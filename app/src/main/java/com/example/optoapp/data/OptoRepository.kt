@@ -7,7 +7,8 @@ class OptoRepository(
     private val pacienteDao: PacienteDao,
     private val evaluacionDao: EvaluacionDao,
     private val dispensacionDao: DispensacionDao,
-    private val pagoDao: PagoDao
+    private val pagoDao: PagoDao,
+    private val servicioExtraDao: ServicioExtraDao
 ) {
     val allPacientes: Flow<List<Paciente>> = pacienteDao.getAllPacientes()
     
@@ -41,7 +42,19 @@ class OptoRepository(
     
     suspend fun insertPago(pago: Pago) = pagoDao.insertPago(pago)
 
+    // Servicios Extra
+    fun getAllServicios(): Flow<List<ServicioExtra>> = servicioExtraDao.getAllServicios()
+    
+    fun getServiciosByPaciente(pacienteId: String): Flow<List<ServicioExtra>> = servicioExtraDao.getServiciosByPaciente(pacienteId)
+    
+    suspend fun getServicioById(id: String): ServicioExtra? = servicioExtraDao.getServicioById(id)
+    
+    suspend fun insertServicio(servicio: ServicioExtra) = servicioExtraDao.insertServicio(servicio)
+    
+    suspend fun deleteServicio(servicio: ServicioExtra) = servicioExtraDao.deleteServicio(servicio)
+
     suspend fun clearAllData() {
+        servicioExtraDao.deleteAll()
         pagoDao.deleteAll()
         dispensacionDao.deleteAll()
         evaluacionDao.deleteAll()
@@ -53,7 +66,8 @@ class OptoRepository(
             pacientes = allPacientes.first(),
             evaluaciones = evaluacionDao.getAllEvaluaciones(),
             dispensaciones = dispensacionDao.getAllDispensacionesList(),
-            pagos = pagoDao.getAllPagos()
+            pagos = pagoDao.getAllPagos(),
+            serviciosExtra = servicioExtraDao.getAllServicios().first()
         )
     }
 
@@ -63,6 +77,7 @@ class OptoRepository(
         backupData.evaluaciones.forEach { insertEvaluacion(it) }
         backupData.dispensaciones.forEach { insertDispensacion(it) }
         backupData.pagos.forEach { insertPago(it) }
+        backupData.serviciosExtra.forEach { insertServicio(it) }
     }
 }
 
@@ -70,5 +85,6 @@ data class BackupData(
     val pacientes: List<Paciente>,
     val evaluaciones: List<EvaluacionClinica>,
     val dispensaciones: List<DispensacionOptica>,
-    val pagos: List<Pago>
+    val pagos: List<Pago>,
+    val serviciosExtra: List<ServicioExtra> = emptyList()
 )

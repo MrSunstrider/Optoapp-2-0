@@ -52,14 +52,19 @@ data class EvaluacionClinica(
     // Agudeza visual SIN corrección
     val avScOdLejos: String = "", val avScOiLejos: String = "",
     val avScOdCerca: String = "", val avScOiCerca: String = "",
+    val avScAo: String = "",
     
-    // Agudeza visual CON corrección
+    // Agudeza visual CON corrección PX
     val avCcOdLejos: String = "", val avCcOiLejos: String = "",
     val avCcOdCerca: String = "", val avCcOiCerca: String = "",
+    val avCcAoPx: String = "",
     
     // Otros exámenes
     val phOd: String = "", val phOi: String = "",
     val kappaOd: String = "", val kappaOi: String = "",
+    val hirshberg: String = "",
+    val duccionesOd: String = "", val duccionesOi: String = "",
+    val versionesAo: String = "", // Unificado Ambos Ojos
     
     // Cover test
     val coverTest6m: String = "", val coverTest40cm: String = "", val coverTest10cm: String = "",
@@ -70,7 +75,7 @@ data class EvaluacionClinica(
     // Reflejos
     val reflejoFotomotor: String = "", val reflejoConsensual: String = "", val reflejoAcomodativo: String = "",
     
-    // Queratometría
+    // Queratometría (Solo en Contactología ahora)
     val k1Od: String = "", val k2Od: String = "",
     val k1Oi: String = "", val k2Oi: String = "",
     
@@ -83,12 +88,13 @@ data class EvaluacionClinica(
     val subjOiEsf: String = "", val subjOiCil: String = "", val subjOiEje: String = "",
     
     // Refracción Final (Receta) Lejos
-    val recetaOdEsf: String = "", val recetaOdCil: String = "", val recetaOdEje: String = "",
-    val recetaOiEsf: String = "", val recetaOiCil: String = "", val recetaOiEje: String = "",
+    val recetaOdEsf: String = "", val recetaOdCil: String = "", val recetaOdEje: String = "", val recetaOdAv: String = "",
+    val recetaOiEsf: String = "", val recetaOiCil: String = "", val recetaOiEje: String = "", val recetaOiAv: String = "",
     
     // Adición (ADD)
     val addCercaOd: String = "", val addCercaOi: String = "",
     val addIntermediaOd: String = "", val addIntermediaOi: String = "",
+    val addAv: String = "",
     
     // DIP o DNP
     val dipLejos: String = "", val dipCerca: String = "", val dipIntermedio: String = "",
@@ -100,7 +106,17 @@ data class EvaluacionClinica(
     val diagnostico: String = "",
     val planTratamiento: String = "",
     val observaciones: String = "",
-    val proximaFechaControl: String = ""
+    val proximaFechaControl: String = "",
+    val proximaCita: Long? = null,
+
+    // Contactología
+    val lcOdEsf: String = "", val lcOdCil: String = "", val lcOdEje: String = "",
+    val lcOiEsf: String = "", val lcOiCil: String = "", val lcOiEje: String = "",
+    val lcRadioBaseOd: String = "", val lcDiametroOd: String = "",
+    val lcRadioBaseOi: String = "", val lcDiametroOi: String = "",
+    val lcLaboratorio: String = "", val lcTipoLente: String = "",
+    val lcMaterial: String = "", val lcFechaAdaptacion: Long? = null,
+    val lcObservaciones: String = ""
 )
 
 @Entity(
@@ -131,7 +147,8 @@ data class DispensacionOptica(
     val metodoPago: String = "",
     val montoPagado: Double = 0.0,
     val estadoEntrega: String = "Pendiente",
-    val fechaVencimientoGarantia: String? = null
+    val fechaVencimientoGarantia: String? = null,
+    val distanciaLente: String = ""
 )
 
 @Entity(
@@ -150,4 +167,25 @@ data class Pago(
     val fecha: Long,
     val tipo: String,
     val monto: Double
+)
+
+@Entity(
+    tableName = "servicios_extra",
+    foreignKeys = [ForeignKey(
+        entity = Paciente::class,
+        parentColumns = ["id"],
+        childColumns = ["pacienteId"],
+        onDelete = ForeignKey.SET_NULL
+    )],
+    indices = [Index(value = ["pacienteId"])]
+)
+data class ServicioExtra(
+    @PrimaryKey val id: String,
+    val ot: String = "",
+    val descripcion: String,
+    val montoTotal: Double,
+    val aCuenta: Double,
+    val estado: String, // Pendiente, Entregado
+    val fecha: Long,
+    val pacienteId: String? = null // Opcional
 )

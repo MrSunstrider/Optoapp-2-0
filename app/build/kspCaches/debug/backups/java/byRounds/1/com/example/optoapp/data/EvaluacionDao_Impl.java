@@ -14,6 +14,7 @@ import androidx.room.util.DBUtil;
 import androidx.sqlite.db.SupportSQLiteStatement;
 import java.lang.Class;
 import java.lang.Exception;
+import java.lang.Long;
 import java.lang.Object;
 import java.lang.Override;
 import java.lang.String;
@@ -44,7 +45,7 @@ public final class EvaluacionDao_Impl implements EvaluacionDao {
       @Override
       @NonNull
       protected String createQuery() {
-        return "INSERT OR REPLACE INTO `evaluaciones` (`id`,`pacienteId`,`fecha`,`motivoConsulta`,`sintomas`,`antecedentesPersonalesOculares`,`antecedentesPersonalesSistemicos`,`antecedentesFamiliaresOculares`,`antecedentesFamiliaresSistemicos`,`medicacion`,`alergias`,`necesidadVisual`,`avScOdLejos`,`avScOiLejos`,`avScOdCerca`,`avScOiCerca`,`avCcOdLejos`,`avCcOiLejos`,`avCcOdCerca`,`avCcOiCerca`,`phOd`,`phOi`,`kappaOd`,`kappaOi`,`coverTest6m`,`coverTest40cm`,`coverTest10cm`,`ppcOr`,`ppcLuz`,`ppcFrl`,`reflejoFotomotor`,`reflejoConsensual`,`reflejoAcomodativo`,`k1Od`,`k2Od`,`k1Oi`,`k2Oi`,`objOdEsf`,`objOdCil`,`objOdEje`,`objOiEsf`,`objOiCil`,`objOiEje`,`subjOdEsf`,`subjOdCil`,`subjOdEje`,`subjOiEsf`,`subjOiCil`,`subjOiEje`,`recetaOdEsf`,`recetaOdCil`,`recetaOdEje`,`recetaOiEsf`,`recetaOiCil`,`recetaOiEje`,`addCercaOd`,`addCercaOi`,`addIntermediaOd`,`addIntermediaOi`,`dipLejos`,`dipCerca`,`dipIntermedio`,`prismaOdValor`,`prismaOdBase`,`prismaOiValor`,`prismaOiBase`,`diagnostico`,`planTratamiento`,`observaciones`,`proximaFechaControl`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+        return "INSERT OR REPLACE INTO `evaluaciones` (`id`,`pacienteId`,`fecha`,`motivoConsulta`,`sintomas`,`antecedentesPersonalesOculares`,`antecedentesPersonalesSistemicos`,`antecedentesFamiliaresOculares`,`antecedentesFamiliaresSistemicos`,`medicacion`,`alergias`,`necesidadVisual`,`avScOdLejos`,`avScOiLejos`,`avScOdCerca`,`avScOiCerca`,`avScAo`,`avCcOdLejos`,`avCcOiLejos`,`avCcOdCerca`,`avCcOiCerca`,`avCcAoPx`,`phOd`,`phOi`,`kappaOd`,`kappaOi`,`hirshberg`,`duccionesOd`,`duccionesOi`,`versionesAo`,`coverTest6m`,`coverTest40cm`,`coverTest10cm`,`ppcOr`,`ppcLuz`,`ppcFrl`,`reflejoFotomotor`,`reflejoConsensual`,`reflejoAcomodativo`,`k1Od`,`k2Od`,`k1Oi`,`k2Oi`,`objOdEsf`,`objOdCil`,`objOdEje`,`objOiEsf`,`objOiCil`,`objOiEje`,`subjOdEsf`,`subjOdCil`,`subjOdEje`,`subjOiEsf`,`subjOiCil`,`subjOiEje`,`recetaOdEsf`,`recetaOdCil`,`recetaOdEje`,`recetaOdAv`,`recetaOiEsf`,`recetaOiCil`,`recetaOiEje`,`recetaOiAv`,`addCercaOd`,`addCercaOi`,`addIntermediaOd`,`addIntermediaOi`,`addAv`,`dipLejos`,`dipCerca`,`dipIntermedio`,`prismaOdValor`,`prismaOdBase`,`prismaOiValor`,`prismaOiBase`,`diagnostico`,`planTratamiento`,`observaciones`,`proximaFechaControl`,`proximaCita`,`lcOdEsf`,`lcOdCil`,`lcOdEje`,`lcOiEsf`,`lcOiCil`,`lcOiEje`,`lcRadioBaseOd`,`lcDiametroOd`,`lcRadioBaseOi`,`lcDiametroOi`,`lcLaboratorio`,`lcTipoLente`,`lcMaterial`,`lcFechaAdaptacion`,`lcObservaciones`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
       }
 
       @Override
@@ -67,60 +68,93 @@ public final class EvaluacionDao_Impl implements EvaluacionDao {
         statement.bindString(14, entity.getAvScOiLejos());
         statement.bindString(15, entity.getAvScOdCerca());
         statement.bindString(16, entity.getAvScOiCerca());
-        statement.bindString(17, entity.getAvCcOdLejos());
-        statement.bindString(18, entity.getAvCcOiLejos());
-        statement.bindString(19, entity.getAvCcOdCerca());
-        statement.bindString(20, entity.getAvCcOiCerca());
-        statement.bindString(21, entity.getPhOd());
-        statement.bindString(22, entity.getPhOi());
-        statement.bindString(23, entity.getKappaOd());
-        statement.bindString(24, entity.getKappaOi());
-        statement.bindString(25, entity.getCoverTest6m());
-        statement.bindString(26, entity.getCoverTest40cm());
-        statement.bindString(27, entity.getCoverTest10cm());
-        statement.bindString(28, entity.getPpcOr());
-        statement.bindString(29, entity.getPpcLuz());
-        statement.bindString(30, entity.getPpcFrl());
-        statement.bindString(31, entity.getReflejoFotomotor());
-        statement.bindString(32, entity.getReflejoConsensual());
-        statement.bindString(33, entity.getReflejoAcomodativo());
-        statement.bindString(34, entity.getK1Od());
-        statement.bindString(35, entity.getK2Od());
-        statement.bindString(36, entity.getK1Oi());
-        statement.bindString(37, entity.getK2Oi());
-        statement.bindString(38, entity.getObjOdEsf());
-        statement.bindString(39, entity.getObjOdCil());
-        statement.bindString(40, entity.getObjOdEje());
-        statement.bindString(41, entity.getObjOiEsf());
-        statement.bindString(42, entity.getObjOiCil());
-        statement.bindString(43, entity.getObjOiEje());
-        statement.bindString(44, entity.getSubjOdEsf());
-        statement.bindString(45, entity.getSubjOdCil());
-        statement.bindString(46, entity.getSubjOdEje());
-        statement.bindString(47, entity.getSubjOiEsf());
-        statement.bindString(48, entity.getSubjOiCil());
-        statement.bindString(49, entity.getSubjOiEje());
-        statement.bindString(50, entity.getRecetaOdEsf());
-        statement.bindString(51, entity.getRecetaOdCil());
-        statement.bindString(52, entity.getRecetaOdEje());
-        statement.bindString(53, entity.getRecetaOiEsf());
-        statement.bindString(54, entity.getRecetaOiCil());
-        statement.bindString(55, entity.getRecetaOiEje());
-        statement.bindString(56, entity.getAddCercaOd());
-        statement.bindString(57, entity.getAddCercaOi());
-        statement.bindString(58, entity.getAddIntermediaOd());
-        statement.bindString(59, entity.getAddIntermediaOi());
-        statement.bindString(60, entity.getDipLejos());
-        statement.bindString(61, entity.getDipCerca());
-        statement.bindString(62, entity.getDipIntermedio());
-        statement.bindString(63, entity.getPrismaOdValor());
-        statement.bindString(64, entity.getPrismaOdBase());
-        statement.bindString(65, entity.getPrismaOiValor());
-        statement.bindString(66, entity.getPrismaOiBase());
-        statement.bindString(67, entity.getDiagnostico());
-        statement.bindString(68, entity.getPlanTratamiento());
-        statement.bindString(69, entity.getObservaciones());
-        statement.bindString(70, entity.getProximaFechaControl());
+        statement.bindString(17, entity.getAvScAo());
+        statement.bindString(18, entity.getAvCcOdLejos());
+        statement.bindString(19, entity.getAvCcOiLejos());
+        statement.bindString(20, entity.getAvCcOdCerca());
+        statement.bindString(21, entity.getAvCcOiCerca());
+        statement.bindString(22, entity.getAvCcAoPx());
+        statement.bindString(23, entity.getPhOd());
+        statement.bindString(24, entity.getPhOi());
+        statement.bindString(25, entity.getKappaOd());
+        statement.bindString(26, entity.getKappaOi());
+        statement.bindString(27, entity.getHirshberg());
+        statement.bindString(28, entity.getDuccionesOd());
+        statement.bindString(29, entity.getDuccionesOi());
+        statement.bindString(30, entity.getVersionesAo());
+        statement.bindString(31, entity.getCoverTest6m());
+        statement.bindString(32, entity.getCoverTest40cm());
+        statement.bindString(33, entity.getCoverTest10cm());
+        statement.bindString(34, entity.getPpcOr());
+        statement.bindString(35, entity.getPpcLuz());
+        statement.bindString(36, entity.getPpcFrl());
+        statement.bindString(37, entity.getReflejoFotomotor());
+        statement.bindString(38, entity.getReflejoConsensual());
+        statement.bindString(39, entity.getReflejoAcomodativo());
+        statement.bindString(40, entity.getK1Od());
+        statement.bindString(41, entity.getK2Od());
+        statement.bindString(42, entity.getK1Oi());
+        statement.bindString(43, entity.getK2Oi());
+        statement.bindString(44, entity.getObjOdEsf());
+        statement.bindString(45, entity.getObjOdCil());
+        statement.bindString(46, entity.getObjOdEje());
+        statement.bindString(47, entity.getObjOiEsf());
+        statement.bindString(48, entity.getObjOiCil());
+        statement.bindString(49, entity.getObjOiEje());
+        statement.bindString(50, entity.getSubjOdEsf());
+        statement.bindString(51, entity.getSubjOdCil());
+        statement.bindString(52, entity.getSubjOdEje());
+        statement.bindString(53, entity.getSubjOiEsf());
+        statement.bindString(54, entity.getSubjOiCil());
+        statement.bindString(55, entity.getSubjOiEje());
+        statement.bindString(56, entity.getRecetaOdEsf());
+        statement.bindString(57, entity.getRecetaOdCil());
+        statement.bindString(58, entity.getRecetaOdEje());
+        statement.bindString(59, entity.getRecetaOdAv());
+        statement.bindString(60, entity.getRecetaOiEsf());
+        statement.bindString(61, entity.getRecetaOiCil());
+        statement.bindString(62, entity.getRecetaOiEje());
+        statement.bindString(63, entity.getRecetaOiAv());
+        statement.bindString(64, entity.getAddCercaOd());
+        statement.bindString(65, entity.getAddCercaOi());
+        statement.bindString(66, entity.getAddIntermediaOd());
+        statement.bindString(67, entity.getAddIntermediaOi());
+        statement.bindString(68, entity.getAddAv());
+        statement.bindString(69, entity.getDipLejos());
+        statement.bindString(70, entity.getDipCerca());
+        statement.bindString(71, entity.getDipIntermedio());
+        statement.bindString(72, entity.getPrismaOdValor());
+        statement.bindString(73, entity.getPrismaOdBase());
+        statement.bindString(74, entity.getPrismaOiValor());
+        statement.bindString(75, entity.getPrismaOiBase());
+        statement.bindString(76, entity.getDiagnostico());
+        statement.bindString(77, entity.getPlanTratamiento());
+        statement.bindString(78, entity.getObservaciones());
+        statement.bindString(79, entity.getProximaFechaControl());
+        if (entity.getProximaCita() == null) {
+          statement.bindNull(80);
+        } else {
+          statement.bindLong(80, entity.getProximaCita());
+        }
+        statement.bindString(81, entity.getLcOdEsf());
+        statement.bindString(82, entity.getLcOdCil());
+        statement.bindString(83, entity.getLcOdEje());
+        statement.bindString(84, entity.getLcOiEsf());
+        statement.bindString(85, entity.getLcOiCil());
+        statement.bindString(86, entity.getLcOiEje());
+        statement.bindString(87, entity.getLcRadioBaseOd());
+        statement.bindString(88, entity.getLcDiametroOd());
+        statement.bindString(89, entity.getLcRadioBaseOi());
+        statement.bindString(90, entity.getLcDiametroOi());
+        statement.bindString(91, entity.getLcLaboratorio());
+        statement.bindString(92, entity.getLcTipoLente());
+        statement.bindString(93, entity.getLcMaterial());
+        if (entity.getLcFechaAdaptacion() == null) {
+          statement.bindNull(94);
+        } else {
+          statement.bindLong(94, entity.getLcFechaAdaptacion());
+        }
+        statement.bindString(95, entity.getLcObservaciones());
       }
     };
     this.__preparedStmtOfDeleteAll = new SharedSQLiteStatement(__db) {
@@ -203,14 +237,20 @@ public final class EvaluacionDao_Impl implements EvaluacionDao {
           final int _cursorIndexOfAvScOiLejos = CursorUtil.getColumnIndexOrThrow(_cursor, "avScOiLejos");
           final int _cursorIndexOfAvScOdCerca = CursorUtil.getColumnIndexOrThrow(_cursor, "avScOdCerca");
           final int _cursorIndexOfAvScOiCerca = CursorUtil.getColumnIndexOrThrow(_cursor, "avScOiCerca");
+          final int _cursorIndexOfAvScAo = CursorUtil.getColumnIndexOrThrow(_cursor, "avScAo");
           final int _cursorIndexOfAvCcOdLejos = CursorUtil.getColumnIndexOrThrow(_cursor, "avCcOdLejos");
           final int _cursorIndexOfAvCcOiLejos = CursorUtil.getColumnIndexOrThrow(_cursor, "avCcOiLejos");
           final int _cursorIndexOfAvCcOdCerca = CursorUtil.getColumnIndexOrThrow(_cursor, "avCcOdCerca");
           final int _cursorIndexOfAvCcOiCerca = CursorUtil.getColumnIndexOrThrow(_cursor, "avCcOiCerca");
+          final int _cursorIndexOfAvCcAoPx = CursorUtil.getColumnIndexOrThrow(_cursor, "avCcAoPx");
           final int _cursorIndexOfPhOd = CursorUtil.getColumnIndexOrThrow(_cursor, "phOd");
           final int _cursorIndexOfPhOi = CursorUtil.getColumnIndexOrThrow(_cursor, "phOi");
           final int _cursorIndexOfKappaOd = CursorUtil.getColumnIndexOrThrow(_cursor, "kappaOd");
           final int _cursorIndexOfKappaOi = CursorUtil.getColumnIndexOrThrow(_cursor, "kappaOi");
+          final int _cursorIndexOfHirshberg = CursorUtil.getColumnIndexOrThrow(_cursor, "hirshberg");
+          final int _cursorIndexOfDuccionesOd = CursorUtil.getColumnIndexOrThrow(_cursor, "duccionesOd");
+          final int _cursorIndexOfDuccionesOi = CursorUtil.getColumnIndexOrThrow(_cursor, "duccionesOi");
+          final int _cursorIndexOfVersionesAo = CursorUtil.getColumnIndexOrThrow(_cursor, "versionesAo");
           final int _cursorIndexOfCoverTest6m = CursorUtil.getColumnIndexOrThrow(_cursor, "coverTest6m");
           final int _cursorIndexOfCoverTest40cm = CursorUtil.getColumnIndexOrThrow(_cursor, "coverTest40cm");
           final int _cursorIndexOfCoverTest10cm = CursorUtil.getColumnIndexOrThrow(_cursor, "coverTest10cm");
@@ -239,13 +279,16 @@ public final class EvaluacionDao_Impl implements EvaluacionDao {
           final int _cursorIndexOfRecetaOdEsf = CursorUtil.getColumnIndexOrThrow(_cursor, "recetaOdEsf");
           final int _cursorIndexOfRecetaOdCil = CursorUtil.getColumnIndexOrThrow(_cursor, "recetaOdCil");
           final int _cursorIndexOfRecetaOdEje = CursorUtil.getColumnIndexOrThrow(_cursor, "recetaOdEje");
+          final int _cursorIndexOfRecetaOdAv = CursorUtil.getColumnIndexOrThrow(_cursor, "recetaOdAv");
           final int _cursorIndexOfRecetaOiEsf = CursorUtil.getColumnIndexOrThrow(_cursor, "recetaOiEsf");
           final int _cursorIndexOfRecetaOiCil = CursorUtil.getColumnIndexOrThrow(_cursor, "recetaOiCil");
           final int _cursorIndexOfRecetaOiEje = CursorUtil.getColumnIndexOrThrow(_cursor, "recetaOiEje");
+          final int _cursorIndexOfRecetaOiAv = CursorUtil.getColumnIndexOrThrow(_cursor, "recetaOiAv");
           final int _cursorIndexOfAddCercaOd = CursorUtil.getColumnIndexOrThrow(_cursor, "addCercaOd");
           final int _cursorIndexOfAddCercaOi = CursorUtil.getColumnIndexOrThrow(_cursor, "addCercaOi");
           final int _cursorIndexOfAddIntermediaOd = CursorUtil.getColumnIndexOrThrow(_cursor, "addIntermediaOd");
           final int _cursorIndexOfAddIntermediaOi = CursorUtil.getColumnIndexOrThrow(_cursor, "addIntermediaOi");
+          final int _cursorIndexOfAddAv = CursorUtil.getColumnIndexOrThrow(_cursor, "addAv");
           final int _cursorIndexOfDipLejos = CursorUtil.getColumnIndexOrThrow(_cursor, "dipLejos");
           final int _cursorIndexOfDipCerca = CursorUtil.getColumnIndexOrThrow(_cursor, "dipCerca");
           final int _cursorIndexOfDipIntermedio = CursorUtil.getColumnIndexOrThrow(_cursor, "dipIntermedio");
@@ -257,6 +300,22 @@ public final class EvaluacionDao_Impl implements EvaluacionDao {
           final int _cursorIndexOfPlanTratamiento = CursorUtil.getColumnIndexOrThrow(_cursor, "planTratamiento");
           final int _cursorIndexOfObservaciones = CursorUtil.getColumnIndexOrThrow(_cursor, "observaciones");
           final int _cursorIndexOfProximaFechaControl = CursorUtil.getColumnIndexOrThrow(_cursor, "proximaFechaControl");
+          final int _cursorIndexOfProximaCita = CursorUtil.getColumnIndexOrThrow(_cursor, "proximaCita");
+          final int _cursorIndexOfLcOdEsf = CursorUtil.getColumnIndexOrThrow(_cursor, "lcOdEsf");
+          final int _cursorIndexOfLcOdCil = CursorUtil.getColumnIndexOrThrow(_cursor, "lcOdCil");
+          final int _cursorIndexOfLcOdEje = CursorUtil.getColumnIndexOrThrow(_cursor, "lcOdEje");
+          final int _cursorIndexOfLcOiEsf = CursorUtil.getColumnIndexOrThrow(_cursor, "lcOiEsf");
+          final int _cursorIndexOfLcOiCil = CursorUtil.getColumnIndexOrThrow(_cursor, "lcOiCil");
+          final int _cursorIndexOfLcOiEje = CursorUtil.getColumnIndexOrThrow(_cursor, "lcOiEje");
+          final int _cursorIndexOfLcRadioBaseOd = CursorUtil.getColumnIndexOrThrow(_cursor, "lcRadioBaseOd");
+          final int _cursorIndexOfLcDiametroOd = CursorUtil.getColumnIndexOrThrow(_cursor, "lcDiametroOd");
+          final int _cursorIndexOfLcRadioBaseOi = CursorUtil.getColumnIndexOrThrow(_cursor, "lcRadioBaseOi");
+          final int _cursorIndexOfLcDiametroOi = CursorUtil.getColumnIndexOrThrow(_cursor, "lcDiametroOi");
+          final int _cursorIndexOfLcLaboratorio = CursorUtil.getColumnIndexOrThrow(_cursor, "lcLaboratorio");
+          final int _cursorIndexOfLcTipoLente = CursorUtil.getColumnIndexOrThrow(_cursor, "lcTipoLente");
+          final int _cursorIndexOfLcMaterial = CursorUtil.getColumnIndexOrThrow(_cursor, "lcMaterial");
+          final int _cursorIndexOfLcFechaAdaptacion = CursorUtil.getColumnIndexOrThrow(_cursor, "lcFechaAdaptacion");
+          final int _cursorIndexOfLcObservaciones = CursorUtil.getColumnIndexOrThrow(_cursor, "lcObservaciones");
           final List<EvaluacionClinica> _result = new ArrayList<EvaluacionClinica>(_cursor.getCount());
           while (_cursor.moveToNext()) {
             final EvaluacionClinica _item;
@@ -294,6 +353,8 @@ public final class EvaluacionDao_Impl implements EvaluacionDao {
             _tmpAvScOdCerca = _cursor.getString(_cursorIndexOfAvScOdCerca);
             final String _tmpAvScOiCerca;
             _tmpAvScOiCerca = _cursor.getString(_cursorIndexOfAvScOiCerca);
+            final String _tmpAvScAo;
+            _tmpAvScAo = _cursor.getString(_cursorIndexOfAvScAo);
             final String _tmpAvCcOdLejos;
             _tmpAvCcOdLejos = _cursor.getString(_cursorIndexOfAvCcOdLejos);
             final String _tmpAvCcOiLejos;
@@ -302,6 +363,8 @@ public final class EvaluacionDao_Impl implements EvaluacionDao {
             _tmpAvCcOdCerca = _cursor.getString(_cursorIndexOfAvCcOdCerca);
             final String _tmpAvCcOiCerca;
             _tmpAvCcOiCerca = _cursor.getString(_cursorIndexOfAvCcOiCerca);
+            final String _tmpAvCcAoPx;
+            _tmpAvCcAoPx = _cursor.getString(_cursorIndexOfAvCcAoPx);
             final String _tmpPhOd;
             _tmpPhOd = _cursor.getString(_cursorIndexOfPhOd);
             final String _tmpPhOi;
@@ -310,6 +373,14 @@ public final class EvaluacionDao_Impl implements EvaluacionDao {
             _tmpKappaOd = _cursor.getString(_cursorIndexOfKappaOd);
             final String _tmpKappaOi;
             _tmpKappaOi = _cursor.getString(_cursorIndexOfKappaOi);
+            final String _tmpHirshberg;
+            _tmpHirshberg = _cursor.getString(_cursorIndexOfHirshberg);
+            final String _tmpDuccionesOd;
+            _tmpDuccionesOd = _cursor.getString(_cursorIndexOfDuccionesOd);
+            final String _tmpDuccionesOi;
+            _tmpDuccionesOi = _cursor.getString(_cursorIndexOfDuccionesOi);
+            final String _tmpVersionesAo;
+            _tmpVersionesAo = _cursor.getString(_cursorIndexOfVersionesAo);
             final String _tmpCoverTest6m;
             _tmpCoverTest6m = _cursor.getString(_cursorIndexOfCoverTest6m);
             final String _tmpCoverTest40cm;
@@ -366,12 +437,16 @@ public final class EvaluacionDao_Impl implements EvaluacionDao {
             _tmpRecetaOdCil = _cursor.getString(_cursorIndexOfRecetaOdCil);
             final String _tmpRecetaOdEje;
             _tmpRecetaOdEje = _cursor.getString(_cursorIndexOfRecetaOdEje);
+            final String _tmpRecetaOdAv;
+            _tmpRecetaOdAv = _cursor.getString(_cursorIndexOfRecetaOdAv);
             final String _tmpRecetaOiEsf;
             _tmpRecetaOiEsf = _cursor.getString(_cursorIndexOfRecetaOiEsf);
             final String _tmpRecetaOiCil;
             _tmpRecetaOiCil = _cursor.getString(_cursorIndexOfRecetaOiCil);
             final String _tmpRecetaOiEje;
             _tmpRecetaOiEje = _cursor.getString(_cursorIndexOfRecetaOiEje);
+            final String _tmpRecetaOiAv;
+            _tmpRecetaOiAv = _cursor.getString(_cursorIndexOfRecetaOiAv);
             final String _tmpAddCercaOd;
             _tmpAddCercaOd = _cursor.getString(_cursorIndexOfAddCercaOd);
             final String _tmpAddCercaOi;
@@ -380,6 +455,8 @@ public final class EvaluacionDao_Impl implements EvaluacionDao {
             _tmpAddIntermediaOd = _cursor.getString(_cursorIndexOfAddIntermediaOd);
             final String _tmpAddIntermediaOi;
             _tmpAddIntermediaOi = _cursor.getString(_cursorIndexOfAddIntermediaOi);
+            final String _tmpAddAv;
+            _tmpAddAv = _cursor.getString(_cursorIndexOfAddAv);
             final String _tmpDipLejos;
             _tmpDipLejos = _cursor.getString(_cursorIndexOfDipLejos);
             final String _tmpDipCerca;
@@ -402,7 +479,47 @@ public final class EvaluacionDao_Impl implements EvaluacionDao {
             _tmpObservaciones = _cursor.getString(_cursorIndexOfObservaciones);
             final String _tmpProximaFechaControl;
             _tmpProximaFechaControl = _cursor.getString(_cursorIndexOfProximaFechaControl);
-            _item = new EvaluacionClinica(_tmpId,_tmpPacienteId,_tmpFecha,_tmpMotivoConsulta,_tmpSintomas,_tmpAntecedentesPersonalesOculares,_tmpAntecedentesPersonalesSistemicos,_tmpAntecedentesFamiliaresOculares,_tmpAntecedentesFamiliaresSistemicos,_tmpMedicacion,_tmpAlergias,_tmpNecesidadVisual,_tmpAvScOdLejos,_tmpAvScOiLejos,_tmpAvScOdCerca,_tmpAvScOiCerca,_tmpAvCcOdLejos,_tmpAvCcOiLejos,_tmpAvCcOdCerca,_tmpAvCcOiCerca,_tmpPhOd,_tmpPhOi,_tmpKappaOd,_tmpKappaOi,_tmpCoverTest6m,_tmpCoverTest40cm,_tmpCoverTest10cm,_tmpPpcOr,_tmpPpcLuz,_tmpPpcFrl,_tmpReflejoFotomotor,_tmpReflejoConsensual,_tmpReflejoAcomodativo,_tmpK1Od,_tmpK2Od,_tmpK1Oi,_tmpK2Oi,_tmpObjOdEsf,_tmpObjOdCil,_tmpObjOdEje,_tmpObjOiEsf,_tmpObjOiCil,_tmpObjOiEje,_tmpSubjOdEsf,_tmpSubjOdCil,_tmpSubjOdEje,_tmpSubjOiEsf,_tmpSubjOiCil,_tmpSubjOiEje,_tmpRecetaOdEsf,_tmpRecetaOdCil,_tmpRecetaOdEje,_tmpRecetaOiEsf,_tmpRecetaOiCil,_tmpRecetaOiEje,_tmpAddCercaOd,_tmpAddCercaOi,_tmpAddIntermediaOd,_tmpAddIntermediaOi,_tmpDipLejos,_tmpDipCerca,_tmpDipIntermedio,_tmpPrismaOdValor,_tmpPrismaOdBase,_tmpPrismaOiValor,_tmpPrismaOiBase,_tmpDiagnostico,_tmpPlanTratamiento,_tmpObservaciones,_tmpProximaFechaControl);
+            final Long _tmpProximaCita;
+            if (_cursor.isNull(_cursorIndexOfProximaCita)) {
+              _tmpProximaCita = null;
+            } else {
+              _tmpProximaCita = _cursor.getLong(_cursorIndexOfProximaCita);
+            }
+            final String _tmpLcOdEsf;
+            _tmpLcOdEsf = _cursor.getString(_cursorIndexOfLcOdEsf);
+            final String _tmpLcOdCil;
+            _tmpLcOdCil = _cursor.getString(_cursorIndexOfLcOdCil);
+            final String _tmpLcOdEje;
+            _tmpLcOdEje = _cursor.getString(_cursorIndexOfLcOdEje);
+            final String _tmpLcOiEsf;
+            _tmpLcOiEsf = _cursor.getString(_cursorIndexOfLcOiEsf);
+            final String _tmpLcOiCil;
+            _tmpLcOiCil = _cursor.getString(_cursorIndexOfLcOiCil);
+            final String _tmpLcOiEje;
+            _tmpLcOiEje = _cursor.getString(_cursorIndexOfLcOiEje);
+            final String _tmpLcRadioBaseOd;
+            _tmpLcRadioBaseOd = _cursor.getString(_cursorIndexOfLcRadioBaseOd);
+            final String _tmpLcDiametroOd;
+            _tmpLcDiametroOd = _cursor.getString(_cursorIndexOfLcDiametroOd);
+            final String _tmpLcRadioBaseOi;
+            _tmpLcRadioBaseOi = _cursor.getString(_cursorIndexOfLcRadioBaseOi);
+            final String _tmpLcDiametroOi;
+            _tmpLcDiametroOi = _cursor.getString(_cursorIndexOfLcDiametroOi);
+            final String _tmpLcLaboratorio;
+            _tmpLcLaboratorio = _cursor.getString(_cursorIndexOfLcLaboratorio);
+            final String _tmpLcTipoLente;
+            _tmpLcTipoLente = _cursor.getString(_cursorIndexOfLcTipoLente);
+            final String _tmpLcMaterial;
+            _tmpLcMaterial = _cursor.getString(_cursorIndexOfLcMaterial);
+            final Long _tmpLcFechaAdaptacion;
+            if (_cursor.isNull(_cursorIndexOfLcFechaAdaptacion)) {
+              _tmpLcFechaAdaptacion = null;
+            } else {
+              _tmpLcFechaAdaptacion = _cursor.getLong(_cursorIndexOfLcFechaAdaptacion);
+            }
+            final String _tmpLcObservaciones;
+            _tmpLcObservaciones = _cursor.getString(_cursorIndexOfLcObservaciones);
+            _item = new EvaluacionClinica(_tmpId,_tmpPacienteId,_tmpFecha,_tmpMotivoConsulta,_tmpSintomas,_tmpAntecedentesPersonalesOculares,_tmpAntecedentesPersonalesSistemicos,_tmpAntecedentesFamiliaresOculares,_tmpAntecedentesFamiliaresSistemicos,_tmpMedicacion,_tmpAlergias,_tmpNecesidadVisual,_tmpAvScOdLejos,_tmpAvScOiLejos,_tmpAvScOdCerca,_tmpAvScOiCerca,_tmpAvScAo,_tmpAvCcOdLejos,_tmpAvCcOiLejos,_tmpAvCcOdCerca,_tmpAvCcOiCerca,_tmpAvCcAoPx,_tmpPhOd,_tmpPhOi,_tmpKappaOd,_tmpKappaOi,_tmpHirshberg,_tmpDuccionesOd,_tmpDuccionesOi,_tmpVersionesAo,_tmpCoverTest6m,_tmpCoverTest40cm,_tmpCoverTest10cm,_tmpPpcOr,_tmpPpcLuz,_tmpPpcFrl,_tmpReflejoFotomotor,_tmpReflejoConsensual,_tmpReflejoAcomodativo,_tmpK1Od,_tmpK2Od,_tmpK1Oi,_tmpK2Oi,_tmpObjOdEsf,_tmpObjOdCil,_tmpObjOdEje,_tmpObjOiEsf,_tmpObjOiCil,_tmpObjOiEje,_tmpSubjOdEsf,_tmpSubjOdCil,_tmpSubjOdEje,_tmpSubjOiEsf,_tmpSubjOiCil,_tmpSubjOiEje,_tmpRecetaOdEsf,_tmpRecetaOdCil,_tmpRecetaOdEje,_tmpRecetaOdAv,_tmpRecetaOiEsf,_tmpRecetaOiCil,_tmpRecetaOiEje,_tmpRecetaOiAv,_tmpAddCercaOd,_tmpAddCercaOi,_tmpAddIntermediaOd,_tmpAddIntermediaOi,_tmpAddAv,_tmpDipLejos,_tmpDipCerca,_tmpDipIntermedio,_tmpPrismaOdValor,_tmpPrismaOdBase,_tmpPrismaOiValor,_tmpPrismaOiBase,_tmpDiagnostico,_tmpPlanTratamiento,_tmpObservaciones,_tmpProximaFechaControl,_tmpProximaCita,_tmpLcOdEsf,_tmpLcOdCil,_tmpLcOdEje,_tmpLcOiEsf,_tmpLcOiCil,_tmpLcOiEje,_tmpLcRadioBaseOd,_tmpLcDiametroOd,_tmpLcRadioBaseOi,_tmpLcDiametroOi,_tmpLcLaboratorio,_tmpLcTipoLente,_tmpLcMaterial,_tmpLcFechaAdaptacion,_tmpLcObservaciones);
             _result.add(_item);
           }
           return _result;
@@ -448,14 +565,20 @@ public final class EvaluacionDao_Impl implements EvaluacionDao {
           final int _cursorIndexOfAvScOiLejos = CursorUtil.getColumnIndexOrThrow(_cursor, "avScOiLejos");
           final int _cursorIndexOfAvScOdCerca = CursorUtil.getColumnIndexOrThrow(_cursor, "avScOdCerca");
           final int _cursorIndexOfAvScOiCerca = CursorUtil.getColumnIndexOrThrow(_cursor, "avScOiCerca");
+          final int _cursorIndexOfAvScAo = CursorUtil.getColumnIndexOrThrow(_cursor, "avScAo");
           final int _cursorIndexOfAvCcOdLejos = CursorUtil.getColumnIndexOrThrow(_cursor, "avCcOdLejos");
           final int _cursorIndexOfAvCcOiLejos = CursorUtil.getColumnIndexOrThrow(_cursor, "avCcOiLejos");
           final int _cursorIndexOfAvCcOdCerca = CursorUtil.getColumnIndexOrThrow(_cursor, "avCcOdCerca");
           final int _cursorIndexOfAvCcOiCerca = CursorUtil.getColumnIndexOrThrow(_cursor, "avCcOiCerca");
+          final int _cursorIndexOfAvCcAoPx = CursorUtil.getColumnIndexOrThrow(_cursor, "avCcAoPx");
           final int _cursorIndexOfPhOd = CursorUtil.getColumnIndexOrThrow(_cursor, "phOd");
           final int _cursorIndexOfPhOi = CursorUtil.getColumnIndexOrThrow(_cursor, "phOi");
           final int _cursorIndexOfKappaOd = CursorUtil.getColumnIndexOrThrow(_cursor, "kappaOd");
           final int _cursorIndexOfKappaOi = CursorUtil.getColumnIndexOrThrow(_cursor, "kappaOi");
+          final int _cursorIndexOfHirshberg = CursorUtil.getColumnIndexOrThrow(_cursor, "hirshberg");
+          final int _cursorIndexOfDuccionesOd = CursorUtil.getColumnIndexOrThrow(_cursor, "duccionesOd");
+          final int _cursorIndexOfDuccionesOi = CursorUtil.getColumnIndexOrThrow(_cursor, "duccionesOi");
+          final int _cursorIndexOfVersionesAo = CursorUtil.getColumnIndexOrThrow(_cursor, "versionesAo");
           final int _cursorIndexOfCoverTest6m = CursorUtil.getColumnIndexOrThrow(_cursor, "coverTest6m");
           final int _cursorIndexOfCoverTest40cm = CursorUtil.getColumnIndexOrThrow(_cursor, "coverTest40cm");
           final int _cursorIndexOfCoverTest10cm = CursorUtil.getColumnIndexOrThrow(_cursor, "coverTest10cm");
@@ -484,13 +607,16 @@ public final class EvaluacionDao_Impl implements EvaluacionDao {
           final int _cursorIndexOfRecetaOdEsf = CursorUtil.getColumnIndexOrThrow(_cursor, "recetaOdEsf");
           final int _cursorIndexOfRecetaOdCil = CursorUtil.getColumnIndexOrThrow(_cursor, "recetaOdCil");
           final int _cursorIndexOfRecetaOdEje = CursorUtil.getColumnIndexOrThrow(_cursor, "recetaOdEje");
+          final int _cursorIndexOfRecetaOdAv = CursorUtil.getColumnIndexOrThrow(_cursor, "recetaOdAv");
           final int _cursorIndexOfRecetaOiEsf = CursorUtil.getColumnIndexOrThrow(_cursor, "recetaOiEsf");
           final int _cursorIndexOfRecetaOiCil = CursorUtil.getColumnIndexOrThrow(_cursor, "recetaOiCil");
           final int _cursorIndexOfRecetaOiEje = CursorUtil.getColumnIndexOrThrow(_cursor, "recetaOiEje");
+          final int _cursorIndexOfRecetaOiAv = CursorUtil.getColumnIndexOrThrow(_cursor, "recetaOiAv");
           final int _cursorIndexOfAddCercaOd = CursorUtil.getColumnIndexOrThrow(_cursor, "addCercaOd");
           final int _cursorIndexOfAddCercaOi = CursorUtil.getColumnIndexOrThrow(_cursor, "addCercaOi");
           final int _cursorIndexOfAddIntermediaOd = CursorUtil.getColumnIndexOrThrow(_cursor, "addIntermediaOd");
           final int _cursorIndexOfAddIntermediaOi = CursorUtil.getColumnIndexOrThrow(_cursor, "addIntermediaOi");
+          final int _cursorIndexOfAddAv = CursorUtil.getColumnIndexOrThrow(_cursor, "addAv");
           final int _cursorIndexOfDipLejos = CursorUtil.getColumnIndexOrThrow(_cursor, "dipLejos");
           final int _cursorIndexOfDipCerca = CursorUtil.getColumnIndexOrThrow(_cursor, "dipCerca");
           final int _cursorIndexOfDipIntermedio = CursorUtil.getColumnIndexOrThrow(_cursor, "dipIntermedio");
@@ -502,6 +628,22 @@ public final class EvaluacionDao_Impl implements EvaluacionDao {
           final int _cursorIndexOfPlanTratamiento = CursorUtil.getColumnIndexOrThrow(_cursor, "planTratamiento");
           final int _cursorIndexOfObservaciones = CursorUtil.getColumnIndexOrThrow(_cursor, "observaciones");
           final int _cursorIndexOfProximaFechaControl = CursorUtil.getColumnIndexOrThrow(_cursor, "proximaFechaControl");
+          final int _cursorIndexOfProximaCita = CursorUtil.getColumnIndexOrThrow(_cursor, "proximaCita");
+          final int _cursorIndexOfLcOdEsf = CursorUtil.getColumnIndexOrThrow(_cursor, "lcOdEsf");
+          final int _cursorIndexOfLcOdCil = CursorUtil.getColumnIndexOrThrow(_cursor, "lcOdCil");
+          final int _cursorIndexOfLcOdEje = CursorUtil.getColumnIndexOrThrow(_cursor, "lcOdEje");
+          final int _cursorIndexOfLcOiEsf = CursorUtil.getColumnIndexOrThrow(_cursor, "lcOiEsf");
+          final int _cursorIndexOfLcOiCil = CursorUtil.getColumnIndexOrThrow(_cursor, "lcOiCil");
+          final int _cursorIndexOfLcOiEje = CursorUtil.getColumnIndexOrThrow(_cursor, "lcOiEje");
+          final int _cursorIndexOfLcRadioBaseOd = CursorUtil.getColumnIndexOrThrow(_cursor, "lcRadioBaseOd");
+          final int _cursorIndexOfLcDiametroOd = CursorUtil.getColumnIndexOrThrow(_cursor, "lcDiametroOd");
+          final int _cursorIndexOfLcRadioBaseOi = CursorUtil.getColumnIndexOrThrow(_cursor, "lcRadioBaseOi");
+          final int _cursorIndexOfLcDiametroOi = CursorUtil.getColumnIndexOrThrow(_cursor, "lcDiametroOi");
+          final int _cursorIndexOfLcLaboratorio = CursorUtil.getColumnIndexOrThrow(_cursor, "lcLaboratorio");
+          final int _cursorIndexOfLcTipoLente = CursorUtil.getColumnIndexOrThrow(_cursor, "lcTipoLente");
+          final int _cursorIndexOfLcMaterial = CursorUtil.getColumnIndexOrThrow(_cursor, "lcMaterial");
+          final int _cursorIndexOfLcFechaAdaptacion = CursorUtil.getColumnIndexOrThrow(_cursor, "lcFechaAdaptacion");
+          final int _cursorIndexOfLcObservaciones = CursorUtil.getColumnIndexOrThrow(_cursor, "lcObservaciones");
           final EvaluacionClinica _result;
           if (_cursor.moveToFirst()) {
             final String _tmpId;
@@ -538,6 +680,8 @@ public final class EvaluacionDao_Impl implements EvaluacionDao {
             _tmpAvScOdCerca = _cursor.getString(_cursorIndexOfAvScOdCerca);
             final String _tmpAvScOiCerca;
             _tmpAvScOiCerca = _cursor.getString(_cursorIndexOfAvScOiCerca);
+            final String _tmpAvScAo;
+            _tmpAvScAo = _cursor.getString(_cursorIndexOfAvScAo);
             final String _tmpAvCcOdLejos;
             _tmpAvCcOdLejos = _cursor.getString(_cursorIndexOfAvCcOdLejos);
             final String _tmpAvCcOiLejos;
@@ -546,6 +690,8 @@ public final class EvaluacionDao_Impl implements EvaluacionDao {
             _tmpAvCcOdCerca = _cursor.getString(_cursorIndexOfAvCcOdCerca);
             final String _tmpAvCcOiCerca;
             _tmpAvCcOiCerca = _cursor.getString(_cursorIndexOfAvCcOiCerca);
+            final String _tmpAvCcAoPx;
+            _tmpAvCcAoPx = _cursor.getString(_cursorIndexOfAvCcAoPx);
             final String _tmpPhOd;
             _tmpPhOd = _cursor.getString(_cursorIndexOfPhOd);
             final String _tmpPhOi;
@@ -554,6 +700,14 @@ public final class EvaluacionDao_Impl implements EvaluacionDao {
             _tmpKappaOd = _cursor.getString(_cursorIndexOfKappaOd);
             final String _tmpKappaOi;
             _tmpKappaOi = _cursor.getString(_cursorIndexOfKappaOi);
+            final String _tmpHirshberg;
+            _tmpHirshberg = _cursor.getString(_cursorIndexOfHirshberg);
+            final String _tmpDuccionesOd;
+            _tmpDuccionesOd = _cursor.getString(_cursorIndexOfDuccionesOd);
+            final String _tmpDuccionesOi;
+            _tmpDuccionesOi = _cursor.getString(_cursorIndexOfDuccionesOi);
+            final String _tmpVersionesAo;
+            _tmpVersionesAo = _cursor.getString(_cursorIndexOfVersionesAo);
             final String _tmpCoverTest6m;
             _tmpCoverTest6m = _cursor.getString(_cursorIndexOfCoverTest6m);
             final String _tmpCoverTest40cm;
@@ -610,12 +764,16 @@ public final class EvaluacionDao_Impl implements EvaluacionDao {
             _tmpRecetaOdCil = _cursor.getString(_cursorIndexOfRecetaOdCil);
             final String _tmpRecetaOdEje;
             _tmpRecetaOdEje = _cursor.getString(_cursorIndexOfRecetaOdEje);
+            final String _tmpRecetaOdAv;
+            _tmpRecetaOdAv = _cursor.getString(_cursorIndexOfRecetaOdAv);
             final String _tmpRecetaOiEsf;
             _tmpRecetaOiEsf = _cursor.getString(_cursorIndexOfRecetaOiEsf);
             final String _tmpRecetaOiCil;
             _tmpRecetaOiCil = _cursor.getString(_cursorIndexOfRecetaOiCil);
             final String _tmpRecetaOiEje;
             _tmpRecetaOiEje = _cursor.getString(_cursorIndexOfRecetaOiEje);
+            final String _tmpRecetaOiAv;
+            _tmpRecetaOiAv = _cursor.getString(_cursorIndexOfRecetaOiAv);
             final String _tmpAddCercaOd;
             _tmpAddCercaOd = _cursor.getString(_cursorIndexOfAddCercaOd);
             final String _tmpAddCercaOi;
@@ -624,6 +782,8 @@ public final class EvaluacionDao_Impl implements EvaluacionDao {
             _tmpAddIntermediaOd = _cursor.getString(_cursorIndexOfAddIntermediaOd);
             final String _tmpAddIntermediaOi;
             _tmpAddIntermediaOi = _cursor.getString(_cursorIndexOfAddIntermediaOi);
+            final String _tmpAddAv;
+            _tmpAddAv = _cursor.getString(_cursorIndexOfAddAv);
             final String _tmpDipLejos;
             _tmpDipLejos = _cursor.getString(_cursorIndexOfDipLejos);
             final String _tmpDipCerca;
@@ -646,7 +806,47 @@ public final class EvaluacionDao_Impl implements EvaluacionDao {
             _tmpObservaciones = _cursor.getString(_cursorIndexOfObservaciones);
             final String _tmpProximaFechaControl;
             _tmpProximaFechaControl = _cursor.getString(_cursorIndexOfProximaFechaControl);
-            _result = new EvaluacionClinica(_tmpId,_tmpPacienteId,_tmpFecha,_tmpMotivoConsulta,_tmpSintomas,_tmpAntecedentesPersonalesOculares,_tmpAntecedentesPersonalesSistemicos,_tmpAntecedentesFamiliaresOculares,_tmpAntecedentesFamiliaresSistemicos,_tmpMedicacion,_tmpAlergias,_tmpNecesidadVisual,_tmpAvScOdLejos,_tmpAvScOiLejos,_tmpAvScOdCerca,_tmpAvScOiCerca,_tmpAvCcOdLejos,_tmpAvCcOiLejos,_tmpAvCcOdCerca,_tmpAvCcOiCerca,_tmpPhOd,_tmpPhOi,_tmpKappaOd,_tmpKappaOi,_tmpCoverTest6m,_tmpCoverTest40cm,_tmpCoverTest10cm,_tmpPpcOr,_tmpPpcLuz,_tmpPpcFrl,_tmpReflejoFotomotor,_tmpReflejoConsensual,_tmpReflejoAcomodativo,_tmpK1Od,_tmpK2Od,_tmpK1Oi,_tmpK2Oi,_tmpObjOdEsf,_tmpObjOdCil,_tmpObjOdEje,_tmpObjOiEsf,_tmpObjOiCil,_tmpObjOiEje,_tmpSubjOdEsf,_tmpSubjOdCil,_tmpSubjOdEje,_tmpSubjOiEsf,_tmpSubjOiCil,_tmpSubjOiEje,_tmpRecetaOdEsf,_tmpRecetaOdCil,_tmpRecetaOdEje,_tmpRecetaOiEsf,_tmpRecetaOiCil,_tmpRecetaOiEje,_tmpAddCercaOd,_tmpAddCercaOi,_tmpAddIntermediaOd,_tmpAddIntermediaOi,_tmpDipLejos,_tmpDipCerca,_tmpDipIntermedio,_tmpPrismaOdValor,_tmpPrismaOdBase,_tmpPrismaOiValor,_tmpPrismaOiBase,_tmpDiagnostico,_tmpPlanTratamiento,_tmpObservaciones,_tmpProximaFechaControl);
+            final Long _tmpProximaCita;
+            if (_cursor.isNull(_cursorIndexOfProximaCita)) {
+              _tmpProximaCita = null;
+            } else {
+              _tmpProximaCita = _cursor.getLong(_cursorIndexOfProximaCita);
+            }
+            final String _tmpLcOdEsf;
+            _tmpLcOdEsf = _cursor.getString(_cursorIndexOfLcOdEsf);
+            final String _tmpLcOdCil;
+            _tmpLcOdCil = _cursor.getString(_cursorIndexOfLcOdCil);
+            final String _tmpLcOdEje;
+            _tmpLcOdEje = _cursor.getString(_cursorIndexOfLcOdEje);
+            final String _tmpLcOiEsf;
+            _tmpLcOiEsf = _cursor.getString(_cursorIndexOfLcOiEsf);
+            final String _tmpLcOiCil;
+            _tmpLcOiCil = _cursor.getString(_cursorIndexOfLcOiCil);
+            final String _tmpLcOiEje;
+            _tmpLcOiEje = _cursor.getString(_cursorIndexOfLcOiEje);
+            final String _tmpLcRadioBaseOd;
+            _tmpLcRadioBaseOd = _cursor.getString(_cursorIndexOfLcRadioBaseOd);
+            final String _tmpLcDiametroOd;
+            _tmpLcDiametroOd = _cursor.getString(_cursorIndexOfLcDiametroOd);
+            final String _tmpLcRadioBaseOi;
+            _tmpLcRadioBaseOi = _cursor.getString(_cursorIndexOfLcRadioBaseOi);
+            final String _tmpLcDiametroOi;
+            _tmpLcDiametroOi = _cursor.getString(_cursorIndexOfLcDiametroOi);
+            final String _tmpLcLaboratorio;
+            _tmpLcLaboratorio = _cursor.getString(_cursorIndexOfLcLaboratorio);
+            final String _tmpLcTipoLente;
+            _tmpLcTipoLente = _cursor.getString(_cursorIndexOfLcTipoLente);
+            final String _tmpLcMaterial;
+            _tmpLcMaterial = _cursor.getString(_cursorIndexOfLcMaterial);
+            final Long _tmpLcFechaAdaptacion;
+            if (_cursor.isNull(_cursorIndexOfLcFechaAdaptacion)) {
+              _tmpLcFechaAdaptacion = null;
+            } else {
+              _tmpLcFechaAdaptacion = _cursor.getLong(_cursorIndexOfLcFechaAdaptacion);
+            }
+            final String _tmpLcObservaciones;
+            _tmpLcObservaciones = _cursor.getString(_cursorIndexOfLcObservaciones);
+            _result = new EvaluacionClinica(_tmpId,_tmpPacienteId,_tmpFecha,_tmpMotivoConsulta,_tmpSintomas,_tmpAntecedentesPersonalesOculares,_tmpAntecedentesPersonalesSistemicos,_tmpAntecedentesFamiliaresOculares,_tmpAntecedentesFamiliaresSistemicos,_tmpMedicacion,_tmpAlergias,_tmpNecesidadVisual,_tmpAvScOdLejos,_tmpAvScOiLejos,_tmpAvScOdCerca,_tmpAvScOiCerca,_tmpAvScAo,_tmpAvCcOdLejos,_tmpAvCcOiLejos,_tmpAvCcOdCerca,_tmpAvCcOiCerca,_tmpAvCcAoPx,_tmpPhOd,_tmpPhOi,_tmpKappaOd,_tmpKappaOi,_tmpHirshberg,_tmpDuccionesOd,_tmpDuccionesOi,_tmpVersionesAo,_tmpCoverTest6m,_tmpCoverTest40cm,_tmpCoverTest10cm,_tmpPpcOr,_tmpPpcLuz,_tmpPpcFrl,_tmpReflejoFotomotor,_tmpReflejoConsensual,_tmpReflejoAcomodativo,_tmpK1Od,_tmpK2Od,_tmpK1Oi,_tmpK2Oi,_tmpObjOdEsf,_tmpObjOdCil,_tmpObjOdEje,_tmpObjOiEsf,_tmpObjOiCil,_tmpObjOiEje,_tmpSubjOdEsf,_tmpSubjOdCil,_tmpSubjOdEje,_tmpSubjOiEsf,_tmpSubjOiCil,_tmpSubjOiEje,_tmpRecetaOdEsf,_tmpRecetaOdCil,_tmpRecetaOdEje,_tmpRecetaOdAv,_tmpRecetaOiEsf,_tmpRecetaOiCil,_tmpRecetaOiEje,_tmpRecetaOiAv,_tmpAddCercaOd,_tmpAddCercaOi,_tmpAddIntermediaOd,_tmpAddIntermediaOi,_tmpAddAv,_tmpDipLejos,_tmpDipCerca,_tmpDipIntermedio,_tmpPrismaOdValor,_tmpPrismaOdBase,_tmpPrismaOiValor,_tmpPrismaOiBase,_tmpDiagnostico,_tmpPlanTratamiento,_tmpObservaciones,_tmpProximaFechaControl,_tmpProximaCita,_tmpLcOdEsf,_tmpLcOdCil,_tmpLcOdEje,_tmpLcOiEsf,_tmpLcOiCil,_tmpLcOiEje,_tmpLcRadioBaseOd,_tmpLcDiametroOd,_tmpLcRadioBaseOi,_tmpLcDiametroOi,_tmpLcLaboratorio,_tmpLcTipoLente,_tmpLcMaterial,_tmpLcFechaAdaptacion,_tmpLcObservaciones);
           } else {
             _result = null;
           }
@@ -687,14 +887,20 @@ public final class EvaluacionDao_Impl implements EvaluacionDao {
           final int _cursorIndexOfAvScOiLejos = CursorUtil.getColumnIndexOrThrow(_cursor, "avScOiLejos");
           final int _cursorIndexOfAvScOdCerca = CursorUtil.getColumnIndexOrThrow(_cursor, "avScOdCerca");
           final int _cursorIndexOfAvScOiCerca = CursorUtil.getColumnIndexOrThrow(_cursor, "avScOiCerca");
+          final int _cursorIndexOfAvScAo = CursorUtil.getColumnIndexOrThrow(_cursor, "avScAo");
           final int _cursorIndexOfAvCcOdLejos = CursorUtil.getColumnIndexOrThrow(_cursor, "avCcOdLejos");
           final int _cursorIndexOfAvCcOiLejos = CursorUtil.getColumnIndexOrThrow(_cursor, "avCcOiLejos");
           final int _cursorIndexOfAvCcOdCerca = CursorUtil.getColumnIndexOrThrow(_cursor, "avCcOdCerca");
           final int _cursorIndexOfAvCcOiCerca = CursorUtil.getColumnIndexOrThrow(_cursor, "avCcOiCerca");
+          final int _cursorIndexOfAvCcAoPx = CursorUtil.getColumnIndexOrThrow(_cursor, "avCcAoPx");
           final int _cursorIndexOfPhOd = CursorUtil.getColumnIndexOrThrow(_cursor, "phOd");
           final int _cursorIndexOfPhOi = CursorUtil.getColumnIndexOrThrow(_cursor, "phOi");
           final int _cursorIndexOfKappaOd = CursorUtil.getColumnIndexOrThrow(_cursor, "kappaOd");
           final int _cursorIndexOfKappaOi = CursorUtil.getColumnIndexOrThrow(_cursor, "kappaOi");
+          final int _cursorIndexOfHirshberg = CursorUtil.getColumnIndexOrThrow(_cursor, "hirshberg");
+          final int _cursorIndexOfDuccionesOd = CursorUtil.getColumnIndexOrThrow(_cursor, "duccionesOd");
+          final int _cursorIndexOfDuccionesOi = CursorUtil.getColumnIndexOrThrow(_cursor, "duccionesOi");
+          final int _cursorIndexOfVersionesAo = CursorUtil.getColumnIndexOrThrow(_cursor, "versionesAo");
           final int _cursorIndexOfCoverTest6m = CursorUtil.getColumnIndexOrThrow(_cursor, "coverTest6m");
           final int _cursorIndexOfCoverTest40cm = CursorUtil.getColumnIndexOrThrow(_cursor, "coverTest40cm");
           final int _cursorIndexOfCoverTest10cm = CursorUtil.getColumnIndexOrThrow(_cursor, "coverTest10cm");
@@ -723,13 +929,16 @@ public final class EvaluacionDao_Impl implements EvaluacionDao {
           final int _cursorIndexOfRecetaOdEsf = CursorUtil.getColumnIndexOrThrow(_cursor, "recetaOdEsf");
           final int _cursorIndexOfRecetaOdCil = CursorUtil.getColumnIndexOrThrow(_cursor, "recetaOdCil");
           final int _cursorIndexOfRecetaOdEje = CursorUtil.getColumnIndexOrThrow(_cursor, "recetaOdEje");
+          final int _cursorIndexOfRecetaOdAv = CursorUtil.getColumnIndexOrThrow(_cursor, "recetaOdAv");
           final int _cursorIndexOfRecetaOiEsf = CursorUtil.getColumnIndexOrThrow(_cursor, "recetaOiEsf");
           final int _cursorIndexOfRecetaOiCil = CursorUtil.getColumnIndexOrThrow(_cursor, "recetaOiCil");
           final int _cursorIndexOfRecetaOiEje = CursorUtil.getColumnIndexOrThrow(_cursor, "recetaOiEje");
+          final int _cursorIndexOfRecetaOiAv = CursorUtil.getColumnIndexOrThrow(_cursor, "recetaOiAv");
           final int _cursorIndexOfAddCercaOd = CursorUtil.getColumnIndexOrThrow(_cursor, "addCercaOd");
           final int _cursorIndexOfAddCercaOi = CursorUtil.getColumnIndexOrThrow(_cursor, "addCercaOi");
           final int _cursorIndexOfAddIntermediaOd = CursorUtil.getColumnIndexOrThrow(_cursor, "addIntermediaOd");
           final int _cursorIndexOfAddIntermediaOi = CursorUtil.getColumnIndexOrThrow(_cursor, "addIntermediaOi");
+          final int _cursorIndexOfAddAv = CursorUtil.getColumnIndexOrThrow(_cursor, "addAv");
           final int _cursorIndexOfDipLejos = CursorUtil.getColumnIndexOrThrow(_cursor, "dipLejos");
           final int _cursorIndexOfDipCerca = CursorUtil.getColumnIndexOrThrow(_cursor, "dipCerca");
           final int _cursorIndexOfDipIntermedio = CursorUtil.getColumnIndexOrThrow(_cursor, "dipIntermedio");
@@ -741,6 +950,22 @@ public final class EvaluacionDao_Impl implements EvaluacionDao {
           final int _cursorIndexOfPlanTratamiento = CursorUtil.getColumnIndexOrThrow(_cursor, "planTratamiento");
           final int _cursorIndexOfObservaciones = CursorUtil.getColumnIndexOrThrow(_cursor, "observaciones");
           final int _cursorIndexOfProximaFechaControl = CursorUtil.getColumnIndexOrThrow(_cursor, "proximaFechaControl");
+          final int _cursorIndexOfProximaCita = CursorUtil.getColumnIndexOrThrow(_cursor, "proximaCita");
+          final int _cursorIndexOfLcOdEsf = CursorUtil.getColumnIndexOrThrow(_cursor, "lcOdEsf");
+          final int _cursorIndexOfLcOdCil = CursorUtil.getColumnIndexOrThrow(_cursor, "lcOdCil");
+          final int _cursorIndexOfLcOdEje = CursorUtil.getColumnIndexOrThrow(_cursor, "lcOdEje");
+          final int _cursorIndexOfLcOiEsf = CursorUtil.getColumnIndexOrThrow(_cursor, "lcOiEsf");
+          final int _cursorIndexOfLcOiCil = CursorUtil.getColumnIndexOrThrow(_cursor, "lcOiCil");
+          final int _cursorIndexOfLcOiEje = CursorUtil.getColumnIndexOrThrow(_cursor, "lcOiEje");
+          final int _cursorIndexOfLcRadioBaseOd = CursorUtil.getColumnIndexOrThrow(_cursor, "lcRadioBaseOd");
+          final int _cursorIndexOfLcDiametroOd = CursorUtil.getColumnIndexOrThrow(_cursor, "lcDiametroOd");
+          final int _cursorIndexOfLcRadioBaseOi = CursorUtil.getColumnIndexOrThrow(_cursor, "lcRadioBaseOi");
+          final int _cursorIndexOfLcDiametroOi = CursorUtil.getColumnIndexOrThrow(_cursor, "lcDiametroOi");
+          final int _cursorIndexOfLcLaboratorio = CursorUtil.getColumnIndexOrThrow(_cursor, "lcLaboratorio");
+          final int _cursorIndexOfLcTipoLente = CursorUtil.getColumnIndexOrThrow(_cursor, "lcTipoLente");
+          final int _cursorIndexOfLcMaterial = CursorUtil.getColumnIndexOrThrow(_cursor, "lcMaterial");
+          final int _cursorIndexOfLcFechaAdaptacion = CursorUtil.getColumnIndexOrThrow(_cursor, "lcFechaAdaptacion");
+          final int _cursorIndexOfLcObservaciones = CursorUtil.getColumnIndexOrThrow(_cursor, "lcObservaciones");
           final List<EvaluacionClinica> _result = new ArrayList<EvaluacionClinica>(_cursor.getCount());
           while (_cursor.moveToNext()) {
             final EvaluacionClinica _item;
@@ -778,6 +1003,8 @@ public final class EvaluacionDao_Impl implements EvaluacionDao {
             _tmpAvScOdCerca = _cursor.getString(_cursorIndexOfAvScOdCerca);
             final String _tmpAvScOiCerca;
             _tmpAvScOiCerca = _cursor.getString(_cursorIndexOfAvScOiCerca);
+            final String _tmpAvScAo;
+            _tmpAvScAo = _cursor.getString(_cursorIndexOfAvScAo);
             final String _tmpAvCcOdLejos;
             _tmpAvCcOdLejos = _cursor.getString(_cursorIndexOfAvCcOdLejos);
             final String _tmpAvCcOiLejos;
@@ -786,6 +1013,8 @@ public final class EvaluacionDao_Impl implements EvaluacionDao {
             _tmpAvCcOdCerca = _cursor.getString(_cursorIndexOfAvCcOdCerca);
             final String _tmpAvCcOiCerca;
             _tmpAvCcOiCerca = _cursor.getString(_cursorIndexOfAvCcOiCerca);
+            final String _tmpAvCcAoPx;
+            _tmpAvCcAoPx = _cursor.getString(_cursorIndexOfAvCcAoPx);
             final String _tmpPhOd;
             _tmpPhOd = _cursor.getString(_cursorIndexOfPhOd);
             final String _tmpPhOi;
@@ -794,6 +1023,14 @@ public final class EvaluacionDao_Impl implements EvaluacionDao {
             _tmpKappaOd = _cursor.getString(_cursorIndexOfKappaOd);
             final String _tmpKappaOi;
             _tmpKappaOi = _cursor.getString(_cursorIndexOfKappaOi);
+            final String _tmpHirshberg;
+            _tmpHirshberg = _cursor.getString(_cursorIndexOfHirshberg);
+            final String _tmpDuccionesOd;
+            _tmpDuccionesOd = _cursor.getString(_cursorIndexOfDuccionesOd);
+            final String _tmpDuccionesOi;
+            _tmpDuccionesOi = _cursor.getString(_cursorIndexOfDuccionesOi);
+            final String _tmpVersionesAo;
+            _tmpVersionesAo = _cursor.getString(_cursorIndexOfVersionesAo);
             final String _tmpCoverTest6m;
             _tmpCoverTest6m = _cursor.getString(_cursorIndexOfCoverTest6m);
             final String _tmpCoverTest40cm;
@@ -850,12 +1087,16 @@ public final class EvaluacionDao_Impl implements EvaluacionDao {
             _tmpRecetaOdCil = _cursor.getString(_cursorIndexOfRecetaOdCil);
             final String _tmpRecetaOdEje;
             _tmpRecetaOdEje = _cursor.getString(_cursorIndexOfRecetaOdEje);
+            final String _tmpRecetaOdAv;
+            _tmpRecetaOdAv = _cursor.getString(_cursorIndexOfRecetaOdAv);
             final String _tmpRecetaOiEsf;
             _tmpRecetaOiEsf = _cursor.getString(_cursorIndexOfRecetaOiEsf);
             final String _tmpRecetaOiCil;
             _tmpRecetaOiCil = _cursor.getString(_cursorIndexOfRecetaOiCil);
             final String _tmpRecetaOiEje;
             _tmpRecetaOiEje = _cursor.getString(_cursorIndexOfRecetaOiEje);
+            final String _tmpRecetaOiAv;
+            _tmpRecetaOiAv = _cursor.getString(_cursorIndexOfRecetaOiAv);
             final String _tmpAddCercaOd;
             _tmpAddCercaOd = _cursor.getString(_cursorIndexOfAddCercaOd);
             final String _tmpAddCercaOi;
@@ -864,6 +1105,8 @@ public final class EvaluacionDao_Impl implements EvaluacionDao {
             _tmpAddIntermediaOd = _cursor.getString(_cursorIndexOfAddIntermediaOd);
             final String _tmpAddIntermediaOi;
             _tmpAddIntermediaOi = _cursor.getString(_cursorIndexOfAddIntermediaOi);
+            final String _tmpAddAv;
+            _tmpAddAv = _cursor.getString(_cursorIndexOfAddAv);
             final String _tmpDipLejos;
             _tmpDipLejos = _cursor.getString(_cursorIndexOfDipLejos);
             final String _tmpDipCerca;
@@ -886,7 +1129,47 @@ public final class EvaluacionDao_Impl implements EvaluacionDao {
             _tmpObservaciones = _cursor.getString(_cursorIndexOfObservaciones);
             final String _tmpProximaFechaControl;
             _tmpProximaFechaControl = _cursor.getString(_cursorIndexOfProximaFechaControl);
-            _item = new EvaluacionClinica(_tmpId,_tmpPacienteId,_tmpFecha,_tmpMotivoConsulta,_tmpSintomas,_tmpAntecedentesPersonalesOculares,_tmpAntecedentesPersonalesSistemicos,_tmpAntecedentesFamiliaresOculares,_tmpAntecedentesFamiliaresSistemicos,_tmpMedicacion,_tmpAlergias,_tmpNecesidadVisual,_tmpAvScOdLejos,_tmpAvScOiLejos,_tmpAvScOdCerca,_tmpAvScOiCerca,_tmpAvCcOdLejos,_tmpAvCcOiLejos,_tmpAvCcOdCerca,_tmpAvCcOiCerca,_tmpPhOd,_tmpPhOi,_tmpKappaOd,_tmpKappaOi,_tmpCoverTest6m,_tmpCoverTest40cm,_tmpCoverTest10cm,_tmpPpcOr,_tmpPpcLuz,_tmpPpcFrl,_tmpReflejoFotomotor,_tmpReflejoConsensual,_tmpReflejoAcomodativo,_tmpK1Od,_tmpK2Od,_tmpK1Oi,_tmpK2Oi,_tmpObjOdEsf,_tmpObjOdCil,_tmpObjOdEje,_tmpObjOiEsf,_tmpObjOiCil,_tmpObjOiEje,_tmpSubjOdEsf,_tmpSubjOdCil,_tmpSubjOdEje,_tmpSubjOiEsf,_tmpSubjOiCil,_tmpSubjOiEje,_tmpRecetaOdEsf,_tmpRecetaOdCil,_tmpRecetaOdEje,_tmpRecetaOiEsf,_tmpRecetaOiCil,_tmpRecetaOiEje,_tmpAddCercaOd,_tmpAddCercaOi,_tmpAddIntermediaOd,_tmpAddIntermediaOi,_tmpDipLejos,_tmpDipCerca,_tmpDipIntermedio,_tmpPrismaOdValor,_tmpPrismaOdBase,_tmpPrismaOiValor,_tmpPrismaOiBase,_tmpDiagnostico,_tmpPlanTratamiento,_tmpObservaciones,_tmpProximaFechaControl);
+            final Long _tmpProximaCita;
+            if (_cursor.isNull(_cursorIndexOfProximaCita)) {
+              _tmpProximaCita = null;
+            } else {
+              _tmpProximaCita = _cursor.getLong(_cursorIndexOfProximaCita);
+            }
+            final String _tmpLcOdEsf;
+            _tmpLcOdEsf = _cursor.getString(_cursorIndexOfLcOdEsf);
+            final String _tmpLcOdCil;
+            _tmpLcOdCil = _cursor.getString(_cursorIndexOfLcOdCil);
+            final String _tmpLcOdEje;
+            _tmpLcOdEje = _cursor.getString(_cursorIndexOfLcOdEje);
+            final String _tmpLcOiEsf;
+            _tmpLcOiEsf = _cursor.getString(_cursorIndexOfLcOiEsf);
+            final String _tmpLcOiCil;
+            _tmpLcOiCil = _cursor.getString(_cursorIndexOfLcOiCil);
+            final String _tmpLcOiEje;
+            _tmpLcOiEje = _cursor.getString(_cursorIndexOfLcOiEje);
+            final String _tmpLcRadioBaseOd;
+            _tmpLcRadioBaseOd = _cursor.getString(_cursorIndexOfLcRadioBaseOd);
+            final String _tmpLcDiametroOd;
+            _tmpLcDiametroOd = _cursor.getString(_cursorIndexOfLcDiametroOd);
+            final String _tmpLcRadioBaseOi;
+            _tmpLcRadioBaseOi = _cursor.getString(_cursorIndexOfLcRadioBaseOi);
+            final String _tmpLcDiametroOi;
+            _tmpLcDiametroOi = _cursor.getString(_cursorIndexOfLcDiametroOi);
+            final String _tmpLcLaboratorio;
+            _tmpLcLaboratorio = _cursor.getString(_cursorIndexOfLcLaboratorio);
+            final String _tmpLcTipoLente;
+            _tmpLcTipoLente = _cursor.getString(_cursorIndexOfLcTipoLente);
+            final String _tmpLcMaterial;
+            _tmpLcMaterial = _cursor.getString(_cursorIndexOfLcMaterial);
+            final Long _tmpLcFechaAdaptacion;
+            if (_cursor.isNull(_cursorIndexOfLcFechaAdaptacion)) {
+              _tmpLcFechaAdaptacion = null;
+            } else {
+              _tmpLcFechaAdaptacion = _cursor.getLong(_cursorIndexOfLcFechaAdaptacion);
+            }
+            final String _tmpLcObservaciones;
+            _tmpLcObservaciones = _cursor.getString(_cursorIndexOfLcObservaciones);
+            _item = new EvaluacionClinica(_tmpId,_tmpPacienteId,_tmpFecha,_tmpMotivoConsulta,_tmpSintomas,_tmpAntecedentesPersonalesOculares,_tmpAntecedentesPersonalesSistemicos,_tmpAntecedentesFamiliaresOculares,_tmpAntecedentesFamiliaresSistemicos,_tmpMedicacion,_tmpAlergias,_tmpNecesidadVisual,_tmpAvScOdLejos,_tmpAvScOiLejos,_tmpAvScOdCerca,_tmpAvScOiCerca,_tmpAvScAo,_tmpAvCcOdLejos,_tmpAvCcOiLejos,_tmpAvCcOdCerca,_tmpAvCcOiCerca,_tmpAvCcAoPx,_tmpPhOd,_tmpPhOi,_tmpKappaOd,_tmpKappaOi,_tmpHirshberg,_tmpDuccionesOd,_tmpDuccionesOi,_tmpVersionesAo,_tmpCoverTest6m,_tmpCoverTest40cm,_tmpCoverTest10cm,_tmpPpcOr,_tmpPpcLuz,_tmpPpcFrl,_tmpReflejoFotomotor,_tmpReflejoConsensual,_tmpReflejoAcomodativo,_tmpK1Od,_tmpK2Od,_tmpK1Oi,_tmpK2Oi,_tmpObjOdEsf,_tmpObjOdCil,_tmpObjOdEje,_tmpObjOiEsf,_tmpObjOiCil,_tmpObjOiEje,_tmpSubjOdEsf,_tmpSubjOdCil,_tmpSubjOdEje,_tmpSubjOiEsf,_tmpSubjOiCil,_tmpSubjOiEje,_tmpRecetaOdEsf,_tmpRecetaOdCil,_tmpRecetaOdEje,_tmpRecetaOdAv,_tmpRecetaOiEsf,_tmpRecetaOiCil,_tmpRecetaOiEje,_tmpRecetaOiAv,_tmpAddCercaOd,_tmpAddCercaOi,_tmpAddIntermediaOd,_tmpAddIntermediaOi,_tmpAddAv,_tmpDipLejos,_tmpDipCerca,_tmpDipIntermedio,_tmpPrismaOdValor,_tmpPrismaOdBase,_tmpPrismaOiValor,_tmpPrismaOiBase,_tmpDiagnostico,_tmpPlanTratamiento,_tmpObservaciones,_tmpProximaFechaControl,_tmpProximaCita,_tmpLcOdEsf,_tmpLcOdCil,_tmpLcOdEje,_tmpLcOiEsf,_tmpLcOiCil,_tmpLcOiEje,_tmpLcRadioBaseOd,_tmpLcDiametroOd,_tmpLcRadioBaseOi,_tmpLcDiametroOi,_tmpLcLaboratorio,_tmpLcTipoLente,_tmpLcMaterial,_tmpLcFechaAdaptacion,_tmpLcObservaciones);
             _result.add(_item);
           }
           return _result;

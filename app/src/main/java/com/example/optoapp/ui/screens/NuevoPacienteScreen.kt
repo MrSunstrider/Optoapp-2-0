@@ -5,7 +5,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -21,6 +21,7 @@ import com.example.optoapp.data.Paciente
 import com.example.optoapp.viewmodel.OptoViewModel
 import com.example.optoapp.viewmodel.OptoViewModelFactory
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
 import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -45,9 +46,10 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
     var ocupacion by remember { mutableStateOf("") }
     var acompanante by remember { mutableStateOf("") }
     var hobbies by remember { mutableStateOf("") }
+    var fechaCreacion by remember { mutableLongStateOf(System.currentTimeMillis()) }
 
     var expandedSexo by remember { mutableStateOf(false) }
-    val sexos = listOf("Masculino", "Femenino", "Otro")
+    val sexos = listOf("Masculino", "Femenino")
 
     LaunchedEffect(pacienteId) {
         if (pacienteId != null) {
@@ -65,7 +67,28 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
                 ocupacion = it.ocupacion ?: ""
                 acompanante = it.acompanante ?: ""
                 hobbies = it.hobbies ?: ""
+                fechaCreacion = it.fechaCreacion
             }
+        }
+    }
+
+    var showDatePicker by remember { mutableStateOf(false) }
+    val datePickerState = rememberDatePickerState(
+        initialSelectedDateMillis = fechaCreacion,
+        yearRange = 1920..2080
+    )
+
+    if (showDatePicker) {
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    datePickerState.selectedDateMillis?.let { fechaCreacion = it }
+                    showDatePicker = false
+                }) { Text("OK") }
+            }
+        ) {
+            DatePicker(state = datePickerState)
         }
     }
 
@@ -75,7 +98,7 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
                 title = { Text(if (pacienteId == null) "Nuevo Paciente" else "Editar Paciente") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Atrás")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
                     }
                 }
             )
@@ -89,6 +112,14 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            OutlinedButton(
+                onClick = { showDatePicker = true },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                val fmt = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+                Text("Fecha de Registro: ${fmt.format(Date(fechaCreacion))}")
+            }
+
             OutlinedTextField(
                 value = nombreCompleto,
                 onValueChange = { nombreCompleto = it },
@@ -211,7 +242,7 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
                                 nombreCompleto = nombreCompleto,
                                 edad = edad.toIntOrNull() ?: 0,
                                 telefono = telefono,
-                                fechaCreacion = if (pacienteId == null) System.currentTimeMillis() else 0L, // Logic needed to keep original date
+                                fechaCreacion = fechaCreacion,
                                 dni = dni,
                                 fechaNacimiento = fechaNacimiento,
                                 sexo = sexo,
@@ -223,12 +254,7 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
                                 hobbies = hobbies
                             )
                             scope.launch {
-                                if (pacienteId == null) {
-                                    viewModel.savePaciente(p.copy(fechaCreacion = System.currentTimeMillis()))
-                                } else {
-                                    val existing = viewModel.getPaciente(pacienteId)
-                                    viewModel.savePaciente(p.copy(fechaCreacion = existing?.fechaCreacion ?: System.currentTimeMillis()))
-                                }
+                                viewModel.savePaciente(p)
                                 navController.popBackStack()
                             }
                         }

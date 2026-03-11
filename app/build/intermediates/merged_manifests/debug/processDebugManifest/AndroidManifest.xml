@@ -26,6 +26,7 @@
         android:label="OptoApp"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
+        android:testOnly="true"
         android:theme="@style/Theme.OptoApp" >
         <activity
             android:name="com.example.optoapp.MainActivity"

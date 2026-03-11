@@ -27,7 +27,7 @@ import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ReportesScreen(navController: NavController, drawerState: DrawerState) {
+fun ReportesScreen(drawerState: DrawerState) {
     val context = LocalContext.current
     val app = context.applicationContext as OptoApplication
     val viewModel: OptoViewModel = viewModel(

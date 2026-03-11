@@ -44,7 +44,7 @@ public final class DispensacionDao_Impl implements DispensacionDao {
       @Override
       @NonNull
       protected String createQuery() {
-        return "INSERT OR REPLACE INTO `dispensaciones` (`id`,`pacienteId`,`fecha`,`tipoMontura`,`materialMontura`,`tipoLente`,`materialLente`,`tratamientos`,`colorLente`,`notasDiseno`,`origenMontura`,`tipoAro`,`descripcionMontura`,`montoTotal`,`metodoPago`,`montoPagado`,`estadoEntrega`,`fechaVencimientoGarantia`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+        return "INSERT OR REPLACE INTO `dispensaciones` (`id`,`pacienteId`,`fecha`,`tipoMontura`,`materialMontura`,`tipoLente`,`materialLente`,`tratamientos`,`colorLente`,`notasDiseno`,`origenMontura`,`tipoAro`,`descripcionMontura`,`montoTotal`,`metodoPago`,`montoPagado`,`estadoEntrega`,`fechaVencimientoGarantia`,`distanciaLente`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
       }
 
       @Override
@@ -73,6 +73,7 @@ public final class DispensacionDao_Impl implements DispensacionDao {
         } else {
           statement.bindString(18, entity.getFechaVencimientoGarantia());
         }
+        statement.bindString(19, entity.getDistanciaLente());
       }
     };
     this.__preparedStmtOfDeleteAll = new SharedSQLiteStatement(__db) {
@@ -157,6 +158,7 @@ public final class DispensacionDao_Impl implements DispensacionDao {
           final int _cursorIndexOfMontoPagado = CursorUtil.getColumnIndexOrThrow(_cursor, "montoPagado");
           final int _cursorIndexOfEstadoEntrega = CursorUtil.getColumnIndexOrThrow(_cursor, "estadoEntrega");
           final int _cursorIndexOfFechaVencimientoGarantia = CursorUtil.getColumnIndexOrThrow(_cursor, "fechaVencimientoGarantia");
+          final int _cursorIndexOfDistanciaLente = CursorUtil.getColumnIndexOrThrow(_cursor, "distanciaLente");
           final List<DispensacionOptica> _result = new ArrayList<DispensacionOptica>(_cursor.getCount());
           while (_cursor.moveToNext()) {
             final DispensacionOptica _item;
@@ -202,7 +204,9 @@ public final class DispensacionDao_Impl implements DispensacionDao {
             } else {
               _tmpFechaVencimientoGarantia = _cursor.getString(_cursorIndexOfFechaVencimientoGarantia);
             }
-            _item = new DispensacionOptica(_tmpId,_tmpPacienteId,_tmpFecha,_tmpTipoMontura,_tmpMaterialMontura,_tmpTipoLente,_tmpMaterialLente,_tmpTratamientos,_tmpColorLente,_tmpNotasDiseno,_tmpOrigenMontura,_tmpTipoAro,_tmpDescripcionMontura,_tmpMontoTotal,_tmpMetodoPago,_tmpMontoPagado,_tmpEstadoEntrega,_tmpFechaVencimientoGarantia);
+            final String _tmpDistanciaLente;
+            _tmpDistanciaLente = _cursor.getString(_cursorIndexOfDistanciaLente);
+            _item = new DispensacionOptica(_tmpId,_tmpPacienteId,_tmpFecha,_tmpTipoMontura,_tmpMaterialMontura,_tmpTipoLente,_tmpMaterialLente,_tmpTratamientos,_tmpColorLente,_tmpNotasDiseno,_tmpOrigenMontura,_tmpTipoAro,_tmpDescripcionMontura,_tmpMontoTotal,_tmpMetodoPago,_tmpMontoPagado,_tmpEstadoEntrega,_tmpFechaVencimientoGarantia,_tmpDistanciaLente);
             _result.add(_item);
           }
           return _result;
@@ -246,6 +250,7 @@ public final class DispensacionDao_Impl implements DispensacionDao {
           final int _cursorIndexOfMontoPagado = CursorUtil.getColumnIndexOrThrow(_cursor, "montoPagado");
           final int _cursorIndexOfEstadoEntrega = CursorUtil.getColumnIndexOrThrow(_cursor, "estadoEntrega");
           final int _cursorIndexOfFechaVencimientoGarantia = CursorUtil.getColumnIndexOrThrow(_cursor, "fechaVencimientoGarantia");
+          final int _cursorIndexOfDistanciaLente = CursorUtil.getColumnIndexOrThrow(_cursor, "distanciaLente");
           final List<DispensacionOptica> _result = new ArrayList<DispensacionOptica>(_cursor.getCount());
           while (_cursor.moveToNext()) {
             final DispensacionOptica _item;
@@ -291,7 +296,9 @@ public final class DispensacionDao_Impl implements DispensacionDao {
             } else {
               _tmpFechaVencimientoGarantia = _cursor.getString(_cursorIndexOfFechaVencimientoGarantia);
             }
-            _item = new DispensacionOptica(_tmpId,_tmpPacienteId,_tmpFecha,_tmpTipoMontura,_tmpMaterialMontura,_tmpTipoLente,_tmpMaterialLente,_tmpTratamientos,_tmpColorLente,_tmpNotasDiseno,_tmpOrigenMontura,_tmpTipoAro,_tmpDescripcionMontura,_tmpMontoTotal,_tmpMetodoPago,_tmpMontoPagado,_tmpEstadoEntrega,_tmpFechaVencimientoGarantia);
+            final String _tmpDistanciaLente;
+            _tmpDistanciaLente = _cursor.getString(_cursorIndexOfDistanciaLente);
+            _item = new DispensacionOptica(_tmpId,_tmpPacienteId,_tmpFecha,_tmpTipoMontura,_tmpMaterialMontura,_tmpTipoLente,_tmpMaterialLente,_tmpTratamientos,_tmpColorLente,_tmpNotasDiseno,_tmpOrigenMontura,_tmpTipoAro,_tmpDescripcionMontura,_tmpMontoTotal,_tmpMetodoPago,_tmpMontoPagado,_tmpEstadoEntrega,_tmpFechaVencimientoGarantia,_tmpDistanciaLente);
             _result.add(_item);
           }
           return _result;
@@ -339,6 +346,7 @@ public final class DispensacionDao_Impl implements DispensacionDao {
           final int _cursorIndexOfMontoPagado = CursorUtil.getColumnIndexOrThrow(_cursor, "montoPagado");
           final int _cursorIndexOfEstadoEntrega = CursorUtil.getColumnIndexOrThrow(_cursor, "estadoEntrega");
           final int _cursorIndexOfFechaVencimientoGarantia = CursorUtil.getColumnIndexOrThrow(_cursor, "fechaVencimientoGarantia");
+          final int _cursorIndexOfDistanciaLente = CursorUtil.getColumnIndexOrThrow(_cursor, "distanciaLente");
           final DispensacionOptica _result;
           if (_cursor.moveToFirst()) {
             final String _tmpId;
@@ -383,7 +391,9 @@ public final class DispensacionDao_Impl implements DispensacionDao {
             } else {
               _tmpFechaVencimientoGarantia = _cursor.getString(_cursorIndexOfFechaVencimientoGarantia);
             }
-            _result = new DispensacionOptica(_tmpId,_tmpPacienteId,_tmpFecha,_tmpTipoMontura,_tmpMaterialMontura,_tmpTipoLente,_tmpMaterialLente,_tmpTratamientos,_tmpColorLente,_tmpNotasDiseno,_tmpOrigenMontura,_tmpTipoAro,_tmpDescripcionMontura,_tmpMontoTotal,_tmpMetodoPago,_tmpMontoPagado,_tmpEstadoEntrega,_tmpFechaVencimientoGarantia);
+            final String _tmpDistanciaLente;
+            _tmpDistanciaLente = _cursor.getString(_cursorIndexOfDistanciaLente);
+            _result = new DispensacionOptica(_tmpId,_tmpPacienteId,_tmpFecha,_tmpTipoMontura,_tmpMaterialMontura,_tmpTipoLente,_tmpMaterialLente,_tmpTratamientos,_tmpColorLente,_tmpNotasDiseno,_tmpOrigenMontura,_tmpTipoAro,_tmpDescripcionMontura,_tmpMontoTotal,_tmpMetodoPago,_tmpMontoPagado,_tmpEstadoEntrega,_tmpFechaVencimientoGarantia,_tmpDistanciaLente);
           } else {
             _result = null;
           }
@@ -426,6 +436,7 @@ public final class DispensacionDao_Impl implements DispensacionDao {
           final int _cursorIndexOfMontoPagado = CursorUtil.getColumnIndexOrThrow(_cursor, "montoPagado");
           final int _cursorIndexOfEstadoEntrega = CursorUtil.getColumnIndexOrThrow(_cursor, "estadoEntrega");
           final int _cursorIndexOfFechaVencimientoGarantia = CursorUtil.getColumnIndexOrThrow(_cursor, "fechaVencimientoGarantia");
+          final int _cursorIndexOfDistanciaLente = CursorUtil.getColumnIndexOrThrow(_cursor, "distanciaLente");
           final List<DispensacionOptica> _result = new ArrayList<DispensacionOptica>(_cursor.getCount());
           while (_cursor.moveToNext()) {
             final DispensacionOptica _item;
@@ -471,7 +482,9 @@ public final class DispensacionDao_Impl implements DispensacionDao {
             } else {
               _tmpFechaVencimientoGarantia = _cursor.getString(_cursorIndexOfFechaVencimientoGarantia);
             }
-            _item = new DispensacionOptica(_tmpId,_tmpPacienteId,_tmpFecha,_tmpTipoMontura,_tmpMaterialMontura,_tmpTipoLente,_tmpMaterialLente,_tmpTratamientos,_tmpColorLente,_tmpNotasDiseno,_tmpOrigenMontura,_tmpTipoAro,_tmpDescripcionMontura,_tmpMontoTotal,_tmpMetodoPago,_tmpMontoPagado,_tmpEstadoEntrega,_tmpFechaVencimientoGarantia);
+            final String _tmpDistanciaLente;
+            _tmpDistanciaLente = _cursor.getString(_cursorIndexOfDistanciaLente);
+            _item = new DispensacionOptica(_tmpId,_tmpPacienteId,_tmpFecha,_tmpTipoMontura,_tmpMaterialMontura,_tmpTipoLente,_tmpMaterialLente,_tmpTratamientos,_tmpColorLente,_tmpNotasDiseno,_tmpOrigenMontura,_tmpTipoAro,_tmpDescripcionMontura,_tmpMontoTotal,_tmpMetodoPago,_tmpMontoPagado,_tmpEstadoEntrega,_tmpFechaVencimientoGarantia,_tmpDistanciaLente);
             _result.add(_item);
           }
           return _result;

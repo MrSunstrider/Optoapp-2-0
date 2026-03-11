@@ -80,3 +80,24 @@ interface PagoDao {
     @Query("SELECT * FROM pagos")
     suspend fun getAllPagos(): List<Pago>
 }
+
+@Dao
+interface ServicioExtraDao {
+    @Query("SELECT * FROM servicios_extra ORDER BY fecha DESC")
+    fun getAllServicios(): Flow<List<ServicioExtra>>
+
+    @Query("SELECT * FROM servicios_extra WHERE pacienteId = :pacienteId ORDER BY fecha DESC")
+    fun getServiciosByPaciente(pacienteId: String): Flow<List<ServicioExtra>>
+
+    @Query("SELECT * FROM servicios_extra WHERE id = :id")
+    suspend fun getServicioById(id: String): ServicioExtra?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertServicio(servicio: ServicioExtra)
+
+    @Delete
+    suspend fun deleteServicio(servicio: ServicioExtra)
+    
+    @Query("DELETE FROM servicios_extra")
+    suspend fun deleteAll()
+}

@@ -7,8 +7,8 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 
 @Database(
-    entities = [Paciente::class, EvaluacionClinica::class, DispensacionOptica::class, Pago::class],
-    version = 1,
+    entities = [Paciente::class, EvaluacionClinica::class, DispensacionOptica::class, Pago::class, ServicioExtra::class],
+    version = 3,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -17,6 +17,7 @@ abstract class OptoDatabase : RoomDatabase() {
     abstract fun evaluacionDao(): EvaluacionDao
     abstract fun dispensacionDao(): DispensacionDao
     abstract fun pagoDao(): PagoDao
+    abstract fun servicioExtraDao(): ServicioExtraDao
 
     companion object {
         @Volatile
@@ -28,7 +29,9 @@ abstract class OptoDatabase : RoomDatabase() {
                     context.applicationContext,
                     OptoDatabase::class.java,
                     "opto_database"
-                ).build()
+                )
+                .fallbackToDestructiveMigration() // Simplificado para desarrollo
+                .build()
                 INSTANCE = instance
                 instance
             }

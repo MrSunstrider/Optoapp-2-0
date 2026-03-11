@@ -60,6 +60,18 @@ class OptoViewModel(private val repository: OptoRepository, private val security
 
     fun saveDispensacion(dispensacion: DispensacionOptica) = viewModelScope.launch { repository.insertDispensacion(dispensacion) }
 
+    // Servicios Extra
+    val allServicios: StateFlow<List<ServicioExtra>> = repository.getAllServicios()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    fun getServiciosByPaciente(pacienteId: String) = repository.getServiciosByPaciente(pacienteId)
+    
+    suspend fun getServicioById(id: String) = repository.getServicioById(id)
+    
+    fun saveServicio(servicio: ServicioExtra) = viewModelScope.launch { repository.insertServicio(servicio) }
+    
+    fun deleteServicio(servicio: ServicioExtra) = viewModelScope.launch { repository.deleteServicio(servicio) }
+
     suspend fun getBackupJson(): String = com.google.gson.Gson().toJson(repository.getBackupData())
 
     fun restoreBackup(json: String) = viewModelScope.launch {
@@ -71,6 +83,7 @@ class OptoViewModel(private val repository: OptoRepository, private val security
 }
 
 class OptoViewModelFactory(private val repository: OptoRepository, private val securityManager: SecurityManager) : ViewModelProvider.Factory {
+    @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         return OptoViewModel(repository, securityManager) as T
     }

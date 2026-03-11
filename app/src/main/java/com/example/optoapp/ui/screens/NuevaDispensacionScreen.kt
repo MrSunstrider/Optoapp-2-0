@@ -21,9 +21,11 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.optoapp.OptoApplication
 import com.example.optoapp.data.DispensacionOptica
+import com.example.optoapp.ui.components.DropdownField
 import com.example.optoapp.viewmodel.OptoViewModel
 import com.example.optoapp.viewmodel.OptoViewModelFactory
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
 import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -38,6 +40,7 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
 
     // Lente
     var tipoLente by remember { mutableStateOf("") }
+    var distanciaLente by remember { mutableStateOf("") }
     var materialLente by remember { mutableStateOf("") }
     val tratamientos = remember { mutableStateListOf<String>() }
     var colorLente by remember { mutableStateOf("") }
@@ -55,6 +58,7 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
     var metodoPago by remember { mutableStateOf("") }
     var montoPagado by remember { mutableStateOf("") }
     var estadoEntrega by remember { mutableStateOf("") }
+    var fechaRegistro by remember { mutableLongStateOf(System.currentTimeMillis()) }
 
     val saldo = (montoTotal.toDoubleOrNull() ?: 0.0) - (montoPagado.toDoubleOrNull() ?: 0.0)
 
@@ -62,6 +66,7 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
         if (dispensacionId != null) {
             viewModel.getDispensacion(dispensacionId)?.let { disp ->
                 tipoLente = disp.tipoLente
+                distanciaLente = disp.distanciaLente
                 materialLente = disp.materialLente
                 tratamientos.clear()
                 tratamientos.addAll(disp.tratamientos)
@@ -74,8 +79,29 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
                 montoTotal = disp.montoTotal.toString()
                 montoPagado = disp.montoPagado.toString()
                 metodoPago = disp.metodoPago
-                estadoEntrega = disp.estadoEntrega
+                estadoEntrega = if (disp.estadoEntrega == "Parcial") "Pendiente" else disp.estadoEntrega
+                fechaRegistro = disp.fecha
             }
+        }
+    }
+
+    var showDatePicker by remember { mutableStateOf(false) }
+    val datePickerState = rememberDatePickerState(
+        initialSelectedDateMillis = fechaRegistro,
+        yearRange = 1920..2080
+    )
+
+    if (showDatePicker) {
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    datePickerState.selectedDateMillis?.let { fechaRegistro = it }
+                    showDatePicker = false
+                }) { Text("OK") }
+            }
+        ) {
+            DatePicker(state = datePickerState)
         }
     }
 
@@ -93,7 +119,7 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
                         val disp = DispensacionOptica(
                             id = dispensacionId ?: UUID.randomUUID().toString(),
                             pacienteId = pacienteId,
-                            fecha = System.currentTimeMillis(),
+                            fecha = fechaRegistro,
                             tipoLente = tipoLente,
                             materialLente = materialLente,
                             tratamientos = tratamientos.toList(),
@@ -107,7 +133,8 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
                             montoPagado = montoPagado.toDoubleOrNull() ?: 0.0,
                             metodoPago = metodoPago,
                             estadoEntrega = estadoEntrega,
-                            fechaVencimientoGarantia = null
+                            fechaVencimientoGarantia = null,
+                            distanciaLente = if (tipoLente == "Monofocal") distanciaLente else ""
                         )
                         scope.launch {
                             viewModel.saveDispensacion(disp)
@@ -128,11 +155,21 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            OutlinedButton(onClick = { showDatePicker = true }, modifier = Modifier.fillMaxWidth()) {
+                val fmt = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+                Text("Fecha: ${fmt.format(Date(fechaRegistro))}")
+            }
+
             // Lente Card
             Card {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("Información del Lente", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                     DropdownField(label = "Tipo de Lente", selected = tipoLente, options = listOf("Monofocal", "Bifocal", "Progresivo", "Ocupacional")) { tipoLente = it }
+                    
+                    if (tipoLente == "Monofocal") {
+                        DropdownField(label = "Distancia", selected = distanciaLente, options = listOf("Lejos", "Intermedia", "Cerca")) { distanciaLente = it }
+                    }
+                    
                     DropdownField(label = "Material", selected = materialLente, options = listOf("Resina", "Policarbonato", "Cristal", "Trivex")) { materialLente = it }
                     Text("Tratamientos", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                     val opts = listOf("Antireflejo", "Antirayas", "Filtro UV 400", "Fotocromático", "AR Blue Defense")
@@ -199,7 +236,7 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
                         )
                     }
                     
-                    DropdownField(label = "Estado de Entrega", selected = estadoEntrega, options = listOf("Pendiente", "Entregado", "Parcial")) { estadoEntrega = it }
+                    DropdownField(label = "Estado de Entrega", selected = estadoEntrega, options = listOf("Pendiente", "Entregado")) { estadoEntrega = it }
                 }
             }
             
@@ -207,7 +244,7 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
                 val disp = DispensacionOptica(
                     id = dispensacionId ?: UUID.randomUUID().toString(),
                     pacienteId = pacienteId,
-                    fecha = System.currentTimeMillis(),
+                    fecha = fechaRegistro,
                     tipoLente = tipoLente,
                     materialLente = materialLente,
                     tratamientos = tratamientos.toList(),
@@ -221,7 +258,8 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
                     montoPagado = montoPagado.toDoubleOrNull() ?: 0.0,
                     metodoPago = metodoPago,
                     estadoEntrega = estadoEntrega,
-                    fechaVencimientoGarantia = null
+                    fechaVencimientoGarantia = null,
+                    distanciaLente = if (tipoLente == "Monofocal") distanciaLente else ""
                 )
                 scope.launch {
                     viewModel.saveDispensacion(disp)
@@ -231,28 +269,6 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
                 Text(if (dispensacionId == null) "Confirmar Orden" else "Actualizar Orden")
             }
             Spacer(modifier = Modifier.height(24.dp))
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun DropdownField(label: String, selected: String, options: List<String>, onSelected: (String) -> Unit) {
-    var expanded by remember { mutableStateOf(false) }
-    ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = !expanded }) {
-        OutlinedTextField(
-            value = selected,
-            onValueChange = {},
-            readOnly = true,
-            label = { Text(label) },
-            placeholder = { Text("Seleccione...") },
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-            modifier = Modifier.menuAnchor().fillMaxWidth()
-        )
-        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            options.forEach { opt ->
-                DropdownMenuItem(text = { Text(opt) }, onClick = { onSelected(opt); expanded = false })
-            }
         }
     }
 }

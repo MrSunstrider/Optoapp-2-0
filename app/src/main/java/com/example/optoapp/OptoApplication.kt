@@ -12,7 +12,8 @@ class OptoApplication : Application() {
             database.pacienteDao(),
             database.evaluacionDao(),
             database.dispensacionDao(),
-            database.pagoDao()
+            database.pagoDao(),
+            database.servicioExtraDao()
         ) 
     }
     val securityManager by lazy { SecurityManager(this) }

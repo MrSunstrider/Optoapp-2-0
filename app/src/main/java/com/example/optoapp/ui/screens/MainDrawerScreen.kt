@@ -3,6 +3,7 @@ package com.example.optoapp.ui.screens
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -57,6 +58,16 @@ fun MainDrawerScreen(parentNavController: NavController) {
                     modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                 )
                 NavigationDrawerItem(
+                    label = { Text("Servicios Varios") },
+                    selected = currentRoute == "servicios_extra",
+                    onClick = {
+                        scope.launch { drawerState.close() }
+                        navController.navigate("servicios_extra")
+                    },
+                    icon = { Icon(Icons.Default.AddShoppingCart, contentDescription = null) },
+                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                )
+                NavigationDrawerItem(
                     label = { Text("Reportes") },
                     selected = currentRoute == "reportes",
                     onClick = {
@@ -81,12 +92,14 @@ fun MainDrawerScreen(parentNavController: NavController) {
                     label = { Text("Cerrar Sesión") },
                     selected = false,
                     onClick = {
-                        scope.launch { drawerState.close() }
-                        parentNavController.navigate("pin") {
-                            popUpTo("main") { inclusive = true }
+                        scope.launch {
+                            drawerState.close()
+                            parentNavController.navigate("pin") {
+                                popUpTo("main") { inclusive = true }
+                            }
                         }
                     },
-                    icon = { Icon(Icons.Default.ExitToApp, contentDescription = null) },
+                    icon = { Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Salir") },
                     modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                 )
             }
@@ -121,7 +134,16 @@ fun MainDrawerScreen(parentNavController: NavController) {
                     dispensacionId = backStackEntry.arguments?.getString("dispId")
                 )
             }
-            composable("reportes") { ReportesScreen(navController, drawerState) }
+            composable("servicios_extra") { 
+                ServiciosExtraScreen(navController, drawerState) 
+            }
+            composable("nuevo_servicio/{pacienteId}") { backStackEntry ->
+                NuevoServicioScreen(navController, pacienteId = backStackEntry.arguments?.getString("pacienteId"))
+            }
+            composable("editar_servicio/{id}") { backStackEntry ->
+                NuevoServicioScreen(navController, servicioId = backStackEntry.arguments?.getString("id"))
+            }
+            composable("reportes") { ReportesScreen(drawerState) }
             composable("configuracion") { ConfiguracionScreen(navController, drawerState) }
         }
     }
