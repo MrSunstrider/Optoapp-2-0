@@ -30,7 +30,7 @@ abstract class OptoDatabase : RoomDatabase() {
                     OptoDatabase::class.java,
                     "opto_database"
                 )
-                .fallbackToDestructiveMigration() // Simplificado para desarrollo
+                .fallbackToDestructiveMigration(true) // Simplificado para desarrollo
                 .build()
                 INSTANCE = instance
                 instance

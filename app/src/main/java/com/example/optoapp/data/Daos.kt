@@ -53,6 +53,12 @@ interface DispensacionDao {
     @Query("SELECT * FROM dispensaciones")
     fun getAllDispensaciones(): Flow<List<DispensacionOptica>>
 
+    @Query("SELECT SUM(montoTotal) FROM dispensaciones")
+    fun getTotalVendido(): Flow<Double?>
+
+    @Query("SELECT SUM(montoPagado) FROM dispensaciones")
+    fun getTotalPagado(): Flow<Double?>
+
     @Query("SELECT * FROM dispensaciones WHERE id = :id")
     suspend fun getDispensacionById(id: String): DispensacionOptica?
 

@@ -26,30 +26,36 @@ import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.EvaluacionClinica
 import com.example.optoapp.data.Paciente
 import com.example.optoapp.data.ServicioExtra
-import com.example.optoapp.viewmodel.OptoViewModel
-import com.example.optoapp.viewmodel.OptoViewModelFactory
+import com.example.optoapp.viewmodel.PacienteViewModel
+import com.example.optoapp.viewmodel.EvaluacionViewModel
+import com.example.optoapp.viewmodel.DispensacionViewModel
+import com.example.optoapp.viewmodel.ServiciosViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import kotlinx.coroutines.flow.map
 import java.text.SimpleDateFormat
 import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DetallePacienteScreen(navController: NavController, id: String) {
-    val context = LocalContext.current
-    val app = context.applicationContext as OptoApplication
-    val viewModel: OptoViewModel = viewModel(
-        factory = OptoViewModelFactory(app.repository, app.securityManager)
-    )
+fun DetallePacienteScreen(
+    navController: NavController, 
+    id: String, 
+    pacienteViewModel: PacienteViewModel = hiltViewModel(),
+    evaluacionViewModel: EvaluacionViewModel = hiltViewModel(),
+    dispensacionViewModel: DispensacionViewModel = hiltViewModel(),
+    serviciosViewModel: ServiciosViewModel = hiltViewModel()
+) {
     
     var paciente by remember { mutableStateOf<Paciente?>(null) }
-    val evaluaciones by viewModel.getEvaluaciones(id).collectAsState(initial = emptyList())
-    val dispensaciones by viewModel.getDispensaciones(id).collectAsState(initial = emptyList())
-    val servicios by viewModel.getServiciosByPaciente(id).collectAsState(initial = emptyList())
+    val evaluaciones by evaluacionViewModel.getEvaluacionesByPaciente(id).collectAsState(initial = emptyList())
+    val dispensaciones by dispensacionViewModel.getDispensacionesByPaciente(id).collectAsState(initial = emptyList())
+    val servicios by serviciosViewModel.allServicios.map { list -> list.filter { it.pacienteId == id } }.collectAsState(initial = emptyList())
     
     var selectedTab by remember { mutableIntStateOf(0) }
     val tabs = listOf("Evaluaciones", "Dispensaciones", "Servicios")
 
     LaunchedEffect(id) {
-        paciente = viewModel.getPaciente(id)
+        paciente = pacienteViewModel.getPaciente(id)
     }
 
     Scaffold(
@@ -317,7 +323,7 @@ fun DispensacionesList(dispensaciones: List<DispensacionOptica>, onEdit: (String
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
                             Text(text = "Saldo:", fontSize = 12.sp, color = Color.Gray)
                             val formattedSaldo = String.format(Locale.getDefault(), "%.2f", saldo)
-                            Text(text = "S/. $formattedSaldo", color = if (saldo > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary, fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
+                            Text(text = "s/. $formattedSaldo", color = if (saldo > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary, fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
                         }
                     }
                 }
@@ -356,7 +362,7 @@ fun ServiciosExtraList(servicios: List<ServicioExtra>, onEdit: (String) -> Unit)
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             Text(text = "Saldo:", fontSize = 12.sp, color = Color.Gray)
                             val formattedSaldo = String.format(Locale.getDefault(), "%.2f", saldo)
-                            Text("S/. $formattedSaldo", color = if (saldo > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary, fontWeight = FontWeight.Bold)
+                            Text("s/. $formattedSaldo", color = if (saldo > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary, fontWeight = FontWeight.Bold)
                         }
                     }
                 }

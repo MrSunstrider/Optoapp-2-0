@@ -18,20 +18,15 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.optoapp.OptoApplication
 import com.example.optoapp.data.Paciente
-import com.example.optoapp.viewmodel.OptoViewModel
-import com.example.optoapp.viewmodel.OptoViewModelFactory
+import com.example.optoapp.viewmodel.PacienteViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null) {
-    val context = LocalContext.current
-    val app = context.applicationContext as OptoApplication
-    val viewModel: OptoViewModel = viewModel(
-        factory = OptoViewModelFactory(app.repository, app.securityManager)
-    )
+fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null, viewModel: PacienteViewModel = hiltViewModel()) {
     val scope = rememberCoroutineScope()
 
     var nombreCompleto by remember { mutableStateOf("") }

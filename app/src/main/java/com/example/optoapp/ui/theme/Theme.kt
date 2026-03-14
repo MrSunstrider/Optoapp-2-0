@@ -49,7 +49,7 @@ fun OptoAppTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit
 ) {
-    // Desactivamos dynamicColor para forzar nuestra paleta médica profesional
+    // Desactivamos dynamicColor para forzar nuestra paleta médica profesional.
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
 
     val view = LocalView.current

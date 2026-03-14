@@ -9,6 +9,7 @@
 /.idea/assetWizardSettings.xml
 .DS_Store
 /build
+app/build
 /captures
 .externalNativeBuild
 .cxx
@@ -21,3 +22,6 @@ java_pid*
 # Android Studio
 *.keystore
 !debug.keystore
+
+# Build results
+**/build/

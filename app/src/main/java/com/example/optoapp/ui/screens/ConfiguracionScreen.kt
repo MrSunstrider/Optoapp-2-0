@@ -19,21 +19,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.example.optoapp.OptoApplication
-import com.example.optoapp.viewmodel.OptoViewModel
-import com.example.optoapp.viewmodel.OptoViewModelFactory
+import com.example.optoapp.viewmodel.AuthViewModel
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ConfiguracionScreen(@Suppress("UNUSED_PARAMETER") navController: NavController, drawerState: DrawerState) {
+fun ConfiguracionScreen(@Suppress("UNUSED_PARAMETER") navController: NavController, drawerState: DrawerState, viewModel: AuthViewModel = hiltViewModel()) {
     val context = LocalContext.current
-    val app = context.applicationContext as OptoApplication
-    val viewModel: OptoViewModel = viewModel(
-        factory = OptoViewModelFactory(app.repository, app.securityManager)
-    )
     val scope = rememberCoroutineScope()
     
     var pinActual by remember { mutableStateOf("") }

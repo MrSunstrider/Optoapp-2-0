@@ -15,18 +15,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.example.optoapp.OptoApplication
-import com.example.optoapp.viewmodel.OptoViewModel
-import com.example.optoapp.viewmodel.OptoViewModelFactory
+import com.example.optoapp.viewmodel.AuthViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import kotlinx.coroutines.launch
 
 @Composable
-fun PinScreen(navController: NavController) {
-    val context = LocalContext.current
-    val app = context.applicationContext as OptoApplication
-    val viewModel: OptoViewModel = viewModel(
-        factory = OptoViewModelFactory(app.repository, app.securityManager)
-    )
+fun PinScreen(navController: NavController, viewModel: AuthViewModel = hiltViewModel()) {
     val pinInput by viewModel.pinInput.collectAsState()
     val scope = rememberCoroutineScope()
     var errorMessage by remember { mutableStateOf<String?>(null) }

@@ -14,7 +14,15 @@ class OptoRepository(
     
     fun searchPacientes(query: String): Flow<List<Paciente>> = pacienteDao.searchPacientes(query)
     
-    suspend fun getPacienteById(id: String): Paciente? = pacienteDao.getPacienteById(id)
+    suspend fun getPacienteById(id: String): Resource<Paciente> {
+        return try {
+            val paciente = pacienteDao.getPacienteById(id)
+            if (paciente != null) Resource.Success(paciente)
+            else Resource.Error("Paciente no encontrado")
+        } catch (e: Exception) {
+            Resource.Error(e.message ?: "Error al obtener paciente")
+        }
+    }
     
     suspend fun insertPaciente(paciente: Paciente) = pacienteDao.insertPaciente(paciente)
     
@@ -25,7 +33,15 @@ class OptoRepository(
     fun getEvaluacionesByPaciente(pacienteId: String): Flow<List<EvaluacionClinica>> = 
         evaluacionDao.getEvaluacionesByPaciente(pacienteId)
         
-    suspend fun getEvaluacionById(id: String): EvaluacionClinica? = evaluacionDao.getEvaluacionById(id)
+    suspend fun getEvaluacionById(id: String): Resource<EvaluacionClinica> {
+        return try {
+            val evaluacion = evaluacionDao.getEvaluacionById(id)
+            if (evaluacion != null) Resource.Success(evaluacion)
+            else Resource.Error("Evaluación no encontrada")
+        } catch (e: Exception) {
+            Resource.Error(e.message ?: "Error al obtener evaluación")
+        }
+    }
         
     suspend fun insertEvaluacion(evaluacion: EvaluacionClinica) = evaluacionDao.insertEvaluacion(evaluacion)
     
@@ -34,7 +50,19 @@ class OptoRepository(
         
     fun getAllDispensaciones(): Flow<List<DispensacionOptica>> = dispensacionDao.getAllDispensaciones()
     
-    suspend fun getDispensacionById(id: String): DispensacionOptica? = dispensacionDao.getDispensacionById(id)
+    fun getTotalVendido(): Flow<Double?> = dispensacionDao.getTotalVendido()
+    
+    fun getTotalPagado(): Flow<Double?> = dispensacionDao.getTotalPagado()
+    
+    suspend fun getDispensacionById(id: String): Resource<DispensacionOptica> {
+        return try {
+            val dispensacion = dispensacionDao.getDispensacionById(id)
+            if (dispensacion != null) Resource.Success(dispensacion)
+            else Resource.Error("Dispensación no encontrada")
+        } catch (e: Exception) {
+            Resource.Error(e.message ?: "Error al obtener dispensación")
+        }
+    }
         
     suspend fun insertDispensacion(dispensacion: DispensacionOptica) = dispensacionDao.insertDispensacion(dispensacion)
     
@@ -47,7 +75,15 @@ class OptoRepository(
     
     fun getServiciosByPaciente(pacienteId: String): Flow<List<ServicioExtra>> = servicioExtraDao.getServiciosByPaciente(pacienteId)
     
-    suspend fun getServicioById(id: String): ServicioExtra? = servicioExtraDao.getServicioById(id)
+    suspend fun getServicioById(id: String): Resource<ServicioExtra> {
+        return try {
+            val servicio = servicioExtraDao.getServicioById(id)
+            if (servicio != null) Resource.Success(servicio)
+            else Resource.Error("Servicio no encontrado")
+        } catch (e: Exception) {
+            Resource.Error(e.message ?: "Error al obtener servicio")
+        }
+    }
     
     suspend fun insertServicio(servicio: ServicioExtra) = servicioExtraDao.insertServicio(servicio)
     

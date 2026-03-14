@@ -19,24 +19,17 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.example.optoapp.OptoApplication
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.example.optoapp.viewmodel.ServiciosViewModel
 import com.example.optoapp.data.ServicioExtra
-import com.example.optoapp.viewmodel.OptoViewModel
-import com.example.optoapp.viewmodel.OptoViewModelFactory
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ServiciosExtraScreen(navController: NavController, drawerState: DrawerState) {
-    val context = LocalContext.current
-    val app = context.applicationContext as OptoApplication
-    val viewModel: OptoViewModel = viewModel(
-        factory = OptoViewModelFactory(app.repository, app.securityManager)
-    )
+fun ServiciosExtraScreen(navController: NavController, drawerState: DrawerState, viewModel: ServiciosViewModel = hiltViewModel()) {
     val servicios by viewModel.allServicios.collectAsState()
     val scope = rememberCoroutineScope()
     var searchQuery by remember { mutableStateOf("") }
@@ -86,13 +79,13 @@ fun ServiciosExtraScreen(navController: NavController, drawerState: DrawerState)
                     modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    items(filteredServicios) { servicio ->
-                        ServicioRow(servicio, 
-                            onEdit = { navController.navigate("editar_servicio/${servicio.id}") },
-                            onDelete = { viewModel.deleteServicio(servicio) }
-                        )
-                        HorizontalDivider()
-                    }
+                items(filteredServicios) { servicio ->
+                    ServicioRow(servicio, 
+                        onEdit = { navController.navigate("editar_servicio/${servicio.id}") },
+                        onDelete = { viewModel.deleteServicio(servicio) }
+                    )
+                    HorizontalDivider()
+                }
                 }
             }
         }
@@ -140,8 +133,8 @@ fun ServicioRow(servicio: ServicioExtra, onEdit: () -> Unit, onDelete: () -> Uni
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Column {
-                Text(text = "Total: $${String.format(Locale.getDefault(), "%.2f", servicio.montoTotal)}", fontSize = 14.sp)
-                Text(text = "Saldo: $${String.format(Locale.getDefault(), "%.2f", saldo)}", 
+                Text(text = "Total: s/. ${String.format(Locale.getDefault(), "%.2f", servicio.montoTotal)}", fontSize = 14.sp)
+                Text(text = "Saldo: s/. ${String.format(Locale.getDefault(), "%.2f", saldo)}", 
                     fontSize = 14.sp, 
                     fontWeight = FontWeight.Bold,
                     color = if (saldo > 0) Color.Red else Color(0xFF4CAF50)

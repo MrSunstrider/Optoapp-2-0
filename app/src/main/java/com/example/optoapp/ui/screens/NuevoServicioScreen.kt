@@ -17,58 +17,38 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.example.optoapp.OptoApplication
 import com.example.optoapp.data.ServicioExtra
 import com.example.optoapp.ui.components.DropdownField
-import com.example.optoapp.viewmodel.OptoViewModel
-import com.example.optoapp.viewmodel.OptoViewModelFactory
-import kotlinx.coroutines.launch
+import com.example.optoapp.viewmodel.ServiciosViewModel
+import com.example.optoapp.ui.components.OptoTextField
 import java.text.SimpleDateFormat
 import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NuevoServicioScreen(navController: NavController, pacienteId: String? = null, servicioId: String? = null) {
-    val context = LocalContext.current
-    val app = context.applicationContext as OptoApplication
-    val viewModel: OptoViewModel = viewModel(
-        factory = OptoViewModelFactory(app.repository, app.securityManager)
-    )
+fun NuevoServicioScreen(navController: NavController, pacienteId: String? = null, servicioId: String? = null, viewModel: ServiciosViewModel = hiltViewModel()) {
     val scope = rememberCoroutineScope()
+    val uiState by viewModel.uiState.collectAsState()
     val pacientes by viewModel.pacientes.collectAsState()
-
-    var ot by remember { mutableStateOf("") }
-    var descripcion by remember { mutableStateOf("") }
-    var montoTotal by remember { mutableStateOf("") }
-    var aCuenta by remember { mutableStateOf("") }
-    var estado by remember { mutableStateOf("") }
-    var fecha by remember { mutableLongStateOf(System.currentTimeMillis()) }
-    var selectedPacienteId by remember { mutableStateOf(pacienteId?.takeIf { it != "null" }) }
 
     var pSearchQuery by remember { mutableStateOf("") }
     val filteredPacientes = if (pSearchQuery.isEmpty()) pacientes 
     else pacientes.filter { it.nombreCompleto.contains(pSearchQuery, ignoreCase = true) }
 
-    val saldo = (montoTotal.toDoubleOrNull() ?: 0.0) - (aCuenta.toDoubleOrNull() ?: 0.0)
+    val saldo = (uiState.montoTotal.toDoubleOrNull() ?: 0.0) - (uiState.aCuenta.toDoubleOrNull() ?: 0.0)
 
     LaunchedEffect(servicioId) {
-        if (servicioId != null) {
-            viewModel.getServicioById(servicioId)?.let { s ->
-                ot = s.ot
-                descripcion = s.descripcion
-                montoTotal = s.montoTotal.toString()
-                aCuenta = s.aCuenta.toString()
-                estado = s.estado
-                fecha = s.fecha
-                selectedPacienteId = s.pacienteId
-            }
+        if (servicioId != null && servicioId != "null") {
+            viewModel.loadServicio(servicioId)
+        } else if (pacienteId != null && pacienteId != "null") {
+            viewModel.updateUiState { it.copy(pacienteId = pacienteId) }
         }
     }
 
     val datePickerState = rememberDatePickerState(
-        initialSelectedDateMillis = fecha,
+        initialSelectedDateMillis = uiState.fecha,
         yearRange = 1920..2080
     )
     var showDatePicker by remember { mutableStateOf(false) }
@@ -78,7 +58,9 @@ fun NuevoServicioScreen(navController: NavController, pacienteId: String? = null
             onDismissRequest = { showDatePicker = false },
             confirmButton = {
                 TextButton(onClick = {
-                    datePickerState.selectedDateMillis?.let { fecha = it }
+                    datePickerState.selectedDateMillis?.let { mills ->
+                        viewModel.updateUiState { it.copy(fecha = mills) }
+                    }
                     showDatePicker = false
                 }) { Text("OK") }
             }
@@ -90,7 +72,7 @@ fun NuevoServicioScreen(navController: NavController, pacienteId: String? = null
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (servicioId == null) "Nuevo Servicio" else "Editar Servicio") },
+                title = { Text(if (servicioId == null || servicioId == "null") "Nuevo Servicio" else "Editar Servicio") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
@@ -98,19 +80,7 @@ fun NuevoServicioScreen(navController: NavController, pacienteId: String? = null
                 },
                 actions = {
                     IconButton(onClick = {
-                        if (descripcion.isBlank() || montoTotal.isBlank()) return@IconButton
-                        val s = ServicioExtra(
-                            id = servicioId ?: UUID.randomUUID().toString(),
-                            ot = ot,
-                            descripcion = descripcion,
-                            montoTotal = montoTotal.toDoubleOrNull() ?: 0.0,
-                            aCuenta = aCuenta.toDoubleOrNull() ?: 0.0,
-                            estado = estado,
-                            fecha = fecha,
-                            pacienteId = selectedPacienteId
-                        )
-                        scope.launch {
-                            viewModel.saveServicio(s)
+                        viewModel.saveServicio {
                             navController.popBackStack()
                         }
                     }) {
@@ -128,23 +98,19 @@ fun NuevoServicioScreen(navController: NavController, pacienteId: String? = null
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            OutlinedTextField(value = ot, onValueChange = { ot = it }, label = { Text("OT (Opcional)") }, modifier = Modifier.fillMaxWidth())
-            OutlinedTextField(value = descripcion, onValueChange = { descripcion = it }, label = { Text("Descripción") }, modifier = Modifier.fillMaxWidth())
+            OptoTextField(value = uiState.ot, onValueChange = { viewModel.updateUiState { s -> s.copy(ot = it) } }, label = "OT (Opcional)")
+            OptoTextField(value = uiState.descripcion, onValueChange = { viewModel.updateUiState { s -> s.copy(descripcion = it) } }, label = "Descripción")
             
-            OutlinedTextField(
-                value = montoTotal, 
-                onValueChange = { montoTotal = it }, 
-                label = { Text("Monto Total") }, 
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                modifier = Modifier.fillMaxWidth()
+            OptoTextField(
+                value = uiState.montoTotal, 
+                onValueChange = { viewModel.updateUiState { s -> s.copy(montoTotal = it) } }, 
+                label = "Monto Total"
             )
             
-            OutlinedTextField(
-                value = aCuenta, 
-                onValueChange = { aCuenta = it }, 
-                label = { Text("A cuenta") }, 
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                modifier = Modifier.fillMaxWidth()
+            OptoTextField(
+                value = uiState.aCuenta, 
+                onValueChange = { viewModel.updateUiState { s -> s.copy(aCuenta = it) } }, 
+                label = "A cuenta"
             )
 
             Card(
@@ -154,7 +120,7 @@ fun NuevoServicioScreen(navController: NavController, pacienteId: String? = null
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text("Saldo Restante:", fontWeight = FontWeight.Bold)
                     Text(
-                        text = "$${String.format(Locale.getDefault(), "%.2f", saldo)}",
+                        text = "s/. ${String.format(Locale.getDefault(), "%.2f", saldo)}",
                         fontSize = 24.sp,
                         fontWeight = FontWeight.ExtraBold,
                         color = if (saldo > 0) Color.Red else Color(0xFF4CAF50)
@@ -164,19 +130,19 @@ fun NuevoServicioScreen(navController: NavController, pacienteId: String? = null
 
             DropdownField(
                 label = "Estado", 
-                selected = estado, 
+                selected = uiState.estado, 
                 options = listOf("Pendiente", "Entregado"), 
-                onSelected = { estado = it }
+                onSelected = { viewModel.updateUiState { s -> s.copy(estado = it) } }
             )
 
             OutlinedButton(onClick = { showDatePicker = true }, modifier = Modifier.fillMaxWidth()) {
                 val fmt = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-                Text("Fecha: ${fmt.format(Date(fecha))}")
+                Text("Fecha: ${fmt.format(Date(uiState.fecha))}")
             }
 
             Text("Asociar a Paciente (Opcional)", fontWeight = FontWeight.Bold)
             var pExpanded by remember { mutableStateOf(false) }
-            val currentPacienteName = pacientes.find { it.id == selectedPacienteId }?.nombreCompleto ?: "Ninguno"
+            val currentPacienteName = pacientes.find { it.id == uiState.pacienteId }?.nombreCompleto ?: "Ninguno"
             
             ExposedDropdownMenuBox(expanded = pExpanded, onExpandedChange = { pExpanded = !pExpanded }) {
                 OutlinedTextField(
@@ -190,13 +156,13 @@ fun NuevoServicioScreen(navController: NavController, pacienteId: String? = null
                 )
                 ExposedDropdownMenu(expanded = pExpanded, onDismissRequest = { pExpanded = false }) {
                     DropdownMenuItem(text = { Text("Ninguno") }, onClick = { 
-                        selectedPacienteId = null
+                        viewModel.updateUiState { it.copy(pacienteId = null) }
                         pSearchQuery = ""
                         pExpanded = false 
                     })
                     filteredPacientes.forEach { p ->
                         DropdownMenuItem(text = { Text(p.nombreCompleto) }, onClick = { 
-                            selectedPacienteId = p.id
+                            viewModel.updateUiState { it.copy(pacienteId = p.id) }
                             pSearchQuery = ""
                             pExpanded = false 
                         })
@@ -206,3 +172,4 @@ fun NuevoServicioScreen(navController: NavController, pacienteId: String? = null
         }
     }
 }
+
