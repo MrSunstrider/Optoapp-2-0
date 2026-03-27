@@ -21,6 +21,7 @@ import com.example.optoapp.data.Paciente
 import com.example.optoapp.viewmodel.PacienteViewModel
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import kotlinx.coroutines.launch
+import com.example.optoapp.util.DateUtils
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -69,7 +70,7 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
 
     var showDatePicker by remember { mutableStateOf(false) }
     val datePickerState = rememberDatePickerState(
-        initialSelectedDateMillis = fechaCreacion,
+        initialSelectedDateMillis = DateUtils.dateToLong(DateUtils.longToDate(fechaCreacion)),
         yearRange = 1920..2080
     )
 
@@ -78,7 +79,10 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
             onDismissRequest = { showDatePicker = false },
             confirmButton = {
                 TextButton(onClick = {
-                    datePickerState.selectedDateMillis?.let { fechaCreacion = it }
+                    datePickerState.selectedDateMillis?.let { 
+                        // El picker devuelve UTC medianoche. Lo convertimos a LocalDate y luego a nuestro Long local.
+                        fechaCreacion = DateUtils.dateToLong(DateUtils.longToDate(it)) 
+                    }
                     showDatePicker = false
                 }) { Text("OK") }
             }

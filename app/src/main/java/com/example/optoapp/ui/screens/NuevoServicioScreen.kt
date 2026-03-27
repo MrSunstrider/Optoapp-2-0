@@ -23,6 +23,7 @@ import com.example.optoapp.data.ServicioExtra
 import com.example.optoapp.ui.components.DropdownField
 import com.example.optoapp.viewmodel.ServiciosViewModel
 import com.example.optoapp.ui.components.OptoTextField
+import com.example.optoapp.util.DateUtils
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -48,7 +49,7 @@ fun NuevoServicioScreen(navController: NavController, pacienteId: String? = null
     }
 
     val datePickerState = rememberDatePickerState(
-        initialSelectedDateMillis = uiState.fecha,
+        initialSelectedDateMillis = DateUtils.dateToLong(DateUtils.longToDate(uiState.fecha)),
         yearRange = 1920..2080
     )
     var showDatePicker by remember { mutableStateOf(false) }
@@ -59,7 +60,7 @@ fun NuevoServicioScreen(navController: NavController, pacienteId: String? = null
             confirmButton = {
                 TextButton(onClick = {
                     datePickerState.selectedDateMillis?.let { mills ->
-                        viewModel.updateUiState { it.copy(fecha = mills) }
+                        viewModel.updateUiState { it.copy(fecha = DateUtils.dateToLong(DateUtils.longToDate(mills))) }
                     }
                     showDatePicker = false
                 }) { Text("OK") }

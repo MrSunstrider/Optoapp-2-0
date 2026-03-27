@@ -1,5 +1,7 @@
 package com.example.optoapp.ui.screens
 
+import android.content.Context
+
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
@@ -36,6 +38,9 @@ fun ConfiguracionScreen(@Suppress("UNUSED_PARAMETER") navController: NavControll
     
     var showDialog by remember { mutableStateOf(false) }
     var dialogMsg by remember { mutableStateOf("") }
+    
+    val sharedPreferences = context.getSharedPreferences("optoapp_prefs", Context.MODE_PRIVATE)
+    var confirmReminders by remember { mutableStateOf(sharedPreferences.getBoolean("pref_enable_reminders", true)) }
 
     val createBackupLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/json")
@@ -113,6 +118,34 @@ fun ConfiguracionScreen(@Suppress("UNUSED_PARAMETER") navController: NavControll
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text("Actualizar PIN")
+                    }
+                }
+            }
+            
+            // Preferencias
+            Card {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("Ajustes Generales", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Recordatorios Automáticos", fontSize = 16.sp)
+                            Text(
+                                "Programar notificaciones a las 12:00 pm para citas agendadas.",
+                                fontSize = 12.sp,
+                                color = Color.Gray
+                            )
+                        }
+                        Switch(
+                            checked = confirmReminders,
+                            onCheckedChange = { isChecked ->
+                                confirmReminders = isChecked
+                                sharedPreferences.edit().putBoolean("pref_enable_reminders", isChecked).apply()
+                            }
+                        )
                     }
                 }
             }

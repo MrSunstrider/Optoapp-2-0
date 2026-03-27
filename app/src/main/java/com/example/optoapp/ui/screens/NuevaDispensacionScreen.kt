@@ -22,6 +22,7 @@ import androidx.navigation.NavController
 import com.example.optoapp.ui.components.DropdownField
 import com.example.optoapp.ui.components.OptoTextField
 import com.example.optoapp.viewmodel.DispensacionViewModel
+import com.example.optoapp.util.DateUtils
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -40,7 +41,7 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
 
     var showDatePicker by remember { mutableStateOf(false) }
     val datePickerState = rememberDatePickerState(
-        initialSelectedDateMillis = uiState.fecha,
+        initialSelectedDateMillis = DateUtils.dateToLong(DateUtils.longToDate(uiState.fecha)),
         yearRange = 1920..2080
     )
 
@@ -50,7 +51,7 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
             confirmButton = {
                 TextButton(onClick = {
                     datePickerState.selectedDateMillis?.let { mills ->
-                        viewModel.updateUiState { it.copy(fecha = mills) }
+                        viewModel.updateUiState { it.copy(fecha = DateUtils.dateToLong(DateUtils.longToDate(mills))) }
                     }
                     showDatePicker = false
                 }) { Text("OK") }

@@ -25,6 +25,22 @@ interface PacienteDao {
     
     @Query("DELETE FROM pacientes")
     suspend fun deleteAll()
+
+    @Query("""
+        SELECT * FROM pacientes 
+        WHERE id IN (SELECT pacienteId FROM dispensaciones WHERE (montoTotal - montoPagado) > 0)
+        OR id IN (SELECT pacienteId FROM servicios_extra WHERE (montoTotal - aCuenta) > 0)
+        ORDER BY nombreCompleto ASC
+    """)
+    fun getPacientesWithPendingBalance(): Flow<List<Paciente>>
+
+    @Query("""
+        SELECT * FROM pacientes 
+        WHERE id IN (SELECT pacienteId FROM dispensaciones WHERE estadoEntrega = 'Pendiente')
+        OR id IN (SELECT pacienteId FROM servicios_extra WHERE estado = 'Pendiente')
+        ORDER BY nombreCompleto ASC
+    """)
+    fun getPacientesWithPendingDelivery(): Flow<List<Paciente>>
 }
 
 @Dao
@@ -37,6 +53,9 @@ interface EvaluacionDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertEvaluacion(evaluacion: EvaluacionClinica)
+    
+    @Delete
+    suspend fun deleteEvaluacion(evaluacion: EvaluacionClinica)
     
     @Query("DELETE FROM evaluaciones")
     suspend fun deleteAll()

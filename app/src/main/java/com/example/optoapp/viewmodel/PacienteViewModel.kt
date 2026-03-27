@@ -21,18 +21,27 @@ class PacienteViewModel @Inject constructor(
     private val _activeFilter = MutableStateFlow<String?>(null)
     val activeFilter: StateFlow<String?> = _activeFilter
 
-    val pacientes = combine(_searchQuery, _activeFilter, repository.allPacientes) { query, filter, list ->
-        var filteredList = if (query.isEmpty()) list
-        else list.filter { 
-            it.nombreCompleto.contains(query, ignoreCase = true) || 
-            it.id.contains(query, ignoreCase = true) || 
-            it.telefono.contains(query) 
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    val pacientes: StateFlow<List<Paciente>> = combine(_searchQuery, _activeFilter) { query, filter ->
+        query to filter
+    }.flatMapLatest { (query, filter) ->
+        val baseFlow = when (filter) {
+            "Saldo Pendiente" -> repository.getPacientesWithPendingBalance()
+            "Estado de entrega" -> repository.getPacientesWithPendingDelivery()
+            else -> if (query.isEmpty()) repository.allPacientes else repository.searchPacientes(query)
         }
         
-        when (filter) {
-            "Fotocromáticos" -> filteredList.filter { it.ultimasEtiquetas.contains("Fotocromático") }
-            "Multifocales" -> filteredList.filter { it.ultimasEtiquetas.contains("Multifocal") }
-            else -> filteredList
+        baseFlow.map { list ->
+            if (query.isNotEmpty() && (filter != null)) {
+                // Si hay filtro Y búsqueda, aplicamos la búsqueda sobre el resultado del filtro
+                list.filter { 
+                    it.nombreCompleto.contains(query, ignoreCase = true) || 
+                    it.id.contains(query, ignoreCase = true) || 
+                    it.telefono.contains(query) 
+                }
+            } else {
+                list
+            }
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 

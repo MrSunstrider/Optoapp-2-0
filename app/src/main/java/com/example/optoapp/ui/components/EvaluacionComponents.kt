@@ -65,8 +65,8 @@ fun CalculationCard(
     onRecorteChange: (Boolean) -> Unit,
     onCalculation: (String, String) -> Unit
 ) {
-    val sph = sphStr.toFloatOrNull() ?: 0f
-    val cyl = cylStr.toFloatOrNull() ?: 0f
+    val sph = parseRefraction(sphStr)
+    val cyl = parseRefraction(cylStr)
     
     val canRecortar = abs(cyl) <= abs(sph) / 4f
     
@@ -111,6 +111,12 @@ private fun applyVertexDistance(power: Float): Float {
     if (power == 0f) return 0f
     val result = power / (1f - (0.012f * power))
     return (result * 4).roundToInt() / 4f
+}
+
+private fun parseRefraction(v: String): Float {
+    val clean = v.lowercase().trim()
+    if (clean in listOf("plano", "neutro", "pl", "nt")) return 0f
+    return clean.replace(",", ".").toFloatOrNull() ?: 0f
 }
 
 private fun formatDiopter(value: Float): String {

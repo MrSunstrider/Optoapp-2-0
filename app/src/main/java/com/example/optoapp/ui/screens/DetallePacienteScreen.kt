@@ -45,7 +45,7 @@ fun DetallePacienteScreen(
     dispensacionViewModel: DispensacionViewModel = hiltViewModel(),
     serviciosViewModel: ServiciosViewModel = hiltViewModel()
 ) {
-    
+    val context = LocalContext.current
     var paciente by remember { mutableStateOf<Paciente?>(null) }
     val evaluaciones by evaluacionViewModel.getEvaluacionesByPaciente(id).collectAsState(initial = emptyList())
     val dispensaciones by dispensacionViewModel.getDispensacionesByPaciente(id).collectAsState(initial = emptyList())
@@ -144,7 +144,7 @@ fun DetallePacienteScreen(
 
                 Box(modifier = Modifier.fillMaxSize()) {
                     when (selectedTab) {
-                        0 -> EvaluacionesList(evaluaciones) { evalId ->
+                        0 -> EvaluacionesList(evaluaciones, p, dispensaciones, evaluacionViewModel) { evalId ->
                             navController.navigate("editarEvaluacion/${id}/${evalId}")
                         }
                         1 -> DispensacionesList(dispensaciones) { dispId ->
@@ -180,7 +180,14 @@ fun DetallePacienteScreen(
 }
 
 @Composable
-fun EvaluacionesList(evaluaciones: List<EvaluacionClinica>, onEdit: (String) -> Unit) {
+fun EvaluacionesList(
+    evaluaciones: List<EvaluacionClinica>, 
+    paciente: Paciente, 
+    dispensaciones: List<DispensacionOptica>, 
+    evaluacionViewModel: com.example.optoapp.viewmodel.EvaluacionViewModel,
+    onEdit: (String) -> Unit
+) {
+    val context = LocalContext.current
     val selectedEvalForResumen = remember { mutableStateOf<EvaluacionClinica?>(null) }
 
     if (evaluaciones.isEmpty()) {
@@ -210,13 +217,62 @@ fun EvaluacionesList(evaluaciones: List<EvaluacionClinica>, onEdit: (String) -> 
                                 IconButton(onClick = { onEdit(eval.id) }) { 
                                     Icon(Icons.Default.Edit, contentDescription = "Editar", tint = MaterialTheme.colorScheme.primary) 
                                 }
+                                var showDeleteDialog by remember { mutableStateOf(false) }
+                                IconButton(onClick = { showDeleteDialog = true }) { 
+                                    Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = Color.Red) 
+                                }
+                                
+                                if (showDeleteDialog) {
+                                    AlertDialog(
+                                        onDismissRequest = { showDeleteDialog = false },
+                                        title = { Text("¿Eliminar evaluación?") },
+                                        text = { Text("Esta acción no se puede deshacer.") },
+                                        confirmButton = {
+                                            TextButton(
+                                                onClick = {
+                                                    val notificationHelper = com.example.optoapp.notifications.NotificationHelper(context)
+                                                    notificationHelper.cancelReminder(eval.id)
+                                                    evaluacionViewModel.deleteEvaluacion(eval.id) {
+                                                        showDeleteDialog = false
+                                                    }
+                                                },
+                                                colors = ButtonDefaults.textButtonColors(contentColor = Color.Red)
+                                            ) {
+                                                Text("Eliminar")
+                                            }
+                                        },
+                                        dismissButton = {
+                                            TextButton(onClick = { showDeleteDialog = false }) {
+                                                Text("Cancelar")
+                                            }
+                                        }
+                                    )
+                                }
                             }
                         }
-                        Text(
-                            text = "Receta OD: ${eval.recetaOdEsf}/${eval.recetaOdCil}x${eval.recetaOdEje}° | OI: ${eval.recetaOiEsf}/${eval.recetaOiCil}x${eval.recetaOiEje}°",
-                            fontSize = 14.sp,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
+                        val recetaStr = buildString {
+                            val hasOd = eval.recetaOdEsf.isNotBlank() || eval.recetaOdCil.isNotBlank()
+                            val hasOi = eval.recetaOiEsf.isNotBlank() || eval.recetaOiCil.isNotBlank()
+                            if (hasOd) append("OD: ${eval.recetaOdEsf}/${eval.recetaOdCil}x${eval.recetaOdEje}° ")
+                            if (hasOi) append("OI: ${eval.recetaOiEsf}/${eval.recetaOiCil}x${eval.recetaOiEje}°")
+                        }
+                        val diagStr = buildString {
+                            val dOd = eval.diagnosticoOd.firstOrNull() ?: ""
+                            val dOi = eval.diagnosticoOi.firstOrNull() ?: ""
+                            if (dOd.isNotBlank()) append("OD: $dOd ")
+                            if (dOi.isNotBlank()) append("OI: $dOi")
+                        }.trim()
+
+                        if (recetaStr.isNotBlank()) {
+                            Text(text = "Receta $recetaStr", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+                            if (diagStr.isNotBlank()) {
+                                Text(text = "Diag: $diagStr", fontSize = 12.sp, color = Color.Gray)
+                            }
+                        } else if (diagStr.isNotBlank()) {
+                            Text("Diagnóstico: $diagStr", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+                        } else {
+                            Text("Sin receta ni diagnóstico", fontSize = 14.sp, color = Color.Gray)
+                        }
                     }
                 }
             }
@@ -226,6 +282,8 @@ fun EvaluacionesList(evaluaciones: List<EvaluacionClinica>, onEdit: (String) -> 
     selectedEvalForResumen.value?.let { currentEval ->
         ResumenEvaluacionDialog(
             eval = currentEval,
+            paciente = paciente,
+            dispensaciones = dispensaciones,
             onDismiss = { selectedEvalForResumen.value = null },
             onEdit = { onEdit(currentEval.id) }
         )
@@ -233,7 +291,7 @@ fun EvaluacionesList(evaluaciones: List<EvaluacionClinica>, onEdit: (String) -> 
 }
 
 @Composable
-fun ResumenEvaluacionDialog(eval: EvaluacionClinica, onDismiss: () -> Unit, onEdit: () -> Unit) {
+fun ResumenEvaluacionDialog(eval: EvaluacionClinica, paciente: Paciente, dispensaciones: List<DispensacionOptica>, onDismiss: () -> Unit, onEdit: () -> Unit) {
     val date = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(eval.fecha))
     val proxima = eval.proximaCita?.let { SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(it)) } ?: "No programada"
 
@@ -243,29 +301,114 @@ fun ResumenEvaluacionDialog(eval: EvaluacionClinica, onDismiss: () -> Unit, onEd
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.AutoMirrored.Filled.Assignment, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Resumen Clínico - $date") 
+                Text("Resumen Clínico") 
             }
         },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                InfoSection("Refracción Final (Gafas)") {
-                    Text("OD: ${eval.recetaOdEsf} / ${eval.recetaOdCil} x ${eval.recetaOdEje}°", fontSize = 14.sp)
-                    Text("OI: ${eval.recetaOiEsf} / ${eval.recetaOiCil} x ${eval.recetaOiEje}°", fontSize = 14.sp)
-                    if (eval.addCercaOd.isNotBlank()) Text("ADD Cerca: OD ${eval.addCercaOd} / OI ${eval.addCercaOi}", fontSize = 14.sp)
+                InfoSection("Datos del Paciente") {
+                    Text("Nombre: ${paciente.nombreCompleto}", fontSize = 14.sp)
+                    Text("Edad: ${paciente.edad} años", fontSize = 14.sp)
+                    if (paciente.telefono.isNotBlank()) Text("Teléfono: ${paciente.telefono}", fontSize = 14.sp)
+                    Text("Fecha de Eval: $date", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                }
+
+                val diagOd = eval.diagnosticoOd.firstOrNull() ?: ""
+                val diagOi = eval.diagnosticoOi.firstOrNull() ?: ""
+                
+                if (diagOd.isNotBlank() || diagOi.isNotBlank() || eval.diagnostico.isNotBlank()) {
+                    InfoSection("Diagnóstico") {
+                        if (eval.diagnostico.isNotBlank()) Text(eval.diagnostico, fontSize = 14.sp)
+                        if (diagOd.isNotBlank()) Text("OD: $diagOd", fontSize = 14.sp)
+                        if (diagOi.isNotBlank()) Text("OI: $diagOi", fontSize = 14.sp)
+                    }
+                }
+
+                val diagOtrosList = mutableListOf<String>()
+                if (eval.otrosPresbicia) diagOtrosList.add("Presbicia")
+                if (eval.otrosAnisometropia) diagOtrosList.add("Anisometropía")
+                if (eval.otrosAmbliopia) diagOtrosList.add("Ambliopía")
+
+                if (diagOtrosList.isNotEmpty()) {
+                    InfoSection("Condiciones Asociadas") {
+                        diagOtrosList.forEach { cond ->
+                            Text(cond, fontSize = 14.sp)
+                        }
+                    }
+                }
+
+                val showOd = eval.recetaOdEsf.isNotBlank() || eval.recetaOdCil.isNotBlank()
+                val showOi = eval.recetaOiEsf.isNotBlank() || eval.recetaOiCil.isNotBlank()
+                if (showOd || showOi) {
+                    InfoSection("Refracción Final (Gafas)") {
+                        if (showOd) Text("OD: ${eval.recetaOdEsf} / ${eval.recetaOdCil} x ${eval.recetaOdEje}°", fontSize = 14.sp)
+                        if (showOi) Text("OI: ${eval.recetaOiEsf} / ${eval.recetaOiCil} x ${eval.recetaOiEje}°", fontSize = 14.sp)
+                    }
+                }
+
+                val hasAdd = eval.addCercaOd.isNotBlank() || eval.addCercaOi.isNotBlank() || eval.addAv.isNotBlank()
+                if (hasAdd) {
+                    InfoSection("Adición (ADD)") {
+                        if (eval.addCercaOd.isNotBlank()) Text("OD: ${eval.addCercaOd}", fontSize = 14.sp)
+                        if (eval.addCercaOi.isNotBlank()) Text("OI: ${eval.addCercaOi}", fontSize = 14.sp)
+                        if (eval.addAv.isNotBlank()) Text("AV: ${eval.addAv}", fontSize = 14.sp)
+                    }
                 }
                 
-                InfoSection("Queratometría") {
-                    Text("OD: ${eval.k1Od} / ${eval.k2Od}", fontSize = 14.sp)
-                    Text("OI: ${eval.k1Oi} / ${eval.k2Oi}", fontSize = 14.sp)
+                val hasDip = eval.dipLejos.isNotBlank() || eval.dipIntermedio.isNotBlank() || eval.dipCerca.isNotBlank()
+                if (hasDip) {
+                    InfoSection("DIP (Distancia Interpupilar)") {
+                        if (eval.dipLejos.isNotBlank()) Text("Lejos: ${eval.dipLejos}", fontSize = 14.sp)
+                        if (eval.dipIntermedio.isNotBlank()) Text("Intermedio: ${eval.dipIntermedio}", fontSize = 14.sp)
+                        if (eval.dipCerca.isNotBlank()) Text("Cerca: ${eval.dipCerca}", fontSize = 14.sp)
+                    }
+                }
+                
+                val hasPrisma = eval.prismaOdValor.isNotBlank() || eval.prismaOiValor.isNotBlank()
+                if (hasPrisma) {
+                    InfoSection("Prismas") {
+                        if (eval.prismaOdValor.isNotBlank()) Text("OD: ${eval.prismaOdValor} (Base: ${eval.prismaOdBase})", fontSize = 14.sp)
+                        if (eval.prismaOiValor.isNotBlank()) Text("OI: ${eval.prismaOiValor} (Base: ${eval.prismaOiBase})", fontSize = 14.sp)
+                    }
+                }
+                
+                val keratoOd = eval.k1Od.isNotBlank() || eval.k2Od.isNotBlank()
+                val keratoOi = eval.k1Oi.isNotBlank() || eval.k2Oi.isNotBlank()
+                if (keratoOd || keratoOi) {
+                    InfoSection("Queratometría") {
+                        if (keratoOd) Text("OD: ${eval.k1Od} / ${eval.k2Od}", fontSize = 14.sp)
+                        if (keratoOi) Text("OI: ${eval.k1Oi} / ${eval.k2Oi}", fontSize = 14.sp)
+                    }
                 }
                 
                 val tieneLC = eval.lcOdEsf.isNotBlank() || eval.lcOiEsf.isNotBlank()
-                InfoSection("Contactología") {
-                    Text(if (tieneLC) "Contiene datos de adaptación" else "Sin datos de contacto", color = if(tieneLC) MaterialTheme.colorScheme.tertiary else Color.Gray, fontSize = 14.sp)
+                if (tieneLC) {
+                    InfoSection("Contactología") {
+                        Text("Contiene datos de adaptación", color = MaterialTheme.colorScheme.tertiary, fontSize = 14.sp)
+                    }
+                }
+
+                if (dispensaciones.isNotEmpty()) {
+                    InfoSection("Dispensaciones (${dispensaciones.size})") {
+                        dispensaciones.forEach { disp ->
+                            val dDate = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(disp.fecha))
+                            val dispStr = buildString {
+                                append("Fecha: $dDate, Lente: ${disp.tipoLente}")
+                                if (disp.montoTotal > 0) {
+                                    val saldo = disp.montoTotal - disp.montoPagado
+                                    append(", Saldo: s/. ${String.format(Locale.getDefault(), "%.2f", saldo)}")
+                                }
+                            }
+                            Text("- $dispStr", fontSize = 13.sp)
+                            Text("  Estado: ${disp.estadoEntrega}", fontSize = 13.sp, color = if (disp.estadoEntrega == "Entregado") MaterialTheme.colorScheme.tertiary else Color.Red)
+                        }
+                    }
                 }
                 
-                InfoSection("Próxima Cita") {
-                    Text(proxima, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                if (eval.proximaCita != null) {
+                    InfoSection("Próxima Cita") {
+                        Text(proxima, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                    }
                 }
             }
         },

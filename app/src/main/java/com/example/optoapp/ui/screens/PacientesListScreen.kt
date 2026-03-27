@@ -83,14 +83,9 @@ fun PacientesListScreen(navController: NavController, drawerState: DrawerState, 
                     label = { Text("Saldo Pendiente") }
                 )
                 FilterChip(
-                    selected = activeFilter == "Fotocromáticos",
-                    onClick = { viewModel.setFilter("Fotocromáticos") },
-                    label = { Text("Fotocromáticos") }
-                )
-                FilterChip(
-                    selected = activeFilter == "Multifocales",
-                    onClick = { viewModel.setFilter("Multifocales") },
-                    label = { Text("Multifocales") }
+                    selected = activeFilter == "Estado de entrega",
+                    onClick = { viewModel.setFilter("Estado de entrega") },
+                    label = { Text("Estado de entrega: Pendiente") }
                 )
             }
             

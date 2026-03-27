@@ -30,7 +30,8 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
     val dispensaciones by viewModel.allDispensaciones.collectAsState()
     val scope = rememberCoroutineScope()
     
-    var periodo by remember { mutableStateOf("Este mes") }
+    val periodo by viewModel.periodo.collectAsState()
+    val anio by viewModel.anio.collectAsState()
     
     val totalVendido by viewModel.totalVendido.collectAsState()
     val totalPagado by viewModel.totalPagado.collectAsState()
@@ -61,12 +62,29 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                 .fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            DropdownField(
-                label = "Período",
-                selected = periodo,
-                options = listOf("Este mes", "Este año", "Todo"),
-                onSelected = { periodo = it }
-            )
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Box(modifier = Modifier.weight(if (periodo == "Anual") 1f else 2f)) {
+                    DropdownField(
+                        label = "Período",
+                        selected = periodo,
+                        options = listOf("Diario", "Semanal", "Este mes", "Este año", "Anual", "Todo"),
+                        onSelected = { viewModel.setPeriodo(it) }
+                    )
+                }
+                
+                if (periodo == "Anual") {
+                    Box(modifier = Modifier.weight(1f)) {
+                        val currentYear = Calendar.getInstance().get(Calendar.YEAR)
+                        val years = (2020..currentYear + 1).map { it.toString() }
+                        DropdownField(
+                            label = "Año",
+                            selected = anio,
+                            options = years,
+                            onSelected = { viewModel.setAnio(it) }
+                        )
+                    }
+                }
+            }
             
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 ReportCard(

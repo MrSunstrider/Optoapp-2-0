@@ -14,6 +14,10 @@ class OptoRepository(
     
     fun searchPacientes(query: String): Flow<List<Paciente>> = pacienteDao.searchPacientes(query)
     
+    fun getPacientesWithPendingBalance(): Flow<List<Paciente>> = pacienteDao.getPacientesWithPendingBalance()
+    
+    fun getPacientesWithPendingDelivery(): Flow<List<Paciente>> = pacienteDao.getPacientesWithPendingDelivery()
+    
     suspend fun getPacienteById(id: String): Resource<Paciente> {
         return try {
             val paciente = pacienteDao.getPacienteById(id)
@@ -43,6 +47,8 @@ class OptoRepository(
         }
     }
         
+    suspend fun deleteEvaluacion(evaluacion: EvaluacionClinica) = evaluacionDao.deleteEvaluacion(evaluacion)
+    
     suspend fun insertEvaluacion(evaluacion: EvaluacionClinica) = evaluacionDao.insertEvaluacion(evaluacion)
     
     fun getDispensacionesByPaciente(pacienteId: String): Flow<List<DispensacionOptica>> = 
@@ -107,20 +113,86 @@ class OptoRepository(
         )
     }
 
+    private fun <T : Any> T.sanitizeNulls(): T {
+        try {
+            this::class.java.declaredFields.forEach { field ->
+                field.isAccessible = true
+                val value = field.get(this)
+                if (value == null) {
+                    if (field.type == String::class.java) {
+                        field.set(this, "")
+                    } else if (field.type == List::class.java) {
+                        field.set(this, emptyList<Any>())
+                    } else if (field.type == Double::class.java || field.type == Double::class.javaPrimitiveType) {
+                        field.set(this, 0.0)
+                    } else if (field.type == Int::class.java || field.type == Int::class.javaPrimitiveType) {
+                        field.set(this, 0)
+                    } else if (field.type == Long::class.java || field.type == Long::class.javaPrimitiveType) {
+                        field.set(this, 0L)
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return this
+    }
+
     suspend fun restoreBackup(backupData: BackupData) {
+        // Ejecutamos en una transacción para evitar inconsistencias si algo falla a mitad de camino
+        // Aunque Room no permite @Transaction en suspend functions de Repositorios fácilmente sin acceso directo a DB,
+        // lo hacemos secuencialmente limpiando primero.
         clearAllData()
-        backupData.pacientes.forEach { insertPaciente(it) }
-        backupData.evaluaciones.forEach { insertEvaluacion(it) }
-        backupData.dispensaciones.forEach { insertDispensacion(it) }
-        backupData.pagos.forEach { insertPago(it) }
-        backupData.serviciosExtra.forEach { insertServicio(it) }
+        
+        backupData.pacientes?.forEach { 
+            try { 
+                insertPaciente(it.sanitizeNulls()) 
+            } catch(e: Exception) { 
+                e.printStackTrace() 
+            } 
+        }
+        
+        backupData.evaluaciones?.forEach { 
+            try { 
+                insertEvaluacion(it.sanitizeNulls()) 
+            } catch(e: Exception) { 
+                e.printStackTrace() 
+            } 
+        }
+        
+        backupData.dispensaciones?.forEach { 
+            try { 
+                insertDispensacion(it.sanitizeNulls()) 
+            } catch(e: Exception) { 
+                e.printStackTrace() 
+            } 
+        }
+        
+        backupData.pagos?.forEach { 
+            try { 
+                insertPago(it.sanitizeNulls()) 
+            } catch(e: Exception) { 
+                e.printStackTrace() 
+            } 
+        }
+        
+        backupData.serviciosExtra?.forEach { 
+            try { 
+                insertServicio(it.sanitizeNulls()) 
+            } catch(e: Exception) { 
+                e.printStackTrace() 
+            } 
+        }
     }
 }
 
 data class BackupData(
-    val pacientes: List<Paciente>,
-    val evaluaciones: List<EvaluacionClinica>,
-    val dispensaciones: List<DispensacionOptica>,
-    val pagos: List<Pago>,
-    val serviciosExtra: List<ServicioExtra> = emptyList()
+    val version: Int = 3,
+    val dateExported: Long = System.currentTimeMillis(),
+    val appIdentifier: String = "OptoApp-2.0",
+    val pacientes: List<Paciente>? = emptyList(),
+    val evaluaciones: List<EvaluacionClinica>? = emptyList(),
+    val dispensaciones: List<DispensacionOptica>? = emptyList(),
+    val pagos: List<Pago>? = emptyList(),
+    val serviciosExtra: List<ServicioExtra>? = emptyList()
 )

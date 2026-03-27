@@ -104,10 +104,21 @@ data class EvaluacionClinica(
     val prismaOiValor: String = "", val prismaOiBase: String = "",
 
     val diagnostico: String = "",
+    val diagnosticoOd: List<String> = emptyList(),
+    val diagnosticoOi: List<String> = emptyList(),
+    val diagnosticoOtros: List<String> = emptyList(),
     val planTratamiento: String = "",
     val observaciones: String = "",
     val proximaFechaControl: String = "",
     val proximaCita: Long? = null,
+    val balanceOd: Boolean = false,
+    val balanceOi: Boolean = false,
+    val otrosPresbicia: Boolean = false,
+    val otrosAnisometropia: Boolean = false,
+    val otrosAmbliopia: Boolean = false,
+    val autoPresbicia: Boolean = true,
+    val autoAnisometropia: Boolean = true,
+    val autoAmbliopia: Boolean = true,
 
     // Contactología
     val lcOdEsf: String = "", val lcOdCil: String = "", val lcOdEje: String = "",

@@ -7,8 +7,12 @@ import com.example.optoapp.data.OptoRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import java.util.Calendar
+import java.util.Date
 import javax.inject.Inject
 
 @HiltViewModel
@@ -16,14 +20,46 @@ class ReportesViewModel @Inject constructor(
     private val repository: OptoRepository
 ) : ViewModel() {
 
-    val allDispensaciones: StateFlow<List<DispensacionOptica>> = repository.getAllDispensaciones()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    private val _periodo = MutableStateFlow("Este mes")
+    val periodo: StateFlow<String> = _periodo
+    
+    private val _anio = MutableStateFlow(Calendar.getInstance().get(Calendar.YEAR).toString())
+    val anio: StateFlow<String> = _anio
 
-    val totalVendido: StateFlow<Double> = repository.getTotalVendido()
-        .map { it ?: 0.0 }
+    fun setPeriodo(p: String) { _periodo.value = p }
+    fun setAnio(a: String) { _anio.value = a }
+
+    val allDispensaciones: StateFlow<List<DispensacionOptica>> = combine(
+        repository.getAllDispensaciones(), _periodo, _anio
+    ) { list, p, a ->
+        val now = java.time.LocalDate.now()
+        list.filter { disp ->
+            val date = java.time.Instant.ofEpochMilli(disp.fecha)
+                .atZone(java.time.ZoneId.systemDefault())
+                .toLocalDate()
+            
+            when (p) {
+                "Diario" -> date.isEqual(now)
+                "Semanal" -> {
+                    // Aproximación simple para semana (mismo año y semana del año)
+                    // Para mayor precisión se usaría WeekFields
+                    val weekFields = java.time.temporal.WeekFields.of(java.util.Locale.getDefault())
+                    date.year == now.year && date.get(weekFields.weekOfYear()) == now.get(weekFields.weekOfYear())
+                }
+                "Este mes" -> date.year == now.year && date.month == now.month
+                "Este año" -> date.year == now.year
+                "Anual" -> date.year.toString() == a
+                "Todo" -> true
+                else -> true
+            }
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val totalVendido: StateFlow<Double> = allDispensaciones
+        .map { list -> list.sumOf { it.montoTotal } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
 
-    val totalPagado: StateFlow<Double> = repository.getTotalPagado()
-        .map { it ?: 0.0 }
+    val totalPagado: StateFlow<Double> = allDispensaciones
+        .map { list -> list.sumOf { it.montoPagado } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
 }
