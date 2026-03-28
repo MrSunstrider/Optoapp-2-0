@@ -36,6 +36,7 @@ data class DispensacionUiState(
     val fecha: Long = System.currentTimeMillis(),
     val fechaVencimientoGarantia: String? = null,
     
+    val subTipoBifocal: String = "",
     val isLoading: Boolean = false,
     val error: String? = null
 )
@@ -57,6 +58,15 @@ class DispensacionViewModel @Inject constructor(
                 is Resource.Success -> {
                     val d = result.data!!
                     _uiState.update {
+                        val bfPrefix = "[Bifocal: "
+                        val actualNotes = d.notasDiseno
+                        val extractedST = if (actualNotes.startsWith(bfPrefix)) {
+                            actualNotes.substringAfter(bfPrefix).substringBefore("]")
+                        } else ""
+                        val cleanNotes = if (actualNotes.startsWith(bfPrefix)) {
+                            actualNotes.substringAfter("] ").ifEmpty { "" }
+                        } else actualNotes
+
                         it.copy(
                             isLoading = false,
                             tipoLente = d.tipoLente,
@@ -64,7 +74,8 @@ class DispensacionViewModel @Inject constructor(
                             materialLente = d.materialLente,
                             tratamientos = d.tratamientos,
                             colorLente = d.colorLente,
-                            notasDiseno = d.notasDiseno,
+                            notasDiseno = cleanNotes,
+                            subTipoBifocal = extractedST,
                             origenMontura = d.origenMontura,
                             tipoAro = d.tipoAro,
                             materialMontura = d.materialMontura,
@@ -102,7 +113,9 @@ class DispensacionViewModel @Inject constructor(
                 materialLente = s.materialLente,
                 tratamientos = s.tratamientos,
                 colorLente = s.colorLente,
-                notasDiseno = s.notasDiseno,
+                notasDiseno = if (s.tipoLente == "Bifocal" && s.subTipoBifocal.isNotEmpty()) {
+                    "[Bifocal: ${s.subTipoBifocal}] ${s.notasDiseno}"
+                } else s.notasDiseno,
                 origenMontura = s.origenMontura,
                 tipoAro = s.tipoAro,
                 materialMontura = s.materialMontura,

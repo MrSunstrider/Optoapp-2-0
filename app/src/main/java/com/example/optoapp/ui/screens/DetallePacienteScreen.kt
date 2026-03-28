@@ -253,8 +253,14 @@ fun EvaluacionesList(
                         val recetaStr = buildString {
                             val hasOd = eval.recetaOdEsf.isNotBlank() || eval.recetaOdCil.isNotBlank()
                             val hasOi = eval.recetaOiEsf.isNotBlank() || eval.recetaOiCil.isNotBlank()
-                            if (hasOd) append("OD: ${eval.recetaOdEsf}/${eval.recetaOdCil}x${eval.recetaOdEje}° ")
-                            if (hasOi) append("OI: ${eval.recetaOiEsf}/${eval.recetaOiCil}x${eval.recetaOiEje}°")
+                            if (hasOd) {
+                                append("OD: ${eval.recetaOdEsf}/${eval.recetaOdCil}x${eval.recetaOdEje}°")
+                                if (eval.recetaOdAv.isNotBlank()) append(" (${eval.recetaOdAv}) ") else append(" ")
+                            }
+                            if (hasOi) {
+                                append("OI: ${eval.recetaOiEsf}/${eval.recetaOiCil}x${eval.recetaOiEje}°")
+                                if (eval.recetaOiAv.isNotBlank()) append(" (${eval.recetaOiAv})")
+                            }
                         }
                         val diagStr = buildString {
                             val dOd = eval.diagnosticoOd.firstOrNull() ?: ""
@@ -341,8 +347,14 @@ fun ResumenEvaluacionDialog(eval: EvaluacionClinica, paciente: Paciente, dispens
                 val showOi = eval.recetaOiEsf.isNotBlank() || eval.recetaOiCil.isNotBlank()
                 if (showOd || showOi) {
                     InfoSection("Refracción Final (Gafas)") {
-                        if (showOd) Text("OD: ${eval.recetaOdEsf} / ${eval.recetaOdCil} x ${eval.recetaOdEje}°", fontSize = 14.sp)
-                        if (showOi) Text("OI: ${eval.recetaOiEsf} / ${eval.recetaOiCil} x ${eval.recetaOiEje}°", fontSize = 14.sp)
+                        if (showOd) {
+                            val avOd = if (eval.recetaOdAv.isNotBlank()) " AV: ${eval.recetaOdAv}" else ""
+                            Text("OD: ${eval.recetaOdEsf} / ${eval.recetaOdCil} x ${eval.recetaOdEje}°$avOd", fontSize = 14.sp)
+                        }
+                        if (showOi) {
+                            val avOi = if (eval.recetaOiAv.isNotBlank()) " AV: ${eval.recetaOiAv}" else ""
+                            Text("OI: ${eval.recetaOiEsf} / ${eval.recetaOiCil} x ${eval.recetaOiEje}°$avOi", fontSize = 14.sp)
+                        }
                     }
                 }
 

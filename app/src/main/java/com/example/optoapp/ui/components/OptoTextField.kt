@@ -16,7 +16,8 @@ fun OptoTextField(
     modifier: Modifier = Modifier.fillMaxWidth(),
     keyboardType: KeyboardType = KeyboardType.Text,
     isError: Boolean = false,
-    supportingText: String? = null
+    supportingText: String? = null,
+    enabled: Boolean = true
 ) {
     OutlinedTextField(
         value = value,
@@ -25,6 +26,7 @@ fun OptoTextField(
         modifier = modifier,
         keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
         isError = isError,
-        supportingText = supportingText?.let { { Text(it) } }
+        supportingText = supportingText?.let { { Text(it) } },
+        enabled = enabled
     )
 }

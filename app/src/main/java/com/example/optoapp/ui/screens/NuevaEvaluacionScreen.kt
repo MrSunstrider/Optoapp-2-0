@@ -14,6 +14,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -81,7 +82,14 @@ fun NuevaEvaluacionScreen(
         viewModel.updateDiagnosticAuto()
     }
 
-    LaunchedEffect(uiState.addCercaOd, uiState.addCercaOi, uiState.avCcOdLejos, uiState.avCcOiLejos) {
+    LaunchedEffect(
+        uiState.addCercaOd, uiState.addCercaOi, 
+        uiState.avCcOdLejos, uiState.avCcOiLejos, 
+        uiState.isAddAo,
+        uiState.recetaOdEsf, uiState.recetaOdCil, uiState.recetaOdEje,
+        uiState.recetaOiEsf, uiState.recetaOiCil, uiState.recetaOiEje,
+        uiState.balanceOd, uiState.balanceOi
+    ) {
         viewModel.updateOtrosAuto()
     }
 
@@ -381,10 +389,25 @@ fun NuevaEvaluacionScreen(
                             colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
                         ) {
                             Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                                Text("Adición (ADD)", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                                    Text("Adición (ADD)", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, modifier = Modifier.weight(1f))
+                                    Text("A/O", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                    Spacer(Modifier.width(4.dp))
+                                    Switch(
+                                        checked = uiState.isAddAo,
+                                        onCheckedChange = { newVal -> viewModel.updateUiState { it.copy(isAddAo = newVal) } },
+                                        modifier = Modifier.scale(0.8f)
+                                    )
+                                }
                                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                     OptoTextField(value = uiState.addCercaOd, onValueChange = { viewModel.updateUiState { s -> s.copy(addCercaOd = it) } }, label = "Add OD", modifier = Modifier.weight(1f))
-                                    OptoTextField(value = uiState.addCercaOi, onValueChange = { viewModel.updateUiState { s -> s.copy(addCercaOi = it) } }, label = "Add OI", modifier = Modifier.weight(1f))
+                                    OptoTextField(
+                                        value = uiState.addCercaOi, 
+                                        onValueChange = { viewModel.updateUiState { s -> s.copy(addCercaOi = it) } }, 
+                                        label = "Add OI", 
+                                        modifier = Modifier.weight(1f),
+                                        enabled = !uiState.isAddAo
+                                    )
                                     OptoTextField(value = uiState.addAv, onValueChange = { viewModel.updateUiState { s -> s.copy(addAv = it) } }, label = "AV Add", modifier = Modifier.weight(1f))
                                 }
                             }

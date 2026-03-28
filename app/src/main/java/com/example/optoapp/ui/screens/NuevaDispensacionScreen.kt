@@ -102,7 +102,16 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("Información del Lente", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                     DropdownField(label = "Tipo de Lente", selected = uiState.tipoLente, options = listOf("Monofocal", "Bifocal", "Progresivo", "Ocupacional")) { 
-                        viewModel.updateUiState { s -> s.copy(tipoLente = it) } 
+                        viewModel.updateUiState { s -> 
+                            val nextS = s.copy(tipoLente = it)
+                            if (it != "Bifocal") nextS.copy(subTipoBifocal = "") else nextS
+                        } 
+                    }
+                    
+                    if (uiState.tipoLente == "Bifocal") {
+                        DropdownField(label = "Sub-tipo Bifocal", selected = uiState.subTipoBifocal, options = listOf("Flaptop", "Invisible")) { 
+                            viewModel.updateUiState { s -> s.copy(subTipoBifocal = it) } 
+                        }
                     }
                     
                     if (uiState.tipoLente == "Monofocal") {
@@ -115,17 +124,27 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
                         viewModel.updateUiState { s -> s.copy(materialLente = it) } 
                     }
                     Text("Tratamientos", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                    val opts = listOf("Antireflejo", "Antirayas", "Filtro UV 400", "Fotocromático", "AR Blue Defense")
-                    opts.forEach { opt ->
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Checkbox(
-                                checked = uiState.tratamientos.contains(opt), 
-                                onCheckedChange = { checked ->
-                                    val newList = if (checked) uiState.tratamientos + opt else uiState.tratamientos - opt
-                                    viewModel.updateUiState { s -> s.copy(tratamientos = newList) }
+                    val opts = listOf("Ninguno", "Antireflejo", "Antirayas", "Filtro UV 400", "Fotocromático", "AR Blue Defense")
+                    
+                    // Lógica para dropdowns dinámicos
+                    val currentTrats = if (uiState.tratamientos.isEmpty()) listOf("Ninguno") else uiState.tratamientos + "Ninguno"
+                    
+                    currentTrats.distinct().forEachIndexed { index, selectedValue ->
+                        if (index == 0 || currentTrats[index-1] != "Ninguno") {
+                            DropdownField(
+                                label = if (index == 0) "Tratamiento Principal" else "Tratamiento Adicional",
+                                selected = selectedValue,
+                                options = opts
+                            ) { selected ->
+                                val newList = uiState.tratamientos.toMutableList()
+                                if (index < uiState.tratamientos.size) {
+                                    if (selected == "Ninguno") newList.removeAt(index)
+                                    else newList[index] = selected
+                                } else if (selected != "Ninguno") {
+                                    newList.add(selected)
                                 }
-                            )
-                            Text(opt)
+                                viewModel.updateUiState { it.copy(tratamientos = newList.distinct().filter { t -> t != "Ninguno" }) }
+                            }
                         }
                     }
                     OptoTextField(value = uiState.colorLente, onValueChange = { viewModel.updateUiState { s -> s.copy(colorLente = it) } }, label = "Color")

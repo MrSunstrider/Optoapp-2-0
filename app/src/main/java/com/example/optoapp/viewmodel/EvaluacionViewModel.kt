@@ -106,6 +106,7 @@ data class EvaluacionUiState(
     val lcMaterial: String = "", val lcFechaAdaptacion: Long? = null,
     val lcObservaciones: String = "",
 
+    val isAddAo: Boolean = false,
     val isLoading: Boolean = false,
     val error: String? = null
 )
@@ -187,7 +188,8 @@ class EvaluacionViewModel @Inject constructor(
                             lcRadioBaseOi = e.lcRadioBaseOi, lcOiDia = e.lcDiametroOi,
                             lcLaboratorio = e.lcLaboratorio, lcTipoLente = e.lcTipoLente,
                             lcMaterial = e.lcMaterial, lcFechaAdaptacion = e.lcFechaAdaptacion,
-                            lcObservaciones = e.lcObservaciones
+                            lcObservaciones = e.lcObservaciones,
+                            isAddAo = e.addCercaOd.isNotEmpty() && e.addCercaOd == e.addCercaOi
                         )
                     }
                 }
@@ -354,16 +356,20 @@ class EvaluacionViewModel @Inject constructor(
 
     fun updateDiagnosticAuto() {
         _uiState.update { s ->
-            // Diagnostic intention: an eye is considered to have data if any of its distance refraction fields 
-            // has something typed (including "plano/neutro").
+            val isTextBalOd = sequenceOf(s.recetaOdEsf, s.recetaOdCil, s.recetaOdEje).any { it.trim().lowercase().contains("bal") }
+            val isTextBalOi = sequenceOf(s.recetaOiEsf, s.recetaOiCil, s.recetaOiEje).any { it.trim().lowercase().contains("bal") }
+            
+            val effBalanceOd = s.balanceOd || isTextBalOd
+            val effBalanceOi = s.balanceOi || isTextBalOi
+
             val hasDataOd = s.recetaOdEsf.trim().isNotEmpty() || s.recetaOdCil.trim().isNotEmpty()
             val hasDataOi = s.recetaOiEsf.trim().isNotEmpty() || s.recetaOiCil.trim().isNotEmpty()
             
-            val diagOd = if (s.balanceOd) "Balance" 
+            val diagOd = if (effBalanceOd) "Balance" 
                          else if (hasDataOd) calcularDiagnostico(s.recetaOdEsf, s.recetaOdCil) 
                          else ""
                          
-            val diagOi = if (s.balanceOi) "Balance" 
+            val diagOi = if (effBalanceOi) "Balance" 
                          else if (hasDataOi) calcularDiagnostico(s.recetaOiEsf, s.recetaOiCil) 
                          else ""
             
@@ -372,18 +378,31 @@ class EvaluacionViewModel @Inject constructor(
                 diagnosticoOi = if (diagOi.isNotEmpty()) listOf(diagOi) else emptyList()
             )
         }
-        updateOtrosAuto()
     }
 
     fun updateOtrosAuto() {
         _uiState.update { s ->
-            val addValStr = if (s.addCercaOd.isNotEmpty()) s.addCercaOd else s.addCercaOi
+            val isTextBalOd = sequenceOf(s.recetaOdEsf, s.recetaOdCil, s.recetaOdEje).any { it.trim().lowercase().contains("bal") }
+            val isTextBalOi = sequenceOf(s.recetaOiEsf, s.recetaOiCil, s.recetaOiEje).any { it.trim().lowercase().contains("bal") }
+            
+            val effBalanceOd = s.balanceOd || isTextBalOd
+            val effBalanceOi = s.balanceOi || isTextBalOi
+
+            // Sincronización de adición si A/O está activo
+            val newAddOi = if (s.isAddAo) s.addCercaOd else s.addCercaOi
+            
+            val addValStr = if (s.addCercaOd.isNotEmpty()) s.addCercaOd else newAddOi
             val addVal = parseRefraction(addValStr) ?: 0.0
             val presbiciaVal = addVal > 0
             
             val eeOd = (parseRefraction(s.recetaOdEsf) ?: 0.0) + ((parseRefraction(s.recetaOdCil) ?: 0.0) / 2.0)
             val eeOi = (parseRefraction(s.recetaOiEsf) ?: 0.0) + ((parseRefraction(s.recetaOiCil) ?: 0.0) / 2.0)
-            val anisometropiaVal = Math.abs(eeOd - eeOi) >= 2.00
+            
+            // Solo calcular anisometropía si ambos ojos tienen datos y NINGUNO es balance
+            val anisometropiaVal = if (!effBalanceOd && !effBalanceOi && 
+                                      s.recetaOdEsf.isNotEmpty() && s.recetaOiEsf.isNotEmpty()) {
+                Math.abs(eeOd - eeOi) >= 2.00
+            } else false
             
             val logMarOd = parseSnellenToLogMar(s.avCcOdLejos)
             val logMarOi = parseSnellenToLogMar(s.avCcOiLejos)
@@ -392,6 +411,7 @@ class EvaluacionViewModel @Inject constructor(
             } else s.otrosAmbliopia
             
             s.copy(
+                addCercaOi = newAddOi,
                 otrosPresbicia = if (s.autoPresbicia) presbiciaVal else s.otrosPresbicia,
                 otrosAnisometropia = if (s.autoAnisometropia) anisometropiaVal else s.otrosAnisometropia,
                 otrosAmbliopia = if (s.autoAmbliopia) ambliopiaVal else s.otrosAmbliopia
