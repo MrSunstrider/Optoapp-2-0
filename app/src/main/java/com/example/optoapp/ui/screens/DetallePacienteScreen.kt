@@ -144,10 +144,10 @@ fun DetallePacienteScreen(
 
                 Box(modifier = Modifier.fillMaxSize()) {
                     when (selectedTab) {
-                        0 -> EvaluacionesList(evaluaciones, p, dispensaciones, evaluacionViewModel) { evalId ->
+                        0 -> EvaluacionesList(evaluaciones, p, evaluacionViewModel) { evalId ->
                             navController.navigate("editarEvaluacion/${id}/${evalId}")
                         }
-                        1 -> DispensacionesList(dispensaciones) { dispId ->
+                        1 -> DispensacionesList(dispensaciones, p) { dispId ->
                             navController.navigate("editarDispensacion/${id}/${dispId}")
                         }
                         2 -> ServiciosExtraList(servicios) { servId ->
@@ -183,7 +183,6 @@ fun DetallePacienteScreen(
 fun EvaluacionesList(
     evaluaciones: List<EvaluacionClinica>, 
     paciente: Paciente, 
-    dispensaciones: List<DispensacionOptica>, 
     evaluacionViewModel: com.example.optoapp.viewmodel.EvaluacionViewModel,
     onEdit: (String) -> Unit
 ) {
@@ -289,7 +288,6 @@ fun EvaluacionesList(
         ResumenEvaluacionDialog(
             eval = currentEval,
             paciente = paciente,
-            dispensaciones = dispensaciones,
             onDismiss = { selectedEvalForResumen.value = null },
             onEdit = { onEdit(currentEval.id) }
         )
@@ -297,7 +295,7 @@ fun EvaluacionesList(
 }
 
 @Composable
-fun ResumenEvaluacionDialog(eval: EvaluacionClinica, paciente: Paciente, dispensaciones: List<DispensacionOptica>, onDismiss: () -> Unit, onEdit: () -> Unit) {
+fun ResumenEvaluacionDialog(eval: EvaluacionClinica, paciente: Paciente, onDismiss: () -> Unit, onEdit: () -> Unit) {
     val date = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(eval.fecha))
     val proxima = eval.proximaCita?.let { SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(it)) } ?: "No programada"
 
@@ -400,23 +398,6 @@ fun ResumenEvaluacionDialog(eval: EvaluacionClinica, paciente: Paciente, dispens
                     }
                 }
 
-                if (dispensaciones.isNotEmpty()) {
-                    InfoSection("Dispensaciones (${dispensaciones.size})") {
-                        dispensaciones.forEach { disp ->
-                            val dDate = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(disp.fecha))
-                            val dispStr = buildString {
-                                append("Fecha: $dDate, Lente: ${disp.tipoLente}")
-                                if (disp.montoTotal > 0) {
-                                    val saldo = disp.montoTotal - disp.montoPagado
-                                    append(", Saldo: s/. ${String.format(Locale.getDefault(), "%.2f", saldo)}")
-                                }
-                            }
-                            Text("- $dispStr", fontSize = 13.sp)
-                            Text("  Estado: ${disp.estadoEntrega}", fontSize = 13.sp, color = if (disp.estadoEntrega == "Entregado") MaterialTheme.colorScheme.tertiary else Color.Red)
-                        }
-                    }
-                }
-                
                 if (eval.proximaCita != null) {
                     InfoSection("Próxima Cita") {
                         Text(proxima, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, fontSize = 15.sp)
@@ -448,7 +429,9 @@ fun InfoSection(title: String, content: @Composable () -> Unit) {
 }
 
 @Composable
-fun DispensacionesList(dispensaciones: List<DispensacionOptica>, onEdit: (String) -> Unit) {
+fun DispensacionesList(dispensaciones: List<DispensacionOptica>, paciente: Paciente, onEdit: (String) -> Unit) {
+    val selectedDispForResumen = remember { mutableStateOf<DispensacionOptica?>(null) }
+
     if (dispensaciones.isEmpty()) {
         EmptyListMessage("No hay dispensaciones.")
     } else {
@@ -466,15 +449,21 @@ fun DispensacionesList(dispensaciones: List<DispensacionOptica>, onEdit: (String
                     Column(modifier = Modifier.padding(16.dp)) {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                             Text(text = date, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                            Surface(
-                                color = if (disp.estadoEntrega == "Entregado") MaterialTheme.colorScheme.tertiary else Color(0xFFFF9800),
-                                shape = RoundedCornerShape(8.dp)
-                            ) {
-                                Text(disp.estadoEntrega, color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                IconButton(modifier = Modifier.size(24.dp), onClick = { selectedDispForResumen.value = disp }) { 
+                                    Icon(Icons.Default.Visibility, contentDescription = "Ver Resumen", tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(20.dp))
+                                }
+                                Surface(
+                                    color = if (disp.estadoEntrega == "Entregado") MaterialTheme.colorScheme.tertiary else Color(0xFFFF9800),
+                                    shape = RoundedCornerShape(8.dp)
+                                ) {
+                                    Text(disp.estadoEntrega, color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
+                                }
                             }
                         }
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(4.dp))
                         Text(text = "${disp.tipoLente} - ${disp.materialLente}", fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                        Spacer(modifier = Modifier.height(4.dp))
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
                             Text(text = "Saldo:", fontSize = 12.sp, color = Color.Gray)
                             val formattedSaldo = String.format(Locale.getDefault(), "%.2f", saldo)
@@ -485,6 +474,98 @@ fun DispensacionesList(dispensaciones: List<DispensacionOptica>, onEdit: (String
             }
         }
     }
+    
+    selectedDispForResumen.value?.let { currentDisp ->
+        ResumenDispensacionDialog(
+            disp = currentDisp,
+            paciente = paciente,
+            onDismiss = { selectedDispForResumen.value = null },
+            onEdit = { onEdit(currentDisp.id) }
+        )
+    }
+}
+
+@Composable
+fun ResumenDispensacionDialog(disp: DispensacionOptica, paciente: Paciente, onDismiss: () -> Unit, onEdit: () -> Unit) {
+    val date = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(disp.fecha))
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { 
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Visibility, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Resumen de Dispensación") 
+            }
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                InfoSection("Datos del Paciente") {
+                    Text("Nombre: ${paciente.nombreCompleto}", fontSize = 14.sp)
+                    Text("Edad: ${paciente.edad} años", fontSize = 14.sp)
+                    Text("Fecha: $date", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                }
+
+                if (disp.origenMontura.isNotBlank() || disp.tipoAro.isNotBlank() || disp.materialMontura.isNotBlank() || disp.descripcionMontura.isNotBlank()) {
+                    InfoSection("Información de Montura") {
+                        if (disp.origenMontura.isNotBlank()) Text("Origen: ${disp.origenMontura}", fontSize = 14.sp)
+                        if (disp.tipoAro.isNotBlank()) Text("Tipo de Aro: ${disp.tipoAro}", fontSize = 14.sp)
+                        if (disp.materialMontura.isNotBlank()) Text("Material: ${disp.materialMontura}", fontSize = 14.sp)
+                        if (disp.descripcionMontura.isNotBlank()) Text("Descripción: ${disp.descripcionMontura}", fontSize = 14.sp)
+                    }
+                }
+
+                if (disp.tipoLente.isNotBlank() || disp.materialLente.isNotBlank() || disp.colorLente.isNotBlank() || disp.tratamientos.isNotEmpty() || disp.notasDiseno.isNotBlank()) {
+                    InfoSection("Información del Lente") {
+                        if (disp.tipoLente.isNotBlank()) Text("Tipo: ${disp.tipoLente}", fontSize = 14.sp)
+                        if (disp.materialLente.isNotBlank()) Text("Material: ${disp.materialLente}", fontSize = 14.sp)
+                        if (disp.colorLente.isNotBlank()) Text("Color: ${disp.colorLente}", fontSize = 14.sp)
+                        if (disp.tratamientos.isNotEmpty()) {
+                            Text("Tratamientos: ${disp.tratamientos.joinToString(", ")}", fontSize = 14.sp)
+                        }
+                        if (disp.notasDiseno.isNotBlank()) Text("Notas: ${disp.notasDiseno}", fontSize = 14.sp)
+                    }
+                }
+
+                InfoSection("Resumen Financiero") {
+                    val saldo = disp.montoTotal - disp.montoPagado
+                    val formattedTotal = String.format(Locale.getDefault(), "%.2f", disp.montoTotal)
+                    val formattedPagado = String.format(Locale.getDefault(), "%.2f", disp.montoPagado)
+                    val formattedSaldo = String.format(Locale.getDefault(), "%.2f", saldo)
+                    
+                    Text("Monto Total: s/. $formattedTotal", fontSize = 14.sp)
+                    if (disp.metodoPago.isNotBlank()) Text("Método de Pago: ${disp.metodoPago}", fontSize = 14.sp)
+                    Text("A Cuenta: s/. $formattedPagado", fontSize = 14.sp)
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        "Saldo Restante: s/. $formattedSaldo", 
+                        fontSize = 15.sp, 
+                        fontWeight = FontWeight.Bold,
+                        color = if (saldo > 0) Color.Red else MaterialTheme.colorScheme.tertiary
+                    )
+                }
+                
+                InfoSection("Estado") {
+                    Text(
+                        disp.estadoEntrega, 
+                        fontSize = 15.sp, 
+                        fontWeight = FontWeight.Bold,
+                        color = if (disp.estadoEntrega == "Entregado") MaterialTheme.colorScheme.tertiary else Color(0xFFFF9800)
+                    )
+                }
+            }
+        },
+        confirmButton = { 
+            Button(onClick = { onDismiss(); onEdit() }) { 
+                Icon(Icons.Default.Edit, null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Editar Completo") 
+            } 
+        },
+        dismissButton = { 
+            TextButton(onClick = onDismiss) { Text("Cerrar") } 
+        }
+    )
 }
 
 @Composable

@@ -14,7 +14,7 @@ interface PacienteDao {
     @Query("SELECT * FROM pacientes WHERE nombreCompleto LIKE '%' || :query || '%' OR id LIKE '%' || :query || '%' OR telefono LIKE '%' || :query || '%'")
     fun searchPacientes(query: String): Flow<List<Paciente>>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Upsert
     suspend fun insertPaciente(paciente: Paciente)
 
     @Update
@@ -51,7 +51,7 @@ interface EvaluacionDao {
     @Query("SELECT * FROM evaluaciones WHERE id = :id")
     suspend fun getEvaluacionById(id: String): EvaluacionClinica?
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Upsert
     suspend fun insertEvaluacion(evaluacion: EvaluacionClinica)
     
     @Delete
@@ -81,7 +81,7 @@ interface DispensacionDao {
     @Query("SELECT * FROM dispensaciones WHERE id = :id")
     suspend fun getDispensacionById(id: String): DispensacionOptica?
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Upsert
     suspend fun insertDispensacion(dispensacion: DispensacionOptica)
     
     @Query("DELETE FROM dispensaciones")
@@ -96,7 +96,7 @@ interface PagoDao {
     @Query("SELECT * FROM pagos WHERE dispensacionId = :dispensacionId ORDER BY fecha DESC")
     fun getPagosByDispensacion(dispensacionId: String): Flow<List<Pago>>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Upsert
     suspend fun insertPago(pago: Pago)
     
     @Query("DELETE FROM pagos")
@@ -117,7 +117,7 @@ interface ServicioExtraDao {
     @Query("SELECT * FROM servicios_extra WHERE id = :id")
     suspend fun getServicioById(id: String): ServicioExtra?
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Upsert
     suspend fun insertServicio(servicio: ServicioExtra)
 
     @Delete
