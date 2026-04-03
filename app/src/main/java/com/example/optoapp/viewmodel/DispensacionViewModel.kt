@@ -11,8 +11,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.first
 import java.util.UUID
 import javax.inject.Inject
+import com.example.optoapp.data.Pago
 
 data class DispensacionUiState(
     val tipoLente: String = "",
@@ -29,16 +31,17 @@ data class DispensacionUiState(
     val tipoMontura: String = "", // Added to match entity
     
     val montoTotal: String = "",
-    val tipoMovimiento: String = "",
-    val metodoPago: String = "",
-    val montoPagado: String = "",
     val estadoEntrega: String = "Pendiente",
     val fecha: Long = System.currentTimeMillis(),
     val fechaVencimientoGarantia: String? = null,
     
     val subTipoBifocal: String = "",
     val isLoading: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    
+    val pagos: List<Pago> = emptyList(),
+    val pagosToDelete: List<Pago> = emptyList(),
+    val generatedId: String = UUID.randomUUID().toString()
 )
 
 @HiltViewModel
@@ -53,20 +56,12 @@ class DispensacionViewModel @Inject constructor(
 
     fun loadDispensacion(dispensacionId: String) {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true) }
+            _uiState.update { it.copy(isLoading = true, generatedId = dispensacionId) }
             when (val result = repository.getDispensacionById(dispensacionId)) {
                 is Resource.Success -> {
                     val d = result.data!!
+                    val loadedPagos = repository.getPagosByDispensacion(dispensacionId).first()
                     _uiState.update {
-                        val bfPrefix = "[Bifocal: "
-                        val actualNotes = d.notasDiseno
-                        val extractedST = if (actualNotes.startsWith(bfPrefix)) {
-                            actualNotes.substringAfter(bfPrefix).substringBefore("]")
-                        } else ""
-                        val cleanNotes = if (actualNotes.startsWith(bfPrefix)) {
-                            actualNotes.substringAfter("] ").ifEmpty { "" }
-                        } else actualNotes
-
                         it.copy(
                             isLoading = false,
                             tipoLente = d.tipoLente,
@@ -74,19 +69,18 @@ class DispensacionViewModel @Inject constructor(
                             materialLente = d.materialLente,
                             tratamientos = d.tratamientos,
                             colorLente = d.colorLente,
-                            notasDiseno = cleanNotes,
-                            subTipoBifocal = extractedST,
+                            notasDiseno = d.notasDiseno,
+                            subTipoBifocal = d.subTipoBifocal,
                             origenMontura = d.origenMontura,
                             tipoAro = d.tipoAro,
                             materialMontura = d.materialMontura,
                             descripcionMontura = d.descripcionMontura,
                             tipoMontura = d.tipoMontura,
                             montoTotal = d.montoTotal.toString(),
-                            montoPagado = d.montoPagado.toString(),
-                            metodoPago = d.metodoPago,
                             estadoEntrega = d.estadoEntrega,
                             fecha = d.fecha,
-                            fechaVencimientoGarantia = d.fechaVencimientoGarantia
+                            fechaVencimientoGarantia = d.fechaVencimientoGarantia,
+                            pagos = loadedPagos
                         )
                     }
                 }
@@ -98,6 +92,25 @@ class DispensacionViewModel @Inject constructor(
         }
     }
 
+    fun addPago(pago: Pago) {
+        _uiState.update { it.copy(pagos = it.pagos + pago) }
+    }
+
+    fun updatePagoLocal(pago: Pago) {
+        _uiState.update { s ->
+            val updatedPagos = s.pagos.map { if (it.id == pago.id) pago else it }
+            s.copy(pagos = updatedPagos)
+        }
+    }
+
+    fun removePagoLocal(pago: Pago) {
+        _uiState.update { s ->
+            val updatedPagos = s.pagos.filter { it.id != pago.id }
+            val updatedToDelete = if (pago.id.isNotEmpty()) s.pagosToDelete + pago else s.pagosToDelete
+            s.copy(pagos = updatedPagos, pagosToDelete = updatedToDelete)
+        }
+    }
+
     fun updateUiState(update: (DispensacionUiState) -> DispensacionUiState) {
         _uiState.update(update)
     }
@@ -105,30 +118,44 @@ class DispensacionViewModel @Inject constructor(
     fun saveDispensacion(pacienteId: String, dispensacionId: String?, onComplete: () -> Unit) {
         viewModelScope.launch {
             val s = _uiState.value
+            val finalId = dispensacionId ?: s.generatedId
+            val finalMontoPagado = s.pagos.sumOf { it.monto }
+
             val disp = DispensacionOptica(
-                id = dispensacionId ?: UUID.randomUUID().toString(),
+                id = finalId,
                 pacienteId = pacienteId,
                 fecha = s.fecha,
                 tipoLente = s.tipoLente,
                 materialLente = s.materialLente,
                 tratamientos = s.tratamientos,
                 colorLente = s.colorLente,
-                notasDiseno = if (s.tipoLente == "Bifocal" && s.subTipoBifocal.isNotEmpty()) {
-                    "[Bifocal: ${s.subTipoBifocal}] ${s.notasDiseno}"
-                } else s.notasDiseno,
+                notasDiseno = s.notasDiseno,
+                subTipoBifocal = if (s.tipoLente == "Bifocal") s.subTipoBifocal else "",
                 origenMontura = s.origenMontura,
                 tipoAro = s.tipoAro,
                 materialMontura = s.materialMontura,
                 descripcionMontura = s.descripcionMontura,
                 tipoMontura = s.tipoMontura,
                 montoTotal = s.montoTotal.toDoubleOrNull() ?: 0.0,
-                montoPagado = s.montoPagado.toDoubleOrNull() ?: 0.0,
-                metodoPago = s.metodoPago,
+                montoPagado = finalMontoPagado,
+                metodoPago = "", // No longer used in entity for new records, but kept for compatibility
                 estadoEntrega = s.estadoEntrega,
                 fechaVencimientoGarantia = s.fechaVencimientoGarantia,
                 distanciaLente = if (s.tipoLente == "Monofocal") s.distanciaLente else ""
             )
             repository.insertDispensacion(disp)
+
+            // Guardar pagos vinculados a esta dispensación
+            s.pagos.forEach { pago ->
+                val pagoToSave = pago.copy(dispensacionId = finalId)
+                repository.insertPago(pagoToSave)
+            }
+
+            // Eliminar pagos marcados
+            s.pagosToDelete.forEach { pago ->
+                repository.deletePago(pago)
+            }
+
             onComplete()
         }
     }

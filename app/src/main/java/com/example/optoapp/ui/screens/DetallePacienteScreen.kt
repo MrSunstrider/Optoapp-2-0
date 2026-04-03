@@ -6,6 +6,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Chat
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Assignment
 import androidx.compose.material.icons.filled.*
@@ -34,6 +36,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import kotlinx.coroutines.flow.map
 import java.text.SimpleDateFormat
 import java.util.*
+import com.example.optoapp.util.WhatsAppUtils
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -53,6 +56,7 @@ fun DetallePacienteScreen(
     
     var selectedTab by remember { mutableIntStateOf(0) }
     val tabs = listOf("Evaluaciones", "Dispensaciones", "Servicios")
+    var showWhatsAppMenu by remember { mutableStateOf(false) }
 
     LaunchedEffect(id) {
         paciente = pacienteViewModel.getPaciente(id)
@@ -68,6 +72,49 @@ fun DetallePacienteScreen(
                     }
                 },
                 actions = {
+                    Box {
+                        IconButton(onClick = { showWhatsAppMenu = true }) {
+                            Icon(Icons.AutoMirrored.Filled.Chat, contentDescription = "WhatsApp")
+                        }
+                        DropdownMenu(
+                            expanded = showWhatsAppMenu,
+                            onDismissRequest = { showWhatsAppMenu = false }
+                        ) {
+                            paciente?.let { p ->
+                                val nombre = p.nombreCompleto.split(" ").firstOrNull() ?: ""
+                                
+                                DropdownMenuItem(
+                                    text = { Text("Mensaje Libre (Saludo)") },
+                                    onClick = { 
+                                        showWhatsAppMenu = false
+                                        WhatsAppUtils.sendWhatsAppMessage(context, p.telefono, "Hola $nombre,")
+                                    }
+                                )
+                                
+                                DropdownMenuItem(
+                                    text = { Text("Invitación Control Anual") },
+                                    onClick = {
+                                        showWhatsAppMenu = false
+                                        val msg = "Hola $nombre, te saludamos de Óptica Sersa Visual y Preventiva. Nos preocupamos por tu salud visual; te recordamos que ya se cumplió un año desde tu última evaluación y te invitamos a visitarnos para tu control optométrico anual. ¡Esperamos verte pronto!"
+                                        WhatsAppUtils.sendWhatsAppMessage(context, p.telefono, msg)
+                                    }
+                                )
+                                
+                                val ultimaEval = evaluaciones.maxByOrNull { it.fecha }
+                                if (ultimaEval?.proximaCita != null) {
+                                    val proxFecha = java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault()).format(java.util.Date(ultimaEval.proximaCita))
+                                    DropdownMenuItem(
+                                        text = { Text("Recordar Próxima Cita ($proxFecha)") },
+                                        onClick = {
+                                            showWhatsAppMenu = false
+                                            val msg = "Hola $nombre, te saludamos de Óptica Sersa Visual y Preventiva. Te recordamos cordialmente que tienes una cita de control optométrico programada con nosotros para el día $proxFecha. ¡Te esperamos!"
+                                            WhatsAppUtils.sendWhatsAppMessage(context, p.telefono, msg)
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
                     IconButton(onClick = { /* PDF Export */ }) {
                         Icon(Icons.Default.PictureAsPdf, contentDescription = "Exportar PDF")
                     }
@@ -317,30 +364,6 @@ fun ResumenEvaluacionDialog(eval: EvaluacionClinica, paciente: Paciente, onDismi
                     Text("Fecha de Eval: $date", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
                 }
 
-                val diagOd = eval.diagnosticoOd.firstOrNull() ?: ""
-                val diagOi = eval.diagnosticoOi.firstOrNull() ?: ""
-                
-                if (diagOd.isNotBlank() || diagOi.isNotBlank() || eval.diagnostico.isNotBlank()) {
-                    InfoSection("Diagnóstico") {
-                        if (eval.diagnostico.isNotBlank()) Text(eval.diagnostico, fontSize = 14.sp)
-                        if (diagOd.isNotBlank()) Text("OD: $diagOd", fontSize = 14.sp)
-                        if (diagOi.isNotBlank()) Text("OI: $diagOi", fontSize = 14.sp)
-                    }
-                }
-
-                val diagOtrosList = mutableListOf<String>()
-                if (eval.otrosPresbicia) diagOtrosList.add("Presbicia")
-                if (eval.otrosAnisometropia) diagOtrosList.add("Anisometropía")
-                if (eval.otrosAmbliopia) diagOtrosList.add("Ambliopía")
-
-                if (diagOtrosList.isNotEmpty()) {
-                    InfoSection("Condiciones Asociadas") {
-                        diagOtrosList.forEach { cond ->
-                            Text(cond, fontSize = 14.sp)
-                        }
-                    }
-                }
-
                 val showOd = eval.recetaOdEsf.isNotBlank() || eval.recetaOdCil.isNotBlank()
                 val showOi = eval.recetaOiEsf.isNotBlank() || eval.recetaOiCil.isNotBlank()
                 if (showOd || showOi) {
@@ -371,6 +394,30 @@ fun ResumenEvaluacionDialog(eval: EvaluacionClinica, paciente: Paciente, onDismi
                         if (eval.dipLejos.isNotBlank()) Text("Lejos: ${eval.dipLejos}", fontSize = 14.sp)
                         if (eval.dipIntermedio.isNotBlank()) Text("Intermedio: ${eval.dipIntermedio}", fontSize = 14.sp)
                         if (eval.dipCerca.isNotBlank()) Text("Cerca: ${eval.dipCerca}", fontSize = 14.sp)
+                    }
+                }
+
+                val diagOd = eval.diagnosticoOd.firstOrNull() ?: ""
+                val diagOi = eval.diagnosticoOi.firstOrNull() ?: ""
+                
+                if (diagOd.isNotBlank() || diagOi.isNotBlank() || eval.diagnostico.isNotBlank()) {
+                    InfoSection("Diagnóstico") {
+                        if (eval.diagnostico.isNotBlank()) Text(eval.diagnostico, fontSize = 14.sp)
+                        if (diagOd.isNotBlank()) Text("OD: $diagOd", fontSize = 14.sp)
+                        if (diagOi.isNotBlank()) Text("OI: $diagOi", fontSize = 14.sp)
+                    }
+                }
+
+                val diagOtrosList = mutableListOf<String>()
+                if (eval.otrosPresbicia) diagOtrosList.add("Presbicia")
+                if (eval.otrosAnisometropia) diagOtrosList.add("Anisometropía")
+                if (eval.otrosAmbliopia) diagOtrosList.add("Ambliopía")
+
+                if (diagOtrosList.isNotEmpty()) {
+                    InfoSection("Condiciones Asociadas") {
+                        diagOtrosList.forEach { cond ->
+                            Text(cond, fontSize = 14.sp)
+                        }
                     }
                 }
                 
@@ -406,11 +453,41 @@ fun ResumenEvaluacionDialog(eval: EvaluacionClinica, paciente: Paciente, onDismi
             }
         },
         confirmButton = { 
-            Button(onClick = { onDismiss(); onEdit() }) { 
-                Icon(Icons.Default.Edit, null, modifier = Modifier.size(18.dp))
+            Row {
+                val context = LocalContext.current
+                IconButton(onClick = {
+                    val recetaStr = buildString {
+                        append("Hola ${paciente.nombreCompleto.split(" ").firstOrNull() ?: ""}, esta es tu receta optométrica:\n\n")
+                        val showOd = eval.recetaOdEsf.isNotBlank() || eval.recetaOdCil.isNotBlank()
+                        val showOi = eval.recetaOiEsf.isNotBlank() || eval.recetaOiCil.isNotBlank()
+                        if (showOd) {
+                            append("👁️ Ojo Derecho (OD): ${eval.recetaOdEsf} / ${eval.recetaOdCil} x ${eval.recetaOdEje}°\n")
+                        }
+                        if (showOi) {
+                            append("👁️ Ojo Izquierdo (OI): ${eval.recetaOiEsf} / ${eval.recetaOiCil} x ${eval.recetaOiEje}°\n")
+                        }
+                        if (eval.addCercaOd.isNotBlank() || eval.addCercaOi.isNotBlank() || eval.addAv.isNotBlank()) {
+                            append("\n👓 Adición:\n")
+                            if (eval.addCercaOd.isNotBlank()) append("OD: ${eval.addCercaOd}\n")
+                            if (eval.addCercaOi.isNotBlank()) append("OI: ${eval.addCercaOi}\n")
+                            if (eval.addAv.isNotBlank()) append("AV: ${eval.addAv}\n")
+                        }
+                        if (eval.proximaCita != null) {
+                            val prox = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(eval.proximaCita))
+                            append("\n📅 Próximo Control: $prox")
+                        }
+                    }
+                    WhatsAppUtils.sendWhatsAppMessage(context, paciente.telefono, recetaStr)
+                }) {
+                    Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Enviar Receta a WhatsApp", tint = Color(0xFF25D366))
+                }
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Editar Completo") 
-            } 
+                Button(onClick = { onDismiss(); onEdit() }) { 
+                    Icon(Icons.Default.Edit, null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Editar Completo") 
+                } 
+            }
         },
         dismissButton = { 
             TextButton(onClick = onDismiss) { Text("Cerrar") } 
@@ -517,9 +594,13 @@ fun ResumenDispensacionDialog(disp: DispensacionOptica, paciente: Paciente, onDi
 
                 if (disp.tipoLente.isNotBlank() || disp.materialLente.isNotBlank() || disp.colorLente.isNotBlank() || disp.tratamientos.isNotEmpty() || disp.notasDiseno.isNotBlank()) {
                     InfoSection("Información del Lente") {
-                        if (disp.tipoLente.isNotBlank()) Text("Tipo: ${disp.tipoLente}", fontSize = 14.sp)
-                        if (disp.materialLente.isNotBlank()) Text("Material: ${disp.materialLente}", fontSize = 14.sp)
-                        if (disp.colorLente.isNotBlank()) Text("Color: ${disp.colorLente}", fontSize = 14.sp)
+                    if (disp.tipoLente.isNotBlank()) {
+                        val subtipo = if (disp.tipoLente == "Bifocal" && disp.subTipoBifocal.isNotBlank()) " (${disp.subTipoBifocal})" else ""
+                        val distancia = if (disp.tipoLente == "Monofocal" && disp.distanciaLente.isNotBlank()) " - ${disp.distanciaLente}" else ""
+                        Text("Tipo: ${disp.tipoLente}$subtipo$distancia", fontSize = 14.sp)
+                    }
+                    if (disp.materialLente.isNotBlank()) Text("Material: ${disp.materialLente}", fontSize = 14.sp)
+                    if (disp.colorLente.isNotBlank()) Text("Color: ${disp.colorLente}", fontSize = 14.sp)
                         if (disp.tratamientos.isNotEmpty()) {
                             Text("Tratamientos: ${disp.tratamientos.joinToString(", ")}", fontSize = 14.sp)
                         }
@@ -556,11 +637,30 @@ fun ResumenDispensacionDialog(disp: DispensacionOptica, paciente: Paciente, onDi
             }
         },
         confirmButton = { 
-            Button(onClick = { onDismiss(); onEdit() }) { 
-                Icon(Icons.Default.Edit, null, modifier = Modifier.size(18.dp))
+            Row {
+                val context = LocalContext.current
+                IconButton(onClick = {
+                    val saldo = disp.montoTotal - disp.montoPagado
+                    val formattedSaldo = String.format(Locale.getDefault(), "%.2f", saldo)
+                    val nombre = paciente.nombreCompleto.split(" ").firstOrNull() ?: ""
+                    
+                    val msg = buildString {
+                        append("Hola $nombre, tus lentes ya están listos para recoger.")
+                        if (saldo > 0) {
+                            append(" Te recordamos que tienes un saldo pendiente de s/. $formattedSaldo.")
+                        }
+                    }
+                    WhatsAppUtils.sendWhatsAppMessage(context, paciente.telefono, msg)
+                }) {
+                    Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "WhatsApp", tint = Color(0xFF25D366))
+                }
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Editar Completo") 
-            } 
+                Button(onClick = { onDismiss(); onEdit() }) { 
+                    Icon(Icons.Default.Edit, null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Editar Completo") 
+                } 
+            }
         },
         dismissButton = { 
             TextButton(onClick = onDismiss) { Text("Cerrar") } 

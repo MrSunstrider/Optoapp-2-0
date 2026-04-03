@@ -22,8 +22,8 @@ object DatabaseModule {
             OptoDatabase::class.java,
             "opto_database"
         )
-        // Eliminado fallbackToDestructiveMigration() para Phase 2
-        .build()
+                .fallbackToDestructiveMigration(true)
+                .build()
     }
 
     @Provides

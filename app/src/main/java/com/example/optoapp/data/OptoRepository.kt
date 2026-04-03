@@ -75,6 +75,14 @@ class OptoRepository(
     fun getPagosByDispensacion(dispensacionId: String): Flow<List<Pago>> = pagoDao.getPagosByDispensacion(dispensacionId)
     
     suspend fun insertPago(pago: Pago) = pagoDao.insertPago(pago)
+    
+    suspend fun deletePago(pago: Pago) = pagoDao.deletePago(pago)
+    
+    fun getPagosByServicioExtra(servicioExtraId: String): Flow<List<Pago>> = 
+        pagoDao.getPagosByServicioExtra(servicioExtraId)
+        
+    fun getPagosByDateRange(start: Long, end: Long): Flow<List<Pago>> = 
+        pagoDao.getPagosByDateRange(start, end)
 
     // Servicios Extra
     fun getAllServicios(): Flow<List<ServicioExtra>> = servicioExtraDao.getAllServicios()

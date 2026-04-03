@@ -159,25 +159,37 @@ data class DispensacionOptica(
     val montoPagado: Double = 0.0,
     val estadoEntrega: String = "Pendiente",
     val fechaVencimientoGarantia: String? = null,
-    val distanciaLente: String = ""
+    val distanciaLente: String = "",
+    val subTipoBifocal: String = ""
 )
 
 @Entity(
     tableName = "pagos",
-    foreignKeys = [ForeignKey(
-        entity = DispensacionOptica::class,
-        parentColumns = ["id"],
-        childColumns = ["dispensacionId"],
-        onDelete = ForeignKey.CASCADE
-    )],
-    indices = [Index(value = ["dispensacionId"])]
+    foreignKeys = [
+        ForeignKey(
+            entity = DispensacionOptica::class,
+            parentColumns = ["id"],
+            childColumns = ["dispensacionId"],
+            onDelete = ForeignKey.CASCADE
+        ),
+        ForeignKey(
+            entity = ServicioExtra::class,
+            parentColumns = ["id"],
+            childColumns = ["servicioExtraId"],
+            onDelete = ForeignKey.CASCADE
+        )
+    ],
+    indices = [Index(value = ["dispensacionId"]), Index(value = ["servicioExtraId"])]
 )
 data class Pago(
     @PrimaryKey val id: String,
-    val dispensacionId: String,
+    val dispensacionId: String? = null,
+    val servicioExtraId: String? = null,
     val fecha: Long,
     val tipo: String,
-    val monto: Double
+    val monto: Double,
+    val metodoPago: String = "",
+    val nota: String = ""
 )
 
 @Entity(
@@ -198,5 +210,6 @@ data class ServicioExtra(
     val aCuenta: Double,
     val estado: String, // Pendiente, Entregado
     val fecha: Long,
-    val pacienteId: String? = null // Opcional
+    val pacienteId: String? = null, // Opcional
+    val metodoPago: String = ""
 )

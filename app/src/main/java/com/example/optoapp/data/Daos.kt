@@ -96,8 +96,20 @@ interface PagoDao {
     @Query("SELECT * FROM pagos WHERE dispensacionId = :dispensacionId ORDER BY fecha DESC")
     fun getPagosByDispensacion(dispensacionId: String): Flow<List<Pago>>
 
+    @Query("SELECT * FROM pagos WHERE servicioExtraId = :servicioExtraId ORDER BY fecha DESC")
+    fun getPagosByServicioExtra(servicioExtraId: String): Flow<List<Pago>>
+
+    @Query("SELECT * FROM pagos WHERE fecha >= :start AND fecha <= :end ORDER BY fecha DESC")
+    fun getPagosByDateRange(start: Long, end: Long): Flow<List<Pago>>
+
     @Upsert
     suspend fun insertPago(pago: Pago)
+
+    @Update
+    suspend fun updatePago(pago: Pago)
+
+    @Delete
+    suspend fun deletePago(pago: Pago)
     
     @Query("DELETE FROM pagos")
     suspend fun deleteAll()

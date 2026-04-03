@@ -11,18 +11,22 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.util.UUID
 import javax.inject.Inject
+import com.example.optoapp.data.Pago
 
 data class ServiciosUiState(
     val id: String = UUID.randomUUID().toString(),
     val ot: String = "",
     val descripcion: String = "",
     val montoTotal: String = "",
-    val aCuenta: String = "",
     val estado: String = "Pendiente",
     val fecha: Long = System.currentTimeMillis(),
     val pacienteId: String? = null,
     val isLoading: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+
+    val pagos: List<Pago> = emptyList(),
+    val pagosToDelete: List<Pago> = emptyList(),
+    val generatedId: String = UUID.randomUUID().toString()
 )
 
 @HiltViewModel
@@ -45,19 +49,21 @@ class ServiciosViewModel @Inject constructor(
 
     fun loadServicio(id: String) {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true)
+            _uiState.value = _uiState.value.copy(isLoading = true, generatedId = id)
             when (val result = repository.getServicioById(id)) {
                 is Resource.Success -> {
                     val s = result.data!!
+                    val loadedPagos = repository.getPagosByServicioExtra(id).first()
                     _uiState.value = ServiciosUiState(
                         id = s.id,
                         ot = s.ot,
                         descripcion = s.descripcion,
                         montoTotal = s.montoTotal.toString(),
-                        aCuenta = s.aCuenta.toString(),
                         estado = s.estado,
                         fecha = s.fecha,
-                        pacienteId = s.pacienteId
+                        pacienteId = s.pacienteId,
+                        pagos = loadedPagos,
+                        generatedId = id
                     )
                 }
                 is Resource.Error -> {
@@ -68,23 +74,58 @@ class ServiciosViewModel @Inject constructor(
         }
     }
 
+    fun addPago(pago: Pago) {
+        _uiState.update { it.copy(pagos = it.pagos + pago) }
+    }
+
+    fun updatePagoLocal(pago: Pago) {
+        _uiState.update { s ->
+            val updatedPagos = s.pagos.map { if (it.id == pago.id) pago else it }
+            s.copy(pagos = updatedPagos)
+        }
+    }
+
+    fun removePagoLocal(pago: Pago) {
+        _uiState.update { s ->
+            val updatedPagos = s.pagos.filter { it.id != pago.id }
+            val updatedToDelete = if (pago.id.isNotEmpty()) s.pagosToDelete + pago else s.pagosToDelete
+            s.copy(pagos = updatedPagos, pagosToDelete = updatedToDelete)
+        }
+    }
+
     fun saveServicio(onSuccess: () -> Unit) {
         val state = _uiState.value
         if (state.descripcion.isBlank() || state.montoTotal.isBlank()) return
 
+        val finalId = if (state.id.isNotBlank()) state.id else state.generatedId
+        val finalACuenta = state.pagos.sumOf { it.monto }
+
         val servicio = ServicioExtra(
-            id = state.id,
+            id = finalId,
             ot = state.ot,
             descripcion = state.descripcion,
             montoTotal = state.montoTotal.toDoubleOrNull() ?: 0.0,
-            aCuenta = state.aCuenta.toDoubleOrNull() ?: 0.0,
+            aCuenta = finalACuenta,
             estado = state.estado,
             fecha = state.fecha,
-            pacienteId = state.pacienteId
+            pacienteId = state.pacienteId,
+            metodoPago = "" // Not strictly necessary, as we use Pago list now
         )
 
         viewModelScope.launch {
             repository.insertServicio(servicio)
+            
+            // Guardar pagos vinculados a este servicio
+            state.pagos.forEach { pago ->
+                val pagoToSave = pago.copy(servicioExtraId = finalId)
+                repository.insertPago(pagoToSave)
+            }
+
+            // Eliminar pagos marcados
+            state.pagosToDelete.forEach { pago ->
+                repository.deletePago(pago)
+            }
+
             onSuccess()
         }
     }

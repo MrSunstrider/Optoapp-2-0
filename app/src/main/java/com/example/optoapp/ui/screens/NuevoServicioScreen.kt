@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -26,6 +27,11 @@ import com.example.optoapp.ui.components.OptoTextField
 import com.example.optoapp.util.DateUtils
 import java.text.SimpleDateFormat
 import java.util.*
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Add
+import com.example.optoapp.data.Pago
+import com.example.optoapp.ui.components.AbonoDialog
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -38,7 +44,6 @@ fun NuevoServicioScreen(navController: NavController, pacienteId: String? = null
     val filteredPacientes = if (pSearchQuery.isEmpty()) pacientes 
     else pacientes.filter { it.nombreCompleto.contains(pSearchQuery, ignoreCase = true) }
 
-    val saldo = (uiState.montoTotal.toDoubleOrNull() ?: 0.0) - (uiState.aCuenta.toDoubleOrNull() ?: 0.0)
 
     LaunchedEffect(servicioId) {
         if (servicioId != null && servicioId != "null") {
@@ -105,14 +110,80 @@ fun NuevoServicioScreen(navController: NavController, pacienteId: String? = null
             OptoTextField(
                 value = uiState.montoTotal, 
                 onValueChange = { viewModel.updateUiState { s -> s.copy(montoTotal = it) } }, 
-                label = "Monto Total"
+                label = "Monto Total",
+                keyboardType = KeyboardType.Decimal
             )
             
-            OptoTextField(
-                value = uiState.aCuenta, 
-                onValueChange = { viewModel.updateUiState { s -> s.copy(aCuenta = it) } }, 
-                label = "A cuenta"
-            )
+            HorizontalDivider()
+            
+            Text("Historial de Abonos", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+            
+            val total = uiState.montoTotal.toDoubleOrNull() ?: 0.0
+            val pagado = uiState.pagos.sumOf { it.monto }
+            val saldo = total - pagado
+            
+            uiState.pagos.forEach { pago ->
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("${pago.metodoPago}: s/. ${String.format(Locale.getDefault(), "%.2f", pago.monto)}", fontWeight = FontWeight.Bold)
+                            if (pago.nota.isNotEmpty()) {
+                                Text(pago.nota, fontSize = 12.sp, color = Color.Gray)
+                            }
+                            Text(SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(pago.fecha)), fontSize = 11.sp, color = Color.Gray)
+                        }
+                        Row {
+                            var showEditDialog by remember { mutableStateOf(false) }
+                            if (showEditDialog) {
+                                AbonoDialog(
+                                    pago = pago,
+                                    onDismiss = { showEditDialog = false },
+                                    onConfirm = { updatedPago: Pago ->
+                                        viewModel.updatePagoLocal(updatedPago)
+                                        showEditDialog = false
+                                    }
+                                )
+                            }
+                            IconButton(onClick = { showEditDialog = true }) {
+                                Icon(Icons.Default.Edit, contentDescription = "Editar", tint = MaterialTheme.colorScheme.primary)
+                            }
+                            IconButton(onClick = { viewModel.removePagoLocal(pago) }) {
+                                Icon(Icons.Default.Delete, contentDescription = "Borrar", tint = MaterialTheme.colorScheme.error)
+                            }
+                        }
+                    }
+                }
+            }
+            
+            var showAddDialog by remember { mutableStateOf(false) }
+            if (showAddDialog) {
+                AbonoDialog(
+                    onDismiss = { showAddDialog = false },
+                    onConfirm = { nuevoPago: Pago ->
+                        viewModel.addPago(nuevoPago)
+                        showAddDialog = false
+                    }
+                )
+            }
+            
+            OutlinedButton(
+                onClick = { showAddDialog = true },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary)
+            ) {
+                Icon(Icons.Default.Add, contentDescription = null)
+                Spacer(Modifier.width(8.dp))
+                Text("Agregar Abono")
+            }
+            
+            HorizontalDivider()
 
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -173,4 +244,5 @@ fun NuevoServicioScreen(navController: NavController, pacienteId: String? = null
         }
     }
 }
+
 

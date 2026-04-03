@@ -68,6 +68,16 @@ fun MainDrawerScreen(parentNavController: NavController) {
                     modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                 )
                 NavigationDrawerItem(
+                    label = { Text("Cierre de Caja") },
+                    selected = currentRoute == "cierre_caja",
+                    onClick = {
+                        scope.launch { drawerState.close() }
+                        navController.navigate("cierre_caja")
+                    },
+                    icon = { Icon(Icons.Default.AccountBalanceWallet, contentDescription = null) },
+                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                )
+                NavigationDrawerItem(
                     label = { Text("Reportes") },
                     selected = currentRoute == "reportes",
                     onClick = {
@@ -144,6 +154,7 @@ fun MainDrawerScreen(parentNavController: NavController) {
                 NuevoServicioScreen(navController, servicioId = backStackEntry.arguments?.getString("id"))
             }
             composable("reportes") { ReportesScreen(drawerState) }
+            composable("cierre_caja") { CierreCajaScreen(navController) }
             composable("configuracion") { ConfiguracionScreen(navController, drawerState) }
         }
     }
