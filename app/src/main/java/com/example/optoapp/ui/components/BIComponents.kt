@@ -45,6 +45,7 @@ private fun ChartBar(label: String, value: Int, ratio: Float, color: Color) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(text = value.toString(), fontWeight = FontWeight.Bold, fontSize = 12.sp)
         Spacer(modifier = Modifier.height(4.dp))
+        val onSurfaceColor = MaterialTheme.colorScheme.onSurface
         Box(
             modifier = Modifier
                 .width(40.dp)
@@ -53,14 +54,14 @@ private fun ChartBar(label: String, value: Int, ratio: Float, color: Color) {
                 .drawWithContent {
                     drawRect(color)
                     drawRect(
-                        brush = Brush.verticalGradient(listOf(Color.White.copy(0.3f), Color.Transparent)),
+                        brush = Brush.verticalGradient(listOf(onSurfaceColor.copy(0.1f), Color.Transparent)),
                         size = size
                     )
                     drawContent()
                 }
         )
         Spacer(modifier = Modifier.height(8.dp))
-        Text(text = label, fontSize = 10.sp, color = Color.Gray)
+        Text(text = label, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
@@ -73,11 +74,14 @@ fun DonutChart(
     val percentage = if (proyectado > 0) (cobrado / proyectado).toFloat() else 0f
     val animState = remember { Animatable(0f) }
     val primaryColor = MaterialTheme.colorScheme.primary
+    val tertiary = MaterialTheme.colorScheme.tertiary
+    val secondary = MaterialTheme.colorScheme.secondary
+    val outlineVariant = MaterialTheme.colorScheme.outlineVariant
     
     LaunchedEffect(percentage) {
         animState.animateTo(percentage, animationSpec = tween(1200, easing = FastOutSlowInEasing))
     }
-
+    
     Box(contentAlignment = Alignment.Center, modifier = modifier) {
         Canvas(modifier = Modifier.size(150.dp)) {
             val strokeWidth = 20.dp.toPx()
@@ -85,14 +89,14 @@ fun DonutChart(
             
             // Background track
             drawCircle(
-                color = Color.LightGray.copy(alpha = 0.2f),
+                color = outlineVariant.copy(alpha = 0.2f),
                 radius = innerRadius,
                 style = Stroke(width = strokeWidth)
             )
             
             // Progress
             drawArc(
-                color = if (animState.value >= 0.9f) Color(0xFF4CAF50) else Color(0xFFFF9800),
+                color = if (percentage >= 0.9f) tertiary else secondary,
                 startAngle = -90f,
                 sweepAngle = 360f * animState.value,
                 useCenter = false,
@@ -106,7 +110,7 @@ fun DonutChart(
                 fontWeight = FontWeight.ExtraBold,
                 color = primaryColor
             )
-            Text("Cobrado", fontSize = 10.sp, color = Color.Gray)
+            Text("Cobrado", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }

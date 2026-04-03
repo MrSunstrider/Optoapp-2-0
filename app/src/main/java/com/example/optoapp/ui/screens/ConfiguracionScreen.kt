@@ -136,7 +136,7 @@ fun ConfiguracionScreen(@Suppress("UNUSED_PARAMETER") navController: NavControll
                             Text(
                                 "Programar notificaciones a las 12:00 pm para citas agendadas.",
                                 fontSize = 12.sp,
-                                color = Color.Gray
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                         Switch(
@@ -166,15 +166,15 @@ fun ConfiguracionScreen(@Suppress("UNUSED_PARAMETER") navController: NavControll
                     HorizontalDivider()
                     
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Warning, contentDescription = null, tint = Color.Red)
+                        Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("ADVERTENCIA: Restaurar un respaldo reemplazará todos los datos actuales.", fontSize = 12.sp, color = Color.Red)
+                        Text("ADVERTENCIA: Restaurar un respaldo reemplazará todos los datos actuales.", fontSize = 12.sp, color = MaterialTheme.colorScheme.error)
                     }
                     
                     OutlinedButton(
                         onClick = { restoreBackupLauncher.launch("application/json") },
                         modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Red)
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
                     ) {
                         Text("Restaurar Respaldo")
                     }

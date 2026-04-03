@@ -56,7 +56,7 @@ fun PinScreen(navController: NavController, viewModel: AuthViewModel = hiltViewM
                     modifier = Modifier
                         .size(20.dp)
                         .background(
-                            if (filled) MaterialTheme.colorScheme.primary else Color.LightGray,
+                            if (filled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
                             shape = CircleShape
                         )
                 )
@@ -117,7 +117,11 @@ fun PinScreen(navController: NavController, viewModel: AuthViewModel = hiltViewM
                             containerColor = if (char == "OK") MaterialTheme.colorScheme.tertiary 
                                             else if (char == "C") MaterialTheme.colorScheme.error
                                             else MaterialTheme.colorScheme.surfaceVariant,
-                            contentColor = if (char == "OK" || char == "C") Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+                            contentColor = when (char) {
+                                "OK" -> MaterialTheme.colorScheme.onTertiary
+                                "C" -> MaterialTheme.colorScheme.onError
+                                else -> MaterialTheme.colorScheme.onSurfaceVariant
+                            }
                         )
                     ) {
                         Text(text = char, fontSize = 24.sp, fontWeight = FontWeight.Bold)

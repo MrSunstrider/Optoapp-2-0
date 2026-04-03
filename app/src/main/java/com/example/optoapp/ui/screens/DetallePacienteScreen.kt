@@ -124,9 +124,9 @@ fun DetallePacienteScreen(
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = Color.White,
-                    navigationIconContentColor = Color.White,
-                    actionIconContentColor = Color.White
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary,
+                    actionIconContentColor = MaterialTheme.colorScheme.onPrimary
                 )
             )
         }
@@ -163,7 +163,7 @@ fun DetallePacienteScreen(
                         Column {
                             Text(text = p.nombreCompleto, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.primary)
                             Text(text = "Tel: ${p.telefono}", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Text(text = "ID: ${p.id.take(8)}", fontSize = 11.sp, color = Color.Gray)
+                            Text(text = "ID: ${p.id.take(8)}", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 }
@@ -211,7 +211,7 @@ fun DetallePacienteScreen(
                             }
                         },
                         containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = Color.White,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
                         modifier = Modifier
                             .align(Alignment.BottomEnd)
                             .padding(24.dp)
@@ -245,8 +245,8 @@ fun EvaluacionesList(
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    border = BorderStroke(1.dp, Color(0xFFEEEEEE)),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                     elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
@@ -265,7 +265,7 @@ fun EvaluacionesList(
                                 }
                                 var showDeleteDialog by remember { mutableStateOf(false) }
                                 IconButton(onClick = { showDeleteDialog = true }) { 
-                                    Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = Color.Red) 
+                                    Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = MaterialTheme.colorScheme.error) 
                                 }
                                 
                                 if (showDeleteDialog) {
@@ -282,7 +282,7 @@ fun EvaluacionesList(
                                                         showDeleteDialog = false
                                                     }
                                                 },
-                                                colors = ButtonDefaults.textButtonColors(contentColor = Color.Red)
+                                                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
                                             ) {
                                                 Text("Eliminar")
                                             }
@@ -318,12 +318,12 @@ fun EvaluacionesList(
                         if (recetaStr.isNotBlank()) {
                             Text(text = "Receta $recetaStr", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
                             if (diagStr.isNotBlank()) {
-                                Text(text = "Diag: $diagStr", fontSize = 12.sp, color = Color.Gray)
+                                Text(text = "Diag: $diagStr", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         } else if (diagStr.isNotBlank()) {
                             Text("Diagnóstico: $diagStr", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
                         } else {
-                            Text("Sin receta ni diagnóstico", fontSize = 14.sp, color = Color.Gray)
+                            Text("Sin receta ni diagnóstico", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 }
@@ -501,7 +501,7 @@ fun InfoSection(title: String, content: @Composable () -> Unit) {
         Text(text = title, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(4.dp))
         content()
-        HorizontalDivider(modifier = Modifier.padding(top = 8.dp), thickness = 0.5.dp, color = Color.LightGray)
+        HorizontalDivider(modifier = Modifier.padding(top = 8.dp), thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
     }
 }
 
@@ -519,8 +519,8 @@ fun DispensacionesList(dispensaciones: List<DispensacionOptica>, paciente: Pacie
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    border = BorderStroke(1.dp, Color(0xFFEEEEEE)),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                     onClick = { onEdit(disp.id) }
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
@@ -531,10 +531,16 @@ fun DispensacionesList(dispensaciones: List<DispensacionOptica>, paciente: Pacie
                                     Icon(Icons.Default.Visibility, contentDescription = "Ver Resumen", tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(20.dp))
                                 }
                                 Surface(
-                                    color = if (disp.estadoEntrega == "Entregado") MaterialTheme.colorScheme.tertiary else Color(0xFFFF9800),
+                                    color = if (disp.estadoEntrega == "Entregado") MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.secondary,
                                     shape = RoundedCornerShape(8.dp)
                                 ) {
-                                    Text(disp.estadoEntrega, color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
+                                    Text(
+                                        disp.estadoEntrega, 
+                                        color = if (disp.estadoEntrega == "Entregado") MaterialTheme.colorScheme.onTertiary else MaterialTheme.colorScheme.onSecondary, 
+                                        fontSize = 10.sp, 
+                                        fontWeight = FontWeight.Bold, 
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                    )
                                 }
                             }
                         }
@@ -542,7 +548,7 @@ fun DispensacionesList(dispensaciones: List<DispensacionOptica>, paciente: Pacie
                         Text(text = "${disp.tipoLente} - ${disp.materialLente}", fontSize = 14.sp, fontWeight = FontWeight.Medium)
                         Spacer(modifier = Modifier.height(4.dp))
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
-                            Text(text = "Saldo:", fontSize = 12.sp, color = Color.Gray)
+                            Text(text = "Saldo:", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             val formattedSaldo = String.format(Locale.getDefault(), "%.2f", saldo)
                             Text(text = "s/. $formattedSaldo", color = if (saldo > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary, fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
                         }
@@ -622,16 +628,16 @@ fun ResumenDispensacionDialog(disp: DispensacionOptica, paciente: Paciente, onDi
                         "Saldo Restante: s/. $formattedSaldo", 
                         fontSize = 15.sp, 
                         fontWeight = FontWeight.Bold,
-                        color = if (saldo > 0) Color.Red else MaterialTheme.colorScheme.tertiary
+                        color = if (saldo > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary
                     )
                 }
                 
                 InfoSection("Estado") {
                     Text(
-                        disp.estadoEntrega, 
+                        text = disp.estadoEntrega,
                         fontSize = 15.sp, 
                         fontWeight = FontWeight.Bold,
-                        color = if (disp.estadoEntrega == "Entregado") MaterialTheme.colorScheme.tertiary else Color(0xFFFF9800)
+                        color = if (disp.estadoEntrega == "Entregado") MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.secondary
                     )
                 }
             }
@@ -680,23 +686,29 @@ fun ServiciosExtraList(servicios: List<ServicioExtra>, onEdit: (String) -> Unit)
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    border = BorderStroke(1.dp, Color(0xFFEEEEEE)),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                     onClick = { onEdit(serv.id) }
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                             Text(text = date, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                             Surface(
-                                color = if (serv.estado == "Entregado") MaterialTheme.colorScheme.tertiary else Color(0xFFFF9800),
+                                color = if (serv.estado == "Entregado") MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.secondary,
                                 shape = RoundedCornerShape(8.dp)
                             ) {
-                                Text(serv.estado, color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
+                                Text(
+                                    serv.estado, 
+                                    color = if (serv.estado == "Entregado") MaterialTheme.colorScheme.onTertiary else MaterialTheme.colorScheme.onSecondary, 
+                                    fontSize = 10.sp, 
+                                    fontWeight = FontWeight.Bold, 
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                )
                             }
                         }
                         Text(serv.descripcion, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text(text = "Saldo:", fontSize = 12.sp, color = Color.Gray)
+                            Text(text = "Saldo:", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             val formattedSaldo = String.format(Locale.getDefault(), "%.2f", saldo)
                             Text("s/. $formattedSaldo", color = if (saldo > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary, fontWeight = FontWeight.Bold)
                         }
@@ -711,8 +723,8 @@ fun ServiciosExtraList(servicios: List<ServicioExtra>, onEdit: (String) -> Unit)
 fun EmptyListMessage(text: String) {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(Icons.Default.Inbox, contentDescription = null, modifier = Modifier.size(48.dp), tint = Color.LightGray)
-            Text(text, color = Color.Gray, fontSize = 14.sp)
+            Icon(Icons.Default.Inbox, contentDescription = null, modifier = Modifier.size(48.dp), tint = MaterialTheme.colorScheme.outlineVariant)
+            Text(text, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
         }
     }
 }

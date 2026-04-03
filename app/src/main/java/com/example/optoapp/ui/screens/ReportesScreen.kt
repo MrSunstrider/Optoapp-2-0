@@ -96,7 +96,7 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                 ReportCard(
                     title = "Por Cobrar",
                     value = "s/. ${String.format("%.2f", porCobrar)}",
-                    color = Color.Red,
+                    color = MaterialTheme.colorScheme.error,
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -114,17 +114,21 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(dispensaciones) { disp ->
-                    val date = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(disp.fecha))
-                    Card(modifier = Modifier.fillMaxWidth()) {
-                        Row(modifier = Modifier.padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(date, fontWeight = FontWeight.Bold)
-                                Text("Pago: ${disp.metodoPago}", fontSize = 12.sp)
-                            }
-                            Column(horizontalAlignment = Alignment.End) {
-                                Text("s/. ${disp.montoTotal}", fontWeight = FontWeight.Bold)
-                                Text("Saldo: s/. ${String.format("%.2f", disp.montoTotal - disp.montoPagado)}", fontSize = 12.sp, color = if (disp.montoTotal - disp.montoPagado > 0) Color.Red else Color.Black)
+                if (dispensaciones.isEmpty()) {
+                    item { Text("No hay transacciones registradas este día", color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                } else {
+                    items(dispensaciones) { disp ->
+                        val date = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(disp.fecha))
+                        Card(modifier = Modifier.fillMaxWidth()) {
+                            Row(modifier = Modifier.padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(date, fontWeight = FontWeight.Bold)
+                                    Text("Pago: ${disp.metodoPago}", fontSize = 12.sp)
+                                }
+                                Column(horizontalAlignment = Alignment.End) {
+                                    Text("s/. ${disp.montoTotal}", fontWeight = FontWeight.Bold)
+                                    Text("Saldo: s/. ${String.format("%.2f", disp.montoTotal - disp.montoPagado)}", fontSize = 12.sp, color = if (disp.montoTotal - disp.montoPagado > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface)
+                                }
                             }
                         }
                     }
@@ -138,7 +142,7 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
 private fun ReportCard(title: String, value: String, color: Color, modifier: Modifier = Modifier) {
     Card(modifier = modifier) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(title, fontSize = 12.sp, color = Color.Gray)
+            Text(title, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text(value, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = color)
         }
     }

@@ -40,17 +40,16 @@ fun SuggestionCard(k1Od: String, k2Od: String, k1Oi: String, k2Oi: String) {
 
 @Composable
 fun SuggestionText(diff: Float) {
-    val darkTheme = isSystemInDarkTheme()
     val (text, color) = when {
         diff >= 4.00f -> "Sugerencia: Lente RGP (rígido gas permeable) – Astigmatismo corneal alto." to MaterialTheme.colorScheme.error
-        diff >= 2.50f -> "Sugerencia: Valorar RGP o lente tórico blando – Astigmatismo corneal moderado." to (if (darkTheme) Color(0xFFFFB74D) else Color(0xFFFF9800))
-        else -> "Sugerencia: Lente blando (esférico o tórico según refracción) – Astigmatismo corneal bajo." to (if (darkTheme) Color(0xFF81C784) else Color(0xFF4CAF50))
+        diff >= 2.50f -> "Sugerencia: Valorar RGP o lente tórico blando – Astigmatismo corneal moderado." to MaterialTheme.colorScheme.secondary
+        else -> "Sugerencia: Lente blando (esférico o tórico según refracción) – Astigmatismo corneal bajo." to MaterialTheme.colorScheme.tertiary
     }
     
     Text(text = text, color = color, fontWeight = FontWeight.Medium, fontSize = 13.sp)
     Text(
         text = "Considerar también comodidad del paciente, estilo de vida y regularidad corneal.",
-        color = if (darkTheme) Color.LightGray else Color.Gray,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
         fontSize = 11.sp,
         lineHeight = 14.sp
     )
@@ -90,7 +89,7 @@ fun CalculationCard(
                 Text("Aplicar recorte de cilindro", fontSize = 14.sp)
             }
             if (recorteChecked && !canRecortar && cyl != 0f) {
-                Text("El cilindro supera el límite para recorte, se requiere lente tórica.", color = Color.Red, fontSize = 12.sp)
+                Text("El cilindro supera el límite para recorte, se requiere lente tórica.", color = MaterialTheme.colorScheme.error, fontSize = 12.sp)
             }
             
             Text("Recomendación LC: Esf ${formatDiopter(resultSph)}${if (resultCyl != 0f) " / Cil ${formatDiopter(resultCyl)}" else ""}", 

@@ -45,8 +45,8 @@ fun BIScreen(navController: NavController, viewModel: BIViewModel = hiltViewMode
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = Color.White,
-                    navigationIconContentColor = Color.White
+                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer
                 )
             )
         }
@@ -91,7 +91,7 @@ fun BIScreen(navController: NavController, viewModel: BIViewModel = hiltViewMode
                 title = "Recaudación vs. Proyección",
                 current = "s/. ${String.format(Locale.getDefault(), "%.0f", uiState.recaudacionCobrada)}",
                 previous = "Meta: s/. ${String.format(Locale.getDefault(), "%.0f", uiState.recaudacionProyectada)}",
-                color = Color(0xFFFF9800)
+                color = MaterialTheme.colorScheme.primary,
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -100,14 +100,14 @@ fun BIScreen(navController: NavController, viewModel: BIViewModel = hiltViewMode
                     DonutChart(uiState.recaudacionProyectada, uiState.recaudacionCobrada, Modifier.size(120.dp))
                     Spacer(modifier = Modifier.width(16.dp))
                     Column {
-                        LegendItem("Cobrado", Color(0xFFFF9800))
-                        LegendItem("Pendiente", Color.LightGray.copy(0.3f))
+                        LegendItem("Cobrado", MaterialTheme.colorScheme.secondary)
+                        LegendItem("Pendiente", MaterialTheme.colorScheme.outlineVariant.copy(0.3f))
                         Spacer(modifier = Modifier.height(8.dp))
                         val brecha = uiState.recaudacionProyectada - uiState.recaudacionCobrada
                         if (brecha > 0) {
-                            Text("Faltan s/. ${String.format(Locale.getDefault(), "%.2f", brecha)}", fontSize = 12.sp, color = Color.Red, fontWeight = FontWeight.Bold)
+                            Text("Faltan s/. ${String.format(Locale.getDefault(), "%.2f", brecha)}", fontSize = 12.sp, color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
                         } else if (uiState.recaudacionProyectada > 0) {
-                            Text("¡Meta cumplida!", fontSize = 12.sp, color = Color(0xFF4CAF50), fontWeight = FontWeight.Bold)
+                            Text("¡Meta cumplida!", fontSize = 12.sp, color = MaterialTheme.colorScheme.tertiary, fontWeight = FontWeight.Bold)
                         }
                     }
                 }
@@ -117,13 +117,13 @@ fun BIScreen(navController: NavController, viewModel: BIViewModel = hiltViewMode
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White)
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
             ) {
                 Column(modifier = Modifier.padding(20.dp)) {
                     Text("Top 5 Productos", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, fontSize = 18.sp)
                     Spacer(modifier = Modifier.height(16.dp))
                     if (uiState.topProductos.isEmpty()) {
-                        Text("Sin datos en este periodo", color = Color.Gray, modifier = Modifier.padding(vertical = 16.dp))
+                        Text("Sin datos en este periodo", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(vertical = 16.dp))
                     } else {
                         HorizontalRankingChart(uiState.topProductos)
                     }
@@ -147,14 +147,14 @@ fun KPICard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Column {
-                    Text(title, color = Color.Gray, fontSize = 13.sp, fontWeight = FontWeight.Medium)
-                    Text(current, fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, color = color)
+                    Text(title, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                    Text(current, fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.onSurface)
                 }
                 icon?.let {
                     Surface(
@@ -179,14 +179,14 @@ fun KPICard(
                 Icon(
                     if (isGrowth) Icons.AutoMirrored.Filled.TrendingUp else Icons.AutoMirrored.Filled.TrendingDown,
                     contentDescription = null,
-                    tint = if (isGrowth) Color(0xFF4CAF50) else Color.Red,
+                    tint = if (isGrowth) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.error,
                     modifier = Modifier.size(14.dp)
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
                     text = if (title.contains("Recaudación")) previous else "Anterior: $previous",
                     fontSize = 11.sp,
-                    color = Color.Gray
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             
@@ -200,6 +200,6 @@ fun LegendItem(label: String, color: Color) {
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 2.dp)) {
         Box(modifier = Modifier.size(8.dp).background(color, CircleShape))
         Spacer(modifier = Modifier.width(8.dp))
-        Text(label, fontSize = 11.sp, color = Color.Gray)
+        Text(label, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }

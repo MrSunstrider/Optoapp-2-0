@@ -207,9 +207,9 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text("${pago.metodoPago}: s/. ${String.format(Locale.getDefault(), "%.2f", pago.monto)}", fontWeight = FontWeight.Bold)
                                     if (pago.nota.isNotEmpty()) {
-                                        Text(pago.nota, fontSize = 12.sp, color = Color.Gray)
+                                        Text(pago.nota, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     }
-                                    Text(SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(pago.fecha)), fontSize = 11.sp, color = Color.Gray)
+                                    Text(SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(pago.fecha)), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                                 Row {
                                     var showEditDialog by remember { mutableStateOf(false) }
@@ -261,12 +261,12 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
                         modifier = Modifier.fillMaxWidth(),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text("SALDO RESTANTE", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.Gray)
+                        Text("SALDO RESTANTE", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         
                         val formattedSaldo = String.format(Locale.getDefault(), "%.2f", saldo)
                         Text(
                             text = "s/. " + formattedSaldo,
-                            color = if (saldo > 0) Color.Red else Color(0xFF4CAF50), 
+                            color = if (saldo > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary, 
                             fontSize = 32.sp, 
                             fontWeight = FontWeight.ExtraBold
                         )

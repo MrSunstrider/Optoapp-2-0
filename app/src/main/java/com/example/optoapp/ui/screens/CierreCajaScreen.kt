@@ -85,9 +85,9 @@ fun CierreCajaScreen(navController: NavController, viewModel: CierreCajaViewMode
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                ResumenCard("Efectivo", totales["Efectivo"] ?: 0.0, Modifier.weight(1f), Color(0xFF4CAF50))
-                ResumenCard("Móvil/Trans", (totales["Transferencia"] ?: 0.0) + (totales["Móvil"] ?: 0.0), Modifier.weight(1f), Color(0xFF2196F3))
-                ResumenCard("Tarjeta", totales["Tarjeta"] ?: 0.0, Modifier.weight(1f), Color(0xFF9C27B0))
+                ResumenCard("Efectivo", totales["Efectivo"] ?: 0.0, Modifier.weight(1f), MaterialTheme.colorScheme.tertiary)
+                ResumenCard("Móvil/Trans", (totales["Transferencia"] ?: 0.0) + (totales["Móvil"] ?: 0.0), Modifier.weight(1f), MaterialTheme.colorScheme.secondary)
+                ResumenCard("Tarjeta", totales["Tarjeta"] ?: 0.0, Modifier.weight(1f), MaterialTheme.colorScheme.primary)
             }
             
             Spacer(modifier = Modifier.height(16.dp))
@@ -115,7 +115,7 @@ fun CierreCajaScreen(navController: NavController, viewModel: CierreCajaViewMode
             
             if (uiState.pagos.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("No hay transacciones registradas este día", color = Color.Gray)
+                    Text("No hay transacciones registradas este día", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             } else {
                 LazyColumn(
@@ -167,14 +167,14 @@ fun TransactionItem(pago: com.example.optoapp.data.Pago) {
                 )
                 Text(pago.metodoPago, fontWeight = FontWeight.Bold)
                 if (pago.nota.isNotEmpty()) {
-                    Text(pago.nota, fontSize = 12.sp, color = Color.Gray)
+                    Text(pago.nota, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
             Text(
                 "s/. ${String.format(Locale.getDefault(), "%.2f", pago.monto)}",
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF4CAF50)
+                color = MaterialTheme.colorScheme.tertiary
             )
         }
     }

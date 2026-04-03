@@ -130,7 +130,7 @@ fun PacienteRow(paciente: Paciente, onClick: () -> Unit) {
             Text(
                 text = "ID: ${paciente.id.take(8)}",
                 fontSize = 12.sp,
-                color = Color.Gray
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
         Spacer(modifier = Modifier.height(4.dp))
@@ -148,7 +148,7 @@ fun PacienteRow(paciente: Paciente, onClick: () -> Unit) {
             Text(
                 text = "Creado: ${dateFormat.format(Date(paciente.fechaCreacion))}",
                 fontSize = 12.sp,
-                color = Color.Gray
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(modifier = Modifier.width(8.dp))
             paciente.ultimasEtiquetas.take(2).forEach { etiqueta ->

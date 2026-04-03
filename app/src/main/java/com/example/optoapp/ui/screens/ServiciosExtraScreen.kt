@@ -79,13 +79,13 @@ fun ServiciosExtraScreen(navController: NavController, drawerState: DrawerState,
                     modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                items(filteredServicios) { servicio ->
-                    ServicioRow(servicio, 
-                        onEdit = { navController.navigate("editar_servicio/${servicio.id}") },
-                        onDelete = { viewModel.deleteServicio(servicio) }
-                    )
-                    HorizontalDivider()
-                }
+                    items(filteredServicios) { servicio ->
+                        ServicioRow(servicio, 
+                            onEdit = { navController.navigate("editar_servicio/${servicio.id}") },
+                            onDelete = { viewModel.deleteServicio(servicio) }
+                        )
+                        HorizontalDivider()
+                    }
                 }
             }
         }
@@ -109,7 +109,7 @@ fun ServicioRow(servicio: ServicioExtra, onEdit: () -> Unit, onDelete: () -> Uni
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 if (servicio.ot.isNotBlank()) {
-                    Text(text = "OT: ${servicio.ot}", fontSize = 12.sp, color = Color.Gray)
+                    Text(text = "OT: ${servicio.ot}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Text(
                     text = servicio.descripcion,
@@ -123,7 +123,7 @@ fun ServicioRow(servicio: ServicioExtra, onEdit: () -> Unit, onDelete: () -> Uni
                     Icon(Icons.Default.Edit, contentDescription = "Editar", tint = MaterialTheme.colorScheme.primary)
                 }
                 IconButton(onClick = onDelete) {
-                    Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = Color.Red)
+                    Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = MaterialTheme.colorScheme.error)
                 }
             }
         }
@@ -137,14 +137,14 @@ fun ServicioRow(servicio: ServicioExtra, onEdit: () -> Unit, onDelete: () -> Uni
                 Text(text = "Saldo: s/. ${String.format(Locale.getDefault(), "%.2f", saldo)}", 
                     fontSize = 14.sp, 
                     fontWeight = FontWeight.Bold,
-                    color = if (saldo > 0) Color.Red else Color(0xFF4CAF50)
+                    color = if (saldo > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary,
                 )
             }
             Column(horizontalAlignment = Alignment.End) {
-                Badge(containerColor = if (servicio.estado == "Entregado") Color(0xFF4CAF50) else Color(0xFFFF9800)) {
-                    Text(servicio.estado, color = Color.White)
+                Badge(containerColor = if (servicio.estado == "Entregado") MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.secondary) {
+                    Text(servicio.estado, color = if (servicio.estado == "Entregado") MaterialTheme.colorScheme.onTertiary else MaterialTheme.colorScheme.onSecondary)
                 }
-                Text(text = dateFormat.format(Date(servicio.fecha)), fontSize = 12.sp, color = Color.Gray)
+                Text(text = dateFormat.format(Date(servicio.fecha)), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }
