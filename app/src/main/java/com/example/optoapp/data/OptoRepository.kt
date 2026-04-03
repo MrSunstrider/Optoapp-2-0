@@ -37,6 +37,10 @@ class OptoRepository(
     fun getEvaluacionesByPaciente(pacienteId: String): Flow<List<EvaluacionClinica>> = 
         evaluacionDao.getEvaluacionesByPaciente(pacienteId)
         
+    fun countEvaluacionesInRange(start: Long, end: Long): Flow<Int> = evaluacionDao.countEvaluacionesInRange(start, end)
+    
+    fun getDispensacionesByDateRange(start: Long, end: Long): Flow<List<DispensacionOptica>> = dispensacionDao.getDispensacionesByDateRange(start, end)
+        
     suspend fun getEvaluacionById(id: String): Resource<EvaluacionClinica> {
         return try {
             val evaluacion = evaluacionDao.getEvaluacionById(id)

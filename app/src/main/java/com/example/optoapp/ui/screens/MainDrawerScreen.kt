@@ -78,6 +78,16 @@ fun MainDrawerScreen(parentNavController: NavController) {
                     modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                 )
                 NavigationDrawerItem(
+                    label = { Text("Estadísticas (BI)") },
+                    selected = currentRoute == "estadisticas_bi",
+                    onClick = {
+                        scope.launch { drawerState.close() }
+                        navController.navigate("estadisticas_bi")
+                    },
+                    icon = { Icon(Icons.Default.BarChart, contentDescription = null) },
+                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                )
+                NavigationDrawerItem(
                     label = { Text("Reportes") },
                     selected = currentRoute == "reportes",
                     onClick = {
@@ -155,6 +165,7 @@ fun MainDrawerScreen(parentNavController: NavController) {
             }
             composable("reportes") { ReportesScreen(drawerState) }
             composable("cierre_caja") { CierreCajaScreen(navController) }
+            composable("estadisticas_bi") { BIScreen(navController) }
             composable("configuracion") { ConfiguracionScreen(navController, drawerState) }
         }
     }

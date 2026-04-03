@@ -62,6 +62,9 @@ interface EvaluacionDao {
     
     @Query("SELECT * FROM evaluaciones")
     suspend fun getAllEvaluaciones(): List<EvaluacionClinica>
+
+    @Query("SELECT COUNT(*) FROM evaluaciones WHERE fecha >= :start AND fecha <= :end")
+    fun countEvaluacionesInRange(start: Long, end: Long): Flow<Int>
 }
 
 @Dao
@@ -89,6 +92,9 @@ interface DispensacionDao {
     
     @Query("SELECT * FROM dispensaciones")
     suspend fun getAllDispensacionesList(): List<DispensacionOptica>
+
+    @Query("SELECT * FROM dispensaciones WHERE fecha >= :start AND fecha <= :end")
+    fun getDispensacionesByDateRange(start: Long, end: Long): Flow<List<DispensacionOptica>>
 }
 
 @Dao
