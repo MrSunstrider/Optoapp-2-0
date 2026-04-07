@@ -30,12 +30,12 @@ data class EvaluacionUiState(
     // Agudeza visual SIN corrección
     val avScOdLejos: String = "", val avScOiLejos: String = "",
     val avScOdCerca: String = "", val avScOiCerca: String = "",
-    val avScAo: String = "",
+    val avScAo: String = "", val avScAoCerca: String = "",
     
     // Agudeza visual CON corrección PX
     val avCcOdLejos: String = "", val avCcOiLejos: String = "",
     val avCcOdCerca: String = "", val avCcOiCerca: String = "",
-    val avCcAoPx: String = "",
+    val avCcAoPx: String = "", val avCcAoCerca: String = "",
     
     // Otros exámenes
     val phOd: String = "", val phOi: String = "",
@@ -43,6 +43,29 @@ data class EvaluacionUiState(
     val hirshberg: String = "",
     val duccionesOd: String = "", val duccionesOi: String = "",
     val versionesAo: String = "",
+    
+    // Visión binocular y Percepción
+    val estereopsisValor: String = "",
+    val estereopsisSegundos: String = "",
+    val lang: String = "",
+    val worth: String = "",
+    
+    // Percepción color
+    val ishihara: String = "",
+    val farnsworth: String = "",
+    
+    // Salud Ocular y Función Visual
+    val schirmerOd: String = "",
+    val schirmerOi: String = "",
+    val osdiPuntuacion: Int? = null,
+    val osdiClasificacion: String = "",
+    val sensibilidadContraste: String = "",
+    val sensibilidadFrecuencia: String = "",
+    
+    // Otras Pruebas
+    val amsler: String = "",
+    val campoVisual: String = "",
+    val campoVisualDescripcion: String = "",
     
     // Cover test
     val coverTest6m: String = "", val coverTest40cm: String = "", val coverTest10cm: String = "",
@@ -142,15 +165,23 @@ class EvaluacionViewModel @Inject constructor(
                             necesidadVisual = e.necesidadVisual,
                             avScOdLejos = e.avScOdLejos, avScOiLejos = e.avScOiLejos,
                             avScOdCerca = e.avScOdCerca, avScOiCerca = e.avScOiCerca,
-                            avScAo = e.avScAo,
+                            avScAo = e.avScAo, avScAoCerca = e.avScAoCerca,
                             avCcOdLejos = e.avCcOdLejos, avCcOiLejos = e.avCcOiLejos,
                             avCcOdCerca = e.avCcOdCerca, avCcOiCerca = e.avCcOiCerca,
-                            avCcAoPx = e.avCcAoPx,
+                            avCcAoPx = e.avCcAoPx, avCcAoCerca = e.avCcAoCerca,
                             phOd = e.phOd, phOi = e.phOi,
                             kappaOd = e.kappaOd, kappaOi = e.kappaOi,
                             hirshberg = e.hirshberg,
                             duccionesOd = e.duccionesOd, duccionesOi = e.duccionesOi,
                             versionesAo = e.versionesAo,
+                            estereopsisValor = e.estereopsisValor,
+                            estereopsisSegundos = e.estereopsisSegundos,
+                            lang = e.lang, worth = e.worth,
+                            ishihara = e.ishihara, farnsworth = e.farnsworth,
+                            schirmerOd = e.schirmerOd, schirmerOi = e.schirmerOi,
+                            osdiPuntuacion = e.osdiPuntuacion, osdiClasificacion = e.osdiClasificacion,
+                            sensibilidadContraste = e.sensibilidadContraste, sensibilidadFrecuencia = e.sensibilidadFrecuencia,
+                            amsler = e.amsler, campoVisual = e.campoVisual, campoVisualDescripcion = e.campoVisualDescripcion,
                             coverTest6m = e.coverTest6m, coverTest40cm = e.coverTest40cm, coverTest10cm = e.coverTest10cm,
                             ppcOr = e.ppcOr, ppcLuz = e.ppcLuz, ppcFrl = e.ppcFrl,
                             reflejoFotomotor = e.reflejoFotomotor, reflejoConsensual = e.reflejoConsensual, reflejoAcomodativo = e.reflejoAcomodativo,
@@ -223,14 +254,22 @@ class EvaluacionViewModel @Inject constructor(
                 necesidadVisual = s.necesidadVisual,
                 avScOdLejos = s.avScOdLejos, avScOiLejos = s.avScOiLejos,
                 avScOdCerca = s.avScOdCerca, avScOiCerca = s.avScOiCerca,
-                avScAo = s.avScAo,
+                avScAo = s.avScAo, avScAoCerca = s.avScAoCerca,
                 avCcOdLejos = s.avCcOdLejos, avCcOiLejos = s.avCcOiLejos,
                 avCcOdCerca = s.avCcOdCerca, avCcOiCerca = s.avCcOiCerca,
-                avCcAoPx = s.avCcAoPx,
+                avCcAoPx = s.avCcAoPx, avCcAoCerca = s.avCcAoCerca,
                 phOd = s.phOd, phOi = s.phOi, kappaOd = s.kappaOd, kappaOi = s.kappaOi,
                 hirshberg = s.hirshberg,
                 duccionesOd = s.duccionesOd, duccionesOi = s.duccionesOi,
                 versionesAo = s.versionesAo,
+                estereopsisValor = s.estereopsisValor,
+                estereopsisSegundos = s.estereopsisSegundos,
+                lang = s.lang, worth = s.worth,
+                ishihara = s.ishihara, farnsworth = s.farnsworth,
+                schirmerOd = s.schirmerOd, schirmerOi = s.schirmerOi,
+                osdiPuntuacion = s.osdiPuntuacion, osdiClasificacion = s.osdiClasificacion,
+                sensibilidadContraste = s.sensibilidadContraste, sensibilidadFrecuencia = s.sensibilidadFrecuencia,
+                amsler = s.amsler, campoVisual = s.campoVisual, campoVisualDescripcion = s.campoVisualDescripcion,
                 coverTest6m = s.coverTest6m, coverTest40cm = s.coverTest40cm, coverTest10cm = s.coverTest10cm,
                 ppcOr = s.ppcOr, ppcLuz = s.ppcLuz, ppcFrl = s.ppcFrl,
                 reflejoFotomotor = s.reflejoFotomotor, reflejoConsensual = s.reflejoConsensual, reflejoAcomodativo = s.reflejoAcomodativo,
@@ -267,7 +306,11 @@ class EvaluacionViewModel @Inject constructor(
                 lcMaterial = s.lcMaterial, lcFechaAdaptacion = s.lcFechaAdaptacion,
                 lcObservaciones = s.lcObservaciones
             )
-            repository.insertEvaluacion(ev)
+            if (evaluacionId != null && evaluacionId != "null") {
+                repository.updateEvaluacion(ev)
+            } else {
+                repository.insertEvaluacion(ev)
+            }
             val pResult = repository.getPacienteById(pacienteId)
             val pName = if (pResult is com.example.optoapp.data.Resource.Success) pResult.data?.nombreCompleto ?: "Paciente" else "Paciente"
             onComplete(ev.id, pName)

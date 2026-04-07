@@ -55,6 +55,8 @@ class OptoRepository(
     
     suspend fun insertEvaluacion(evaluacion: EvaluacionClinica) = evaluacionDao.insertEvaluacion(evaluacion)
     
+    suspend fun updateEvaluacion(evaluacion: EvaluacionClinica) = evaluacionDao.updateEvaluacion(evaluacion)
+    
     fun getDispensacionesByPaciente(pacienteId: String): Flow<List<DispensacionOptica>> = 
         dispensacionDao.getDispensacionesByPaciente(pacienteId)
         
@@ -75,6 +77,8 @@ class OptoRepository(
     }
         
     suspend fun insertDispensacion(dispensacion: DispensacionOptica) = dispensacionDao.insertDispensacion(dispensacion)
+    
+    suspend fun updateDispensacion(dispensacion: DispensacionOptica) = dispensacionDao.updateDispensacion(dispensacion)
     
     fun getPagosByDispensacion(dispensacionId: String): Flow<List<Pago>> = pagoDao.getPagosByDispensacion(dispensacionId)
     
@@ -104,6 +108,8 @@ class OptoRepository(
     }
     
     suspend fun insertServicio(servicio: ServicioExtra) = servicioExtraDao.insertServicio(servicio)
+    
+    suspend fun updateServicio(servicio: ServicioExtra) = servicioExtraDao.updateServicio(servicio)
     
     suspend fun deleteServicio(servicio: ServicioExtra) = servicioExtraDao.deleteServicio(servicio)
 

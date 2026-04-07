@@ -143,7 +143,11 @@ class DispensacionViewModel @Inject constructor(
                 fechaVencimientoGarantia = s.fechaVencimientoGarantia,
                 distanciaLente = if (s.tipoLente == "Monofocal") s.distanciaLente else ""
             )
-            repository.insertDispensacion(disp)
+            if (dispensacionId != null && dispensacionId != "null") {
+                repository.updateDispensacion(disp)
+            } else {
+                repository.insertDispensacion(disp)
+            }
 
             // Guardar pagos vinculados a esta dispensación
             s.pagos.forEach { pago ->

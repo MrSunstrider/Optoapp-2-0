@@ -54,6 +54,9 @@ interface EvaluacionDao {
     @Upsert
     suspend fun insertEvaluacion(evaluacion: EvaluacionClinica)
     
+    @Update
+    suspend fun updateEvaluacion(evaluacion: EvaluacionClinica)
+    
     @Delete
     suspend fun deleteEvaluacion(evaluacion: EvaluacionClinica)
     
@@ -86,6 +89,9 @@ interface DispensacionDao {
 
     @Upsert
     suspend fun insertDispensacion(dispensacion: DispensacionOptica)
+    
+    @Update
+    suspend fun updateDispensacion(dispensacion: DispensacionOptica)
     
     @Query("DELETE FROM dispensaciones")
     suspend fun deleteAll()
@@ -137,6 +143,9 @@ interface ServicioExtraDao {
 
     @Upsert
     suspend fun insertServicio(servicio: ServicioExtra)
+
+    @Update
+    suspend fun updateServicio(servicio: ServicioExtra)
 
     @Delete
     suspend fun deleteServicio(servicio: ServicioExtra)

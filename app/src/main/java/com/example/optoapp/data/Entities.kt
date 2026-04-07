@@ -52,12 +52,12 @@ data class EvaluacionClinica(
     // Agudeza visual SIN corrección
     val avScOdLejos: String = "", val avScOiLejos: String = "",
     val avScOdCerca: String = "", val avScOiCerca: String = "",
-    val avScAo: String = "",
+    val avScAo: String = "", val avScAoCerca: String = "",
     
     // Agudeza visual CON corrección PX
     val avCcOdLejos: String = "", val avCcOiLejos: String = "",
     val avCcOdCerca: String = "", val avCcOiCerca: String = "",
-    val avCcAoPx: String = "",
+    val avCcAoPx: String = "", val avCcAoCerca: String = "",
     
     // Otros exámenes
     val phOd: String = "", val phOi: String = "",
@@ -65,6 +65,29 @@ data class EvaluacionClinica(
     val hirshberg: String = "",
     val duccionesOd: String = "", val duccionesOi: String = "",
     val versionesAo: String = "", // Unificado Ambos Ojos
+    
+    // Visión binocular y Percepción
+    val estereopsisValor: String = "",
+    val estereopsisSegundos: String = "",
+    val lang: String = "",
+    val worth: String = "",
+    
+    // Percepción color
+    val ishihara: String = "",
+    val farnsworth: String = "",
+    
+    // Salud Ocular y Función Visual
+    val schirmerOd: String = "",
+    val schirmerOi: String = "",
+    val osdiPuntuacion: Int? = null,
+    val osdiClasificacion: String = "",
+    val sensibilidadContraste: String = "",
+    val sensibilidadFrecuencia: String = "",
+    
+    // Otras Pruebas
+    val amsler: String = "",
+    val campoVisual: String = "",
+    val campoVisualDescripcion: String = "",
     
     // Cover test
     val coverTest6m: String = "", val coverTest40cm: String = "", val coverTest10cm: String = "",

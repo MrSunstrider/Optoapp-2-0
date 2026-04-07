@@ -26,7 +26,8 @@ data class ServiciosUiState(
 
     val pagos: List<Pago> = emptyList(),
     val pagosToDelete: List<Pago> = emptyList(),
-    val generatedId: String = UUID.randomUUID().toString()
+    val generatedId: String = UUID.randomUUID().toString(),
+    val isEdit: Boolean = false
 )
 
 @HiltViewModel
@@ -63,7 +64,8 @@ class ServiciosViewModel @Inject constructor(
                         fecha = s.fecha,
                         pacienteId = s.pacienteId,
                         pagos = loadedPagos,
-                        generatedId = id
+                        generatedId = id,
+                        isEdit = true
                     )
                 }
                 is Resource.Error -> {
@@ -113,7 +115,11 @@ class ServiciosViewModel @Inject constructor(
         )
 
         viewModelScope.launch {
-            repository.insertServicio(servicio)
+            if (state.isEdit) {
+                repository.updateServicio(servicio)
+            } else {
+                repository.insertServicio(servicio)
+            }
             
             // Guardar pagos vinculados a este servicio
             state.pagos.forEach { pago ->
