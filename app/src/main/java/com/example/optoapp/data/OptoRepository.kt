@@ -2,6 +2,7 @@ package com.example.optoapp.data
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import com.google.gson.annotations.SerializedName
 
 class OptoRepository(
     private val pacienteDao: PacienteDao,
@@ -183,15 +184,13 @@ class OptoRepository(
         return this
     }
 
-    suspend fun restoreBackup(backupData: BackupData) {
-        // Ejecutamos en una transacción para evitar inconsistencias si algo falla a mitad de camino
-        // Aunque Room no permite @Transaction en suspend functions de Repositorios fácilmente sin acceso directo a DB,
-        // lo hacemos secuencialmente limpiando primero.
+    suspend fun restoreBackup(backupData: BackupData, currentOpticaId: String) {
+        // Ejecutamos en una transacción secuencial limpiando primero.
         clearAllData()
         
         backupData.pacientes?.forEach { 
             try { 
-                insertPaciente(it.sanitizeNulls()) 
+                insertPaciente(it.sanitizeNulls().copy(opticaId = currentOpticaId)) 
             } catch(e: Exception) { 
                 e.printStackTrace() 
             } 
@@ -199,7 +198,7 @@ class OptoRepository(
         
         backupData.evaluaciones?.forEach { 
             try { 
-                insertEvaluacion(it.sanitizeNulls()) 
+                insertEvaluacion(it.sanitizeNulls().copy(opticaId = currentOpticaId)) 
             } catch(e: Exception) { 
                 e.printStackTrace() 
             } 
@@ -207,7 +206,7 @@ class OptoRepository(
         
         backupData.dispensaciones?.forEach { 
             try { 
-                insertDispensacion(it.sanitizeNulls()) 
+                insertDispensacion(it.sanitizeNulls().copy(opticaId = currentOpticaId)) 
             } catch(e: Exception) { 
                 e.printStackTrace() 
             } 
@@ -215,7 +214,7 @@ class OptoRepository(
         
         backupData.pagos?.forEach { 
             try { 
-                insertPago(it.sanitizeNulls()) 
+                insertPago(it.sanitizeNulls().copy(opticaId = currentOpticaId)) 
             } catch(e: Exception) { 
                 e.printStackTrace() 
             } 
@@ -223,7 +222,7 @@ class OptoRepository(
         
         backupData.serviciosExtra?.forEach { 
             try { 
-                insertServicio(it.sanitizeNulls()) 
+                insertServicio(it.sanitizeNulls().copy(opticaId = currentOpticaId)) 
             } catch(e: Exception) { 
                 e.printStackTrace() 
             } 
@@ -237,7 +236,9 @@ data class BackupData(
     val appIdentifier: String = "OptoApp-2.0",
     val pacientes: List<Paciente>? = emptyList(),
     val evaluaciones: List<EvaluacionClinica>? = emptyList(),
+    @SerializedName("dispensaciones", alternate = ["ordenes", "ventas"])
     val dispensaciones: List<DispensacionOptica>? = emptyList(),
     val pagos: List<Pago>? = emptyList(),
+    @SerializedName("serviciosExtra", alternate = ["servicios", "otrosServicios"])
     val serviciosExtra: List<ServicioExtra>? = emptyList()
 )

@@ -5,13 +5,16 @@ import androidx.room.PrimaryKey
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.TypeConverters
+import com.google.gson.annotations.SerializedName
 
 @Entity(tableName = "pacientes")
 data class Paciente(
     @PrimaryKey val id: String,
+    @SerializedName("nombreCompleto", alternate = ["nombre_completo"])
     val nombreCompleto: String,
     val edad: Int,
     val telefono: String,
+    @SerializedName("fechaCreacion", alternate = ["fecha_creacion"])
     val fechaCreacion: Long,
     val dni: String? = null,
     val fechaNacimiento: String? = null,
@@ -23,6 +26,7 @@ data class Paciente(
     val acompanante: String? = null,
     val hobbies: String? = null,
     val ultimasEtiquetas: List<String> = emptyList(),
+    @SerializedName("opticaId", alternate = ["optica_id"])
     val opticaId: String = "mi_optica_base"
 )
 
@@ -167,8 +171,10 @@ data class EvaluacionClinica(
 )
 data class DispensacionOptica(
     @PrimaryKey val id: String,
+    @SerializedName("pacienteId", alternate = ["paciente_id"])
     val pacienteId: String,
     val fecha: Long,
+    @SerializedName("opticaId", alternate = ["optica_id"])
     val opticaId: String = "mi_optica_base",
     val tipoMontura: String = "",
     val materialMontura: String = "",
@@ -180,9 +186,13 @@ data class DispensacionOptica(
     val origenMontura: String = "",
     val tipoAro: String = "",
     val descripcionMontura: String = "",
+    @SerializedName("montoTotal", alternate = ["monto_total"])
     val montoTotal: Double = 0.0,
+    @SerializedName("metodoPago", alternate = ["metodo_pago"])
     val metodoPago: String = "",
+    @SerializedName("montoPagado", alternate = ["monto_pagado"])
     val montoPagado: Double = 0.0,
+    @SerializedName("estadoEntrega", alternate = ["estado_entrega"])
     val estadoEntrega: String = "Pendiente",
     val fechaVencimientoGarantia: String? = null,
     val distanciaLente: String = "",
@@ -209,13 +219,17 @@ data class DispensacionOptica(
 )
 data class Pago(
     @PrimaryKey val id: String,
+    @SerializedName("dispensacionId", alternate = ["dispensacion_id"])
     val dispensacionId: String? = null,
+    @SerializedName("servicioExtraId", alternate = ["servicio_extra_id"])
     val servicioExtraId: String? = null,
     val fecha: Long,
     val tipo: String,
     val monto: Double,
+    @SerializedName("metodoPago", alternate = ["metodo_pago"])
     val metodoPago: String = "",
     val nota: String = "",
+    @SerializedName("opticaId", alternate = ["optica_id"])
     val opticaId: String = "mi_optica_base"
 )
 
@@ -233,11 +247,16 @@ data class ServicioExtra(
     @PrimaryKey val id: String,
     val ot: String = "",
     val descripcion: String,
+    @SerializedName("montoTotal", alternate = ["monto_total"])
     val montoTotal: Double,
+    @SerializedName("aCuenta", alternate = ["a_cuenta"])
     val aCuenta: Double,
     val estado: String, // Pendiente, Entregado
     val fecha: Long,
+    @SerializedName("pacienteId", alternate = ["paciente_id"])
     val pacienteId: String? = null, // Opcional
+    @SerializedName("metodoPago", alternate = ["metodo_pago"])
     val metodoPago: String = "",
+    @SerializedName("opticaId", alternate = ["optica_id"])
     val opticaId: String = "mi_optica_base"
 )

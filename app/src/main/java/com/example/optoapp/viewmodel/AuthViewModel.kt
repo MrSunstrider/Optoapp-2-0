@@ -179,7 +179,8 @@ class AuthViewModel @Inject constructor(
     fun restoreBackup(json: String) = viewModelScope.launch {
         try {
             val data = com.google.gson.Gson().fromJson(json, BackupData::class.java)
-            repository.restoreBackup(data)
+            val currentOpticaId = sessionManager.opticaId.first()
+            repository.restoreBackup(data, currentOpticaId)
         } catch (e: Exception) { e.printStackTrace() }
     }
 }
