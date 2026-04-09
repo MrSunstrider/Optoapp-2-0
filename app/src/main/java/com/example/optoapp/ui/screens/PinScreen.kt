@@ -17,6 +17,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.optoapp.viewmodel.AuthViewModel
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 @Composable
@@ -94,6 +95,8 @@ fun PinScreen(navController: NavController, viewModel: AuthViewModel = hiltViewM
                                 "OK" -> {
                                     scope.launch {
                                         if (viewModel.validatePin()) {
+                                            // PIN correcto → Navegar directo a main
+                                            // (MainActivity garantiza que hay sesión activa si estamos aquí)
                                             navController.navigate("main") {
                                                 popUpTo("pin") { inclusive = true }
                                             }

@@ -46,7 +46,9 @@ data class DispensacionUiState(
 
 @HiltViewModel
 class DispensacionViewModel @Inject constructor(
-    private val repository: OptoRepository
+    private val repository: com.example.optoapp.data.OptoRepository,
+    private val sessionManager: com.example.optoapp.data.SessionManager,
+    private val syncFinanzasUseCase: com.example.optoapp.domain.SyncFinanzasUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DispensacionUiState())
@@ -118,6 +120,7 @@ class DispensacionViewModel @Inject constructor(
     fun saveDispensacion(pacienteId: String, dispensacionId: String?, onComplete: () -> Unit) {
         viewModelScope.launch {
             val s = _uiState.value
+            val currentOpticaId = sessionManager.opticaId.first()
             val finalId = dispensacionId ?: s.generatedId
             val finalMontoPagado = s.pagos.sumOf { it.monto }
 
@@ -125,6 +128,7 @@ class DispensacionViewModel @Inject constructor(
                 id = finalId,
                 pacienteId = pacienteId,
                 fecha = s.fecha,
+                opticaId = currentOpticaId,
                 tipoLente = s.tipoLente,
                 materialLente = s.materialLente,
                 tratamientos = s.tratamientos,
@@ -138,7 +142,7 @@ class DispensacionViewModel @Inject constructor(
                 tipoMontura = s.tipoMontura,
                 montoTotal = s.montoTotal.toDoubleOrNull() ?: 0.0,
                 montoPagado = finalMontoPagado,
-                metodoPago = "", // No longer used in entity for new records, but kept for compatibility
+                metodoPago = "",
                 estadoEntrega = s.estadoEntrega,
                 fechaVencimientoGarantia = s.fechaVencimientoGarantia,
                 distanciaLente = if (s.tipoLente == "Monofocal") s.distanciaLente else ""
@@ -151,7 +155,7 @@ class DispensacionViewModel @Inject constructor(
 
             // Guardar pagos vinculados a esta dispensación
             s.pagos.forEach { pago ->
-                val pagoToSave = pago.copy(dispensacionId = finalId)
+                val pagoToSave = pago.copy(dispensacionId = finalId, opticaId = currentOpticaId)
                 repository.insertPago(pagoToSave)
             }
 
@@ -160,6 +164,9 @@ class DispensacionViewModel @Inject constructor(
                 repository.deletePago(pago)
             }
 
+            // Silent Sync
+            syncFinanzasUseCase(currentOpticaId)
+            
             onComplete()
         }
     }

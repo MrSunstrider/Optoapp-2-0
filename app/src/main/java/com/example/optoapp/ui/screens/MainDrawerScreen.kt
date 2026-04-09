@@ -14,6 +14,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.hilt.navigation.compose.hiltViewModel
 import kotlinx.coroutines.launch
 
 @Composable
@@ -21,6 +22,10 @@ fun MainDrawerScreen(parentNavController: NavController) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     val navController = rememberNavController()
+    
+    // Obtenemos el ViewModel de sincronización a nivel de pantalla
+    val syncViewModel: com.example.optoapp.viewmodel.SyncViewModel = hiltViewModel()
+    val syncState by syncViewModel.syncState.collectAsState()
     
     val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
 
@@ -107,6 +112,42 @@ fun MainDrawerScreen(parentNavController: NavController) {
                     icon = { Icon(Icons.Default.Settings, contentDescription = null) },
                     modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                 )
+
+                // Paso 5.2: Botón de Sincronización Cloud
+                val context = androidx.compose.ui.platform.LocalContext.current
+
+                LaunchedEffect(syncState) {
+                    when (syncState) {
+                        is com.example.optoapp.viewmodel.SyncState.Success -> {
+                            android.widget.Toast.makeText(context, (syncState as com.example.optoapp.viewmodel.SyncState.Success).message, android.widget.Toast.LENGTH_SHORT).show()
+                        }
+                        is com.example.optoapp.viewmodel.SyncState.Error -> {
+                            android.widget.Toast.makeText(context, (syncState as com.example.optoapp.viewmodel.SyncState.Error).message, android.widget.Toast.LENGTH_LONG).show()
+                        }
+                        else -> {}
+                    }
+                }
+
+                NavigationDrawerItem(
+                    label = { 
+                        Text(if (syncState is com.example.optoapp.viewmodel.SyncState.Loading) "Sincronizando..." else "Sincronizar Cloud") 
+                    },
+                    selected = false,
+                    onClick = {
+                        if (syncState !is com.example.optoapp.viewmodel.SyncState.Loading) {
+                            syncViewModel.performFullSync()
+                        }
+                    },
+                    icon = { 
+                        if (syncState is com.example.optoapp.viewmodel.SyncState.Loading) {
+                            CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                        } else {
+                            Icon(Icons.Default.CloudSync, contentDescription = null)
+                        }
+                    },
+                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                )
+
                 Spacer(modifier = Modifier.weight(1f))
                 NavigationDrawerItem(
                     label = { Text("Cerrar Sesión") },

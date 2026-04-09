@@ -32,7 +32,9 @@ data class ServiciosUiState(
 
 @HiltViewModel
 class ServiciosViewModel @Inject constructor(
-    private val repository: OptoRepository
+    private val repository: com.example.optoapp.data.OptoRepository,
+    private val sessionManager: com.example.optoapp.data.SessionManager,
+    private val syncFinanzasUseCase: com.example.optoapp.domain.SyncFinanzasUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ServiciosUiState())
@@ -96,25 +98,27 @@ class ServiciosViewModel @Inject constructor(
     }
 
     fun saveServicio(onSuccess: () -> Unit) {
-        val state = _uiState.value
-        if (state.descripcion.isBlank() || state.montoTotal.isBlank()) return
-
-        val finalId = if (state.id.isNotBlank()) state.id else state.generatedId
-        val finalACuenta = state.pagos.sumOf { it.monto }
-
-        val servicio = ServicioExtra(
-            id = finalId,
-            ot = state.ot,
-            descripcion = state.descripcion,
-            montoTotal = state.montoTotal.toDoubleOrNull() ?: 0.0,
-            aCuenta = finalACuenta,
-            estado = state.estado,
-            fecha = state.fecha,
-            pacienteId = state.pacienteId,
-            metodoPago = "" // Not strictly necessary, as we use Pago list now
-        )
-
         viewModelScope.launch {
+            val state = _uiState.value
+            if (state.descripcion.isBlank() || state.montoTotal.isBlank()) return@launch
+
+            val currentOpticaId = sessionManager.opticaId.first()
+            val finalId = if (state.id.isNotBlank()) state.id else state.generatedId
+            val finalACuenta = state.pagos.sumOf { it.monto }
+
+            val servicio = ServicioExtra(
+                id = finalId,
+                ot = state.ot,
+                descripcion = state.descripcion,
+                montoTotal = state.montoTotal.toDoubleOrNull() ?: 0.0,
+                aCuenta = finalACuenta,
+                estado = state.estado,
+                fecha = state.fecha,
+                pacienteId = state.pacienteId,
+                metodoPago = "",
+                opticaId = currentOpticaId
+            )
+
             if (state.isEdit) {
                 repository.updateServicio(servicio)
             } else {
@@ -123,7 +127,7 @@ class ServiciosViewModel @Inject constructor(
             
             // Guardar pagos vinculados a este servicio
             state.pagos.forEach { pago ->
-                val pagoToSave = pago.copy(servicioExtraId = finalId)
+                val pagoToSave = pago.copy(servicioExtraId = finalId, opticaId = currentOpticaId)
                 repository.insertPago(pagoToSave)
             }
 
@@ -131,6 +135,9 @@ class ServiciosViewModel @Inject constructor(
             state.pagosToDelete.forEach { pago ->
                 repository.deletePago(pago)
             }
+
+            // Silent Sync
+            syncFinanzasUseCase(currentOpticaId)
 
             onSuccess()
         }

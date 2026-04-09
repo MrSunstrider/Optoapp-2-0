@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.util.Locale
 import java.util.UUID
@@ -136,7 +137,9 @@ data class EvaluacionUiState(
 
 @HiltViewModel
 class EvaluacionViewModel @Inject constructor(
-    private val repository: OptoRepository
+    private val repository: com.example.optoapp.data.OptoRepository,
+    private val sessionManager: com.example.optoapp.data.SessionManager,
+    private val syncHistorialUseCase: com.example.optoapp.domain.SyncHistorialUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(EvaluacionUiState())
@@ -239,11 +242,15 @@ class EvaluacionViewModel @Inject constructor(
     fun saveEvaluacion(pacienteId: String, evaluacionId: String?, onComplete: (String, String) -> Unit) {
         viewModelScope.launch {
             val s = _uiState.value
+            val currentOpticaId = sessionManager.opticaId.first()
+            
             val ev = EvaluacionClinica(
                 id = evaluacionId ?: UUID.randomUUID().toString(),
                 pacienteId = pacienteId,
                 fecha = s.fecha,
+                opticaId = currentOpticaId,
                 motivoConsulta = s.motivoConsulta,
+                // ... (el resto de campos se mantienen igual por el constructor de datos)
                 sintomas = s.sintomas,
                 antecedentesPersonalesOculares = s.antecedentesPersonalesOculares,
                 antecedentesPersonalesSistemicos = s.antecedentesPersonalesSistemicos,
@@ -311,6 +318,8 @@ class EvaluacionViewModel @Inject constructor(
             } else {
                 repository.insertEvaluacion(ev)
             }
+            // Silent Sync
+            syncHistorialUseCase(currentOpticaId)
             val pResult = repository.getPacienteById(pacienteId)
             val pName = if (pResult is com.example.optoapp.data.Resource.Success) pResult.data?.nombreCompleto ?: "Paciente" else "Paciente"
             onComplete(ev.id, pName)

@@ -39,6 +39,8 @@ fun ConfiguracionScreen(@Suppress("UNUSED_PARAMETER") navController: NavControll
     var showDialog by remember { mutableStateOf(false) }
     var dialogMsg by remember { mutableStateOf("") }
     
+    val isPinRequired by viewModel.isPinRequired.collectAsState(initial = true)
+    
     val sharedPreferences = context.getSharedPreferences("optoapp_prefs", Context.MODE_PRIVATE)
     var confirmReminders by remember { mutableStateOf(sharedPreferences.getBoolean("pref_enable_reminders", true)) }
 
@@ -97,6 +99,29 @@ fun ConfiguracionScreen(@Suppress("UNUSED_PARAMETER") navController: NavControll
             Card {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text("Seguridad y Acceso", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                    
+                    // Nuevo Switch para PIN Opcional
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Requerir PIN al inicio", fontSize = 16.sp)
+                            Text(
+                                "Solicita el PIN de seguridad cada vez que abres la app.",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Switch(
+                            checked = isPinRequired,
+                            onCheckedChange = { viewModel.togglePinRequired(it) }
+                        )
+                    }
+
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
                     OutlinedTextField(value = pinActual, onValueChange = { pinActual = it }, label = { Text("PIN Actual") }, modifier = Modifier.fillMaxWidth(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
                     OutlinedTextField(value = nuevoPin, onValueChange = { nuevoPin = it }, label = { Text("Nuevo PIN") }, modifier = Modifier.fillMaxWidth(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
                     OutlinedTextField(value = confirmPin, onValueChange = { confirmPin = it }, label = { Text("Confirmar Nuevo PIN") }, modifier = Modifier.fillMaxWidth(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))

@@ -12,7 +12,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class PacienteViewModel @Inject constructor(
-    private val repository: OptoRepository
+    private val repository: com.example.optoapp.data.OptoRepository,
+    private val syncPacientesUseCase: com.example.optoapp.domain.SyncPacientesUseCase
 ) : ViewModel() {
 
     private val _searchQuery = MutableStateFlow("")
@@ -48,7 +49,11 @@ class PacienteViewModel @Inject constructor(
     fun onSearchQueryChange(query: String) { _searchQuery.value = query }
     fun setFilter(filter: String?) { _activeFilter.value = if (_activeFilter.value == filter) null else filter }
 
-    fun savePaciente(paciente: Paciente) = viewModelScope.launch { repository.insertPaciente(paciente) }
+    fun savePaciente(paciente: Paciente) = viewModelScope.launch { 
+        repository.insertPaciente(paciente)
+        // Silent sync
+        syncPacientesUseCase(paciente.opticaId)
+    }
     
     suspend fun getPaciente(id: String): Paciente? {
         val result = repository.getPacienteById(id)

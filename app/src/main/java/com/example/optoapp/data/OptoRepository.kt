@@ -113,6 +113,33 @@ class OptoRepository(
     
     suspend fun deleteServicio(servicio: ServicioExtra) = servicioExtraDao.deleteServicio(servicio)
 
+    // ─── Métodos de sincronización (Fase 3) ──────────────────────────────────
+    // Devuelven una lista completa en un instante dado (snapshot), usados por los
+    // Use Cases de sincronización que necesitan leer todos los registros de una vez.
+
+    /** Alias de upsert para la bajada de datos desde Supabase. */
+    suspend fun upsertPaciente(paciente: Paciente) = pacienteDao.insertPaciente(paciente)
+
+    /** Snapshot de todos los pacientes (sin suscripción continua). */
+    suspend fun getAllPacientesSnapshot(): List<Paciente> = allPacientes.first()
+
+    /** Snapshot de todas las evaluaciones clínicas. */
+    suspend fun getAllEvaluacionesSnapshot(): List<EvaluacionClinica> =
+        evaluacionDao.getAllEvaluaciones()
+
+    /** Snapshot de todas las dispensaciones. */
+    suspend fun getAllDispensacionesSnapshot(): List<DispensacionOptica> =
+        dispensacionDao.getAllDispensacionesList()
+
+    /** Snapshot de todos los pagos. */
+    suspend fun getAllPagosSnapshot(): List<Pago> = pagoDao.getAllPagos()
+
+    /** Snapshot de todos los servicios extra. */
+    suspend fun getAllServiciosSnapshot(): List<ServicioExtra> =
+        servicioExtraDao.getAllServicios().first()
+
+    // ─────────────────────────────────────────────────────────────────────────
+
     suspend fun clearAllData() {
         servicioExtraDao.deleteAll()
         pagoDao.deleteAll()

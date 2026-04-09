@@ -10,6 +10,8 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
+// SessionManager se provee aquí porque comparte el mismo DataStore que SecurityManager
+
 @Module
 @InstallIn(SingletonComponent::class)
 object DatabaseModule {
@@ -45,6 +47,12 @@ object DatabaseModule {
     @Singleton
     fun provideSecurityManager(@ApplicationContext context: Context): SecurityManager {
         return SecurityManager(context)
+    }
+
+    @Provides
+    @Singleton
+    fun provideSessionManager(@ApplicationContext context: Context): SessionManager {
+        return SessionManager(context)
     }
 
     @Provides

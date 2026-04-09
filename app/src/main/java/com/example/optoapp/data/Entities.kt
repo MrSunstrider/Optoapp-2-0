@@ -22,7 +22,8 @@ data class Paciente(
     val ocupacion: String? = null,
     val acompanante: String? = null,
     val hobbies: String? = null,
-    val ultimasEtiquetas: List<String> = emptyList()
+    val ultimasEtiquetas: List<String> = emptyList(),
+    val opticaId: String = "mi_optica_base"
 )
 
 @Entity(
@@ -39,6 +40,7 @@ data class EvaluacionClinica(
     @PrimaryKey val id: String,
     val pacienteId: String,
     val fecha: Long,
+    val opticaId: String = "mi_optica_base",
     val motivoConsulta: String = "",
     val sintomas: String = "",
     val antecedentesPersonalesOculares: String = "",
@@ -167,6 +169,7 @@ data class DispensacionOptica(
     @PrimaryKey val id: String,
     val pacienteId: String,
     val fecha: Long,
+    val opticaId: String = "mi_optica_base",
     val tipoMontura: String = "",
     val materialMontura: String = "",
     val tipoLente: String = "",
@@ -212,7 +215,8 @@ data class Pago(
     val tipo: String,
     val monto: Double,
     val metodoPago: String = "",
-    val nota: String = ""
+    val nota: String = "",
+    val opticaId: String = "mi_optica_base"
 )
 
 @Entity(
@@ -234,5 +238,6 @@ data class ServicioExtra(
     val estado: String, // Pendiente, Entregado
     val fecha: Long,
     val pacienteId: String? = null, // Opcional
-    val metodoPago: String = ""
+    val metodoPago: String = "",
+    val opticaId: String = "mi_optica_base"
 )

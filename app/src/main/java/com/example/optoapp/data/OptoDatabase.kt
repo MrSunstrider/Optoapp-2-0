@@ -10,7 +10,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 
 @Database(
     entities = [Paciente::class, EvaluacionClinica::class, DispensacionOptica::class, Pago::class, ServicioExtra::class],
-    version = 7,
+    version = 8,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -25,6 +25,17 @@ abstract class OptoDatabase : RoomDatabase() {
         @Volatile
         private var INSTANCE: OptoDatabase? = null
 
+        val MIGRATION_7_8 = object : Migration(7, 8) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Añadir campo multi-inquilino a todas las tablas principales
+                // Los registros existentes quedan asignados a 'mi_optica_base'
+                db.execSQL("ALTER TABLE pacientes ADD COLUMN opticaId TEXT NOT NULL DEFAULT 'mi_optica_base'")
+                db.execSQL("ALTER TABLE evaluaciones ADD COLUMN opticaId TEXT NOT NULL DEFAULT 'mi_optica_base'")
+                db.execSQL("ALTER TABLE dispensaciones ADD COLUMN opticaId TEXT NOT NULL DEFAULT 'mi_optica_base'")
+                db.execSQL("ALTER TABLE servicios_extra ADD COLUMN opticaId TEXT NOT NULL DEFAULT 'mi_optica_base'")
+                db.execSQL("ALTER TABLE pagos ADD COLUMN opticaId TEXT NOT NULL DEFAULT 'mi_optica_base'")
+            }
+        }
         val MIGRATION_6_7 = object : Migration(6, 7) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 // Agudeza visual (Nuevos campos Cerca AO)
@@ -56,6 +67,7 @@ abstract class OptoDatabase : RoomDatabase() {
             }
         }
 
+
         fun getDatabase(context: Context): OptoDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -63,7 +75,7 @@ abstract class OptoDatabase : RoomDatabase() {
                     OptoDatabase::class.java,
                     "opto_database"
                 )
-                .addMigrations(MIGRATION_6_7)
+                .addMigrations(MIGRATION_6_7, MIGRATION_7_8)
                 .fallbackToDestructiveMigration(false) // Simplificado para desarrollo, pero respeta MIGRATION_6_7
                 .build()
                 INSTANCE = instance
