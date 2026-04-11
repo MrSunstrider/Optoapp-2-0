@@ -52,7 +52,9 @@ fun DetallePacienteScreen(
     var paciente by remember { mutableStateOf<Paciente?>(null) }
     val evaluaciones by evaluacionViewModel.getEvaluacionesByPaciente(id).collectAsState(initial = emptyList())
     val dispensaciones by dispensacionViewModel.getDispensacionesByPaciente(id).collectAsState(initial = emptyList())
-    val servicios by serviciosViewModel.allServicios.map { list -> list.filter { it.pacienteId == id } }.collectAsState(initial = emptyList())
+    val servicios by remember(serviciosViewModel.allServicios, id) {
+        serviciosViewModel.allServicios.map { list -> list.filter { it.pacienteId == id } }
+    }.collectAsState(initial = emptyList())
     
     var selectedTab by remember { mutableIntStateOf(0) }
     val tabs = listOf("Evaluaciones", "Dispensaciones", "Servicios")
@@ -607,9 +609,9 @@ fun ResumenDispensacionDialog(disp: DispensacionOptica, paciente: Paciente, onDi
                     }
                     if (disp.materialLente.isNotBlank()) Text("Material: ${disp.materialLente}", fontSize = 14.sp)
                     if (disp.colorLente.isNotBlank()) Text("Color: ${disp.colorLente}", fontSize = 14.sp)
-                        if (disp.tratamientos.isNotEmpty()) {
-                            Text("Tratamientos: ${disp.tratamientos.joinToString(", ")}", fontSize = 14.sp)
-                        }
+                    if (disp.tratamientos.isNotEmpty()) {
+                        Text("Tratamientos: ${disp.tratamientos.joinToString(", ")}", fontSize = 14.sp)
+                    }
                         if (disp.notasDiseno.isNotBlank()) Text("Notas: ${disp.notasDiseno}", fontSize = 14.sp)
                     }
                 }

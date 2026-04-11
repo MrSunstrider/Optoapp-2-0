@@ -1,6 +1,8 @@
 package com.example.optoapp.ui.screens
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
@@ -14,7 +16,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import kotlinx.coroutines.launch
 
 @Composable
@@ -25,7 +27,17 @@ fun MainDrawerScreen(parentNavController: NavController) {
     
     // Obtenemos el ViewModel de sincronización a nivel de pantalla
     val syncViewModel: com.example.optoapp.viewmodel.SyncViewModel = hiltViewModel()
+    val authViewModel: com.example.optoapp.viewmodel.AuthViewModel = hiltViewModel()
     val syncState by syncViewModel.syncState.collectAsState()
+    val isSilentSyncing by syncViewModel.isSilentSyncing.collectAsState()
+
+    // Sincronización automática al entrar al dashboard
+    LaunchedEffect(Unit) {
+        syncViewModel.performSilentSync()
+    }
+    
+    var showErrorDialog by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf("") }
     
     val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
 
@@ -122,10 +134,32 @@ fun MainDrawerScreen(parentNavController: NavController) {
                             android.widget.Toast.makeText(context, (syncState as com.example.optoapp.viewmodel.SyncState.Success).message, android.widget.Toast.LENGTH_SHORT).show()
                         }
                         is com.example.optoapp.viewmodel.SyncState.Error -> {
-                            android.widget.Toast.makeText(context, (syncState as com.example.optoapp.viewmodel.SyncState.Error).message, android.widget.Toast.LENGTH_LONG).show()
+                            errorMessage = (syncState as com.example.optoapp.viewmodel.SyncState.Error).message
+                            showErrorDialog = true
                         }
                         else -> {}
                     }
+                }
+
+                if (showErrorDialog) {
+                    AlertDialog(
+                        onDismissRequest = { showErrorDialog = false },
+                        confirmButton = { 
+                            TextButton(onClick = { showErrorDialog = false }) { Text("Entendido") } 
+                        },
+                        title = { 
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.Error, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Error de Sincronización")
+                            }
+                        },
+                        text = { 
+                            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                                Text(errorMessage)
+                            }
+                        }
+                    )
                 }
 
                 NavigationDrawerItem(
@@ -155,9 +189,7 @@ fun MainDrawerScreen(parentNavController: NavController) {
                     onClick = {
                         scope.launch {
                             drawerState.close()
-                            parentNavController.navigate("pin") {
-                                popUpTo("main") { inclusive = true }
-                            }
+                            authViewModel.logout()
                         }
                     },
                     icon = { Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Salir") },
@@ -166,48 +198,58 @@ fun MainDrawerScreen(parentNavController: NavController) {
             }
         }
     ) {
-        NavHost(navController = navController, startDestination = "pacientes") {
-            composable("pacientes") { PacientesListScreen(navController, drawerState) }
-            composable("nuevoPaciente") { NuevoPacienteScreen(navController) }
-            composable("editarPaciente/{id}") { backStackEntry ->
-                NuevoPacienteScreen(navController, pacienteId = backStackEntry.arguments?.getString("id"))
-            }
-            composable("detallePaciente/{id}") { backStackEntry ->
-                DetallePacienteScreen(navController, id = backStackEntry.arguments?.getString("id")!!)
-            }
-            composable("nuevaEvaluacion/{pacienteId}") { backStackEntry ->
-                NuevaEvaluacionScreen(navController, pacienteId = backStackEntry.arguments?.getString("pacienteId")!!)
-            }
-            composable("editarEvaluacion/{pacienteId}/{evalId}") { backStackEntry ->
-                NuevaEvaluacionScreen(
-                    navController, 
-                    pacienteId = backStackEntry.arguments?.getString("pacienteId")!!,
-                    evaluacionId = backStackEntry.arguments?.getString("evalId")
+        Column {
+            // Indicador discreto de sincronización de fondo
+            if (isSilentSyncing) {
+                LinearProgressIndicator(
+                    modifier = Modifier.fillMaxWidth().height(2.dp),
+                    color = MaterialTheme.colorScheme.secondary,
+                    trackColor = MaterialTheme.colorScheme.surfaceVariant
                 )
             }
-            composable("nuevaDispensacion/{pacienteId}") { backStackEntry ->
-                NuevaDispensacionScreen(navController, pacienteId = backStackEntry.arguments?.getString("pacienteId")!!)
+            NavHost(navController = navController, startDestination = "pacientes", modifier = Modifier.weight(1f)) {
+                composable("pacientes") { PacientesListScreen(navController, drawerState) }
+                composable("nuevoPaciente") { NuevoPacienteScreen(navController) }
+                composable("editarPaciente/{id}") { backStackEntry ->
+                    NuevoPacienteScreen(navController, pacienteId = backStackEntry.arguments?.getString("id"))
+                }
+                composable("detallePaciente/{id}") { backStackEntry ->
+                    DetallePacienteScreen(navController, id = backStackEntry.arguments?.getString("id")!!)
+                }
+                composable("nuevaEvaluacion/{pacienteId}") { backStackEntry ->
+                    NuevaEvaluacionScreen(navController, pacienteId = backStackEntry.arguments?.getString("pacienteId")!!)
+                }
+                composable("editarEvaluacion/{pacienteId}/{evalId}") { backStackEntry ->
+                    NuevaEvaluacionScreen(
+                        navController, 
+                        pacienteId = backStackEntry.arguments?.getString("pacienteId")!!,
+                        evaluacionId = backStackEntry.arguments?.getString("evalId")
+                    )
+                }
+                composable("nuevaDispensacion/{pacienteId}") { backStackEntry ->
+                    NuevaDispensacionScreen(navController, pacienteId = backStackEntry.arguments?.getString("pacienteId")!!)
+                }
+                composable("editarDispensacion/{pacienteId}/{dispId}") { backStackEntry ->
+                    NuevaDispensacionScreen(
+                        navController, 
+                        pacienteId = backStackEntry.arguments?.getString("pacienteId")!!,
+                        dispensacionId = backStackEntry.arguments?.getString("dispId")
+                    )
+                }
+                composable("servicios_extra") { 
+                    ServiciosExtraScreen(navController, drawerState) 
+                }
+                composable("nuevo_servicio/{pacienteId}") { backStackEntry ->
+                    NuevoServicioScreen(navController, pacienteId = backStackEntry.arguments?.getString("pacienteId"))
+                }
+                composable("editar_servicio/{id}") { backStackEntry ->
+                    NuevoServicioScreen(navController, servicioId = backStackEntry.arguments?.getString("id"))
+                }
+                composable("reportes") { ReportesScreen(drawerState) }
+                composable("cierre_caja") { CierreCajaScreen(navController) }
+                composable("estadisticas_bi") { BIScreen(navController) }
+                composable("configuracion") { ConfiguracionScreen(navController, drawerState) }
             }
-            composable("editarDispensacion/{pacienteId}/{dispId}") { backStackEntry ->
-                NuevaDispensacionScreen(
-                    navController, 
-                    pacienteId = backStackEntry.arguments?.getString("pacienteId")!!,
-                    dispensacionId = backStackEntry.arguments?.getString("dispId")
-                )
-            }
-            composable("servicios_extra") { 
-                ServiciosExtraScreen(navController, drawerState) 
-            }
-            composable("nuevo_servicio/{pacienteId}") { backStackEntry ->
-                NuevoServicioScreen(navController, pacienteId = backStackEntry.arguments?.getString("pacienteId"))
-            }
-            composable("editar_servicio/{id}") { backStackEntry ->
-                NuevoServicioScreen(navController, servicioId = backStackEntry.arguments?.getString("id"))
-            }
-            composable("reportes") { ReportesScreen(drawerState) }
-            composable("cierre_caja") { CierreCajaScreen(navController) }
-            composable("estadisticas_bi") { BIScreen(navController) }
-            composable("configuracion") { ConfiguracionScreen(navController, drawerState) }
         }
     }
 }

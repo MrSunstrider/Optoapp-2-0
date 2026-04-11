@@ -51,8 +51,12 @@ class PacienteViewModel @Inject constructor(
 
     fun savePaciente(paciente: Paciente) = viewModelScope.launch { 
         repository.insertPaciente(paciente)
-        // Silent sync
-        syncPacientesUseCase(paciente.opticaId)
+        // Silent sync en segundo plano
+        viewModelScope.launch { 
+            try {
+                syncPacientesUseCase(paciente.opticaId)
+            } catch (e: Exception) {}
+        }
     }
     
     suspend fun getPaciente(id: String): Paciente? {

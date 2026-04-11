@@ -89,13 +89,13 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 ReportCard(
                     title = "Total Vendido",
-                    value = "s/. ${String.format("%.2f", totalVendido)}",
+                    value = "s/. ${String.format(java.util.Locale.getDefault(), "%.2f", totalVendido)}",
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.weight(1f)
                 )
                 ReportCard(
                     title = "Por Cobrar",
-                    value = "s/. ${String.format("%.2f", porCobrar)}",
+                    value = "s/. ${String.format(java.util.Locale.getDefault(), "%.2f", porCobrar)}",
                     color = MaterialTheme.colorScheme.error,
                     modifier = Modifier.weight(1f)
                 )
@@ -103,7 +103,7 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
             
             ReportCard(
                 title = "Ticket Promedio",
-                value = "s/. ${String.format("%.2f", ticketPromedio)}",
+                value = "s/. ${String.format(java.util.Locale.getDefault(), "%.2f", ticketPromedio)}",
                 color = MaterialTheme.colorScheme.secondary,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -127,7 +127,7 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                                 }
                                 Column(horizontalAlignment = Alignment.End) {
                                     Text("s/. ${disp.montoTotal}", fontWeight = FontWeight.Bold)
-                                    Text("Saldo: s/. ${String.format("%.2f", disp.montoTotal - disp.montoPagado)}", fontSize = 12.sp, color = if (disp.montoTotal - disp.montoPagado > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface)
+                                    Text("Saldo: s/. ${String.format(java.util.Locale.getDefault(), "%.2f", disp.montoTotal - disp.montoPagado)}", fontSize = 12.sp, color = if (disp.montoTotal - disp.montoPagado > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface)
                                 }
                             }
                         }

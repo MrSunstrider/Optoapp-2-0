@@ -91,7 +91,7 @@ class AuthViewModel @Inject constructor(
     /**
      * Autentica con email/contraseña en Supabase.
      * El opticaId se extrae de los metadatos del usuario (campo "optica_id")
-     * o se construye como "optica_<uid>" como fallback seguro.
+     * o se usa el <uid> directamente como fallback seguro.
      */
     fun login(email: String, password: String) = viewModelScope.launch {
         _authState.value = AuthState.Loading
@@ -108,7 +108,7 @@ class AuthViewModel @Inject constructor(
             val meta    = user?.userMetadata
             val opticaId = meta?.get("optica_id")?.toString()
                 ?.removePrefix("\"")?.removeSuffix("\"")
-                ?: "optica_$uid"
+                ?: uid
 
             val nombre = meta?.get("nombre")?.toString()
                 ?.removePrefix("\"")?.removeSuffix("\"")

@@ -10,7 +10,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 
 @Database(
     entities = [Paciente::class, EvaluacionClinica::class, DispensacionOptica::class, Pago::class, ServicioExtra::class],
-    version = 8,
+    version = 9,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -76,7 +76,7 @@ abstract class OptoDatabase : RoomDatabase() {
                     "opto_database"
                 )
                 .addMigrations(MIGRATION_6_7, MIGRATION_7_8)
-                .fallbackToDestructiveMigration(false) // Simplificado para desarrollo, pero respeta MIGRATION_6_7
+                .fallbackToDestructiveMigration(true) // Permitir recrear tablas ante cambios de índices en desarrollo
                 .build()
                 INSTANCE = instance
                 instance

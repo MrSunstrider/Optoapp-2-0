@@ -6,6 +6,7 @@ import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Resource
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import javax.inject.Inject
 
@@ -14,14 +15,6 @@ data class HistorialSyncResult(val uploaded: Int, val downloaded: Int)
 /**
  * FASE 3 – Paso 3.2
  * Sincronización de Evaluaciones Clínicas (historial clínico).
- *
- * Estrategia solo-subida (upload-first):
- *  • Las evaluaciones clínicas se crean en el dispositivo del optometrista.
- *  • Se suben a Supabase con upsert usando (id, opticaId) como clave única.
- *  • No se hace bajada aquí porque los datos clínicos son el origen de verdad local.
- *
- * Para escenarios multi-dispositivo futuros, deberá añadirse lógica de resolución
- * de conflictos basada en el campo "fecha".
  */
 class SyncHistorialUseCase @Inject constructor(
     private val repository: OptoRepository,
@@ -33,9 +26,6 @@ class SyncHistorialUseCase @Inject constructor(
         private const val TABLE = "evaluaciones"
     }
 
-    /**
-     * Ejecuta el ciclo completo: subida → bajada.
-     */
     suspend operator fun invoke(opticaId: String): Resource<HistorialSyncResult> {
         return try {
             val uploaded = upload(opticaId)
@@ -47,22 +37,18 @@ class SyncHistorialUseCase @Inject constructor(
         }
     }
 
-    // ─── SUBIDA ──────────────────────────────────────────────────────────────
-
     private suspend fun upload(opticaId: String): Int {
         val evaluaciones = repository.getAllEvaluacionesSnapshot()
-            .filter { it.opticaId == opticaId }
+            .filter { it.opticaId == opticaId || it.opticaId == "mi_optica_base" }
 
         if (evaluaciones.isEmpty()) return 0
 
-        val rows = evaluaciones.map { it.toRemoteMap() }
+        val rows = evaluaciones.map { it.toRemoto().copy(opticaId = opticaId) }
         supabase.postgrest[TABLE].upsert(rows)
 
-        Log.d(TAG, "Subidas ${evaluaciones.size} evaluaciones a Supabase.")
+        Log.d(TAG, "Subidas ${evaluaciones.size} evaluaciones a Supabase (forzando ID: $opticaId).")
         return evaluaciones.size
     }
-
-    // ─── BAJADA ──────────────────────────────────────────────────────────────
 
     private suspend fun download(opticaId: String): Int {
         val remotos = supabase.postgrest[TABLE]
@@ -83,166 +69,254 @@ class SyncHistorialUseCase @Inject constructor(
     }
 }
 
-// ─── DTO de bajada ────────────────────────────────────────────────────────────
-
 @Serializable
 data class EvaluacionRemota(
     val id: String,
-    val paciente_id: String,
+    @SerialName("paciente_id") val pacienteId: String,
     val fecha: Long,
-    val optica_id: String,
-    val motivo_consulta: String = "",
+    @SerialName("optica_id") val opticaId: String,
+    @SerialName("motivo_consulta") val motivoConsulta: String = "",
     val sintomas: String = "",
-    val antecedentes_personales_oculares: String = "",
-    val antecedentes_personales_sistemicos: String = "",
-    val antecedentes_familiares_oculares: String = "",
-    val antecedentes_familiares_sistemicos: String = "",
+    @SerialName("antecedentes_personales_oculares") val antecedentesPersonalesOculares: String = "",
+    @SerialName("antecedentes_personales_sistemicos") val antecedentesPersonalesSistemicos: String = "",
+    @SerialName("antecedentes_familiares_oculares") val antecedentesFamiliaresOculares: String = "",
+    @SerialName("antecedentes_familiares_sistemicos") val antecedentesFamiliaresSistemicos: String = "",
     val medicacion: String = "",
     val alergias: String = "",
-    val necesidad_visual: String = "",
-    val av_sc_od_lejos: String = "", val av_sc_oi_lejos: String = "",
-    val av_sc_od_cerca: String = "", val av_sc_oi_cerca: String = "",
-    val av_sc_ao: String = "", val av_sc_ao_cerca: String = "",
-    val av_cc_od_lejos: String = "", val av_cc_oi_lejos: String = "",
-    val av_cc_od_cerca: String = "", val av_cc_oi_cerca: String = "",
-    val av_cc_ao_px: String = "", val av_cc_ao_cerca: String = "",
-    val obj_od_esf: String = "", val obj_od_cil: String = "", val obj_od_eje: String = "",
-    val obj_oi_esf: String = "", val obj_oi_cil: String = "", val obj_oi_eje: String = "",
-    val subj_od_esf: String = "", val subj_od_cil: String = "", val subj_od_eje: String = "",
-    val subj_oi_esf: String = "", val subj_oi_cil: String = "", val subj_oi_eje: String = "",
-    val receta_od_esf: String = "", val receta_od_cil: String = "", val receta_od_eje: String = "", val receta_od_av: String = "",
-    val receta_oi_esf: String = "", val receta_oi_cil: String = "", val receta_oi_eje: String = "", val receta_oi_av: String = "",
-    val add_cerca_od: String = "", val add_cerca_oi: String = "",
-    val add_intermedia_od: String = "", val add_intermedia_oi: String = "",
-    val add_av: String = "",
-    val dip_lejos: String = "", val dip_cerca: String = "", val dip_intermedio: String = "",
+    @SerialName("necesidad_visual") val necesidadVisual: String = "",
+    
+    // AV
+    @SerialName("av_sc_od_lejos") val avScOdLejos: String = "", 
+    @SerialName("av_sc_oi_lejos") val avScOiLejos: String = "",
+    @SerialName("av_sc_od_cerca") val avScOdCerca: String = "", 
+    @SerialName("av_sc_oi_cerca") val avScOiCerca: String = "",
+    @SerialName("av_sc_ao") val avScAo: String = "", 
+    @SerialName("av_sc_ao_cerca") val avScAoCerca: String = "",
+    @SerialName("av_cc_od_lejos") val avCcOdLejos: String = "", 
+    @SerialName("av_cc_oi_lejos") val avCcOiLejos: String = "",
+    @SerialName("av_cc_od_cerca") val avCcOdCerca: String = "", 
+    @SerialName("av_cc_oi_cerca") val avCcOiCerca: String = "",
+    @SerialName("av_cc_ao_px") val avCcAoPx: String = "", 
+    @SerialName("av_cc_ao_cerca") val avCcAoCerca: String = "",
+    
+    // Motor
+    @SerialName("ph_od") val phOd: String = "", 
+    @SerialName("ph_oi") val phOi: String = "",
+    @SerialName("kappa_od") val kappaOd: String = "", 
+    @SerialName("kappa_oi") val kappaOi: String = "",
+    val hirshberg: String = "",
+    @SerialName("ducciones_od") val duccionesOd: String = "", 
+    @SerialName("ducciones_oi") val duccionesOi: String = "",
+    @SerialName("versiones_ao") val versionesAo: String = "",
+    @SerialName("estereopsis_valor") val estereopsisValor: String = "", 
+    @SerialName("estereopsis_segundos") val estereopsisSegundos: String = "",
+    val lang: String = "", 
+    val worth: String = "",
+    val ishihara: String = "", 
+    val farnsworth: String = "",
+    @SerialName("schirmer_od") val schirmerOd: String = "", 
+    @SerialName("schirmer_oi") val schirmerOi: String = "",
+    @SerialName("osdi_puntuacion") val osdiPuntuacion: Int? = null, 
+    @SerialName("osdi_clasificacion") val osdiClasificacion: String = "",
+    @SerialName("sensibilidad_contraste") val sensibilidadContraste: String = "", 
+    @SerialName("sensibilidad_frecuencia") val sensibilidadFrecuencia: String = "",
+    val amsler: String = "", 
+    @SerialName("campo_visual") val campoVisual: String = "", 
+    @SerialName("campo_visual_descripcion") val campoVisualDescripcion: String = "",
+    @SerialName("cover_test_6m") val coverTest6m: String = "", 
+    @SerialName("cover_test_40cm") val coverTest40cm: String = "", 
+    @SerialName("cover_test_10cm") val coverTest10cm: String = "",
+    @SerialName("ppc_or") val ppcOr: String = "", 
+    @SerialName("ppc_luz") val ppcLuz: String = "", 
+    @SerialName("ppc_frl") val ppcFrl: String = "",
+    @SerialName("reflejo_fotomotor") val reflejoFotomotor: String = "", 
+    @SerialName("reflejo_consensual") val reflejoConsensual: String = "", 
+    @SerialName("reflejo_acomodativo") val reflejoAcomodativo: String = "",
+    
+    // Refracción
+    @SerialName("k1_od") val k1Od: String = "", 
+    @SerialName("k2_od") val k2Od: String = "",
+    @SerialName("k1_oi") val k1Oi: String = "", 
+    @SerialName("k2_oi") val k2Oi: String = "",
+    @SerialName("obj_od_esf") val objOdEsf: String = "", 
+    @SerialName("obj_od_cil") val objOdCil: String = "", 
+    @SerialName("obj_od_eje") val objOdEje: String = "",
+    @SerialName("obj_oi_esf") val objOiEsf: String = "", 
+    @SerialName("obj_oi_cil") val objOiCil: String = "", 
+    @SerialName("obj_oi_eje") val objOiEje: String = "",
+    @SerialName("subj_od_esf") val subjOdEsf: String = "", 
+    @SerialName("subj_od_cil") val subjOdCil: String = "", 
+    @SerialName("subj_od_eje") val subjOdEje: String = "",
+    @SerialName("subj_oi_esf") val subjOiEsf: String = "", 
+    @SerialName("subj_oi_cil") val subjOiCil: String = "", 
+    @SerialName("subj_oi_eje") val subjOiEje: String = "",
+    @SerialName("receta_od_esf") val recetaOdEsf: String = "", 
+    @SerialName("receta_od_cil") val recetaOdCil: String = "", 
+    @SerialName("receta_od_eje") val recetaOdEje: String = "", 
+    @SerialName("receta_od_av") val recetaOdAv: String = "",
+    @SerialName("receta_oi_esf") val recetaOiEsf: String = "", 
+    @SerialName("receta_oi_cil") val recetaOiCil: String = "", 
+    @SerialName("receta_oi_eje") val recetaOiEje: String = "", 
+    @SerialName("receta_oi_av") val recetaOiAv: String = "",
+    @SerialName("add_cerca_od") val addCercaOd: String = "", 
+    @SerialName("add_cerca_oi") val addCercaOi: String = "",
+    @SerialName("add_intermedia_od") val addIntermediaOd: String = "", 
+    @SerialName("add_intermedia_oi") val addIntermediaOi: String = "",
+    @SerialName("add_av") val addAv: String = "",
+    @SerialName("dip_lejos") val dipLejos: String = "", 
+    @SerialName("dip_cerca") val dipCerca: String = "", 
+    @SerialName("dip_intermedio") val dipIntermedio: String = "",
+    @SerialName("prisma_od_valor") val prismaOdValor: String = "", 
+    @SerialName("prisma_od_base") val prismaOdBase: String = "",
+    @SerialName("prisma_oi_valor") val prismaOiValor: String = "", 
+    @SerialName("prisma_oi_base") val prismaOiBase: String = "",
+    
+    // Diagnóstico
     val diagnostico: String = "",
-    val diagnostico_od: String = "",
-    val diagnostico_oi: String = "",
-    val diagnostico_otros: String = "",
-    val plan_tratamiento: String = "",
+    @SerialName("diagnostico_od") val diagnosticoOd: String = "",
+    @SerialName("diagnostico_oi") val diagnosticoOi: String = "",
+    @SerialName("diagnostico_otros") val diagnosticoOtros: String = "",
+    @SerialName("plan_tratamiento") val planTratamiento: String = "",
     val observaciones: String = "",
-    val proxima_fecha_control: String = "",
-    val proxima_cita: Long? = null,
-    val balance_od: Boolean = false,
-    val balance_oi: Boolean = false,
-    val otros_presbicia: Boolean = false,
-    val otros_anisometropia: Boolean = false,
-    val otros_ambliopia: Boolean = false,
-    val lc_od_esf: String = "", val lc_od_cil: String = "", val lc_od_eje: String = "",
-    val lc_oi_esf: String = "", val lc_oi_cil: String = "", val lc_oi_eje: String = "",
-    val lc_radio_base_od: String = "", val lc_diametro_od: String = "",
-    val lc_radio_base_oi: String = "", val lc_diametro_oi: String = "",
-    val lc_laboratorio: String = "", val lc_tipo_lente: String = "",
-    val lc_material: String = "", val lc_observaciones: String = ""
+    @SerialName("proxima_fecha_control") val proximaFechaControl: String = "",
+    @SerialName("proxima_cita") val proximaCita: Long? = null,
+    @SerialName("balance_od") val balanceOd: Boolean = false,
+    @SerialName("balance_oi") val balanceOi: Boolean = false,
+    @SerialName("otros_presbicia") val otrosPresbicia: Boolean = false,
+    @SerialName("otros_anisometropia") val otrosAnisometropia: Boolean = false,
+    @SerialName("otros_ambliopia") val otrosAmbliopia: Boolean = false,
+    @SerialName("auto_presbicia") val autoPresbicia: Boolean = true,
+    @SerialName("auto_anisometropia") val autoAnisometropia: Boolean = true,
+    @SerialName("auto_ambliopia") val autoAmbliopia: Boolean = true,
+    
+    // Contactología
+    @SerialName("lc_od_esf") val lcOdEsf: String = "", 
+    @SerialName("lc_od_cil") val lcOdCil: String = "", 
+    @SerialName("lc_od_eje") val lcOdEje: String = "",
+    @SerialName("lc_oi_esf") val lcOiEsf: String = "", 
+    @SerialName("lc_oi_cil") val lcOiCil: String = "", 
+    @SerialName("lc_oi_eje") val lcOiEje: String = "",
+    @SerialName("lc_radio_base_od") val lcRadioBaseOd: String = "", 
+    @SerialName("lc_diametro_od") val lcDiametroOd: String = "",
+    @SerialName("lc_radio_base_oi") val lcRadioBaseOi: String = "", 
+    @SerialName("lc_diametro_oi") val lcDiametroOi: String = "",
+    @SerialName("lc_laboratorio") val lcLaboratorio: String = "", 
+    @SerialName("lc_tipo_lente") val lcTipoLente: String = "",
+    @SerialName("lc_material") val lcMaterial: String = "", 
+    @SerialName("lc_fecha_adaptacion") val lcFechaAdaptacion: Long? = null,
+    @SerialName("lc_observaciones") val lcObservaciones: String = ""
 ) {
     fun toEntity(): EvaluacionClinica = EvaluacionClinica(
-        id = id, pacienteId = paciente_id, fecha = fecha, opticaId = optica_id,
-        motivoConsulta = motivo_consulta, sintomas = sintomas,
-        antecedentesPersonalesOculares = antecedentes_personales_oculares,
-        antecedentesPersonalesSistemicos = antecedentes_personales_sistemicos,
-        antecedentesFamiliaresOculares = antecedentes_familiares_oculares,
-        antecedentesFamiliaresSistemicos = antecedentes_familiares_sistemicos,
+        id = id, pacienteId = pacienteId, fecha = fecha, opticaId = opticaId.ifBlank { "mi_optica_base" },
+        motivoConsulta = motivoConsulta, sintomas = sintomas,
+        antecedentesPersonalesOculares = antecedentesPersonalesOculares,
+        antecedentesPersonalesSistemicos = antecedentesPersonalesSistemicos,
+        antecedentesFamiliaresOculares = antecedentesFamiliaresOculares,
+        antecedentesFamiliaresSistemicos = antecedentesFamiliaresSistemicos,
         medicacion = medicacion, alergias = alergias,
-        necesidadVisual = necesidad_visual.split(",").filter { it.isNotBlank() },
-        avScOdLejos = av_sc_od_lejos, avScOiLejos = av_sc_oi_lejos,
-        avScOdCerca = av_sc_od_cerca, avScOiCerca = av_sc_oi_cerca,
-        avScAo = av_sc_ao, avScAoCerca = av_sc_ao_cerca,
-        avCcOdLejos = av_cc_od_lejos, avCcOiLejos = av_cc_oi_lejos,
-        avCcOdCerca = av_cc_od_cerca, avCcOiCerca = av_cc_oi_cerca,
-        avCcAoPx = av_cc_ao_px, avCcAoCerca = av_cc_ao_cerca,
-        objOdEsf = obj_od_esf, objOdCil = obj_od_cil, objOdEje = obj_od_eje,
-        objOiEsf = obj_oi_esf, objOiCil = obj_oi_cil, objOiEje = obj_oi_eje,
-        subjOdEsf = subj_od_esf, subjOdCil = subj_od_cil, subjOdEje = subj_od_eje,
-        subjOiEsf = subj_oi_esf, subjOiCil = subj_oi_cil, subjOiEje = subj_oi_eje,
-        recetaOdEsf = receta_od_esf, recetaOdCil = receta_od_cil, recetaOdEje = receta_od_eje, recetaOdAv = receta_od_av,
-        recetaOiEsf = receta_oi_esf, recetaOiCil = receta_oi_cil, recetaOiEje = receta_oi_eje, recetaOiAv = receta_oi_av,
-        addCercaOd = add_cerca_od, addCercaOi = add_cerca_oi,
-        addIntermediaOd = add_intermedia_od, addIntermediaOi = add_intermedia_oi,
-        addAv = add_av,
-        dipLejos = dip_lejos, dipCerca = dip_cerca, dipIntermedio = dip_intermedio,
+        necesidadVisual = necesidadVisual.split(",").filter { it.isNotBlank() },
+        avScOdLejos = avScOdLejos, avScOiLejos = avScOiLejos,
+        avScOdCerca = avScOdCerca, avScOiCerca = avScOiCerca,
+        avScAo = avScAo, avScAoCerca = avScAoCerca,
+        avCcOdLejos = avCcOdLejos, avCcOiLejos = avCcOiLejos,
+        avCcOdCerca = avCcOdCerca, avCcOiCerca = avCcOiCerca,
+        avCcAoPx = avCcAoPx, avCcAoCerca = avCcAoCerca,
+        phOd = phOd, phOi = phOi, kappaOd = kappaOd, kappaOi = kappaOi,
+        hirshberg = hirshberg, duccionesOd = duccionesOd, duccionesOi = duccionesOi, versionesAo = versionesAo,
+        estereopsisValor = estereopsisValor, estereopsisSegundos = estereopsisSegundos,
+        lang = lang, worth = worth, ishihara = ishihara, farnsworth = farnsworth,
+        schirmerOd = schirmerOd, schirmerOi = schirmerOi,
+        osdiPuntuacion = osdiPuntuacion, osdiClasificacion = osdiClasificacion,
+        sensibilidadContraste = sensibilidadContraste, sensibilidadFrecuencia = sensibilidadFrecuencia,
+        amsler = amsler, campoVisual = campoVisual, campoVisualDescripcion = campoVisualDescripcion,
+        coverTest6m = coverTest6m, coverTest40cm = coverTest40cm, coverTest10cm = coverTest10cm,
+        ppcOr = ppcOr, ppcLuz = ppcLuz, ppcFrl = ppcFrl,
+        reflejoFotomotor = reflejoFotomotor, reflejoConsensual = reflejoConsensual, reflejoAcomodativo = reflejoAcomodativo,
+        k1Od = k1Od, k2Od = k2Od, k1Oi = k1Oi, k2Oi = k2Oi,
+        objOdEsf = objOdEsf, objOdCil = objOdCil, objOdEje = objOdEje,
+        objOiEsf = objOiEsf, objOiCil = objOiCil, objOiEje = objOiEje,
+        subjOdEsf = subjOdEsf, subjOdCil = subjOdCil, subjOdEje = subjOdEje,
+        subjOiEsf = subjOiEsf, subjOiCil = subjOiCil, subjOiEje = subjOiEje,
+        recetaOdEsf = recetaOdEsf, recetaOdCil = recetaOdCil, recetaOdEje = recetaOdEje, recetaOdAv = recetaOdAv,
+        recetaOiEsf = recetaOiEsf, recetaOiCil = recetaOiCil, recetaOiEje = recetaOiEje, recetaOiAv = recetaOiAv,
+        addCercaOd = addCercaOd, addCercaOi = addCercaOi,
+        addIntermediaOd = addIntermediaOd, addIntermediaOi = addIntermediaOi,
+        addAv = addAv,
+        dipLejos = dipLejos, dipCerca = dipCerca, dipIntermedio = dipIntermedio,
+        prismaOdValor = prismaOdValor, prismaOdBase = prismaOdBase,
+        prismaOiValor = prismaOiValor, prismaOiBase = prismaOiBase,
         diagnostico = diagnostico,
-        diagnosticoOd = diagnostico_od.split(",").filter { it.isNotBlank() },
-        diagnosticoOi = diagnostico_oi.split(",").filter { it.isNotBlank() },
-        diagnosticoOtros = diagnostico_otros.split(",").filter { it.isNotBlank() },
-        planTratamiento = plan_tratamiento, observaciones = observaciones,
-        proximaFechaControl = proxima_fecha_control, proximaCita = proxima_cita,
-        balanceOd = balance_od, balanceOi = balance_oi,
-        otrosPresbicia = otros_presbicia, otrosAnisometropia = otros_anisometropia, otrosAmbliopia = otros_ambliopia,
-        lcOdEsf = lc_od_esf, lcOdCil = lc_od_cil, lcOdEje = lc_od_eje,
-        lcOiEsf = lc_oi_esf, lcOiCil = lc_oi_cil, lcOiEje = lc_oi_eje,
-        lcRadioBaseOd = lc_radio_base_od, lcDiametroOd = lc_diametro_od,
-        lcRadioBaseOi = lc_radio_base_oi, lcDiametroOi = lc_diametro_oi,
-        lcLaboratorio = lc_laboratorio, lcTipoLente = lc_tipo_lente,
-        lcMaterial = lc_material, lcObservaciones = lc_observaciones
+        diagnosticoOd = diagnosticoOd.split(",").filter { it.isNotBlank() },
+        diagnosticoOi = diagnosticoOi.split(",").filter { it.isNotBlank() },
+        diagnosticoOtros = diagnosticoOtros.split(",").filter { it.isNotBlank() },
+        planTratamiento = planTratamiento, observaciones = observaciones,
+        proximaFechaControl = proximaFechaControl, proximaCita = proximaCita,
+        balanceOd = balanceOd, balanceOi = balanceOi,
+        otrosPresbicia = otrosPresbicia, otrosAnisometropia = otrosAnisometropia, otrosAmbliopia = otrosAmbliopia,
+        autoPresbicia = autoPresbicia, autoAnisometropia = autoAnisometropia, autoAmbliopia = autoAmbliopia,
+        lcOdEsf = lcOdEsf, lcOdCil = lcOdCil, lcOdEje = lcOdEje,
+        lcOiEsf = lcOiEsf, lcOiCil = lcOiCil, lcOiEje = lcOiEje,
+        lcRadioBaseOd = lcRadioBaseOd, lcDiametroOd = lcDiametroOd,
+        lcRadioBaseOi = lcRadioBaseOi, lcDiametroOi = lcDiametroOi,
+        lcLaboratorio = lcLaboratorio, lcTipoLente = lcTipoLente,
+        lcMaterial = lcMaterial, lcFechaAdaptacion = lcFechaAdaptacion,
+        lcObservaciones = lcObservaciones
     )
 }
 
-// ─── Extensión: EvaluacionClinica → Mapa para Supabase ───────────────────────
-// Se mapean solo los campos clave para mantener la consulta manejable.
-// Si la tabla de Supabase tiene todas las columnas, agregar los campos restantes aquí.
-
-private fun EvaluacionClinica.toRemoteMap(): Map<String, Any?> = mapOf(
-    "id"                                  to id,
-    "paciente_id"                         to pacienteId,
-    "fecha"                               to fecha,
-    "optica_id"                           to opticaId,
-    "motivo_consulta"                     to motivoConsulta,
-    "sintomas"                            to sintomas,
-    "antecedentes_personales_oculares"    to antecedentesPersonalesOculares,
-    "antecedentes_personales_sistemicos"  to antecedentesPersonalesSistemicos,
-    "antecedentes_familiares_oculares"    to antecedentesFamiliaresOculares,
-    "antecedentes_familiares_sistemicos"  to antecedentesFamiliaresSistemicos,
-    "medicacion"                          to medicacion,
-    "alergias"                            to alergias,
-    "necesidad_visual"                    to necesidadVisual.joinToString(","),
-    // AV sin corrección
-    "av_sc_od_lejos"  to avScOdLejos,  "av_sc_oi_lejos"  to avScOiLejos,
-    "av_sc_od_cerca"  to avScOdCerca,  "av_sc_oi_cerca"  to avScOiCerca,
-    "av_sc_ao"        to avScAo,       "av_sc_ao_cerca"  to avScAoCerca,
-    // AV con corrección
-    "av_cc_od_lejos"  to avCcOdLejos,  "av_cc_oi_lejos"  to avCcOiLejos,
-    "av_cc_od_cerca"  to avCcOdCerca,  "av_cc_oi_cerca"  to avCcOiCerca,
-    "av_cc_ao_px"     to avCcAoPx,     "av_cc_ao_cerca"  to avCcAoCerca,
-    // Refracción objetiva
-    "obj_od_esf" to objOdEsf, "obj_od_cil" to objOdCil, "obj_od_eje" to objOdEje,
-    "obj_oi_esf" to objOiEsf, "obj_oi_cil" to objOiCil, "obj_oi_eje" to objOiEje,
-    // Refracción subjetiva
-    "subj_od_esf" to subjOdEsf, "subj_od_cil" to subjOdCil, "subj_od_eje" to subjOdEje,
-    "subj_oi_esf" to subjOiEsf, "subj_oi_cil" to subjOiCil, "subj_oi_eje" to subjOiEje,
-    // Receta final
-    "receta_od_esf" to recetaOdEsf, "receta_od_cil" to recetaOdCil,
-    "receta_od_eje" to recetaOdEje, "receta_od_av"  to recetaOdAv,
-    "receta_oi_esf" to recetaOiEsf, "receta_oi_cil" to recetaOiCil,
-    "receta_oi_eje" to recetaOiEje, "receta_oi_av"  to recetaOiAv,
-    // ADD
-    "add_cerca_od"       to addCercaOd,       "add_cerca_oi"       to addCercaOi,
-    "add_intermedia_od"  to addIntermediaOd,   "add_intermedia_oi"  to addIntermediaOi,
-    "add_av"             to addAv,
-    // DIP/DNP
-    "dip_lejos"      to dipLejos,
-    "dip_cerca"      to dipCerca,
-    "dip_intermedio" to dipIntermedio,
-    // Diagnóstico
-    "diagnostico"       to diagnostico,
-    "diagnostico_od"    to diagnosticoOd.joinToString(","),
-    "diagnostico_oi"    to diagnosticoOi.joinToString(","),
-    "diagnostico_otros" to diagnosticoOtros.joinToString(","),
-    "plan_tratamiento"  to planTratamiento,
-    "observaciones"     to observaciones,
-    "proxima_fecha_control" to proximaFechaControl,
-    "proxima_cita"          to proximaCita,
-    // Flags diagnóstico
-    "balance_od"         to balanceOd,
-    "balance_oi"         to balanceOi,
-    "otros_presbicia"    to otrosPresbicia,
-    "otros_anisometropia" to otrosAnisometropia,
-    "otros_ambliopia"    to otrosAmbliopia,
-    // Contactología
-    "lc_od_esf"       to lcOdEsf,       "lc_od_cil"      to lcOdCil,      "lc_od_eje"      to lcOdEje,
-    "lc_oi_esf"       to lcOiEsf,       "lc_oi_cil"      to lcOiCil,      "lc_oi_eje"      to lcOiEje,
-    "lc_radio_base_od" to lcRadioBaseOd, "lc_diametro_od" to lcDiametroOd,
-    "lc_radio_base_oi" to lcRadioBaseOi, "lc_diametro_oi" to lcDiametroOi,
-    "lc_laboratorio"  to lcLaboratorio,  "lc_tipo_lente"  to lcTipoLente,
-    "lc_material"     to lcMaterial,     "lc_observaciones" to lcObservaciones
+private fun EvaluacionClinica.toRemoto(): EvaluacionRemota = EvaluacionRemota(
+    id = id, pacienteId = pacienteId, fecha = fecha, opticaId = opticaId,
+    motivoConsulta = motivoConsulta, sintomas = sintomas,
+    antecedentesPersonalesOculares = antecedentesPersonalesOculares,
+    antecedentesPersonalesSistemicos = antecedentesPersonalesSistemicos,
+    antecedentesFamiliaresOculares = antecedentesFamiliaresOculares,
+    antecedentesFamiliaresSistemicos = antecedentesFamiliaresSistemicos,
+    medicacion = medicacion, alergias = alergias,
+    necesidadVisual = necesidadVisual.joinToString(","),
+    avScOdLejos = avScOdLejos, avScOiLejos = avScOiLejos,
+    avScOdCerca = avScOdCerca, avScOiCerca = avScOiCerca,
+    avScAo = avScAo, avScAoCerca = avScAoCerca,
+    avCcOdLejos = avCcOdLejos, avCcOiLejos = avCcOiLejos,
+    avCcOdCerca = avCcOdCerca, avCcOiCerca = avCcOiCerca,
+    avCcAoPx = avCcAoPx, avCcAoCerca = avCcAoCerca,
+    phOd = phOd, phOi = phOi, kappaOd = kappaOd, kappaOi = kappaOi,
+    hirshberg = hirshberg, duccionesOd = duccionesOd, duccionesOi = duccionesOi, versionesAo = versionesAo,
+    estereopsisValor = estereopsisValor, estereopsisSegundos = estereopsisSegundos,
+    lang = lang, worth = worth, ishihara = ishihara, farnsworth = farnsworth,
+    schirmerOd = schirmerOd, schirmerOi = schirmerOi,
+    osdiPuntuacion = osdiPuntuacion, osdiClasificacion = osdiClasificacion,
+    sensibilidadContraste = sensibilidadContraste, sensibilidadFrecuencia = sensibilidadFrecuencia,
+    amsler = amsler, campoVisual = campoVisual, campoVisualDescripcion = campoVisualDescripcion,
+    coverTest6m = coverTest6m, coverTest40cm = coverTest40cm, coverTest10cm = coverTest10cm,
+    ppcOr = ppcOr, ppcLuz = ppcLuz, ppcFrl = ppcFrl,
+    reflejoFotomotor = reflejoFotomotor, reflejoConsensual = reflejoConsensual, reflejoAcomodativo = reflejoAcomodativo,
+    k1Od = k1Od, k2Od = k2Od, k1Oi = k1Oi, k2Oi = k2Oi,
+    objOdEsf = objOdEsf, objOdCil = objOdCil, objOdEje = objOdEje,
+    objOiEsf = objOiEsf, objOiCil = objOiCil, objOiEje = objOiEje,
+    subjOdEsf = subjOdEsf, subjOdCil = subjOdCil, subjOdEje = subjOdEje,
+    subjOiEsf = subjOiEsf, subjOiCil = subjOiCil, subjOiEje = subjOiEje,
+    recetaOdEsf = recetaOdEsf, recetaOdCil = recetaOdCil, recetaOdEje = recetaOdEje, recetaOdAv = recetaOdAv,
+    recetaOiEsf = recetaOiEsf, recetaOiCil = recetaOiCil, recetaOiEje = recetaOiEje, recetaOiAv = recetaOiAv,
+    addCercaOd = addCercaOd, addCercaOi = addCercaOi,
+    addIntermediaOd = addIntermediaOd, addIntermediaOi = addIntermediaOi,
+    addAv = addAv,
+    dipLejos = dipLejos, dipCerca = dipCerca, dipIntermedio = dipIntermedio,
+    prismaOdValor = prismaOdValor, prismaOdBase = prismaOdBase,
+    prismaOiValor = prismaOiValor, prismaOiBase = prismaOiBase,
+    diagnostico = diagnostico,
+    diagnosticoOd = diagnosticoOd.joinToString(","),
+    diagnosticoOi = diagnosticoOi.joinToString(","),
+    diagnosticoOtros = diagnosticoOtros.joinToString(","),
+    planTratamiento = planTratamiento, observaciones = observaciones,
+    proximaFechaControl = proximaFechaControl, proximaCita = proximaCita,
+    balanceOd = balanceOd, balanceOi = balanceOi,
+    otrosPresbicia = otrosPresbicia, otrosAnisometropia = otrosAnisometropia, otrosAmbliopia = otrosAmbliopia,
+    autoPresbicia = autoPresbicia, autoAnisometropia = autoAnisometropia, autoAmbliopia = autoAmbliopia,
+    lcOdEsf = lcOdEsf, lcOdCil = lcOdCil, lcOdEje = lcOdEje,
+    lcOiEsf = lcOiEsf, lcOiCil = lcOiCil, lcOiEje = lcOiEje,
+    lcRadioBaseOd = lcRadioBaseOd, lcDiametroOd = lcDiametroOd,
+    lcRadioBaseOi = lcRadioBaseOi, lcDiametroOi = lcDiametroOi,
+    lcLaboratorio = lcLaboratorio, lcTipoLente = lcTipoLente,
+    lcMaterial = lcMaterial, lcFechaAdaptacion = lcFechaAdaptacion,
+    lcObservaciones = lcObservaciones
 )

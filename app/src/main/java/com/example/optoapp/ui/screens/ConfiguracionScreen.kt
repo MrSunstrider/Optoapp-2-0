@@ -4,6 +4,7 @@ import android.content.Context
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.edit
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
@@ -168,7 +169,9 @@ fun ConfiguracionScreen(@Suppress("UNUSED_PARAMETER") navController: NavControll
                             checked = confirmReminders,
                             onCheckedChange = { isChecked ->
                                 confirmReminders = isChecked
-                                sharedPreferences.edit().putBoolean("pref_enable_reminders", isChecked).apply()
+                                sharedPreferences.edit(commit = false) {
+                                    putBoolean("pref_enable_reminders", isChecked)
+                                }
                             }
                         )
                     }

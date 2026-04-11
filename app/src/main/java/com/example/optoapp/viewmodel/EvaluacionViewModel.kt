@@ -318,8 +318,14 @@ class EvaluacionViewModel @Inject constructor(
             } else {
                 repository.insertEvaluacion(ev)
             }
-            // Silent Sync
-            syncHistorialUseCase(currentOpticaId)
+            // Silent Sync en segundo plano (No bloquea la navegación)
+            viewModelScope.launch { 
+                try {
+                    syncHistorialUseCase(currentOpticaId)
+                } catch (e: Exception) {
+                    // Log error silently
+                }
+            }
             val pResult = repository.getPacienteById(pacienteId)
             val pName = if (pResult is com.example.optoapp.data.Resource.Success) pResult.data?.nombreCompleto ?: "Paciente" else "Paciente"
             onComplete(ev.id, pName)

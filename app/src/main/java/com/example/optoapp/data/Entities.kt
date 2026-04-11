@@ -7,7 +7,13 @@ import androidx.room.Index
 import androidx.room.TypeConverters
 import com.google.gson.annotations.SerializedName
 
-@Entity(tableName = "pacientes")
+@Entity(
+    tableName = "pacientes",
+    indices = [
+        Index(value = ["nombreCompleto"]),
+        Index(value = ["opticaId"])
+    ]
+)
 data class Paciente(
     @PrimaryKey val id: String,
     @SerializedName("nombreCompleto", alternate = ["nombre_completo"])
@@ -38,7 +44,10 @@ data class Paciente(
         childColumns = ["pacienteId"],
         onDelete = ForeignKey.CASCADE
     )],
-    indices = [Index(value = ["pacienteId"])]
+    indices = [
+        Index(value = ["pacienteId"]),
+        Index(value = ["opticaId"])
+    ]
 )
 data class EvaluacionClinica(
     @PrimaryKey val id: String,
@@ -167,7 +176,10 @@ data class EvaluacionClinica(
         childColumns = ["pacienteId"],
         onDelete = ForeignKey.CASCADE
     )],
-    indices = [Index(value = ["pacienteId"])]
+    indices = [
+        Index(value = ["pacienteId"]),
+        Index(value = ["opticaId"])
+    ]
 )
 data class DispensacionOptica(
     @PrimaryKey val id: String,
@@ -215,7 +227,11 @@ data class DispensacionOptica(
             onDelete = ForeignKey.CASCADE
         )
     ],
-    indices = [Index(value = ["dispensacionId"]), Index(value = ["servicioExtraId"])]
+    indices = [
+        Index(value = ["dispensacionId"]), 
+        Index(value = ["servicioExtraId"]),
+        Index(value = ["opticaId"])
+    ]
 )
 data class Pago(
     @PrimaryKey val id: String,
@@ -241,7 +257,10 @@ data class Pago(
         childColumns = ["pacienteId"],
         onDelete = ForeignKey.SET_NULL
     )],
-    indices = [Index(value = ["pacienteId"])]
+    indices = [
+        Index(value = ["pacienteId"]),
+        Index(value = ["opticaId"])
+    ]
 )
 data class ServicioExtra(
     @PrimaryKey val id: String,

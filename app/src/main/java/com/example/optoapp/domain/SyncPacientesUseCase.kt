@@ -6,23 +6,13 @@ import com.example.optoapp.data.Paciente
 import com.example.optoapp.data.Resource
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
-import io.github.jan.supabase.postgrest.query.Columns
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
 import javax.inject.Inject
 
 /**
  * FASE 3 – Paso 3.1
  * Sincronización bidireccional de Pacientes.
- *
- * Estrategia:
- *  1. SUBIDA  → Upsert de todos los pacientes locales en la tabla remota "pacientes".
- *  2. BAJADA  → Descarga de pacientes remotos con el mismo opticaId y los guarda en Room.
- *
- * La tabla "pacientes" en Supabase debe tener las mismas columnas que la Entity Room
- * más una columna updated_at (timestamp) para resolver conflictos futuros.
  */
 class SyncPacientesUseCase @Inject constructor(
     private val repository: OptoRepository,
@@ -34,10 +24,6 @@ class SyncPacientesUseCase @Inject constructor(
         private const val TABLE = "pacientes"
     }
 
-    /**
-     * Ejecuta el ciclo completo: subida → bajada.
-     * @return Resource.Success con el nº de registros procesados o Resource.Error con el mensaje.
-     */
     suspend operator fun invoke(opticaId: String): Resource<PacientesSyncResult> {
         return try {
             val uploaded = upload(opticaId)
@@ -49,23 +35,18 @@ class SyncPacientesUseCase @Inject constructor(
         }
     }
 
-    // ─── SUBIDA ──────────────────────────────────────────────────────────────
-
     private suspend fun upload(opticaId: String): Int {
         val pacientes = repository.getAllPacientesSnapshot()
-            .filter { it.opticaId == opticaId }
+            .filter { it.opticaId == opticaId || it.opticaId == "mi_optica_base" }
 
         if (pacientes.isEmpty()) return 0
 
-        val rows = pacientes.map { it.toRemoteMap() }
-
+        val rows = pacientes.map { it.toRemoto().copy(opticaId = opticaId) }
         supabase.postgrest[TABLE].upsert(rows)
 
-        Log.d(TAG, "Subidos ${pacientes.size} pacientes a Supabase.")
+        Log.d(TAG, "Subidos ${pacientes.size} pacientes a Supabase (forzando ID: $opticaId).")
         return pacientes.size
     }
-
-    // ─── BAJADA ──────────────────────────────────────────────────────────────
 
     private suspend fun download(opticaId: String): Int {
         val remotos = supabase.postgrest[TABLE]
@@ -86,38 +67,15 @@ class SyncPacientesUseCase @Inject constructor(
     }
 }
 
-// ─── Extensión: Entity → Mapa para Supabase ──────────────────────────────────
-
-private fun Paciente.toRemoteMap(): Map<String, Any?> = mapOf(
-    "id"                  to id,
-    "nombre_completo"     to nombreCompleto,
-    "edad"                to edad,
-    "telefono"            to telefono,
-    "fecha_creacion"      to fechaCreacion,
-    "dni"                 to dni,
-    "fecha_nacimiento"    to fechaNacimiento,
-    "sexo"                to sexo,
-    "email"               to email,
-    "direccion"           to direccion,
-    "distrito"            to distrito,
-    "ocupacion"           to ocupacion,
-    "acompanante"         to acompanante,
-    "hobbies"             to hobbies,
-    "ultimas_etiquetas"   to ultimasEtiquetas.joinToString(","),
-    "optica_id"           to opticaId
-)
-
-// ─── DTO de bajada ────────────────────────────────────────────────────────────
-
 @Serializable
 data class PacienteRemoto(
     val id: String,
-    val nombre_completo: String,
+    @SerialName("nombre_completo") val nombreCompleto: String,
     val edad: Int,
     val telefono: String,
-    val fecha_creacion: Long,
+    @SerialName("fecha_creacion") val fechaCreacion: Long,
     val dni: String? = null,
-    val fecha_nacimiento: String? = null,
+    @SerialName("fecha_nacimiento") val fechaNacimiento: String? = null,
     val sexo: String? = null,
     val email: String? = null,
     val direccion: String? = null,
@@ -125,17 +83,17 @@ data class PacienteRemoto(
     val ocupacion: String? = null,
     val acompanante: String? = null,
     val hobbies: String? = null,
-    val ultimas_etiquetas: String? = null,
-    val optica_id: String = "mi_optica_base"
+    @SerialName("ultimas_etiquetas") val ultimasEtiquetas: String? = null,
+    @SerialName("optica_id") val opticaId: String = "mi_optica_base"
 ) {
     fun toEntity(): Paciente = Paciente(
         id               = id,
-        nombreCompleto   = nombre_completo,
+        nombreCompleto   = nombreCompleto,
         edad             = edad,
         telefono         = telefono,
-        fechaCreacion    = fecha_creacion,
+        fechaCreacion    = fechaCreacion,
         dni              = dni,
-        fechaNacimiento  = fecha_nacimiento,
+        fechaNacimiento  = fechaNacimiento,
         sexo             = sexo,
         email            = email,
         direccion        = direccion,
@@ -143,14 +101,31 @@ data class PacienteRemoto(
         ocupacion        = ocupacion,
         acompanante      = acompanante,
         hobbies          = hobbies,
-        ultimasEtiquetas = ultimas_etiquetas
+        ultimasEtiquetas = ultimasEtiquetas
             ?.split(",")
             ?.filter { it.isNotBlank() }
             ?: emptyList(),
-        opticaId         = optica_id
+        opticaId         = opticaId.ifBlank { "mi_optica_base" }
     )
 }
 
-// ─── Resultado de sincronización ─────────────────────────────────────────────
+private fun Paciente.toRemoto(): PacienteRemoto = PacienteRemoto(
+    id                = id,
+    nombreCompleto   = nombreCompleto, // Corregido: ya es nombreCompleto en la entity
+    edad              = edad,
+    telefono          = telefono,
+    fechaCreacion    = fechaCreacion,
+    dni               = dni,
+    fechaNacimiento  = fechaNacimiento,
+    sexo              = sexo,
+    email             = email,
+    direccion         = direccion,
+    distrito          = distrito,
+    ocupacion         = ocupacion,
+    acompanante       = acompanante,
+    hobbies           = hobbies,
+    ultimasEtiquetas = ultimasEtiquetas.joinToString(","),
+    opticaId         = opticaId
+)
 
 data class PacientesSyncResult(val uploaded: Int, val downloaded: Int)

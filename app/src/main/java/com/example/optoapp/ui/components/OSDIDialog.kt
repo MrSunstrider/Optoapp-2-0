@@ -46,8 +46,8 @@ fun OSDIDialog(
     onDismissRequest: () -> Unit,
     onSave: (puntuacion: Int, clasificacion: String) -> Unit
 ) {
-    // Almacenamos respuestas como mapa: Index(0-11) -> Valor(0-4). Null = sin responder
-    var answers by remember { mutableStateOf(mutableMapOf<Int, Int>()) }
+    // Almacenamos respuestas como mapa persistente en Compose: Index(0-11) -> Valor(0-4)
+    val answers = remember { mutableStateMapOf<Int, Int>() }
     
     Dialog(onDismissRequest = onDismissRequest) {
         Surface(
@@ -79,9 +79,7 @@ fun OSDIDialog(
                     Text("Bloque 1: Síntomas Visuales", fontWeight = FontWeight.Bold)
                     osdiBloque1.forEachIndexed { qIndex, question ->
                         QuestionItem(1 + qIndex, question, answers[qIndex]) { ans ->
-                            val newMap = answers.toMutableMap()
-                            newMap[qIndex] = ans
-                            answers = newMap
+                            answers[qIndex] = ans
                         }
                     }
                     
@@ -91,9 +89,7 @@ fun OSDIDialog(
                     osdiBloque2.forEachIndexed { qIndex, question ->
                         val globalIndex = qIndex + 4
                         QuestionItem(1 + globalIndex, question, answers[globalIndex]) { ans ->
-                            val newMap = answers.toMutableMap()
-                            newMap[globalIndex] = ans
-                            answers = newMap
+                            answers[globalIndex] = ans
                         }
                     }
                     
@@ -103,9 +99,7 @@ fun OSDIDialog(
                     osdiBloque3.forEachIndexed { qIndex, question ->
                         val globalIndex = qIndex + 8
                         QuestionItem(1 + globalIndex, question, answers[globalIndex]) { ans ->
-                            val newMap = answers.toMutableMap()
-                            newMap[globalIndex] = ans
-                            answers = newMap
+                            answers[globalIndex] = ans
                         }
                     }
                 }

@@ -164,8 +164,12 @@ class DispensacionViewModel @Inject constructor(
                 repository.deletePago(pago)
             }
 
-            // Silent Sync
-            syncFinanzasUseCase(currentOpticaId)
+            // Silent Sync en segundo plano
+            viewModelScope.launch { 
+                try {
+                    syncFinanzasUseCase(currentOpticaId)
+                } catch (e: Exception) {}
+            }
             
             onComplete()
         }

@@ -1,5 +1,8 @@
 package com.example.optoapp.viewmodel
 
+import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.optoapp.data.Resource
@@ -8,6 +11,7 @@ import com.example.optoapp.domain.SyncFinanzasUseCase
 import com.example.optoapp.domain.SyncHistorialUseCase
 import com.example.optoapp.domain.SyncPacientesUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -28,6 +32,7 @@ sealed class SyncState {
  */
 @HiltViewModel
 class SyncViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val sessionManager: SessionManager,
     private val syncPacientesUseCase: SyncPacientesUseCase,
     private val syncHistorialUseCase: SyncHistorialUseCase,
@@ -36,6 +41,9 @@ class SyncViewModel @Inject constructor(
 
     private val _syncState = MutableStateFlow<SyncState>(SyncState.Idle)
     val syncState: StateFlow<SyncState> = _syncState.asStateFlow()
+
+    private val _isSilentSyncing = MutableStateFlow(false)
+    val isSilentSyncing: StateFlow<Boolean> = _isSilentSyncing.asStateFlow()
 
     /**
      * Dispara la sincronización manual completa (Bidireccional).
@@ -74,9 +82,29 @@ class SyncViewModel @Inject constructor(
      * No cambia el estado global de UI para no interrumpir al usuario.
      */
     fun performSilentSync() = viewModelScope.launch {
-        val opticaId = sessionManager.opticaId.first()
-        syncPacientesUseCase(opticaId)
-        syncHistorialUseCase(opticaId)
-        syncFinanzasUseCase(opticaId)
+        if (_isSilentSyncing.value || !isNetworkAvailable()) return@launch
+        _isSilentSyncing.value = true
+        try {
+            val opticaId = sessionManager.opticaId.first()
+            syncPacientesUseCase(opticaId)
+            syncHistorialUseCase(opticaId)
+            syncFinanzasUseCase(opticaId)
+        } catch (e: Exception) {
+            // Error silencioso, no interrumpimos al usuario
+        } finally {
+            _isSilentSyncing.value = false
+        }
+    }
+
+    private fun isNetworkAvailable(): Boolean {
+        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val network = connectivityManager.activeNetwork ?: return false
+        val activeNetwork = connectivityManager.getNetworkCapabilities(network) ?: return false
+        return when {
+            activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> true
+            activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> true
+            activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> true
+            else -> false
+        }
     }
 }
