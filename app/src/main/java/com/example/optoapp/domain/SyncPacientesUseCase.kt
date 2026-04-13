@@ -36,8 +36,7 @@ class SyncPacientesUseCase @Inject constructor(
     }
 
     private suspend fun upload(opticaId: String): Int {
-        val pacientes = repository.getAllPacientesSnapshot()
-            .filter { it.opticaId == opticaId || it.opticaId == "mi_optica_base" }
+        val pacientes = repository.getPacientesSnapshotForOptica(opticaId)
 
         if (pacientes.isEmpty()) return 0
 

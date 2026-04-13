@@ -8,7 +8,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -55,11 +55,11 @@ fun OptoAppNavigation() {
     val isLoggedIn by authViewModel.isLoggedIn.collectAsState(initial = null)
     val isPinRequired by authViewModel.isPinRequired.collectAsState(initial = null)
 
-    // Guardia Global: Si la sesión se invalida, expulsar al login
+    // Guardia global: si la sesión se invalida, volver al login vaciando la pila
     LaunchedEffect(isLoggedIn) {
         if (isLoggedIn == false) {
             navController.navigate("login") {
-                popUpTo(0) { inclusive = true }
+                popUpTo(navController.graph.id) { inclusive = true }
             }
         }
     }
@@ -95,6 +95,7 @@ fun OptoAppNavigation() {
 
         composable("pin") { PinScreen(navController, viewModel = authViewModel) }
         composable("login") { LoginScreen(navController, viewModel = authViewModel) }
+        composable("seleccion_optica") { SeleccionOpticaScreen(navController, viewModel = authViewModel) }
         composable("main") { MainDrawerScreen(navController) }
     }
 }

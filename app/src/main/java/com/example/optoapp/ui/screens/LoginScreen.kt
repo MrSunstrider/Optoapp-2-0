@@ -29,7 +29,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.optoapp.viewmodel.AuthState
 import com.example.optoapp.viewmodel.AuthViewModel
@@ -45,20 +45,26 @@ fun LoginScreen(
     viewModel: AuthViewModel = hiltViewModel()
 ) {
     val authState by viewModel.authState.collectAsState()
+    val pendingMemberships by viewModel.pendingMemberships.collectAsState()
     val focusManager = LocalFocusManager.current
 
     var email    by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var showPassword by remember { mutableStateOf(false) }
 
-    // Navegar automáticamente cuando el login es exitoso
     val isPinRequired by viewModel.isPinRequired.collectAsState(initial = false)
-    
-    LaunchedEffect(authState) {
+
+    LaunchedEffect(authState, pendingMemberships) {
         if (authState is AuthState.Success) {
-            val dest = if (isPinRequired == true) "pin" else "main"
-            navController.navigate(dest) {
-                popUpTo("login") { inclusive = true }
+            if (pendingMemberships.isNotEmpty()) {
+                navController.navigate("seleccion_optica") {
+                    popUpTo("login") { inclusive = true }
+                }
+            } else {
+                val dest = if (isPinRequired == true) "pin" else "main"
+                navController.navigate(dest) {
+                    popUpTo("login") { inclusive = true }
+                }
             }
         }
     }

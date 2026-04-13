@@ -2,6 +2,7 @@ package com.example.optoapp.viewmodel
 
 import android.content.Context
 import android.net.ConnectivityManager
+import android.util.Log
 import android.net.NetworkCapabilities
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -32,12 +33,16 @@ sealed class SyncState {
  */
 @HiltViewModel
 class SyncViewModel @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
     private val sessionManager: SessionManager,
     private val syncPacientesUseCase: SyncPacientesUseCase,
     private val syncHistorialUseCase: SyncHistorialUseCase,
     private val syncFinanzasUseCase: SyncFinanzasUseCase
 ) : ViewModel() {
+
+    companion object {
+        private const val TAG = "SyncViewModel"
+    }
 
     private val _syncState = MutableStateFlow<SyncState>(SyncState.Idle)
     val syncState: StateFlow<SyncState> = _syncState.asStateFlow()
@@ -86,11 +91,20 @@ class SyncViewModel @Inject constructor(
         _isSilentSyncing.value = true
         try {
             val opticaId = sessionManager.opticaId.first()
-            syncPacientesUseCase(opticaId)
-            syncHistorialUseCase(opticaId)
-            syncFinanzasUseCase(opticaId)
+            when (val p = syncPacientesUseCase(opticaId)) {
+                is Resource.Error -> Log.w(TAG, "Sync silenciosa (pacientes): ${p.message}")
+                else -> {}
+            }
+            when (val h = syncHistorialUseCase(opticaId)) {
+                is Resource.Error -> Log.w(TAG, "Sync silenciosa (historial): ${h.message}")
+                else -> {}
+            }
+            when (val f = syncFinanzasUseCase(opticaId)) {
+                is Resource.Error -> Log.w(TAG, "Sync silenciosa (finanzas): ${f.message}")
+                else -> {}
+            }
         } catch (e: Exception) {
-            // Error silencioso, no interrumpimos al usuario
+            Log.w(TAG, "Sync silenciosa: excepción no controlada", e)
         } finally {
             _isSilentSyncing.value = false
         }

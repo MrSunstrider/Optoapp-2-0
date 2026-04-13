@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.optoapp.data.SecurityManager
 import com.example.optoapp.viewmodel.AuthViewModel
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import kotlinx.coroutines.flow.first
@@ -41,7 +42,7 @@ fun PinScreen(navController: NavController, viewModel: AuthViewModel = hiltViewM
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "Ingrese su PIN de seguridad",
+            text = "Ingrese su PIN de seguridad (6 dígitos)",
             fontSize = 18.sp,
             color = MaterialTheme.colorScheme.onBackground
         )
@@ -51,7 +52,7 @@ fun PinScreen(navController: NavController, viewModel: AuthViewModel = hiltViewM
         Row(
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            repeat(6) { index ->
+            repeat(SecurityManager.PIN_LENGTH) { index ->
                 val filled = index < pinInput.length
                 Box(
                     modifier = Modifier

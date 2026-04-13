@@ -1,5 +1,6 @@
 package com.example.optoapp.di
 
+import com.example.optoapp.BuildConfig
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -18,8 +19,8 @@ object SupabaseModule {
     @Singleton
     fun provideSupabaseClient(): SupabaseClient {
         return createSupabaseClient(
-            supabaseUrl = "https://sflhtihqdhrlryeyrzdo.supabase.co",
-            supabaseKey = "sb_publishable_YGRw7Rxr8bFabgHGpE-i5A_JJcOdYiK"
+            supabaseUrl = BuildConfig.SUPABASE_URL,
+            supabaseKey = BuildConfig.SUPABASE_ANON_KEY
         ) {
             defaultSerializer = io.github.jan.supabase.serializer.KotlinXSerializer(kotlinx.serialization.json.Json {
                 ignoreUnknownKeys = true

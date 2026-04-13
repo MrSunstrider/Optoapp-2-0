@@ -7,6 +7,7 @@ import com.example.optoapp.data.ServicioExtra
 import com.example.optoapp.data.Paciente
 import dagger.hilt.android.lifecycle.HiltViewModel
 import com.example.optoapp.data.Resource
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.util.UUID
@@ -40,10 +41,14 @@ class ServiciosViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(ServiciosUiState())
     val uiState: StateFlow<ServiciosUiState> = _uiState.asStateFlow()
 
-    val allServicios: StateFlow<List<ServicioExtra>> = repository.getAllServicios()
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val allServicios: StateFlow<List<ServicioExtra>> = sessionManager.opticaId
+        .flatMapLatest { repository.getAllServiciosForOptica(it) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val pacientes: StateFlow<List<Paciente>> = repository.allPacientes
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val pacientes: StateFlow<List<Paciente>> = sessionManager.opticaId
+        .flatMapLatest { repository.pacientesFlowForOptica(it) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun updateUiState(update: (ServiciosUiState) -> ServiciosUiState) {

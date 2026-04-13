@@ -38,8 +38,7 @@ class SyncHistorialUseCase @Inject constructor(
     }
 
     private suspend fun upload(opticaId: String): Int {
-        val evaluaciones = repository.getAllEvaluacionesSnapshot()
-            .filter { it.opticaId == opticaId || it.opticaId == "mi_optica_base" }
+        val evaluaciones = repository.getEvaluacionesSnapshotForOptica(opticaId)
 
         if (evaluaciones.isEmpty()) return 0
 

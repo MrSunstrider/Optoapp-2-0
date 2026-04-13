@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.example.optoapp.data.SecurityManager
 import com.example.optoapp.viewmodel.AuthViewModel
 import kotlinx.coroutines.launch
 
@@ -123,13 +124,31 @@ fun ConfiguracionScreen(@Suppress("UNUSED_PARAMETER") navController: NavControll
 
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
-                    OutlinedTextField(value = pinActual, onValueChange = { pinActual = it }, label = { Text("PIN Actual") }, modifier = Modifier.fillMaxWidth(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
-                    OutlinedTextField(value = nuevoPin, onValueChange = { nuevoPin = it }, label = { Text("Nuevo PIN") }, modifier = Modifier.fillMaxWidth(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
-                    OutlinedTextField(value = confirmPin, onValueChange = { confirmPin = it }, label = { Text("Confirmar Nuevo PIN") }, modifier = Modifier.fillMaxWidth(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
-                    
+                    OutlinedTextField(
+                        value = pinActual,
+                        onValueChange = { pinActual = it.filter { c -> c.isDigit() }.take(SecurityManager.PIN_LENGTH) },
+                        label = { Text("PIN actual (${SecurityManager.PIN_LENGTH} dígitos)") },
+                        modifier = Modifier.fillMaxWidth(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                    )
+                    OutlinedTextField(
+                        value = nuevoPin,
+                        onValueChange = { nuevoPin = it.filter { c -> c.isDigit() }.take(SecurityManager.PIN_LENGTH) },
+                        label = { Text("Nuevo PIN (${SecurityManager.PIN_LENGTH} dígitos)") },
+                        modifier = Modifier.fillMaxWidth(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                    )
+                    OutlinedTextField(
+                        value = confirmPin,
+                        onValueChange = { confirmPin = it.filter { c -> c.isDigit() }.take(SecurityManager.PIN_LENGTH) },
+                        label = { Text("Confirmar nuevo PIN") },
+                        modifier = Modifier.fillMaxWidth(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                    )
+
                     Button(
                         onClick = {
-                            if (nuevoPin == confirmPin && nuevoPin.length >= 4) {
+                            if (nuevoPin == confirmPin && nuevoPin.length == SecurityManager.PIN_LENGTH) {
                                 scope.launch {
                                     viewModel.updatePin(pinActual, nuevoPin)
                                     dialogMsg = "PIN actualizado correctamente."

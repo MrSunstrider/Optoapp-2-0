@@ -13,6 +13,12 @@ import kotlinx.coroutines.flow.map
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
 
 class SecurityManager(private val context: Context) {
+
+    companion object {
+        /** Longitud fija del PIN en la app. */
+        const val PIN_LENGTH = 6
+        private const val DEFAULT_PIN = "123456"
+    }
     private val masterKeyAlias = MasterKeys.getOrCreate(MasterKeys.AES256_GCM_SPEC)
     
     private val encryptedPrefs = EncryptedSharedPreferences.create(
@@ -28,7 +34,7 @@ class SecurityManager(private val context: Context) {
     val userPin: Flow<String> = _pinFlow
 
     private fun getSecurePin(): String {
-        return encryptedPrefs.getString("user_pin", "1234") ?: "1234"
+        return encryptedPrefs.getString("user_pin", DEFAULT_PIN) ?: DEFAULT_PIN
     }
 
     suspend fun savePin(pin: String) {

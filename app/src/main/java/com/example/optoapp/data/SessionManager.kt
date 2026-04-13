@@ -27,6 +27,7 @@ class SessionManager(private val context: Context) {
     )
 
     private val _opticaIdFlow = MutableStateFlow(getSecureOpticaId())
+    private val _opticaRolFlow = MutableStateFlow(getSecureOpticaRol())
 
     companion object {
         private val IS_LOGGED_IN  = booleanPreferencesKey("saas_logged_in")
@@ -42,8 +43,15 @@ class SessionManager(private val context: Context) {
 
     val opticaId: Flow<String> = _opticaIdFlow
 
+    /** Rol en la óptica activa (tabla usuario_optica). */
+    val opticaRol: Flow<String> = _opticaRolFlow
+
     private fun getSecureOpticaId(): String {
         return encryptedPrefs.getString("saas_optica_id", "mi_optica_base") ?: "mi_optica_base"
+    }
+
+    private fun getSecureOpticaRol(): String {
+        return encryptedPrefs.getString("saas_optica_rol", "admin") ?: "admin"
     }
 
     val userEmail: Flow<String> = context.dataStore.data
@@ -60,14 +68,16 @@ class SessionManager(private val context: Context) {
 
     // ─── Escritura ────────────────────────────────────────────────────────────
 
-    suspend fun saveSession(opticaId: String, email: String, name: String = "") {
+    suspend fun saveSession(opticaId: String, email: String, name: String = "", rol: String = "admin") {
         encryptedPrefs.edit().apply {
             putString("saas_optica_id", opticaId)
             putString("saas_user_email", email)
+            putString("saas_optica_rol", rol)
             apply()
         }
         _opticaIdFlow.value = opticaId
-        
+        _opticaRolFlow.value = rol
+
         context.dataStore.edit { prefs ->
             prefs[IS_LOGGED_IN] = true
             prefs[USER_NAME]    = name
@@ -82,6 +92,7 @@ class SessionManager(private val context: Context) {
     suspend fun clearSession() {
         encryptedPrefs.edit().clear().apply()
         _opticaIdFlow.value = "mi_optica_base"
+        _opticaRolFlow.value = "admin"
         
         context.dataStore.edit { prefs ->
             prefs[IS_LOGGED_IN] = false

@@ -11,13 +11,18 @@ class OptoRepository(
     private val pagoDao: PagoDao,
     private val servicioExtraDao: ServicioExtraDao
 ) {
-    val allPacientes: Flow<List<Paciente>> = pacienteDao.getAllPacientes()
-    
-    fun searchPacientes(query: String): Flow<List<Paciente>> = pacienteDao.searchPacientes(query)
-    
-    fun getPacientesWithPendingBalance(): Flow<List<Paciente>> = pacienteDao.getPacientesWithPendingBalance()
-    
-    fun getPacientesWithPendingDelivery(): Flow<List<Paciente>> = pacienteDao.getPacientesWithPendingDelivery()
+    fun pacientesFlowForOptica(opticaId: String): Flow<List<Paciente>> =
+        pacienteDao.getPacientesByOptica(opticaId)
+
+    fun searchPacientesForOptica(opticaId: String, query: String): Flow<List<Paciente>> =
+        if (query.isEmpty()) pacienteDao.getPacientesByOptica(opticaId)
+        else pacienteDao.searchPacientesForOptica(opticaId, query)
+
+    fun getPacientesWithPendingBalanceForOptica(opticaId: String): Flow<List<Paciente>> =
+        pacienteDao.getPacientesWithPendingBalanceForOptica(opticaId)
+
+    fun getPacientesWithPendingDeliveryForOptica(opticaId: String): Flow<List<Paciente>> =
+        pacienteDao.getPacientesWithPendingDeliveryForOptica(opticaId)
     
     suspend fun getPacienteById(id: String): Resource<Paciente> {
         return try {
@@ -39,8 +44,15 @@ class OptoRepository(
         evaluacionDao.getEvaluacionesByPaciente(pacienteId)
         
     fun countEvaluacionesInRange(start: Long, end: Long): Flow<Int> = evaluacionDao.countEvaluacionesInRange(start, end)
-    
-    fun getDispensacionesByDateRange(start: Long, end: Long): Flow<List<DispensacionOptica>> = dispensacionDao.getDispensacionesByDateRange(start, end)
+
+    fun countEvaluacionesInRangeForOptica(start: Long, end: Long, opticaId: String): Flow<Int> =
+        evaluacionDao.countEvaluacionesInRangeForOptica(start, end, opticaId)
+
+    fun getDispensacionesByDateRange(start: Long, end: Long): Flow<List<DispensacionOptica>> =
+        dispensacionDao.getDispensacionesByDateRange(start, end)
+
+    fun getDispensacionesByDateRangeForOptica(start: Long, end: Long, opticaId: String): Flow<List<DispensacionOptica>> =
+        dispensacionDao.getDispensacionesByDateRangeForOptica(start, end, opticaId)
         
     suspend fun getEvaluacionById(id: String): Resource<EvaluacionClinica> {
         return try {
@@ -62,10 +74,19 @@ class OptoRepository(
         dispensacionDao.getDispensacionesByPaciente(pacienteId)
         
     fun getAllDispensaciones(): Flow<List<DispensacionOptica>> = dispensacionDao.getAllDispensaciones()
-    
+
+    fun getAllDispensacionesForOptica(opticaId: String): Flow<List<DispensacionOptica>> =
+        dispensacionDao.getAllDispensacionesForOptica(opticaId)
+
     fun getTotalVendido(): Flow<Double?> = dispensacionDao.getTotalVendido()
-    
+
     fun getTotalPagado(): Flow<Double?> = dispensacionDao.getTotalPagado()
+
+    fun getTotalVendidoForOptica(opticaId: String): Flow<Double?> =
+        dispensacionDao.getTotalVendidoForOptica(opticaId)
+
+    fun getTotalPagadoForOptica(opticaId: String): Flow<Double?> =
+        dispensacionDao.getTotalPagadoForOptica(opticaId)
     
     suspend fun getDispensacionById(id: String): Resource<DispensacionOptica> {
         return try {
@@ -90,11 +111,17 @@ class OptoRepository(
     fun getPagosByServicioExtra(servicioExtraId: String): Flow<List<Pago>> = 
         pagoDao.getPagosByServicioExtra(servicioExtraId)
         
-    fun getPagosByDateRange(start: Long, end: Long): Flow<List<Pago>> = 
+    fun getPagosByDateRange(start: Long, end: Long): Flow<List<Pago>> =
         pagoDao.getPagosByDateRange(start, end)
+
+    fun getPagosByDateRangeForOptica(start: Long, end: Long, opticaId: String): Flow<List<Pago>> =
+        pagoDao.getPagosByDateRangeForOptica(start, end, opticaId)
 
     // Servicios Extra
     fun getAllServicios(): Flow<List<ServicioExtra>> = servicioExtraDao.getAllServicios()
+
+    fun getAllServiciosForOptica(opticaId: String): Flow<List<ServicioExtra>> =
+        servicioExtraDao.getAllServiciosForOptica(opticaId)
     
     fun getServiciosByPaciente(pacienteId: String): Flow<List<ServicioExtra>> = servicioExtraDao.getServiciosByPaciente(pacienteId)
     
@@ -121,23 +148,25 @@ class OptoRepository(
     /** Alias de upsert para la bajada de datos desde Supabase. */
     suspend fun upsertPaciente(paciente: Paciente) = pacienteDao.insertPaciente(paciente)
 
-    /** Snapshot de todos los pacientes (sin suscripción continua). */
-    suspend fun getAllPacientesSnapshot(): List<Paciente> = allPacientes.first()
+    /** Snapshot de pacientes de la óptica activa (sync upload). */
+    suspend fun getPacientesSnapshotForOptica(opticaId: String): List<Paciente> =
+        pacienteDao.getPacientesListByOptica(opticaId)
 
-    /** Snapshot de todas las evaluaciones clínicas. */
-    suspend fun getAllEvaluacionesSnapshot(): List<EvaluacionClinica> =
-        evaluacionDao.getAllEvaluaciones()
+    /** Snapshot de evaluaciones de la óptica activa. */
+    suspend fun getEvaluacionesSnapshotForOptica(opticaId: String): List<EvaluacionClinica> =
+        evaluacionDao.getEvaluacionesListByOptica(opticaId)
 
-    /** Snapshot de todas las dispensaciones. */
-    suspend fun getAllDispensacionesSnapshot(): List<DispensacionOptica> =
-        dispensacionDao.getAllDispensacionesList()
+    /** Snapshot de dispensaciones de la óptica activa. */
+    suspend fun getDispensacionesSnapshotForOptica(opticaId: String): List<DispensacionOptica> =
+        dispensacionDao.getDispensacionesListByOptica(opticaId)
 
-    /** Snapshot de todos los pagos. */
-    suspend fun getAllPagosSnapshot(): List<Pago> = pagoDao.getAllPagos()
+    /** Snapshot de pagos de la óptica activa. */
+    suspend fun getPagosSnapshotForOptica(opticaId: String): List<Pago> =
+        pagoDao.getPagosListByOptica(opticaId)
 
-    /** Snapshot de todos los servicios extra. */
-    suspend fun getAllServiciosSnapshot(): List<ServicioExtra> =
-        servicioExtraDao.getAllServicios().first()
+    /** Snapshot de servicios extra de la óptica activa. */
+    suspend fun getServiciosSnapshotForOptica(opticaId: String): List<ServicioExtra> =
+        servicioExtraDao.getServiciosListByOptica(opticaId)
 
     // ─────────────────────────────────────────────────────────────────────────
 
@@ -149,13 +178,13 @@ class OptoRepository(
         pacienteDao.deleteAll()
     }
     
-    suspend fun getBackupData(): BackupData {
+    suspend fun getBackupDataForOptica(opticaId: String): BackupData {
         return BackupData(
-            pacientes = allPacientes.first(),
-            evaluaciones = evaluacionDao.getAllEvaluaciones(),
-            dispensaciones = dispensacionDao.getAllDispensacionesList(),
-            pagos = pagoDao.getAllPagos(),
-            serviciosExtra = servicioExtraDao.getAllServicios().first()
+            pacientes = pacienteDao.getPacientesListByOptica(opticaId),
+            evaluaciones = evaluacionDao.getEvaluacionesListByOptica(opticaId),
+            dispensaciones = dispensacionDao.getDispensacionesListByOptica(opticaId),
+            pagos = pagoDao.getPagosListByOptica(opticaId),
+            serviciosExtra = servicioExtraDao.getServiciosListByOptica(opticaId)
         )
     }
 

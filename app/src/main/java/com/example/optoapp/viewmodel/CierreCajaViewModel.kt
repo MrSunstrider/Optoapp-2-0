@@ -4,7 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Pago
+import com.example.optoapp.data.SessionManager
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.util.*
@@ -18,7 +20,8 @@ data class CierreCajaUiState(
 
 @HiltViewModel
 class CierreCajaViewModel @Inject constructor(
-    private val repository: OptoRepository
+    private val repository: OptoRepository,
+    private val sessionManager: SessionManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CierreCajaUiState())
@@ -34,9 +37,12 @@ class CierreCajaViewModel @Inject constructor(
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     private fun observePagos() {
-        _uiState.map { it.fecha }
+        kotlinx.coroutines.flow.combine(
+            _uiState.map { it.fecha }.distinctUntilChanged(),
+            sessionManager.opticaId
+        ) { fecha, opticaId -> fecha to opticaId }
             .distinctUntilChanged()
-            .flatMapLatest { fecha ->
+            .flatMapLatest { (fecha, opticaId) ->
                 val calendar = Calendar.getInstance().apply {
                     timeInMillis = fecha
                     set(Calendar.HOUR_OF_DAY, 0)
@@ -49,8 +55,8 @@ class CierreCajaViewModel @Inject constructor(
                 calendar.set(Calendar.MINUTE, 59)
                 calendar.set(Calendar.SECOND, 59)
                 val end = calendar.timeInMillis
-                
-                repository.getPagosByDateRange(start, end)
+
+                repository.getPagosByDateRangeForOptica(start, end, opticaId)
             }
             .onEach { lista ->
                 _uiState.update { it.copy(pagos = lista, isLoading = false) }

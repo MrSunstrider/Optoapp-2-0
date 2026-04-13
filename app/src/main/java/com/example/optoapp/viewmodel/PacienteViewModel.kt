@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Paciente
+import com.example.optoapp.data.SessionManager
 import com.example.optoapp.data.Resource
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
@@ -13,6 +14,7 @@ import javax.inject.Inject
 @HiltViewModel
 class PacienteViewModel @Inject constructor(
     private val repository: com.example.optoapp.data.OptoRepository,
+    private val sessionManager: SessionManager,
     private val syncPacientesUseCase: com.example.optoapp.domain.SyncPacientesUseCase
 ) : ViewModel() {
 
@@ -23,13 +25,21 @@ class PacienteViewModel @Inject constructor(
     val activeFilter: StateFlow<String?> = _activeFilter
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
-    val pacientes: StateFlow<List<Paciente>> = combine(_searchQuery, _activeFilter) { query, filter ->
-        query to filter
-    }.flatMapLatest { (query, filter) ->
+    val pacientes: StateFlow<List<Paciente>> = combine(
+        _searchQuery,
+        _activeFilter,
+        sessionManager.opticaId
+    ) { query, filter, opticaId ->
+        Triple(query, filter, opticaId)
+    }.flatMapLatest { (query, filter, opticaId) ->
         val baseFlow = when (filter) {
-            "Saldo Pendiente" -> repository.getPacientesWithPendingBalance()
-            "Estado de entrega" -> repository.getPacientesWithPendingDelivery()
-            else -> if (query.isEmpty()) repository.allPacientes else repository.searchPacientes(query)
+            "Saldo Pendiente" -> repository.getPacientesWithPendingBalanceForOptica(opticaId)
+            "Estado de entrega" -> repository.getPacientesWithPendingDeliveryForOptica(opticaId)
+            else -> if (query.isEmpty()) {
+                repository.pacientesFlowForOptica(opticaId)
+            } else {
+                repository.searchPacientesForOptica(opticaId, query)
+            }
         }
         
         baseFlow.map { list ->

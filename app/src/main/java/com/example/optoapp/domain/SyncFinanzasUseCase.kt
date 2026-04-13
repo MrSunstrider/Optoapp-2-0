@@ -50,7 +50,7 @@ class SyncFinanzasUseCase @Inject constructor(
             // 2. BAJADA
             val dispDown = downloadDispensaciones(opticaId)
             val servDown = downloadServicios(opticaId)
-            val pagosDown = downloadPagos()
+            val pagosDown = downloadPagos(opticaId)
 
             Resource.Success(
                 FinanzasSyncResult(
@@ -71,8 +71,7 @@ class SyncFinanzasUseCase @Inject constructor(
     // ─── SUBIDA ──────────────────────────────────────────────────────────────
 
     private suspend fun uploadDispensaciones(opticaId: String): Int {
-        val dispensaciones = repository.getAllDispensacionesSnapshot()
-            .filter { it.opticaId == opticaId || it.opticaId == "mi_optica_base" }
+        val dispensaciones = repository.getDispensacionesSnapshotForOptica(opticaId)
         if (dispensaciones.isEmpty()) return 0
         val rows = dispensaciones.map { it.toRemoto().copy(opticaId = opticaId) }
         supabase.postgrest[TABLE_DISPENSACIONES].upsert(rows)
@@ -80,8 +79,7 @@ class SyncFinanzasUseCase @Inject constructor(
     }
 
     private suspend fun uploadServicios(opticaId: String): Int {
-        val servicios = repository.getAllServiciosSnapshot()
-            .filter { it.opticaId == opticaId || it.opticaId == "mi_optica_base" }
+        val servicios = repository.getServiciosSnapshotForOptica(opticaId)
         if (servicios.isEmpty()) return 0
         val rows = servicios.map { it.toRemoto().copy(opticaId = opticaId) }
         supabase.postgrest[TABLE_SERVICIOS].upsert(rows)
@@ -89,8 +87,7 @@ class SyncFinanzasUseCase @Inject constructor(
     }
 
     private suspend fun uploadPagos(opticaId: String): Int {
-        val pagos = repository.getAllPagosSnapshot()
-            .filter { it.opticaId == opticaId || it.opticaId == "mi_optica_base" }
+        val pagos = repository.getPagosSnapshotForOptica(opticaId)
         if (pagos.isEmpty()) return 0
         val rows = pagos.map { it.toRemoto().copy(opticaId = opticaId) }
         supabase.postgrest[TABLE_PAGOS].upsert(rows)
@@ -111,8 +108,10 @@ class SyncFinanzasUseCase @Inject constructor(
         return remotos.size
     }
 
-    private suspend fun downloadPagos(): Int {
-        val remotos = supabase.postgrest[TABLE_PAGOS].select().decodeList<PagoRemoto>()
+    private suspend fun downloadPagos(opticaId: String): Int {
+        val remotos = supabase.postgrest[TABLE_PAGOS]
+            .select { filter { eq("optica_id", opticaId) } }
+            .decodeList<PagoRemoto>()
         remotos.forEach { repository.insertPago(it.toEntity()) }
         return remotos.size
     }

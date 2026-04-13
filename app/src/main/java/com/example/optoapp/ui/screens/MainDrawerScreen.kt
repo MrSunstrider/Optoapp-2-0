@@ -8,6 +8,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import com.example.optoapp.data.AppRoles
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -30,6 +31,9 @@ fun MainDrawerScreen(parentNavController: NavController) {
     val authViewModel: com.example.optoapp.viewmodel.AuthViewModel = hiltViewModel()
     val syncState by syncViewModel.syncState.collectAsState()
     val isSilentSyncing by syncViewModel.isSilentSyncing.collectAsState()
+    val opticaRol by authViewModel.opticaRol.collectAsState(initial = "admin")
+    val showCierreCaja = AppRoles.canViewCierreCaja(opticaRol)
+    val showBiYReportes = AppRoles.canViewBiAndReports(opticaRol)
 
     // Sincronización automática al entrar al dashboard
     LaunchedEffect(Unit) {
@@ -84,36 +88,40 @@ fun MainDrawerScreen(parentNavController: NavController) {
                     icon = { Icon(Icons.Default.AddShoppingCart, contentDescription = null) },
                     modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                 )
-                NavigationDrawerItem(
-                    label = { Text("Cierre de Caja") },
-                    selected = currentRoute == "cierre_caja",
-                    onClick = {
-                        scope.launch { drawerState.close() }
-                        navController.navigate("cierre_caja")
-                    },
-                    icon = { Icon(Icons.Default.AccountBalanceWallet, contentDescription = null) },
-                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
-                )
-                NavigationDrawerItem(
-                    label = { Text("Estadísticas (BI)") },
-                    selected = currentRoute == "estadisticas_bi",
-                    onClick = {
-                        scope.launch { drawerState.close() }
-                        navController.navigate("estadisticas_bi")
-                    },
-                    icon = { Icon(Icons.Default.BarChart, contentDescription = null) },
-                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
-                )
-                NavigationDrawerItem(
-                    label = { Text("Reportes") },
-                    selected = currentRoute == "reportes",
-                    onClick = {
-                        scope.launch { drawerState.close() }
-                        navController.navigate("reportes")
-                    },
-                    icon = { Icon(Icons.Default.DateRange, contentDescription = null) },
-                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
-                )
+                if (showCierreCaja) {
+                    NavigationDrawerItem(
+                        label = { Text("Cierre de Caja") },
+                        selected = currentRoute == "cierre_caja",
+                        onClick = {
+                            scope.launch { drawerState.close() }
+                            navController.navigate("cierre_caja")
+                        },
+                        icon = { Icon(Icons.Default.AccountBalanceWallet, contentDescription = null) },
+                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                    )
+                }
+                if (showBiYReportes) {
+                    NavigationDrawerItem(
+                        label = { Text("Estadísticas (BI)") },
+                        selected = currentRoute == "estadisticas_bi",
+                        onClick = {
+                            scope.launch { drawerState.close() }
+                            navController.navigate("estadisticas_bi")
+                        },
+                        icon = { Icon(Icons.Default.BarChart, contentDescription = null) },
+                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                    )
+                    NavigationDrawerItem(
+                        label = { Text("Reportes") },
+                        selected = currentRoute == "reportes",
+                        onClick = {
+                            scope.launch { drawerState.close() }
+                            navController.navigate("reportes")
+                        },
+                        icon = { Icon(Icons.Default.DateRange, contentDescription = null) },
+                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                    )
+                }
                 NavigationDrawerItem(
                     label = { Text("Configuración") },
                     selected = currentRoute == "configuracion",
@@ -190,6 +198,9 @@ fun MainDrawerScreen(parentNavController: NavController) {
                         scope.launch {
                             drawerState.close()
                             authViewModel.logout()
+                            parentNavController.navigate("login") {
+                                popUpTo(parentNavController.graph.id) { inclusive = true }
+                            }
                         }
                     },
                     icon = { Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Salir") },

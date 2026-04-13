@@ -33,7 +33,8 @@ data class ProductoRanking(
 
 @HiltViewModel
 class BIViewModel @Inject constructor(
-    private val repository: OptoRepository
+    private val repository: OptoRepository,
+    private val sessionManager: SessionManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(BIUiState())
@@ -49,17 +50,20 @@ class BIViewModel @Inject constructor(
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     private fun observeStats() {
-        _uiState.map { it.periodo }
+        combine(
+            _uiState.map { it.periodo }.distinctUntilChanged(),
+            sessionManager.opticaId
+        ) { periodo, opticaId -> periodo to opticaId }
             .distinctUntilChanged()
-            .flatMapLatest { periodo ->
+            .flatMapLatest { (periodo, opticaId) ->
                 val ranges = getRangesForPeriod(periodo)
                 val prevRanges = getPreviousRangesForPeriod(periodo)
-                
+
                 combine(
-                    repository.countEvaluacionesInRange(ranges.first, ranges.second),
-                    repository.countEvaluacionesInRange(prevRanges.first, prevRanges.second),
-                    repository.getDispensacionesByDateRange(ranges.first, ranges.second),
-                    repository.getPagosByDateRange(ranges.first, ranges.second)
+                    repository.countEvaluacionesInRangeForOptica(ranges.first, ranges.second, opticaId),
+                    repository.countEvaluacionesInRangeForOptica(prevRanges.first, prevRanges.second, opticaId),
+                    repository.getDispensacionesByDateRangeForOptica(ranges.first, ranges.second, opticaId),
+                    repository.getPagosByDateRangeForOptica(ranges.first, ranges.second, opticaId)
                 ) { examsActual, examsAnterior, dispensaciones, pagos ->
                     
                     val proyectada = dispensaciones.sumOf { it.montoTotal }

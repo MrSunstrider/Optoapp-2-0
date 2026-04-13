@@ -4,6 +4,8 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.optoapp.data.BackupData
+import com.example.optoapp.data.MembershipRepository
+import com.example.optoapp.data.OpticaMembership
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.SecurityManager
 import com.example.optoapp.data.SessionManager
@@ -30,6 +32,7 @@ class AuthViewModel @Inject constructor(
     private val securityManager: SecurityManager,
     private val sessionManager: SessionManager,
     private val repository: OptoRepository,
+    private val membershipRepository: MembershipRepository,
     private val supabase: SupabaseClient
 ) : ViewModel() {
 
@@ -41,11 +44,18 @@ class AuthViewModel @Inject constructor(
     private val _pinInput = MutableStateFlow("")
     val pinInput: StateFlow<String> = _pinInput
 
-    fun onPinDigit(digit: String) { if (_pinInput.value.length < 6) _pinInput.value += digit }
+    fun onPinDigit(digit: String) {
+        if (_pinInput.value.length < SecurityManager.PIN_LENGTH) _pinInput.value += digit
+    }
+
     fun clearPin() { _pinInput.value = "" }
+
     suspend fun validatePin(): Boolean = _pinInput.value == userPin.first()
+
     fun updatePin(oldPin: String, newPin: String) = viewModelScope.launch {
-        if (oldPin == userPin.first()) securityManager.savePin(newPin)
+        if (oldPin != userPin.first()) return@launch
+        if (newPin.length != SecurityManager.PIN_LENGTH) return@launch
+        securityManager.savePin(newPin)
     }
 
     // ─── Estado Supabase Auth ─────────────────────────────────────────────────
@@ -59,6 +69,9 @@ class AuthViewModel @Inject constructor(
     /** opticaId activo, usado por los Use Cases de sincronización. */
     val opticaId = sessionManager.opticaId
 
+    /** Rol en la óptica activa (`usuario_optica`), para ocultar secciones en el drawer. */
+    val opticaRol = sessionManager.opticaRol
+
     private val _isAuthChecked = MutableStateFlow(false)
     val isAuthChecked = _isAuthChecked.asStateFlow()
 
@@ -67,6 +80,13 @@ class AuthViewModel @Inject constructor(
 
     /** Flujo para la pantalla de configuración: ¿el PIN es obligatorio? */
     val isPinRequired = sessionManager.isPinRequired
+
+    /** Si hay más de una óptica, el usuario debe elegir en [SeleccionOpticaScreen]. */
+    private val _pendingMemberships = MutableStateFlow<List<OpticaMembership>>(emptyList())
+    val pendingMemberships: StateFlow<List<OpticaMembership>> = _pendingMemberships.asStateFlow()
+
+    private var pendingLoginEmail: String = ""
+    private var pendingLoginName: String = ""
 
     fun togglePinRequired(enabled: Boolean) = viewModelScope.launch {
         sessionManager.setPinRequired(enabled)
@@ -90,38 +110,61 @@ class AuthViewModel @Inject constructor(
 
     /**
      * Autentica con email/contraseña en Supabase.
-     * El opticaId se extrae de los metadatos del usuario (campo "optica_id")
-     * o se usa el <uid> directamente como fallback seguro.
+     * Óptica activa: tabla `usuario_optica` (multi-óptica). Si no hay filas, fallback a metadata/uid (legado).
      */
     fun login(email: String, password: String) = viewModelScope.launch {
         _authState.value = AuthState.Loading
+        _pendingMemberships.value = emptyList()
         try {
             supabase.auth.signInWith(Email) {
                 this.email    = email
                 this.password = password
             }
 
-            val user    = supabase.auth.currentUserOrNull()
-            val uid     = user?.id ?: "unknown"
-
-            // Intentar leer opticaId desde metadatos del usuario en Supabase
-            val meta    = user?.userMetadata
-            val opticaId = meta?.get("optica_id")?.toString()
-                ?.removePrefix("\"")?.removeSuffix("\"")
-                ?: uid
+            val user = supabase.auth.currentUserOrNull()
+            val uid  = user?.id ?: "unknown"
+            val meta = user?.userMetadata
 
             val nombre = meta?.get("nombre")?.toString()
                 ?.removePrefix("\"")?.removeSuffix("\"")
                 ?: email.substringBefore("@")
 
-            sessionManager.saveSession(
-                opticaId = opticaId,
-                email    = email,
-                name     = nombre
-            )
+            pendingLoginEmail = email
+            pendingLoginName = nombre
 
-            Log.d(TAG, "Login exitoso. opticaId=$opticaId uid=$uid")
-            _authState.value = AuthState.Success
+            val memberships = membershipRepository.fetchMembershipsForCurrentUser()
+
+            when {
+                memberships.size > 1 -> {
+                    _pendingMemberships.value = memberships
+                    Log.d(TAG, "Login: ${memberships.size} ópticas; se requiere selección")
+                    _authState.value = AuthState.Success
+                }
+                memberships.size == 1 -> {
+                    val m = memberships.first()
+                    sessionManager.saveSession(
+                        opticaId = m.opticaId,
+                        email = email,
+                        name = nombre,
+                        rol = m.rol
+                    )
+                    Log.d(TAG, "Login exitoso. opticaId=${m.opticaId} (única membresía)")
+                    _authState.value = AuthState.Success
+                }
+                else -> {
+                    val opticaLegacy = meta?.get("optica_id")?.toString()
+                        ?.removePrefix("\"")?.removeSuffix("\"")
+                        ?: uid
+                    sessionManager.saveSession(
+                        opticaId = opticaLegacy,
+                        email = email,
+                        name = nombre,
+                        rol = "admin"
+                    )
+                    Log.d(TAG, "Login exitoso (legado sin usuario_optica). opticaId=$opticaLegacy uid=$uid")
+                    _authState.value = AuthState.Success
+                }
+            }
 
         } catch (e: Exception) {
             Log.e(TAG, "Error de login", e)
@@ -137,14 +180,28 @@ class AuthViewModel @Inject constructor(
         }
     }
 
+    /** Tras elegir óptica en pantalla de selección (solo si hay varias membresías). */
+    suspend fun selectOptica(membership: OpticaMembership) {
+        sessionManager.saveSession(
+            opticaId = membership.opticaId,
+            email = pendingLoginEmail,
+            name = pendingLoginName,
+            rol = membership.rol
+        )
+        _pendingMemberships.value = emptyList()
+        Log.d(TAG, "Óptica seleccionada: ${membership.opticaId} rol=${membership.rol}")
+    }
+
     // ─── Logout ───────────────────────────────────────────────────────────────
 
-    fun logout() = viewModelScope.launch {
+    /** Cierra sesión en Supabase y borra datos locales; debe llamarse desde una corrutina. */
+    suspend fun logout() {
         try {
             supabase.auth.signOut()
         } catch (e: Exception) {
             Log.w(TAG, "Error en signOut (ignorado): ${e.localizedMessage}")
         } finally {
+            _pendingMemberships.value = emptyList()
             sessionManager.clearSession()
             _authState.value = AuthState.Idle
         }
@@ -162,7 +219,7 @@ class AuthViewModel @Inject constructor(
             // Nueva validación: si la sesión no existe en Supabase O el tiempo de 24h expiró
             if (session == null || !isSessionTimeValid()) {
                 Log.d(TAG, "Sesión inexistente o expirada por tiempo (24h). Limpiando...")
-                logout() // Usa logout para limpiar Supabase y SessionManager
+                logout()
             }
         } catch (e: Exception) {
             Log.w(TAG, "No se pudo verificar sesión existente: ${e.localizedMessage}")
@@ -174,7 +231,10 @@ class AuthViewModel @Inject constructor(
 
     // ─── Backup local (sin cambios) ───────────────────────────────────────────
 
-    suspend fun getBackupJson(): String = com.google.gson.Gson().toJson(repository.getBackupData())
+    suspend fun getBackupJson(): String {
+        val oid = sessionManager.opticaId.first()
+        return com.google.gson.Gson().toJson(repository.getBackupDataForOptica(oid))
+    }
 
     fun restoreBackup(json: String) = viewModelScope.launch {
         try {
