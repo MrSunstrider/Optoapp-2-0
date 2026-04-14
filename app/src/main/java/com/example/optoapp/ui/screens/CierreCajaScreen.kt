@@ -18,7 +18,6 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.optoapp.viewmodel.CierreCajaViewModel
 import com.example.optoapp.util.DateUtils
-import java.text.SimpleDateFormat
 import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -28,7 +27,7 @@ fun CierreCajaScreen(navController: NavController, viewModel: CierreCajaViewMode
     var showDatePicker by remember { mutableStateOf(false) }
     
     val datePickerState = rememberDatePickerState(
-        initialSelectedDateMillis = uiState.fecha
+        initialSelectedDateMillis = DateUtils.localDateToPickerMillis(uiState.fecha)
     )
 
     if (showDatePicker) {
@@ -36,7 +35,7 @@ fun CierreCajaScreen(navController: NavController, viewModel: CierreCajaViewMode
             onDismissRequest = { showDatePicker = false },
             confirmButton = {
                 TextButton(onClick = {
-                    datePickerState.selectedDateMillis?.let { viewModel.setFecha(it) }
+                    datePickerState.selectedDateMillis?.let { viewModel.setFecha(DateUtils.pickerMillisToLocalDate(it)) }
                     showDatePicker = false
                 }) { Text("OK") }
             }
@@ -70,7 +69,7 @@ fun CierreCajaScreen(navController: NavController, viewModel: CierreCajaViewMode
         ) {
             // Header con Fecha
             Text(
-                text = "Reporte del ${SimpleDateFormat("dd 'de' MMMM, yyyy", Locale("es", "PE")).format(Date(uiState.fecha))}",
+                text = "Reporte del ${DateUtils.formatLocalized(uiState.fecha)}",
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.primary
             )

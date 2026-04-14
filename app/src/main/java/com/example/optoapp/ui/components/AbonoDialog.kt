@@ -8,6 +8,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.example.optoapp.data.Pago
 import java.util.*
+import java.time.LocalDate
 
 @Composable
 fun AbonoDialog(pago: Pago? = null, onDismiss: () -> Unit, onConfirm: (Pago) -> Unit) {
@@ -50,7 +51,7 @@ fun AbonoDialog(pago: Pago? = null, onDismiss: () -> Unit, onConfirm: (Pago) -> 
                                 monto = m,
                                 metodoPago = metodo,
                                 nota = nota,
-                                fecha = System.currentTimeMillis(),
+                                fecha = LocalDate.now(),
                                 tipo = "Abono"
                             )
                     )

@@ -9,11 +9,12 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import java.util.*
+import java.time.LocalDate
+import com.example.optoapp.util.DateUtils
 import javax.inject.Inject
 
 data class CierreCajaUiState(
-    val fecha: Long = System.currentTimeMillis(),
+    val fecha: LocalDate = DateUtils.today(),
     val pagos: List<Pago> = emptyList(),
     val isLoading: Boolean = false
 )
@@ -31,7 +32,7 @@ class CierreCajaViewModel @Inject constructor(
         observePagos()
     }
 
-    fun setFecha(fecha: Long) {
+    fun setFecha(fecha: LocalDate) {
         _uiState.update { it.copy(fecha = fecha) }
     }
 
@@ -43,20 +44,7 @@ class CierreCajaViewModel @Inject constructor(
         ) { fecha, opticaId -> fecha to opticaId }
             .distinctUntilChanged()
             .flatMapLatest { (fecha, opticaId) ->
-                val calendar = Calendar.getInstance().apply {
-                    timeInMillis = fecha
-                    set(Calendar.HOUR_OF_DAY, 0)
-                    set(Calendar.MINUTE, 0)
-                    set(Calendar.SECOND, 0)
-                    set(Calendar.MILLISECOND, 0)
-                }
-                val start = calendar.timeInMillis
-                calendar.set(Calendar.HOUR_OF_DAY, 23)
-                calendar.set(Calendar.MINUTE, 59)
-                calendar.set(Calendar.SECOND, 59)
-                val end = calendar.timeInMillis
-
-                repository.getPagosByDateRangeForOptica(start, end, opticaId)
+                repository.getPagosByDateRangeForOptica(fecha, fecha, opticaId)
             }
             .onEach { lista ->
                 _uiState.update { it.copy(pagos = lista, isLoading = false) }

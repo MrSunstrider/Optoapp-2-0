@@ -27,8 +27,7 @@ import com.example.optoapp.ui.components.SuggestionCard
 import com.example.optoapp.ui.components.OSDIDialog
 import com.example.optoapp.viewmodel.EvaluacionViewModel
 import com.example.optoapp.util.DateUtils
-import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Locale
 
 val basesPrisma = listOf("Nasal", "Temporal", "Superior", "Inferior")
 val diagnosticosRefraccion = listOf(
@@ -110,15 +109,15 @@ fun NuevaEvaluacionScreen(
     val notificationHelper = remember { com.example.optoapp.notifications.NotificationHelper(context) }
 
     val datePickerState = rememberDatePickerState(
-        initialSelectedDateMillis = DateUtils.dateToLong(DateUtils.longToDate(uiState.fecha)),
+        initialSelectedDateMillis = DateUtils.localDateToPickerMillis(uiState.fecha),
         yearRange = 1920..2080
     )
     val proximaDatePickerState = rememberDatePickerState(
-        initialSelectedDateMillis = DateUtils.dateToLong(DateUtils.longToDate(uiState.proximaCita ?: System.currentTimeMillis())),
+        initialSelectedDateMillis = DateUtils.localDateToPickerMillis(uiState.proximaCita ?: DateUtils.today()),
         yearRange = 1920..2080
     )
     val lcDatePickerState = rememberDatePickerState(
-        initialSelectedDateMillis = DateUtils.dateToLong(DateUtils.longToDate(uiState.lcFechaAdaptacion ?: System.currentTimeMillis())),
+        initialSelectedDateMillis = DateUtils.localDateToPickerMillis(uiState.lcFechaAdaptacion ?: DateUtils.today()),
         yearRange = 1920..2080
     )
 
@@ -128,7 +127,7 @@ fun NuevaEvaluacionScreen(
             confirmButton = {
                 TextButton(onClick = {
                     datePickerState.selectedDateMillis?.let { mills ->
-                        viewModel.updateUiState { it.copy(fecha = DateUtils.dateToLong(DateUtils.longToDate(mills))) }
+                        viewModel.updateUiState { it.copy(fecha = DateUtils.pickerMillisToLocalDate(mills)) }
                     }
                     showDatePicker = false
                 }) { Text("OK") }
@@ -144,7 +143,7 @@ fun NuevaEvaluacionScreen(
             confirmButton = {
                 TextButton(onClick = {
                     proximaDatePickerState.selectedDateMillis?.let { mills ->
-                        viewModel.updateUiState { it.copy(proximaCita = DateUtils.dateToLong(DateUtils.longToDate(mills))) }
+                        viewModel.updateUiState { it.copy(proximaCita = DateUtils.pickerMillisToLocalDate(mills)) }
                     }
                     showProximaDatePicker = false
                 }) { Text("OK") }
@@ -166,7 +165,7 @@ fun NuevaEvaluacionScreen(
             confirmButton = {
                 TextButton(onClick = {
                     lcDatePickerState.selectedDateMillis?.let { mills ->
-                        viewModel.updateUiState { it.copy(lcFechaAdaptacion = DateUtils.dateToLong(DateUtils.longToDate(mills))) }
+                        viewModel.updateUiState { it.copy(lcFechaAdaptacion = DateUtils.pickerMillisToLocalDate(mills)) }
                     }
                     showLcDatePicker = false
                 }) { Text("OK") }
@@ -249,8 +248,7 @@ fun NuevaEvaluacionScreen(
                 when (selectedTab) {
                     0 -> { // Anamnesis
                         OutlinedButton(onClick = { showDatePicker = true }, modifier = Modifier.fillMaxWidth()) {
-                            val fmt = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-                            Text("Fecha Registro: ${fmt.format(Date(uiState.fecha))}")
+                            Text("Fecha Registro: ${DateUtils.formatLocalized(uiState.fecha)}")
                         }
                         OptoTextField(value = uiState.motivoConsulta, onValueChange = { viewModel.updateUiState { s -> s.copy(motivoConsulta = it) } }, label = "Motivo de consulta")
                         OptoTextField(value = uiState.sintomas, onValueChange = { viewModel.updateUiState { s -> s.copy(sintomas = it) } }, label = "Síntomas y signos")
@@ -597,8 +595,7 @@ fun NuevaEvaluacionScreen(
                                 DropdownField(label = "Material", selected = uiState.lcMaterial, options = materialesLC, onSelected = { viewModel.updateUiState { s -> s.copy(lcMaterial = it) } })
                                 
                                 OutlinedButton(onClick = { showLcDatePicker = true }, modifier = Modifier.fillMaxWidth()) {
-                                    val fmt = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-                                    val dText = uiState.lcFechaAdaptacion?.let { fmt.format(Date(it)) } ?: "Seleccionar Fecha"
+                                    val dText = uiState.lcFechaAdaptacion?.let { DateUtils.formatLocalized(it) } ?: "Seleccionar Fecha"
                                     Text("Fecha Adaptación: $dText")
                                 }
                                 OptoTextField(value = uiState.lcObservaciones, onValueChange = { viewModel.updateUiState { s -> s.copy(lcObservaciones = it) } }, label = "Notas Contactología")
@@ -701,8 +698,7 @@ fun NuevaEvaluacionScreen(
                         OutlinedButton(onClick = { showProximaDatePicker = true }, modifier = Modifier.fillMaxWidth()) {
                             val labelText = if (uiState.proximaCita == null) "Programar Próxima Cita" 
                             else {
-                                val fmt = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-                                "Próxima Cita: ${fmt.format(Date(uiState.proximaCita!!))}"
+                                "Próxima Cita: ${DateUtils.formatLocalized(uiState.proximaCita!!)}"
                             }
                             Text(labelText)
                         }

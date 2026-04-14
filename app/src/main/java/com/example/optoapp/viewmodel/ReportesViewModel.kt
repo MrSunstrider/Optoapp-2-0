@@ -15,7 +15,7 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import java.util.Calendar
-import java.util.Date
+import java.time.LocalDate
 import javax.inject.Inject
 
 @HiltViewModel
@@ -43,9 +43,7 @@ class ReportesViewModel @Inject constructor(
             repository.getAllDispensacionesForOptica(opticaId).map { list ->
                 val now = java.time.LocalDate.now()
                 list.filter { disp ->
-                    val date = java.time.Instant.ofEpochMilli(disp.fecha)
-                        .atZone(java.time.ZoneId.systemDefault())
-                        .toLocalDate()
+                    val date = disp.fecha
 
                     when (p) {
                         "Diario" -> date.isEqual(now)

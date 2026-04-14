@@ -10,6 +10,7 @@ import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import java.time.LocalDate
 import javax.inject.Inject
 
 /**
@@ -123,7 +124,7 @@ class SyncFinanzasUseCase @Inject constructor(
 data class DispensacionRemota(
     val id: String,
     @SerialName("paciente_id") val pacienteId: String,
-    val fecha: Long,
+    val fecha: String,
     @SerialName("optica_id") val opticaId: String,
     @SerialName("tipo_montura") val tipoMontura: String? = null,
     @SerialName("material_montura") val materialMontura: String? = null,
@@ -139,12 +140,12 @@ data class DispensacionRemota(
     @SerialName("metodo_pago") val metodoPago: String? = null,
     @SerialName("monto_pagado") val montoPagado: Double = 0.0,
     @SerialName("estado_entrega") val estadoEntrega: String? = null,
-    @SerialName("fecha_vencimiento_garantia") val fechaVencimientoGarantia: Long? = null,
+    @SerialName("fecha_vencimiento_garantia") val fechaVencimientoGarantia: String? = null,
     @SerialName("distancia_lente") val distanciaLente: String? = null,
     @SerialName("sub_tipo_bifocal") val subTipoBifocal: String? = null
 ) {
     fun toEntity() = DispensacionOptica(
-        id = id, pacienteId = pacienteId, fecha = fecha, opticaId = optId(opticaId),
+        id = id, pacienteId = pacienteId, fecha = LocalDate.parse(fecha), opticaId = optId(opticaId),
         tipoMontura = tipoMontura ?: "", materialMontura = materialMontura ?: "",
         tipoLente = tipoLente ?: "", materialLente = materialLente ?: "",
         tratamientos = tratamientos?.split(",")?.filter { it.isNotBlank() } ?: emptyList(),
@@ -153,7 +154,7 @@ data class DispensacionRemota(
         descripcionMontura = descripcionMontura ?: "", montoTotal = montoTotal,
         metodoPago = metodoPago ?: "", montoPagado = montoPagado,
         estadoEntrega = estadoEntrega ?: "",
-        fechaVencimientoGarantia = fechaVencimientoGarantia?.toString(),
+        fechaVencimientoGarantia = fechaVencimientoGarantia?.let(LocalDate::parse),
         distanciaLente = distanciaLente ?: "", subTipoBifocal = subTipoBifocal ?: ""
     )
 
@@ -168,14 +169,14 @@ data class ServicioRemoto(
     @SerialName("monto_total") val montoTotal: Double = 0.0,
     @SerialName("a_cuenta") val aCuenta: Double = 0.0,
     val estado: String = "",
-    val fecha: Long,
+    val fecha: String,
     @SerialName("paciente_id") val pacienteId: String,
     @SerialName("metodo_pago") val metodoPago: String = "",
     @SerialName("optica_id") val opticaId: String
 ) {
     fun toEntity() = ServicioExtra(
         id = id, ot = ot, descripcion = descripcion, montoTotal = montoTotal,
-        aCuenta = aCuenta, estado = estado, fecha = fecha,
+        aCuenta = aCuenta, estado = estado, fecha = LocalDate.parse(fecha),
         pacienteId = pacienteId, metodoPago = metodoPago, opticaId = opticaId
     )
 }
@@ -185,7 +186,7 @@ data class PagoRemoto(
     val id: String,
     @SerialName("dispensacion_id") val dispensacionId: String? = null,
     @SerialName("servicio_extra_id") val servicioExtraId: String? = null,
-    val fecha: Long,
+    val fecha: String,
     val tipo: String = "",
     val monto: Double = 0.0,
     @SerialName("metodo_pago") val metodoPago: String = "",
@@ -194,7 +195,7 @@ data class PagoRemoto(
 ) {
     fun toEntity() = Pago(
         id = id, dispensacionId = dispensacionId, servicioExtraId = servicioExtraId,
-        fecha = fecha, tipo = tipo, monto = monto, metodoPago = metodoPago, nota = nota ?: "",
+        fecha = LocalDate.parse(fecha), tipo = tipo, monto = monto, metodoPago = metodoPago, nota = nota ?: "",
         opticaId = opticaId
     )
 }
@@ -213,7 +214,7 @@ data class FinanzasSyncResult(
 // ─── Extensiones: Entidad → DTO para Supabase ────────────────────────────────
 
 private fun DispensacionOptica.toRemoto(): DispensacionRemota = DispensacionRemota(
-    id = id, pacienteId = pacienteId, fecha = fecha, opticaId = opticaId,
+    id = id, pacienteId = pacienteId, fecha = fecha.toString(), opticaId = opticaId,
     tipoMontura = tipoMontura, materialMontura = materialMontura,
     tipoLente = tipoLente, materialLente = materialLente,
     tratamientos = tratamientos.joinToString(","), colorLente = colorLente,
@@ -221,18 +222,18 @@ private fun DispensacionOptica.toRemoto(): DispensacionRemota = DispensacionRemo
     tipoAro = tipoAro, descripcionMontura = descripcionMontura,
     montoTotal = montoTotal, metodoPago = metodoPago,
     montoPagado = montoPagado, estadoEntrega = estadoEntrega,
-    fechaVencimientoGarantia = fechaVencimientoGarantia?.toLongOrNull(),
+    fechaVencimientoGarantia = fechaVencimientoGarantia?.toString(),
     distanciaLente = distanciaLente, subTipoBifocal = subTipoBifocal
 )
 
 private fun Pago.toRemoto(): PagoRemoto = PagoRemoto(
     id = id, dispensacionId = dispensacionId, servicioExtraId = servicioExtraId,
-    fecha = fecha, tipo = tipo, monto = monto, metodoPago = metodoPago, nota = nota,
+    fecha = fecha.toString(), tipo = tipo, monto = monto, metodoPago = metodoPago, nota = nota,
     opticaId = opticaId
 )
 
 private fun ServicioExtra.toRemoto(): ServicioRemoto = ServicioRemoto(
     id = id, ot = ot, descripcion = descripcion, montoTotal = montoTotal,
-    aCuenta = aCuenta, estado = estado, fecha = fecha,
+    aCuenta = aCuenta, estado = estado, fecha = fecha.toString(),
     pacienteId = pacienteId ?: "", metodoPago = metodoPago, opticaId = opticaId
 )

@@ -3,31 +3,28 @@ package com.example.optoapp.util
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 
 object DateUtils {
-    /**
-     * Convierte un LocalDate a milisegundos en la medianoche de la zona horaria del sistema.
-     * Útil para guardar en base de datos de manera consistente.
-     */
-    fun dateToLong(date: LocalDate): Long {
-        return date.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
-    }
+    private val localZone: ZoneId = ZoneId.systemDefault()
+    private val isoFormatter: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE
 
-    /**
-     * Convierte milisegundos a LocalDate basándose en la zona horaria del sistema.
-     * Útil para mostrar en UI o procesar lógica de días.
-     */
-    fun longToDate(millis: Long): LocalDate {
-        return Instant.ofEpochMilli(millis)
-            .atZone(ZoneId.systemDefault())
-            .toLocalDate()
-    }
+    fun today(): LocalDate = LocalDate.now(localZone)
 
-    /**
-     * Obtiene el timestamp de hoy al mediodía (12:00 PM) para notificaciones.
-     * Esto evita problemas con cambios de horario (DST).
-     */
-    fun getNoonTimestamp(date: LocalDate): Long {
-        return date.atTime(12, 0).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
-    }
+    fun localDateToPickerMillis(date: LocalDate): Long =
+        date.atStartOfDay(localZone).toInstant().toEpochMilli()
+
+    fun pickerMillisToLocalDate(millis: Long): LocalDate =
+        Instant.ofEpochMilli(millis).atZone(localZone).toLocalDate()
+
+    fun toIso(date: LocalDate): String = date.format(isoFormatter)
+
+    fun fromIso(value: String): LocalDate = LocalDate.parse(value, isoFormatter)
+
+    fun formatLocalized(date: LocalDate): String =
+        date.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM))
+
+    fun getNoonTimestamp(date: LocalDate): Long =
+        date.atTime(12, 0).atZone(localZone).toInstant().toEpochMilli()
 }

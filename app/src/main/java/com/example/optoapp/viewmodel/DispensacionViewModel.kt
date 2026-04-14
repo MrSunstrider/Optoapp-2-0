@@ -15,6 +15,8 @@ import kotlinx.coroutines.flow.first
 import java.util.UUID
 import javax.inject.Inject
 import com.example.optoapp.data.Pago
+import java.time.LocalDate
+import com.example.optoapp.util.DateUtils
 
 data class DispensacionUiState(
     val tipoLente: String = "",
@@ -32,8 +34,8 @@ data class DispensacionUiState(
     
     val montoTotal: String = "",
     val estadoEntrega: String = "Pendiente",
-    val fecha: Long = System.currentTimeMillis(),
-    val fechaVencimientoGarantia: String? = null,
+    val fecha: LocalDate = DateUtils.today(),
+    val fechaVencimientoGarantia: LocalDate? = null,
     
     val subTipoBifocal: String = "",
     val isLoading: Boolean = false,

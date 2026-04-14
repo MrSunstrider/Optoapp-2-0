@@ -8,6 +8,7 @@ import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import java.time.LocalDate
 import javax.inject.Inject
 
 data class HistorialSyncResult(val uploaded: Int, val downloaded: Int)
@@ -72,7 +73,7 @@ class SyncHistorialUseCase @Inject constructor(
 data class EvaluacionRemota(
     val id: String,
     @SerialName("paciente_id") val pacienteId: String,
-    val fecha: Long,
+    val fecha: String,
     @SerialName("optica_id") val opticaId: String,
     @SerialName("motivo_consulta") val motivoConsulta: String = "",
     val sintomas: String = "",
@@ -178,7 +179,7 @@ data class EvaluacionRemota(
     @SerialName("plan_tratamiento") val planTratamiento: String = "",
     val observaciones: String = "",
     @SerialName("proxima_fecha_control") val proximaFechaControl: String = "",
-    @SerialName("proxima_cita") val proximaCita: Long? = null,
+    @SerialName("proxima_cita") val proximaCita: String? = null,
     @SerialName("balance_od") val balanceOd: Boolean = false,
     @SerialName("balance_oi") val balanceOi: Boolean = false,
     @SerialName("otros_presbicia") val otrosPresbicia: Boolean = false,
@@ -202,11 +203,11 @@ data class EvaluacionRemota(
     @SerialName("lc_laboratorio") val lcLaboratorio: String = "", 
     @SerialName("lc_tipo_lente") val lcTipoLente: String = "",
     @SerialName("lc_material") val lcMaterial: String = "", 
-    @SerialName("lc_fecha_adaptacion") val lcFechaAdaptacion: Long? = null,
+    @SerialName("lc_fecha_adaptacion") val lcFechaAdaptacion: String? = null,
     @SerialName("lc_observaciones") val lcObservaciones: String = ""
 ) {
     fun toEntity(): EvaluacionClinica = EvaluacionClinica(
-        id = id, pacienteId = pacienteId, fecha = fecha, opticaId = opticaId.ifBlank { "mi_optica_base" },
+        id = id, pacienteId = pacienteId, fecha = LocalDate.parse(fecha), opticaId = opticaId.ifBlank { "mi_optica_base" },
         motivoConsulta = motivoConsulta, sintomas = sintomas,
         antecedentesPersonalesOculares = antecedentesPersonalesOculares,
         antecedentesPersonalesSistemicos = antecedentesPersonalesSistemicos,
@@ -249,7 +250,7 @@ data class EvaluacionRemota(
         diagnosticoOi = diagnosticoOi.split(",").filter { it.isNotBlank() },
         diagnosticoOtros = diagnosticoOtros.split(",").filter { it.isNotBlank() },
         planTratamiento = planTratamiento, observaciones = observaciones,
-        proximaFechaControl = proximaFechaControl, proximaCita = proximaCita,
+        proximaFechaControl = proximaFechaControl, proximaCita = proximaCita?.let(LocalDate::parse),
         balanceOd = balanceOd, balanceOi = balanceOi,
         otrosPresbicia = otrosPresbicia, otrosAnisometropia = otrosAnisometropia, otrosAmbliopia = otrosAmbliopia,
         autoPresbicia = autoPresbicia, autoAnisometropia = autoAnisometropia, autoAmbliopia = autoAmbliopia,
@@ -258,13 +259,13 @@ data class EvaluacionRemota(
         lcRadioBaseOd = lcRadioBaseOd, lcDiametroOd = lcDiametroOd,
         lcRadioBaseOi = lcRadioBaseOi, lcDiametroOi = lcDiametroOi,
         lcLaboratorio = lcLaboratorio, lcTipoLente = lcTipoLente,
-        lcMaterial = lcMaterial, lcFechaAdaptacion = lcFechaAdaptacion,
+        lcMaterial = lcMaterial, lcFechaAdaptacion = lcFechaAdaptacion?.let(LocalDate::parse),
         lcObservaciones = lcObservaciones
     )
 }
 
 private fun EvaluacionClinica.toRemoto(): EvaluacionRemota = EvaluacionRemota(
-    id = id, pacienteId = pacienteId, fecha = fecha, opticaId = opticaId,
+    id = id, pacienteId = pacienteId, fecha = fecha.toString(), opticaId = opticaId,
     motivoConsulta = motivoConsulta, sintomas = sintomas,
     antecedentesPersonalesOculares = antecedentesPersonalesOculares,
     antecedentesPersonalesSistemicos = antecedentesPersonalesSistemicos,
@@ -307,7 +308,7 @@ private fun EvaluacionClinica.toRemoto(): EvaluacionRemota = EvaluacionRemota(
     diagnosticoOi = diagnosticoOi.joinToString(","),
     diagnosticoOtros = diagnosticoOtros.joinToString(","),
     planTratamiento = planTratamiento, observaciones = observaciones,
-    proximaFechaControl = proximaFechaControl, proximaCita = proximaCita,
+    proximaFechaControl = proximaFechaControl, proximaCita = proximaCita?.toString(),
     balanceOd = balanceOd, balanceOi = balanceOi,
     otrosPresbicia = otrosPresbicia, otrosAnisometropia = otrosAnisometropia, otrosAmbliopia = otrosAmbliopia,
     autoPresbicia = autoPresbicia, autoAnisometropia = autoAnisometropia, autoAmbliopia = autoAmbliopia,
@@ -316,6 +317,6 @@ private fun EvaluacionClinica.toRemoto(): EvaluacionRemota = EvaluacionRemota(
     lcRadioBaseOd = lcRadioBaseOd, lcDiametroOd = lcDiametroOd,
     lcRadioBaseOi = lcRadioBaseOi, lcDiametroOi = lcDiametroOi,
     lcLaboratorio = lcLaboratorio, lcTipoLente = lcTipoLente,
-    lcMaterial = lcMaterial, lcFechaAdaptacion = lcFechaAdaptacion,
+    lcMaterial = lcMaterial, lcFechaAdaptacion = lcFechaAdaptacion?.toString(),
     lcObservaciones = lcObservaciones
 )

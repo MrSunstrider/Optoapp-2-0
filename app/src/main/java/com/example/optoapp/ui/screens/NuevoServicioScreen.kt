@@ -25,7 +25,6 @@ import com.example.optoapp.ui.components.DropdownField
 import com.example.optoapp.viewmodel.ServiciosViewModel
 import com.example.optoapp.ui.components.OptoTextField
 import com.example.optoapp.util.DateUtils
-import java.text.SimpleDateFormat
 import java.util.*
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -54,7 +53,7 @@ fun NuevoServicioScreen(navController: NavController, pacienteId: String? = null
     }
 
     val datePickerState = rememberDatePickerState(
-        initialSelectedDateMillis = DateUtils.dateToLong(DateUtils.longToDate(uiState.fecha)),
+        initialSelectedDateMillis = DateUtils.localDateToPickerMillis(uiState.fecha),
         yearRange = 1920..2080
     )
     var showDatePicker by remember { mutableStateOf(false) }
@@ -65,7 +64,7 @@ fun NuevoServicioScreen(navController: NavController, pacienteId: String? = null
             confirmButton = {
                 TextButton(onClick = {
                     datePickerState.selectedDateMillis?.let { mills ->
-                        viewModel.updateUiState { it.copy(fecha = DateUtils.dateToLong(DateUtils.longToDate(mills))) }
+                        viewModel.updateUiState { it.copy(fecha = DateUtils.pickerMillisToLocalDate(mills)) }
                     }
                     showDatePicker = false
                 }) { Text("OK") }
@@ -137,7 +136,7 @@ fun NuevoServicioScreen(navController: NavController, pacienteId: String? = null
                             if (pago.nota.isNotEmpty()) {
                                 Text(pago.nota, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
-                            Text(SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(pago.fecha)), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(DateUtils.formatLocalized(pago.fecha), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         Row {
                             var showEditDialog by remember { mutableStateOf(false) }
@@ -208,8 +207,7 @@ fun NuevoServicioScreen(navController: NavController, pacienteId: String? = null
             )
 
             OutlinedButton(onClick = { showDatePicker = true }, modifier = Modifier.fillMaxWidth()) {
-                val fmt = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-                Text("Fecha: ${fmt.format(Date(uiState.fecha))}")
+                Text("Fecha: ${DateUtils.formatLocalized(uiState.fecha)}")
             }
 
             Text("Asociar a Paciente (Opcional)", fontWeight = FontWeight.Bold)

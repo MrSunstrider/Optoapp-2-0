@@ -6,6 +6,7 @@ import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.TypeConverters
 import com.google.gson.annotations.SerializedName
+import java.time.LocalDate
 
 @Entity(
     tableName = "pacientes",
@@ -21,9 +22,9 @@ data class Paciente(
     val edad: Int,
     val telefono: String,
     @SerializedName("fechaCreacion", alternate = ["fecha_creacion"])
-    val fechaCreacion: Long,
+    val fechaCreacion: LocalDate,
     val dni: String? = null,
-    val fechaNacimiento: String? = null,
+    val fechaNacimiento: LocalDate? = null,
     val sexo: String? = null,
     val email: String? = null,
     val direccion: String? = null,
@@ -52,7 +53,7 @@ data class Paciente(
 data class EvaluacionClinica(
     @PrimaryKey val id: String,
     val pacienteId: String,
-    val fecha: Long,
+    val fecha: LocalDate,
     val opticaId: String = "mi_optica_base",
     val motivoConsulta: String = "",
     val sintomas: String = "",
@@ -148,7 +149,7 @@ data class EvaluacionClinica(
     val planTratamiento: String = "",
     val observaciones: String = "",
     val proximaFechaControl: String = "",
-    val proximaCita: Long? = null,
+    val proximaCita: LocalDate? = null,
     val balanceOd: Boolean = false,
     val balanceOi: Boolean = false,
     val otrosPresbicia: Boolean = false,
@@ -164,7 +165,7 @@ data class EvaluacionClinica(
     val lcRadioBaseOd: String = "", val lcDiametroOd: String = "",
     val lcRadioBaseOi: String = "", val lcDiametroOi: String = "",
     val lcLaboratorio: String = "", val lcTipoLente: String = "",
-    val lcMaterial: String = "", val lcFechaAdaptacion: Long? = null,
+    val lcMaterial: String = "", val lcFechaAdaptacion: LocalDate? = null,
     val lcObservaciones: String = ""
 )
 
@@ -185,7 +186,7 @@ data class DispensacionOptica(
     @PrimaryKey val id: String,
     @SerializedName("pacienteId", alternate = ["paciente_id"])
     val pacienteId: String,
-    val fecha: Long,
+    val fecha: LocalDate,
     @SerializedName("opticaId", alternate = ["optica_id"])
     val opticaId: String = "mi_optica_base",
     val tipoMontura: String = "",
@@ -206,7 +207,7 @@ data class DispensacionOptica(
     val montoPagado: Double = 0.0,
     @SerializedName("estadoEntrega", alternate = ["estado_entrega"])
     val estadoEntrega: String = "Pendiente",
-    val fechaVencimientoGarantia: String? = null,
+    val fechaVencimientoGarantia: LocalDate? = null,
     val distanciaLente: String = "",
     val subTipoBifocal: String = ""
 )
@@ -239,7 +240,7 @@ data class Pago(
     val dispensacionId: String? = null,
     @SerializedName("servicioExtraId", alternate = ["servicio_extra_id"])
     val servicioExtraId: String? = null,
-    val fecha: Long,
+    val fecha: LocalDate,
     val tipo: String,
     val monto: Double,
     @SerializedName("metodoPago", alternate = ["metodo_pago"])
@@ -271,7 +272,7 @@ data class ServicioExtra(
     @SerializedName("aCuenta", alternate = ["a_cuenta"])
     val aCuenta: Double,
     val estado: String, // Pendiente, Entregado
-    val fecha: Long,
+    val fecha: LocalDate,
     @SerializedName("pacienteId", alternate = ["paciente_id"])
     val pacienteId: String? = null, // Opcional
     @SerializedName("metodoPago", alternate = ["metodo_pago"])

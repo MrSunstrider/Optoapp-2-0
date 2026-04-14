@@ -23,9 +23,8 @@ import com.example.optoapp.OptoApplication
 import com.example.optoapp.data.Paciente
 import com.example.optoapp.viewmodel.PacienteViewModel
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.example.optoapp.util.DateUtils
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -108,8 +107,6 @@ fun PacientesListScreen(navController: NavController, drawerState: DrawerState, 
 
 @Composable
 fun PacienteRow(paciente: Paciente, onClick: () -> Unit) {
-    val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-    
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -146,7 +143,7 @@ fun PacienteRow(paciente: Paciente, onClick: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Creado: ${dateFormat.format(Date(paciente.fechaCreacion))}",
+                text = "Creado: ${DateUtils.formatLocalized(paciente.fechaCreacion)}",
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

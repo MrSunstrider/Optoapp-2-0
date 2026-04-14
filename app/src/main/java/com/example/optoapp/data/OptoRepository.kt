@@ -3,6 +3,7 @@ package com.example.optoapp.data
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import com.google.gson.annotations.SerializedName
+import java.time.LocalDate
 
 class OptoRepository(
     private val pacienteDao: PacienteDao,
@@ -43,15 +44,15 @@ class OptoRepository(
     fun getEvaluacionesByPaciente(pacienteId: String): Flow<List<EvaluacionClinica>> = 
         evaluacionDao.getEvaluacionesByPaciente(pacienteId)
         
-    fun countEvaluacionesInRange(start: Long, end: Long): Flow<Int> = evaluacionDao.countEvaluacionesInRange(start, end)
+    fun countEvaluacionesInRange(start: LocalDate, end: LocalDate): Flow<Int> = evaluacionDao.countEvaluacionesInRange(start, end)
 
-    fun countEvaluacionesInRangeForOptica(start: Long, end: Long, opticaId: String): Flow<Int> =
+    fun countEvaluacionesInRangeForOptica(start: LocalDate, end: LocalDate, opticaId: String): Flow<Int> =
         evaluacionDao.countEvaluacionesInRangeForOptica(start, end, opticaId)
 
-    fun getDispensacionesByDateRange(start: Long, end: Long): Flow<List<DispensacionOptica>> =
+    fun getDispensacionesByDateRange(start: LocalDate, end: LocalDate): Flow<List<DispensacionOptica>> =
         dispensacionDao.getDispensacionesByDateRange(start, end)
 
-    fun getDispensacionesByDateRangeForOptica(start: Long, end: Long, opticaId: String): Flow<List<DispensacionOptica>> =
+    fun getDispensacionesByDateRangeForOptica(start: LocalDate, end: LocalDate, opticaId: String): Flow<List<DispensacionOptica>> =
         dispensacionDao.getDispensacionesByDateRangeForOptica(start, end, opticaId)
         
     suspend fun getEvaluacionById(id: String): Resource<EvaluacionClinica> {
@@ -111,10 +112,10 @@ class OptoRepository(
     fun getPagosByServicioExtra(servicioExtraId: String): Flow<List<Pago>> = 
         pagoDao.getPagosByServicioExtra(servicioExtraId)
         
-    fun getPagosByDateRange(start: Long, end: Long): Flow<List<Pago>> =
+    fun getPagosByDateRange(start: LocalDate, end: LocalDate): Flow<List<Pago>> =
         pagoDao.getPagosByDateRange(start, end)
 
-    fun getPagosByDateRangeForOptica(start: Long, end: Long, opticaId: String): Flow<List<Pago>> =
+    fun getPagosByDateRangeForOptica(start: LocalDate, end: LocalDate, opticaId: String): Flow<List<Pago>> =
         pagoDao.getPagosByDateRangeForOptica(start, end, opticaId)
 
     // Servicios Extra

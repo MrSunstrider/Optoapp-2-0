@@ -104,7 +104,7 @@ fun DetallePacienteScreen(
                                 
                                 val ultimaEval = evaluaciones.maxByOrNull { it.fecha }
                                 if (ultimaEval?.proximaCita != null) {
-                                    val proxFecha = java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault()).format(java.util.Date(ultimaEval.proximaCita))
+                                    val proxFecha = com.example.optoapp.util.DateUtils.formatLocalized(ultimaEval.proximaCita)
                                     DropdownMenuItem(
                                         text = { Text("Recordar Próxima Cita ($proxFecha)") },
                                         onClick = {
@@ -243,7 +243,7 @@ fun EvaluacionesList(
     } else {
         LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             items(evaluaciones) { eval ->
-                val date = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(eval.fecha))
+                val date = com.example.optoapp.util.DateUtils.formatLocalized(eval.fecha)
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
@@ -345,8 +345,8 @@ fun EvaluacionesList(
 
 @Composable
 fun ResumenEvaluacionDialog(eval: EvaluacionClinica, paciente: Paciente, onDismiss: () -> Unit, onEdit: () -> Unit) {
-    val date = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(eval.fecha))
-    val proxima = eval.proximaCita?.let { SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(it)) } ?: "No programada"
+    val date = com.example.optoapp.util.DateUtils.formatLocalized(eval.fecha)
+    val proxima = eval.proximaCita?.let { com.example.optoapp.util.DateUtils.formatLocalized(it) } ?: "No programada"
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -475,7 +475,7 @@ fun ResumenEvaluacionDialog(eval: EvaluacionClinica, paciente: Paciente, onDismi
                             if (eval.addAv.isNotBlank()) append("AV: ${eval.addAv}\n")
                         }
                         if (eval.proximaCita != null) {
-                            val prox = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(eval.proximaCita))
+                            val prox = com.example.optoapp.util.DateUtils.formatLocalized(eval.proximaCita)
                             append("\n📅 Próximo Control: $prox")
                         }
                     }
@@ -516,7 +516,7 @@ fun DispensacionesList(dispensaciones: List<DispensacionOptica>, paciente: Pacie
     } else {
         LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             items(dispensaciones) { disp ->
-                val date = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(disp.fecha))
+                val date = com.example.optoapp.util.DateUtils.formatLocalized(disp.fecha)
                 val saldo = disp.montoTotal - disp.montoPagado
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -572,7 +572,7 @@ fun DispensacionesList(dispensaciones: List<DispensacionOptica>, paciente: Pacie
 
 @Composable
 fun ResumenDispensacionDialog(disp: DispensacionOptica, paciente: Paciente, onDismiss: () -> Unit, onEdit: () -> Unit) {
-    val date = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(disp.fecha))
+    val date = com.example.optoapp.util.DateUtils.formatLocalized(disp.fecha)
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -683,7 +683,7 @@ fun ServiciosExtraList(servicios: List<ServicioExtra>, onEdit: (String) -> Unit)
     } else {
         LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             items(servicios) { serv ->
-                val date = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(serv.fecha))
+                val date = com.example.optoapp.util.DateUtils.formatLocalized(serv.fecha)
                 val saldo = serv.montoTotal - serv.aCuenta
                 Card(
                     modifier = Modifier.fillMaxWidth(),

@@ -2,6 +2,7 @@ package com.example.optoapp.data
 
 import androidx.room.*
 import kotlinx.coroutines.flow.Flow
+import java.time.LocalDate
 
 @Dao
 interface PacienteDao {
@@ -99,10 +100,10 @@ interface EvaluacionDao {
     suspend fun getEvaluacionesListByOptica(opticaId: String): List<EvaluacionClinica>
 
     @Query("SELECT COUNT(*) FROM evaluaciones WHERE fecha >= :start AND fecha <= :end")
-    fun countEvaluacionesInRange(start: Long, end: Long): Flow<Int>
+    fun countEvaluacionesInRange(start: LocalDate, end: LocalDate): Flow<Int>
 
     @Query("SELECT COUNT(*) FROM evaluaciones WHERE fecha >= :start AND fecha <= :end AND opticaId = :opticaId")
-    fun countEvaluacionesInRangeForOptica(start: Long, end: Long, opticaId: String): Flow<Int>
+    fun countEvaluacionesInRangeForOptica(start: LocalDate, end: LocalDate, opticaId: String): Flow<Int>
 }
 
 @Dao
@@ -141,10 +142,10 @@ interface DispensacionDao {
     suspend fun getDispensacionesListByOptica(opticaId: String): List<DispensacionOptica>
 
     @Query("SELECT * FROM dispensaciones WHERE fecha >= :start AND fecha <= :end")
-    fun getDispensacionesByDateRange(start: Long, end: Long): Flow<List<DispensacionOptica>>
+    fun getDispensacionesByDateRange(start: LocalDate, end: LocalDate): Flow<List<DispensacionOptica>>
 
     @Query("SELECT * FROM dispensaciones WHERE fecha >= :start AND fecha <= :end AND opticaId = :opticaId")
-    fun getDispensacionesByDateRangeForOptica(start: Long, end: Long, opticaId: String): Flow<List<DispensacionOptica>>
+    fun getDispensacionesByDateRangeForOptica(start: LocalDate, end: LocalDate, opticaId: String): Flow<List<DispensacionOptica>>
 
     @Query("SELECT SUM(montoTotal) FROM dispensaciones WHERE opticaId = :opticaId")
     fun getTotalVendidoForOptica(opticaId: String): Flow<Double?>
@@ -162,10 +163,10 @@ interface PagoDao {
     fun getPagosByServicioExtra(servicioExtraId: String): Flow<List<Pago>>
 
     @Query("SELECT * FROM pagos WHERE fecha >= :start AND fecha <= :end ORDER BY fecha DESC")
-    fun getPagosByDateRange(start: Long, end: Long): Flow<List<Pago>>
+    fun getPagosByDateRange(start: LocalDate, end: LocalDate): Flow<List<Pago>>
 
     @Query("SELECT * FROM pagos WHERE fecha >= :start AND fecha <= :end AND opticaId = :opticaId ORDER BY fecha DESC")
-    fun getPagosByDateRangeForOptica(start: Long, end: Long, opticaId: String): Flow<List<Pago>>
+    fun getPagosByDateRangeForOptica(start: LocalDate, end: LocalDate, opticaId: String): Flow<List<Pago>>
 
     @Upsert
     suspend fun insertPago(pago: Pago)

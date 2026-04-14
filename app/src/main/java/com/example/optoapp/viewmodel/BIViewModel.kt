@@ -6,7 +6,7 @@ import com.example.optoapp.data.*
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import java.util.*
+import java.time.LocalDate
 import javax.inject.Inject
 
 enum class Periodo(val label: String) {
@@ -96,48 +96,22 @@ class BIViewModel @Inject constructor(
             .launchIn(viewModelScope)
     }
 
-    private fun getRangesForPeriod(periodo: Periodo): Pair<Long, Long> {
-        val cal = Calendar.getInstance()
-        val end = cal.timeInMillis
-        
-        when (periodo) {
-            Periodo.MES_ACTUAL -> {
-                cal.set(Calendar.DAY_OF_MONTH, 1)
-            }
-            Periodo.TRIMESTRE -> {
-                cal.add(Calendar.MONTH, -3)
-            }
-            Periodo.SEMESTRE -> {
-                cal.add(Calendar.MONTH, -6)
-            }
-            Periodo.ANIO -> {
-                cal.add(Calendar.YEAR, -1)
-            }
+    private fun getRangesForPeriod(periodo: Periodo): Pair<LocalDate, LocalDate> {
+        val end = LocalDate.now()
+        val start = when (periodo) {
+            Periodo.MES_ACTUAL -> end.withDayOfMonth(1)
+            Periodo.TRIMESTRE -> end.minusMonths(3)
+            Periodo.SEMESTRE -> end.minusMonths(6)
+            Periodo.ANIO -> end.minusYears(1)
         }
-        cal.set(Calendar.HOUR_OF_DAY, 0)
-        cal.set(Calendar.MINUTE, 0)
-        cal.set(Calendar.SECOND, 0)
-        
-        return cal.timeInMillis to end
+        return start to end
     }
 
-    private fun getPreviousRangesForPeriod(periodo: Periodo): Pair<Long, Long> {
-        val cal = Calendar.getInstance()
-        
-        when (periodo) {
-            Periodo.MES_ACTUAL -> {
-                cal.add(Calendar.MONTH, -1)
-                cal.set(Calendar.DAY_OF_MONTH, 1)
-                val start = cal.timeInMillis
-                cal.set(Calendar.DAY_OF_MONTH, cal.getActualMaximum(Calendar.DAY_OF_MONTH))
-                return start to cal.timeInMillis
-            }
-            else -> {
-                // Para otros periodos usamos el mismo periodo inmediatamente anterior
-                val currentRange = getRangesForPeriod(periodo)
-                val diff = currentRange.second - currentRange.first
-                return (currentRange.first - diff) to currentRange.first
-            }
-        }
+    private fun getPreviousRangesForPeriod(periodo: Periodo): Pair<LocalDate, LocalDate> {
+        val currentRange = getRangesForPeriod(periodo)
+        val days = java.time.temporal.ChronoUnit.DAYS.between(currentRange.first, currentRange.second).coerceAtLeast(1)
+        val prevEnd = currentRange.first.minusDays(1)
+        val prevStart = prevEnd.minusDays(days)
+        return prevStart to prevEnd
     }
 }

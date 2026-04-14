@@ -8,6 +8,7 @@ import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import java.time.LocalDate
 import javax.inject.Inject
 
 /**
@@ -72,7 +73,7 @@ data class PacienteRemoto(
     @SerialName("nombre_completo") val nombreCompleto: String,
     val edad: Int,
     val telefono: String,
-    @SerialName("fecha_creacion") val fechaCreacion: Long,
+    @SerialName("fecha_creacion") val fechaCreacion: String,
     val dni: String? = null,
     @SerialName("fecha_nacimiento") val fechaNacimiento: String? = null,
     val sexo: String? = null,
@@ -90,9 +91,9 @@ data class PacienteRemoto(
         nombreCompleto   = nombreCompleto,
         edad             = edad,
         telefono         = telefono,
-        fechaCreacion    = fechaCreacion,
+        fechaCreacion    = LocalDate.parse(fechaCreacion),
         dni              = dni,
-        fechaNacimiento  = fechaNacimiento,
+        fechaNacimiento  = fechaNacimiento?.let(LocalDate::parse),
         sexo             = sexo,
         email            = email,
         direccion        = direccion,
@@ -113,9 +114,9 @@ private fun Paciente.toRemoto(): PacienteRemoto = PacienteRemoto(
     nombreCompleto   = nombreCompleto, // Corregido: ya es nombreCompleto en la entity
     edad              = edad,
     telefono          = telefono,
-    fechaCreacion    = fechaCreacion,
+    fechaCreacion    = fechaCreacion.toString(),
     dni               = dni,
-    fechaNacimiento  = fechaNacimiento,
+    fechaNacimiento  = fechaNacimiento?.toString(),
     sexo              = sexo,
     email             = email,
     direccion         = direccion,

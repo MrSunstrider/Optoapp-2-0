@@ -23,8 +23,8 @@ import androidx.navigation.NavController
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.example.optoapp.viewmodel.ServiciosViewModel
 import com.example.optoapp.data.ServicioExtra
+import com.example.optoapp.util.DateUtils
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
 import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -94,7 +94,6 @@ fun ServiciosExtraScreen(navController: NavController, drawerState: DrawerState,
 
 @Composable
 fun ServicioRow(servicio: ServicioExtra, onEdit: () -> Unit, onDelete: () -> Unit) {
-    val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
     val saldo = servicio.montoTotal - servicio.aCuenta
 
     Column(
@@ -144,7 +143,7 @@ fun ServicioRow(servicio: ServicioExtra, onEdit: () -> Unit, onDelete: () -> Uni
                 Badge(containerColor = if (servicio.estado == "Entregado") MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.secondary) {
                     Text(servicio.estado, color = if (servicio.estado == "Entregado") MaterialTheme.colorScheme.onTertiary else MaterialTheme.colorScheme.onSecondary)
                 }
-                Text(text = dateFormat.format(Date(servicio.fecha)), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(text = DateUtils.formatLocalized(servicio.fecha), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }

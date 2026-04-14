@@ -63,14 +63,9 @@ class NotificationHelper(private val context: Context) {
     /**
      * Agenda un recordatorio usando WorkManager para las 12:00 PM del día indicado.
      */
-    fun scheduleWorkManagerReminder(patientName: String, appointmentDateMillis: Long, evaluationId: String) {
+    fun scheduleWorkManagerReminder(patientName: String, appointmentDate: LocalDate, evaluationId: String) {
         val workManager = WorkManager.getInstance(context)
-        
-        // Calculamos el inicio del día del appointment y luego las 12:00 PM
-        val appointmentDate = Instant.ofEpochMilli(appointmentDateMillis)
-            .atZone(ZoneId.systemDefault())
-            .toLocalDate()
-        
+
         val noonDateTime = appointmentDate.atTime(LocalTime.NOON).atZone(ZoneId.systemDefault())
         val delay = noonDateTime.toInstant().toEpochMilli() - System.currentTimeMillis()
 

@@ -13,6 +13,8 @@ import kotlinx.coroutines.launch
 import java.util.UUID
 import javax.inject.Inject
 import com.example.optoapp.data.Pago
+import java.time.LocalDate
+import com.example.optoapp.util.DateUtils
 
 data class ServiciosUiState(
     val id: String = UUID.randomUUID().toString(),
@@ -20,7 +22,7 @@ data class ServiciosUiState(
     val descripcion: String = "",
     val montoTotal: String = "",
     val estado: String = "Pendiente",
-    val fecha: Long = System.currentTimeMillis(),
+    val fecha: LocalDate = DateUtils.today(),
     val pacienteId: String? = null,
     val isLoading: Boolean = false,
     val error: String? = null,

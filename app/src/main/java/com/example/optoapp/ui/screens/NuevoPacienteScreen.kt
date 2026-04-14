@@ -22,8 +22,9 @@ import com.example.optoapp.viewmodel.PacienteViewModel
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import kotlinx.coroutines.launch
 import com.example.optoapp.util.DateUtils
-import java.text.SimpleDateFormat
-import java.util.*
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.util.UUID
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -42,7 +43,7 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
     var ocupacion by remember { mutableStateOf("") }
     var acompanante by remember { mutableStateOf("") }
     var hobbies by remember { mutableStateOf("") }
-    var fechaCreacion by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    var fechaCreacion by remember { mutableStateOf(DateUtils.today()) }
 
     var expandedSexo by remember { mutableStateOf(false) }
     val sexos = listOf("Masculino", "Femenino")
@@ -55,7 +56,7 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
                 edad = it.edad.toString()
                 telefono = it.telefono
                 dni = it.dni ?: ""
-                fechaNacimiento = it.fechaNacimiento ?: ""
+                fechaNacimiento = it.fechaNacimiento?.format(DateTimeFormatter.ISO_LOCAL_DATE) ?: ""
                 sexo = it.sexo ?: "Masculino"
                 email = it.email ?: ""
                 direccion = it.direccion ?: ""
@@ -70,7 +71,7 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
 
     var showDatePicker by remember { mutableStateOf(false) }
     val datePickerState = rememberDatePickerState(
-        initialSelectedDateMillis = DateUtils.dateToLong(DateUtils.longToDate(fechaCreacion)),
+        initialSelectedDateMillis = DateUtils.localDateToPickerMillis(fechaCreacion),
         yearRange = 1920..2080
     )
 
@@ -79,9 +80,8 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
             onDismissRequest = { showDatePicker = false },
             confirmButton = {
                 TextButton(onClick = {
-                    datePickerState.selectedDateMillis?.let { 
-                        // El picker devuelve UTC medianoche. Lo convertimos a LocalDate y luego a nuestro Long local.
-                        fechaCreacion = DateUtils.dateToLong(DateUtils.longToDate(it)) 
+                    datePickerState.selectedDateMillis?.let {
+                        fechaCreacion = DateUtils.pickerMillisToLocalDate(it)
                     }
                     showDatePicker = false
                 }) { Text("OK") }
@@ -115,8 +115,7 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
                 onClick = { showDatePicker = true },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                val fmt = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-                Text("Fecha de Registro: ${fmt.format(Date(fechaCreacion))}")
+                Text("Fecha de Registro: ${DateUtils.formatLocalized(fechaCreacion)}")
             }
 
             OutlinedTextField(
@@ -243,7 +242,7 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
                                 telefono = telefono,
                                 fechaCreacion = fechaCreacion,
                                 dni = dni,
-                                fechaNacimiento = fechaNacimiento,
+                                fechaNacimiento = fechaNacimiento.takeIf { it.isNotBlank() }?.let(LocalDate::parse),
                                 sexo = sexo,
                                 email = email,
                                 direccion = direccion,

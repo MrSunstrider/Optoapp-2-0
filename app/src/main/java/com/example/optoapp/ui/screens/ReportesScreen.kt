@@ -20,7 +20,7 @@ import androidx.navigation.NavController
 import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.viewmodel.ReportesViewModel
 import com.example.optoapp.ui.components.DropdownField
-import java.text.SimpleDateFormat
+import com.example.optoapp.util.DateUtils
 import java.util.*
 import kotlinx.coroutines.launch
 
@@ -118,7 +118,7 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                     item { Text("No hay transacciones registradas este día", color = MaterialTheme.colorScheme.onSurfaceVariant) }
                 } else {
                     items(dispensaciones) { disp ->
-                        val date = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(disp.fecha))
+                        val date = DateUtils.formatLocalized(disp.fecha)
                         Card(modifier = Modifier.fillMaxWidth()) {
                             Row(modifier = Modifier.padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                 Column(modifier = Modifier.weight(1f)) {

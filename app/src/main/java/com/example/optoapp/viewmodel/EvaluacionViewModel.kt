@@ -14,10 +14,12 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.util.Locale
 import java.util.UUID
+import java.time.LocalDate
+import com.example.optoapp.util.DateUtils
 import javax.inject.Inject
 
 data class EvaluacionUiState(
-    val fecha: Long = System.currentTimeMillis(),
+    val fecha: LocalDate = DateUtils.today(),
     val motivoConsulta: String = "",
     val sintomas: String = "",
     val antecedentesPersonalesOculares: String = "",
@@ -119,7 +121,7 @@ data class EvaluacionUiState(
     val autoAmbliopia: Boolean = true,
     val planTratamiento: String = "",
     val observaciones: String = "",
-    val proximaCita: Long? = null,
+    val proximaCita: LocalDate? = null,
 
     // Contactología
     val lcOdEsf: String = "", val lcOdCil: String = "", val lcOdEje: String = "",
@@ -127,7 +129,7 @@ data class EvaluacionUiState(
     val lcRadioBaseOd: String = "", val lcOdDia: String = "",
     val lcRadioBaseOi: String = "", val lcOiDia: String = "",
     val lcLaboratorio: String = "", val lcTipoLente: String = "",
-    val lcMaterial: String = "", val lcFechaAdaptacion: Long? = null,
+    val lcMaterial: String = "", val lcFechaAdaptacion: LocalDate? = null,
     val lcObservaciones: String = "",
 
     val isAddAo: Boolean = false,
