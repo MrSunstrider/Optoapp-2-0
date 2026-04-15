@@ -1,5 +1,6 @@
 package com.example.optoapp.data
 
+import android.util.Log
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import com.google.gson.annotations.SerializedName
@@ -12,6 +13,10 @@ class OptoRepository(
     private val pagoDao: PagoDao,
     private val servicioExtraDao: ServicioExtraDao
 ) {
+
+    companion object {
+        private const val TAG = "OptoRepository"
+    }
     fun pacientesFlowForOptica(opticaId: String): Flow<List<Paciente>> =
         pacienteDao.getPacientesByOptica(opticaId)
 
@@ -177,6 +182,21 @@ class OptoRepository(
         dispensacionDao.deleteAll()
         evaluacionDao.deleteAll()
         pacienteDao.deleteAll()
+    }
+
+    /**
+     * Reasigna filas creadas con el tenant legacy `mi_optica_base` al [currentOpticaId] de sesión SaaS,
+     * para que aparezcan en listas filtradas y entren en el snapshot de sync.
+     */
+    suspend fun reassignLegacyMiOpticaBaseTo(currentOpticaId: String) {
+        if (currentOpticaId.isBlank() || currentOpticaId == SessionManager.LEGACY_OPTICA_ID) return
+        val p = pacienteDao.reassignFromLegacyMiOpticaBase(currentOpticaId)
+        val e = evaluacionDao.reassignFromLegacyMiOpticaBase(currentOpticaId)
+        val d = dispensacionDao.reassignFromLegacyMiOpticaBase(currentOpticaId)
+        val s = servicioExtraDao.reassignFromLegacyMiOpticaBase(currentOpticaId)
+        val pg = pagoDao.reassignFromLegacyMiOpticaBase(currentOpticaId)
+        val n = p + e + d + s + pg
+        if (n > 0) Log.d(TAG, "Reasignadas $n filas de mi_optica_base → opticaId=$currentOpticaId (p=$p e=$e d=$d s=$s pg=$pg)")
     }
     
     suspend fun getBackupDataForOptica(opticaId: String): BackupData {

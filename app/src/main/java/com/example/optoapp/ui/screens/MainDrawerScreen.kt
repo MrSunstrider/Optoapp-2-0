@@ -9,6 +9,7 @@ import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import com.example.optoapp.data.AppRoles
+import com.example.optoapp.util.SyncErrorSanitizer
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -18,17 +19,21 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.example.optoapp.viewmodel.AuthViewModel
 import kotlinx.coroutines.launch
 
 @Composable
-fun MainDrawerScreen(parentNavController: NavController) {
+fun MainDrawerScreen(
+    parentNavController: NavController,
+    /** Misma instancia que [LoginScreen] / [PinScreen] en [MainActivity]; si no, logout no resetea el estado que lee el login. */
+    authViewModel: AuthViewModel
+) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     val navController = rememberNavController()
     
     // Obtenemos el ViewModel de sincronización a nivel de pantalla
     val syncViewModel: com.example.optoapp.viewmodel.SyncViewModel = hiltViewModel()
-    val authViewModel: com.example.optoapp.viewmodel.AuthViewModel = hiltViewModel()
     val syncState by syncViewModel.syncState.collectAsState()
     val isSilentSyncing by syncViewModel.isSilentSyncing.collectAsState()
     val opticaRol by authViewModel.opticaRol.collectAsState(initial = "admin")
@@ -142,7 +147,9 @@ fun MainDrawerScreen(parentNavController: NavController) {
                             android.widget.Toast.makeText(context, (syncState as com.example.optoapp.viewmodel.SyncState.Success).message, android.widget.Toast.LENGTH_SHORT).show()
                         }
                         is com.example.optoapp.viewmodel.SyncState.Error -> {
-                            errorMessage = (syncState as com.example.optoapp.viewmodel.SyncState.Error).message
+                            errorMessage = SyncErrorSanitizer.forUserMessage(
+                                (syncState as com.example.optoapp.viewmodel.SyncState.Error).message
+                            )
                             showErrorDialog = true
                         }
                         else -> {}

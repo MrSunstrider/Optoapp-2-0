@@ -6,8 +6,10 @@ import android.util.Log
 import android.net.NetworkCapabilities
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Resource
 import com.example.optoapp.data.SessionManager
+import com.example.optoapp.util.SyncErrorSanitizer
 import com.example.optoapp.domain.SyncFinanzasUseCase
 import com.example.optoapp.domain.SyncHistorialUseCase
 import com.example.optoapp.domain.SyncPacientesUseCase
@@ -35,6 +37,7 @@ sealed class SyncState {
 class SyncViewModel @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val sessionManager: SessionManager,
+    private val repository: OptoRepository,
     private val syncPacientesUseCase: SyncPacientesUseCase,
     private val syncHistorialUseCase: SyncHistorialUseCase,
     private val syncFinanzasUseCase: SyncFinanzasUseCase
@@ -55,27 +58,34 @@ class SyncViewModel @Inject constructor(
      */
     fun performFullSync() = viewModelScope.launch {
         _syncState.value = SyncState.Loading
-        
+
         val opticaId = sessionManager.opticaId.first()
-        
+        repository.reassignLegacyMiOpticaBaseTo(opticaId)
+
         // 1. Sincronizar Pacientes (Bidireccional por defecto en Fase 3)
         val pacientesResult = syncPacientesUseCase(opticaId)
         if (pacientesResult is Resource.Error) {
-            _syncState.value = SyncState.Error(pacientesResult.message ?: "Error en pacientes")
+            _syncState.value = SyncState.Error(
+                SyncErrorSanitizer.forUserMessage(pacientesResult.message ?: "Error en pacientes")
+            )
             return@launch
         }
 
         // 2. Sincronizar Historial Clínico
         val historialResult = syncHistorialUseCase(opticaId)
         if (historialResult is Resource.Error) {
-            _syncState.value = SyncState.Error(historialResult.message ?: "Error en historial")
+            _syncState.value = SyncState.Error(
+                SyncErrorSanitizer.forUserMessage(historialResult.message ?: "Error en historial")
+            )
             return@launch
         }
 
         // 3. Sincronizar Finanzas (Dispensaciones y Pagos)
         val finanzasResult = syncFinanzasUseCase(opticaId)
         if (finanzasResult is Resource.Error) {
-            _syncState.value = SyncState.Error(finanzasResult.message ?: "Error en finanzas")
+            _syncState.value = SyncState.Error(
+                SyncErrorSanitizer.forUserMessage(finanzasResult.message ?: "Error en finanzas")
+            )
             return@launch
         }
 
@@ -91,6 +101,7 @@ class SyncViewModel @Inject constructor(
         _isSilentSyncing.value = true
         try {
             val opticaId = sessionManager.opticaId.first()
+            repository.reassignLegacyMiOpticaBaseTo(opticaId)
             when (val p = syncPacientesUseCase(opticaId)) {
                 is Resource.Error -> Log.w(TAG, "Sync silenciosa (pacientes): ${p.message}")
                 else -> {}

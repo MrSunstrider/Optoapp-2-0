@@ -40,6 +40,9 @@ interface PacienteDao {
     @Query("DELETE FROM pacientes")
     suspend fun deleteAll()
 
+    @Query("UPDATE pacientes SET opticaId = :newOpticaId WHERE opticaId = 'mi_optica_base'")
+    suspend fun reassignFromLegacyMiOpticaBase(newOpticaId: String): Int
+
     @Query("""
         SELECT * FROM pacientes 
         WHERE id IN (SELECT pacienteId FROM dispensaciones WHERE (montoTotal - montoPagado) > 0)
@@ -92,6 +95,9 @@ interface EvaluacionDao {
     
     @Query("DELETE FROM evaluaciones")
     suspend fun deleteAll()
+
+    @Query("UPDATE evaluaciones SET opticaId = :newOpticaId WHERE opticaId = 'mi_optica_base'")
+    suspend fun reassignFromLegacyMiOpticaBase(newOpticaId: String): Int
     
     @Query("SELECT * FROM evaluaciones")
     suspend fun getAllEvaluaciones(): List<EvaluacionClinica>
@@ -134,6 +140,9 @@ interface DispensacionDao {
     
     @Query("DELETE FROM dispensaciones")
     suspend fun deleteAll()
+
+    @Query("UPDATE dispensaciones SET opticaId = :newOpticaId WHERE opticaId = 'mi_optica_base'")
+    suspend fun reassignFromLegacyMiOpticaBase(newOpticaId: String): Int
     
     @Query("SELECT * FROM dispensaciones")
     suspend fun getAllDispensacionesList(): List<DispensacionOptica>
@@ -179,6 +188,9 @@ interface PagoDao {
     
     @Query("DELETE FROM pagos")
     suspend fun deleteAll()
+
+    @Query("UPDATE pagos SET opticaId = :newOpticaId WHERE opticaId = 'mi_optica_base'")
+    suspend fun reassignFromLegacyMiOpticaBase(newOpticaId: String): Int
     
     @Query("SELECT * FROM pagos")
     suspend fun getAllPagos(): List<Pago>
@@ -212,6 +224,9 @@ interface ServicioExtraDao {
     
     @Query("DELETE FROM servicios_extra")
     suspend fun deleteAll()
+
+    @Query("UPDATE servicios_extra SET opticaId = :newOpticaId WHERE opticaId = 'mi_optica_base'")
+    suspend fun reassignFromLegacyMiOpticaBase(newOpticaId: String): Int
 
     @Query("SELECT * FROM servicios_extra WHERE opticaId = :opticaId")
     suspend fun getServiciosListByOptica(opticaId: String): List<ServicioExtra>

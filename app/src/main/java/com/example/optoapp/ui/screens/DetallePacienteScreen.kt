@@ -21,6 +21,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import android.widget.Toast
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.optoapp.OptoApplication
@@ -37,6 +38,7 @@ import kotlinx.coroutines.flow.map
 import java.text.SimpleDateFormat
 import java.util.*
 import com.example.optoapp.util.WhatsAppUtils
+import com.example.optoapp.util.RecetaEvaluacionPdfGenerator
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -117,8 +119,27 @@ fun DetallePacienteScreen(
                             }
                         }
                     }
-                    IconButton(onClick = { /* PDF Export */ }) {
-                        Icon(Icons.Default.PictureAsPdf, contentDescription = "Exportar PDF")
+                    IconButton(
+                        onClick = {
+                            val p = paciente
+                            if (p == null) {
+                                Toast.makeText(context, "Esperando datos del paciente…", Toast.LENGTH_SHORT).show()
+                                return@IconButton
+                            }
+                            val ultima = evaluaciones.maxByOrNull { it.fecha }
+                            if (ultima == null) {
+                                Toast.makeText(context, "No hay evaluaciones para generar la receta en PDF", Toast.LENGTH_LONG).show()
+                                return@IconButton
+                            }
+                            try {
+                                val file = RecetaEvaluacionPdfGenerator.generate(context, p, ultima)
+                                RecetaEvaluacionPdfGenerator.openPdf(context, file)
+                            } catch (e: Exception) {
+                                Toast.makeText(context, "No se pudo generar el PDF: ${e.message}", Toast.LENGTH_LONG).show()
+                            }
+                        }
+                    ) {
+                        Icon(Icons.Default.PictureAsPdf, contentDescription = "Exportar receta PDF")
                     }
                     IconButton(onClick = { navController.navigate("editarPaciente/${id}") }) {
                         Icon(Icons.Default.Edit, contentDescription = "Editar Perfil")

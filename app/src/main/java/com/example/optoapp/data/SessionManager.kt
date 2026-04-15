@@ -30,6 +30,9 @@ class SessionManager(private val context: Context) {
     private val _opticaRolFlow = MutableStateFlow(getSecureOpticaRol())
 
     companion object {
+        /** Valor por defecto histórico en Room; las filas con este tenant deben reasignarse a la óptica de sesión cuando el usuario inicia sesión con SaaS. */
+        const val LEGACY_OPTICA_ID = "mi_optica_base"
+
         private val IS_LOGGED_IN  = booleanPreferencesKey("saas_logged_in")
         private val USER_NAME     = stringPreferencesKey("saas_user_name")
         private val LAST_LOGIN_TS = longPreferencesKey("saas_last_login_ts")
@@ -47,7 +50,7 @@ class SessionManager(private val context: Context) {
     val opticaRol: Flow<String> = _opticaRolFlow
 
     private fun getSecureOpticaId(): String {
-        return encryptedPrefs.getString("saas_optica_id", "mi_optica_base") ?: "mi_optica_base"
+        return encryptedPrefs.getString("saas_optica_id", LEGACY_OPTICA_ID) ?: LEGACY_OPTICA_ID
     }
 
     private fun getSecureOpticaRol(): String {
@@ -91,7 +94,7 @@ class SessionManager(private val context: Context) {
 
     suspend fun clearSession() {
         encryptedPrefs.edit().clear().apply()
-        _opticaIdFlow.value = "mi_optica_base"
+        _opticaIdFlow.value = LEGACY_OPTICA_ID
         _opticaRolFlow.value = "admin"
         
         context.dataStore.edit { prefs ->

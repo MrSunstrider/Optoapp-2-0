@@ -48,6 +48,8 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
     var expandedSexo by remember { mutableStateOf(false) }
     val sexos = listOf("Masculino", "Femenino")
 
+    var saving by remember { mutableStateOf(false) }
+
     LaunchedEffect(pacienteId) {
         if (pacienteId != null) {
             val p = viewModel.getPaciente(pacienteId)
@@ -228,12 +230,14 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
             ) {
                 OutlinedButton(
                     onClick = { navController.popBackStack() },
+                    enabled = !saving,
                     modifier = Modifier.weight(1f)
                 ) {
                     Text("Cancelar")
                 }
                 Button(
                     onClick = {
+                        if (saving) return@Button
                         if (nombreCompleto.isNotBlank() && edad.isNotBlank() && telefono.isNotBlank()) {
                             val p = Paciente(
                                 id = pacienteId ?: UUID.randomUUID().toString(),
@@ -252,14 +256,25 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
                                 hobbies = hobbies
                             )
                             scope.launch {
-                                viewModel.savePaciente(p)
-                                navController.popBackStack()
+                                saving = true
+                                try {
+                                    viewModel.savePaciente(p)
+                                    val currentRoute = navController.currentBackStackEntry?.destination?.route
+                                    navController.navigate("detallePaciente/${p.id}") {
+                                        if (currentRoute != null) {
+                                            popUpTo(currentRoute) { inclusive = true }
+                                        }
+                                    }
+                                } finally {
+                                    saving = false
+                                }
                             }
                         }
                     },
+                    enabled = !saving,
                     modifier = Modifier.weight(1f)
                 ) {
-                    Text("Guardar")
+                    Text(if (saving) "Guardando…" else "Guardar")
                 }
             }
             Spacer(modifier = Modifier.height(24.dp))

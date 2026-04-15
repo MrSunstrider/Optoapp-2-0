@@ -53,19 +53,22 @@ fun LoginScreen(
     var showPassword by remember { mutableStateOf(false) }
 
     val isPinRequired by viewModel.isPinRequired.collectAsState(initial = false)
+    val isLoggedIn by viewModel.isLoggedIn.collectAsState(initial = false)
 
-    LaunchedEffect(authState, pendingMemberships) {
-        if (authState is AuthState.Success) {
-            if (pendingMemberships.isNotEmpty()) {
-                navController.navigate("seleccion_optica") {
-                    popUpTo("login") { inclusive = true }
-                }
-            } else {
-                val dest = if (isPinRequired == true) "pin" else "main"
-                navController.navigate(dest) {
-                    popUpTo("login") { inclusive = true }
-                }
+    LaunchedEffect(authState, pendingMemberships, isLoggedIn) {
+        if (authState !is AuthState.Success) return@LaunchedEffect
+        // Varios locales: Success antes de saveSession; aún no hay isLoggedIn
+        if (pendingMemberships.isNotEmpty()) {
+            navController.navigate("seleccion_optica") {
+                popUpTo("login") { inclusive = true }
             }
+            return@LaunchedEffect
+        }
+        // Un solo flujo: exige sesión persistida para no reaccionar a Success "viejo" (p. ej. otra instancia de ViewModel).
+        if (!isLoggedIn) return@LaunchedEffect
+        val dest = if (isPinRequired == true) "pin" else "main"
+        navController.navigate(dest) {
+            popUpTo("login") { inclusive = true }
         }
     }
 

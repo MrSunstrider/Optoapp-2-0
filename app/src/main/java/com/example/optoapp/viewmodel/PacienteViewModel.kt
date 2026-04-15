@@ -1,5 +1,6 @@
 package com.example.optoapp.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.optoapp.data.OptoRepository
@@ -17,6 +18,10 @@ class PacienteViewModel @Inject constructor(
     private val sessionManager: SessionManager,
     private val syncPacientesUseCase: com.example.optoapp.domain.SyncPacientesUseCase
 ) : ViewModel() {
+
+    companion object {
+        private const val TAG = "PacienteViewModel"
+    }
 
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery
@@ -59,13 +64,19 @@ class PacienteViewModel @Inject constructor(
     fun onSearchQueryChange(query: String) { _searchQuery.value = query }
     fun setFilter(filter: String?) { _activeFilter.value = if (_activeFilter.value == filter) null else filter }
 
-    fun savePaciente(paciente: Paciente) = viewModelScope.launch { 
-        repository.insertPaciente(paciente)
-        // Silent sync en segundo plano
-        viewModelScope.launch { 
-            try {
-                syncPacientesUseCase(paciente.opticaId)
-            } catch (e: Exception) {}
+    /**
+     * Persiste el paciente con el [SessionManager.opticaId] activo y lanza sync de pacientes para esa óptica.
+     */
+    suspend fun savePaciente(paciente: Paciente) {
+        val oid = sessionManager.opticaId.first()
+        val toSave = paciente.copy(opticaId = oid)
+        repository.insertPaciente(toSave)
+        when (val r = syncPacientesUseCase(oid)) {
+            is Resource.Error ->
+                Log.w(TAG, "Sync tras guardar paciente (opticaId=$oid): ${r.message}")
+            is Resource.Success ->
+                Log.d(TAG, "Paciente guardado; sync pacientes OK (subidos=${r.data?.uploaded}, bajados=${r.data?.downloaded})")
+            else -> {}
         }
     }
     

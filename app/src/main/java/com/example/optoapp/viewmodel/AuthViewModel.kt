@@ -148,7 +148,7 @@ class AuthViewModel @Inject constructor(
                         name = nombre,
                         rol = m.rol
                     )
-                    Log.d(TAG, "Login exitoso. opticaId=${m.opticaId} (única membresía)")
+                    Log.d(TAG, "Login exitoso. opticaId=${m.opticaId} uid=$uid (única membresía)")
                     _authState.value = AuthState.Success
                 }
                 else -> {
@@ -161,7 +161,7 @@ class AuthViewModel @Inject constructor(
                         name = nombre,
                         rol = "admin"
                     )
-                    Log.d(TAG, "Login exitoso (legado sin usuario_optica). opticaId=$opticaLegacy uid=$uid")
+                    Log.d(TAG, "Login exitoso (legado sin usuario_optica). opticaId=$opticaLegacy uid=$uid (verificar fila en usuario_optica si falla RLS)")
                     _authState.value = AuthState.Success
                 }
             }
@@ -189,7 +189,8 @@ class AuthViewModel @Inject constructor(
             rol = membership.rol
         )
         _pendingMemberships.value = emptyList()
-        Log.d(TAG, "Óptica seleccionada: ${membership.opticaId} rol=${membership.rol}")
+        val uid = try { supabase.auth.currentUserOrNull()?.id } catch (_: Exception) { null }
+        Log.d(TAG, "Óptica seleccionada: ${membership.opticaId} rol=${membership.rol} uid=$uid")
     }
 
     // ─── Logout ───────────────────────────────────────────────────────────────

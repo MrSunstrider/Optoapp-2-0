@@ -39,12 +39,19 @@ class SyncPacientesUseCase @Inject constructor(
     private suspend fun upload(opticaId: String): Int {
         val pacientes = repository.getPacientesSnapshotForOptica(opticaId)
 
-        if (pacientes.isEmpty()) return 0
+        if (pacientes.isEmpty()) {
+            Log.d(TAG, "Upload pacientes: 0 filas locales para optica_id=$opticaId")
+            return 0
+        }
 
         val rows = pacientes.map { it.toRemoto().copy(opticaId = opticaId) }
+        Log.d(
+            TAG,
+            "Upload pacientes: ${pacientes.size} filas, optica_id en payload=$opticaId (id primer paciente=${pacientes.first().id})"
+        )
         supabase.postgrest[TABLE].upsert(rows)
 
-        Log.d(TAG, "Subidos ${pacientes.size} pacientes a Supabase (forzando ID: $opticaId).")
+        Log.d(TAG, "Subidos ${pacientes.size} pacientes a Supabase (optica_id=$opticaId).")
         return pacientes.size
     }
 

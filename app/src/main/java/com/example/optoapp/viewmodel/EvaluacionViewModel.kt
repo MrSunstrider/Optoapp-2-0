@@ -144,6 +144,18 @@ class EvaluacionViewModel @Inject constructor(
     private val syncHistorialUseCase: com.example.optoapp.domain.SyncHistorialUseCase
 ) : ViewModel() {
 
+    companion object {
+        /**
+         * **Anisometropía (auto):** solo se considera si la diferencia de equivalente esférico entre ojos
+         * **alcanza o supera 2 D** (|EE(OD) − EE(OI)| ≥ 2). Por debajo de eso, no es anisometropía con este criterio.
+         *
+         * EE = esfera + cilindro/2 (`receta*Esf` / `receta*Cil` en receta lejos).
+         *
+         * Ejemplo: OD −3.50 −1.00 → EE = −4.00 D; OI −4.25 → EE = −4.25 D → |Δ| = 0.25 D → no anisometropía.
+         */
+        const val ANISOMETROPIA_UMBRAL_DIOPTRIAS = 2.0
+    }
+
     private val _uiState = MutableStateFlow(EvaluacionUiState())
     val uiState: StateFlow<EvaluacionUiState> = _uiState.asStateFlow()
 
@@ -457,12 +469,15 @@ class EvaluacionViewModel @Inject constructor(
             
             val eeOd = (parseRefraction(s.recetaOdEsf) ?: 0.0) + ((parseRefraction(s.recetaOdCil) ?: 0.0) / 2.0)
             val eeOi = (parseRefraction(s.recetaOiEsf) ?: 0.0) + ((parseRefraction(s.recetaOiCil) ?: 0.0) / 2.0)
-            
-            // Solo calcular anisometropía si ambos ojos tienen datos y NINGUNO es balance
-            val anisometropiaVal = if (!effBalanceOd && !effBalanceOi && 
-                                      s.recetaOdEsf.isNotEmpty() && s.recetaOiEsf.isNotEmpty()) {
-                Math.abs(eeOd - eeOi) >= 2.00
-            } else false
+
+            // Solo calcular anisometropía si ambos ojos tienen esfera informada y NINGUNO es balance
+            val anisometropiaVal = if (!effBalanceOd && !effBalanceOi &&
+                s.recetaOdEsf.isNotEmpty() && s.recetaOiEsf.isNotEmpty()
+            ) {
+                Math.abs(eeOd - eeOi) >= ANISOMETROPIA_UMBRAL_DIOPTRIAS
+            } else {
+                false
+            }
             
             val logMarOd = parseSnellenToLogMar(s.avCcOdLejos)
             val logMarOi = parseSnellenToLogMar(s.avCcOiLejos)
