@@ -231,3 +231,36 @@ interface ServicioExtraDao {
     @Query("SELECT * FROM servicios_extra WHERE opticaId = :opticaId")
     suspend fun getServiciosListByOptica(opticaId: String): List<ServicioExtra>
 }
+
+@Dao
+interface MonturaDao {
+    @Query("SELECT * FROM monturas WHERE opticaId = :opticaId ORDER BY activo DESC, marca ASC, modelo ASC")
+    fun getMonturasByOptica(opticaId: String): Flow<List<Montura>>
+
+    @Query("SELECT * FROM monturas WHERE id = :id")
+    suspend fun getMonturaById(id: String): Montura?
+
+    @Query("UPDATE monturas SET stockActual = stockActual + :delta WHERE id = :monturaId AND opticaId = :opticaId AND (stockActual + :delta) >= 0")
+    suspend fun adjustStock(monturaId: String, opticaId: String, delta: Int): Int
+
+    @Upsert
+    suspend fun insertMontura(montura: Montura)
+
+    @Update
+    suspend fun updateMontura(montura: Montura)
+
+    @Delete
+    suspend fun deleteMontura(montura: Montura)
+}
+
+@Dao
+interface MonturaMovimientoDao {
+    @Query("SELECT * FROM montura_movimientos WHERE opticaId = :opticaId ORDER BY fecha DESC")
+    fun getMovimientosByOptica(opticaId: String): Flow<List<MonturaMovimiento>>
+
+    @Query("SELECT * FROM montura_movimientos WHERE monturaId = :monturaId ORDER BY fecha DESC")
+    fun getMovimientosByMontura(monturaId: String): Flow<List<MonturaMovimiento>>
+
+    @Upsert
+    suspend fun insertMovimiento(movimiento: MonturaMovimiento)
+}

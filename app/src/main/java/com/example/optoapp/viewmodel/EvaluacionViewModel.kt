@@ -143,6 +143,11 @@ class EvaluacionViewModel @Inject constructor(
     private val sessionManager: com.example.optoapp.data.SessionManager,
     private val syncHistorialUseCase: com.example.optoapp.domain.SyncHistorialUseCase
 ) : ViewModel() {
+    private data class DipParseResult(
+        val dipTotalMm: Double? = null,
+        val dnpOdMm: Double? = null,
+        val dnpOiMm: Double? = null
+    )
 
     companion object {
         /**
@@ -158,6 +163,46 @@ class EvaluacionViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(EvaluacionUiState())
     val uiState: StateFlow<EvaluacionUiState> = _uiState.asStateFlow()
+
+    private fun parseDipOrDnp(input: String): DipParseResult {
+        val normalized = input.trim().replace(" ", "")
+        if (normalized.isBlank()) return DipParseResult()
+
+        if (normalized.contains("/")) {
+            val parts = normalized.split("/")
+            if (parts.size == 2) {
+                val od = parts[0].replace(",", ".").toDoubleOrNull()
+                val oi = parts[1].replace(",", ".").toDoubleOrNull()
+                if (od != null && oi != null) {
+                    return DipParseResult(
+                        dipTotalMm = od + oi,
+                        dnpOdMm = od,
+                        dnpOiMm = oi
+                    )
+                }
+            }
+            return DipParseResult()
+        }
+
+        val dipTotal = normalized.replace(",", ".").toDoubleOrNull()
+        return DipParseResult(dipTotalMm = dipTotal)
+    }
+
+    private fun formatDipForUi(
+        dipLejosRaw: String,
+        dipTotalMm: Double?,
+        dnpOdMm: Double?,
+        dnpOiMm: Double?
+    ): String {
+        fun pretty(value: Double): String {
+            val asLong = value.toLong()
+            return if (value == asLong.toDouble()) asLong.toString() else value.toString()
+        }
+        if (dipLejosRaw.isNotBlank()) return dipLejosRaw
+        if (dnpOdMm != null && dnpOiMm != null) return "${pretty(dnpOdMm)}/${pretty(dnpOiMm)}"
+        if (dipTotalMm != null) return pretty(dipTotalMm)
+        return ""
+    }
 
     fun getEvaluacionesByPaciente(pacienteId: String) = repository.getEvaluacionesByPaciente(pacienteId)
 
@@ -212,7 +257,8 @@ class EvaluacionViewModel @Inject constructor(
                             addCercaOd = e.addCercaOd, addCercaOi = e.addCercaOi,
                             addIntermediaOd = e.addIntermediaOd, addIntermediaOi = e.addIntermediaOi,
                             addAv = e.addAv,
-                            dipLejos = e.dipLejos, dipCerca = e.dipCerca, dipIntermedio = e.dipIntermedio,
+                            dipLejos = formatDipForUi(e.dipLejos, e.dipTotalMm, e.dnpOdMm, e.dnpOiMm),
+                            dipCerca = e.dipCerca, dipIntermedio = e.dipIntermedio,
                             prismaOdValor = e.prismaOdValor, prismaOdBase = e.prismaOdBase,
                             prismaOiValor = e.prismaOiValor, prismaOiBase = e.prismaOiBase,
                             diagnostico = e.diagnostico,
@@ -257,6 +303,7 @@ class EvaluacionViewModel @Inject constructor(
         viewModelScope.launch {
             val s = _uiState.value
             val currentOpticaId = sessionManager.opticaId.first()
+            val dipParsed = parseDipOrDnp(s.dipLejos)
             
             val ev = EvaluacionClinica(
                 id = evaluacionId ?: UUID.randomUUID().toString(),
@@ -303,7 +350,10 @@ class EvaluacionViewModel @Inject constructor(
                 recetaOiEsf = s.recetaOiEsf, recetaOiCil = s.recetaOiCil, recetaOiEje = s.recetaOiEje, recetaOiAv = s.recetaOiAv,
                 addCercaOd = s.addCercaOd, addCercaOi = s.addCercaOi,
                 addIntermediaOd = s.addIntermediaOd, addIntermediaOi = s.addIntermediaOi, addAv = s.addAv,
-                dipLejos = s.dipLejos, dipCerca = s.dipCerca, dipIntermedio = s.dipIntermedio,
+                dipLejos = s.dipLejos.trim(), dipCerca = s.dipCerca, dipIntermedio = s.dipIntermedio,
+                dipTotalMm = dipParsed.dipTotalMm,
+                dnpOdMm = dipParsed.dnpOdMm,
+                dnpOiMm = dipParsed.dnpOiMm,
                 prismaOdValor = s.prismaOdValor, prismaOdBase = s.prismaOdBase,
                 prismaOiValor = s.prismaOiValor, prismaOiBase = s.prismaOiBase,
                 diagnostico = s.diagnostico,

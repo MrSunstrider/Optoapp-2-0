@@ -123,6 +123,8 @@ class SyncFinanzasUseCase @Inject constructor(
 @Serializable
 data class DispensacionRemota(
     val id: String,
+    val ot: String? = null,
+    @SerialName("montura_id") val monturaId: String? = null,
     @SerialName("paciente_id") val pacienteId: String,
     val fecha: String,
     @SerialName("optica_id") val opticaId: String,
@@ -142,10 +144,11 @@ data class DispensacionRemota(
     @SerialName("estado_entrega") val estadoEntrega: String? = null,
     @SerialName("fecha_vencimiento_garantia") val fechaVencimientoGarantia: String? = null,
     @SerialName("distancia_lente") val distanciaLente: String? = null,
+    val altura: String? = null,
     @SerialName("sub_tipo_bifocal") val subTipoBifocal: String? = null
 ) {
     fun toEntity() = DispensacionOptica(
-        id = id, pacienteId = pacienteId, fecha = LocalDate.parse(fecha), opticaId = optId(opticaId),
+        id = id, ot = ot ?: "", monturaId = monturaId ?: "", pacienteId = pacienteId, fecha = LocalDate.parse(fecha), opticaId = optId(opticaId),
         tipoMontura = tipoMontura ?: "", materialMontura = materialMontura ?: "",
         tipoLente = tipoLente ?: "", materialLente = materialLente ?: "",
         tratamientos = tratamientos?.split(",")?.filter { it.isNotBlank() } ?: emptyList(),
@@ -155,7 +158,9 @@ data class DispensacionRemota(
         metodoPago = metodoPago ?: "", montoPagado = montoPagado,
         estadoEntrega = estadoEntrega ?: "",
         fechaVencimientoGarantia = fechaVencimientoGarantia?.let(LocalDate::parse),
-        distanciaLente = distanciaLente ?: "", subTipoBifocal = subTipoBifocal ?: ""
+        distanciaLente = distanciaLente ?: "",
+        altura = altura ?: "",
+        subTipoBifocal = subTipoBifocal ?: ""
     )
 
     private fun optId(remoteId: String) = remoteId.ifBlank { "mi_optica_base" }
@@ -214,7 +219,7 @@ data class FinanzasSyncResult(
 // ─── Extensiones: Entidad → DTO para Supabase ────────────────────────────────
 
 private fun DispensacionOptica.toRemoto(): DispensacionRemota = DispensacionRemota(
-    id = id, pacienteId = pacienteId, fecha = fecha.toString(), opticaId = opticaId,
+    id = id, ot = ot, monturaId = monturaId, pacienteId = pacienteId, fecha = fecha.toString(), opticaId = opticaId,
     tipoMontura = tipoMontura, materialMontura = materialMontura,
     tipoLente = tipoLente, materialLente = materialLente,
     tratamientos = tratamientos.joinToString(","), colorLente = colorLente,
@@ -223,7 +228,7 @@ private fun DispensacionOptica.toRemoto(): DispensacionRemota = DispensacionRemo
     montoTotal = montoTotal, metodoPago = metodoPago,
     montoPagado = montoPagado, estadoEntrega = estadoEntrega,
     fechaVencimientoGarantia = fechaVencimientoGarantia?.toString(),
-    distanciaLente = distanciaLente, subTipoBifocal = subTipoBifocal
+    distanciaLente = distanciaLente, altura = altura, subTipoBifocal = subTipoBifocal
 )
 
 private fun Pago.toRemoto(): PagoRemoto = PagoRemoto(

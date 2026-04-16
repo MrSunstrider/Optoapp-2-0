@@ -93,6 +93,16 @@ fun MainDrawerScreen(
                     icon = { Icon(Icons.Default.AddShoppingCart, contentDescription = null) },
                     modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                 )
+                NavigationDrawerItem(
+                    label = { Text("Inventario Monturas") },
+                    selected = currentRoute == "monturas",
+                    onClick = {
+                        scope.launch { drawerState.close() }
+                        navController.navigate("monturas")
+                    },
+                    icon = { Icon(Icons.Default.Inventory2, contentDescription = null) },
+                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                )
                 if (showCierreCaja) {
                     NavigationDrawerItem(
                         label = { Text("Cierre de Caja") },
@@ -257,6 +267,7 @@ fun MainDrawerScreen(
                 composable("servicios_extra") { 
                     ServiciosExtraScreen(navController, drawerState) 
                 }
+                composable("monturas") { MonturasScreen(navController) }
                 composable("nuevo_servicio/{pacienteId}") { backStackEntry ->
                     NuevoServicioScreen(navController, pacienteId = backStackEntry.arguments?.getString("pacienteId"))
                 }

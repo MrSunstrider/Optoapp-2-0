@@ -1,9 +1,11 @@
 package com.example.optoapp.ui.screens
 
+import android.content.Intent
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
@@ -13,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -35,12 +38,18 @@ import com.example.optoapp.ui.components.AbonoDialog
 @Composable
 fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, dispensacionId: String? = null, viewModel: DispensacionViewModel = hiltViewModel()) {
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
+    val monturasActivas by viewModel.monturasActivas.collectAsState()
+    val clipboardManager = LocalClipboardManager.current
 
     LaunchedEffect(dispensacionId) {
         if (dispensacionId != null) {
             viewModel.loadDispensacion(dispensacionId)
         }
+    }
+    LaunchedEffect(pacienteId) {
+        viewModel.loadPacienteNombre(pacienteId)
     }
 
     var showDatePicker by remember { mutableStateOf(false) }
@@ -69,6 +78,96 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
         viewModel.saveDispensacion(pacienteId, dispensacionId) {
             navController.popBackStack()
         }
+    }
+    var showTicketDialog by remember { mutableStateOf(false) }
+
+    fun ticketLaboratorioTexto(): String {
+        val requiereAltura = uiState.tipoLente == "Bifocal" || uiState.tipoLente == "Progresivo" || uiState.tipoLente == "Ocupacional"
+        val tipoLenteLinea = buildString {
+            append(uiState.tipoLente.ifBlank { "-" })
+            if (uiState.subTipoBifocal.isNotBlank()) append(" (${uiState.subTipoBifocal})")
+            if (uiState.tipoLente == "Monofocal" && uiState.distanciaLente.isNotBlank()) append(" - ${uiState.distanciaLente}")
+        }
+        val tratamientos = if (uiState.tratamientos.isEmpty()) "-" else uiState.tratamientos.joinToString(", ")
+
+        return buildString {
+            appendLine("OT: ${uiState.ot.ifBlank { "(pendiente)" }}")
+            appendLine("Fecha: ${DateUtils.formatLocalized(uiState.fecha)}")
+            appendLine("Paciente: ${uiState.pacienteNombre.ifBlank { pacienteId }}")
+            appendLine()
+            appendLine("=== LABORATORIO ===")
+            appendLine("Tipo de lente: $tipoLenteLinea")
+            appendLine("Material lente: ${uiState.materialLente.ifBlank { "-" }}")
+            appendLine("Color lente: ${uiState.colorLente.ifBlank { "-" }}")
+            appendLine("Tratamientos: $tratamientos")
+            appendLine("DIP / DNP: Ver receta clínica")
+            if (requiereAltura) {
+                appendLine("Altura (mm): ${uiState.altura.ifBlank { "-" }}")
+            }
+            appendLine()
+            appendLine("Montura:")
+            appendLine("- Origen: ${uiState.origenMontura.ifBlank { "-" }}")
+            appendLine("- Tipo aro: ${uiState.tipoAro.ifBlank { "-" }}")
+            appendLine("- Material: ${uiState.materialMontura.ifBlank { "-" }}")
+            appendLine("- Descripción: ${uiState.descripcionMontura.ifBlank { "-" }}")
+            appendLine()
+            appendLine("Observaciones técnicas:")
+            appendLine(uiState.notasDiseno.ifBlank { "-" })
+        }
+    }
+
+    fun ticketLaboratorioTextoCompacto(): String {
+        val tratamientos = if (uiState.tratamientos.isEmpty()) "-" else uiState.tratamientos.joinToString("/")
+        val altura = if (uiState.tipoLente == "Bifocal" || uiState.tipoLente == "Progresivo" || uiState.tipoLente == "Ocupacional") {
+            uiState.altura.ifBlank { "-" }
+        } else "-"
+        return "OT ${uiState.ot.ifBlank { "(pendiente)" }} | ${uiState.pacienteNombre.ifBlank { pacienteId }}\n" +
+            "Lente: ${uiState.tipoLente.ifBlank { "-" }} ${if (uiState.subTipoBifocal.isNotBlank()) "(${uiState.subTipoBifocal})" else ""}\n" +
+            "Mat: ${uiState.materialLente.ifBlank { "-" }} | Altura(mm): $altura\n" +
+            "Trat: $tratamientos\n" +
+            "Montura: ${uiState.descripcionMontura.ifBlank { "-" }}\n" +
+            "Obs: ${uiState.notasDiseno.ifBlank { "-" }}"
+    }
+
+    if (showTicketDialog) {
+        val ticketText = ticketLaboratorioTexto()
+        val ticketCompact = ticketLaboratorioTextoCompacto()
+        AlertDialog(
+            onDismissRequest = { showTicketDialog = false },
+            title = { Text("Ticket de Laboratorio") },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 420.dp)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = ticketText,
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            },
+            confirmButton = {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    TextButton(onClick = {
+                        clipboardManager.setText(AnnotatedString(ticketCompact))
+                    }) { Text("Copiar") }
+                    TextButton(onClick = {
+                        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                            type = "text/plain"
+                            putExtra(Intent.EXTRA_TEXT, ticketCompact)
+                        }
+                        context.startActivity(Intent.createChooser(shareIntent, "Compartir Ticket"))
+                    }) { Text("Compartir") }
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showTicketDialog = false }) { Text("Cerrar") }
+            }
+        )
     }
 
     Scaffold(
@@ -99,6 +198,11 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
             OutlinedButton(onClick = { showDatePicker = true }, modifier = Modifier.fillMaxWidth()) {
                 Text("Fecha: ${DateUtils.formatLocalized(uiState.fecha)}")
             }
+            OptoTextField(
+                value = uiState.ot,
+                onValueChange = { viewModel.updateUiState { s -> s.copy(ot = it) } },
+                label = "N° OT (Orden de Trabajo)"
+            )
 
             // Lente Card
             Card {
@@ -107,7 +211,10 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
                     DropdownField(label = "Tipo de Lente", selected = uiState.tipoLente, options = listOf("Monofocal", "Bifocal", "Progresivo", "Ocupacional")) { 
                         viewModel.updateUiState { s -> 
                             val nextS = s.copy(tipoLente = it)
-                            if (it != "Bifocal") nextS.copy(subTipoBifocal = "") else nextS
+                            var cleaned = if (it != "Bifocal") nextS.copy(subTipoBifocal = "") else nextS
+                            if (it != "Monofocal") cleaned = cleaned.copy(distanciaLente = "")
+                            if (it != "Bifocal" && it != "Progresivo" && it != "Ocupacional") cleaned = cleaned.copy(altura = "")
+                            cleaned
                         } 
                     }
                     
@@ -121,6 +228,15 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
                         DropdownField(label = "Distancia", selected = uiState.distanciaLente, options = listOf("Lejos", "Intermedia", "Cerca")) { 
                             viewModel.updateUiState { s -> s.copy(distanciaLente = it) } 
                         }
+                    }
+
+                    if (uiState.tipoLente == "Bifocal" || uiState.tipoLente == "Progresivo" || uiState.tipoLente == "Ocupacional") {
+                        OptoTextField(
+                            value = uiState.altura,
+                            onValueChange = { viewModel.updateUiState { s -> s.copy(altura = it) } },
+                            label = "Altura (mm)",
+                            keyboardType = KeyboardType.Decimal
+                        )
                     }
                     
                     DropdownField(label = "Material", selected = uiState.materialLente, options = listOf("Resina", "Policarbonato", "Cristal", "Trivex")) { 
@@ -160,7 +276,30 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("Información de Montura", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                     DropdownField(label = "Origen", selected = uiState.origenMontura, options = listOf("Nueva de Tienda", "Traída por paciente")) { 
-                        viewModel.updateUiState { s -> s.copy(origenMontura = it) } 
+                        viewModel.updateUiState { s ->
+                            if (it == "Nueva de Tienda") s.copy(origenMontura = it)
+                            else s.copy(origenMontura = it, monturaId = "")
+                        }
+                    }
+                    if (uiState.origenMontura == "Nueva de Tienda") {
+                        val opcionesMontura = monturasActivas
+                            .filter { it.stockActual > 0 || it.id == uiState.monturaId }
+                            .map { m -> "${m.id}|${m.sku} - ${m.marca} ${m.modelo} (Stock: ${m.stockActual})" }
+                        val seleccion = opcionesMontura.firstOrNull { it.startsWith(uiState.monturaId) } ?: ""
+                        DropdownField(
+                            label = "Montura de inventario",
+                            selected = seleccion,
+                            options = opcionesMontura
+                        ) { selected ->
+                            val id = selected.substringBefore("|")
+                            val montura = monturasActivas.firstOrNull { it.id == id }
+                            viewModel.updateUiState { s ->
+                                s.copy(
+                                    monturaId = id,
+                                    descripcionMontura = montura?.let { "${it.marca} ${it.modelo}" } ?: s.descripcionMontura
+                                )
+                            }
+                        }
                     }
                     DropdownField(label = "Tipo de Aro", selected = uiState.tipoAro, options = listOf("Aro Completo", "Semi al aire", "Al aire")) { 
                         viewModel.updateUiState { s -> s.copy(tipoAro = it) } 
@@ -235,6 +374,7 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
                     var showAddDialog by remember { mutableStateOf(false) }
                     if (showAddDialog) {
                         AbonoDialog(
+                            defaultFecha = uiState.fecha,
                             onDismiss = { showAddDialog = false },
                             onConfirm = { nuevoPago: Pago ->
                                 viewModel.addPago(nuevoPago)
@@ -278,6 +418,19 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
             
             Button(onClick = { saveAction() }, modifier = Modifier.fillMaxWidth()) {
                 Text(if (dispensacionId == null) "Confirmar Orden" else "Actualizar Orden")
+            }
+            OutlinedButton(
+                onClick = { showTicketDialog = true },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Ver Ticket Laboratorio")
+            }
+            if (!uiState.error.isNullOrBlank()) {
+                Text(
+                    text = uiState.error ?: "",
+                    color = MaterialTheme.colorScheme.error,
+                    fontSize = 13.sp
+                )
             }
             Spacer(modifier = Modifier.height(24.dp))
         }

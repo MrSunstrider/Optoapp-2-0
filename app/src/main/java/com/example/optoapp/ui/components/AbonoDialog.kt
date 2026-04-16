@@ -11,7 +11,12 @@ import java.util.*
 import java.time.LocalDate
 
 @Composable
-fun AbonoDialog(pago: Pago? = null, onDismiss: () -> Unit, onConfirm: (Pago) -> Unit) {
+fun AbonoDialog(
+    pago: Pago? = null,
+    defaultFecha: LocalDate = LocalDate.now(),
+    onDismiss: () -> Unit,
+    onConfirm: (Pago) -> Unit
+) {
     var monto by remember { mutableStateOf(pago?.monto?.toString() ?: "") }
     var metodo by remember { mutableStateOf(pago?.metodoPago ?: "Efectivo") }
     var nota by remember { mutableStateOf(pago?.nota ?: "") }
@@ -51,7 +56,7 @@ fun AbonoDialog(pago: Pago? = null, onDismiss: () -> Unit, onConfirm: (Pago) -> 
                                 monto = m,
                                 metodoPago = metodo,
                                 nota = nota,
-                                fecha = LocalDate.now(),
+                                fecha = defaultFecha,
                                 tipo = "Abono"
                             )
                     )

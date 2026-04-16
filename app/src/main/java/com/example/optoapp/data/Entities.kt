@@ -137,6 +137,12 @@ data class EvaluacionClinica(
     
     // DIP o DNP
     val dipLejos: String = "", val dipCerca: String = "", val dipIntermedio: String = "",
+    @SerializedName("dipTotalMm", alternate = ["dip_total_mm"])
+    val dipTotalMm: Double? = null,
+    @SerializedName("dnpOdMm", alternate = ["dnp_od_mm"])
+    val dnpOdMm: Double? = null,
+    @SerializedName("dnpOiMm", alternate = ["dnp_oi_mm"])
+    val dnpOiMm: Double? = null,
     
     // Prismas
     val prismaOdValor: String = "", val prismaOdBase: String = "",
@@ -184,6 +190,8 @@ data class EvaluacionClinica(
 )
 data class DispensacionOptica(
     @PrimaryKey val id: String,
+    val ot: String = "",
+    val monturaId: String = "",
     @SerializedName("pacienteId", alternate = ["paciente_id"])
     val pacienteId: String,
     val fecha: LocalDate,
@@ -209,6 +217,7 @@ data class DispensacionOptica(
     val estadoEntrega: String = "Pendiente",
     val fechaVencimientoGarantia: LocalDate? = null,
     val distanciaLente: String = "",
+    val altura: String = "",
     val subTipoBifocal: String = ""
 )
 
@@ -277,6 +286,60 @@ data class ServicioExtra(
     val pacienteId: String? = null, // Opcional
     @SerializedName("metodoPago", alternate = ["metodo_pago"])
     val metodoPago: String = "",
+    @SerializedName("opticaId", alternate = ["optica_id"])
+    val opticaId: String = "mi_optica_base"
+)
+
+@Entity(
+    tableName = "monturas",
+    indices = [
+        Index(value = ["opticaId"]),
+        Index(value = ["sku", "opticaId"], unique = true)
+    ]
+)
+data class Montura(
+    @PrimaryKey val id: String,
+    val sku: String = "",
+    val marca: String = "",
+    val modelo: String = "",
+    val color: String = "",
+    val talla: String = "",
+    val costo: Double = 0.0,
+    val precio: Double = 0.0,
+    val stockActual: Int = 0,
+    val stockMinimo: Int = 0,
+    val activo: Boolean = true,
+    @SerializedName("opticaId", alternate = ["optica_id"])
+    val opticaId: String = "mi_optica_base"
+)
+
+@Entity(
+    tableName = "montura_movimientos",
+    indices = [
+        Index(value = ["monturaId"]),
+        Index(value = ["opticaId"]),
+        Index(value = ["fecha"]),
+        Index(value = ["referenciaId"])
+    ],
+    foreignKeys = [
+        ForeignKey(
+            entity = Montura::class,
+            parentColumns = ["id"],
+            childColumns = ["monturaId"],
+            onDelete = ForeignKey.CASCADE
+        )
+    ]
+)
+data class MonturaMovimiento(
+    @PrimaryKey val id: String,
+    val monturaId: String,
+    val fecha: LocalDate = LocalDate.now(),
+    val tipo: String, // ENTRADA, SALIDA_VENTA, AJUSTE
+    val cantidad: Int,
+    val stockPrevio: Int,
+    val stockNuevo: Int,
+    val referenciaId: String = "",
+    val nota: String = "",
     @SerializedName("opticaId", alternate = ["optica_id"])
     val opticaId: String = "mi_optica_base"
 )

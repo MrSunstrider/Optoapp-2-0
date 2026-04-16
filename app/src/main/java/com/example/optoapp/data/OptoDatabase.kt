@@ -10,8 +10,8 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import java.util.concurrent.TimeUnit
 
 @Database(
-    entities = [Paciente::class, EvaluacionClinica::class, DispensacionOptica::class, Pago::class, ServicioExtra::class],
-    version = 10,
+    entities = [Paciente::class, EvaluacionClinica::class, DispensacionOptica::class, Pago::class, ServicioExtra::class, Montura::class, MonturaMovimiento::class],
+    version = 15,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -21,6 +21,8 @@ abstract class OptoDatabase : RoomDatabase() {
     abstract fun dispensacionDao(): DispensacionDao
     abstract fun pagoDao(): PagoDao
     abstract fun servicioExtraDao(): ServicioExtraDao
+    abstract fun monturaDao(): MonturaDao
+    abstract fun monturaMovimientoDao(): MonturaMovimientoDao
 
     companion object {
         @Volatile
@@ -467,6 +469,78 @@ abstract class OptoDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_10_11 = object : Migration(10, 11) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE evaluaciones ADD COLUMN dipTotalMm REAL")
+                db.execSQL("ALTER TABLE evaluaciones ADD COLUMN dnpOdMm REAL")
+                db.execSQL("ALTER TABLE evaluaciones ADD COLUMN dnpOiMm REAL")
+            }
+        }
+
+        val MIGRATION_11_12 = object : Migration(11, 12) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE dispensaciones ADD COLUMN altura TEXT NOT NULL DEFAULT ''")
+            }
+        }
+
+        val MIGRATION_12_13 = object : Migration(12, 13) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE dispensaciones ADD COLUMN ot TEXT NOT NULL DEFAULT ''")
+            }
+        }
+
+        val MIGRATION_13_14 = object : Migration(13, 14) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS monturas (
+                        id TEXT NOT NULL PRIMARY KEY,
+                        sku TEXT NOT NULL,
+                        marca TEXT NOT NULL,
+                        modelo TEXT NOT NULL,
+                        color TEXT NOT NULL,
+                        talla TEXT NOT NULL,
+                        costo REAL NOT NULL,
+                        precio REAL NOT NULL,
+                        stockActual INTEGER NOT NULL,
+                        stockMinimo INTEGER NOT NULL,
+                        activo INTEGER NOT NULL,
+                        opticaId TEXT NOT NULL
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_monturas_sku_opticaId ON monturas(sku, opticaId)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_monturas_opticaId ON monturas(opticaId)")
+            }
+        }
+
+        val MIGRATION_14_15 = object : Migration(14, 15) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE dispensaciones ADD COLUMN monturaId TEXT NOT NULL DEFAULT ''")
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS montura_movimientos (
+                        id TEXT NOT NULL PRIMARY KEY,
+                        monturaId TEXT NOT NULL,
+                        fecha TEXT NOT NULL,
+                        tipo TEXT NOT NULL,
+                        cantidad INTEGER NOT NULL,
+                        stockPrevio INTEGER NOT NULL,
+                        stockNuevo INTEGER NOT NULL,
+                        referenciaId TEXT NOT NULL,
+                        nota TEXT NOT NULL,
+                        opticaId TEXT NOT NULL,
+                        FOREIGN KEY(monturaId) REFERENCES monturas(id) ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_montura_movimientos_monturaId ON montura_movimientos(monturaId)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_montura_movimientos_opticaId ON montura_movimientos(opticaId)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_montura_movimientos_fecha ON montura_movimientos(fecha)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_montura_movimientos_referenciaId ON montura_movimientos(referenciaId)")
+            }
+        }
+
 
         fun getDatabase(context: Context): OptoDatabase {
             return INSTANCE ?: synchronized(this) {
@@ -475,7 +549,7 @@ abstract class OptoDatabase : RoomDatabase() {
                     OptoDatabase::class.java,
                     "opto_database"
                 )
-                .addMigrations(MIGRATION_6_7, MIGRATION_7_8, MIGRATION_9_10)
+                .addMigrations(MIGRATION_6_7, MIGRATION_7_8, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15)
                 .fallbackToDestructiveMigration(true) // Permitir recrear tablas ante cambios de índices en desarrollo
                 .build()
                 INSTANCE = instance

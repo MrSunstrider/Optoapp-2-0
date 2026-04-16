@@ -3,6 +3,7 @@ package com.example.optoapp.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.optoapp.data.DispensacionOptica
+import com.example.optoapp.data.MonturaMovimiento
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Resource
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -19,14 +20,18 @@ import java.time.LocalDate
 import com.example.optoapp.util.DateUtils
 
 data class DispensacionUiState(
+    val pacienteNombre: String = "",
+    val ot: String = "",
     val tipoLente: String = "",
     val distanciaLente: String = "",
+    val altura: String = "",
     val materialLente: String = "",
     val tratamientos: List<String> = emptyList(),
     val colorLente: String = "",
     val notasDiseno: String = "",
     
     val origenMontura: String = "",
+    val monturaId: String = "",
     val tipoAro: String = "",
     val materialMontura: String = "",
     val descripcionMontura: String = "",
@@ -55,8 +60,32 @@ class DispensacionViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(DispensacionUiState())
     val uiState: StateFlow<DispensacionUiState> = _uiState.asStateFlow()
+    private val _monturasActivas = MutableStateFlow<List<com.example.optoapp.data.Montura>>(emptyList())
+    val monturasActivas: StateFlow<List<com.example.optoapp.data.Montura>> = _monturasActivas.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            sessionManager.opticaId.collect { opticaId ->
+                repository.getMonturasByOptica(opticaId).collect { items ->
+                    _monturasActivas.value = items.filter { it.activo }
+                }
+            }
+        }
+    }
 
     fun getDispensacionesByPaciente(pacienteId: String) = repository.getDispensacionesByPaciente(pacienteId)
+
+    fun loadPacienteNombre(pacienteId: String) {
+        viewModelScope.launch {
+            when (val result = repository.getPacienteById(pacienteId)) {
+                is Resource.Success -> {
+                    val nombre = result.data?.nombreCompleto.orEmpty()
+                    _uiState.update { it.copy(pacienteNombre = nombre) }
+                }
+                else -> Unit
+            }
+        }
+    }
 
     fun loadDispensacion(dispensacionId: String) {
         viewModelScope.launch {
@@ -68,14 +97,17 @@ class DispensacionViewModel @Inject constructor(
                     _uiState.update {
                         it.copy(
                             isLoading = false,
+                            ot = d.ot,
                             tipoLente = d.tipoLente,
                             distanciaLente = d.distanciaLente,
+                            altura = d.altura,
                             materialLente = d.materialLente,
                             tratamientos = d.tratamientos,
                             colorLente = d.colorLente,
                             notasDiseno = d.notasDiseno,
                             subTipoBifocal = d.subTipoBifocal,
                             origenMontura = d.origenMontura,
+                            monturaId = d.monturaId,
                             tipoAro = d.tipoAro,
                             materialMontura = d.materialMontura,
                             descripcionMontura = d.descripcionMontura,
@@ -122,12 +154,35 @@ class DispensacionViewModel @Inject constructor(
     fun saveDispensacion(pacienteId: String, dispensacionId: String?, onComplete: () -> Unit) {
         viewModelScope.launch {
             val s = _uiState.value
+            val requiereAltura = s.tipoLente == "Bifocal" || s.tipoLente == "Progresivo" || s.tipoLente == "Ocupacional"
+            if (requiereAltura && s.altura.isBlank()) {
+                _uiState.update { it.copy(error = "La altura es obligatoria para ${s.tipoLente}.") }
+                return@launch
+            }
+
+            val alturaValida = s.altura.trim().replace(",", ".").toDoubleOrNull()
+            if (requiereAltura && (alturaValida == null || alturaValida <= 0.0)) {
+                _uiState.update { it.copy(error = "Ingresa una altura válida en mm.") }
+                return@launch
+            }
+            if (s.ot.isBlank()) {
+                _uiState.update { it.copy(error = "La OT es obligatoria para guardar la dispensación.") }
+                return@launch
+            }
+
+            _uiState.update { it.copy(error = null) }
             val currentOpticaId = sessionManager.opticaId.first()
             val finalId = dispensacionId ?: s.generatedId
             val finalMontoPagado = s.pagos.sumOf { it.monto }
+            val dispensacionAnterior = if (dispensacionId != null && dispensacionId != "null") {
+                (repository.getDispensacionById(dispensacionId) as? Resource.Success)?.data
+            } else null
+            val monturaActualId = if (s.origenMontura == "Nueva de Tienda") s.monturaId else ""
 
             val disp = DispensacionOptica(
                 id = finalId,
+                ot = s.ot.trim(),
+                monturaId = monturaActualId,
                 pacienteId = pacienteId,
                 fecha = s.fecha,
                 opticaId = currentOpticaId,
@@ -147,8 +202,55 @@ class DispensacionViewModel @Inject constructor(
                 metodoPago = "",
                 estadoEntrega = s.estadoEntrega,
                 fechaVencimientoGarantia = s.fechaVencimientoGarantia,
-                distanciaLente = if (s.tipoLente == "Monofocal") s.distanciaLente else ""
+                distanciaLente = if (s.tipoLente == "Monofocal") s.distanciaLente else "",
+                altura = if (requiereAltura) s.altura.trim() else ""
             )
+
+            suspend fun registrarMovimiento(monturaId: String, delta: Int, referencia: String, nota: String, tipo: String) {
+                val stockAntes = (repository.getMonturaById(monturaId) as? Resource.Success)?.data?.stockActual ?: return
+                val changed = repository.adjustMonturaStock(monturaId, currentOpticaId, delta)
+                if (changed > 0) {
+                    val stockDespues = stockAntes + delta
+                    repository.insertMonturaMovimiento(
+                        MonturaMovimiento(
+                            id = UUID.randomUUID().toString(),
+                            monturaId = monturaId,
+                            fecha = s.fecha,
+                            tipo = tipo,
+                            cantidad = kotlin.math.abs(delta),
+                            stockPrevio = stockAntes,
+                            stockNuevo = stockDespues,
+                            referenciaId = referencia,
+                            nota = nota,
+                            opticaId = currentOpticaId
+                        )
+                    )
+                } else if (delta < 0) {
+                    _uiState.update { it.copy(error = "Stock insuficiente para la montura seleccionada.") }
+                }
+            }
+
+            val monturaAnteriorId = dispensacionAnterior?.monturaId?.takeIf { it.isNotBlank() } ?: ""
+            if (monturaAnteriorId.isNotBlank() && monturaAnteriorId != monturaActualId) {
+                registrarMovimiento(
+                    monturaId = monturaAnteriorId,
+                    delta = 1,
+                    referencia = finalId,
+                    nota = "Reversión por edición de dispensación",
+                    tipo = "AJUSTE"
+                )
+            }
+            if (monturaActualId.isNotBlank() && monturaActualId != monturaAnteriorId) {
+                registrarMovimiento(
+                    monturaId = monturaActualId,
+                    delta = -1,
+                    referencia = finalId,
+                    nota = "Salida por venta en dispensación",
+                    tipo = "SALIDA_VENTA"
+                )
+                if (_uiState.value.error != null) return@launch
+            }
+
             if (dispensacionId != null && dispensacionId != "null") {
                 repository.updateDispensacion(disp)
             } else {

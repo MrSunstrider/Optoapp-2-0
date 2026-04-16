@@ -11,7 +11,9 @@ class OptoRepository(
     private val evaluacionDao: EvaluacionDao,
     private val dispensacionDao: DispensacionDao,
     private val pagoDao: PagoDao,
-    private val servicioExtraDao: ServicioExtraDao
+    private val servicioExtraDao: ServicioExtraDao,
+    private val monturaDao: MonturaDao,
+    private val monturaMovimientoDao: MonturaMovimientoDao
 ) {
 
     companion object {
@@ -146,6 +148,32 @@ class OptoRepository(
     suspend fun updateServicio(servicio: ServicioExtra) = servicioExtraDao.updateServicio(servicio)
     
     suspend fun deleteServicio(servicio: ServicioExtra) = servicioExtraDao.deleteServicio(servicio)
+
+    // Monturas
+    fun getMonturasByOptica(opticaId: String): Flow<List<Montura>> =
+        monturaDao.getMonturasByOptica(opticaId)
+
+    suspend fun getMonturaById(id: String): Resource<Montura> {
+        return try {
+            val montura = monturaDao.getMonturaById(id)
+            if (montura != null) Resource.Success(montura)
+            else Resource.Error("Montura no encontrada")
+        } catch (e: Exception) {
+            Resource.Error(e.message ?: "Error al obtener montura")
+        }
+    }
+
+    suspend fun insertMontura(montura: Montura) = monturaDao.insertMontura(montura)
+    suspend fun updateMontura(montura: Montura) = monturaDao.updateMontura(montura)
+    suspend fun deleteMontura(montura: Montura) = monturaDao.deleteMontura(montura)
+    suspend fun adjustMonturaStock(monturaId: String, opticaId: String, delta: Int): Int =
+        monturaDao.adjustStock(monturaId, opticaId, delta)
+    fun getMovimientosMonturaByOptica(opticaId: String): Flow<List<MonturaMovimiento>> =
+        monturaMovimientoDao.getMovimientosByOptica(opticaId)
+    fun getMovimientosByMontura(monturaId: String): Flow<List<MonturaMovimiento>> =
+        monturaMovimientoDao.getMovimientosByMontura(monturaId)
+    suspend fun insertMonturaMovimiento(movimiento: MonturaMovimiento) =
+        monturaMovimientoDao.insertMovimiento(movimiento)
 
     // ─── Métodos de sincronización (Fase 3) ──────────────────────────────────
     // Devuelven una lista completa en un instante dado (snapshot), usados por los

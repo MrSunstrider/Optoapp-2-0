@@ -44,6 +44,12 @@ object DatabaseModule {
     fun provideServicioExtraDao(database: OptoDatabase): ServicioExtraDao = database.servicioExtraDao()
 
     @Provides
+    fun provideMonturaDao(database: OptoDatabase): MonturaDao = database.monturaDao()
+
+    @Provides
+    fun provideMonturaMovimientoDao(database: OptoDatabase): MonturaMovimientoDao = database.monturaMovimientoDao()
+
+    @Provides
     @Singleton
     fun provideSecurityManager(@ApplicationContext context: Context): SecurityManager {
         return SecurityManager(context)
@@ -62,14 +68,18 @@ object DatabaseModule {
         evaluacionDao: EvaluacionDao,
         dispensacionDao: DispensacionDao,
         pagoDao: PagoDao,
-        servicioExtraDao: ServicioExtraDao
+        servicioExtraDao: ServicioExtraDao,
+        monturaDao: MonturaDao,
+        monturaMovimientoDao: MonturaMovimientoDao
     ): OptoRepository {
         return OptoRepository(
             pacienteDao,
             evaluacionDao,
             dispensacionDao,
             pagoDao,
-            servicioExtraDao
+            servicioExtraDao,
+            monturaDao,
+            monturaMovimientoDao
         )
     }
 }

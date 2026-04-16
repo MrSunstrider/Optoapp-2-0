@@ -164,6 +164,7 @@ fun NuevoServicioScreen(navController: NavController, pacienteId: String? = null
             var showAddDialog by remember { mutableStateOf(false) }
             if (showAddDialog) {
                 AbonoDialog(
+                    defaultFecha = uiState.fecha,
                     onDismiss = { showAddDialog = false },
                     onConfirm = { nuevoPago: Pago ->
                         viewModel.addPago(nuevoPago)

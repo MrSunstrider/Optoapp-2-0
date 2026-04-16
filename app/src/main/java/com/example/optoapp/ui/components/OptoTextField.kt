@@ -23,7 +23,7 @@ fun OptoTextField(
         value = value,
         onValueChange = onValueChange,
         label = { Text(label) },
-        modifier = modifier,
+        modifier = modifier.fillMaxWidth(),
         keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
         isError = isError,
         supportingText = supportingText?.let { { Text(it) } },

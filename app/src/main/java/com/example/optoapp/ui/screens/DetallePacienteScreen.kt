@@ -607,6 +607,7 @@ fun ResumenDispensacionDialog(disp: DispensacionOptica, paciente: Paciente, onDi
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 InfoSection("Datos del Paciente") {
+                    if (disp.ot.isNotBlank()) Text("OT: ${disp.ot}", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
                     Text("Nombre: ${paciente.nombreCompleto}", fontSize = 14.sp)
                     Text("Edad: ${paciente.edad} años", fontSize = 14.sp)
                     Text("Fecha: $date", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
@@ -627,6 +628,9 @@ fun ResumenDispensacionDialog(disp: DispensacionOptica, paciente: Paciente, onDi
                         val subtipo = if (disp.tipoLente == "Bifocal" && disp.subTipoBifocal.isNotBlank()) " (${disp.subTipoBifocal})" else ""
                         val distancia = if (disp.tipoLente == "Monofocal" && disp.distanciaLente.isNotBlank()) " - ${disp.distanciaLente}" else ""
                         Text("Tipo: ${disp.tipoLente}$subtipo$distancia", fontSize = 14.sp)
+                    }
+                    if ((disp.tipoLente == "Bifocal" || disp.tipoLente == "Progresivo" || disp.tipoLente == "Ocupacional") && disp.altura.isNotBlank()) {
+                        Text("Altura: ${disp.altura} mm", fontSize = 14.sp)
                     }
                     if (disp.materialLente.isNotBlank()) Text("Material: ${disp.materialLente}", fontSize = 14.sp)
                     if (disp.colorLente.isNotBlank()) Text("Color: ${disp.colorLente}", fontSize = 14.sp)
