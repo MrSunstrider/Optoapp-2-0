@@ -14,7 +14,8 @@ class AppointmentReminderWorker(
         val evaluationId = inputData.getString("evaluation_id") ?: return Result.failure()
         
         val notificationHelper = NotificationHelper(applicationContext)
-        notificationHelper.showNotification(patientName)
+        val nid = evaluationId.hashCode()
+        notificationHelper.showNotification(patientName, notificationId = nid)
         
         return Result.success()
     }

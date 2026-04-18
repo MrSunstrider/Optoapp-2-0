@@ -1,6 +1,9 @@
+@file:Suppress("DEPRECATION")
+
 package com.example.optoapp.data
 
 import android.content.Context
+import androidx.core.content.edit
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.*
 import androidx.security.crypto.EncryptedSharedPreferences
@@ -93,7 +96,7 @@ class SessionManager(private val context: Context) {
     }
 
     suspend fun clearSession() {
-        encryptedPrefs.edit().clear().apply()
+        encryptedPrefs.edit { clear() }
         _opticaIdFlow.value = LEGACY_OPTICA_ID
         _opticaRolFlow.value = "admin"
         

@@ -122,6 +122,8 @@ data class EvaluacionUiState(
     val planTratamiento: String = "",
     val observaciones: String = "",
     val proximaCita: LocalDate? = null,
+    /** programada | confirmada | asistio | no_asistio | reprogramada */
+    val citaEstado: String = "programada",
 
     // Contactología
     val lcOdEsf: String = "", val lcOdCil: String = "", val lcOdEje: String = "",
@@ -268,6 +270,7 @@ class EvaluacionViewModel @Inject constructor(
                             planTratamiento = e.planTratamiento,
                             observaciones = e.observaciones,
                             proximaCita = e.proximaCita,
+                            citaEstado = e.citaEstado.ifBlank { "programada" },
                             balanceOd = e.balanceOd,
                             balanceOi = e.balanceOi,
                             otrosPresbicia = e.otrosPresbicia,
@@ -363,6 +366,7 @@ class EvaluacionViewModel @Inject constructor(
                 planTratamiento = s.planTratamiento,
                 observaciones = s.observaciones,
                 proximaCita = s.proximaCita,
+                citaEstado = s.citaEstado.trim().ifBlank { "programada" },
                 balanceOd = s.balanceOd,
                 balanceOi = s.balanceOi,
                 otrosPresbicia = s.otrosPresbicia,

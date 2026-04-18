@@ -8,9 +8,14 @@ import androidx.core.net.toUri
 
 object WhatsAppUtils {
 
-    fun sendWhatsAppMessage(context: Context, phoneNumber: String, message: String) {
+    fun sendWhatsAppMessage(
+        context: Context,
+        phoneNumber: String,
+        message: String,
+        emptyNumberMessage: String = "El paciente no tiene un número telefónico registrado."
+    ) {
         if (phoneNumber.isBlank()) {
-            Toast.makeText(context, "El paciente no tiene un número telefónico registrado.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, emptyNumberMessage, Toast.LENGTH_SHORT).show()
             return
         }
 

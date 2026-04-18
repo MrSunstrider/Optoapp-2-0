@@ -9,10 +9,14 @@ import androidx.lifecycle.viewModelScope
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Resource
 import com.example.optoapp.data.SessionManager
+import com.example.optoapp.data.SyncTelemetry
+import com.example.optoapp.subscription.SubscriptionManager
 import com.example.optoapp.util.SyncErrorSanitizer
 import com.example.optoapp.domain.SyncFinanzasUseCase
 import com.example.optoapp.domain.SyncHistorialUseCase
 import com.example.optoapp.domain.SyncPacientesUseCase
+import com.example.optoapp.domain.SyncSessionHelper
+import io.github.jan.supabase.SupabaseClient
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -38,6 +42,9 @@ class SyncViewModel @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val sessionManager: SessionManager,
     private val repository: OptoRepository,
+    private val syncTelemetry: SyncTelemetry,
+    private val subscriptionManager: SubscriptionManager,
+    private val supabase: SupabaseClient,
     private val syncPacientesUseCase: SyncPacientesUseCase,
     private val syncHistorialUseCase: SyncHistorialUseCase,
     private val syncFinanzasUseCase: SyncFinanzasUseCase
@@ -53,43 +60,73 @@ class SyncViewModel @Inject constructor(
     private val _isSilentSyncing = MutableStateFlow(false)
     val isSilentSyncing: StateFlow<Boolean> = _isSilentSyncing.asStateFlow()
 
+    /** Vuelve el estado de UI de sync a inactivo (tras mensaje o cierre de diálogo). */
+    fun clearSyncUiState() {
+        _syncState.value = SyncState.Idle
+    }
+
     /**
      * Dispara la sincronización manual completa (Bidireccional).
      */
     fun performFullSync() = viewModelScope.launch {
         _syncState.value = SyncState.Loading
+        if (!isNetworkAvailable()) {
+            _syncState.value = SyncState.Error(
+                "Sin conexión a internet. Comprueba tu red e inténtalo de nuevo."
+            )
+            return@launch
+        }
+        SyncSessionHelper.refreshSessionBeforeSync(supabase)
 
         val opticaId = sessionManager.opticaId.first()
         repository.reassignLegacyMiOpticaBaseTo(opticaId)
 
-        // 1. Sincronizar Pacientes (Bidireccional por defecto en Fase 3)
-        val pacientesResult = syncPacientesUseCase(opticaId)
-        if (pacientesResult is Resource.Error) {
-            _syncState.value = SyncState.Error(
-                SyncErrorSanitizer.forUserMessage(pacientesResult.message ?: "Error en pacientes")
-            )
-            return@launch
+        suspend fun runStages(): Resource<Unit> {
+            Log.d(TAG, "Sync etapa 1/3: inicio pacientes (opticaId=$opticaId)")
+            val pacientesResult = syncPacientesUseCase(opticaId)
+            if (pacientesResult is Resource.Error) {
+                Log.e(TAG, "Sync etapa 1/3: fin pacientes ERROR")
+                return Resource.Error(pacientesResult.message ?: "Error en pacientes")
+            }
+            Log.d(TAG, "Sync etapa 1/3: fin pacientes OK")
+
+            Log.d(TAG, "Sync etapa 2/3: inicio historial (evaluaciones)")
+            val historialResult = syncHistorialUseCase(opticaId)
+            if (historialResult is Resource.Error) {
+                Log.e(TAG, "Sync etapa 2/3: fin historial ERROR")
+                return Resource.Error(historialResult.message ?: "Error en historial")
+            }
+            Log.d(TAG, "Sync etapa 2/3: fin historial OK")
+
+            Log.d(TAG, "Sync etapa 3/3: inicio finanzas (dispensaciones → servicios_extra → pagos)")
+            val finanzasResult = syncFinanzasUseCase(opticaId)
+            if (finanzasResult is Resource.Error) {
+                Log.e(TAG, "Sync etapa 3/3: fin finanzas ERROR")
+                return Resource.Error(finanzasResult.message ?: "Error en finanzas")
+            }
+            Log.d(TAG, "Sync etapa 3/3: fin finanzas OK")
+            return Resource.Success(Unit)
         }
 
-        // 2. Sincronizar Historial Clínico
-        val historialResult = syncHistorialUseCase(opticaId)
-        if (historialResult is Resource.Error) {
-            _syncState.value = SyncState.Error(
-                SyncErrorSanitizer.forUserMessage(historialResult.message ?: "Error en historial")
-            )
-            return@launch
+        var outcome = runStages()
+        if (outcome is Resource.Error && SyncSessionHelper.looksLikeAuthError(outcome.message)) {
+            Log.w(TAG, "Reintento sync tras posible error de auth")
+            SyncSessionHelper.refreshSessionBeforeSync(supabase)
+            outcome = runStages()
         }
 
-        // 3. Sincronizar Finanzas (Dispensaciones y Pagos)
-        val finanzasResult = syncFinanzasUseCase(opticaId)
-        if (finanzasResult is Resource.Error) {
-            _syncState.value = SyncState.Error(
-                SyncErrorSanitizer.forUserMessage(finanzasResult.message ?: "Error en finanzas")
-            )
-            return@launch
+        when (outcome) {
+            is Resource.Error -> {
+                val msg = SyncErrorSanitizer.forUserMessage(outcome.message)
+                syncTelemetry.recordFullSyncError(outcome.message)
+                _syncState.value = SyncState.Error(msg)
+            }
+            else -> {
+                syncTelemetry.recordFullSyncSuccess()
+                runCatching { subscriptionManager.refreshPlanFromServer(opticaId) }
+                _syncState.value = SyncState.Success("Sincronización completada con éxito")
+            }
         }
-
-        _syncState.value = SyncState.Success("Sincronización completada con éxito")
     }
 
     /**
@@ -100,6 +137,7 @@ class SyncViewModel @Inject constructor(
         if (_isSilentSyncing.value || !isNetworkAvailable()) return@launch
         _isSilentSyncing.value = true
         try {
+            SyncSessionHelper.refreshSessionBeforeSync(supabase)
             val opticaId = sessionManager.opticaId.first()
             repository.reassignLegacyMiOpticaBaseTo(opticaId)
             when (val p = syncPacientesUseCase(opticaId)) {

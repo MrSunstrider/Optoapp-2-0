@@ -1,5 +1,7 @@
 package com.example.optoapp.viewmodel
 
+import android.database.sqlite.SQLiteConstraintException
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.optoapp.data.OptoRepository
@@ -40,6 +42,10 @@ class ServiciosViewModel @Inject constructor(
     private val syncFinanzasUseCase: com.example.optoapp.domain.SyncFinanzasUseCase
 ) : ViewModel() {
 
+    companion object {
+        private const val TAG = "ServiciosViewModel"
+    }
+
     private val _uiState = MutableStateFlow(ServiciosUiState())
     val uiState: StateFlow<ServiciosUiState> = _uiState.asStateFlow()
 
@@ -74,7 +80,9 @@ class ServiciosViewModel @Inject constructor(
                         pacienteId = s.pacienteId,
                         pagos = loadedPagos,
                         generatedId = id,
-                        isEdit = true
+                        isEdit = true,
+                        isLoading = false,
+                        error = null
                     )
                 }
                 is Resource.Error -> {
@@ -104,53 +112,82 @@ class ServiciosViewModel @Inject constructor(
         }
     }
 
+    fun clearServicioError() {
+        _uiState.update { it.copy(error = null) }
+    }
+
     fun saveServicio(onSuccess: () -> Unit) {
         viewModelScope.launch {
             val state = _uiState.value
-            if (state.descripcion.isBlank() || state.montoTotal.isBlank()) return@launch
-
-            val currentOpticaId = sessionManager.opticaId.first()
-            val finalId = if (state.id.isNotBlank()) state.id else state.generatedId
-            val finalACuenta = state.pagos.sumOf { it.monto }
-
-            val servicio = ServicioExtra(
-                id = finalId,
-                ot = state.ot,
-                descripcion = state.descripcion,
-                montoTotal = state.montoTotal.toDoubleOrNull() ?: 0.0,
-                aCuenta = finalACuenta,
-                estado = state.estado,
-                fecha = state.fecha,
-                pacienteId = state.pacienteId,
-                metodoPago = "",
-                opticaId = currentOpticaId
-            )
-
-            if (state.isEdit) {
-                repository.updateServicio(servicio)
-            } else {
-                repository.insertServicio(servicio)
+            if (state.descripcion.isBlank() || state.montoTotal.isBlank()) {
+                _uiState.update {
+                    it.copy(error = "Completa la descripción y el monto total para guardar.")
+                }
+                return@launch
             }
-            
-            // Guardar pagos vinculados a este servicio
-            state.pagos.forEach { pago ->
-                val pagoToSave = pago.copy(servicioExtraId = finalId, opticaId = currentOpticaId)
-                repository.insertPago(pagoToSave)
+            val montoParsed = state.montoTotal.toDoubleOrNull()
+            if (montoParsed == null) {
+                _uiState.update { it.copy(error = "El monto total no es un número válido.") }
+                return@launch
             }
 
-            // Eliminar pagos marcados
-            state.pagosToDelete.forEach { pago ->
-                repository.deletePago(pago)
-            }
+            try {
+                val currentOpticaId = sessionManager.opticaId.first()
+                val finalId = if (state.id.isNotBlank()) state.id else state.generatedId
+                val finalACuenta = state.pagos.sumOf { it.monto }
 
-            // Silent Sync en segundo plano
-            viewModelScope.launch { 
-                try {
-                    syncFinanzasUseCase(currentOpticaId)
-                } catch (e: Exception) {}
-            }
+                val servicio = ServicioExtra(
+                    id = finalId,
+                    ot = state.ot,
+                    descripcion = state.descripcion.trim(),
+                    montoTotal = montoParsed,
+                    aCuenta = finalACuenta,
+                    estado = state.estado,
+                    fecha = state.fecha,
+                    pacienteId = state.pacienteId,
+                    metodoPago = "",
+                    opticaId = currentOpticaId
+                )
 
-            onSuccess()
+                if (state.isEdit) {
+                    repository.updateServicio(servicio)
+                } else {
+                    repository.insertServicio(servicio)
+                }
+
+                state.pagos.forEach { pago ->
+                    val pagoToSave = pago.copy(servicioExtraId = finalId, opticaId = currentOpticaId)
+                    repository.insertPago(pagoToSave)
+                }
+
+                state.pagosToDelete.forEach { pago ->
+                    repository.deletePagoRegistrandoAnulacionEnCaja(pago, currentOpticaId)
+                }
+
+                _uiState.update { it.copy(error = null) }
+
+                viewModelScope.launch {
+                    try {
+                        syncFinanzasUseCase(currentOpticaId)
+                    } catch (e: Exception) {
+                        Log.w(TAG, "Sync finanzas tras guardar servicio", e)
+                    }
+                }
+
+                onSuccess()
+            } catch (e: SQLiteConstraintException) {
+                Log.e(TAG, "Guardar servicio: restricción BD", e)
+                _uiState.update {
+                    it.copy(
+                        error = "No se pudo guardar: revisa el paciente asociado o deja el servicio sin paciente."
+                    )
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Guardar servicio", e)
+                _uiState.update {
+                    it.copy(error = e.message ?: "No se pudo guardar el servicio.")
+                }
+            }
         }
     }
 

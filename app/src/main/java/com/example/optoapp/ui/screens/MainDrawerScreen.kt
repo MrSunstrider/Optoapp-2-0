@@ -84,6 +84,16 @@ fun MainDrawerScreen(
                     modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                 )
                 NavigationDrawerItem(
+                    label = { Text("Agenda") },
+                    selected = currentRoute == "agenda",
+                    onClick = {
+                        scope.launch { drawerState.close() }
+                        navController.navigate("agenda")
+                    },
+                    icon = { Icon(Icons.Default.CalendarMonth, contentDescription = null) },
+                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                )
+                NavigationDrawerItem(
                     label = { Text("Servicios Varios") },
                     selected = currentRoute == "servicios_extra",
                     onClick = {
@@ -154,7 +164,12 @@ fun MainDrawerScreen(
                 LaunchedEffect(syncState) {
                     when (syncState) {
                         is com.example.optoapp.viewmodel.SyncState.Success -> {
-                            android.widget.Toast.makeText(context, (syncState as com.example.optoapp.viewmodel.SyncState.Success).message, android.widget.Toast.LENGTH_SHORT).show()
+                            android.widget.Toast.makeText(
+                                context,
+                                (syncState as com.example.optoapp.viewmodel.SyncState.Success).message,
+                                android.widget.Toast.LENGTH_SHORT
+                            ).show()
+                            syncViewModel.clearSyncUiState()
                         }
                         is com.example.optoapp.viewmodel.SyncState.Error -> {
                             errorMessage = SyncErrorSanitizer.forUserMessage(
@@ -168,9 +183,15 @@ fun MainDrawerScreen(
 
                 if (showErrorDialog) {
                     AlertDialog(
-                        onDismissRequest = { showErrorDialog = false },
-                        confirmButton = { 
-                            TextButton(onClick = { showErrorDialog = false }) { Text("Entendido") } 
+                        onDismissRequest = {
+                            showErrorDialog = false
+                            syncViewModel.clearSyncUiState()
+                        },
+                        confirmButton = {
+                            TextButton(onClick = {
+                                showErrorDialog = false
+                                syncViewModel.clearSyncUiState()
+                            }) { Text("Entendido") }
                         },
                         title = { 
                             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -237,32 +258,63 @@ fun MainDrawerScreen(
             }
             NavHost(navController = navController, startDestination = "pacientes", modifier = Modifier.weight(1f)) {
                 composable("pacientes") { PacientesListScreen(navController, drawerState) }
+                composable("agenda") { AgendaScreen(navController, drawerState) }
                 composable("nuevoPaciente") { NuevoPacienteScreen(navController) }
                 composable("editarPaciente/{id}") { backStackEntry ->
                     NuevoPacienteScreen(navController, pacienteId = backStackEntry.arguments?.getString("id"))
                 }
                 composable("detallePaciente/{id}") { backStackEntry ->
-                    DetallePacienteScreen(navController, id = backStackEntry.arguments?.getString("id")!!)
+                    val pid = backStackEntry.arguments?.getString("id")
+                    if (pid.isNullOrBlank()) {
+                        LaunchedEffect(Unit) { navController.popBackStack() }
+                        Box(Modifier.fillMaxSize())
+                    } else {
+                        DetallePacienteScreen(navController, id = pid)
+                    }
                 }
                 composable("nuevaEvaluacion/{pacienteId}") { backStackEntry ->
-                    NuevaEvaluacionScreen(navController, pacienteId = backStackEntry.arguments?.getString("pacienteId")!!)
+                    val pacienteId = backStackEntry.arguments?.getString("pacienteId")
+                    if (pacienteId.isNullOrBlank()) {
+                        LaunchedEffect(Unit) { navController.popBackStack() }
+                        Box(Modifier.fillMaxSize())
+                    } else {
+                        NuevaEvaluacionScreen(navController, pacienteId = pacienteId)
+                    }
                 }
                 composable("editarEvaluacion/{pacienteId}/{evalId}") { backStackEntry ->
-                    NuevaEvaluacionScreen(
-                        navController, 
-                        pacienteId = backStackEntry.arguments?.getString("pacienteId")!!,
-                        evaluacionId = backStackEntry.arguments?.getString("evalId")
-                    )
+                    val pacienteId = backStackEntry.arguments?.getString("pacienteId")
+                    if (pacienteId.isNullOrBlank()) {
+                        LaunchedEffect(Unit) { navController.popBackStack() }
+                        Box(Modifier.fillMaxSize())
+                    } else {
+                        NuevaEvaluacionScreen(
+                            navController,
+                            pacienteId = pacienteId,
+                            evaluacionId = backStackEntry.arguments?.getString("evalId")
+                        )
+                    }
                 }
                 composable("nuevaDispensacion/{pacienteId}") { backStackEntry ->
-                    NuevaDispensacionScreen(navController, pacienteId = backStackEntry.arguments?.getString("pacienteId")!!)
+                    val pacienteId = backStackEntry.arguments?.getString("pacienteId")
+                    if (pacienteId.isNullOrBlank()) {
+                        LaunchedEffect(Unit) { navController.popBackStack() }
+                        Box(Modifier.fillMaxSize())
+                    } else {
+                        NuevaDispensacionScreen(navController, pacienteId = pacienteId)
+                    }
                 }
                 composable("editarDispensacion/{pacienteId}/{dispId}") { backStackEntry ->
-                    NuevaDispensacionScreen(
-                        navController, 
-                        pacienteId = backStackEntry.arguments?.getString("pacienteId")!!,
-                        dispensacionId = backStackEntry.arguments?.getString("dispId")
-                    )
+                    val pacienteId = backStackEntry.arguments?.getString("pacienteId")
+                    if (pacienteId.isNullOrBlank()) {
+                        LaunchedEffect(Unit) { navController.popBackStack() }
+                        Box(Modifier.fillMaxSize())
+                    } else {
+                        NuevaDispensacionScreen(
+                            navController,
+                            pacienteId = pacienteId,
+                            dispensacionId = backStackEntry.arguments?.getString("dispId")
+                        )
+                    }
                 }
                 composable("servicios_extra") { 
                     ServiciosExtraScreen(navController, drawerState) 

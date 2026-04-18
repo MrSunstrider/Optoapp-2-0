@@ -173,7 +173,10 @@ fun TransactionItem(pago: com.example.optoapp.data.Pago) {
                 "s/. ${String.format(Locale.getDefault(), "%.2f", pago.monto)}",
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.tertiary
+                color = when {
+                    pago.monto < 0 -> MaterialTheme.colorScheme.error
+                    else -> MaterialTheme.colorScheme.tertiary
+                }
             )
         }
     }

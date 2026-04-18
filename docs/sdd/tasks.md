@@ -1,86 +1,113 @@
 # Tasks de implementacion de OptoApp
 
 ## Uso de este backlog
+- Lista de verificación para PRs y revisiones de código: `code-review-checklist.md`.
 - Cada tarea debe referenciar `constitution.md`, `spec.md` y `plan.md`.
-- No iniciar tareas P1/P2 sin estabilizar P0.
-- Marcar estado por tarea: TODO, IN_PROGRESS, DONE, BLOCKED.
+- No iniciar tareas mayores sin estabilizar P0; el bloque P0 actual está cerrado (ver resumen).
+- Marcar estado por tarea: TODO, IN_PROGRESS, DONE, BLOCKED, DEFERRED (diferido con motivo breve).
 
 ## P0 - Estabilidad y sincronizacion critica
 
-### P0-T1 Alinear nullabilidad Room/Supabase
+Resumen: **P0-T1 … T5 = DONE** para la fase actual (bloque estabilidad/sync operativa + trazabilidad por registro en Room).
+
+### P0-T1 Alinear nullabilidad Room/Supabase [DONE]
 - Objetivo: eliminar errores `null value violates not-null constraint`.
 - Acciones:
   - auditar columnas `NOT NULL` remotas vs DTOs/entidades locales.
   - decidir por campo: relajar schema o enviar valor por defecto controlado.
 - Definition of Done:
   - sync completa sin errores de nullabilidad en flujo base.
+- Implementado: valores por defecto seguros en `Paciente.toRemoto()` (textos opcionales como `""`, nombre/teléfono no vacíos).
 
-### P0-T2 Orden estricto de sincronizacion
+### P0-T2 Orden estricto de sincronizacion [DONE]
 - Objetivo: evitar fallos de FK por envio fuera de secuencia.
 - Acciones:
   - aplicar secuencia Pacientes -> Evaluaciones -> Dispensaciones -> ServiciosExtra -> Pagos.
   - registrar logs de inicio/fin por etapa.
 - Definition of Done:
   - no aparecen errores de FK en una corrida de sincronizacion completa.
+- Implementado: orden ya era correcto en código; documentado en `SyncFinanzasUseCase` y logs `SyncViewModel` + cada use case.
 
-### P0-T3 Estado de sincronizacion por registro
-- Objetivo: reintentos inteligentes y trazabilidad operativa.
-- Acciones:
-  - agregar `sync_status` y actualizar transiciones `pending/synced/error`.
-  - incluir motivo de error para depuracion.
-- Definition of Done:
-  - cada registro sincronizable refleja estado actual real.
+### P0-T3 Trazabilidad de sincronizacion (operacion) [DONE]
+- Objetivo: reintentos inteligentes y trazabilidad operativa **a nivel de corrida de sync** (fase actual: un solo operador / implementación incremental).
+- Definition of Done (alcance acordado):
+  - queda registro de última sync exitosa y del último fallo **global**; logs por etapa para depuración sin migrar cada tabla.
+- Implementado:
+  - `SyncTelemetry`: timestamp de última sync OK y último error global en DataStore (`sync_last_full_success_ms`, `sync_last_full_error`), mensaje acotado con `SyncErrorSanitizer`.
+  - Logs por etapa en `SyncViewModel` y use cases de sync.
+- **Fuera de alcance (delegado en P0-T5):** `sync_status` por fila, motivo de error por entidad, UI “pendiente de subir”.
 
-### P0-T4 Robustecer cliente de serializacion y auth
+### P0-T4 Robustecer cliente de serializacion y auth [DONE]
 - Objetivo: reducir fallos por coercion y expiracion de sesion.
 - Acciones:
   - habilitar configuracion JSON tolerante donde aplique.
   - asegurar refresh/retry ante errores de auth.
 - Definition of Done:
   - sincronizacion resiste expiracion de token sin cerrar sesion abruptamente.
+- Implementado: `Json` ya tolerante en `SupabaseModule`; `refreshCurrentSession()` antes de sync manual y silenciosa; reintento de sync completa tras error que parece de auth.
+
+### P0-T5 Sync por registro / cola offline [DONE]
+- Objetivo: saber **qué fila** falló en sync y exponer motivo para soporte (alcance MVP: Room local + UI de diagnóstico; sin cola de reintento automático por fila).
+- Acciones realizadas:
+  - tabla Room `sync_entity_state` (`SyncEntityState`, `SyncEntityStateDao`) con `opticaId` + `entityType` + `entityId`, mensaje de error y `SyncStateTracker` (marcar synced / error).
+  - integración en subidas/bajadas de `SyncPacientesUseCase`, `SyncHistorialUseCase`, `SyncFinanzasUseCase`.
+  - pantalla Configuración: lista de errores por registro vía `SyncDiagnosticsViewModel`.
+- Definition of Done (alcance entregado):
+  - tras una corrida, los registros con fallo quedan registrados localmente con mensaje; el usuario puede verlos en Configuración.
+- **Fuera de alcance en esta iteración:** `sync_status` en cada tabla de negocio, espejo en Supabase, reintento automático por fila.
 
 ## P1 - Multi-optica y permisos
 
-### P1-T1 Modelo `usuario_optica`
+### P1-T1 Modelo `usuario_optica` [DONE]
 - Objetivo: soportar N:N usuario-optica con rol.
 - Definition of Done:
   - existe contrato de tabla y consumo en app para resolver contexto activo.
+- Implementado: tabla Supabase `usuario_optica`; `MembershipRepository.fetchMembershipsForCurrentUser()`; mapeo a `OpticaMembership` (`data/OpticaMembership.kt`).
 
-### P1-T2 Selector de optica activa
+### P1-T2 Selector de optica activa [DONE]
 - Objetivo: permitir cambio de contexto de trabajo cuando aplique.
 - Definition of Done:
   - al login, usuarios multi-optica seleccionan optica y se persiste contexto.
+- Implementado: `SeleccionOpticaScreen` + `AuthViewModel.selectOptica()`; `SessionManager` persiste `opticaId` / `opticaRol`; flujo post-login con varias membresías.
 
-### P1-T3 Filtrado consistente por `optica_id`
+### P1-T3 Filtrado consistente por `optica_id` [DONE]
 - Objetivo: evitar mezcla de datos entre tenants.
 - Definition of Done:
   - todas las consultas criticas en Room/remoto filtran por optica activa.
+- Implementado: entidades Room con `opticaId`; DAOs con variantes `*ForOptica` / `*ByOptica`; repositorio y view models usan `sessionManager.opticaId`; sync fuerza óptica en subidas.
 
-### P1-T4 PermissionManager por rol
+### P1-T4 PermissionManager por rol [DONE]
 - Objetivo: controlar acceso a pantallas y acciones por rol.
 - Definition of Done:
   - administrador, optometrista y asesor tienen permisos esperados sin escalaciones.
+- Implementado: `AppRoles` (`canViewBiAndReports`, `canViewCierreCaja`) según rol de `usuario_optica`; drawer en `MainDrawerScreen` oculta BI, reportes y cierre de caja para rol tipo asesor/ventas (MVP; ampliar matriz de roles cuando haya más pantallas).
 
 ## P2 - Monetizacion y escalado
 
-### P2-T1 Modelo de suscripciones
+**Resumen: P2-T1 y P2-T3 = DONE en código.** **P2-T2:** integración en app **DONE**; **validación de compra en dispositivo con Play Console** queda **DEFERRED** hasta después de encuestas / estudio de mercado (priorizar aprendizaje de precio y disposición a pagar antes de configurar producto, pistas de prueba y licencias).
+
+### P2-T1 Modelo de suscripciones [DONE]
 - Objetivo: soportar plan gratuito y planes de pago.
 - Definition of Done:
   - existe estructura y validacion minima de estado de plan.
+- Implementado: `SubscriptionManager` (`SubscriptionTier` FREE/PRO), caché DataStore (`sub_cached_plan`, `sub_dev_pro`), `MembershipRepository.fetchOpticaPlan` leyendo `OpticaDto.plan`; migración SQL `20260418140000_opticas_plan.sql` (`ALTER TABLE opticas ADD COLUMN plan`).
 
-### P2-T2 Integracion Billing
+### P2-T2 Integracion Billing [DONE código | DEFERRED validación Play]
 - Objetivo: habilitar compra/restauracion de planes de pago.
-- Definition of Done:
-  - flujo de compra funcional en entorno de prueba.
+- Definition of Done (alcance cerrado):
+  - código integrado con Play Billing Library y flujo de compra desde la app.
+- Implementado: `PlayBillingManager` (producto `optoapp_pro_monthly`), `SubscriptionViewModel.launchProPurchase`; compra exitosa llama a `setProFromLocalCache`.
+- **Pendiente (diferido a post-estudio):** comprobar de punta a punta en dispositivo con producto creado en Play Console, pista de prueba e internos/licencias de prueba. **Motivo del aplazamiento:** hacer antes encuestas o estudios de mercado para afinar oferta y pricing antes de invertir en setup de tienda y pruebas de billing.
 
-### P2-T3 Paywall por limites de plan
+### P2-T3 Paywall por limites de plan [DONE]
 - Objetivo: aplicar restricciones del plan gratuito de forma clara.
 - Definition of Done:
   - al superar limites, se bloquea accion y se muestra CTA de upgrade.
+- Implementado: límite FREE `FREE_MAX_PACIENTES = 50` (`SubscriptionViewModel.canAddPaciente`); `PacientesListScreen` / `NuevoPacienteScreen` bloquean alta con diálogo y CTA; `Configuración` muestra plan, producto Play, override dev PRO y refresco de plan tras sync.
 
 ## P3 - Operacion optica (OT, Inventario, Agenda)
 
-### P3-T1 OT en Dispensaciones (MVP) [TODO]
+### P3-T1 OT en Dispensaciones (MVP) [DONE]
 - Objetivo: registrar orden de trabajo de laboratorio por venta.
 - Acciones:
   - agregar campo `ot` en `dispensaciones` (obligatorio al confirmar).
@@ -90,7 +117,7 @@
   - no se puede guardar dispensacion confirmada sin OT.
   - no se permiten OT duplicadas dentro de la misma optica.
 
-### P3-T2 Ticket de Laboratorio en pantalla [TODO]
+### P3-T2 Ticket de Laboratorio en pantalla [DONE]
 - Objetivo: mostrar solo la informacion tecnica para copiar/compartir.
 - Acciones:
   - crear vista/modal "Ticket Laboratorio" desde Dispensacion.
@@ -100,7 +127,7 @@
   - el usuario puede copiar el ticket completo en texto en un toque.
   - no se muestran datos financieros ni diagnostico clinico.
 
-### P3-T3 Contacto de laboratorio por optica [TODO]
+### P3-T3 Contacto de laboratorio por optica [DONE]
 - Objetivo: agilizar envio por WhatsApp/Telegram sin crear usuario tecnico.
 - Acciones:
   - guardar `laboratorio_nombre` y `laboratorio_contacto` en configuracion de optica.
@@ -134,26 +161,27 @@
 - Definition of Done:
   - el usuario visualiza rapidamente monturas criticas por reposicion.
 
-### P3-T7 Agenda visual de citas [TODO]
+### P3-T7 Agenda visual de citas [DONE]
 - Objetivo: ver semana/mes de un vistazo a partir de `proxima_cita`.
 - Acciones:
-  - crear pantalla Agenda (hoy/manana + calendario mensual).
-  - estados de cita: `programada`, `confirmada`, `asistio`, `no_asistio`, `reprogramada`.
+  - pantalla Agenda (filtros Hoy / Semana / Mes con navegación de mes en modo Mes).
+  - campo `cita_estado` local + Supabase; estados: `programada`, `confirmada`, `asistio`, `no_asistio`, `reprogramada`.
 - Definition of Done:
-  - se pueden listar y filtrar citas del dia/semana.
-  - reprogramar cita actualiza agenda y proxima fecha del paciente.
+  - se pueden listar y filtrar citas del día/semana/mes por óptica.
+  - reprogramar cita actualiza `proxima_cita`, marca `reprogramada` y sincroniza historial.
 
-### P3-T8 Integracion BI/Reportes con inventario y OT [TODO]
+### P3-T8 Integracion BI con inventario y entregas [DONE]
 - Objetivo: medir impacto operativo de laboratorio e inventario.
 - Acciones:
-  - agregar metricas: rotacion de monturas, stock bajo, OTs pendientes/listas.
-  - mantener filtros por periodo y optica activa.
+  - metricas en panel BI: entregas pendientes/completadas en el periodo, ventas con montura de catalogo, referencias en stock bajo (instantaneo), salidas de inventario por venta (`SALIDA_VENTA` en periodo).
+  - mismos filtros de periodo que el resto del BI; datos acotados a `sessionManager.opticaId`.
 - Definition of Done:
   - BI muestra indicadores minimos operativos sin mezclar datos entre opticas.
+- Implementado: `BIViewModel` + tarjeta "Operación e inventario" en `BIScreen`.
 
 ## Matriz de trazabilidad minima
 - Reglas clinicas (`spec.md`) -> P0-T1, P0-T4
-- Integridad de datos y sync (`plan.md`) -> P0-T1, P0-T2, P0-T3
+- Integridad de datos y sync (`plan.md`) -> P0-T1, P0-T2, P0-T3 (operación); granularidad por registro -> P0-T5 cuando aplique
 - Multi-tenant y roles (`clarification.md` + `plan.md`) -> P1-T1, P1-T2, P1-T3, P1-T4
-- Monetizacion futura (`spec.md`) -> P2-T1, P2-T2, P2-T3
+- Monetizacion (`spec.md`) -> P2-T1, P2-T2, P2-T3 (código MVP; validación Play en dispositivo diferida; webhooks Play / Edge Functions si hace falta verdad servidor-side)
 - Operacion optica (nuevo alcance) -> P3-T1, P3-T2, P3-T3, P3-T4, P3-T5, P3-T6, P3-T7, P3-T8

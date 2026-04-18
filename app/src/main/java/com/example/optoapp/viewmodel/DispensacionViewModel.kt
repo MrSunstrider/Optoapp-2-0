@@ -151,6 +151,16 @@ class DispensacionViewModel @Inject constructor(
         _uiState.update(update)
     }
 
+    /** Rellena OT con el siguiente correlativo OT-AAAA-#### según fecha y óptica activa. */
+    fun suggestOt() {
+        viewModelScope.launch {
+            val oid = sessionManager.opticaId.first()
+            val fecha = _uiState.value.fecha
+            val next = repository.suggestNextOt(oid, fecha)
+            _uiState.update { it.copy(ot = next, error = null) }
+        }
+    }
+
     fun saveDispensacion(pacienteId: String, dispensacionId: String?, onComplete: () -> Unit) {
         viewModelScope.launch {
             val s = _uiState.value
@@ -170,9 +180,15 @@ class DispensacionViewModel @Inject constructor(
                 return@launch
             }
 
-            _uiState.update { it.copy(error = null) }
             val currentOpticaId = sessionManager.opticaId.first()
             val finalId = dispensacionId ?: s.generatedId
+            val excludeForOt = if (dispensacionId != null && dispensacionId != "null") finalId else ""
+            if (repository.existsDuplicateOt(currentOpticaId, s.ot, excludeForOt.takeIf { it.isNotEmpty() })) {
+                _uiState.update { it.copy(error = "Ya existe una dispensación con esta OT en esta óptica. Usa otra OT o \"Sugerir OT\".") }
+                return@launch
+            }
+
+            _uiState.update { it.copy(error = null) }
             val finalMontoPagado = s.pagos.sumOf { it.monto }
             val dispensacionAnterior = if (dispensacionId != null && dispensacionId != "null") {
                 (repository.getDispensacionById(dispensacionId) as? Resource.Success)?.data
@@ -263,9 +279,9 @@ class DispensacionViewModel @Inject constructor(
                 repository.insertPago(pagoToSave)
             }
 
-            // Eliminar pagos marcados
+            // Eliminar pagos marcados (si ya estaban guardados, se registra anulación en caja el día de hoy)
             s.pagosToDelete.forEach { pago ->
-                repository.deletePago(pago)
+                repository.deletePagoRegistrandoAnulacionEnCaja(pago, currentOpticaId)
             }
 
             // Silent Sync en segundo plano

@@ -156,6 +156,8 @@ data class EvaluacionClinica(
     val observaciones: String = "",
     val proximaFechaControl: String = "",
     val proximaCita: LocalDate? = null,
+    /** programada | confirmada | asistio | no_asistio | reprogramada */
+    val citaEstado: String = "programada",
     val balanceOd: Boolean = false,
     val balanceOi: Boolean = false,
     val otrosPresbicia: Boolean = false,

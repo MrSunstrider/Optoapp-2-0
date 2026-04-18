@@ -10,8 +10,11 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import java.util.concurrent.TimeUnit
 
 @Database(
-    entities = [Paciente::class, EvaluacionClinica::class, DispensacionOptica::class, Pago::class, ServicioExtra::class, Montura::class, MonturaMovimiento::class],
-    version = 15,
+    entities = [
+        Paciente::class, EvaluacionClinica::class, DispensacionOptica::class, Pago::class, ServicioExtra::class,
+        Montura::class, MonturaMovimiento::class, SyncEntityState::class
+    ],
+    version = 18,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -23,6 +26,7 @@ abstract class OptoDatabase : RoomDatabase() {
     abstract fun servicioExtraDao(): ServicioExtraDao
     abstract fun monturaDao(): MonturaDao
     abstract fun monturaMovimientoDao(): MonturaMovimientoDao
+    abstract fun syncEntityStateDao(): SyncEntityStateDao
 
     companion object {
         @Volatile
@@ -541,6 +545,37 @@ abstract class OptoDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_15_16 = object : Migration(15, 16) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    UPDATE dispensaciones
+                    SET ot = ot || '-d' || rowid
+                    WHERE length(trim(ot)) > 0
+                    AND rowid NOT IN (
+                        SELECT MIN(rowid) FROM dispensaciones
+                        WHERE length(trim(ot)) > 0
+                        GROUP BY opticaId, UPPER(TRIM(ot))
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    CREATE UNIQUE INDEX IF NOT EXISTS index_dispensaciones_optica_ot_unique
+                    ON dispensaciones(opticaId, UPPER(TRIM(ot)))
+                    WHERE length(trim(ot)) > 0
+                    """.trimIndent()
+                )
+            }
+        }
+
+        val MIGRATION_16_17 = object : Migration(16, 17) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "ALTER TABLE evaluaciones ADD COLUMN citaEstado TEXT NOT NULL DEFAULT 'programada'"
+                )
+            }
+        }
 
         fun getDatabase(context: Context): OptoDatabase {
             return INSTANCE ?: synchronized(this) {
@@ -549,7 +584,7 @@ abstract class OptoDatabase : RoomDatabase() {
                     OptoDatabase::class.java,
                     "opto_database"
                 )
-                .addMigrations(MIGRATION_6_7, MIGRATION_7_8, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15)
+                .addMigrations(MIGRATION_6_7, MIGRATION_7_8, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17)
                 .fallbackToDestructiveMigration(true) // Permitir recrear tablas ante cambios de índices en desarrollo
                 .build()
                 INSTANCE = instance

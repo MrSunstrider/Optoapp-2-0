@@ -1,11 +1,14 @@
 package com.example.optoapp.ui.screens
 
+import android.app.Activity
 import android.content.Context
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.edit
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -18,21 +21,50 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import com.example.optoapp.billing.PlayBillingManager
+import com.example.optoapp.subscription.SubscriptionTier
+import com.example.optoapp.viewmodel.SubscriptionViewModel
+import com.example.optoapp.viewmodel.SyncDiagnosticsViewModel
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.example.optoapp.BuildConfig
 import com.example.optoapp.data.SecurityManager
+import com.example.optoapp.ui.components.OptoTextField
 import com.example.optoapp.viewmodel.AuthViewModel
+import com.example.optoapp.viewmodel.LaboratorioConfigViewModel
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ConfiguracionScreen(@Suppress("UNUSED_PARAMETER") navController: NavController, drawerState: DrawerState, viewModel: AuthViewModel = hiltViewModel()) {
+fun ConfiguracionScreen(
+    @Suppress("UNUSED_PARAMETER") navController: NavController,
+    drawerState: DrawerState,
+    viewModel: AuthViewModel = hiltViewModel(),
+    laboratorioVm: LaboratorioConfigViewModel = hiltViewModel(),
+    subscriptionVm: SubscriptionViewModel = hiltViewModel(),
+    syncDiagVm: SyncDiagnosticsViewModel = hiltViewModel()
+) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val labUi by laboratorioVm.uiState.collectAsState()
+    var labNombre by remember { mutableStateOf("") }
+    var labContacto by remember { mutableStateOf("") }
+    LaunchedEffect(labUi.opticaId, labUi.laboratorioNombre, labUi.laboratorioContacto) {
+        labNombre = labUi.laboratorioNombre
+        labContacto = labUi.laboratorioContacto
+    }
+    LaunchedEffect(Unit) {
+        laboratorioVm.syncFromServer()
+        subscriptionVm.refreshPlanFromServer()
+    }
+
+    val subTier by subscriptionVm.tier.collectAsState()
+    val devProOverride by subscriptionVm.devProOverride.collectAsState()
+    val syncErrors by syncDiagVm.errorRows.collectAsState()
     
     var pinActual by remember { mutableStateOf("") }
     var nuevoPin by remember { mutableStateOf("") }
@@ -69,9 +101,10 @@ fun ConfiguracionScreen(@Suppress("UNUSED_PARAMETER") navController: NavControll
                 val inputStream = context.contentResolver.openInputStream(it)
                 val json = inputStream?.bufferedReader()?.use { it.readText() }
                 if (json != null) {
-                    viewModel.restoreBackup(json)
-                    dialogMsg = "Base de datos restaurada correctamente."
-                    showDialog = true
+                    viewModel.restoreBackup(json) { msg ->
+                        dialogMsg = msg
+                        showDialog = true
+                    }
                 }
             }
         }
@@ -179,7 +212,7 @@ fun ConfiguracionScreen(@Suppress("UNUSED_PARAMETER") navController: NavControll
                         Column(modifier = Modifier.weight(1f)) {
                             Text("Recordatorios Automáticos", fontSize = 16.sp)
                             Text(
-                                "Programar notificaciones a las 12:00 pm para citas agendadas.",
+                                "Aviso el día de la cita alrededor de las 12:00 (hora del teléfono). Si guardas la cita ese mismo día después de las 12:00, se envía un aviso en segundos. Activa las notificaciones del sistema para OptoApp.",
                                 fontSize = 12.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -193,6 +226,111 @@ fun ConfiguracionScreen(@Suppress("UNUSED_PARAMETER") navController: NavControll
                                 }
                             }
                         )
+                    }
+                }
+            }
+
+            Card {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("Laboratorio (esta óptica)", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                    Text(
+                        "Nombre y WhatsApp o teléfono del laboratorio. Se usa para enviar el ticket de orden con un toque.",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    OptoTextField(
+                        value = labNombre,
+                        onValueChange = { labNombre = it },
+                        label = "Nombre del laboratorio (opcional)"
+                    )
+                    OptoTextField(
+                        value = labContacto,
+                        onValueChange = { labContacto = it },
+                        label = "WhatsApp / teléfono del laboratorio",
+                        keyboardType = KeyboardType.Phone
+                    )
+                    Button(
+                        onClick = { laboratorioVm.save(labNombre, labContacto) },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Guardar contacto de laboratorio")
+                    }
+                }
+            }
+
+            Card {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("Suscripción y límites", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                    Text(
+                        "Plan: ${if (subTier == SubscriptionTier.PRO) "PRO (ilimitado)" else "Gratuito (máx. ${com.example.optoapp.subscription.SubscriptionManager.FREE_MAX_PACIENTES} pacientes)"}",
+                        fontSize = 14.sp
+                    )
+                    Text(
+                        "Producto Play: ${PlayBillingManager.SUBSCRIPTION_PRODUCT_ID}",
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Button(
+                        onClick = {
+                            val act = context as? Activity
+                            if (act != null) {
+                                subscriptionVm.launchProPurchase(act) { msg ->
+                                    android.widget.Toast.makeText(context, msg, android.widget.Toast.LENGTH_LONG).show()
+                                }
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Comprar / renovar PRO (Play Store)")
+                    }
+                    if (BuildConfig.DEBUG) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text("Modo desarrollador: forzar PRO", fontSize = 14.sp)
+                                Text("Solo para pruebas sin Play Billing.", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            Switch(
+                                checked = devProOverride,
+                                onCheckedChange = { subscriptionVm.setDevProOverride(it) }
+                            )
+                        }
+                    }
+                    OutlinedButton(
+                        onClick = { subscriptionVm.refreshPlanFromServer() },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Sincronizar plan desde servidor")
+                    }
+                }
+            }
+
+            Card {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Sincronización por registro (errores)", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                    Text(
+                        "Filas que fallaron al bajar o subir (P0-T5). Vacío si todo está bien.",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    if (syncErrors.isEmpty()) {
+                        Text("Sin errores registrados.", fontSize = 14.sp)
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.heightIn(max = 220.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            items(syncErrors, key = { "${it.entityType}-${it.entityId}-${it.updatedAt}" }) { row ->
+                                Text(
+                                    "${row.entityType} · ${row.entityId.take(12)}… → ${row.lastError}",
+                                    fontSize = 11.sp,
+                                    color = MaterialTheme.colorScheme.error
+                                )
+                            }
+                        }
                     }
                 }
             }

@@ -23,12 +23,28 @@ data class BIUiState(
     val recaudacionProyectada: Double = 0.0,
     val recaudacionCobrada: Double = 0.0,
     val topProductos: List<ProductoRanking> = emptyList(),
+    /** P3-T8: dispensaciones con entrega pendiente en el período (filtro por fecha + óptica). */
+    val entregasPendientesPeriodo: Int = 0,
+    val entregasCompletadasPeriodo: Int = 0,
+    /** Dispensaciones con `montura_id` de catálogo en el período. */
+    val ventasConMonturaCatalogo: Int = 0,
+    /** Monturas activas con stock ≤ mínimo (instantáneo, óptica activa). */
+    val monturasStockBajo: Int = 0,
+    /** Movimientos `SALIDA_VENTA` en el período. */
+    val salidasInventarioVentas: Int = 0,
     val isLoading: Boolean = false
 )
 
 data class ProductoRanking(
     val nombre: String,
     val cantidad: Int
+)
+
+private data class BiCoreFlows(
+    val examenesActual: Int,
+    val examenesAnterior: Int,
+    val dispensaciones: List<DispensacionOptica>,
+    val pagos: List<Pago>
 )
 
 @HiltViewModel
@@ -60,17 +76,32 @@ class BIViewModel @Inject constructor(
                 val prevRanges = getPreviousRangesForPeriod(periodo)
 
                 combine(
-                    repository.countEvaluacionesInRangeForOptica(ranges.first, ranges.second, opticaId),
-                    repository.countEvaluacionesInRangeForOptica(prevRanges.first, prevRanges.second, opticaId),
-                    repository.getDispensacionesByDateRangeForOptica(ranges.first, ranges.second, opticaId),
-                    repository.getPagosByDateRangeForOptica(ranges.first, ranges.second, opticaId)
-                ) { examsActual, examsAnterior, dispensaciones, pagos ->
-                    
+                    combine(
+                        repository.countEvaluacionesInRangeForOptica(ranges.first, ranges.second, opticaId),
+                        repository.countEvaluacionesInRangeForOptica(prevRanges.first, prevRanges.second, opticaId),
+                        repository.getDispensacionesByDateRangeForOptica(ranges.first, ranges.second, opticaId),
+                        repository.getPagosByDateRangeForOptica(ranges.first, ranges.second, opticaId)
+                    ) { e1, e2, disp, pag ->
+                        BiCoreFlows(e1, e2, disp, pag)
+                    },
+                    repository.getMonturasByOptica(opticaId),
+                    repository.getMovimientosMonturaByOptica(opticaId)
+                ) { core, monturas, movimientos ->
+                    val dispensaciones = core.dispensaciones
+                    val pagos = core.pagos
                     val proyectada = dispensaciones.sumOf { it.montoTotal }
                     val cobrada = pagos.sumOf { it.monto }
-                    
+
+                    val entregasPendientes = dispensaciones.count { it.estadoEntrega.equals("Pendiente", ignoreCase = true) }
+                    val entregasHechas = dispensaciones.count { it.estadoEntrega.equals("Entregado", ignoreCase = true) }
+                    val conMontura = dispensaciones.count { it.monturaId.isNotBlank() }
+                    val stockBajo = monturas.count { m -> m.activo && m.stockActual <= m.stockMinimo }
+                    val salidasVentas = movimientos.count { m ->
+                        m.fecha >= ranges.first && m.fecha <= ranges.second && m.tipo == "SALIDA_VENTA"
+                    }
+
                     val ranking = dispensaciones
-                        .map { d -> 
+                        .map { d ->
                             val material = if (d.materialLente.isNotBlank()) d.materialLente else "Sin Material"
                             val trats = if (d.tratamientos.isNotEmpty()) " (${d.tratamientos.joinToString(", ")})" else ""
                             "$material$trats"
@@ -82,11 +113,16 @@ class BIViewModel @Inject constructor(
 
                     BIUiState(
                         periodo = periodo,
-                        examenesActual = examsActual,
-                        examenesAnterior = examsAnterior,
+                        examenesActual = core.examenesActual,
+                        examenesAnterior = core.examenesAnterior,
                         recaudacionProyectada = proyectada,
                         recaudacionCobrada = cobrada,
                         topProductos = ranking,
+                        entregasPendientesPeriodo = entregasPendientes,
+                        entregasCompletadasPeriodo = entregasHechas,
+                        ventasConMonturaCatalogo = conMontura,
+                        monturasStockBajo = stockBajo,
+                        salidasInventarioVentas = salidasVentas,
                         isLoading = false
                     )
                 }

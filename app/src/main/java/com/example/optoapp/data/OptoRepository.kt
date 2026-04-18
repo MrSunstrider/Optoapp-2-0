@@ -5,6 +5,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import com.google.gson.annotations.SerializedName
 import java.time.LocalDate
+import java.util.UUID
+import com.example.optoapp.util.DateUtils
 
 class OptoRepository(
     private val pacienteDao: PacienteDao,
@@ -21,6 +23,9 @@ class OptoRepository(
     }
     fun pacientesFlowForOptica(opticaId: String): Flow<List<Paciente>> =
         pacienteDao.getPacientesByOptica(opticaId)
+
+    fun countPacientesForOptica(opticaId: String): Flow<Int> =
+        pacienteDao.countByOptica(opticaId)
 
     fun searchPacientesForOptica(opticaId: String, query: String): Flow<List<Paciente>> =
         if (query.isEmpty()) pacienteDao.getPacientesByOptica(opticaId)
@@ -50,6 +55,10 @@ class OptoRepository(
     
     fun getEvaluacionesByPaciente(pacienteId: String): Flow<List<EvaluacionClinica>> = 
         evaluacionDao.getEvaluacionesByPaciente(pacienteId)
+
+    /** Evaluaciones con próxima cita en [start, end] (por fecha de cita), óptica actual. */
+    fun getEvaluacionesProximaCitaEnRango(opticaId: String, start: LocalDate, end: LocalDate): Flow<List<EvaluacionClinica>> =
+        evaluacionDao.getEvaluacionesConProximaCitaEnRango(opticaId, start, end)
         
     fun countEvaluacionesInRange(start: LocalDate, end: LocalDate): Flow<Int> = evaluacionDao.countEvaluacionesInRange(start, end)
 
@@ -109,11 +118,61 @@ class OptoRepository(
     suspend fun insertDispensacion(dispensacion: DispensacionOptica) = dispensacionDao.insertDispensacion(dispensacion)
     
     suspend fun updateDispensacion(dispensacion: DispensacionOptica) = dispensacionDao.updateDispensacion(dispensacion)
+
+    /** True si otra dispensación de la misma óptica ya usa esta OT (misma cadena ignorando mayúsculas/espacios). */
+    suspend fun existsDuplicateOt(opticaId: String, ot: String, excludeDispensacionId: String?): Boolean {
+        val n = ot.trim()
+        if (n.isEmpty()) return false
+        val ex = excludeDispensacionId.orEmpty()
+        return dispensacionDao.countDispensacionesWithSameOt(opticaId, n, ex) > 0
+    }
+
+    /** Siguiente correlativo `OT-<año>-####` según OT existentes de la óptica para ese año. */
+    suspend fun suggestNextOt(opticaId: String, fecha: LocalDate): String {
+        val year = fecha.year.toString()
+        val ots = dispensacionDao.getOtsWithYearPrefix(opticaId, year)
+        val regex = Regex("^OT-$year-(\\d+)$", RegexOption.IGNORE_CASE)
+        var max = 0
+        for (ot in ots) {
+            regex.find(ot.trim())?.groupValues?.get(1)?.toIntOrNull()?.let { if (it > max) max = it }
+        }
+        val next = max + 1
+        return "OT-$year-" + next.toString().padStart(4, '0')
+    }
     
     fun getPagosByDispensacion(dispensacionId: String): Flow<List<Pago>> = pagoDao.getPagosByDispensacion(dispensacionId)
     
     suspend fun insertPago(pago: Pago) = pagoDao.insertPago(pago)
-    
+
+    suspend fun getPagoById(id: String): Pago? = pagoDao.getPagoById(id)
+
+    /**
+     * Borra un abono. Si ya existía en BD, registra un movimiento de anulación el día [fechaAnulacion]
+     * (importe negativo) para que cierre de caja refleje la salida o reversión en la fecha correcta.
+     */
+    suspend fun deletePagoRegistrandoAnulacionEnCaja(
+        pago: Pago,
+        opticaId: String,
+        fechaAnulacion: LocalDate = DateUtils.today()
+    ) {
+        val existing = pagoDao.getPagoById(pago.id)
+        if (existing != null && existing.monto != 0.0) {
+            val reversal = Pago(
+                id = UUID.randomUUID().toString(),
+                dispensacionId = existing.dispensacionId,
+                servicioExtraId = existing.servicioExtraId,
+                fecha = fechaAnulacion,
+                tipo = "Anulación",
+                monto = -existing.monto,
+                metodoPago = existing.metodoPago,
+                nota = "Anula abono ${existing.id.take(8)}… (${DateUtils.formatLocalized(existing.fecha)})",
+                opticaId = opticaId
+            )
+            pagoDao.insertPago(reversal)
+        }
+        pagoDao.deletePago(pago)
+    }
+
     suspend fun deletePago(pago: Pago) = pagoDao.deletePago(pago)
     
     fun getPagosByServicioExtra(servicioExtraId: String): Flow<List<Pago>> = 

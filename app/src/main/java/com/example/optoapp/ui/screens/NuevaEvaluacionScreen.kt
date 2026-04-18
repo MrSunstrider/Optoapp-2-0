@@ -52,6 +52,13 @@ val farnsworthOptions = listOf("Normal", "Deutan", "Protan", "Tritan")
 val sensibilidadOptions = listOf("Normal", "Disminuida")
 val campoVisualOptions = listOf("Normal", "Anomalía detectada")
 
+private val estadosCitaOpciones = listOf(
+    "programada" to "Programada",
+    "confirmada" to "Confirmada",
+    "asistio" to "Asistió",
+    "no_asistio" to "No asistió",
+    "reprogramada" to "Reprogramada"
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -150,7 +157,7 @@ fun NuevaEvaluacionScreen(
             },
             dismissButton = {
                 TextButton(onClick = {
-                    viewModel.updateUiState { it.copy(proximaCita = null) }
+                    viewModel.updateUiState { it.copy(proximaCita = null, citaEstado = "programada") }
                     showProximaDatePicker = false
                 }) { Text("Limpiar") }
             }
@@ -718,6 +725,22 @@ fun NuevaEvaluacionScreen(
                                 "Próxima Cita: ${DateUtils.formatLocalized(uiState.proximaCita!!)}"
                             }
                             Text(labelText)
+                        }
+                        if (uiState.proximaCita != null) {
+                            val labelSeleccionado = estadosCitaOpciones
+                                .find { it.first == uiState.citaEstado.ifBlank { "programada" } }
+                                ?.second
+                                ?: estadosCitaOpciones.first().second
+                            DropdownField(
+                                label = "Estado de la cita",
+                                selected = labelSeleccionado,
+                                options = estadosCitaOpciones.map { it.second },
+                                onSelected = { etiqueta ->
+                                    val codigo = estadosCitaOpciones.find { it.second == etiqueta }?.first
+                                        ?: "programada"
+                                    viewModel.updateUiState { it.copy(citaEstado = codigo) }
+                                }
+                            )
                         }
                         
                         // Nota: Para integrarse al calendario de Google en el futuro, usar Intent(Intent.ACTION_INSERT).setData(CalendarContract.Events.CONTENT_URI)

@@ -38,6 +38,13 @@ fun NuevoServicioScreen(navController: NavController, pacienteId: String? = null
     val scope = rememberCoroutineScope()
     val uiState by viewModel.uiState.collectAsState()
     val pacientes by viewModel.pacientes.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(uiState.error) {
+        val msg = uiState.error ?: return@LaunchedEffect
+        snackbarHostState.showSnackbar(msg)
+        viewModel.clearServicioError()
+    }
 
     var pSearchQuery by remember { mutableStateOf("") }
     val filteredPacientes = if (pSearchQuery.isEmpty()) pacientes 
@@ -75,6 +82,7 @@ fun NuevoServicioScreen(navController: NavController, pacienteId: String? = null
     }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text(if (servicioId == null || servicioId == "null") "Nuevo Servicio" else "Editar Servicio") },
@@ -164,7 +172,7 @@ fun NuevoServicioScreen(navController: NavController, pacienteId: String? = null
             var showAddDialog by remember { mutableStateOf(false) }
             if (showAddDialog) {
                 AbonoDialog(
-                    defaultFecha = uiState.fecha,
+                    defaultFecha = DateUtils.today(),
                     onDismiss = { showAddDialog = false },
                     onConfirm = { nuevoPago: Pago ->
                         viewModel.addPago(nuevoPago)

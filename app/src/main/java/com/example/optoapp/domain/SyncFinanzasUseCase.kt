@@ -17,18 +17,15 @@ import javax.inject.Inject
  * FASE 3 – Paso 3.3
  * Sincronización de Dispensaciones, Pagos y Servicios Extra.
  *
- * Estrategia upload-first:
- *  1. Sube todas las Dispensaciones cuyo opticaId coincida.
- *  2. Sube todos los Pagos asociados (sin filtro de opticaId propio,
- *     se garantiza integridad referencial por la fk dispensacionId/servicioExtraId).
- *  3. Sube todos los ServiciosExtra cuyo opticaId coincida.
+ * P0-T2 — Orden de subida obligatorio: **Dispensaciones → servicios_extra → pagos**
+ * (padres antes que pagos; pagos referencian dispensación y/o servicio).
  *
- * Orden garantizado: primero padres (Dispensaciones/Servicios) y luego hijos (Pagos),
- * para evitar fallos de clave foránea si Supabase tiene FK habilitadas.
+ * Orden de bajada: el mismo, para que existan padres antes de insertar pagos locales.
  */
 class SyncFinanzasUseCase @Inject constructor(
     private val repository: OptoRepository,
-    private val supabase: SupabaseClient
+    private val supabase: SupabaseClient,
+    private val syncStateTracker: com.example.optoapp.data.SyncStateTracker
 ) {
 
     companion object {
@@ -43,15 +40,20 @@ class SyncFinanzasUseCase @Inject constructor(
      */
     suspend operator fun invoke(opticaId: String): Resource<FinanzasSyncResult> {
         return try {
-            // 1. SUBIDA
+            Log.d(TAG, "Finanzas: inicio (opticaId=$opticaId)")
             val dispUp = uploadDispensaciones(opticaId)
+            Log.d(TAG, "Finanzas: upload dispensaciones=$dispUp")
             val servUp = uploadServicios(opticaId)
+            Log.d(TAG, "Finanzas: upload servicios_extra=$servUp")
             val pagosUp = uploadPagos(opticaId)
+            Log.d(TAG, "Finanzas: upload pagos=$pagosUp")
 
-            // 2. BAJADA
             val dispDown = downloadDispensaciones(opticaId)
+            Log.d(TAG, "Finanzas: download dispensaciones=$dispDown")
             val servDown = downloadServicios(opticaId)
+            Log.d(TAG, "Finanzas: download servicios_extra=$servDown")
             val pagosDown = downloadPagos(opticaId)
+            Log.d(TAG, "Finanzas: download pagos=$pagosDown; fin OK")
 
             Resource.Success(
                 FinanzasSyncResult(
@@ -75,7 +77,15 @@ class SyncFinanzasUseCase @Inject constructor(
         val dispensaciones = repository.getDispensacionesSnapshotForOptica(opticaId)
         if (dispensaciones.isEmpty()) return 0
         val rows = dispensaciones.map { it.toRemoto().copy(opticaId = opticaId) }
-        supabase.postgrest[TABLE_DISPENSACIONES].upsert(rows)
+        try {
+            supabase.postgrest[TABLE_DISPENSACIONES].upsert(rows)
+        } catch (e: Exception) {
+            syncStateTracker.markError(opticaId, "upload_dispensaciones", "batch", e.message)
+            throw e
+        }
+        dispensaciones.forEach { d ->
+            syncStateTracker.markSynced(opticaId, "dispensacion", d.id)
+        }
         return dispensaciones.size
     }
 
@@ -83,7 +93,15 @@ class SyncFinanzasUseCase @Inject constructor(
         val servicios = repository.getServiciosSnapshotForOptica(opticaId)
         if (servicios.isEmpty()) return 0
         val rows = servicios.map { it.toRemoto().copy(opticaId = opticaId) }
-        supabase.postgrest[TABLE_SERVICIOS].upsert(rows)
+        try {
+            supabase.postgrest[TABLE_SERVICIOS].upsert(rows)
+        } catch (e: Exception) {
+            syncStateTracker.markError(opticaId, "upload_servicios_extra", "batch", e.message)
+            throw e
+        }
+        servicios.forEach { s ->
+            syncStateTracker.markSynced(opticaId, "servicio_extra", s.id)
+        }
         return servicios.size
     }
 
@@ -91,7 +109,15 @@ class SyncFinanzasUseCase @Inject constructor(
         val pagos = repository.getPagosSnapshotForOptica(opticaId)
         if (pagos.isEmpty()) return 0
         val rows = pagos.map { it.toRemoto().copy(opticaId = opticaId) }
-        supabase.postgrest[TABLE_PAGOS].upsert(rows)
+        try {
+            supabase.postgrest[TABLE_PAGOS].upsert(rows)
+        } catch (e: Exception) {
+            syncStateTracker.markError(opticaId, "upload_pagos", "batch", e.message)
+            throw e
+        }
+        pagos.forEach { p ->
+            syncStateTracker.markSynced(opticaId, "pago", p.id)
+        }
         return pagos.size
     }
 
@@ -99,13 +125,29 @@ class SyncFinanzasUseCase @Inject constructor(
 
     private suspend fun downloadDispensaciones(opticaId: String): Int {
         val remotos = supabase.postgrest[TABLE_DISPENSACIONES].select { filter { eq("optica_id", opticaId) } }.decodeList<DispensacionRemota>()
-        remotos.forEach { repository.insertDispensacion(it.toEntity()) }
+        remotos.forEach { r ->
+            try {
+                val local = r.toEntity()
+                repository.insertDispensacion(local)
+                syncStateTracker.markSynced(opticaId, "dispensacion", local.id)
+            } catch (e: Exception) {
+                syncStateTracker.markError(opticaId, "dispensacion", r.id, e.message)
+            }
+        }
         return remotos.size
     }
 
     private suspend fun downloadServicios(opticaId: String): Int {
         val remotos = supabase.postgrest[TABLE_SERVICIOS].select { filter { eq("optica_id", opticaId) } }.decodeList<ServicioRemoto>()
-        remotos.forEach { repository.insertServicio(it.toEntity()) }
+        remotos.forEach { r ->
+            try {
+                val local = r.toEntity()
+                repository.insertServicio(local)
+                syncStateTracker.markSynced(opticaId, "servicio_extra", local.id)
+            } catch (e: Exception) {
+                syncStateTracker.markError(opticaId, "servicio_extra", r.id, e.message)
+            }
+        }
         return remotos.size
     }
 
@@ -113,7 +155,15 @@ class SyncFinanzasUseCase @Inject constructor(
         val remotos = supabase.postgrest[TABLE_PAGOS]
             .select { filter { eq("optica_id", opticaId) } }
             .decodeList<PagoRemoto>()
-        remotos.forEach { repository.insertPago(it.toEntity()) }
+        remotos.forEach { r ->
+            try {
+                val local = r.toEntity()
+                repository.insertPago(local)
+                syncStateTracker.markSynced(opticaId, "pago", local.id)
+            } catch (e: Exception) {
+                syncStateTracker.markError(opticaId, "pago", r.id, e.message)
+            }
+        }
         return remotos.size
     }
 }
@@ -182,7 +232,9 @@ data class ServicioRemoto(
     fun toEntity() = ServicioExtra(
         id = id, ot = ot, descripcion = descripcion, montoTotal = montoTotal,
         aCuenta = aCuenta, estado = estado, fecha = LocalDate.parse(fecha),
-        pacienteId = pacienteId, metodoPago = metodoPago, opticaId = opticaId
+        // Vacío o inválido rompe la FK a pacientes en Room; null es válido (servicio sin paciente).
+        pacienteId = pacienteId.takeIf { it.isNotBlank() },
+        metodoPago = metodoPago, opticaId = opticaId
     )
 }
 

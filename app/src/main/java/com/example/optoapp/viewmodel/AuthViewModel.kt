@@ -3,12 +3,13 @@ package com.example.optoapp.viewmodel
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.optoapp.data.BackupData
+import com.example.optoapp.BuildConfig
 import com.example.optoapp.data.MembershipRepository
 import com.example.optoapp.data.OpticaMembership
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.SecurityManager
 import com.example.optoapp.data.SessionManager
+import com.example.optoapp.util.BackupImportValidator
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
@@ -189,8 +190,10 @@ class AuthViewModel @Inject constructor(
             rol = membership.rol
         )
         _pendingMemberships.value = emptyList()
-        val uid = try { supabase.auth.currentUserOrNull()?.id } catch (_: Exception) { null }
-        Log.d(TAG, "Óptica seleccionada: ${membership.opticaId} rol=${membership.rol} uid=$uid")
+        if (BuildConfig.DEBUG) {
+            val uid = try { supabase.auth.currentUserOrNull()?.id } catch (_: Exception) { null }
+            Log.d(TAG, "Óptica seleccionada: ${membership.opticaId} rol=${membership.rol} uid=$uid")
+        }
     }
 
     // ─── Logout ───────────────────────────────────────────────────────────────
@@ -219,7 +222,9 @@ class AuthViewModel @Inject constructor(
             val session = supabase.auth.currentSessionOrNull()
             // Nueva validación: si la sesión no existe en Supabase O el tiempo de 24h expiró
             if (session == null || !isSessionTimeValid()) {
-                Log.d(TAG, "Sesión inexistente o expirada por tiempo (24h). Limpiando...")
+                if (BuildConfig.DEBUG) {
+                    Log.d(TAG, "Sesión inexistente o expirada por tiempo (24h). Limpiando...")
+                }
                 logout()
             }
         } catch (e: Exception) {
@@ -237,12 +242,18 @@ class AuthViewModel @Inject constructor(
         return com.google.gson.Gson().toJson(repository.getBackupDataForOptica(oid))
     }
 
-    fun restoreBackup(json: String) = viewModelScope.launch {
+    fun restoreBackup(json: String, onFinished: (String) -> Unit) = viewModelScope.launch {
+        val data = BackupImportValidator.parse(json).getOrElse { e ->
+            onFinished(e.message ?: "No se pudo validar el respaldo.")
+            return@launch
+        }
         try {
-            val data = com.google.gson.Gson().fromJson(json, BackupData::class.java)
             val currentOpticaId = sessionManager.opticaId.first()
             repository.restoreBackup(data, currentOpticaId)
-        } catch (e: Exception) { e.printStackTrace() }
+            onFinished("Base de datos restaurada correctamente.")
+        } catch (e: Exception) {
+            onFinished("Error al restaurar: ${e.message ?: "desconocido"}")
+        }
     }
 }
 

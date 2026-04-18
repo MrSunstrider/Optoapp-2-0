@@ -1,9 +1,12 @@
+@file:Suppress("DEPRECATION")
+
 package com.example.optoapp.data
 
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStore
+import androidx.core.content.edit
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKeys
 import kotlinx.coroutines.flow.Flow
@@ -38,7 +41,7 @@ class SecurityManager(private val context: Context) {
     }
 
     suspend fun savePin(pin: String) {
-        encryptedPrefs.edit().putString("user_pin", pin).apply()
+        encryptedPrefs.edit { putString("user_pin", pin) }
         _pinFlow.value = pin
         
         // Limpiar el antiguo si existe

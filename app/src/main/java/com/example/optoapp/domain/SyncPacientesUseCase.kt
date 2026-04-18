@@ -17,7 +17,8 @@ import javax.inject.Inject
  */
 class SyncPacientesUseCase @Inject constructor(
     private val repository: OptoRepository,
-    private val supabase: SupabaseClient
+    private val supabase: SupabaseClient,
+    private val syncStateTracker: com.example.optoapp.data.SyncStateTracker
 ) {
 
     companion object {
@@ -27,8 +28,10 @@ class SyncPacientesUseCase @Inject constructor(
 
     suspend operator fun invoke(opticaId: String): Resource<PacientesSyncResult> {
         return try {
+            Log.d(TAG, "Pacientes: inicio upload+download (opticaId=$opticaId)")
             val uploaded = upload(opticaId)
             val downloaded = download(opticaId)
+            Log.d(TAG, "Pacientes: fin OK (subidos=$uploaded, bajados=$downloaded)")
             Resource.Success(PacientesSyncResult(uploaded, downloaded))
         } catch (e: Exception) {
             Log.e(TAG, "Error en sincronización de pacientes", e)
@@ -49,7 +52,15 @@ class SyncPacientesUseCase @Inject constructor(
             TAG,
             "Upload pacientes: ${pacientes.size} filas, optica_id en payload=$opticaId (id primer paciente=${pacientes.first().id})"
         )
-        supabase.postgrest[TABLE].upsert(rows)
+        try {
+            supabase.postgrest[TABLE].upsert(rows)
+        } catch (e: Exception) {
+            syncStateTracker.markError(opticaId, "upload_pacientes", "batch", e.message)
+            throw e
+        }
+        pacientes.forEach { p ->
+            syncStateTracker.markSynced(opticaId, "paciente", p.id)
+        }
 
         Log.d(TAG, "Subidos ${pacientes.size} pacientes a Supabase (optica_id=$opticaId).")
         return pacientes.size
@@ -65,8 +76,13 @@ class SyncPacientesUseCase @Inject constructor(
         if (remotos.isEmpty()) return 0
 
         remotos.forEach { remoto ->
-            val local = remoto.toEntity()
-            repository.upsertPaciente(local)
+            try {
+                val local = remoto.toEntity()
+                repository.upsertPaciente(local)
+                syncStateTracker.markSynced(opticaId, "paciente", local.id)
+            } catch (e: Exception) {
+                syncStateTracker.markError(opticaId, "paciente", remoto.id, e.message)
+            }
         }
 
         Log.d(TAG, "Descargados ${remotos.size} pacientes desde Supabase.")
@@ -118,21 +134,21 @@ data class PacienteRemoto(
 
 private fun Paciente.toRemoto(): PacienteRemoto = PacienteRemoto(
     id                = id,
-    nombreCompleto   = nombreCompleto, // Corregido: ya es nombreCompleto en la entity
+    nombreCompleto   = nombreCompleto.ifBlank { "-" },
     edad              = edad,
-    telefono          = telefono,
+    telefono          = telefono.ifBlank { "-" },
     fechaCreacion    = fechaCreacion.toString(),
-    dni               = dni,
+    dni               = dni ?: "",
     fechaNacimiento  = fechaNacimiento?.toString(),
-    sexo              = sexo,
-    email             = email,
-    direccion         = direccion,
-    distrito          = distrito,
-    ocupacion         = ocupacion,
-    acompanante       = acompanante,
-    hobbies           = hobbies,
+    sexo              = sexo ?: "",
+    email             = email ?: "",
+    direccion         = direccion ?: "",
+    distrito          = distrito ?: "",
+    ocupacion         = ocupacion ?: "",
+    acompanante       = acompanante ?: "",
+    hobbies           = hobbies ?: "",
     ultimasEtiquetas = ultimasEtiquetas.joinToString(","),
-    opticaId         = opticaId
+    opticaId         = opticaId.ifBlank { "mi_optica_base" }
 )
 
 data class PacientesSyncResult(val uploaded: Int, val downloaded: Int)

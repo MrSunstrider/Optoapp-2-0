@@ -12,6 +12,9 @@ interface PacienteDao {
     @Query("SELECT * FROM pacientes WHERE opticaId = :opticaId ORDER BY nombreCompleto ASC")
     fun getPacientesByOptica(opticaId: String): Flow<List<Paciente>>
 
+    @Query("SELECT COUNT(*) FROM pacientes WHERE opticaId = :opticaId")
+    fun countByOptica(opticaId: String): Flow<Int>
+
     @Query("SELECT * FROM pacientes WHERE opticaId = :opticaId ORDER BY nombreCompleto ASC")
     suspend fun getPacientesListByOptica(opticaId: String): List<Paciente>
 
@@ -110,6 +113,18 @@ interface EvaluacionDao {
 
     @Query("SELECT COUNT(*) FROM evaluaciones WHERE fecha >= :start AND fecha <= :end AND opticaId = :opticaId")
     fun countEvaluacionesInRangeForOptica(start: LocalDate, end: LocalDate, opticaId: String): Flow<Int>
+
+    @Query(
+        """
+        SELECT * FROM evaluaciones
+        WHERE opticaId = :opticaId
+        AND proximaCita IS NOT NULL
+        AND proximaCita >= :start
+        AND proximaCita <= :end
+        ORDER BY proximaCita ASC
+        """
+    )
+    fun getEvaluacionesConProximaCitaEnRango(opticaId: String, start: LocalDate, end: LocalDate): Flow<List<EvaluacionClinica>>
 }
 
 @Dao
@@ -161,10 +176,27 @@ interface DispensacionDao {
 
     @Query("SELECT SUM(montoPagado) FROM dispensaciones WHERE opticaId = :opticaId")
     fun getTotalPagadoForOptica(opticaId: String): Flow<Double?>
+
+    /** excludeId vacío = contar todas las coincidencias (nueva dispensación). */
+    @Query(
+        """
+        SELECT COUNT(*) FROM dispensaciones
+        WHERE opticaId = :opticaId
+        AND UPPER(TRIM(ot)) = UPPER(TRIM(:otNorm))
+        AND (:excludeId = '' OR id != :excludeId)
+        """
+    )
+    suspend fun countDispensacionesWithSameOt(opticaId: String, otNorm: String, excludeId: String): Int
+
+    @Query("SELECT ot FROM dispensaciones WHERE opticaId = :opticaId AND ot LIKE ('OT-' || :year || '-%')")
+    suspend fun getOtsWithYearPrefix(opticaId: String, year: String): List<String>
 }
 
 @Dao
 interface PagoDao {
+    @Query("SELECT * FROM pagos WHERE id = :id")
+    suspend fun getPagoById(id: String): Pago?
+
     @Query("SELECT * FROM pagos WHERE dispensacionId = :dispensacionId ORDER BY fecha DESC")
     fun getPagosByDispensacion(dispensacionId: String): Flow<List<Pago>>
 

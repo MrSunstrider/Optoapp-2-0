@@ -19,7 +19,8 @@ data class HistorialSyncResult(val uploaded: Int, val downloaded: Int)
  */
 class SyncHistorialUseCase @Inject constructor(
     private val repository: OptoRepository,
-    private val supabase: SupabaseClient
+    private val supabase: SupabaseClient,
+    private val syncStateTracker: com.example.optoapp.data.SyncStateTracker
 ) {
 
     companion object {
@@ -29,8 +30,10 @@ class SyncHistorialUseCase @Inject constructor(
 
     suspend operator fun invoke(opticaId: String): Resource<HistorialSyncResult> {
         return try {
+            Log.d(TAG, "Evaluaciones: inicio upload+download (opticaId=$opticaId)")
             val uploaded = upload(opticaId)
             val downloaded = download(opticaId)
+            Log.d(TAG, "Evaluaciones: fin OK (subidas=$uploaded, bajadas=$downloaded)")
             Resource.Success(HistorialSyncResult(uploaded, downloaded))
         } catch (e: Exception) {
             Log.e(TAG, "Error en sincronización de evaluaciones", e)
@@ -44,7 +47,15 @@ class SyncHistorialUseCase @Inject constructor(
         if (evaluaciones.isEmpty()) return 0
 
         val rows = evaluaciones.map { it.toRemoto().copy(opticaId = opticaId) }
-        supabase.postgrest[TABLE].upsert(rows)
+        try {
+            supabase.postgrest[TABLE].upsert(rows)
+        } catch (e: Exception) {
+            syncStateTracker.markError(opticaId, "upload_evaluaciones", "batch", e.message)
+            throw e
+        }
+        evaluaciones.forEach { ev ->
+            syncStateTracker.markSynced(opticaId, "evaluacion", ev.id)
+        }
 
         Log.d(TAG, "Subidas ${evaluaciones.size} evaluaciones a Supabase (forzando ID: $opticaId).")
         return evaluaciones.size
@@ -60,8 +71,13 @@ class SyncHistorialUseCase @Inject constructor(
         if (remotos.isEmpty()) return 0
 
         remotos.forEach { remoto ->
-            val local = remoto.toEntity()
-            repository.insertEvaluacion(local)
+            try {
+                val local = remoto.toEntity()
+                repository.insertEvaluacion(local)
+                syncStateTracker.markSynced(opticaId, "evaluacion", local.id)
+            } catch (e: Exception) {
+                syncStateTracker.markError(opticaId, "evaluacion", remoto.id, e.message)
+            }
         }
 
         Log.d(TAG, "Descargadas ${remotos.size} evaluaciones desde Supabase.")
@@ -183,6 +199,7 @@ data class EvaluacionRemota(
     val observaciones: String = "",
     @SerialName("proxima_fecha_control") val proximaFechaControl: String? = null,
     @SerialName("proxima_cita") val proximaCita: String? = null,
+    @SerialName("cita_estado") val citaEstado: String = "programada",
     @SerialName("balance_od") val balanceOd: Boolean = false,
     @SerialName("balance_oi") val balanceOi: Boolean = false,
     @SerialName("otros_presbicia") val otrosPresbicia: Boolean = false,
@@ -256,6 +273,7 @@ data class EvaluacionRemota(
         planTratamiento = planTratamiento, observaciones = observaciones,
         proximaFechaControl = proximaFechaControl.orEmpty(),
         proximaCita = proximaCita?.trim()?.takeIf { it.isNotEmpty() }?.let(LocalDate::parse),
+        citaEstado = citaEstado.trim().ifBlank { "programada" },
         balanceOd = balanceOd, balanceOi = balanceOi,
         otrosPresbicia = otrosPresbicia, otrosAnisometropia = otrosAnisometropia, otrosAmbliopia = otrosAmbliopia,
         autoPresbicia = autoPresbicia, autoAnisometropia = autoAnisometropia, autoAmbliopia = autoAmbliopia,
@@ -316,6 +334,7 @@ private fun EvaluacionClinica.toRemoto(): EvaluacionRemota = EvaluacionRemota(
     diagnosticoOtros = diagnosticoOtros.joinToString(","),
     planTratamiento = planTratamiento, observaciones = observaciones,
     proximaFechaControl = proximaFechaControl.trim().ifBlank { null }, proximaCita = proximaCita?.toString(),
+    citaEstado = citaEstado.trim().ifBlank { "programada" },
     balanceOd = balanceOd, balanceOi = balanceOi,
     otrosPresbicia = otrosPresbicia, otrosAnisometropia = otrosAnisometropia, otrosAmbliopia = otrosAmbliopia,
     autoPresbicia = autoPresbicia, autoAnisometropia = autoAnisometropia, autoAmbliopia = autoAmbliopia,

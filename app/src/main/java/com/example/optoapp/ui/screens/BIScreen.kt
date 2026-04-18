@@ -113,6 +113,32 @@ fun BIScreen(navController: NavController, viewModel: BIViewModel = hiltViewMode
                 }
             }
 
+            // P3-T8: inventario, entregas y movimientos (misma óptica y período que arriba)
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            ) {
+                Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        "Operación e inventario",
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontSize = 18.sp
+                    )
+                    BiMetricRow("Entregas pendientes (en período)", uiState.entregasPendientesPeriodo.toString())
+                    BiMetricRow("Entregas completadas (en período)", uiState.entregasCompletadasPeriodo.toString())
+                    BiMetricRow("Ventas con montura de catálogo", uiState.ventasConMonturaCatalogo.toString())
+                    BiMetricRow("Referencias en stock bajo (ahora)", uiState.monturasStockBajo.toString())
+                    BiMetricRow("Salidas de inventario por venta", uiState.salidasInventarioVentas.toString())
+                    Text(
+                        "Stock bajo y salidas usan inventario y movimientos de la óptica activa.",
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
             // Best Sellers Section
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -132,6 +158,18 @@ fun BIScreen(navController: NavController, viewModel: BIViewModel = hiltViewMode
             
             Spacer(modifier = Modifier.height(32.dp))
         }
+    }
+}
+
+@Composable
+private fun BiMetricRow(label: String, value: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(label, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
+        Text(value, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
     }
 }
 

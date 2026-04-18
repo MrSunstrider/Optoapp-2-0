@@ -1,5 +1,6 @@
 package com.example.optoapp.ui.screens
 
+import android.app.Activity
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -22,17 +23,27 @@ import androidx.navigation.NavController
 import com.example.optoapp.OptoApplication
 import com.example.optoapp.data.Paciente
 import com.example.optoapp.viewmodel.PacienteViewModel
+import com.example.optoapp.viewmodel.SubscriptionViewModel
+import com.example.optoapp.subscription.SubscriptionTier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.example.optoapp.util.DateUtils
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PacientesListScreen(navController: NavController, drawerState: DrawerState, viewModel: PacienteViewModel = hiltViewModel()) {
+fun PacientesListScreen(navController: NavController, drawerState: DrawerState, viewModel: PacienteViewModel = hiltViewModel(), subscriptionVm: SubscriptionViewModel = hiltViewModel()) {
     val pacientes by viewModel.pacientes.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
     val activeFilter by viewModel.activeFilter.collectAsState()
+    val canAddPaciente by subscriptionVm.canAddPaciente.collectAsState()
+    val tier by subscriptionVm.tier.collectAsState()
+    val context = LocalContext.current
+    var showPaywall by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+
+    LaunchedEffect(Unit) {
+        subscriptionVm.refreshPlanFromServer()
+    }
 
     Scaffold(
         topBar = {
@@ -51,11 +62,40 @@ fun PacientesListScreen(navController: NavController, drawerState: DrawerState, 
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { navController.navigate("nuevoPaciente") }) {
+            FloatingActionButton(onClick = {
+                if (canAddPaciente) navController.navigate("nuevoPaciente")
+                else showPaywall = true
+            }) {
                 Icon(Icons.Default.Add, contentDescription = "Añadir Paciente")
             }
         }
     ) { padding ->
+        if (showPaywall) {
+            AlertDialog(
+                onDismissRequest = { showPaywall = false },
+                title = { Text("Límite del plan gratuito") },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("Has alcanzado el máximo de pacientes del plan gratuito. Pasa a PRO para registros ilimitados.")
+                        Text("Plan actual: ${if (tier == SubscriptionTier.PRO) "PRO" else "Gratuito"}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            val act = context as? Activity
+                            if (act != null) {
+                                subscriptionVm.launchProPurchase(act) { android.widget.Toast.makeText(context, it, android.widget.Toast.LENGTH_LONG).show() }
+                            }
+                            showPaywall = false
+                        }
+                    ) { Text("Actualizar plan") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showPaywall = false }) { Text("Cerrar") }
+                }
+            )
+        }
         Column(
             modifier = Modifier
                 .fillMaxSize()

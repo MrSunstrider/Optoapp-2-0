@@ -5,6 +5,7 @@ import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.coroutines.CancellationException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -51,6 +52,66 @@ class MembershipRepository @Inject constructor(
         }
     }
 
+    /** Plan de suscripción (`free` | `pro` | …) desde Supabase; null si no hay sesión o error. */
+    suspend fun fetchOpticaPlan(opticaId: String): String? {
+        if (supabase.auth.currentUserOrNull() == null) return null
+        return try {
+            val list = supabase.postgrest[TABLE_OPTICAS]
+                .select { filter { eq("id", opticaId) } }
+                .decodeList<OpticaDto>()
+            list.firstOrNull()?.plan?.lowercase()?.trim() ?: "free"
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    /**
+     * Lee contacto de laboratorio desde Supabase. `null` si no hay sesión, error de red o RLS.
+     * Par vacío `"" to ""` es válido cuando la fila existe sin datos aún.
+     */
+    suspend fun fetchOpticaLaboratorioSettings(opticaId: String): Pair<String, String>? {
+        if (supabase.auth.currentUserOrNull() == null) return null
+        return try {
+            val list = supabase.postgrest[TABLE_OPTICAS]
+                .select { filter { eq("id", opticaId) } }
+                .decodeList<OpticaDto>()
+            val row = list.firstOrNull() ?: return "" to ""
+            row.laboratorioNombre to row.laboratorioContacto
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    /**
+     * Persiste en Supabase. Falla si no hay sesión, red o políticas RLS.
+     */
+    suspend fun updateOpticaLaboratorioSettings(
+        opticaId: String,
+        laboratorioNombre: String,
+        laboratorioContacto: String
+    ): Result<Unit> {
+        if (supabase.auth.currentUserOrNull() == null) {
+            return Result.failure(IllegalStateException("Sin sesión"))
+        }
+        return try {
+            supabase.postgrest[TABLE_OPTICAS].update(
+                OpticaLaboratorioPatch(
+                    laboratorioNombre = laboratorioNombre.trim(),
+                    laboratorioContacto = laboratorioContacto.trim()
+                )
+            ) {
+                filter { eq("id", opticaId) }
+            }
+            Result.success(Unit)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     companion object {
         private const val TABLE_UO = "usuario_optica"
         private const val TABLE_OPTICAS = "opticas"
@@ -67,5 +128,14 @@ private data class UsuarioOpticaDto(
 @Serializable
 private data class OpticaDto(
     val id: String,
-    val nombre: String = ""
+    val nombre: String = "",
+    val plan: String = "free",
+    @SerialName("laboratorio_nombre") val laboratorioNombre: String = "",
+    @SerialName("laboratorio_contacto") val laboratorioContacto: String = ""
+)
+
+@Serializable
+private data class OpticaLaboratorioPatch(
+    @SerialName("laboratorio_nombre") val laboratorioNombre: String,
+    @SerialName("laboratorio_contacto") val laboratorioContacto: String
 )

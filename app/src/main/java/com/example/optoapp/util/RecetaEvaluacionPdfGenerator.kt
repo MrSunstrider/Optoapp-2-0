@@ -15,6 +15,7 @@ import android.text.StaticLayout
 import android.text.TextPaint
 import android.widget.Toast
 import androidx.core.content.FileProvider
+import androidx.core.graphics.withTranslation
 import com.example.optoapp.data.EvaluacionClinica
 import com.example.optoapp.data.Paciente
 import java.io.File
@@ -142,10 +143,9 @@ object RecetaEvaluacionPdfGenerator {
         fun spaceAvailable(need: Float): Boolean = y + need <= PAGE_H - BOTTOM_SAFE
 
         fun drawStaticLayout(sl: StaticLayout, x: Float, startY: Float) {
-            canvas.save()
-            canvas.translate(x, startY)
-            sl.draw(canvas)
-            canvas.restore()
+            canvas.withTranslation(x, startY) {
+                sl.draw(this)
+            }
         }
 
         fun layoutText(
