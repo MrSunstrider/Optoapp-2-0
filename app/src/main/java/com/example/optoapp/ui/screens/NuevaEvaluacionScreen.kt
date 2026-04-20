@@ -434,7 +434,7 @@ fun NuevaEvaluacionScreen(
                         }
 
                         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                        Text("Receta Final (Gafas)", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                        Text("Fórmula final (gafas)", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             OptoTextField(
                                 value = uiState.recetaOdEsf, 

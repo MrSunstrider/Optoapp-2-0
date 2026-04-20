@@ -3,6 +3,7 @@ package com.example.optoapp.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.optoapp.data.DispensacionOptica
+import com.example.optoapp.data.EvaluacionClinica
 import com.example.optoapp.data.MonturaMovimiento
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Resource
@@ -17,6 +18,7 @@ import java.util.UUID
 import javax.inject.Inject
 import com.example.optoapp.data.Pago
 import java.time.LocalDate
+import com.example.optoapp.sync.PostSaveSyncScheduler
 import com.example.optoapp.util.DateUtils
 
 data class DispensacionUiState(
@@ -55,13 +57,17 @@ data class DispensacionUiState(
 class DispensacionViewModel @Inject constructor(
     private val repository: com.example.optoapp.data.OptoRepository,
     private val sessionManager: com.example.optoapp.data.SessionManager,
-    private val syncFinanzasUseCase: com.example.optoapp.domain.SyncFinanzasUseCase
+    private val postSaveSyncScheduler: PostSaveSyncScheduler
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DispensacionUiState())
     val uiState: StateFlow<DispensacionUiState> = _uiState.asStateFlow()
     private val _monturasActivas = MutableStateFlow<List<com.example.optoapp.data.Montura>>(emptyList())
     val monturasActivas: StateFlow<List<com.example.optoapp.data.Montura>> = _monturasActivas.asStateFlow()
+
+    /** Última evaluación del paciente (por fecha) para refracción/DIP en ticket de laboratorio. */
+    private val _ultimaEvaluacionTicket = MutableStateFlow<EvaluacionClinica?>(null)
+    val ultimaEvaluacionTicket: StateFlow<EvaluacionClinica?> = _ultimaEvaluacionTicket.asStateFlow()
 
     init {
         viewModelScope.launch {
@@ -84,6 +90,13 @@ class DispensacionViewModel @Inject constructor(
                 }
                 else -> Unit
             }
+        }
+    }
+
+    fun loadUltimaEvaluacionParaTicket(pacienteId: String) {
+        viewModelScope.launch {
+            val list = repository.getEvaluacionesByPaciente(pacienteId).first()
+            _ultimaEvaluacionTicket.value = list.maxByOrNull { it.fecha }
         }
     }
 
@@ -284,13 +297,8 @@ class DispensacionViewModel @Inject constructor(
                 repository.deletePagoRegistrandoAnulacionEnCaja(pago, currentOpticaId)
             }
 
-            // Silent Sync en segundo plano
-            viewModelScope.launch { 
-                try {
-                    syncFinanzasUseCase(currentOpticaId)
-                } catch (e: Exception) {}
-            }
-            
+            postSaveSyncScheduler.scheduleFinanzasSync(currentOpticaId)
+
             onComplete()
         }
     }

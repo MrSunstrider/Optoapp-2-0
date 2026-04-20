@@ -22,4 +22,7 @@ interface SyncEntityStateDao {
 
     @Query("SELECT COUNT(*) FROM sync_entity_state WHERE opticaId = :opticaId AND status = 'error'")
     fun countErrorsForOptica(opticaId: String): Flow<Int>
+
+    @Query("DELETE FROM sync_entity_state WHERE opticaId = :opticaId AND status = 'error'")
+    suspend fun deleteErrorsForOptica(opticaId: String)
 }

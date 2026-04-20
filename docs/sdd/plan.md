@@ -39,6 +39,12 @@ Implementar y operar OptoApp con consistencia entre capa local (Room), capa remo
   - logs por entidad y lote
   - causa raiz por error (RLS, nullabilidad, FK, token)
 
+### Principio: los errores se solucionan, no se esconden
+
+- Un fallo de sync debe **corregirse en origen** (causa raiz, orden de upserts, cancelacion de corrutinas, red, RLS, etc.), no **ocultarse** en la UI ni borrarse del historial sin haber abordado el problema.
+- Quitar el mensaje o limpiar la lista de diagnostico es una **accion de usuario** o consecuencia de una **sync exitosa**, no un sustituto de arreglar datos o contratos.
+- Las **cancelaciones de corrutina** (`CancellationException`) no son fallos de negocio: no deben registrarse como error de sync salvo diagnostico residual; la sync pesada debe ejecutarse en **scope de aplicacion** para no cancelarse al salir de pantalla.
+
 ## Seguridad y acceso
 - Login con Supabase Auth (email/contrasena).
 - Bloqueo por PIN de 6 digitos en ciclo de sesion.

@@ -1,6 +1,7 @@
 package com.example.optoapp.subscription
 
 import android.content.Context
+import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -30,14 +31,14 @@ class SubscriptionManager @Inject constructor(
 
     /** Solo true en builds de debug; en release nunca se expone el flag aunque quedara en DataStore. */
     val devProOverride: Flow<Boolean> = context.dataStore.data.map {
-        BuildConfig.DEBUG && it[keyDevPro] == true
+        isDevProEffective(it)
     }
 
     /**
      * Tier efectivo: override dev, plan en caché (post-sync o compra), o FREE.
      */
     val tier: Flow<SubscriptionTier> = combine(
-        context.dataStore.data.map { BuildConfig.DEBUG && it[keyDevPro] == true },
+        context.dataStore.data.map { isDevProEffective(it) },
         context.dataStore.data.map { (it[keyCachedPlan] ?: "free").lowercase().trim() }
     ) { dev, planStr ->
         when {
@@ -62,6 +63,12 @@ class SubscriptionManager @Inject constructor(
         context.dataStore.edit { prefs ->
             if (enabled) prefs[keyDevPro] = true else prefs.remove(keyDevPro)
         }
+    }
+
+    private fun isDevProEffective(prefs: Preferences): Boolean {
+        if (!BuildConfig.DEBUG) return false
+        if (BuildConfig.FORCE_PRO_DEV) return true
+        return prefs[keyDevPro] == true
     }
 
     /** Tras compra verificada en Play Billing (o prueba). */

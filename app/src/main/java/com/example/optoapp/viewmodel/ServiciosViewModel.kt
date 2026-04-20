@@ -16,6 +16,7 @@ import java.util.UUID
 import javax.inject.Inject
 import com.example.optoapp.data.Pago
 import java.time.LocalDate
+import com.example.optoapp.sync.PostSaveSyncScheduler
 import com.example.optoapp.util.DateUtils
 
 data class ServiciosUiState(
@@ -39,7 +40,7 @@ data class ServiciosUiState(
 class ServiciosViewModel @Inject constructor(
     private val repository: com.example.optoapp.data.OptoRepository,
     private val sessionManager: com.example.optoapp.data.SessionManager,
-    private val syncFinanzasUseCase: com.example.optoapp.domain.SyncFinanzasUseCase
+    private val postSaveSyncScheduler: PostSaveSyncScheduler
 ) : ViewModel() {
 
     companion object {
@@ -166,13 +167,7 @@ class ServiciosViewModel @Inject constructor(
 
                 _uiState.update { it.copy(error = null) }
 
-                viewModelScope.launch {
-                    try {
-                        syncFinanzasUseCase(currentOpticaId)
-                    } catch (e: Exception) {
-                        Log.w(TAG, "Sync finanzas tras guardar servicio", e)
-                    }
-                }
+                postSaveSyncScheduler.scheduleFinanzasSync(currentOpticaId)
 
                 onSuccess()
             } catch (e: SQLiteConstraintException) {

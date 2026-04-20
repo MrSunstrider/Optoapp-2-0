@@ -6,6 +6,7 @@ import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Pago
 import com.example.optoapp.data.Resource
 import com.example.optoapp.data.ServicioExtra
+import com.example.optoapp.util.rethrowIfCancellation
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.serialization.SerialName
@@ -66,6 +67,7 @@ class SyncFinanzasUseCase @Inject constructor(
                 )
             )
         } catch (e: Exception) {
+            rethrowIfCancellation(e)
             Log.e(TAG, "Error en sincronización financiera", e)
             Resource.Error("Error sincronizando finanzas: ${e.localizedMessage}")
         }
@@ -75,14 +77,19 @@ class SyncFinanzasUseCase @Inject constructor(
 
     private suspend fun uploadDispensaciones(opticaId: String): Int {
         val dispensaciones = repository.getDispensacionesSnapshotForOptica(opticaId)
-        if (dispensaciones.isEmpty()) return 0
+        if (dispensaciones.isEmpty()) {
+            syncStateTracker.markSynced(opticaId, "upload_dispensaciones", "batch")
+            return 0
+        }
         val rows = dispensaciones.map { it.toRemoto().copy(opticaId = opticaId) }
         try {
             supabase.postgrest[TABLE_DISPENSACIONES].upsert(rows)
         } catch (e: Exception) {
+            rethrowIfCancellation(e)
             syncStateTracker.markError(opticaId, "upload_dispensaciones", "batch", e.message)
             throw e
         }
+        syncStateTracker.markSynced(opticaId, "upload_dispensaciones", "batch")
         dispensaciones.forEach { d ->
             syncStateTracker.markSynced(opticaId, "dispensacion", d.id)
         }
@@ -91,14 +98,19 @@ class SyncFinanzasUseCase @Inject constructor(
 
     private suspend fun uploadServicios(opticaId: String): Int {
         val servicios = repository.getServiciosSnapshotForOptica(opticaId)
-        if (servicios.isEmpty()) return 0
+        if (servicios.isEmpty()) {
+            syncStateTracker.markSynced(opticaId, "upload_servicios_extra", "batch")
+            return 0
+        }
         val rows = servicios.map { it.toRemoto().copy(opticaId = opticaId) }
         try {
             supabase.postgrest[TABLE_SERVICIOS].upsert(rows)
         } catch (e: Exception) {
+            rethrowIfCancellation(e)
             syncStateTracker.markError(opticaId, "upload_servicios_extra", "batch", e.message)
             throw e
         }
+        syncStateTracker.markSynced(opticaId, "upload_servicios_extra", "batch")
         servicios.forEach { s ->
             syncStateTracker.markSynced(opticaId, "servicio_extra", s.id)
         }
@@ -107,14 +119,19 @@ class SyncFinanzasUseCase @Inject constructor(
 
     private suspend fun uploadPagos(opticaId: String): Int {
         val pagos = repository.getPagosSnapshotForOptica(opticaId)
-        if (pagos.isEmpty()) return 0
+        if (pagos.isEmpty()) {
+            syncStateTracker.markSynced(opticaId, "upload_pagos", "batch")
+            return 0
+        }
         val rows = pagos.map { it.toRemoto().copy(opticaId = opticaId) }
         try {
             supabase.postgrest[TABLE_PAGOS].upsert(rows)
         } catch (e: Exception) {
+            rethrowIfCancellation(e)
             syncStateTracker.markError(opticaId, "upload_pagos", "batch", e.message)
             throw e
         }
+        syncStateTracker.markSynced(opticaId, "upload_pagos", "batch")
         pagos.forEach { p ->
             syncStateTracker.markSynced(opticaId, "pago", p.id)
         }
@@ -131,6 +148,7 @@ class SyncFinanzasUseCase @Inject constructor(
                 repository.insertDispensacion(local)
                 syncStateTracker.markSynced(opticaId, "dispensacion", local.id)
             } catch (e: Exception) {
+                rethrowIfCancellation(e)
                 syncStateTracker.markError(opticaId, "dispensacion", r.id, e.message)
             }
         }
@@ -145,6 +163,7 @@ class SyncFinanzasUseCase @Inject constructor(
                 repository.insertServicio(local)
                 syncStateTracker.markSynced(opticaId, "servicio_extra", local.id)
             } catch (e: Exception) {
+                rethrowIfCancellation(e)
                 syncStateTracker.markError(opticaId, "servicio_extra", r.id, e.message)
             }
         }
@@ -161,6 +180,7 @@ class SyncFinanzasUseCase @Inject constructor(
                 repository.insertPago(local)
                 syncStateTracker.markSynced(opticaId, "pago", local.id)
             } catch (e: Exception) {
+                rethrowIfCancellation(e)
                 syncStateTracker.markError(opticaId, "pago", r.id, e.message)
             }
         }

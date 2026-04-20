@@ -7,7 +7,7 @@ import com.example.optoapp.data.EvaluacionClinica
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Resource
 import com.example.optoapp.data.SessionManager
-import com.example.optoapp.domain.SyncHistorialUseCase
+import com.example.optoapp.sync.PostSaveSyncScheduler
 import com.example.optoapp.notifications.NotificationHelper
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -40,7 +40,7 @@ data class AgendaFila(
 class AgendaViewModel @Inject constructor(
     private val repository: OptoRepository,
     private val sessionManager: SessionManager,
-    private val syncHistorialUseCase: SyncHistorialUseCase,
+    private val postSaveSyncScheduler: PostSaveSyncScheduler,
     @ApplicationContext private val appContext: Context
 ) : ViewModel() {
 
@@ -103,7 +103,7 @@ class AgendaViewModel @Inject constructor(
             if (res !is Resource.Success) return@launch
             val ev = res.data ?: return@launch
             repository.updateEvaluacion(ev.copy(citaEstado = nuevoEstado.trim().ifBlank { "programada" }))
-            runCatching { syncHistorialUseCase(sessionManager.opticaId.first()) }
+            postSaveSyncScheduler.scheduleHistorialSync(sessionManager.opticaId.first())
         }
     }
 
@@ -115,7 +115,7 @@ class AgendaViewModel @Inject constructor(
             repository.updateEvaluacion(
                 ev.copy(proximaCita = nuevaFecha, citaEstado = "reprogramada")
             )
-            runCatching { syncHistorialUseCase(sessionManager.opticaId.first()) }
+            postSaveSyncScheduler.scheduleHistorialSync(sessionManager.opticaId.first())
 
             val remindersOn = prefs.getBoolean("pref_enable_reminders", true)
             val helper = NotificationHelper(appContext)

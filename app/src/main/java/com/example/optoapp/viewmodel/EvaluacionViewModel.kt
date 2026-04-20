@@ -15,6 +15,7 @@ import kotlinx.coroutines.launch
 import java.util.Locale
 import java.util.UUID
 import java.time.LocalDate
+import com.example.optoapp.sync.PostSaveSyncScheduler
 import com.example.optoapp.util.DateUtils
 import javax.inject.Inject
 
@@ -91,7 +92,7 @@ data class EvaluacionUiState(
     val subjOdEsf: String = "", val subjOdCil: String = "", val subjOdEje: String = "",
     val subjOiEsf: String = "", val subjOiCil: String = "", val subjOiEje: String = "",
     
-    // Refracción Final (Receta) Lejos
+    // Refracción final / fórmula (lejos)
     val recetaOdEsf: String = "", val recetaOdCil: String = "", val recetaOdEje: String = "", val recetaOdAv: String = "",
     val recetaOiEsf: String = "", val recetaOiCil: String = "", val recetaOiEje: String = "", val recetaOiAv: String = "",
     
@@ -143,7 +144,7 @@ data class EvaluacionUiState(
 class EvaluacionViewModel @Inject constructor(
     private val repository: com.example.optoapp.data.OptoRepository,
     private val sessionManager: com.example.optoapp.data.SessionManager,
-    private val syncHistorialUseCase: com.example.optoapp.domain.SyncHistorialUseCase
+    private val postSaveSyncScheduler: PostSaveSyncScheduler
 ) : ViewModel() {
     private data class DipParseResult(
         val dipTotalMm: Double? = null,
@@ -156,7 +157,7 @@ class EvaluacionViewModel @Inject constructor(
          * **Anisometropía (auto):** solo se considera si la diferencia de equivalente esférico entre ojos
          * **alcanza o supera 2 D** (|EE(OD) − EE(OI)| ≥ 2). Por debajo de eso, no es anisometropía con este criterio.
          *
-         * EE = esfera + cilindro/2 (`receta*Esf` / `receta*Cil` en receta lejos).
+         * EE = esfera + cilindro/2 (`receta*Esf` / `receta*Cil` en fórmula lejos).
          *
          * Ejemplo: OD −3.50 −1.00 → EE = −4.00 D; OI −4.25 → EE = −4.25 D → |Δ| = 0.25 D → no anisometropía.
          */
@@ -386,14 +387,8 @@ class EvaluacionViewModel @Inject constructor(
             } else {
                 repository.insertEvaluacion(ev)
             }
-            // Silent Sync en segundo plano (No bloquea la navegación)
-            viewModelScope.launch { 
-                try {
-                    syncHistorialUseCase(currentOpticaId)
-                } catch (e: Exception) {
-                    // Log error silently
-                }
-            }
+            // Sync con Supabase en scope de aplicación (no se cancela al salir de la pantalla)
+            postSaveSyncScheduler.scheduleHistorialSync(currentOpticaId)
             val pResult = repository.getPacienteById(pacienteId)
             val pName = if (pResult is com.example.optoapp.data.Resource.Success) pResult.data?.nombreCompleto ?: "Paciente" else "Paciente"
             onComplete(ev.id, pName)

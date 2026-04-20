@@ -52,3 +52,11 @@ VALUES (
 )
 ON CONFLICT (user_id, optica_id) DO NOTHING;
 */
+
+-- PASO 3 — Plan PRO para la óptica (ver también scripts/set_optica_plan_pro.sql).
+-- Ejecutar en SQL Editor; luego en la app: Configuración → Sincronizar plan desde servidor.
+/*
+UPDATE public.opticas
+SET plan = 'pro'
+WHERE id = 'TU_OPTICA_ID';
+*/

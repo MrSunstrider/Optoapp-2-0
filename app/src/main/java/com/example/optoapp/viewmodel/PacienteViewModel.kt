@@ -1,12 +1,12 @@
 package com.example.optoapp.viewmodel
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Paciente
 import com.example.optoapp.data.SessionManager
 import com.example.optoapp.data.Resource
+import com.example.optoapp.sync.PostSaveSyncScheduler
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -16,12 +16,8 @@ import javax.inject.Inject
 class PacienteViewModel @Inject constructor(
     private val repository: com.example.optoapp.data.OptoRepository,
     private val sessionManager: SessionManager,
-    private val syncPacientesUseCase: com.example.optoapp.domain.SyncPacientesUseCase
+    private val postSaveSyncScheduler: PostSaveSyncScheduler
 ) : ViewModel() {
-
-    companion object {
-        private const val TAG = "PacienteViewModel"
-    }
 
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery
@@ -65,19 +61,13 @@ class PacienteViewModel @Inject constructor(
     fun setFilter(filter: String?) { _activeFilter.value = if (_activeFilter.value == filter) null else filter }
 
     /**
-     * Persiste el paciente con el [SessionManager.opticaId] activo y lanza sync de pacientes para esa óptica.
+     * Persiste el paciente con el [SessionManager.opticaId] activo y encola sync de pacientes (scope de aplicación).
      */
     suspend fun savePaciente(paciente: Paciente) {
         val oid = sessionManager.opticaId.first()
         val toSave = paciente.copy(opticaId = oid)
         repository.insertPaciente(toSave)
-        when (val r = syncPacientesUseCase(oid)) {
-            is Resource.Error ->
-                Log.w(TAG, "Sync tras guardar paciente (opticaId=$oid): ${r.message}")
-            is Resource.Success ->
-                Log.d(TAG, "Paciente guardado; sync pacientes OK (subidos=${r.data?.uploaded}, bajados=${r.data?.downloaded})")
-            else -> {}
-        }
+        postSaveSyncScheduler.schedulePacientesSync(oid)
     }
     
     suspend fun getPaciente(id: String): Paciente? {

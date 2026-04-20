@@ -126,7 +126,7 @@ data class EvaluacionClinica(
     val subjOdEsf: String = "", val subjOdCil: String = "", val subjOdEje: String = "",
     val subjOiEsf: String = "", val subjOiCil: String = "", val subjOiEje: String = "",
     
-    // Refracción Final (Receta) Lejos
+    // Refracción final / fórmula (lejos) — campos receta* persisten en BD
     val recetaOdEsf: String = "", val recetaOdCil: String = "", val recetaOdEje: String = "", val recetaOdAv: String = "",
     val recetaOiEsf: String = "", val recetaOiCil: String = "", val recetaOiEje: String = "", val recetaOiAv: String = "",
     

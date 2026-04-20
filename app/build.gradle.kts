@@ -37,8 +37,10 @@ android {
 
         val supabaseUrl = escapeForBuildConfigField(localProperties.getProperty("supabase.url", ""))
         val supabaseAnonKey = escapeForBuildConfigField(localProperties.getProperty("supabase.anon.key", ""))
+        val forceProDev = localProperties.getProperty("optoapp.dev.force_pro", "false").equals("true", ignoreCase = true)
         buildConfigField("String", "SUPABASE_URL", "\"$supabaseUrl\"")
         buildConfigField("String", "SUPABASE_ANON_KEY", "\"$supabaseAnonKey\"")
+        buildConfigField("Boolean", "FORCE_PRO_DEV", "$forceProDev")
     }
 
     buildTypes {

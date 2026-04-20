@@ -4,6 +4,7 @@ import android.util.Log
 import com.example.optoapp.data.EvaluacionClinica
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Resource
+import com.example.optoapp.util.rethrowIfCancellation
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.serialization.SerialName
@@ -36,6 +37,7 @@ class SyncHistorialUseCase @Inject constructor(
             Log.d(TAG, "Evaluaciones: fin OK (subidas=$uploaded, bajadas=$downloaded)")
             Resource.Success(HistorialSyncResult(uploaded, downloaded))
         } catch (e: Exception) {
+            rethrowIfCancellation(e)
             Log.e(TAG, "Error en sincronización de evaluaciones", e)
             Resource.Error("Error sincronizando historial clínico: ${e.localizedMessage}")
         }
@@ -44,15 +46,20 @@ class SyncHistorialUseCase @Inject constructor(
     private suspend fun upload(opticaId: String): Int {
         val evaluaciones = repository.getEvaluacionesSnapshotForOptica(opticaId)
 
-        if (evaluaciones.isEmpty()) return 0
+        if (evaluaciones.isEmpty()) {
+            syncStateTracker.markSynced(opticaId, "upload_evaluaciones", "batch")
+            return 0
+        }
 
         val rows = evaluaciones.map { it.toRemoto().copy(opticaId = opticaId) }
         try {
             supabase.postgrest[TABLE].upsert(rows)
         } catch (e: Exception) {
+            rethrowIfCancellation(e)
             syncStateTracker.markError(opticaId, "upload_evaluaciones", "batch", e.message)
             throw e
         }
+        syncStateTracker.markSynced(opticaId, "upload_evaluaciones", "batch")
         evaluaciones.forEach { ev ->
             syncStateTracker.markSynced(opticaId, "evaluacion", ev.id)
         }
@@ -76,6 +83,7 @@ class SyncHistorialUseCase @Inject constructor(
                 repository.insertEvaluacion(local)
                 syncStateTracker.markSynced(opticaId, "evaluacion", local.id)
             } catch (e: Exception) {
+                rethrowIfCancellation(e)
                 syncStateTracker.markError(opticaId, "evaluacion", remoto.id, e.message)
             }
         }

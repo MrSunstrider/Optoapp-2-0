@@ -1,11 +1,9 @@
 package com.example.optoapp.ui.screens
 
-import android.content.Intent
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
@@ -15,7 +13,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -24,9 +21,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.optoapp.ui.components.DropdownField
 import com.example.optoapp.ui.components.OptoTextField
-import com.example.optoapp.util.WhatsAppUtils
 import com.example.optoapp.viewmodel.DispensacionViewModel
-import com.example.optoapp.viewmodel.LaboratorioConfigViewModel
 import com.example.optoapp.util.DateUtils
 import java.util.*
 import androidx.compose.material.icons.filled.Delete
@@ -39,14 +34,11 @@ import com.example.optoapp.ui.components.AbonoDialog
 @OptIn(ExperimentalMaterial3Api::class)
 @Suppress("DEPRECATION")
 @Composable
-fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, dispensacionId: String? = null, viewModel: DispensacionViewModel = hiltViewModel(), laboratorioVm: LaboratorioConfigViewModel = hiltViewModel()) {
+fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, dispensacionId: String? = null, viewModel: DispensacionViewModel = hiltViewModel()) {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
-    val labCfg by laboratorioVm.uiState.collectAsState()
     val monturasActivas by viewModel.monturasActivas.collectAsState()
-    val clipboardManager = LocalClipboardManager.current
-
     LaunchedEffect(dispensacionId) {
         if (dispensacionId != null) {
             viewModel.loadDispensacion(dispensacionId)
@@ -83,155 +75,6 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
             navController.popBackStack()
         }
     }
-    var showTicketDialog by remember { mutableStateOf(false) }
-
-    fun tratamientosTicket(): String =
-        uiState.tratamientos.filter { it.isNotBlank() && it != "Ninguno" }.joinToString(", ")
-
-    fun ticketLaboratorioTexto(): String {
-        val requiereAltura = uiState.tipoLente == "Bifocal" || uiState.tipoLente == "Progresivo" || uiState.tipoLente == "Ocupacional"
-        val tipoLenteLinea = buildString {
-            if (uiState.tipoLente.isNotBlank()) {
-                append(uiState.tipoLente)
-                if (uiState.subTipoBifocal.isNotBlank()) append(" (${uiState.subTipoBifocal})")
-                if (uiState.tipoLente == "Monofocal" && uiState.distanciaLente.isNotBlank()) append(" - ${uiState.distanciaLente}")
-            }
-        }
-        val tratamientosStr = tratamientosTicket()
-        val monturaLines = buildList {
-            if (uiState.origenMontura.isNotBlank()) add("- Origen: ${uiState.origenMontura}")
-            if (uiState.tipoAro.isNotBlank()) add("- Tipo aro: ${uiState.tipoAro}")
-            if (uiState.materialMontura.isNotBlank()) add("- Material: ${uiState.materialMontura}")
-            if (uiState.descripcionMontura.isNotBlank()) add("- Descripción: ${uiState.descripcionMontura}")
-        }
-        val tieneBloqueLente = tipoLenteLinea.isNotBlank() || uiState.materialLente.isNotBlank() ||
-            uiState.colorLente.isNotBlank() || tratamientosStr.isNotBlank() ||
-            (requiereAltura && uiState.altura.isNotBlank())
-
-        return buildString {
-            if (uiState.ot.isNotBlank()) appendLine("OT: ${uiState.ot}")
-            appendLine("Fecha: ${DateUtils.formatLocalized(uiState.fecha)}")
-            if (uiState.pacienteNombre.isNotBlank()) appendLine("Paciente: ${uiState.pacienteNombre}")
-            if (tieneBloqueLente) {
-                appendLine()
-                appendLine("=== LABORATORIO ===")
-                if (tipoLenteLinea.isNotBlank()) appendLine("Tipo de lente: $tipoLenteLinea")
-                if (uiState.materialLente.isNotBlank()) appendLine("Material lente: ${uiState.materialLente}")
-                if (uiState.colorLente.isNotBlank()) appendLine("Color lente: ${uiState.colorLente}")
-                if (tratamientosStr.isNotBlank()) appendLine("Tratamientos: $tratamientosStr")
-                if (requiereAltura && uiState.altura.isNotBlank()) appendLine("Altura (mm): ${uiState.altura}")
-            }
-            if (monturaLines.isNotEmpty()) {
-                appendLine()
-                appendLine("Montura:")
-                monturaLines.forEach { appendLine(it) }
-            }
-            if (uiState.notasDiseno.isNotBlank()) {
-                appendLine()
-                appendLine("Observaciones técnicas:")
-                appendLine(uiState.notasDiseno)
-            }
-        }.trimEnd()
-    }
-
-    fun ticketLaboratorioTextoCompacto(): String {
-        val requiereAltura = uiState.tipoLente == "Bifocal" || uiState.tipoLente == "Progresivo" || uiState.tipoLente == "Ocupacional"
-        val tratamientosStr = tratamientosTicket().replace(", ", "/")
-        val lines = mutableListOf<String>()
-        lines.add("Fecha: ${DateUtils.formatLocalized(uiState.fecha)}")
-        val cabecera = buildList {
-            if (uiState.ot.isNotBlank()) add("OT ${uiState.ot}")
-            if (uiState.pacienteNombre.isNotBlank()) add(uiState.pacienteNombre)
-        }
-        if (cabecera.isNotEmpty()) lines.add(cabecera.joinToString(" | "))
-        if (uiState.tipoLente.isNotBlank()) {
-            var l = uiState.tipoLente
-            if (uiState.subTipoBifocal.isNotBlank()) l += " (${uiState.subTipoBifocal})"
-            if (uiState.tipoLente == "Monofocal" && uiState.distanciaLente.isNotBlank()) l += " - ${uiState.distanciaLente}"
-            lines.add("Lente: $l")
-        }
-        val matAlt = buildList {
-            if (uiState.materialLente.isNotBlank()) add("Mat: ${uiState.materialLente}")
-            if (uiState.colorLente.isNotBlank()) add("Color: ${uiState.colorLente}")
-            if (requiereAltura && uiState.altura.isNotBlank()) add("Altura(mm): ${uiState.altura}")
-        }
-        if (matAlt.isNotEmpty()) lines.add(matAlt.joinToString(" | "))
-        if (tratamientosStr.isNotBlank()) lines.add("Trat: $tratamientosStr")
-        val monturaBits = listOfNotNull(
-            uiState.descripcionMontura.takeIf { it.isNotBlank() },
-            uiState.origenMontura.takeIf { it.isNotBlank() },
-            uiState.tipoAro.takeIf { it.isNotBlank() },
-            uiState.materialMontura.takeIf { it.isNotBlank() }
-        )
-        if (monturaBits.isNotEmpty()) lines.add("Montura: ${monturaBits.joinToString(", ")}")
-        if (uiState.notasDiseno.isNotBlank()) lines.add("Obs: ${uiState.notasDiseno}")
-        return lines.joinToString("\n")
-    }
-
-    if (showTicketDialog) {
-        val ticketText = ticketLaboratorioTexto()
-        val ticketCompact = ticketLaboratorioTextoCompacto()
-        val mensajeWhatsappLab = buildString {
-            if (labCfg.laboratorioNombre.isNotBlank()) {
-                appendLine("Hola ${labCfg.laboratorioNombre},")
-                appendLine()
-            }
-            append(ticketCompact)
-        }.trim()
-        AlertDialog(
-            onDismissRequest = { showTicketDialog = false },
-            title = { Text("Ticket de Laboratorio") },
-            text = {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(max = 420.dp)
-                        .verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text(
-                        text = ticketText,
-                        fontSize = 13.sp,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                }
-            },
-            confirmButton = {
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.End,
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    if (labCfg.laboratorioContacto.isNotBlank()) {
-                        TextButton(onClick = {
-                            WhatsAppUtils.sendWhatsAppMessage(
-                                context,
-                                labCfg.laboratorioContacto,
-                                mensajeWhatsappLab,
-                                "Configura el contacto del laboratorio en Configuración."
-                            )
-                        }) { Text("WhatsApp laboratorio") }
-                    }
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        TextButton(onClick = {
-                            clipboardManager.setText(AnnotatedString(ticketCompact))
-                        }) { Text("Copiar") }
-                        TextButton(onClick = {
-                            val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                                type = "text/plain"
-                                putExtra(Intent.EXTRA_TEXT, ticketCompact)
-                            }
-                            context.startActivity(Intent.createChooser(shareIntent, "Compartir Ticket"))
-                        }) { Text("Compartir") }
-                    }
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showTicketDialog = false }) { Text("Cerrar") }
-            }
-        )
-    }
-
     Scaffold(
         topBar = {
             TopAppBar(
@@ -491,12 +334,6 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
             Button(onClick = { saveAction() }, modifier = Modifier.fillMaxWidth()) {
                 Text(if (dispensacionId == null) "Confirmar Orden" else "Actualizar Orden")
             }
-            OutlinedButton(
-                onClick = { showTicketDialog = true },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Ver Ticket Laboratorio")
-            }
             if (!uiState.error.isNullOrBlank()) {
                 Text(
                     text = uiState.error ?: "",
@@ -508,4 +345,3 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
         }
     }
 }
-

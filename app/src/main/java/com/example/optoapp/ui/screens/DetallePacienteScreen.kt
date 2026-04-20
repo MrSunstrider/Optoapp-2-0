@@ -39,6 +39,11 @@ import java.text.SimpleDateFormat
 import java.util.*
 import com.example.optoapp.util.WhatsAppUtils
 import com.example.optoapp.util.RecetaEvaluacionPdfGenerator
+import com.example.optoapp.util.DispensacionLaboratorioTicket
+import com.example.optoapp.util.LaboratorioTicketContext
+import com.example.optoapp.ui.components.LaboratorioTicketAlertDialog
+import com.example.optoapp.viewmodel.LaboratorioConfigViewModel
+import androidx.compose.material.icons.filled.Science
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -128,7 +133,7 @@ fun DetallePacienteScreen(
                             }
                             val ultima = evaluaciones.maxByOrNull { it.fecha }
                             if (ultima == null) {
-                                Toast.makeText(context, "No hay evaluaciones para generar la receta en PDF", Toast.LENGTH_LONG).show()
+                                Toast.makeText(context, "No hay evaluaciones para generar la fórmula en PDF", Toast.LENGTH_LONG).show()
                                 return@IconButton
                             }
                             try {
@@ -139,7 +144,7 @@ fun DetallePacienteScreen(
                             }
                         }
                     ) {
-                        Icon(Icons.Default.PictureAsPdf, contentDescription = "Exportar receta PDF")
+                        Icon(Icons.Default.PictureAsPdf, contentDescription = "Exportar fórmula en PDF")
                     }
                     IconButton(onClick = { navController.navigate("editarPaciente/${id}") }) {
                         Icon(Icons.Default.Edit, contentDescription = "Editar Perfil")
@@ -217,9 +222,14 @@ fun DetallePacienteScreen(
                         0 -> EvaluacionesList(evaluaciones, p, evaluacionViewModel) { evalId ->
                             navController.navigate("editarEvaluacion/${id}/${evalId}")
                         }
-                        1 -> DispensacionesList(dispensaciones, p) { dispId ->
-                            navController.navigate("editarDispensacion/${id}/${dispId}")
-                        }
+                        1 -> DispensacionesList(
+                            dispensaciones = dispensaciones,
+                            paciente = p,
+                            evaluaciones = evaluaciones,
+                            onEdit = { dispId ->
+                                navController.navigate("editarDispensacion/${id}/${dispId}")
+                            }
+                        )
                         2 -> ServiciosExtraList(servicios) { servId ->
                             navController.navigate("editar_servicio/${servId}")
                         }
@@ -319,7 +329,7 @@ fun EvaluacionesList(
                                 }
                             }
                         }
-                        val recetaStr = buildString {
+                        val formulaStr = buildString {
                             val hasOd = eval.recetaOdEsf.isNotBlank() || eval.recetaOdCil.isNotBlank()
                             val hasOi = eval.recetaOiEsf.isNotBlank() || eval.recetaOiCil.isNotBlank()
                             if (hasOd) {
@@ -338,15 +348,15 @@ fun EvaluacionesList(
                             if (dOi.isNotBlank()) append("OI: $dOi")
                         }.trim()
 
-                        if (recetaStr.isNotBlank()) {
-                            Text(text = "Receta $recetaStr", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+                        if (formulaStr.isNotBlank()) {
+                            Text(text = "Fórmula $formulaStr", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
                             if (diagStr.isNotBlank()) {
                                 Text(text = "Diag: $diagStr", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         } else if (diagStr.isNotBlank()) {
                             Text("Diagnóstico: $diagStr", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
                         } else {
-                            Text("Sin receta ni diagnóstico", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text("Sin fórmula ni diagnóstico", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 }
@@ -390,7 +400,7 @@ fun ResumenEvaluacionDialog(eval: EvaluacionClinica, paciente: Paciente, onDismi
                 val showOd = eval.recetaOdEsf.isNotBlank() || eval.recetaOdCil.isNotBlank()
                 val showOi = eval.recetaOiEsf.isNotBlank() || eval.recetaOiCil.isNotBlank()
                 if (showOd || showOi) {
-                    InfoSection("Refracción Final (Gafas)") {
+                    InfoSection("Fórmula final (gafas)") {
                         if (showOd) {
                             val avOd = if (eval.recetaOdAv.isNotBlank()) " AV: ${eval.recetaOdAv}" else ""
                             Text("OD: ${eval.recetaOdEsf} / ${eval.recetaOdCil} x ${eval.recetaOdEje}°$avOd", fontSize = 14.sp)
@@ -479,8 +489,8 @@ fun ResumenEvaluacionDialog(eval: EvaluacionClinica, paciente: Paciente, onDismi
             Row {
                 val context = LocalContext.current
                 IconButton(onClick = {
-                    val recetaStr = buildString {
-                        append("Hola ${paciente.nombreCompleto.split(" ").firstOrNull() ?: ""}, esta es tu receta optométrica:\n\n")
+                    val formulaStr = buildString {
+                        append("Hola ${paciente.nombreCompleto.split(" ").firstOrNull() ?: ""}, esta es tu fórmula optométrica:\n\n")
                         val showOd = eval.recetaOdEsf.isNotBlank() || eval.recetaOdCil.isNotBlank()
                         val showOi = eval.recetaOiEsf.isNotBlank() || eval.recetaOiCil.isNotBlank()
                         if (showOd) {
@@ -500,9 +510,9 @@ fun ResumenEvaluacionDialog(eval: EvaluacionClinica, paciente: Paciente, onDismi
                             append("\n📅 Próximo Control: $prox")
                         }
                     }
-                    WhatsAppUtils.sendWhatsAppMessage(context, paciente.telefono, recetaStr)
+                    WhatsAppUtils.sendWhatsAppMessage(context, paciente.telefono, formulaStr)
                 }) {
-                    Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Enviar Receta a WhatsApp", tint = Color(0xFF25D366))
+                    Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Enviar fórmula a WhatsApp", tint = Color(0xFF25D366))
                 }
                 Spacer(modifier = Modifier.width(8.dp))
                 Button(onClick = { onDismiss(); onEdit() }) { 
@@ -529,8 +539,16 @@ fun InfoSection(title: String, content: @Composable () -> Unit) {
 }
 
 @Composable
-fun DispensacionesList(dispensaciones: List<DispensacionOptica>, paciente: Paciente, onEdit: (String) -> Unit) {
+fun DispensacionesList(
+    dispensaciones: List<DispensacionOptica>,
+    paciente: Paciente,
+    evaluaciones: List<EvaluacionClinica>,
+    onEdit: (String) -> Unit,
+    laboratorioVm: LaboratorioConfigViewModel = hiltViewModel(),
+) {
     val selectedDispForResumen = remember { mutableStateOf<DispensacionOptica?>(null) }
+    val selectedDispForTicket = remember { mutableStateOf<DispensacionOptica?>(null) }
+    val labCfg by laboratorioVm.uiState.collectAsState()
 
     if (dispensaciones.isEmpty()) {
         EmptyListMessage("No hay dispensaciones.")
@@ -549,8 +567,16 @@ fun DispensacionesList(dispensaciones: List<DispensacionOptica>, paciente: Pacie
                     Column(modifier = Modifier.padding(16.dp)) {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                             Text(text = date, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                IconButton(modifier = Modifier.size(24.dp), onClick = { selectedDispForResumen.value = disp }) { 
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                IconButton(modifier = Modifier.size(24.dp), onClick = { selectedDispForTicket.value = disp }) {
+                                    Icon(
+                                        Icons.Filled.Science,
+                                        contentDescription = "Ticket de laboratorio",
+                                        tint = MaterialTheme.colorScheme.tertiary,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                                IconButton(modifier = Modifier.size(24.dp), onClick = { selectedDispForResumen.value = disp }) {
                                     Icon(Icons.Default.Visibility, contentDescription = "Ver Resumen", tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(20.dp))
                                 }
                                 Surface(
@@ -581,6 +607,18 @@ fun DispensacionesList(dispensaciones: List<DispensacionOptica>, paciente: Pacie
         }
     }
     
+    selectedDispForTicket.value?.let { dispTicket ->
+        val ultimaEval = evaluaciones.maxByOrNull { it.fecha }
+        val ticketCtx = LaboratorioTicketContext.fromDispensacion(dispTicket, paciente.nombreCompleto)
+        LaboratorioTicketAlertDialog(
+            onDismiss = { selectedDispForTicket.value = null },
+            ticketTextoCompleto = DispensacionLaboratorioTicket.textoCompleto(ticketCtx, ultimaEval),
+            ticketTextoCompacto = DispensacionLaboratorioTicket.textoCompacto(ticketCtx, ultimaEval),
+            laboratorioNombre = labCfg.laboratorioNombre,
+            laboratorioContacto = labCfg.laboratorioContacto,
+        )
+    }
+
     selectedDispForResumen.value?.let { currentDisp ->
         ResumenDispensacionDialog(
             disp = currentDisp,

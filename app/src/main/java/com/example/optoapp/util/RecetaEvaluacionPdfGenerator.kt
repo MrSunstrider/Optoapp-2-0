@@ -22,7 +22,7 @@ import java.io.File
 import java.io.FileOutputStream
 
 /**
- * Genera un PDF tipo receta / resumen clínico a partir de la última evaluación:
+ * Genera un PDF de fórmula optométrica / resumen clínico a partir de la última evaluación:
  * refracción final y DIP en dos columnas; plan de tratamiento antes de próxima cita.
  */
 object RecetaEvaluacionPdfGenerator {
@@ -53,7 +53,7 @@ object RecetaEvaluacionPdfGenerator {
 
     fun generate(context: Context, paciente: Paciente, eval: EvaluacionClinica): File {
         val dir = File(context.cacheDir, "recetas").apply { mkdirs() }
-        val safeName = "receta_${paciente.id.take(12)}_${eval.fecha}.pdf"
+        val safeName = "formula_${paciente.id.take(12)}_${eval.fecha}.pdf"
             .replace(Regex("[^a-zA-Z0-9._-]"), "_")
         val out = File(dir, safeName)
 
@@ -169,7 +169,7 @@ object RecetaEvaluacionPdfGenerator {
         }
 
         // ─── Cabecera ───
-        val title = layoutText("Receta optométrica", titlePaint, (PAGE_W - 2 * MARGIN).toInt())
+        val title = layoutText("Fórmula optométrica", titlePaint, (PAGE_W - 2 * MARGIN).toInt())
         drawStaticLayout(title, MARGIN, y)
         advance(title.height + 4f)
 
@@ -246,7 +246,7 @@ object RecetaEvaluacionPdfGenerator {
                 add(RxGridRow.Head("Medida", "OD", "OI"))
                 add(
                     RxGridRow.Three(
-                        "Refracción final",
+                        "Fórmula (lejos)",
                         fmtRx(eval.recetaOdEsf, eval.recetaOdCil, eval.recetaOdEje),
                         fmtRx(eval.recetaOiEsf, eval.recetaOiCil, eval.recetaOiEje)
                     )
@@ -501,7 +501,7 @@ object RecetaEvaluacionPdfGenerator {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
         try {
-            context.startActivity(Intent.createChooser(intent, "Abrir receta PDF"))
+            context.startActivity(Intent.createChooser(intent, "Abrir PDF de fórmula"))
         } catch (_: ActivityNotFoundException) {
             Toast.makeText(context, "No hay ninguna app para abrir PDF; instala un visor de PDF.", Toast.LENGTH_LONG).show()
         }

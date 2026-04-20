@@ -11,11 +11,13 @@ import com.example.optoapp.data.Resource
 import com.example.optoapp.data.SessionManager
 import com.example.optoapp.data.SyncTelemetry
 import com.example.optoapp.subscription.SubscriptionManager
+import com.example.optoapp.util.rethrowIfCancellation
 import com.example.optoapp.util.SyncErrorSanitizer
 import com.example.optoapp.domain.SyncFinanzasUseCase
 import com.example.optoapp.domain.SyncHistorialUseCase
 import com.example.optoapp.domain.SyncPacientesUseCase
 import com.example.optoapp.domain.SyncSessionHelper
+import com.example.optoapp.sync.SyncGate
 import io.github.jan.supabase.SupabaseClient
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -24,6 +26,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.withLock
 import javax.inject.Inject
 
 sealed class SyncState {
@@ -47,7 +50,8 @@ class SyncViewModel @Inject constructor(
     private val supabase: SupabaseClient,
     private val syncPacientesUseCase: SyncPacientesUseCase,
     private val syncHistorialUseCase: SyncHistorialUseCase,
-    private val syncFinanzasUseCase: SyncFinanzasUseCase
+    private val syncFinanzasUseCase: SyncFinanzasUseCase,
+    private val syncGate: SyncGate
 ) : ViewModel() {
 
     companion object {
@@ -108,11 +112,14 @@ class SyncViewModel @Inject constructor(
             return Resource.Success(Unit)
         }
 
-        var outcome = runStages()
-        if (outcome is Resource.Error && SyncSessionHelper.looksLikeAuthError(outcome.message)) {
-            Log.w(TAG, "Reintento sync tras posible error de auth")
-            SyncSessionHelper.refreshSessionBeforeSync(supabase)
-            outcome = runStages()
+        val outcome = syncGate.mutex.withLock {
+            var o = runStages()
+            if (o is Resource.Error && SyncSessionHelper.looksLikeAuthError(o.message)) {
+                Log.w(TAG, "Reintento sync tras posible error de auth")
+                SyncSessionHelper.refreshSessionBeforeSync(supabase)
+                o = runStages()
+            }
+            o
         }
 
         when (outcome) {
@@ -137,22 +144,25 @@ class SyncViewModel @Inject constructor(
         if (_isSilentSyncing.value || !isNetworkAvailable()) return@launch
         _isSilentSyncing.value = true
         try {
-            SyncSessionHelper.refreshSessionBeforeSync(supabase)
-            val opticaId = sessionManager.opticaId.first()
-            repository.reassignLegacyMiOpticaBaseTo(opticaId)
-            when (val p = syncPacientesUseCase(opticaId)) {
-                is Resource.Error -> Log.w(TAG, "Sync silenciosa (pacientes): ${p.message}")
-                else -> {}
-            }
-            when (val h = syncHistorialUseCase(opticaId)) {
-                is Resource.Error -> Log.w(TAG, "Sync silenciosa (historial): ${h.message}")
-                else -> {}
-            }
-            when (val f = syncFinanzasUseCase(opticaId)) {
-                is Resource.Error -> Log.w(TAG, "Sync silenciosa (finanzas): ${f.message}")
-                else -> {}
+            syncGate.mutex.withLock {
+                SyncSessionHelper.refreshSessionBeforeSync(supabase)
+                val opticaId = sessionManager.opticaId.first()
+                repository.reassignLegacyMiOpticaBaseTo(opticaId)
+                when (val p = syncPacientesUseCase(opticaId)) {
+                    is Resource.Error -> Log.w(TAG, "Sync silenciosa (pacientes): ${p.message}")
+                    else -> {}
+                }
+                when (val h = syncHistorialUseCase(opticaId)) {
+                    is Resource.Error -> Log.w(TAG, "Sync silenciosa (historial): ${h.message}")
+                    else -> {}
+                }
+                when (val f = syncFinanzasUseCase(opticaId)) {
+                    is Resource.Error -> Log.w(TAG, "Sync silenciosa (finanzas): ${f.message}")
+                    else -> {}
+                }
             }
         } catch (e: Exception) {
+            rethrowIfCancellation(e)
             Log.w(TAG, "Sync silenciosa: excepción no controlada", e)
         } finally {
             _isSilentSyncing.value = false

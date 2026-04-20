@@ -1,7 +1,10 @@
 package com.example.optoapp.ui.screens
 
 import android.app.Activity
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
+import android.widget.Toast
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -13,6 +16,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
@@ -265,6 +270,13 @@ fun ConfiguracionScreen(
                         "Plan: ${if (subTier == SubscriptionTier.PRO) "PRO (ilimitado)" else "Gratuito (máx. ${com.example.optoapp.subscription.SubscriptionManager.FREE_MAX_PACIENTES} pacientes)"}",
                         fontSize = 14.sp
                     )
+                    if (BuildConfig.DEBUG && BuildConfig.FORCE_PRO_DEV) {
+                        Text(
+                            "PRO forzado en esta compilación (local.properties: optoapp.dev.force_pro).",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                     Text(
                         "Producto Play: ${PlayBillingManager.SUBSCRIPTION_PRODUCT_ID}",
                         fontSize = 11.sp,
@@ -310,15 +322,61 @@ fun ConfiguracionScreen(
 
             Card {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Sincronización por registro (errores)", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                    Text("Diagnóstico de sincronización", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                     Text(
-                        "Filas que fallaron al bajar o subir (P0-T5). Vacío si todo está bien.",
+                        "Si algún registro no pudo subirse o bajarse respecto a la nube, se lista aquí con el detalle. " +
+                            "No es un fallo de la app por sí solo: revisa conexión y vuelve a sincronizar desde el menú.",
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     if (syncErrors.isEmpty()) {
-                        Text("Sin errores registrados.", fontSize = 14.sp)
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                Icons.Filled.CheckCircle,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(22.dp)
+                            )
+                            Text(
+                                "No hay registros con error de sincronización.",
+                                fontSize = 14.sp,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
                     } else {
+                        OutlinedButton(
+                            onClick = {
+                                val body = syncErrors.joinToString("\n\n") { row ->
+                                    buildString {
+                                        appendLine("${row.entityType} · ${row.entityId}")
+                                        appendLine("Estado: ${row.status}")
+                                        appendLine("Error: ${row.lastError}")
+                                        append("Actualizado (ms): ${row.updatedAt}")
+                                    }
+                                }
+                                val clip = ClipData.newPlainText("Errores sincronización OptoApp", body)
+                                val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                                cm.setPrimaryClip(clip)
+                                Toast.makeText(context, "Copiado al portapapeles", Toast.LENGTH_SHORT).show()
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(Icons.Filled.ContentCopy, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Copiar todo (${syncErrors.size})")
+                        }
+                        TextButton(
+                            onClick = {
+                                syncDiagVm.clearErrorHistory()
+                                Toast.makeText(context, "Lista de errores borrada (los datos locales no se eliminan).", Toast.LENGTH_SHORT).show()
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Limpiar esta lista")
+                        }
                         LazyColumn(
                             modifier = Modifier.heightIn(max = 220.dp),
                             verticalArrangement = Arrangement.spacedBy(6.dp)

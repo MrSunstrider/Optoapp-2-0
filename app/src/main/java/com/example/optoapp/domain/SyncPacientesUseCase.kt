@@ -4,6 +4,7 @@ import android.util.Log
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Paciente
 import com.example.optoapp.data.Resource
+import com.example.optoapp.util.rethrowIfCancellation
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.serialization.SerialName
@@ -34,6 +35,7 @@ class SyncPacientesUseCase @Inject constructor(
             Log.d(TAG, "Pacientes: fin OK (subidos=$uploaded, bajados=$downloaded)")
             Resource.Success(PacientesSyncResult(uploaded, downloaded))
         } catch (e: Exception) {
+            rethrowIfCancellation(e)
             Log.e(TAG, "Error en sincronización de pacientes", e)
             Resource.Error("Error sincronizando pacientes: ${e.localizedMessage}")
         }
@@ -44,6 +46,7 @@ class SyncPacientesUseCase @Inject constructor(
 
         if (pacientes.isEmpty()) {
             Log.d(TAG, "Upload pacientes: 0 filas locales para optica_id=$opticaId")
+            syncStateTracker.markSynced(opticaId, "upload_pacientes", "batch")
             return 0
         }
 
@@ -55,9 +58,11 @@ class SyncPacientesUseCase @Inject constructor(
         try {
             supabase.postgrest[TABLE].upsert(rows)
         } catch (e: Exception) {
+            rethrowIfCancellation(e)
             syncStateTracker.markError(opticaId, "upload_pacientes", "batch", e.message)
             throw e
         }
+        syncStateTracker.markSynced(opticaId, "upload_pacientes", "batch")
         pacientes.forEach { p ->
             syncStateTracker.markSynced(opticaId, "paciente", p.id)
         }
@@ -81,6 +86,7 @@ class SyncPacientesUseCase @Inject constructor(
                 repository.upsertPaciente(local)
                 syncStateTracker.markSynced(opticaId, "paciente", local.id)
             } catch (e: Exception) {
+                rethrowIfCancellation(e)
                 syncStateTracker.markError(opticaId, "paciente", remoto.id, e.message)
             }
         }
