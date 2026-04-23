@@ -44,6 +44,7 @@ import com.example.optoapp.ui.components.DropdownField
 import com.example.optoapp.ui.components.OptoTextField
 import com.example.optoapp.viewmodel.AuthViewModel
 import com.example.optoapp.viewmodel.LaboratorioConfigViewModel
+import com.example.optoapp.viewmodel.PlanManagementViewModel
 import com.example.optoapp.viewmodel.RoleManagementViewModel
 import kotlinx.coroutines.launch
 
@@ -56,7 +57,8 @@ fun ConfiguracionScreen(
     laboratorioVm: LaboratorioConfigViewModel = hiltViewModel(),
     subscriptionVm: SubscriptionViewModel = hiltViewModel(),
     syncDiagVm: SyncDiagnosticsViewModel = hiltViewModel(),
-    roleVm: RoleManagementViewModel = hiltViewModel()
+    roleVm: RoleManagementViewModel = hiltViewModel(),
+    planVm: PlanManagementViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -77,8 +79,10 @@ fun ConfiguracionScreen(
     val devProOverride by subscriptionVm.devProOverride.collectAsState()
     val syncErrors by syncDiagVm.errorRows.collectAsState()
     val roleUi by roleVm.uiState.collectAsState()
+    val planUi by planVm.uiState.collectAsState()
     val opticaRol by viewModel.opticaRol.collectAsState(initial = "admin")
     val canManageUsers = AppRoles.canManageUsers(opticaRol)
+    val canManagePlans = AppRoles.canManagePlans(opticaRol)
     val canAssignAdminRole = opticaRol.trim().equals("admin", ignoreCase = true)
     val allowedRoles = remember(canAssignAdminRole) {
         if (canAssignAdminRole) {
@@ -102,6 +106,9 @@ fun ConfiguracionScreen(
 
     LaunchedEffect(canManageUsers) {
         if (canManageUsers) roleVm.loadMembers()
+    }
+    LaunchedEffect(canManagePlans) {
+        if (canManagePlans) planVm.load()
     }
     LaunchedEffect(allowedRoles, roleUi.roleInput) {
         if (roleUi.roleInput !in allowedRoles) {
@@ -285,6 +292,58 @@ fun ConfiguracionScreen(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text("Guardar contacto de laboratorio")
+                    }
+                }
+            }
+
+            if (canManagePlans) {
+                Card {
+                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text("Administración de plan (interno)", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                        Text("Ajusta plan y límites de la óptica activa. Uso administrativo.", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        DropdownField(
+                            label = "Plan",
+                            selected = planUi.planCode,
+                            options = listOf("free", "pro_individual", "pro_multisite_15", "enterprise"),
+                            onSelected = planVm::updatePlanCode
+                        )
+                        DropdownField(
+                            label = "Estado",
+                            selected = planUi.planStatus,
+                            options = listOf("active", "grace", "canceled"),
+                            onSelected = planVm::updatePlanStatus
+                        )
+                        OptoTextField(
+                            value = planUi.maxOpticasInput,
+                            onValueChange = planVm::updateMaxOpticas,
+                            label = "Max ópticas (vacío = ilimitado)",
+                            keyboardType = KeyboardType.Number
+                        )
+                        OptoTextField(
+                            value = planUi.maxPacientesInput,
+                            onValueChange = planVm::updateMaxPacientes,
+                            label = "Max pacientes por óptica (vacío = ilimitado)",
+                            keyboardType = KeyboardType.Number
+                        )
+                        OptoTextField(
+                            value = planUi.maxUsuariosInput,
+                            onValueChange = planVm::updateMaxUsuarios,
+                            label = "Max usuarios por óptica (vacío = ilimitado)",
+                            keyboardType = KeyboardType.Number
+                        )
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedButton(onClick = { planVm.applyPreset() }, enabled = !planUi.loading) {
+                                Text("Aplicar preset")
+                            }
+                            Button(onClick = { planVm.save() }, enabled = !planUi.loading) {
+                                Text("Guardar plan")
+                            }
+                            OutlinedButton(onClick = { planVm.load() }, enabled = !planUi.loading) {
+                                Text("Recargar")
+                            }
+                        }
+                        planUi.message?.let { Text(it, color = MaterialTheme.colorScheme.tertiary, fontSize = 12.sp) }
+                        planUi.error?.let { Text(it, color = MaterialTheme.colorScheme.error, fontSize = 12.sp) }
                     }
                 }
             }

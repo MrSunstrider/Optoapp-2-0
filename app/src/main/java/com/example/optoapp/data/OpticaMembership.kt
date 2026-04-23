@@ -50,4 +50,6 @@ object AppRoles {
         val r = norm(rol)
         return r == "admin" || r == "gerente"
     }
+
+    fun canManagePlans(rol: String): Boolean = canManageUsers(rol)
 }

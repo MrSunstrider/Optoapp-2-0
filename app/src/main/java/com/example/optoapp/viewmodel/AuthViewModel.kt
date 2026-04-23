@@ -268,7 +268,19 @@ class AuthViewModel @Inject constructor(
             _needsOnboarding.value = false
             onFinished(true, "Óptica creada en plan gratuito.")
         } else {
-            onFinished(false, result.exceptionOrNull()?.localizedMessage ?: "No se pudo crear la óptica.")
+            val raw = result.exceptionOrNull()?.localizedMessage.orEmpty()
+            val friendly = when {
+                raw.contains("límite de ópticas", ignoreCase = true) ||
+                    raw.contains("max_opticas", ignoreCase = true) ->
+                    "Has alcanzado el límite de ópticas de tu plan. Actualiza tu plan para crear más sedes."
+                raw.contains("permission", ignoreCase = true) ||
+                    raw.contains("policy", ignoreCase = true) ||
+                    raw.contains("RLS", ignoreCase = true) ->
+                    "No tienes permisos para crear una nueva óptica con esta cuenta."
+                raw.isBlank() -> "No se pudo crear la óptica."
+                else -> raw
+            }
+            onFinished(false, friendly)
         }
     }
 

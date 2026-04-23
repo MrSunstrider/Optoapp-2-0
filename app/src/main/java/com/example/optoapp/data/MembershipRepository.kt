@@ -119,6 +119,52 @@ class MembershipRepository @Inject constructor(
         }
     }
 
+    suspend fun fetchPlanSettings(opticaId: String): Result<PlanSettings> {
+        if (supabase.auth.currentUserOrNull() == null) return Result.failure(IllegalStateException("Sin sesión"))
+        return try {
+            val row = supabase.postgrest[TABLE_OPTICAS]
+                .select { filter { eq("id", opticaId) } }
+                .decodeList<OpticaPlanSettingsDto>()
+                .firstOrNull()
+                ?: return Result.failure(IllegalStateException("No se encontró la óptica"))
+            Result.success(
+                PlanSettings(
+                    planCode = row.planCode.ifBlank { "free" },
+                    maxOpticas = row.maxOpticas,
+                    maxPacientesPorOptica = row.maxPacientesPorOptica,
+                    maxUsuariosPorOptica = row.maxUsuariosPorOptica,
+                    planStatus = row.planStatus.ifBlank { "active" }
+                )
+            )
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun updatePlanSettings(opticaId: String, settings: PlanSettings): Result<Unit> {
+        if (supabase.auth.currentUserOrNull() == null) return Result.failure(IllegalStateException("Sin sesión"))
+        return try {
+            supabase.postgrest[TABLE_OPTICAS].update(
+                OpticaPlanUpdateDto(
+                    planCode = settings.planCode.trim().lowercase(),
+                    maxOpticas = settings.maxOpticas,
+                    maxPacientesPorOptica = settings.maxPacientesPorOptica,
+                    maxUsuariosPorOptica = settings.maxUsuariosPorOptica,
+                    planStatus = settings.planStatus.trim().lowercase()
+                )
+            ) {
+                filter { eq("id", opticaId) }
+            }
+            Result.success(Unit)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     private suspend fun fetchOpticaNombre(opticaId: String): String {
         return try {
             val list = supabase.postgrest[TABLE_OPTICAS]
@@ -217,6 +263,14 @@ data class OpticaMemberRow(
     @SerialName("created_at") val createdAt: String = ""
 )
 
+data class PlanSettings(
+    val planCode: String,
+    val maxOpticas: Int?,
+    val maxPacientesPorOptica: Int?,
+    val maxUsuariosPorOptica: Int?,
+    val planStatus: String
+)
+
 @Serializable
 private data class UserProfileRow(
     @SerialName("user_id") val userId: String,
@@ -251,6 +305,24 @@ private data class OpticaInsertDto(
     @SerialName("max_usuarios_por_optica") val maxUsuariosPorOptica: Int = 2,
     @SerialName("plan_source") val planSource: String = "manual",
     @SerialName("plan_status") val planStatus: String = "active"
+)
+
+@Serializable
+private data class OpticaPlanSettingsDto(
+    @SerialName("plan_code") val planCode: String = "free",
+    @SerialName("max_opticas") val maxOpticas: Int? = null,
+    @SerialName("max_pacientes_por_optica") val maxPacientesPorOptica: Int? = null,
+    @SerialName("max_usuarios_por_optica") val maxUsuariosPorOptica: Int? = null,
+    @SerialName("plan_status") val planStatus: String = "active"
+)
+
+@Serializable
+private data class OpticaPlanUpdateDto(
+    @SerialName("plan_code") val planCode: String,
+    @SerialName("max_opticas") val maxOpticas: Int?,
+    @SerialName("max_pacientes_por_optica") val maxPacientesPorOptica: Int?,
+    @SerialName("max_usuarios_por_optica") val maxUsuariosPorOptica: Int?,
+    @SerialName("plan_status") val planStatus: String
 )
 
 @Serializable
