@@ -16,14 +16,22 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.example.optoapp.data.AppRoles
 import com.example.optoapp.viewmodel.CierreCajaViewModel
+import com.example.optoapp.viewmodel.AuthViewModel
 import com.example.optoapp.util.DateUtils
 import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CierreCajaScreen(navController: NavController, viewModel: CierreCajaViewModel = hiltViewModel()) {
+fun CierreCajaScreen(
+    navController: NavController,
+    viewModel: CierreCajaViewModel = hiltViewModel(),
+    authViewModel: AuthViewModel = hiltViewModel()
+) {
     val uiState by viewModel.uiState.collectAsState()
+    val opticaRol by authViewModel.opticaRol.collectAsState(initial = "admin")
+    val canView = AppRoles.canViewCierreCaja(opticaRol)
     var showDatePicker by remember { mutableStateOf(false) }
     
     val datePickerState = rememberDatePickerState(
@@ -54,8 +62,10 @@ fun CierreCajaScreen(navController: NavController, viewModel: CierreCajaViewMode
                     }
                 },
                 actions = {
-                    IconButton(onClick = { showDatePicker = true }) {
-                        Icon(Icons.Default.DateRange, contentDescription = "Cambiar Fecha")
+                    if (canView) {
+                        IconButton(onClick = { showDatePicker = true }) {
+                            Icon(Icons.Default.DateRange, contentDescription = "Cambiar Fecha")
+                        }
                     }
                 }
             )
@@ -67,6 +77,16 @@ fun CierreCajaScreen(navController: NavController, viewModel: CierreCajaViewMode
                 .padding(padding)
                 .padding(16.dp)
         ) {
+            if (!canView) {
+                Card(modifier = Modifier.fillMaxWidth()) {
+                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("Acceso restringido", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error)
+                        Text("Tu rol actual no tiene permiso para consultar cierre de caja.")
+                    }
+                }
+                return@Column
+            }
+
             // Header con Fecha
             Text(
                 text = "Reporte del ${DateUtils.formatLocalized(uiState.fecha)}",

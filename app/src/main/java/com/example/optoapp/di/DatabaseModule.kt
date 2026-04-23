@@ -1,7 +1,6 @@
 package com.example.optoapp.di
 
 import android.content.Context
-import androidx.room.Room
 import com.example.optoapp.data.*
 import dagger.Module
 import dagger.Provides
@@ -19,13 +18,15 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): OptoDatabase {
-        return Room.databaseBuilder(
-            context,
-            OptoDatabase::class.java,
-            "opto_database"
-        )
-                .fallbackToDestructiveMigration(true)
-                .build()
+        return try {
+            OptoDatabase.getDatabase(context)
+        } catch (e: IllegalStateException) {
+            throw IllegalStateException(
+                "No se pudo abrir la base local por un conflicto de migración. " +
+                    "Tus datos no se han borrado. Exporta respaldo y actualiza la app.",
+                e
+            )
+        }
     }
 
     @Provides

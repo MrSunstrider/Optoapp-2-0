@@ -35,6 +35,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -42,7 +43,10 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.optoapp.data.Montura
 import com.example.optoapp.ui.components.OptoTextField
+import com.example.optoapp.util.FileShareUtils
+import com.example.optoapp.util.InventarioMonturasPdfGenerator
 import com.example.optoapp.viewmodel.MonturasViewModel
+import java.io.File
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -51,8 +55,10 @@ fun MonturasScreen(
     navController: NavController,
     viewModel: MonturasViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
     val monturas by viewModel.monturas.collectAsState()
+    var lastGeneratedPdf by remember { mutableStateOf<File?>(null) }
 
     val filtradas = monturas.filter {
         if (uiState.query.isBlank()) true
@@ -65,6 +71,9 @@ fun MonturasScreen(
     val porReponer = monturas
         .filter { it.activo && it.stockActual <= it.stockMinimo }
         .sortedBy { it.stockActual - it.stockMinimo }
+    val stockTotal = filtradas.sumOf { it.stockActual }
+    val valorCosto = filtradas.sumOf { it.stockActual * it.costo }
+    val valorVenta = filtradas.sumOf { it.stockActual * it.precio }
     val restantes = if (porReponer.isEmpty()) filtradas else filtradas.filter { f -> porReponer.none { it.id == f.id } }
 
     if (uiState.editing) {
@@ -144,6 +153,36 @@ fun MonturasScreen(
                     } else {
                         porReponer.take(5).forEach { m ->
                             Text("- ${m.sku} ${m.marca} ${m.modelo}: ${m.stockActual}/${m.stockMinimo}")
+                        }
+                    }
+                }
+            }
+
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text("Resumen inventario", fontWeight = FontWeight.Bold)
+                    Text("Monturas listadas: ${filtradas.size}")
+                    Text("Stock total: $stockTotal")
+                    Text("Valor costo: s/. ${String.format(Locale.getDefault(), "%.2f", valorCosto)}")
+                    Text("Valor venta: s/. ${String.format(Locale.getDefault(), "%.2f", valorVenta)}")
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(
+                            onClick = {
+                                val pdf = InventarioMonturasPdfGenerator.generate(context, filtradas)
+                                lastGeneratedPdf = pdf
+                                FileShareUtils.openPdf(context, pdf, "Abrir inventario de monturas")
+                            }
+                        ) {
+                            Text("Generar PDF")
+                        }
+                        OutlinedButton(
+                            onClick = {
+                                val file = lastGeneratedPdf ?: InventarioMonturasPdfGenerator.generate(context, filtradas)
+                                lastGeneratedPdf = file
+                                FileShareUtils.sharePdf(context, file, "Compartir inventario de monturas")
+                            }
+                        ) {
+                            Text("Compartir PDF")
                         }
                     }
                 }

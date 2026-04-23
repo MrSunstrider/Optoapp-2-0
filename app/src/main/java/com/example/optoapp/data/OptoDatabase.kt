@@ -1,12 +1,14 @@
 package com.example.optoapp.data
 
 import android.content.Context
+import com.example.optoapp.BuildConfig
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
+import com.example.optoapp.util.LocalDatabaseBackupManager
 import java.util.concurrent.TimeUnit
 
 @Database(
@@ -591,7 +593,16 @@ abstract class OptoDatabase : RoomDatabase() {
                     "opto_database"
                 )
                 .addMigrations(MIGRATION_6_7, MIGRATION_7_8, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17, MIGRATION_18_19)
-                .fallbackToDestructiveMigration(true) // Permitir recrear tablas ante cambios de índices en desarrollo
+                .addCallback(object : RoomDatabase.Callback() {
+                    override fun onOpen(db: SupportSQLiteDatabase) {
+                        super.onOpen(db)
+                        LocalDatabaseBackupManager.backupIfNeeded(context.applicationContext, "opto_database")
+                    }
+                })
+                .let { builder ->
+                    // Seguridad local: evitar borrado silencioso en producción.
+                    if (BuildConfig.DEBUG) builder.fallbackToDestructiveMigration(true) else builder
+                }
                 .build()
                 INSTANCE = instance
                 instance

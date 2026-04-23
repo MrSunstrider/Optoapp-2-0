@@ -39,6 +39,7 @@ fun MainDrawerScreen(
     val opticaRol by authViewModel.opticaRol.collectAsState(initial = "admin")
     val showCierreCaja = AppRoles.canViewCierreCaja(opticaRol)
     val showBiYReportes = AppRoles.canViewBiAndReports(opticaRol)
+    val showOperacionHoy = AppRoles.canViewOperacionHoy(opticaRol)
 
     // Sincronización automática al entrar al dashboard
     LaunchedEffect(Unit) {
@@ -113,6 +114,18 @@ fun MainDrawerScreen(
                     icon = { Icon(Icons.Default.Inventory2, contentDescription = null) },
                     modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                 )
+                if (showOperacionHoy) {
+                    NavigationDrawerItem(
+                        label = { Text("Operación de Hoy") },
+                        selected = currentRoute == "operacion_hoy",
+                        onClick = {
+                            scope.launch { drawerState.close() }
+                            navController.navigate("operacion_hoy")
+                        },
+                        icon = { Icon(Icons.Default.Today, contentDescription = null) },
+                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                    )
+                }
                 if (showCierreCaja) {
                     NavigationDrawerItem(
                         label = { Text("Cierre de Caja") },
@@ -320,6 +333,7 @@ fun MainDrawerScreen(
                     ServiciosExtraScreen(navController, drawerState) 
                 }
                 composable("monturas") { MonturasScreen(navController) }
+                composable("operacion_hoy") { OperacionHoyScreen(navController) }
                 composable("nuevo_servicio") {
                     NuevoServicioScreen(navController, pacienteId = null)
                 }

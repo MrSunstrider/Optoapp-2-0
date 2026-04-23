@@ -59,6 +59,22 @@ Implementar y operar OptoApp con consistencia entre capa local (Room), capa remo
 - Capa de permisos en cliente:
   - controla visibilidad de pantallas y acciones sensibles.
 
+### Matriz actual de permisos (cliente)
+
+| Rol | BI/Reportes | Cierre de caja | Operacion de hoy | Exportar pendientes | Exportar cierre | Exportar inventario |
+|---|---|---|---|---|---|---|
+| admin | Si | Si | Si | Si | Si | Si |
+| especialista | Si | Si | Si | Si | Si | Si |
+| gerente | Si | Si | Si | Si | Si | Si |
+| asesor / asesora | No | No | No | Si | No | Si |
+| ventas | No | No | No | Si | No | Si |
+| invitado | No | No | No | No | No | No |
+
+Notas:
+- En codigo, la referencia central vive en `AppRoles` (`app/src/main/java/com/example/optoapp/data/OpticaMembership.kt`).
+- Si se incorpora un rol nuevo, debe agregarse a la matriz y a `AppRoles` en el mismo cambio.
+- Para roles no catalogados, se aplica politica conservadora (sin acceso financiero ni exportaciones sensibles).
+
 ## Alcance futuro (no bloqueante de P0)
 - Suscripciones y paywall.
 - Integracion Google Play Billing.
