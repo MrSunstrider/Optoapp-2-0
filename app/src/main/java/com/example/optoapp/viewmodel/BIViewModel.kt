@@ -133,21 +133,56 @@ class BIViewModel @Inject constructor(
     }
 
     private fun getRangesForPeriod(periodo: Periodo): Pair<LocalDate, LocalDate> {
-        val end = LocalDate.now()
-        val start = when (periodo) {
-            Periodo.MES_ACTUAL -> end.withDayOfMonth(1)
-            Periodo.TRIMESTRE -> end.minusMonths(3)
-            Periodo.SEMESTRE -> end.minusMonths(6)
-            Periodo.ANIO -> end.minusYears(1)
+        val today = LocalDate.now()
+        return when (periodo) {
+            Periodo.MES_ACTUAL -> {
+                val start = today.withDayOfMonth(1)
+                val end = start.plusMonths(1).minusDays(1)
+                start to end
+            }
+            Periodo.TRIMESTRE -> {
+                val quarterStartMonth = ((today.monthValue - 1) / 3) * 3 + 1
+                val start = LocalDate.of(today.year, quarterStartMonth, 1)
+                val end = start.plusMonths(3).minusDays(1)
+                start to end
+            }
+            Periodo.SEMESTRE -> {
+                val semesterStartMonth = if (today.monthValue <= 6) 1 else 7
+                val start = LocalDate.of(today.year, semesterStartMonth, 1)
+                val end = start.plusMonths(6).minusDays(1)
+                start to end
+            }
+            Periodo.ANIO -> {
+                val start = LocalDate.of(today.year, 1, 1)
+                val end = LocalDate.of(today.year, 12, 31)
+                start to end
+            }
         }
-        return start to end
     }
 
     private fun getPreviousRangesForPeriod(periodo: Periodo): Pair<LocalDate, LocalDate> {
-        val currentRange = getRangesForPeriod(periodo)
-        val days = java.time.temporal.ChronoUnit.DAYS.between(currentRange.first, currentRange.second).coerceAtLeast(1)
-        val prevEnd = currentRange.first.minusDays(1)
-        val prevStart = prevEnd.minusDays(days)
-        return prevStart to prevEnd
+        val (currentStart, _) = getRangesForPeriod(periodo)
+        return when (periodo) {
+            Periodo.MES_ACTUAL -> {
+                val start = currentStart.minusMonths(1)
+                val end = currentStart.minusDays(1)
+                start to end
+            }
+            Periodo.TRIMESTRE -> {
+                val start = currentStart.minusMonths(3)
+                val end = currentStart.minusDays(1)
+                start to end
+            }
+            Periodo.SEMESTRE -> {
+                val start = currentStart.minusMonths(6)
+                val end = currentStart.minusDays(1)
+                start to end
+            }
+            Periodo.ANIO -> {
+                val start = currentStart.minusYears(1)
+                val end = currentStart.minusDays(1)
+                start to end
+            }
+        }
     }
 }

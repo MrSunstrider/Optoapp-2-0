@@ -4,6 +4,7 @@ import android.database.sqlite.SQLiteConstraintException
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.optoapp.data.FinanzasRemoteDefaults
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.ServicioExtra
 import com.example.optoapp.data.Paciente
@@ -49,6 +50,13 @@ class ServiciosViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(ServiciosUiState())
     val uiState: StateFlow<ServiciosUiState> = _uiState.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            val oid = sessionManager.opticaId.first()
+            repository.reassignLegacyMiOpticaBaseTo(oid)
+        }
+    }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val allServicios: StateFlow<List<ServicioExtra>> = sessionManager.opticaId
@@ -131,22 +139,37 @@ class ServiciosViewModel @Inject constructor(
                 _uiState.update { it.copy(error = "El monto total no es un número válido.") }
                 return@launch
             }
+            if (montoParsed <= 0.0) {
+                _uiState.update { it.copy(error = FinanzasRemoteDefaults.Messages.MONTO_TOTAL_MAYOR_A_CERO) }
+                return@launch
+            }
+            if (state.pagos.any { it.monto <= 0.0 }) {
+                _uiState.update { it.copy(error = FinanzasRemoteDefaults.Messages.ABONO_MAYOR_A_CERO) }
+                return@launch
+            }
+            val totalAbonos = state.pagos.sumOf { it.monto }
+            if (totalAbonos > montoParsed) {
+                _uiState.update { it.copy(error = FinanzasRemoteDefaults.Messages.ABONO_MAYOR_QUE_TOTAL) }
+                return@launch
+            }
 
             try {
-                val currentOpticaId = sessionManager.opticaId.first()
+                val currentOpticaId = sessionManager.opticaId.first().trim().ifBlank {
+                    com.example.optoapp.data.SessionManager.LEGACY_OPTICA_ID
+                }
                 val finalId = if (state.id.isNotBlank()) state.id else state.generatedId
-                val finalACuenta = state.pagos.sumOf { it.monto }
+                val finalACuenta = totalAbonos.coerceIn(0.0, montoParsed)
 
                 val servicio = ServicioExtra(
                     id = finalId,
-                    ot = state.ot,
+                    ot = state.ot.trim(),
                     descripcion = state.descripcion.trim(),
                     montoTotal = montoParsed,
                     aCuenta = finalACuenta,
                     estado = state.estado,
                     fecha = state.fecha,
-                    pacienteId = state.pacienteId,
-                    metodoPago = "",
+                    pacienteId = state.pacienteId?.takeIf { !it.isBlank() },
+                    metodoPago = FinanzasRemoteDefaults.ServicioExtra.METODO_PAGO_ROW,
                     opticaId = currentOpticaId
                 )
 

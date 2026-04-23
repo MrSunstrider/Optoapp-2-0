@@ -139,6 +139,27 @@ class OptoRepository(
         val next = max + 1
         return "OT-$year-" + next.toString().padStart(4, '0')
     }
+
+    /** Siguiente correlativo `HO-<año>-####` para historia optométrica en la óptica activa. */
+    suspend fun suggestNextHistoriaOptometrica(opticaId: String): String {
+        val historias = pacienteDao.getHistoriasOptometricasByOptica(opticaId)
+        val year = LocalDate.now().year.toString()
+        val regex = Regex("^HO-$year-(\\d+)$", RegexOption.IGNORE_CASE)
+        var max = 0
+        for (historia in historias) {
+            regex.find(historia.trim())?.groupValues?.get(1)?.toIntOrNull()?.let { if (it > max) max = it }
+        }
+        val next = max + 1
+        return "HO-$year-" + next.toString().padStart(4, '0')
+    }
+
+    /** True si ya existe esa historia optométrica en la misma óptica (ignorando mayúsculas/espacios). */
+    suspend fun existsDuplicateHistoriaOptometrica(opticaId: String, historia: String, excludePacienteId: String?): Boolean {
+        val n = historia.trim()
+        if (n.isEmpty()) return false
+        val ex = excludePacienteId.orEmpty()
+        return pacienteDao.countPacientesByHistoriaOptometrica(opticaId, n, ex) > 0
+    }
     
     fun getPagosByDispensacion(dispensacionId: String): Flow<List<Pago>> = pagoDao.getPagosByDispensacion(dispensacionId)
     

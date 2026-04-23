@@ -49,7 +49,7 @@ fun ServiciosExtraScreen(navController: NavController, drawerState: DrawerState,
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { navController.navigate("nuevo_servicio/null") }) {
+            FloatingActionButton(onClick = { navController.navigate("nuevo_servicio") }) {
                 Icon(Icons.Default.Add, contentDescription = "Añadir Servicio")
             }
         }

@@ -394,6 +394,7 @@ fun ResumenEvaluacionDialog(eval: EvaluacionClinica, paciente: Paciente, onDismi
                     Text("Nombre: ${paciente.nombreCompleto}", fontSize = 14.sp)
                     Text("Edad: ${paciente.edad} años", fontSize = 14.sp)
                     if (paciente.telefono.isNotBlank()) Text("Teléfono: ${paciente.telefono}", fontSize = 14.sp)
+                    if (!paciente.historiaOptometrica.isNullOrBlank()) Text("Historia Optométrica: ${paciente.historiaOptometrica}", fontSize = 14.sp)
                     Text("Fecha de Eval: $date", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
                 }
 
@@ -648,6 +649,7 @@ fun ResumenDispensacionDialog(disp: DispensacionOptica, paciente: Paciente, onDi
                     if (disp.ot.isNotBlank()) Text("OT: ${disp.ot}", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
                     Text("Nombre: ${paciente.nombreCompleto}", fontSize = 14.sp)
                     Text("Edad: ${paciente.edad} años", fontSize = 14.sp)
+                    if (!paciente.historiaOptometrica.isNullOrBlank()) Text("Historia Optométrica: ${paciente.historiaOptometrica}", fontSize = 14.sp)
                     Text("Fecha: $date", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
                 }
 

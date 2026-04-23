@@ -149,6 +149,7 @@ class AuthViewModel @Inject constructor(
                         name = nombre,
                         rol = m.rol
                     )
+                    repository.reassignLegacyMiOpticaBaseTo(m.opticaId)
                     Log.d(TAG, "Login exitoso. opticaId=${m.opticaId} uid=$uid (única membresía)")
                     _authState.value = AuthState.Success
                 }
@@ -162,6 +163,7 @@ class AuthViewModel @Inject constructor(
                         name = nombre,
                         rol = "admin"
                     )
+                    repository.reassignLegacyMiOpticaBaseTo(opticaLegacy)
                     Log.d(TAG, "Login exitoso (legado sin usuario_optica). opticaId=$opticaLegacy uid=$uid (verificar fila en usuario_optica si falla RLS)")
                     _authState.value = AuthState.Success
                 }
@@ -189,6 +191,7 @@ class AuthViewModel @Inject constructor(
             name = pendingLoginName,
             rol = membership.rol
         )
+        repository.reassignLegacyMiOpticaBaseTo(membership.opticaId)
         _pendingMemberships.value = emptyList()
         if (BuildConfig.DEBUG) {
             val uid = try { supabase.auth.currentUserOrNull()?.id } catch (_: Exception) { null }
@@ -226,6 +229,9 @@ class AuthViewModel @Inject constructor(
                     Log.d(TAG, "Sesión inexistente o expirada por tiempo (24h). Limpiando...")
                 }
                 logout()
+            } else {
+                val oid = sessionManager.opticaId.first()
+                repository.reassignLegacyMiOpticaBaseTo(oid)
             }
         } catch (e: Exception) {
             Log.w(TAG, "No se pudo verificar sesión existente: ${e.localizedMessage}")

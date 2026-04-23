@@ -18,15 +18,28 @@ interface PacienteDao {
     @Query("SELECT * FROM pacientes WHERE opticaId = :opticaId ORDER BY nombreCompleto ASC")
     suspend fun getPacientesListByOptica(opticaId: String): List<Paciente>
 
+    @Query("SELECT historiaOptometrica FROM pacientes WHERE opticaId = :opticaId AND ifnull(historiaOptometrica, '') <> ''")
+    suspend fun getHistoriasOptometricasByOptica(opticaId: String): List<String>
+
+    @Query(
+        """
+        SELECT COUNT(*) FROM pacientes
+        WHERE opticaId = :opticaId
+          AND UPPER(TRIM(ifnull(historiaOptometrica, ''))) = UPPER(TRIM(:historiaNorm))
+          AND (:excludeId = '' OR id != :excludeId)
+        """
+    )
+    suspend fun countPacientesByHistoriaOptometrica(opticaId: String, historiaNorm: String, excludeId: String): Int
+
     @Query("SELECT * FROM pacientes WHERE id = :id")
     suspend fun getPacienteById(id: String): Paciente?
 
-    @Query("SELECT * FROM pacientes WHERE nombreCompleto LIKE '%' || :query || '%' OR id LIKE '%' || :query || '%' OR telefono LIKE '%' || :query || '%'")
+    @Query("SELECT * FROM pacientes WHERE nombreCompleto LIKE '%' || :query || '%' OR id LIKE '%' || :query || '%' OR telefono LIKE '%' || :query || '%' OR ifnull(historiaOptometrica, '') LIKE '%' || :query || '%'")
     fun searchPacientes(query: String): Flow<List<Paciente>>
 
     @Query("""
         SELECT * FROM pacientes WHERE opticaId = :opticaId AND (
-            nombreCompleto LIKE '%' || :query || '%' OR id LIKE '%' || :query || '%' OR telefono LIKE '%' || :query || '%'
+            nombreCompleto LIKE '%' || :query || '%' OR id LIKE '%' || :query || '%' OR telefono LIKE '%' || :query || '%' OR ifnull(historiaOptometrica, '') LIKE '%' || :query || '%'
         )
     """)
     fun searchPacientesForOptica(opticaId: String, query: String): Flow<List<Paciente>>

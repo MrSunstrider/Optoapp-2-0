@@ -2,7 +2,6 @@ package com.example.optoapp.ui.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -11,14 +10,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.example.optoapp.data.FinanzasRemoteDefaults
 import com.example.optoapp.ui.components.DropdownField
 import com.example.optoapp.ui.components.OptoTextField
 import com.example.optoapp.viewmodel.DispensacionViewModel
@@ -35,8 +33,6 @@ import com.example.optoapp.ui.components.AbonoDialog
 @Suppress("DEPRECATION")
 @Composable
 fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, dispensacionId: String? = null, viewModel: DispensacionViewModel = hiltViewModel()) {
-    val scope = rememberCoroutineScope()
-    val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
     val monturasActivas by viewModel.monturasActivas.collectAsState()
     LaunchedEffect(dispensacionId) {
@@ -190,13 +186,13 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
             Card {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("Información de Montura", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                    DropdownField(label = "Origen", selected = uiState.origenMontura, options = listOf("Nueva de Tienda", "Traída por paciente")) { 
+                    DropdownField(label = "Origen", selected = uiState.origenMontura, options = listOf("Tienda", "Paciente")) { 
                         viewModel.updateUiState { s ->
-                            if (it == "Nueva de Tienda") s.copy(origenMontura = it)
+                            if (it == "Tienda") s.copy(origenMontura = it)
                             else s.copy(origenMontura = it, monturaId = "")
                         }
                     }
-                    if (uiState.origenMontura == "Nueva de Tienda") {
+                    if (uiState.origenMontura == "Tienda" || uiState.origenMontura == "Nueva de Tienda") {
                         val opcionesMontura = monturasActivas
                             .filter { it.stockActual > 0 || it.id == uiState.monturaId }
                             .map { m -> "${m.id}|${m.sku} - ${m.marca} ${m.modelo} (Stock: ${m.stockActual})" }
@@ -270,6 +266,18 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
                                             pago = pago,
                                             onDismiss = { showEditDialog = false },
                                             onConfirm = { updatedPago: Pago ->
+                                                val total = uiState.montoTotal.toDoubleOrNull() ?: 0.0
+                                                val otrosAbonos = uiState.pagos
+                                                    .filter { it.id != pago.id }
+                                                    .sumOf { it.monto }
+                                                if (total <= 0.0) {
+                                                    viewModel.updateUiState { it.copy(error = FinanzasRemoteDefaults.Messages.MONTO_TOTAL_INVALIDO) }
+                                                    return@AbonoDialog
+                                                }
+                                                if (otrosAbonos + updatedPago.monto > total) {
+                                                    viewModel.updateUiState { it.copy(error = FinanzasRemoteDefaults.Messages.ABONO_MAYOR_QUE_TOTAL) }
+                                                    return@AbonoDialog
+                                                }
                                                 viewModel.updatePagoLocal(updatedPago)
                                                 showEditDialog = false
                                             }
@@ -292,6 +300,16 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
                             defaultFecha = DateUtils.today(),
                             onDismiss = { showAddDialog = false },
                             onConfirm = { nuevoPago: Pago ->
+                                val total = uiState.montoTotal.toDoubleOrNull() ?: 0.0
+                                val totalConNuevo = uiState.pagos.sumOf { it.monto } + nuevoPago.monto
+                                if (total <= 0.0) {
+                                    viewModel.updateUiState { it.copy(error = FinanzasRemoteDefaults.Messages.MONTO_TOTAL_INVALIDO) }
+                                    return@AbonoDialog
+                                }
+                                if (totalConNuevo > total) {
+                                    viewModel.updateUiState { it.copy(error = FinanzasRemoteDefaults.Messages.ABONO_MAYOR_QUE_TOTAL) }
+                                    return@AbonoDialog
+                                }
                                 viewModel.addPago(nuevoPago)
                                 showAddDialog = false
                             }

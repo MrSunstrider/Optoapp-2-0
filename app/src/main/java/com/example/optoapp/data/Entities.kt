@@ -27,6 +27,8 @@ data class Paciente(
     val fechaNacimiento: LocalDate? = null,
     val sexo: String? = null,
     val email: String? = null,
+    @SerializedName("historiaOptometrica", alternate = ["historia_optometrica"])
+    val historiaOptometrica: String? = null,
     val direccion: String? = null,
     val distrito: String? = null,
     val ocupacion: String? = null,

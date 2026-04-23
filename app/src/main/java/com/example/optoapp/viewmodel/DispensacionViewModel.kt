@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.EvaluacionClinica
+import com.example.optoapp.data.FinanzasRemoteDefaults
 import com.example.optoapp.data.MonturaMovimiento
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Resource
@@ -59,6 +60,12 @@ class DispensacionViewModel @Inject constructor(
     private val sessionManager: com.example.optoapp.data.SessionManager,
     private val postSaveSyncScheduler: PostSaveSyncScheduler
 ) : ViewModel() {
+    companion object {
+        private const val ORIGEN_TIENDA = "Tienda"
+        private const val ORIGEN_PACIENTE = "Paciente"
+        private const val ORIGEN_TIENDA_LEGACY = "Nueva de Tienda"
+        private const val ORIGEN_PACIENTE_LEGACY = "Traída por paciente"
+    }
 
     private val _uiState = MutableStateFlow(DispensacionUiState())
     val uiState: StateFlow<DispensacionUiState> = _uiState.asStateFlow()
@@ -119,7 +126,7 @@ class DispensacionViewModel @Inject constructor(
                             colorLente = d.colorLente,
                             notasDiseno = d.notasDiseno,
                             subTipoBifocal = d.subTipoBifocal,
-                            origenMontura = d.origenMontura,
+                            origenMontura = normalizeOrigenMontura(d.origenMontura),
                             monturaId = d.monturaId,
                             tipoAro = d.tipoAro,
                             materialMontura = d.materialMontura,
@@ -192,6 +199,20 @@ class DispensacionViewModel @Inject constructor(
                 _uiState.update { it.copy(error = "La OT es obligatoria para guardar la dispensación.") }
                 return@launch
             }
+            val montoTotal = s.montoTotal.toDoubleOrNull()
+            if (montoTotal == null || montoTotal <= 0.0) {
+                _uiState.update { it.copy(error = FinanzasRemoteDefaults.Messages.MONTO_TOTAL_MAYOR_A_CERO) }
+                return@launch
+            }
+            if (s.pagos.any { it.monto <= 0.0 }) {
+                _uiState.update { it.copy(error = FinanzasRemoteDefaults.Messages.ABONO_MAYOR_A_CERO) }
+                return@launch
+            }
+            val totalAbonos = s.pagos.sumOf { it.monto }
+            if (totalAbonos > montoTotal) {
+                _uiState.update { it.copy(error = FinanzasRemoteDefaults.Messages.ABONO_MAYOR_QUE_TOTAL) }
+                return@launch
+            }
 
             val currentOpticaId = sessionManager.opticaId.first()
             val finalId = dispensacionId ?: s.generatedId
@@ -202,11 +223,12 @@ class DispensacionViewModel @Inject constructor(
             }
 
             _uiState.update { it.copy(error = null) }
-            val finalMontoPagado = s.pagos.sumOf { it.monto }
+            val finalMontoPagado = totalAbonos
             val dispensacionAnterior = if (dispensacionId != null && dispensacionId != "null") {
                 (repository.getDispensacionById(dispensacionId) as? Resource.Success)?.data
             } else null
-            val monturaActualId = if (s.origenMontura == "Nueva de Tienda") s.monturaId else ""
+            val origenMonturaNormalizado = normalizeOrigenMontura(s.origenMontura)
+            val monturaActualId = if (isOrigenTienda(origenMonturaNormalizado)) s.monturaId else ""
 
             val disp = DispensacionOptica(
                 id = finalId,
@@ -221,12 +243,12 @@ class DispensacionViewModel @Inject constructor(
                 colorLente = s.colorLente,
                 notasDiseno = s.notasDiseno,
                 subTipoBifocal = if (s.tipoLente == "Bifocal") s.subTipoBifocal else "",
-                origenMontura = s.origenMontura,
+                origenMontura = origenMonturaNormalizado,
                 tipoAro = s.tipoAro,
                 materialMontura = s.materialMontura,
                 descripcionMontura = s.descripcionMontura,
                 tipoMontura = s.tipoMontura,
-                montoTotal = s.montoTotal.toDoubleOrNull() ?: 0.0,
+                montoTotal = montoTotal,
                 montoPagado = finalMontoPagado,
                 metodoPago = "",
                 estadoEntrega = s.estadoEntrega,
@@ -302,4 +324,13 @@ class DispensacionViewModel @Inject constructor(
             onComplete()
         }
     }
+
+    private fun normalizeOrigenMontura(value: String): String = when (value.trim()) {
+        ORIGEN_TIENDA_LEGACY -> ORIGEN_TIENDA
+        ORIGEN_PACIENTE_LEGACY -> ORIGEN_PACIENTE
+        else -> value.trim()
+    }
+
+    private fun isOrigenTienda(value: String): Boolean =
+        value == ORIGEN_TIENDA || value == ORIGEN_TIENDA_LEGACY
 }

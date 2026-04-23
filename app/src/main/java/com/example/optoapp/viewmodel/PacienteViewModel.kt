@@ -49,7 +49,8 @@ class PacienteViewModel @Inject constructor(
                 list.filter { 
                     it.nombreCompleto.contains(query, ignoreCase = true) || 
                     it.id.contains(query, ignoreCase = true) || 
-                    it.telefono.contains(query) 
+                    it.telefono.contains(query) ||
+                    it.historiaOptometrica.orEmpty().contains(query, ignoreCase = true)
                 }
             } else {
                 list
@@ -73,5 +74,17 @@ class PacienteViewModel @Inject constructor(
     suspend fun getPaciente(id: String): Paciente? {
         val result = repository.getPacienteById(id)
         return if (result is Resource.Success) result.data else null
+    }
+
+    /** Sugerencia correlativa para historia optométrica en la óptica activa. */
+    suspend fun suggestHistoriaOptometrica(): String {
+        val oid = sessionManager.opticaId.first()
+        return repository.suggestNextHistoriaOptometrica(oid)
+    }
+
+    /** Valida duplicados de historia optométrica en la óptica activa. */
+    suspend fun existsDuplicateHistoriaOptometrica(historia: String, excludePacienteId: String?): Boolean {
+        val oid = sessionManager.opticaId.first()
+        return repository.existsDuplicateHistoriaOptometrica(oid, historia, excludePacienteId)
     }
 }

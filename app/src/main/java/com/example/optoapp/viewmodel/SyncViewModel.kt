@@ -141,13 +141,14 @@ class SyncViewModel @Inject constructor(
      * No cambia el estado global de UI para no interrumpir al usuario.
      */
     fun performSilentSync() = viewModelScope.launch {
+        val opticaId = sessionManager.opticaId.first()
+        // Sin red también: migrar datos legacy a la óptica de sesión para que las listas no queden vacías.
+        repository.reassignLegacyMiOpticaBaseTo(opticaId)
         if (_isSilentSyncing.value || !isNetworkAvailable()) return@launch
         _isSilentSyncing.value = true
         try {
             syncGate.mutex.withLock {
                 SyncSessionHelper.refreshSessionBeforeSync(supabase)
-                val opticaId = sessionManager.opticaId.first()
-                repository.reassignLegacyMiOpticaBaseTo(opticaId)
                 when (val p = syncPacientesUseCase(opticaId)) {
                     is Resource.Error -> Log.w(TAG, "Sync silenciosa (pacientes): ${p.message}")
                     else -> {}

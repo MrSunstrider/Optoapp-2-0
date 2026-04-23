@@ -85,11 +85,10 @@ fun LaboratorioTicketAlertDialog(
                         }
                         context.startActivity(Intent.createChooser(shareIntent, "Compartir Ticket"))
                     }) { Text("Compartir") }
+                    TextButton(onClick = onDismiss) { Text("Cerrar") }
                 }
             }
         },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cerrar") }
-        }
+        dismissButton = null
     )
 }

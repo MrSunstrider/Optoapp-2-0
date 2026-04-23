@@ -12,13 +12,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import android.widget.Toast
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.example.optoapp.OptoApplication
 import com.example.optoapp.data.Paciente
 import com.example.optoapp.viewmodel.PacienteViewModel
 import com.example.optoapp.viewmodel.SubscriptionViewModel
@@ -45,6 +41,7 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
     var edad by remember { mutableStateOf("") }
     var telefono by remember { mutableStateOf("") }
     var dni by remember { mutableStateOf("") }
+    var historiaOptometrica by remember { mutableStateOf("") }
     var fechaNacimiento by remember { mutableStateOf("") }
     var sexo by remember { mutableStateOf("Masculino") }
     var email by remember { mutableStateOf("") }
@@ -68,6 +65,7 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
                 edad = it.edad.toString()
                 telefono = it.telefono
                 dni = it.dni ?: ""
+                historiaOptometrica = it.historiaOptometrica ?: ""
                 fechaNacimiento = it.fechaNacimiento?.format(DateTimeFormatter.ISO_LOCAL_DATE) ?: ""
                 sexo = it.sexo ?: "Masculino"
                 email = it.email ?: ""
@@ -148,6 +146,23 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text("Fecha de Registro: ${DateUtils.formatLocalized(fechaCreacion)}")
+            }
+
+            OutlinedTextField(
+                value = historiaOptometrica,
+                onValueChange = { historiaOptometrica = it },
+                label = { Text("N° Historia Optométrica") },
+                modifier = Modifier.fillMaxWidth()
+            )
+            TextButton(
+                onClick = {
+                    scope.launch {
+                        historiaOptometrica = viewModel.suggestHistoriaOptometrica()
+                    }
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Sugerir HO")
             }
 
             OutlinedTextField(
@@ -280,6 +295,7 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
                                 telefono = telefono,
                                 fechaCreacion = fechaCreacion,
                                 dni = dni,
+                                historiaOptometrica = historiaOptometrica,
                                 fechaNacimiento = fechaNacimiento.takeIf { it.isNotBlank() }?.let(LocalDate::parse),
                                 sexo = sexo,
                                 email = email,
@@ -292,6 +308,21 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
                             scope.launch {
                                 saving = true
                                 try {
+                                    val historiaNorm = historiaOptometrica.trim()
+                                    if (historiaNorm.isNotEmpty()) {
+                                        val duplicated = viewModel.existsDuplicateHistoriaOptometrica(
+                                            historia = historiaNorm,
+                                            excludePacienteId = pacienteId
+                                        )
+                                        if (duplicated) {
+                                            Toast.makeText(
+                                                ctx,
+                                                "Ya existe una historia optométrica con ese número en esta óptica.",
+                                                Toast.LENGTH_LONG
+                                            ).show()
+                                            return@launch
+                                        }
+                                    }
                                     viewModel.savePaciente(p)
                                     val currentRoute = navController.currentBackStackEntry?.destination?.route
                                     navController.navigate("detallePaciente/${p.id}") {

@@ -2,6 +2,7 @@ package com.example.optoapp.domain
 
 import android.util.Log
 import com.example.optoapp.data.DispensacionOptica
+import com.example.optoapp.data.FinanzasRemoteDefaults
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Pago
 import com.example.optoapp.data.Resource
@@ -81,7 +82,8 @@ class SyncFinanzasUseCase @Inject constructor(
             syncStateTracker.markSynced(opticaId, "upload_dispensaciones", "batch")
             return 0
         }
-        val rows = dispensaciones.map { it.toRemoto().copy(opticaId = opticaId) }
+        val opticaRemota = opticaId.trim().ifBlank { FinanzasRemoteDefaults.OPTICA_ID_FALLBACK }
+        val rows = dispensaciones.map { it.toRemoto().copy(opticaId = opticaRemota) }
         try {
             supabase.postgrest[TABLE_DISPENSACIONES].upsert(rows)
         } catch (e: Exception) {
@@ -102,7 +104,8 @@ class SyncFinanzasUseCase @Inject constructor(
             syncStateTracker.markSynced(opticaId, "upload_servicios_extra", "batch")
             return 0
         }
-        val rows = servicios.map { it.toRemoto().copy(opticaId = opticaId) }
+        val opticaRemota = opticaId.trim().ifBlank { FinanzasRemoteDefaults.OPTICA_ID_FALLBACK }
+        val rows = servicios.map { it.toRemoto().copy(opticaId = opticaRemota) }
         try {
             supabase.postgrest[TABLE_SERVICIOS].upsert(rows)
         } catch (e: Exception) {
@@ -123,7 +126,8 @@ class SyncFinanzasUseCase @Inject constructor(
             syncStateTracker.markSynced(opticaId, "upload_pagos", "batch")
             return 0
         }
-        val rows = pagos.map { it.toRemoto().copy(opticaId = opticaId) }
+        val opticaRemota = opticaId.trim().ifBlank { FinanzasRemoteDefaults.OPTICA_ID_FALLBACK }
+        val rows = pagos.map { it.toRemoto().copy(opticaId = opticaRemota) }
         try {
             supabase.postgrest[TABLE_PAGOS].upsert(rows)
         } catch (e: Exception) {
@@ -245,16 +249,34 @@ data class ServicioRemoto(
     @SerialName("a_cuenta") val aCuenta: Double = 0.0,
     val estado: String = "",
     val fecha: String,
-    @SerialName("paciente_id") val pacienteId: String,
+    /** En Postgres suele ser UUID nullable: enviar null, nunca "". */
+    @SerialName("paciente_id") val pacienteId: String? = null,
     @SerialName("metodo_pago") val metodoPago: String = "",
     @SerialName("optica_id") val opticaId: String
 ) {
     fun toEntity() = ServicioExtra(
-        id = id, ot = ot, descripcion = descripcion, montoTotal = montoTotal,
-        aCuenta = aCuenta, estado = estado, fecha = LocalDate.parse(fecha),
+        // Blindaje adicional ante datos remotos legacy/ensuciados.
+        // Si luego se agregan checks numéricos en DB, ya no romperá al descargar/subir.
+        // También evita estados o descripciones vacías en UI local.
+        // (local puede seguir mostrando OT vacía como opcional).
+        // Montos:
+        // - montoTotal no negativo
+        // - aCuenta en [0, montoTotal]
+        // Texto:
+        // - descripcion/estado nunca vacíos
+        //
+        // Nota: método y OT usan mapeo reversible para no ensuciar la UX local.
+        id = id,
+        ot = ot.trim().remotoOtServicioExtraToLocal(),
+        descripcion = descripcion.trim().ifBlank { FinanzasRemoteDefaults.ServicioExtra.DESCRIPCION_VACIA },
+        montoTotal = montoTotal.coerceAtLeast(0.0),
+        aCuenta = aCuenta.coerceAtLeast(0.0).coerceAtMost(montoTotal.coerceAtLeast(0.0)),
+        estado = estado.trim().ifBlank { FinanzasRemoteDefaults.ServicioExtra.ESTADO_VACIO },
+        fecha = LocalDate.parse(fecha),
         // Vacío o inválido rompe la FK a pacientes en Room; null es válido (servicio sin paciente).
-        pacienteId = pacienteId.takeIf { it.isNotBlank() },
-        metodoPago = metodoPago, opticaId = opticaId
+        pacienteId = pacienteId?.takeIf { it.isNotBlank() },
+        metodoPago = metodoPago.remotoServicioExtraMetodoToLocal(),
+        opticaId = opticaId.trim().ifBlank { FinanzasRemoteDefaults.OPTICA_ID_FALLBACK }
     )
 }
 
@@ -271,9 +293,15 @@ data class PagoRemoto(
     @SerialName("optica_id") val opticaId: String = "mi_optica_base"
 ) {
     fun toEntity() = Pago(
-        id = id, dispensacionId = dispensacionId, servicioExtraId = servicioExtraId,
-        fecha = LocalDate.parse(fecha), tipo = tipo, monto = monto, metodoPago = metodoPago, nota = nota ?: "",
-        opticaId = opticaId
+        id = id,
+        dispensacionId = dispensacionId.normalizeOptionalFk(),
+        servicioExtraId = servicioExtraId.normalizeOptionalFk(),
+        fecha = LocalDate.parse(fecha),
+        tipo = tipo,
+        monto = monto,
+        metodoPago = metodoPago,
+        nota = nota ?: "",
+        opticaId = opticaId.trim().ifBlank { FinanzasRemoteDefaults.OPTICA_ID_FALLBACK }
     )
 }
 
@@ -304,13 +332,36 @@ private fun DispensacionOptica.toRemoto(): DispensacionRemota = DispensacionRemo
 )
 
 private fun Pago.toRemoto(): PagoRemoto = PagoRemoto(
-    id = id, dispensacionId = dispensacionId, servicioExtraId = servicioExtraId,
-    fecha = fecha.toString(), tipo = tipo, monto = monto, metodoPago = metodoPago, nota = nota,
-    opticaId = opticaId
+    id = id,
+    dispensacionId = dispensacionId.normalizeOptionalFk(),
+    servicioExtraId = servicioExtraId.normalizeOptionalFk(),
+    fecha = fecha.toString(),
+    tipo = tipo.trim().ifBlank { FinanzasRemoteDefaults.Pago.TIPO_VACIO },
+    monto = monto,
+    metodoPago = metodoPago.trim().ifBlank { FinanzasRemoteDefaults.Pago.METODO_PAGO_VACIO },
+    nota = nota.trim(),
+    opticaId = opticaId.trim().ifBlank { FinanzasRemoteDefaults.OPTICA_ID_FALLBACK }
 )
 
+/** PostgREST: FK UUID opcional no debe enviarse como "". */
+private fun String?.normalizeOptionalFk(): String? =
+    this?.trim()?.takeIf { it.isNotBlank() }
+
+private fun String.remotoServicioExtraMetodoToLocal(): String =
+    if (this == FinanzasRemoteDefaults.ServicioExtra.METODO_PAGO_ROW) "" else this
+
+private fun String.remotoOtServicioExtraToLocal(): String =
+    if (this == FinanzasRemoteDefaults.ServicioExtra.OT_VACIA) "" else this
+
 private fun ServicioExtra.toRemoto(): ServicioRemoto = ServicioRemoto(
-    id = id, ot = ot, descripcion = descripcion, montoTotal = montoTotal,
-    aCuenta = aCuenta, estado = estado, fecha = fecha.toString(),
-    pacienteId = pacienteId ?: "", metodoPago = metodoPago, opticaId = opticaId
+    id = id,
+    ot = ot.trim().ifBlank { FinanzasRemoteDefaults.ServicioExtra.OT_VACIA },
+    descripcion = descripcion.trim().ifBlank { FinanzasRemoteDefaults.ServicioExtra.DESCRIPCION_VACIA },
+    montoTotal = montoTotal.coerceAtLeast(0.0),
+    aCuenta = aCuenta.coerceAtLeast(0.0).coerceAtMost(montoTotal.coerceAtLeast(0.0)),
+    estado = estado.trim().ifBlank { FinanzasRemoteDefaults.ServicioExtra.ESTADO_VACIO },
+    fecha = fecha.toString(),
+    pacienteId = pacienteId?.trim()?.takeIf { it.isNotBlank() },
+    metodoPago = metodoPago.trim().ifBlank { FinanzasRemoteDefaults.ServicioExtra.METODO_PAGO_ROW },
+    opticaId = opticaId.trim().ifBlank { FinanzasRemoteDefaults.OPTICA_ID_FALLBACK }
 )

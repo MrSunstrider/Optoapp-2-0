@@ -15,7 +15,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -33,6 +32,18 @@ import java.util.*
 fun BIScreen(navController: NavController, viewModel: BIViewModel = hiltViewModel()) {
     val uiState by viewModel.uiState.collectAsState()
     val scrollState = rememberScrollState()
+    val comparativoLabel = when (uiState.periodo) {
+        Periodo.MES_ACTUAL -> "Mes anterior"
+        Periodo.TRIMESTRE -> "Trimestre anterior"
+        Periodo.SEMESTRE -> "Semestre anterior"
+        Periodo.ANIO -> "Año anterior"
+    }
+    val actualLabel = when (uiState.periodo) {
+        Periodo.MES_ACTUAL -> "Mes actual"
+        Periodo.TRIMESTRE -> "Trimestre actual"
+        Periodo.SEMESTRE -> "Semestre actual"
+        Periodo.ANIO -> "Año actual"
+    }
 
     Scaffold(
         topBar = {
@@ -74,6 +85,11 @@ fun BIScreen(navController: NavController, viewModel: BIViewModel = hiltViewMode
                     }
                 }
             }
+            Text(
+                text = "Comparando con: $comparativoLabel",
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
 
             // Exámenes Section
             KPICard(
@@ -81,9 +97,16 @@ fun BIScreen(navController: NavController, viewModel: BIViewModel = hiltViewMode
                 current = uiState.examenesActual.toString(),
                 previous = uiState.examenesAnterior.toString(),
                 icon = Icons.Default.Insights,
-                color = MaterialTheme.colorScheme.primary
+                color = MaterialTheme.colorScheme.primary,
+                previousLabel = comparativoLabel
             ) {
-                BarChart(uiState.examenesActual, uiState.examenesAnterior, Modifier.padding(top = 16.dp))
+                BarChart(
+                    actual = uiState.examenesActual,
+                    anterior = uiState.examenesAnterior,
+                    labelActual = actualLabel,
+                    labelAnterior = comparativoLabel,
+                    modifier = Modifier.padding(top = 16.dp)
+                )
             }
 
             // Recaudación Section
@@ -92,6 +115,7 @@ fun BIScreen(navController: NavController, viewModel: BIViewModel = hiltViewMode
                 current = "s/. ${String.format(Locale.getDefault(), "%.0f", uiState.recaudacionCobrada)}",
                 previous = "Meta: s/. ${String.format(Locale.getDefault(), "%.0f", uiState.recaudacionProyectada)}",
                 color = MaterialTheme.colorScheme.primary,
+                previousLabel = comparativoLabel,
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -180,6 +204,7 @@ fun KPICard(
     previous: String,
     icon: ImageVector? = null,
     color: Color,
+    previousLabel: String = "Anterior",
     content: @Composable () -> Unit
 ) {
     Card(
@@ -222,7 +247,7 @@ fun KPICard(
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
-                    text = if (title.contains("Recaudación")) previous else "Anterior: $previous",
+                    text = if (title.contains("Recaudación")) previous else "$previousLabel: $previous",
                     fontSize = 11.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

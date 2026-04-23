@@ -320,6 +320,9 @@ fun MainDrawerScreen(
                     ServiciosExtraScreen(navController, drawerState) 
                 }
                 composable("monturas") { MonturasScreen(navController) }
+                composable("nuevo_servicio") {
+                    NuevoServicioScreen(navController, pacienteId = null)
+                }
                 composable("nuevo_servicio/{pacienteId}") { backStackEntry ->
                     NuevoServicioScreen(navController, pacienteId = backStackEntry.arguments?.getString("pacienteId"))
                 }
