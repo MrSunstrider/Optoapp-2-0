@@ -59,6 +59,10 @@ class SubscriptionViewModel @Inject constructor(
     }
 
     fun launchProPurchase(activity: Activity, onError: (String) -> Unit) {
+        if (planCode.value == PlanCode.DEV_OWNER) {
+            onError("Esta óptica usa plan interno dev_owner y no requiere facturación.")
+            return
+        }
         playBillingManager.launchSubscriptionPurchase(activity, onError)
     }
 }

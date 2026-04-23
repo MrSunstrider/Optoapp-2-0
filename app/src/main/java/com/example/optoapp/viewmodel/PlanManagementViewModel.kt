@@ -82,6 +82,7 @@ class PlanManagementViewModel @Inject constructor(
                 "pro_individual" -> state.copy(maxOpticasInput = "1", maxPacientesInput = "", maxUsuariosInput = "5")
                 "pro_multisite_15" -> state.copy(maxOpticasInput = "15", maxPacientesInput = "", maxUsuariosInput = "100")
                 "enterprise" -> state.copy(maxOpticasInput = "", maxPacientesInput = "", maxUsuariosInput = "")
+                "dev_owner", "internal_owner" -> state.copy(maxOpticasInput = "", maxPacientesInput = "", maxUsuariosInput = "")
                 else -> state
             }
         }

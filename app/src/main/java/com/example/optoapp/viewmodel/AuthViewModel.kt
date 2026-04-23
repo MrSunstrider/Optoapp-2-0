@@ -1,6 +1,7 @@
 package com.example.optoapp.viewmodel
 
 import android.util.Log
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.optoapp.BuildConfig
@@ -10,7 +11,9 @@ import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.SecurityManager
 import com.example.optoapp.data.SessionManager
 import com.example.optoapp.util.BackupImportValidator
+import com.example.optoapp.notifications.NotificationHelper
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.builtin.Email
@@ -19,6 +22,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 import javax.inject.Inject
 
 sealed class AuthState {
@@ -34,7 +38,8 @@ class AuthViewModel @Inject constructor(
     private val sessionManager: SessionManager,
     private val repository: OptoRepository,
     private val membershipRepository: MembershipRepository,
-    private val supabase: SupabaseClient
+    private val supabase: SupabaseClient,
+    @ApplicationContext private val appContext: Context
 ) : ViewModel() {
 
     companion object { private const val TAG = "AuthViewModel" }
@@ -244,12 +249,52 @@ class AuthViewModel @Inject constructor(
             } else {
                 val oid = sessionManager.opticaId.first()
                 repository.reassignLegacyMiOpticaBaseTo(oid)
+                rescheduleFutureRemindersIfEnabled(oid)
             }
         } catch (e: Exception) {
             Log.w(TAG, "No se pudo verificar sesión existente: ${e.localizedMessage}")
             sessionManager.clearSession()
         } finally {
             _isAuthChecked.value = true
+        }
+    }
+
+    private suspend fun rescheduleFutureRemindersIfEnabled(opticaId: String) {
+        val enabled = appContext
+            .getSharedPreferences("optoapp_prefs", Context.MODE_PRIVATE)
+            .getBoolean("pref_enable_reminders", true)
+        if (!enabled) return
+
+        val today = LocalDate.now()
+        val helper = NotificationHelper(appContext)
+        val evaluaciones = repository.getEvaluacionesSnapshotForOptica(opticaId)
+        var scheduled = 0
+        var cancelled = 0
+
+        for (ev in evaluaciones) {
+            val cita = ev.proximaCita
+            val estado = ev.citaEstado.trim().lowercase()
+            val shouldNotify = cita != null &&
+                !cita.isBefore(today) &&
+                estado !in setOf("asistio", "no_asistio")
+
+            if (shouldNotify) {
+                val paciente = repository.getPacienteById(ev.pacienteId)
+                val nombre = if (paciente is com.example.optoapp.data.Resource.Success) {
+                    paciente.data?.nombreCompleto ?: "Paciente"
+                } else {
+                    "Paciente"
+                }
+                helper.scheduleWorkManagerReminder(nombre, cita!!, ev.id)
+                scheduled++
+            } else {
+                helper.cancelReminder(ev.id)
+                cancelled++
+            }
+        }
+
+        if (BuildConfig.DEBUG) {
+            Log.d(TAG, "Reprogramación de recordatorios al inicio: programados=$scheduled cancelados=$cancelled")
         }
     }
 

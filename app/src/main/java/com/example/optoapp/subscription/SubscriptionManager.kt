@@ -24,7 +24,8 @@ enum class PlanCode {
     FREE,
     PRO_INDIVIDUAL,
     PRO_MULTISITE_15,
-    ENTERPRISE
+    ENTERPRISE,
+    DEV_OWNER
 }
 
 @Singleton
@@ -74,6 +75,7 @@ class SubscriptionManager @Inject constructor(
         PlanCode.PRO_INDIVIDUAL -> 1
         PlanCode.PRO_MULTISITE_15 -> 15
         PlanCode.ENTERPRISE -> null
+        PlanCode.DEV_OWNER -> null
     }
 
     suspend fun setDevProOverride(enabled: Boolean) {
@@ -97,6 +99,7 @@ class SubscriptionManager @Inject constructor(
     private fun toPlanCode(raw: String): PlanCode = when (raw.lowercase().trim()) {
         "pro_multisite_15" -> PlanCode.PRO_MULTISITE_15
         "enterprise" -> PlanCode.ENTERPRISE
+        "dev_owner", "internal_owner" -> PlanCode.DEV_OWNER
         "pro_individual", "pro", "paid", "premium" -> PlanCode.PRO_INDIVIDUAL
         else -> PlanCode.FREE
     }

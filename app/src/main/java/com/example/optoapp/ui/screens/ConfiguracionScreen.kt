@@ -4,10 +4,14 @@ import android.app.Activity
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
 import android.widget.Toast
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.app.ActivityCompat
+import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.edit
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -48,6 +52,8 @@ import com.example.optoapp.viewmodel.PlanManagementViewModel
 import com.example.optoapp.viewmodel.RoleManagementViewModel
 import kotlinx.coroutines.launch
 
+private const val INTERNAL_OWNER_EMAIL = "jaermadera@gmail.com"
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ConfiguracionScreen(
@@ -81,8 +87,10 @@ fun ConfiguracionScreen(
     val roleUi by roleVm.uiState.collectAsState()
     val planUi by planVm.uiState.collectAsState()
     val opticaRol by viewModel.opticaRol.collectAsState(initial = "admin")
+    val userEmail by viewModel.userEmail.collectAsState(initial = "")
     val canManageUsers = AppRoles.canManageUsers(opticaRol)
     val canManagePlans = AppRoles.canManagePlans(opticaRol)
+    val canUseInternalPlan = userEmail.trim().equals(INTERNAL_OWNER_EMAIL, ignoreCase = true)
     val canAssignAdminRole = opticaRol.trim().equals("admin", ignoreCase = true)
     val allowedRoles = remember(canAssignAdminRole) {
         if (canAssignAdminRole) {
@@ -103,6 +111,13 @@ fun ConfiguracionScreen(
     
     val sharedPreferences = context.getSharedPreferences("optoapp_prefs", Context.MODE_PRIVATE)
     var confirmReminders by remember { mutableStateOf(sharedPreferences.getBoolean("pref_enable_reminders", true)) }
+    val notificationPermissionGranted =
+        Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+            ActivityCompat.checkSelfPermission(
+                context,
+                android.Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
+    val systemNotificationsEnabled = NotificationManagerCompat.from(context).areNotificationsEnabled()
 
     LaunchedEffect(canManageUsers) {
         if (canManageUsers) roleVm.loadMembers()
@@ -265,6 +280,36 @@ fun ConfiguracionScreen(
                             }
                         )
                     }
+                    val remindersStatusText = when {
+                        !notificationPermissionGranted -> "Sin permiso de notificaciones (Android 13+)."
+                        !systemNotificationsEnabled -> "Notificaciones del sistema desactivadas para OptoApp."
+                        !confirmReminders -> "Recordatorios desactivados desde la app."
+                        else -> "Recordatorios activos."
+                    }
+                    val remindersStatusColor = when {
+                        !notificationPermissionGranted || !systemNotificationsEnabled -> MaterialTheme.colorScheme.error
+                        !confirmReminders -> MaterialTheme.colorScheme.onSurfaceVariant
+                        else -> MaterialTheme.colorScheme.tertiary
+                    }
+                    Text(
+                        text = "Estado recordatorios: $remindersStatusText",
+                        fontSize = 12.sp,
+                        color = remindersStatusColor
+                    )
+                    OutlinedButton(
+                        onClick = {
+                            com.example.optoapp.notifications.NotificationHelper(context)
+                                .showNotification("Prueba OptoApp")
+                            Toast.makeText(
+                                context,
+                                "Prueba enviada. Si no aparece, revisa permisos/notificaciones del sistema.",
+                                Toast.LENGTH_LONG
+                            ).show()
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Probar notificación ahora")
+                    }
                 }
             }
 
@@ -304,7 +349,11 @@ fun ConfiguracionScreen(
                         DropdownField(
                             label = "Plan",
                             selected = planUi.planCode,
-                            options = listOf("free", "pro_individual", "pro_multisite_15", "enterprise"),
+                            options = if (canUseInternalPlan) {
+                                listOf("free", "pro_individual", "pro_multisite_15", "enterprise", "dev_owner")
+                            } else {
+                                listOf("free", "pro_individual", "pro_multisite_15", "enterprise")
+                            },
                             onSelected = planVm::updatePlanCode
                         )
                         DropdownField(
@@ -406,6 +455,7 @@ fun ConfiguracionScreen(
                         PlanCode.PRO_INDIVIDUAL -> "Pro Individual (1 óptica)"
                         PlanCode.PRO_MULTISITE_15 -> "Pro Multi-sede 15"
                         PlanCode.ENTERPRISE -> "Enterprise"
+                        PlanCode.DEV_OWNER -> "Dev Owner (interno, ilimitado y exento de facturación)"
                     }
                     Text(
                         "Plan: $planLabel",
@@ -423,18 +473,25 @@ fun ConfiguracionScreen(
                         fontSize = 11.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    Button(
-                        onClick = {
-                            val act = context as? Activity
-                            if (act != null) {
-                                subscriptionVm.launchProPurchase(act) { msg ->
-                                    android.widget.Toast.makeText(context, msg, android.widget.Toast.LENGTH_LONG).show()
+                    if (planCode != PlanCode.DEV_OWNER) {
+                        Button(
+                            onClick = {
+                                val act = context as? Activity
+                                if (act != null) {
+                                    subscriptionVm.launchProPurchase(act) { msg ->
+                                        android.widget.Toast.makeText(context, msg, android.widget.Toast.LENGTH_LONG).show()
+                                    }
                                 }
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("Comprar / renovar PRO (Play Store)")
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Comprar / renovar PRO (Play Store)")
+                        }
+                    } else {
+                        AssistChip(
+                            onClick = {},
+                            label = { Text("Facturación deshabilitada para plan interno") }
+                        )
                     }
                     if (BuildConfig.DEBUG) {
                         Row(
