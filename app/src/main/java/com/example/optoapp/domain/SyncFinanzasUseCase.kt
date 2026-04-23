@@ -105,7 +105,45 @@ class SyncFinanzasUseCase @Inject constructor(
             return 0
         }
         val opticaRemota = opticaId.trim().ifBlank { FinanzasRemoteDefaults.OPTICA_ID_FALLBACK }
-        val rows = servicios.map { it.toRemoto().copy(opticaId = opticaRemota) }
+        val remotosExistentes = try {
+            supabase.postgrest[TABLE_SERVICIOS]
+                .select {
+                    filter { eq("optica_id", opticaRemota) }
+                }
+                .decodeList<ServicioRemotoLookup>()
+        } catch (e: Exception) {
+            rethrowIfCancellation(e)
+            // Si falla esta lectura, seguimos con el flujo normal de upsert para no bloquear sync.
+            Log.w(TAG, "No se pudo consultar servicios remotos para reconciliar OT: ${e.message}")
+            emptyList()
+        }
+        val remoteIdByOt = remotosExistentes
+            .mapNotNull { r ->
+                normalizedOtForUnique(r.ot)?.let { key -> key to r.id }
+            }
+            .toMap()
+
+        // Evita colisiones de unique (optica_id, upper(trim(ot))) en el mismo batch:
+        // - Si OT ya existe remoto, reutilizamos su id para que upsert actualice.
+        // - Si hay duplicados locales por OT, nos quedamos con el último visto.
+        val uniqueRows = LinkedHashMap<String, ServicioRemoto>()
+        servicios.forEach { servicio ->
+            val base = servicio.toRemoto().copy(opticaId = opticaRemota)
+            val normalizedOt = normalizedOtForUnique(base.ot)
+            val reconciled = if (normalizedOt != null) {
+                val existingRemoteId = remoteIdByOt[normalizedOt]
+                if (existingRemoteId != null && existingRemoteId != base.id) {
+                    base.copy(id = existingRemoteId)
+                } else {
+                    base
+                }
+            } else {
+                base
+            }
+            val dedupeKey = normalizedOt?.let { "ot:$it" } ?: "id:${reconciled.id}"
+            uniqueRows[dedupeKey] = reconciled
+        }
+        val rows = uniqueRows.values.toList()
         try {
             supabase.postgrest[TABLE_SERVICIOS].upsert(rows)
         } catch (e: Exception) {
@@ -353,9 +391,16 @@ private fun String.remotoServicioExtraMetodoToLocal(): String =
 private fun String.remotoOtServicioExtraToLocal(): String =
     if (this == FinanzasRemoteDefaults.ServicioExtra.OT_VACIA) "" else this
 
+private fun normalizedOtForUnique(ot: String?): String? =
+    ot?.trim()?.takeIf { it.isNotBlank() }?.uppercase()
+
 private fun ServicioExtra.toRemoto(): ServicioRemoto = ServicioRemoto(
     id = id,
-    ot = ot.trim().ifBlank { FinanzasRemoteDefaults.ServicioExtra.OT_VACIA },
+    // Supabase tiene unicidad por (optica_id, OT normalizada) para OT no vacía.
+    // Enviar "-" para OT vacía convertía "sin OT" en un valor real y generaba
+    // colisiones de unique constraint al subir más de un servicio sin OT.
+    // Se envía vacío para que no entre en el índice único parcial.
+    ot = ot.trim(),
     descripcion = descripcion.trim().ifBlank { FinanzasRemoteDefaults.ServicioExtra.DESCRIPCION_VACIA },
     montoTotal = montoTotal.coerceAtLeast(0.0),
     aCuenta = aCuenta.coerceAtLeast(0.0).coerceAtMost(montoTotal.coerceAtLeast(0.0)),
@@ -364,4 +409,10 @@ private fun ServicioExtra.toRemoto(): ServicioRemoto = ServicioRemoto(
     pacienteId = pacienteId?.trim()?.takeIf { it.isNotBlank() },
     metodoPago = metodoPago.trim().ifBlank { FinanzasRemoteDefaults.ServicioExtra.METODO_PAGO_ROW },
     opticaId = opticaId.trim().ifBlank { FinanzasRemoteDefaults.OPTICA_ID_FALLBACK }
+)
+
+@Serializable
+private data class ServicioRemotoLookup(
+    val id: String,
+    val ot: String = ""
 )
