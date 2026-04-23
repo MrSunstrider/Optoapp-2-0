@@ -1,5 +1,6 @@
 package com.example.optoapp.ui.screens
 
+import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -21,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -44,6 +46,7 @@ fun LoginScreen(
     navController: NavController,
     viewModel: AuthViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
     val authState by viewModel.authState.collectAsState()
     val pendingMemberships by viewModel.pendingMemberships.collectAsState()
     val focusManager = LocalFocusManager.current
@@ -232,6 +235,22 @@ fun LoginScreen(
                                 fontWeight = FontWeight.SemiBold
                             )
                         }
+                    }
+
+                    OutlinedButton(
+                        onClick = {
+                            focusManager.clearFocus()
+                            viewModel.register(email, password) { msg ->
+                                Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
+                            }
+                        },
+                        enabled = email.isNotBlank() && password.length >= 6 && authState !is AuthState.Loading,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text("Crear cuenta")
                     }
                 }
             }

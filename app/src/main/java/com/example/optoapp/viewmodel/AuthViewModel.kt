@@ -183,6 +183,24 @@ class AuthViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Registro básico de cuenta.
+     * El rol NO se define aquí: lo asigna un admin/gerente desde gestión de usuarios.
+     */
+    fun register(email: String, password: String, onFinished: (String) -> Unit) = viewModelScope.launch {
+        try {
+            supabase.auth.signUpWith(Email) {
+                this.email = email
+                this.password = password
+            }
+            // Evitar que la sesión de registro pise la sesión operativa actual.
+            runCatching { supabase.auth.signOut() }
+            onFinished("Cuenta creada. Ahora un admin/gerente debe asignarte rol en la óptica.")
+        } catch (e: Exception) {
+            onFinished("No se pudo crear la cuenta: ${e.localizedMessage ?: "error desconocido"}")
+        }
+    }
+
     /** Tras elegir óptica en pantalla de selección (solo si hay varias membresías). */
     suspend fun selectOptica(membership: OpticaMembership) {
         sessionManager.saveSession(

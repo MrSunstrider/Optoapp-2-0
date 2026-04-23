@@ -45,4 +45,9 @@ object AppRoles {
         val r = norm(rol)
         return r in ROLES_CON_BI || r in ROLES_COMERCIALES
     }
+
+    fun canManageUsers(rol: String): Boolean {
+        val r = norm(rol)
+        return r == "admin" || r == "gerente"
+    }
 }

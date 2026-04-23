@@ -41,6 +41,50 @@ class MembershipRepository @Inject constructor(
         return out
     }
 
+    suspend fun fetchMembersForOptica(opticaId: String): List<OpticaMemberRow> {
+        if (supabase.auth.currentUserOrNull() == null) return emptyList()
+        return try {
+            supabase.postgrest[TABLE_OPTICA_MEMBERS]
+                .select { filter { eq("optica_id", opticaId) } }
+                .decodeList<OpticaMemberRow>()
+                .sortedWith(compareBy({ it.email.lowercase() }, { it.userId }))
+        } catch (_: Exception) {
+            emptyList()
+        }
+    }
+
+    suspend fun assignRoleByEmail(opticaId: String, email: String, rol: String): Result<Unit> {
+        if (supabase.auth.currentUserOrNull() == null) {
+            return Result.failure(IllegalStateException("Sin sesión"))
+        }
+        val normalizedEmail = email.trim().lowercase()
+        val normalizedRole = rol.trim().lowercase()
+        if (normalizedEmail.isBlank()) return Result.failure(IllegalArgumentException("Email requerido"))
+        if (normalizedRole.isBlank()) return Result.failure(IllegalArgumentException("Rol requerido"))
+        return try {
+            val user = supabase.postgrest[TABLE_USER_PROFILES]
+                .select { filter { eq("email", normalizedEmail) } }
+                .decodeList<UserProfileRow>()
+                .firstOrNull()
+                ?: return Result.failure(IllegalArgumentException("No existe una cuenta con ese email."))
+
+            supabase.postgrest[TABLE_UO].upsert(
+                listOf(
+                    UsuarioOpticaUpsertDto(
+                    userId = user.userId,
+                    opticaId = opticaId,
+                    rol = normalizedRole
+                    )
+                )
+            )
+            Result.success(Unit)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     private suspend fun fetchOpticaNombre(opticaId: String): String {
         return try {
             val list = supabase.postgrest[TABLE_OPTICAS]
@@ -115,6 +159,8 @@ class MembershipRepository @Inject constructor(
     companion object {
         private const val TABLE_UO = "usuario_optica"
         private const val TABLE_OPTICAS = "opticas"
+        private const val TABLE_USER_PROFILES = "user_profiles"
+        private const val TABLE_OPTICA_MEMBERS = "optica_members"
     }
 }
 
@@ -123,6 +169,28 @@ private data class UsuarioOpticaDto(
     @SerialName("user_id") val userId: String,
     @SerialName("optica_id") val opticaId: String,
     val rol: String = "admin"
+)
+
+@Serializable
+data class OpticaMemberRow(
+    @SerialName("optica_id") val opticaId: String,
+    @SerialName("user_id") val userId: String,
+    val email: String = "",
+    val rol: String = "",
+    @SerialName("created_at") val createdAt: String = ""
+)
+
+@Serializable
+private data class UserProfileRow(
+    @SerialName("user_id") val userId: String,
+    val email: String
+)
+
+@Serializable
+private data class UsuarioOpticaUpsertDto(
+    @SerialName("user_id") val userId: String,
+    @SerialName("optica_id") val opticaId: String,
+    val rol: String
 )
 
 @Serializable

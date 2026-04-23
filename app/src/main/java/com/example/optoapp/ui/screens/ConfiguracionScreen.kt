@@ -37,10 +37,13 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.optoapp.BuildConfig
+import com.example.optoapp.data.AppRoles
 import com.example.optoapp.data.SecurityManager
+import com.example.optoapp.ui.components.DropdownField
 import com.example.optoapp.ui.components.OptoTextField
 import com.example.optoapp.viewmodel.AuthViewModel
 import com.example.optoapp.viewmodel.LaboratorioConfigViewModel
+import com.example.optoapp.viewmodel.RoleManagementViewModel
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -51,7 +54,8 @@ fun ConfiguracionScreen(
     viewModel: AuthViewModel = hiltViewModel(),
     laboratorioVm: LaboratorioConfigViewModel = hiltViewModel(),
     subscriptionVm: SubscriptionViewModel = hiltViewModel(),
-    syncDiagVm: SyncDiagnosticsViewModel = hiltViewModel()
+    syncDiagVm: SyncDiagnosticsViewModel = hiltViewModel(),
+    roleVm: RoleManagementViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -70,6 +74,17 @@ fun ConfiguracionScreen(
     val subTier by subscriptionVm.tier.collectAsState()
     val devProOverride by subscriptionVm.devProOverride.collectAsState()
     val syncErrors by syncDiagVm.errorRows.collectAsState()
+    val roleUi by roleVm.uiState.collectAsState()
+    val opticaRol by viewModel.opticaRol.collectAsState(initial = "admin")
+    val canManageUsers = AppRoles.canManageUsers(opticaRol)
+    val canAssignAdminRole = opticaRol.trim().equals("admin", ignoreCase = true)
+    val allowedRoles = remember(canAssignAdminRole) {
+        if (canAssignAdminRole) {
+            listOf("especialista", "asesor", "asesora", "ventas", "invitado", "gerente", "admin")
+        } else {
+            listOf("especialista", "asesor", "asesora", "ventas", "invitado", "gerente")
+        }
+    }
     
     var pinActual by remember { mutableStateOf("") }
     var nuevoPin by remember { mutableStateOf("") }
@@ -82,6 +97,15 @@ fun ConfiguracionScreen(
     
     val sharedPreferences = context.getSharedPreferences("optoapp_prefs", Context.MODE_PRIVATE)
     var confirmReminders by remember { mutableStateOf(sharedPreferences.getBoolean("pref_enable_reminders", true)) }
+
+    LaunchedEffect(canManageUsers) {
+        if (canManageUsers) roleVm.loadMembers()
+    }
+    LaunchedEffect(allowedRoles, roleUi.roleInput) {
+        if (roleUi.roleInput !in allowedRoles) {
+            roleVm.updateRole(allowedRoles.first())
+        }
+    }
 
     val createBackupLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/json")
@@ -259,6 +283,56 @@ fun ConfiguracionScreen(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text("Guardar contacto de laboratorio")
+                    }
+                }
+            }
+
+            if (canManageUsers) {
+                Card {
+                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text("Usuarios y roles", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                        Text(
+                            "Asigna rol por email a cuentas ya registradas. Si el email no existe, primero debe crear su cuenta en login.",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        OptoTextField(
+                            value = roleUi.emailInput,
+                            onValueChange = roleVm::updateEmail,
+                            label = "Email de la cuenta"
+                        )
+                        DropdownField(
+                            label = "Rol",
+                            selected = roleUi.roleInput,
+                            options = allowedRoles,
+                            onSelected = roleVm::updateRole
+                        )
+                        if (!canAssignAdminRole) {
+                            Text(
+                                "Solo admin puede asignar el rol admin.",
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Button(
+                                onClick = { roleVm.assignRole() },
+                                enabled = !roleUi.loading
+                            ) { Text("Asignar / actualizar rol") }
+                            OutlinedButton(
+                                onClick = { roleVm.loadMembers() },
+                                enabled = !roleUi.loading
+                            ) { Text("Actualizar lista") }
+                        }
+                        roleUi.message?.let { Text(it, color = MaterialTheme.colorScheme.tertiary, fontSize = 12.sp) }
+                        roleUi.error?.let { Text(it, color = MaterialTheme.colorScheme.error, fontSize = 12.sp) }
+                        if (roleUi.members.isEmpty()) {
+                            Text("No hay miembros visibles en esta óptica.", fontSize = 12.sp)
+                        } else {
+                            roleUi.members.take(20).forEach { row ->
+                                Text("• ${row.email.ifBlank { row.userId }} — ${row.rol}", fontSize = 12.sp)
+                            }
+                        }
                     }
                 }
             }
