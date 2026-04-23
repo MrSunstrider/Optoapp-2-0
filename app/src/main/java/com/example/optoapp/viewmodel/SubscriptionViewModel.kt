@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.optoapp.billing.PlayBillingManager
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.SessionManager
+import com.example.optoapp.subscription.PlanCode
 import com.example.optoapp.subscription.SubscriptionManager
 import com.example.optoapp.subscription.SubscriptionTier
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -30,6 +31,9 @@ class SubscriptionViewModel @Inject constructor(
 
     val tier: StateFlow<SubscriptionTier> = subscriptionManager.tier
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SubscriptionTier.FREE)
+
+    val planCode: StateFlow<PlanCode> = subscriptionManager.planCode
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), PlanCode.FREE)
 
     val devProOverride: StateFlow<Boolean> = subscriptionManager.devProOverride
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)

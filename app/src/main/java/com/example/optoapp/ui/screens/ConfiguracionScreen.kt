@@ -27,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import com.example.optoapp.billing.PlayBillingManager
+import com.example.optoapp.subscription.PlanCode
 import com.example.optoapp.subscription.SubscriptionTier
 import com.example.optoapp.viewmodel.SubscriptionViewModel
 import com.example.optoapp.viewmodel.SyncDiagnosticsViewModel
@@ -72,6 +73,7 @@ fun ConfiguracionScreen(
     }
 
     val subTier by subscriptionVm.tier.collectAsState()
+    val planCode by subscriptionVm.planCode.collectAsState()
     val devProOverride by subscriptionVm.devProOverride.collectAsState()
     val syncErrors by syncDiagVm.errorRows.collectAsState()
     val roleUi by roleVm.uiState.collectAsState()
@@ -340,8 +342,14 @@ fun ConfiguracionScreen(
             Card {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text("Suscripción y límites", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                    val planLabel = when (planCode) {
+                        PlanCode.FREE -> "Free (máx. ${com.example.optoapp.subscription.SubscriptionManager.FREE_MAX_PACIENTES} pacientes)"
+                        PlanCode.PRO_INDIVIDUAL -> "Pro Individual (1 óptica)"
+                        PlanCode.PRO_MULTISITE_15 -> "Pro Multi-sede 15"
+                        PlanCode.ENTERPRISE -> "Enterprise"
+                    }
                     Text(
-                        "Plan: ${if (subTier == SubscriptionTier.PRO) "PRO (ilimitado)" else "Gratuito (máx. ${com.example.optoapp.subscription.SubscriptionManager.FREE_MAX_PACIENTES} pacientes)"}",
+                        "Plan: $planLabel",
                         fontSize = 14.sp
                     )
                     if (BuildConfig.DEBUG && BuildConfig.FORCE_PRO_DEV) {

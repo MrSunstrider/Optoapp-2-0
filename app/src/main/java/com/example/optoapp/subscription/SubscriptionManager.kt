@@ -20,6 +20,13 @@ enum class SubscriptionTier {
     PRO
 }
 
+enum class PlanCode {
+    FREE,
+    PRO_INDIVIDUAL,
+    PRO_MULTISITE_15,
+    ENTERPRISE
+}
+
 @Singleton
 class SubscriptionManager @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -43,9 +50,13 @@ class SubscriptionManager @Inject constructor(
     ) { dev, planStr ->
         when {
             dev -> SubscriptionTier.PRO
-            planStr == "pro" || planStr == "paid" || planStr == "premium" -> SubscriptionTier.PRO
+            toPlanCode(planStr) != PlanCode.FREE -> SubscriptionTier.PRO
             else -> SubscriptionTier.FREE
         }
+    }
+
+    val planCode: Flow<PlanCode> = context.dataStore.data.map {
+        toPlanCode((it[keyCachedPlan] ?: "free").lowercase().trim())
     }
 
     suspend fun refreshPlanFromServer(opticaId: String) {
@@ -56,6 +67,13 @@ class SubscriptionManager @Inject constructor(
     fun maxPacientes(tier: SubscriptionTier): Int = when (tier) {
         SubscriptionTier.FREE -> FREE_MAX_PACIENTES
         SubscriptionTier.PRO -> Int.MAX_VALUE
+    }
+
+    fun maxOpticas(planCode: PlanCode): Int? = when (planCode) {
+        PlanCode.FREE -> 1
+        PlanCode.PRO_INDIVIDUAL -> 1
+        PlanCode.PRO_MULTISITE_15 -> 15
+        PlanCode.ENTERPRISE -> null
     }
 
     suspend fun setDevProOverride(enabled: Boolean) {
@@ -73,7 +91,14 @@ class SubscriptionManager @Inject constructor(
 
     /** Tras compra verificada en Play Billing (o prueba). */
     suspend fun setProFromLocalCache() {
-        context.dataStore.edit { it[keyCachedPlan] = "pro" }
+        context.dataStore.edit { it[keyCachedPlan] = "pro_individual" }
+    }
+
+    private fun toPlanCode(raw: String): PlanCode = when (raw.lowercase().trim()) {
+        "pro_multisite_15" -> PlanCode.PRO_MULTISITE_15
+        "enterprise" -> PlanCode.ENTERPRISE
+        "pro_individual", "pro", "paid", "premium" -> PlanCode.PRO_INDIVIDUAL
+        else -> PlanCode.FREE
     }
 
     companion object {

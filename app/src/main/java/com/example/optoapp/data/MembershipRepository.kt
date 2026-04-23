@@ -94,7 +94,19 @@ class MembershipRepository @Inject constructor(
         val opticaId = "opt_" + UUID.randomUUID().toString().replace("-", "").take(16)
         return try {
             supabase.postgrest[TABLE_OPTICAS].insert(
-                listOf(OpticaInsertDto(id = opticaId, nombre = nombre, plan = "free"))
+                listOf(
+                    OpticaInsertDto(
+                        id = opticaId,
+                        nombre = nombre,
+                        plan = "free",
+                        planCode = "free",
+                        maxOpticas = 1,
+                        maxPacientesPorOptica = 20,
+                        maxUsuariosPorOptica = 2,
+                        planSource = "manual",
+                        planStatus = "active"
+                    )
+                )
             )
             supabase.postgrest[TABLE_UO].insert(
                 listOf(UsuarioOpticaUpsertDto(userId = uid, opticaId = opticaId, rol = "admin"))
@@ -118,14 +130,17 @@ class MembershipRepository @Inject constructor(
         }
     }
 
-    /** Plan de suscripción (`free` | `pro` | …) desde Supabase; null si no hay sesión o error. */
+    /** Plan de suscripción (`plan_code`) desde Supabase; fallback a columna legacy `plan`. */
     suspend fun fetchOpticaPlan(opticaId: String): String? {
         if (supabase.auth.currentUserOrNull() == null) return null
         return try {
             val list = supabase.postgrest[TABLE_OPTICAS]
                 .select { filter { eq("id", opticaId) } }
                 .decodeList<OpticaDto>()
-            list.firstOrNull()?.plan?.lowercase()?.trim() ?: "free"
+            val row = list.firstOrNull()
+            row?.planCode?.lowercase()?.trim()?.ifBlank { null }
+                ?: row?.plan?.lowercase()?.trim()?.ifBlank { null }
+                ?: "free"
         } catch (_: Exception) {
             null
         }
@@ -220,6 +235,7 @@ private data class OpticaDto(
     val id: String,
     val nombre: String = "",
     val plan: String = "free",
+    @SerialName("plan_code") val planCode: String? = null,
     @SerialName("laboratorio_nombre") val laboratorioNombre: String = "",
     @SerialName("laboratorio_contacto") val laboratorioContacto: String = ""
 )
@@ -228,7 +244,13 @@ private data class OpticaDto(
 private data class OpticaInsertDto(
     val id: String,
     val nombre: String,
-    val plan: String = "free"
+    val plan: String = "free",
+    @SerialName("plan_code") val planCode: String = "free",
+    @SerialName("max_opticas") val maxOpticas: Int = 1,
+    @SerialName("max_pacientes_por_optica") val maxPacientesPorOptica: Int = 20,
+    @SerialName("max_usuarios_por_optica") val maxUsuariosPorOptica: Int = 2,
+    @SerialName("plan_source") val planSource: String = "manual",
+    @SerialName("plan_status") val planStatus: String = "active"
 )
 
 @Serializable
