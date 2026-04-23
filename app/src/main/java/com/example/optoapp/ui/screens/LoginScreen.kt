@@ -49,6 +49,7 @@ fun LoginScreen(
     val context = LocalContext.current
     val authState by viewModel.authState.collectAsState()
     val pendingMemberships by viewModel.pendingMemberships.collectAsState()
+    val needsOnboarding by viewModel.needsOnboarding.collectAsState()
     val focusManager = LocalFocusManager.current
 
     var email    by remember { mutableStateOf("") }
@@ -58,8 +59,14 @@ fun LoginScreen(
     val isPinRequired by viewModel.isPinRequired.collectAsState(initial = false)
     val isLoggedIn by viewModel.isLoggedIn.collectAsState(initial = false)
 
-    LaunchedEffect(authState, pendingMemberships, isLoggedIn) {
+    LaunchedEffect(authState, pendingMemberships, isLoggedIn, needsOnboarding) {
         if (authState !is AuthState.Success) return@LaunchedEffect
+        if (needsOnboarding) {
+            navController.navigate("onboarding_optica") {
+                popUpTo("login") { inclusive = true }
+            }
+            return@LaunchedEffect
+        }
         // Varios locales: Success antes de saveSession; aún no hay isLoggedIn
         if (pendingMemberships.isNotEmpty()) {
             navController.navigate("seleccion_optica") {

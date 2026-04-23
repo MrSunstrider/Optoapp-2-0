@@ -75,6 +75,8 @@ class AuthViewModel @Inject constructor(
 
     private val _isAuthChecked = MutableStateFlow(false)
     val isAuthChecked = _isAuthChecked.asStateFlow()
+    private val _needsOnboarding = MutableStateFlow(false)
+    val needsOnboarding = _needsOnboarding.asStateFlow()
 
     val userEmail = sessionManager.userEmail
     val userName  = sessionManager.userName
@@ -154,17 +156,8 @@ class AuthViewModel @Inject constructor(
                     _authState.value = AuthState.Success
                 }
                 else -> {
-                    val opticaLegacy = meta?.get("optica_id")?.toString()
-                        ?.removePrefix("\"")?.removeSuffix("\"")
-                        ?: uid
-                    sessionManager.saveSession(
-                        opticaId = opticaLegacy,
-                        email = email,
-                        name = nombre,
-                        rol = "admin"
-                    )
-                    repository.reassignLegacyMiOpticaBaseTo(opticaLegacy)
-                    Log.d(TAG, "Login exitoso (legado sin usuario_optica). opticaId=$opticaLegacy uid=$uid (verificar fila en usuario_optica si falla RLS)")
+                    _needsOnboarding.value = true
+                    Log.d(TAG, "Login sin membresías: requiere onboarding de óptica. uid=$uid")
                     _authState.value = AuthState.Success
                 }
             }
@@ -203,6 +196,7 @@ class AuthViewModel @Inject constructor(
 
     /** Tras elegir óptica en pantalla de selección (solo si hay varias membresías). */
     suspend fun selectOptica(membership: OpticaMembership) {
+        _needsOnboarding.value = false
         sessionManager.saveSession(
             opticaId = membership.opticaId,
             email = pendingLoginEmail,
@@ -256,6 +250,25 @@ class AuthViewModel @Inject constructor(
             sessionManager.clearSession()
         } finally {
             _isAuthChecked.value = true
+        }
+    }
+
+    fun completeOnboardingOptica(nombreOptica: String, onFinished: (Boolean, String) -> Unit) = viewModelScope.launch {
+        val email = pendingLoginEmail.ifBlank { sessionManager.userEmail.first() }
+        val name = pendingLoginName.ifBlank { sessionManager.userName.first() }
+        val result = membershipRepository.createOpticaForCurrentUser(nombreOptica)
+        if (result.isSuccess) {
+            val m = result.getOrNull()!!
+            sessionManager.saveSession(
+                opticaId = m.opticaId,
+                email = email,
+                name = name,
+                rol = "admin"
+            )
+            _needsOnboarding.value = false
+            onFinished(true, "Óptica creada en plan gratuito.")
+        } else {
+            onFinished(false, result.exceptionOrNull()?.localizedMessage ?: "No se pudo crear la óptica.")
         }
     }
 

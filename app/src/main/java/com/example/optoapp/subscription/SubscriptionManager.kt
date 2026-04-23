@@ -77,6 +77,6 @@ class SubscriptionManager @Inject constructor(
     }
 
     companion object {
-        const val FREE_MAX_PACIENTES = 50
+        const val FREE_MAX_PACIENTES = 20
     }
 }

@@ -6,6 +6,7 @@ import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.coroutines.CancellationException
+import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -78,6 +79,27 @@ class MembershipRepository @Inject constructor(
                 )
             )
             Result.success(Unit)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun createOpticaForCurrentUser(nombreOptica: String): Result<OpticaMembership> {
+        val uid = supabase.auth.currentUserOrNull()?.id
+            ?: return Result.failure(IllegalStateException("Sin sesión"))
+        val nombre = nombreOptica.trim()
+        if (nombre.isBlank()) return Result.failure(IllegalArgumentException("Nombre de óptica requerido"))
+        val opticaId = "opt_" + UUID.randomUUID().toString().replace("-", "").take(16)
+        return try {
+            supabase.postgrest[TABLE_OPTICAS].insert(
+                listOf(OpticaInsertDto(id = opticaId, nombre = nombre, plan = "free"))
+            )
+            supabase.postgrest[TABLE_UO].insert(
+                listOf(UsuarioOpticaUpsertDto(userId = uid, opticaId = opticaId, rol = "admin"))
+            )
+            Result.success(OpticaMembership(opticaId = opticaId, nombre = nombre, rol = "admin"))
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -200,6 +222,13 @@ private data class OpticaDto(
     val plan: String = "free",
     @SerialName("laboratorio_nombre") val laboratorioNombre: String = "",
     @SerialName("laboratorio_contacto") val laboratorioContacto: String = ""
+)
+
+@Serializable
+private data class OpticaInsertDto(
+    val id: String,
+    val nombre: String,
+    val plan: String = "free"
 )
 
 @Serializable
