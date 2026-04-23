@@ -49,6 +49,7 @@ fun OperacionHoyScreen(
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
     val opticaRol by authViewModel.opticaRol.collectAsState(initial = "admin")
+    val canView = AppRoles.canViewOperacionHoy(opticaRol)
     val canExportPendientes = AppRoles.canExportPendientes(opticaRol)
     val canExportCierre = AppRoles.canExportCierreCaja(opticaRol)
     val canExportInventario = AppRoles.canExportInventario(opticaRol)
@@ -73,6 +74,16 @@ fun OperacionHoyScreen(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            if (!canView) {
+                Card(modifier = Modifier.fillMaxWidth()) {
+                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("Acceso restringido", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error)
+                        Text("Tu rol actual no tiene permiso para consultar Operación de Hoy.")
+                    }
+                }
+                return@Column
+            }
+
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text("Tablero operativo", fontWeight = FontWeight.Bold)
