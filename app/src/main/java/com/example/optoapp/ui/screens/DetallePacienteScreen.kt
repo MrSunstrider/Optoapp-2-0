@@ -403,13 +403,22 @@ fun ResumenEvaluacionDialog(eval: EvaluacionClinica, paciente: Paciente, onDismi
                 if (showOd || showOi) {
                     InfoSection("Fórmula final (gafas)") {
                         if (showOd) {
-                            val avOd = if (eval.recetaOdAv.isNotBlank()) " AV: ${eval.recetaOdAv}" else ""
-                            Text("OD: ${eval.recetaOdEsf} / ${eval.recetaOdCil} x ${eval.recetaOdEje}°$avOd", fontSize = 14.sp)
+                            Text("OD: ${eval.recetaOdEsf} / ${eval.recetaOdCil} x ${eval.recetaOdEje}°", fontSize = 14.sp)
                         }
                         if (showOi) {
-                            val avOi = if (eval.recetaOiAv.isNotBlank()) " AV: ${eval.recetaOiAv}" else ""
-                            Text("OI: ${eval.recetaOiEsf} / ${eval.recetaOiCil} x ${eval.recetaOiEje}°$avOi", fontSize = 14.sp)
+                            Text("OI: ${eval.recetaOiEsf} / ${eval.recetaOiCil} x ${eval.recetaOiEje}°", fontSize = 14.sp)
                         }
+                    }
+                }
+
+                val avccOd = eval.recetaOdAv.ifBlank { eval.avCcOdLejos }
+                val avccOi = eval.recetaOiAv.ifBlank { eval.avCcOiLejos }
+                val avccAo = eval.avCcAoPx
+                val hasAvcc = avccOd.isNotBlank() || avccOi.isNotBlank() || avccAo.isNotBlank()
+                if (hasAvcc) {
+                    InfoSection("Agudeza visual (AV CC)") {
+                        Text("AVCC OD: ${if (avccOd.isBlank()) "—" else avccOd}       AV CC AO", fontSize = 14.sp)
+                        Text("AVCC OI: ${if (avccOi.isBlank()) "—" else avccOi}       ${if (avccAo.isBlank()) "—" else avccAo}", fontSize = 14.sp)
                     }
                 }
 

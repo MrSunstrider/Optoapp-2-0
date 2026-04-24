@@ -139,48 +139,19 @@ begin
   end if;
 end $$;
 
--- Reparacion historica idempotente (+1 dia) para registros afectados.
--- Ajusta la ventana temporal segun tu despliegue afectado.
+-- Reparacion historica (+1 dia) DESACTIVADA.
+-- Motivo: el incidente ya fue corregido y no queremos riesgo de sobrecorreccion masiva.
+-- Se conserva este bloque como NO-OP para mantener trazabilidad historica.
 do $$
 declare
-  already_applied boolean;
-  affected_from date := date '2025-01-01';
-  affected_to date := date '2026-12-31';
+  noop_marked boolean;
 begin
   select exists (
-    select 1 from public.schema_migrations_flags where key = 'fix_localdate_shift_plus_1_v1'
-  ) into already_applied;
+    select 1 from public.schema_migrations_flags where key = 'fix_localdate_shift_plus_1_v1_deprecated_noop'
+  ) into noop_marked;
 
-  if not already_applied then
-    update public.pacientes
-      set fecha_creacion = fecha_creacion + interval '1 day'
-      where fecha_creacion between affected_from and affected_to;
-
-    update public.evaluaciones
-      set fecha = fecha + interval '1 day'
-      where fecha between affected_from and affected_to;
-
-    update public.evaluaciones
-      set proxima_cita = proxima_cita + interval '1 day'
-      where proxima_cita between affected_from and affected_to;
-
-    update public.evaluaciones
-      set lc_fecha_adaptacion = lc_fecha_adaptacion + interval '1 day'
-      where lc_fecha_adaptacion between affected_from and affected_to;
-
-    update public.dispensaciones
-      set fecha = fecha + interval '1 day'
-      where fecha between affected_from and affected_to;
-
-    update public.servicios_extra
-      set fecha = fecha + interval '1 day'
-      where fecha between affected_from and affected_to;
-
-    update public.pagos
-      set fecha = fecha + interval '1 day'
-      where fecha between affected_from and affected_to;
-
-    insert into public.schema_migrations_flags(key) values ('fix_localdate_shift_plus_1_v1');
+  if not noop_marked then
+    insert into public.schema_migrations_flags(key) values ('fix_localdate_shift_plus_1_v1_deprecated_noop');
   end if;
 end $$;
 

@@ -140,7 +140,6 @@ object LaboratorioTicketText {
             ev.addIntermediaOi.takeIf { it.isNotBlank() }?.let { "int. OI $it" }
         )
         if (inter.isNotEmpty()) parts.add(inter.joinToString(" · "))
-        if (ev.addAv.isNotBlank()) parts.add("AV ${ev.addAv}")
         return parts.joinToString(" · ")
     }
 
@@ -156,7 +155,6 @@ object LaboratorioTicketText {
             ev.addIntermediaOi.takeIf { it.isNotBlank() }?.let { "int. OI $it" }
         )
         if (inter.isNotEmpty()) parts.add("ADD ${inter.joinToString(" | ")}")
-        if (ev.addAv.isNotBlank()) parts.add("ADD AV ${ev.addAv}")
         return parts.joinToString(" · ")
     }
 

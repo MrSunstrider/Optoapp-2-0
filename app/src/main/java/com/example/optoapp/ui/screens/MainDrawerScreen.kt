@@ -85,16 +85,6 @@ fun MainDrawerScreen(
                     modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                 )
                 NavigationDrawerItem(
-                    label = { Text("Agenda") },
-                    selected = currentRoute == "agenda",
-                    onClick = {
-                        scope.launch { drawerState.close() }
-                        navController.navigate("agenda")
-                    },
-                    icon = { Icon(Icons.Default.CalendarMonth, contentDescription = null) },
-                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
-                )
-                NavigationDrawerItem(
                     label = { Text("Servicios Varios") },
                     selected = currentRoute == "servicios_extra",
                     onClick = {
@@ -102,16 +92,6 @@ fun MainDrawerScreen(
                         navController.navigate("servicios_extra")
                     },
                     icon = { Icon(Icons.Default.AddShoppingCart, contentDescription = null) },
-                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
-                )
-                NavigationDrawerItem(
-                    label = { Text("Inventario Monturas") },
-                    selected = currentRoute == "monturas",
-                    onClick = {
-                        scope.launch { drawerState.close() }
-                        navController.navigate("monturas")
-                    },
-                    icon = { Icon(Icons.Default.Inventory2, contentDescription = null) },
                     modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                 )
                 if (showOperacionHoy) {
@@ -126,6 +106,36 @@ fun MainDrawerScreen(
                         modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                     )
                 }
+                NavigationDrawerItem(
+                    label = { Text("Configuración") },
+                    selected = currentRoute == "configuracion",
+                    onClick = {
+                        scope.launch { drawerState.close() }
+                        navController.navigate("configuracion")
+                    },
+                    icon = { Icon(Icons.Default.Settings, contentDescription = null) },
+                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                )
+                NavigationDrawerItem(
+                    label = { Text("Agenda") },
+                    selected = currentRoute == "agenda",
+                    onClick = {
+                        scope.launch { drawerState.close() }
+                        navController.navigate("agenda")
+                    },
+                    icon = { Icon(Icons.Default.CalendarMonth, contentDescription = null) },
+                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                )
+                NavigationDrawerItem(
+                    label = { Text("Inventario Monturas") },
+                    selected = currentRoute == "monturas",
+                    onClick = {
+                        scope.launch { drawerState.close() }
+                        navController.navigate("monturas")
+                    },
+                    icon = { Icon(Icons.Default.Inventory2, contentDescription = null) },
+                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                )
                 if (showCierreCaja) {
                     NavigationDrawerItem(
                         label = { Text("Cierre de Caja") },
@@ -160,16 +170,6 @@ fun MainDrawerScreen(
                         modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                     )
                 }
-                NavigationDrawerItem(
-                    label = { Text("Configuración") },
-                    selected = currentRoute == "configuracion",
-                    onClick = {
-                        scope.launch { drawerState.close() }
-                        navController.navigate("configuracion")
-                    },
-                    icon = { Icon(Icons.Default.Settings, contentDescription = null) },
-                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
-                )
 
                 // Paso 5.2: Botón de Sincronización Cloud
                 val context = androidx.compose.ui.platform.LocalContext.current

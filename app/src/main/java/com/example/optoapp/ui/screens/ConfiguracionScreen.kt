@@ -30,6 +30,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextOverflow
 import com.example.optoapp.billing.PlayBillingManager
 import com.example.optoapp.subscription.PlanCode
 import com.example.optoapp.subscription.SubscriptionTier
@@ -380,15 +381,32 @@ fun ConfiguracionScreen(
                             label = "Max usuarios por óptica (vacío = ilimitado)",
                             keyboardType = KeyboardType.Number
                         )
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            OutlinedButton(onClick = { planVm.applyPreset() }, enabled = !planUi.loading) {
-                                Text("Aplicar preset")
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                OutlinedButton(
+                                    onClick = { planVm.applyPreset() },
+                                    enabled = !planUi.loading,
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text("Aplicar preset", maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                }
+                                Button(
+                                    onClick = { planVm.save() },
+                                    enabled = !planUi.loading,
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text("Guardar plan", maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                }
                             }
-                            Button(onClick = { planVm.save() }, enabled = !planUi.loading) {
-                                Text("Guardar plan")
-                            }
-                            OutlinedButton(onClick = { planVm.load() }, enabled = !planUi.loading) {
-                                Text("Recargar")
+                            OutlinedButton(
+                                onClick = { planVm.load() },
+                                enabled = !planUi.loading,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text("Recargar plan")
                             }
                         }
                         planUi.message?.let { Text(it, color = MaterialTheme.colorScheme.tertiary, fontSize = 12.sp) }
@@ -424,14 +442,16 @@ fun ConfiguracionScreen(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Button(
                                 onClick = { roleVm.assignRole() },
-                                enabled = !roleUi.loading
-                            ) { Text("Asignar / actualizar rol") }
+                                enabled = !roleUi.loading,
+                                modifier = Modifier.fillMaxWidth()
+                            ) { Text("Asignar o actualizar rol") }
                             OutlinedButton(
                                 onClick = { roleVm.loadMembers() },
-                                enabled = !roleUi.loading
+                                enabled = !roleUi.loading,
+                                modifier = Modifier.fillMaxWidth()
                             ) { Text("Actualizar lista") }
                         }
                         roleUi.message?.let { Text(it, color = MaterialTheme.colorScheme.tertiary, fontSize = 12.sp) }

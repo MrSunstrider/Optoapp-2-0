@@ -3,6 +3,7 @@ package com.example.optoapp.util
 import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.EvaluacionClinica
 import java.time.LocalDate
+import java.util.Locale
 
 /**
  * Datos de dispensación necesarios para armar el ticket de laboratorio (misma forma que en pantalla de edición).
@@ -48,6 +49,7 @@ data class LaboratorioTicketContext(
 }
 
 object DispensacionLaboratorioTicket {
+    private const val AV_COL_W = 28
 
     private fun tratamientosStr(tratamientos: List<String>) =
         tratamientos.filter { it.isNotBlank() && it != "Ninguno" }.joinToString(", ")
@@ -63,6 +65,7 @@ object DispensacionLaboratorioTicket {
     private fun buildTicketFormatoLaboratorio(ctx: LaboratorioTicketContext, ev: EvaluacionClinica?): String {
         val dipLinea = dipLejosCerca(ev)
         val addLinea = addOdOi(ev)
+        val tratamientosLinea = tratamientosStr(ctx.tratamientos)
         val requiereAltura =
             ctx.tipoLente == "Bifocal" || ctx.tipoLente == "Progresivo" || ctx.tipoLente == "Ocupacional"
         val alturaLinea = if (requiereAltura && ctx.altura.isNotBlank()) "h: ${ctx.altura.trim()} mm" else ""
@@ -82,16 +85,41 @@ object DispensacionLaboratorioTicket {
             appendLine("Fórmula")
             appendLine(od)
             appendLine(oi)
+            avCcLines(ev).forEach { appendLine(it) }
             if (dipLinea.isNotBlank()) appendLine(dipLinea)
             if (addLinea.isNotBlank()) appendLine("Add: $addLinea")
             if (alturaLinea.isNotBlank()) appendLine(alturaLinea)
             appendLine("Lente: $lente")
             if (ctx.materialLente.isNotBlank()) appendLine("Mat ${ctx.materialLente}")
+            if (tratamientosLinea.isNotBlank()) appendLine("Tratamientos: $tratamientosLinea")
+            if (ctx.colorLente.isNotBlank()) appendLine("Color: ${ctx.colorLente}")
+            if (ctx.notasDiseno.isNotBlank()) appendLine("Notas: ${ctx.notasDiseno}")
             appendLine("Montura")
             if (ctx.origenMontura.isNotBlank()) appendLine("Origen: ${ctx.origenMontura}")
+            if (ctx.tipoMontura.isNotBlank()) appendLine("Tipo: ${ctx.tipoMontura}")
             if (ctx.tipoAro.isNotBlank()) appendLine("Aro: ${ctx.tipoAro}")
             if (ctx.materialMontura.isNotBlank()) appendLine("Mat: ${ctx.materialMontura}")
+            if (ctx.descripcionMontura.isNotBlank()) appendLine("Desc: ${ctx.descripcionMontura}")
         }.trimEnd()
+    }
+
+    private fun avCcLines(ev: EvaluacionClinica?): List<String> {
+        if (ev == null) return emptyList()
+        val avccOd = ev.recetaOdAv.ifBlank { ev.avCcOdLejos }.ifBlank { "—" }
+        val avccOi = ev.recetaOiAv.ifBlank { ev.avCcOiLejos }.ifBlank { "—" }
+        val avccAo = ev.avCcAoPx.ifBlank { "—" }
+        val anyAv = avccOd != "—" || avccOi != "—" || avccAo != "—"
+        if (!anyAv) return emptyList()
+
+        val line1 = dosColumnas(
+            "AVCC OD ${avccOd.uppercase(Locale.getDefault())}",
+            "AV CC AO"
+        )
+        val line2 = dosColumnas(
+            "AVCC OI ${avccOi.uppercase(Locale.getDefault())}",
+            avccAo.uppercase(Locale.getDefault())
+        )
+        return listOf(line1, line2)
     }
 
     private fun formatOjo(esf: String?, cil: String?, eje: String?, label: String): String {
@@ -121,8 +149,15 @@ object DispensacionLaboratorioTicket {
             od.isNotBlank() && oi.isNotBlank() -> "OD $od · OI $oi"
             od.isNotBlank() -> "OD $od"
             oi.isNotBlank() -> "OI $oi"
-            ev.addAv.isNotBlank() -> ev.addAv.trim()
             else -> ""
         }
+    }
+
+    private fun dosColumnas(izq: String, der: String): String {
+        val left = izq.trimEnd()
+        val right = der.trim()
+        if (right.isEmpty()) return left
+        if (left.length >= AV_COL_W) return "$left\n    $right"
+        return left + " ".repeat(AV_COL_W - left.length) + right
     }
 }

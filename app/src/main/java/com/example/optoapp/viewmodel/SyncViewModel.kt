@@ -149,15 +149,15 @@ class SyncViewModel @Inject constructor(
         try {
             syncGate.mutex.withLock {
                 SyncSessionHelper.refreshSessionBeforeSync(supabase)
-                when (val p = syncPacientesUseCase(opticaId)) {
+                when (val p = syncPacientesUseCase(opticaId, downloadAfterUpload = false)) {
                     is Resource.Error -> Log.w(TAG, "Sync silenciosa (pacientes): ${p.message}")
                     else -> {}
                 }
-                when (val h = syncHistorialUseCase(opticaId)) {
+                when (val h = syncHistorialUseCase(opticaId, downloadAfterUpload = false)) {
                     is Resource.Error -> Log.w(TAG, "Sync silenciosa (historial): ${h.message}")
                     else -> {}
                 }
-                when (val f = syncFinanzasUseCase(opticaId)) {
+                when (val f = syncFinanzasUseCase(opticaId, downloadAfterUpload = false)) {
                     is Resource.Error -> Log.w(TAG, "Sync silenciosa (finanzas): ${f.message}")
                     else -> {}
                 }

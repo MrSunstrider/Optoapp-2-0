@@ -40,9 +40,12 @@ class SyncFinanzasUseCase @Inject constructor(
     /**
      * Ejecuta la sincronización completa del módulo financiero (Upload -> Download).
      */
-    suspend operator fun invoke(opticaId: String): Resource<FinanzasSyncResult> {
+    suspend operator fun invoke(
+        opticaId: String,
+        downloadAfterUpload: Boolean = true
+    ): Resource<FinanzasSyncResult> {
         return try {
-            Log.d(TAG, "Finanzas: inicio (opticaId=$opticaId)")
+            Log.d(TAG, "Finanzas: inicio (opticaId=$opticaId, download=$downloadAfterUpload)")
             val dispUp = uploadDispensaciones(opticaId)
             Log.d(TAG, "Finanzas: upload dispensaciones=$dispUp")
             val servUp = uploadServicios(opticaId)
@@ -50,12 +53,22 @@ class SyncFinanzasUseCase @Inject constructor(
             val pagosUp = uploadPagos(opticaId)
             Log.d(TAG, "Finanzas: upload pagos=$pagosUp")
 
-            val dispDown = downloadDispensaciones(opticaId)
-            Log.d(TAG, "Finanzas: download dispensaciones=$dispDown")
-            val servDown = downloadServicios(opticaId)
-            Log.d(TAG, "Finanzas: download servicios_extra=$servDown")
-            val pagosDown = downloadPagos(opticaId)
-            Log.d(TAG, "Finanzas: download pagos=$pagosDown; fin OK")
+            val dispDown: Int
+            val servDown: Int
+            val pagosDown: Int
+            if (downloadAfterUpload) {
+                dispDown = downloadDispensaciones(opticaId)
+                Log.d(TAG, "Finanzas: download dispensaciones=$dispDown")
+                servDown = downloadServicios(opticaId)
+                Log.d(TAG, "Finanzas: download servicios_extra=$servDown")
+                pagosDown = downloadPagos(opticaId)
+                Log.d(TAG, "Finanzas: download pagos=$pagosDown; fin OK")
+            } else {
+                dispDown = 0
+                servDown = 0
+                pagosDown = 0
+                Log.d(TAG, "Finanzas: fin upload-only OK")
+            }
 
             Resource.Success(
                 FinanzasSyncResult(

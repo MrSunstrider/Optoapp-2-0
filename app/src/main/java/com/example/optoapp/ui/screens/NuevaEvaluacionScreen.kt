@@ -275,28 +275,26 @@ fun NuevaEvaluacionScreen(
                     }
                     1 -> { // Examen Visual
                         Text("Agudeza Visual SIN corrección", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                        OptoTextField(value = uiState.avScAo, onValueChange = { viewModel.updateUiState { s -> s.copy(avScAo = it) } }, label = "Ambos ojos lejos")
+                        OptoTextField(
+                            value = uiState.avScAo,
+                            onValueChange = { viewModel.updateUiState { s -> s.copy(avScAo = it) } },
+                            label = "Ambos ojos"
+                        )
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            OptoTextField(value = uiState.avScOdLejos, onValueChange = { viewModel.updateUiState { s -> s.copy(avScOdLejos = it) } }, label = "OD lejos", modifier = Modifier.weight(1f))
-                            OptoTextField(value = uiState.avScOiLejos, onValueChange = { viewModel.updateUiState { s -> s.copy(avScOiLejos = it) } }, label = "OI lejos", modifier = Modifier.weight(1f))
-                        }
-                        OptoTextField(value = uiState.avScAoCerca, onValueChange = { viewModel.updateUiState { s -> s.copy(avScAoCerca = it) } }, label = "Ambos ojos cerca")
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            OptoTextField(value = uiState.avScOdCerca, onValueChange = { viewModel.updateUiState { s -> s.copy(avScOdCerca = it) } }, label = "OD cerca", modifier = Modifier.weight(1f))
-                            OptoTextField(value = uiState.avScOiCerca, onValueChange = { viewModel.updateUiState { s -> s.copy(avScOiCerca = it) } }, label = "OI cerca", modifier = Modifier.weight(1f))
+                            OptoTextField(value = uiState.avScOdLejos, onValueChange = { viewModel.updateUiState { s -> s.copy(avScOdLejos = it) } }, label = "OD", modifier = Modifier.weight(1f))
+                            OptoTextField(value = uiState.avScOiLejos, onValueChange = { viewModel.updateUiState { s -> s.copy(avScOiLejos = it) } }, label = "OI", modifier = Modifier.weight(1f))
                         }
 
                         Spacer(modifier = Modifier.height(8.dp))
                         Text("Agudeza Visual CON corrección PX", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                        OptoTextField(value = uiState.avCcAoPx, onValueChange = { viewModel.updateUiState { s -> s.copy(avCcAoPx = it) } }, label = "Ambos ojos lejos")
+                        OptoTextField(
+                            value = uiState.avCcAoPx,
+                            onValueChange = { viewModel.updateUiState { s -> s.copy(avCcAoPx = it) } },
+                            label = "Ambos ojos"
+                        )
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            OptoTextField(value = uiState.avCcOdLejos, onValueChange = { viewModel.updateUiState { s -> s.copy(avCcOdLejos = it) } }, label = "OD lejos", modifier = Modifier.weight(1f))
-                            OptoTextField(value = uiState.avCcOiLejos, onValueChange = { viewModel.updateUiState { s -> s.copy(avCcOiLejos = it) } }, label = "OI lejos", modifier = Modifier.weight(1f))
-                        }
-                        OptoTextField(value = uiState.avCcAoCerca, onValueChange = { viewModel.updateUiState { s -> s.copy(avCcAoCerca = it) } }, label = "Ambos ojos cerca")
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            OptoTextField(value = uiState.avCcOdCerca, onValueChange = { viewModel.updateUiState { s -> s.copy(avCcOdCerca = it) } }, label = "OD cerca", modifier = Modifier.weight(1f))
-                            OptoTextField(value = uiState.avCcOiCerca, onValueChange = { viewModel.updateUiState { s -> s.copy(avCcOiCerca = it) } }, label = "OI cerca", modifier = Modifier.weight(1f))
+                            OptoTextField(value = uiState.avCcOdLejos, onValueChange = { viewModel.updateUiState { s -> s.copy(avCcOdLejos = it) } }, label = "OD", modifier = Modifier.weight(1f))
+                            OptoTextField(value = uiState.avCcOiLejos, onValueChange = { viewModel.updateUiState { s -> s.copy(avCcOiLejos = it) } }, label = "OI", modifier = Modifier.weight(1f))
                         }
 
                         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
@@ -454,7 +452,6 @@ fun NuevaEvaluacionScreen(
                                 label = "OD Eje", 
                                 modifier = Modifier.weight(1f).onFocusChanged { if (!it.isFocused) viewModel.normalizeAndTranspose("OD") }
                             )
-                            OptoTextField(value = uiState.recetaOdAv, onValueChange = { viewModel.updateUiState { s -> s.copy(recetaOdAv = it) } }, label = "AV", modifier = Modifier.weight(1f))
                         }
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             OptoTextField(
@@ -475,7 +472,26 @@ fun NuevaEvaluacionScreen(
                                 label = "OI Eje", 
                                 modifier = Modifier.weight(1f).onFocusChanged { if (!it.isFocused) viewModel.normalizeAndTranspose("OI") }
                             )
-                            OptoTextField(value = uiState.recetaOiAv, onValueChange = { viewModel.updateUiState { s -> s.copy(recetaOiAv = it) } }, label = "AV", modifier = Modifier.weight(1f))
+                        }
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OptoTextField(
+                                value = uiState.recetaOdAv,
+                                onValueChange = { viewModel.updateUiState { s -> s.copy(recetaOdAv = it) } },
+                                label = "AV OD",
+                                modifier = Modifier.weight(1f)
+                            )
+                            OptoTextField(
+                                value = uiState.recetaOiAv,
+                                onValueChange = { viewModel.updateUiState { s -> s.copy(recetaOiAv = it) } },
+                                label = "AV OI",
+                                modifier = Modifier.weight(1f)
+                            )
+                            OptoTextField(
+                                value = uiState.avCcAoPx,
+                                onValueChange = { viewModel.updateUiState { s -> s.copy(avCcAoPx = it) } },
+                                label = "AV AO",
+                                modifier = Modifier.weight(1f)
+                            )
                         }
 
                         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))

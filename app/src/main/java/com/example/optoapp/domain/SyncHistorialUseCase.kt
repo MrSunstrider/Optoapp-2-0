@@ -29,11 +29,14 @@ class SyncHistorialUseCase @Inject constructor(
         private const val TABLE = "evaluaciones"
     }
 
-    suspend operator fun invoke(opticaId: String): Resource<HistorialSyncResult> {
+    suspend operator fun invoke(
+        opticaId: String,
+        downloadAfterUpload: Boolean = true
+    ): Resource<HistorialSyncResult> {
         return try {
-            Log.d(TAG, "Evaluaciones: inicio upload+download (opticaId=$opticaId)")
+            Log.d(TAG, "Evaluaciones: inicio sync (opticaId=$opticaId, download=$downloadAfterUpload)")
             val uploaded = upload(opticaId)
-            val downloaded = download(opticaId)
+            val downloaded = if (downloadAfterUpload) download(opticaId) else 0
             Log.d(TAG, "Evaluaciones: fin OK (subidas=$uploaded, bajadas=$downloaded)")
             Resource.Success(HistorialSyncResult(uploaded, downloaded))
         } catch (e: Exception) {

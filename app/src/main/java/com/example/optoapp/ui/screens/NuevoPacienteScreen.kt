@@ -9,6 +9,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import android.widget.Toast
@@ -148,21 +149,26 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
                 Text("Fecha de Registro: ${DateUtils.formatLocalized(fechaCreacion)}")
             }
 
-            OutlinedTextField(
-                value = historiaOptometrica,
-                onValueChange = { historiaOptometrica = it },
-                label = { Text("N° Historia Optométrica") },
-                modifier = Modifier.fillMaxWidth()
-            )
-            TextButton(
-                onClick = {
-                    scope.launch {
-                        historiaOptometrica = viewModel.suggestHistoriaOptometrica()
-                    }
-                },
-                modifier = Modifier.fillMaxWidth()
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Sugerir HO")
+                OutlinedTextField(
+                    value = historiaOptometrica,
+                    onValueChange = { historiaOptometrica = it },
+                    label = { Text("N° Historia Optométrica") },
+                    modifier = Modifier.weight(1f)
+                )
+                TextButton(
+                    onClick = {
+                        scope.launch {
+                            historiaOptometrica = viewModel.suggestHistoriaOptometrica()
+                        }
+                    }
+                ) {
+                    Text("Sugerir HO")
+                }
             }
 
             OutlinedTextField(

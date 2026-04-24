@@ -239,8 +239,8 @@ object RecetaEvaluacionPdfGenerator {
 
             fun dash(s: String) = if (s.isBlank()) "—" else s
 
-            val avLejosOd = eval.recetaOdAv.ifBlank { eval.avCcOdLejos }
-            val avLejosOi = eval.recetaOiAv.ifBlank { eval.avCcOiLejos }
+            val avCcOd = eval.avCcOdLejos.ifBlank { eval.recetaOdAv }
+            val avCcOi = eval.avCcOiLejos.ifBlank { eval.recetaOiAv }
 
             val gridRows = buildList {
                 add(RxGridRow.Head("Medida", "OD", "OI"))
@@ -251,7 +251,8 @@ object RecetaEvaluacionPdfGenerator {
                         fmtRx(eval.recetaOiEsf, eval.recetaOiCil, eval.recetaOiEje)
                     )
                 )
-                add(RxGridRow.Three("AV lejos", dash(avLejosOd), dash(avLejosOi)))
+                add(RxGridRow.Three("AV CC", dash(avCcOd), dash(avCcOi)))
+                add(RxGridRow.Merged("AV CC AO", dash(eval.avCcAoPx)))
                 add(RxGridRow.Three("ADD", fmtAdd(true), fmtAdd(false)))
                 add(RxGridRow.Three("AV cerca", dash(eval.avCcOdCerca), dash(eval.avCcOiCerca)))
                 if (eval.addAv.isNotBlank()) {
