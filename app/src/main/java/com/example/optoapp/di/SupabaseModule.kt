@@ -7,6 +7,7 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.createSupabaseClient
+import io.github.jan.supabase.auth.ExternalAuthAction
 import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.postgrest.Postgrest
 import javax.inject.Singleton
@@ -28,7 +29,11 @@ object SupabaseModule {
                 encodeDefaults = true
             })
             install(Postgrest)
-            install(Auth)
+            install(Auth) {
+                host = BuildConfig.SUPABASE_REDIRECT_HOST
+                scheme = BuildConfig.SUPABASE_REDIRECT_SCHEME
+                defaultExternalAuthAction = ExternalAuthAction.CustomTabs()
+            }
         }
     }
 }

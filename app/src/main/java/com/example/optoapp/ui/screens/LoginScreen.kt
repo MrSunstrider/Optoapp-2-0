@@ -247,6 +247,20 @@ fun LoginScreen(
                     OutlinedButton(
                         onClick = {
                             focusManager.clearFocus()
+                            viewModel.loginWithGoogle()
+                        },
+                        enabled = authState !is AuthState.Loading,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text("Continuar con Google")
+                    }
+
+                    OutlinedButton(
+                        onClick = {
+                            focusManager.clearFocus()
                             viewModel.register(email, password) { msg ->
                                 Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
                             }

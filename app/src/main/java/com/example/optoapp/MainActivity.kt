@@ -1,14 +1,15 @@
 package com.example.optoapp
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.viewModels
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -21,6 +22,8 @@ import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+    private val authViewModel: AuthViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -32,25 +35,31 @@ class MainActivity : ComponentActivity() {
             }
         }
 
+        authViewModel.handleAuthDeepLinkIntent(intent)
+
         setContent {
             OptoAppTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    OptoAppNavigation()
+                    OptoAppNavigation(authViewModel)
                 }
             }
         }
     }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        authViewModel.handleAuthDeepLinkIntent(intent)
+    }
 }
 
 @Composable
-fun OptoAppNavigation() {
+fun OptoAppNavigation(authViewModel: AuthViewModel) {
     val navController = rememberNavController()
 
-    // AuthViewModel compartido
-    val authViewModel: AuthViewModel = hiltViewModel()
     val isAuthChecked by authViewModel.isAuthChecked.collectAsState()
     val isLoggedIn by authViewModel.isLoggedIn.collectAsState(initial = null)
     val isPinRequired by authViewModel.isPinRequired.collectAsState(initial = null)

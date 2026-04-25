@@ -1,5 +1,6 @@
 package com.example.optoapp.viewmodel
 
+import android.content.Intent
 import android.util.Log
 import android.content.Context
 import androidx.lifecycle.ViewModel
@@ -17,6 +18,9 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.builtin.Email
+import io.github.jan.supabase.auth.providers.Google
+import io.github.jan.supabase.auth.handleDeeplinks
+import io.github.jan.supabase.auth.user.UserInfo
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -129,44 +133,10 @@ class AuthViewModel @Inject constructor(
                 this.password = password
             }
 
-            val user = supabase.auth.currentUserOrNull()
-            val uid  = user?.id ?: "unknown"
-            val meta = user?.userMetadata
-
-            val nombre = meta?.get("nombre")?.toString()
-                ?.removePrefix("\"")?.removeSuffix("\"")
-                ?: email.substringBefore("@")
-
-            pendingLoginEmail = email
-            pendingLoginName = nombre
-
-            val memberships = membershipRepository.fetchMembershipsForCurrentUser()
-
-            when {
-                memberships.size > 1 -> {
-                    _pendingMemberships.value = memberships
-                    Log.d(TAG, "Login: ${memberships.size} ópticas; se requiere selección")
-                    _authState.value = AuthState.Success
-                }
-                memberships.size == 1 -> {
-                    val m = memberships.first()
-                    sessionManager.saveSession(
-                        opticaId = m.opticaId,
-                        email = email,
-                        name = nombre,
-                        rol = m.rol
-                    )
-                    repository.reassignLegacyMiOpticaBaseTo(m.opticaId)
-                    Log.d(TAG, "Login exitoso. opticaId=${m.opticaId} uid=$uid (única membresía)")
-                    _authState.value = AuthState.Success
-                }
-                else -> {
-                    _needsOnboarding.value = true
-                    Log.d(TAG, "Login sin membresías: requiere onboarding de óptica. uid=$uid")
-                    _authState.value = AuthState.Success
-                }
-            }
-
+            resolvePostLogin(
+                emailFallback = email,
+                nameFallback = email.substringBefore("@")
+            )
         } catch (e: Exception) {
             Log.e(TAG, "Error de login", e)
             _authState.value = AuthState.Error(
@@ -178,6 +148,32 @@ class AuthViewModel @Inject constructor(
                     else -> "Error: ${e.localizedMessage}"
                 }
             )
+        }
+    }
+
+    fun loginWithGoogle() = viewModelScope.launch {
+        _authState.value = AuthState.Loading
+        _pendingMemberships.value = emptyList()
+        try {
+            supabase.auth.signInWith(Google)
+            Log.d(TAG, "Inicio de OAuth Google lanzado")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error iniciando login con Google", e)
+            _authState.value = AuthState.Error("No se pudo iniciar Google: ${e.localizedMessage}")
+        }
+    }
+
+    fun handleAuthDeepLinkIntent(intent: Intent?) = viewModelScope.launch {
+        if (intent?.data == null) return@launch
+        runCatching { supabase.handleDeeplinks(intent) }
+            .onFailure { e -> Log.w(TAG, "No se pudo procesar deeplink OAuth: ${e.localizedMessage}") }
+        val session = runCatching { supabase.auth.currentSessionOrNull() }.getOrNull()
+        if (session != null) {
+            runCatching { resolvePostLogin() }
+                .onFailure { e ->
+                    Log.e(TAG, "Error cerrando OAuth Google", e)
+                    _authState.value = AuthState.Error("No se pudo completar Google: ${e.localizedMessage}")
+                }
         }
     }
 
@@ -214,6 +210,7 @@ class AuthViewModel @Inject constructor(
             val uid = try { supabase.auth.currentUserOrNull()?.id } catch (_: Exception) { null }
             Log.d(TAG, "Óptica seleccionada: ${membership.opticaId} rol=${membership.rol} uid=$uid")
         }
+        _authState.value = AuthState.Success
     }
 
     // ─── Logout ───────────────────────────────────────────────────────────────
@@ -348,6 +345,67 @@ class AuthViewModel @Inject constructor(
         } catch (e: Exception) {
             onFinished("Error al restaurar: ${e.message ?: "desconocido"}")
         }
+    }
+
+    private suspend fun resolvePostLogin(
+        emailFallback: String? = null,
+        nameFallback: String? = null
+    ) {
+        val user = supabase.auth.currentUserOrNull()
+            ?: throw IllegalStateException("No se encontró usuario autenticado")
+        val uid = user.id
+        val email = user.email?.trim().orEmpty().ifBlank { emailFallback.orEmpty() }
+        val nombre = extractDisplayName(user, emailFallback, nameFallback)
+
+        pendingLoginEmail = email
+        pendingLoginName = nombre
+
+        val memberships = membershipRepository.fetchMembershipsForCurrentUser()
+        when {
+            memberships.size > 1 -> {
+                _pendingMemberships.value = memberships
+                _authState.value = AuthState.Success
+                Log.d(TAG, "Login: ${memberships.size} ópticas; se requiere selección")
+            }
+            memberships.size == 1 -> {
+                val m = memberships.first()
+                sessionManager.saveSession(
+                    opticaId = m.opticaId,
+                    email = email,
+                    name = nombre,
+                    rol = m.rol
+                )
+                repository.reassignLegacyMiOpticaBaseTo(m.opticaId)
+                _authState.value = AuthState.Success
+                Log.d(TAG, "Login exitoso. opticaId=${m.opticaId} uid=$uid (única membresía)")
+            }
+            else -> {
+                _needsOnboarding.value = true
+                _authState.value = AuthState.Success
+                Log.d(TAG, "Login sin membresías: requiere onboarding de óptica. uid=$uid")
+            }
+        }
+    }
+
+    private fun extractDisplayName(
+        user: UserInfo,
+        emailFallback: String?,
+        nameFallback: String?
+    ): String {
+        val meta = user.userMetadata
+        val candidates = listOf(
+            meta?.get("nombre")?.toString(),
+            meta?.get("full_name")?.toString(),
+            meta?.get("name")?.toString(),
+            nameFallback,
+            emailFallback?.substringBefore("@"),
+            user.email?.substringBefore("@")
+        )
+        return candidates.firstOrNull { !it.isNullOrBlank() }
+            ?.removePrefix("\"")
+            ?.removeSuffix("\"")
+            .orEmpty()
+            .ifBlank { "Usuario" }
     }
 }
 

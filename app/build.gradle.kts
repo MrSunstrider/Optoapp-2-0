@@ -37,10 +37,20 @@ android {
 
         val supabaseUrl = escapeForBuildConfigField(localProperties.getProperty("supabase.url", ""))
         val supabaseAnonKey = escapeForBuildConfigField(localProperties.getProperty("supabase.anon.key", ""))
+        val supabaseRedirectScheme = escapeForBuildConfigField(
+            localProperties.getProperty("supabase.redirect.scheme", "optoapp")
+        )
+        val supabaseRedirectHost = escapeForBuildConfigField(
+            localProperties.getProperty("supabase.redirect.host", "auth")
+        )
         val forceProDev = localProperties.getProperty("optoapp.dev.force_pro", "false").equals("true", ignoreCase = true)
         buildConfigField("String", "SUPABASE_URL", "\"$supabaseUrl\"")
         buildConfigField("String", "SUPABASE_ANON_KEY", "\"$supabaseAnonKey\"")
+        buildConfigField("String", "SUPABASE_REDIRECT_SCHEME", "\"$supabaseRedirectScheme\"")
+        buildConfigField("String", "SUPABASE_REDIRECT_HOST", "\"$supabaseRedirectHost\"")
         buildConfigField("Boolean", "FORCE_PRO_DEV", "$forceProDev")
+        manifestPlaceholders["SUPABASE_REDIRECT_SCHEME"] = supabaseRedirectScheme
+        manifestPlaceholders["SUPABASE_REDIRECT_HOST"] = supabaseRedirectHost
     }
 
     buildTypes {
