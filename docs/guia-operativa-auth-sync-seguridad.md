@@ -71,6 +71,52 @@ Archivos/migraciones clave:
 - `app/src/main/java/com/example/optoapp/data/OptoRepository.kt`
 - `supabase/migrations/20260425014500_backup_restore_admin_guardrails.sql`
 
+### 5) Alta de sucursales desde app
+
+- Se habilito creacion de nuevas sucursales/opticas desde `Configuracion`.
+- Flujo restringido a `admin` y `gerente` en app, con mensajes claros de permisos/limites.
+- Se reutiliza guardrail de plan (`max_opticas`) ya vigente en backend para evitar sobrepasar sedes permitidas.
+
+Archivos clave:
+
+- `app/src/main/java/com/example/optoapp/ui/screens/ConfiguracionScreen.kt`
+- `app/src/main/java/com/example/optoapp/viewmodel/AuthViewModel.kt`
+- `app/src/main/java/com/example/optoapp/data/MembershipRepository.kt`
+
+### 6) Perfil fiscal y de negocio por optica
+
+- Se incorporo perfil fiscal base por optica:
+  - `RUC/RUS`, `razon_social`, `direccion_fiscal`.
+- Se agregaron campos opcionales de negocio:
+  - `distrito_ciudad_departamento`, `moneda`, `pais`, `contacto_whatsapp_telefono`.
+- En app, los campos obligatorios para facturacion base son:
+  - `RUC/RUS`, razon social y direccion fiscal.
+- Los campos de negocio adicionales son opcionales y editables en la misma seccion.
+- Se agregaron guardrails server-side para que estos perfiles solo se actualicen con rol `admin` o `gerente`.
+
+Archivos/migraciones clave:
+
+- `app/src/main/java/com/example/optoapp/ui/screens/OnboardingOpticaScreen.kt`
+- `app/src/main/java/com/example/optoapp/ui/screens/ConfiguracionScreen.kt`
+- `app/src/main/java/com/example/optoapp/viewmodel/FiscalConfigViewModel.kt`
+- `app/src/main/java/com/example/optoapp/data/OpticaFiscalSettingsStore.kt`
+- `app/src/main/java/com/example/optoapp/data/MembershipRepository.kt`
+- `supabase/migrations/20260425015500_opticas_fiscal_profile_and_guardrails.sql`
+- `supabase/migrations/20260425020000_opticas_business_profile_optional_fields.sql`
+
+### 7) Contexto permanente de optica activa
+
+- Se muestra en header principal:
+  - `Optica activa: [nombre] · [RUC/RUS + numero]`.
+- La franja de contexto permite abrir cambio de sucursal en un toque.
+- Si solo existe una membresia, se informa en UI sin navegar al selector.
+
+Archivos clave:
+
+- `app/src/main/java/com/example/optoapp/ui/screens/MainDrawerScreen.kt`
+- `app/src/main/java/com/example/optoapp/viewmodel/OpticaHeaderViewModel.kt`
+- `app/src/main/java/com/example/optoapp/viewmodel/AuthViewModel.kt`
+
 ## Configuracion de Google OAuth (checklist rapido)
 
 1. Google Cloud Console:
@@ -122,6 +168,7 @@ order by dia_utc desc, total desc;
 - Backup/restore total: solo `admin`.
 - Asignacion de `admin`: solo `admin` actual.
 - Borrado de pacientes: `admin/gerente` con limite diario y auditoria.
+- Edicion de perfil fiscal/negocio de optica: solo `admin/gerente`.
 - Cualquier incidente de sync: priorizar recuperacion de datos, no detener lotes completos por conflictos puntuales.
 
 ## Notas de mantenimiento
