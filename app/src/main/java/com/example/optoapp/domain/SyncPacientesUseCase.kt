@@ -54,24 +54,64 @@ class SyncPacientesUseCase @Inject constructor(
         }
 
         val rows = pacientes.map { it.toRemoto().copy(opticaId = opticaId) }
+        val remoteByHistoria = fetchRemoteHistoriaMap(opticaId)
+        val localHistoriaKeys = mutableMapOf<String, String>()
+        val filteredRows = mutableListOf<PacienteRemoto>()
+
+        for (row in rows) {
+            val historiaKey = normalizedHistoriaKey(row.historiaOptometrica)
+            if (historiaKey == null) {
+                filteredRows += row
+                continue
+            }
+
+            val duplicatedLocalId = localHistoriaKeys[historiaKey]
+            if (duplicatedLocalId != null && duplicatedLocalId != row.id) {
+                syncStateTracker.markError(
+                    opticaId,
+                    "paciente",
+                    row.id,
+                    "HO duplicada local: ${row.historiaOptometrica}. Se omite para evitar conflicto único."
+                )
+                continue
+            }
+            localHistoriaKeys[historiaKey] = row.id
+
+            val remoteId = remoteByHistoria[historiaKey]
+            if (remoteId != null && remoteId != row.id) {
+                syncStateTracker.markError(
+                    opticaId,
+                    "paciente",
+                    row.id,
+                    "HO ya existe en remoto con otro ID ($remoteId). Se omite para evitar conflicto único."
+                )
+                continue
+            }
+            filteredRows += row
+        }
+
+        if (filteredRows.isEmpty()) {
+            syncStateTracker.markSynced(opticaId, "upload_pacientes", "batch")
+            return 0
+        }
         Log.d(
             TAG,
-            "Upload pacientes: ${pacientes.size} filas, optica_id en payload=$opticaId (id primer paciente=${pacientes.first().id})"
+            "Upload pacientes: ${filteredRows.size}/${pacientes.size} filas tras prevalidación de HO, optica_id=$opticaId"
         )
         try {
-            supabase.postgrest[TABLE].upsert(rows)
+            supabase.postgrest[TABLE].upsert(filteredRows)
         } catch (e: Exception) {
             rethrowIfCancellation(e)
             syncStateTracker.markError(opticaId, "upload_pacientes", "batch", e.message)
             throw e
         }
         syncStateTracker.markSynced(opticaId, "upload_pacientes", "batch")
-        pacientes.forEach { p ->
+        filteredRows.forEach { p ->
             syncStateTracker.markSynced(opticaId, "paciente", p.id)
         }
 
-        Log.d(TAG, "Subidos ${pacientes.size} pacientes a Supabase (optica_id=$opticaId).")
-        return pacientes.size
+        Log.d(TAG, "Subidos ${filteredRows.size} pacientes a Supabase (optica_id=$opticaId).")
+        return filteredRows.size
     }
 
     private suspend fun download(opticaId: String): Int {
@@ -96,6 +136,26 @@ class SyncPacientesUseCase @Inject constructor(
 
         Log.d(TAG, "Descargados ${remotos.size} pacientes desde Supabase.")
         return remotos.size
+    }
+
+    private suspend fun fetchRemoteHistoriaMap(opticaId: String): Map<String, String> {
+        return runCatching {
+            supabase.postgrest[TABLE]
+                .select {
+                    filter { eq("optica_id", opticaId) }
+                }
+                .decodeList<PacienteRemoto>()
+                .mapNotNull { remoto ->
+                    val key = normalizedHistoriaKey(remoto.historiaOptometrica) ?: return@mapNotNull null
+                    key to remoto.id
+                }
+                .toMap()
+        }.getOrDefault(emptyMap())
+    }
+
+    private fun normalizedHistoriaKey(historia: String?): String? {
+        val normalized = historia?.trim()?.uppercase().orEmpty()
+        return normalized.ifBlank { null }
     }
 }
 

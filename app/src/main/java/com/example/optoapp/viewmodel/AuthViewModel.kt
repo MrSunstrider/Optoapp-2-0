@@ -25,6 +25,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import javax.inject.Inject
@@ -164,17 +165,38 @@ class AuthViewModel @Inject constructor(
     }
 
     fun handleAuthDeepLinkIntent(intent: Intent?) = viewModelScope.launch {
-        if (intent?.data == null) return@launch
-        runCatching { supabase.handleDeeplinks(intent) }
-            .onFailure { e -> Log.w(TAG, "No se pudo procesar deeplink OAuth: ${e.localizedMessage}") }
-        val session = runCatching { supabase.auth.currentSessionOrNull() }.getOrNull()
-        if (session != null) {
-            runCatching { resolvePostLogin() }
-                .onFailure { e ->
-                    Log.e(TAG, "Error cerrando OAuth Google", e)
-                    _authState.value = AuthState.Error("No se pudo completar Google: ${e.localizedMessage}")
-                }
+        val deepLink = intent?.data ?: return@launch
+        _authState.value = AuthState.Loading
+        Log.d(TAG, "Recibido deeplink OAuth: $deepLink")
+
+        val handleResult = runCatching { supabase.handleDeeplinks(intent) }
+        handleResult.onFailure { e ->
+            Log.w(TAG, "No se pudo procesar deeplink OAuth: ${e.localizedMessage}", e)
         }
+
+        // En algunos dispositivos/custom tabs la sesión tarda unos milisegundos en persistirse.
+        var hasSession = false
+        repeat(10) {
+            val session = runCatching { supabase.auth.currentSessionOrNull() }.getOrNull()
+            if (session != null) {
+                hasSession = true
+                return@repeat
+            }
+            delay(200)
+        }
+
+        if (hasSession) {
+            runCatching { resolvePostLogin() }.onFailure { e ->
+                Log.e(TAG, "Error cerrando OAuth Google", e)
+                _authState.value = AuthState.Error("No se pudo completar Google: ${e.localizedMessage}")
+            }
+            return@launch
+        }
+
+        val message = handleResult.exceptionOrNull()?.localizedMessage
+            ?: "No se pudo recuperar la sesión de Google. Reintenta el acceso."
+        _authState.value = AuthState.Error(message)
+        Log.w(TAG, "OAuth completado sin sesión activa. deeplink=$deepLink")
     }
 
     /**

@@ -54,7 +54,48 @@ class SyncHistorialUseCase @Inject constructor(
             return 0
         }
 
-        val rows = evaluaciones.map { it.toRemoto().copy(opticaId = opticaId) }
+        val localPacientes = repository.getPacientesSnapshotForOptica(opticaId)
+        val remotePacientes = runCatching {
+            supabase.postgrest["pacientes"]
+                .select {
+                    filter { eq("optica_id", opticaId) }
+                }
+                .decodeList<PacienteRemoto>()
+        }.getOrDefault(emptyList())
+
+        val remoteByHistoria = remotePacientes
+            .mapNotNull { rp ->
+                val key = normalizedHistoriaKey(rp.historiaOptometrica) ?: return@mapNotNull null
+                key to rp.id
+            }
+            .toMap()
+
+        val remapPacienteId = localPacientes.mapNotNull { lp ->
+            val key = normalizedHistoriaKey(lp.historiaOptometrica) ?: return@mapNotNull null
+            val remoteId = remoteByHistoria[key] ?: return@mapNotNull null
+            if (remoteId == lp.id) return@mapNotNull null
+            lp.id to remoteId
+        }.toMap()
+
+        val remotePacienteIds = remotePacientes.map { it.id }.toSet()
+        val rows = evaluaciones.mapNotNull { ev ->
+            val finalPacienteId = remapPacienteId[ev.pacienteId] ?: ev.pacienteId
+            if (finalPacienteId !in remotePacienteIds) {
+                syncStateTracker.markError(
+                    opticaId,
+                    "evaluacion",
+                    ev.id,
+                    "Paciente remoto inexistente para paciente_id=$finalPacienteId. Se omite para evitar FK."
+                )
+                return@mapNotNull null
+            }
+            ev.toRemoto().copy(opticaId = opticaId, pacienteId = finalPacienteId)
+        }
+
+        if (rows.isEmpty()) {
+            syncStateTracker.markSynced(opticaId, "upload_evaluaciones", "batch")
+            return 0
+        }
         try {
             supabase.postgrest[TABLE].upsert(rows)
         } catch (e: Exception) {
@@ -68,7 +109,7 @@ class SyncHistorialUseCase @Inject constructor(
         }
 
         Log.d(TAG, "Subidas ${evaluaciones.size} evaluaciones a Supabase (forzando ID: $opticaId).")
-        return evaluaciones.size
+        return rows.size
     }
 
     private suspend fun download(opticaId: String): Int {
@@ -93,6 +134,11 @@ class SyncHistorialUseCase @Inject constructor(
 
         Log.d(TAG, "Descargadas ${remotos.size} evaluaciones desde Supabase.")
         return remotos.size
+    }
+
+    private fun normalizedHistoriaKey(historia: String?): String? {
+        val normalized = historia?.trim()?.uppercase().orEmpty()
+        return normalized.ifBlank { null }
     }
 }
 
