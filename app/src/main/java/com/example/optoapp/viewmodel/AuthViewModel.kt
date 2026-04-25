@@ -21,6 +21,9 @@ import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.auth.providers.Google
 import io.github.jan.supabase.auth.handleDeeplinks
 import io.github.jan.supabase.auth.user.UserInfo
+import io.github.jan.supabase.postgrest.postgrest
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -352,16 +355,38 @@ class AuthViewModel @Inject constructor(
 
     suspend fun getBackupJson(): String {
         val oid = sessionManager.opticaId.first()
+        val rol = sessionManager.opticaRol.first().trim().lowercase()
+        if (rol != "admin") {
+            throw IllegalStateException("Solo admin puede descargar respaldo total.")
+        }
+        assertBackupOperationAllowed("export", oid, oid)
         return com.google.gson.Gson().toJson(repository.getBackupDataForOptica(oid))
     }
 
     fun restoreBackup(json: String, onFinished: (String) -> Unit) = viewModelScope.launch {
+        val rol = sessionManager.opticaRol.first().trim().lowercase()
+        if (rol != "admin") {
+            onFinished("Solo admin puede restaurar respaldos.")
+            return@launch
+        }
         val data = BackupImportValidator.parse(json).getOrElse { e ->
             onFinished(e.message ?: "No se pudo validar el respaldo.")
             return@launch
         }
         try {
             val currentOpticaId = sessionManager.opticaId.first()
+            val sourceOpticaId = data.sourceOpticaId?.trim().orEmpty()
+            if (sourceOpticaId.isBlank()) {
+                onFinished("Respaldo sin origen de óptica. Exporta uno nuevo con la versión actual.")
+                return@launch
+            }
+            if (!sourceOpticaId.equals(currentOpticaId, ignoreCase = false)) {
+                onFinished(
+                    "Este respaldo pertenece a otra óptica y no puede restaurarse aquí."
+                )
+                return@launch
+            }
+            assertBackupOperationAllowed("restore", sourceOpticaId, currentOpticaId)
             repository.restoreBackup(data, currentOpticaId)
             onFinished("Base de datos restaurada correctamente.")
         } catch (e: Exception) {
@@ -428,6 +453,21 @@ class AuthViewModel @Inject constructor(
             ?.removeSuffix("\"")
             .orEmpty()
             .ifBlank { "Usuario" }
+    }
+
+    private suspend fun assertBackupOperationAllowed(
+        action: String,
+        sourceOpticaId: String,
+        targetOpticaId: String
+    ) {
+        supabase.postgrest.rpc(
+            "assert_backup_operation_allowed",
+            buildJsonObject {
+                put("p_action", action)
+                put("p_source_optica_id", sourceOpticaId)
+                put("p_target_optica_id", targetOpticaId)
+            }
+        )
     }
 }
 

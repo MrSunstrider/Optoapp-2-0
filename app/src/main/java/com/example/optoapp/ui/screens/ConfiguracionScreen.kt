@@ -91,6 +91,7 @@ fun ConfiguracionScreen(
     val userEmail by viewModel.userEmail.collectAsState(initial = "")
     val canManageUsers = AppRoles.canManageUsers(opticaRol)
     val canManagePlans = AppRoles.canManagePlans(opticaRol)
+    val canManageBackups = opticaRol.trim().equals("admin", ignoreCase = true)
     val canUseInternalPlan = userEmail.trim().equals(INTERNAL_OWNER_EMAIL, ignoreCase = true)
     val canAssignAdminRole = opticaRol.trim().equals("admin", ignoreCase = true)
     val allowedRoles = remember(canAssignAdminRole) {
@@ -137,12 +138,18 @@ fun ConfiguracionScreen(
     ) { uri ->
         uri?.let {
             scope.launch {
-                val json = viewModel.getBackupJson()
-                context.contentResolver.openOutputStream(it)?.use { stream ->
-                    stream.write(json.toByteArray())
+                runCatching {
+                    val json = viewModel.getBackupJson()
+                    context.contentResolver.openOutputStream(it)?.use { stream ->
+                        stream.write(json.toByteArray())
+                    }
+                }.onSuccess {
+                    dialogMsg = "Respaldo exportado exitosamente."
+                    showDialog = true
+                }.onFailure { e ->
+                    dialogMsg = e.message ?: "No se pudo exportar el respaldo."
+                    showDialog = true
                 }
-                dialogMsg = "Respaldo exportado exitosamente."
-                showDialog = true
             }
         }
     }
@@ -616,10 +623,18 @@ fun ConfiguracionScreen(
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text("Gestión de Datos", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                     Text("Realiza respaldos de tu información local para evitar pérdidas.", fontSize = 14.sp)
+                    if (!canManageBackups) {
+                        Text(
+                            "Solo admin puede descargar o restaurar respaldo total.",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
                     
                     Button(
                         onClick = { createBackupLauncher.launch("OptoApp_Backup_${System.currentTimeMillis()}.json") },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = canManageBackups
                     ) {
                         Text("Descargar Respaldo Total")
                     }
@@ -635,6 +650,7 @@ fun ConfiguracionScreen(
                     OutlinedButton(
                         onClick = { restoreBackupLauncher.launch("application/json") },
                         modifier = Modifier.fillMaxWidth(),
+                        enabled = canManageBackups,
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
                     ) {
                         Text("Restaurar Respaldo")

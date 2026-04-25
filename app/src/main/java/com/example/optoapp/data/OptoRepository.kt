@@ -309,6 +309,7 @@ class OptoRepository(
     
     suspend fun getBackupDataForOptica(opticaId: String): BackupData {
         return BackupData(
+            sourceOpticaId = opticaId,
             pacientes = pacienteDao.getPacientesListByOptica(opticaId),
             evaluaciones = evaluacionDao.getEvaluacionesListByOptica(opticaId),
             dispensaciones = dispensacionDao.getDispensacionesListByOptica(opticaId),
@@ -392,6 +393,8 @@ data class BackupData(
     val version: Int = 3,
     val dateExported: Long = System.currentTimeMillis(),
     val appIdentifier: String = "OptoApp-2.0",
+    @SerializedName("source_optica_id")
+    val sourceOpticaId: String? = null,
     val pacientes: List<Paciente>? = emptyList(),
     val evaluaciones: List<EvaluacionClinica>? = emptyList(),
     @SerializedName("dispensaciones", alternate = ["ordenes", "ventas"])
