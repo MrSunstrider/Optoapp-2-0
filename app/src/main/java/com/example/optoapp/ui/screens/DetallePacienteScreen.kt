@@ -35,6 +35,7 @@ import com.example.optoapp.viewmodel.DispensacionViewModel
 import com.example.optoapp.viewmodel.ServiciosViewModel
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 import com.example.optoapp.util.WhatsAppUtils
@@ -43,6 +44,7 @@ import com.example.optoapp.util.DispensacionLaboratorioTicket
 import com.example.optoapp.util.LaboratorioTicketContext
 import com.example.optoapp.ui.components.LaboratorioTicketAlertDialog
 import com.example.optoapp.viewmodel.LaboratorioConfigViewModel
+import com.example.optoapp.viewmodel.DeletePacienteResult
 import androidx.compose.material.icons.filled.Science
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -56,6 +58,7 @@ fun DetallePacienteScreen(
     serviciosViewModel: ServiciosViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     var paciente by remember { mutableStateOf<Paciente?>(null) }
     val evaluaciones by evaluacionViewModel.getEvaluacionesByPaciente(id).collectAsState(initial = emptyList())
     val dispensaciones by dispensacionViewModel.getDispensacionesByPaciente(id).collectAsState(initial = emptyList())
@@ -66,6 +69,8 @@ fun DetallePacienteScreen(
     var selectedTab by remember { mutableIntStateOf(0) }
     val tabs = listOf("Evaluaciones", "Dispensaciones", "Servicios")
     var showWhatsAppMenu by remember { mutableStateOf(false) }
+    var showDeletePacienteDialog by remember { mutableStateOf(false) }
+    var deletingPaciente by remember { mutableStateOf(false) }
 
     LaunchedEffect(id) {
         paciente = pacienteViewModel.getPaciente(id)
@@ -149,6 +154,12 @@ fun DetallePacienteScreen(
                     IconButton(onClick = { navController.navigate("editarPaciente/${id}") }) {
                         Icon(Icons.Default.Edit, contentDescription = "Editar Perfil")
                     }
+                    IconButton(
+                        onClick = { showDeletePacienteDialog = true },
+                        enabled = !deletingPaciente
+                    ) {
+                        Icon(Icons.Default.Delete, contentDescription = "Eliminar Paciente")
+                    }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary,
@@ -160,6 +171,58 @@ fun DetallePacienteScreen(
         }
     ) { padding ->
         paciente?.let { p ->
+            if (showDeletePacienteDialog) {
+                AlertDialog(
+                    onDismissRequest = { if (!deletingPaciente) showDeletePacienteDialog = false },
+                    title = { Text("¿Eliminar paciente?") },
+                    text = {
+                        Text(
+                            "Esta acción eliminará también evaluaciones, dispensaciones y servicios relacionados. " +
+                                "Existe un límite diario de seguridad."
+                        )
+                    },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                if (deletingPaciente) return@TextButton
+                                deletingPaciente = true
+                                val pacienteToDelete = p
+                                scope.launch {
+                                    try {
+                                        when (val result = pacienteViewModel.deletePacienteGuarded(pacienteToDelete)) {
+                                            is DeletePacienteResult.Success -> {
+                                                Toast.makeText(
+                                                    context,
+                                                    "Paciente eliminado. Quedan ${result.remainingDeletesToday} eliminaciones hoy.",
+                                                    Toast.LENGTH_LONG
+                                                ).show()
+                                                showDeletePacienteDialog = false
+                                                navController.popBackStack()
+                                            }
+                                            is DeletePacienteResult.Error -> {
+                                                Toast.makeText(context, result.message, Toast.LENGTH_LONG).show()
+                                            }
+                                        }
+                                    } finally {
+                                        deletingPaciente = false
+                                    }
+                                }
+                            },
+                            enabled = !deletingPaciente
+                        ) {
+                            Text("Eliminar", color = MaterialTheme.colorScheme.error)
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(
+                            onClick = { showDeletePacienteDialog = false },
+                            enabled = !deletingPaciente
+                        ) {
+                            Text("Cancelar")
+                        }
+                    }
+                )
+            }
             Column(
                 modifier = Modifier
                     .fillMaxSize()

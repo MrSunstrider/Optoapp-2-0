@@ -11,6 +11,8 @@ import androidx.security.crypto.MasterKeys
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 /**
  * FASE 4 – Paso 4.3
@@ -105,5 +107,23 @@ class SessionManager(private val context: Context) {
             prefs[USER_NAME]    = ""
             prefs[LAST_LOGIN_TS] = 0L
         }
+    }
+
+    fun getPacienteDeleteCountToday(opticaId: String): Int {
+        val key = dailyPacienteDeleteKey(opticaId)
+        return encryptedPrefs.getInt(key, 0)
+    }
+
+    fun incrementPacienteDeleteCountToday(opticaId: String): Int {
+        val key = dailyPacienteDeleteKey(opticaId)
+        val current = encryptedPrefs.getInt(key, 0)
+        val next = current + 1
+        encryptedPrefs.edit().putInt(key, next).apply()
+        return next
+    }
+
+    private fun dailyPacienteDeleteKey(opticaId: String): String {
+        val day = LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE)
+        return "paciente_delete_count_${opticaId}_$day"
     }
 }

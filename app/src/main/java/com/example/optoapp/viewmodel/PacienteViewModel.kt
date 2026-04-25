@@ -8,16 +8,27 @@ import com.example.optoapp.data.SessionManager
 import com.example.optoapp.data.Resource
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import dagger.hilt.android.lifecycle.HiltViewModel
+import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+
+sealed class DeletePacienteResult {
+    data class Success(val remainingDeletesToday: Int) : DeletePacienteResult()
+    data class Error(val message: String) : DeletePacienteResult()
+}
 
 @HiltViewModel
 class PacienteViewModel @Inject constructor(
     private val repository: com.example.optoapp.data.OptoRepository,
     private val sessionManager: SessionManager,
-    private val postSaveSyncScheduler: PostSaveSyncScheduler
+    private val postSaveSyncScheduler: PostSaveSyncScheduler,
+    private val supabase: SupabaseClient
 ) : ViewModel() {
+    companion object {
+        private const val DAILY_DELETE_LIMIT = 10
+    }
 
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery
@@ -67,6 +78,19 @@ class PacienteViewModel @Inject constructor(
     suspend fun savePaciente(paciente: Paciente) {
         val oid = sessionManager.opticaId.first()
         val toSave = paciente.copy(opticaId = oid)
+        val historiaNorm = toSave.historiaOptometrica?.trim().orEmpty()
+        if (historiaNorm.isNotEmpty()) {
+            val duplicated = repository.existsDuplicateHistoriaOptometrica(
+                opticaId = oid,
+                historia = historiaNorm,
+                excludePacienteId = toSave.id
+            )
+            if (duplicated) {
+                throw IllegalArgumentException(
+                    "Ya existe una historia optometrica con ese numero en esta optica."
+                )
+            }
+        }
         repository.insertPaciente(toSave)
         postSaveSyncScheduler.schedulePacientesSync(oid)
     }
@@ -86,5 +110,38 @@ class PacienteViewModel @Inject constructor(
     suspend fun existsDuplicateHistoriaOptometrica(historia: String, excludePacienteId: String?): Boolean {
         val oid = sessionManager.opticaId.first()
         return repository.existsDuplicateHistoriaOptometrica(oid, historia, excludePacienteId)
+    }
+
+    suspend fun deletePacienteGuarded(paciente: Paciente): DeletePacienteResult {
+        val oid = sessionManager.opticaId.first()
+        val role = sessionManager.opticaRol.first().trim().lowercase()
+        if (role !in setOf("admin", "gerente")) {
+            return DeletePacienteResult.Error("Solo admin o gerente pueden eliminar pacientes.")
+        }
+
+        val deletesToday = sessionManager.getPacienteDeleteCountToday(oid)
+        if (deletesToday >= DAILY_DELETE_LIMIT) {
+            return DeletePacienteResult.Error(
+                "Límite diario de eliminaciones alcanzado ($DAILY_DELETE_LIMIT). Contacta al administrador."
+            )
+        }
+
+        return try {
+            // Eliminar primero en remoto para mantener consistencia entre dispositivos.
+            supabase.postgrest["pacientes"].delete {
+                filter {
+                    eq("id", paciente.id)
+                    eq("optica_id", oid)
+                }
+            }
+            repository.deletePaciente(paciente)
+            val used = sessionManager.incrementPacienteDeleteCountToday(oid)
+            postSaveSyncScheduler.schedulePacientesSync(oid)
+            DeletePacienteResult.Success((DAILY_DELETE_LIMIT - used).coerceAtLeast(0))
+        } catch (e: Exception) {
+            DeletePacienteResult.Error(
+                "No se pudo eliminar el paciente: ${e.localizedMessage ?: "error desconocido"}"
+            )
+        }
     }
 }
