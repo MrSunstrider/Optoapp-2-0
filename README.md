@@ -110,6 +110,11 @@ El APK queda en `app/build/outputs/apk/release/`.
 - Reintentos con backoff ante fallos de red.
 - Conflictos: enfoque tipo **Last Write Wins** usando `updated_at` donde aplique.
 
+Guia operativa detallada de autenticacion, sync y guardrails de seguridad:
+
+- `docs/guia-operativa-auth-sync-seguridad.md`
+- `docs/changelog-operativo.md`
+
 ---
 
 ## Reglas de negocio clave (referencia)
