@@ -48,6 +48,7 @@ import com.example.optoapp.data.SecurityManager
 import com.example.optoapp.ui.components.DropdownField
 import com.example.optoapp.ui.components.OptoTextField
 import com.example.optoapp.viewmodel.AuthViewModel
+import com.example.optoapp.viewmodel.FiscalConfigViewModel
 import com.example.optoapp.viewmodel.LaboratorioConfigViewModel
 import com.example.optoapp.viewmodel.PlanManagementViewModel
 import com.example.optoapp.viewmodel.RoleManagementViewModel
@@ -61,6 +62,7 @@ fun ConfiguracionScreen(
     @Suppress("UNUSED_PARAMETER") navController: NavController,
     drawerState: DrawerState,
     viewModel: AuthViewModel = hiltViewModel(),
+    fiscalVm: FiscalConfigViewModel = hiltViewModel(),
     laboratorioVm: LaboratorioConfigViewModel = hiltViewModel(),
     subscriptionVm: SubscriptionViewModel = hiltViewModel(),
     syncDiagVm: SyncDiagnosticsViewModel = hiltViewModel(),
@@ -69,14 +71,44 @@ fun ConfiguracionScreen(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val fiscalUi by fiscalVm.uiState.collectAsState()
     val labUi by laboratorioVm.uiState.collectAsState()
+    var fiscalDocTipo by remember { mutableStateOf("RUC") }
+    var fiscalDocNumero by remember { mutableStateOf("") }
+    var fiscalRazonSocial by remember { mutableStateOf("") }
+    var fiscalDireccion by remember { mutableStateOf("") }
+    var fiscalDistritoCiudadDepartamento by remember { mutableStateOf("") }
+    var fiscalMoneda by remember { mutableStateOf("") }
+    var fiscalPais by remember { mutableStateOf("") }
+    var fiscalContactoWhatsappTelefono by remember { mutableStateOf("") }
     var labNombre by remember { mutableStateOf("") }
     var labContacto by remember { mutableStateOf("") }
+    LaunchedEffect(
+        fiscalUi.opticaId,
+        fiscalUi.docTipo,
+        fiscalUi.docNumero,
+        fiscalUi.razonSocial,
+        fiscalUi.direccionFiscal,
+        fiscalUi.distritoCiudadDepartamento,
+        fiscalUi.moneda,
+        fiscalUi.pais,
+        fiscalUi.contactoWhatsappTelefono
+    ) {
+        fiscalDocTipo = fiscalUi.docTipo.ifBlank { "RUC" }
+        fiscalDocNumero = fiscalUi.docNumero
+        fiscalRazonSocial = fiscalUi.razonSocial
+        fiscalDireccion = fiscalUi.direccionFiscal
+        fiscalDistritoCiudadDepartamento = fiscalUi.distritoCiudadDepartamento
+        fiscalMoneda = fiscalUi.moneda
+        fiscalPais = fiscalUi.pais
+        fiscalContactoWhatsappTelefono = fiscalUi.contactoWhatsappTelefono
+    }
     LaunchedEffect(labUi.opticaId, labUi.laboratorioNombre, labUi.laboratorioContacto) {
         labNombre = labUi.laboratorioNombre
         labContacto = labUi.laboratorioContacto
     }
     LaunchedEffect(Unit) {
+        fiscalVm.syncFromServer()
         laboratorioVm.syncFromServer()
         subscriptionVm.refreshPlanFromServer()
     }
@@ -105,6 +137,8 @@ fun ConfiguracionScreen(
     var pinActual by remember { mutableStateOf("") }
     var nuevoPin by remember { mutableStateOf("") }
     var confirmPin by remember { mutableStateOf("") }
+    var nuevaSucursalNombre by remember { mutableStateOf("") }
+    var creatingSucursal by remember { mutableStateOf(false) }
     
     var showDialog by remember { mutableStateOf(false) }
     var dialogMsg by remember { mutableStateOf("") }
@@ -349,6 +383,105 @@ fun ConfiguracionScreen(
                 }
             }
 
+            if (canManageUsers) {
+                Card {
+                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text("Datos fiscales (esta óptica)", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                        Text(
+                            "Requerido para facturación futura: RUC/RUS, razón social y dirección. Los demás campos son opcionales.",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        DropdownField(
+                            label = "Tipo documento fiscal",
+                            selected = fiscalDocTipo,
+                            options = listOf("RUC", "RUS"),
+                            onSelected = {
+                                fiscalDocTipo = it
+                                fiscalVm.clearMessages()
+                            }
+                        )
+                        OptoTextField(
+                            value = fiscalDocNumero,
+                            onValueChange = {
+                                fiscalDocNumero = it
+                                fiscalVm.clearMessages()
+                            },
+                            label = "Número $fiscalDocTipo"
+                        )
+                        OptoTextField(
+                            value = fiscalRazonSocial,
+                            onValueChange = {
+                                fiscalRazonSocial = it
+                                fiscalVm.clearMessages()
+                            },
+                            label = "Razón social"
+                        )
+                        OptoTextField(
+                            value = fiscalDireccion,
+                            onValueChange = {
+                                fiscalDireccion = it
+                                fiscalVm.clearMessages()
+                            },
+                            label = "Dirección fiscal"
+                        )
+                        OptoTextField(
+                            value = fiscalDistritoCiudadDepartamento,
+                            onValueChange = {
+                                fiscalDistritoCiudadDepartamento = it
+                                fiscalVm.clearMessages()
+                            },
+                            label = "Distrito / ciudad / departamento (opcional)"
+                        )
+                        OptoTextField(
+                            value = fiscalMoneda,
+                            onValueChange = {
+                                fiscalMoneda = it
+                                fiscalVm.clearMessages()
+                            },
+                            label = "Moneda (opcional)"
+                        )
+                        OptoTextField(
+                            value = fiscalPais,
+                            onValueChange = {
+                                fiscalPais = it
+                                fiscalVm.clearMessages()
+                            },
+                            label = "País (opcional)"
+                        )
+                        OptoTextField(
+                            value = fiscalContactoWhatsappTelefono,
+                            onValueChange = {
+                                fiscalContactoWhatsappTelefono = it
+                                fiscalVm.clearMessages()
+                            },
+                            label = "WhatsApp / teléfono de contacto (opcional)",
+                            keyboardType = KeyboardType.Phone
+                        )
+                        Button(
+                            onClick = {
+                                fiscalVm.save(
+                                    docTipo = fiscalDocTipo,
+                                    docNumero = fiscalDocNumero,
+                                    razonSocial = fiscalRazonSocial,
+                                    direccionFiscal = fiscalDireccion,
+                                    distritoCiudadDepartamento = fiscalDistritoCiudadDepartamento,
+                                    moneda = fiscalMoneda,
+                                    pais = fiscalPais,
+                                    contactoWhatsappTelefono = fiscalContactoWhatsappTelefono
+                                )
+                            },
+                            enabled = !fiscalUi.loading,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(if (fiscalUi.loading) "Guardando..." else "Guardar datos fiscales")
+                        }
+                        fiscalUi.message?.let { Text(it, color = MaterialTheme.colorScheme.tertiary, fontSize = 12.sp) }
+                        fiscalUi.error?.let { Text(it, color = MaterialTheme.colorScheme.error, fontSize = 12.sp) }
+                    }
+                }
+            }
+
             if (canManagePlans) {
                 Card {
                     Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -469,6 +602,42 @@ fun ConfiguracionScreen(
                             roleUi.members.take(20).forEach { row ->
                                 Text("• ${row.email.ifBlank { row.userId }} — ${row.rol}", fontSize = 12.sp)
                             }
+                        }
+                    }
+                }
+            }
+
+            if (canManageUsers) {
+                Card {
+                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text("Sucursales", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                        Text(
+                            "Crea una nueva óptica/sucursal dentro de tu plan. Solo admin o gerente.",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        OptoTextField(
+                            value = nuevaSucursalNombre,
+                            onValueChange = { nuevaSucursalNombre = it },
+                            label = "Nombre de la sucursal"
+                        )
+                        Button(
+                            onClick = {
+                                if (creatingSucursal) return@Button
+                                creatingSucursal = true
+                                viewModel.createAdditionalOptica(nuevaSucursalNombre) { ok, msg ->
+                                    creatingSucursal = false
+                                    dialogMsg = msg
+                                    showDialog = true
+                                    if (ok) {
+                                        nuevaSucursalNombre = ""
+                                    }
+                                }
+                            },
+                            enabled = nuevaSucursalNombre.trim().isNotEmpty() && !creatingSucursal,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(if (creatingSucursal) "Creando..." else "Crear sucursal")
                         }
                     }
                 }

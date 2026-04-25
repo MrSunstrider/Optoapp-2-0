@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.optoapp.subscription.SubscriptionManager
+import com.example.optoapp.ui.components.DropdownField
 import com.example.optoapp.viewmodel.AuthViewModel
 
 @Composable
@@ -33,6 +34,10 @@ fun OnboardingOpticaScreen(
     viewModel: AuthViewModel = hiltViewModel()
 ) {
     var nombreOptica by remember { mutableStateOf("") }
+    var fiscalDocTipo by remember { mutableStateOf("RUC") }
+    var fiscalDocNumero by remember { mutableStateOf("") }
+    var razonSocial by remember { mutableStateOf("") }
+    var direccionFiscal by remember { mutableStateOf("") }
     var loading by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     val needsOnboarding by viewModel.needsOnboarding.collectAsState()
@@ -63,17 +68,54 @@ fun OnboardingOpticaScreen(
             label = { Text("Nombre de tu óptica") },
             singleLine = true
         )
+        DropdownField(
+            label = "Tipo documento fiscal",
+            selected = fiscalDocTipo,
+            options = listOf("RUC", "RUS"),
+            onSelected = { fiscalDocTipo = it }
+        )
+        OutlinedTextField(
+            value = fiscalDocNumero,
+            onValueChange = { fiscalDocNumero = it },
+            modifier = Modifier.fillMaxWidth(),
+            label = { Text("Número $fiscalDocTipo") },
+            singleLine = true
+        )
+        OutlinedTextField(
+            value = razonSocial,
+            onValueChange = { razonSocial = it },
+            modifier = Modifier.fillMaxWidth(),
+            label = { Text("Razón social") },
+            singleLine = true
+        )
+        OutlinedTextField(
+            value = direccionFiscal,
+            onValueChange = { direccionFiscal = it },
+            modifier = Modifier.fillMaxWidth(),
+            label = { Text("Dirección fiscal") },
+            singleLine = true
+        )
         if (error != null) Text(error!!, color = MaterialTheme.colorScheme.error)
         Button(
             onClick = {
                 loading = true
                 error = null
-                viewModel.completeOnboardingOptica(nombreOptica) { ok, msg ->
+                viewModel.completeOnboardingOptica(
+                    nombreOptica = nombreOptica,
+                    fiscalDocTipo = fiscalDocTipo,
+                    fiscalDocNumero = fiscalDocNumero,
+                    razonSocial = razonSocial,
+                    direccionFiscal = direccionFiscal
+                ) { ok, msg ->
                     loading = false
                     if (!ok) error = msg
                 }
             },
-            enabled = nombreOptica.isNotBlank() && !loading,
+            enabled = nombreOptica.isNotBlank() &&
+                fiscalDocNumero.isNotBlank() &&
+                razonSocial.isNotBlank() &&
+                direccionFiscal.isNotBlank() &&
+                !loading,
             modifier = Modifier.fillMaxWidth()
         ) {
             if (loading) CircularProgressIndicator() else Text("Crear óptica y continuar")

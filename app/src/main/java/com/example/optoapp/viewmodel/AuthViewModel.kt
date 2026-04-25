@@ -238,6 +238,16 @@ class AuthViewModel @Inject constructor(
         _authState.value = AuthState.Success
     }
 
+    /**
+     * Prepara la pantalla de selección de óptica en sesión activa.
+     * Retorna true si hay más de una membresía para elegir.
+     */
+    suspend fun prepareOpticaSelection(): Boolean {
+        val memberships = membershipRepository.fetchMembershipsForCurrentUser()
+        _pendingMemberships.value = memberships
+        return memberships.size > 1
+    }
+
     // ─── Logout ───────────────────────────────────────────────────────────────
 
     /** Cierra sesión en Supabase y borra datos locales; debe llamarse desde una corrutina. */
@@ -320,10 +330,23 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-    fun completeOnboardingOptica(nombreOptica: String, onFinished: (Boolean, String) -> Unit) = viewModelScope.launch {
+    fun completeOnboardingOptica(
+        nombreOptica: String,
+        fiscalDocTipo: String,
+        fiscalDocNumero: String,
+        razonSocial: String,
+        direccionFiscal: String,
+        onFinished: (Boolean, String) -> Unit
+    ) = viewModelScope.launch {
         val email = pendingLoginEmail.ifBlank { sessionManager.userEmail.first() }
         val name = pendingLoginName.ifBlank { sessionManager.userName.first() }
-        val result = membershipRepository.createOpticaForCurrentUser(nombreOptica)
+        val result = membershipRepository.createOpticaForCurrentUser(
+            nombreOptica = nombreOptica,
+            fiscalDocTipo = fiscalDocTipo,
+            fiscalDocNumero = fiscalDocNumero,
+            razonSocial = razonSocial,
+            direccionFiscal = direccionFiscal
+        )
         if (result.isSuccess) {
             val m = result.getOrNull()!!
             sessionManager.saveSession(
@@ -345,6 +368,36 @@ class AuthViewModel @Inject constructor(
                     raw.contains("RLS", ignoreCase = true) ->
                     "No tienes permisos para crear una nueva óptica con esta cuenta."
                 raw.isBlank() -> "No se pudo crear la óptica."
+                else -> raw
+            }
+            onFinished(false, friendly)
+        }
+    }
+
+    fun createAdditionalOptica(nombreOptica: String, onFinished: (Boolean, String) -> Unit) = viewModelScope.launch {
+        val role = sessionManager.opticaRol.first().trim().lowercase()
+        if (role !in setOf("admin", "gerente")) {
+            onFinished(false, "Solo admin o gerente pueden crear sucursales.")
+            return@launch
+        }
+        val result = membershipRepository.createOpticaForCurrentUser(nombreOptica)
+        if (result.isSuccess) {
+            val created = result.getOrNull()
+            onFinished(
+                true,
+                "Sucursal creada: ${created?.nombre ?: nombreOptica.trim()}. Cierra y vuelve a iniciar sesión para elegirla."
+            )
+        } else {
+            val raw = result.exceptionOrNull()?.localizedMessage.orEmpty()
+            val friendly = when {
+                raw.contains("límite de ópticas", ignoreCase = true) ||
+                    raw.contains("max_opticas", ignoreCase = true) ->
+                    "Has alcanzado el límite de sucursales de tu plan."
+                raw.contains("permission", ignoreCase = true) ||
+                    raw.contains("policy", ignoreCase = true) ||
+                    raw.contains("RLS", ignoreCase = true) ->
+                    "No tienes permisos para crear una nueva sucursal."
+                raw.isBlank() -> "No se pudo crear la sucursal."
                 else -> raw
             }
             onFinished(false, friendly)

@@ -86,7 +86,13 @@ class MembershipRepository @Inject constructor(
         }
     }
 
-    suspend fun createOpticaForCurrentUser(nombreOptica: String): Result<OpticaMembership> {
+    suspend fun createOpticaForCurrentUser(
+        nombreOptica: String,
+        fiscalDocTipo: String = "",
+        fiscalDocNumero: String = "",
+        razonSocial: String = "",
+        direccionFiscal: String = ""
+    ): Result<OpticaMembership> {
         val uid = supabase.auth.currentUserOrNull()?.id
             ?: return Result.failure(IllegalStateException("Sin sesión"))
         val nombre = nombreOptica.trim()
@@ -104,7 +110,11 @@ class MembershipRepository @Inject constructor(
                         maxPacientesPorOptica = 20,
                         maxUsuariosPorOptica = 2,
                         planSource = "manual",
-                        planStatus = "active"
+                        planStatus = "active",
+                        fiscalDocTipo = fiscalDocTipo.trim().uppercase(),
+                        fiscalDocNumero = fiscalDocNumero.trim(),
+                        razonSocial = razonSocial.trim(),
+                        direccionFiscal = direccionFiscal.trim()
                     )
                 )
             )
@@ -211,6 +221,93 @@ class MembershipRepository @Inject constructor(
         }
     }
 
+    suspend fun fetchOpticaFiscalSettings(opticaId: String): OpticaFiscalSettings? {
+        if (supabase.auth.currentUserOrNull() == null) return null
+        return try {
+            val list = supabase.postgrest[TABLE_OPTICAS]
+                .select { filter { eq("id", opticaId) } }
+                .decodeList<OpticaDto>()
+            val row = list.firstOrNull() ?: return OpticaFiscalSettings()
+            OpticaFiscalSettings(
+                docTipo = row.fiscalDocTipo,
+                docNumero = row.fiscalDocNumero,
+                razonSocial = row.razonSocial,
+                direccionFiscal = row.direccionFiscal,
+                distritoCiudadDepartamento = row.distritoCiudadDepartamento,
+                moneda = row.moneda,
+                pais = row.pais,
+                contactoWhatsappTelefono = row.contactoWhatsappTelefono
+            )
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    suspend fun fetchOpticaHeaderSummary(opticaId: String): OpticaHeaderSummary? {
+        if (supabase.auth.currentUserOrNull() == null) return null
+        return try {
+            val list = supabase.postgrest[TABLE_OPTICAS]
+                .select { filter { eq("id", opticaId) } }
+                .decodeList<OpticaDto>()
+            val row = list.firstOrNull() ?: return OpticaHeaderSummary(
+                nombreOptica = opticaId,
+                fiscalEtiqueta = "Sin documento fiscal"
+            )
+            val fiscal = if (row.fiscalDocTipo.isBlank() || row.fiscalDocNumero.isBlank()) {
+                "Sin documento fiscal"
+            } else {
+                "${row.fiscalDocTipo} ${row.fiscalDocNumero}"
+            }
+            OpticaHeaderSummary(
+                nombreOptica = row.nombre.ifBlank { opticaId },
+                fiscalEtiqueta = fiscal
+            )
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    suspend fun updateOpticaFiscalSettings(
+        opticaId: String,
+        docTipo: String,
+        docNumero: String,
+        razonSocial: String,
+        direccionFiscal: String,
+        distritoCiudadDepartamento: String,
+        moneda: String,
+        pais: String,
+        contactoWhatsappTelefono: String
+    ): Result<Unit> {
+        if (supabase.auth.currentUserOrNull() == null) {
+            return Result.failure(IllegalStateException("Sin sesión"))
+        }
+        return try {
+            supabase.postgrest[TABLE_OPTICAS].update(
+                OpticaFiscalPatch(
+                    fiscalDocTipo = docTipo.trim().uppercase(),
+                    fiscalDocNumero = docNumero.trim(),
+                    razonSocial = razonSocial.trim(),
+                    direccionFiscal = direccionFiscal.trim(),
+                    distritoCiudadDepartamento = distritoCiudadDepartamento.trim(),
+                    moneda = moneda.trim(),
+                    pais = pais.trim(),
+                    contactoWhatsappTelefono = contactoWhatsappTelefono.trim()
+                )
+            ) {
+                filter { eq("id", opticaId) }
+            }
+            Result.success(Unit)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     /**
      * Persiste en Supabase. Falla si no hay sesión, red o políticas RLS.
      */
@@ -271,6 +368,22 @@ data class PlanSettings(
     val planStatus: String
 )
 
+data class OpticaFiscalSettings(
+    val docTipo: String = "",
+    val docNumero: String = "",
+    val razonSocial: String = "",
+    val direccionFiscal: String = "",
+    val distritoCiudadDepartamento: String = "",
+    val moneda: String = "",
+    val pais: String = "",
+    val contactoWhatsappTelefono: String = ""
+)
+
+data class OpticaHeaderSummary(
+    val nombreOptica: String,
+    val fiscalEtiqueta: String
+)
+
 @Serializable
 private data class UserProfileRow(
     @SerialName("user_id") val userId: String,
@@ -291,7 +404,15 @@ private data class OpticaDto(
     val plan: String = "free",
     @SerialName("plan_code") val planCode: String? = null,
     @SerialName("laboratorio_nombre") val laboratorioNombre: String = "",
-    @SerialName("laboratorio_contacto") val laboratorioContacto: String = ""
+    @SerialName("laboratorio_contacto") val laboratorioContacto: String = "",
+    @SerialName("fiscal_doc_tipo") val fiscalDocTipo: String = "",
+    @SerialName("fiscal_doc_numero") val fiscalDocNumero: String = "",
+    @SerialName("razon_social") val razonSocial: String = "",
+    @SerialName("direccion_fiscal") val direccionFiscal: String = "",
+    @SerialName("distrito_ciudad_departamento") val distritoCiudadDepartamento: String = "",
+    val moneda: String = "",
+    val pais: String = "",
+    @SerialName("contacto_whatsapp_telefono") val contactoWhatsappTelefono: String = ""
 )
 
 @Serializable
@@ -304,7 +425,15 @@ private data class OpticaInsertDto(
     @SerialName("max_pacientes_por_optica") val maxPacientesPorOptica: Int = 20,
     @SerialName("max_usuarios_por_optica") val maxUsuariosPorOptica: Int = 2,
     @SerialName("plan_source") val planSource: String = "manual",
-    @SerialName("plan_status") val planStatus: String = "active"
+    @SerialName("plan_status") val planStatus: String = "active",
+    @SerialName("fiscal_doc_tipo") val fiscalDocTipo: String = "",
+    @SerialName("fiscal_doc_numero") val fiscalDocNumero: String = "",
+    @SerialName("razon_social") val razonSocial: String = "",
+    @SerialName("direccion_fiscal") val direccionFiscal: String = "",
+    @SerialName("distrito_ciudad_departamento") val distritoCiudadDepartamento: String = "",
+    val moneda: String = "",
+    val pais: String = "",
+    @SerialName("contacto_whatsapp_telefono") val contactoWhatsappTelefono: String = ""
 )
 
 @Serializable
@@ -329,4 +458,16 @@ private data class OpticaPlanUpdateDto(
 private data class OpticaLaboratorioPatch(
     @SerialName("laboratorio_nombre") val laboratorioNombre: String,
     @SerialName("laboratorio_contacto") val laboratorioContacto: String
+)
+
+@Serializable
+private data class OpticaFiscalPatch(
+    @SerialName("fiscal_doc_tipo") val fiscalDocTipo: String,
+    @SerialName("fiscal_doc_numero") val fiscalDocNumero: String,
+    @SerialName("razon_social") val razonSocial: String,
+    @SerialName("direccion_fiscal") val direccionFiscal: String,
+    @SerialName("distrito_ciudad_departamento") val distritoCiudadDepartamento: String,
+    val moneda: String,
+    val pais: String,
+    @SerialName("contacto_whatsapp_telefono") val contactoWhatsappTelefono: String
 )

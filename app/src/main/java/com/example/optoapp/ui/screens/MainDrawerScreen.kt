@@ -12,6 +12,8 @@ import com.example.optoapp.data.AppRoles
 import com.example.optoapp.util.SyncErrorSanitizer
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
@@ -20,6 +22,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.example.optoapp.viewmodel.AuthViewModel
+import com.example.optoapp.viewmodel.OpticaHeaderViewModel
 import kotlinx.coroutines.launch
 
 @Composable
@@ -28,14 +31,17 @@ fun MainDrawerScreen(
     /** Misma instancia que [LoginScreen] / [PinScreen] en [MainActivity]; si no, logout no resetea el estado que lee el login. */
     authViewModel: AuthViewModel
 ) {
+    val context = LocalContext.current
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     val navController = rememberNavController()
     
     // Obtenemos el ViewModel de sincronización a nivel de pantalla
     val syncViewModel: com.example.optoapp.viewmodel.SyncViewModel = hiltViewModel()
+    val opticaHeaderViewModel: OpticaHeaderViewModel = hiltViewModel()
     val syncState by syncViewModel.syncState.collectAsState()
     val isSilentSyncing by syncViewModel.isSilentSyncing.collectAsState()
+    val opticaHeader by opticaHeaderViewModel.uiState.collectAsState()
     val opticaRol by authViewModel.opticaRol.collectAsState(initial = "admin")
     val showCierreCaja = AppRoles.canViewCierreCaja(opticaRol)
     val showBiYReportes = AppRoles.canViewBiAndReports(opticaRol)
@@ -69,7 +75,12 @@ fun MainDrawerScreen(
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(text = "OptoApp", style = MaterialTheme.typography.titleLarge)
-                    Text(text = "Usuario Único", style = MaterialTheme.typography.bodyMedium)
+                    Text(
+                        text = opticaHeader.nombreOptica,
+                        style = MaterialTheme.typography.bodyMedium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
                 }
                 HorizontalDivider()
                 NavigationDrawerItem(
@@ -268,6 +279,38 @@ fun MainDrawerScreen(
                     color = MaterialTheme.colorScheme.secondary,
                     trackColor = MaterialTheme.colorScheme.surfaceVariant
                 )
+            }
+            Surface(
+                tonalElevation = 1.dp,
+                color = MaterialTheme.colorScheme.surfaceVariant,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                TextButton(
+                    onClick = {
+                        scope.launch {
+                            val hasMultiple = authViewModel.prepareOpticaSelection()
+                            if (hasMultiple) {
+                                parentNavController.navigate("seleccion_optica")
+                            } else {
+                                android.widget.Toast.makeText(
+                                    context,
+                                    "Solo tienes una óptica asociada.",
+                                    android.widget.Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp)
+                ) {
+                    Text(
+                        text = "Óptica activa: ${opticaHeader.nombreOptica} · ${opticaHeader.fiscalEtiqueta}",
+                        style = MaterialTheme.typography.labelLarge,
+                        modifier = Modifier.padding(vertical = 8.dp),
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
             }
             NavHost(navController = navController, startDestination = "pacientes", modifier = Modifier.weight(1f)) {
                 composable("pacientes") { PacientesListScreen(navController, drawerState) }

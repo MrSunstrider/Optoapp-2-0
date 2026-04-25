@@ -6,6 +6,21 @@ Registro operativo de cambios relevantes en autenticacion, sincronizacion, segur
 
 ## 2026-04-25
 
+- `01:56` · `(sin commit)`  
+  La franja de “Óptica activa” en el header principal ahora permite cambiar de sucursal en un toque (abre selector cuando hay múltiples membresías).
+
+- `01:52` · `(sin commit)`  
+  Muestra en header principal la óptica activa con contexto fiscal (`Óptica activa: nombre · RUC/RUS + número`) para reducir errores operativos entre sucursales.
+
+- `01:48` · `(sin commit)`  
+  Agrega campos opcionales de perfil de óptica (distrito/ciudad/departamento, moneda, país y WhatsApp/teléfono) en Configuración, con persistencia en Supabase y restricción de edición a admin/gerente.
+
+- `01:41` · `(sin commit)`  
+  Onboarding y Configuración ahora capturan/gestionan perfil fiscal de la óptica (`RUC/RUS`, razón social, dirección) con restricción de edición para admin/gerente y guardrails en Supabase.
+
+- `01:28` · `(sin commit)`  
+  Agrega en Configuracion el flujo para crear sucursales (admin/gerente), con validacion de nombre y mensajes de limite/permisos desde backend.
+
 - `01:12` · `f7fce80`  
   Restringe respaldo total a `admin`, agrega validaciones de restore por optica origen/destino y RPC server-side para autorizacion de backup/restore.
 
