@@ -38,8 +38,10 @@ fun ServiciosExtraScreen(navController: NavController, drawerState: DrawerState,
     else servicios.filter { it.descripcion.contains(searchQuery, ignoreCase = true) || it.ot.contains(searchQuery, ignoreCase = true) }
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             TopAppBar(
+                windowInsets = WindowInsets(0, 0, 0, 0),
                 title = { Text("Servicios Varios") },
                 navigationIcon = {
                     IconButton(onClick = { scope.launch { drawerState.open() } }) {

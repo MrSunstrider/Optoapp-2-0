@@ -90,28 +90,30 @@ class SyncPacientesUseCase @Inject constructor(
             filteredRows += row
         }
 
-        if (filteredRows.isEmpty()) {
+        val finalRows = filteredRows.distinctBy { it.id }
+
+        if (finalRows.isEmpty()) {
             syncStateTracker.markSynced(opticaId, "upload_pacientes", "batch")
             return 0
         }
         Log.d(
             TAG,
-            "Upload pacientes: ${filteredRows.size}/${pacientes.size} filas tras prevalidación de HO, optica_id=$opticaId"
+            "Upload pacientes: ${finalRows.size}/${pacientes.size} filas tras prevalidación de HO, optica_id=$opticaId"
         )
         try {
-            supabase.postgrest[TABLE].upsert(filteredRows)
+            supabase.postgrest[TABLE].upsert(finalRows)
         } catch (e: Exception) {
             rethrowIfCancellation(e)
             syncStateTracker.markError(opticaId, "upload_pacientes", "batch", e.message)
             throw e
         }
         syncStateTracker.markSynced(opticaId, "upload_pacientes", "batch")
-        filteredRows.forEach { p ->
+        finalRows.forEach { p ->
             syncStateTracker.markSynced(opticaId, "paciente", p.id)
         }
 
-        Log.d(TAG, "Subidos ${filteredRows.size} pacientes a Supabase (optica_id=$opticaId).")
-        return filteredRows.size
+        Log.d(TAG, "Subidos ${finalRows.size} pacientes a Supabase (optica_id=$opticaId).")
+        return finalRows.size
     }
 
     private suspend fun download(opticaId: String): Int {

@@ -1,6 +1,7 @@
 package com.example.optoapp.data
 
 import android.util.Log
+import androidx.room.withTransaction
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import com.google.gson.annotations.SerializedName
@@ -9,6 +10,7 @@ import java.util.UUID
 import com.example.optoapp.util.DateUtils
 
 class OptoRepository(
+    private val database: OptoDatabase,
     private val pacienteDao: PacienteDao,
     private val evaluacionDao: EvaluacionDao,
     private val dispensacionDao: DispensacionDao,
@@ -118,6 +120,7 @@ class OptoRepository(
     suspend fun insertDispensacion(dispensacion: DispensacionOptica) = dispensacionDao.insertDispensacion(dispensacion)
     
     suspend fun updateDispensacion(dispensacion: DispensacionOptica) = dispensacionDao.updateDispensacion(dispensacion)
+    suspend fun deleteDispensacionById(id: String): Int = dispensacionDao.deleteById(id)
 
     /** True si otra dispensación de la misma óptica ya usa esta OT (misma cadena ignorando mayúsculas/espacios). */
     suspend fun existsDuplicateOt(opticaId: String, ot: String, excludeDispensacionId: String?): Boolean {
@@ -166,6 +169,8 @@ class OptoRepository(
     suspend fun insertPago(pago: Pago) = pagoDao.insertPago(pago)
 
     suspend fun getPagoById(id: String): Pago? = pagoDao.getPagoById(id)
+    suspend fun reassignPagosDispensacion(oldDispensacionId: String, newDispensacionId: String): Int =
+        pagoDao.reassignDispensacionId(oldDispensacionId, newDispensacionId)
 
     /**
      * Borra un abono. Si ya existía en BD, registra un movimiento de anulación el día [fechaAnulacion]
@@ -387,6 +392,74 @@ class OptoRepository(
             } 
         }
     }
+
+    suspend fun resolveDuplicatePacientesByHistoria(opticaId: String): DuplicateHoResolutionResult {
+        val pacientes = pacienteDao.getPacientesListByOptica(opticaId)
+        val grouped = pacientes
+            .mapNotNull { p ->
+                val ho = p.historiaOptometrica?.trim()?.uppercase().orEmpty()
+                if (ho.isBlank()) null else ho to p
+            }
+            .groupBy({ it.first }, { it.second })
+            .filterValues { it.size > 1 }
+        if (grouped.isEmpty()) return DuplicateHoResolutionResult()
+
+        var mergedPacientes = 0
+        var movedEvaluaciones = 0
+        var movedDispensaciones = 0
+        var movedServicios = 0
+
+        database.withTransaction {
+            grouped.forEach { (_, rows) ->
+                val canonical = rows.minByOrNull { it.fechaCreacion } ?: return@forEach
+                rows.forEach { duplicate ->
+                    if (duplicate.id == canonical.id) return@forEach
+
+                    val mergedCanonical = canonical.mergeWith(duplicate)
+                    pacienteDao.updatePaciente(mergedCanonical)
+                    movedEvaluaciones += pacienteDao.reassignEvaluacionesPaciente(duplicate.id, canonical.id)
+                    movedDispensaciones += pacienteDao.reassignDispensacionesPaciente(duplicate.id, canonical.id)
+                    movedServicios += pacienteDao.reassignServiciosPaciente(duplicate.id, canonical.id)
+                    pacienteDao.deletePacienteById(duplicate.id)
+                    mergedPacientes++
+                }
+            }
+        }
+        return DuplicateHoResolutionResult(
+            mergedPacientes = mergedPacientes,
+            movedEvaluaciones = movedEvaluaciones,
+            movedDispensaciones = movedDispensaciones,
+            movedServicios = movedServicios
+        )
+    }
+}
+
+data class DuplicateHoResolutionResult(
+    val mergedPacientes: Int = 0,
+    val movedEvaluaciones: Int = 0,
+    val movedDispensaciones: Int = 0,
+    val movedServicios: Int = 0
+)
+
+private fun Paciente.mergeWith(other: Paciente): Paciente {
+    fun chooseText(primary: String?, fallback: String?): String? =
+        primary?.takeIf { it.isNotBlank() } ?: fallback?.takeIf { it.isNotBlank() }
+    return copy(
+        nombreCompleto = if (nombreCompleto.isNotBlank()) nombreCompleto else other.nombreCompleto,
+        edad = maxOf(edad, other.edad),
+        telefono = chooseText(telefono, other.telefono).orEmpty(),
+        dni = chooseText(dni, other.dni),
+        fechaNacimiento = fechaNacimiento ?: other.fechaNacimiento,
+        sexo = chooseText(sexo, other.sexo),
+        email = chooseText(email, other.email),
+        historiaOptometrica = chooseText(historiaOptometrica, other.historiaOptometrica),
+        direccion = chooseText(direccion, other.direccion),
+        distrito = chooseText(distrito, other.distrito),
+        ocupacion = chooseText(ocupacion, other.ocupacion),
+        acompanante = chooseText(acompanante, other.acompanante),
+        hobbies = chooseText(hobbies, other.hobbies),
+        ultimasEtiquetas = (ultimasEtiquetas + other.ultimasEtiquetas).distinct()
+    )
 }
 
 data class BackupData(

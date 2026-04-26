@@ -92,12 +92,13 @@ class SyncHistorialUseCase @Inject constructor(
             ev.toRemoto().copy(opticaId = opticaId, pacienteId = finalPacienteId)
         }
 
-        if (rows.isEmpty()) {
+        val finalRows = rows.distinctBy { it.id }
+        if (finalRows.isEmpty()) {
             syncStateTracker.markSynced(opticaId, "upload_evaluaciones", "batch")
             return 0
         }
         try {
-            supabase.postgrest[TABLE].upsert(rows)
+            supabase.postgrest[TABLE].upsert(finalRows)
         } catch (e: Exception) {
             rethrowIfCancellation(e)
             syncStateTracker.markError(opticaId, "upload_evaluaciones", "batch", e.message)
@@ -109,7 +110,7 @@ class SyncHistorialUseCase @Inject constructor(
         }
 
         Log.d(TAG, "Subidas ${evaluaciones.size} evaluaciones a Supabase (forzando ID: $opticaId).")
-        return rows.size
+        return finalRows.size
     }
 
     private suspend fun download(opticaId: String): Int {

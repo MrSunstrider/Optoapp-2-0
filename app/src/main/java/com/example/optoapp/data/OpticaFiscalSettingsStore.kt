@@ -13,6 +13,7 @@ import javax.inject.Singleton
 class OpticaFiscalSettingsStore @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
+    private fun keyNombreComercial(opticaId: String) = stringPreferencesKey("fiscal_nombre_comercial_" + sanitize(opticaId))
     private fun keyDocTipo(opticaId: String) = stringPreferencesKey("fiscal_doc_tipo_" + sanitize(opticaId))
     private fun keyDocNumero(opticaId: String) = stringPreferencesKey("fiscal_doc_numero_" + sanitize(opticaId))
     private fun keyRazonSocial(opticaId: String) = stringPreferencesKey("fiscal_razon_social_" + sanitize(opticaId))
@@ -29,6 +30,7 @@ class OpticaFiscalSettingsStore @Inject constructor(
     fun settingsFlow(opticaId: String): Flow<OpticaFiscalSettings> =
         context.dataStore.data.map { prefs ->
             OpticaFiscalSettings(
+                nombreComercial = prefs[keyNombreComercial(opticaId)] ?: "",
                 docTipo = prefs[keyDocTipo(opticaId)] ?: "",
                 docNumero = prefs[keyDocNumero(opticaId)] ?: "",
                 razonSocial = prefs[keyRazonSocial(opticaId)] ?: "",
@@ -42,6 +44,7 @@ class OpticaFiscalSettingsStore @Inject constructor(
 
     suspend fun save(opticaId: String, settings: OpticaFiscalSettings) {
         context.dataStore.edit { prefs ->
+            prefs[keyNombreComercial(opticaId)] = settings.nombreComercial.trim()
             prefs[keyDocTipo(opticaId)] = settings.docTipo.trim().uppercase()
             prefs[keyDocNumero(opticaId)] = settings.docNumero.trim()
             prefs[keyRazonSocial(opticaId)] = settings.razonSocial.trim()

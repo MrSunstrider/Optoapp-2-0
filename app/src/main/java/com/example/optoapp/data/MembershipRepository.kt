@@ -229,6 +229,7 @@ class MembershipRepository @Inject constructor(
                 .decodeList<OpticaDto>()
             val row = list.firstOrNull() ?: return OpticaFiscalSettings()
             OpticaFiscalSettings(
+                nombreComercial = row.nombre,
                 docTipo = row.fiscalDocTipo,
                 docNumero = row.fiscalDocNumero,
                 razonSocial = row.razonSocial,
@@ -252,7 +253,7 @@ class MembershipRepository @Inject constructor(
                 .select { filter { eq("id", opticaId) } }
                 .decodeList<OpticaDto>()
             val row = list.firstOrNull() ?: return OpticaHeaderSummary(
-                nombreOptica = opticaId,
+                nombreOptica = "Óptica sin nombre",
                 fiscalEtiqueta = "Sin documento fiscal"
             )
             val fiscal = if (row.fiscalDocTipo.isBlank() || row.fiscalDocNumero.isBlank()) {
@@ -260,8 +261,11 @@ class MembershipRepository @Inject constructor(
             } else {
                 "${row.fiscalDocTipo} ${row.fiscalDocNumero}"
             }
+            val nombreComercial = row.nombre.trim()
+                .ifBlank { row.razonSocial.trim() }
+                .ifBlank { "Óptica sin nombre" }
             OpticaHeaderSummary(
-                nombreOptica = row.nombre.ifBlank { opticaId },
+                nombreOptica = nombreComercial,
                 fiscalEtiqueta = fiscal
             )
         } catch (e: CancellationException) {
@@ -273,6 +277,7 @@ class MembershipRepository @Inject constructor(
 
     suspend fun updateOpticaFiscalSettings(
         opticaId: String,
+        nombreComercial: String,
         docTipo: String,
         docNumero: String,
         razonSocial: String,
@@ -286,19 +291,43 @@ class MembershipRepository @Inject constructor(
             return Result.failure(IllegalStateException("Sin sesión"))
         }
         return try {
+            val patch = OpticaFiscalPatch(
+                nombre = nombreComercial.trim(),
+                fiscalDocTipo = docTipo.trim().uppercase(),
+                fiscalDocNumero = docNumero.trim(),
+                razonSocial = razonSocial.trim(),
+                direccionFiscal = direccionFiscal.trim(),
+                distritoCiudadDepartamento = distritoCiudadDepartamento.trim(),
+                moneda = moneda.trim(),
+                pais = pais.trim(),
+                contactoWhatsappTelefono = contactoWhatsappTelefono.trim()
+            )
             supabase.postgrest[TABLE_OPTICAS].update(
-                OpticaFiscalPatch(
-                    fiscalDocTipo = docTipo.trim().uppercase(),
-                    fiscalDocNumero = docNumero.trim(),
-                    razonSocial = razonSocial.trim(),
-                    direccionFiscal = direccionFiscal.trim(),
-                    distritoCiudadDepartamento = distritoCiudadDepartamento.trim(),
-                    moneda = moneda.trim(),
-                    pais = pais.trim(),
-                    contactoWhatsappTelefono = contactoWhatsappTelefono.trim()
-                )
+                patch
             ) {
                 filter { eq("id", opticaId) }
+            }
+            // RLS puede dejar updates en 0 filas sin lanzar excepción; verificamos persistencia real.
+            val persisted = supabase.postgrest[TABLE_OPTICAS]
+                .select { filter { eq("id", opticaId) } }
+                .decodeList<OpticaDto>()
+                .firstOrNull()
+                ?: return Result.failure(
+                    IllegalStateException("No se pudo verificar la actualización de datos fiscales para esta óptica.")
+                )
+            val matches = persisted.fiscalDocTipo.trim().uppercase() == patch.fiscalDocTipo &&
+                persisted.nombre.trim() == patch.nombre &&
+                persisted.fiscalDocNumero.trim() == patch.fiscalDocNumero &&
+                persisted.razonSocial.trim() == patch.razonSocial &&
+                persisted.direccionFiscal.trim() == patch.direccionFiscal &&
+                persisted.distritoCiudadDepartamento.trim() == patch.distritoCiudadDepartamento &&
+                persisted.moneda.trim() == patch.moneda &&
+                persisted.pais.trim() == patch.pais &&
+                persisted.contactoWhatsappTelefono.trim() == patch.contactoWhatsappTelefono
+            if (!matches) {
+                return Result.failure(
+                    IllegalStateException("Supabase no confirmó la persistencia de los datos fiscales. Revisa políticas RLS de opticas.")
+                )
             }
             Result.success(Unit)
         } catch (e: CancellationException) {
@@ -369,6 +398,7 @@ data class PlanSettings(
 )
 
 data class OpticaFiscalSettings(
+    val nombreComercial: String = "",
     val docTipo: String = "",
     val docNumero: String = "",
     val razonSocial: String = "",
@@ -462,6 +492,7 @@ private data class OpticaLaboratorioPatch(
 
 @Serializable
 private data class OpticaFiscalPatch(
+    val nombre: String,
     @SerialName("fiscal_doc_tipo") val fiscalDocTipo: String,
     @SerialName("fiscal_doc_numero") val fiscalDocNumero: String,
     @SerialName("razon_social") val razonSocial: String,

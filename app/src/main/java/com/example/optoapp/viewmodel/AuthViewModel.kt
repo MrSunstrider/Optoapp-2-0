@@ -404,6 +404,30 @@ class AuthViewModel @Inject constructor(
         }
     }
 
+    fun resolveDuplicateHistorias(onFinished: (String) -> Unit) = viewModelScope.launch {
+        val rol = sessionManager.opticaRol.first().trim().lowercase()
+        if (rol !in setOf("admin", "gerente")) {
+            onFinished("Solo admin o gerente pueden resolver duplicados de historia optométrica.")
+            return@launch
+        }
+        runCatching {
+            val oid = sessionManager.opticaId.first()
+            val result = repository.resolveDuplicatePacientesByHistoria(oid)
+            if (result.mergedPacientes == 0) {
+                "No se encontraron pacientes duplicados por Historia Optométrica."
+            } else {
+                "Duplicados resueltos: pacientes fusionados=${result.mergedPacientes}, " +
+                    "evaluaciones movidas=${result.movedEvaluaciones}, " +
+                    "dispensaciones movidas=${result.movedDispensaciones}, " +
+                    "servicios movidos=${result.movedServicios}."
+            }
+        }.onSuccess { msg ->
+            onFinished(msg)
+        }.onFailure { e ->
+            onFinished("No se pudieron resolver duplicados HO: ${e.localizedMessage ?: "error desconocido"}")
+        }
+    }
+
     // ─── Backup local (sin cambios) ───────────────────────────────────────────
 
     suspend fun getBackupJson(): String {
@@ -480,6 +504,9 @@ class AuthViewModel @Inject constructor(
                 Log.d(TAG, "Login exitoso. opticaId=${m.opticaId} uid=$uid (única membresía)")
             }
             else -> {
+                // Evita reutilizar una óptica previa de otra cuenta (estado legacy en dispositivo compartido).
+                // Sin membresías, el usuario debe pasar por onboarding antes de sincronizar.
+                sessionManager.clearSession()
                 _needsOnboarding.value = true
                 _authState.value = AuthState.Success
                 Log.d(TAG, "Login sin membresías: requiere onboarding de óptica. uid=$uid")

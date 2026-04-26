@@ -57,6 +57,8 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
     val sexos = listOf("Masculino", "Femenino")
 
     var saving by remember { mutableStateOf(false) }
+    var showDuplicateHoWarning by remember { mutableStateOf(false) }
+    var duplicateHoWarningText by remember { mutableStateOf("") }
 
     LaunchedEffect(pacienteId) {
         if (pacienteId != null) {
@@ -120,6 +122,17 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
         ) {
             DatePicker(state = datePickerState)
         }
+    }
+
+    if (showDuplicateHoWarning) {
+        AlertDialog(
+            onDismissRequest = { showDuplicateHoWarning = false },
+            title = { Text("Advertencia de HO duplicada") },
+            text = { Text(duplicateHoWarningText) },
+            confirmButton = {
+                TextButton(onClick = { showDuplicateHoWarning = false }) { Text("Entendido") }
+            }
+        )
     }
 
     Scaffold(
@@ -321,11 +334,9 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
                                             excludePacienteId = pacienteId
                                         )
                                         if (duplicated) {
-                                            Toast.makeText(
-                                                ctx,
-                                                "Ya existe una historia optométrica con ese número en esta óptica.",
-                                                Toast.LENGTH_LONG
-                                            ).show()
+                                            duplicateHoWarningText =
+                                                "Ya existe una historia optométrica con ese número en esta óptica."
+                                            showDuplicateHoWarning = true
                                             return@launch
                                         }
                                     }

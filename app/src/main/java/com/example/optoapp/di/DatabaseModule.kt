@@ -68,6 +68,7 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun provideOptoRepository(
+        database: OptoDatabase,
         pacienteDao: PacienteDao,
         evaluacionDao: EvaluacionDao,
         dispensacionDao: DispensacionDao,
@@ -77,6 +78,7 @@ object DatabaseModule {
         monturaMovimientoDao: MonturaMovimientoDao
     ): OptoRepository {
         return OptoRepository(
+            database,
             pacienteDao,
             evaluacionDao,
             dispensacionDao,

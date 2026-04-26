@@ -10,6 +10,7 @@ import com.example.optoapp.data.ServicioExtra
 import com.example.optoapp.util.rethrowIfCancellation
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
+import kotlinx.coroutines.delay
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import java.time.LocalDate
@@ -35,6 +36,8 @@ class SyncFinanzasUseCase @Inject constructor(
         private const val TABLE_DISPENSACIONES = "dispensaciones"
         private const val TABLE_PAGOS          = "pagos"
         private const val TABLE_SERVICIOS      = "servicios_extra"
+        private const val UPSERT_BATCH_SIZE = 80
+        private const val NETWORK_RETRY_ATTEMPTS = 3
     }
 
     /**
@@ -90,25 +93,171 @@ class SyncFinanzasUseCase @Inject constructor(
     // ─── SUBIDA ──────────────────────────────────────────────────────────────
 
     private suspend fun uploadDispensaciones(opticaId: String): Int {
+        resolveLocalDuplicateDispensaciones(opticaId)
         val dispensaciones = repository.getDispensacionesSnapshotForOptica(opticaId)
         if (dispensaciones.isEmpty()) {
             syncStateTracker.markSynced(opticaId, "upload_dispensaciones", "batch")
             return 0
         }
+        val localById = dispensaciones.associateBy { it.id }
         val opticaRemota = opticaId.trim().ifBlank { FinanzasRemoteDefaults.OPTICA_ID_FALLBACK }
-        val rows = dispensaciones.map { it.toRemoto().copy(opticaId = opticaRemota) }
+        val remotosExistentes = try {
+            supabase.postgrest[TABLE_DISPENSACIONES]
+                .select {
+                    filter { eq("optica_id", opticaRemota) }
+                }
+                .decodeList<DispensacionRemotaLookup>()
+        } catch (e: Exception) {
+            rethrowIfCancellation(e)
+            Log.w(TAG, "No se pudo consultar dispensaciones remotas para reconciliar OT: ${e.message}")
+            emptyList()
+        }
+        val remoteIdByOt = remotosExistentes
+            .mapNotNull { r ->
+                normalizedOtForUnique(r.ot)?.let { key -> key to r.id }
+            }
+            .toMap()
+        val uniqueRows = LinkedHashMap<String, Pair<String, DispensacionRemota>>()
+        dispensaciones.forEach { dispensacion ->
+            val base = dispensacion.toRemoto().copy(opticaId = opticaRemota)
+            val normalizedOt = normalizedOtForUnique(base.ot)
+            val reconciled = if (normalizedOt != null) {
+                val existingRemoteId = remoteIdByOt[normalizedOt]
+                if (existingRemoteId != null && existingRemoteId != base.id) {
+                    base.copy(id = existingRemoteId)
+                } else {
+                    base
+                }
+            } else {
+                base
+            }
+            val dedupeKey = normalizedOt?.let { "ot:$it" } ?: "id:${reconciled.id}"
+            if (uniqueRows.containsKey(dedupeKey)) {
+                val canonicalLocalId = uniqueRows[dedupeKey]?.first.orEmpty()
+                val canonicalLocal = localById[canonicalLocalId]
+                val duplicateLocal = localById[dispensacion.id]
+                if (canonicalLocal != null && duplicateLocal != null) {
+                    mergeLocalDispensacionConflict(
+                        opticaId = opticaId,
+                        canonical = canonicalLocal,
+                        duplicate = duplicateLocal
+                    )
+                } else {
+                    Log.w(TAG, "OT duplicada en lote sin datos locales para fusión (dedupeKey=$dedupeKey, localId=${dispensacion.id})")
+                }
+                return@forEach
+            }
+            uniqueRows[dedupeKey] = dispensacion.id to reconciled
+        }
+        // Segundo blindaje: evita que dos filas distintas terminen apuntando al mismo id remoto.
+        val uniqueById = LinkedHashMap<String, Pair<String, DispensacionRemota>>()
+        uniqueRows.values.forEach { (localId, row) ->
+            if (uniqueById.containsKey(row.id)) {
+                val firstLocalId = uniqueById[row.id]?.first.orEmpty()
+                val canonicalLocal = localById[firstLocalId]
+                val duplicateLocal = localById[localId]
+                if (canonicalLocal != null && duplicateLocal != null) {
+                    mergeLocalDispensacionConflict(
+                        opticaId = opticaId,
+                        canonical = canonicalLocal,
+                        duplicate = duplicateLocal
+                    )
+                } else {
+                    Log.w(TAG, "Conflicto de reconciliación sin datos locales para fusión ($localId -> $firstLocalId)")
+                }
+                return@forEach
+            }
+            uniqueById[row.id] = localId to row
+        }
+        val rows = uniqueById.values.map { it.second }
         try {
-            supabase.postgrest[TABLE_DISPENSACIONES].upsert(rows)
+            rows.chunked(UPSERT_BATCH_SIZE).forEachIndexed { index, chunk ->
+                retryNetwork("upsert:$TABLE_DISPENSACIONES:chunk${index + 1}") {
+                    supabase.postgrest[TABLE_DISPENSACIONES].upsert(chunk)
+                }
+            }
         } catch (e: Exception) {
             rethrowIfCancellation(e)
             syncStateTracker.markError(opticaId, "upload_dispensaciones", "batch", e.message)
             throw e
         }
         syncStateTracker.markSynced(opticaId, "upload_dispensaciones", "batch")
-        dispensaciones.forEach { d ->
-            syncStateTracker.markSynced(opticaId, "dispensacion", d.id)
+        uniqueById.values.forEach { (localId, _) ->
+            syncStateTracker.markSynced(opticaId, "dispensacion", localId)
         }
-        return dispensaciones.size
+        return rows.size
+    }
+
+    private suspend fun mergeLocalDispensacionConflict(
+        opticaId: String,
+        canonical: DispensacionOptica,
+        duplicate: DispensacionOptica
+    ) {
+        val merged = canonical.copy(
+            ot = canonical.ot.ifBlank { duplicate.ot },
+            monturaId = canonical.monturaId.ifBlank { duplicate.monturaId },
+            pacienteId = canonical.pacienteId.ifBlank { duplicate.pacienteId },
+            fecha = if (canonical.fecha >= duplicate.fecha) canonical.fecha else duplicate.fecha,
+            tipoMontura = canonical.tipoMontura.ifBlank { duplicate.tipoMontura },
+            materialMontura = canonical.materialMontura.ifBlank { duplicate.materialMontura },
+            tipoLente = canonical.tipoLente.ifBlank { duplicate.tipoLente },
+            materialLente = canonical.materialLente.ifBlank { duplicate.materialLente },
+            tratamientos = (canonical.tratamientos + duplicate.tratamientos).distinct(),
+            colorLente = canonical.colorLente.ifBlank { duplicate.colorLente },
+            notasDiseno = canonical.notasDiseno.ifBlank { duplicate.notasDiseno },
+            origenMontura = canonical.origenMontura.ifBlank { duplicate.origenMontura },
+            tipoAro = canonical.tipoAro.ifBlank { duplicate.tipoAro },
+            descripcionMontura = canonical.descripcionMontura.ifBlank { duplicate.descripcionMontura },
+            montoTotal = maxOf(canonical.montoTotal, duplicate.montoTotal),
+            metodoPago = canonical.metodoPago.ifBlank { duplicate.metodoPago },
+            montoPagado = maxOf(canonical.montoPagado, duplicate.montoPagado),
+            estadoEntrega = canonical.estadoEntrega.ifBlank { duplicate.estadoEntrega },
+            fechaVencimientoGarantia = canonical.fechaVencimientoGarantia ?: duplicate.fechaVencimientoGarantia,
+            distanciaLente = canonical.distanciaLente.ifBlank { duplicate.distanciaLente },
+            altura = canonical.altura.ifBlank { duplicate.altura },
+            subTipoBifocal = canonical.subTipoBifocal.ifBlank { duplicate.subTipoBifocal }
+        )
+        repository.updateDispensacion(merged)
+        val moved = repository.reassignPagosDispensacion(duplicate.id, canonical.id)
+        repository.deleteDispensacionById(duplicate.id)
+        syncStateTracker.markSynced(opticaId, "dispensacion", duplicate.id)
+        syncStateTracker.markError(
+            opticaId,
+            "dispensacion",
+            canonical.id,
+            "Conflicto de reconciliación resuelto: fusionada ${duplicate.id} en ${canonical.id}; " +
+                "ot=${merged.ot.ifBlank { "(sin OT)" }}, paciente_id=${merged.pacienteId}, pagos_movidos=$moved."
+        )
+        Log.w(TAG, "Dispensacion fusionada por conflicto remoto ${duplicate.id} -> ${canonical.id} (pagos movidos=$moved)")
+    }
+
+    private suspend fun resolveLocalDuplicateDispensaciones(opticaId: String) {
+        val local = repository.getDispensacionesSnapshotForOptica(opticaId)
+        if (local.isEmpty()) return
+        val groups = local
+            .mapNotNull { d ->
+                val key = normalizedOtForUnique(d.ot) ?: return@mapNotNull null
+                key to d
+            }
+            .groupBy({ it.first }, { it.second })
+            .filterValues { it.size > 1 }
+        if (groups.isEmpty()) return
+
+        groups.forEach { (otKey, rows) ->
+            val canonical = rows.maxByOrNull { it.fecha } ?: return@forEach
+            rows.forEach { duplicate ->
+                if (duplicate.id == canonical.id) return@forEach
+                val moved = repository.reassignPagosDispensacion(duplicate.id, canonical.id)
+                repository.deleteDispensacionById(duplicate.id)
+                syncStateTracker.markError(
+                    opticaId,
+                    "dispensacion",
+                    duplicate.id,
+                    "OT duplicada local ($otKey) resuelta automáticamente. Fusionada en ${canonical.id}; pagos movidos=$moved."
+                )
+                Log.w(TAG, "Dispensacion duplicada OT=$otKey fusionada ${duplicate.id} -> ${canonical.id} (pagos movidos=$moved)")
+            }
+        }
     }
 
     private suspend fun uploadServicios(opticaId: String): Int {
@@ -156,9 +305,13 @@ class SyncFinanzasUseCase @Inject constructor(
             val dedupeKey = normalizedOt?.let { "ot:$it" } ?: "id:${reconciled.id}"
             uniqueRows[dedupeKey] = reconciled
         }
-        val rows = uniqueRows.values.toList()
+        val rows = uniqueRows.values.toList().distinctBy { it.id }
         try {
-            supabase.postgrest[TABLE_SERVICIOS].upsert(rows)
+            rows.chunked(UPSERT_BATCH_SIZE).forEachIndexed { index, chunk ->
+                retryNetwork("upsert:$TABLE_SERVICIOS:chunk${index + 1}") {
+                    supabase.postgrest[TABLE_SERVICIOS].upsert(chunk)
+                }
+            }
         } catch (e: Exception) {
             rethrowIfCancellation(e)
             syncStateTracker.markError(opticaId, "upload_servicios_extra", "batch", e.message)
@@ -178,9 +331,13 @@ class SyncFinanzasUseCase @Inject constructor(
             return 0
         }
         val opticaRemota = opticaId.trim().ifBlank { FinanzasRemoteDefaults.OPTICA_ID_FALLBACK }
-        val rows = pagos.map { it.toRemoto().copy(opticaId = opticaRemota) }
+        val rows = pagos.map { it.toRemoto().copy(opticaId = opticaRemota) }.distinctBy { it.id }
         try {
-            supabase.postgrest[TABLE_PAGOS].upsert(rows)
+            rows.chunked(UPSERT_BATCH_SIZE).forEachIndexed { index, chunk ->
+                retryNetwork("upsert:$TABLE_PAGOS:chunk${index + 1}") {
+                    supabase.postgrest[TABLE_PAGOS].upsert(chunk)
+                }
+            }
         } catch (e: Exception) {
             rethrowIfCancellation(e)
             syncStateTracker.markError(opticaId, "upload_pagos", "batch", e.message)
@@ -191,6 +348,38 @@ class SyncFinanzasUseCase @Inject constructor(
             syncStateTracker.markSynced(opticaId, "pago", p.id)
         }
         return pagos.size
+    }
+
+    private suspend fun retryNetwork(
+        opName: String,
+        block: suspend () -> Unit
+    ) {
+        var lastError: Exception? = null
+        repeat(NETWORK_RETRY_ATTEMPTS) { attempt ->
+            try {
+                block()
+                return
+            } catch (e: Exception) {
+                rethrowIfCancellation(e)
+                lastError = e
+                val shouldRetry = isTransientNetworkError(e)
+                if (!shouldRetry || attempt == NETWORK_RETRY_ATTEMPTS - 1) throw e
+                val backoffMs = 400L * (attempt + 1)
+                Log.w(TAG, "$opName fallo de red (intento ${attempt + 1}/$NETWORK_RETRY_ATTEMPTS). Reintentando en ${backoffMs}ms")
+                delay(backoffMs)
+            }
+        }
+        lastError?.let { throw it }
+    }
+
+    private fun isTransientNetworkError(e: Exception): Boolean {
+        val msg = e.message?.lowercase().orEmpty()
+        return msg.contains("timeout") ||
+            msg.contains("timed out") ||
+            msg.contains("connect") && msg.contains("failed") ||
+            msg.contains("unable to resolve host") ||
+            msg.contains("network is unreachable") ||
+            msg.contains("connection reset")
     }
 
     // ─── BAJADA ──────────────────────────────────────────────────────────────
@@ -428,4 +617,10 @@ private fun ServicioExtra.toRemoto(): ServicioRemoto = ServicioRemoto(
 private data class ServicioRemotoLookup(
     val id: String,
     val ot: String = ""
+)
+
+@Serializable
+private data class DispensacionRemotaLookup(
+    val id: String,
+    val ot: String? = null
 )

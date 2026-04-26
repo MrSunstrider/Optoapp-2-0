@@ -10,6 +10,7 @@ import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Resource
 import com.example.optoapp.data.SessionManager
 import com.example.optoapp.data.SyncTelemetry
+import com.example.optoapp.data.MembershipRepository
 import com.example.optoapp.subscription.SubscriptionManager
 import com.example.optoapp.util.rethrowIfCancellation
 import com.example.optoapp.util.SyncErrorSanitizer
@@ -19,6 +20,7 @@ import com.example.optoapp.domain.SyncPacientesUseCase
 import com.example.optoapp.domain.SyncSessionHelper
 import com.example.optoapp.sync.SyncGate
 import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.auth.auth
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -44,6 +46,7 @@ sealed class SyncState {
 class SyncViewModel @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val sessionManager: SessionManager,
+    private val membershipRepository: MembershipRepository,
     private val repository: OptoRepository,
     private val syncTelemetry: SyncTelemetry,
     private val subscriptionManager: SubscriptionManager,
@@ -81,6 +84,12 @@ class SyncViewModel @Inject constructor(
             return@launch
         }
         SyncSessionHelper.refreshSessionBeforeSync(supabase)
+
+        val contextCheck = ensureSyncContext()
+        if (contextCheck != null) {
+            _syncState.value = SyncState.Error(contextCheck)
+            return@launch
+        }
 
         val opticaId = sessionManager.opticaId.first()
         repository.reassignLegacyMiOpticaBaseTo(opticaId)
@@ -141,6 +150,11 @@ class SyncViewModel @Inject constructor(
      * No cambia el estado global de UI para no interrumpir al usuario.
      */
     fun performSilentSync() = viewModelScope.launch {
+        val contextCheck = ensureSyncContext()
+        if (contextCheck != null) {
+            Log.w(TAG, "Sync silenciosa cancelada: $contextCheck")
+            return@launch
+        }
         val opticaId = sessionManager.opticaId.first()
         // Sin red también: migrar datos legacy a la óptica de sesión para que las listas no queden vacías.
         repository.reassignLegacyMiOpticaBaseTo(opticaId)
@@ -180,5 +194,20 @@ class SyncViewModel @Inject constructor(
             activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> true
             else -> false
         }
+    }
+
+    private suspend fun ensureSyncContext(): String? {
+        val currentUser = runCatching { supabase.auth.currentUserOrNull() }.getOrNull()
+            ?: return "Tu sesión de Supabase no está activa. Vuelve a iniciar sesión."
+        val opticaId = sessionManager.opticaId.first()
+        if (opticaId.isBlank() || opticaId == SessionManager.LEGACY_OPTICA_ID) {
+            return "Debes seleccionar o crear una óptica antes de sincronizar."
+        }
+        val memberships = membershipRepository.fetchMembershipsForCurrentUser()
+        val belongsToOptica = memberships.any { it.opticaId == opticaId }
+        if (!belongsToOptica) {
+            return "Tu cuenta (${currentUser.email ?: "usuario"}) no tiene acceso a la óptica actual. Reingresa y selecciona una óptica válida."
+        }
+        return null
     }
 }

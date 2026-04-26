@@ -46,13 +46,12 @@ fun PacientesListScreen(navController: NavController, drawerState: DrawerState, 
     }
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             TopAppBar(
+                windowInsets = WindowInsets(0, 0, 0, 0),
                 title = {
-                    Column {
-                        Text("OptoApp", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                        Text("Lista de Pacientes", fontSize = 14.sp)
-                    }
+                    Text("Pacientes", fontSize = 20.sp, fontWeight = FontWeight.Bold)
                 },
                 navigationIcon = {
                     IconButton(onClick = { scope.launch { drawerState.open() } }) {

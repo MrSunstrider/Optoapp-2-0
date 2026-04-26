@@ -59,6 +59,18 @@ interface PacienteDao {
     @Query("UPDATE pacientes SET opticaId = :newOpticaId WHERE opticaId = 'mi_optica_base'")
     suspend fun reassignFromLegacyMiOpticaBase(newOpticaId: String): Int
 
+    @Query("UPDATE evaluaciones SET pacienteId = :targetPacienteId WHERE pacienteId = :sourcePacienteId")
+    suspend fun reassignEvaluacionesPaciente(sourcePacienteId: String, targetPacienteId: String): Int
+
+    @Query("UPDATE dispensaciones SET pacienteId = :targetPacienteId WHERE pacienteId = :sourcePacienteId")
+    suspend fun reassignDispensacionesPaciente(sourcePacienteId: String, targetPacienteId: String): Int
+
+    @Query("UPDATE servicios_extra SET pacienteId = :targetPacienteId WHERE pacienteId = :sourcePacienteId")
+    suspend fun reassignServiciosPaciente(sourcePacienteId: String, targetPacienteId: String): Int
+
+    @Query("DELETE FROM pacientes WHERE id = :id")
+    suspend fun deletePacienteById(id: String): Int
+
     @Query("""
         SELECT * FROM pacientes 
         WHERE id IN (SELECT pacienteId FROM dispensaciones WHERE (montoTotal - montoPagado) > 0)
@@ -203,6 +215,9 @@ interface DispensacionDao {
 
     @Query("SELECT ot FROM dispensaciones WHERE opticaId = :opticaId AND ot LIKE ('OT-' || :year || '-%')")
     suspend fun getOtsWithYearPrefix(opticaId: String, year: String): List<String>
+
+    @Query("DELETE FROM dispensaciones WHERE id = :id")
+    suspend fun deleteById(id: String): Int
 }
 
 @Dao
@@ -242,6 +257,9 @@ interface PagoDao {
 
     @Query("SELECT * FROM pagos WHERE opticaId = :opticaId")
     suspend fun getPagosListByOptica(opticaId: String): List<Pago>
+
+    @Query("UPDATE pagos SET dispensacionId = :newDispensacionId WHERE dispensacionId = :oldDispensacionId")
+    suspend fun reassignDispensacionId(oldDispensacionId: String, newDispensacionId: String): Int
 }
 
 @Dao

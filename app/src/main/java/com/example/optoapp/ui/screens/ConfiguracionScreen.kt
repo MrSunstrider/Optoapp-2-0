@@ -12,7 +12,6 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationManagerCompat
-import androidx.core.content.edit
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -28,12 +27,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
+import com.example.optoapp.R
 import com.example.optoapp.billing.PlayBillingManager
 import com.example.optoapp.subscription.PlanCode
-import com.example.optoapp.subscription.SubscriptionTier
 import com.example.optoapp.viewmodel.SubscriptionViewModel
 import com.example.optoapp.viewmodel.SyncDiagnosticsViewModel
 import androidx.compose.ui.text.font.FontWeight
@@ -50,8 +49,10 @@ import com.example.optoapp.ui.components.OptoTextField
 import com.example.optoapp.viewmodel.AuthViewModel
 import com.example.optoapp.viewmodel.FiscalConfigViewModel
 import com.example.optoapp.viewmodel.LaboratorioConfigViewModel
+import com.example.optoapp.viewmodel.PlanManagementUiState
 import com.example.optoapp.viewmodel.PlanManagementViewModel
 import com.example.optoapp.viewmodel.RoleManagementViewModel
+import com.example.optoapp.viewmodel.SettingsViewModel
 import kotlinx.coroutines.launch
 
 private const val INTERNAL_OWNER_EMAIL = "jaermadera@gmail.com"
@@ -64,6 +65,7 @@ fun ConfiguracionScreen(
     viewModel: AuthViewModel = hiltViewModel(),
     fiscalVm: FiscalConfigViewModel = hiltViewModel(),
     laboratorioVm: LaboratorioConfigViewModel = hiltViewModel(),
+    settingsVm: SettingsViewModel = hiltViewModel(),
     subscriptionVm: SubscriptionViewModel = hiltViewModel(),
     syncDiagVm: SyncDiagnosticsViewModel = hiltViewModel(),
     roleVm: RoleManagementViewModel = hiltViewModel(),
@@ -73,36 +75,8 @@ fun ConfiguracionScreen(
     val scope = rememberCoroutineScope()
     val fiscalUi by fiscalVm.uiState.collectAsState()
     val labUi by laboratorioVm.uiState.collectAsState()
-    var fiscalDocTipo by remember { mutableStateOf("RUC") }
-    var fiscalDocNumero by remember { mutableStateOf("") }
-    var fiscalRazonSocial by remember { mutableStateOf("") }
-    var fiscalDireccion by remember { mutableStateOf("") }
-    var fiscalDistritoCiudadDepartamento by remember { mutableStateOf("") }
-    var fiscalMoneda by remember { mutableStateOf("") }
-    var fiscalPais by remember { mutableStateOf("") }
-    var fiscalContactoWhatsappTelefono by remember { mutableStateOf("") }
     var labNombre by remember { mutableStateOf("") }
     var labContacto by remember { mutableStateOf("") }
-    LaunchedEffect(
-        fiscalUi.opticaId,
-        fiscalUi.docTipo,
-        fiscalUi.docNumero,
-        fiscalUi.razonSocial,
-        fiscalUi.direccionFiscal,
-        fiscalUi.distritoCiudadDepartamento,
-        fiscalUi.moneda,
-        fiscalUi.pais,
-        fiscalUi.contactoWhatsappTelefono
-    ) {
-        fiscalDocTipo = fiscalUi.docTipo.ifBlank { "RUC" }
-        fiscalDocNumero = fiscalUi.docNumero
-        fiscalRazonSocial = fiscalUi.razonSocial
-        fiscalDireccion = fiscalUi.direccionFiscal
-        fiscalDistritoCiudadDepartamento = fiscalUi.distritoCiudadDepartamento
-        fiscalMoneda = fiscalUi.moneda
-        fiscalPais = fiscalUi.pais
-        fiscalContactoWhatsappTelefono = fiscalUi.contactoWhatsappTelefono
-    }
     LaunchedEffect(labUi.opticaId, labUi.laboratorioNombre, labUi.laboratorioContacto) {
         labNombre = labUi.laboratorioNombre
         labContacto = labUi.laboratorioContacto
@@ -112,8 +86,6 @@ fun ConfiguracionScreen(
         laboratorioVm.syncFromServer()
         subscriptionVm.refreshPlanFromServer()
     }
-
-    val subTier by subscriptionVm.tier.collectAsState()
     val planCode by subscriptionVm.planCode.collectAsState()
     val devProOverride by subscriptionVm.devProOverride.collectAsState()
     val syncErrors by syncDiagVm.errorRows.collectAsState()
@@ -142,11 +114,24 @@ fun ConfiguracionScreen(
     
     var showDialog by remember { mutableStateOf(false) }
     var dialogMsg by remember { mutableStateOf("") }
+
+    LaunchedEffect(fiscalUi.message, fiscalUi.error) {
+        when {
+            !fiscalUi.message.isNullOrBlank() -> {
+                dialogMsg = fiscalUi.message!!
+                showDialog = true
+                fiscalVm.clearMessages()
+            }
+            !fiscalUi.error.isNullOrBlank() -> {
+                dialogMsg = fiscalUi.error!!
+                showDialog = true
+                fiscalVm.clearMessages()
+            }
+        }
+    }
     
     val isPinRequired by viewModel.isPinRequired.collectAsState(initial = true)
-    
-    val sharedPreferences = context.getSharedPreferences("optoapp_prefs", Context.MODE_PRIVATE)
-    var confirmReminders by remember { mutableStateOf(sharedPreferences.getBoolean("pref_enable_reminders", true)) }
+    val remindersEnabled by settingsVm.remindersEnabled.collectAsState()
     val notificationPermissionGranted =
         Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
             ActivityCompat.checkSelfPermission(
@@ -178,10 +163,10 @@ fun ConfiguracionScreen(
                         stream.write(json.toByteArray())
                     }
                 }.onSuccess {
-                    dialogMsg = "Respaldo exportado exitosamente."
+                    dialogMsg = context.getString(R.string.config_backup_export_success)
                     showDialog = true
                 }.onFailure { e ->
-                    dialogMsg = e.message ?: "No se pudo exportar el respaldo."
+                    dialogMsg = e.message ?: context.getString(R.string.config_backup_export_failed)
                     showDialog = true
                 }
             }
@@ -191,10 +176,10 @@ fun ConfiguracionScreen(
     val restoreBackupLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri ->
-        uri?.let {
+        uri?.let { selectedUri ->
             scope.launch {
-                val inputStream = context.contentResolver.openInputStream(it)
-                val json = inputStream?.bufferedReader()?.use { it.readText() }
+                val inputStream = context.contentResolver.openInputStream(selectedUri)
+                val json = inputStream?.bufferedReader()?.use { reader -> reader.readText() }
                 if (json != null) {
                     viewModel.restoreBackup(json) { msg ->
                         dialogMsg = msg
@@ -206,9 +191,11 @@ fun ConfiguracionScreen(
     }
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             TopAppBar(
-                title = { Text("Configuración") },
+                windowInsets = WindowInsets(0, 0, 0, 0),
+                title = { Text(stringResource(R.string.config_title)) },
                 navigationIcon = {
                     IconButton(onClick = { scope.launch { drawerState.open() } }) {
                         Icon(Icons.Default.Menu, contentDescription = "Menu")
@@ -225,427 +212,189 @@ fun ConfiguracionScreen(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            // Seguridad
-            Card {
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text("Seguridad y Acceso", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                    
-                    // Nuevo Switch para PIN Opcional
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text("Requerir PIN al inicio", fontSize = 16.sp)
-                            Text(
-                                "Solicita el PIN de seguridad cada vez que abres la app.",
-                                fontSize = 12.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+            SecuritySection(
+                isPinRequired = isPinRequired,
+                pinActual = pinActual,
+                nuevoPin = nuevoPin,
+                confirmPin = confirmPin,
+                onPinActualChange = { pinActual = it },
+                onNuevoPinChange = { nuevoPin = it },
+                onConfirmPinChange = { confirmPin = it },
+                onPinRequiredChange = { viewModel.togglePinRequired(it) },
+                onUpdatePin = {
+                    if (nuevoPin == confirmPin && nuevoPin.length == SecurityManager.PIN_LENGTH) {
+                        scope.launch {
+                            viewModel.updatePin(pinActual, nuevoPin)
+                            dialogMsg = context.getString(R.string.config_security_pin_updated)
+                            showDialog = true
+                            pinActual = ""; nuevoPin = ""; confirmPin = ""
                         }
-                        Switch(
-                            checked = isPinRequired,
-                            onCheckedChange = { viewModel.togglePinRequired(it) }
-                        )
-                    }
-
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-
-                    OutlinedTextField(
-                        value = pinActual,
-                        onValueChange = { pinActual = it.filter { c -> c.isDigit() }.take(SecurityManager.PIN_LENGTH) },
-                        label = { Text("PIN actual (${SecurityManager.PIN_LENGTH} dígitos)") },
-                        modifier = Modifier.fillMaxWidth(),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-                    )
-                    OutlinedTextField(
-                        value = nuevoPin,
-                        onValueChange = { nuevoPin = it.filter { c -> c.isDigit() }.take(SecurityManager.PIN_LENGTH) },
-                        label = { Text("Nuevo PIN (${SecurityManager.PIN_LENGTH} dígitos)") },
-                        modifier = Modifier.fillMaxWidth(),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-                    )
-                    OutlinedTextField(
-                        value = confirmPin,
-                        onValueChange = { confirmPin = it.filter { c -> c.isDigit() }.take(SecurityManager.PIN_LENGTH) },
-                        label = { Text("Confirmar nuevo PIN") },
-                        modifier = Modifier.fillMaxWidth(),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-                    )
-
-                    Button(
-                        onClick = {
-                            if (nuevoPin == confirmPin && nuevoPin.length == SecurityManager.PIN_LENGTH) {
-                                scope.launch {
-                                    viewModel.updatePin(pinActual, nuevoPin)
-                                    dialogMsg = "PIN actualizado correctamente."
-                                    showDialog = true
-                                    pinActual = ""; nuevoPin = ""; confirmPin = ""
-                                }
-                            } else {
-                                dialogMsg = "Los PINs no coinciden o son inválidos."
-                                showDialog = true
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("Actualizar PIN")
+                    } else {
+                        dialogMsg = context.getString(R.string.config_security_pin_invalid)
+                        showDialog = true
                     }
                 }
-            }
+            )
             
             // Preferencias
             Card {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text("Ajustes Generales", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                    Text(stringResource(R.string.config_general_section_title), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Recordatorios Automáticos", fontSize = 16.sp)
+                            Text(stringResource(R.string.config_general_reminders_title), fontSize = 16.sp)
                             Text(
-                                "Aviso el día de la cita alrededor de las 12:00 (hora del teléfono). Si guardas la cita ese mismo día después de las 12:00, se envía un aviso en segundos. Activa las notificaciones del sistema para OptoApp.",
+                                stringResource(R.string.config_general_reminders_desc),
                                 fontSize = 12.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                         Switch(
-                            checked = confirmReminders,
-                            onCheckedChange = { isChecked ->
-                                confirmReminders = isChecked
-                                sharedPreferences.edit(commit = false) {
-                                    putBoolean("pref_enable_reminders", isChecked)
-                                }
-                            }
+                            checked = remindersEnabled,
+                            onCheckedChange = settingsVm::setRemindersEnabled
                         )
                     }
                     val remindersStatusText = when {
-                        !notificationPermissionGranted -> "Sin permiso de notificaciones (Android 13+)."
-                        !systemNotificationsEnabled -> "Notificaciones del sistema desactivadas para OptoApp."
-                        !confirmReminders -> "Recordatorios desactivados desde la app."
-                        else -> "Recordatorios activos."
+                        !notificationPermissionGranted -> stringResource(R.string.config_general_reminders_state_no_permission)
+                        !systemNotificationsEnabled -> stringResource(R.string.config_general_reminders_state_system_disabled)
+                        !remindersEnabled -> stringResource(R.string.config_general_reminders_state_app_disabled)
+                        else -> stringResource(R.string.config_general_reminders_state_active)
                     }
                     val remindersStatusColor = when {
                         !notificationPermissionGranted || !systemNotificationsEnabled -> MaterialTheme.colorScheme.error
-                        !confirmReminders -> MaterialTheme.colorScheme.onSurfaceVariant
+                        !remindersEnabled -> MaterialTheme.colorScheme.onSurfaceVariant
                         else -> MaterialTheme.colorScheme.tertiary
                     }
                     Text(
-                        text = "Estado recordatorios: $remindersStatusText",
+                        text = stringResource(R.string.config_general_reminders_state_prefix, remindersStatusText),
                         fontSize = 12.sp,
                         color = remindersStatusColor
                     )
                     OutlinedButton(
                         onClick = {
-                            com.example.optoapp.notifications.NotificationHelper(context)
-                                .showNotification("Prueba OptoApp")
-                            Toast.makeText(
-                                context,
-                                "Prueba enviada. Si no aparece, revisa permisos/notificaciones del sistema.",
-                                Toast.LENGTH_LONG
-                            ).show()
+                            settingsVm.sendTestNotification()
+                            Toast.makeText(context, context.getString(R.string.config_notification_test_sent), Toast.LENGTH_LONG).show()
                         },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("Probar notificación ahora")
+                        Text(stringResource(R.string.config_test_notification_action))
                     }
                 }
             }
 
             Card {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text("Laboratorio (esta óptica)", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                    Text(stringResource(R.string.config_laboratory_section_title), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                     Text(
-                        "Nombre y WhatsApp o teléfono del laboratorio. Se usa para enviar el ticket de orden con un toque.",
+                        stringResource(R.string.config_laboratory_section_description),
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     OptoTextField(
                         value = labNombre,
                         onValueChange = { labNombre = it },
-                        label = "Nombre del laboratorio (opcional)"
+                        label = stringResource(R.string.config_laboratory_name_label)
                     )
                     OptoTextField(
                         value = labContacto,
                         onValueChange = { labContacto = it },
-                        label = "WhatsApp / teléfono del laboratorio",
+                        label = stringResource(R.string.config_laboratory_contact_label),
                         keyboardType = KeyboardType.Phone
                     )
                     Button(
                         onClick = { laboratorioVm.save(labNombre, labContacto) },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("Guardar contacto de laboratorio")
+                        Text(stringResource(R.string.config_laboratory_save_action))
                     }
                 }
             }
 
             if (canManageUsers) {
-                Card {
-                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Text("Datos fiscales (esta óptica)", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                        Text(
-                            "Requerido para facturación futura: RUC/RUS, razón social y dirección. Los demás campos son opcionales.",
-                            fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                FiscalDataSection(
+                    fiscalUi = fiscalUi,
+                    onDraftChange = { update ->
+                        fiscalVm.updateDraft(
+                            nombreComercial = update.nombreComercial,
+                            docTipo = update.docTipo,
+                            docNumero = update.docNumero,
+                            razonSocial = update.razonSocial,
+                            direccionFiscal = update.direccionFiscal,
+                            distritoCiudadDepartamento = update.distritoCiudadDepartamento,
+                            moneda = update.moneda,
+                            pais = update.pais,
+                            contactoWhatsappTelefono = update.contactoWhatsappTelefono
                         )
-                        DropdownField(
-                            label = "Tipo documento fiscal",
-                            selected = fiscalDocTipo,
-                            options = listOf("RUC", "RUS"),
-                            onSelected = {
-                                fiscalDocTipo = it
-                                fiscalVm.clearMessages()
-                            }
-                        )
-                        OptoTextField(
-                            value = fiscalDocNumero,
-                            onValueChange = {
-                                fiscalDocNumero = it
-                                fiscalVm.clearMessages()
-                            },
-                            label = "Número $fiscalDocTipo"
-                        )
-                        OptoTextField(
-                            value = fiscalRazonSocial,
-                            onValueChange = {
-                                fiscalRazonSocial = it
-                                fiscalVm.clearMessages()
-                            },
-                            label = "Razón social"
-                        )
-                        OptoTextField(
-                            value = fiscalDireccion,
-                            onValueChange = {
-                                fiscalDireccion = it
-                                fiscalVm.clearMessages()
-                            },
-                            label = "Dirección fiscal"
-                        )
-                        OptoTextField(
-                            value = fiscalDistritoCiudadDepartamento,
-                            onValueChange = {
-                                fiscalDistritoCiudadDepartamento = it
-                                fiscalVm.clearMessages()
-                            },
-                            label = "Distrito / ciudad / departamento (opcional)"
-                        )
-                        OptoTextField(
-                            value = fiscalMoneda,
-                            onValueChange = {
-                                fiscalMoneda = it
-                                fiscalVm.clearMessages()
-                            },
-                            label = "Moneda (opcional)"
-                        )
-                        OptoTextField(
-                            value = fiscalPais,
-                            onValueChange = {
-                                fiscalPais = it
-                                fiscalVm.clearMessages()
-                            },
-                            label = "País (opcional)"
-                        )
-                        OptoTextField(
-                            value = fiscalContactoWhatsappTelefono,
-                            onValueChange = {
-                                fiscalContactoWhatsappTelefono = it
-                                fiscalVm.clearMessages()
-                            },
-                            label = "WhatsApp / teléfono de contacto (opcional)",
-                            keyboardType = KeyboardType.Phone
-                        )
-                        Button(
-                            onClick = {
-                                fiscalVm.save(
-                                    docTipo = fiscalDocTipo,
-                                    docNumero = fiscalDocNumero,
-                                    razonSocial = fiscalRazonSocial,
-                                    direccionFiscal = fiscalDireccion,
-                                    distritoCiudadDepartamento = fiscalDistritoCiudadDepartamento,
-                                    moneda = fiscalMoneda,
-                                    pais = fiscalPais,
-                                    contactoWhatsappTelefono = fiscalContactoWhatsappTelefono
-                                )
-                            },
-                            enabled = !fiscalUi.loading,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(if (fiscalUi.loading) "Guardando..." else "Guardar datos fiscales")
-                        }
-                        fiscalUi.message?.let { Text(it, color = MaterialTheme.colorScheme.tertiary, fontSize = 12.sp) }
-                        fiscalUi.error?.let { Text(it, color = MaterialTheme.colorScheme.error, fontSize = 12.sp) }
-                    }
-                }
+                        fiscalVm.clearMessages()
+                    },
+                    onSave = fiscalVm::save
+                )
             }
 
             if (canManagePlans) {
-                Card {
-                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Text("Administración de plan (interno)", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                        Text("Ajusta plan y límites de la óptica activa. Uso administrativo.", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        DropdownField(
-                            label = "Plan",
-                            selected = planUi.planCode,
-                            options = if (canUseInternalPlan) {
-                                listOf("free", "pro_individual", "pro_multisite_15", "enterprise", "dev_owner")
-                            } else {
-                                listOf("free", "pro_individual", "pro_multisite_15", "enterprise")
-                            },
-                            onSelected = planVm::updatePlanCode
-                        )
-                        DropdownField(
-                            label = "Estado",
-                            selected = planUi.planStatus,
-                            options = listOf("active", "grace", "canceled"),
-                            onSelected = planVm::updatePlanStatus
-                        )
-                        OptoTextField(
-                            value = planUi.maxOpticasInput,
-                            onValueChange = planVm::updateMaxOpticas,
-                            label = "Max ópticas (vacío = ilimitado)",
-                            keyboardType = KeyboardType.Number
-                        )
-                        OptoTextField(
-                            value = planUi.maxPacientesInput,
-                            onValueChange = planVm::updateMaxPacientes,
-                            label = "Max pacientes por óptica (vacío = ilimitado)",
-                            keyboardType = KeyboardType.Number
-                        )
-                        OptoTextField(
-                            value = planUi.maxUsuariosInput,
-                            onValueChange = planVm::updateMaxUsuarios,
-                            label = "Max usuarios por óptica (vacío = ilimitado)",
-                            keyboardType = KeyboardType.Number
-                        )
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                OutlinedButton(
-                                    onClick = { planVm.applyPreset() },
-                                    enabled = !planUi.loading,
-                                    modifier = Modifier.weight(1f)
-                                ) {
-                                    Text("Aplicar preset", maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                }
-                                Button(
-                                    onClick = { planVm.save() },
-                                    enabled = !planUi.loading,
-                                    modifier = Modifier.weight(1f)
-                                ) {
-                                    Text("Guardar plan", maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                }
-                            }
-                            OutlinedButton(
-                                onClick = { planVm.load() },
-                                enabled = !planUi.loading,
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text("Recargar plan")
-                            }
-                        }
-                        planUi.message?.let { Text(it, color = MaterialTheme.colorScheme.tertiary, fontSize = 12.sp) }
-                        planUi.error?.let { Text(it, color = MaterialTheme.colorScheme.error, fontSize = 12.sp) }
-                    }
-                }
+                PlanManagementSection(
+                    planUi = planUi,
+                    canUseInternalPlan = canUseInternalPlan,
+                    onPlanCodeChange = planVm::updatePlanCode,
+                    onPlanStatusChange = planVm::updatePlanStatus,
+                    onMaxOpticasChange = planVm::updateMaxOpticas,
+                    onMaxPacientesChange = planVm::updateMaxPacientes,
+                    onMaxUsuariosChange = planVm::updateMaxUsuarios,
+                    onApplyPreset = { planVm.applyPreset() },
+                    onSave = { planVm.save() },
+                    onReload = { planVm.load() }
+                )
             }
 
             if (canManageUsers) {
-                Card {
-                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Text("Usuarios y roles", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                        Text(
-                            "Asigna rol por email a cuentas ya registradas. Si el email no existe, primero debe crear su cuenta en login.",
-                            fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        OptoTextField(
-                            value = roleUi.emailInput,
-                            onValueChange = roleVm::updateEmail,
-                            label = "Email de la cuenta"
-                        )
-                        DropdownField(
-                            label = "Rol",
-                            selected = roleUi.roleInput,
-                            options = allowedRoles,
-                            onSelected = roleVm::updateRole
-                        )
-                        if (!canAssignAdminRole) {
-                            Text(
-                                "Solo admin puede asignar el rol admin.",
-                                fontSize = 11.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Button(
-                                onClick = { roleVm.assignRole() },
-                                enabled = !roleUi.loading,
-                                modifier = Modifier.fillMaxWidth()
-                            ) { Text("Asignar o actualizar rol") }
-                            OutlinedButton(
-                                onClick = { roleVm.loadMembers() },
-                                enabled = !roleUi.loading,
-                                modifier = Modifier.fillMaxWidth()
-                            ) { Text("Actualizar lista") }
-                        }
-                        roleUi.message?.let { Text(it, color = MaterialTheme.colorScheme.tertiary, fontSize = 12.sp) }
-                        roleUi.error?.let { Text(it, color = MaterialTheme.colorScheme.error, fontSize = 12.sp) }
-                        if (roleUi.members.isEmpty()) {
-                            Text("No hay miembros visibles en esta óptica.", fontSize = 12.sp)
-                        } else {
-                            roleUi.members.take(20).forEach { row ->
-                                Text("• ${row.email.ifBlank { row.userId }} — ${row.rol}", fontSize = 12.sp)
-                            }
+                ClinicalIntegritySection(
+                    onResolveDuplicates = {
+                        viewModel.resolveDuplicateHistorias { msg ->
+                            dialogMsg = msg
+                            showDialog = true
                         }
                     }
-                }
+                )
             }
 
             if (canManageUsers) {
-                Card {
-                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Text("Sucursales", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                        Text(
-                            "Crea una nueva óptica/sucursal dentro de tu plan. Solo admin o gerente.",
-                            fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        OptoTextField(
-                            value = nuevaSucursalNombre,
-                            onValueChange = { nuevaSucursalNombre = it },
-                            label = "Nombre de la sucursal"
-                        )
-                        Button(
-                            onClick = {
-                                if (creatingSucursal) return@Button
-                                creatingSucursal = true
-                                viewModel.createAdditionalOptica(nuevaSucursalNombre) { ok, msg ->
-                                    creatingSucursal = false
-                                    dialogMsg = msg
-                                    showDialog = true
-                                    if (ok) {
-                                        nuevaSucursalNombre = ""
-                                    }
-                                }
-                            },
-                            enabled = nuevaSucursalNombre.trim().isNotEmpty() && !creatingSucursal,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(if (creatingSucursal) "Creando..." else "Crear sucursal")
+                UsuariosRolesSection(
+                    roleUi = roleUi,
+                    allowedRoles = allowedRoles,
+                    canAssignAdminRole = canAssignAdminRole,
+                    onEmailChange = roleVm::updateEmail,
+                    onRoleChange = roleVm::updateRole,
+                    onAssignRole = { roleVm.assignRole() },
+                    onRefresh = { roleVm.loadMembers() }
+                )
+            }
+
+            if (canManageUsers) {
+                SucursalesSection(
+                    nuevaSucursalNombre = nuevaSucursalNombre,
+                    creatingSucursal = creatingSucursal,
+                    onNombreChange = { nuevaSucursalNombre = it },
+                    onCreate = {
+                        creatingSucursal = true
+                        viewModel.createAdditionalOptica(nuevaSucursalNombre) { ok, msg ->
+                            creatingSucursal = false
+                            dialogMsg = msg
+                            showDialog = true
+                            if (ok) {
+                                nuevaSucursalNombre = ""
+                            }
                         }
                     }
-                }
+                )
             }
 
             Card {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text("Suscripción y límites", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                    Text(stringResource(R.string.config_subscription_section_title), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                     val planLabel = when (planCode) {
                         PlanCode.FREE -> "Free (máx. ${com.example.optoapp.subscription.SubscriptionManager.FREE_MAX_PACIENTES} pacientes)"
                         PlanCode.PRO_INDIVIDUAL -> "Pro Individual (1 óptica)"
@@ -653,19 +402,16 @@ fun ConfiguracionScreen(
                         PlanCode.ENTERPRISE -> "Enterprise"
                         PlanCode.DEV_OWNER -> "Dev Owner (interno, ilimitado y exento de facturación)"
                     }
-                    Text(
-                        "Plan: $planLabel",
-                        fontSize = 14.sp
-                    )
+                    Text(stringResource(R.string.config_subscription_plan_label, planLabel), fontSize = 14.sp)
                     if (BuildConfig.DEBUG && BuildConfig.FORCE_PRO_DEV) {
                         Text(
-                            "PRO forzado en esta compilación (local.properties: optoapp.dev.force_pro).",
+                            stringResource(R.string.config_subscription_force_pro_debug),
                             fontSize = 11.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                     Text(
-                        "Producto Play: ${PlayBillingManager.SUBSCRIPTION_PRODUCT_ID}",
+                        stringResource(R.string.config_subscription_play_product, PlayBillingManager.SUBSCRIPTION_PRODUCT_ID),
                         fontSize = 11.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -675,18 +421,18 @@ fun ConfiguracionScreen(
                                 val act = context as? Activity
                                 if (act != null) {
                                     subscriptionVm.launchProPurchase(act) { msg ->
-                                        android.widget.Toast.makeText(context, msg, android.widget.Toast.LENGTH_LONG).show()
+                                        Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
                                     }
                                 }
                             },
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Text("Comprar / renovar PRO (Play Store)")
+                            Text(stringResource(R.string.config_subscription_buy_action))
                         }
                     } else {
                         AssistChip(
                             onClick = {},
-                            label = { Text("Facturación deshabilitada para plan interno") }
+                            label = { Text(stringResource(R.string.config_subscription_internal_billing_disabled)) }
                         )
                     }
                     if (BuildConfig.DEBUG) {
@@ -696,8 +442,8 @@ fun ConfiguracionScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
-                                Text("Modo desarrollador: forzar PRO", fontSize = 14.sp)
-                                Text("Solo para pruebas sin Play Billing.", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(stringResource(R.string.config_subscription_dev_mode_title), fontSize = 14.sp)
+                                Text(stringResource(R.string.config_subscription_dev_mode_desc), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                             Switch(
                                 checked = devProOverride,
@@ -709,17 +455,16 @@ fun ConfiguracionScreen(
                         onClick = { subscriptionVm.refreshPlanFromServer() },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("Sincronizar plan desde servidor")
+                        Text(stringResource(R.string.config_subscription_sync_plan_action))
                     }
                 }
             }
 
             Card {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Diagnóstico de sincronización", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                    Text(stringResource(R.string.config_sync_diag_section_title), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                     Text(
-                        "Si algún registro no pudo subirse o bajarse respecto a la nube, se lista aquí con el detalle. " +
-                            "No es un fallo de la app por sí solo: revisa conexión y vuelve a sincronizar desde el menú.",
+                        stringResource(R.string.config_sync_diag_desc),
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -735,7 +480,7 @@ fun ConfiguracionScreen(
                                 modifier = Modifier.size(22.dp)
                             )
                             Text(
-                                "No hay registros con error de sincronización.",
+                                stringResource(R.string.config_sync_diag_empty),
                                 fontSize = 14.sp,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
@@ -754,22 +499,22 @@ fun ConfiguracionScreen(
                                 val clip = ClipData.newPlainText("Errores sincronización OptoApp", body)
                                 val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                                 cm.setPrimaryClip(clip)
-                                Toast.makeText(context, "Copiado al portapapeles", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, context.getString(R.string.config_sync_copied_to_clipboard), Toast.LENGTH_SHORT).show()
                             },
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Icon(Icons.Filled.ContentCopy, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Copiar todo (${syncErrors.size})")
+                            Text(stringResource(R.string.config_sync_copy_all, syncErrors.size))
                         }
                         TextButton(
                             onClick = {
                                 syncDiagVm.clearErrorHistory()
-                                Toast.makeText(context, "Lista de errores borrada (los datos locales no se eliminan).", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, context.getString(R.string.config_sync_cleared), Toast.LENGTH_SHORT).show()
                             },
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Text("Limpiar esta lista")
+                            Text(stringResource(R.string.config_sync_clear_list))
                         }
                         LazyColumn(
                             modifier = Modifier.heightIn(max = 220.dp),
@@ -790,11 +535,11 @@ fun ConfiguracionScreen(
             // Gestión de Datos
             Card {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text("Gestión de Datos", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                    Text("Realiza respaldos de tu información local para evitar pérdidas.", fontSize = 14.sp)
+                    Text(stringResource(R.string.config_data_section_title), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                    Text(stringResource(R.string.config_data_section_desc), fontSize = 14.sp)
                     if (!canManageBackups) {
                         Text(
-                            "Solo admin puede descargar o restaurar respaldo total.",
+                            stringResource(R.string.config_data_admin_only_backup),
                             fontSize = 12.sp,
                             color = MaterialTheme.colorScheme.error
                         )
@@ -805,7 +550,7 @@ fun ConfiguracionScreen(
                         modifier = Modifier.fillMaxWidth(),
                         enabled = canManageBackups
                     ) {
-                        Text("Descargar Respaldo Total")
+                        Text(stringResource(R.string.config_backup_download_action))
                     }
                     
                     HorizontalDivider()
@@ -813,7 +558,7 @@ fun ConfiguracionScreen(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("ADVERTENCIA: Restaurar un respaldo reemplazará todos los datos actuales.", fontSize = 12.sp, color = MaterialTheme.colorScheme.error)
+                        Text(stringResource(R.string.config_data_restore_warning), fontSize = 12.sp, color = MaterialTheme.colorScheme.error)
                     }
                     
                     OutlinedButton(
@@ -822,7 +567,7 @@ fun ConfiguracionScreen(
                         enabled = canManageBackups,
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
                     ) {
-                        Text("Restaurar Respaldo")
+                        Text(stringResource(R.string.config_backup_restore_action))
                     }
                 }
             }
@@ -832,9 +577,372 @@ fun ConfiguracionScreen(
     if (showDialog) {
         AlertDialog(
             onDismissRequest = { showDialog = false },
-            confirmButton = { TextButton(onClick = { showDialog = false }) { Text("OK") } },
-            title = { Text("Información") },
+            confirmButton = { TextButton(onClick = { showDialog = false }) { Text(stringResource(R.string.config_dialog_ok)) } },
+            title = { Text(stringResource(R.string.config_dialog_info_title)) },
             text = { Text(dialogMsg) }
         )
+    }
+}
+
+@Composable
+private fun SecuritySection(
+    isPinRequired: Boolean,
+    pinActual: String,
+    nuevoPin: String,
+    confirmPin: String,
+    onPinActualChange: (String) -> Unit,
+    onNuevoPinChange: (String) -> Unit,
+    onConfirmPinChange: (String) -> Unit,
+    onPinRequiredChange: (Boolean) -> Unit,
+    onUpdatePin: () -> Unit
+) {
+    Card {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(stringResource(R.string.config_security_section_title), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(stringResource(R.string.config_security_pin_required_title), fontSize = 16.sp)
+                    Text(
+                        stringResource(R.string.config_security_pin_required_desc),
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Switch(
+                    checked = isPinRequired,
+                    onCheckedChange = onPinRequiredChange
+                )
+            }
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            OutlinedTextField(
+                value = pinActual,
+                onValueChange = { onPinActualChange(it.filter { c -> c.isDigit() }.take(SecurityManager.PIN_LENGTH)) },
+                label = { Text(stringResource(R.string.config_pin_current_label, SecurityManager.PIN_LENGTH)) },
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+            )
+            OutlinedTextField(
+                value = nuevoPin,
+                onValueChange = { onNuevoPinChange(it.filter { c -> c.isDigit() }.take(SecurityManager.PIN_LENGTH)) },
+                label = { Text(stringResource(R.string.config_pin_new_label, SecurityManager.PIN_LENGTH)) },
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+            )
+            OutlinedTextField(
+                value = confirmPin,
+                onValueChange = { onConfirmPinChange(it.filter { c -> c.isDigit() }.take(SecurityManager.PIN_LENGTH)) },
+                label = { Text(stringResource(R.string.config_pin_confirm_label)) },
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+            )
+            Button(
+                onClick = onUpdatePin,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(stringResource(R.string.config_pin_update_action))
+            }
+        }
+    }
+}
+
+@Composable
+private fun UsuariosRolesSection(
+    roleUi: com.example.optoapp.viewmodel.RoleManagementUiState,
+    allowedRoles: List<String>,
+    canAssignAdminRole: Boolean,
+    onEmailChange: (String) -> Unit,
+    onRoleChange: (String) -> Unit,
+    onAssignRole: () -> Unit,
+    onRefresh: () -> Unit
+) {
+    Card {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text(stringResource(R.string.config_users_roles_section_title), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+            Text(
+                stringResource(R.string.config_users_roles_desc),
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            OptoTextField(
+                value = roleUi.emailInput,
+                onValueChange = onEmailChange,
+                label = stringResource(R.string.config_users_roles_email_label)
+            )
+            DropdownField(
+                label = stringResource(R.string.config_users_roles_role_label),
+                selected = roleUi.roleInput,
+                options = allowedRoles,
+                onSelected = onRoleChange
+            )
+            if (!canAssignAdminRole) {
+                Text(
+                    stringResource(R.string.config_users_roles_admin_only),
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(
+                    onClick = onAssignRole,
+                    enabled = !roleUi.loading,
+                    modifier = Modifier.fillMaxWidth()
+                ) { Text(stringResource(R.string.config_users_roles_assign_action)) }
+                OutlinedButton(
+                    onClick = onRefresh,
+                    enabled = !roleUi.loading,
+                    modifier = Modifier.fillMaxWidth()
+                ) { Text(stringResource(R.string.config_users_roles_refresh_action)) }
+            }
+            roleUi.message?.let { Text(it, color = MaterialTheme.colorScheme.tertiary, fontSize = 12.sp) }
+            roleUi.error?.let { Text(it, color = MaterialTheme.colorScheme.error, fontSize = 12.sp) }
+            if (roleUi.members.isEmpty()) {
+                Text(stringResource(R.string.config_users_roles_empty), fontSize = 12.sp)
+            } else {
+                roleUi.members.take(20).forEach { row ->
+                    Text("• ${row.email.ifBlank { row.userId }} — ${row.rol}", fontSize = 12.sp)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SucursalesSection(
+    nuevaSucursalNombre: String,
+    creatingSucursal: Boolean,
+    onNombreChange: (String) -> Unit,
+    onCreate: () -> Unit
+) {
+    Card {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text(stringResource(R.string.config_branches_section_title), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+            Text(
+                stringResource(R.string.config_branches_desc),
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            OptoTextField(
+                value = nuevaSucursalNombre,
+                onValueChange = onNombreChange,
+                label = stringResource(R.string.config_branches_name_label)
+            )
+            Button(
+                onClick = onCreate,
+                enabled = nuevaSucursalNombre.trim().isNotEmpty() && !creatingSucursal,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    if (creatingSucursal) {
+                        stringResource(R.string.config_branches_creating_action)
+                    } else {
+                        stringResource(R.string.config_branches_create_action)
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun PlanManagementSection(
+    planUi: PlanManagementUiState,
+    canUseInternalPlan: Boolean,
+    onPlanCodeChange: (String) -> Unit,
+    onPlanStatusChange: (String) -> Unit,
+    onMaxOpticasChange: (String) -> Unit,
+    onMaxPacientesChange: (String) -> Unit,
+    onMaxUsuariosChange: (String) -> Unit,
+    onApplyPreset: () -> Unit,
+    onSave: () -> Unit,
+    onReload: () -> Unit
+) {
+    Card {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text(stringResource(R.string.config_plan_management_section_title), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+            Text(stringResource(R.string.config_plan_management_desc), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            DropdownField(
+                label = stringResource(R.string.config_plan_label),
+                selected = planUi.planCode,
+                options = if (canUseInternalPlan) {
+                    listOf("free", "pro_individual", "pro_multisite_15", "enterprise", "dev_owner")
+                } else {
+                    listOf("free", "pro_individual", "pro_multisite_15", "enterprise")
+                },
+                onSelected = onPlanCodeChange
+            )
+            DropdownField(
+                label = stringResource(R.string.config_plan_status_label),
+                selected = planUi.planStatus,
+                options = listOf("active", "grace", "canceled"),
+                onSelected = onPlanStatusChange
+            )
+            OptoTextField(
+                value = planUi.maxOpticasInput,
+                onValueChange = onMaxOpticasChange,
+                label = stringResource(R.string.config_plan_max_opticas_label),
+                keyboardType = KeyboardType.Number
+            )
+            OptoTextField(
+                value = planUi.maxPacientesInput,
+                onValueChange = onMaxPacientesChange,
+                label = stringResource(R.string.config_plan_max_pacientes_label),
+                keyboardType = KeyboardType.Number
+            )
+            OptoTextField(
+                value = planUi.maxUsuariosInput,
+                onValueChange = onMaxUsuariosChange,
+                label = stringResource(R.string.config_plan_max_usuarios_label),
+                keyboardType = KeyboardType.Number
+            )
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = onApplyPreset,
+                        enabled = !planUi.loading,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(stringResource(R.string.config_plan_apply_preset), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
+                    Button(
+                        onClick = onSave,
+                        enabled = !planUi.loading,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(stringResource(R.string.config_plan_save_action), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
+                }
+                OutlinedButton(
+                    onClick = onReload,
+                    enabled = !planUi.loading,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(stringResource(R.string.config_plan_reload))
+                }
+            }
+            planUi.message?.let { Text(it, color = MaterialTheme.colorScheme.tertiary, fontSize = 12.sp) }
+            planUi.error?.let { Text(it, color = MaterialTheme.colorScheme.error, fontSize = 12.sp) }
+        }
+    }
+}
+
+@Composable
+private fun ClinicalIntegritySection(
+    onResolveDuplicates: () -> Unit
+) {
+    Card {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text(stringResource(R.string.config_clinical_section_title), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+            Text(
+                stringResource(R.string.config_clinical_section_desc),
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Button(
+                onClick = onResolveDuplicates,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(stringResource(R.string.config_clinical_resolve_ho_action))
+            }
+        }
+    }
+}
+
+private data class FiscalDraftUpdate(
+    val nombreComercial: String? = null,
+    val docTipo: String? = null,
+    val docNumero: String? = null,
+    val razonSocial: String? = null,
+    val direccionFiscal: String? = null,
+    val distritoCiudadDepartamento: String? = null,
+    val moneda: String? = null,
+    val pais: String? = null,
+    val contactoWhatsappTelefono: String? = null
+)
+
+@Composable
+private fun FiscalDataSection(
+    fiscalUi: com.example.optoapp.viewmodel.FiscalConfigUi,
+    onDraftChange: (FiscalDraftUpdate) -> Unit,
+    onSave: () -> Unit
+) {
+    Card {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text(stringResource(R.string.config_fiscal_section_title), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+            Text(
+                stringResource(R.string.config_fiscal_desc),
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            OptoTextField(
+                value = fiscalUi.nombreComercial,
+                onValueChange = { onDraftChange(FiscalDraftUpdate(nombreComercial = it)) },
+                label = stringResource(R.string.config_fiscal_nombre_comercial_label)
+            )
+            DropdownField(
+                label = stringResource(R.string.config_fiscal_tipo_doc_label),
+                selected = fiscalUi.docTipo,
+                options = listOf("RUC", "RUS"),
+                onSelected = { onDraftChange(FiscalDraftUpdate(docTipo = it)) }
+            )
+            OptoTextField(
+                value = fiscalUi.docNumero,
+                onValueChange = { onDraftChange(FiscalDraftUpdate(docNumero = it)) },
+                label = stringResource(R.string.config_fiscal_numero_doc_label, fiscalUi.docTipo)
+            )
+            OptoTextField(
+                value = fiscalUi.razonSocial,
+                onValueChange = { onDraftChange(FiscalDraftUpdate(razonSocial = it)) },
+                label = stringResource(R.string.config_fiscal_razon_social_label)
+            )
+            OptoTextField(
+                value = fiscalUi.direccionFiscal,
+                onValueChange = { onDraftChange(FiscalDraftUpdate(direccionFiscal = it)) },
+                label = stringResource(R.string.config_fiscal_direccion_label)
+            )
+            OptoTextField(
+                value = fiscalUi.distritoCiudadDepartamento,
+                onValueChange = { onDraftChange(FiscalDraftUpdate(distritoCiudadDepartamento = it)) },
+                label = stringResource(R.string.config_fiscal_distrito_label)
+            )
+            OptoTextField(
+                value = fiscalUi.moneda,
+                onValueChange = { onDraftChange(FiscalDraftUpdate(moneda = it)) },
+                label = stringResource(R.string.config_fiscal_moneda_label)
+            )
+            OptoTextField(
+                value = fiscalUi.pais,
+                onValueChange = { onDraftChange(FiscalDraftUpdate(pais = it)) },
+                label = stringResource(R.string.config_fiscal_pais_label)
+            )
+            OptoTextField(
+                value = fiscalUi.contactoWhatsappTelefono,
+                onValueChange = { onDraftChange(FiscalDraftUpdate(contactoWhatsappTelefono = it)) },
+                label = stringResource(R.string.config_fiscal_contacto_label),
+                keyboardType = KeyboardType.Phone
+            )
+            Button(
+                onClick = onSave,
+                enabled = !fiscalUi.loading,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                if (fiscalUi.loading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(18.dp),
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Text(stringResource(R.string.config_save_fiscal))
+                }
+            }
+            fiscalUi.message?.let { Text(it, color = MaterialTheme.colorScheme.tertiary, fontSize = 12.sp) }
+            fiscalUi.error?.let { Text(it, color = MaterialTheme.colorScheme.error, fontSize = 12.sp) }
+        }
     }
 }

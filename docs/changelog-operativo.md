@@ -6,6 +6,42 @@ Registro operativo de cambios relevantes en autenticacion, sincronizacion, segur
 
 ## 2026-04-25
 
+- `22:52` · `(sin commit)`  
+  Refactor integral de `Configuración`: extracción en secciones composables (seguridad, plan, integridad clínica, usuarios/roles, sucursales y datos fiscales) para reducir complejidad, mejorar mantenibilidad y minimizar riesgo de regresiones en cambios futuros.
+
+- `22:52` · `(sin commit)`  
+  Endurecimiento de UX/arquitectura en Configuración: migración de preferencias de recordatorios a DataStore + ViewModel, draft fiscal en ViewModel para evitar sobrescritura mientras se edita, y externalización completa de textos a `strings.xml` (base lista para internacionalización).
+
+- `21:46` · `(sin commit)`  
+  Datos fiscales endurecidos: `razón comercial` y `razón social` pasan a obligatorios (junto a RUC/RUS y dirección), con persistencia completa en store/VM/repositorio y actualización de `opticas.nombre` en Supabase.
+
+- `21:46` · `(sin commit)`  
+  Header operativo de óptica activa prioriza identificación rápida de tienda con razón comercial + etiqueta fiscal (RUC/RUS) para reducir confusión entre sucursales.
+
+- `21:33` · `(sin commit)`  
+  Endurece sync de finanzas ante red inestable: subida en lotes (`dispensaciones`, `servicios_extra`, `pagos`) + reintentos automáticos con backoff para timeouts/conexión transitoria.
+
+- `21:32` · `(sin commit)`  
+  Sanitiza errores de sincronización de red para UX: reemplaza mensajes técnicos extensos de timeout por texto corto y accionable para el usuario.
+
+- `21:26` · `(sin commit)`  
+  Corrige feedback silencioso en “Datos fiscales (esta óptica)”: el estado de guardado ahora es reactivo, con manejo robusto de excepciones y confirmación visible por diálogo (éxito/error) en Configuración.
+
+- `21:24` · `(sin commit)`  
+  Endurece persistencia fiscal en Supabase: tras `update` se verifica lectura de vuelta para detectar `0 rows`/RLS y evitar falsos “guardado correcto”.
+
+- `21:18` · `(sin commit)`  
+  Ajusta insets del dashboard (`statusBarsPadding`) para evitar superposición del bloque “Óptica activa” con la barra de estado del móvil.
+
+- `21:12` · `(sin commit)`  
+  Reorganiza menú lateral principal con scroll completo en drawer para garantizar acceso a opciones al final (incluye “Cerrar sesión”) en pantallas pequeñas.
+
+- `20:57` · `(sin commit)`  
+  Reubica y visibiliza la acción de “Cerrar sesión” en el dashboard para facilitar cambio de cuenta y recuperación operativa.
+
+- `19:41` · `(sin commit)`  
+  Agrega validaciones de contexto previo a sincronización (sesión Supabase activa, óptica válida y membresía vigente) para cortar cascadas de errores RLS/FK tras login OAuth.
+
 - `01:56` · `(sin commit)`  
   La franja de “Óptica activa” en el header principal ahora permite cambiar de sucursal en un toque (abre selector cuando hay múltiples membresías).
 

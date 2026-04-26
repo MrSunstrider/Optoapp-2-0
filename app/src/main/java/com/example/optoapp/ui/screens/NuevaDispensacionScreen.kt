@@ -35,6 +35,8 @@ import com.example.optoapp.ui.components.AbonoDialog
 fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, dispensacionId: String? = null, viewModel: DispensacionViewModel = hiltViewModel()) {
     val uiState by viewModel.uiState.collectAsState()
     val monturasActivas by viewModel.monturasActivas.collectAsState()
+    var showDuplicateOtWarning by remember { mutableStateOf(false) }
+    var duplicateOtWarningText by remember { mutableStateOf("") }
     LaunchedEffect(dispensacionId) {
         if (dispensacionId != null) {
             viewModel.loadDispensacion(dispensacionId)
@@ -42,6 +44,13 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
     }
     LaunchedEffect(pacienteId) {
         viewModel.loadPacienteNombre(pacienteId)
+    }
+    LaunchedEffect(uiState.error) {
+        val msg = uiState.error.orEmpty()
+        if (msg.contains("Ya existe una dispensación con esta OT", ignoreCase = true)) {
+            duplicateOtWarningText = msg
+            showDuplicateOtWarning = true
+        }
     }
 
     var showDatePicker by remember { mutableStateOf(false) }
@@ -64,6 +73,19 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
         ) {
             DatePicker(state = datePickerState)
         }
+    }
+
+    if (showDuplicateOtWarning) {
+        AlertDialog(
+            onDismissRequest = { showDuplicateOtWarning = false },
+            title = { Text("Advertencia de OT duplicada") },
+            text = { Text(duplicateOtWarningText) },
+            confirmButton = {
+                TextButton(onClick = { showDuplicateOtWarning = false }) {
+                    Text("Entendido")
+                }
+            }
+        )
     }
 
     val saveAction = {

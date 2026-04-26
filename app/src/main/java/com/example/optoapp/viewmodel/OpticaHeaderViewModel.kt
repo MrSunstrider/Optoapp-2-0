@@ -3,6 +3,7 @@ package com.example.optoapp.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.optoapp.data.MembershipRepository
+import com.example.optoapp.data.OpticaFiscalSettingsStore
 import com.example.optoapp.data.SessionManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -10,6 +11,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 data class OpticaHeaderUi(
@@ -20,7 +22,8 @@ data class OpticaHeaderUi(
 @HiltViewModel
 class OpticaHeaderViewModel @Inject constructor(
     private val sessionManager: SessionManager,
-    private val membershipRepository: MembershipRepository
+    private val membershipRepository: MembershipRepository,
+    private val fiscalStore: OpticaFiscalSettingsStore
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(OpticaHeaderUi())
@@ -31,7 +34,16 @@ class OpticaHeaderViewModel @Inject constructor(
             sessionManager.opticaId.collectLatest { opticaId ->
                 val summary = membershipRepository.fetchOpticaHeaderSummary(opticaId)
                 _uiState.value = if (summary == null) {
-                    OpticaHeaderUi(nombreOptica = opticaId, fiscalEtiqueta = "Sin documento fiscal")
+                    val local = fiscalStore.settingsFlow(opticaId).first()
+                    val nombreLocal = local.nombreComercial.trim()
+                        .ifBlank { local.razonSocial.trim() }
+                        .ifBlank { "Óptica sin nombre" }
+                    val fiscalLocal = if (local.docTipo.isBlank() || local.docNumero.isBlank()) {
+                        "Sin documento fiscal"
+                    } else {
+                        "${local.docTipo} ${local.docNumero}"
+                    }
+                    OpticaHeaderUi(nombreOptica = nombreLocal, fiscalEtiqueta = fiscalLocal)
                 } else {
                     OpticaHeaderUi(
                         nombreOptica = summary.nombreOptica,
