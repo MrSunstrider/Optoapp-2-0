@@ -24,6 +24,12 @@ Registro operativo de cambios relevantes en autenticacion, sincronizacion, segur
 - `01:05` · `(sin commit)`  
   Limpieza adicional de advisors en telemetría: índice faltante para FK `last_actor` y ajuste de policies RLS para usar `(select auth.uid())`, reduciendo reevaluaciones por fila.
 
+- `01:12` · `(sin commit)`  
+  Reducción de superficie `SECURITY DEFINER`: helpers RLS movidos a esquema privado `app_private` (no expuesto por RPC), policies/triggers actualizados para usarlo y `assert_backup_operation_allowed` cambiado a `SECURITY INVOKER`.
+
+- `01:15` · `(sin commit)`  
+  Ajuste de performance en RLS de `usuario_optica` y `opticas`: reemplazo de `auth.uid()` por `(select auth.uid())` en policies para eliminar reevaluación por fila (`auth_rls_initplan`).
+
 ## 2026-04-25
 
 - `22:52` · `(sin commit)`  
