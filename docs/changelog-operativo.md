@@ -21,6 +21,9 @@ Registro operativo de cambios relevantes en autenticacion, sincronizacion, segur
 - `00:59` · `(sin commit)`  
   Se agrega `supabase/scripts/weekly_health_check.sql` para chequeo semanal de integridad, duplicados operativos, drift de estructura y estado de sync por óptica.
 
+- `01:05` · `(sin commit)`  
+  Limpieza adicional de advisors en telemetría: índice faltante para FK `last_actor` y ajuste de policies RLS para usar `(select auth.uid())`, reduciendo reevaluaciones por fila.
+
 ## 2026-04-25
 
 - `22:52` · `(sin commit)`  
