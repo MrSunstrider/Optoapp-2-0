@@ -53,7 +53,13 @@ import com.example.optoapp.viewmodel.PlanManagementUiState
 import com.example.optoapp.viewmodel.PlanManagementViewModel
 import com.example.optoapp.viewmodel.RoleManagementViewModel
 import com.example.optoapp.viewmodel.SettingsViewModel
+import com.example.optoapp.viewmodel.SyncState
+import com.example.optoapp.viewmodel.SyncViewModel
 import kotlinx.coroutines.launch
+import java.time.OffsetDateTime
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
+import java.time.Duration
 
 private const val INTERNAL_OWNER_EMAIL = "jaermadera@gmail.com"
 
@@ -62,6 +68,7 @@ private const val INTERNAL_OWNER_EMAIL = "jaermadera@gmail.com"
 fun ConfiguracionScreen(
     @Suppress("UNUSED_PARAMETER") navController: NavController,
     drawerState: DrawerState,
+    syncVm: SyncViewModel,
     viewModel: AuthViewModel = hiltViewModel(),
     fiscalVm: FiscalConfigViewModel = hiltViewModel(),
     laboratorioVm: LaboratorioConfigViewModel = hiltViewModel(),
@@ -89,6 +96,10 @@ fun ConfiguracionScreen(
     val planCode by subscriptionVm.planCode.collectAsState()
     val devProOverride by subscriptionVm.devProOverride.collectAsState()
     val syncErrors by syncDiagVm.errorRows.collectAsState()
+    val globalSyncState by syncVm.syncState.collectAsState()
+    val remoteSyncTelemetry by syncDiagVm.remoteTelemetry.collectAsState()
+    val remoteSyncTelemetryLoading by syncDiagVm.remoteTelemetryLoading.collectAsState()
+    val remoteSyncTelemetryError by syncDiagVm.remoteTelemetryError.collectAsState()
     val roleUi by roleVm.uiState.collectAsState()
     val planUi by planVm.uiState.collectAsState()
     val opticaRol by viewModel.opticaRol.collectAsState(initial = "admin")
@@ -145,6 +156,12 @@ fun ConfiguracionScreen(
     }
     LaunchedEffect(canManagePlans) {
         if (canManagePlans) planVm.load()
+    }
+    LaunchedEffect(globalSyncState) {
+        when (globalSyncState) {
+            is SyncState.Success, is SyncState.Error -> syncDiagVm.refreshRemoteTelemetry()
+            else -> Unit
+        }
     }
     LaunchedEffect(allowedRoles, roleUi.roleInput) {
         if (roleUi.roleInput !in allowedRoles) {
@@ -468,6 +485,78 @@ fun ConfiguracionScreen(
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                    HorizontalDivider()
+                    Text(
+                        "Estado remoto (servidor)",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    if (remoteSyncTelemetryLoading) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            CircularProgressIndicator(modifier = Modifier.size(14.dp), strokeWidth = 2.dp)
+                            Text("Consultando última sincronización remota…", fontSize = 12.sp)
+                        }
+                    } else {
+                        val remote = remoteSyncTelemetry
+                        if (remote == null) {
+                            Text(
+                                "Sin registro remoto aún para esta óptica.",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        } else {
+                            val statusColor = if (remote.lastStatus == "ok") {
+                                MaterialTheme.colorScheme.tertiary
+                            } else {
+                                MaterialTheme.colorScheme.error
+                            }
+                            Text(
+                                "Estado: ${remote.lastStatus.uppercase()}",
+                                fontSize = 12.sp,
+                                color = statusColor,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Text(
+                                "Etapa: ${remote.lastStage.ifBlank { "n/a" }}",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                "Última sync: ${formatRemoteSyncDateTime(remote.lastSyncAt)}",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                "Actualizado ${formatRelativeSyncAge(remote.lastSyncAt)}",
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            if (remote.lastError.isNotBlank()) {
+                                Text(
+                                    "Error: ${remote.lastError}",
+                                    fontSize = 11.sp,
+                                    color = MaterialTheme.colorScheme.error
+                                )
+                            }
+                        }
+                    }
+                    remoteSyncTelemetryError?.let { err ->
+                        Text(
+                            "No se pudo leer telemetría remota: $err",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                    OutlinedButton(
+                        onClick = { syncDiagVm.refreshRemoteTelemetry() },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Actualizar estado remoto")
+                    }
+                    HorizontalDivider()
                     if (syncErrors.isEmpty()) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -945,4 +1034,27 @@ private fun FiscalDataSection(
             fiscalUi.error?.let { Text(it, color = MaterialTheme.colorScheme.error, fontSize = 12.sp) }
         }
     }
+}
+
+private fun formatRemoteSyncDateTime(raw: String?): String {
+    if (raw.isNullOrBlank()) return "No disponible"
+    return runCatching {
+        OffsetDateTime.parse(raw).toLocalDateTime()
+            .format(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM))
+    }.getOrDefault(raw)
+}
+
+private fun formatRelativeSyncAge(raw: String?): String {
+    if (raw.isNullOrBlank()) return "hace un momento"
+    return runCatching {
+        val then = OffsetDateTime.parse(raw)
+        val now = OffsetDateTime.now(then.offset)
+        val seconds = Duration.between(then, now).seconds.coerceAtLeast(0)
+        when {
+            seconds < 60 -> "hace menos de 1 min"
+            seconds < 3600 -> "hace ${seconds / 60} min"
+            seconds < 86400 -> "hace ${seconds / 3600} h"
+            else -> "hace ${seconds / 86400} d"
+        }
+    }.getOrDefault("recientemente")
 }

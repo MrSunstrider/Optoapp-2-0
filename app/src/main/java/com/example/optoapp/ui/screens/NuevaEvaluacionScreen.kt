@@ -761,7 +761,7 @@ fun NuevaEvaluacionScreen(
                         
                         // Nota: Para integrarse al calendario de Google en el futuro, usar Intent(Intent.ACTION_INSERT).setData(CalendarContract.Events.CONTENT_URI)
                         
-                        Spacer(modifier = Modifier.height(24.dp))
+                        Spacer(modifier = Modifier.height(12.dp))
                         Button(
                             onClick = { saveAction() },
                             modifier = Modifier.fillMaxWidth().height(56.dp),

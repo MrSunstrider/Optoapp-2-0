@@ -10,6 +10,7 @@ import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Resource
 import com.example.optoapp.data.SessionManager
 import com.example.optoapp.data.SyncTelemetry
+import com.example.optoapp.data.SyncTelemetryRemoteRow
 import com.example.optoapp.data.MembershipRepository
 import com.example.optoapp.subscription.SubscriptionManager
 import com.example.optoapp.util.rethrowIfCancellation
@@ -21,6 +22,7 @@ import com.example.optoapp.domain.SyncSessionHelper
 import com.example.optoapp.sync.SyncGate
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.postgrest.postgrest
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -95,26 +97,32 @@ class SyncViewModel @Inject constructor(
         repository.reassignLegacyMiOpticaBaseTo(opticaId)
 
         suspend fun runStages(): Resource<Unit> {
+            var currentStage = "pacientes"
             Log.d(TAG, "Sync etapa 1/3: inicio pacientes (opticaId=$opticaId)")
             val pacientesResult = syncPacientesUseCase(opticaId)
             if (pacientesResult is Resource.Error) {
                 Log.e(TAG, "Sync etapa 1/3: fin pacientes ERROR")
+                recordRemoteSyncTelemetry(opticaId, "error", currentStage, pacientesResult.message)
                 return Resource.Error(pacientesResult.message ?: "Error en pacientes")
             }
             Log.d(TAG, "Sync etapa 1/3: fin pacientes OK")
 
+            currentStage = "historial"
             Log.d(TAG, "Sync etapa 2/3: inicio historial (evaluaciones)")
             val historialResult = syncHistorialUseCase(opticaId)
             if (historialResult is Resource.Error) {
                 Log.e(TAG, "Sync etapa 2/3: fin historial ERROR")
+                recordRemoteSyncTelemetry(opticaId, "error", currentStage, historialResult.message)
                 return Resource.Error(historialResult.message ?: "Error en historial")
             }
             Log.d(TAG, "Sync etapa 2/3: fin historial OK")
 
+            currentStage = "finanzas"
             Log.d(TAG, "Sync etapa 3/3: inicio finanzas (dispensaciones → servicios_extra → pagos)")
             val finanzasResult = syncFinanzasUseCase(opticaId)
             if (finanzasResult is Resource.Error) {
                 Log.e(TAG, "Sync etapa 3/3: fin finanzas ERROR")
+                recordRemoteSyncTelemetry(opticaId, "error", currentStage, finanzasResult.message)
                 return Resource.Error(finanzasResult.message ?: "Error en finanzas")
             }
             Log.d(TAG, "Sync etapa 3/3: fin finanzas OK")
@@ -139,6 +147,7 @@ class SyncViewModel @Inject constructor(
             }
             else -> {
                 syncTelemetry.recordFullSyncSuccess()
+                recordRemoteSyncTelemetry(opticaId, "ok", "finanzas", null)
                 runCatching { subscriptionManager.refreshPlanFromServer(opticaId) }
                 _syncState.value = SyncState.Success("Sincronización completada con éxito")
             }
@@ -163,17 +172,33 @@ class SyncViewModel @Inject constructor(
         try {
             syncGate.mutex.withLock {
                 SyncSessionHelper.refreshSessionBeforeSync(supabase)
+                var hasErrors = false
                 when (val p = syncPacientesUseCase(opticaId, downloadAfterUpload = false)) {
-                    is Resource.Error -> Log.w(TAG, "Sync silenciosa (pacientes): ${p.message}")
+                    is Resource.Error -> {
+                        hasErrors = true
+                        Log.w(TAG, "Sync silenciosa (pacientes): ${p.message}")
+                        recordRemoteSyncTelemetry(opticaId, "error", "pacientes", p.message)
+                    }
                     else -> {}
                 }
                 when (val h = syncHistorialUseCase(opticaId, downloadAfterUpload = false)) {
-                    is Resource.Error -> Log.w(TAG, "Sync silenciosa (historial): ${h.message}")
+                    is Resource.Error -> {
+                        hasErrors = true
+                        Log.w(TAG, "Sync silenciosa (historial): ${h.message}")
+                        recordRemoteSyncTelemetry(opticaId, "error", "historial", h.message)
+                    }
                     else -> {}
                 }
                 when (val f = syncFinanzasUseCase(opticaId, downloadAfterUpload = false)) {
-                    is Resource.Error -> Log.w(TAG, "Sync silenciosa (finanzas): ${f.message}")
+                    is Resource.Error -> {
+                        hasErrors = true
+                        Log.w(TAG, "Sync silenciosa (finanzas): ${f.message}")
+                        recordRemoteSyncTelemetry(opticaId, "error", "finanzas", f.message)
+                    }
                     else -> {}
+                }
+                if (!hasErrors) {
+                    recordRemoteSyncTelemetry(opticaId, "ok", "finanzas", null)
                 }
             }
         } catch (e: Exception) {
@@ -181,6 +206,27 @@ class SyncViewModel @Inject constructor(
             Log.w(TAG, "Sync silenciosa: excepción no controlada", e)
         } finally {
             _isSilentSyncing.value = false
+        }
+    }
+
+    private suspend fun recordRemoteSyncTelemetry(
+        opticaId: String,
+        status: String,
+        stage: String,
+        rawError: String?
+    ) {
+        runCatching {
+            val safeError = SyncErrorSanitizer.forUserMessage(rawError).take(500)
+            val row = SyncTelemetryRemoteRow(
+                opticaId = opticaId,
+                lastSyncAt = java.time.OffsetDateTime.now(java.time.ZoneOffset.UTC).toString(),
+                lastStatus = status,
+                lastStage = stage,
+                lastError = if (status == "error") safeError else ""
+            )
+            supabase.postgrest["sync_telemetry_optica"].upsert(row)
+        }.onFailure { e ->
+            Log.w(TAG, "No se pudo guardar telemetría remota de sync: ${e.message}")
         }
     }
 

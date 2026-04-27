@@ -397,7 +397,7 @@ fun MainDrawerScreen(
                 composable("reportes") { ReportesScreen(drawerState) }
                 composable("cierre_caja") { CierreCajaScreen(navController) }
                 composable("estadisticas_bi") { BIScreen(navController) }
-                composable("configuracion") { ConfiguracionScreen(navController, drawerState) }
+                composable("configuracion") { ConfiguracionScreen(navController, drawerState, syncViewModel) }
             }
         }
     }

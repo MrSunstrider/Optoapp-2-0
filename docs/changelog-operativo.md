@@ -4,6 +4,23 @@ Registro operativo de cambios relevantes en autenticacion, sincronizacion, segur
 
 > Zona horaria de referencia: UTC-5 (hora local del equipo).
 
+## 2026-04-27
+
+- `00:59` · `(sin commit)`  
+  Hardening integral de base de datos: índices compuestos por `optica_id + fecha/updated_at`, constraints explícitos de estado (`Pendiente/Entregado`), normalización `updated_at` en UTC y limpieza de índices OT redundantes en `dispensaciones`.
+
+- `00:59` · `(sin commit)`  
+  Observabilidad operativa de sincronización: nueva tabla `sync_telemetry_optica` con trigger de auditoría, RLS por membresía de óptica y bloqueo de `anon`; app ahora escribe telemetría en sync manual y sync silenciosa.
+
+- `00:59` · `(sin commit)`  
+  Dashboard de soporte en Configuración: estado remoto de sync (estado/etapa/fecha/error), refresco manual y automático tras sincronización, más etiqueta relativa “actualizado hace X min”.
+
+- `00:59` · `(sin commit)`  
+  Endurecimiento de funciones `SECURITY DEFINER`: revocación de `PUBLIC`/`anon` y recorte de `authenticated` a funciones mínimas requeridas por RPC y helpers de RLS.
+
+- `00:59` · `(sin commit)`  
+  Se agrega `supabase/scripts/weekly_health_check.sql` para chequeo semanal de integridad, duplicados operativos, drift de estructura y estado de sync por óptica.
+
 ## 2026-04-25
 
 - `22:52` · `(sin commit)`  

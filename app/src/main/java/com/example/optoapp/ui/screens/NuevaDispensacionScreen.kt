@@ -1,6 +1,8 @@
 package com.example.optoapp.ui.screens
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -29,7 +31,7 @@ import com.example.optoapp.data.Pago
 import com.example.optoapp.ui.components.AbonoDialog
 
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Suppress("DEPRECATION")
 @Composable
 fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, dispensacionId: String? = null, viewModel: DispensacionViewModel = hiltViewModel()) {
@@ -121,18 +123,21 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
             OutlinedButton(onClick = { showDatePicker = true }, modifier = Modifier.fillMaxWidth()) {
                 Text("Fecha: ${DateUtils.formatLocalized(uiState.fecha)}")
             }
-            Row(
+            FlowRow(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 OptoTextField(
                     value = uiState.ot,
                     onValueChange = { viewModel.updateUiState { s -> s.copy(ot = it) } },
                     label = "N° OT (OT-AAAA-####)",
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.fillMaxWidth()
                 )
-                TextButton(onClick = { viewModel.suggestOt() }) {
+                TextButton(
+                    onClick = { viewModel.suggestOt() },
+                    modifier = Modifier.align(Alignment.CenterVertically)
+                ) {
                     Text("Sugerir OT", fontSize = 13.sp)
                 }
             }
@@ -381,7 +386,7 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
                     fontSize = 13.sp
                 )
             }
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(12.dp))
         }
     }
 }

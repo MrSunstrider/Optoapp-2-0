@@ -2,6 +2,8 @@ package com.example.optoapp.ui.screens
 
 import android.app.Activity
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -26,7 +28,7 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.UUID
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null, viewModel: PacienteViewModel = hiltViewModel(), subscriptionVm: SubscriptionViewModel = hiltViewModel()) {
     val scope = rememberCoroutineScope()
@@ -162,23 +164,24 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
                 Text("Fecha de Registro: ${DateUtils.formatLocalized(fechaCreacion)}")
             }
 
-            Row(
+            FlowRow(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 OutlinedTextField(
                     value = historiaOptometrica,
                     onValueChange = { historiaOptometrica = it },
                     label = { Text("N° Historia Optométrica") },
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.fillMaxWidth()
                 )
                 TextButton(
                     onClick = {
                         scope.launch {
                             historiaOptometrica = viewModel.suggestHistoriaOptometrica()
                         }
-                    }
+                    },
+                    modifier = Modifier.align(Alignment.CenterVertically)
                 ) {
                     Text("Sugerir HO")
                 }
@@ -359,7 +362,7 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
                     Text(if (saving) "Guardando…" else "Guardar")
                 }
             }
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(12.dp))
         }
     }
 }

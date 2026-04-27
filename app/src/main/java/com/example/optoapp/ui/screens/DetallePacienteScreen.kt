@@ -168,6 +168,21 @@ fun DetallePacienteScreen(
                     actionIconContentColor = MaterialTheme.colorScheme.onPrimary
                 )
             )
+        },
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = {
+                    when(selectedTab) {
+                        0 -> navController.navigate("nuevaEvaluacion/${id}")
+                        1 -> navController.navigate("nuevaDispensacion/${id}")
+                        2 -> navController.navigate("nuevo_servicio/${id}")
+                    }
+                },
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+            ) {
+                Icon(Icons.Default.Add, contentDescription = "Añadir")
+            }
         }
     ) { padding ->
         paciente?.let { p ->
@@ -296,23 +311,6 @@ fun DetallePacienteScreen(
                         2 -> ServiciosExtraList(servicios) { servId ->
                             navController.navigate("editar_servicio/${servId}")
                         }
-                    }
-                    
-                    FloatingActionButton(
-                        onClick = {
-                            when(selectedTab) {
-                                0 -> navController.navigate("nuevaEvaluacion/${id}")
-                                1 -> navController.navigate("nuevaDispensacion/${id}")
-                                2 -> navController.navigate("nuevo_servicio/${id}")
-                            }
-                        },
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary,
-                        modifier = Modifier
-                            .align(Alignment.BottomEnd)
-                            .padding(24.dp)
-                    ) {
-                        Icon(Icons.Default.Add, contentDescription = "Añadir")
                     }
                 }
             }
