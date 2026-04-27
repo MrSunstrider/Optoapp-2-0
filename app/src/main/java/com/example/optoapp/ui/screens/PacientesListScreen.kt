@@ -66,7 +66,9 @@ fun PacientesListScreen(navController: NavController, drawerState: DrawerState, 
             FloatingActionButton(onClick = {
                 if (canAddPaciente) navController.navigate("nuevoPaciente")
                 else showPaywall = true
-            }) {
+            },
+                modifier = Modifier.navigationBarsPadding()
+            ) {
                 Icon(Icons.Default.Add, contentDescription = "Añadir Paciente")
             }
         }

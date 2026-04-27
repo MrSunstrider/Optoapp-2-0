@@ -185,3 +185,60 @@ Resumen: **P0-T1 … T5 = DONE** para la fase actual (bloque estabilidad/sync op
 - Multi-tenant y roles (`clarification.md` + `plan.md`) -> P1-T1, P1-T2, P1-T3, P1-T4
 - Monetizacion (`spec.md`) -> P2-T1, P2-T2, P2-T3 (código MVP; validación Play en dispositivo diferida; webhooks Play / Edge Functions si hace falta verdad servidor-side)
 - Operacion optica (nuevo alcance) -> P3-T1, P3-T2, P3-T3, P3-T4, P3-T5, P3-T6, P3-T7, P3-T8
+
+## P4 - Web ecosistema (seguro, confiable y persistente)
+
+Referencia principal: `docs/guia-web-ecosistema-seguro.md`.
+
+### P4-T1 Baseline web segura (Next.js + Supabase SSR) [DONE]
+- Objetivo: habilitar base web con sesion segura y rutas protegidas.
+- Acciones:
+  - setup Next.js + TypeScript + Tailwind + shadcn/ui.
+  - configurar clientes Supabase SSR (`server/client`) y `middleware`.
+  - login/logout + persistencia de sesion.
+- Definition of Done:
+  - rutas privadas protegidas sin sesion.
+  - no uso de `service_role` en frontend.
+- Avance:
+  - carpeta `web/` bootstrap manual completado (config base, Supabase SSR, login, middleware, dashboard inicial).
+  - dependencias instaladas y build/lint validados localmente.
+  - seleccion de optica real implementada con lectura de `usuario_optica`, persistencia de contexto activo en cookie httpOnly y auto-seleccion cuando hay una sola membresia.
+
+### P4-T2 Contexto multi-optica y permisos [TODO]
+- Objetivo: reproducir el modelo de `optica activa` y visibilidad por rol.
+- Acciones:
+  - selector de optica para usuarios con multiples membresias.
+  - persistencia de optica activa en sesion web.
+  - menu/rutas condicionadas por rol.
+- Definition of Done:
+  - datos aislados por `optica_id`.
+  - no hay acceso a modulos no permitidos por rol.
+
+### P4-T3 Dashboard y navegacion operativa [TODO]
+- Objetivo: entregar shell web productiva para operacion diaria.
+- Acciones:
+  - layout autenticado con sidebar + header de optica activa.
+  - dashboard inicial con KPIs base.
+  - placeholders de modulos principales.
+- Definition of Done:
+  - navegacion estable end-to-end con sesion activa.
+  - KPIs visibles sin mezclar tenants.
+
+### P4-T4 Operacion administrativa web (MVP) [TODO]
+- Objetivo: cubrir uso de backoffice de alto valor.
+- Acciones:
+  - pacientes (listado, detalle, alta/edicion).
+  - configuracion fiscal segura por rol.
+  - reportes financieros base.
+- Definition of Done:
+  - flujo CRUD minimo de pacientes funcionando con RLS.
+  - restricciones por rol respetadas.
+
+### P4-T5 Hardening, pruebas y readiness [TODO]
+- Objetivo: salir a produccion sin degradar seguridad ni confiabilidad.
+- Acciones:
+  - pruebas E2E de flujos criticos (auth, multi-optica, permisos, CRUD).
+  - telemetria de errores y health checks operativos.
+  - checklist de release/rollback documentado.
+- Definition of Done:
+  - criterios de salida cumplidos y validados por QA funcional.

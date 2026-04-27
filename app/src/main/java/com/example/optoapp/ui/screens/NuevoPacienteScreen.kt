@@ -2,8 +2,6 @@ package com.example.optoapp.ui.screens
 
 import android.app.Activity
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -16,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import android.widget.Toast
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.optoapp.data.Paciente
@@ -28,7 +27,7 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.UUID
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null, viewModel: PacienteViewModel = hiltViewModel(), subscriptionVm: SubscriptionViewModel = hiltViewModel()) {
     val scope = rememberCoroutineScope()
@@ -138,8 +137,10 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
     }
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             TopAppBar(
+                windowInsets = WindowInsets(0, 0, 0, 0),
                 title = { Text(if (pacienteId == null) "Nuevo Paciente" else "Editar Paciente") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
@@ -164,16 +165,16 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
                 Text("Fecha de Registro: ${DateUtils.formatLocalized(fechaCreacion)}")
             }
 
-            FlowRow(
+            Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 OutlinedTextField(
                     value = historiaOptometrica,
                     onValueChange = { historiaOptometrica = it },
                     label = { Text("N° Historia Optométrica") },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.weight(1f)
                 )
                 TextButton(
                     onClick = {
@@ -181,9 +182,9 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
                             historiaOptometrica = viewModel.suggestHistoriaOptometrica()
                         }
                     },
-                    modifier = Modifier.align(Alignment.CenterVertically)
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
                 ) {
-                    Text("Sugerir HO")
+                    Text("Sugerir HO", maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
             }
 

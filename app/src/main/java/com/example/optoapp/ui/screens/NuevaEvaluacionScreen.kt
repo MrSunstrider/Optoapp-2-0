@@ -209,8 +209,10 @@ fun NuevaEvaluacionScreen(
     }
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             TopAppBar(
+                windowInsets = WindowInsets(0, 0, 0, 0),
                 title = { Text(if (evaluacionId == null) "Nueva Evaluación" else "Editar Evaluación") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {

@@ -28,3 +28,8 @@ java_pid*
 
 # Build results
 **/build/
+
+# Web app artifacts
+web/node_modules/
+web/.next/
+web/.env.local

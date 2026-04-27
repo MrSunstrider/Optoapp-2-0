@@ -1,8 +1,6 @@
 package com.example.optoapp.ui.screens
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -31,7 +29,7 @@ import com.example.optoapp.data.Pago
 import com.example.optoapp.ui.components.AbonoDialog
 
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Suppress("DEPRECATION")
 @Composable
 fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, dispensacionId: String? = null, viewModel: DispensacionViewModel = hiltViewModel()) {
@@ -96,8 +94,10 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
         }
     }
     Scaffold(
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             TopAppBar(
+                windowInsets = WindowInsets(0, 0, 0, 0),
                 title = { Text(if (dispensacionId == null) "Nueva Dispensación" else "Editar Dispensación") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
@@ -123,21 +123,18 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
             OutlinedButton(onClick = { showDatePicker = true }, modifier = Modifier.fillMaxWidth()) {
                 Text("Fecha: ${DateUtils.formatLocalized(uiState.fecha)}")
             }
-            FlowRow(
+            Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 OptoTextField(
                     value = uiState.ot,
                     onValueChange = { viewModel.updateUiState { s -> s.copy(ot = it) } },
                     label = "N° OT (OT-AAAA-####)",
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.weight(1f)
                 )
-                TextButton(
-                    onClick = { viewModel.suggestOt() },
-                    modifier = Modifier.align(Alignment.CenterVertically)
-                ) {
+                TextButton(onClick = { viewModel.suggestOt() }) {
                     Text("Sugerir OT", fontSize = 13.sp)
                 }
             }

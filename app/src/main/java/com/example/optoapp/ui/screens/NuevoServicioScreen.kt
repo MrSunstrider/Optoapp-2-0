@@ -78,9 +78,11 @@ fun NuevoServicioScreen(navController: NavController, pacienteId: String? = null
     }
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
+                windowInsets = WindowInsets(0, 0, 0, 0),
                 title = { Text(if (servicioId == null || servicioId == "null") "Nuevo Servicio" else "Editar Servicio") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {

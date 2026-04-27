@@ -6,6 +6,18 @@ Registro operativo de cambios relevantes en autenticacion, sincronizacion, segur
 
 ## 2026-04-27
 
+- `15:12` · `(sin commit)`  
+  Se completa P4-T1 web: selección de óptica activa conectada a `usuario_optica`, persistencia de contexto en cookie httpOnly (`optoapp_active_optica`), auto-selección con membresía única, guardia en middleware para exigir contexto antes de operar y logout server-side; verificado con `npm run lint` + `npm run build`.
+
+- `15:01` · `(sin commit)`  
+  Entorno web habilitado para ejecucion local: instalacion Node LTS con `npm`, instalacion de dependencias en `web/`, ajuste de tipados Supabase SSR y validacion exitosa de `npm run lint` + `npm run build`.
+
+- `14:52` · `(sin commit)`  
+  Inicio de implementacion P4-T1 web: bootstrap manual de `web/` con Next.js App Router + TypeScript + Tailwind, cliente Supabase SSR (`server/client/middleware`), login base, rutas protegidas y dashboard inicial; queda pendiente validacion de build/dev al habilitar `npm` en entorno.
+
+- `14:40` · `(sin commit)`  
+  Se define y documenta la ruta oficial para la version web como ecosistema seguro/confiable/persistente: nueva guia `docs/guia-web-ecosistema-seguro.md`, enlace en `README.md` y apertura formal de fase web en backlog SDD.
+
 - `00:59` · `(sin commit)`  
   Hardening integral de base de datos: índices compuestos por `optica_id + fecha/updated_at`, constraints explícitos de estado (`Pendiente/Entregado`), normalización `updated_at` en UTC y limpieza de índices OT redundantes en `dispensaciones`.
 

@@ -114,6 +114,7 @@ Guia operativa detallada de autenticacion, sync y guardrails de seguridad:
 
 - `docs/guia-operativa-auth-sync-seguridad.md`
 - `docs/changelog-operativo.md`
+- `docs/guia-web-ecosistema-seguro.md` (ruta oficial para version web segura/confiable/persistente)
 
 ---
 
