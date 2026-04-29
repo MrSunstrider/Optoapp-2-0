@@ -1,12 +1,23 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { ACTIVE_OPTICA_COOKIE } from "@/lib/optica-context";
+import { clearActiveOpticaContext } from "@/lib/optica-context";
 
 export async function POST(request: Request) {
-  const supabase = await createClient();
-  await supabase.auth.signOut();
+  try {
+    const supabase = await createClient();
+    const { error: signOutErr } = await supabase.auth.signOut();
+    if (signOutErr) {
+      console.error("[auth/logout] signOut:", signOutErr.message);
+    }
+  } catch (e) {
+    console.error("[auth/logout] Error al cerrar sesión en Supabase:", e);
+  }
 
-  const response = NextResponse.redirect(new URL("/login", request.url));
-  response.cookies.delete(ACTIVE_OPTICA_COOKIE);
-  return response;
+  try {
+    await clearActiveOpticaContext();
+  } catch (e) {
+    console.error("[auth/logout] Error al borrar cookie de óptica:", e);
+  }
+
+  return NextResponse.redirect(new URL("/login", request.url));
 }

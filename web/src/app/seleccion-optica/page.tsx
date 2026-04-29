@@ -27,27 +27,29 @@ export default async function SeleccionOpticaPage() {
 
   if (memberships.length === 1) {
     const only = memberships[0];
-    await setActiveOpticaContext({
+    const qp = new URLSearchParams({
       opticaId: only.opticaId,
       rol: only.rol,
       nombre: only.nombre
     });
-    redirect("/dashboard");
+    redirect(`/auth/select-optica?${qp.toString()}`);
   }
 
   return (
-    <div className="min-h-screen p-6 flex items-center justify-center">
-      <div className="w-full max-w-lg rounded border bg-white p-5 shadow-sm">
-        <h1 className="text-2xl font-semibold mb-1">Seleccionar optica</h1>
-        <p className="text-sm text-slate-600 mb-4">
+    <div className="flex min-h-screen items-center justify-center bg-muted/40 p-6">
+      <div className="w-full max-w-lg rounded-xl border border-border bg-card p-6 shadow-sm">
+        <h1 className="mb-1 text-2xl font-semibold tracking-tight">
+          Seleccionar optica
+        </h1>
+        <p className="mb-4 text-sm text-muted-foreground">
           Elige la optica activa para empezar a operar.
         </p>
         {memberships.length === 0 ? (
-          <p className="text-sm text-red-600">
+          <p className="text-sm text-destructive">
             No tienes membresias activas en `usuario_optica`.
           </p>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-2">
             {memberships.map((m) => (
               <form key={m.opticaId} action={selectOpticaAction}>
                 <input type="hidden" name="opticaId" value={m.opticaId} />
@@ -55,10 +57,10 @@ export default async function SeleccionOpticaPage() {
                 <input type="hidden" name="nombre" value={m.nombre} />
                 <button
                   type="submit"
-                  className="w-full rounded border px-3 py-2 text-left hover:bg-slate-50"
+                  className="w-full rounded-lg border border-border bg-background px-3 py-3 text-left transition-colors hover:bg-accent hover:text-accent-foreground"
                 >
                   <p className="font-medium">{m.nombre}</p>
-                  <p className="text-xs text-slate-500">Rol: {m.rol}</p>
+                  <p className="text-xs text-muted-foreground">Rol: {m.rol}</p>
                 </button>
               </form>
             ))}

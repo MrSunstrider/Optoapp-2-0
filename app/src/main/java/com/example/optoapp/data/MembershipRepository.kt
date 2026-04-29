@@ -1,5 +1,6 @@
 package com.example.optoapp.data
 
+import android.util.Log
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.postgrest
@@ -24,7 +25,10 @@ class MembershipRepository @Inject constructor(
             supabase.postgrest[TABLE_UO]
                 .select { filter { eq("user_id", uid) } }
                 .decodeList<UsuarioOpticaDto>()
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            if (e !is CancellationException) {
+                Log.w(TAG, "fetchMembershipsForCurrentUser falló (uid=$uid): ${e.message}", e)
+            }
             emptyList()
         }
         if (rows.isEmpty()) return emptyList()
@@ -366,6 +370,7 @@ class MembershipRepository @Inject constructor(
     }
 
     companion object {
+        private const val TAG = "MembershipRepository"
         private const val TABLE_UO = "usuario_optica"
         private const val TABLE_OPTICAS = "opticas"
         private const val TABLE_USER_PROFILES = "user_profiles"

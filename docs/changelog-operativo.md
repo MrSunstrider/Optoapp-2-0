@@ -4,7 +4,90 @@ Registro operativo de cambios relevantes en autenticacion, sincronizacion, segur
 
 > Zona horaria de referencia: UTC-5 (hora local del equipo).
 
+## 2026-04-29
+
+- `01:12` · `(sin commit)`  
+  Cierre funcional web del módulo Pacientes con paridad operativa frente a app móvil: listado con búsqueda/chips/paginación, CRUD de paciente con HO sugerida + validación de duplicado por óptica, ficha con tabs y acciones críticas (WhatsApp plantillas, PDF receta de última evaluación, eliminación protegida con límite diario), flujo completo de Evaluaciones (5 tabs) con automatismos clínicos y OSDI, Dispensaciones (OT sugerida, OT única por óptica, stock de montura en edición, ciclo de abonos/anulaciones), y Servicios Extra (asociación opcional a paciente + reglas financieras completas con `a_cuenta` y anulaciones contables).
+
+- `01:12` · `(sin commit)`  
+  Hardening transversal App/Web en Pacientes: controles server-side por rol/óptica activa, guardrails de coherencia financiera en eliminación de abonos (anulación negativa y validación de pertenencia por documento), ajuste de permisos UI para evitar acciones de edición sin gestión, y actualización de `docs/sdd/tasks.md` con cierre por prioridad P1/P2 y remanente P3 visual.
+
+- `01:12` · `(sin commit)`  
+  Verificación técnica de estabilidad posterior a cambios: `npm run lint` y `npm run build` en `web/` ejecutados en verde tras cada bloque crítico de correcciones.
+
 ## 2026-04-27
+
+- `17:25` · `(sin commit)`  
+  Errores de datos sin ocultar: `assertNoDbError` (`lib/supabase/db-error.ts`) en pacientes, clínico por paciente, membresías y óptica fiscal; reportes financieros validan todas las queries; KPIs del dashboard conservan KPI parcial pero muestran **mensaje Supabase por fuente** en “Estado operativo”; configuración fiscal propaga mensaje real de Postgres/RLS en `detalle` al fallar guardado.
+
+- `17:10` · `(sin commit)`  
+  Auditoría web: módulo `lib/supabase/env-public.ts` con validación explícita de variables públicas Supabase; cliente servidor/browser usa `requirePublicSupabaseEnv`; `server.ts` deja de ignorar errores desconocidos en `setAll` (solo omite la restricción conocida de cookies en RSC con log en dev); middleware usa `getPublicSupabaseEnv`, redirección visible a `/login?error=configuracion` si falta env, `console.error` en fallos de `usuario_optica`, cookie inválida advertida en dev; página login muestra banner de configuración; `error.tsx` muestra digest y stack en desarrollo; logout registra errores sin ocultarlos; navegación shell con espacio entre etiqueta y estado.
+
+- `16:48` · `(sin commit)`  
+  Estabilidad web dev UX: `npm run dev` usa Turbopack por defecto (`next dev --turbo`) para evitar errores recurrentes de Webpack/HMR; matcher del middleware incluye `/` explícito; middleware valida env Supabase y limita consulta `usuario_optica` con `abortSignal` 6s para no colgar navegación si la red va lenta.
+
+- `16:40` · `(sin commit)`  
+  Fix crítico “no carga nada” / HTTP 500 en rutas web: el middleware importaba `ACTIVE_OPTICA_COOKIE` desde `optica-context.ts`, archivo que depende de `next/headers` (no válido en Edge Middleware); se extrae la constante a `web/src/lib/optica-cookie.ts`, el middleware solo importa ese módulo y se añade try/catch defensivo en sesión.
+
+- `16:25` · `(sin commit)`  
+  Mitigación de UI sin estilos en web: middleware deja de aplicarse a todo `/_next/*` (no solo `static`/`image`) y `updateSession` hace bypass explícito de `/_next/`, `/api/` y favicon, evitando interferir con chunks/CSS y dejando de servir HTML accidental en lugar de hojas de estilo.
+
+- `16:12` · `(sin commit)`  
+  Mitigación de error runtime Webpack en dev (`__webpack_modules__[moduleId] is not a function`): en `web/next.config.mjs` se desactiva caché de Webpack solo en modo desarrollo, se añaden scripts `npm run clean` / `npm run dev:clean` y alternativa `npm run dev:turbo` (Turbopack) para evitar HMR/caché corrupta; `build` de producción verificado.
+
+- `16:06` · `(sin commit)`  
+  Navegación web alineada a la app móvil: Evaluaciones, Dispensaciones y Servicios extra salen del menú lateral global y pasan al expediente del paciente (`/pacientes/[id]/…`) con pestañas; rutas huérfanas `/evaluaciones`, `/dispensaciones`, `/servicios` redirigen al listado de pacientes.
+
+- `15:55` · `(sin commit)`  
+  Estabilización de runtime web ante error `__webpack_modules__[moduleId] is not a function`: se limpia estado dev dejando un único `next dev` activo y se fija persistencia de cookie de óptica activa en `/auth/select-optica` escribiéndola directamente sobre `NextResponse.redirect`, evitando rebotes de sesión/contexto que forzaban recargas completas.
+
+- `15:53` · `(sin commit)`  
+  Fix de bucle de redirección web (`ERR_TOO_MANY_REDIRECTS`): middleware ahora permite explícitamente la ruta `/auth/select-optica` sin exigir cookie de óptica activa previa, evitando loop entre selección de óptica y auto-selección tras login.
+
+- `17:58` · `(sin commit)`  
+  Fix runtime en selección de óptica web: auto-selección (usuario con 1 membresía) deja de escribir cookie desde Server Component y ahora delega a Route Handler (`/auth/select-optica`), eliminando el error `Cookies can only be modified...` y la cascada de fallos de bundler en dev.
+
+- `17:50` · `(sin commit)`  
+  Corrección de login web post-feedback: se evita excepción de Next.js por escritura de cookies en Server Components (`Cookies can only be modified...`) envolviendo `setAll` de Supabase SSR en `try/catch` y delegando escrituras efectivas a middleware/handlers; validado con lint/build.
+
+- `17:37` · `(sin commit)`  
+  Ejecución de runbook P4-T5: se validan checks automáticos de readiness (lint/build, ausencia de `service_role`, uso controlado de `NEXT_PUBLIC_*`, guardias de sesión/optica/rol y filtros por `optica_id`); se mantiene NO-GO temporal hasta completar smoke tests manuales por rol.
+
+- `17:27` · `(sin commit)`  
+  Inicio P4-T5: se define checklist operativo de readiness para release web (`docs/web-readiness-checklist.md`) con controles bloqueantes de seguridad/multi-tenant, smoke tests por flujo/rol, criterios GO/NO-GO y plan de rollback.
+
+- `17:14` · `(sin commit)`  
+  Optimización post-cierre de P4-T4: se endurecen acciones de pacientes y configuración fiscal para detectar `0 rows` por RLS como error real (evita falsos “guardado/eliminado”), y se corrige paginación fuera de rango en listado de pacientes.
+
+- `17:01` · `(sin commit)`  
+  Se completa P4-T4 web (operación administrativa MVP): pacientes con CRUD mínimo endurecido, configuración fiscal segura por rol y reportes financieros base por período; verificado con lint/build y cumplimiento explícito de DoD en `docs/sdd/tasks.md`.
+
+- `16:48` · `(sin commit)`  
+  P4-T4 web añade Configuración fiscal segura por rol: vista de lectura para todos los roles permitidos y edición únicamente para `admin/gerente` con guardia server-side y feedback de validación/guardado.
+
+- `16:34` · `(sin commit)`  
+  P4-T4 web endurece flujo de pacientes: eliminación protegida con confirmación explícita y `delete` acotado por `optica_id`, paginación real + filtros por edad en listado, y feedback visible de éxito/error en crear/editar/eliminar.
+
+- `16:26` · `(sin commit)`  
+  Se revisa y cierra P4-T3 como DONE tras verificación explícita de DoD: navegación web estable con sesión activa (guardias + selección de óptica + shell) y KPIs visibles sin mezcla de tenants (filtro por `optica_id`).
+
+- `16:19` · `(sin commit)`  
+  Inicio P4-T4 web (operación administrativa): se implementa Pacientes MVP con listado + búsqueda, alta, detalle y edición básica, aplicando guardias por rol y aislamiento por `optica_id` en consultas y mutaciones; validado con lint/build.
+
+- `16:07` · `(sin commit)`  
+  Revisión y optimización transversal de P4-T1/T2/T3: middleware ahora valida que la óptica activa del contexto pertenezca realmente al usuario autenticado (mitiga tampering de cookie), `secure` de cookie ajustado por entorno (dev/prod), y KPIs del dashboard corrigen borde de zona horaria usando fechas locales con timeout por consulta.
+
+- `15:56` · `(sin commit)`  
+  P4-T3 web avanza en operabilidad: dashboard incorpora tarjeta de estado operativo (salud por fuente + timestamp de última actualización) y sidebar agrega indicadores visuales de estado por módulo (`listo`/`base`), con validación lint/build.
+
+- `15:43` · `(sin commit)`  
+  Inicio P4-T3 web: dashboard deja estado placeholder y ahora calcula KPIs reales por `optica_id` (ventas día/mes, pacientes del día y saldos pendientes) consultando `pagos`, `pacientes`, `dispensaciones` y `servicios_extra`; validado con lint/build.
+
+- `15:32` · `(sin commit)`  
+  Se cierra P4-T2 al 100% a nivel de gobernanza: matriz de permisos web↔Android agregada en `docs/sdd/plan.md` y criterio obligatorio para futuros módulos sensibles (guardia server-side + filtro de menú + actualización de matriz + validación por rol) registrado en `docs/sdd/tasks.md`.
+
+- `15:20` · `(sin commit)`  
+  Inicio P4-T2 web (permisos): menú lateral ahora filtra módulos por rol activo y rutas de módulo aplican guardia server-side; `reportes` queda restringido a roles con acceso BI (admin/especialista/gerente), validado con build/lint.
 
 - `15:12` · `(sin commit)`  
   Se completa P4-T1 web: selección de óptica activa conectada a `usuario_optica`, persistencia de contexto en cookie httpOnly (`optoapp_active_optica`), auto-selección con membresía única, guardia en middleware para exigir contexto antes de operar y logout server-side; verificado con `npm run lint` + `npm run build`.

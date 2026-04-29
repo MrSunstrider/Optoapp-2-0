@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
+import { ACTIVE_OPTICA_COOKIE } from "@/lib/optica-cookie";
 
-export const ACTIVE_OPTICA_COOKIE = "optoapp_active_optica";
+export { ACTIVE_OPTICA_COOKIE };
 
 export type ActiveOpticaContext = {
   opticaId: string;
@@ -29,7 +30,7 @@ export async function setActiveOpticaContext(ctx: ActiveOpticaContext): Promise<
     }),
     {
       httpOnly: true,
-      secure: true,
+      secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       path: "/",
       maxAge: 60 * 60 * 24 * 30
@@ -43,4 +44,9 @@ function safeParse(value: string): ActiveOpticaContext | null {
   } catch {
     return null;
   }
+}
+
+export async function clearActiveOpticaContext(): Promise<void> {
+  const cookieStore = await cookies();
+  cookieStore.delete(ACTIVE_OPTICA_COOKIE);
 }

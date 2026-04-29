@@ -204,7 +204,7 @@ Referencia principal: `docs/guia-web-ecosistema-seguro.md`.
   - dependencias instaladas y build/lint validados localmente.
   - seleccion de optica real implementada con lectura de `usuario_optica`, persistencia de contexto activo en cookie httpOnly y auto-seleccion cuando hay una sola membresia.
 
-### P4-T2 Contexto multi-optica y permisos [TODO]
+### P4-T2 Contexto multi-optica y permisos [DONE]
 - Objetivo: reproducir el modelo de `optica activa` y visibilidad por rol.
 - Acciones:
   - selector de optica para usuarios con multiples membresias.
@@ -213,8 +213,19 @@ Referencia principal: `docs/guia-web-ecosistema-seguro.md`.
 - Definition of Done:
   - datos aislados por `optica_id`.
   - no hay acceso a modulos no permitidos por rol.
+- Avance:
+  - permisos por rol aplicados en web para navegacion y guardia server-side de rutas de modulo.
+  - `reportes` restringido a roles con visibilidad BI (`admin`, `especialista`, `gerente`) alineado con `AppRoles`.
+  - matriz web↔Android documentada en `docs/sdd/plan.md` con regla obligatoria para futuros modulos sensibles.
 
-### P4-T3 Dashboard y navegacion operativa [TODO]
+#### Criterio obligatorio para siguientes modulos sensibles web
+- Antes de publicar cualquier modulo sensible nuevo (BI, cierre de caja, exportaciones, finanzas, auditoria), incluir en el mismo PR:
+  1) guardia server-side por rol,
+  2) filtro de navegacion por rol,
+  3) actualizacion de matriz web↔Android en `plan.md`,
+  4) validacion tecnica (`lint/build`) y validacion funcional por rol.
+
+### P4-T3 Dashboard y navegacion operativa [DONE]
 - Objetivo: entregar shell web productiva para operacion diaria.
 - Acciones:
   - layout autenticado con sidebar + header de optica activa.
@@ -223,8 +234,16 @@ Referencia principal: `docs/guia-web-ecosistema-seguro.md`.
 - Definition of Done:
   - navegacion estable end-to-end con sesion activa.
   - KPIs visibles sin mezclar tenants.
+- Avance:
+  - dashboard web ya consume KPIs reales por `optica_id` desde `pagos`, `pacientes`, `dispensaciones` y `servicios_extra`.
+  - validado con `npm run lint` y `npm run build`.
+  - se agrega tarjeta de estado operativo (salud de fuentes + ultima actualizacion) y etiquetas visuales de estado por modulo en sidebar.
+  - optimizaciones T1/T2/T3 aplicadas: validacion de pertenencia real de `optica_id` en middleware, cookie segura por entorno (`secure` solo en produccion) y correccion de calculo de fechas locales para KPIs diarios/mensuales.
+- Verificacion de DoD:
+  - `navegacion estable end-to-end con sesion activa`: cumplido (guardia en middleware + seleccion de optica + shell con rutas de modulos).
+  - `KPIs visibles sin mezclar tenants`: cumplido (consultas dashboard filtradas por `optica_id` activo).
 
-### P4-T4 Operacion administrativa web (MVP) [TODO]
+### P4-T4 Operacion administrativa web (MVP) [DONE]
 - Objetivo: cubrir uso de backoffice de alto valor.
 - Acciones:
   - pacientes (listado, detalle, alta/edicion).
@@ -233,8 +252,21 @@ Referencia principal: `docs/guia-web-ecosistema-seguro.md`.
 - Definition of Done:
   - flujo CRUD minimo de pacientes funcionando con RLS.
   - restricciones por rol respetadas.
+- Avance:
+  - pacientes web MVP implementado: listado con busqueda, alta y edicion basica.
+  - rutas `pacientes`, `pacientes/nuevo`, `pacientes/[id]` con guardias por rol y aislamiento por `optica_id`.
+  - validacion tecnica completada con `npm run lint` y `npm run build`.
+  - se agrega eliminacion protegida en detalle (confirmacion explicita + delete filtrado por `optica_id`).
+  - se agrega paginacion real (20 por pagina) y filtros extra por rango de edad.
+  - se agrega feedback UX de exito/error para crear, editar y eliminar paciente.
+  - configuracion fiscal web implementada con lectura por `optica_id` y edicion restringida a `admin/gerente` (guardia server-side + formulario readonly para otros roles).
+  - reportes financieros base web implementados con filtro por periodo (`dia/semana/mes/anio`), KPIs de ingresos/ventas/saldo/ticket y guardia de rol financiero.
+  - hardening adicional: guardrails anti-falso-exito por RLS (`0 rows`) en crear/editar/eliminar paciente y en guardado fiscal (verificación de persistencia), más clamping de paginación fuera de rango.
+- Verificacion de DoD:
+  - `flujo CRUD minimo de pacientes funcionando con RLS`: cumplido (alta/listado/edicion/eliminacion acotados por `optica_id` y RLS server-side).
+  - `restricciones por rol respetadas`: cumplido (lectura/edicion pacientes por rol, configuracion fiscal solo admin/gerente, reportes solo roles con BI).
 
-### P4-T5 Hardening, pruebas y readiness [TODO]
+### P4-T5 Hardening, pruebas y readiness [IN_PROGRESS]
 - Objetivo: salir a produccion sin degradar seguridad ni confiabilidad.
 - Acciones:
   - pruebas E2E de flujos criticos (auth, multi-optica, permisos, CRUD).
@@ -242,3 +274,29 @@ Referencia principal: `docs/guia-web-ecosistema-seguro.md`.
   - checklist de release/rollback documentado.
 - Definition of Done:
   - criterios de salida cumplidos y validados por QA funcional.
+- Avance:
+  - se crea checklist formal de release en `docs/web-readiness-checklist.md` con:
+    - seguridad, multi-tenant, pruebas funcionales por modulo/rol,
+    - criterios GO/NO-GO,
+    - protocolo de rollback y evidencia de cierre.
+  - se ejecuta runbook tecnico automatico (lint/build + auditoria de secretos + auditoria de tenanting/guardias) con resultado PASS.
+  - queda pendiente smoke test manual por rol para decision GO final.
+
+## Cierre recomendado por prioridad (App vs Web Pacientes)
+
+### P1 crítico [DONE]
+- Evaluaciones (automatismos clínicos): tabs completos + autodiagnóstico por refracción, auto de otros diagnósticos, normalización/transposición y OSDI operativo en create/edit.
+- Dispensaciones pago/adelanto: validaciones de monto/tope, ciclo de abonos (alta/edición/eliminación) y anulación en caja al eliminar pagos persistidos.
+- Ficha (acciones críticas): WhatsApp con plantillas, PDF desde última evaluación con bloqueo sin evaluaciones, borrado protegido con confirmación y límite diario.
+- Paywall por plan: bloqueo de alta por cupo en listado/form/actions + CTA de upgrade en UI.
+- Riesgo residual: bajo (principalmente UX fino y pruebas manuales por rol/dispositivo).
+
+### P2 importante [DONE]
+- Formulario completo de paciente: campos clínico-demográficos equivalentes a app en web create/edit.
+- HO sugerida + validación de duplicado por óptica: implementado en acciones server-side y feedback UI.
+- Riesgo residual: bajo (depende de smoke funcional y QA de datos reales).
+
+### P3 mejora UX [IN_PROGRESS]
+- Filtros/chips en listados: implementados (incluye chip "Todos" + chips clínico-operativos), con ajustes de uso.
+- Paridad visual fina en listados/tabs: avance alto; quedan micro-ajustes cosméticos no bloqueantes (spacing, tipografía, labels con tildes según baseline final).
+- Riesgo residual: bajo-medio (no funcional, sí percepción UX).

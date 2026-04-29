@@ -75,6 +75,24 @@ Notas:
 - Si se incorpora un rol nuevo, debe agregarse a la matriz y a `AppRoles` en el mismo cambio.
 - Para roles no catalogados, se aplica politica conservadora (sin acceso financiero ni exportaciones sensibles).
 
+### Matriz de permisos web ↔ Android (alineacion P4)
+
+| Dominio | Android (estado) | Web (estado) | Regla de alineacion |
+|---|---|---|---|
+| Contexto activo de optica | Seleccion y persistencia por sesion | Seleccion y persistencia por cookie httpOnly | Debe existir contexto activo antes de operar en ambos clientes |
+| Dashboard | Disponible | Disponible | Solo datos filtrados por `optica_id` |
+| Reportes/BI | Restringido por `canViewBiAndReports` | Restringido por `canViewBiAndReports` en menu + guardia de ruta | Cualquier vista financiera debe heredar esta regla |
+| Cierre de caja | Restringido por rol | Aun no implementado | Al implementarse, debe copiar la politica de Android antes de publicar |
+| Operacion de hoy | Restringido por rol | Aun no implementado | Al implementarse, debe copiar la politica de Android antes de publicar |
+| Exportaciones | Permisos finos por rol | Aun no implementado | No habilitar exportaciones sin matriz de permisos explicita |
+
+Regla operativa:
+- Si web incorpora un modulo sensible nuevo (BI, cierre, exportaciones, auditoria, finanzas), el PR debe incluir en el mismo cambio:
+  1) guardia server-side por rol,
+  2) filtro de navegacion por rol,
+  3) actualizacion de esta matriz,
+  4) evidencia de validacion (lint/build + prueba funcional por rol).
+
 ## Alcance futuro (no bloqueante de P0)
 - Suscripciones y paywall.
 - Integracion Google Play Billing.

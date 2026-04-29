@@ -144,6 +144,9 @@ La web debe respetar:
 - crear/editar/consultar paciente sin mezclar opticas
 - probar guardrails en acciones sensibles
 
+Checklist de salida (release readiness):
+- `docs/web-readiness-checklist.md`
+
 ## Regla operativa de cambios
 
 - Cualquier cambio web que afecte seguridad, auth, sync, roles o integridad debe:

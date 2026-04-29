@@ -6,6 +6,7 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.optoapp.BuildConfig
+import com.example.optoapp.domain.SyncSessionHelper
 import com.example.optoapp.data.MembershipRepository
 import com.example.optoapp.data.OpticaMembership
 import com.example.optoapp.data.OptoRepository
@@ -189,6 +190,8 @@ class AuthViewModel @Inject constructor(
         }
 
         if (hasSession) {
+            // Fuerza JWT actualizado en el cliente antes de PostgREST (evita peticiones como `anon` tras Custom Tabs).
+            SyncSessionHelper.refreshSessionBeforeSync(supabase)
             runCatching { resolvePostLogin() }.onFailure { e ->
                 Log.e(TAG, "Error cerrando OAuth Google", e)
                 _authState.value = AuthState.Error("No se pudo completar Google: ${e.localizedMessage}")

@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { assertNoDbError } from "@/lib/supabase/db-error";
 
 export type Membership = {
   opticaId: string;
@@ -21,7 +22,8 @@ export async function fetchMembershipsForUser(
     .select("optica_id,rol,opticas(nombre)")
     .eq("user_id", userId);
 
-  if (error || !data) return [];
+  assertNoDbError(error, "Membresías de usuario (usuario_optica)");
+  if (!data) return [];
 
   return (data as unknown as UsuarioOpticaRow[]).map((row) => ({
     opticaId: row.optica_id,
