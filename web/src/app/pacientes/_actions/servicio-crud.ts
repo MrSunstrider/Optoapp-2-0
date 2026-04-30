@@ -162,3 +162,47 @@ export async function saveServicioAction(formData: FormData) {
   if (pacienteId) revalidatePath(`/pacientes/${pacienteId}/servicios-extra`);
   redirect(`${returnTo}?msg=${servicioId ? "actualizado" : "creado"}`);
 }
+
+export async function deleteServicioExtraAction(servicioId: string) {
+  const activeOptica = await getActiveOpticaContext();
+  if (!activeOptica) redirect("/seleccion-optica");
+  if (!canManagePacientes(activeOptica.rol)) redirect("/servicios-varios");
+  const opticaId = activeOptica.opticaId;
+  const supabase = await createClient();
+
+  const id = String(servicioId ?? "").trim();
+  if (!id) redirect("/servicios-varios?error=eliminar");
+
+  const { data: row, error: fetchErr } = await supabase
+    .from("servicios_extra")
+    .select("id,paciente_id")
+    .eq("id", id)
+    .eq("optica_id", opticaId)
+    .maybeSingle();
+
+  if (fetchErr || !row) redirect("/servicios-varios?error=eliminar");
+
+  const { error: delPagos } = await supabase
+    .from("pagos")
+    .delete()
+    .eq("servicio_extra_id", id)
+    .eq("optica_id", opticaId);
+
+  if (delPagos) redirect("/servicios-varios?error=eliminar");
+
+  const { error: delServ } = await supabase
+    .from("servicios_extra")
+    .delete()
+    .eq("id", id)
+    .eq("optica_id", opticaId);
+
+  if (delServ) redirect("/servicios-varios?error=eliminar");
+
+  revalidatePath("/servicios-varios");
+  revalidatePath("/pacientes");
+  if (row.paciente_id) {
+    revalidatePath(`/pacientes/${row.paciente_id}/servicios-extra`);
+  }
+
+  redirect("/servicios-varios?msg=eliminado");
+}

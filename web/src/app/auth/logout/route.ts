@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { clearActiveOpticaContext } from "@/lib/optica-context";
+import { PIN_VERIFIED_COOKIE } from "@/lib/pin-cookie";
 
 export async function POST(request: Request) {
   try {
@@ -19,5 +20,7 @@ export async function POST(request: Request) {
     console.error("[auth/logout] Error al borrar cookie de óptica:", e);
   }
 
-  return NextResponse.redirect(new URL("/login", request.url));
+  const res = NextResponse.redirect(new URL("/login", request.url));
+  res.cookies.delete(PIN_VERIFIED_COOKIE);
+  return res;
 }

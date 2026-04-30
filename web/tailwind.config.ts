@@ -10,6 +10,15 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        optoapp: {
+          bg: "#121214",
+          surface: "#121212",
+          card: "#2C2C2E",
+          brand: "#90CAF9",
+          key: "#333333",
+          "key-clear": "#EF9A9A",
+          "key-ok": "#A5D6A7"
+        },
         background: "var(--background)",
         foreground: "var(--foreground)",
         card: {
@@ -69,6 +78,7 @@ const config: Config = {
       },
       fontFamily: {
         sans: ["var(--font-geist-sans)", "system-ui", "sans-serif"],
+        inter: ["var(--font-inter)", "var(--font-geist-sans)", "system-ui", "sans-serif"],
         mono: ["var(--font-geist-mono)", "ui-monospace", "monospace"]
       }
     }

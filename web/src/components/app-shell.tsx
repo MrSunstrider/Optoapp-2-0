@@ -1,7 +1,8 @@
 import { canAccessModule } from "@/lib/roles";
+import { LogoutButton } from "@/components/auth/logout-button";
 
 import { AppShellNav, type AppShellNavItem } from "./app-shell-nav";
-import { IconLogout, LogoOptoArc } from "./nav-icons";
+import { LogoOptoArc } from "./nav-icons";
 
 const modules: AppShellNavItem[] = [
   { href: "/pacientes", label: "Pacientes", iconKey: "pacientes" },
@@ -91,15 +92,7 @@ export function AppShell({
         <AppShellNav items={visibleModules} />
 
         <div className="mt-auto shrink-0 border-t border-white/[0.08] p-3">
-          <form action="/auth/logout" method="post">
-            <button
-              type="submit"
-              className="flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-[#B0B0B0] transition-colors hover:bg-white/[0.06] hover:text-white"
-            >
-              <IconLogout className="shrink-0" />
-              Cerrar Sesión
-            </button>
-          </form>
+          <LogoutButton />
         </div>
       </aside>
 

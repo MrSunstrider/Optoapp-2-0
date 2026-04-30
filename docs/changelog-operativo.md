@@ -6,6 +6,15 @@ Registro operativo de cambios relevantes en autenticacion, sincronizacion, segur
 
 ## 2026-04-29
 
+- `21:38` · `(sin commit)`  
+  Producción Supabase actualizada en runtime: aplicadas migraciones `cierres_caja_and_optica_settings` y `cierres_optica_settings_rls_perf_fix`; se corrigen tipos (`optica_id` como `text`) y trigger de `updated_at` (`public.update_updated_at()`), se añaden índices FK (`closed_by`, `reopened_by`) y se optimizan políticas RLS (`auth.uid()` con `SELECT` + separación SELECT/INSERT/UPDATE/DELETE).
+
+- `21:38` · `(sin commit)`  
+  Validación runtime de permisos efectiva: en contexto `authenticated` con JWT simulado, `admin` logra `INSERT/UPSERT` en `public.optica_settings` y `public.cierres_caja`, mientras usuario no miembro recibe bloqueo RLS (`new row violates row-level security policy`) en ambas tablas.
+
+- `21:38` · `(sin commit)`  
+  Verificación post-migración en proyecto `OptoApp`: `list_migrations` confirma versiones nuevas registradas en base; `get_advisors` sin alertas nuevas de seguridad por estas tablas (queda WARN global de Auth por leaked password protection deshabilitado).
+
 - `01:12` · `(sin commit)`  
   Cierre funcional web del módulo Pacientes con paridad operativa frente a app móvil: listado con búsqueda/chips/paginación, CRUD de paciente con HO sugerida + validación de duplicado por óptica, ficha con tabs y acciones críticas (WhatsApp plantillas, PDF receta de última evaluación, eliminación protegida con límite diario), flujo completo de Evaluaciones (5 tabs) con automatismos clínicos y OSDI, Dispensaciones (OT sugerida, OT única por óptica, stock de montura en edición, ciclo de abonos/anulaciones), y Servicios Extra (asociación opcional a paciente + reglas financieras completas con `a_cuenta` y anulaciones contables).
 
@@ -219,6 +228,11 @@ Registro operativo de cambios relevantes en autenticacion, sincronizacion, segur
   Onboarding de optica y plan free de 20 pacientes.
 
 ## Historico previo importante (backfill)
+
+## 2026-04-29
+
+- `21:34` · (working tree)  
+  Integracion final web: nueva ruta `estadisticas`, migracion SQL para `cierres_caja` con RLS, y configuracion operativa por `optica_settings` compartida (con fallback temporal a metadata).
 
 ## 2026-04-22
 

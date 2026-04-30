@@ -2,6 +2,8 @@ import { createServerClient } from "@supabase/ssr";
 import type { CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { ACTIVE_OPTICA_COOKIE } from "@/lib/optica-cookie";
+import { PIN_VERIFIED_COOKIE } from "@/lib/pin-cookie";
+import { isPinRequiredFromUser } from "@/lib/pin-policy";
 import { getPublicSupabaseEnv } from "@/lib/supabase/env-public";
 
 type CookieToSet = {
@@ -78,15 +80,39 @@ async function runSessionMiddleware(request: NextRequest) {
   const activeOpticaCookie = request.cookies.get(ACTIVE_OPTICA_COOKIE)?.value;
   const parsedActiveOptica = parseActiveOpticaCookie(activeOpticaCookie);
 
+  const pinOk = request.cookies.get(PIN_VERIFIED_COOKIE)?.value === "1";
+  const pinReq = user ? isPinRequiredFromUser(user) : false;
+  const isPinPage = request.nextUrl.pathname.startsWith("/pin");
+  const allowsWithoutPinComplete =
+    isPinPage ||
+    request.nextUrl.pathname.startsWith("/auth/callback") ||
+    request.nextUrl.pathname.startsWith("/auth/logout");
+
   if (!user && !isPublic) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
   }
 
-  if (user && request.nextUrl.pathname === "/login") {
+  if (user && pinReq && !pinOk && !allowsWithoutPinComplete) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/pin";
+    return NextResponse.redirect(url);
+  }
+
+  if (user && isPinPage && (!pinReq || pinOk)) {
     const url = request.nextUrl.clone();
     url.pathname = parsedActiveOptica ? "/dashboard" : "/seleccion-optica";
+    return NextResponse.redirect(url);
+  }
+
+  if (user && request.nextUrl.pathname === "/login") {
+    const url = request.nextUrl.clone();
+    if (pinReq && !pinOk) {
+      url.pathname = "/pin";
+    } else {
+      url.pathname = parsedActiveOptica ? "/dashboard" : "/seleccion-optica";
+    }
     return NextResponse.redirect(url);
   }
 
@@ -95,7 +121,8 @@ async function runSessionMiddleware(request: NextRequest) {
     !isPublic &&
     !isSeleccionOptica &&
     !isAuthSelectOptica &&
-    !parsedActiveOptica
+    !parsedActiveOptica &&
+    !isPinPage
   ) {
     const url = request.nextUrl.clone();
     url.pathname = "/seleccion-optica";

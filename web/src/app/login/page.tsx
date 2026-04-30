@@ -1,4 +1,4 @@
-import { LoginForm } from "./login-form";
+import { LoginForm } from "@/components/access/login-form";
 
 export default async function LoginPage({
   searchParams
@@ -7,6 +7,12 @@ export default async function LoginPage({
 }) {
   const q = await searchParams;
   const configuracionIncompleta = q.error === "configuracion";
+  const oauthError = q.error === "oauth";
 
-  return <LoginForm configuracionIncompleta={configuracionIncompleta} />;
+  return (
+    <LoginForm
+      configuracionIncompleta={configuracionIncompleta}
+      oauthError={oauthError}
+    />
+  );
 }
