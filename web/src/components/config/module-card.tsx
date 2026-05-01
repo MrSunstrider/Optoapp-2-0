@@ -14,13 +14,15 @@ export function ModuleCard({
   return (
     <Link
       href={href}
-      className="block rounded-2xl border border-zinc-700/80 bg-[#3F3D4A]/75 p-4 transition-colors hover:bg-[#4a4758]"
+      className="group block rounded-2xl border border-border bg-card p-6 shadow-sm transition-all hover:-translate-y-1 hover:shadow-md active:scale-95"
       aria-disabled={blocked}
     >
-      <p className="text-base font-semibold text-[#8AB4F8]">{title}</p>
-      <p className="mt-1 text-sm text-zinc-300">{description}</p>
+      <p className="font-heading text-lg font-bold text-foreground group-hover:text-primary transition-colors">{title}</p>
+      <p className="mt-2 text-sm font-medium text-muted-foreground/80">{description}</p>
       {blocked ? (
-        <p className="mt-2 text-xs text-amber-300">Acceso restringido por rol.</p>
+        <div className="mt-4 flex items-center gap-2 rounded-lg bg-amber-500/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-amber-600 dark:text-amber-400">
+          <span>🔒</span> Acceso restringido
+        </div>
       ) : null}
     </Link>
   );

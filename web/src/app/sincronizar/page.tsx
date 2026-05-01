@@ -26,7 +26,7 @@ export default async function SincronizarPage() {
 
   return (
     <AppShell role={activeOptica.rol} opticaName={activeOptica.nombre}>
-      <div className="-m-6 min-h-screen bg-[#121214] p-6 text-zinc-100">
+      <div className="mx-auto w-full max-w-6xl space-y-8 py-4">
         <div className="mx-auto w-full max-w-5xl space-y-4">
           <h1 className="text-2xl font-semibold tracking-tight text-white">Sincronizar Cloud</h1>
           <p className="text-xs text-zinc-400">

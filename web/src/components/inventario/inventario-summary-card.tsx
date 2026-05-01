@@ -12,26 +12,40 @@ export function InventarioSummaryCard({
     ? `/api/inventario/pdf?q=${encodeURIComponent(q.trim())}`
     : "/api/inventario/pdf";
   return (
-    <section className="rounded-2xl bg-[#4A4856] p-4">
-      <h2 className="text-3xl font-semibold text-zinc-100">Resumen inventario</h2>
-      <div className="mt-3 space-y-1 text-2xl text-zinc-200">
-        <p>Monturas listadas: {summary.listed}</p>
-        <p>Stock total: {summary.stockTotal}</p>
-        <p>Valor costo: {soles(summary.valorCosto)}</p>
-        <p>Valor venta: {soles(summary.valorVenta)}</p>
+    <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+      <h2 className="font-heading text-2xl font-bold text-foreground">Resumen de Inventario</h2>
+      
+      <div className="mt-6 grid grid-cols-2 gap-4">
+        <div className="rounded-2xl bg-foreground/[0.03] p-4">
+          <p className="text-xs font-bold uppercase tracking-tight text-muted-foreground/60">Monturas</p>
+          <p className="font-heading text-2xl font-black text-foreground">{summary.listed}</p>
+        </div>
+        <div className="rounded-2xl bg-foreground/[0.03] p-4">
+          <p className="text-xs font-bold uppercase tracking-tight text-muted-foreground/60">Stock Total</p>
+          <p className="font-heading text-2xl font-black text-foreground">{summary.stockTotal}</p>
+        </div>
+        <div className="rounded-2xl bg-primary/5 p-4">
+          <p className="text-xs font-bold uppercase tracking-tight text-primary/60">Valor Costo</p>
+          <p className="font-heading text-xl font-black text-primary">{soles(summary.valorCosto)}</p>
+        </div>
+        <div className="rounded-2xl bg-primary/5 p-4">
+          <p className="text-xs font-bold uppercase tracking-tight text-primary/60">Valor Venta</p>
+          <p className="font-heading text-xl font-black text-primary">{soles(summary.valorVenta)}</p>
+        </div>
       </div>
-      <div className="mt-4 flex flex-wrap gap-2">
+
+      <div className="mt-8 flex flex-wrap gap-3">
         <Link
           href={pdfHref}
-          className="rounded-full bg-[#8AB4F8] px-6 py-2 text-lg font-semibold text-zinc-900"
+          className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95"
         >
-          Generar PDF
+          📄 Exportar PDF
         </Link>
         <Link
           href={pdfHref}
-          className="rounded-full border border-zinc-400 px-6 py-2 text-lg text-zinc-100"
+          className="flex items-center justify-center gap-2 rounded-xl border border-border bg-card px-6 py-3 text-sm font-bold text-foreground transition-all hover:bg-foreground/5 active:scale-95"
         >
-          Compartir PDF
+          📤 Compartir
         </Link>
       </div>
     </section>

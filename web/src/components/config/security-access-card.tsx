@@ -81,13 +81,13 @@ export function SecurityAccessCard({ initialPinRequired }: Props) {
   }
 
   return (
-    <section className="rounded-2xl border border-zinc-700/80 bg-[#3F3D4A]/75 p-5 shadow-sm">
-      <h2 className="mb-4 text-xl font-semibold text-[#8AB4F8]">Seguridad y Acceso</h2>
+    <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+      <h2 className="font-heading text-xl font-bold text-foreground">Seguridad y Acceso</h2>
 
-      <div className="flex items-start justify-between gap-4 rounded-xl border border-zinc-600/70 bg-black/10 p-3">
+      <div className="mt-6 flex items-start justify-between gap-4 rounded-2xl border border-border bg-foreground/[0.02] p-4 transition-all hover:bg-foreground/[0.04]">
         <div>
-          <p className="text-sm font-medium text-zinc-100">Requerir PIN al inicio</p>
-          <p className="mt-1 text-xs text-zinc-300">
+          <p className="font-bold text-foreground">Requerir PIN al inicio</p>
+          <p className="mt-1 text-xs font-medium text-muted-foreground/80">
             Solicita el PIN de seguridad cada vez que abres la app.
           </p>
         </div>
@@ -98,46 +98,59 @@ export function SecurityAccessCard({ initialPinRequired }: Props) {
           aria-label="Requerir PIN al inicio"
           disabled={savingToggle}
           onClick={() => void onToggle(!pinRequired)}
-          className={`relative h-8 w-14 rounded-full transition-colors ${
-            pinRequired ? "bg-[#8AB4F8]" : "bg-zinc-600"
+          className={`relative h-8 w-14 shrink-0 rounded-full transition-all duration-300 ${
+            pinRequired ? "bg-primary shadow-lg shadow-primary/30" : "bg-muted"
           }`}
         >
           <span
-            className={`absolute top-1 h-6 w-6 rounded-full bg-black transition-transform ${
+            className={`absolute top-1 h-6 w-6 rounded-full bg-white shadow-sm transition-transform duration-300 ${
               pinRequired ? "translate-x-7" : "translate-x-1"
             }`}
           />
         </button>
       </div>
 
-      <form onSubmit={onUpdatePin} className="mt-4 space-y-3">
-        <PinInput
-          label="PIN actual (6 dígitos)"
-          value={currentPin}
-          onChange={setCurrentPin}
-        />
-        <PinInput
-          label="Nuevo PIN (6 dígitos)"
-          value={newPin}
-          onChange={setNewPin}
-        />
-        <PinInput
-          label="Confirmar nuevo PIN"
-          value={confirmPin}
-          onChange={setConfirmPin}
-        />
-        <button
-          type="submit"
-          disabled={savingPin}
-          className="w-full rounded-full bg-[#8AB4F8] px-4 py-2.5 text-sm font-semibold text-zinc-900 transition-opacity hover:opacity-90 disabled:opacity-60"
-        >
-          {savingPin ? "Actualizando..." : "Actualizar PIN"}
-        </button>
-      </form>
+      <div className="mt-8 space-y-4">
+        <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground/60">Actualizar Credenciales</h3>
+        <form onSubmit={onUpdatePin} className="space-y-4">
+          <PinInput
+            label="PIN actual"
+            value={currentPin}
+            onChange={setCurrentPin}
+          />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <PinInput
+              label="Nuevo PIN"
+              value={newPin}
+              onChange={setNewPin}
+            />
+            <PinInput
+              label="Confirmar PIN"
+              value={confirmPin}
+              onChange={setConfirmPin}
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={savingPin}
+            className="w-full rounded-xl bg-primary px-6 py-3 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50"
+          >
+            {savingPin ? "⌛ Actualizando..." : "🔐 Actualizar PIN de Seguridad"}
+          </button>
+        </form>
+      </div>
 
-      <div aria-live="polite" className="mt-3 min-h-5 text-sm">
-        {message ? <p className="text-emerald-300">{message}</p> : null}
-        {error ? <p className="text-red-300">{error}</p> : null}
+      <div aria-live="polite" className="mt-4 min-h-6">
+        {message ? (
+          <p className="flex items-center gap-2 text-sm font-bold text-primary">
+            <span>✨</span> {message}
+          </p>
+        ) : null}
+        {error ? (
+          <p className="flex items-center gap-2 text-sm font-bold text-destructive">
+            <span>❌</span> {error}
+          </p>
+        ) : null}
       </div>
     </section>
   );

@@ -1,3 +1,4 @@
+import { Banknote, Smartphone, CreditCard } from "lucide-react";
 import { money } from "@/lib/cierre-caja";
 
 export function PaymentSummaryCards({
@@ -10,10 +11,25 @@ export function PaymentSummaryCards({
   tarjeta: number;
 }) {
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-      <MiniCard title="Efectivo" value={money(efectivo)} tone="emerald" />
-      <MiniCard title="Móvil/Trans" value={money(movilTrans)} tone="cyan" />
-      <MiniCard title="Tarjeta" value={money(tarjeta)} tone="sky" />
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <MiniCard 
+        title="Efectivo" 
+        value={money(efectivo)} 
+        icon={<Banknote className="h-5 w-5" />}
+        variant="emerald" 
+      />
+      <MiniCard 
+        title="Móvil/Trans" 
+        value={money(movilTrans)} 
+        icon={<Smartphone className="h-5 w-5" />}
+        variant="primary" 
+      />
+      <MiniCard 
+        title="Tarjeta" 
+        value={money(tarjeta)} 
+        icon={<CreditCard className="h-5 w-5" />}
+        variant="blue" 
+      />
     </div>
   );
 }
@@ -21,22 +37,29 @@ export function PaymentSummaryCards({
 function MiniCard({
   title,
   value,
-  tone
+  icon,
+  variant
 }: {
   title: string;
   value: string;
-  tone: "emerald" | "cyan" | "sky";
+  icon: React.ReactNode;
+  variant: "emerald" | "primary" | "blue";
 }) {
-  const toneClass =
-    tone === "emerald"
-      ? "text-emerald-300"
-      : tone === "cyan"
-        ? "text-cyan-300"
-        : "text-sky-300";
+  const variants = {
+    emerald: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20",
+    primary: "text-primary bg-primary/10 border-primary/20",
+    blue: "text-blue-500 bg-blue-500/10 border-blue-500/20"
+  };
+
   return (
-    <div className="rounded-xl bg-[#1E1F2A] p-4">
-      <p className={`text-sm ${toneClass}`}>{title}</p>
-      <p className={`mt-1 text-3xl font-semibold ${toneClass}`}>{value}</p>
+    <div className={`rounded-3xl border p-6 transition-all hover:shadow-lg ${variants[variant]}`}>
+      <div className="flex items-center gap-2 mb-4 opacity-70">
+        {icon}
+        <p className="text-[10px] font-black uppercase tracking-[0.2em]">{title}</p>
+      </div>
+      <p className="font-heading text-3xl font-black tabular-nums tracking-tighter">
+        {value}
+      </p>
     </div>
   );
 }

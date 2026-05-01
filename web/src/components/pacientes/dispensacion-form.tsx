@@ -241,92 +241,102 @@ export function DispensacionForm({
       <input type="hidden" name="pagosJson" value={JSON.stringify(pagos)} />
       <input type="hidden" name="pagosDeleteJson" value={JSON.stringify(pagosDeleteIds)} />
 
-      <div className="rounded-xl border border-zinc-800 bg-[#121212] text-zinc-100">
-        <div className="border-b border-zinc-800 px-3 py-2 text-[13px] text-sky-400">{opticaLine}</div>
-        <div className="flex items-center gap-2 bg-zinc-900 px-2 py-2 text-zinc-100">
-          <Link href={backHref} className="flex h-10 w-10 items-center justify-center rounded-lg hover:bg-white/10">
-            <span className="text-xl">{`<`}</span>
+      <div className="rounded-2xl border border-border bg-card text-foreground shadow-xl overflow-hidden">
+        <div className="border-b border-border px-4 py-2 text-[11px] font-black uppercase tracking-widest text-primary/70">{opticaLine}</div>
+        <div className="flex items-center gap-3 bg-primary px-4 py-4 text-primary-foreground shadow-md">
+          <Link href={backHref} className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 hover:bg-white/20 transition-all active:scale-95">
+            <span className="text-xl font-bold">{`←`}</span>
           </Link>
-          <h2 className="flex-1 text-lg font-bold">
-            {mode === "edit" ? "Editar Dispensacion" : "Nueva Dispensacion"}
+          <h2 className="flex-1 font-heading text-xl font-bold">
+            {mode === "edit" ? "Editar Dispensación" : "Nueva Dispensación"}
           </h2>
-          <button type="submit" className="flex h-10 w-10 items-center justify-center rounded-lg text-xl hover:bg-white/10">
-            ✓
+          <button type="submit" className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 hover:bg-white/20 transition-all active:scale-95">
+            💾
           </button>
         </div>
 
-        <div className="space-y-4 px-4 py-4">
-          <button type="button" className="w-full rounded-full border border-zinc-700 py-2 text-sm" onClick={() => {}}>
-            Fecha: {new Date(fecha + "T12:00:00").toLocaleDateString("es-PE", { day: "2-digit", month: "short", year: "numeric" })}
-          </button>
-          <input
-            type="date"
-            value={fecha}
-            onChange={(e) => setFecha(e.target.value)}
-            className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm"
-          />
-          <div className="flex items-center gap-2">
-            <input
-              value={ot}
-              onChange={(e) => setOt(e.target.value)}
-              placeholder="N° OT (OT-AAAA-####)"
-              className="flex-1 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2"
-            />
-            <button type="button" onClick={suggestOt} className="text-sm text-sky-400">
-              Sugerir OT
-            </button>
+        <div className="space-y-6 px-5 py-6">
+          <div className="space-y-4">
+            <label className="block">
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 ml-1">Fecha de Orden</span>
+              <input
+                type="date"
+                value={fecha}
+                onChange={(e) => setFecha(e.target.value)}
+                className="mt-1 w-full rounded-xl border border-border bg-foreground/[0.03] px-4 py-3 text-sm font-medium text-foreground transition-all focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+              />
+            </label>
+            <div className="flex items-end gap-3">
+              <label className="flex-1">
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 ml-1">N° Orden (OT)</span>
+                <input
+                  value={ot}
+                  onChange={(e) => setOt(e.target.value)}
+                  placeholder="OT-AAAA-####"
+                  className="mt-1 w-full rounded-xl border border-border bg-foreground/[0.03] px-4 py-3 text-sm font-medium text-foreground transition-all focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                />
+              </label>
+              <button type="button" onClick={suggestOt} className="h-[46px] rounded-xl border border-primary/20 bg-primary/5 px-4 text-xs font-bold text-primary transition-all hover:bg-primary/10 active:scale-95">
+                Sugerir OT
+              </button>
+            </div>
           </div>
 
-          <section className="rounded-xl border border-zinc-700 bg-zinc-800/40 p-3 space-y-2">
-            <h3 className="font-semibold text-sky-300">Informacion del Lente</h3>
-            <select value={tipoLente} onChange={(e) => onTipoLenteChange(e.target.value)} className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2">
-              <option value="">Tipo de Lente</option>
-              {TIPO_LENTE.map((x) => <option key={x} value={x}>{x}</option>)}
-            </select>
-            {tipoLente === "Bifocal" && (
-              <select value={subTipoBifocal} onChange={(e) => setSubTipoBifocal(e.target.value)} className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2">
-                <option value="">Sub-tipo Bifocal</option>
-                {SUB_BIFOCAL.map((x) => <option key={x} value={x}>{x}</option>)}
+          <section className="rounded-2xl border border-border bg-foreground/[0.02] p-5 space-y-4">
+            <h3 className="font-heading text-sm font-bold text-primary">Información del Lente</h3>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <select value={tipoLente} onChange={(e) => onTipoLenteChange(e.target.value)} className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm font-medium transition-all focus:border-primary focus:ring-1 focus:ring-primary outline-none">
+                <option value="">Tipo de Lente</option>
+                {TIPO_LENTE.map((x) => <option key={x} value={x}>{x}</option>)}
               </select>
-            )}
-            {tipoLente === "Monofocal" && (
-              <select value={distanciaLente} onChange={(e) => setDistanciaLente(e.target.value)} className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2">
-                <option value="">Distancia</option>
-                {DISTANCIA.map((x) => <option key={x} value={x}>{x}</option>)}
+              {tipoLente === "Bifocal" && (
+                <select value={subTipoBifocal} onChange={(e) => setSubTipoBifocal(e.target.value)} className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm font-medium transition-all focus:border-primary focus:ring-1 focus:ring-primary outline-none">
+                  <option value="">Sub-tipo Bifocal</option>
+                  {SUB_BIFOCAL.map((x) => <option key={x} value={x}>{x}</option>)}
+                </select>
+              )}
+              {tipoLente === "Monofocal" && (
+                <select value={distanciaLente} onChange={(e) => setDistanciaLente(e.target.value)} className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm font-medium transition-all focus:border-primary focus:ring-1 focus:ring-primary outline-none">
+                  <option value="">Distancia</option>
+                  {DISTANCIA.map((x) => <option key={x} value={x}>{x}</option>)}
+                </select>
+              )}
+              {requiresAltura && (
+                <input value={altura} onChange={(e) => setAltura(e.target.value)} placeholder="Altura (mm)" className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm font-medium transition-all focus:border-primary focus:ring-1 focus:ring-primary outline-none" />
+              )}
+              <select value={materialLente} onChange={(e) => setMaterialLente(e.target.value)} className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm font-medium transition-all focus:border-primary focus:ring-1 focus:ring-primary outline-none">
+                <option value="">Material</option>
+                {MATERIAL_LENTE.map((x) => <option key={x} value={x}>{x}</option>)}
               </select>
-            )}
-            {requiresAltura && (
-              <input value={altura} onChange={(e) => setAltura(e.target.value)} placeholder="Altura (mm)" className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2" />
-            )}
-            <select value={materialLente} onChange={(e) => setMaterialLente(e.target.value)} className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2">
-              <option value="">Material</option>
-              {MATERIAL_LENTE.map((x) => <option key={x} value={x}>{x}</option>)}
-            </select>
-            <p className="text-sm text-zinc-300">Tratamientos</p>
-            {tratamientosUi.map((value, idx) => (
-              <select
-                key={`${idx}-${value}`}
-                value={value}
-                onChange={(e) => {
-                  const selected = e.target.value;
-                  setTratamientos((prev) => {
-                    const arr = [...prev];
-                    if (idx < arr.length) {
-                      if (selected === "Ninguno") arr.splice(idx, 1);
-                      else arr[idx] = selected;
-                    } else if (selected !== "Ninguno") {
-                      arr.push(selected);
-                    }
-                    return Array.from(new Set(arr.filter((x) => x !== "Ninguno")));
-                  });
-                }}
-                className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2"
-              >
-                {TRATAMIENTOS.map((x) => <option key={x} value={x}>{x}</option>)}
-              </select>
-            ))}
-            <input value={colorLente} onChange={(e) => setColorLente(e.target.value)} placeholder="Color" className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2" />
-            <textarea value={notasDiseno} onChange={(e) => setNotasDiseno(e.target.value)} placeholder="Notas de Diseño" rows={2} className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2" />
+            </div>
+            
+            <div className="space-y-3">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 ml-1">Tratamientos Aplicados</p>
+              {tratamientosUi.map((value, idx) => (
+                <select
+                  key={`${idx}-${value}`}
+                  value={value}
+                  onChange={(e) => {
+                    const selected = e.target.value;
+                    setTratamientos((prev) => {
+                      const arr = [...prev];
+                      if (idx < arr.length) {
+                        if (selected === "Ninguno") arr.splice(idx, 1);
+                        else arr[idx] = selected;
+                      } else if (selected !== "Ninguno") {
+                        arr.push(selected);
+                      }
+                      return Array.from(new Set(arr.filter((x) => x !== "Ninguno")));
+                    });
+                  }}
+                  className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm font-medium transition-all focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                >
+                  {TRATAMIENTOS.map((x) => <option key={x} value={x}>{x}</option>)}
+                </select>
+              ))}
+            </div>
+            <input value={colorLente} onChange={(e) => setColorLente(e.target.value)} placeholder="Color del lente" className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm font-medium transition-all focus:border-primary focus:ring-1 focus:ring-primary outline-none" />
+            <textarea value={notasDiseno} onChange={(e) => setNotasDiseno(e.target.value)} placeholder="Notas de diseño adicionales..." rows={2} className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm font-medium transition-all focus:border-primary focus:ring-1 focus:ring-primary outline-none resize-none" />
           </section>
 
           <section className="rounded-xl border border-zinc-700 bg-zinc-800/40 p-3 space-y-2">
@@ -362,70 +372,96 @@ export function DispensacionForm({
               <option value="">Material</option>
               {MATERIAL_MONTURA.map((x) => <option key={x} value={x}>{x}</option>)}
             </select>
-            <input value={descripcionMontura} onChange={(e) => setDescripcionMontura(e.target.value)} placeholder="Descripcion (Marca, Modelo)" className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2" />
+            <input value={descripcionMontura} onChange={(e) => setDescripcionMontura(e.target.value)} placeholder="Descripción (Marca, Modelo)" className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm font-medium transition-all focus:border-primary focus:ring-1 focus:ring-primary outline-none" />
           </section>
 
-          <section className="rounded-xl border border-zinc-700 bg-zinc-800/40 p-3 space-y-3">
-            <h3 className="font-semibold text-sky-300">Informacion Financiera</h3>
-            <input value={montoTotal} onChange={(e) => setMontoTotal(e.target.value)} placeholder="Monto Total" className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2" />
-            <hr className="border-zinc-700" />
-            <p className="font-semibold text-zinc-200">Historial de Abonos</p>
-            {pagos.map((p) => (
-              <div key={p.id} className="flex items-start justify-between rounded-lg border border-zinc-700 bg-zinc-900/60 p-2">
-                <div>
-                  <p className="text-sm font-medium">{p.metodoPago}: s/. {parseNum(p.monto).toFixed(2)}</p>
-                  {p.nota && <p className="text-xs text-zinc-400">{p.nota}</p>}
-                  <p className="text-xs text-zinc-500">{p.fecha}</p>
-                </div>
-                <div className="flex gap-2">
-                  <button type="button" onClick={() => openEditPago(p.id)} className="text-xs text-sky-400">Editar</button>
-                  <button type="button" onClick={() => deletePago(p.id)} className="text-xs text-red-400">Borrar</button>
-                </div>
+          <section className="rounded-2xl border border-border bg-foreground/[0.04] p-5 space-y-5">
+            <h3 className="font-heading text-sm font-bold text-primary">Resumen Financiero</h3>
+            <label className="block">
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 ml-1">Costo Total del Servicio</span>
+              <div className="relative mt-1">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-muted-foreground/60">S/</span>
+                <input value={montoTotal} onChange={(e) => setMontoTotal(e.target.value)} placeholder="0.00" className="w-full rounded-xl border border-border bg-card py-3 pl-10 pr-4 text-lg font-black text-foreground transition-all focus:border-primary focus:ring-1 focus:ring-primary outline-none" />
               </div>
-            ))}
-            <button type="button" onClick={openAddPago} className="w-full rounded-lg border border-zinc-600 py-2 text-sm">
-              Agregar Abono
-            </button>
+            </label>
+            
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground/70">Historial de Abonos</p>
+                <button type="button" onClick={openAddPago} className="rounded-lg bg-primary/10 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-primary transition-all hover:bg-primary/20 active:scale-95">
+                  + Agregar
+                </button>
+              </div>
+              
+              <div className="space-y-2">
+                {pagos.map((p) => (
+                  <div key={p.id} className="flex items-center justify-between rounded-xl border border-border bg-card p-3 shadow-sm transition-all hover:border-primary/30">
+                    <div>
+                      <p className="text-sm font-bold text-foreground">S/ {parseNum(p.monto).toFixed(2)} <span className="ml-1 text-[10px] font-medium text-muted-foreground/60">({p.metodoPago})</span></p>
+                      <p className="text-[10px] font-medium text-muted-foreground/60">{p.fecha}</p>
+                      {p.nota && <p className="mt-0.5 text-[10px] italic text-muted-foreground/80">"{p.nota}"</p>}
+                    </div>
+                    <div className="flex gap-2">
+                      <button type="button" onClick={() => openEditPago(p.id)} className="text-[10px] font-bold text-primary hover:underline">Editar</button>
+                      <button type="button" onClick={() => deletePago(p.id)} className="text-[10px] font-bold text-destructive hover:underline">Borrar</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
 
-            <div className="text-center">
-              <p className="text-xs text-zinc-400">SALDO RESTANTE</p>
-              <p className={"text-3xl font-extrabold " + (saldo > 0 ? "text-red-400" : "text-emerald-400")}>
-                s/. {saldo.toFixed(2)}
+            <div className="rounded-2xl bg-foreground/5 p-4 text-center">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">Saldo Pendiente</p>
+              <p className={"font-heading text-3xl font-black mt-1 " + (saldo > 0 ? "text-destructive" : "text-emerald-500")}>
+                S/ {saldo.toFixed(2)}
               </p>
             </div>
-            <select value={estadoEntrega} onChange={(e) => setEstadoEntrega(e.target.value)} className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2">
-              {ESTADO_ENTREGA.map((x) => <option key={x} value={x}>{x}</option>)}
-            </select>
-            <button type="submit" className="w-full rounded-lg bg-sky-400 px-4 py-2.5 font-semibold text-zinc-900">
-              {mode === "edit" ? "Actualizar Orden" : "Confirmar Orden"}
+
+            <label className="block">
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 ml-1">Estado de la Orden</span>
+              <select value={estadoEntrega} onChange={(e) => setEstadoEntrega(e.target.value)} className="mt-1 w-full rounded-xl border border-border bg-card px-4 py-3 text-sm font-bold text-foreground transition-all focus:border-primary focus:ring-1 focus:ring-primary outline-none">
+                {ESTADO_ENTREGA.map((x) => <option key={x} value={x}>{x}</option>)}
+              </select>
+            </label>
+
+            <button type="submit" className="w-full rounded-xl bg-primary px-6 py-4 font-heading text-base font-black text-primary-foreground shadow-xl shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95">
+              {mode === "edit" ? "💾 ACTUALIZAR ORDEN" : "🚀 CONFIRMAR ORDEN"}
             </button>
-            {localError && <p className="text-sm text-red-400">{localError}</p>}
+            {localError && <p className="text-center text-xs font-bold text-destructive animate-bounce">⚠️ {localError}</p>}
           </section>
         </div>
       </div>
 
       {showPagoDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
           <div className="absolute inset-0" onClick={() => setShowPagoDialog(false)} role="presentation" />
-          <div className="relative z-10 w-full max-w-md rounded-xl border border-zinc-700 bg-zinc-900 p-4 text-zinc-100 space-y-3">
-            <h4 className="font-semibold">{editingPagoId ? "Editar Abono" : "Agregar Abono"}</h4>
-            <label className="block text-sm">Fecha del abono
-              <input type="date" value={dialogFecha} onChange={(e) => setDialogFecha(e.target.value)} className="mt-1 w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2" />
-            </label>
-            <label className="block text-sm">Monto
-              <input value={dialogMonto} onChange={(e) => setDialogMonto(e.target.value)} className="mt-1 w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2" />
-            </label>
-            <label className="block text-sm">Metodo de pago
-              <select value={dialogMetodo} onChange={(e) => setDialogMetodo(e.target.value)} className="mt-1 w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2">
-                {METODO_PAGO.map((x) => <option key={x} value={x}>{x}</option>)}
-              </select>
-            </label>
-            <label className="block text-sm">Nota
-              <input value={dialogNota} onChange={(e) => setDialogNota(e.target.value)} className="mt-1 w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2" />
-            </label>
-            <div className="flex justify-end gap-2">
-              <button type="button" onClick={() => setShowPagoDialog(false)} className="rounded-md border border-zinc-600 px-3 py-1.5 text-sm">Cancelar</button>
-              <button type="button" onClick={savePagoDialog} className="rounded-md bg-sky-400 px-3 py-1.5 text-sm font-medium text-zinc-900">Guardar</button>
+          <div className="relative z-10 w-full max-w-md rounded-3xl border border-border bg-card p-6 text-foreground shadow-2xl transition-all">
+            <h4 className="font-heading text-xl font-bold">{editingPagoId ? "Editar Abono" : "Agregar Abono"}</h4>
+            
+            <div className="mt-6 space-y-4">
+              <label className="block">
+                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1">Fecha del Abono</span>
+                <input type="date" value={dialogFecha} onChange={(e) => setDialogFecha(e.target.value)} className="mt-1 w-full rounded-xl border border-border bg-foreground/[0.03] px-4 py-3 text-sm font-medium focus:border-primary focus:ring-1 focus:ring-primary outline-none" />
+              </label>
+              <label className="block">
+                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1">Monto (S/)</span>
+                <input value={dialogMonto} onChange={(e) => setDialogMonto(e.target.value)} placeholder="0.00" className="mt-1 w-full rounded-xl border border-border bg-foreground/[0.03] px-4 py-3 text-sm font-bold focus:border-primary focus:ring-1 focus:ring-primary outline-none" />
+              </label>
+              <label className="block">
+                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1">Método de Pago</span>
+                <select value={dialogMetodo} onChange={(e) => setDialogMetodo(e.target.value)} className="mt-1 w-full rounded-xl border border-border bg-foreground/[0.03] px-4 py-3 text-sm font-medium focus:border-primary focus:ring-1 focus:ring-primary outline-none">
+                  {METODO_PAGO.map((x) => <option key={x} value={x}>{x}</option>)}
+                </select>
+              </label>
+              <label className="block">
+                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1">Nota / Referencia</span>
+                <input value={dialogNota} onChange={(e) => setDialogNota(e.target.value)} placeholder="Ej. Operación #12345" className="mt-1 w-full rounded-xl border border-border bg-foreground/[0.03] px-4 py-3 text-sm font-medium focus:border-primary focus:ring-1 focus:ring-primary outline-none" />
+              </label>
+            </div>
+
+            <div className="mt-8 flex justify-end gap-3">
+              <button type="button" onClick={() => setShowPagoDialog(false)} className="rounded-xl border border-border bg-card px-5 py-2.5 text-sm font-bold text-foreground transition-all hover:bg-foreground/5">Cancelar</button>
+              <button type="button" onClick={savePagoDialog} className="rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/20 transition-all hover:scale-105 active:scale-95">Guardar Abono</button>
             </div>
           </div>
         </div>

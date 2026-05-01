@@ -58,11 +58,11 @@ export default async function ConfigModulePage({
 
   return (
     <AppShell role={activeOptica.rol} opticaName={activeOptica.nombre}>
-      <div className="-m-6 min-h-screen bg-[#121214] p-6 text-zinc-100">
-        <div className="mx-auto w-full max-w-5xl">
+      <div className="min-h-screen bg-background p-4 sm:p-8 text-foreground transition-colors duration-300">
+        <div className="mx-auto w-full max-w-5xl space-y-6">
           <ConfigSectionShell title={moduleMeta.title} description={moduleMeta.description}>
             {moduleMeta.key === "seguridad" && (
-              <>
+              <div className="space-y-4">
                 <SecurityAccessCard initialPinRequired={isPinRequiredFromUser(user)} />
                 <GeneralSettingsCard
                   initialAutomaticReminders={
@@ -71,7 +71,7 @@ export default async function ConfigModulePage({
                       : true
                   }
                 />
-              </>
+              </div>
             )}
 
             {moduleMeta.key === "laboratorio" && (
@@ -166,19 +166,21 @@ async function PlanAdminSection({
 }) {
   if (!isInternal) {
     return (
-      <MessageCard message="Este módulo es solo para staff interno autorizado." tone="warn" />
+      <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-6 text-sm font-medium text-amber-600">
+        Este módulo es solo para staff interno autorizado.
+      </div>
     );
   }
   return (
-    <section className="rounded-2xl border border-zinc-700/80 bg-[#3F3D4A]/75 p-5">
-      <h2 className="text-xl font-semibold text-[#8AB4F8]">Administración de plan</h2>
-      <p className="mt-2 text-sm text-zinc-300">
-        Rol activo: {role}. Ajustes internos y notas operativas por óptica.
+    <section className="rounded-3xl border border-border bg-card p-6 shadow-sm">
+      <h2 className="font-heading text-xl font-bold text-foreground">Administración de plan</h2>
+      <p className="mt-2 text-sm font-medium text-muted-foreground">
+        Rol activo: <span className="text-primary font-black uppercase tracking-tighter">{role}</span>. Ajustes internos.
       </p>
-      <pre className="mt-3 overflow-x-auto rounded-xl bg-black/20 p-3 text-xs text-zinc-300">
+      <pre className="mt-4 overflow-x-auto rounded-2xl bg-foreground/[0.03] p-4 text-xs font-mono text-foreground/70">
         {JSON.stringify(currentOpticaConfig.planAdmin ?? {}, null, 2)}
       </pre>
-      {query.msg ? <p className="mt-2 text-xs text-emerald-300">{query.msg}</p> : null}
+      {query.msg ? <p className="mt-4 text-xs font-bold text-emerald-500 uppercase tracking-widest">{query.msg}</p> : null}
     </section>
   );
 }
@@ -208,78 +210,79 @@ async function UserRolesSection({
       : [];
 
   return (
-    <section className="rounded-2xl border border-zinc-700/80 bg-[#3F3D4A]/75 p-5">
-      <h2 className="text-xl font-semibold text-[#8AB4F8]">Usuario y roles</h2>
+    <section className="rounded-3xl border border-border bg-card p-6 shadow-sm">
+      <h2 className="font-heading text-xl font-bold text-foreground">Usuarios y Roles</h2>
       {!canManage ? (
-        <p className="mt-2 text-sm text-amber-300">Acceso solo lectura para tu rol.</p>
+        <p className="mt-2 text-xs font-bold text-amber-500 uppercase tracking-widest">Acceso solo lectura para tu rol.</p>
       ) : null}
-      {query.msg ? <p className="mt-2 text-sm text-emerald-300">{query.msg}</p> : null}
-      {query.error ? <p className="mt-2 text-sm text-red-300">{query.error}</p> : null}
-      {error ? (
-        <p className="mt-3 text-sm text-red-300">
-          No se pudo cargar miembros de la óptica.
-        </p>
-      ) : (
-        <div className="mt-3 space-y-2">
-          {members.map((m) => (
-            <div
-              key={m.user_id}
-              className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-zinc-700 bg-black/10 p-3"
-            >
-              <div>
-                <p className="text-sm text-zinc-100">{m.user_profiles?.email ?? m.user_id}</p>
-                <p className="text-xs text-zinc-400">ID: {m.user_id}</p>
-              </div>
-              {canManage ? (
-                <form action={updateRoleAction} className="flex items-center gap-2">
-                  <input type="hidden" name="userId" value={m.user_id} />
-                  <select
-                    name="rol"
-                    defaultValue={m.rol}
-                    className="rounded border border-zinc-600 bg-zinc-900 px-2 py-1 text-sm"
-                  >
-                    <option value="admin">admin</option>
-                    <option value="gerente">gerente</option>
-                    <option value="colaborador">colaborador</option>
-                    <option value="invitado">invitado</option>
-                  </select>
-                  <button className="rounded border border-zinc-600 px-2 py-1 text-xs">
-                    Guardar
-                  </button>
-                </form>
-              ) : null}
+      
+      <div className="mt-6 space-y-3">
+        {members.map((m) => (
+          <div
+            key={m.user_id}
+            className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-border bg-foreground/[0.02] p-4 transition-all hover:bg-foreground/[0.04]"
+          >
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-bold text-foreground">{m.user_profiles?.email ?? m.user_id}</p>
+              <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/50">ID: {m.user_id}</p>
             </div>
-          ))}
-        </div>
-      )}
-      {canManage ? (
-        <form action={inviteMemberAction} className="mt-4 flex flex-wrap items-end gap-2">
-          <label className="text-sm">
-            <span className="text-zinc-300">ID de usuario a vincular</span>
-            <input
-              name="userId"
-              className="mt-1 w-full rounded border border-zinc-600 bg-zinc-900 px-2 py-1"
-              placeholder="uuid usuario"
-            />
-          </label>
-          <label className="text-sm">
-            <span className="text-zinc-300">Rol</span>
-            <select
-              name="rol"
-              className="mt-1 rounded border border-zinc-600 bg-zinc-900 px-2 py-1"
-              defaultValue="colaborador"
-            >
-              <option value="admin">admin</option>
-              <option value="gerente">gerente</option>
-              <option value="colaborador">colaborador</option>
-              <option value="invitado">invitado</option>
-            </select>
-          </label>
-          <button className="rounded-full bg-[#8AB4F8] px-4 py-2 text-sm font-semibold text-zinc-900">
-            Vincular usuario
+            {canManage ? (
+              <form action={updateRoleAction} className="flex items-center gap-2">
+                <input type="hidden" name="userId" value={m.user_id} />
+                <select
+                  name="rol"
+                  defaultValue={m.rol}
+                  className="rounded-xl border border-border bg-background px-3 py-1.5 text-xs font-bold text-foreground outline-none focus:ring-2 focus:ring-primary/20"
+                >
+                  <option value="admin">admin</option>
+                  <option value="gerente">gerente</option>
+                  <option value="colaborador">colaborador</option>
+                  <option value="invitado">invitado</option>
+                </select>
+                <button className="rounded-xl bg-primary px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-primary-foreground hover:scale-105 transition-all">
+                  Guardar
+                </button>
+              </form>
+            ) : (
+               <span className="rounded-full bg-primary/10 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-primary">
+                 {m.rol}
+               </span>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {canManage && (
+        <form action={inviteMemberAction} className="mt-8 rounded-2xl border border-dashed border-border p-6 bg-foreground/[0.01]">
+          <h3 className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground/60 mb-4">Vincular nuevo usuario</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
+            <div className="space-y-1">
+              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">ID del Usuario (UUID)</span>
+              <input
+                name="userId"
+                className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm font-medium outline-none focus:ring-2 focus:ring-primary/20"
+                placeholder="00000000-0000-0000-0000-000000000000"
+              />
+            </div>
+            <div className="space-y-1">
+              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Asignar Rol</span>
+              <select
+                name="rol"
+                className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm font-medium outline-none focus:ring-2 focus:ring-primary/20"
+                defaultValue="colaborador"
+              >
+                <option value="admin">admin</option>
+                <option value="gerente">gerente</option>
+                <option value="colaborador">colaborador</option>
+                <option value="invitado">invitado</option>
+              </select>
+            </div>
+          </div>
+          <button className="mt-4 w-full rounded-2xl bg-primary py-4 text-xs font-black uppercase tracking-[0.2em] text-primary-foreground shadow-xl shadow-primary/20 hover:scale-[1.01] transition-all active:scale-95">
+            Vincular Usuario a la Óptica
           </button>
         </form>
-      ) : null}
+      )}
     </section>
   );
 }
@@ -296,25 +299,25 @@ async function SubscriptionLimitsSection({ opticaId }: { opticaId: string }) {
   ]);
   const patientState = stateByUsage(limits.pacientesActuales, limits.maxPacientes);
   return (
-    <section className="rounded-2xl border border-zinc-700/80 bg-[#3F3D4A]/75 p-5">
-      <h2 className="text-xl font-semibold text-[#8AB4F8]">Suscripciones y límites</h2>
-      <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-2">
+    <section className="rounded-3xl border border-border bg-card p-6 shadow-sm">
+      <h2 className="font-heading text-xl font-bold text-foreground">Suscripción y Límites</h2>
+      <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
         <LimitRow
-          label="Pacientes"
+          label="Pacientes Registrados"
           used={limits.pacientesActuales}
           max={limits.maxPacientes}
           state={patientState}
         />
         <LimitRow
-          label="Usuarios"
+          label="Usuarios Activos"
           used={userCount.count ?? 0}
           max={null}
           state="normal"
         />
         <LimitRow label="Sucursales" used={branchCount.count ?? 0} max={null} state="normal" />
       </div>
-      <p className="mt-3 text-xs text-zinc-300">
-        Si requieres ampliar capacidad, contacta al administrador del plan para upgrade.
+      <p className="mt-6 text-[10px] font-black uppercase tracking-widest text-muted-foreground/40 text-center">
+        Para ampliar capacidad contacta con el soporte de OptoApp SaaS.
       </p>
     </section>
   );
@@ -325,21 +328,21 @@ async function DiagnosticoSyncSection({ opticaId }: { opticaId: string }) {
   const snapshot = await fetchDashboardKpis(supabase, opticaId);
   const report = JSON.stringify(snapshot, null, 2);
   return (
-    <section className="rounded-2xl border border-zinc-700/80 bg-[#3F3D4A]/75 p-5">
-      <h2 className="text-xl font-semibold text-[#8AB4F8]">Diagnóstico de sincronización</h2>
-      <p className="mt-2 text-sm text-zinc-200">
-        Estado general:{" "}
-        <span className={snapshot.status.overall === "ok" ? "text-emerald-300" : "text-amber-300"}>
-          {snapshot.status.overall === "ok" ? "OK" : "Degradado"}
-        </span>
-      </p>
-      <p className="text-xs text-zinc-400">Último sync: {snapshot.status.lastUpdatedIso}</p>
-      <p className="mt-2 text-sm text-zinc-300">
-        Pendientes: {snapshot.kpis.saldosPendientes.toFixed(2)} · Reintentos:{" "}
-        {snapshot.status.overall === "ok" ? 0 : 1} · Fallidos:{" "}
-        {snapshot.status.overall === "ok" ? 0 : 1}
-      </p>
-      <DiagnosticoCard reportText={report} />
+    <section className="rounded-3xl border border-border bg-card p-6 shadow-sm">
+      <h2 className="font-heading text-xl font-bold text-foreground">Diagnóstico del Sistema</h2>
+      <div className="mt-6 space-y-4">
+        <div className="flex items-center justify-between p-4 rounded-2xl bg-foreground/[0.02] border border-border/50">
+          <div className="flex items-center gap-3">
+            <div className={`h-3 w-3 rounded-full animate-pulse ${snapshot.status.overall === "ok" ? "bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.5)]" : "bg-amber-500"}`} />
+            <span className="text-sm font-bold text-foreground">Integridad de Sincronización</span>
+          </div>
+          <span className={`text-xs font-black uppercase tracking-widest ${snapshot.status.overall === "ok" ? "text-emerald-500" : "text-amber-500"}`}>
+            {snapshot.status.overall === "ok" ? "OPERATIVO" : "DEGRADADO"}
+          </span>
+        </div>
+        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/40 ml-1">ÚLTIMO SYNC: {snapshot.status.lastUpdatedIso}</p>
+        <DiagnosticoCard reportText={report} />
+      </div>
     </section>
   );
 }
@@ -347,39 +350,28 @@ async function DiagnosticoSyncSection({ opticaId }: { opticaId: string }) {
 function DataManagementSection({ role }: { role: string }) {
   const canManage = canManageOpticaSettings(role);
   return (
-    <section className="rounded-2xl border border-zinc-700/80 bg-[#3F3D4A]/75 p-5">
-      <h2 className="text-xl font-semibold text-[#8AB4F8]">Gestión de datos</h2>
-      <p className="mt-2 text-sm text-zinc-300">
-        Exporta información operativa y usa acciones sensibles con confirmación doble.
+    <section className="rounded-3xl border border-border bg-card p-6 shadow-sm">
+      <h2 className="font-heading text-xl font-bold text-foreground">Gestión de Datos Maestros</h2>
+      <p className="mt-2 text-sm font-medium text-muted-foreground">
+        Exportaciones seguras de la base de datos operativa.
       </p>
-      <div className="mt-3 flex flex-wrap gap-2">
+      <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
         <Link className={btn} href="/api/dashboard/export?type=pendientes">
-          Exportar pendientes CSV
+          📋 Pendientes CSV
         </Link>
         <Link className={btn} href="/api/dashboard/export?type=cierre">
-          Exportar cierre CSV
+          💰 Cierre Caja CSV
         </Link>
         <Link className={btn} href="/api/dashboard/export?type=inventario-csv">
-          Exportar inventario CSV
+          📦 Inventario CSV
         </Link>
       </div>
-      <p className="mt-3 text-xs text-zinc-400">
-        Importación y borrado seguro se habilitan solo para administración avanzada.
-      </p>
-      {!canManage ? (
-        <p className="mt-2 text-xs text-amber-300">
-          Tu rol actual no permite acciones destructivas.
+      {!canManage && (
+        <p className="mt-6 text-center text-[10px] font-black uppercase tracking-widest text-amber-500">
+          Tu rol actual tiene restricciones en acciones destructivas.
         </p>
-      ) : null}
+      )}
     </section>
-  );
-}
-
-function MessageCard({ message, tone }: { message: string; tone: "warn" | "info" }) {
-  return (
-    <div className="rounded-2xl border border-zinc-700/80 bg-[#3F3D4A]/75 p-5">
-      <p className={tone === "warn" ? "text-amber-300" : "text-zinc-300"}>{message}</p>
-    </div>
   );
 }
 
@@ -395,12 +387,12 @@ function LimitRow({
   state: "normal" | "warning" | "error";
 }) {
   const color =
-    state === "error" ? "text-red-300" : state === "warning" ? "text-amber-300" : "text-emerald-300";
+    state === "error" ? "text-rose-500" : state === "warning" ? "text-amber-500" : "text-emerald-500";
   return (
-    <div className="rounded-xl border border-zinc-700 bg-black/10 p-3 text-sm">
-      <p className="text-zinc-300">{label}</p>
-      <p className={`font-semibold ${color}`}>
-        {used} / {max ?? "Ilimitado"}
+    <div className="rounded-2xl border border-border bg-foreground/[0.02] p-4 text-center">
+      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 mb-2">{label}</p>
+      <p className={`font-heading text-2xl font-black ${color}`}>
+        {used} <span className="text-muted-foreground/30 text-sm font-light">/</span> {max ?? "∞"}
       </p>
     </div>
   );
@@ -452,7 +444,7 @@ function asBranches(value: unknown) {
 }
 
 const btn =
-  "rounded-full border border-zinc-600 px-4 py-2 text-sm text-zinc-100 hover:bg-white/5";
+  "flex items-center justify-center rounded-2xl border border-border bg-card p-4 text-xs font-bold text-foreground shadow-sm transition-all hover:bg-primary hover:text-primary-foreground hover:border-primary active:scale-95";
 
 async function updateRoleAction(formData: FormData) {
   "use server";

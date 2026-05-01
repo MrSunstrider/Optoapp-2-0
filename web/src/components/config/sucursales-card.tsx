@@ -80,45 +80,49 @@ export function SucursalesCard({ initialBranches }: { initialBranches: Branch[] 
   }
 
   return (
-    <section className="rounded-2xl border border-zinc-700/80 bg-[#3F3D4A]/75 p-5">
-      <h2 className="mb-4 text-xl font-semibold text-[#8AB4F8]">Sucursales</h2>
-      <p className="mb-3 text-xs text-zinc-400">
+    <section className="rounded-2xl border border-border bg-card p-6 shadow-sm transition-all hover:shadow-md">
+      <h2 className="font-heading text-xl font-bold text-foreground">Sucursales</h2>
+      <p className="mb-6 text-xs font-medium text-muted-foreground/80">
         Configuración operativa persistida por óptica activa en preferencias seguras.
       </p>
 
-      <div className="mb-3 flex gap-2">
+      <div className="mb-6 flex gap-3">
         <input
           value={newName}
           onChange={(e) => setNewName(e.target.value)}
-          placeholder="Nueva sucursal"
-          className="flex-1 rounded-xl border border-zinc-500/70 bg-[#4A4756] px-3 py-2 text-sm text-zinc-100"
+          placeholder="Nombre de la nueva sucursal"
+          className="flex-1 rounded-xl border border-border bg-foreground/[0.03] px-4 py-2.5 text-sm font-medium text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
         />
         <button
           type="button"
           onClick={addBranch}
-          className="rounded-xl border border-zinc-600 px-3 py-2 text-sm text-zinc-100"
+          className="rounded-xl border border-border bg-card px-6 py-2.5 text-sm font-bold text-foreground transition-all hover:bg-foreground/5 active:scale-95"
         >
           Agregar
         </button>
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-3">
         {branches.map((b) => (
-          <div key={b.id} className="rounded-xl border border-zinc-700 bg-black/10 p-3">
-            <div className="flex items-center justify-between gap-3">
-              <p className="font-medium text-zinc-100">{b.nombre}</p>
-              <div className="flex gap-2 text-xs">
+          <div key={b.id} className="group rounded-2xl border border-border bg-foreground/[0.02] p-4 transition-all hover:bg-foreground/[0.04]">
+            <div className="flex items-center justify-between gap-4">
+              <p className="font-bold text-foreground">{b.nombre}</p>
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => setPrincipal(b.id)}
-                  className="rounded border border-zinc-600 px-2 py-1 text-zinc-100"
+                  className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-all ${
+                    b.principal 
+                      ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20" 
+                      : "bg-card border border-border text-foreground hover:bg-foreground/5"
+                  }`}
                 >
-                  {b.principal ? "Principal" : "Hacer principal"}
+                  {b.principal ? "⭐ Principal" : "Hacer principal"}
                 </button>
                 <button
                   type="button"
                   onClick={() => removeBranch(b.id)}
-                  className="rounded border border-red-500/70 px-2 py-1 text-red-200"
+                  className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-1.5 text-xs font-bold text-destructive transition-all hover:bg-destructive hover:text-white"
                 >
                   Eliminar
                 </button>
@@ -132,13 +136,22 @@ export function SucursalesCard({ initialBranches }: { initialBranches: Branch[] 
         type="button"
         onClick={saveAll}
         disabled={saving}
-        className="mt-4 rounded-full bg-[#8AB4F8] px-5 py-2.5 text-sm font-semibold text-zinc-900 disabled:opacity-60"
+        className="mt-8 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50"
       >
-        {saving ? "Guardando..." : "Guardar sucursales"}
+        {saving ? "⌛ Guardando cambios..." : "💾 Guardar sucursales"}
       </button>
-      <div className="mt-3 min-h-5 text-sm" aria-live="polite">
-        {message ? <p className="text-emerald-300">{message}</p> : null}
-        {error ? <p className="text-red-300">{error}</p> : null}
+      
+      <div className="mt-4 min-h-6" aria-live="polite">
+        {message ? (
+          <p className="flex items-center gap-2 text-sm font-bold text-primary">
+            <span>✨</span> {message}
+          </p>
+        ) : null}
+        {error ? (
+          <p className="flex items-center gap-2 text-sm font-bold text-destructive">
+            <span>❌</span> {error}
+          </p>
+        ) : null}
       </div>
     </section>
   );

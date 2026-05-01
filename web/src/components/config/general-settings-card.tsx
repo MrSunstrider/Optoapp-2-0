@@ -42,13 +42,13 @@ export function GeneralSettingsCard({ initialAutomaticReminders }: Props) {
   }
 
   return (
-    <section className="rounded-2xl border border-zinc-700/80 bg-[#3F3D4A]/75 p-5 shadow-sm">
-      <h2 className="mb-4 text-xl font-semibold text-[#8AB4F8]">Ajustes Generales</h2>
+    <section className="rounded-2xl border border-border bg-card p-6 shadow-sm transition-all hover:shadow-md">
+      <h2 className="font-heading text-xl font-bold text-foreground">Ajustes Generales</h2>
 
-      <div className="flex items-start justify-between gap-4 rounded-xl border border-zinc-600/70 bg-black/10 p-3">
+      <div className="mt-6 flex items-start justify-between gap-4 rounded-2xl border border-border bg-foreground/[0.02] p-4 transition-all hover:bg-foreground/[0.04]">
         <div>
-          <p className="text-sm font-medium text-zinc-100">Recordatorios Automáticos</p>
-          <p className="mt-1 text-xs text-zinc-300">
+          <p className="font-bold text-foreground">Recordatorios Automáticos</p>
+          <p className="mt-1 text-xs font-medium text-muted-foreground/80">
             Aviso el día de la cita alrededor de las 12:00 (hora local).
           </p>
         </div>
@@ -59,25 +59,33 @@ export function GeneralSettingsCard({ initialAutomaticReminders }: Props) {
           aria-label="Recordatorios automáticos"
           disabled={saving}
           onClick={() => void onToggle(!automaticReminders)}
-          className={`relative h-8 w-14 rounded-full transition-colors ${
-            automaticReminders ? "bg-[#8AB4F8]" : "bg-zinc-600"
+          className={`relative h-8 w-14 shrink-0 rounded-full transition-all duration-300 ${
+            automaticReminders ? "bg-primary shadow-lg shadow-primary/30" : "bg-muted"
           }`}
         >
           <span
-            className={`absolute top-1 h-6 w-6 rounded-full bg-black transition-transform ${
+            className={`absolute top-1 h-6 w-6 rounded-full bg-white shadow-sm transition-transform duration-300 ${
               automaticReminders ? "translate-x-7" : "translate-x-1"
             }`}
           />
         </button>
       </div>
 
-      <p className="mt-2 text-xs text-zinc-400">
-        Preferencia persistida por usuario en metadata (`optoapp_automatic_reminders`).
+      <p className="mt-4 text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground/40">
+        Preferencia persistida en metadata segura.
       </p>
 
-      <div aria-live="polite" className="mt-3 min-h-5 text-sm">
-        {message ? <p className="text-emerald-300">{message}</p> : null}
-        {error ? <p className="text-red-300">{error}</p> : null}
+      <div aria-live="polite" className="mt-4 min-h-6">
+        {message ? (
+          <p className="flex items-center gap-2 text-sm font-bold text-primary">
+            <span>✨</span> {message}
+          </p>
+        ) : null}
+        {error ? (
+          <p className="flex items-center gap-2 text-sm font-bold text-destructive">
+            <span>❌</span> {error}
+          </p>
+        ) : null}
       </div>
     </section>
   );

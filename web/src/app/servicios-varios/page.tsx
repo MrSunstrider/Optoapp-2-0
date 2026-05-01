@@ -36,7 +36,7 @@ export default async function ServiciosVariosPage({
 
   return (
     <AppShell role={activeOptica.rol} opticaName={activeOptica.nombre}>
-      <div className="-m-6 min-h-screen space-y-4 bg-[#121214] p-6 text-zinc-100">
+      <div className="mx-auto w-full max-w-6xl space-y-8 py-4">
         <p className="text-xs text-zinc-400">{opticaLine}</p>
 
         <div className="space-y-1">

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { InventarioSearch } from "@/components/inventario/inventario-search";
 import { InventarioSummaryCard } from "@/components/inventario/inventario-summary-card";
+import { DashboardExportActions } from "@/components/dashboard/dashboard-export-actions";
 import { MonturaList } from "@/components/inventario/montura-list";
 import { StockAlertCard } from "@/components/inventario/stock-alert-card";
 import {
@@ -38,14 +39,16 @@ export default async function InventarioPage({
 
   return (
     <AppShell role={activeOptica.rol} opticaName={activeOptica.nombre}>
-      <div className="-m-6 min-h-screen bg-[#121214] p-6 text-zinc-100">
-        <div className="mx-auto w-full max-w-5xl space-y-4">
-          <p className="text-xs text-zinc-400">{opticaLine}</p>
-          <div className="flex items-center justify-between gap-3">
-            <h1 className="text-4xl font-semibold">Inventario de Monturas</h1>
-            <Link href="/inventario/nuevo" className="text-5xl leading-none text-zinc-100">
-              +
-            </Link>
+      <div className="min-h-screen bg-background p-4 sm:p-8 text-foreground transition-colors duration-300">
+        <div className="mx-auto w-full max-w-6xl space-y-8">
+          <div className="flex flex-col gap-1">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/70">{opticaLine}</p>
+            <div className="flex items-center justify-between gap-4">
+              <h1 className="font-heading text-4xl font-black tracking-tight text-foreground sm:text-5xl">Inventario</h1>
+              <Link href="/inventario/nuevo" className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-2xl font-bold text-primary-foreground shadow-xl shadow-primary/20 transition-all hover:scale-110 active:scale-95" title="Nueva montura">
+                +
+              </Link>
+            </div>
           </div>
 
           {query.msg === "guardado" || query.msg === "actualizado" ? (
@@ -55,6 +58,17 @@ export default async function InventarioPage({
           ) : null}
 
           <InventarioSearch initial={q} />
+          
+          <section className="rounded-3xl border border-border bg-card p-6 shadow-xl shadow-foreground/[0.02]">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="font-heading text-lg font-bold text-foreground">Exportaciones Rápidas</h2>
+                <p className="text-sm font-medium text-muted-foreground">Reportes operativos e inventario del día.</p>
+              </div>
+            </div>
+            <DashboardExportActions />
+          </section>
+
           <StockAlertCard items={items} />
           <InventarioSummaryCard summary={summary} q={q} />
           <MonturaList items={items} canWrite={canWrite} />

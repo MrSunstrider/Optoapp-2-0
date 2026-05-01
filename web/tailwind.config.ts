@@ -10,15 +10,6 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        optoapp: {
-          bg: "#121214",
-          surface: "#121212",
-          card: "#2C2C2E",
-          brand: "#90CAF9",
-          key: "#333333",
-          "key-clear": "#EF9A9A",
-          "key-ok": "#A5D6A7"
-        },
         background: "var(--background)",
         foreground: "var(--foreground)",
         card: {
@@ -52,6 +43,11 @@ const config: Config = {
         border: "var(--border)",
         input: "var(--input)",
         ring: "var(--ring)",
+        brand: {
+          blue: "#2C3E50",
+          green: "#27AE60",
+          navy: "#0F172A"
+        },
         chart: {
           1: "var(--chart-1)",
           2: "var(--chart-2)",
@@ -74,12 +70,14 @@ const config: Config = {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
-        xl: "calc(var(--radius) + 4px)"
+        xl: "1rem",
+        "2xl": "1.5rem",
+        "3xl": "2rem"
       },
       fontFamily: {
-        sans: ["var(--font-geist-sans)", "system-ui", "sans-serif"],
-        inter: ["var(--font-inter)", "var(--font-geist-sans)", "system-ui", "sans-serif"],
-        mono: ["var(--font-geist-mono)", "ui-monospace", "monospace"]
+        sans: ["var(--font-inter)", "ui-sans-serif", "system-ui"],
+        heading: ["var(--font-outfit)", "ui-sans-serif", "system-ui"],
+        mono: ["ui-monospace", "monospace"]
       }
     }
   },

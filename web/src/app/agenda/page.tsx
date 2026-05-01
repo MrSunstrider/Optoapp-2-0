@@ -45,22 +45,24 @@ export default async function AgendaPage({
 
   return (
     <AppShell role={activeOptica.rol} opticaName={activeOptica.nombre}>
-      <div className="-m-6 min-h-screen bg-[#121214] p-6 text-zinc-100">
-        <div className="mx-auto w-full max-w-4xl space-y-4">
-          <p className="text-xs text-zinc-400">{opticaLine}</p>
+      <div className="min-h-screen bg-background p-4 sm:p-8 text-foreground transition-colors duration-300">
+        <div className="mx-auto w-full max-w-4xl space-y-8">
+          <div className="flex flex-col gap-1">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/70">{opticaLine}</p>
+            <h1 className="font-heading text-4xl font-black tracking-tight text-foreground sm:text-5xl">Agenda Clínica</h1>
+            <p className="mt-2 text-sm font-medium text-muted-foreground">Gestión de próximas citas y flujo de pacientes.</p>
+          </div>
 
-          <header className="space-y-1">
-            <h1 className="text-4xl font-bold text-white">OptoApp</h1>
-            <p className="text-3xl text-zinc-200">Agenda (próximas citas)</p>
-          </header>
-
-          <AgendaPeriodTabs active={periodo} />
-          <p className="text-xs text-zinc-500">{bounds.note}</p>
+          <div className="space-y-4">
+            <AgendaPeriodTabs active={periodo} />
+            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/40 ml-1">{bounds.note}</p>
+          </div>
 
           {queryError ? (
-            <p role="alert" className="rounded-lg border border-red-700/60 bg-red-950/30 p-3 text-sm text-red-200">
-              No se pudo cargar la agenda por ahora. Intenta nuevamente.
-            </p>
+            <div role="alert" className="rounded-2xl border border-destructive/20 bg-destructive/5 p-6 text-center shadow-sm">
+              <p className="text-sm font-bold text-destructive">No se pudo sincronizar la agenda</p>
+              <p className="mt-1 text-xs text-destructive/70">Hubo un problema de conexión con el servidor. Por favor, reintenta en unos momentos.</p>
+            </div>
           ) : null}
 
           <AgendaList items={queryError ? [] : items} canWrite={canWrite} />

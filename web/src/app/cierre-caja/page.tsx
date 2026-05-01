@@ -1,3 +1,11 @@
+import { 
+  FileText, 
+  FileSpreadsheet, 
+  Wallet, 
+  Calendar as CalendarIcon, 
+  ShieldCheck, 
+  ShieldAlert
+} from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
@@ -45,37 +53,65 @@ export default async function CierreCajaPage({
 
   return (
     <AppShell role={activeOptica.rol} opticaName={activeOptica.nombre}>
-      <div className="-m-6 min-h-screen bg-[#121214] p-6 text-zinc-100">
-        <div className="mx-auto w-full max-w-4xl space-y-4">
-          <p className="text-xs text-zinc-400">
-            {formatOpticaActivaLine(activeOptica.nombre, fiscal)}
-          </p>
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <h1 className="text-5xl font-semibold">Cierre de Caja</h1>
+      <div className="mx-auto w-full max-w-7xl space-y-10 py-6">
+        <header className="flex flex-col justify-between gap-6 md:flex-row md:items-end border-b border-border/50 pb-10">
+          <div className="space-y-3">
+            <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-primary">
+              <Wallet className="h-3 w-3" />
+              GESTIÓN FINANCIERA
+            </div>
+            <h1 className="font-heading text-4xl font-black tracking-tight text-foreground sm:text-5xl">
+              Cierre de <span className="text-primary">Caja</span>
+            </h1>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm font-medium text-muted-foreground/80">
+              <span className="flex items-center gap-2">
+                {formatOpticaActivaLine(activeOptica.nombre, fiscal)}
+              </span>
+              <span className="hidden md:inline text-border/40">•</span>
+              <span className="flex items-center gap-2">
+                <CalendarIcon className="h-4 w-4 opacity-40" />
+                {formatFechaLarga(fecha)}
+              </span>
+            </div>
+          </div>
+          
+          <div className="rounded-2xl border border-border/50 bg-card p-1.5 shadow-sm">
             <DateFilter value={fecha} />
           </div>
-          <p className="text-3xl text-zinc-200">Reporte del {formatFechaLarga(fecha)}</p>
+        </header>
 
-          <PaymentSummaryCards
-            efectivo={snapshot.efectivo}
-            movilTrans={snapshot.movilTrans}
-            tarjeta={snapshot.tarjeta}
-          />
-          <TotalCard total={snapshot.total} />
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+          <div className="lg:col-span-2">
+            <PaymentSummaryCards
+              efectivo={snapshot.efectivo}
+              movilTrans={snapshot.movilTrans}
+              tarjeta={snapshot.tarjeta}
+            />
+          </div>
+          <div>
+            <TotalCard total={snapshot.total} />
+          </div>
+        </div>
 
-          <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-4 rounded-[2rem] border border-border/50 bg-foreground/[0.02] p-6 shadow-inner">
+          <div className="flex gap-2">
             <Link
               href={`/api/cierre-caja/export?fecha=${fecha}&format=pdf`}
-              className="rounded-full bg-[#8AB4F8] px-5 py-2 text-sm font-semibold text-zinc-900"
+              className="flex items-center gap-2 rounded-2xl bg-primary px-6 py-3.5 text-xs font-black uppercase tracking-widest text-primary-foreground shadow-xl shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95"
             >
+              <FileText className="h-4 w-4" />
               Exportar PDF
             </Link>
             <Link
               href={`/api/cierre-caja/export?fecha=${fecha}&format=csv`}
-              className="rounded-full border border-zinc-500 px-5 py-2 text-sm text-zinc-100"
+              className="flex items-center gap-2 rounded-2xl border border-border bg-card px-6 py-3.5 text-xs font-black uppercase tracking-widest text-foreground transition-all hover:bg-foreground/5"
             >
+              <FileSpreadsheet className="h-4 w-4" />
               Exportar CSV
             </Link>
+          </div>
+          
+          <div className="ml-auto">
             <CloseActions
               fecha={fecha}
               canClose={canClose}
@@ -84,21 +120,33 @@ export default async function CierreCajaPage({
               featureEnabled={formal.featureEnabled}
             />
           </div>
-          {formal.featureEnabled ? (
-            <p className="text-xs text-zinc-400">
-              Estado del cierre:{" "}
-              <span className={formal.isClosed ? "text-emerald-300" : "text-amber-300"}>
-                {formal.isClosed ? "Cerrado" : "Abierto"}
-              </span>
-              {formal.closedAt ? ` · ${formal.closedAt}` : ""}
-            </p>
-          ) : null}
-
-          <section className="space-y-3">
-            <h2 className="text-4xl font-semibold">Detalle de Transacciones</h2>
-            <TransactionsList rows={snapshot.transacciones} />
-          </section>
         </div>
+
+        {formal.featureEnabled && (
+          <div className="inline-flex items-center gap-4 rounded-2xl border border-border/40 bg-foreground/[0.03] px-6 py-3">
+            <div className={`flex items-center gap-2 text-[10px] font-black uppercase tracking-widest ${formal.isClosed ? "text-emerald-500" : "text-amber-500"}`}>
+              {formal.isClosed ? <ShieldCheck className="h-4 w-4" /> : <ShieldAlert className="h-4 w-4" />}
+              ESTADO: {formal.isClosed ? "CERRADO" : "ABIERTO"}
+            </div>
+            {formal.closedAt && (
+              <>
+                <div className="h-4 w-px bg-border/40" />
+                <span className="text-[10px] font-bold text-muted-foreground uppercase">{formal.closedAt}</span>
+              </>
+            )}
+          </div>
+        )}
+
+        <section className="overflow-hidden rounded-[2.5rem] border border-border/50 bg-card shadow-sm">
+          <div className="border-b border-border/50 bg-foreground/[0.02] px-8 py-6">
+            <h2 className="font-heading text-2xl font-bold text-foreground">
+              Detalle de Transacciones
+            </h2>
+          </div>
+          <div className="p-2">
+            <TransactionsList rows={snapshot.transacciones} />
+          </div>
+        </section>
       </div>
     </AppShell>
   );

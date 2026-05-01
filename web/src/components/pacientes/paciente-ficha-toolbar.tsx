@@ -122,7 +122,7 @@ Si deseas agendar tu cita de control, responde a este mensaje y con gusto te coo
   }, [nombrePaciente, proximaCitaIso]);
 
   const btn =
-    "flex h-10 w-10 items-center justify-center rounded-lg text-zinc-900 transition-colors hover:bg-black/10 disabled:cursor-not-allowed disabled:opacity-40";
+    "flex h-10 w-10 items-center justify-center rounded-xl text-foreground/70 transition-all hover:bg-muted active:scale-95 disabled:cursor-not-allowed disabled:opacity-40";
 
   return (
     <div className="flex shrink-0 items-center gap-0.5">
@@ -145,34 +145,37 @@ Si deseas agendar tu cita de control, responde a este mensaje y con gusto te coo
               aria-label="Cerrar menú"
               onClick={() => setMenuOpen(false)}
             />
-            <div className="absolute right-0 top-full z-50 mt-1 min-w-[260px] rounded-md border border-zinc-600 bg-zinc-900 py-1 text-sm text-zinc-100 shadow-xl">
+            <div className="absolute right-0 top-full z-50 mt-2 min-w-[280px] rounded-2xl border border-border bg-card py-2 text-sm text-foreground shadow-2xl animate-in fade-in slide-in-from-top-2">
+              <div className="px-4 py-2 border-b border-border/50 mb-1">
+                <p className="text-[10px] font-black uppercase tracking-widest text-primary">Acciones de WhatsApp</p>
+              </div>
               <a
-                className="block px-3 py-2 hover:bg-zinc-800"
+                className="block px-4 py-2.5 font-medium hover:bg-primary/10 hover:text-primary transition-colors"
                 href={waUrl(digits, saludo)}
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => setMenuOpen(false)}
               >
-                Mensaje Libre (Saludo)
+                💬 Mensaje Libre (Saludo)
               </a>
               <a
-                className="block px-3 py-2 hover:bg-zinc-800"
+                className="block px-4 py-2.5 font-medium hover:bg-primary/10 hover:text-primary transition-colors"
                 href={waUrl(digits, invitacionAnual)}
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => setMenuOpen(false)}
               >
-                Invitación Control Anual
+                📅 Invitación Control Anual
               </a>
               {proximaCitaIso && recordatorioCita && (
                 <a
-                  className="block px-3 py-2 hover:bg-zinc-800"
+                  className="block px-4 py-2.5 font-medium hover:bg-primary/10 hover:text-primary transition-colors"
                   href={waUrl(digits, recordatorioCita)}
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={() => setMenuOpen(false)}
                 >
-                  Recordar Próxima Cita ({fechaCitaLabel})
+                  ⏰ Recordar Cita ({fechaCitaLabel})
                 </a>
               )}
             </div>
@@ -225,25 +228,24 @@ Si deseas agendar tu cita de control, responde a este mensaje y con gusto te coo
       )}
 
       {pdfWarnOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4">
           <div
             className="absolute inset-0"
             role="presentation"
             onClick={() => setPdfWarnOpen(false)}
           />
-          <div className="relative z-10 w-full max-w-md rounded-xl border border-zinc-700 bg-zinc-900 p-5 text-zinc-100 shadow-xl">
-            <h3 className="text-lg font-semibold text-sky-400">Fórmula en PDF</h3>
-            <p className="mt-2 text-sm text-zinc-400">
-              No hay evaluaciones clínicas registradas para este paciente. No se puede generar la
-              fórmula en PDF hasta registrar al menos una evaluación.
+          <div className="relative z-10 w-full max-w-md rounded-3xl border border-border bg-card p-6 text-foreground shadow-2xl">
+            <h3 className="font-heading text-xl font-bold text-primary">Generar Receta PDF</h3>
+            <p className="mt-3 text-sm font-medium text-muted-foreground leading-relaxed">
+              No hay evaluaciones clínicas registradas para este paciente. Debes registrar al menos una evaluación antes de poder exportar la fórmula médica.
             </p>
-            <div className="mt-4 flex justify-end">
+            <div className="mt-6">
               <button
                 type="button"
-                className="rounded-lg border border-zinc-600 px-4 py-2 text-sm hover:bg-zinc-800"
+                className="w-full rounded-xl bg-primary px-4 py-3 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all"
                 onClick={() => setPdfWarnOpen(false)}
               >
-                Entendido
+                ENTENDIDO
               </button>
             </div>
           </div>
@@ -251,47 +253,48 @@ Si deseas agendar tu cita de control, responde a este mensaje y con gusto te coo
       )}
 
       {puedeEliminar && deleteOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
           <div
             className="absolute inset-0"
             role="presentation"
             onClick={() => setDeleteOpen(false)}
           />
-          <div className="relative z-10 w-full max-w-md rounded-xl border border-zinc-700 bg-zinc-900 p-5 text-zinc-100 shadow-xl">
-            <h3 className="text-lg font-semibold text-red-400">Eliminar paciente</h3>
-            <p className="mt-2 text-sm text-zinc-400">
-              Esta acción elimina el expediente del paciente y, en cascada, sus evaluaciones,
-              dispensaciones y servicios vinculados en esta óptica. No se puede deshacer.
-            </p>
-            <p className="mt-2 text-sm text-zinc-400">
-              Por seguridad, cada usuario tiene un límite diario de eliminaciones en la óptica (10
-              por día). Si alcanzas el límite, deberás esperar al día siguiente.
-            </p>
-            <p className="mt-2 text-sm text-zinc-500">
-              Solo administradores o gerentes pueden eliminar. Confirma escribiendo{" "}
-              <span className="font-mono text-zinc-300">ELIMINAR</span> abajo.
-            </p>
-            <form action={deletePacienteAction} className="mt-4 space-y-3">
+          <div className="relative z-10 w-full max-w-md rounded-3xl border border-destructive/20 bg-card p-8 text-foreground shadow-2xl">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-destructive/10 text-destructive">
+              <IconTrash width={32} height={32} />
+            </div>
+            <h3 className="text-center font-heading text-2xl font-black text-destructive">Eliminar Paciente</h3>
+            <div className="mt-4 space-y-3 text-center text-sm font-medium text-muted-foreground">
+              <p>Esta acción es <span className="text-destructive font-black underline">irreversible</span>.</p>
+              <p>Se eliminará el expediente completo, incluyendo evaluaciones y dispensaciones.</p>
+            </div>
+
+            <form action={deletePacienteAction} className="mt-8 space-y-4">
               <input type="hidden" name="id" value={pacienteId} />
-              <input
-                name="confirm"
-                className="w-full rounded-lg border border-zinc-600 bg-black px-3 py-2 text-sm"
-                placeholder="Escribe ELIMINAR"
-                autoComplete="off"
-              />
-              <div className="flex gap-2">
+              <div className="space-y-1">
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 text-center mb-2">
+                  Escribe <span className="text-foreground">ELIMINAR</span> para confirmar
+                </p>
+                <input
+                  name="confirm"
+                  className="w-full rounded-xl border border-border bg-foreground/[0.03] px-4 py-3 text-center font-bold text-foreground outline-none focus:ring-2 focus:ring-destructive/20 transition-all"
+                  placeholder="ELIMINAR"
+                  autoComplete="off"
+                />
+              </div>
+              <div className="flex flex-col gap-2">
                 <button
                   type="submit"
-                  className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-500"
+                  className="rounded-xl bg-destructive px-6 py-4 font-heading text-base font-black text-white shadow-xl shadow-destructive/20 transition-all hover:scale-[1.02] active:scale-95"
                 >
-                  Eliminar
+                  ELIMINAR PERMANENTEMENTE
                 </button>
                 <button
                   type="button"
-                  className="rounded-lg border border-zinc-600 px-4 py-2 text-sm hover:bg-zinc-800"
+                  className="rounded-xl border border-border px-6 py-3 text-sm font-bold text-muted-foreground hover:bg-muted/50 transition-all"
                   onClick={() => setDeleteOpen(false)}
                 >
-                  Cancelar
+                  CANCELAR
                 </button>
               </div>
             </form>

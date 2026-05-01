@@ -1,5 +1,15 @@
+import { 
+  Calendar, 
+  Package, 
+  DollarSign, 
+  AlertTriangle, 
+  CheckCircle2, 
+  Activity,
+  TrendingUp,
+  ArrowRight,
+  ClipboardList
+} from "lucide-react";
 import { AppShell } from "@/components/app-shell";
-import { DashboardExportActions } from "@/components/dashboard/dashboard-export-actions";
 import { fetchDashboardKpis } from "@/lib/dashboard-kpis";
 import { formatOpticaActivaLine } from "@/lib/optica-display";
 import { fetchOpticaFiscal } from "@/lib/optica-fiscal";
@@ -7,9 +17,7 @@ import { getActiveOpticaContext } from "@/lib/optica-context";
 import { canAccessModule } from "@/lib/roles";
 import { fetchSyncSnapshot } from "@/lib/sync";
 import Link from "next/link";
-
 import { createClient } from "@/lib/supabase/server";
-
 import { redirect } from "next/navigation";
 
 export default async function DashboardPage() {
@@ -30,234 +38,203 @@ export default async function DashboardPage() {
   ]);
 
   const kpis = snapshot.kpis;
-  const errs = snapshot.status.erroresPorFuente;
   const today = dateOnly(new Date());
   const opticaLine = formatOpticaActivaLine(activeOptica.nombre, fiscal);
   const alertas = buildAlertas(kpis.entregasPendientes, kpis.serviciosPendientes);
 
   return (
     <AppShell role={activeOptica.rol} opticaName={activeOptica.nombre}>
-      <div className="-m-6 min-h-screen bg-[#121214] p-6 text-zinc-100">
-        <div className="mx-auto w-full max-w-5xl space-y-5">
-          <header className="space-y-1">
-            <h1 className="text-2xl font-semibold tracking-tight text-white">
-              Operación de Hoy
+      <div className="mx-auto w-full max-w-7xl space-y-10 py-6">
+        <header className="flex flex-col justify-between gap-6 md:flex-row md:items-end border-b border-border/50 pb-10">
+          <div className="space-y-3">
+            <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-primary">
+              <Activity className="h-3 w-3" />
+              SISTEMA OPERATIVO
+            </div>
+            <h1 className="font-heading text-4xl font-black tracking-tight text-foreground sm:text-5xl">
+              Dashboard <span className="text-primary">Clínico</span>
             </h1>
-            <p className="text-xs text-zinc-400">{opticaLine}</p>
-            <p className="text-xs text-zinc-500">
-              Fecha operativa: {today}
-              {user?.email ? ` · ${user.email}` : ""}
-            </p>
-          </header>
-
-          <section className="rounded-2xl border border-zinc-700/80 bg-[#3F3D4A]/75 p-5 shadow-sm">
-            <h2 className="mb-3 text-lg font-semibold text-white">Tablero operativo</h2>
-            <div className="space-y-2 text-sm">
-              <LineaKpi etiqueta="Fecha" valor={today} />
-              <LineaKpi etiqueta="Citas hoy" valor={String(kpis.citasHoy)} />
-              <LineaKpi
-                etiqueta="Entregas pendientes"
-                valor={String(kpis.entregasPendientes)}
-              />
-              <LineaKpi etiqueta="Cobros del día" valor={money(kpis.cobrosDia)} />
-              <LineaKpi etiqueta="Stock crítico" valor={String(kpis.stockCritico)} />
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm font-medium text-muted-foreground/80">
+              <span className="flex items-center gap-2">
+                {opticaLine}
+              </span>
+              <span className="hidden md:inline text-border/40">•</span>
+              <span className="flex items-center gap-2">
+                <Calendar className="h-4 w-4 opacity-40" />
+                {today}
+              </span>
             </div>
-          </section>
-
-          <section className="rounded-2xl border border-zinc-700/80 bg-[#3F3D4A]/75 p-5 shadow-sm">
-            <h2 className="mb-3 text-lg font-semibold text-white">Alertas internas</h2>
-            {alertas.length === 0 ? (
-              <p className="text-sm text-zinc-300">Sin alertas internas por ahora.</p>
-            ) : (
-              <ul className="space-y-2 text-sm">
-                {alertas.map((alerta, idx) => (
-                  <li
-                    key={idx}
-                    className={
-                      alerta.tipo === "critica"
-                        ? "text-amber-300"
-                        : "text-zinc-200"
-                    }
-                  >
-                    - {alerta.texto}
-                  </li>
-                ))}
-              </ul>
+          </div>
+          
+          <div className="flex items-center gap-4">
+            {user?.email && (
+              <div className="flex items-center gap-3 rounded-2xl bg-foreground/[0.03] px-5 py-3 border border-border/40">
+                <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-black text-xs">
+                  {user.email.charAt(0).toUpperCase()}
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-xs font-black uppercase tracking-tighter text-foreground">{user.email.split('@')[0]}</span>
+                  <span className="text-[10px] font-medium text-muted-foreground">{user.email}</span>
+                </div>
+              </div>
             )}
-          </section>
+          </div>
+        </header>
 
-          <section className="rounded-2xl border border-zinc-700/80 bg-[#3F3D4A]/75 p-5 shadow-sm">
-            <h2 className="mb-2 text-lg font-semibold text-white">Exportaciones rápidas</h2>
-            <p className="mb-4 text-sm text-zinc-300">
-              Descarga reportes operativos del día e inventario, o actualiza el snapshot
-              en pantalla.
-            </p>
-            <DashboardExportActions />
-          </section>
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
+          {/* Main KPI Cards */}
+          <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <BentoKpi 
+              etiqueta="Citas del Día" 
+              valor={String(kpis.citasHoy)} 
+              subtexto="Pacientes agendados"
+              icon={<Calendar className="h-6 w-6 text-primary" />} 
+              href="/agenda"
+            />
+            <BentoKpi 
+              etiqueta="Entregas OT" 
+              valor={String(kpis.entregasPendientes)} 
+              subtexto="Pendientes de entrega"
+              icon={<Package className="h-6 w-6 text-amber-500" />} 
+              highlight={kpis.entregasPendientes > 0}
+              href="/pacientes?filtro=pendientes"
+            />
+            <BentoKpi 
+              etiqueta="Cobros Hoy" 
+              valor={money(kpis.cobrosDia)} 
+              subtexto="Ingresos liquidados"
+              icon={<DollarSign className="h-6 w-6 text-emerald-500" />} 
+              href="/reportes"
+            />
+            <BentoKpi 
+              etiqueta="Alertas Stock" 
+              valor={String(kpis.stockCritico)} 
+              subtexto="Insumos bajo límite"
+              icon={<AlertTriangle className="h-6 w-6 text-destructive" />} 
+              highlight={kpis.stockCritico > 0}
+              href="/configuracion/inventario"
+            />
+          </div>
 
-          <section className="rounded-2xl border border-zinc-700/80 bg-[#3F3D4A]/75 p-5 shadow-sm">
-            <h2 className="mb-2 text-lg font-semibold text-white">Integración de módulos</h2>
-            <p className="mb-4 text-sm text-zinc-300">
-              Acceso rápido y estado operativo de los apartados principales.
-            </p>
-            <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
-              <ModuleLink
-                href="/agenda"
-                label="Agenda"
-                detail={`Citas hoy: ${kpis.citasHoy}`}
-                enabled={canAccessModule(activeOptica.rol, "agenda")}
-              />
-              <ModuleLink
-                href="/inventario"
-                label="Inventario de Monturas"
-                detail={`Stock crítico: ${kpis.stockCritico}`}
-                enabled={canAccessModule(activeOptica.rol, "inventario")}
-              />
-              <ModuleLink
-                href="/cierre-caja"
-                label="Cierre de Caja"
-                detail={`Cobros del día: ${money(kpis.cobrosDia)}`}
-                enabled={canAccessModule(activeOptica.rol, "cierre-caja")}
-              />
-              <ModuleLink
-                href="/sincronizar"
-                label="Sincronizar Cloud"
-                detail={`Estado: ${syncSnapshot.globalStatus}`}
-                enabled={canAccessModule(activeOptica.rol, "sincronizar")}
-              />
-              <ModuleLink
-                href="/servicios-varios"
-                label="Servicios Varios"
-                detail={`Pendientes: ${kpis.serviciosPendientes}`}
-                enabled={canAccessModule(activeOptica.rol, "servicios-varios")}
-              />
-              <ModuleLink
-                href="/configuracion"
-                label="Configuración"
-                detail="Seguridad, fiscal, roles y operación"
-                enabled={canAccessModule(activeOptica.rol, "configuracion")}
-              />
-              <ModuleLink
-                href="/estadisticas"
-                label="Estadisticas"
-                detail="BI operativo y salud de sincronizacion"
-                enabled={canAccessModule(activeOptica.rol, "estadisticas")}
-              />
+          {/* Right Section - Alerts & Health */}
+          <div className="space-y-6">
+            <section className="rounded-3xl border border-border/50 bg-card p-6 shadow-sm shadow-foreground/[0.02]">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="font-heading text-lg font-bold text-foreground">Alertas</h2>
+                <TrendingUp className="h-4 w-4 text-primary opacity-40" />
+              </div>
+              
+              <div className="space-y-3">
+                {alertas.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-10 text-center space-y-4">
+                    <div className="h-12 w-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-500">
+                      <CheckCircle2 className="h-6 w-6" />
+                    </div>
+                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest leading-relaxed">
+                      Operación <br/> al 100%
+                    </p>
+                  </div>
+                ) : (
+                  alertas.map((alerta, idx) => (
+                    <div
+                      key={idx}
+                      className={`flex gap-3 rounded-2xl p-4 text-xs font-medium transition-all ${
+                        alerta.tipo === "critica"
+                          ? "bg-destructive/5 text-destructive border border-destructive/10"
+                          : "bg-primary/5 text-primary border border-primary/10"
+                      }`}
+                    >
+                      <AlertTriangle className="h-4 w-4 shrink-0" />
+                      <p className="leading-relaxed">{alerta.texto}</p>
+                    </div>
+                  ))
+                )}
+              </div>
+            </section>
+
+            {/* Quick Actions / Status */}
+            <div className="rounded-3xl bg-foreground/[0.02] border border-border/40 p-6">
+              <h3 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/50 mb-4">Acceso Rápido</h3>
+              <div className="space-y-2">
+                <Link href="/reportes" className="flex items-center justify-between p-3 rounded-xl hover:bg-card hover:shadow-sm transition-all group">
+                  <span className="text-xs font-bold text-foreground">Ver Reportes</span>
+                  <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                </Link>
+                <Link href="/pacientes" className="flex items-center justify-between p-3 rounded-xl hover:bg-card hover:shadow-sm transition-all group">
+                  <span className="text-xs font-bold text-foreground">Lista de Pacientes</span>
+                  <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                </Link>
+              </div>
             </div>
-          </section>
-
-          <section className="rounded-2xl border border-zinc-700/80 bg-[#3F3D4A]/60 p-4">
-            <p className="mb-2 text-xs text-zinc-300">
-              Estado del snapshot:{" "}
-              <span
-                className={
-                  snapshot.status.overall === "ok"
-                    ? "font-medium text-emerald-300"
-                    : "font-medium text-amber-300"
-                }
-              >
-                {snapshot.status.overall === "ok" ? "OK" : "Degradado"}
-              </span>{" "}
-              · Actualizado: {formatIso(snapshot.status.lastUpdatedIso)}
-            </p>
-            {snapshot.status.overall === "degraded" && (
-              <ul className="space-y-1 text-xs text-zinc-400">
-                <FuenteLinea ok={snapshot.status.sources.pagosDia} titulo="Pagos día" detalle={errs.pagosDia} />
-                <FuenteLinea ok={snapshot.status.sources.pagosMes} titulo="Pagos mes" detalle={errs.pagosMes} />
-                <FuenteLinea ok={snapshot.status.sources.pacientesHoy} titulo="Pacientes hoy" detalle={errs.pacientesHoy} />
-                <FuenteLinea ok={snapshot.status.sources.dispensaciones} titulo="Saldo dispensaciones" detalle={errs.dispensaciones} />
-                <FuenteLinea ok={snapshot.status.sources.serviciosExtra} titulo="Saldo servicios extra" detalle={errs.serviciosExtra} />
-                <FuenteLinea ok={snapshot.status.sources.citasHoy} titulo="Citas hoy" detalle={errs.citasHoy} />
-                <FuenteLinea ok={snapshot.status.sources.entregasPendientes} titulo="Entregas pendientes" detalle={errs.entregasPendientes} />
-                <FuenteLinea ok={snapshot.status.sources.serviciosPendientes} titulo="Servicios pendientes" detalle={errs.serviciosPendientes} />
-                <FuenteLinea ok={snapshot.status.sources.stockCritico} titulo="Stock crítico" detalle={errs.stockCritico} />
-              </ul>
-            )}
-          </section>
+          </div>
         </div>
       </div>
     </AppShell>
   );
 }
 
-function ModuleLink({
-  href,
-  label,
-  detail,
-  enabled
+function BentoKpi({
+  etiqueta,
+  valor,
+  subtexto,
+  icon,
+  highlight = false,
+  href
 }: {
+  etiqueta: string;
+  valor: string;
+  subtexto: string;
+  icon: React.ReactNode;
+  highlight?: boolean;
   href: string;
-  label: string;
-  detail: string;
-  enabled: boolean;
 }) {
-  if (!enabled) {
-    return (
-      <div className="rounded-xl border border-zinc-700 bg-black/15 p-3 opacity-60">
-        <p className="font-medium text-zinc-200">{label}</p>
-        <p className="text-xs text-zinc-400">{detail}</p>
-        <p className="mt-1 text-xs text-amber-300">Sin permiso para este rol.</p>
-      </div>
-    );
-  }
   return (
-    <Link href={href} className="rounded-xl border border-zinc-700 bg-black/15 p-3 hover:bg-black/25">
-      <p className="font-medium text-zinc-100">{label}</p>
-      <p className="text-xs text-zinc-400">{detail}</p>
+    <Link href={href} className="group relative flex flex-col justify-between overflow-hidden rounded-[2.5rem] border border-border/50 bg-card p-8 shadow-sm transition-all hover:shadow-xl hover:-translate-y-1">
+      <div className="flex items-center justify-between">
+        <div className="rounded-2xl bg-foreground/[0.03] p-3 group-hover:bg-primary/10 transition-colors">
+          {icon}
+        </div>
+        {highlight && (
+          <div className="flex h-2 w-2">
+            <div className="absolute inline-flex h-2 w-2 animate-ping rounded-full bg-destructive opacity-75"></div>
+            <div className="relative inline-flex h-2 w-2 rounded-full bg-destructive"></div>
+          </div>
+        )}
+      </div>
+      
+      <div className="mt-8">
+        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/50">
+          {etiqueta}
+        </p>
+        <div className="flex items-baseline gap-2 mt-1">
+          <p className="font-heading text-4xl font-black text-foreground tabular-nums tracking-tighter">
+            {valor}
+          </p>
+        </div>
+        <p className="mt-2 text-xs font-medium text-muted-foreground/60">{subtexto}</p>
+      </div>
+
+      <div className="absolute bottom-4 right-8 translate-x-4 opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100">
+        <ArrowRight className="h-5 w-5 text-primary" />
+      </div>
     </Link>
   );
 }
 
-function LineaKpi({ etiqueta, valor }: { etiqueta: string; valor: string }) {
-  return (
-    <p className="flex items-center justify-between gap-3 rounded-lg bg-black/15 px-3 py-2 text-zinc-100">
-      <span className="text-zinc-300">{etiqueta}</span>
-      <span className="font-semibold tabular-nums">{valor}</span>
-    </p>
-  );
-}
-
-function FuenteLinea({
-  ok,
-  titulo,
-  detalle
-}: {
-  ok: boolean;
-  titulo: string;
-  detalle?: string;
-}) {
-  return (
-    <li className="border-l-2 border-zinc-600 pl-2">
-      <span className="font-medium">{titulo}:</span>{" "}
-      <span className={ok ? "text-emerald-300" : "text-red-300"}>
-        {ok ? "OK" : "Error"}
-      </span>
-      {!ok && detalle && (
-        <span className="mt-0.5 block whitespace-pre-wrap text-[11px] text-red-300/90">
-          {detalle}
-        </span>
-      )}
-    </li>
-  );
-}
-
 function money(value: number): string {
-  return `S/ ${value.toFixed(2)}`;
-}
-
-function formatIso(value: string): string {
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) return value;
-
-  return date.toLocaleString("es-PE");
+  return new Intl.NumberFormat("es-PE", {
+    style: "currency",
+    currency: "PEN",
+    maximumFractionDigits: 0
+  }).format(value);
 }
 
 function dateOnly(date: Date): string {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
+  return date.toLocaleDateString("es-PE", {
+    year: "numeric",
+    month: "long",
+    day: "numeric"
+  });
 }
 
 function buildAlertas(entregasPendientes: number, serviciosPendientes: number) {
@@ -265,13 +242,13 @@ function buildAlertas(entregasPendientes: number, serviciosPendientes: number) {
   if (entregasPendientes > 0) {
     alertas.push({
       tipo: entregasPendientes >= 5 ? "critica" : "info",
-      texto: `Hay ${entregasPendientes} entregas pendientes con fecha anterior a hoy.`
+      texto: `Hay ${entregasPendientes} entregas pendientes con fecha vencida.`
     });
   }
   if (serviciosPendientes > 0) {
     alertas.push({
       tipo: serviciosPendientes >= 5 ? "critica" : "info",
-      texto: `Servicios extra pendientes: ${serviciosPendientes}.`
+      texto: `Tienes ${serviciosPendientes} servicios extra por cobrar.`
     });
   }
   return alertas;

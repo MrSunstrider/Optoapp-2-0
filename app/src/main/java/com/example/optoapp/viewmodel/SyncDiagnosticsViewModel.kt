@@ -6,9 +6,11 @@ import com.example.optoapp.data.SyncTelemetryRemoteRow
 import com.example.optoapp.data.SyncEntityState
 import com.example.optoapp.data.SyncEntityStateDao
 import com.example.optoapp.data.SessionManager
+import com.example.optoapp.util.SyncErrorSanitizer
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -29,6 +31,10 @@ class SyncDiagnosticsViewModel @Inject constructor(
     private val sessionManager: SessionManager,
     private val supabase: SupabaseClient
 ) : ViewModel() {
+    companion object {
+        private const val REMOTE_TELEMETRY_RETRY_ATTEMPTS = 3
+    }
+
 
     val errorRows: StateFlow<List<SyncEntityState>> = sessionManager.opticaId
         .flatMapLatest { oid -> syncEntityStateDao.observeErrorsForOptica(oid) }
@@ -64,18 +70,45 @@ class SyncDiagnosticsViewModel @Inject constructor(
         _remoteTelemetryLoading.value = true
         _remoteTelemetryError.value = null
         runCatching {
-            supabase.postgrest["sync_telemetry_optica"]
-                .select {
-                    filter { eq("optica_id", opticaId) }
-                }
-                .decodeList<SyncTelemetryRemoteRow>()
-                .firstOrNull()
+            fetchRemoteTelemetryWithRetry(opticaId)
         }.onSuccess { row ->
             _remoteTelemetry.value = row
         }.onFailure { e ->
-            _remoteTelemetryError.value = e.localizedMessage ?: "No se pudo consultar telemetría remota."
+            _remoteTelemetryError.value =
+                SyncErrorSanitizer.forUserMessage(e.localizedMessage ?: e.message)
         }
         _remoteTelemetryLoading.value = false
+    }
+
+    private suspend fun fetchRemoteTelemetryWithRetry(opticaId: String): SyncTelemetryRemoteRow? {
+        var lastError: Throwable? = null
+        repeat(REMOTE_TELEMETRY_RETRY_ATTEMPTS) { attempt ->
+            runCatching {
+                supabase.postgrest["sync_telemetry_optica"]
+                    .select {
+                        filter { eq("optica_id", opticaId) }
+                    }
+                    .decodeList<SyncTelemetryRemoteRow>()
+                    .firstOrNull()
+            }.onSuccess { return it }
+                .onFailure { e ->
+                    lastError = e
+                    if (!isTransientNetworkError(e) || attempt == REMOTE_TELEMETRY_RETRY_ATTEMPTS - 1) {
+                        throw e
+                    }
+                    delay(300L * (attempt + 1))
+                }
+        }
+        throw (lastError ?: IllegalStateException("No se pudo consultar telemetría remota."))
+    }
+
+    private fun isTransientNetworkError(error: Throwable): Boolean {
+        val m = (error.localizedMessage ?: error.message).orEmpty().lowercase()
+        return m.contains("timeout") ||
+            m.contains("timed out") ||
+            m.contains("unable to resolve host") ||
+            m.contains("network is unreachable") ||
+            m.contains("connection reset")
     }
 
     /** Elimina solo el historial de errores mostrado en la app (no borra datos clínicos). */

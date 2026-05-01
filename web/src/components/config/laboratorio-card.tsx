@@ -52,14 +52,15 @@ export function LaboratorioCard({ initial }: Props) {
   }
 
   return (
-    <section className="rounded-2xl border border-zinc-700/80 bg-[#3F3D4A]/75 p-5">
-      <h2 className="mb-4 text-xl font-semibold text-[#8AB4F8]">Laboratorio (esta óptica)</h2>
-      <form className="grid grid-cols-1 gap-3 md:grid-cols-2" onSubmit={onSubmit}>
+    <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+      <h2 className="font-heading text-xl font-bold text-foreground">Laboratorio (esta óptica)</h2>
+      <form className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2" onSubmit={onSubmit}>
         <Field label="Nombre de laboratorio preferido">
           <input
             value={form.preferredLab}
             onChange={(e) => setForm((s) => ({ ...s, preferredLab: e.target.value }))}
             className={inputClass}
+            placeholder="Ej. Lab Optical Center"
           />
         </Field>
         <Field label="Tiempo estimado entrega (días)">
@@ -73,14 +74,17 @@ export function LaboratorioCard({ initial }: Props) {
           />
         </Field>
         <Field label="Costo base laboratorio">
-          <input
-            type="number"
-            min={0}
-            step="0.01"
-            value={form.costBase}
-            onChange={(e) => setForm((s) => ({ ...s, costBase: Number(e.target.value) }))}
-            className={inputClass}
-          />
+          <div className="relative">
+            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-muted-foreground/60">S/</span>
+            <input
+              type="number"
+              min={0}
+              step="0.01"
+              value={form.costBase}
+              onChange={(e) => setForm((s) => ({ ...s, costBase: Number(e.target.value) }))}
+              className={inputClass + " pl-10"}
+            />
+          </div>
         </Field>
         <Field label="Política de prioridad">
           <select
@@ -88,45 +92,54 @@ export function LaboratorioCard({ initial }: Props) {
             onChange={(e) =>
               setForm((s) => ({ ...s, priority: e.target.value as "normal" | "urgente" }))
             }
-            className={inputClass}
+            className={inputClass + " appearance-none"}
           >
-            <option value="normal">Normal</option>
-            <option value="urgente">Urgente</option>
+            <option value="normal">🟢 Normal</option>
+            <option value="urgente">🔴 Urgente</option>
           </select>
         </Field>
         <label className="md:col-span-2">
-          <span className="text-sm text-zinc-200">Notas internas</span>
+          <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground/60">Notas internas</span>
           <textarea
             value={form.notes}
             onChange={(e) => setForm((s) => ({ ...s, notes: e.target.value }))}
-            className={inputClass + " mt-1 min-h-[90px]"}
+            placeholder="Detalles adicionales sobre el flujo con este laboratorio..."
+            className={inputClass + " mt-2 min-h-[100px] resize-none"}
           />
         </label>
         <div className="md:col-span-2">
           <button
             type="submit"
             disabled={saving}
-            className="rounded-full bg-[#8AB4F8] px-5 py-2.5 text-sm font-semibold text-zinc-900 disabled:opacity-60"
+            className="w-full rounded-xl bg-primary px-6 py-3 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50"
           >
-            {saving ? "Guardando..." : "Guardar laboratorio"}
+            {saving ? "⌛ Guardando..." : "💾 Guardar Ajustes de Laboratorio"}
           </button>
         </div>
       </form>
-      <div className="mt-3 min-h-5 text-sm" aria-live="polite">
-        {message ? <p className="text-emerald-300">{message}</p> : null}
-        {error ? <p className="text-red-300">{error}</p> : null}
+      <div className="mt-4 min-h-6" aria-live="polite">
+        {message ? (
+          <p className="flex items-center gap-2 text-sm font-bold text-primary">
+            <span>✨</span> {message}
+          </p>
+        ) : null}
+        {error ? (
+          <p className="flex items-center gap-2 text-sm font-bold text-destructive">
+            <span>❌</span> {error}
+          </p>
+        ) : null}
       </div>
     </section>
   );
 }
 
 const inputClass =
-  "mt-1 w-full rounded-xl border border-zinc-500/70 bg-[#4A4756] px-3 py-2 text-sm text-zinc-100";
+  "w-full rounded-xl border border-border bg-foreground/[0.03] px-4 py-3 text-sm font-medium text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all";
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <label>
-      <span className="text-sm text-zinc-200">{label}</span>
+    <label className="flex flex-col gap-2">
+      <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground/60">{label}</span>
       {children}
     </label>
   );

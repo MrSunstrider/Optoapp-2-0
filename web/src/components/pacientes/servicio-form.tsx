@@ -157,63 +157,81 @@ export function ServicioForm({
       <input type="hidden" name="returnTo" value={returnTo} />
       <input type="hidden" name="errorBase" value={errorBase} />
 
-      <div className="rounded-xl border border-zinc-800 bg-[#121212] text-zinc-100">
-        <div className="border-b border-zinc-800 px-3 py-2 text-[13px] text-sky-400">{opticaLine}</div>
-        <div className="flex items-center gap-2 bg-zinc-900 px-2 py-2 text-zinc-100">
-          <Link href={backHref} className="flex h-10 w-10 items-center justify-center rounded-lg hover:bg-white/10">
-            <span className="text-xl">{`<`}</span>
+      <div className="rounded-2xl border border-border bg-card text-foreground shadow-xl overflow-hidden">
+        <div className="border-b border-border px-4 py-2 text-[11px] font-black uppercase tracking-widest text-primary/70">{opticaLine}</div>
+        <div className="flex items-center gap-3 bg-primary px-4 py-4 text-primary-foreground shadow-md">
+          <Link href={backHref} className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 hover:bg-white/20 transition-all active:scale-95">
+            <span className="text-xl font-bold">{`←`}</span>
           </Link>
-          <h2 className="flex-1 text-lg font-bold">{mode === "edit" ? "Editar Servicio" : "Nuevo Servicio"}</h2>
-          <button type="submit" className="flex h-10 w-10 items-center justify-center rounded-lg text-xl hover:bg-white/10">
-            ✓
+          <h2 className="flex-1 font-heading text-xl font-bold">{mode === "edit" ? "Editar Servicio" : "Nuevo Servicio"}</h2>
+          <button type="submit" className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 hover:bg-white/20 transition-all active:scale-95">
+            💾
           </button>
         </div>
 
-        <div className="space-y-4 px-4 py-4">
-          <input value={ot} onChange={(e) => setOt(e.target.value)} placeholder="OT (Opcional)" className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2" />
-          <input value={descripcion} onChange={(e) => setDescripcion(e.target.value)} placeholder="Descripcion" className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2" />
-          <input value={montoTotal} onChange={(e) => setMontoTotal(e.target.value)} placeholder="Monto Total" className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2" />
-
-          <hr className="border-zinc-800" />
-          <p className="font-semibold text-sky-300">Historial de Abonos</p>
-          {pagos.map((p) => (
-            <div key={p.id} className="flex items-start justify-between rounded-lg border border-zinc-700 bg-zinc-900/60 p-2">
-              <div>
-                <p className="text-sm font-medium">{p.metodoPago}: s/. {parseNum(p.monto).toFixed(2)}</p>
-                {p.nota && <p className="text-xs text-zinc-400">{p.nota}</p>}
-                <p className="text-xs text-zinc-500">{p.fecha}</p>
-              </div>
-              <div className="flex gap-2">
-                <button type="button" onClick={() => openEditPago(p.id)} className="text-xs text-sky-400">Editar</button>
-                <button type="button" onClick={() => deletePago(p.id)} className="text-xs text-red-400">Borrar</button>
-              </div>
+        <div className="space-y-6 px-5 py-6">
+          <div className="space-y-4">
+            <input value={ot} onChange={(e) => setOt(e.target.value)} placeholder="N° Orden (OT) - Opcional" className="w-full rounded-xl border border-border bg-foreground/[0.03] px-4 py-3 text-sm font-medium transition-all focus:border-primary focus:ring-1 focus:ring-primary outline-none" />
+            <input value={descripcion} onChange={(e) => setDescripcion(e.target.value)} placeholder="Descripción del servicio" className="w-full rounded-xl border border-border bg-foreground/[0.03] px-4 py-3 text-sm font-medium transition-all focus:border-primary focus:ring-1 focus:ring-primary outline-none" />
+            <div className="relative">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-muted-foreground/50">S/</span>
+              <input value={montoTotal} onChange={(e) => setMontoTotal(e.target.value)} placeholder="Costo Total" className="w-full rounded-xl border border-border bg-foreground/[0.03] py-3 pl-10 pr-4 text-base font-bold transition-all focus:border-primary focus:ring-1 focus:ring-primary outline-none" />
             </div>
-          ))}
-          <button type="button" onClick={openAddPago} className="w-full rounded-full border border-zinc-600 py-2 text-sm">
-            + Agregar Abono
-          </button>
-
-          <div className="rounded-xl border border-zinc-700 bg-zinc-800/40 p-3">
-            <p className="text-sm font-semibold text-zinc-200">Saldo Restante:</p>
-            <p className={"text-4xl font-extrabold " + (saldo > 0 ? "text-red-400" : "text-emerald-400")}>
-              s/. {saldo.toFixed(2)}
-            </p>
           </div>
 
-          <select value={estado} onChange={(e) => setEstado(e.target.value)} className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2">
-            {ESTADO.map((x) => <option key={x} value={x}>{x}</option>)}
-          </select>
-          <input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2" />
+          <div className="space-y-4 rounded-2xl border border-border bg-foreground/[0.02] p-5">
+            <div className="flex items-center justify-between">
+              <p className="font-heading text-sm font-bold text-primary">Historial de Abonos</p>
+              <button type="button" onClick={openAddPago} className="rounded-lg bg-primary/10 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-primary hover:bg-primary/20 transition-all">
+                + Agregar
+              </button>
+            </div>
+            
+            <div className="space-y-2">
+              {pagos.map((p) => (
+                <div key={p.id} className="flex items-center justify-between rounded-xl border border-border bg-card p-3 shadow-sm">
+                  <div>
+                    <p className="text-sm font-bold">S/ {parseNum(p.monto).toFixed(2)} <span className="text-[10px] font-medium text-muted-foreground/60">({p.metodoPago})</span></p>
+                    <p className="text-[10px] text-muted-foreground/60">{p.fecha}</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button type="button" onClick={() => openEditPago(p.id)} className="text-[10px] font-bold text-primary hover:underline">Editar</button>
+                    <button type="button" onClick={() => deletePago(p.id)} className="text-[10px] font-bold text-destructive hover:underline">Borrar</button>
+                  </div>
+                </div>
+              ))}
+            </div>
 
-          <div className="space-y-2 rounded-xl border border-zinc-700 bg-zinc-800/40 p-3">
-            <p className="font-semibold text-sky-300">Asociar a Paciente (Opcional)</p>
+            <div className="rounded-xl bg-background p-4 text-center">
+              <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Saldo Pendiente</p>
+              <p className={"font-heading text-3xl font-black mt-1 " + (saldo > 0 ? "text-destructive" : "text-emerald-500")}>
+                S/ {saldo.toFixed(2)}
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <label className="block">
+              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/50 ml-1">Estado</span>
+              <select value={estado} onChange={(e) => setEstado(e.target.value)} className="mt-1 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm font-bold outline-none focus:border-primary focus:ring-1 focus:ring-primary">
+                {ESTADO.map((x) => <option key={x} value={x}>{x}</option>)}
+              </select>
+            </label>
+            <label className="block">
+              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/50 ml-1">Fecha</span>
+              <input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} className="mt-1 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm font-bold outline-none focus:border-primary focus:ring-1 focus:ring-primary" />
+            </label>
+          </div>
+
+          <div className="space-y-3 rounded-2xl border border-border bg-background p-5">
+            <p className="font-heading text-sm font-bold text-primary">Asociar a Paciente</p>
             <input
               value={pacienteSearch}
               onChange={(e) => setPacienteSearch(e.target.value)}
-              placeholder="Buscar paciente..."
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2"
+              placeholder="Buscar paciente por nombre..."
+              className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm font-medium outline-none focus:border-primary focus:ring-1 focus:ring-primary"
             />
-            <select value={pacienteId} onChange={(e) => setPacienteId(e.target.value)} className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2">
+            <select value={pacienteId} onChange={(e) => setPacienteId(e.target.value)} className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm font-medium outline-none focus:border-primary focus:ring-1 focus:ring-primary">
               <option value="">Ninguno</option>
               {filteredPacientes.map((p) => (
                 <option key={p.id} value={p.id}>
@@ -223,10 +241,10 @@ export function ServicioForm({
             </select>
           </div>
 
-          <button type="submit" className="w-full rounded-lg bg-sky-400 px-4 py-2.5 font-semibold text-zinc-900">
-            {mode === "edit" ? "Actualizar Servicio" : "Guardar Servicio"}
+          <button type="submit" className="w-full rounded-xl bg-primary px-6 py-4 font-heading text-base font-black text-primary-foreground shadow-xl shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95">
+            {mode === "edit" ? "💾 ACTUALIZAR SERVICIO" : "🚀 GUARDAR SERVICIO"}
           </button>
-          {localError && <p className="text-sm text-red-400">{localError}</p>}
+          {localError && <p className="text-center text-xs font-bold text-destructive animate-bounce">⚠️ {localError}</p>}
         </div>
       </div>
 

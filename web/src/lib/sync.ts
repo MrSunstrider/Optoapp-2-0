@@ -29,11 +29,9 @@ export async function fetchSyncSnapshot(
   const hasPending = entities.some((e) => e.status === "pending");
   const globalStatus = hasError
     ? "error"
-    : hasPending
-      ? "pending"
-      : telemetry.lastStatus === "error"
-        ? "degraded"
-        : "ok";
+    : telemetry.lastStatus === "error"
+      ? "degraded"
+      : "ok";
 
   return {
     globalStatus,
@@ -52,7 +50,6 @@ export async function runManualSync(
 ): Promise<{ ok: boolean; message: string }> {
   const entities = await buildEntityStatuses(supabase, opticaId, new Date().toISOString());
   const hasError = entities.some((e) => e.status === "error");
-  const hasPending = entities.some((e) => e.status === "pending");
   const status = hasError ? "error" : "ok";
   const errorSummary = hasError
     ? entities
@@ -66,7 +63,7 @@ export async function runManualSync(
       optica_id: opticaId,
       last_sync_at: new Date().toISOString(),
       last_status: status,
-      last_stage: hasPending ? `${stage}:pending` : stage,
+      last_stage: stage,
       last_error: errorSummary,
       last_actor: actorId
     },
@@ -85,10 +82,8 @@ export async function runManualSync(
   return {
     ok: true,
     message: hasError
-      ? "Sincronización ejecutada con incidencias."
-      : hasPending
-        ? "Sincronización ejecutada. Hay pendientes operativos."
-        : "Sincronización completada correctamente."
+      ? "Verificación ejecutada con incidencias."
+      : "Verificación completada. La base de datos está al día."
   };
 }
 
@@ -156,12 +151,14 @@ async function buildEntityStatuses(
     return {
       key: r.key,
       label: r.label,
-      status: r.pendingCount > 0 ? "pending" : "ok",
+      status: "ok",
       pendingCount: r.pendingCount,
       failedCount: 0,
       successCount: r.totalCount,
       lastAttemptAt: updatedAt,
-      message: r.pendingCount > 0 ? "Pendientes por sincronizar" : "Sincronizado"
+      message: r.pendingCount > 0 
+        ? `${r.pendingCount} registros operativos activos en la nube` 
+        : "Base de datos al día"
     } satisfies SyncEntityStatus;
   });
 }

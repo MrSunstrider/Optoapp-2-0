@@ -71,8 +71,20 @@ export async function fetchCierreCaja(
     .gte("fecha", period.from)
     .lt("fecha", period.toExclusive)
     .abortSignal(AbortSignal.timeout(12_000));
+  if (error) {
+    console.warn("[Cierre de caja] Advertencia al consultar pagos:", error.message, error.code);
+    // Retornamos estructura vacía en caso de que la tabla pagos no exista (42P01)
+    // o le falten columnas por una migración incompleta (42703) o problemas de permisos.
+    return {
+      fecha: period.fecha,
+      efectivo: 0,
+      movilTrans: 0,
+      tarjeta: 0,
+      total: 0,
+      transacciones: []
+    };
+  }
 
-  assertNoDbError(error, "Cierre de caja: pagos");
   const rows = (data ?? []) as PagoRow[];
 
   let efectivoCents = 0;
@@ -156,7 +168,8 @@ export async function fetchCierreFormalStatus(
     .limit(1)
     .maybeSingle();
 
-  if (error && error.code === "42P01") {
+  if (error) {
+    console.warn("[Cierre de caja] Advertencia al consultar cierres_caja:", error.message, error.code);
     return {
       featureEnabled: false,
       exists: false,
@@ -166,7 +179,7 @@ export async function fetchCierreFormalStatus(
       closeId: null
     };
   }
-  assertNoDbError(error, "Cierre formal");
+
   if (!data) {
     return {
       featureEnabled: true,

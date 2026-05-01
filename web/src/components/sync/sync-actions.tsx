@@ -24,13 +24,13 @@ export function SyncActions({
       const res = await fetch(path, { method: "POST" });
       const data = (await res.json().catch(() => ({}))) as { error?: string; message?: string };
       if (!res.ok) {
-        setError(data.error ?? "No se pudo ejecutar la sincronización.");
+        setError(data.error ?? "No se pudo ejecutar la verificación.");
         return;
       }
-      setMessage(data.message ?? "Sincronización iniciada.");
+      setMessage(data.message ?? "Verificación iniciada.");
       router.refresh();
     } catch {
-      setError("Error de red al ejecutar la sincronización.");
+      setError("Error de red al ejecutar la verificación.");
     } finally {
       setRunning(false);
     }
@@ -47,47 +47,55 @@ export function SyncActions({
   }
 
   return (
-    <section className="rounded-2xl border border-zinc-700/80 bg-[#3F3D4A]/75 p-5">
-      <h2 className="text-xl font-semibold text-[#8AB4F8]">Acciones</h2>
-      <div className="mt-3 flex flex-wrap gap-2">
+    <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+      <h2 className="font-heading text-xl font-bold text-foreground">Acciones</h2>
+      <div className="mt-4 flex flex-wrap gap-3">
         <button
           type="button"
           onClick={() => void run("/api/sync/run")}
           disabled={!canRun || running}
-          className="rounded-full bg-[#8AB4F8] px-5 py-2 text-sm font-semibold text-zinc-900 disabled:opacity-50"
-          aria-label="Sincronizar ahora"
+          className="flex items-center gap-2 rounded-xl bg-primary px-6 py-2.5 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/20 transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
+          aria-label="Verificar estado"
         >
-          {running ? "Sincronizando..." : "Sincronizar ahora"}
-        </button>
-        <button
-          type="button"
-          onClick={() => router.refresh()}
-          className="rounded-full border border-zinc-600 px-5 py-2 text-sm text-zinc-100"
-          aria-label="Refrescar estado"
-        >
-          Refrescar estado
-        </button>
-        <button
-          type="button"
-          onClick={copyDiag}
-          className="rounded-full border border-zinc-600 px-5 py-2 text-sm text-zinc-100"
-          aria-label="Copiar diagnóstico"
-        >
-          Copiar diagnóstico
+          {running ? "⌛ Verificando..." : "🔍 Verificar estado"}
         </button>
         <button
           type="button"
           onClick={() => void run("/api/sync/retry")}
           disabled={!canRun || running}
-          className="rounded-full border border-zinc-600 px-5 py-2 text-sm text-zinc-100 disabled:opacity-50"
+          className="flex items-center gap-2 rounded-xl border border-border bg-card px-6 py-2.5 text-sm font-bold text-foreground transition-all hover:bg-foreground/5 disabled:opacity-50"
           aria-label="Reintentar fallidos"
         >
-          Reintentar fallidos
+          🔄 Reintentar fallidos
+        </button>
+        <button
+          type="button"
+          onClick={copyDiag}
+          className="flex items-center gap-2 rounded-xl border border-border bg-card px-6 py-2.5 text-sm font-bold text-foreground transition-all hover:bg-foreground/5"
+          aria-label="Copiar diagnóstico"
+        >
+          📋 Copiar diagnóstico
+        </button>
+        <button
+          type="button"
+          onClick={() => router.refresh()}
+          className="flex items-center gap-2 rounded-xl border border-border bg-card px-6 py-2.5 text-sm font-bold text-foreground transition-all hover:bg-foreground/5"
+          aria-label="Refrescar estado"
+        >
+          ⚡ Refrescar
         </button>
       </div>
-      <div aria-live="polite" className="mt-3 min-h-5 text-sm">
-        {message ? <p className="text-emerald-300">{message}</p> : null}
-        {error ? <p className="text-red-300">{error}</p> : null}
+      <div aria-live="polite" className="mt-4 min-h-6">
+        {message ? (
+          <p className="flex items-center gap-2 text-sm font-bold text-primary">
+            <span>✨</span> {message}
+          </p>
+        ) : null}
+        {error ? (
+          <p className="flex items-center gap-2 text-sm font-bold text-destructive">
+            <span>❌</span> {error}
+          </p>
+        ) : null}
       </div>
     </section>
   );

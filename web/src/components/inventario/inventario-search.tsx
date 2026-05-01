@@ -16,15 +16,18 @@ export function InventarioSearch({ initial }: { initial: string }) {
   }
 
   return (
-    <div className="rounded-2xl border border-zinc-600 bg-[#121214] p-3">
+    <div className="group relative rounded-2xl border border-border bg-card p-1 shadow-sm transition-all focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/10">
+      <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground/50 transition-colors group-focus-within:text-primary">
+        🔍
+      </div>
       <input
         value={value}
         onChange={(e) => setValue(e.target.value)}
         onKeyDown={(e) => {
           if (e.key === "Enter") submit(value);
         }}
-        placeholder="Buscar por SKU, marca o modelo"
-        className="w-full bg-transparent text-lg text-zinc-100 placeholder:text-zinc-400 focus-visible:outline-none"
+        placeholder="Buscar por SKU, marca o modelo..."
+        className="w-full bg-transparent py-3 pl-11 pr-4 text-base font-medium text-foreground placeholder:text-muted-foreground/40 focus:outline-none"
         aria-label="Buscar por SKU, marca o modelo"
       />
     </div>

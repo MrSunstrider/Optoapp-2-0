@@ -84,25 +84,30 @@ export function LoginForm({
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-optoapp-bg px-4 py-10 font-inter">
-      <div className="flex w-full max-w-[400px] flex-col items-center gap-8">
-        <header className="space-y-1 text-center">
-          <h1 className="text-4xl font-bold text-optoapp-brand">OptoApp</h1>
-          <p className="text-[15px] text-zinc-400">Acceso a tu cuenta</p>
+    <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4 py-10 transition-colors duration-300">
+      <div className="flex w-full max-w-[420px] flex-col items-center gap-10">
+        <header className="flex flex-col items-center gap-3 text-center">
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary shadow-xl shadow-primary/20">
+             <span className="font-heading text-3xl font-black text-primary-foreground">O</span>
+          </div>
+          <div className="space-y-1">
+            <h1 className="font-heading text-5xl font-black tracking-tight text-foreground">OptoApp</h1>
+            <p className="text-sm font-medium text-muted-foreground/60 uppercase tracking-[0.2em]">Clinical Software 2026</p>
+          </div>
         </header>
 
-        <div className="w-full rounded-2xl bg-optoapp-card p-6 shadow-xl">
-          <form className="flex flex-col gap-4" onSubmit={onSubmit} noValidate>
+        <div className="w-full rounded-[2.5rem] border border-border bg-card p-8 shadow-2xl shadow-foreground/[0.02]">
+          <form className="flex flex-col gap-6" onSubmit={onSubmit} noValidate>
             {configuracionIncompleta && (
-              <p className="rounded-xl border border-red-500/40 bg-red-950/40 p-3 text-sm text-red-200">
-                Configuración incompleta: defina las variables de Supabase en{" "}
-                <code className="text-xs">web/.env.local</code>.
-              </p>
+              <div className="rounded-2xl border border-destructive/20 bg-destructive/5 p-4 text-xs font-medium text-destructive">
+                ⚠️ Configuración incompleta: defina las variables de Supabase en{" "}
+                <code className="font-mono bg-destructive/10 px-1 rounded">web/.env.local</code>.
+              </div>
             )}
             {oauthError && (
-              <p className="rounded-xl border border-amber-500/40 bg-amber-950/40 p-3 text-sm text-amber-100">
-                No se pudo completar el acceso con Google. Intente de nuevo.
-              </p>
+              <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4 text-xs font-medium text-amber-600">
+                ⚠️ No se pudo completar el acceso con Google. Intente de nuevo.
+              </div>
             )}
 
             <div className="space-y-2">
@@ -127,7 +132,7 @@ export function LoginForm({
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   disabled={configuracionIncompleta}
-                  className="w-full rounded-xl border border-zinc-600 bg-zinc-900/80 py-3 pl-11 pr-3 text-[15px] text-white placeholder:text-zinc-500 focus-visible:border-optoapp-brand focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-optoapp-brand disabled:opacity-50"
+                  className="w-full rounded-2xl border border-border bg-foreground/[0.03] py-4 pl-12 pr-4 text-sm font-medium text-foreground placeholder:text-muted-foreground/40 focus:bg-background focus:ring-2 focus:ring-primary/20 transition-all outline-none disabled:opacity-50"
                 />
               </div>
             </div>
@@ -150,7 +155,7 @@ export function LoginForm({
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   disabled={configuracionIncompleta}
-                  className="w-full rounded-xl border border-zinc-600 bg-zinc-900/80 py-3 pl-11 pr-12 text-[15px] text-white placeholder:text-zinc-500 focus-visible:border-optoapp-brand focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-optoapp-brand disabled:opacity-50"
+                  className="w-full rounded-2xl border border-border bg-foreground/[0.03] py-4 pl-12 pr-12 text-sm font-medium text-foreground placeholder:text-muted-foreground/40 focus:bg-background focus:ring-2 focus:ring-primary/20 transition-all outline-none disabled:opacity-50"
                 />
                 <button
                   type="button"
@@ -177,30 +182,26 @@ export function LoginForm({
             <button
               type="submit"
               disabled={!canSubmit || loading || configuracionIncompleta}
-              className={
-                !canSubmit || configuracionIncompleta
-                  ? "w-full rounded-xl bg-zinc-600 py-3 text-[15px] font-medium text-zinc-400"
-                  : "w-full rounded-xl bg-optoapp-brand py-3 text-[15px] font-semibold text-zinc-900 hover:brightness-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-optoapp-brand disabled:opacity-70"
-              }
+              className="w-full rounded-2xl bg-primary py-4 font-heading text-base font-black text-primary-foreground shadow-xl shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-30 disabled:hover:scale-100"
             >
-              {loading ? "Ingresando…" : "Ingresar"}
+              {loading ? "VERIFICANDO..." : "ENTRAR AL SISTEMA"}
             </button>
 
             <button
               type="button"
               onClick={() => void onGoogle()}
               disabled={oauthLoading || configuracionIncompleta}
-              className="w-full rounded-xl border border-zinc-600 bg-transparent py-3 text-[15px] font-medium text-optoapp-brand hover:bg-white/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-optoapp-brand disabled:opacity-50"
+              className="w-full rounded-2xl border border-border bg-foreground/[0.02] py-4 text-sm font-bold text-foreground transition-all hover:bg-foreground/[0.05] disabled:opacity-30"
             >
-              {oauthLoading ? "Redirigiendo…" : "Continuar con Google"}
+              {oauthLoading ? "Cargando..." : "Continuar con Google"}
             </button>
 
             {signupUrl ? (
               <Link
                 href={signupUrl}
-                className="block w-full rounded-xl border border-zinc-600 py-3 text-center text-[15px] font-medium text-zinc-400 hover:bg-white/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400"
+                className="block w-full rounded-2xl border border-dashed border-border py-4 text-center text-xs font-bold text-muted-foreground hover:bg-muted/30 transition-all"
               >
-                Crear cuenta
+                CREAR UNA CUENTA NUEVA
               </Link>
             ) : null}
           </form>

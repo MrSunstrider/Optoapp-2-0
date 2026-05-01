@@ -21,36 +21,65 @@ export function MonturaList({
   }
 
   return (
-    <ul className="space-y-3">
+    <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-1">
       {items.map((item) => {
         const critical = item.stockActual <= item.stockMinimo;
         return (
-          <li key={item.id} className="rounded-xl border border-zinc-700 bg-[#1C1C20] p-4">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <p className="text-sm text-zinc-400">SKU: {item.sku}</p>
-                <p className="text-xl font-semibold text-zinc-100">
+          <li key={item.id} className="group rounded-2xl border border-border bg-card p-5 shadow-sm transition-all hover:shadow-md">
+            <div className="flex flex-wrap items-start justify-between gap-6">
+              <div className="flex-1 space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="rounded-lg bg-foreground/[0.05] px-2 py-1 text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
+                    SKU: {item.sku}
+                  </span>
+                  {critical && (
+                    <span className="rounded-lg bg-destructive/10 px-2 py-1 text-[10px] font-black uppercase tracking-widest text-destructive animate-pulse">
+                      ⚠️ Stock Crítico
+                    </span>
+                  )}
+                </div>
+                <p className="font-heading text-xl font-bold text-foreground">
                   {item.marca} {item.modelo}
                 </p>
-                {item.color ? <p className="text-sm text-zinc-300">Color: {item.color}</p> : null}
-                <p className={critical ? "text-red-300" : "text-zinc-200"}>
-                  Stock: {item.stockActual} (mínimo {item.stockMinimo})
-                </p>
-                <p className="text-sm text-zinc-300">
-                  Costo: {soles(item.costoUnitario)} · Venta: {soles(item.precioVenta)}
-                </p>
-                <p className="text-xs text-zinc-500">
-                  Estado: {item.activo ? "activo" : "inactivo"}
-                </p>
+                {item.color ? <p className="text-sm font-medium text-muted-foreground/80">🎨 Color: {item.color}</p> : null}
+                
+                <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3">
+                  <div className="rounded-xl bg-foreground/[0.03] p-3 text-center">
+                    <p className="text-[10px] font-bold uppercase tracking-tight text-muted-foreground/60">Stock Actual</p>
+                    <p className={`font-heading text-lg font-black ${critical ? "text-destructive" : "text-foreground"}`}>
+                      {item.stockActual}
+                    </p>
+                  </div>
+                  <div className="rounded-xl bg-foreground/[0.03] p-3 text-center">
+                    <p className="text-[10px] font-bold uppercase tracking-tight text-muted-foreground/60">Precio Venta</p>
+                    <p className="font-heading text-lg font-black text-primary">
+                      {soles(item.precioVenta)}
+                    </p>
+                  </div>
+                  <div className="hidden rounded-xl bg-foreground/[0.03] p-3 text-center sm:block">
+                    <p className="text-[10px] font-bold uppercase tracking-tight text-muted-foreground/60">Estado</p>
+                    <p className={`text-xs font-bold uppercase ${item.activo ? "text-emerald-500" : "text-muted-foreground/40"}`}>
+                      {item.activo ? "Activo" : "Inactivo"}
+                    </p>
+                  </div>
+                </div>
               </div>
-              <div className="flex flex-wrap gap-2 text-xs">
-                <Link href={`/inventario/${item.id}/editar`} className="rounded border border-zinc-600 px-2 py-1 text-zinc-100">
-                  Editar
+
+              <div className="flex shrink-0 flex-wrap gap-2">
+                <Link 
+                  href={`/inventario/${item.id}/editar`} 
+                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-card text-foreground transition-all hover:bg-foreground/5"
+                  title="Editar montura"
+                >
+                  ✏️
                 </Link>
                 <form action={`/inventario/${item.id}/editar`} method="get">
                   <input type="hidden" name="action" value="stock" />
-                  <button className="rounded border border-zinc-600 px-2 py-1 text-zinc-100">
-                    Ajustar stock
+                  <button 
+                    className="flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-card text-foreground transition-all hover:bg-foreground/5"
+                    title="Ajustar stock"
+                  >
+                    📦
                   </button>
                 </form>
                 <form action={toggleMonturaAction}>
@@ -58,9 +87,10 @@ export function MonturaList({
                   <input type="hidden" name="active" value={item.activo ? "0" : "1"} />
                   <button
                     disabled={!canWrite}
-                    className="rounded border border-zinc-600 px-2 py-1 text-zinc-100 disabled:opacity-50"
+                    className="flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-card text-foreground transition-all hover:bg-foreground/5 disabled:opacity-50"
+                    title={item.activo ? "Desactivar" : "Activar"}
                   >
-                    {item.activo ? "Inactivar" : "Reactivar"}
+                    {item.activo ? "🚫" : "✅"}
                   </button>
                 </form>
               </div>

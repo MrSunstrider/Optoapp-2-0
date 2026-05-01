@@ -59,7 +59,7 @@ export function AppShellNav({ items }: { items: AppShellNavItem[] }) {
   const pathname = usePathname();
 
   return (
-    <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-3">
+    <nav className="flex-1 space-y-1.5 overflow-y-auto px-4 py-6">
       {items.map((item) => {
         const active = isNavActive(pathname, item.href);
         const Icon = ICONS[item.iconKey];
@@ -68,21 +68,24 @@ export function AppShellNav({ items }: { items: AppShellNavItem[] }) {
             key={item.href}
             href={item.href}
             className={
-              "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors " +
+              "group relative flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-300 " +
               (active
-                ? "bg-[#34495E] text-white shadow-sm"
-                : "text-[#B0B0B0] hover:bg-white/[0.06] hover:text-white")
+                ? "bg-primary/10 text-primary shadow-[inset_0_0_0_1px_rgba(39,174,96,0.2)]"
+                : "text-muted-foreground hover:bg-foreground/5 hover:text-foreground hover:translate-x-1")
             }
           >
+            {active && (
+              <span className="absolute left-0 h-5 w-1 rounded-full bg-primary" />
+            )}
             <span
               className={
-                "flex shrink-0 items-center justify-center " +
-                (active ? "text-white" : "text-[#B0B0B0]")
+                "flex shrink-0 items-center justify-center transition-all duration-300 " +
+                (active ? "scale-110 text-primary" : "text-muted-foreground group-hover:text-primary")
               }
             >
               <Icon className="h-5 w-5" />
             </span>
-            <span className="truncate">{item.label}</span>
+            <span className="truncate tracking-wide">{item.label}</span>
           </Link>
         );
       })}

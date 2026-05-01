@@ -30,35 +30,49 @@ export function LogoutButton() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-[#B0B0B0] transition-colors hover:bg-white/[0.06] hover:text-white"
+        className="flex w-full items-center justify-center gap-3 rounded-xl px-4 py-3 text-sm font-bold text-muted-foreground transition-all hover:bg-foreground/[0.05] hover:text-foreground active:scale-95"
       >
         <IconLogout className="shrink-0" />
         Cerrar Sesión
       </button>
       {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-md rounded-xl border border-zinc-700 bg-zinc-900 p-5">
-            <h3 className="text-lg font-semibold text-zinc-100">¿Cerrar sesión?</h3>
-            <p className="mt-2 text-sm text-zinc-300">
-              Si hay sincronización en curso, continuará en servidor según estado actual.
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-background/80 backdrop-blur-sm p-4 animate-in fade-in">
+          <div
+            className="absolute inset-0"
+            role="presentation"
+            onClick={() => !loading && setOpen(false)}
+          />
+          <div className="relative z-10 w-full max-w-sm rounded-[2.5rem] border border-border bg-card p-8 shadow-2xl">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-destructive/10 text-destructive">
+              <IconLogout className="h-8 w-8" />
+            </div>
+            <h3 className="text-center font-heading text-2xl font-black text-foreground">¿Finalizar Sesión?</h3>
+            <p className="mt-4 text-center text-sm font-medium text-muted-foreground leading-relaxed">
+              Asegúrate de haber guardado tus cambios. La sincronización pendiente continuará en el servidor.
             </p>
-            {error ? <p className="mt-2 text-sm text-red-300">{error}</p> : null}
-            <div className="mt-4 flex justify-end gap-2">
+            
+            {error ? (
+              <div className="mt-4 rounded-xl bg-destructive/10 p-3 text-center text-[10px] font-bold text-destructive uppercase tracking-widest">
+                {error}
+              </div>
+            ) : null}
+
+            <div className="mt-8 flex flex-col gap-2">
               <button
                 type="button"
-                className="rounded-md border border-zinc-600 px-4 py-2 text-sm text-zinc-100"
-                onClick={() => setOpen(false)}
-                disabled={loading}
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                className="rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white"
+                className="w-full rounded-2xl bg-destructive py-4 font-heading text-base font-black text-white shadow-xl shadow-destructive/20 transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-30"
                 onClick={() => void onLogout()}
                 disabled={loading}
               >
-                {loading ? "Cerrando..." : "Cerrar sesión"}
+                {loading ? "CERRANDO..." : "SÍ, CERRAR SESIÓN"}
+              </button>
+              <button
+                type="button"
+                className="w-full rounded-2xl border border-border py-3 text-sm font-bold text-muted-foreground hover:bg-muted/50 transition-all"
+                onClick={() => setOpen(false)}
+                disabled={loading}
+              >
+                CANCELAR
               </button>
             </div>
           </div>

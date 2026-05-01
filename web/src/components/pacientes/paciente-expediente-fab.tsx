@@ -43,7 +43,7 @@ export function PacienteExpedienteFab({ pacienteId }: { pacienteId: string }) {
   return (
     <Link
       href={href}
-      className="fixed bottom-24 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-xl bg-sky-400 text-2xl font-light text-zinc-900 shadow-lg shadow-sky-900/30 transition-colors hover:bg-sky-300 md:bottom-20"
+      className="fixed bottom-24 right-6 z-40 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary text-3xl font-bold text-primary-foreground shadow-2xl shadow-primary/30 transition-all hover:scale-110 active:scale-90 md:bottom-20"
       title={label}
       aria-label={label}
     >

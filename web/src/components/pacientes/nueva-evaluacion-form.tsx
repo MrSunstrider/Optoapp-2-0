@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
@@ -407,8 +407,8 @@ export function NuevaEvaluacionForm({
     clearDraft();
   }
 
-  const tabBtnBase = "rounded-full border px-3 py-1.5 text-xs font-medium transition-colors";
-  const inputCls = "mt-1 w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-zinc-100";
+  const tabBtnBase = "rounded-full border px-4 py-2 text-xs font-bold transition-all active:scale-95";
+  const inputCls = "mt-1 w-full rounded-xl border border-border bg-foreground/[0.03] px-4 py-3 text-sm font-medium text-foreground placeholder:text-muted-foreground/40 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all";
 
   const hiddenPairs: Array<[string, string]> = [
     ["pacienteId", pacienteId],
@@ -534,17 +534,17 @@ export function NuevaEvaluacionForm({
         <input key={k} type="hidden" name={k} value={v} />
       ))}
 
-      <div className="rounded-xl border border-zinc-800 bg-[#121212] text-zinc-100">
-        <div className="border-b border-zinc-800 px-3 py-2 text-[13px] text-sky-400">{opticaLine}</div>
-        <div className="flex items-center gap-2 bg-sky-400 px-2 py-2 text-zinc-900">
-          <Link href={backHref} className="flex h-10 w-10 items-center justify-center rounded-lg hover:bg-black/10" aria-label="Volver a evaluaciones"><span className="text-xl font-semibold">{"<"}</span></Link>
-          <h2 className="flex-1 text-lg font-bold">{mode === "edit" ? "Editar Evaluacion" : "Nueva Evaluacion"}</h2>
-          <button type="submit" className="flex h-10 w-10 items-center justify-center rounded-lg text-xl hover:bg-black/10" title="Guardar evaluacion" aria-label="Guardar evaluacion">?</button>
+      <div className="rounded-2xl border border-border bg-card text-foreground shadow-xl overflow-hidden">
+        <div className="border-b border-border px-4 py-2 text-[11px] font-black uppercase tracking-widest text-primary/70">{opticaLine}</div>
+        <div className="flex items-center gap-3 bg-primary px-4 py-4 text-primary-foreground shadow-md">
+          <Link href={backHref} className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 hover:bg-white/20 transition-all active:scale-95" aria-label="Volver a evaluaciones"><span className="text-xl font-bold">{"←"}</span></Link>
+          <h2 className="flex-1 font-heading text-xl font-bold">{mode === "edit" ? "Editar Evaluación" : "Nueva Evaluación"}</h2>
+          <button type="submit" className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 hover:bg-white/20 transition-all active:scale-95" title="Guardar evaluación" aria-label="Guardar evaluación">💾</button>
         </div>
 
-        <div className="flex flex-wrap gap-2 border-b border-zinc-800 px-3 py-3">
+        <div className="flex flex-wrap gap-2 border-b border-border px-4 py-4 bg-foreground/[0.01]">
           {TAB_ITEMS.map((item) => (
-            <button key={item} type="button" onClick={() => setActiveTab(item)} className={tabBtnBase + (activeTab === item ? " border-sky-400 bg-sky-400/20 text-sky-300" : " border-zinc-700 bg-zinc-900 text-zinc-400")}>{item}</button>
+            <button key={item} type="button" onClick={() => setActiveTab(item)} className={tabBtnBase + (activeTab === item ? " border-primary bg-primary text-primary-foreground shadow-lg shadow-primary/20" : " border-border bg-card text-muted-foreground hover:bg-foreground/5")}>{item}</button>
           ))}
         </div>
 
@@ -553,20 +553,20 @@ export function NuevaEvaluacionForm({
 
           {activeTab === "Anamnesis" && (
             <>
-              <label className="block text-sm text-zinc-300">Fecha de registro<input type="date" value={draft.fecha} onChange={(e) => update("fecha", e.target.value)} className={inputCls} /></label>
-              <label className="block text-sm text-zinc-300">Motivo de consulta<textarea value={draft.motivoConsulta} onChange={(e) => update("motivoConsulta", e.target.value)} rows={3} className={inputCls + " placeholder:text-zinc-500"} /></label>
-              <label className="block text-sm text-zinc-300">Sintomas y signos<textarea value={draft.sintomasSignos} onChange={(e) => update("sintomasSignos", e.target.value)} rows={4} className={inputCls + " placeholder:text-zinc-500"} /></label>
-              <div className="space-y-3 rounded-xl border border-zinc-800 bg-zinc-900/60 p-3">
-                <p className="text-sm font-medium text-zinc-300">Antecedentes</p>
-                <label className="block text-sm text-zinc-400">Personales oculares<textarea value={draft.antecedentesPersonalesOculares} onChange={(e) => update("antecedentesPersonalesOculares", e.target.value)} rows={2} className={inputCls} /></label>
-                <label className="block text-sm text-zinc-400">Personales sistemicos<textarea value={draft.antecedentesPersonalesSistemicos} onChange={(e) => update("antecedentesPersonalesSistemicos", e.target.value)} rows={2} className={inputCls} /></label>
-                <label className="block text-sm text-zinc-400">Familiares oculares<textarea value={draft.antecedentesFamiliaresOculares} onChange={(e) => update("antecedentesFamiliaresOculares", e.target.value)} rows={2} className={inputCls} /></label>
-                <label className="block text-sm text-zinc-400">Familiares sistemicos<textarea value={draft.antecedentesFamiliaresSistemicos} onChange={(e) => update("antecedentesFamiliaresSistemicos", e.target.value)} rows={2} className={inputCls} /></label>
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                  <label className="text-sm text-zinc-400">Medicacion<input value={draft.medicacion} onChange={(e) => update("medicacion", e.target.value)} className={inputCls} /></label>
-                  <label className="text-sm text-zinc-400">Alergias<input value={draft.alergias} onChange={(e) => update("alergias", e.target.value)} className={inputCls} /></label>
+              <label className="block text-xs font-bold uppercase tracking-widest text-muted-foreground/60">Fecha de registro<input type="date" value={draft.fecha} onChange={(e) => update("fecha", e.target.value)} className={inputCls} /></label>
+              <label className="block text-xs font-bold uppercase tracking-widest text-muted-foreground/60">Motivo de consulta<textarea value={draft.motivoConsulta} onChange={(e) => update("motivoConsulta", e.target.value)} rows={3} className={inputCls + " placeholder:text-muted-foreground/30"} /></label>
+              <label className="block text-xs font-bold uppercase tracking-widest text-muted-foreground/60">Síntomas y signos<textarea value={draft.sintomasSignos} onChange={(e) => update("sintomasSignos", e.target.value)} rows={4} className={inputCls + " placeholder:text-muted-foreground/30"} /></label>
+              <div className="space-y-4 rounded-2xl border border-border bg-foreground/[0.02] p-5 shadow-sm">
+                <p className="font-heading text-sm font-bold text-primary">Antecedentes</p>
+                <label className="block text-xs font-bold uppercase tracking-tight text-muted-foreground/60">Personales oculares<textarea value={draft.antecedentesPersonalesOculares} onChange={(e) => update("antecedentesPersonalesOculares", e.target.value)} rows={2} className={inputCls} /></label>
+                <label className="block text-xs font-bold uppercase tracking-tight text-muted-foreground/60">Personales sistémicos<textarea value={draft.antecedentesPersonalesSistemicos} onChange={(e) => update("antecedentesPersonalesSistemicos", e.target.value)} rows={2} className={inputCls} /></label>
+                <label className="block text-xs font-bold uppercase tracking-tight text-muted-foreground/60">Familiares oculares<textarea value={draft.antecedentesFamiliaresOculares} onChange={(e) => update("antecedentesFamiliaresOculares", e.target.value)} rows={2} className={inputCls} /></label>
+                <label className="block text-xs font-bold uppercase tracking-tight text-muted-foreground/60">Familiares sistémicos<textarea value={draft.antecedentesFamiliaresSistemicos} onChange={(e) => update("antecedentesFamiliaresSistemicos", e.target.value)} rows={2} className={inputCls} /></label>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <label className="text-xs font-bold uppercase tracking-tight text-muted-foreground/60">Medicación<input value={draft.medicacion} onChange={(e) => update("medicacion", e.target.value)} className={inputCls} /></label>
+                  <label className="text-xs font-bold uppercase tracking-tight text-muted-foreground/60">Alergias<input value={draft.alergias} onChange={(e) => update("alergias", e.target.value)} className={inputCls} /></label>
                 </div>
-                <label className="block text-sm text-zinc-400">Necesidad visual<textarea value={draft.necesidadVisual} onChange={(e) => update("necesidadVisual", e.target.value)} rows={2} className={inputCls} placeholder="Ej: Computadora, Conducir, Lectura prolongada" /></label>
+                <label className="block text-xs font-bold uppercase tracking-tight text-muted-foreground/60">Necesidad visual<textarea value={draft.necesidadVisual} onChange={(e) => update("necesidadVisual", e.target.value)} rows={2} className={inputCls} placeholder="Ej: Computadora, Conducir, Lectura prolongada" /></label>
               </div>
             </>
           )}
@@ -632,8 +632,8 @@ function RefraccionTab({
   update: <K extends keyof EvaluacionDraft>(key: K, value: EvaluacionDraft[K]) => void;
   inputCls: string;
 }) {
-  const cardCls = "space-y-3 rounded-xl border border-zinc-800 bg-zinc-900/60 p-3";
-  const subtitle = "text-sm font-semibold text-sky-300";
+  const cardCls = "space-y-4 rounded-2xl border border-border bg-foreground/[0.02] p-5 shadow-sm";
+  const subtitle = "text-xs font-black uppercase tracking-widest text-primary/80";
   const addAo = draft.isAddAo === "true";
 
   function normalizeEye(side: "od" | "oi") {
@@ -767,7 +767,7 @@ function CierreTab({
   inputCls: string;
   mode: "create" | "edit";
 }) {
-  const cardCls = "space-y-3 rounded-xl border border-zinc-800 bg-zinc-900/60 p-3";
+  const cardCls = "space-y-4 rounded-2xl border border-border bg-foreground/[0.02] p-5 shadow-sm";
   const hasProxCita = draft.proximaCita.trim() !== "";
 
   function toggleManual(flagKey: "autoPresbicia" | "autoAnisometropia" | "autoAmbliopia") {

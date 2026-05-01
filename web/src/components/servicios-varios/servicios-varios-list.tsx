@@ -83,12 +83,9 @@ export function ServiciosVariosList({
   return (
     <>
       <div className="space-y-4">
-        <div className="relative">
-          <label htmlFor="sv-search" className="sr-only">
-            Buscar por descripción u orden de trabajo
-          </label>
+        <div className="relative group">
           <Search
-            className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-500"
+            className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground/50 transition-colors group-focus-within:text-primary"
             aria-hidden
           />
           <input
@@ -97,47 +94,47 @@ export function ServiciosVariosList({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Buscar por descripción u OT…"
-            className="w-full rounded-xl border border-zinc-600 bg-zinc-900/80 py-3 pl-11 pr-3 text-[15px] text-white placeholder:text-zinc-500 focus-visible:border-sky-500/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-sky-500/50"
+            className="w-full rounded-2xl border border-border bg-foreground/[0.03] py-4 pl-12 pr-4 text-sm font-medium text-foreground placeholder:text-muted-foreground/40 transition-all focus:bg-card focus:ring-2 focus:ring-primary/20 outline-none shadow-sm"
             autoComplete="off"
           />
         </div>
 
         {rows.length === 0 ? (
-          <p className="rounded-xl border border-zinc-800 bg-zinc-900/40 px-4 py-8 text-center text-sm text-zinc-400">
+          <p className="rounded-2xl border border-border bg-foreground/[0.02] px-4 py-12 text-center text-sm font-medium text-muted-foreground/60 shadow-inner">
             No hay servicios registrados.
           </p>
         ) : filtered.length === 0 ? (
-          <p className="rounded-xl border border-zinc-800 bg-zinc-900/40 px-4 py-8 text-center text-sm text-zinc-400">
+          <p className="rounded-2xl border border-border bg-foreground/[0.02] px-4 py-12 text-center text-sm font-medium text-muted-foreground/60 shadow-inner">
             No hay resultados para la búsqueda.
           </p>
         ) : (
-          <ul className="divide-y divide-zinc-800 rounded-xl border border-zinc-800 bg-[#121212]">
+          <ul className="divide-y divide-border rounded-2xl border border-border bg-card shadow-xl overflow-hidden">
             {filtered.map((r) => {
               const saldo = computeSaldoServicioExtra(r.monto_total, r.a_cuenta);
               const pagado = isSaldoPagado(saldo);
               const ot = r.ot?.trim();
 
               return (
-                <li key={r.id} className="p-4">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="min-w-0 flex-1 space-y-1">
+                <li key={r.id} className="p-5 transition-colors hover:bg-foreground/[0.01]">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0 flex-1 space-y-1.5">
                       {ot ? (
-                        <p className="text-xs text-zinc-500">OT: {ot}</p>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/50">OT: {ot}</p>
                       ) : null}
-                      <h2 className="text-base font-medium leading-snug text-sky-300">
+                      <h2 className="font-heading text-lg font-bold leading-snug text-primary">
                         {r.descripcion?.trim() || "—"}
                       </h2>
-                      <p className="text-sm text-zinc-200">
+                      <p className="text-sm font-medium text-foreground/80">
                         Total:{" "}
-                        <span className="tabular-nums">
+                        <span className="tabular-nums font-bold">
                           {formatSoles(r.monto_total)}
                         </span>
                       </p>
-                      <p className="text-sm">
+                      <p className="text-sm font-medium">
                         Saldo:{" "}
                         <span
-                          className={`tabular-nums font-medium ${
-                            pagado ? "text-emerald-400" : "text-red-400"
+                          className={`tabular-nums font-black ${
+                            pagado ? "text-emerald-500" : "text-destructive"
                           }`}
                         >
                           {formatSoles(saldo)}
@@ -190,10 +187,7 @@ export function ServiciosVariosList({
       {canManage && (
         <Link
           href="/servicios-varios/nuevo"
-          className={
-            fabClass +
-            " bg-violet-600 shadow-violet-900/40 hover:bg-violet-500"
-          }
+          className="fixed bottom-24 right-6 z-40 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary text-3xl font-bold text-primary-foreground shadow-2xl shadow-primary/30 transition-all hover:scale-110 active:scale-90 md:bottom-20"
           aria-label="Nuevo servicio"
           title="Nuevo servicio"
         >

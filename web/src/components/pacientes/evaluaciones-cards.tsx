@@ -20,56 +20,59 @@ export function EvaluacionesCards({
   const [openId, setOpenId] = useState<string | null>(null);
 
   return (
-    <ul className="space-y-3">
+    <ul className="space-y-4">
       {rows.map((r) => (
         <li
           key={r.id}
-          className="rounded-xl border border-zinc-700 bg-zinc-900/60 p-4 shadow-sm"
+          className="rounded-2xl border border-border bg-card p-5 shadow-sm transition-all hover:shadow-md"
         >
-          <div className="flex flex-wrap items-start justify-between gap-2">
-            <div>
-              <p className="font-medium text-white">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-1">
                 {r.fecha
                   ? new Date(r.fecha + "T12:00:00").toLocaleDateString("es-PE", {
                       day: "numeric",
-                      month: "short",
+                      month: "long",
                       year: "numeric"
                     })
                   : "Sin fecha"}
               </p>
-              <p className="mt-1 text-sm text-zinc-400">
+              <p className="font-heading text-lg font-bold text-foreground leading-tight">
                 {formatFormulaResumida(r)}
               </p>
               {r.diagnostico?.trim() && (
-                <p className="mt-2 line-clamp-2 text-sm">{r.diagnostico.trim()}</p>
+                <p className="mt-2 text-sm font-medium text-muted-foreground line-clamp-2 italic">"{r.diagnostico.trim()}"</p>
               )}
             </div>
             <button
               type="button"
-              className="rounded-md border border-zinc-600 px-2 py-1 text-xs font-medium text-zinc-300"
+              className="shrink-0 rounded-xl bg-foreground/[0.03] px-4 py-2 text-[10px] font-black uppercase tracking-widest text-foreground hover:bg-primary hover:text-primary-foreground transition-all"
               onClick={() => setOpenId(openId === r.id ? null : r.id)}
             >
-              Ver resumen
+              {openId === r.id ? "Cerrar" : "Detalles"}
             </button>
           </div>
 
           {openId === r.id && (
-            <div className="mt-3 rounded-lg bg-zinc-800/80 p-3 text-sm text-zinc-200">
-              <p>
-                <span className="font-medium">Fórmula:</span>{" "}
-                {formatFormulaResumida(r)}
-              </p>
-              {r.diagnostico?.trim() && (
-                <p className="mt-2">
-                  <span className="font-medium">Diagnóstico:</span> {r.diagnostico}
-                </p>
-              )}
+            <div className="mt-4 rounded-xl bg-foreground/[0.02] border border-border p-4 text-sm animate-in fade-in slide-in-from-top-2">
+              <div className="space-y-3">
+                <div className="flex justify-between items-center border-b border-border/50 pb-2">
+                   <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Fórmula Completa</span>
+                   <span className="font-bold text-foreground">{formatFormulaResumida(r)}</span>
+                </div>
+                {r.diagnostico?.trim() && (
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Diagnóstico</span>
+                    <p className="font-medium text-foreground">{r.diagnostico}</p>
+                  </div>
+                )}
+              </div>
               {canManage && (
                 <Link
                   href={`/pacientes/${pacienteId}/evaluaciones/${r.id}/editar`}
-                  className="mt-2 inline-block text-xs font-medium text-sky-400 hover:underline"
+                  className="mt-4 inline-flex w-full items-center justify-center rounded-xl bg-primary/10 py-2.5 text-[10px] font-black uppercase tracking-widest text-primary hover:bg-primary/20 transition-all"
                 >
-                  Editar evaluación
+                  ✏️ EDITAR EVALUACIÓN
                 </Link>
               )}
             </div>
@@ -87,15 +90,15 @@ export function EvaluacionesCards({
                   e.preventDefault();
                 }
               }}
-              className="mt-3 flex flex-wrap items-center gap-2 border-t border-zinc-700 pt-3"
+              className="mt-4 flex flex-wrap items-center gap-2 border-t border-border pt-4"
             >
               <input type="hidden" name="pacienteId" value={pacienteId} />
               <input type="hidden" name="evaluacionId" value={r.id} />
               <button
                 type="submit"
-                className="text-xs font-medium text-destructive hover:underline"
+                className="text-[10px] font-black uppercase tracking-widest text-destructive hover:underline"
               >
-                Eliminar
+                Eliminar Registro
               </button>
             </form>
           )}

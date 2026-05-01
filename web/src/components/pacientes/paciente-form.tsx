@@ -86,21 +86,21 @@ export function PacienteForm({
   const shell = "max-w-2xl space-y-4";
 
   const inp = isDark
-    ? "w-full rounded-lg border border-zinc-600 bg-[#0a0a0a] px-3 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+    ? "w-full rounded-xl border border-border bg-foreground/[0.03] px-4 py-3 text-sm font-medium text-foreground placeholder:text-muted-foreground/40 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
     : "w-full rounded-md border border-input bg-background px-3 py-2 text-sm";
 
-  const lbl = isDark ? "text-xs font-medium text-zinc-400" : "text-sm font-medium text-foreground";
+  const lbl = isDark ? "text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60" : "text-sm font-medium text-foreground";
 
   const btnPrimary = isDark
-    ? "rounded-lg bg-violet-600 px-5 py-2.5 text-sm font-medium text-white shadow-md hover:bg-violet-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-400"
+    ? "rounded-xl bg-primary px-6 py-3 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95"
     : "rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground";
 
   const btnGhost = isDark
-    ? "rounded-lg border border-zinc-600 bg-transparent px-5 py-2.5 text-sm font-medium text-zinc-200 hover:bg-zinc-900"
+    ? "rounded-xl border border-border bg-card px-6 py-3 text-sm font-bold text-foreground transition-all hover:bg-foreground/5 active:scale-95"
     : "rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-accent";
 
   const suggestLink = isDark
-    ? "shrink-0 rounded-lg px-3 py-2.5 text-sm font-medium text-sky-400 hover:bg-zinc-900 hover:text-sky-300 disabled:opacity-50"
+    ? "shrink-0 rounded-xl border border-border bg-card px-4 py-3 text-sm font-bold text-primary transition-all hover:bg-foreground/5 disabled:opacity-50"
     : "shrink-0 rounded-md border border-border bg-card px-3 py-2 text-sm font-medium hover:bg-accent";
 
   return (
@@ -111,17 +111,17 @@ export function PacienteForm({
 
       {/* 1. Fecha de registro — control tipo renglón (paridad app) */}
       <div className={isDark ? "" : ""}>
-        <span className={`${lbl} mb-1.5 block`}>Fecha de registro</span>
+        <span className={`${lbl} mb-2 block`}>Fecha de registro</span>
         <button
           type="button"
           onClick={openFechaPicker}
           className={
             isDark
-              ? "flex w-full items-center justify-center rounded-full border border-zinc-600 bg-[#0c0c0c] py-3 text-center text-sm text-sky-400 transition-colors hover:border-zinc-500"
+              ? "flex w-full items-center justify-center rounded-2xl border border-border bg-foreground/[0.03] py-4 text-center text-sm font-bold text-primary transition-all hover:bg-foreground/[0.05]"
               : "flex w-full items-center justify-center rounded-full border border-input bg-background py-2.5 text-sm text-primary"
           }
         >
-          Fecha de Registro: {formatFechaRegistroLabel(fechaCreacionIso)}
+          📅 {formatFechaRegistroLabel(fechaCreacionIso)}
         </button>
         <input
           ref={fechaPickerRef}
