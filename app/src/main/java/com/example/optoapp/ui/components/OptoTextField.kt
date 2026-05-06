@@ -17,7 +17,8 @@ fun OptoTextField(
     keyboardType: KeyboardType = KeyboardType.Text,
     isError: Boolean = false,
     supportingText: String? = null,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    trailingIcon: @Composable (() -> Unit)? = null
 ) {
     OutlinedTextField(
         value = value,
@@ -27,6 +28,7 @@ fun OptoTextField(
         keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
         isError = isError,
         supportingText = supportingText?.let { { Text(it) } },
-        enabled = enabled
+        enabled = enabled,
+        trailingIcon = trailingIcon
     )
 }

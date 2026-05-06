@@ -113,32 +113,38 @@ class MonturasViewModel @Inject constructor(
                 _uiState.update { it.copy(error = "Stock actual y mínimo no pueden ser negativos.") }
                 return@launch
             }
-            val opticaId = sessionManager.opticaId.first()
-            val montura = Montura(
-                id = form.id ?: UUID.randomUUID().toString(),
-                sku = form.sku.trim(),
-                marca = form.marca.trim(),
-                modelo = form.modelo.trim(),
-                color = form.color.trim(),
-                talla = form.talla.trim(),
-                costo = costo,
-                precio = precio,
-                stockActual = stockActual,
-                stockMinimo = stockMinimo,
-                activo = form.activo,
-                opticaId = opticaId
-            )
-            when (repository.getMonturaById(montura.id)) {
-                is Resource.Success -> repository.updateMontura(montura)
-                else -> repository.insertMontura(montura)
-            }
-            _uiState.update {
-                it.copy(
-                    editing = false,
-                    form = MonturaFormState(),
-                    error = null,
-                    success = "Montura guardada"
+            try {
+                val opticaId = sessionManager.opticaId.first()
+                val montura = Montura(
+                    id = form.id ?: UUID.randomUUID().toString(),
+                    sku = form.sku.trim(),
+                    marca = form.marca.trim(),
+                    modelo = form.modelo.trim(),
+                    color = form.color.trim(),
+                    talla = form.talla.trim(),
+                    costo = costo,
+                    precio = precio,
+                    stockActual = stockActual,
+                    stockMinimo = stockMinimo,
+                    activo = form.activo,
+                    opticaId = opticaId
                 )
+                when (repository.getMonturaById(montura.id)) {
+                    is Resource.Success -> repository.updateMontura(montura)
+                    else -> repository.insertMontura(montura)
+                }
+                _uiState.update {
+                    it.copy(
+                        editing = false,
+                        form = MonturaFormState(),
+                        error = null,
+                        success = "Producto guardado"
+                    )
+                }
+            } catch (e: Exception) {
+                val msg = if (e.message?.contains("UNIQUE") == true) "El SKU ya existe para otro producto." 
+                          else "Error al guardar: ${e.message}"
+                _uiState.update { it.copy(error = msg) }
             }
         }
     }
@@ -146,7 +152,7 @@ class MonturasViewModel @Inject constructor(
     fun delete(montura: Montura) {
         viewModelScope.launch {
             repository.deleteMontura(montura)
-            _uiState.update { it.copy(success = "Montura eliminada", error = null) }
+            _uiState.update { it.copy(success = "Producto eliminado", error = null) }
         }
     }
 

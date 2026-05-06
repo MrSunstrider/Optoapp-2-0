@@ -44,10 +44,10 @@ export type CierreFormalStatus = {
   closeId: string | null;
 };
 
-export function normalizeFechaCierre(value?: string): string {
+export function normalizeFechaCierre(value?: string, timeZone?: string | null): string {
   const raw = String(value ?? "").trim();
   if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
-  return dateOnly(new Date());
+  return dateOnly(new Date(), timeZone);
 }
 
 export function resolveCierrePeriodo(fecha: string): CierrePeriodo {
@@ -235,7 +235,20 @@ function fromCents(cents: number): number {
   return Math.round(cents) / 100;
 }
 
-function dateOnly(date: Date): string {
+function dateOnly(date: Date, timeZone?: string | null): string {
+  if (timeZone && timeZone !== "auto") {
+    try {
+      const formatter = new Intl.DateTimeFormat("en-CA", {
+        timeZone,
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit"
+      });
+      return formatter.format(date); // Retorna YYYY-MM-DD directamente
+    } catch (e) {
+      console.warn("[dateOnly] Zona horaria inválida:", timeZone, e);
+    }
+  }
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, "0");
   const d = String(date.getDate()).padStart(2, "0");

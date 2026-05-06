@@ -13,7 +13,8 @@ import java.time.LocalDate
 import javax.inject.Inject
 
 class DispensacionRepositoryImpl @Inject constructor(
-    private val dispensacionDao: DispensacionDao
+    private val dispensacionDao: DispensacionDao,
+    private val optoRepository: com.example.optoapp.data.OptoRepository
 ) : DispensacionRepository {
     override fun getDispensacionesByPaciente(pacienteId: String): Flow<List<DispensacionModel>> =
         dispensacionDao.getDispensacionesByPaciente(pacienteId).map { list ->
@@ -37,7 +38,12 @@ class DispensacionRepositoryImpl @Inject constructor(
     }
 
     override suspend fun deleteDispensacion(id: String) {
-        dispensacionDao.deleteById(id)
+        val entity = dispensacionDao.getDispensacionById(id)
+        if (entity != null) {
+            optoRepository.deleteDispensacion(entity)
+        } else {
+            dispensacionDao.deleteById(id)
+        }
     }
 }
 

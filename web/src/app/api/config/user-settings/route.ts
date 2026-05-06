@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 type Body = {
   pinRequired?: boolean;
   automaticReminders?: boolean;
+  timezone?: string | null;
   opticaConfigPatch?: Record<string, unknown>;
 };
 
@@ -37,6 +38,11 @@ export async function POST(request: Request) {
   }
   if (typeof body.automaticReminders === "boolean") {
     nextMetadata.optoapp_automatic_reminders = body.automaticReminders;
+    changed = true;
+  }
+  if (body.timezone !== undefined) {
+    if (body.timezone === null) delete nextMetadata.optoapp_timezone;
+    else nextMetadata.optoapp_timezone = body.timezone;
     changed = true;
   }
   if (body.opticaConfigPatch && typeof body.opticaConfigPatch === "object") {
@@ -96,6 +102,7 @@ export async function POST(request: Request) {
       typeof nextMetadata.optoapp_automatic_reminders === "boolean"
         ? nextMetadata.optoapp_automatic_reminders
         : true,
+    timezone: nextMetadata.optoapp_timezone as string | undefined,
     opticaConfig: nextMetadata.optoapp_optica_config ?? {}
   });
 }

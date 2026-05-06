@@ -143,7 +143,7 @@ fun MainDrawerScreen(
                         modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                     )
                     NavigationDrawerItem(
-                        label = { Text("Inventario Monturas") },
+                        label = { Text("Inventario") },
                         selected = currentRoute == "monturas",
                         onClick = {
                             scope.launch { drawerState.close() }
@@ -313,8 +313,8 @@ fun MainDrawerScreen(
                 ) {
                     Text(
                         text = "Óptica activa: ${opticaHeader.nombreOptica} · ${opticaHeader.fiscalEtiqueta}",
-                        style = MaterialTheme.typography.labelMedium,
-                        modifier = Modifier.padding(vertical = 4.dp),
+                        style = MaterialTheme.typography.labelSmall, // Letra un poco más pequeña y elegante
+                        modifier = Modifier.padding(vertical = 2.dp), // Espacio mínimo
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )

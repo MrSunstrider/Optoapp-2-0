@@ -2,8 +2,9 @@ package com.example.optoapp.data
 
 import android.util.Log
 import androidx.room.withTransaction
+import dagger.Lazy
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.first
+
 import com.google.gson.annotations.SerializedName
 import java.time.LocalDate
 import java.util.UUID
@@ -17,11 +18,20 @@ class OptoRepository(
     private val pagoDao: PagoDao,
     private val servicioExtraDao: ServicioExtraDao,
     private val monturaDao: MonturaDao,
-    private val monturaMovimientoDao: MonturaMovimientoDao
+    private val monturaMovimientoDao: MonturaMovimientoDao,
+    private val syncStateTracker: SyncStateTracker,
+    private val postSaveSyncScheduler: Lazy<com.example.optoapp.sync.PostSaveSyncScheduler>
 ) {
-
     companion object {
         private const val TAG = "OptoRepository"
+    }
+
+    private fun triggerFinanzasSync(opticaId: String) {
+        postSaveSyncScheduler.get().scheduleFinanzasSync(opticaId)
+    }
+
+    private fun triggerInventarioSync(opticaId: String) {
+        postSaveSyncScheduler.get().scheduleInventarioSync(opticaId)
     }
     fun pacientesFlowForOptica(opticaId: String): Flow<List<Paciente>> =
         pacienteDao.getPacientesByOptica(opticaId)
@@ -49,9 +59,15 @@ class OptoRepository(
         }
     }
     
-    suspend fun insertPaciente(paciente: Paciente) = pacienteDao.insertPaciente(paciente)
+    suspend fun insertPaciente(paciente: Paciente) {
+        pacienteDao.insertPaciente(paciente)
+        triggerFinanzasSync(paciente.opticaId)
+    }
     
-    suspend fun updatePaciente(paciente: Paciente) = pacienteDao.updatePaciente(paciente)
+    suspend fun updatePaciente(paciente: Paciente) {
+        pacienteDao.updatePaciente(paciente)
+        triggerFinanzasSync(paciente.opticaId)
+    }
     
     suspend fun deletePaciente(paciente: Paciente) = pacienteDao.deletePaciente(paciente)
     
@@ -85,9 +101,15 @@ class OptoRepository(
         
     suspend fun deleteEvaluacion(evaluacion: EvaluacionClinica) = evaluacionDao.deleteEvaluacion(evaluacion)
     
-    suspend fun insertEvaluacion(evaluacion: EvaluacionClinica) = evaluacionDao.insertEvaluacion(evaluacion)
+    suspend fun insertEvaluacion(evaluacion: EvaluacionClinica) {
+        evaluacionDao.insertEvaluacion(evaluacion)
+        triggerFinanzasSync(evaluacion.opticaId)
+    }
     
-    suspend fun updateEvaluacion(evaluacion: EvaluacionClinica) = evaluacionDao.updateEvaluacion(evaluacion)
+    suspend fun updateEvaluacion(evaluacion: EvaluacionClinica) {
+        evaluacionDao.updateEvaluacion(evaluacion)
+        triggerFinanzasSync(evaluacion.opticaId)
+    }
     
     fun getDispensacionesByPaciente(pacienteId: String): Flow<List<DispensacionOptica>> = 
         dispensacionDao.getDispensacionesByPaciente(pacienteId)
@@ -117,10 +139,24 @@ class OptoRepository(
         }
     }
         
-    suspend fun insertDispensacion(dispensacion: DispensacionOptica) = dispensacionDao.insertDispensacion(dispensacion)
+    suspend fun insertDispensacion(dispensacion: DispensacionOptica) {
+        dispensacionDao.insertDispensacion(dispensacion)
+        triggerFinanzasSync(dispensacion.opticaId)
+    }
     
-    suspend fun updateDispensacion(dispensacion: DispensacionOptica) = dispensacionDao.updateDispensacion(dispensacion)
+    suspend fun updateDispensacion(dispensacion: DispensacionOptica) {
+        dispensacionDao.updateDispensacion(dispensacion)
+        triggerFinanzasSync(dispensacion.opticaId)
+    }
+    
     suspend fun deleteDispensacionById(id: String): Int = dispensacionDao.deleteById(id)
+
+    suspend fun deleteDispensacion(dispensacion: DispensacionOptica) {
+        dispensacionDao.deleteById(dispensacion.id)
+        // Registrar tombstone para que el siguiente sync elimine de Supabase
+        syncStateTracker.markDeleted(dispensacion.opticaId, "dispensacion", dispensacion.id)
+        triggerFinanzasSync(dispensacion.opticaId)
+    }
 
     /** True si otra dispensación de la misma óptica ya usa esta OT (misma cadena ignorando mayúsculas/espacios). */
     suspend fun existsDuplicateOt(opticaId: String, ot: String, excludeDispensacionId: String?): Boolean {
@@ -166,7 +202,10 @@ class OptoRepository(
     
     fun getPagosByDispensacion(dispensacionId: String): Flow<List<Pago>> = pagoDao.getPagosByDispensacion(dispensacionId)
     
-    suspend fun insertPago(pago: Pago) = pagoDao.insertPago(pago)
+    suspend fun insertPago(pago: Pago) {
+        pagoDao.insertPago(pago)
+        triggerFinanzasSync(pago.opticaId)
+    }
 
     suspend fun getPagoById(id: String): Pago? = pagoDao.getPagoById(id)
     suspend fun reassignPagosDispensacion(oldDispensacionId: String, newDispensacionId: String): Int =
@@ -228,11 +267,22 @@ class OptoRepository(
         }
     }
     
-    suspend fun insertServicio(servicio: ServicioExtra) = servicioExtraDao.insertServicio(servicio)
+    suspend fun insertServicio(servicio: ServicioExtra) {
+        servicioExtraDao.insertServicio(servicio)
+        triggerFinanzasSync(servicio.opticaId)
+    }
     
-    suspend fun updateServicio(servicio: ServicioExtra) = servicioExtraDao.updateServicio(servicio)
+    suspend fun updateServicio(servicio: ServicioExtra) {
+        servicioExtraDao.updateServicio(servicio)
+        triggerFinanzasSync(servicio.opticaId)
+    }
     
-    suspend fun deleteServicio(servicio: ServicioExtra) = servicioExtraDao.deleteServicio(servicio)
+    suspend fun deleteServicio(servicio: ServicioExtra) {
+        servicioExtraDao.deleteServicio(servicio)
+        // Registrar tombstone para que el siguiente sync elimine de Supabase
+        syncStateTracker.markDeleted(servicio.opticaId, "servicio_extra", servicio.id)
+        triggerFinanzasSync(servicio.opticaId)
+    }
 
     // Monturas
     fun getMonturasByOptica(opticaId: String): Flow<List<Montura>> =
@@ -248,17 +298,34 @@ class OptoRepository(
         }
     }
 
-    suspend fun insertMontura(montura: Montura) = monturaDao.insertMontura(montura)
-    suspend fun updateMontura(montura: Montura) = monturaDao.updateMontura(montura)
-    suspend fun deleteMontura(montura: Montura) = monturaDao.deleteMontura(montura)
-    suspend fun adjustMonturaStock(monturaId: String, opticaId: String, delta: Int): Int =
-        monturaDao.adjustStock(monturaId, opticaId, delta)
+    suspend fun insertMontura(montura: Montura) {
+        monturaDao.insertMontura(montura)
+        triggerInventarioSync(montura.opticaId)
+    }
+
+    suspend fun updateMontura(montura: Montura) {
+        monturaDao.updateMontura(montura)
+        triggerInventarioSync(montura.opticaId)
+    }
+
+    suspend fun deleteMontura(montura: Montura) {
+        monturaDao.deleteMontura(montura)
+        triggerInventarioSync(montura.opticaId)
+    }
+
+    suspend fun adjustMonturaStock(monturaId: String, opticaId: String, delta: Int): Int {
+        val changed = monturaDao.adjustStock(monturaId, opticaId, delta)
+        if (changed > 0) triggerInventarioSync(opticaId)
+        return changed
+    }
     fun getMovimientosMonturaByOptica(opticaId: String): Flow<List<MonturaMovimiento>> =
         monturaMovimientoDao.getMovimientosByOptica(opticaId)
     fun getMovimientosByMontura(monturaId: String): Flow<List<MonturaMovimiento>> =
         monturaMovimientoDao.getMovimientosByMontura(monturaId)
-    suspend fun insertMonturaMovimiento(movimiento: MonturaMovimiento) =
+    suspend fun insertMonturaMovimiento(movimiento: MonturaMovimiento) {
         monturaMovimientoDao.insertMovimiento(movimiento)
+        triggerInventarioSync(movimiento.opticaId)
+    }
 
     // ─── Métodos de sincronización (Fase 3) ──────────────────────────────────
     // Devuelven una lista completa en un instante dado (snapshot), usados por los
@@ -266,6 +333,13 @@ class OptoRepository(
 
     /** Alias de upsert para la bajada de datos desde Supabase. */
     suspend fun upsertPaciente(paciente: Paciente) = pacienteDao.insertPaciente(paciente)
+
+    /** Alias de upsert para la bajada de inventario desde Supabase (no dispara sync post-guardado). */
+    suspend fun upsertMontura(montura: Montura) = monturaDao.insertMontura(montura)
+
+    /** Alias de upsert para la bajada de movimientos desde Supabase (no dispara sync post-guardado). */
+    suspend fun upsertMonturaMovimiento(movimiento: MonturaMovimiento) =
+        monturaMovimientoDao.insertMovimiento(movimiento)
 
     /** Snapshot de pacientes de la óptica activa (sync upload). */
     suspend fun getPacientesSnapshotForOptica(opticaId: String): List<Paciente> =
@@ -286,6 +360,22 @@ class OptoRepository(
     /** Snapshot de servicios extra de la óptica activa. */
     suspend fun getServiciosSnapshotForOptica(opticaId: String): List<ServicioExtra> =
         servicioExtraDao.getServiciosListByOptica(opticaId)
+
+    /** Snapshot de monturas de la óptica activa (sync inventario). */
+    suspend fun getMonturasSnapshotForOptica(opticaId: String): List<Montura> =
+        monturaDao.getMonturasListByOptica(opticaId)
+
+    /** Snapshot de movimientos de montura de la óptica activa (sync inventario). */
+    suspend fun getMovimientosMonturaSnapshotForOptica(opticaId: String): List<MonturaMovimiento> =
+        monturaMovimientoDao.getMovimientosListByOptica(opticaId)
+
+    /** Retorna todos los registros marcados como eliminados pendientes de sync remoto. */
+    suspend fun getPendingDeletions(opticaId: String): List<SyncEntityState> =
+        syncStateTracker.dao.getPendingDeletions(opticaId)
+
+    /** Limpia el tombstone después de que la eliminación fue confirmada en Supabase. */
+    suspend fun clearDeletionState(opticaId: String, type: String, id: String) =
+        syncStateTracker.dao.clearEntityState(opticaId, type, id)
 
     // ─────────────────────────────────────────────────────────────────────────
 

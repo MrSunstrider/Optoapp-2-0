@@ -527,7 +527,7 @@ fun ConfiguracionScreen(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Column(modifier = Modifier.padding(8.dp)) {
-                            val systemZone = java.util.TimeZone.getDefault().id
+                            val systemZone = java.time.ZoneId.systemDefault().id
                             val effectiveZone = userTimeZone ?: systemZone
                             val localNow = java.time.ZonedDateTime.now(java.time.ZoneId.of(effectiveZone))
                             

@@ -25,4 +25,10 @@ interface SyncEntityStateDao {
 
     @Query("DELETE FROM sync_entity_state WHERE opticaId = :opticaId AND status = 'error'")
     suspend fun deleteErrorsForOptica(opticaId: String)
+
+    @Query("SELECT * FROM sync_entity_state WHERE opticaId = :opticaId AND status = 'deleted'")
+    suspend fun getPendingDeletions(opticaId: String): List<SyncEntityState>
+
+    @Query("DELETE FROM sync_entity_state WHERE opticaId = :opticaId AND entityType = :type AND entityId = :id")
+    suspend fun clearEntityState(opticaId: String, type: String, id: String)
 }

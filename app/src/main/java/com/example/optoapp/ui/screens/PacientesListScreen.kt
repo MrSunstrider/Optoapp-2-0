@@ -118,17 +118,17 @@ fun PacientesListScreen(navController: NavController, drawerState: DrawerState, 
             FlowRow(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 FilterChip(
                     selected = activeFilter == "Saldo Pendiente",
                     onClick = { viewModel.setFilter("Saldo Pendiente") },
-                    label = { Text("Saldo Pendiente") }
+                    label = { Text("Saldo Pendiente", fontSize = 12.sp) }
                 )
                 FilterChip(
                     selected = activeFilter == "Estado de entrega",
                     onClick = { viewModel.setFilter("Estado de entrega") },
-                    label = { Text("Estado de entrega: Pendiente") }
+                    label = { Text("Pendientes Entrega", fontSize = 12.sp) }
                 )
             }
             

@@ -19,13 +19,11 @@ object DateUtils {
     var userPreferredZone: ZoneId? = null
 
     fun today(): LocalDate {
-        val zoneId = userPreferredZone ?: try {
-            java.time.ZoneId.of(java.util.TimeZone.getDefault().id)
-        } catch (e: Exception) {
-            java.time.ZoneId.systemDefault()
-        }
+        // 1. Si el usuario eligió una zona manual, manda esa.
+        // 2. Si no, usamos ZoneId.systemDefault() que es el estándar moderno de Java/Android.
+        val zoneId = userPreferredZone ?: java.time.ZoneId.systemDefault()
         val now = LocalDate.now(zoneId)
-        android.util.Log.d("DATE_DEBUG", "today() GLOBAL -> Fecha: $now | Zona Usada: ${zoneId.id}")
+        android.util.Log.d("DATE_DEBUG", "today() -> Fecha: $now | Zona: ${zoneId.id} | Es Manual: ${userPreferredZone != null}")
         return now
     }
 

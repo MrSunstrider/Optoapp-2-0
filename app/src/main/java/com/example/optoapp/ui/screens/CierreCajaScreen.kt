@@ -55,7 +55,8 @@ fun CierreCajaScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Cierre de Caja") },
+                windowInsets = WindowInsets(0, 0, 0, 0),
+                title = { Text("Cierre de Caja", fontSize = 18.sp, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")

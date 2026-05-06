@@ -40,9 +40,12 @@ export default async function CierreCajaPage({
   if (!canAccessModule(activeOptica.rol, "cierre-caja")) redirect("/dashboard");
   if (!canReadCierre(activeOptica.rol)) redirect("/dashboard");
 
-  const q = await searchParams;
-  const fecha = normalizeFechaCierre(q.fecha);
   const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const timezone = user?.user_metadata?.optoapp_timezone as string | undefined;
+
+  const q = await searchParams;
+  const fecha = normalizeFechaCierre(q.fecha, timezone);
   const [fiscal, snapshot, formal] = await Promise.all([
     fetchOpticaFiscal(supabase, activeOptica.opticaId),
     fetchCierreCaja(supabase, activeOptica.opticaId, fecha),

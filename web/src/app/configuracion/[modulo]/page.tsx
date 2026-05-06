@@ -70,6 +70,7 @@ export default async function ConfigModulePage({
                       ? metadata.optoapp_automatic_reminders
                       : true
                   }
+                  initialTimeZone={metadata.optoapp_timezone as string | undefined}
                 />
               </div>
             )}

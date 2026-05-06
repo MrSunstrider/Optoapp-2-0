@@ -68,6 +68,11 @@ class ServiciosViewModel @Inject constructor(
         .flatMapLatest { repository.pacientesFlowForOptica(it) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val monturas: StateFlow<List<com.example.optoapp.data.Montura>> = sessionManager.opticaId
+        .flatMapLatest { repository.getMonturasByOptica(it) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     fun updateUiState(update: (ServiciosUiState) -> ServiciosUiState) {
         _uiState.value = update(_uiState.value)
     }

@@ -79,18 +79,43 @@ fun MonturasScreen(
     if (uiState.editing) {
         AlertDialog(
             onDismissRequest = { viewModel.cancelEdit() },
-            title = { Text(if (uiState.form.id == null) "Nueva Montura" else "Editar Montura") },
+            title = { Text(if (uiState.form.id == null) "Nuevo Producto" else "Editar Producto") },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OptoTextField(uiState.form.sku, { v -> viewModel.updateForm { it.copy(sku = v) } }, "SKU")
-                    OptoTextField(uiState.form.marca, { v -> viewModel.updateForm { it.copy(marca = v) } }, "Marca")
-                    OptoTextField(uiState.form.modelo, { v -> viewModel.updateForm { it.copy(modelo = v) } }, "Modelo")
-                    OptoTextField(uiState.form.color, { v -> viewModel.updateForm { it.copy(color = v) } }, "Color")
-                    OptoTextField(uiState.form.talla, { v -> viewModel.updateForm { it.copy(talla = v) } }, "Talla")
-                    OptoTextField(uiState.form.costo, { v -> viewModel.updateForm { it.copy(costo = v) } }, "Costo", keyboardType = KeyboardType.Decimal)
-                    OptoTextField(uiState.form.precio, { v -> viewModel.updateForm { it.copy(precio = v) } }, "Precio", keyboardType = KeyboardType.Decimal)
-                    OptoTextField(uiState.form.stockActual, { v -> viewModel.updateForm { it.copy(stockActual = v) } }, "Stock actual", keyboardType = KeyboardType.Number)
-                    OptoTextField(uiState.form.stockMinimo, { v -> viewModel.updateForm { it.copy(stockMinimo = v) } }, "Stock mínimo", keyboardType = KeyboardType.Number)
+                    if (!uiState.error.isNullOrBlank()) {
+                        Text(
+                            text = uiState.error ?: "",
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+                    }
+                    OptoTextField(
+                        value = uiState.form.sku, 
+                        onValueChange = { v -> viewModel.updateForm { it.copy(sku = v) } }, 
+                        label = "SKU * (Código único)",
+                        isError = uiState.error?.contains("SKU", ignoreCase = true) == true
+                    )
+                    OptoTextField(
+                        value = uiState.form.marca, 
+                        onValueChange = { v -> viewModel.updateForm { it.copy(marca = v) } }, 
+                        label = "Marca / Fabricante"
+                    )
+                    OptoTextField(
+                        value = uiState.form.modelo, 
+                        onValueChange = { v -> viewModel.updateForm { it.copy(modelo = v) } }, 
+                        label = "Modelo / Nombre Producto *",
+                        isError = uiState.error?.contains("Modelo", ignoreCase = true) == true
+                    )
+                    OptoTextField(uiState.form.color, { v -> viewModel.updateForm { it.copy(color = v) } }, "Color / Variedad")
+                    OptoTextField(uiState.form.talla, { v -> viewModel.updateForm { it.copy(talla = v) } }, "Talla / Tamaño")
+                    OptoTextField(uiState.form.costo, { v -> viewModel.updateForm { it.copy(costo = v) } }, "Costo unitario", keyboardType = KeyboardType.Decimal)
+                    OptoTextField(uiState.form.precio, { v -> viewModel.updateForm { it.copy(precio = v) } }, "Precio venta", keyboardType = KeyboardType.Decimal)
+                    OptoTextField(uiState.form.stockActual, { v -> viewModel.updateForm { it.copy(stockActual = v) } }, "Stock inicial", keyboardType = KeyboardType.Number)
+                    OptoTextField(uiState.form.stockMinimo, { v -> viewModel.updateForm { it.copy(stockMinimo = v) } }, "Alerta stock mínimo", keyboardType = KeyboardType.Number)
+                    
+                    Text("* Campos obligatorios", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             },
             confirmButton = { TextButton(onClick = { viewModel.save() }) { Text("Guardar") } },
@@ -101,7 +126,7 @@ fun MonturasScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Inventario de Monturas") },
+                title = { Text("Inventario General") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
@@ -109,7 +134,7 @@ fun MonturasScreen(
                 },
                 actions = {
                     IconButton(onClick = { viewModel.startCreate() }) {
-                        Icon(Icons.Default.Add, contentDescription = "Nueva montura")
+                        Icon(Icons.Default.Add, contentDescription = "Nuevo producto")
                     }
                 }
             )
@@ -149,7 +174,7 @@ fun MonturasScreen(
                         }
                     )
                     if (porReponer.isEmpty()) {
-                        Text("No hay monturas críticas por reposición.")
+                        Text("No hay productos críticos por reposición.")
                     } else {
                         porReponer.take(5).forEach { m ->
                             Text("- ${m.sku} ${m.marca} ${m.modelo}: ${m.stockActual}/${m.stockMinimo}")
@@ -161,7 +186,7 @@ fun MonturasScreen(
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text("Resumen inventario", fontWeight = FontWeight.Bold)
-                    Text("Monturas listadas: ${filtradas.size}")
+                    Text("Productos listados: ${filtradas.size}")
                     Text("Stock total: $stockTotal")
                     Text("Valor costo: s/. ${String.format(Locale.getDefault(), "%.2f", valorCosto)}")
                     Text("Valor venta: s/. ${String.format(Locale.getDefault(), "%.2f", valorVenta)}")
@@ -170,7 +195,7 @@ fun MonturasScreen(
                             onClick = {
                                 val pdf = InventarioMonturasPdfGenerator.generate(context, filtradas)
                                 lastGeneratedPdf = pdf
-                                FileShareUtils.openPdf(context, pdf, "Abrir inventario de monturas")
+                                FileShareUtils.openPdf(context, pdf, "Abrir reporte de inventario")
                             }
                         ) {
                             Text("Generar PDF")
@@ -179,7 +204,7 @@ fun MonturasScreen(
                             onClick = {
                                 val file = lastGeneratedPdf ?: InventarioMonturasPdfGenerator.generate(context, filtradas)
                                 lastGeneratedPdf = file
-                                FileShareUtils.sharePdf(context, file, "Compartir inventario de monturas")
+                                FileShareUtils.sharePdf(context, file, "Compartir reporte de inventario")
                             }
                         ) {
                             Text("Compartir PDF")
@@ -215,7 +240,7 @@ fun MonturasScreen(
                     item {
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            "Todas las monturas",
+                            "Todos los productos",
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
                         )
@@ -267,7 +292,7 @@ private fun MonturaItem(
     if (showDelete) {
         AlertDialog(
             onDismissRequest = { showDelete = false },
-            title = { Text("Eliminar montura") },
+            title = { Text("Eliminar producto") },
             text = { Text("¿Eliminar ${montura.marca} ${montura.modelo}?") },
             confirmButton = {
                 Button(onClick = {

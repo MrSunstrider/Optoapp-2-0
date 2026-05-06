@@ -8,7 +8,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class SyncStateTracker @Inject constructor(
-    private val dao: SyncEntityStateDao
+    internal val dao: SyncEntityStateDao
 ) {
     suspend fun markSynced(opticaId: String, entityType: String, entityId: String) {
         dao.upsert(
@@ -31,6 +31,19 @@ class SyncStateTracker @Inject constructor(
                 entityId = entityId,
                 status = "error",
                 lastError = (err ?: "error").take(500),
+                updatedAt = System.currentTimeMillis()
+            )
+        )
+    }
+
+    suspend fun markDeleted(opticaId: String, entityType: String, entityId: String) {
+        dao.upsert(
+            SyncEntityState(
+                opticaId = opticaId,
+                entityType = entityType,
+                entityId = entityId,
+                status = "deleted",
+                lastError = "",
                 updatedAt = System.currentTimeMillis()
             )
         )

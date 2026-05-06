@@ -20,6 +20,12 @@ Registro operativo de cambios relevantes en autenticacion, sincronizacion, segur
   - **Estabilidad Android**: Corrección de errores de compilación KSP y SDK. Se integró exitosamente `realtime-kt` y se migró el `SupabaseObserver` a `postgresChangeFlow`.
   - **Corrección de Fechas (SaaS Ready)**: Implementación de un selector manual de zona horaria en Configuración. El app ahora permite forzar la zona horaria (ej: America/Lima) para ignorar desajustes del sistema, asegurando que el Cierre de Caja y el Diagnóstico reflejen siempre la realidad del usuario.
 
+- `01:05` · `(sin commit)`  
+  Sync post-guardado endurecido y extendido:
+  - **Debounce + Gate**: `PostSaveSyncScheduler` ahora coalescea disparos repetidos por módulo/óptica y mantiene exclusión mutua global con `SyncGate` para evitar spam y carreras.
+  - **Inventario (Monturas)**: nuevo `SyncInventarioUseCase` (monturas + `montura_movimientos`) y scheduler `scheduleInventarioSync` para paridad entre dispositivos.
+  - **Eliminaciones**: delete de `dispensacion`/`servicio_extra` ahora encola sync tras registrar tombstones; delete de evaluación encola sync de historial para reflejarse en remoto.
+
 ## 2026-04-29
 
 - `21:38` · `(sin commit)`  

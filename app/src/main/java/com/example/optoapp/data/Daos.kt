@@ -314,6 +314,9 @@ interface MonturaDao {
 
     @Delete
     suspend fun deleteMontura(montura: Montura)
+
+    @Query("SELECT * FROM monturas WHERE opticaId = :opticaId")
+    suspend fun getMonturasListByOptica(opticaId: String): List<Montura>
 }
 
 @Dao
@@ -326,4 +329,7 @@ interface MonturaMovimientoDao {
 
     @Upsert
     suspend fun insertMovimiento(movimiento: MonturaMovimiento)
+
+    @Query("SELECT * FROM montura_movimientos WHERE opticaId = :opticaId")
+    suspend fun getMovimientosListByOptica(opticaId: String): List<MonturaMovimiento>
 }

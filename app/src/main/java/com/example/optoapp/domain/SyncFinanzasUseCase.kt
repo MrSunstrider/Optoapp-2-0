@@ -49,6 +49,10 @@ class SyncFinanzasUseCase @Inject constructor(
     ): Resource<FinanzasSyncResult> {
         return try {
             Log.d(TAG, "Finanzas: inicio (opticaId=$opticaId, download=$downloadAfterUpload)")
+
+            // ── 0. Propagar eliminaciones pendientes a Supabase ────────────────
+            pushPendingDeletions(opticaId)
+
             val dispUp = uploadDispensaciones(opticaId)
             Log.d(TAG, "Finanzas: upload dispensaciones=$dispUp")
             val servUp = uploadServicios(opticaId)
@@ -87,6 +91,40 @@ class SyncFinanzasUseCase @Inject constructor(
             rethrowIfCancellation(e)
             Log.e(TAG, "Error en sincronización financiera", e)
             Resource.Error("Error sincronizando finanzas: ${e.localizedMessage}")
+        }
+    }
+
+    // ─── PROPAGAR ELIMINACIONES ───────────────────────────────────────────────
+
+    private suspend fun pushPendingDeletions(opticaId: String) {
+        val pending = repository.getPendingDeletions(opticaId)
+        if (pending.isEmpty()) return
+        Log.d(TAG, "Finanzas: propagando ${pending.size} eliminaciones a Supabase")
+        pending.forEach { tombstone ->
+            val table = when (tombstone.entityType) {
+                "servicio_extra" -> TABLE_SERVICIOS
+                "dispensacion"   -> TABLE_DISPENSACIONES
+                "pago"           -> TABLE_PAGOS
+                else             -> null
+            }
+            if (table == null) {
+                repository.clearDeletionState(opticaId, tombstone.entityType, tombstone.entityId)
+                return@forEach
+            }
+            try {
+                supabase.postgrest[table].delete {
+                    filter {
+                        eq("id", tombstone.entityId)
+                        eq("optica_id", opticaId)
+                    }
+                }
+                repository.clearDeletionState(opticaId, tombstone.entityType, tombstone.entityId)
+                Log.d(TAG, "Eliminado remoto ${tombstone.entityType}/${tombstone.entityId}")
+            } catch (e: Exception) {
+                rethrowIfCancellation(e)
+                Log.w(TAG, "No se pudo eliminar remoto ${tombstone.entityType}/${tombstone.entityId}: ${e.message}")
+                // No lanzamos: un fallo aislado no debe abortar todo el sync
+            }
         }
     }
 
@@ -384,9 +422,16 @@ class SyncFinanzasUseCase @Inject constructor(
 
     // ─── BAJADA ──────────────────────────────────────────────────────────────
 
+    /** IDs marcados para eliminación que NO deben reinsertarse al bajar de la nube. */
+    private suspend fun deletedIds(opticaId: String): Set<String> {
+        return repository.getPendingDeletions(opticaId).map { it.entityId }.toSet()
+    }
+
     private suspend fun downloadDispensaciones(opticaId: String): Int {
+        val skipIds = deletedIds(opticaId)
         val remotos = supabase.postgrest[TABLE_DISPENSACIONES].select { filter { eq("optica_id", opticaId) } }.decodeList<DispensacionRemota>()
         remotos.forEach { r ->
+            if (r.id in skipIds) return@forEach
             try {
                 val local = r.toEntity()
                 repository.insertDispensacion(local)
@@ -400,8 +445,10 @@ class SyncFinanzasUseCase @Inject constructor(
     }
 
     private suspend fun downloadServicios(opticaId: String): Int {
+        val skipIds = deletedIds(opticaId)
         val remotos = supabase.postgrest[TABLE_SERVICIOS].select { filter { eq("optica_id", opticaId) } }.decodeList<ServicioRemoto>()
         remotos.forEach { r ->
+            if (r.id in skipIds) return@forEach
             try {
                 val local = r.toEntity()
                 repository.insertServicio(local)
@@ -415,10 +462,12 @@ class SyncFinanzasUseCase @Inject constructor(
     }
 
     private suspend fun downloadPagos(opticaId: String): Int {
+        val skipIds = deletedIds(opticaId)
         val remotos = supabase.postgrest[TABLE_PAGOS]
             .select { filter { eq("optica_id", opticaId) } }
             .decodeList<PagoRemoto>()
         remotos.forEach { r ->
+            if (r.id in skipIds) return@forEach
             try {
                 val local = r.toEntity()
                 repository.insertPago(local)

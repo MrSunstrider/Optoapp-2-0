@@ -17,7 +17,7 @@ object InventarioMonturasPdfGenerator {
 
     fun generate(context: Context, monturas: List<Montura>): File {
         val dir = File(context.cacheDir, "recetas").apply { mkdirs() }
-        val file = File(dir, "inventario-monturas-${System.currentTimeMillis()}.pdf")
+        val file = File(dir, "reporte-inventario-${System.currentTimeMillis()}.pdf")
 
         val doc = PdfDocument()
         val titlePaint = Paint().apply {
@@ -37,7 +37,7 @@ object InventarioMonturasPdfGenerator {
         var y = MARGIN
 
         fun drawHeader() {
-            canvas.drawText("Reporte total de inventario de monturas", MARGIN, y, titlePaint)
+            canvas.drawText("Reporte de Inventario General", MARGIN, y, titlePaint)
             y += 18f
             val total = monturas.size
             val activas = monturas.count { it.activo }
@@ -60,7 +60,7 @@ object InventarioMonturasPdfGenerator {
             )
             y += 16f
             canvas.drawText("SKU", MARGIN, y, headerPaint)
-            canvas.drawText("Marca / Modelo", MARGIN + 85f, y, headerPaint)
+            canvas.drawText("Marca / Producto", MARGIN + 85f, y, headerPaint)
             canvas.drawText("Color/Talla", MARGIN + 290f, y, headerPaint)
             canvas.drawText("Stock", MARGIN + 410f, y, headerPaint)
             canvas.drawText("Precio", MARGIN + 465f, y, headerPaint)

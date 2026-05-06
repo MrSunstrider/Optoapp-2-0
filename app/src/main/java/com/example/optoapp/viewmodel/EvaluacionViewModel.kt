@@ -400,6 +400,9 @@ class EvaluacionViewModel @Inject constructor(
             val result = repository.getEvaluacionById(evaluacionId)
             if (result is Resource.Success) {
                 repository.deleteEvaluacion(result.data!!)
+                // Mantener paridad con "post-save sync": la eliminación también debe reflejarse en remoto.
+                val oid = sessionManager.opticaId.first()
+                postSaveSyncScheduler.scheduleHistorialSync(oid)
                 onComplete()
             }
         }

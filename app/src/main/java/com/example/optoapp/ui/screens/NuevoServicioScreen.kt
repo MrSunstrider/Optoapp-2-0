@@ -1,12 +1,16 @@
 package com.example.optoapp.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -110,7 +114,57 @@ fun NuevoServicioScreen(navController: NavController, pacienteId: String? = null
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             OptoTextField(value = uiState.ot, onValueChange = { viewModel.updateUiState { s -> s.copy(ot = it) } }, label = "OT (Opcional)")
-            OptoTextField(value = uiState.descripcion, onValueChange = { viewModel.updateUiState { s -> s.copy(descripcion = it) } }, label = "Descripción")
+            
+            var showMonturaDialog by remember { mutableStateOf(false) }
+            val monturas by viewModel.monturas.collectAsState()
+
+            if (showMonturaDialog) {
+                AlertDialog(
+                    onDismissRequest = { showMonturaDialog = false },
+                    title = { Text("Seleccionar Producto") },
+                    text = {
+                        Column {
+                            if (monturas.isEmpty()) {
+                                Text("No hay monturas con stock en el inventario.", style = MaterialTheme.typography.bodySmall)
+                            } else {
+                                LazyColumn(modifier = Modifier.heightIn(max = 400.dp)) {
+                                    items(monturas) { montura ->
+                                        ListItem(
+                                            headlineContent = { Text("${montura.marca} ${montura.modelo}") },
+                                            supportingContent = { Text("Color: ${montura.color} | SKU: ${montura.sku}") },
+                                            trailingContent = { Text("s/. ${montura.precio}", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary) },
+                                            modifier = Modifier.clickable {
+                                                viewModel.updateUiState { s -> 
+                                                    s.copy(
+                                                        descripcion = "${montura.marca} ${montura.modelo} (${montura.sku})",
+                                                        montoTotal = montura.precio.toString()
+                                                    ) 
+                                                }
+                                                showMonturaDialog = false
+                                            }
+                                        )
+                                        HorizontalDivider(thickness = 0.5.dp)
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    confirmButton = {
+                        TextButton(onClick = { showMonturaDialog = false }) { Text("Cerrar") }
+                    }
+                )
+            }
+
+            OptoTextField(
+                value = uiState.descripcion, 
+                onValueChange = { viewModel.updateUiState { s -> s.copy(descripcion = it) } }, 
+                label = "Descripción",
+                trailingIcon = {
+                    IconButton(onClick = { showMonturaDialog = true }) {
+                        Icon(Icons.Default.Inventory2, contentDescription = "Vincular Inventario", tint = MaterialTheme.colorScheme.primary)
+                    }
+                }
+            )
             
             OptoTextField(
                 value = uiState.montoTotal, 

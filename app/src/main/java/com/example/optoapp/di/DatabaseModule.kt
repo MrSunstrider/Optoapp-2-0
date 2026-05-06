@@ -2,6 +2,8 @@ package com.example.optoapp.di
 
 import android.content.Context
 import com.example.optoapp.data.*
+import com.example.optoapp.sync.PostSaveSyncScheduler
+import dagger.Lazy
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -75,7 +77,9 @@ object DatabaseModule {
         pagoDao: PagoDao,
         servicioExtraDao: ServicioExtraDao,
         monturaDao: MonturaDao,
-        monturaMovimientoDao: MonturaMovimientoDao
+        monturaMovimientoDao: MonturaMovimientoDao,
+        syncStateTracker: SyncStateTracker,
+        postSaveSyncScheduler: Lazy<PostSaveSyncScheduler>
     ): OptoRepository {
         return OptoRepository(
             database,
@@ -85,7 +89,9 @@ object DatabaseModule {
             pagoDao,
             servicioExtraDao,
             monturaDao,
-            monturaMovimientoDao
+            monturaMovimientoDao,
+            syncStateTracker,
+            postSaveSyncScheduler
         )
     }
 }
