@@ -12,14 +12,20 @@ object DateUtils {
     private val localZone: ZoneId = ZoneId.systemDefault()
     private val isoFormatter: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE
 
-    fun today(overrideZoneId: String? = null): LocalDate {
-        val zoneId = if (!overrideZoneId.isNullOrBlank()) {
-            try { java.time.ZoneId.of(overrideZoneId) } catch (e: Exception) { java.time.ZoneId.systemDefault() }
-        } else {
-            try { java.time.ZoneId.of(java.util.TimeZone.getDefault().id) } catch (e: Exception) { java.time.ZoneId.systemDefault() }
+    /**
+     * Preferencia global de zona horaria (SaaS). 
+     * Se actualiza desde el SessionManager al iniciar el app o cambiar la config.
+     */
+    var userPreferredZone: ZoneId? = null
+
+    fun today(): LocalDate {
+        val zoneId = userPreferredZone ?: try {
+            java.time.ZoneId.of(java.util.TimeZone.getDefault().id)
+        } catch (e: Exception) {
+            java.time.ZoneId.systemDefault()
         }
         val now = LocalDate.now(zoneId)
-        android.util.Log.d("DATE_DEBUG", "today() -> Fecha: $now | Zona Usada: ${zoneId.id}")
+        android.util.Log.d("DATE_DEBUG", "today() GLOBAL -> Fecha: $now | Zona Usada: ${zoneId.id}")
         return now
     }
 

@@ -4,6 +4,8 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.viewModels
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
@@ -36,6 +38,15 @@ class MainActivity : ComponentActivity() {
         }
 
         authViewModel.handleAuthDeepLinkIntent(intent)
+
+        // Sincronizar zona horaria global (SaaS Ready)
+        lifecycleScope.launch {
+            authViewModel.userTimeZone.collect { tz ->
+                com.example.optoapp.util.DateUtils.userPreferredZone = tz?.let { 
+                    try { java.time.ZoneId.of(it) } catch (e: Exception) { null }
+                }
+            }
+        }
 
         setContent {
             OptoAppTheme {

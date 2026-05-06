@@ -98,6 +98,9 @@ class AuthViewModel @Inject constructor(
     /** Flujo para la pantalla de configuración: ¿el PIN es obligatorio? */
     val isPinRequired = sessionManager.isPinRequired
 
+    /** Zona horaria preferida por el usuario (Manual Override) */
+    val userTimeZone = sessionManager.userTimeZone
+
     /** Si hay más de una óptica, el usuario debe elegir en [SeleccionOpticaScreen]. */
     private val _pendingMemberships = MutableStateFlow<List<OpticaMembership>>(emptyList())
     val pendingMemberships: StateFlow<List<OpticaMembership>> = _pendingMemberships.asStateFlow()

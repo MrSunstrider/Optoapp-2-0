@@ -30,8 +30,8 @@ class CierreCajaViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            sessionManager.userTimeZone.collectLatest { tz ->
-                _uiState.update { it.copy(fecha = DateUtils.today(tz)) }
+            sessionManager.userTimeZone.collectLatest { _ ->
+                _uiState.update { it.copy(fecha = DateUtils.today()) }
             }
         }
         observePagos()
