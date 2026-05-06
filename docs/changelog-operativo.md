@@ -17,6 +17,7 @@ Registro operativo de cambios relevantes en autenticacion, sincronizacion, segur
   - **Proxy**: Capa de seguridad RBAC en los repositorios para validar permisos de borrado/edición según el rol del usuario.
   - **Decorator**: Implementación de `LoggingPacienteRepository` para observabilidad transparente sin alterar la lógica de negocio.
   - **Estabilidad Web**: Corrección de errores de linting (unescaped entities) en el proyecto Next.js para asegurar build limpio.
+  - **Estabilidad Android**: Corrección de errores de compilación KSP por imports faltantes en `FullSyncStrategy` y `SyncViewModel`.
 
 ## 2026-04-29
 
