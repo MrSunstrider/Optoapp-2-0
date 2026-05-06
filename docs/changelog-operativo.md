@@ -26,6 +26,12 @@ Registro operativo de cambios relevantes en autenticacion, sincronizacion, segur
   - **Inventario (Monturas)**: nuevo `SyncInventarioUseCase` (monturas + `montura_movimientos`) y scheduler `scheduleInventarioSync` para paridad entre dispositivos.
   - **Eliminaciones**: delete de `dispensacion`/`servicio_extra` ahora encola sync tras registrar tombstones; delete de evaluación encola sync de historial para reflejarse en remoto.
 
+- `01:10` · `(sin commit)`  
+  Hardening Supabase RLS (Inventario):
+  - `public.montura_movimientos` completa CRUD de policies (se agregan `UPDATE/DELETE` faltantes).
+  - **Write restringido por rol**: `INSERT/UPDATE/DELETE` en `public.monturas` y `public.montura_movimientos` queda limitado a `admin/gerente` vía `public.has_optica_role(...)`.
+  - **Lectura por membresía**: `SELECT` se mantiene por `usuario_optica` para roles operativos sin permisos de edición.
+
 ## 2026-04-29
 
 - `21:38` · `(sin commit)`  
