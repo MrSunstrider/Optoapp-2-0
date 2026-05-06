@@ -42,6 +42,7 @@ class SessionManager(private val context: Context) {
         private val USER_NAME     = stringPreferencesKey("saas_user_name")
         private val LAST_LOGIN_TS = longPreferencesKey("saas_last_login_ts")
         private val IS_PIN_REQUIRED = booleanPreferencesKey("pref_is_pin_required")
+        private val USER_TIMEZONE = stringPreferencesKey("pref_user_timezone")
     }
 
     // ─── Lectura reactiva ─────────────────────────────────────────────────────
@@ -74,7 +75,17 @@ class SessionManager(private val context: Context) {
     val isPinRequired: Flow<Boolean> = context.dataStore.data
         .map { prefs: Preferences -> prefs[IS_PIN_REQUIRED] ?: true }
 
+    val userTimeZone: Flow<String?> = context.dataStore.data
+        .map { prefs: Preferences -> prefs[USER_TIMEZONE] }
+
     // ─── Escritura ────────────────────────────────────────────────────────────
+
+    suspend fun setUserTimeZone(timeZoneId: String?) {
+        context.dataStore.edit { prefs ->
+            if (timeZoneId == null) prefs.remove(USER_TIMEZONE)
+            else prefs[USER_TIMEZONE] = timeZoneId
+        }
+    }
 
     suspend fun saveSession(opticaId: String, email: String, name: String = "", rol: String = "admin") {
         encryptedPrefs.edit().apply {

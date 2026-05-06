@@ -12,9 +12,14 @@ object DateUtils {
     private val localZone: ZoneId = ZoneId.systemDefault()
     private val isoFormatter: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE
 
-    fun today(): LocalDate {
-        val now = LocalDate.now(ZoneId.systemDefault())
-        android.util.Log.d("DATE_DEBUG", "DateUtils.today() llamado. Fecha actual: $now en zona: ${ZoneId.systemDefault()}")
+    fun today(overrideZoneId: String? = null): LocalDate {
+        val zoneId = if (!overrideZoneId.isNullOrBlank()) {
+            try { java.time.ZoneId.of(overrideZoneId) } catch (e: Exception) { java.time.ZoneId.systemDefault() }
+        } else {
+            try { java.time.ZoneId.of(java.util.TimeZone.getDefault().id) } catch (e: Exception) { java.time.ZoneId.systemDefault() }
+        }
+        val now = LocalDate.now(zoneId)
+        android.util.Log.d("DATE_DEBUG", "today() -> Fecha: $now | Zona Usada: ${zoneId.id}")
         return now
     }
 

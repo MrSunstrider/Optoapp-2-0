@@ -101,6 +101,21 @@ fun ConfiguracionScreen(
     val remoteSyncTelemetry by syncDiagVm.remoteTelemetry.collectAsState()
     val remoteSyncTelemetryLoading by syncDiagVm.remoteTelemetryLoading.collectAsState()
     val remoteSyncTelemetryError by syncDiagVm.remoteTelemetryError.collectAsState()
+    
+    val userTimeZone by settingsVm.userTimeZone.collectAsState()
+    val availableTimeZones = remember {
+        listOf(
+            "Detectar automáticamente",
+            "America/Lima",
+            "America/Bogota",
+            "America/Mexico_City",
+            "America/Santiago",
+            "America/Argentina/Buenos_Aires",
+            "America/Guayaquil",
+            "America/Caracas",
+            "Europe/Madrid"
+        )
+    }
     val roleUi by roleVm.uiState.collectAsState()
     val planUi by planVm.uiState.collectAsState()
     val opticaRol by viewModel.opticaRol.collectAsState(initial = "admin")
@@ -258,6 +273,24 @@ fun ConfiguracionScreen(
             Card {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(stringResource(R.string.config_general_section_title), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                    
+                    // Selector de Zona Horaria
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text("Zona Horaria (SaaS)", fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                        Text("Ajusta esto si la hora del app no coincide con tu reloj local.", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        DropdownField(
+                            label = "Seleccionar Ciudad/Zona",
+                            selected = userTimeZone ?: "Detectar automáticamente",
+                            options = availableTimeZones,
+                            onSelected = { selected ->
+                                if (selected == "Detectar automáticamente") settingsVm.setUserTimeZone(null)
+                                else settingsVm.setUserTimeZone(selected)
+                            }
+                        )
+                    }
+
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -486,6 +519,24 @@ fun ConfiguracionScreen(
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                    
+                    // Auditoría de Tiempo para depuración
+                    Surface(
+                        color = MaterialTheme.colorScheme.surfaceVariant,
+                        shape = MaterialTheme.shapes.extraSmall,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(8.dp)) {
+                            val systemZone = java.util.TimeZone.getDefault().id
+                            val effectiveZone = userTimeZone ?: systemZone
+                            val localNow = java.time.ZonedDateTime.now(java.time.ZoneId.of(effectiveZone))
+                            
+                            Text("Reloj Efectivo: ${localNow.format(java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss"))}", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                            Text("Sistema: $systemZone | Manual: ${userTimeZone ?: "Ninguna"}", fontSize = 10.sp)
+                            Text("Fecha Operativa: ${localNow.toLocalDate()}", fontSize = 10.sp)
+                        }
+                    }
+
                     HorizontalDivider()
                     Text(
                         "Estado remoto (servidor)",
@@ -526,7 +577,7 @@ fun ConfiguracionScreen(
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                "Última sync: ${formatRemoteSyncDateTime(remote.lastSyncAt)}",
+                                "Última sync: ${formatRemoteSyncDateTime(remote.lastSyncAt, userTimeZone)}",
                                 fontSize = 12.sp,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
@@ -1037,14 +1088,18 @@ private fun FiscalDataSection(
     }
 }
 
-private fun formatRemoteSyncDateTime(raw: String?): String {
+private fun formatRemoteSyncDateTime(raw: String?, overrideZoneId: String?): String {
     if (raw.isNullOrBlank()) return "No disponible"
     return runCatching {
         val utcDate = OffsetDateTime.parse(raw)
-        // Convertimos el instante UTC al horario local del sistema (ej. Lima)
-        val localDate = utcDate.atZoneSameInstant(ZoneId.systemDefault())
+        val zoneId = if (!overrideZoneId.isNullOrBlank()) {
+            ZoneId.of(overrideZoneId)
+        } else {
+            java.util.TimeZone.getDefault().toZoneId()
+        }
+        val localDate = utcDate.atZoneSameInstant(zoneId)
         localDate.format(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM))
-    }.getOrDefault(raw)
+    }.getOrDefault(raw ?: "")
 }
 
 private fun formatRelativeSyncAge(raw: String?): String {

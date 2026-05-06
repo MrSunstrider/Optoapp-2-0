@@ -18,7 +18,7 @@ Registro operativo de cambios relevantes en autenticacion, sincronizacion, segur
   - **Decorator**: Implementación de `LoggingPacienteRepository` para observabilidad transparente sin alterar la lógica de negocio.
   - **Estabilidad Web**: Corrección de errores de linting (unescaped entities) en el proyecto Next.js para asegurar build limpio.
   - **Estabilidad Android**: Corrección de errores de compilación KSP y SDK. Se integró exitosamente `realtime-kt` y se migró el `SupabaseObserver` a `postgresChangeFlow`.
-  - **Corrección de Fechas**: Sincronización de la UI con la zona horaria local del usuario (Lima) tanto en el Cierre de Caja como en el Diagnóstico de Sincronización, eliminando desfases con UTC.
+  - **Corrección de Fechas (SaaS Ready)**: Implementación de un selector manual de zona horaria en Configuración. El app ahora permite forzar la zona horaria (ej: America/Lima) para ignorar desajustes del sistema, asegurando que el Cierre de Caja y el Diagnóstico reflejen siempre la realidad del usuario.
 
 ## 2026-04-29
 
