@@ -56,7 +56,8 @@ class SyncViewModel @Inject constructor(
     private val syncPacientesUseCase: SyncPacientesUseCase,
     private val syncHistorialUseCase: SyncHistorialUseCase,
     private val syncFinanzasUseCase: SyncFinanzasUseCase,
-    private val syncGate: SyncGate
+    private val syncGate: SyncGate,
+    private val syncManager: com.example.optoapp.domain.sync.SyncManager
 ) : ViewModel() {
 
     companion object {
@@ -75,18 +76,16 @@ class SyncViewModel @Inject constructor(
     }
 
     /**
-     * Dispara la sincronización manual completa (Bidireccional).
+     * Dispara la sincronización manual completa (Bidireccional) usando el patrón Strategy.
      */
     fun performFullSync() = viewModelScope.launch {
         _syncState.value = SyncState.Loading
         if (!isNetworkAvailable()) {
-            _syncState.value = SyncState.Error(
-                "Sin conexión a internet. Comprueba tu red e inténtalo de nuevo."
-            )
+            _syncState.value = SyncState.Error("Sin conexión a internet.")
             return@launch
         }
-        SyncSessionHelper.refreshSessionBeforeSync(supabase)
 
+        SyncSessionHelper.refreshSessionBeforeSync(supabase)
         val contextCheck = ensureSyncContext()
         if (contextCheck != null) {
             _syncState.value = SyncState.Error(contextCheck)
@@ -96,61 +95,24 @@ class SyncViewModel @Inject constructor(
         val opticaId = sessionManager.opticaId.first()
         repository.reassignLegacyMiOpticaBaseTo(opticaId)
 
-        suspend fun runStages(): Resource<Unit> {
-            var currentStage = "pacientes"
-            Log.d(TAG, "Sync etapa 1/3: inicio pacientes (opticaId=$opticaId)")
-            val pacientesResult = syncPacientesUseCase(opticaId)
-            if (pacientesResult is Resource.Error) {
-                Log.e(TAG, "Sync etapa 1/3: fin pacientes ERROR")
-                recordRemoteSyncTelemetry(opticaId, "error", currentStage, pacientesResult.message)
-                return Resource.Error(pacientesResult.message ?: "Error en pacientes")
-            }
-            Log.d(TAG, "Sync etapa 1/3: fin pacientes OK")
-
-            currentStage = "historial"
-            Log.d(TAG, "Sync etapa 2/3: inicio historial (evaluaciones)")
-            val historialResult = syncHistorialUseCase(opticaId)
-            if (historialResult is Resource.Error) {
-                Log.e(TAG, "Sync etapa 2/3: fin historial ERROR")
-                recordRemoteSyncTelemetry(opticaId, "error", currentStage, historialResult.message)
-                return Resource.Error(historialResult.message ?: "Error en historial")
-            }
-            Log.d(TAG, "Sync etapa 2/3: fin historial OK")
-
-            currentStage = "finanzas"
-            Log.d(TAG, "Sync etapa 3/3: inicio finanzas (dispensaciones → servicios_extra → pagos)")
-            val finanzasResult = syncFinanzasUseCase(opticaId)
-            if (finanzasResult is Resource.Error) {
-                Log.e(TAG, "Sync etapa 3/3: fin finanzas ERROR")
-                recordRemoteSyncTelemetry(opticaId, "error", currentStage, finanzasResult.message)
-                return Resource.Error(finanzasResult.message ?: "Error en finanzas")
-            }
-            Log.d(TAG, "Sync etapa 3/3: fin finanzas OK")
-            return Resource.Success(Unit)
-        }
-
         val outcome = syncGate.mutex.withLock {
-            var o = runStages()
-            if (o is Resource.Error && SyncSessionHelper.looksLikeAuthError(o.message)) {
-                Log.w(TAG, "Reintento sync tras posible error de auth")
-                SyncSessionHelper.refreshSessionBeforeSync(supabase)
-                o = runStages()
-            }
-            o
+            syncManager.switchToFullSync()
+            syncManager.performSync(opticaId)
         }
 
         when (outcome) {
-            is Resource.Error -> {
+            is com.example.optoapp.domain.sync.SyncResult.Error -> {
                 val msg = SyncErrorSanitizer.forUserMessage(outcome.message)
                 syncTelemetry.recordFullSyncError(outcome.message)
                 _syncState.value = SyncState.Error(msg)
             }
-            else -> {
+            is com.example.optoapp.domain.sync.SyncResult.Success -> {
                 syncTelemetry.recordFullSyncSuccess()
-                recordRemoteSyncTelemetry(opticaId, "ok", "finanzas", null)
+                recordRemoteSyncTelemetry(opticaId, "ok", "finalizado", null)
                 runCatching { subscriptionManager.refreshPlanFromServer(opticaId) }
                 _syncState.value = SyncState.Success("Sincronización completada con éxito")
             }
+            else -> { /* Otros estados si existieran */ }
         }
     }
 

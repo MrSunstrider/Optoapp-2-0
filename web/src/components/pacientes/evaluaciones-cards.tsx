@@ -41,7 +41,7 @@ export function EvaluacionesCards({
                 {formatFormulaResumida(r)}
               </p>
               {r.diagnostico?.trim() && (
-                <p className="mt-2 text-sm font-medium text-muted-foreground line-clamp-2 italic">"{r.diagnostico.trim()}"</p>
+                <p className="mt-2 text-sm font-medium text-muted-foreground line-clamp-2 italic">&quot;{r.diagnostico.trim()}&quot;</p>
               )}
             </div>
             <button

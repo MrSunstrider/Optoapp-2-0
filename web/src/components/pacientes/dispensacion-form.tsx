@@ -399,7 +399,7 @@ export function DispensacionForm({
                     <div>
                       <p className="text-sm font-bold text-foreground">S/ {parseNum(p.monto).toFixed(2)} <span className="ml-1 text-[10px] font-medium text-muted-foreground/60">({p.metodoPago})</span></p>
                       <p className="text-[10px] font-medium text-muted-foreground/60">{p.fecha}</p>
-                      {p.nota && <p className="mt-0.5 text-[10px] italic text-muted-foreground/80">"{p.nota}"</p>}
+                      {p.nota && <p className="mt-0.5 text-[10px] italic text-muted-foreground/80">&quot;{p.nota}&quot;</p>}
                     </div>
                     <div className="flex gap-2">
                       <button type="button" onClick={() => openEditPago(p.id)} className="text-[10px] font-bold text-primary hover:underline">Editar</button>

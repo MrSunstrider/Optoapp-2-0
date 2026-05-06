@@ -31,7 +31,7 @@ export function AgendaItemCard({
             {item.pacienteNombre}
           </p>
           {item.motivo ? (
-            <p className="text-sm font-medium text-foreground/70 italic">"{item.motivo}"</p>
+            <p className="text-sm font-medium text-foreground/70 italic">&quot;{item.motivo}&quot;</p>
           ) : null}
           {item.contacto ? (
             <p className="text-xs font-medium text-muted-foreground flex items-center gap-2">

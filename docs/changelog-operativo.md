@@ -4,6 +4,20 @@ Registro operativo de cambios relevantes en autenticacion, sincronizacion, segur
 
 > Zona horaria de referencia: UTC-5 (hora local del equipo).
 
+## 2026-05-05
+
+- `23:15` · `(sin commit)`  
+  Modernización Arquitectónica OptoApp (Android & Web): Implementación de patrones de diseño Clean Architecture para escalabilidad y paridad de plataformas.
+  - **Repository & Mappers**: Desacoplamiento de la base de datos (Room/Supabase) mediante repositorios modulares y mappers bidireccionales para todas las entidades financieras y clínicas.
+  - **Strategy (Sync)**: Nuevo `SyncManager` en Android que delega la lógica de sincronización a estrategias intercambiables (`FullSyncStrategy`, `ReadOnlySyncStrategy`), preparando el camino para sync incremental.
+  - **Builder (Clínico)**: Implementación de `EvaluacionBuilder` con automatización de transposición de cilindros positivos a negativos y normalización de valores "plano/neutro".
+  - **Observer (Realtime)**: Infraestructura de actualización en tiempo real con `SupabaseObserver` (Android Flow) y `useSupabaseRealtime` (React hook) para reactividad instantánea.
+  - **Factory**: `DiagnosticoFactory` para suministrar diferentes motores de diagnóstico según el rol del usuario (Admin/Especialista vs Asesor).
+  - **Command**: Encapsulamiento de operaciones críticas como `Backup` y `Export` con soporte para colas e historial.
+  - **Proxy**: Capa de seguridad RBAC en los repositorios para validar permisos de borrado/edición según el rol del usuario.
+  - **Decorator**: Implementación de `LoggingPacienteRepository` para observabilidad transparente sin alterar la lógica de negocio.
+  - **Estabilidad Web**: Corrección de errores de linting (unescaped entities) en el proyecto Next.js para asegurar build limpio.
+
 ## 2026-04-29
 
 - `21:38` · `(sin commit)`  
