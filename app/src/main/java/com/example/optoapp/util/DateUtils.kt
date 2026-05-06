@@ -6,12 +6,17 @@ import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
+import java.util.Locale
 
 object DateUtils {
     private val localZone: ZoneId = ZoneId.systemDefault()
     private val isoFormatter: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE
 
-    fun today(): LocalDate = LocalDate.now(localZone)
+    fun today(): LocalDate {
+        val now = LocalDate.now(ZoneId.systemDefault())
+        android.util.Log.d("DATE_DEBUG", "DateUtils.today() llamado. Fecha actual: $now en zona: ${ZoneId.systemDefault()}")
+        return now
+    }
 
     /**
      * Conversión hacia/desde [androidx.compose.material3.DatePicker]: el valor es epoch del **inicio del día en UTC**
@@ -28,8 +33,10 @@ object DateUtils {
 
     fun fromIso(value: String): LocalDate = LocalDate.parse(value, isoFormatter)
 
-    fun formatLocalized(date: LocalDate): String =
-        date.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM))
+    fun formatLocalized(date: LocalDate): String {
+        val formatter = DateTimeFormatter.ofPattern("dd 'de' MMMM 'de' yyyy", Locale("es", "PE"))
+        return date.format(formatter)
+    }
 
     fun getNoonTimestamp(date: LocalDate): Long =
         date.atTime(12, 0).atZone(localZone).toInstant().toEpochMilli()

@@ -59,7 +59,8 @@ class SyncViewModel @Inject constructor(
     private val syncHistorialUseCase: SyncHistorialUseCase,
     private val syncFinanzasUseCase: SyncFinanzasUseCase,
     private val syncGate: SyncGate,
-    private val syncManager: SyncManager
+    private val syncManager: SyncManager,
+    private val supabaseObserver: com.example.optoapp.domain.observer.SupabaseObserver
 ) : ViewModel() {
 
     companion object {
@@ -191,6 +192,20 @@ class SyncViewModel @Inject constructor(
             supabase.postgrest["sync_telemetry_optica"].upsert(row)
         }.onFailure { e ->
             Log.w(TAG, "No se pudo guardar telemetría remota de sync: ${e.message}")
+        }
+    }
+
+    /**
+     * Ejemplo de uso del patrón Observer: Escucha cambios en la telemetría en tiempo real
+     * desde otros dispositivos para la misma óptica.
+     */
+    fun observeRemoteTelemetry(opticaId: String) {
+        viewModelScope.launch {
+            supabaseObserver.observeTable("sync_telemetry_optica", opticaId)
+                .collect { action ->
+                    Log.d(TAG, "Cambio detectado en telemetría remota: $action")
+                    // Aquí se podría disparar una actualización de UI si otro dispositivo finalizó sync
+                }
         }
     }
 

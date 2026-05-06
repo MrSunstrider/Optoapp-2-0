@@ -18,10 +18,12 @@ class SupabaseObserver @Inject constructor(
      * Convierte los eventos de Supabase Realtime en un Flow de acciones (Insert, Update, Delete).
      */
     fun observeTable(tableName: String, opticaId: String): Flow<PostgresAction> {
-        val channel = supabase.realtime.channel("realtime_$tableName")
+        // Usamos opticaId en el nombre del canal para asegurar aislamiento por instancia
+        val channel = supabase.realtime.channel("realtime_${tableName}_$opticaId")
         return channel.postgresChangeFlow<PostgresAction>(schema = "public") {
             this.table = tableName
-            // El filtrado por optica_id se maneja usualmente vía RLS en Realtime o parámetros adicionales
+            // Nota: El filtrado fino por optica_id se delega a las políticas RLS de Supabase 
+            // para garantizar que el cliente solo reciba lo que le corresponde.
         }
     }
 }

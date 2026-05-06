@@ -29,6 +29,7 @@ class CierreCajaViewModel @Inject constructor(
     val uiState: StateFlow<CierreCajaUiState> = _uiState.asStateFlow()
 
     init {
+        android.util.Log.d("DATE_DEBUG", "CierreCajaViewModel init con fecha: ${uiState.value.fecha}")
         observePagos()
     }
 

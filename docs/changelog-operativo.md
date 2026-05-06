@@ -17,7 +17,8 @@ Registro operativo de cambios relevantes en autenticacion, sincronizacion, segur
   - **Proxy**: Capa de seguridad RBAC en los repositorios para validar permisos de borrado/edición según el rol del usuario.
   - **Decorator**: Implementación de `LoggingPacienteRepository` para observabilidad transparente sin alterar la lógica de negocio.
   - **Estabilidad Web**: Corrección de errores de linting (unescaped entities) en el proyecto Next.js para asegurar build limpio.
-  - **Estabilidad Android**: Corrección de errores de compilación KSP y SDK. Se integró exitosamente `realtime-kt` y se migró el `SupabaseObserver` a `postgresChangeFlow` para compatibilidad con la versión 3.x, verificado mediante un build completo exitoso (`assembleDebug`).
+  - **Estabilidad Android**: Corrección de errores de compilación KSP y SDK. Se integró exitosamente `realtime-kt` y se migró el `SupabaseObserver` a `postgresChangeFlow`.
+  - **Corrección de Fechas**: Sincronización de la UI con la zona horaria local del usuario (Lima) tanto en el Cierre de Caja como en el Diagnóstico de Sincronización, eliminando desfases con UTC.
 
 ## 2026-04-29
 

@@ -60,6 +60,7 @@ import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.time.Duration
+import java.time.ZoneId
 
 private const val INTERNAL_OWNER_EMAIL = "jaermadera@gmail.com"
 
@@ -1039,17 +1040,19 @@ private fun FiscalDataSection(
 private fun formatRemoteSyncDateTime(raw: String?): String {
     if (raw.isNullOrBlank()) return "No disponible"
     return runCatching {
-        OffsetDateTime.parse(raw).toLocalDateTime()
-            .format(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM))
+        val utcDate = OffsetDateTime.parse(raw)
+        // Convertimos el instante UTC al horario local del sistema (ej. Lima)
+        val localDate = utcDate.atZoneSameInstant(ZoneId.systemDefault())
+        localDate.format(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM))
     }.getOrDefault(raw)
 }
 
 private fun formatRelativeSyncAge(raw: String?): String {
     if (raw.isNullOrBlank()) return "hace un momento"
     return runCatching {
-        val then = OffsetDateTime.parse(raw)
-        val now = OffsetDateTime.now(then.offset)
-        val seconds = Duration.between(then, now).seconds.coerceAtLeast(0)
+        val then = OffsetDateTime.parse(raw).toInstant()
+        val now = java.time.Instant.now()
+        val seconds = java.time.Duration.between(then, now).seconds.coerceAtLeast(0)
         when {
             seconds < 60 -> "hace menos de 1 min"
             seconds < 3600 -> "hace ${seconds / 60} min"
