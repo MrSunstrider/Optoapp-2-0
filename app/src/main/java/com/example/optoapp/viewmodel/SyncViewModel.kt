@@ -19,6 +19,8 @@ import com.example.optoapp.domain.SyncFinanzasUseCase
 import com.example.optoapp.domain.SyncHistorialUseCase
 import com.example.optoapp.domain.SyncPacientesUseCase
 import com.example.optoapp.domain.SyncSessionHelper
+import com.example.optoapp.domain.sync.SyncManager
+import com.example.optoapp.domain.sync.SyncResult
 import com.example.optoapp.sync.SyncGate
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
@@ -57,7 +59,7 @@ class SyncViewModel @Inject constructor(
     private val syncHistorialUseCase: SyncHistorialUseCase,
     private val syncFinanzasUseCase: SyncFinanzasUseCase,
     private val syncGate: SyncGate,
-    private val syncManager: com.example.optoapp.domain.sync.SyncManager
+    private val syncManager: SyncManager
 ) : ViewModel() {
 
     companion object {
@@ -101,12 +103,12 @@ class SyncViewModel @Inject constructor(
         }
 
         when (outcome) {
-            is com.example.optoapp.domain.sync.SyncResult.Error -> {
+            is SyncResult.Error -> {
                 val msg = SyncErrorSanitizer.forUserMessage(outcome.message)
                 syncTelemetry.recordFullSyncError(outcome.message)
                 _syncState.value = SyncState.Error(msg)
             }
-            is com.example.optoapp.domain.sync.SyncResult.Success -> {
+            is SyncResult.Success -> {
                 syncTelemetry.recordFullSyncSuccess()
                 recordRemoteSyncTelemetry(opticaId, "ok", "finalizado", null)
                 runCatching { subscriptionManager.refreshPlanFromServer(opticaId) }

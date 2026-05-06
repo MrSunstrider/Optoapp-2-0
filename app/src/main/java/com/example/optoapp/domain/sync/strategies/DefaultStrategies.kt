@@ -1,6 +1,8 @@
 package com.example.optoapp.domain.sync.strategies
 
 import com.example.optoapp.domain.SyncPacientesUseCase
+import com.example.optoapp.domain.SyncHistorialUseCase
+import com.example.optoapp.domain.SyncFinanzasUseCase
 import com.example.optoapp.domain.sync.SyncResult
 import com.example.optoapp.domain.sync.SyncStrategy
 import javax.inject.Inject
