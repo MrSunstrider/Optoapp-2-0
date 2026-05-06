@@ -51,6 +51,7 @@ desugar-jdk-libs = { group = "com.android.tools", name = "desugar_jdk_libs", ver
 supabase-bom = { group = "io.github.jan-tennert.supabase", name = "bom", version = "3.0.1" }
 supabase-auth = { group = "io.github.jan-tennert.supabase", name = "auth-kt", version = "3.0.1" }
 supabase-postgrest = { group = "io.github.jan-tennert.supabase", name = "postgrest-kt", version = "3.0.1" }
+supabase-realtime = { group = "io.github.jan-tennert.supabase", name = "realtime-kt", version = "3.0.1" }
 ktor-client-cio = { group = "io.ktor", name = "ktor-client-cio", version = "3.0.0" }
 androidx-security-crypto = { group = "androidx.security", name = "security-crypto", version.ref = "securityCrypto" }
 billing-ktx = { group = "com.android.billingclient", name = "billing-ktx", version.ref = "billing" }
