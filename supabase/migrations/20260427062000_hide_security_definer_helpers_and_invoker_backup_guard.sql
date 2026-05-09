@@ -72,10 +72,11 @@ as $$
   select app_private.is_internal_owner();
 $$;
 
--- Remove direct RPC exposure of public SECURITY DEFINER helpers.
-revoke execute on function public.has_optica_role(uuid, text, text[]) from authenticated;
+-- Keep public wrapper executable for authenticated users when RLS policies still resolve public.has_optica_role.
+-- The underlying logic is delegated to app_private.has_optica_role.
+revoke execute on function public.has_optica_role(uuid, text, text[]) from public;
+grant execute on function public.has_optica_role(uuid, text, text[]) to authenticated, service_role;
 revoke execute on function public.is_internal_owner() from authenticated;
-grant execute on function public.has_optica_role(uuid, text, text[]) to service_role;
 grant execute on function public.is_internal_owner() to service_role;
 
 -- Recreate policies to use private-schema helpers explicitly.
