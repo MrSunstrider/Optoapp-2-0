@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.optoapp.data.Montura
+import com.example.optoapp.ui.components.DropdownField
 import com.example.optoapp.ui.components.OptoTextField
 import com.example.optoapp.util.FileShareUtils
 import com.example.optoapp.util.InventarioMonturasPdfGenerator
@@ -100,7 +101,8 @@ fun MonturasScreen(
                     OptoTextField(
                         value = uiState.form.marca, 
                         onValueChange = { v -> viewModel.updateForm { it.copy(marca = v) } }, 
-                        label = "Marca / Fabricante"
+                        label = "Marca / Fabricante *",
+                        isError = uiState.error?.contains("Marca", ignoreCase = true) == true
                     )
                     OptoTextField(
                         value = uiState.form.modelo, 
@@ -110,6 +112,12 @@ fun MonturasScreen(
                     )
                     OptoTextField(uiState.form.color, { v -> viewModel.updateForm { it.copy(color = v) } }, "Color / Variedad")
                     OptoTextField(uiState.form.talla, { v -> viewModel.updateForm { it.copy(talla = v) } }, "Talla / Tamaño")
+                    DropdownField(label = "Tipo de Aro *", selected = uiState.form.tipoAro, options = listOf("Aro Completo", "Semi al aire", "Al aire")) { opt ->
+                        viewModel.updateForm { it.copy(tipoAro = opt) }
+                    }
+                    DropdownField(label = "Material *", selected = uiState.form.materialMontura, options = listOf("Acetato", "Metal", "Carey", "Econ")) { opt ->
+                        viewModel.updateForm { it.copy(materialMontura = opt) }
+                    }
                     OptoTextField(uiState.form.costo, { v -> viewModel.updateForm { it.copy(costo = v) } }, "Costo unitario", keyboardType = KeyboardType.Decimal)
                     OptoTextField(uiState.form.precio, { v -> viewModel.updateForm { it.copy(precio = v) } }, "Precio venta", keyboardType = KeyboardType.Decimal)
                     OptoTextField(uiState.form.stockActual, { v -> viewModel.updateForm { it.copy(stockActual = v) } }, "Stock inicial", keyboardType = KeyboardType.Number)
@@ -144,7 +152,7 @@ fun MonturasScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp),
+                .padding(horizontal = 14.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             OptoTextField(

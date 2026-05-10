@@ -17,6 +17,7 @@ import com.example.optoapp.util.rethrowIfCancellation
 import com.example.optoapp.util.SyncErrorSanitizer
 import com.example.optoapp.domain.SyncFinanzasUseCase
 import com.example.optoapp.domain.SyncHistorialUseCase
+import com.example.optoapp.domain.SyncInventarioUseCase
 import com.example.optoapp.domain.SyncPacientesUseCase
 import com.example.optoapp.domain.SyncSessionHelper
 import com.example.optoapp.domain.sync.SyncManager
@@ -58,6 +59,7 @@ class SyncViewModel @Inject constructor(
     private val syncPacientesUseCase: SyncPacientesUseCase,
     private val syncHistorialUseCase: SyncHistorialUseCase,
     private val syncFinanzasUseCase: SyncFinanzasUseCase,
+    private val syncInventarioUseCase: SyncInventarioUseCase,
     private val syncGate: SyncGate,
     private val syncManager: SyncManager,
     private val supabaseObserver: com.example.optoapp.domain.observer.SupabaseObserver
@@ -162,8 +164,16 @@ class SyncViewModel @Inject constructor(
                     }
                     else -> {}
                 }
+                when (val i = syncInventarioUseCase(opticaId, downloadAfterUpload = false)) {
+                    is Resource.Error -> {
+                        hasErrors = true
+                        Log.w(TAG, "Sync silenciosa (inventario): ${i.message}")
+                        recordRemoteSyncTelemetry(opticaId, "error", "inventario", i.message)
+                    }
+                    else -> {}
+                }
                 if (!hasErrors) {
-                    recordRemoteSyncTelemetry(opticaId, "ok", "finanzas", null)
+                    recordRemoteSyncTelemetry(opticaId, "ok", "inventario", null)
                 }
             }
         } catch (e: Exception) {

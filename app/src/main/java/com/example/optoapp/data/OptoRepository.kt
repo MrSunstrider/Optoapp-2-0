@@ -33,6 +33,14 @@ class OptoRepository(
     private fun triggerInventarioSync(opticaId: String) {
         postSaveSyncScheduler.get().scheduleInventarioSync(opticaId)
     }
+
+    private fun triggerPacientesSync(opticaId: String) {
+        postSaveSyncScheduler.get().schedulePacientesSync(opticaId)
+    }
+
+    private fun triggerHistorialSync(opticaId: String) {
+        postSaveSyncScheduler.get().scheduleHistorialSync(opticaId)
+    }
     fun pacientesFlowForOptica(opticaId: String): Flow<List<Paciente>> =
         pacienteDao.getPacientesByOptica(opticaId)
 
@@ -61,12 +69,12 @@ class OptoRepository(
     
     suspend fun insertPaciente(paciente: Paciente) {
         pacienteDao.insertPaciente(paciente)
-        triggerFinanzasSync(paciente.opticaId)
+        triggerPacientesSync(paciente.opticaId)
     }
     
     suspend fun updatePaciente(paciente: Paciente) {
         pacienteDao.updatePaciente(paciente)
-        triggerFinanzasSync(paciente.opticaId)
+        triggerPacientesSync(paciente.opticaId)
     }
     
     suspend fun deletePaciente(paciente: Paciente) = pacienteDao.deletePaciente(paciente)
@@ -103,12 +111,12 @@ class OptoRepository(
     
     suspend fun insertEvaluacion(evaluacion: EvaluacionClinica) {
         evaluacionDao.insertEvaluacion(evaluacion)
-        triggerFinanzasSync(evaluacion.opticaId)
+        triggerHistorialSync(evaluacion.opticaId)
     }
     
     suspend fun updateEvaluacion(evaluacion: EvaluacionClinica) {
         evaluacionDao.updateEvaluacion(evaluacion)
-        triggerFinanzasSync(evaluacion.opticaId)
+        triggerHistorialSync(evaluacion.opticaId)
     }
     
     fun getDispensacionesByPaciente(pacienteId: String): Flow<List<DispensacionOptica>> = 
@@ -413,38 +421,40 @@ class OptoRepository(
         )
     }
 
-    private fun <T : Any> T.sanitizeNulls(): T {
-        try {
-            this::class.java.declaredFields.forEach { field ->
-                field.isAccessible = true
-                val value = field.get(this)
-                if (value == null) {
-                    if (field.type == String::class.java) {
-                        field.set(this, "")
-                    } else if (field.type == List::class.java) {
-                        field.set(this, emptyList<Any>())
-                    } else if (field.type == Double::class.java || field.type == Double::class.javaPrimitiveType) {
-                        field.set(this, 0.0)
-                    } else if (field.type == Int::class.java || field.type == Int::class.javaPrimitiveType) {
-                        field.set(this, 0)
-                    } else if (field.type == Long::class.java || field.type == Long::class.javaPrimitiveType) {
-                        field.set(this, 0L)
-                    }
-                }
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-        return this
-    }
+    private fun Paciente.withDefaults(): Paciente = copy(
+        dni = dni ?: "",
+        sexo = sexo ?: "",
+        email = email ?: "",
+        historiaOptometrica = historiaOptometrica ?: "",
+        direccion = direccion ?: "",
+        distrito = distrito ?: "",
+        ocupacion = ocupacion ?: "",
+        acompanante = acompanante ?: "",
+        hobbies = hobbies ?: "",
+        ultimasEtiquetas = if (ultimasEtiquetas == null) emptyList() else ultimasEtiquetas
+    )
+
+    private fun EvaluacionClinica.withDefaults(): EvaluacionClinica = copy(
+        necesidadVisual = if (necesidadVisual == null) emptyList() else necesidadVisual,
+        diagnosticoOd = if (diagnosticoOd == null) emptyList() else diagnosticoOd,
+        diagnosticoOi = if (diagnosticoOi == null) emptyList() else diagnosticoOi,
+        diagnosticoOtros = if (diagnosticoOtros == null) emptyList() else diagnosticoOtros
+    )
+
+    private fun DispensacionOptica.withDefaults(): DispensacionOptica = copy(
+        tratamientos = if (tratamientos == null) emptyList() else tratamientos
+    )
+
+    private fun Pago.withDefaults(): Pago = this
+
+    private fun ServicioExtra.withDefaults(): ServicioExtra = this
 
     suspend fun restoreBackup(backupData: BackupData, currentOpticaId: String) {
-        // Ejecutamos en una transacción secuencial limpiando primero.
         clearAllData()
         
         backupData.pacientes?.forEach { 
             try { 
-                insertPaciente(it.sanitizeNulls().copy(opticaId = currentOpticaId)) 
+                insertPaciente(it.withDefaults().copy(opticaId = currentOpticaId)) 
             } catch(e: Exception) { 
                 e.printStackTrace() 
             } 
@@ -452,7 +462,7 @@ class OptoRepository(
         
         backupData.evaluaciones?.forEach { 
             try { 
-                insertEvaluacion(it.sanitizeNulls().copy(opticaId = currentOpticaId)) 
+                insertEvaluacion(it.withDefaults().copy(opticaId = currentOpticaId)) 
             } catch(e: Exception) { 
                 e.printStackTrace() 
             } 
@@ -460,7 +470,7 @@ class OptoRepository(
         
         backupData.dispensaciones?.forEach { 
             try { 
-                insertDispensacion(it.sanitizeNulls().copy(opticaId = currentOpticaId)) 
+                insertDispensacion(it.withDefaults().copy(opticaId = currentOpticaId)) 
             } catch(e: Exception) { 
                 e.printStackTrace() 
             } 
@@ -468,7 +478,7 @@ class OptoRepository(
         
         backupData.pagos?.forEach { 
             try { 
-                insertPago(it.sanitizeNulls().copy(opticaId = currentOpticaId)) 
+                insertPago(it.withDefaults().copy(opticaId = currentOpticaId)) 
             } catch(e: Exception) { 
                 e.printStackTrace() 
             } 
@@ -476,7 +486,7 @@ class OptoRepository(
         
         backupData.serviciosExtra?.forEach { 
             try { 
-                insertServicio(it.sanitizeNulls().copy(opticaId = currentOpticaId)) 
+                insertServicio(it.withDefaults().copy(opticaId = currentOpticaId)) 
             } catch(e: Exception) { 
                 e.printStackTrace() 
             } 

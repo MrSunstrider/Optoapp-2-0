@@ -160,6 +160,8 @@ private data class MonturaRemota(
     @SerialName("stock_actual") val stockActual: Int = 0,
     @SerialName("stock_minimo") val stockMinimo: Int = 0,
     val activo: Boolean = true,
+    @SerialName("tipo_aro") val tipoAro: String = "",
+    @SerialName("material_montura") val materialMontura: String = "",
     @SerialName("optica_id") val opticaId: String
 ) {
     fun toEntity() = Montura(
@@ -174,6 +176,8 @@ private data class MonturaRemota(
         stockActual = stockActual,
         stockMinimo = stockMinimo,
         activo = activo,
+        tipoAro = tipoAro,
+        materialMontura = materialMontura,
         opticaId = opticaId
     )
 }
@@ -217,6 +221,8 @@ private fun Montura.toRemoto(): MonturaRemota = MonturaRemota(
     stockActual = stockActual,
     stockMinimo = stockMinimo,
     activo = activo,
+    tipoAro = tipoAro.trim(),
+    materialMontura = materialMontura.trim(),
     opticaId = opticaId
 )
 

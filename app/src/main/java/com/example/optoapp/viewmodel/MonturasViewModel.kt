@@ -32,7 +32,9 @@ data class MonturaFormState(
     val precio: String = "",
     val stockActual: String = "",
     val stockMinimo: String = "",
-    val activo: Boolean = true
+    val activo: Boolean = true,
+    val tipoAro: String = "",
+    val materialMontura: String = ""
 )
 
 data class MonturasUiState(
@@ -87,7 +89,9 @@ class MonturasViewModel @Inject constructor(
                     precio = if (montura.precio == 0.0) "" else montura.precio.toString(),
                     stockActual = montura.stockActual.toString(),
                     stockMinimo = montura.stockMinimo.toString(),
-                    activo = montura.activo
+                    activo = montura.activo,
+                    tipoAro = montura.tipoAro,
+                    materialMontura = montura.materialMontura
                 )
             )
         }
@@ -101,8 +105,24 @@ class MonturasViewModel @Inject constructor(
         viewModelScope.launch {
             val state = _uiState.value
             val form = state.form
-            if (form.sku.isBlank() || form.modelo.isBlank()) {
-                _uiState.update { it.copy(error = "SKU y Modelo son obligatorios.") }
+            if (form.sku.isBlank()) {
+                _uiState.update { it.copy(error = "SKU es obligatorio.") }
+                return@launch
+            }
+            if (form.marca.isBlank()) {
+                _uiState.update { it.copy(error = "Marca / Fabricante es obligatorio.") }
+                return@launch
+            }
+            if (form.modelo.isBlank()) {
+                _uiState.update { it.copy(error = "Modelo / Nombre del producto es obligatorio.") }
+                return@launch
+            }
+            if (form.tipoAro.isBlank()) {
+                _uiState.update { it.copy(error = "Tipo de aro es obligatorio.") }
+                return@launch
+            }
+            if (form.materialMontura.isBlank()) {
+                _uiState.update { it.copy(error = "Material de la montura es obligatorio.") }
                 return@launch
             }
             val costo = form.costo.replace(",", ".").toDoubleOrNull() ?: 0.0
@@ -127,6 +147,8 @@ class MonturasViewModel @Inject constructor(
                     stockActual = stockActual,
                     stockMinimo = stockMinimo,
                     activo = form.activo,
+                    tipoAro = form.tipoAro.trim(),
+                    materialMontura = form.materialMontura.trim(),
                     opticaId = opticaId
                 )
                 when (repository.getMonturaById(montura.id)) {

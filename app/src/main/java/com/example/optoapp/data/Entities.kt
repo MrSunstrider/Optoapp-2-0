@@ -313,6 +313,8 @@ data class Montura(
     val stockActual: Int = 0,
     val stockMinimo: Int = 0,
     val activo: Boolean = true,
+    val tipoAro: String = "",
+    val materialMontura: String = "",
     @SerializedName("opticaId", alternate = ["optica_id"])
     val opticaId: String = "mi_optica_base"
 )

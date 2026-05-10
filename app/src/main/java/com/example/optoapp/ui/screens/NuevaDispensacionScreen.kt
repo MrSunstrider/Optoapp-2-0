@@ -25,6 +25,7 @@ import java.util.*
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Search
 import com.example.optoapp.data.Pago
 import com.example.optoapp.ui.components.AbonoDialog
 
@@ -217,22 +218,88 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
                         }
                     }
                     if (uiState.origenMontura == "Tienda" || uiState.origenMontura == "Nueva de Tienda") {
-                        val opcionesMontura = monturasActivas
-                            .filter { it.stockActual > 0 || it.id == uiState.monturaId }
-                            .map { m -> "${m.id}|${m.sku} - ${m.marca} ${m.modelo} (Stock: ${m.stockActual})" }
-                        val seleccion = opcionesMontura.firstOrNull { it.startsWith(uiState.monturaId) } ?: ""
-                        DropdownField(
-                            label = "Montura de inventario",
-                            selected = seleccion,
-                            options = opcionesMontura
-                        ) { selected ->
-                            val id = selected.substringBefore("|")
-                            val montura = monturasActivas.firstOrNull { it.id == id }
-                            viewModel.updateUiState { s ->
-                                s.copy(
-                                    monturaId = id,
-                                    descripcionMontura = montura?.let { "${it.marca} ${it.modelo}" } ?: s.descripcionMontura
-                                )
+                        val monturaSeleccionada = monturasActivas.firstOrNull { it.id == uiState.monturaId }
+                        var monturaQuery by remember { mutableStateOf("") }
+                        var expanded by remember { mutableStateOf(false) }
+
+                        LaunchedEffect(monturaSeleccionada) {
+                            if (monturaSeleccionada != null && monturaQuery.isEmpty()) {
+                                monturaQuery = "${monturaSeleccionada.marca} ${monturaSeleccionada.modelo}"
+                            }
+                        }
+
+                        val isSelected = monturaSeleccionada != null &&
+                            monturaQuery == "${monturaSeleccionada.marca} ${monturaSeleccionada.modelo}"
+
+                        val filteredMonturas = if (isSelected) {
+                            emptyList()
+                        } else if (monturaQuery.isBlank()) {
+                            monturasActivas.filter { it.stockActual > 0 }
+                        } else {
+                            monturasActivas
+                                .filter { it.stockActual > 0 }
+                                .filter {
+                                    it.marca.contains(monturaQuery, ignoreCase = true) ||
+                                    it.modelo.contains(monturaQuery, ignoreCase = true) ||
+                                    it.sku.contains(monturaQuery, ignoreCase = true)
+                                }
+                        }
+
+                        ExposedDropdownMenuBox(
+                            expanded = expanded && filteredMonturas.isNotEmpty(),
+                            onExpandedChange = { expanded = it }
+                        ) {
+                            OutlinedTextField(
+                                value = monturaQuery,
+                                onValueChange = {
+                                    monturaQuery = it
+                                    if (it.isEmpty()) {
+                                        viewModel.updateUiState { s -> s.copy(monturaId = "", descripcionMontura = "") }
+                                    }
+                                    expanded = true
+                                },
+                                label = { Text("Buscar montura por marca, modelo o SKU") },
+                                placeholder = { Text("Ej: Ray-Ban, RX-1234...") },
+                                leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Buscar") },
+                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                                modifier = Modifier.menuAnchor().fillMaxWidth()
+                            )
+                            ExposedDropdownMenu(
+                                expanded = expanded && filteredMonturas.isNotEmpty(),
+                                onDismissRequest = { expanded = false }
+                            ) {
+                                filteredMonturas.forEach { montura ->
+                                    DropdownMenuItem(
+                                        text = {
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Column(modifier = Modifier.weight(1f)) {
+                                                    Text("${montura.marca} ${montura.modelo}", fontWeight = FontWeight.Bold)
+                                                    Text("SKU: ${montura.sku} | ${montura.color}",
+                                                        style = MaterialTheme.typography.bodySmall)
+                                                }
+                                                Text("Stock: ${montura.stockActual}",
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = MaterialTheme.colorScheme.primary,
+                                                    style = MaterialTheme.typography.bodySmall)
+                                            }
+                                        },
+                                        onClick = {
+                                            monturaQuery = "${montura.marca} ${montura.modelo}"
+                                            viewModel.updateUiState { s ->
+                                                s.copy(
+                                                    monturaId = montura.id,
+                                                    tipoAro = montura.tipoAro,
+                                                    materialMontura = montura.materialMontura
+                                                )
+                                            }
+                                            expanded = false
+                                        }
+                                    )
+                                }
                             }
                         }
                     }

@@ -16,7 +16,7 @@ import java.util.concurrent.TimeUnit
         Paciente::class, EvaluacionClinica::class, DispensacionOptica::class, Pago::class, ServicioExtra::class,
         Montura::class, MonturaMovimiento::class, SyncEntityState::class
     ],
-    version = 19,
+    version = 20,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -84,6 +84,13 @@ abstract class OptoDatabase : RoomDatabase() {
          * Nota: el fix +1 día se aplica solo cuando el patrón de millis parece provenir de "UTC midnight"
          * (milis mod 1 día ~ 0), que es el caso típico del MaterialDatePicker cuando se trata como instante.
          */
+        val MIGRATION_8_9 = object : Migration(8, 9) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Gap intencional: bump de versión sin cambios de schema.
+                // Ver commit 08685cd para contexto.
+            }
+        }
+
         val MIGRATION_9_10 = object : Migration(9, 10) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 val dayMillis = TimeUnit.DAYS.toMillis(1)
@@ -579,9 +586,34 @@ abstract class OptoDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_17_18 = object : Migration(17, 18) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS sync_entity_state (
+                        opticaId TEXT NOT NULL,
+                        entityType TEXT NOT NULL,
+                        entityId TEXT NOT NULL,
+                        status TEXT NOT NULL,
+                        lastError TEXT NOT NULL DEFAULT '',
+                        updatedAt INTEGER NOT NULL,
+                        PRIMARY KEY (opticaId, entityType, entityId)
+                    )
+                    """.trimIndent()
+                )
+            }
+        }
+
         val MIGRATION_18_19 = object : Migration(18, 19) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE pacientes ADD COLUMN historiaOptometrica TEXT")
+            }
+        }
+
+        val MIGRATION_19_20 = object : Migration(19, 20) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE monturas ADD COLUMN tipoAro TEXT NOT NULL DEFAULT ''")
+                db.execSQL("ALTER TABLE monturas ADD COLUMN materialMontura TEXT NOT NULL DEFAULT ''")
             }
         }
 
@@ -592,7 +624,7 @@ abstract class OptoDatabase : RoomDatabase() {
                     OptoDatabase::class.java,
                     "opto_database"
                 )
-                .addMigrations(MIGRATION_6_7, MIGRATION_7_8, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17, MIGRATION_18_19)
+                .addMigrations(MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17, MIGRATION_17_18, MIGRATION_18_19, MIGRATION_19_20)
                 .addCallback(object : RoomDatabase.Callback() {
                     override fun onOpen(db: SupportSQLiteDatabase) {
                         super.onOpen(db)
