@@ -4,6 +4,16 @@ Registro operativo de cambios relevantes en autenticacion, sincronizacion, segur
 
 > Zona horaria de referencia: UTC-5 (hora local del equipo).
 
+## 2026-05-10
+
+- `(sin commit)`
+  Sync: reparada race condition en post-save que causaba errores "Paciente remoto inexistente" en evaluaciones.
+  - `PostSaveSyncScheduler`: `scheduleHistorialSync` y `scheduleFinanzasSync` ahora ejecutan `syncPacientesUseCase` primero dentro del mismo mutex, garantizando que los pacientes existan en Supabase antes de subir evaluaciones/finanzas.
+  - `SyncHistorialUseCase`: agregado `onFailure` con `Log.w` al consultar pacientes remotos para que fallos silenciosos sean visibles en diagnóstico.
+  - UI: corregido padding duplicado en `MonturasScreen`, `ConfiguracionScreen` (`.padding(16.dp)` → `horizontal=14.dp, vertical=8.dp`) y reducido `Arrangement.spacedBy(24.dp)` a `12.dp` en Configuración.
+  - Supabase: aplicada migración `20260510000400_add_tipo_aro_material_to_monturas.sql` que agrega columnas `tipo_aro` y `material_montura`.
+  - Tests: `connectedDebugAndroidTest` 12/12 pasando.
+
 ## 2026-05-05
 
 - `23:15` · `(sin commit)`  

@@ -61,6 +61,8 @@ class SyncHistorialUseCase @Inject constructor(
                     filter { eq("optica_id", opticaId) }
                 }
                 .decodeList<PacienteRemoto>()
+        }.onFailure { e ->
+            Log.w(TAG, "Error al consultar pacientes remotos para FK check: ${e.localizedMessage}")
         }.getOrDefault(emptyList())
 
         val remoteByHistoria = remotePacientes
