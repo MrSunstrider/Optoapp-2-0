@@ -68,8 +68,8 @@ fun BIScreen(navController: NavController, viewModel: BIViewModel = hiltViewMode
                 .padding(padding)
                 .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
                 .verticalScroll(scrollState)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(horizontal = 14.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             // Selector de Periodo
             SingleChoiceSegmentedButtonRow(
