@@ -293,8 +293,8 @@ export function NuevaEvaluacionForm({
 
   useEffect(() => {
     const base = { ...toEmptyDraft(todayDate), ...(initialData ?? {}) };
-    const raw = window.localStorage.getItem(storageKey);
-    const rawTab = window.localStorage.getItem(`${storageKey}:tab`);
+    const raw = window.sessionStorage.getItem(storageKey);
+    const rawTab = window.sessionStorage.getItem(`${storageKey}:tab`);
     if (rawTab && TAB_ITEMS.includes(rawTab as TabItem)) {
       setActiveTab(rawTab as TabItem);
     } else {
@@ -313,11 +313,11 @@ export function NuevaEvaluacionForm({
   }, [initialData, storageKey, todayDate]);
 
   useEffect(() => {
-    window.localStorage.setItem(storageKey, JSON.stringify(draft));
+    window.sessionStorage.setItem(storageKey, JSON.stringify(draft));
   }, [draft, storageKey]);
 
   useEffect(() => {
-    window.localStorage.setItem(`${storageKey}:tab`, activeTab);
+    window.sessionStorage.setItem(`${storageKey}:tab`, activeTab);
   }, [activeTab, storageKey]);
 
   useEffect(() => {
@@ -389,8 +389,8 @@ export function NuevaEvaluacionForm({
   }
 
   function clearDraft() {
-    window.localStorage.removeItem(storageKey);
-    window.localStorage.removeItem(`${storageKey}:tab`);
+    window.sessionStorage.removeItem(storageKey);
+    window.sessionStorage.removeItem(`${storageKey}:tab`);
   }
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {

@@ -47,7 +47,6 @@ export class EvaluacionBuilder {
   }
 
   private updateAutoDiagnosis() {
-    // Aquí iría la lógica de presbicia y anisometropía similar a Android
     const eeOd = this.calculateEE(this._evaluacion.receta_od_esf || "0", this._evaluacion.receta_od_cil || "0");
     const eeOi = this.calculateEE(this._evaluacion.receta_oi_esf || "0", this._evaluacion.receta_oi_cil || "0");
     const diff = Math.abs(eeOd - eeOi);

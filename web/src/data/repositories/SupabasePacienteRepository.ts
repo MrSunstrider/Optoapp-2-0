@@ -8,7 +8,7 @@ export class SupabasePacienteRepository implements IPacienteRepository {
   async getAll(opticaId: string, options?: { search?: string; page?: number; pageSize?: number }): Promise<Paciente[]> {
     let query = this.supabase
       .from("pacientes")
-      .select("*")
+      .select("id,nombre_completo,edad,telefono,fecha_creacion,dni,fecha_nacimiento,sexo,email,historia_optometrica,direccion,distrito,ocupacion,acompanante,hobbies,ultimas_etiquetas,optica_id")
       .eq("optica_id", opticaId)
       .order("fecha_creacion", { ascending: false });
 
@@ -32,7 +32,7 @@ export class SupabasePacienteRepository implements IPacienteRepository {
   async getById(id: string, opticaId: string): Promise<Paciente | null> {
     const { data, error } = await this.supabase
       .from("pacientes")
-      .select("*")
+      .select("id,nombre_completo,edad,telefono,fecha_creacion,dni,fecha_nacimiento,sexo,email,historia_optometrica,direccion,distrito,ocupacion,acompanante,hobbies,ultimas_etiquetas,optica_id")
       .eq("id", id)
       .eq("optica_id", opticaId)
       .maybeSingle();

@@ -2,12 +2,8 @@ import { NextResponse } from "next/server";
 
 import { hashWebPin, verifyWebPinAgainstMetadata } from "@/lib/pin-verification";
 import { createClient } from "@/lib/supabase/server";
-
-type Body = {
-  currentPin?: string;
-  newPin?: string;
-  confirmPin?: string;
-};
+import { checkRateLimit } from "@/lib/rate-limit";
+import { ChangePinSchema } from "@/lib/api-schemas";
 
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -19,23 +15,28 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "No autorizado." }, { status: 401 });
   }
 
-  let body: Body;
+  const rl = checkRateLimit("pin-change:" + user.id);
+  if (!rl.allowed) {
+    return NextResponse.json({ error: "Demasiados intentos. Espere 1 minuto." }, { status: 429 });
+  }
+
+  let raw: unknown;
   try {
-    body = (await request.json()) as Body;
+    raw = await request.json();
   } catch {
     return NextResponse.json({ error: "JSON inválido." }, { status: 400 });
   }
 
-  const currentPin = sanitizePin(body.currentPin);
-  const newPin = sanitizePin(body.newPin);
-  const confirmPin = sanitizePin(body.confirmPin);
-
-  if (currentPin.length !== 6 || newPin.length !== 6 || confirmPin.length !== 6) {
+  const parsed = ChangePinSchema.safeParse(raw);
+  if (!parsed.success) {
     return NextResponse.json(
       { error: "Todos los campos de PIN deben tener 6 dígitos." },
       { status: 400 }
     );
   }
+
+  const { currentPin, newPin, confirmPin } = parsed.data;
+
   if (newPin !== confirmPin) {
     return NextResponse.json(
       { error: "La confirmación del nuevo PIN no coincide." },
@@ -53,7 +54,7 @@ export async function POST(request: Request) {
   const verify = verifyWebPinAgainstMetadata(currentPin, user.id, metadata);
   if (!verify.ok && verify.code === "unconfigured") {
     return NextResponse.json(
-      { error: "PIN no configurado para esta cuenta." },
+      { error: "No se puede cambiar el PIN en este momento." },
       { status: 503 }
     );
   }
@@ -77,8 +78,4 @@ export async function POST(request: Request) {
   }
 
   return NextResponse.json({ ok: true });
-}
-
-function sanitizePin(value: unknown): string {
-  return String(value ?? "").replace(/\D/g, "").slice(0, 6);
 }

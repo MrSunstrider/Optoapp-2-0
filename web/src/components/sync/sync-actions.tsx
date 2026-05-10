@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { runSyncAction } from "@/app/sincronizar/actions";
 import type { SyncSnapshot } from "@/lib/sync";
 
 export function SyncActions({
@@ -16,21 +17,20 @@ export function SyncActions({
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  async function run(path: "/api/sync/run" | "/api/sync/retry") {
+  async function handleRun() {
     setRunning(true);
     setMessage(null);
     setError(null);
     try {
-      const res = await fetch(path, { method: "POST" });
-      const data = (await res.json().catch(() => ({}))) as { error?: string; message?: string };
-      if (!res.ok) {
-        setError(data.error ?? "No se pudo ejecutar la verificación.");
+      const result = await runSyncAction();
+      if (!result.ok) {
+        setError(result.message);
         return;
       }
-      setMessage(data.message ?? "Verificación iniciada.");
+      setMessage(result.message);
       router.refresh();
     } catch {
-      setError("Error de red al ejecutar la verificación.");
+      setError("Error al ejecutar la verificación.");
     } finally {
       setRunning(false);
     }
@@ -52,21 +52,12 @@ export function SyncActions({
       <div className="mt-4 flex flex-wrap gap-3">
         <button
           type="button"
-          onClick={() => void run("/api/sync/run")}
+          onClick={handleRun}
           disabled={!canRun || running}
           className="flex items-center gap-2 rounded-xl bg-primary px-6 py-2.5 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/20 transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
           aria-label="Verificar estado"
         >
-          {running ? "⌛ Verificando..." : "🔍 Verificar estado"}
-        </button>
-        <button
-          type="button"
-          onClick={() => void run("/api/sync/retry")}
-          disabled={!canRun || running}
-          className="flex items-center gap-2 rounded-xl border border-border bg-card px-6 py-2.5 text-sm font-bold text-foreground transition-all hover:bg-foreground/5 disabled:opacity-50"
-          aria-label="Reintentar fallidos"
-        >
-          🔄 Reintentar fallidos
+          {running ? "Verificando..." : "Verificar estado"}
         </button>
         <button
           type="button"
@@ -74,7 +65,7 @@ export function SyncActions({
           className="flex items-center gap-2 rounded-xl border border-border bg-card px-6 py-2.5 text-sm font-bold text-foreground transition-all hover:bg-foreground/5"
           aria-label="Copiar diagnóstico"
         >
-          📋 Copiar diagnóstico
+          Copiar diagnóstico
         </button>
         <button
           type="button"
@@ -82,19 +73,15 @@ export function SyncActions({
           className="flex items-center gap-2 rounded-xl border border-border bg-card px-6 py-2.5 text-sm font-bold text-foreground transition-all hover:bg-foreground/5"
           aria-label="Refrescar estado"
         >
-          ⚡ Refrescar
+          Refrescar
         </button>
       </div>
       <div aria-live="polite" className="mt-4 min-h-6">
         {message ? (
-          <p className="flex items-center gap-2 text-sm font-bold text-primary">
-            <span>✨</span> {message}
-          </p>
+          <p className="flex items-center gap-2 text-sm font-bold text-primary">{message}</p>
         ) : null}
         {error ? (
-          <p className="flex items-center gap-2 text-sm font-bold text-destructive">
-            <span>❌</span> {error}
-          </p>
+          <p className="flex items-center gap-2 text-sm font-bold text-destructive">{error}</p>
         ) : null}
       </div>
     </section>

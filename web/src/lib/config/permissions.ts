@@ -6,7 +6,6 @@ export type ConfigModuleKey =
   | "usuarios-roles"
   | "sucursales"
   | "suscripciones"
-  | "diagnostico-sync"
   | "gestion-datos";
 
 function norm(role: string): string {
@@ -24,7 +23,6 @@ export function isReadOnlyRole(role: string): boolean {
 
 export function canAccessConfigModule(role: string, module: ConfigModuleKey): boolean {
   if (module === "plan-admin") return isInternalRole(role);
-  if (module === "diagnostico-sync") return canManageOpticaSettings(role) || isInternalRole(role);
   if (module === "gestion-datos") return canManageOpticaSettings(role);
   if (module === "usuarios-roles" || module === "sucursales") return canManageOpticaSettings(role);
   if (module === "fiscal") return true;

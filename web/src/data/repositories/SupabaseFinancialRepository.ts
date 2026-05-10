@@ -13,7 +13,7 @@ export class SupabaseFinancialRepository implements IFinancialRepository {
   async getDispensaciones(opticaId: string, options?: { pacienteId?: string, start?: string, end?: string }): Promise<Dispensacion[]> {
     let query = this.supabase
       .from("dispensaciones")
-      .select("*")
+      .select("id,ot,paciente_id,fecha,optica_id,tipo_montura,material_montura,tipo_lente,material_lente,tratamientos,color_lente,notas_diseno,origen_montura,tipo_aro,descripcion_montura,monto_total,metodo_pago,monto_pagado,estado_entrega,fecha_vencimiento_garantia,distancia_lente,altura,sub_tipo_bifocal,montura_id")
       .eq("optica_id", opticaId)
       .order("fecha", { ascending: false });
 
@@ -29,7 +29,7 @@ export class SupabaseFinancialRepository implements IFinancialRepository {
   async getDispensacionById(id: string, opticaId: string): Promise<Dispensacion | null> {
     const { data, error } = await this.supabase
       .from("dispensaciones")
-      .select("*")
+      .select("id,ot,paciente_id,fecha,optica_id,tipo_montura,material_montura,tipo_lente,material_lente,tratamientos,color_lente,notas_diseno,origen_montura,tipo_aro,descripcion_montura,monto_total,metodo_pago,monto_pagado,estado_entrega,fecha_vencimiento_garantia,distancia_lente,altura,sub_tipo_bifocal,montura_id")
       .eq("id", id)
       .eq("optica_id", opticaId)
       .maybeSingle();
@@ -49,7 +49,7 @@ export class SupabaseFinancialRepository implements IFinancialRepository {
   async getPagos(opticaId: string, options?: { dispensacionId?: string, servicioExtraId?: string, start?: string, end?: string }): Promise<Pago[]> {
     let query = this.supabase
       .from("pagos")
-      .select("*")
+      .select("id,dispensacion_id,servicio_extra_id,fecha,tipo,monto,metodo_pago,nota,optica_id")
       .eq("optica_id", opticaId)
       .order("fecha", { ascending: false });
 
@@ -74,7 +74,7 @@ export class SupabaseFinancialRepository implements IFinancialRepository {
   async getServiciosExtra(opticaId: string, options?: { pacienteId?: string }): Promise<ServicioExtra[]> {
     let query = this.supabase
       .from("servicios_extra")
-      .select("*")
+      .select("id,ot,descripcion,monto_total,a_cuenta,estado,fecha,paciente_id,metodo_pago,optica_id")
       .eq("optica_id", opticaId)
       .order("fecha", { ascending: false });
 

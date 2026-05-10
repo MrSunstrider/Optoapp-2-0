@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "zod/v4";
 
 export const DispensacionSchema = z.object({
   id: z.string(),

@@ -3,13 +3,7 @@ import { NextResponse } from "next/server";
 import { getActiveOpticaContext } from "@/lib/optica-context";
 import { upsertOpticaSettingsPatch } from "@/lib/optica-settings";
 import { createClient } from "@/lib/supabase/server";
-
-type Body = {
-  pinRequired?: boolean;
-  automaticReminders?: boolean;
-  timezone?: string | null;
-  opticaConfigPatch?: Record<string, unknown>;
-};
+import { UserSettingsSchema } from "@/lib/api-schemas";
 
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -21,22 +15,31 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "No autorizado." }, { status: 401 });
   }
 
-  let body: Body;
+  let raw: unknown;
   try {
-    body = (await request.json()) as Body;
+    raw = await request.json();
   } catch {
     return NextResponse.json({ error: "JSON inválido." }, { status: 400 });
   }
 
+  const parsed = UserSettingsSchema.safeParse(raw);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Datos de configuración inválidos." },
+      { status: 400 }
+    );
+  }
+
+  const body = parsed.data;
   const metadata = (user.user_metadata ?? {}) as Record<string, unknown>;
   const nextMetadata: Record<string, unknown> = { ...metadata };
   let changed = false;
 
-  if (typeof body.pinRequired === "boolean") {
+  if (body.pinRequired !== undefined) {
     nextMetadata.optoapp_pin_required = body.pinRequired;
     changed = true;
   }
-  if (typeof body.automaticReminders === "boolean") {
+  if (body.automaticReminders !== undefined) {
     nextMetadata.optoapp_automatic_reminders = body.automaticReminders;
     changed = true;
   }
@@ -45,7 +48,7 @@ export async function POST(request: Request) {
     else nextMetadata.optoapp_timezone = body.timezone;
     changed = true;
   }
-  if (body.opticaConfigPatch && typeof body.opticaConfigPatch === "object") {
+  if (body.opticaConfigPatch) {
     const activeOptica = await getActiveOpticaContext();
     if (!activeOptica) {
       return NextResponse.json(
@@ -65,7 +68,6 @@ export async function POST(request: Request) {
       );
     }
     if (persisted.missingTable) {
-      // Fallback compatible hasta desplegar migración de tabla compartida.
       const prev = asRecord(nextMetadata.optoapp_optica_config);
       const current = asRecord(prev[activeOptica.opticaId]);
       prev[activeOptica.opticaId] = { ...current, ...body.opticaConfigPatch };

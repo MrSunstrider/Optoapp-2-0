@@ -8,8 +8,7 @@ import {
 } from "@/lib/cierre-caja";
 import { getActiveOpticaContext } from "@/lib/optica-context";
 import { createClient } from "@/lib/supabase/server";
-
-type Body = { fecha?: string; action?: "close" | "reopen" };
+import { CierreCajaSchema } from "@/lib/api-schemas";
 
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -23,15 +22,24 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Sin óptica activa." }, { status: 400 });
   }
 
-  let body: Body;
+  let raw: unknown;
   try {
-    body = (await request.json()) as Body;
+    raw = await request.json();
   } catch {
     return NextResponse.json({ error: "Solicitud inválida." }, { status: 400 });
   }
 
-  const fecha = normalizeFechaCierre(body.fecha);
-  const action = body.action === "reopen" ? "reopen" : "close";
+  const parsed = CierreCajaSchema.safeParse(raw);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Datos de cierre inválidos." },
+      { status: 400 }
+    );
+  }
+
+  const { fecha: rawFecha, action: rawAction } = parsed.data;
+  const fecha = normalizeFechaCierre(rawFecha);
+  const action = rawAction === "reopen" ? "reopen" : "close";
   if (action === "close" && !canCloseCierre(activeOptica.rol)) {
     return NextResponse.json({ error: "Sin permiso para cerrar caja." }, { status: 403 });
   }

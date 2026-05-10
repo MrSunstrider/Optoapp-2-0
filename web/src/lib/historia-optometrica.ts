@@ -1,5 +1,3 @@
-/** Correlativo HO-{año}-{####} alineado con la app Android. */
-
 export function suggestNextHistoriaOptometrica(
   historias: (string | null | undefined)[]
 ): string {

@@ -43,11 +43,6 @@ export const CONFIG_MODULES: ConfigModuleMeta[] = [
     description: "Consumo del plan y capacidades habilitadas."
   },
   {
-    key: "diagnostico-sync",
-    title: "Diagnóstico de sincronización",
-    description: "Estado operativo, pendientes y reintentos."
-  },
-  {
     key: "gestion-datos",
     title: "Gestión de datos",
     description: "Exportación, respaldo y acciones sensibles."

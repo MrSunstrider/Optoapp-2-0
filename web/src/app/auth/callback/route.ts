@@ -7,7 +7,26 @@ import { createClient } from "@/lib/supabase/server";
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/dashboard";
+  const nextParam = searchParams.get("next") ?? "/dashboard";
+
+  const allowedPaths = new Set([
+    "/dashboard",
+    "/pacientes",
+    "/agenda",
+    "/inventario",
+    "/servicios-varios",
+    "/configuracion",
+    "/cierre-caja",
+    "/estadisticas",
+    "/reportes",
+    "/sincronizar",
+    "/pin",
+    "/seleccion-optica",
+  ]);
+
+  const next = nextParam.startsWith("/") && allowedPaths.has(nextParam.split("?")[0].split("#")[0])
+    ? nextParam
+    : "/dashboard";
 
   if (code) {
     const supabase = await createClient();

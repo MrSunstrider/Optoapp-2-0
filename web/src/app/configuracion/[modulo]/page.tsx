@@ -118,10 +118,6 @@ export default async function ConfigModulePage({
               <SubscriptionLimitsSection opticaId={activeOptica.opticaId} />
             )}
 
-            {moduleMeta.key === "diagnostico-sync" && (
-              <DiagnosticoSyncSection opticaId={activeOptica.opticaId} />
-            )}
-
             {moduleMeta.key === "gestion-datos" && (
               <DataManagementSection role={activeOptica.rol} />
             )}

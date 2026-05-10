@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { PIN_VERIFIED_COOKIE } from "@/lib/pin-cookie";
+import { setPinVerifiedCookie } from "@/lib/pin-cookie";
 import { isPinRequiredFromUser } from "@/lib/pin-policy";
 import { verifyWebPinAgainstMetadata } from "@/lib/pin-verification";
-
-const PIN_LENGTH = 6;
+import { checkRateLimit } from "@/lib/rate-limit";
+import { VerifyPinSchema } from "@/lib/api-schemas";
 
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -16,30 +16,31 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Sesión no válida." }, { status: 401 });
   }
 
+  const rl = checkRateLimit("pin-verify:" + user.id);
+  if (!rl.allowed) {
+    return NextResponse.json({ error: "Demasiados intentos. Espere 1 minuto." }, { status: 429 });
+  }
+
   if (!isPinRequiredFromUser(user)) {
     const res = NextResponse.json({ ok: true, skipped: true });
-    setPinCookie(res);
+    setPinVerifiedCookie(res);
     return res;
   }
 
-  let body: unknown;
+  let raw: unknown;
   try {
-    body = await request.json();
+    raw = await request.json();
   } catch {
     return NextResponse.json({ error: "Solicitud inválida." }, { status: 400 });
   }
 
-  const pin =
-    typeof body === "object" && body !== null && "pin" in body
-      ? String((body as { pin?: unknown }).pin ?? "").replace(/\D/g, "")
-      : "";
-
-  if (pin.length !== PIN_LENGTH) {
+  const parsed = VerifyPinSchema.safeParse(raw);
+  if (!parsed.success) {
     return NextResponse.json({ error: "PIN inválido." }, { status: 400 });
   }
 
   const meta = (user.user_metadata ?? {}) as Record<string, unknown>;
-  const result = verifyWebPinAgainstMetadata(pin, user.id, meta);
+  const result = verifyWebPinAgainstMetadata(parsed.data.pin, user.id, meta);
 
   if (!result.ok) {
     if (result.code === "unconfigured") {
@@ -58,16 +59,6 @@ export async function POST(request: Request) {
   }
 
   const res = NextResponse.json({ ok: true });
-  setPinCookie(res);
+  setPinVerifiedCookie(res);
   return res;
-}
-
-function setPinCookie(res: NextResponse) {
-  res.cookies.set(PIN_VERIFIED_COOKIE, "1", {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    maxAge: 60 * 60 * 8
-  });
 }
