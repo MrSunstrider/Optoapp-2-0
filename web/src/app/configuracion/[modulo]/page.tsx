@@ -9,6 +9,8 @@ import { GeneralSettingsCard } from "@/components/config/general-settings-card";
 import { LaboratorioCard } from "@/components/config/laboratorio-card";
 import { SecurityAccessCard } from "@/components/config/security-access-card";
 import { SucursalesCard } from "@/components/config/sucursales-card";
+import { GenerarCodigoForm } from "@/components/invitaciones/generar-codigo-form";
+import { generarInvitacion } from "@/lib/invitaciones";
 import { saveFiscalAction } from "@/lib/config/fiscal-actions";
 import { CONFIG_MODULES } from "@/lib/config/modules";
 import {
@@ -250,35 +252,39 @@ async function UserRolesSection({
       </div>
 
       {canManage && (
-        <form action={inviteMemberAction} className="mt-8 rounded-2xl border border-dashed border-border p-6 bg-foreground/[0.01]">
-          <h3 className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground/60 mb-4">Vincular nuevo usuario</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
-            <div className="space-y-1">
-              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">ID del Usuario (UUID)</span>
-              <input
-                name="userId"
-                className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm font-medium outline-none focus:ring-2 focus:ring-primary/20"
-                placeholder="00000000-0000-0000-0000-000000000000"
-              />
+        <>
+          <form action={inviteMemberAction} className="mt-8 rounded-2xl border border-dashed border-border p-6 bg-foreground/[0.01]">
+            <h3 className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground/60 mb-4">Vincular nuevo usuario</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
+              <div className="space-y-1">
+                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">ID del Usuario (UUID)</span>
+                <input
+                  name="userId"
+                  className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm font-medium outline-none focus:ring-2 focus:ring-primary/20"
+                  placeholder="00000000-0000-0000-0000-000000000000"
+                />
+              </div>
+              <div className="space-y-1">
+                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Asignar Rol</span>
+                <select
+                  name="rol"
+                  className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm font-medium outline-none focus:ring-2 focus:ring-primary/20"
+                  defaultValue="colaborador"
+                >
+                  <option value="admin">admin</option>
+                  <option value="gerente">gerente</option>
+                  <option value="colaborador">colaborador</option>
+                  <option value="invitado">invitado</option>
+                </select>
+              </div>
             </div>
-            <div className="space-y-1">
-              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Asignar Rol</span>
-              <select
-                name="rol"
-                className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm font-medium outline-none focus:ring-2 focus:ring-primary/20"
-                defaultValue="colaborador"
-              >
-                <option value="admin">admin</option>
-                <option value="gerente">gerente</option>
-                <option value="colaborador">colaborador</option>
-                <option value="invitado">invitado</option>
-              </select>
-            </div>
-          </div>
-          <button className="mt-4 w-full rounded-2xl bg-primary py-4 text-xs font-black uppercase tracking-[0.2em] text-primary-foreground shadow-xl shadow-primary/20 hover:scale-[1.01] transition-all active:scale-95">
-            Vincular Usuario a la Óptica
-          </button>
-        </form>
+            <button className="mt-4 w-full rounded-2xl bg-primary py-4 text-xs font-black uppercase tracking-[0.2em] text-primary-foreground shadow-xl shadow-primary/20 hover:scale-[1.01] transition-all active:scale-95">
+              Vincular Usuario a la Óptica
+            </button>
+          </form>
+
+          <GenerarCodigoForm action={generarInvitacionAction} />
+        </>
       )}
     </section>
   );
@@ -473,6 +479,37 @@ async function updateRoleAction(formData: FormData) {
     .eq("user_id", userId);
   if (error) redirect("/configuracion/usuarios-roles?error=No se pudo actualizar rol");
   redirect("/configuracion/usuarios-roles?msg=Rol actualizado");
+}
+
+type GenerarCodigoState = { error?: string; codigo?: string } | null;
+
+async function generarInvitacionAction(
+  _prevState: GenerarCodigoState,
+  formData: FormData,
+): Promise<GenerarCodigoState> {
+  "use server";
+  const activeOptica = await getActiveOpticaContext();
+  if (!activeOptica) return { error: "Sin sesión activa." };
+  if (!canManageOpticaSettings(activeOptica.rol)) {
+    return { error: "Sin permiso para invitar." };
+  }
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "No autenticado." };
+
+  const rol = String(formData.get("rol") ?? "").trim().toLowerCase();
+  if (!rol) return { error: "Rol inválido." };
+
+  const result = await generarInvitacion(
+    supabase,
+    activeOptica.opticaId,
+    rol,
+    user.id,
+  );
+  if (!result.ok) return { error: result.error };
+  return { codigo: result.codigo };
 }
 
 async function inviteMemberAction(formData: FormData) {

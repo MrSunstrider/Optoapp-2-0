@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { dateOnly } from "@/lib/date-utils";
+import { today } from "@/lib/date-utils";
 
 export const PagoInputSchema = z.object({
   id: z.string(),
@@ -31,5 +31,5 @@ export function parseMonto(raw: string): number {
 }
 
 export function todayIsoDate(): string {
-  return dateOnly(new Date());
+  return today();
 }
