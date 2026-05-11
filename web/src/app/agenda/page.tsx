@@ -49,13 +49,18 @@ export default async function AgendaPage({
         <div className="mx-auto w-full max-w-4xl space-y-8">
           <div className="flex flex-col gap-1">
             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/70">{opticaLine}</p>
-            <h1 className="font-heading text-4xl font-black tracking-tight text-foreground sm:text-5xl">Agenda Clínica</h1>
+            <h1 className="font-heading text-4xl font-black tracking-tight text-foreground sm:text-5xl">
+              Agenda <span className="text-primary">Clínica</span>
+            </h1>
             <p className="mt-2 text-sm font-medium text-muted-foreground">Gestión de próximas citas y flujo de pacientes.</p>
           </div>
 
           <div className="space-y-4">
             <AgendaPeriodTabs active={periodo} />
-            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/40 ml-1">{bounds.note}</p>
+            <div className="flex items-center gap-2 ml-1">
+              <div className="h-1.5 w-1.5 rounded-full bg-primary/60"></div>
+              <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/50">{bounds.note}</p>
+            </div>
           </div>
 
           {queryError ? (

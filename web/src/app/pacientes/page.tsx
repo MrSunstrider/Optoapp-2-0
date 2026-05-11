@@ -159,23 +159,25 @@ export default async function PacientesPage({
         </div>
 
         {params.msg === "eliminado" && (
-          <div className="mb-3 rounded-lg border border-emerald-900/50 bg-emerald-950/40 px-3 py-2 text-sm text-emerald-300">
-            <p>Paciente eliminado correctamente.</p>
+          <div className="mb-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 px-5 py-3.5 text-sm font-medium text-emerald-700 dark:text-emerald-300">
+            <div className="flex items-center gap-2">
+              <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+              <p>Paciente eliminado correctamente.</p>
+            </div>
             {restantesValid !== null && (
-              <p className="mt-1 text-emerald-400/90">
-                Eliminaciones permitidas restantes hoy en esta óptica:{" "}
-                <span className="font-semibold tabular-nums">{restantesValid}</span>.
+              <p className="mt-1.5 text-xs text-emerald-600/80 dark:text-emerald-400/80 ml-6">
+                Eliminaciones restantes hoy: <span className="font-bold tabular-nums">{restantesValid}</span>.
               </p>
             )}
           </div>
         )}
         {canManage && reachedLimit && (
-          <div className="mb-3 rounded-lg border border-amber-800/40 bg-amber-950/30 px-3 py-2 text-sm text-amber-200">
+          <div className="mb-4 rounded-2xl border border-amber-500/20 bg-amber-500/5 px-5 py-3.5 text-sm font-medium text-amber-700 dark:text-amber-300">
             Límite de pacientes alcanzado
             {limitInfo.maxPacientes != null
               ? ` (${limitInfo.pacientesActuales}/${limitInfo.maxPacientes}). `
               : ". "}
-            <Link href="/configuracion" className="ml-1 underline">
+            <Link href="/configuracion" className="ml-1 underline font-bold">
               Actualizar plan
             </Link>
           </div>
@@ -246,11 +248,12 @@ export default async function PacientesPage({
             </Link>
           </div>
 
-          <details className="text-sm text-muted-foreground">
-            <summary className="cursor-pointer hover:text-primary transition-colors">
+          <details className="group text-sm">
+            <summary className="cursor-pointer rounded-xl border border-border/50 bg-foreground/[0.02] px-4 py-2.5 text-xs font-bold text-muted-foreground transition-all hover:bg-accent hover:text-accent-foreground group-open:rounded-b-none group-open:border-b-0 list-none flex items-center gap-2">
+              <svg className="h-3.5 w-3.5 transition-transform group-open:rotate-90" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 18l6-6-6-6"/></svg>
               Más filtros (edad)
             </summary>
-            <div className="mt-2 flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 rounded-b-xl border border-border/50 bg-foreground/[0.01] p-4">
               <input
                 type="number"
                 name="minEdad"
@@ -267,7 +270,7 @@ export default async function PacientesPage({
               />
               <button
                 type="submit"
-                className="rounded-lg border border-border bg-muted px-4 py-2 text-xs font-bold text-foreground hover:bg-primary/10"
+                className="rounded-lg bg-primary px-4 py-2 text-xs font-bold text-primary-foreground shadow-sm hover:bg-primary/90 transition-all"
               >
                 Aplicar
               </button>
@@ -289,38 +292,46 @@ export default async function PacientesPage({
                 <Link
                   key={row.id}
                   href={`/pacientes/${row.id}`}
-                  className="block group py-5 transition-colors border-b border-border last:border-b-0 hover:bg-muted/30"
+                  className="block group rounded-2xl transition-all duration-200 hover:bg-card hover:shadow-sm hover:border-border/80 border border-transparent -mx-2 px-4 py-4"
                 >
-                  <div className="flex gap-5">
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                  <div className="flex gap-4">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/15 to-primary/5 text-primary shadow-sm transition-all group-hover:shadow-md group-hover:from-primary/20 group-hover:to-primary/10">
                       <svg
                         viewBox="0 0 24 24"
-                        width={24}
-                        height={24}
+                        width={22}
+                        height={22}
                         fill="none"
                         stroke="currentColor"
-                        strokeWidth={2}
+                        strokeWidth={1.5}
                       >
                         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                         <circle cx="12" cy="7" r="4" />
                       </svg>
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="font-heading text-lg font-bold text-foreground truncate">
-                        {row.nombre_completo}
+                      <div className="flex items-center gap-2">
+                        <p className="font-heading text-lg font-bold text-foreground truncate group-hover:text-primary transition-colors">
+                          {row.nombre_completo}
+                        </p>
+                        <svg className="h-4 w-4 shrink-0 text-muted-foreground/30 group-hover:text-primary transition-all opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 18l6-6-6-6"/></svg>
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-0.5 flex items-center gap-2">
+                        <span className="inline-flex items-center gap-1">
+                          <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                          {row.edad} años
+                        </span>
+                        <span className="text-muted-foreground/30">·</span>
+                        <span>{row.telefono}</span>
                       </p>
-                      <p className="text-sm text-muted-foreground mt-0.5">
-                        {row.edad} años · {row.telefono}
-                      </p>
-                      <p className="mt-1 font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50">
+                      <p className="mt-1.5 font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground/40">
                         EXP: {idPreview(row.id)}
                       </p>
                       {tags.length > 0 && (
-                        <div className="mt-2 flex flex-wrap gap-2">
+                        <div className="mt-2.5 flex flex-wrap gap-1.5">
                           {tags.map((t) => (
                             <span
                               key={t}
-                              className="rounded-full border border-primary/20 bg-primary/5 px-2.5 py-0.5 text-[10px] font-bold text-primary uppercase tracking-tighter"
+                              className="inline-flex items-center gap-1 rounded-full border border-primary/20 bg-primary/5 px-2.5 py-0.5 text-[10px] font-bold text-primary uppercase tracking-tighter transition-all group-hover:bg-primary/10"
                             >
                               {t}
                             </span>
@@ -335,28 +346,30 @@ export default async function PacientesPage({
           )}
         </div>
 
-        <div className="mt-5 flex flex-wrap items-center justify-between gap-2 border-t border-zinc-800 pt-4 text-sm text-zinc-500">
-          <span>
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-4 border-t border-border pt-5 text-sm">
+          <span className="text-muted-foreground font-medium">
             Página {page} de {totalPages} · {total} pacientes
           </span>
           <div className="flex gap-2">
             <Link
               href={hrefPage(prevPage)}
               className={
-                "rounded-md border border-zinc-700 px-2 py-1 text-zinc-300 hover:bg-zinc-800 " +
-                (page <= 1 ? "pointer-events-none opacity-40" : "")
+                "inline-flex items-center gap-1.5 rounded-xl border border-border px-4 py-2 text-xs font-bold text-foreground transition-all hover:bg-accent hover:text-accent-foreground " +
+                (page <= 1 ? "pointer-events-none opacity-30" : "")
               }
             >
+              <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 18l-6-6 6-6"/></svg>
               Anterior
             </Link>
             <Link
               href={hrefPage(nextPage)}
               className={
-                "rounded-md border border-zinc-700 px-2 py-1 text-zinc-300 hover:bg-zinc-800 " +
-                (page >= totalPages ? "pointer-events-none opacity-40" : "")
+                "inline-flex items-center gap-1.5 rounded-xl border border-border px-4 py-2 text-xs font-bold text-foreground transition-all hover:bg-accent hover:text-accent-foreground " +
+                (page >= totalPages ? "pointer-events-none opacity-30" : "")
               }
             >
               Siguiente
+              <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 18l6-6-6-6"/></svg>
             </Link>
           </div>
         </div>
