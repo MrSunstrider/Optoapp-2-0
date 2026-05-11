@@ -102,7 +102,7 @@ class SyncDiagnosticsViewModel @Inject constructor(
         throw (lastError ?: IllegalStateException("No se pudo consultar telemetría remota."))
     }
 
-    private fun isTransientNetworkError(error: Throwable): Boolean {
+    internal fun isTransientNetworkError(error: Throwable): Boolean {
         val m = (error.localizedMessage ?: error.message).orEmpty().lowercase()
         return m.contains("timeout") ||
             m.contains("timed out") ||

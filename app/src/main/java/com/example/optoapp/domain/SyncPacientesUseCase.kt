@@ -155,7 +155,7 @@ class SyncPacientesUseCase @Inject constructor(
         }.getOrDefault(emptyMap())
     }
 
-    private fun normalizedHistoriaKey(historia: String?): String? {
+    internal fun normalizedHistoriaKey(historia: String?): String? {
         val normalized = historia?.trim()?.uppercase().orEmpty()
         return normalized.ifBlank { null }
     }

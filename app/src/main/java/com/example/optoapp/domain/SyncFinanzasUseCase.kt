@@ -50,7 +50,6 @@ class SyncFinanzasUseCase @Inject constructor(
         return try {
             Log.d(TAG, "Finanzas: inicio (opticaId=$opticaId, download=$downloadAfterUpload)")
 
-            // ── 0. Propagar eliminaciones pendientes a Supabase ────────────────
             pushPendingDeletions(opticaId)
 
             val dispUp = uploadDispensaciones(opticaId)
@@ -94,8 +93,6 @@ class SyncFinanzasUseCase @Inject constructor(
         }
     }
 
-    // ─── PROPAGAR ELIMINACIONES ───────────────────────────────────────────────
-
     private suspend fun pushPendingDeletions(opticaId: String) {
         val pending = repository.getPendingDeletions(opticaId)
         if (pending.isEmpty()) return
@@ -127,8 +124,6 @@ class SyncFinanzasUseCase @Inject constructor(
             }
         }
     }
-
-    // ─── SUBIDA ──────────────────────────────────────────────────────────────
 
     private suspend fun uploadDispensaciones(opticaId: String): Int {
         resolveLocalDuplicateDispensaciones(opticaId)
@@ -410,7 +405,7 @@ class SyncFinanzasUseCase @Inject constructor(
         lastError?.let { throw it }
     }
 
-    private fun isTransientNetworkError(e: Exception): Boolean {
+    internal fun isTransientNetworkError(e: Exception): Boolean {
         val msg = e.message?.lowercase().orEmpty()
         return msg.contains("timeout") ||
             msg.contains("timed out") ||
@@ -419,8 +414,6 @@ class SyncFinanzasUseCase @Inject constructor(
             msg.contains("network is unreachable") ||
             msg.contains("connection reset")
     }
-
-    // ─── BAJADA ──────────────────────────────────────────────────────────────
 
     /** IDs marcados para eliminación que NO deben reinsertarse al bajar de la nube. */
     private suspend fun deletedIds(opticaId: String): Set<String> {
@@ -480,8 +473,6 @@ class SyncFinanzasUseCase @Inject constructor(
         return remotos.size
     }
 }
-
-// ─── DTOs de sincronización ──────────────────────────────────────────────────
 
 @Serializable
 data class DispensacionRemota(
@@ -594,8 +585,6 @@ data class PagoRemoto(
     )
 }
 
-// ─── Resultado de la sincronización financiera ────────────────────────────────
-
 data class FinanzasSyncResult(
     val uploadedDispensaciones: Int,
     val uploadedServicios: Int,
@@ -604,8 +593,6 @@ data class FinanzasSyncResult(
     val downloadedServicios: Int,
     val downloadedPagos: Int
 )
-
-// ─── Extensiones: Entidad → DTO para Supabase ────────────────────────────────
 
 private fun DispensacionOptica.toRemoto(): DispensacionRemota = DispensacionRemota(
     id = id, ot = ot, monturaId = monturaId, pacienteId = pacienteId, fecha = fecha.toString(), opticaId = opticaId,
@@ -642,7 +629,7 @@ private fun String.remotoServicioExtraMetodoToLocal(): String =
 private fun String.remotoOtServicioExtraToLocal(): String =
     if (this == FinanzasRemoteDefaults.ServicioExtra.OT_VACIA) "" else this
 
-private fun normalizedOtForUnique(ot: String?): String? =
+internal fun normalizedOtForUnique(ot: String?): String? =
     ot?.trim()?.takeIf { it.isNotBlank() }?.uppercase()
 
 private fun ServicioExtra.toRemoto(): ServicioRemoto = ServicioRemoto(
