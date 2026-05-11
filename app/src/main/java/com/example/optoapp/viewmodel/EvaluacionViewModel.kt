@@ -10,13 +10,17 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.util.Locale
 import java.util.UUID
+import java.time.LocalDate
+import com.example.optoapp.sync.PostSaveSyncScheduler
+import com.example.optoapp.util.DateUtils
 import javax.inject.Inject
 
 data class EvaluacionUiState(
-    val fecha: Long = System.currentTimeMillis(),
+    val fecha: LocalDate = DateUtils.today(),
     val motivoConsulta: String = "",
     val sintomas: String = "",
     val antecedentesPersonalesOculares: String = "",
@@ -88,7 +92,7 @@ data class EvaluacionUiState(
     val subjOdEsf: String = "", val subjOdCil: String = "", val subjOdEje: String = "",
     val subjOiEsf: String = "", val subjOiCil: String = "", val subjOiEje: String = "",
     
-    // Refracción Final (Receta) Lejos
+    // Refracción final / fórmula (lejos)
     val recetaOdEsf: String = "", val recetaOdCil: String = "", val recetaOdEje: String = "", val recetaOdAv: String = "",
     val recetaOiEsf: String = "", val recetaOiCil: String = "", val recetaOiEje: String = "", val recetaOiAv: String = "",
     
@@ -118,7 +122,9 @@ data class EvaluacionUiState(
     val autoAmbliopia: Boolean = true,
     val planTratamiento: String = "",
     val observaciones: String = "",
-    val proximaCita: Long? = null,
+    val proximaCita: LocalDate? = null,
+    /** programada | confirmada | asistio | no_asistio | reprogramada */
+    val citaEstado: String = "programada",
 
     // Contactología
     val lcOdEsf: String = "", val lcOdCil: String = "", val lcOdEje: String = "",
@@ -126,7 +132,7 @@ data class EvaluacionUiState(
     val lcRadioBaseOd: String = "", val lcOdDia: String = "",
     val lcRadioBaseOi: String = "", val lcOiDia: String = "",
     val lcLaboratorio: String = "", val lcTipoLente: String = "",
-    val lcMaterial: String = "", val lcFechaAdaptacion: Long? = null,
+    val lcMaterial: String = "", val lcFechaAdaptacion: LocalDate? = null,
     val lcObservaciones: String = "",
 
     val isAddAo: Boolean = false,
@@ -136,11 +142,70 @@ data class EvaluacionUiState(
 
 @HiltViewModel
 class EvaluacionViewModel @Inject constructor(
-    private val repository: OptoRepository
+    private val repository: com.example.optoapp.data.OptoRepository,
+    private val sessionManager: com.example.optoapp.data.SessionManager,
+    private val postSaveSyncScheduler: PostSaveSyncScheduler
 ) : ViewModel() {
+    private data class DipParseResult(
+        val dipTotalMm: Double? = null,
+        val dnpOdMm: Double? = null,
+        val dnpOiMm: Double? = null
+    )
+
+    companion object {
+        /**
+         * **Anisometropía (auto):** solo se considera si la diferencia de equivalente esférico entre ojos
+         * **alcanza o supera 2 D** (|EE(OD) − EE(OI)| ≥ 2). Por debajo de eso, no es anisometropía con este criterio.
+         *
+         * EE = esfera + cilindro/2 (`receta*Esf` / `receta*Cil` en fórmula lejos).
+         *
+         * Ejemplo: OD −3.50 −1.00 → EE = −4.00 D; OI −4.25 → EE = −4.25 D → |Δ| = 0.25 D → no anisometropía.
+         */
+        const val ANISOMETROPIA_UMBRAL_DIOPTRIAS = 2.0
+    }
 
     private val _uiState = MutableStateFlow(EvaluacionUiState())
     val uiState: StateFlow<EvaluacionUiState> = _uiState.asStateFlow()
+
+    private fun parseDipOrDnp(input: String): DipParseResult {
+        val normalized = input.trim().replace(" ", "")
+        if (normalized.isBlank()) return DipParseResult()
+
+        if (normalized.contains("/")) {
+            val parts = normalized.split("/")
+            if (parts.size == 2) {
+                val od = parts[0].replace(",", ".").toDoubleOrNull()
+                val oi = parts[1].replace(",", ".").toDoubleOrNull()
+                if (od != null && oi != null) {
+                    return DipParseResult(
+                        dipTotalMm = od + oi,
+                        dnpOdMm = od,
+                        dnpOiMm = oi
+                    )
+                }
+            }
+            return DipParseResult()
+        }
+
+        val dipTotal = normalized.replace(",", ".").toDoubleOrNull()
+        return DipParseResult(dipTotalMm = dipTotal)
+    }
+
+    private fun formatDipForUi(
+        dipLejosRaw: String,
+        dipTotalMm: Double?,
+        dnpOdMm: Double?,
+        dnpOiMm: Double?
+    ): String {
+        fun pretty(value: Double): String {
+            val asLong = value.toLong()
+            return if (value == asLong.toDouble()) asLong.toString() else value.toString()
+        }
+        if (dipLejosRaw.isNotBlank()) return dipLejosRaw
+        if (dnpOdMm != null && dnpOiMm != null) return "${pretty(dnpOdMm)}/${pretty(dnpOiMm)}"
+        if (dipTotalMm != null) return pretty(dipTotalMm)
+        return ""
+    }
 
     fun getEvaluacionesByPaciente(pacienteId: String) = repository.getEvaluacionesByPaciente(pacienteId)
 
@@ -195,7 +260,8 @@ class EvaluacionViewModel @Inject constructor(
                             addCercaOd = e.addCercaOd, addCercaOi = e.addCercaOi,
                             addIntermediaOd = e.addIntermediaOd, addIntermediaOi = e.addIntermediaOi,
                             addAv = e.addAv,
-                            dipLejos = e.dipLejos, dipCerca = e.dipCerca, dipIntermedio = e.dipIntermedio,
+                            dipLejos = formatDipForUi(e.dipLejos, e.dipTotalMm, e.dnpOdMm, e.dnpOiMm),
+                            dipCerca = e.dipCerca, dipIntermedio = e.dipIntermedio,
                             prismaOdValor = e.prismaOdValor, prismaOdBase = e.prismaOdBase,
                             prismaOiValor = e.prismaOiValor, prismaOiBase = e.prismaOiBase,
                             diagnostico = e.diagnostico,
@@ -205,6 +271,7 @@ class EvaluacionViewModel @Inject constructor(
                             planTratamiento = e.planTratamiento,
                             observaciones = e.observaciones,
                             proximaCita = e.proximaCita,
+                            citaEstado = e.citaEstado.ifBlank { "programada" },
                             balanceOd = e.balanceOd,
                             balanceOi = e.balanceOi,
                             otrosPresbicia = e.otrosPresbicia,
@@ -239,11 +306,16 @@ class EvaluacionViewModel @Inject constructor(
     fun saveEvaluacion(pacienteId: String, evaluacionId: String?, onComplete: (String, String) -> Unit) {
         viewModelScope.launch {
             val s = _uiState.value
+            val currentOpticaId = sessionManager.opticaId.first()
+            val dipParsed = parseDipOrDnp(s.dipLejos)
+            
             val ev = EvaluacionClinica(
                 id = evaluacionId ?: UUID.randomUUID().toString(),
                 pacienteId = pacienteId,
                 fecha = s.fecha,
+                opticaId = currentOpticaId,
                 motivoConsulta = s.motivoConsulta,
+                // ... (el resto de campos se mantienen igual por el constructor de datos)
                 sintomas = s.sintomas,
                 antecedentesPersonalesOculares = s.antecedentesPersonalesOculares,
                 antecedentesPersonalesSistemicos = s.antecedentesPersonalesSistemicos,
@@ -282,7 +354,10 @@ class EvaluacionViewModel @Inject constructor(
                 recetaOiEsf = s.recetaOiEsf, recetaOiCil = s.recetaOiCil, recetaOiEje = s.recetaOiEje, recetaOiAv = s.recetaOiAv,
                 addCercaOd = s.addCercaOd, addCercaOi = s.addCercaOi,
                 addIntermediaOd = s.addIntermediaOd, addIntermediaOi = s.addIntermediaOi, addAv = s.addAv,
-                dipLejos = s.dipLejos, dipCerca = s.dipCerca, dipIntermedio = s.dipIntermedio,
+                dipLejos = s.dipLejos.trim(), dipCerca = s.dipCerca, dipIntermedio = s.dipIntermedio,
+                dipTotalMm = dipParsed.dipTotalMm,
+                dnpOdMm = dipParsed.dnpOdMm,
+                dnpOiMm = dipParsed.dnpOiMm,
                 prismaOdValor = s.prismaOdValor, prismaOdBase = s.prismaOdBase,
                 prismaOiValor = s.prismaOiValor, prismaOiBase = s.prismaOiBase,
                 diagnostico = s.diagnostico,
@@ -292,6 +367,7 @@ class EvaluacionViewModel @Inject constructor(
                 planTratamiento = s.planTratamiento,
                 observaciones = s.observaciones,
                 proximaCita = s.proximaCita,
+                citaEstado = s.citaEstado.trim().ifBlank { "programada" },
                 balanceOd = s.balanceOd,
                 balanceOi = s.balanceOi,
                 otrosPresbicia = s.otrosPresbicia,
@@ -311,6 +387,8 @@ class EvaluacionViewModel @Inject constructor(
             } else {
                 repository.insertEvaluacion(ev)
             }
+            // Sync con Supabase en scope de aplicación (no se cancela al salir de la pantalla)
+            postSaveSyncScheduler.scheduleHistorialSync(currentOpticaId)
             val pResult = repository.getPacienteById(pacienteId)
             val pName = if (pResult is com.example.optoapp.data.Resource.Success) pResult.data?.nombreCompleto ?: "Paciente" else "Paciente"
             onComplete(ev.id, pName)
@@ -322,6 +400,9 @@ class EvaluacionViewModel @Inject constructor(
             val result = repository.getEvaluacionById(evaluacionId)
             if (result is Resource.Success) {
                 repository.deleteEvaluacion(result.data!!)
+                // Mantener paridad con "post-save sync": la eliminación también debe reflejarse en remoto.
+                val oid = sessionManager.opticaId.first()
+                postSaveSyncScheduler.scheduleHistorialSync(oid)
                 onComplete()
             }
         }
@@ -440,12 +521,15 @@ class EvaluacionViewModel @Inject constructor(
             
             val eeOd = (parseRefraction(s.recetaOdEsf) ?: 0.0) + ((parseRefraction(s.recetaOdCil) ?: 0.0) / 2.0)
             val eeOi = (parseRefraction(s.recetaOiEsf) ?: 0.0) + ((parseRefraction(s.recetaOiCil) ?: 0.0) / 2.0)
-            
-            // Solo calcular anisometropía si ambos ojos tienen datos y NINGUNO es balance
-            val anisometropiaVal = if (!effBalanceOd && !effBalanceOi && 
-                                      s.recetaOdEsf.isNotEmpty() && s.recetaOiEsf.isNotEmpty()) {
-                Math.abs(eeOd - eeOi) >= 2.00
-            } else false
+
+            // Solo calcular anisometropía si ambos ojos tienen esfera informada y NINGUNO es balance
+            val anisometropiaVal = if (!effBalanceOd && !effBalanceOi &&
+                s.recetaOdEsf.isNotEmpty() && s.recetaOiEsf.isNotEmpty()
+            ) {
+                Math.abs(eeOd - eeOi) >= ANISOMETROPIA_UMBRAL_DIOPTRIAS
+            } else {
+                false
+            }
             
             val logMarOd = parseSnellenToLogMar(s.avCcOdLejos)
             val logMarOi = parseSnellenToLogMar(s.avCcOiLejos)

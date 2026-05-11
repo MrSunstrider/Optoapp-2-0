@@ -2,7 +2,6 @@ package com.example.optoapp.ui.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -11,42 +10,53 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.example.optoapp.data.FinanzasRemoteDefaults
 import com.example.optoapp.ui.components.DropdownField
 import com.example.optoapp.ui.components.OptoTextField
 import com.example.optoapp.viewmodel.DispensacionViewModel
 import com.example.optoapp.util.DateUtils
-import java.text.SimpleDateFormat
 import java.util.*
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Search
 import com.example.optoapp.data.Pago
 import com.example.optoapp.ui.components.AbonoDialog
 
 
 @OptIn(ExperimentalMaterial3Api::class)
+@Suppress("DEPRECATION")
 @Composable
 fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, dispensacionId: String? = null, viewModel: DispensacionViewModel = hiltViewModel()) {
-    val scope = rememberCoroutineScope()
     val uiState by viewModel.uiState.collectAsState()
-
+    val monturasActivas by viewModel.monturasActivas.collectAsState()
+    var showDuplicateOtWarning by remember { mutableStateOf(false) }
+    var duplicateOtWarningText by remember { mutableStateOf("") }
     LaunchedEffect(dispensacionId) {
         if (dispensacionId != null) {
             viewModel.loadDispensacion(dispensacionId)
         }
     }
+    LaunchedEffect(pacienteId) {
+        viewModel.loadPacienteNombre(pacienteId)
+    }
+    LaunchedEffect(uiState.error) {
+        val msg = uiState.error.orEmpty()
+        if (msg.contains("Ya existe una dispensación con esta OT", ignoreCase = true)) {
+            duplicateOtWarningText = msg
+            showDuplicateOtWarning = true
+        }
+    }
 
     var showDatePicker by remember { mutableStateOf(false) }
     val datePickerState = rememberDatePickerState(
-        initialSelectedDateMillis = DateUtils.dateToLong(DateUtils.longToDate(uiState.fecha)),
+        initialSelectedDateMillis = DateUtils.localDateToPickerMillis(uiState.fecha),
         yearRange = 1920..2080
     )
 
@@ -56,7 +66,7 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
             confirmButton = {
                 TextButton(onClick = {
                     datePickerState.selectedDateMillis?.let { mills ->
-                        viewModel.updateUiState { it.copy(fecha = DateUtils.dateToLong(DateUtils.longToDate(mills))) }
+                        viewModel.updateUiState { it.copy(fecha = DateUtils.pickerMillisToLocalDate(mills)) }
                     }
                     showDatePicker = false
                 }) { Text("OK") }
@@ -66,15 +76,29 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
         }
     }
 
+    if (showDuplicateOtWarning) {
+        AlertDialog(
+            onDismissRequest = { showDuplicateOtWarning = false },
+            title = { Text("Advertencia de OT duplicada") },
+            text = { Text(duplicateOtWarningText) },
+            confirmButton = {
+                TextButton(onClick = { showDuplicateOtWarning = false }) {
+                    Text("Entendido")
+                }
+            }
+        )
+    }
+
     val saveAction = {
         viewModel.saveDispensacion(pacienteId, dispensacionId) {
             navController.popBackStack()
         }
     }
-
     Scaffold(
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             TopAppBar(
+                windowInsets = WindowInsets(0, 0, 0, 0),
                 title = { Text(if (dispensacionId == null) "Nueva Dispensación" else "Editar Dispensación") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
@@ -98,8 +122,22 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             OutlinedButton(onClick = { showDatePicker = true }, modifier = Modifier.fillMaxWidth()) {
-                val fmt = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-                Text("Fecha: ${fmt.format(Date(uiState.fecha))}")
+                Text("Fecha: ${DateUtils.formatLocalized(uiState.fecha)}")
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                OptoTextField(
+                    value = uiState.ot,
+                    onValueChange = { viewModel.updateUiState { s -> s.copy(ot = it) } },
+                    label = "N° OT (OT-AAAA-####)",
+                    modifier = Modifier.weight(1f)
+                )
+                TextButton(onClick = { viewModel.suggestOt() }) {
+                    Text("Sugerir OT", fontSize = 13.sp)
+                }
             }
 
             // Lente Card
@@ -109,7 +147,10 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
                     DropdownField(label = "Tipo de Lente", selected = uiState.tipoLente, options = listOf("Monofocal", "Bifocal", "Progresivo", "Ocupacional")) { 
                         viewModel.updateUiState { s -> 
                             val nextS = s.copy(tipoLente = it)
-                            if (it != "Bifocal") nextS.copy(subTipoBifocal = "") else nextS
+                            var cleaned = if (it != "Bifocal") nextS.copy(subTipoBifocal = "") else nextS
+                            if (it != "Monofocal") cleaned = cleaned.copy(distanciaLente = "")
+                            if (it != "Bifocal" && it != "Progresivo" && it != "Ocupacional") cleaned = cleaned.copy(altura = "")
+                            cleaned
                         } 
                     }
                     
@@ -123,6 +164,15 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
                         DropdownField(label = "Distancia", selected = uiState.distanciaLente, options = listOf("Lejos", "Intermedia", "Cerca")) { 
                             viewModel.updateUiState { s -> s.copy(distanciaLente = it) } 
                         }
+                    }
+
+                    if (uiState.tipoLente == "Bifocal" || uiState.tipoLente == "Progresivo" || uiState.tipoLente == "Ocupacional") {
+                        OptoTextField(
+                            value = uiState.altura,
+                            onValueChange = { viewModel.updateUiState { s -> s.copy(altura = it) } },
+                            label = "Altura (mm)",
+                            keyboardType = KeyboardType.Decimal
+                        )
                     }
                     
                     DropdownField(label = "Material", selected = uiState.materialLente, options = listOf("Resina", "Policarbonato", "Cristal", "Trivex")) { 
@@ -161,8 +211,97 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
             Card {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("Información de Montura", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                    DropdownField(label = "Origen", selected = uiState.origenMontura, options = listOf("Nueva de Tienda", "Traída por paciente")) { 
-                        viewModel.updateUiState { s -> s.copy(origenMontura = it) } 
+                    DropdownField(label = "Origen", selected = uiState.origenMontura, options = listOf("Tienda", "Paciente")) { 
+                        viewModel.updateUiState { s ->
+                            if (it == "Tienda") s.copy(origenMontura = it)
+                            else s.copy(origenMontura = it, monturaId = "")
+                        }
+                    }
+                    if (uiState.origenMontura == "Tienda" || uiState.origenMontura == "Nueva de Tienda") {
+                        val monturaSeleccionada = monturasActivas.firstOrNull { it.id == uiState.monturaId }
+                        var monturaQuery by remember { mutableStateOf("") }
+                        var expanded by remember { mutableStateOf(false) }
+
+                        LaunchedEffect(monturaSeleccionada) {
+                            if (monturaSeleccionada != null && monturaQuery.isEmpty()) {
+                                monturaQuery = "${monturaSeleccionada.marca} ${monturaSeleccionada.modelo}"
+                            }
+                        }
+
+                        val isSelected = monturaSeleccionada != null &&
+                            monturaQuery == "${monturaSeleccionada.marca} ${monturaSeleccionada.modelo}"
+
+                        val filteredMonturas = if (isSelected) {
+                            emptyList()
+                        } else if (monturaQuery.isBlank()) {
+                            monturasActivas.filter { it.stockActual > 0 }
+                        } else {
+                            monturasActivas
+                                .filter { it.stockActual > 0 }
+                                .filter {
+                                    it.marca.contains(monturaQuery, ignoreCase = true) ||
+                                    it.modelo.contains(monturaQuery, ignoreCase = true) ||
+                                    it.sku.contains(monturaQuery, ignoreCase = true)
+                                }
+                        }
+
+                        ExposedDropdownMenuBox(
+                            expanded = expanded && filteredMonturas.isNotEmpty(),
+                            onExpandedChange = { expanded = it }
+                        ) {
+                            OutlinedTextField(
+                                value = monturaQuery,
+                                onValueChange = {
+                                    monturaQuery = it
+                                    if (it.isEmpty()) {
+                                        viewModel.updateUiState { s -> s.copy(monturaId = "", descripcionMontura = "") }
+                                    }
+                                    expanded = true
+                                },
+                                label = { Text("Buscar montura por marca, modelo o SKU") },
+                                placeholder = { Text("Ej: Ray-Ban, RX-1234...") },
+                                leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Buscar") },
+                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                                modifier = Modifier.menuAnchor().fillMaxWidth()
+                            )
+                            ExposedDropdownMenu(
+                                expanded = expanded && filteredMonturas.isNotEmpty(),
+                                onDismissRequest = { expanded = false }
+                            ) {
+                                filteredMonturas.forEach { montura ->
+                                    DropdownMenuItem(
+                                        text = {
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Column(modifier = Modifier.weight(1f)) {
+                                                    Text("${montura.marca} ${montura.modelo}", fontWeight = FontWeight.Bold)
+                                                    Text("SKU: ${montura.sku} | ${montura.color}",
+                                                        style = MaterialTheme.typography.bodySmall)
+                                                }
+                                                Text("Stock: ${montura.stockActual}",
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = MaterialTheme.colorScheme.primary,
+                                                    style = MaterialTheme.typography.bodySmall)
+                                            }
+                                        },
+                                        onClick = {
+                                            monturaQuery = "${montura.marca} ${montura.modelo}"
+                                            viewModel.updateUiState { s ->
+                                                s.copy(
+                                                    monturaId = montura.id,
+                                                    tipoAro = montura.tipoAro,
+                                                    materialMontura = montura.materialMontura
+                                                )
+                                            }
+                                            expanded = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
                     }
                     DropdownField(label = "Tipo de Aro", selected = uiState.tipoAro, options = listOf("Aro Completo", "Semi al aire", "Al aire")) { 
                         viewModel.updateUiState { s -> s.copy(tipoAro = it) } 
@@ -209,7 +348,7 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
                                     if (pago.nota.isNotEmpty()) {
                                         Text(pago.nota, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     }
-                                    Text(SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(pago.fecha)), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text(DateUtils.formatLocalized(pago.fecha), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                                 Row {
                                     var showEditDialog by remember { mutableStateOf(false) }
@@ -218,6 +357,18 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
                                             pago = pago,
                                             onDismiss = { showEditDialog = false },
                                             onConfirm = { updatedPago: Pago ->
+                                                val total = uiState.montoTotal.toDoubleOrNull() ?: 0.0
+                                                val otrosAbonos = uiState.pagos
+                                                    .filter { it.id != pago.id }
+                                                    .sumOf { it.monto }
+                                                if (total <= 0.0) {
+                                                    viewModel.updateUiState { it.copy(error = FinanzasRemoteDefaults.Messages.MONTO_TOTAL_INVALIDO) }
+                                                    return@AbonoDialog
+                                                }
+                                                if (otrosAbonos + updatedPago.monto > total) {
+                                                    viewModel.updateUiState { it.copy(error = FinanzasRemoteDefaults.Messages.ABONO_MAYOR_QUE_TOTAL) }
+                                                    return@AbonoDialog
+                                                }
                                                 viewModel.updatePagoLocal(updatedPago)
                                                 showEditDialog = false
                                             }
@@ -237,8 +388,19 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
                     var showAddDialog by remember { mutableStateOf(false) }
                     if (showAddDialog) {
                         AbonoDialog(
+                            defaultFecha = DateUtils.today(),
                             onDismiss = { showAddDialog = false },
                             onConfirm = { nuevoPago: Pago ->
+                                val total = uiState.montoTotal.toDoubleOrNull() ?: 0.0
+                                val totalConNuevo = uiState.pagos.sumOf { it.monto } + nuevoPago.monto
+                                if (total <= 0.0) {
+                                    viewModel.updateUiState { it.copy(error = FinanzasRemoteDefaults.Messages.MONTO_TOTAL_INVALIDO) }
+                                    return@AbonoDialog
+                                }
+                                if (totalConNuevo > total) {
+                                    viewModel.updateUiState { it.copy(error = FinanzasRemoteDefaults.Messages.ABONO_MAYOR_QUE_TOTAL) }
+                                    return@AbonoDialog
+                                }
                                 viewModel.addPago(nuevoPago)
                                 showAddDialog = false
                             }
@@ -281,8 +443,14 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
             Button(onClick = { saveAction() }, modifier = Modifier.fillMaxWidth()) {
                 Text(if (dispensacionId == null) "Confirmar Orden" else "Actualizar Orden")
             }
-            Spacer(modifier = Modifier.height(24.dp))
+            if (!uiState.error.isNullOrBlank()) {
+                Text(
+                    text = uiState.error ?: "",
+                    color = MaterialTheme.colorScheme.error,
+                    fontSize = 13.sp
+                )
+            }
+            Spacer(modifier = Modifier.height(12.dp))
         }
     }
 }
-

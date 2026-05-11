@@ -27,8 +27,7 @@ import com.example.optoapp.ui.components.SuggestionCard
 import com.example.optoapp.ui.components.OSDIDialog
 import com.example.optoapp.viewmodel.EvaluacionViewModel
 import com.example.optoapp.util.DateUtils
-import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Locale
 
 val basesPrisma = listOf("Nasal", "Temporal", "Superior", "Inferior")
 val diagnosticosRefraccion = listOf(
@@ -53,6 +52,13 @@ val farnsworthOptions = listOf("Normal", "Deutan", "Protan", "Tritan")
 val sensibilidadOptions = listOf("Normal", "Disminuida")
 val campoVisualOptions = listOf("Normal", "Anomalía detectada")
 
+private val estadosCitaOpciones = listOf(
+    "programada" to "Programada",
+    "confirmada" to "Confirmada",
+    "asistio" to "Asistió",
+    "no_asistio" to "No asistió",
+    "reprogramada" to "Reprogramada"
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -110,15 +116,15 @@ fun NuevaEvaluacionScreen(
     val notificationHelper = remember { com.example.optoapp.notifications.NotificationHelper(context) }
 
     val datePickerState = rememberDatePickerState(
-        initialSelectedDateMillis = DateUtils.dateToLong(DateUtils.longToDate(uiState.fecha)),
+        initialSelectedDateMillis = DateUtils.localDateToPickerMillis(uiState.fecha),
         yearRange = 1920..2080
     )
     val proximaDatePickerState = rememberDatePickerState(
-        initialSelectedDateMillis = DateUtils.dateToLong(DateUtils.longToDate(uiState.proximaCita ?: System.currentTimeMillis())),
+        initialSelectedDateMillis = DateUtils.localDateToPickerMillis(uiState.proximaCita ?: DateUtils.today()),
         yearRange = 1920..2080
     )
     val lcDatePickerState = rememberDatePickerState(
-        initialSelectedDateMillis = DateUtils.dateToLong(DateUtils.longToDate(uiState.lcFechaAdaptacion ?: System.currentTimeMillis())),
+        initialSelectedDateMillis = DateUtils.localDateToPickerMillis(uiState.lcFechaAdaptacion ?: DateUtils.today()),
         yearRange = 1920..2080
     )
 
@@ -128,7 +134,7 @@ fun NuevaEvaluacionScreen(
             confirmButton = {
                 TextButton(onClick = {
                     datePickerState.selectedDateMillis?.let { mills ->
-                        viewModel.updateUiState { it.copy(fecha = DateUtils.dateToLong(DateUtils.longToDate(mills))) }
+                        viewModel.updateUiState { it.copy(fecha = DateUtils.pickerMillisToLocalDate(mills)) }
                     }
                     showDatePicker = false
                 }) { Text("OK") }
@@ -144,14 +150,14 @@ fun NuevaEvaluacionScreen(
             confirmButton = {
                 TextButton(onClick = {
                     proximaDatePickerState.selectedDateMillis?.let { mills ->
-                        viewModel.updateUiState { it.copy(proximaCita = DateUtils.dateToLong(DateUtils.longToDate(mills))) }
+                        viewModel.updateUiState { it.copy(proximaCita = DateUtils.pickerMillisToLocalDate(mills)) }
                     }
                     showProximaDatePicker = false
                 }) { Text("OK") }
             },
             dismissButton = {
                 TextButton(onClick = {
-                    viewModel.updateUiState { it.copy(proximaCita = null) }
+                    viewModel.updateUiState { it.copy(proximaCita = null, citaEstado = "programada") }
                     showProximaDatePicker = false
                 }) { Text("Limpiar") }
             }
@@ -166,7 +172,7 @@ fun NuevaEvaluacionScreen(
             confirmButton = {
                 TextButton(onClick = {
                     lcDatePickerState.selectedDateMillis?.let { mills ->
-                        viewModel.updateUiState { it.copy(lcFechaAdaptacion = DateUtils.dateToLong(DateUtils.longToDate(mills))) }
+                        viewModel.updateUiState { it.copy(lcFechaAdaptacion = DateUtils.pickerMillisToLocalDate(mills)) }
                     }
                     showLcDatePicker = false
                 }) { Text("OK") }
@@ -203,8 +209,10 @@ fun NuevaEvaluacionScreen(
     }
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             TopAppBar(
+                windowInsets = WindowInsets(0, 0, 0, 0),
                 title = { Text(if (evaluacionId == null) "Nueva Evaluación" else "Editar Evaluación") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
@@ -249,8 +257,7 @@ fun NuevaEvaluacionScreen(
                 when (selectedTab) {
                     0 -> { // Anamnesis
                         OutlinedButton(onClick = { showDatePicker = true }, modifier = Modifier.fillMaxWidth()) {
-                            val fmt = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-                            Text("Fecha Registro: ${fmt.format(Date(uiState.fecha))}")
+                            Text("Fecha Registro: ${DateUtils.formatLocalized(uiState.fecha)}")
                         }
                         OptoTextField(value = uiState.motivoConsulta, onValueChange = { viewModel.updateUiState { s -> s.copy(motivoConsulta = it) } }, label = "Motivo de consulta")
                         OptoTextField(value = uiState.sintomas, onValueChange = { viewModel.updateUiState { s -> s.copy(sintomas = it) } }, label = "Síntomas y signos")
@@ -270,33 +277,34 @@ fun NuevaEvaluacionScreen(
                     }
                     1 -> { // Examen Visual
                         Text("Agudeza Visual SIN corrección", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                        OptoTextField(value = uiState.avScAo, onValueChange = { viewModel.updateUiState { s -> s.copy(avScAo = it) } }, label = "Ambos ojos lejos")
+                        OptoTextField(
+                            value = uiState.avScAo,
+                            onValueChange = { viewModel.updateUiState { s -> s.copy(avScAo = it) } },
+                            label = "Ambos ojos"
+                        )
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            OptoTextField(value = uiState.avScOdLejos, onValueChange = { viewModel.updateUiState { s -> s.copy(avScOdLejos = it) } }, label = "OD lejos", modifier = Modifier.weight(1f))
-                            OptoTextField(value = uiState.avScOiLejos, onValueChange = { viewModel.updateUiState { s -> s.copy(avScOiLejos = it) } }, label = "OI lejos", modifier = Modifier.weight(1f))
-                        }
-                        OptoTextField(value = uiState.avScAoCerca, onValueChange = { viewModel.updateUiState { s -> s.copy(avScAoCerca = it) } }, label = "Ambos ojos cerca")
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            OptoTextField(value = uiState.avScOdCerca, onValueChange = { viewModel.updateUiState { s -> s.copy(avScOdCerca = it) } }, label = "OD cerca", modifier = Modifier.weight(1f))
-                            OptoTextField(value = uiState.avScOiCerca, onValueChange = { viewModel.updateUiState { s -> s.copy(avScOiCerca = it) } }, label = "OI cerca", modifier = Modifier.weight(1f))
+                            OptoTextField(value = uiState.avScOdLejos, onValueChange = { viewModel.updateUiState { s -> s.copy(avScOdLejos = it) } }, label = "OD", modifier = Modifier.weight(1f))
+                            OptoTextField(value = uiState.avScOiLejos, onValueChange = { viewModel.updateUiState { s -> s.copy(avScOiLejos = it) } }, label = "OI", modifier = Modifier.weight(1f))
                         }
 
                         Spacer(modifier = Modifier.height(8.dp))
                         Text("Agudeza Visual CON corrección PX", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                        OptoTextField(value = uiState.avCcAoPx, onValueChange = { viewModel.updateUiState { s -> s.copy(avCcAoPx = it) } }, label = "Ambos ojos lejos")
+                        OptoTextField(
+                            value = uiState.avCcAoPx,
+                            onValueChange = { viewModel.updateUiState { s -> s.copy(avCcAoPx = it) } },
+                            label = "Ambos ojos"
+                        )
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            OptoTextField(value = uiState.avCcOdLejos, onValueChange = { viewModel.updateUiState { s -> s.copy(avCcOdLejos = it) } }, label = "OD lejos", modifier = Modifier.weight(1f))
-                            OptoTextField(value = uiState.avCcOiLejos, onValueChange = { viewModel.updateUiState { s -> s.copy(avCcOiLejos = it) } }, label = "OI lejos", modifier = Modifier.weight(1f))
-                        }
-                        OptoTextField(value = uiState.avCcAoCerca, onValueChange = { viewModel.updateUiState { s -> s.copy(avCcAoCerca = it) } }, label = "Ambos ojos cerca")
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            OptoTextField(value = uiState.avCcOdCerca, onValueChange = { viewModel.updateUiState { s -> s.copy(avCcOdCerca = it) } }, label = "OD cerca", modifier = Modifier.weight(1f))
-                            OptoTextField(value = uiState.avCcOiCerca, onValueChange = { viewModel.updateUiState { s -> s.copy(avCcOiCerca = it) } }, label = "OI cerca", modifier = Modifier.weight(1f))
+                            OptoTextField(value = uiState.avCcOdLejos, onValueChange = { viewModel.updateUiState { s -> s.copy(avCcOdLejos = it) } }, label = "OD", modifier = Modifier.weight(1f))
+                            OptoTextField(value = uiState.avCcOiLejos, onValueChange = { viewModel.updateUiState { s -> s.copy(avCcOiLejos = it) } }, label = "OI", modifier = Modifier.weight(1f))
                         }
 
                         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                         
-                        OutlinedCard(colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))) {
+                        OutlinedCard(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+                        ) {
                             Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Text("Visión Binocular y Percepción", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                                 DropdownField(label = "Estereopsis", selected = uiState.estereopsisValor, options = estereopsisOptions, onSelected = { viewModel.updateUiState { s -> s.copy(estereopsisValor = it) } })
@@ -306,7 +314,10 @@ fun NuevaEvaluacionScreen(
                             }
                         }
 
-                        OutlinedCard(colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))) {
+                        OutlinedCard(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+                        ) {
                             Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Text("Percepción del Color", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                                 OptoTextField(value = uiState.ishihara, onValueChange = { viewModel.updateUiState { s -> s.copy(ishihara = it) } }, label = "Test de Ishihara")
@@ -314,7 +325,10 @@ fun NuevaEvaluacionScreen(
                             }
                         }
 
-                        OutlinedCard(colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))) {
+                        OutlinedCard(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+                        ) {
                             Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Text("Salud de la Superficie Ocular y Función Visual", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                                 Text("Test de Schirmer (mm)", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
@@ -338,7 +352,10 @@ fun NuevaEvaluacionScreen(
                             }
                         }
 
-                        OutlinedCard(colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))) {
+                        OutlinedCard(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+                        ) {
                             Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Text("Otras Pruebas y Exámenes Previos", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                                 OptoTextField(value = uiState.amsler, onValueChange = { viewModel.updateUiState { s -> s.copy(amsler = it) } }, label = "Test de Amsler")
@@ -392,12 +409,12 @@ fun NuevaEvaluacionScreen(
                     2 -> { // Refracción
                         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                         Text("Refracción Objetiva", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             OptoTextField(value = uiState.objOdEsf, onValueChange = { viewModel.updateUiState { s -> s.copy(objOdEsf = it) } }, label = "OD Esf", modifier = Modifier.weight(1f))
                             OptoTextField(value = uiState.objOdCil, onValueChange = { viewModel.updateUiState { s -> s.copy(objOdCil = it) } }, label = "OD Cil", modifier = Modifier.weight(1f))
                             OptoTextField(value = uiState.objOdEje, onValueChange = { viewModel.updateUiState { s -> s.copy(objOdEje = it) } }, label = "OD Eje", modifier = Modifier.weight(1f))
                         }
-                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             OptoTextField(value = uiState.objOiEsf, onValueChange = { viewModel.updateUiState { s -> s.copy(objOiEsf = it) } }, label = "OI Esf", modifier = Modifier.weight(1f))
                             OptoTextField(value = uiState.objOiCil, onValueChange = { viewModel.updateUiState { s -> s.copy(objOiCil = it) } }, label = "OI Cil", modifier = Modifier.weight(1f))
                             OptoTextField(value = uiState.objOiEje, onValueChange = { viewModel.updateUiState { s -> s.copy(objOiEje = it) } }, label = "OI Eje", modifier = Modifier.weight(1f))
@@ -405,20 +422,20 @@ fun NuevaEvaluacionScreen(
                         
                         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                         Text("Refracción Subjetiva", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             OptoTextField(value = uiState.subjOdEsf, onValueChange = { viewModel.updateUiState { s -> s.copy(subjOdEsf = it) } }, label = "OD Esf", modifier = Modifier.weight(1f))
                             OptoTextField(value = uiState.subjOdCil, onValueChange = { viewModel.updateUiState { s -> s.copy(subjOdCil = it) } }, label = "OD Cil", modifier = Modifier.weight(1f))
                             OptoTextField(value = uiState.subjOdEje, onValueChange = { viewModel.updateUiState { s -> s.copy(subjOdEje = it) } }, label = "OD Eje", modifier = Modifier.weight(1f))
                         }
-                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             OptoTextField(value = uiState.subjOiEsf, onValueChange = { viewModel.updateUiState { s -> s.copy(subjOiEsf = it) } }, label = "OI Esf", modifier = Modifier.weight(1f))
                             OptoTextField(value = uiState.subjOiCil, onValueChange = { viewModel.updateUiState { s -> s.copy(subjOiCil = it) } }, label = "OI Cil", modifier = Modifier.weight(1f))
                             OptoTextField(value = uiState.subjOiEje, onValueChange = { viewModel.updateUiState { s -> s.copy(subjOiEje = it) } }, label = "OI Eje", modifier = Modifier.weight(1f))
                         }
 
                         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                        Text("Receta Final (Gafas)", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text("Fórmula final (gafas)", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             OptoTextField(
                                 value = uiState.recetaOdEsf, 
                                 onValueChange = { viewModel.updateUiState { s -> s.copy(recetaOdEsf = it) } }, 
@@ -437,9 +454,8 @@ fun NuevaEvaluacionScreen(
                                 label = "OD Eje", 
                                 modifier = Modifier.weight(1f).onFocusChanged { if (!it.isFocused) viewModel.normalizeAndTranspose("OD") }
                             )
-                            OptoTextField(value = uiState.recetaOdAv, onValueChange = { viewModel.updateUiState { s -> s.copy(recetaOdAv = it) } }, label = "AV", modifier = Modifier.weight(1f))
                         }
-                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             OptoTextField(
                                 value = uiState.recetaOiEsf, 
                                 onValueChange = { viewModel.updateUiState { s -> s.copy(recetaOiEsf = it) } }, 
@@ -458,7 +474,26 @@ fun NuevaEvaluacionScreen(
                                 label = "OI Eje", 
                                 modifier = Modifier.weight(1f).onFocusChanged { if (!it.isFocused) viewModel.normalizeAndTranspose("OI") }
                             )
-                            OptoTextField(value = uiState.recetaOiAv, onValueChange = { viewModel.updateUiState { s -> s.copy(recetaOiAv = it) } }, label = "AV", modifier = Modifier.weight(1f))
+                        }
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OptoTextField(
+                                value = uiState.recetaOdAv,
+                                onValueChange = { viewModel.updateUiState { s -> s.copy(recetaOdAv = it) } },
+                                label = "AV OD",
+                                modifier = Modifier.weight(1f)
+                            )
+                            OptoTextField(
+                                value = uiState.recetaOiAv,
+                                onValueChange = { viewModel.updateUiState { s -> s.copy(recetaOiAv = it) } },
+                                label = "AV OI",
+                                modifier = Modifier.weight(1f)
+                            )
+                            OptoTextField(
+                                value = uiState.avCcAoPx,
+                                onValueChange = { viewModel.updateUiState { s -> s.copy(avCcAoPx = it) } },
+                                label = "AV AO",
+                                modifier = Modifier.weight(1f)
+                            )
                         }
 
                         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
@@ -498,6 +533,11 @@ fun NuevaEvaluacionScreen(
                         ) {
                             Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                                 Text("DIP (Distancia Interpupilar)", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                                Text(
+                                    "Puedes ingresar DIP total (ej. 62) o DNP OD/OI (ej. 31/31).",
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
                                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                     OptoTextField(value = uiState.dipLejos, onValueChange = { viewModel.updateUiState { s -> s.copy(dipLejos = it) } }, label = "DIP Lejos", modifier = Modifier.weight(1f))
                                     OptoTextField(value = uiState.dipCerca, onValueChange = { viewModel.updateUiState { s -> s.copy(dipCerca = it) } }, label = "DIP Cerca", modifier = Modifier.weight(1f))
@@ -570,12 +610,12 @@ fun NuevaEvaluacionScreen(
                                 Text("Prueba / Adaptación Final", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                                 
                                 Text("Poder del Lente", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                     OptoTextField(value = uiState.lcOdEsf, onValueChange = { viewModel.updateUiState { s -> s.copy(lcOdEsf = it) } }, label = "OD Esf", modifier = Modifier.weight(1f))
                                     OptoTextField(value = uiState.lcOdCil, onValueChange = { viewModel.updateUiState { s -> s.copy(lcOdCil = it) } }, label = "OD Cil", modifier = Modifier.weight(1f))
                                     OptoTextField(value = uiState.lcOdEje, onValueChange = { viewModel.updateUiState { s -> s.copy(lcOdEje = it) } }, label = "OD Eje", modifier = Modifier.weight(1f))
                                 }
-                                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                     OptoTextField(value = uiState.lcOiEsf, onValueChange = { viewModel.updateUiState { s -> s.copy(lcOiEsf = it) } }, label = "OI Esf", modifier = Modifier.weight(1f))
                                     OptoTextField(value = uiState.lcOiCil, onValueChange = { viewModel.updateUiState { s -> s.copy(lcOiCil = it) } }, label = "OI Cil", modifier = Modifier.weight(1f))
                                     OptoTextField(value = uiState.lcOiEje, onValueChange = { viewModel.updateUiState { s -> s.copy(lcOiEje = it) } }, label = "OI Eje", modifier = Modifier.weight(1f))
@@ -597,8 +637,7 @@ fun NuevaEvaluacionScreen(
                                 DropdownField(label = "Material", selected = uiState.lcMaterial, options = materialesLC, onSelected = { viewModel.updateUiState { s -> s.copy(lcMaterial = it) } })
                                 
                                 OutlinedButton(onClick = { showLcDatePicker = true }, modifier = Modifier.fillMaxWidth()) {
-                                    val fmt = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-                                    val dText = uiState.lcFechaAdaptacion?.let { fmt.format(Date(it)) } ?: "Seleccionar Fecha"
+                                    val dText = uiState.lcFechaAdaptacion?.let { DateUtils.formatLocalized(it) } ?: "Seleccionar Fecha"
                                     Text("Fecha Adaptación: $dText")
                                 }
                                 OptoTextField(value = uiState.lcObservaciones, onValueChange = { viewModel.updateUiState { s -> s.copy(lcObservaciones = it) } }, label = "Notas Contactología")
@@ -701,15 +740,30 @@ fun NuevaEvaluacionScreen(
                         OutlinedButton(onClick = { showProximaDatePicker = true }, modifier = Modifier.fillMaxWidth()) {
                             val labelText = if (uiState.proximaCita == null) "Programar Próxima Cita" 
                             else {
-                                val fmt = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-                                "Próxima Cita: ${fmt.format(Date(uiState.proximaCita!!))}"
+                                "Próxima Cita: ${DateUtils.formatLocalized(uiState.proximaCita!!)}"
                             }
                             Text(labelText)
+                        }
+                        if (uiState.proximaCita != null) {
+                            val labelSeleccionado = estadosCitaOpciones
+                                .find { it.first == uiState.citaEstado.ifBlank { "programada" } }
+                                ?.second
+                                ?: estadosCitaOpciones.first().second
+                            DropdownField(
+                                label = "Estado de la cita",
+                                selected = labelSeleccionado,
+                                options = estadosCitaOpciones.map { it.second },
+                                onSelected = { etiqueta ->
+                                    val codigo = estadosCitaOpciones.find { it.second == etiqueta }?.first
+                                        ?: "programada"
+                                    viewModel.updateUiState { it.copy(citaEstado = codigo) }
+                                }
+                            )
                         }
                         
                         // Nota: Para integrarse al calendario de Google en el futuro, usar Intent(Intent.ACTION_INSERT).setData(CalendarContract.Events.CONTENT_URI)
                         
-                        Spacer(modifier = Modifier.height(24.dp))
+                        Spacer(modifier = Modifier.height(12.dp))
                         Button(
                             onClick = { saveAction() },
                             modifier = Modifier.fillMaxWidth().height(56.dp),

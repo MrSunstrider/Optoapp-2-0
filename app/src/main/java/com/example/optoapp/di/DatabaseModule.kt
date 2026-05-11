@@ -1,14 +1,17 @@
 package com.example.optoapp.di
 
 import android.content.Context
-import androidx.room.Room
 import com.example.optoapp.data.*
+import com.example.optoapp.sync.PostSaveSyncScheduler
+import dagger.Lazy
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
+
+// SessionManager se provee aquí porque comparte el mismo DataStore que SecurityManager
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -17,13 +20,15 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): OptoDatabase {
-        return Room.databaseBuilder(
-            context,
-            OptoDatabase::class.java,
-            "opto_database"
-        )
-                .fallbackToDestructiveMigration(true)
-                .build()
+        return try {
+            OptoDatabase.getDatabase(context)
+        } catch (e: IllegalStateException) {
+            throw IllegalStateException(
+                "No se pudo abrir la base local por un conflicto de migración. " +
+                    "Tus datos no se han borrado. Exporta respaldo y actualiza la app.",
+                e
+            )
+        }
     }
 
     @Provides
@@ -42,6 +47,15 @@ object DatabaseModule {
     fun provideServicioExtraDao(database: OptoDatabase): ServicioExtraDao = database.servicioExtraDao()
 
     @Provides
+    fun provideMonturaDao(database: OptoDatabase): MonturaDao = database.monturaDao()
+
+    @Provides
+    fun provideMonturaMovimientoDao(database: OptoDatabase): MonturaMovimientoDao = database.monturaMovimientoDao()
+
+    @Provides
+    fun provideSyncEntityStateDao(database: OptoDatabase): SyncEntityStateDao = database.syncEntityStateDao()
+
+    @Provides
     @Singleton
     fun provideSecurityManager(@ApplicationContext context: Context): SecurityManager {
         return SecurityManager(context)
@@ -49,19 +63,35 @@ object DatabaseModule {
 
     @Provides
     @Singleton
+    fun provideSessionManager(@ApplicationContext context: Context): SessionManager {
+        return SessionManager(context)
+    }
+
+    @Provides
+    @Singleton
     fun provideOptoRepository(
+        database: OptoDatabase,
         pacienteDao: PacienteDao,
         evaluacionDao: EvaluacionDao,
         dispensacionDao: DispensacionDao,
         pagoDao: PagoDao,
-        servicioExtraDao: ServicioExtraDao
+        servicioExtraDao: ServicioExtraDao,
+        monturaDao: MonturaDao,
+        monturaMovimientoDao: MonturaMovimientoDao,
+        syncStateTracker: SyncStateTracker,
+        postSaveSyncScheduler: Lazy<PostSaveSyncScheduler>
     ): OptoRepository {
         return OptoRepository(
+            database,
             pacienteDao,
             evaluacionDao,
             dispensacionDao,
             pagoDao,
-            servicioExtraDao
+            servicioExtraDao,
+            monturaDao,
+            monturaMovimientoDao,
+            syncStateTracker,
+            postSaveSyncScheduler
         )
     }
 }

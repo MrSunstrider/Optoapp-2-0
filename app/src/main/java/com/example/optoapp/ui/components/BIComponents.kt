@@ -21,6 +21,8 @@ import kotlin.math.min
 fun BarChart(
     actual: Int,
     anterior: Int,
+    labelActual: String = "Este Mes",
+    labelAnterior: String = "Mes Ant.",
     modifier: Modifier = Modifier
 ) {
     val maxVal = maxOf(actual, anterior, 1).toFloat()
@@ -35,8 +37,8 @@ fun BarChart(
         horizontalArrangement = Arrangement.SpaceEvenly,
         verticalAlignment = Alignment.Bottom
     ) {
-        ChartBar("Mes Ant.", anterior, anterior / maxVal * animState.value, MaterialTheme.colorScheme.outline)
-        ChartBar("Este Mes", actual, actual / maxVal * animState.value, MaterialTheme.colorScheme.primary)
+        ChartBar(labelAnterior, anterior, anterior / maxVal * animState.value, MaterialTheme.colorScheme.outline)
+        ChartBar(labelActual, actual, actual / maxVal * animState.value, MaterialTheme.colorScheme.primary)
     }
 }
 

@@ -4,53 +4,52 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Pago
+import com.example.optoapp.data.SessionManager
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import java.util.*
+import java.time.LocalDate
+import com.example.optoapp.util.DateUtils
 import javax.inject.Inject
 
 data class CierreCajaUiState(
-    val fecha: Long = System.currentTimeMillis(),
+    val fecha: LocalDate = DateUtils.today(),
     val pagos: List<Pago> = emptyList(),
     val isLoading: Boolean = false
 )
 
 @HiltViewModel
 class CierreCajaViewModel @Inject constructor(
-    private val repository: OptoRepository
+    private val repository: OptoRepository,
+    private val sessionManager: SessionManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CierreCajaUiState())
     val uiState: StateFlow<CierreCajaUiState> = _uiState.asStateFlow()
 
     init {
+        viewModelScope.launch {
+            sessionManager.userTimeZone.collectLatest { _ ->
+                _uiState.update { it.copy(fecha = DateUtils.today()) }
+            }
+        }
         observePagos()
     }
 
-    fun setFecha(fecha: Long) {
+    fun setFecha(fecha: LocalDate) {
         _uiState.update { it.copy(fecha = fecha) }
     }
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     private fun observePagos() {
-        _uiState.map { it.fecha }
+        kotlinx.coroutines.flow.combine(
+            _uiState.map { it.fecha }.distinctUntilChanged(),
+            sessionManager.opticaId
+        ) { fecha, opticaId -> fecha to opticaId }
             .distinctUntilChanged()
-            .flatMapLatest { fecha ->
-                val calendar = Calendar.getInstance().apply {
-                    timeInMillis = fecha
-                    set(Calendar.HOUR_OF_DAY, 0)
-                    set(Calendar.MINUTE, 0)
-                    set(Calendar.SECOND, 0)
-                    set(Calendar.MILLISECOND, 0)
-                }
-                val start = calendar.timeInMillis
-                calendar.set(Calendar.HOUR_OF_DAY, 23)
-                calendar.set(Calendar.MINUTE, 59)
-                calendar.set(Calendar.SECOND, 59)
-                val end = calendar.timeInMillis
-                
-                repository.getPagosByDateRange(start, end)
+            .flatMapLatest { (fecha, opticaId) ->
+                repository.getPagosByDateRangeForOptica(fecha, fecha, opticaId)
             }
             .onEach { lista ->
                 _uiState.update { it.copy(pagos = lista, isLoading = false) }

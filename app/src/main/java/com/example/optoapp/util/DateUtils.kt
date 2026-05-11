@@ -3,31 +3,50 @@ package com.example.optoapp.util
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
+import java.util.Locale
 
 object DateUtils {
+    private val localZone: ZoneId = ZoneId.systemDefault()
+    private val isoFormatter: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE
+
     /**
-     * Convierte un LocalDate a milisegundos en la medianoche de la zona horaria del sistema.
-     * Útil para guardar en base de datos de manera consistente.
+     * Preferencia global de zona horaria (SaaS). 
+     * Se actualiza desde el SessionManager al iniciar el app o cambiar la config.
      */
-    fun dateToLong(date: LocalDate): Long {
-        return date.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+    var userPreferredZone: ZoneId? = null
+
+    fun today(): LocalDate {
+        // 1. Si el usuario eligió una zona manual, manda esa.
+        // 2. Si no, usamos ZoneId.systemDefault() que es el estándar moderno de Java/Android.
+        val zoneId = userPreferredZone ?: java.time.ZoneId.systemDefault()
+        val now = LocalDate.now(zoneId)
+        android.util.Log.d("DATE_DEBUG", "today() -> Fecha: $now | Zona: ${zoneId.id} | Es Manual: ${userPreferredZone != null}")
+        return now
     }
 
     /**
-     * Convierte milisegundos a LocalDate basándose en la zona horaria del sistema.
-     * Útil para mostrar en UI o procesar lógica de días.
+     * Conversión hacia/desde [androidx.compose.material3.DatePicker]: el valor es epoch del **inicio del día en UTC**
+     * para esa fecha de calendario. Si se usa [ZoneId.systemDefault] al interpretar los millis, en zonas UTC−X
+     * el día local queda un día **antes** que el elegido en el selector.
      */
-    fun longToDate(millis: Long): LocalDate {
-        return Instant.ofEpochMilli(millis)
-            .atZone(ZoneId.systemDefault())
-            .toLocalDate()
+    fun localDateToPickerMillis(date: LocalDate): Long =
+        date.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+
+    fun pickerMillisToLocalDate(millis: Long): LocalDate =
+        Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate()
+
+    fun toIso(date: LocalDate): String = date.format(isoFormatter)
+
+    fun fromIso(value: String): LocalDate = LocalDate.parse(value, isoFormatter)
+
+    fun formatLocalized(date: LocalDate): String {
+        val formatter = DateTimeFormatter.ofPattern("dd 'de' MMMM 'de' yyyy", Locale("es", "PE"))
+        return date.format(formatter)
     }
 
-    /**
-     * Obtiene el timestamp de hoy al mediodía (12:00 PM) para notificaciones.
-     * Esto evita problemas con cambios de horario (DST).
-     */
-    fun getNoonTimestamp(date: LocalDate): Long {
-        return date.atTime(12, 0).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
-    }
+    fun getNoonTimestamp(date: LocalDate): Long =
+        date.atTime(12, 0).atZone(localZone).toInstant().toEpochMilli()
 }

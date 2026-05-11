@@ -1,0 +1,42 @@
+{
+  "name": "optoapp-web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "clean": "node ./scripts/rm-next.mjs",
+    "dev": "next dev",
+    "dev:turbo": "next dev --turbo",
+    "dev:clean": "node ./scripts/rm-next.mjs && next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@supabase/ssr": "^0.5.2",
+    "@supabase/supabase-js": "^2.49.8",
+    "lucide-react": "^1.14.0",
+    "next": "^15.3.0",
+    "next-themes": "^0.4.6",
+    "pdf-lib": "^1.17.1",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "uuid": "^14.0.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.17",
+    "@types/react": "^19.1.4",
+    "@types/react-dom": "^19.1.4",
+    "@types/uuid": "^10.0.0",
+    "@vitest/coverage-v8": "^4.1.5",
+    "autoprefixer": "^10.4.21",
+    "eslint": "^9.26.0",
+    "eslint-config-next": "^15.3.0",
+    "postcss": "^8.5.3",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.8.3",
+    "vitest": "^4.1.5"
+  }
+}

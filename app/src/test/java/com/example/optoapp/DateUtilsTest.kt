@@ -1,6 +1,7 @@
 package com.example.optoapp
 
 import com.example.optoapp.util.DateUtils
+import org.junit.Assert.assertEquals
 import org.junit.Test
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -21,14 +22,15 @@ class DateUtilsTest {
         val localFmt = SimpleDateFormat("dd/MM/yyyy HH:mm:ss") // local default formatter
         out.append("If formatted directly locally: ${localFmt.format(dateUTC)}\n")
         
-        val storedLocal = DateUtils.dateToLong(DateUtils.longToDate(selectedUtcMillis))
-        out.append("Stored local millis: $storedLocal\n")
-        val storedDate = Date(storedLocal)
-        out.append("Formatted stored local: ${localFmt.format(storedDate)}\n")
+        val selectedLocalDate = DateUtils.pickerMillisToLocalDate(selectedUtcMillis)
+        out.append("Selected as LocalDate: $selectedLocalDate\n")
         
-        val toPickerUtc = DateUtils.dateToLong(DateUtils.longToDate(storedLocal))
+        val toPickerUtc = DateUtils.localDateToPickerMillis(selectedLocalDate)
         out.append("Back to picker UTC millis: $toPickerUtc\n")
         out.append("Picker reads as: ${format.format(Date(toPickerUtc))}\n")
+
+        val roundTrip = DateUtils.pickerMillisToLocalDate(toPickerUtc)
+        assertEquals(selectedLocalDate, roundTrip)
         
         System.out.println(out.toString())
     }

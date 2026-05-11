@@ -15,6 +15,9 @@ app/build
 .cxx
 local.properties
 
+# Supabase CLI (binario descargado; no versionar)
+/tools/supabase-cli/
+
 # Memory dumps
 *.hprof
 java_pid*
@@ -25,3 +28,10 @@ java_pid*
 
 # Build results
 **/build/
+
+# Web app artifacts
+web/node_modules/
+web/.next/
+web/.env.local
+# Coverage output
+web/coverage/

@@ -16,19 +16,26 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.example.optoapp.data.AppRoles
 import com.example.optoapp.viewmodel.CierreCajaViewModel
+import com.example.optoapp.viewmodel.AuthViewModel
 import com.example.optoapp.util.DateUtils
-import java.text.SimpleDateFormat
 import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CierreCajaScreen(navController: NavController, viewModel: CierreCajaViewModel = hiltViewModel()) {
+fun CierreCajaScreen(
+    navController: NavController,
+    viewModel: CierreCajaViewModel = hiltViewModel(),
+    authViewModel: AuthViewModel = hiltViewModel()
+) {
     val uiState by viewModel.uiState.collectAsState()
+    val opticaRol by authViewModel.opticaRol.collectAsState(initial = "admin")
+    val canView = AppRoles.canViewCierreCaja(opticaRol)
     var showDatePicker by remember { mutableStateOf(false) }
     
     val datePickerState = rememberDatePickerState(
-        initialSelectedDateMillis = uiState.fecha
+        initialSelectedDateMillis = DateUtils.localDateToPickerMillis(uiState.fecha)
     )
 
     if (showDatePicker) {
@@ -36,7 +43,7 @@ fun CierreCajaScreen(navController: NavController, viewModel: CierreCajaViewMode
             onDismissRequest = { showDatePicker = false },
             confirmButton = {
                 TextButton(onClick = {
-                    datePickerState.selectedDateMillis?.let { viewModel.setFecha(it) }
+                    datePickerState.selectedDateMillis?.let { viewModel.setFecha(DateUtils.pickerMillisToLocalDate(it)) }
                     showDatePicker = false
                 }) { Text("OK") }
             }
@@ -48,15 +55,18 @@ fun CierreCajaScreen(navController: NavController, viewModel: CierreCajaViewMode
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Cierre de Caja") },
+                windowInsets = WindowInsets(0, 0, 0, 0),
+                title = { Text("Cierre de Caja", fontSize = 18.sp, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
                     }
                 },
                 actions = {
-                    IconButton(onClick = { showDatePicker = true }) {
-                        Icon(Icons.Default.DateRange, contentDescription = "Cambiar Fecha")
+                    if (canView) {
+                        IconButton(onClick = { showDatePicker = true }) {
+                            Icon(Icons.Default.DateRange, contentDescription = "Cambiar Fecha")
+                        }
                     }
                 }
             )
@@ -68,9 +78,19 @@ fun CierreCajaScreen(navController: NavController, viewModel: CierreCajaViewMode
                 .padding(padding)
                 .padding(16.dp)
         ) {
+            if (!canView) {
+                Card(modifier = Modifier.fillMaxWidth()) {
+                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("Acceso restringido", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error)
+                        Text("Tu rol actual no tiene permiso para consultar cierre de caja.")
+                    }
+                }
+                return@Column
+            }
+
             // Header con Fecha
             Text(
-                text = "Reporte del ${SimpleDateFormat("dd 'de' MMMM, yyyy", Locale("es", "PE")).format(Date(uiState.fecha))}",
+                text = "Reporte del ${DateUtils.formatLocalized(uiState.fecha)}",
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.primary
             )
@@ -174,7 +194,10 @@ fun TransactionItem(pago: com.example.optoapp.data.Pago) {
                 "s/. ${String.format(Locale.getDefault(), "%.2f", pago.monto)}",
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.tertiary
+                color = when {
+                    pago.monto < 0 -> MaterialTheme.colorScheme.error
+                    else -> MaterialTheme.colorScheme.tertiary
+                }
             )
         }
     }

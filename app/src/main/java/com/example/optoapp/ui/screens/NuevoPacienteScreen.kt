@@ -1,5 +1,6 @@
 package com.example.optoapp.ui.screens
 
+import android.app.Activity
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
@@ -8,32 +9,41 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
+import android.widget.Toast
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.example.optoapp.OptoApplication
 import com.example.optoapp.data.Paciente
 import com.example.optoapp.viewmodel.PacienteViewModel
+import com.example.optoapp.viewmodel.SubscriptionViewModel
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import kotlinx.coroutines.launch
 import com.example.optoapp.util.DateUtils
-import java.text.SimpleDateFormat
-import java.util.*
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.util.UUID
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null, viewModel: PacienteViewModel = hiltViewModel()) {
+fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null, viewModel: PacienteViewModel = hiltViewModel(), subscriptionVm: SubscriptionViewModel = hiltViewModel()) {
     val scope = rememberCoroutineScope()
+    val ctx = LocalContext.current
+    val canAdd by subscriptionVm.canAddPaciente.collectAsState()
+    var showPaywall by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        subscriptionVm.refreshPlanFromServer()
+    }
 
     var nombreCompleto by remember { mutableStateOf("") }
     var edad by remember { mutableStateOf("") }
     var telefono by remember { mutableStateOf("") }
     var dni by remember { mutableStateOf("") }
+    var historiaOptometrica by remember { mutableStateOf("") }
     var fechaNacimiento by remember { mutableStateOf("") }
     var sexo by remember { mutableStateOf("Masculino") }
     var email by remember { mutableStateOf("") }
@@ -42,10 +52,14 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
     var ocupacion by remember { mutableStateOf("") }
     var acompanante by remember { mutableStateOf("") }
     var hobbies by remember { mutableStateOf("") }
-    var fechaCreacion by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    var fechaCreacion by remember { mutableStateOf(DateUtils.today()) }
 
     var expandedSexo by remember { mutableStateOf(false) }
     val sexos = listOf("Masculino", "Femenino")
+
+    var saving by remember { mutableStateOf(false) }
+    var showDuplicateHoWarning by remember { mutableStateOf(false) }
+    var duplicateHoWarningText by remember { mutableStateOf("") }
 
     LaunchedEffect(pacienteId) {
         if (pacienteId != null) {
@@ -55,7 +69,8 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
                 edad = it.edad.toString()
                 telefono = it.telefono
                 dni = it.dni ?: ""
-                fechaNacimiento = it.fechaNacimiento ?: ""
+                historiaOptometrica = it.historiaOptometrica ?: ""
+                fechaNacimiento = it.fechaNacimiento?.format(DateTimeFormatter.ISO_LOCAL_DATE) ?: ""
                 sexo = it.sexo ?: "Masculino"
                 email = it.email ?: ""
                 direccion = it.direccion ?: ""
@@ -70,18 +85,37 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
 
     var showDatePicker by remember { mutableStateOf(false) }
     val datePickerState = rememberDatePickerState(
-        initialSelectedDateMillis = DateUtils.dateToLong(DateUtils.longToDate(fechaCreacion)),
+        initialSelectedDateMillis = DateUtils.localDateToPickerMillis(fechaCreacion),
         yearRange = 1920..2080
     )
+
+    if (showPaywall) {
+        AlertDialog(
+            onDismissRequest = { showPaywall = false },
+            title = { Text("Límite del plan gratuito") },
+            text = { Text("No puedes crear más pacientes en el plan gratuito. Actualiza a PRO desde Configuración o compra desde aquí.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val act = ctx as? Activity
+                        if (act != null) {
+                            subscriptionVm.launchProPurchase(act) { Toast.makeText(ctx, it, Toast.LENGTH_LONG).show() }
+                        }
+                        showPaywall = false
+                    }
+                ) { Text("Actualizar plan") }
+            },
+            dismissButton = { TextButton(onClick = { showPaywall = false }) { Text("Cerrar") } }
+        )
+    }
 
     if (showDatePicker) {
         DatePickerDialog(
             onDismissRequest = { showDatePicker = false },
             confirmButton = {
                 TextButton(onClick = {
-                    datePickerState.selectedDateMillis?.let { 
-                        // El picker devuelve UTC medianoche. Lo convertimos a LocalDate y luego a nuestro Long local.
-                        fechaCreacion = DateUtils.dateToLong(DateUtils.longToDate(it)) 
+                    datePickerState.selectedDateMillis?.let {
+                        fechaCreacion = DateUtils.pickerMillisToLocalDate(it)
                     }
                     showDatePicker = false
                 }) { Text("OK") }
@@ -91,9 +125,22 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
         }
     }
 
+    if (showDuplicateHoWarning) {
+        AlertDialog(
+            onDismissRequest = { showDuplicateHoWarning = false },
+            title = { Text("Advertencia de HO duplicada") },
+            text = { Text(duplicateHoWarningText) },
+            confirmButton = {
+                TextButton(onClick = { showDuplicateHoWarning = false }) { Text("Entendido") }
+            }
+        )
+    }
+
     Scaffold(
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             TopAppBar(
+                windowInsets = WindowInsets(0, 0, 0, 0),
                 title = { Text(if (pacienteId == null) "Nuevo Paciente" else "Editar Paciente") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
@@ -115,8 +162,30 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
                 onClick = { showDatePicker = true },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                val fmt = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-                Text("Fecha de Registro: ${fmt.format(Date(fechaCreacion))}")
+                Text("Fecha de Registro: ${DateUtils.formatLocalized(fechaCreacion)}")
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                OutlinedTextField(
+                    value = historiaOptometrica,
+                    onValueChange = { historiaOptometrica = it },
+                    label = { Text("N° Historia Optométrica") },
+                    modifier = Modifier.weight(1f)
+                )
+                TextButton(
+                    onClick = {
+                        scope.launch {
+                            historiaOptometrica = viewModel.suggestHistoriaOptometrica()
+                        }
+                    },
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
+                ) {
+                    Text("Sugerir HO", maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
             }
 
             OutlinedTextField(
@@ -229,12 +298,18 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
             ) {
                 OutlinedButton(
                     onClick = { navController.popBackStack() },
+                    enabled = !saving,
                     modifier = Modifier.weight(1f)
                 ) {
                     Text("Cancelar")
                 }
                 Button(
                     onClick = {
+                        if (saving) return@Button
+                        if (pacienteId == null && !canAdd) {
+                            showPaywall = true
+                            return@Button
+                        }
                         if (nombreCompleto.isNotBlank() && edad.isNotBlank() && telefono.isNotBlank()) {
                             val p = Paciente(
                                 id = pacienteId ?: UUID.randomUUID().toString(),
@@ -243,7 +318,8 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
                                 telefono = telefono,
                                 fechaCreacion = fechaCreacion,
                                 dni = dni,
-                                fechaNacimiento = fechaNacimiento,
+                                historiaOptometrica = historiaOptometrica,
+                                fechaNacimiento = fechaNacimiento.takeIf { it.isNotBlank() }?.let(LocalDate::parse),
                                 sexo = sexo,
                                 email = email,
                                 direccion = direccion,
@@ -253,17 +329,41 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
                                 hobbies = hobbies
                             )
                             scope.launch {
-                                viewModel.savePaciente(p)
-                                navController.popBackStack()
+                                saving = true
+                                try {
+                                    val historiaNorm = historiaOptometrica.trim()
+                                    if (historiaNorm.isNotEmpty()) {
+                                        val duplicated = viewModel.existsDuplicateHistoriaOptometrica(
+                                            historia = historiaNorm,
+                                            excludePacienteId = pacienteId
+                                        )
+                                        if (duplicated) {
+                                            duplicateHoWarningText =
+                                                "Ya existe una historia optométrica con ese número en esta óptica."
+                                            showDuplicateHoWarning = true
+                                            return@launch
+                                        }
+                                    }
+                                    viewModel.savePaciente(p)
+                                    val currentRoute = navController.currentBackStackEntry?.destination?.route
+                                    navController.navigate("detallePaciente/${p.id}") {
+                                        if (currentRoute != null) {
+                                            popUpTo(currentRoute) { inclusive = true }
+                                        }
+                                    }
+                                } finally {
+                                    saving = false
+                                }
                             }
                         }
                     },
+                    enabled = !saving,
                     modifier = Modifier.weight(1f)
                 ) {
-                    Text("Guardar")
+                    Text(if (saving) "Guardando…" else "Guardar")
                 }
             }
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(12.dp))
         }
     }
 }

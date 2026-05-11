@@ -1,18 +1,30 @@
+import java.util.Properties
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.serialization)
 }
+
+val localProperties = Properties().apply {
+    val f = rootProject.file("local.properties")
+    if (f.exists()) f.inputStream().use { load(it) }
+}
+
+fun escapeForBuildConfigField(value: String): String =
+    value.replace("\\", "\\\\").replace("\"", "\\\"")
 
 android {
     namespace = "com.example.optoapp"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.example.optoapp"
         minSdk = 24
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 1
         versionName = "1.0"
         
@@ -22,6 +34,23 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
+
+        val supabaseUrl = escapeForBuildConfigField(localProperties.getProperty("supabase.url", ""))
+        val supabaseAnonKey = escapeForBuildConfigField(localProperties.getProperty("supabase.anon.key", ""))
+        val supabaseRedirectScheme = escapeForBuildConfigField(
+            localProperties.getProperty("supabase.redirect.scheme", "optoapp")
+        )
+        val supabaseRedirectHost = escapeForBuildConfigField(
+            localProperties.getProperty("supabase.redirect.host", "auth")
+        )
+        val forceProDev = localProperties.getProperty("optoapp.dev.force_pro", "false").equals("true", ignoreCase = true)
+        buildConfigField("String", "SUPABASE_URL", "\"$supabaseUrl\"")
+        buildConfigField("String", "SUPABASE_ANON_KEY", "\"$supabaseAnonKey\"")
+        buildConfigField("String", "SUPABASE_REDIRECT_SCHEME", "\"$supabaseRedirectScheme\"")
+        buildConfigField("String", "SUPABASE_REDIRECT_HOST", "\"$supabaseRedirectHost\"")
+        buildConfigField("Boolean", "FORCE_PRO_DEV", "$forceProDev")
+        manifestPlaceholders["SUPABASE_REDIRECT_SCHEME"] = supabaseRedirectScheme
+        manifestPlaceholders["SUPABASE_REDIRECT_HOST"] = supabaseRedirectHost
     }
 
     buildTypes {
@@ -40,6 +69,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     packaging {
         resources {
@@ -60,6 +90,7 @@ dependencies {
     implementation(libs.androidx.material.icons.extended)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.datastore.preferences)
+    implementation(libs.androidx.security.crypto)
     implementation(libs.gson)
 
     // Room
@@ -74,11 +105,33 @@ dependencies {
     implementation(libs.androidx.work.runtime.ktx)
     coreLibraryDesugaring(libs.desugar.jdk.libs)
 
+    implementation(libs.billing.ktx)
+
+    // Supabase
+    implementation(platform(libs.supabase.bom))
+    implementation(libs.supabase.auth)
+    implementation(libs.supabase.postgrest)
+    implementation(libs.supabase.realtime)
+    implementation(libs.ktor.client.cio)
+
     testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+
+    // Room testing
+    androidTestImplementation(libs.androidx.room.testing)
+    androidTestImplementation(libs.kotlinx.coroutines.test)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.core)
+}
+
+tasks.withType<KotlinCompile>().configureEach {
+    compilerOptions {
+        freeCompilerArgs.add("-Xannotation-default-target=param-property")
+    }
 }
