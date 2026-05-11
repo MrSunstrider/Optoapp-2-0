@@ -130,7 +130,7 @@ async function fetchServicios(
   return (data ?? []) as ServicioRow[];
 }
 
-function resolveRange(periodo: ReportePeriodo): { start: string; endExclusive: string } {
+export function resolveRange(periodo: ReportePeriodo): { start: string; endExclusive: string } {
   const now = new Date();
   const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   switch (periodo) {
@@ -160,7 +160,7 @@ function resolveRange(periodo: ReportePeriodo): { start: string; endExclusive: s
   }
 }
 
-function labelForPeriodo(periodo: ReportePeriodo): string {
+export function labelForPeriodo(periodo: ReportePeriodo): string {
   switch (periodo) {
     case "dia":
       return "Día";
