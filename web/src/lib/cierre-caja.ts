@@ -227,21 +227,8 @@ export async function fetchCierreFormalStatus(
   };
 }
 
-export function mapMedioPago(raw: string | null): CierreTx["medioPago"] {
-  const v = (raw ?? "").trim().toLowerCase();
-  if (!v || v.includes("efectivo")) return "Efectivo";
-  if (v.includes("tarjeta")) return "Tarjeta";
-  if (
-    v.includes("yape") ||
-    v.includes("plin") ||
-    v.includes("transfer") ||
-    v.includes("movil") ||
-    v.includes("móvil")
-  ) {
-    return "Móvil/Trans";
-  }
-  return "Otro";
-}
+import { mapMedioPago } from "@/lib/payment-methods";
+export { mapMedioPago };
 
 export function normalizeMoney(value: number): number {
   if (!Number.isFinite(value)) return 0;
