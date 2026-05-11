@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
 import { PDFDocument, StandardFonts } from "pdf-lib";
+import { z } from "zod";
 
 import { fetchMonturasInventario, computeInventarioSummary, soles } from "@/lib/inventario";
 import { formatOpticaActivaLine } from "@/lib/optica-display";
 import { fetchOpticaFiscal } from "@/lib/optica-fiscal";
 import { getActiveOpticaContext } from "@/lib/optica-context";
 import { createClient } from "@/lib/supabase/server";
+import { canAccessModule } from "@/lib/roles";
 
 export async function GET(request: Request) {
   const supabase = await createClient();
@@ -20,7 +22,15 @@ export async function GET(request: Request) {
   if (!activeOptica) {
     return NextResponse.json({ error: "Sin óptica activa" }, { status: 400 });
   }
-  const q = new URL(request.url).searchParams.get("q") ?? "";
+
+  if (!canAccessModule(activeOptica.rol, "inventario")) {
+    return NextResponse.json(
+      { error: "No autorizado para exportar inventario." },
+      { status: 403 }
+    );
+  }
+
+  const q = z.string().parse(new URL(request.url).searchParams.get("q") ?? "");
   const [fiscal, items] = await Promise.all([
     fetchOpticaFiscal(supabase, activeOptica.opticaId),
     fetchMonturasInventario(supabase, activeOptica.opticaId, q)
