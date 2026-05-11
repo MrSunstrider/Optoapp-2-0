@@ -1,5 +1,8 @@
 -- Persist rate-limit attempts across serverless cold starts.
 
+-- Necesario para preview branches de Supabase que no tienen pg_cron por defecto
+CREATE EXTENSION IF NOT EXISTS pg_cron WITH SCHEMA cron;
+
 CREATE TABLE IF NOT EXISTS public.pin_attempts (
     id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
     limit_key text NOT NULL,
