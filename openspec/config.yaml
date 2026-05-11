@@ -1,0 +1,36 @@
+# openspec/config.yaml
+schema: spec-driven
+
+context: |
+  Monorepo: Android (Kotlin/Compose) + Web (Next.js 15/React 19/TypeScript) + Supabase (PostgreSQL 17, 54 migrations)
+  Android: Jetpack Compose, Hilt DI, Room, KSP, Coroutines+Flow, Clean Architecture (data/domain/presentation)
+  Web: App Router, Tailwind CSS 3, Zod 4, Supabase SSR, Vitest 4.x, ESLint next/core-web-vitals, strict TS
+  Supabase: All schema via migrations, RLS policies, auth (email+password), edge functions (Deno 2), offline-first sync
+  Architecture: offline-first with Supabase sync, multi-tenant (optica_id), ViewModel+StateFlow (Android), Server Components (Web)
+  Style: Kotlin camelCase/PascalCase, snake_case in Postgres, no AI attributions, conventional commits, code only explains WHY not WHAT
+
+strict_tdd: true
+rules:
+  proposal:
+    - Include rollback plan for risky changes
+    - Clarify which platform(s) are affected (Android, Web, Supabase)
+  specs:
+    - Use Given/When/Then for scenarios
+    - Use RFC 2119 keywords (MUST, SHALL, SHOULD, MAY)
+  design:
+    - Include sequence diagrams for complex flows
+    - Document architecture decisions with rationale
+    - Specify both Android and Web impact when cross-platform
+  tasks:
+    - Group by platform, use hierarchical numbering
+    - Keep tasks completable in one session
+  apply:
+    - Follow existing code patterns from AGENTS.md
+    tdd: true
+    test_command: "npm test"
+  verify:
+    test_command: "npm test"
+    build_command: "npm run build"
+    coverage_threshold: 0
+  archive:
+    - Warn before merging destructive deltas
