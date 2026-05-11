@@ -3,14 +3,13 @@
 import { redirect } from "next/navigation";
 
 import {
-  findDuplicateHistoriaPacienteId,
-  suggestNextHistoriaOptometrica
+  suggestNextHoRPC,
+  checkDuplicateHo
 } from "@/lib/historia-optometrica";
 import { getOpticaPacienteLimitInfo } from "@/lib/optica-limits";
 import { fetchEliminacionesRestantesHoy } from "@/lib/paciente-delete-audit";
 import { getActiveOpticaContext } from "@/lib/optica-context";
 import {
-  fetchHistoriaRowsForOptica,
   localTodayDateOnly
 } from "@/lib/pacientes";
 import { canDeletePaciente, canManagePacientes } from "@/lib/roles";
@@ -57,29 +56,31 @@ function parsePacienteForm(formData: FormData) {
   };
 }
 
-export async function createPacienteAction(formData: FormData) {
+export async function createPacienteAction(
+  prevState: { error?: string } | null,
+  formData: FormData
+): Promise<{ error?: string } | null> {
   const activeOptica = await getActiveOpticaContext();
-  if (!activeOptica) redirect("/seleccion-optica");
-  if (!canManagePacientes(activeOptica.rol)) redirect("/pacientes");
+  if (!activeOptica) return { error: "Sin óptica activa" };
+  if (!canManagePacientes(activeOptica.rol)) return { error: "Sin permiso" };
 
   const p = parsePacienteForm(formData);
   if (!p.nombreCompleto || !p.telefono || Number.isNaN(p.edad) || p.edad <= 0) {
-    redirect("/pacientes/nuevo?error=validacion");
+    return { error: "Completa nombre, teléfono y edad." };
   }
 
   const supabase = await createClient();
 
   const limit = await getOpticaPacienteLimitInfo(supabase, activeOptica.opticaId);
   if (!limit.puedeCrearMas) {
-    redirect("/pacientes/nuevo?error=limite");
+    return { error: "Límite de pacientes alcanzado para esta óptica." };
   }
 
-  const rows = await fetchHistoriaRowsForOptica(supabase, activeOptica.opticaId);
   if (
     p.historiaOptometrica &&
-    findDuplicateHistoriaPacienteId(rows, p.historiaOptometrica, null)
+    (await checkDuplicateHo(supabase, activeOptica.opticaId, p.historiaOptometrica))
   ) {
-    redirect("/pacientes/nuevo?error=duplicado_ho");
+    return { error: "El número de historia optométrica ya existe." };
   }
 
   const newId = crypto.randomUUID();
@@ -107,35 +108,38 @@ export async function createPacienteAction(formData: FormData) {
     .maybeSingle();
 
   if (error?.code === "23505") {
-    redirect("/pacientes/nuevo?error=duplicado_ho");
+    return { error: "Ya existe esa historia optométrica en esta óptica." };
   }
   if (error || !data?.id) {
-    redirect("/pacientes/nuevo?error=guardar");
+    return { error: "No se pudo guardar. Intenta nuevamente." };
   }
 
   redirect(`/pacientes/${data.id}/evaluaciones?msg=creado`);
+  return null;
 }
 
-export async function updatePacienteAction(formData: FormData) {
+export async function updatePacienteAction(
+  prevState: { error?: string } | null,
+  formData: FormData
+): Promise<{ error?: string } | null> {
   const activeOptica = await getActiveOpticaContext();
-  if (!activeOptica) redirect("/seleccion-optica");
-  if (!canManagePacientes(activeOptica.rol)) redirect("/pacientes");
+  if (!activeOptica) return { error: "Sin óptica activa" };
+  if (!canManagePacientes(activeOptica.rol)) return { error: "Sin permiso" };
 
   const id = String(formData.get("id") ?? "").trim();
-  if (!id) redirect("/pacientes");
+  if (!id) return { error: "Falta ID del paciente" };
 
   const p = parsePacienteForm(formData);
   if (!p.nombreCompleto || !p.telefono || Number.isNaN(p.edad) || p.edad <= 0) {
-    redirect(`/pacientes/${id}/editar?error=validacion`);
+    return { error: "Revisa los campos obligatorios antes de guardar." };
   }
 
   const supabase = await createClient();
-  const rows = await fetchHistoriaRowsForOptica(supabase, activeOptica.opticaId);
   if (
     p.historiaOptometrica &&
-    findDuplicateHistoriaPacienteId(rows, p.historiaOptometrica, id)
+    (await checkDuplicateHo(supabase, activeOptica.opticaId, p.historiaOptometrica, id))
   ) {
-    redirect(`/pacientes/${id}/editar?error=duplicado_ho`);
+    return { error: "Ya existe otra ficha con esa HO en esta óptica." };
   }
 
   const { data, error } = await supabase
@@ -162,24 +166,28 @@ export async function updatePacienteAction(formData: FormData) {
     .maybeSingle();
 
   if (error?.code === "23505") {
-    redirect(`/pacientes/${id}/editar?error=duplicado_ho`);
+    return { error: "Ya existe otra ficha con esa HO en esta óptica." };
   }
   if (error || !data?.id) {
-    redirect(`/pacientes/${id}/editar?error=guardar`);
+    return { error: "No se pudo guardar los cambios." };
   }
 
   redirect(`/pacientes/${id}/evaluaciones?msg=guardado`);
+  return null;
 }
 
-export async function deletePacienteAction(formData: FormData) {
+export async function deletePacienteAction(
+  prevState: { error?: string } | null,
+  formData: FormData
+): Promise<{ error?: string } | null> {
   const activeOptica = await getActiveOpticaContext();
-  if (!activeOptica) redirect("/seleccion-optica");
-  if (!canDeletePaciente(activeOptica.rol)) redirect("/pacientes");
+  if (!activeOptica) return { error: "Sin óptica activa" };
+  if (!canDeletePaciente(activeOptica.rol)) return { error: "Sin permiso" };
 
   const id = String(formData.get("id") ?? "").trim();
   const confirm = String(formData.get("confirm") ?? "");
   if (!id || confirm !== "ELIMINAR") {
-    redirect(`/pacientes/${id}/evaluaciones?error=confirm`);
+    return { error: "Debes escribir ELIMINAR para confirmar." };
   }
 
   const supabase = await createClient();
@@ -195,9 +203,9 @@ export async function deletePacienteAction(formData: FormData) {
     const msg =
       error?.message?.includes("Límite diario") ||
       error?.message?.includes("límite diario")
-        ? "limite_borrado"
-        : "eliminar";
-    redirect(`/pacientes/${id}/evaluaciones?error=${msg}`);
+        ? "Límite diario de eliminaciones alcanzado."
+        : "No se pudo eliminar el paciente.";
+    return { error: msg };
   }
 
   const restantes = await fetchEliminacionesRestantesHoy(
@@ -207,6 +215,7 @@ export async function deletePacienteAction(formData: FormData) {
   const qs = new URLSearchParams({ msg: "eliminado" });
   if (restantes != null) qs.set("restantes", String(restantes));
   redirect(`/pacientes?${qs.toString()}`);
+  return null;
 }
 
 export async function suggestHistoriaOptometricaAction(): Promise<{
@@ -220,7 +229,7 @@ export async function suggestHistoriaOptometricaAction(): Promise<{
     return { ok: false, error: "Sin permiso" };
 
   const supabase = await createClient();
-  const rows = await fetchHistoriaRowsForOptica(supabase, activeOptica.opticaId);
-  const historias = rows.map((r) => r.historia_optometrica);
-  return { ok: true, value: suggestNextHistoriaOptometrica(historias) };
+  const result = await suggestNextHoRPC(supabase, activeOptica.opticaId);
+  if (!result.ok) return { ok: false, error: result.error };
+  return { ok: true, value: result.value };
 }

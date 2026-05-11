@@ -155,13 +155,16 @@ function buildEvaluacionPayload(
   };
 }
 
-export async function createEvaluacionAction(formData: FormData) {
+export async function createEvaluacionAction(
+  prevState: { error?: string } | null,
+  formData: FormData
+): Promise<{ error?: string } | null> {
   const activeOptica = await getActiveOpticaContext();
-  if (!activeOptica) redirect("/seleccion-optica");
-  if (!canManagePacientes(activeOptica.rol)) redirect("/pacientes");
+  if (!activeOptica) return { error: "Sin óptica activa" };
+  if (!canManagePacientes(activeOptica.rol)) return { error: "Sin permiso" };
 
   const pacienteId = textOrEmpty(formData, "pacienteId");
-  if (!pacienteId) redirect("/pacientes");
+  if (!pacienteId) return { error: "Falta paciente" };
 
   const payload = {
     id: crypto.randomUUID(),
@@ -171,22 +174,24 @@ export async function createEvaluacionAction(formData: FormData) {
   const supabase = await createClient();
   const { error } = await supabase.from("evaluaciones").insert(payload);
   if (error) {
-    redirect(
-      `/pacientes/${pacienteId}/evaluaciones/nueva?error=guardar_eval`
-    );
+    return { error: "No se pudo guardar la evaluación. Verifica permisos o intenta nuevamente." };
   }
 
   redirect(`/pacientes/${pacienteId}/evaluaciones?msg=eval_creada`);
+  return null;
 }
 
-export async function updateEvaluacionAction(formData: FormData) {
+export async function updateEvaluacionAction(
+  prevState: { error?: string } | null,
+  formData: FormData
+): Promise<{ error?: string } | null> {
   const activeOptica = await getActiveOpticaContext();
-  if (!activeOptica) redirect("/seleccion-optica");
-  if (!canManagePacientes(activeOptica.rol)) redirect("/pacientes");
+  if (!activeOptica) return { error: "Sin óptica activa" };
+  if (!canManagePacientes(activeOptica.rol)) return { error: "Sin permiso" };
 
   const pacienteId = textOrEmpty(formData, "pacienteId");
   const evaluacionId = textOrEmpty(formData, "evaluacionId");
-  if (!pacienteId || !evaluacionId) redirect("/pacientes");
+  if (!pacienteId || !evaluacionId) return { error: "Faltan datos" };
 
   const supabase = await createClient();
   const { error } = await supabase
@@ -197,10 +202,9 @@ export async function updateEvaluacionAction(formData: FormData) {
     .eq("paciente_id", pacienteId);
 
   if (error) {
-    redirect(
-      `/pacientes/${pacienteId}/evaluaciones/${evaluacionId}/editar?error=guardar_eval`
-    );
+    return { error: "No se pudo guardar la evaluación. Verifica permisos o intenta nuevamente." };
   }
 
   redirect(`/pacientes/${pacienteId}/evaluaciones?msg=eval_actualizada`);
+  return null;
 }

@@ -2,18 +2,13 @@ import { NextResponse } from "next/server";
 
 import { getActiveOpticaContext } from "@/lib/optica-context";
 import { upsertOpticaSettingsPatch } from "@/lib/optica-settings";
-import { createClient } from "@/lib/supabase/server";
 import { UserSettingsSchema } from "@/lib/api-schemas";
+import { requireUser } from "@/lib/api-auth";
 
 export async function POST(request: Request) {
-  const supabase = await createClient();
-  const {
-    data: { user }
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ error: "No autorizado." }, { status: 401 });
-  }
+  const session = await requireUser();
+  if (session instanceof NextResponse) return session;
+  const { supabase, user } = session;
 
   let raw: unknown;
   try {

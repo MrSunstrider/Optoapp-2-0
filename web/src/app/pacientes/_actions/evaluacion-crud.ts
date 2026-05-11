@@ -6,16 +6,17 @@ import { getActiveOpticaContext } from "@/lib/optica-context";
 import { canManagePacientes } from "@/lib/roles";
 import { createClient } from "@/lib/supabase/server";
 
-export async function deleteEvaluacionAction(formData: FormData) {
+export async function deleteEvaluacionAction(
+  prevState: { error?: string } | null,
+  formData: FormData
+): Promise<{ error?: string } | null> {
   const activeOptica = await getActiveOpticaContext();
-  if (!activeOptica) redirect("/seleccion-optica");
-  if (!canManagePacientes(activeOptica.rol)) redirect("/pacientes");
+  if (!activeOptica) return { error: "Sin óptica activa" };
+  if (!canManagePacientes(activeOptica.rol)) return { error: "Sin permiso" };
 
   const pacienteId = String(formData.get("pacienteId") ?? "").trim();
   const evalId = String(formData.get("evaluacionId") ?? "").trim();
-  if (!pacienteId || !evalId) {
-    redirect("/pacientes");
-  }
+  if (!pacienteId || !evalId) return { error: "Faltan datos de la evaluación" };
 
   const supabase = await createClient();
   const { error } = await supabase
@@ -26,8 +27,9 @@ export async function deleteEvaluacionAction(formData: FormData) {
     .eq("paciente_id", pacienteId);
 
   if (error) {
-    redirect(`/pacientes/${pacienteId}/evaluaciones?error=eliminar_eval`);
+    return { error: "No se pudo eliminar la evaluación. Intenta de nuevo." };
   }
 
   redirect(`/pacientes/${pacienteId}/evaluaciones?msg=eval_eliminada`);
+  return null; // unreachable, but satisfies TS
 }

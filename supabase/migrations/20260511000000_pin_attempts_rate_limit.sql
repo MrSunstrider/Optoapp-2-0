@@ -58,9 +58,15 @@ REVOKE EXECUTE ON FUNCTION public.check_rate_limit(text, integer, integer) FROM 
 GRANT EXECUTE ON FUNCTION public.check_rate_limit(text, integer, integer) TO authenticated, service_role;
 
 -- pg_cron cleanup (hourly, removes rows older than 24h)
-SELECT cron.unschedule('cleanup-pin-attempts');
-SELECT cron.schedule(
+DO $cron$
+BEGIN
+  IF EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'cleanup-pin-attempts') THEN
+    PERFORM cron.unschedule('cleanup-pin-attempts');
+  END IF;
+  PERFORM cron.schedule(
     'cleanup-pin-attempts',
     '0 * * * *',
-    $$ DELETE FROM public.pin_attempts WHERE window_start < now() - interval '24 hours' $$
-);
+    $sql$ DELETE FROM public.pin_attempts WHERE window_start < now() - interval '24 hours' $sql$
+  );
+END;
+$cron$;
