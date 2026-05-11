@@ -1,6 +1,7 @@
 import { SupabaseClient } from "@supabase/supabase-js";
 import { IPacienteRepository } from "@/domain/repositories/PacienteRepository";
 import { Paciente, PacienteSchema } from "@/domain/models/Paciente";
+import { escapeIlikeFragment } from "@/lib/sanitize";
 
 export class SupabasePacienteRepository implements IPacienteRepository {
   constructor(private supabase: SupabaseClient) {}
@@ -14,7 +15,10 @@ export class SupabasePacienteRepository implements IPacienteRepository {
 
     if (options?.search) {
       const s = options.search.trim();
-      query = query.or(`nombre_completo.ilike.%${s}%,telefono.ilike.%${s}%,historia_optometrica.ilike.%${s}%`);
+      if (s.length > 0) {
+        const escaped = escapeIlikeFragment(s);
+        query = query.or(`nombre_completo.ilike.%${escaped}%,telefono.ilike.%${escaped}%,historia_optometrica.ilike.%${escaped}%`);
+      }
     }
 
     if (options?.page && options?.pageSize) {
