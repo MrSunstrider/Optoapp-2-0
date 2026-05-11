@@ -1,49 +1,60 @@
 import { NextResponse } from "next/server";
 import { PDFDocument, StandardFonts } from "pdf-lib";
+import { z } from "zod";
 
 import { fetchDashboardKpis } from "@/lib/dashboard-kpis";
 import { getActiveOpticaContext } from "@/lib/optica-context";
 import { createClient } from "@/lib/supabase/server";
+import { canViewBiAndReports, canAccessModule } from "@/lib/roles";
 
-type ExportType =
-  | "pendientes"
-  | "cierre"
-  | "inventario-csv"
-  | "inventario-pdf";
+const ExportTypeSchema = z.enum([
+  "pendientes",
+  "cierre",
+  "inventario-csv",
+  "inventario-pdf"
+]);
+type ExportType = z.infer<typeof ExportTypeSchema>;
 
-type PendDisp = {
-  id: string;
-  fecha: string | null;
-  ot: string | null;
-  monto_total: number | null;
-  monto_pagado: number | null;
-  estado_entrega: string | null;
-};
+const PendDispSchema = z.object({
+  id: z.string(),
+  fecha: z.string().nullable(),
+  ot: z.string().nullable(),
+  monto_total: z.number().nullable(),
+  monto_pagado: z.number().nullable(),
+  estado_entrega: z.string().nullable()
+});
 
-type PendServ = {
-  id: string;
-  fecha: string | null;
-  ot: string | null;
-  descripcion: string | null;
-  monto_total: number | null;
-  a_cuenta: number | null;
-  estado: string | null;
-};
+const PendServSchema = z.object({
+  id: z.string(),
+  fecha: z.string().nullable(),
+  ot: z.string().nullable(),
+  descripcion: z.string().nullable(),
+  monto_total: z.number().nullable(),
+  a_cuenta: z.number().nullable(),
+  estado: z.string().nullable()
+});
 
-type InvRow = {
-  id: string;
-  sku: string | null;
-  marca: string | null;
-  modelo: string | null;
-  stock_actual: number | null;
-  activo: boolean | null;
-};
+const InvRowSchema = z.object({
+  id: z.string(),
+  sku: z.string().nullable(),
+  marca: z.string().nullable(),
+  modelo: z.string().nullable(),
+  stock_actual: z.number().nullable(),
+  activo: z.boolean().nullable()
+});
+
+type PendDisp = z.infer<typeof PendDispSchema>;
+type PendServ = z.infer<typeof PendServSchema>;
+type InvRow = z.infer<typeof InvRowSchema>;
 
 export async function GET(request: Request) {
-  const type = getType(new URL(request.url).searchParams.get("type"));
-  if (!type) {
+  const typeResult = ExportTypeSchema.safeParse(
+    new URL(request.url).searchParams.get("type")
+  );
+  if (!typeResult.success) {
     return NextResponse.json({ error: "Tipo de exportación inválido." }, { status: 400 });
   }
+  const type = typeResult.data;
 
   const supabase = await createClient();
   const {
@@ -56,6 +67,26 @@ export async function GET(request: Request) {
   const activeOptica = await getActiveOpticaContext();
   if (!activeOptica) {
     return NextResponse.json({ error: "Sin óptica activa." }, { status: 400 });
+  }
+
+  if (
+    (type === "pendientes" || type === "cierre") &&
+    !canViewBiAndReports(activeOptica.rol)
+  ) {
+    return NextResponse.json(
+      { error: "No autorizado para exportar reportes financieros." },
+      { status: 403 }
+    );
+  }
+
+  if (
+    (type === "inventario-csv" || type === "inventario-pdf") &&
+    !canAccessModule(activeOptica.rol, "inventario")
+  ) {
+    return NextResponse.json(
+      { error: "No autorizado para exportar inventario." },
+      { status: 403 }
+    );
   }
 
   if (type === "pendientes") {
@@ -98,8 +129,11 @@ async function exportPendientesCsv(
     );
   }
 
+  const dispRows = z.array(PendDispSchema).parse(dispResp.data ?? []);
+  const servRows = z.array(PendServSchema).parse(servResp.data ?? []);
+
   const lines = ["tipo,id,fecha,ot,descripcion,total,pagado_o_cuenta,saldo,estado"];
-  for (const row of (dispResp.data ?? []) as PendDisp[]) {
+  for (const row of dispRows) {
     const total = row.monto_total ?? 0;
     const pagado = row.monto_pagado ?? 0;
     const saldo = total - pagado;
@@ -118,7 +152,7 @@ async function exportPendientesCsv(
     );
   }
 
-  for (const row of (servResp.data ?? []) as PendServ[]) {
+  for (const row of servRows) {
     const total = row.monto_total ?? 0;
     const aCuenta = row.a_cuenta ?? 0;
     const saldo = total - aCuenta;
@@ -187,8 +221,9 @@ async function exportInventarioCsv(
     );
   }
 
+  const rows = z.array(InvRowSchema).parse(data ?? []);
   const lines = ["id,sku,marca,modelo,stock_actual,activo"];
-  for (const row of (data ?? []) as InvRow[]) {
+  for (const row of rows) {
     lines.push(
       toCsvLine([
         row.id,
@@ -223,7 +258,7 @@ async function exportInventarioPdf(
     );
   }
 
-  const rows = (data ?? []) as InvRow[];
+  const rows = z.array(InvRowSchema).parse(data ?? []);
   const pdfDoc = await PDFDocument.create();
   const page = pdfDoc.addPage([595.28, 841.89]);
   const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
@@ -291,18 +326,6 @@ function toCsvLine(values: Array<string>) {
       return normalized;
     })
     .join(",");
-}
-
-function getType(value: string | null): ExportType | null {
-  if (
-    value === "pendientes" ||
-    value === "cierre" ||
-    value === "inventario-csv" ||
-    value === "inventario-pdf"
-  ) {
-    return value;
-  }
-  return null;
 }
 
 function dateOnly(date: Date): string {

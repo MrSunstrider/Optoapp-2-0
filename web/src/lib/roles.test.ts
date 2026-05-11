@@ -124,12 +124,28 @@ describe("canAccessModule", () => {
     });
   });
 
-  describe("other modules", () => {
-    it("returns true for all roles including invitado (fallback)", () => {
-      // Non-restricted modules return true for all roles
+  describe("inventario module", () => {
+    it("returns true for admin", () => {
       expect(canAccessModule("admin", "inventario")).toBe(true);
+    });
+
+    it("returns true for asesor", () => {
       expect(canAccessModule("asesor", "inventario")).toBe(true);
-      expect(canAccessModule("invitado", "inventario")).toBe(true);
+    });
+
+    it("returns true for gerente", () => {
+      expect(canAccessModule("gerente", "inventario")).toBe(true);
+    });
+
+    it("returns false for invitado", () => {
+      expect(canAccessModule("invitado", "inventario")).toBe(false);
+    });
+  });
+
+  describe("other modules (fallback)", () => {
+    it("returns true for unknown modules", () => {
+      expect(canAccessModule("admin", "configuracion")).toBe(true);
+      expect(canAccessModule("invitado", "configuracion")).toBe(true);
     });
 
     it("is case insensitive for module name", () => {
