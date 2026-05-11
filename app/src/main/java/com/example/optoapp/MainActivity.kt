@@ -73,6 +73,7 @@ fun OptoAppNavigation(authViewModel: AuthViewModel) {
 
     val isAuthChecked by authViewModel.isAuthChecked.collectAsState()
     val isLoggedIn by authViewModel.isLoggedIn.collectAsState(initial = null)
+    val pinHasBeenSet by authViewModel.pinHasBeenSet.collectAsState(initial = null)
     val isPinRequired by authViewModel.isPinRequired.collectAsState(initial = null)
 
     // Guardia global: si la sesión se invalida, volver al login vaciando la pila
@@ -98,6 +99,7 @@ fun OptoAppNavigation(authViewModel: AuthViewModel) {
                 if (isAuthChecked) {
                     val dest = when {
                         isLoggedIn == false -> "login"
+                        pinHasBeenSet == false -> "create_pin"
                         isPinRequired == true -> "pin"
                         else -> "main"
                     }
@@ -113,6 +115,7 @@ fun OptoAppNavigation(authViewModel: AuthViewModel) {
             }
         }
 
+        composable("create_pin") { CreatePinScreen(navController, viewModel = authViewModel) }
         composable("pin") { PinScreen(navController, viewModel = authViewModel) }
         composable("login") { LoginScreen(navController, viewModel = authViewModel) }
         composable("onboarding_optica") { OnboardingOpticaScreen(navController, viewModel = authViewModel) }

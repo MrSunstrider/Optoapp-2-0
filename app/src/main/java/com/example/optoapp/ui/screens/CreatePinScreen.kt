@@ -8,23 +8,22 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.optoapp.data.SecurityManager
 import com.example.optoapp.viewmodel.AuthViewModel
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 @Composable
-fun PinScreen(navController: NavController, viewModel: AuthViewModel = hiltViewModel()) {
-    val pinInput by viewModel.pinInput.collectAsState()
+fun CreatePinScreen(navController: NavController, viewModel: AuthViewModel = hiltViewModel()) {
     val scope = rememberCoroutineScope()
+    var step by remember { mutableStateOf(1) }
+    var firstPin by remember { mutableStateOf("") }
+    var secondPin by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
     Column(
@@ -42,23 +41,25 @@ fun PinScreen(navController: NavController, viewModel: AuthViewModel = hiltViewM
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "Ingresá tu PIN",
+            text = if (step == 1) "Crear PIN de seguridad (6 dígitos)"
+                   else "Confirmar PIN",
             fontSize = 18.sp,
             color = MaterialTheme.colorScheme.onBackground
         )
         Spacer(modifier = Modifier.height(32.dp))
 
-        // PIN display (dots)
+        val displayPin = if (step == 1) firstPin else secondPin
         Row(
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             repeat(SecurityManager.PIN_LENGTH) { index ->
-                val filled = index < pinInput.length
+                val filled = index < displayPin.length
                 Box(
                     modifier = Modifier
                         .size(20.dp)
                         .background(
-                            if (filled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
+                            if (filled) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.outlineVariant,
                             shape = CircleShape
                         )
                 )
@@ -72,7 +73,6 @@ fun PinScreen(navController: NavController, viewModel: AuthViewModel = hiltViewM
 
         Spacer(modifier = Modifier.height(48.dp))
 
-        // Number Pad
         val numbers = listOf(
             listOf("1", "2", "3"),
             listOf("4", "5", "6"),
@@ -88,28 +88,46 @@ fun PinScreen(navController: NavController, viewModel: AuthViewModel = hiltViewM
                 row.forEach { char ->
                     Button(
                         onClick = {
+                            errorMessage = null
                             when (char) {
                                 "C" -> {
-                                    viewModel.clearPin()
-                                    errorMessage = null
+                                    if (step == 1) firstPin = ""
+                                    else secondPin = ""
                                 }
                                 "OK" -> {
                                     scope.launch {
-                                        if (viewModel.validatePin()) {
-                                            // PIN correcto → Navegar directo a main
-                                            // (MainActivity garantiza que hay sesión activa si estamos aquí)
-                                            navController.navigate("main") {
-                                                popUpTo("pin") { inclusive = true }
+                                        if (step == 1) {
+                                            if (firstPin.length == SecurityManager.PIN_LENGTH) {
+                                                if (!SecurityManager.isValidPin(firstPin)) {
+                                                    errorMessage = "PIN débil. Evita secuencias o repeticiones."
+                                                    firstPin = ""
+                                                } else {
+                                                    step = 2
+                                                }
                                             }
                                         } else {
-                                            errorMessage = "PIN incorrecto"
-                                            viewModel.clearPin()
+                                            if (secondPin == firstPin) {
+                                                viewModel.createPin(firstPin)
+                                                navController.navigate("main") {
+                                                    popUpTo("create_pin") { inclusive = true }
+                                                }
+                                            } else {
+                                                errorMessage = "Los PINs no coinciden"
+                                                secondPin = ""
+                                            }
                                         }
                                     }
                                 }
                                 else -> {
-                                    viewModel.onPinDigit(char)
-                                    errorMessage = null
+                                    if (step == 1) {
+                                        if (firstPin.length < SecurityManager.PIN_LENGTH) {
+                                            firstPin += char
+                                        }
+                                    } else {
+                                        if (secondPin.length < SecurityManager.PIN_LENGTH) {
+                                            secondPin += char
+                                        }
+                                    }
                                 }
                             }
                         },
@@ -118,7 +136,7 @@ fun PinScreen(navController: NavController, viewModel: AuthViewModel = hiltViewM
                             .padding(4.dp),
                         shape = CircleShape,
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = if (char == "OK") MaterialTheme.colorScheme.tertiary 
+                            containerColor = if (char == "OK") MaterialTheme.colorScheme.tertiary
                                             else if (char == "C") MaterialTheme.colorScheme.error
                                             else MaterialTheme.colorScheme.surfaceVariant,
                             contentColor = when (char) {

@@ -157,6 +157,7 @@ fun ConfiguracionScreen(
         }
     }
     
+    val pinHasBeenSet by viewModel.pinHasBeenSet.collectAsState(initial = true)
     val isPinRequired by viewModel.isPinRequired.collectAsState(initial = true)
     val remindersEnabled by settingsVm.remindersEnabled.collectAsState()
     val notificationPermissionGranted =
@@ -246,6 +247,7 @@ fun ConfiguracionScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             SecuritySection(
+                pinHasBeenSet = pinHasBeenSet,
                 isPinRequired = isPinRequired,
                 pinActual = pinActual,
                 nuevoPin = nuevoPin,
@@ -255,7 +257,7 @@ fun ConfiguracionScreen(
                 onConfirmPinChange = { confirmPin = it },
                 onPinRequiredChange = { viewModel.togglePinRequired(it) },
                 onUpdatePin = {
-                    if (nuevoPin == confirmPin && nuevoPin.length == SecurityManager.PIN_LENGTH) {
+                    if (nuevoPin == confirmPin && SecurityManager.isValidPin(nuevoPin)) {
                         scope.launch {
                             viewModel.updatePin(pinActual, nuevoPin)
                             dialogMsg = context.getString(R.string.config_security_pin_updated)
@@ -727,6 +729,7 @@ fun ConfiguracionScreen(
 
 @Composable
 private fun SecuritySection(
+    pinHasBeenSet: Boolean,
     isPinRequired: Boolean,
     pinActual: String,
     nuevoPin: String,
@@ -759,13 +762,15 @@ private fun SecuritySection(
                 )
             }
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-            OutlinedTextField(
-                value = pinActual,
-                onValueChange = { onPinActualChange(it.filter { c -> c.isDigit() }.take(SecurityManager.PIN_LENGTH)) },
-                label = { Text(stringResource(R.string.config_pin_current_label, SecurityManager.PIN_LENGTH)) },
-                modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-            )
+            if (pinHasBeenSet) {
+                OutlinedTextField(
+                    value = pinActual,
+                    onValueChange = { onPinActualChange(it.filter { c -> c.isDigit() }.take(SecurityManager.PIN_LENGTH)) },
+                    label = { Text(stringResource(R.string.config_pin_current_label, SecurityManager.PIN_LENGTH)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                )
+            }
             OutlinedTextField(
                 value = nuevoPin,
                 onValueChange = { onNuevoPinChange(it.filter { c -> c.isDigit() }.take(SecurityManager.PIN_LENGTH)) },
@@ -784,7 +789,10 @@ private fun SecuritySection(
                 onClick = onUpdatePin,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text(stringResource(R.string.config_pin_update_action))
+                Text(
+                    if (pinHasBeenSet) stringResource(R.string.config_pin_update_action)
+                    else "Crear PIN"
+                )
             }
         }
     }

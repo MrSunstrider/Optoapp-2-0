@@ -10,6 +10,7 @@ import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKeys
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -35,14 +36,14 @@ class SessionManager(private val context: Context) {
     private val _opticaRolFlow = MutableStateFlow(getSecureOpticaRol())
 
     companion object {
-        /** Valor por defecto histórico en Room; las filas con este tenant deben reasignarse a la óptica de sesión cuando el usuario inicia sesión con SaaS. */
         const val LEGACY_OPTICA_ID = "mi_optica_base"
 
-        private val IS_LOGGED_IN  = booleanPreferencesKey("saas_logged_in")
-        private val USER_NAME     = stringPreferencesKey("saas_user_name")
-        private val LAST_LOGIN_TS = longPreferencesKey("saas_last_login_ts")
-        private val IS_PIN_REQUIRED = booleanPreferencesKey("pref_is_pin_required")
-        private val USER_TIMEZONE = stringPreferencesKey("pref_user_timezone")
+        private val IS_LOGGED_IN     = booleanPreferencesKey("saas_logged_in")
+        private val USER_NAME        = stringPreferencesKey("saas_user_name")
+        private val LAST_LOGIN_TS    = longPreferencesKey("saas_last_login_ts")
+        private val IS_PIN_REQUIRED  = booleanPreferencesKey("pref_is_pin_required")
+        private val USER_TIMEZONE    = stringPreferencesKey("pref_user_timezone")
+        private val PIN_HAS_BEEN_SET = booleanPreferencesKey("pref_pin_has_been_set")
     }
 
     // ─── Lectura reactiva ─────────────────────────────────────────────────────
@@ -71,6 +72,9 @@ class SessionManager(private val context: Context) {
 
     val lastLoginTimestamp: Flow<Long> = context.dataStore.data
         .map { prefs: Preferences -> prefs[LAST_LOGIN_TS] ?: 0L }
+
+    val pinHasBeenSet: Flow<Boolean> = context.dataStore.data
+        .map { prefs: Preferences -> prefs[PIN_HAS_BEEN_SET] ?: false }
 
     val isPinRequired: Flow<Boolean> = context.dataStore.data
         .map { prefs: Preferences -> prefs[IS_PIN_REQUIRED] ?: true }
@@ -102,6 +106,14 @@ class SessionManager(private val context: Context) {
             prefs[USER_NAME]    = name
             prefs[LAST_LOGIN_TS] = System.currentTimeMillis()
         }
+    }
+
+    suspend fun setPinHasBeenSet(value: Boolean) {
+        context.dataStore.edit { prefs -> prefs[PIN_HAS_BEEN_SET] = value }
+    }
+
+    suspend fun hasBeenSetAtLeastOnce(): Boolean {
+        return context.dataStore.data.first()[PIN_HAS_BEEN_SET] ?: false
     }
 
     suspend fun setPinRequired(required: Boolean) {

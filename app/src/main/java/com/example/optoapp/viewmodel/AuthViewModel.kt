@@ -69,8 +69,13 @@ class AuthViewModel @Inject constructor(
 
     fun updatePin(oldPin: String, newPin: String) = viewModelScope.launch {
         if (oldPin != userPin.first()) return@launch
-        if (newPin.length != SecurityManager.PIN_LENGTH) return@launch
+        if (!SecurityManager.isValidPin(newPin)) return@launch
         securityManager.savePin(newPin)
+    }
+
+    fun createPin(pin: String) = viewModelScope.launch {
+        if (!SecurityManager.isValidPin(pin)) return@launch
+        securityManager.savePin(pin)
     }
 
     // ─── Estado Supabase Auth ─────────────────────────────────────────────────
@@ -94,6 +99,9 @@ class AuthViewModel @Inject constructor(
 
     val userEmail = sessionManager.userEmail
     val userName  = sessionManager.userName
+
+    /** Flujo reactivo: ¿el PIN ha sido configurado por el usuario? */
+    val pinHasBeenSet = sessionManager.pinHasBeenSet
 
     /** Flujo para la pantalla de configuración: ¿el PIN es obligatorio? */
     val isPinRequired = sessionManager.isPinRequired
