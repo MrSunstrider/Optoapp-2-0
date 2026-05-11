@@ -4,6 +4,29 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { getActiveOpticaContext } from "@/lib/optica-context";
 import { createClient } from "@/lib/supabase/server";
 
+type RouteHandler = (
+  request: Request,
+  context?: { params: Promise<Record<string, string>> }
+) => Promise<NextResponse>;
+
+/**
+ * Wraps an API route handler with error handling.
+ * Catches unexpected errors and returns a 500 JSON response.
+ */
+export function withErrorHandler(handler: RouteHandler): RouteHandler {
+  return async (request, context) => {
+    try {
+      return await handler(request, context);
+    } catch (e) {
+      console.error("[api] Error no controlado:", e);
+      return NextResponse.json(
+        { error: "Error interno del servidor." },
+        { status: 500 }
+      );
+    }
+  };
+}
+
 export type UserSession = {
   supabase: SupabaseClient;
   user: NonNullable<Awaited<ReturnType<SupabaseClient["auth"]["getUser"]>>["data"]["user"]>;

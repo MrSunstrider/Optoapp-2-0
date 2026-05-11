@@ -5,6 +5,13 @@
  */
 
 /**
+ * Today's date as YYYY-MM-DD using local timezone.
+ */
+export function today(): string {
+  return dateOnly(new Date());
+}
+
+/**
  * Format a Date as YYYY-MM-DD using the given IANA timezone.
  * If timeZone is omitted or "auto", uses the local system timezone.
  */

@@ -7,13 +7,9 @@ import { getActiveOpticaContext } from "@/lib/optica-context";
 import { fetchOpticaFiscal } from "@/lib/optica-fiscal";
 import { canManagePacientes } from "@/lib/roles";
 import { createClient } from "@/lib/supabase/server";
+import { today } from "@/lib/date-utils";
 
-function todayDateOnly(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
-    d.getDate()
-  ).padStart(2, "0")}`;
-}
+function todayDateOnly(): string { return today(); }
 
 export default async function NuevaDispensacionPage({
   params,
