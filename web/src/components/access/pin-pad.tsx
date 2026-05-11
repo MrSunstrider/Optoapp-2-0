@@ -57,9 +57,8 @@ export function PinPad({
                 disabled={confirmDisabled}
                 aria-label="Confirmar PIN"
               >
-                <span className="flex flex-col items-center justify-center leading-none">
-                  <span>O</span>
-                  <span>K</span>
+                <span className="flex items-center justify-center font-bold tracking-tight">
+                  OK
                 </span>
               </button>
             );
