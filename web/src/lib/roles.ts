@@ -20,6 +20,7 @@ export function canAccessModule(role: string, moduleName: string): boolean {
   if (moduleKey === "servicios-varios") return canReadPacientes(role);
   if (moduleKey === "reportes" || moduleKey === "estadisticas")
     return canViewBiAndReports(role);
+  if (moduleKey === "inventario") return canReadPacientes(role);
   return true;
 }
 
