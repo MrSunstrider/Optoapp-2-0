@@ -38,8 +38,10 @@ grant execute on function public.is_internal_owner() to authenticated, service_r
 revoke execute on function public.opticas_lock_plan_from_clients() from public;
 grant execute on function public.opticas_lock_plan_from_clients() to authenticated, service_role;
 
-revoke execute on function public.rls_auto_enable() from public;
-grant execute on function public.rls_auto_enable() to authenticated, service_role;
+-- revoke + grant on rls_auto_enable removed — Supabase-managed function, not available in preview/CI/Docker.
+-- Already executed in production where the function exists.
+-- revoke execute on function public.rls_auto_enable() from public;
+-- grant execute on function public.rls_auto_enable() to authenticated, service_role;
 
 revoke execute on function public.sync_user_profiles_from_auth() from public;
 grant execute on function public.sync_user_profiles_from_auth() to authenticated, service_role;

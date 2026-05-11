@@ -68,6 +68,26 @@ object DatabaseModule {
     }
 
     @Provides
+    fun providePacienteRepository(
+        pacienteDao: PacienteDao,
+        evaluacionDao: EvaluacionDao
+    ): PacienteRepository = PacienteRepository(pacienteDao, evaluacionDao)
+
+    @Provides
+    fun provideDispensacionRepository(
+        dispensacionDao: DispensacionDao,
+        pagoDao: PagoDao,
+        servicioExtraDao: ServicioExtraDao
+    ): DispensacionRepository = DispensacionRepository(dispensacionDao, pagoDao, servicioExtraDao)
+
+    @Provides
+    fun provideSyncRepository(
+        syncStateTracker: SyncStateTracker,
+        monturaDao: MonturaDao,
+        monturaMovimientoDao: MonturaMovimientoDao
+    ): SyncRepository = SyncRepository(syncStateTracker, monturaDao, monturaMovimientoDao)
+
+    @Provides
     @Singleton
     fun provideOptoRepository(
         database: OptoDatabase,
@@ -79,7 +99,10 @@ object DatabaseModule {
         monturaDao: MonturaDao,
         monturaMovimientoDao: MonturaMovimientoDao,
         syncStateTracker: SyncStateTracker,
-        postSaveSyncScheduler: Lazy<PostSaveSyncScheduler>
+        postSaveSyncScheduler: Lazy<PostSaveSyncScheduler>,
+        pacienteRepo: PacienteRepository,
+        dispensacionRepo: DispensacionRepository,
+        syncRepo: SyncRepository
     ): OptoRepository {
         return OptoRepository(
             database,
@@ -91,7 +114,10 @@ object DatabaseModule {
             monturaDao,
             monturaMovimientoDao,
             syncStateTracker,
-            postSaveSyncScheduler
+            postSaveSyncScheduler,
+            pacienteRepo,
+            dispensacionRepo,
+            syncRepo
         )
     }
 }

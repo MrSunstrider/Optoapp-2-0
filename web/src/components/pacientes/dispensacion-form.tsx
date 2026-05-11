@@ -1,9 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useActionState, useMemo, useState } from "react";
 
-type SaveAction = (formData: FormData) => void | Promise<void>;
+type SaveAction = (
+  prevState: { error?: string } | null,
+  formData: FormData
+) => Promise<{ error?: string } | null>;
 
 type MonturaOption = {
   id: string;
@@ -88,6 +91,8 @@ export function DispensacionForm({
   monturas,
   saveAction
 }: Props) {
+  const [actionState, action, isPending] = useActionState(saveAction, null);
+
   const [fecha, setFecha] = useState(initial.fecha || todayDate);
   const [ot, setOt] = useState(initial.ot);
   const [tipoLente, setTipoLente] = useState(initial.tipoLente);
@@ -217,7 +222,12 @@ export function DispensacionForm({
   }
 
   return (
-    <form action={saveAction} className="space-y-4">
+    <form action={action} className="space-y-4">
+      {actionState?.error && (
+        <p className="mb-3 rounded-lg border border-red-900/50 bg-red-950/40 px-3 py-2 text-sm text-red-300">
+          {actionState.error}
+        </p>
+      )}
       <input type="hidden" name="pacienteId" value={pacienteId} />
       <input type="hidden" name="dispensacionId" value={dispensacionId ?? ""} />
       <input type="hidden" name="previousMonturaId" value={initial.previousMonturaId} />
@@ -250,8 +260,8 @@ export function DispensacionForm({
           <h2 className="flex-1 font-heading text-xl font-bold">
             {mode === "edit" ? "Editar Dispensación" : "Nueva Dispensación"}
           </h2>
-          <button type="submit" className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 hover:bg-white/20 transition-all active:scale-95">
-            💾
+          <button type="submit" disabled={isPending} className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 hover:bg-white/20 transition-all active:scale-95 disabled:opacity-50">
+            {isPending ? "…" : "💾"}
           </button>
         </div>
 
@@ -424,8 +434,8 @@ export function DispensacionForm({
               </select>
             </label>
 
-            <button type="submit" className="w-full rounded-xl bg-primary px-6 py-4 font-heading text-base font-black text-primary-foreground shadow-xl shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95">
-              {mode === "edit" ? "💾 ACTUALIZAR ORDEN" : "🚀 CONFIRMAR ORDEN"}
+            <button type="submit" disabled={isPending} className="w-full rounded-xl bg-primary px-6 py-4 font-heading text-base font-black text-primary-foreground shadow-xl shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50">
+              {isPending ? "Guardando…" : mode === "edit" ? "💾 ACTUALIZAR ORDEN" : "🚀 CONFIRMAR ORDEN"}
             </button>
             {localError && <p className="text-center text-xs font-bold text-destructive animate-bounce">⚠️ {localError}</p>}
           </section>

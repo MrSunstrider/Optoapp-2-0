@@ -3,9 +3,10 @@ import { PDFDocument, StandardFonts } from "pdf-lib";
 import { z } from "zod";
 
 import { fetchDashboardKpis } from "@/lib/dashboard-kpis";
-import { getActiveOpticaContext } from "@/lib/optica-context";
-import { createClient } from "@/lib/supabase/server";
 import { canViewBiAndReports, canAccessModule } from "@/lib/roles";
+import { dateOnly } from "@/lib/date-utils";
+import { createClient } from "@/lib/supabase/server";
+import { requireUserAndOptica } from "@/lib/api-auth";
 
 const ExportTypeSchema = z.enum([
   "pendientes",
@@ -56,18 +57,9 @@ export async function GET(request: Request) {
   }
   const type = typeResult.data;
 
-  const supabase = await createClient();
-  const {
-    data: { user }
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return NextResponse.json({ error: "No autorizado." }, { status: 401 });
-  }
-
-  const activeOptica = await getActiveOpticaContext();
-  if (!activeOptica) {
-    return NextResponse.json({ error: "Sin óptica activa." }, { status: 400 });
-  }
+  const session = await requireUserAndOptica();
+  if (session instanceof NextResponse) return session;
+  const { supabase, user, optica: activeOptica } = session;
 
   if (
     (type === "pendientes" || type === "cierre") &&
@@ -114,11 +106,13 @@ async function exportPendientesCsv(
       .eq("optica_id", opticaId)
       .eq("estado_entrega", "Pendiente")
       .lt("fecha", today)
+      .limit(5000)
       .abortSignal(AbortSignal.timeout(12_000)),
     supabase
       .from("servicios_extra")
       .select("id,fecha,ot,descripcion,monto_total,a_cuenta,estado")
       .eq("optica_id", opticaId)
+      .limit(5000)
       .abortSignal(AbortSignal.timeout(12_000))
   ]);
 
@@ -204,7 +198,8 @@ async function exportCierreCsv(
 
 async function exportInventarioCsv(
   supabase: Awaited<ReturnType<typeof createClient>>,
-  opticaId: string
+  opticaId: string,
+  limit = 10000
 ) {
   const { data, error } = await supabase
     .from("monturas")
@@ -212,6 +207,7 @@ async function exportInventarioCsv(
     .eq("optica_id", opticaId)
     .order("marca", { ascending: true })
     .order("modelo", { ascending: true })
+    .limit(limit)
     .abortSignal(AbortSignal.timeout(12_000));
 
   if (error) {
@@ -328,9 +324,4 @@ function toCsvLine(values: Array<string>) {
     .join(",");
 }
 
-function dateOnly(date: Date): string {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
-}
+

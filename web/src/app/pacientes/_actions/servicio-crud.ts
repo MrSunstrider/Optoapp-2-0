@@ -6,61 +6,19 @@ import { redirect } from "next/navigation";
 import { getActiveOpticaContext } from "@/lib/optica-context";
 import { canManagePacientes } from "@/lib/roles";
 import { createClient } from "@/lib/supabase/server";
-
-type PagoInput = {
-  id: string;
-  fecha: string;
-  monto: number;
-  metodoPago: string;
-  nota: string;
-};
+import { parsePagos, parseDeletedIds, parseMonto, todayIsoDate } from "@/lib/payment-utils";
 
 function text(fd: FormData, key: string): string {
   return String(fd.get(key) ?? "").trim();
 }
 
-function parseMonto(raw: string): number {
-  const n = Number(raw.replace(",", "."));
-  return Number.isFinite(n) ? n : NaN;
-}
-
-function parsePagos(raw: string): PagoInput[] {
-  try {
-    const arr = JSON.parse(raw) as PagoInput[];
-    if (!Array.isArray(arr)) return [];
-    return arr.map((p) => ({
-      id: String(p.id ?? "").trim(),
-      fecha: String(p.fecha ?? "").trim(),
-      monto: Number(p.monto ?? 0),
-      metodoPago: String(p.metodoPago ?? "").trim(),
-      nota: String(p.nota ?? "").trim()
-    }));
-  } catch {
-    return [];
-  }
-}
-
-function parseDeleteIds(raw: string): string[] {
-  try {
-    const arr = JSON.parse(raw) as string[];
-    if (!Array.isArray(arr)) return [];
-    return arr.map((x) => String(x).trim()).filter(Boolean);
-  } catch {
-    return [];
-  }
-}
-
-function todayIso(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
-    d.getDate()
-  ).padStart(2, "0")}`;
-}
-
-export async function saveServicioAction(formData: FormData) {
+export async function saveServicioAction(
+  prevState: { error?: string } | null,
+  formData: FormData
+): Promise<{ error?: string } | null> {
   const activeOptica = await getActiveOpticaContext();
-  if (!activeOptica) redirect("/seleccion-optica");
-  if (!canManagePacientes(activeOptica.rol)) redirect("/pacientes");
+  if (!activeOptica) return { error: "Sin óptica activa" };
+  if (!canManagePacientes(activeOptica.rol)) return { error: "Sin permiso" };
   const opticaId = activeOptica.opticaId;
   const supabase = await createClient();
 
@@ -71,23 +29,23 @@ export async function saveServicioAction(formData: FormData) {
   const descripcion = text(formData, "descripcion");
   const montoTotalRaw = text(formData, "montoTotal");
   const estado = text(formData, "estado") || "Pendiente";
-  const fecha = text(formData, "fecha") || todayIso();
+  const fecha = text(formData, "fecha") || todayIsoDate();
   const pagos = parsePagos(text(formData, "pagosJson"));
-  const pagosDeleteIds = parseDeleteIds(text(formData, "pagosDeleteJson"));
+  const pagosDeleteIds = parseDeletedIds(text(formData, "pagosDeleteJson"));
   const returnTo = text(formData, "returnTo") || "/servicios-varios";
   const errorBase = text(formData, "errorBase") || "/servicios-varios/nuevo";
 
   if (!descripcion || !montoTotalRaw) {
-    redirect(`${errorBase}?error=descripcion_monto_requeridos`);
+    return { error: "descripcion_monto_requeridos" };
   }
   const montoTotal = parseMonto(montoTotalRaw);
-  if (!Number.isFinite(montoTotal)) redirect(`${errorBase}?error=monto_no_numerico`);
-  if (montoTotal <= 0) redirect(`${errorBase}?error=total_mayor_0`);
+  if (!Number.isFinite(montoTotal)) return { error: "monto_no_numerico" };
+  if (montoTotal <= 0) return { error: "total_mayor_0" };
   if (pagos.some((p) => !Number.isFinite(p.monto) || p.monto <= 0)) {
-    redirect(`${errorBase}?error=pago_mayor_0`);
+    return { error: "pago_mayor_0" };
   }
   const aCuenta = pagos.reduce((acc, p) => acc + p.monto, 0);
-  if (aCuenta > montoTotal) redirect(`${errorBase}?error=pago_mayor_total`);
+  if (aCuenta > montoTotal) return { error: "pago_mayor_total" };
 
   const finalId = servicioId || crypto.randomUUID();
   const payload = {
@@ -115,7 +73,7 @@ export async function saveServicioAction(formData: FormData) {
       id: p.id || crypto.randomUUID(),
       dispensacion_id: null,
       servicio_extra_id: finalId,
-      fecha: p.fecha || todayIso(),
+      fecha: p.fecha || todayIsoDate(),
       tipo: "Abono",
       monto: p.monto,
       metodo_pago: p.metodoPago,
@@ -140,7 +98,7 @@ export async function saveServicioAction(formData: FormData) {
         id: crypto.randomUUID(),
         dispensacion_id: existing.dispensacion_id,
         servicio_extra_id: existing.servicio_extra_id,
-        fecha: todayIso(),
+        fecha: todayIsoDate(),
         tipo: "Anulacion",
         monto: -Math.abs(Number(existing.monto ?? 0)),
         metodo_pago: existing.metodo_pago,
@@ -161,6 +119,7 @@ export async function saveServicioAction(formData: FormData) {
   revalidatePath("/pacientes");
   if (pacienteId) revalidatePath(`/pacientes/${pacienteId}/servicios-extra`);
   redirect(`${returnTo}?msg=${servicioId ? "actualizado" : "creado"}`);
+  return null;
 }
 
 export async function deleteServicioExtraAction(servicioId: string) {

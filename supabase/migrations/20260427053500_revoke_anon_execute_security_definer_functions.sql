@@ -14,5 +14,8 @@ revoke execute on function public.guard_pacientes_delete() from anon;
 revoke execute on function public.has_optica_role(uuid, text, text[]) from anon;
 revoke execute on function public.is_internal_owner() from anon;
 revoke execute on function public.opticas_lock_plan_from_clients() from anon;
-revoke execute on function public.rls_auto_enable() from anon;
+-- rls_auto_enable is a Supabase-managed function that does not exist in preview/CI/local Docker.
+-- This revoke was already applied in production (where the function exists).
+-- Removing it to prevent failures in environments where the function is absent.
+-- revoke execute on function public.rls_auto_enable() from anon;
 revoke execute on function public.sync_user_profiles_from_auth() from anon;

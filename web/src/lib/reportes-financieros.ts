@@ -1,24 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { assertNoDbError } from "@/lib/supabase/db-error";
-
-type PagoRow = {
-  monto: number | null;
-  fecha: string | null;
-};
-
-type DispensacionRow = {
-  id: string;
-  monto_total: number | null;
-  monto_pagado: number | null;
-  fecha: string | null;
-};
-
-type ServicioRow = {
-  id: string;
-  monto_total: number | null;
-  a_cuenta: number | null;
-  fecha: string | null;
-};
+import { ResumenFinancieroRowSchema } from "@/lib/financial-queries";
+import { dateOnly } from "@/lib/date-utils";
 
 export type ReportePeriodo = "dia" | "semana" | "mes" | "anio";
 
@@ -33,101 +16,61 @@ export type ReporteFinanciero = {
   fechaFinExclusiva: string;
 };
 
+/** Status indicating whether the data is real or fallback-empty after a DB error */
+export type ReporteFinancieroStatus = {
+  overall: "ok" | "degraded";
+  error?: string;
+};
+
+export type ReporteFinancieroResult = ReporteFinanciero & {
+  status: ReporteFinancieroStatus;
+};
+
 export async function fetchReporteFinanciero(
   supabase: SupabaseClient,
   opticaId: string,
   periodo: ReportePeriodo
-): Promise<ReporteFinanciero> {
+): Promise<ReporteFinancieroResult> {
   const range = resolveRange(periodo);
 
-  const [pagos, dispensaciones, servicios] = await Promise.all([
-    fetchPagos(supabase, opticaId, range.start, range.endExclusive),
-    fetchDispensaciones(supabase, opticaId, range.start, range.endExclusive),
-    fetchServicios(supabase, opticaId, range.start, range.endExclusive)
-  ]);
+  try {
+    const { data, error } = await supabase
+      .rpc("rpc_resumen_financiero", {
+        p_optica_id: opticaId,
+        p_from: range.start,
+        p_to: range.endExclusive,
+      })
+      .abortSignal(AbortSignal.timeout(12_000));
 
-  const ingresosCobrados = pagos.reduce((acc, row) => acc + (row.monto ?? 0), 0);
-  const ventasDisp = dispensaciones.reduce((acc, row) => acc + (row.monto_total ?? 0), 0);
-  const ventasServ = servicios.reduce((acc, row) => acc + (row.monto_total ?? 0), 0);
-  const ventasEmitidas = ventasDisp + ventasServ;
+    assertNoDbError(error, "Reporte financiero RPC");
 
-  const saldoDisp = dispensaciones.reduce((acc, row) => {
-    const saldo = (row.monto_total ?? 0) - (row.monto_pagado ?? 0);
-    return acc + Math.max(0, saldo);
-  }, 0);
-  const saldoServ = servicios.reduce((acc, row) => {
-    const saldo = (row.monto_total ?? 0) - (row.a_cuenta ?? 0);
-    return acc + Math.max(0, saldo);
-  }, 0);
-  const saldoPendiente = saldoDisp + saldoServ;
+    const row = ResumenFinancieroRowSchema.parse(data);
 
-  const totalMovimientos = dispensaciones.length + servicios.length;
-  const ticketPromedio = totalMovimientos > 0 ? ventasEmitidas / totalMovimientos : 0;
-
-  return {
-    periodoLabel: labelForPeriodo(periodo),
-    ingresosCobrados,
-    ventasEmitidas,
-    saldoPendiente,
-    totalMovimientos,
-    ticketPromedio,
-    fechaInicio: range.start,
-    fechaFinExclusiva: range.endExclusive
-  };
-}
-
-async function fetchPagos(
-  supabase: SupabaseClient,
-  opticaId: string,
-  from: string,
-  toExclusive: string
-): Promise<PagoRow[]> {
-  const { data, error } = await supabase
-    .from("pagos")
-    .select("monto,fecha")
-    .eq("optica_id", opticaId)
-    .gte("fecha", from)
-    .lt("fecha", toExclusive)
-    .abortSignal(AbortSignal.timeout(12_000));
-
-  assertNoDbError(error, "Reporte: pagos");
-  return (data ?? []) as PagoRow[];
-}
-
-async function fetchDispensaciones(
-  supabase: SupabaseClient,
-  opticaId: string,
-  from: string,
-  toExclusive: string
-): Promise<DispensacionRow[]> {
-  const { data, error } = await supabase
-    .from("dispensaciones")
-    .select("id,monto_total,monto_pagado,fecha")
-    .eq("optica_id", opticaId)
-    .gte("fecha", from)
-    .lt("fecha", toExclusive)
-    .abortSignal(AbortSignal.timeout(12_000));
-
-  assertNoDbError(error, "Reporte: dispensaciones");
-  return (data ?? []) as DispensacionRow[];
-}
-
-async function fetchServicios(
-  supabase: SupabaseClient,
-  opticaId: string,
-  from: string,
-  toExclusive: string
-): Promise<ServicioRow[]> {
-  const { data, error } = await supabase
-    .from("servicios_extra")
-    .select("id,monto_total,a_cuenta,fecha")
-    .eq("optica_id", opticaId)
-    .gte("fecha", from)
-    .lt("fecha", toExclusive)
-    .abortSignal(AbortSignal.timeout(12_000));
-
-  assertNoDbError(error, "Reporte: servicios_extra");
-  return (data ?? []) as ServicioRow[];
+    return {
+      periodoLabel: labelForPeriodo(periodo),
+      ingresosCobrados: row.ingresos_cobrados,
+      ventasEmitidas: row.ventas_emitidas,
+      saldoPendiente: row.saldo_pendiente,
+      totalMovimientos: row.total_movimientos,
+      ticketPromedio: row.ticket_promedio,
+      fechaInicio: row.fecha_inicio,
+      fechaFinExclusiva: row.fecha_fin_exclusiva,
+      status: { overall: "ok" },
+    };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return {
+      periodoLabel: labelForPeriodo(periodo),
+      ingresosCobrados: 0,
+      ventasEmitidas: 0,
+      saldoPendiente: 0,
+      totalMovimientos: 0,
+      ticketPromedio: 0,
+      fechaInicio: range.start,
+      fechaFinExclusiva: range.endExclusive,
+      status: { overall: "degraded", error: msg },
+    };
+  }
 }
 
 export function resolveRange(periodo: ReportePeriodo): { start: string; endExclusive: string } {
@@ -136,7 +79,7 @@ export function resolveRange(periodo: ReportePeriodo): { start: string; endExclu
   switch (periodo) {
     case "dia": {
       const end = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-      return { start: toDateOnly(startOfDay), endExclusive: toDateOnly(end) };
+      return { start: dateOnly(startOfDay), endExclusive: dateOnly(end) };
     }
     case "semana": {
       const day = startOfDay.getDay();
@@ -145,17 +88,17 @@ export function resolveRange(periodo: ReportePeriodo): { start: string; endExclu
       start.setDate(start.getDate() - diffToMonday);
       const end = new Date(start);
       end.setDate(end.getDate() + 7);
-      return { start: toDateOnly(start), endExclusive: toDateOnly(end) };
+      return { start: dateOnly(start), endExclusive: dateOnly(end) };
     }
     case "mes": {
       const start = new Date(now.getFullYear(), now.getMonth(), 1);
       const end = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-      return { start: toDateOnly(start), endExclusive: toDateOnly(end) };
+      return { start: dateOnly(start), endExclusive: dateOnly(end) };
     }
     case "anio": {
       const start = new Date(now.getFullYear(), 0, 1);
       const end = new Date(now.getFullYear() + 1, 0, 1);
-      return { start: toDateOnly(start), endExclusive: toDateOnly(end) };
+      return { start: dateOnly(start), endExclusive: dateOnly(end) };
     }
   }
 }
@@ -173,9 +116,3 @@ export function labelForPeriodo(periodo: ReportePeriodo): string {
   }
 }
 
-function toDateOnly(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}

@@ -7,51 +7,19 @@ import { z } from "zod";
 import { getActiveOpticaContext } from "@/lib/optica-context";
 import { canManagePacientes } from "@/lib/roles";
 import { createClient } from "@/lib/supabase/server";
-
-const PagoInputSchema = z.object({
-  id: z.string(),
-  fecha: z.string(),
-  monto: z.number(),
-  metodoPago: z.string(),
-  nota: z.string(),
-});
-
-type PagoInput = z.infer<typeof PagoInputSchema>;
+import { parsePagos, parseDeletedIds, parseMonto, todayIsoDate, type PagoInput } from "@/lib/payment-utils";
 
 function text(formData: FormData, key: string): string {
   return String(formData.get(key) ?? "").trim();
 }
 
-function parseMonto(raw: string): number {
-  const n = Number(raw.replace(",", "."));
-  return Number.isFinite(n) ? n : NaN;
-}
-
-function parsePagos(raw: string): PagoInput[] {
-  const arr = JSON.parse(raw);
-  const parsed = z.array(PagoInputSchema).safeParse(arr);
-  if (!parsed.success) throw new Error("Invalid pagos data");
-  return parsed.data;
-}
-
-function parseDeletedIds(raw: string): string[] {
-  const arr = JSON.parse(raw);
-  const parsed = z.array(z.string()).safeParse(arr);
-  if (!parsed.success) throw new Error("Invalid deleted-ids data");
-  return parsed.data.map((x) => x.trim()).filter(Boolean);
-}
-
-function todayIsoDate(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
-    d.getDate()
-  ).padStart(2, "0")}`;
-}
-
-export async function saveDispensacionAction(formData: FormData) {
+export async function saveDispensacionAction(
+  prevState: { error?: string } | null,
+  formData: FormData
+): Promise<{ error?: string } | null> {
   const activeOptica = await getActiveOpticaContext();
-  if (!activeOptica) redirect("/seleccion-optica");
-  if (!canManagePacientes(activeOptica.rol)) redirect("/pacientes");
+  if (!activeOptica) return { error: "Sin óptica activa" };
+  if (!canManagePacientes(activeOptica.rol)) return { error: "Sin permiso" };
   const opticaId = activeOptica.opticaId;
 
   const supabase = await createClient();
@@ -80,27 +48,27 @@ export async function saveDispensacionAction(formData: FormData) {
   const errorBase = dispensacionId
     ? `/pacientes/${pacienteId}/dispensaciones/${dispensacionId}/editar`
     : `/pacientes/${pacienteId}/dispensaciones/nueva`;
-  if (!pacienteId) redirect(`${errorBase}?error=guardar`);
+  if (!pacienteId) return { error: "guardar" };
 
   const requiresAltura =
     tipoLente === "Bifocal" || tipoLente === "Progresivo" || tipoLente === "Ocupacional";
   if (requiresAltura && !altura) {
-    redirect(`${errorBase}?error=altura`);
+    return { error: "altura" };
   }
   if (!ot) {
-    redirect(`${errorBase}?error=ot`);
+    return { error: "ot" };
   }
 
   const montoTotal = parseMonto(montoTotalRaw);
   if (!Number.isFinite(montoTotal) || montoTotal <= 0) {
-    redirect(`${errorBase}?error=total_mayor_0`);
+    return { error: "total_mayor_0" };
   }
   if (pagos.some((p) => !Number.isFinite(p.monto) || p.monto <= 0)) {
-    redirect(`${errorBase}?error=pago_mayor_0`);
+    return { error: "pago_mayor_0" };
   }
   const montoPagado = pagos.reduce((acc, p) => acc + p.monto, 0);
   if (montoPagado > montoTotal) {
-    redirect(`${errorBase}?error=pago_mayor_total`);
+    return { error: "pago_mayor_total" };
   }
 
   const normalizedOt = ot.trim().toUpperCase();
@@ -261,4 +229,5 @@ export async function saveDispensacionAction(formData: FormData) {
   revalidatePath("/dashboard");
   revalidatePath("/reportes");
   redirect(`/pacientes/${pacienteId}/dispensaciones?msg=${dispensacionId ? "actualizada" : "creada"}`);
+  return null;
 }

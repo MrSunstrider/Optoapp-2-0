@@ -1,9 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useActionState, useMemo, useState } from "react";
 
-type SaveAction = (formData: FormData) => void | Promise<void>;
+type SaveAction = (
+  prevState: { error?: string } | null,
+  formData: FormData
+) => Promise<{ error?: string } | null>;
 type PacienteOption = { id: string; nombre_completo: string | null };
 type PagoDraft = {
   id: string;
@@ -54,6 +57,8 @@ export function ServicioForm({
   initial,
   saveAction
 }: Props) {
+  const [actionState, action, isPending] = useActionState(saveAction, null);
+
   const [ot, setOt] = useState(initial.ot);
   const [descripcion, setDescripcion] = useState(initial.descripcion);
   const [montoTotal, setMontoTotal] = useState(initial.montoTotal);
@@ -144,7 +149,12 @@ export function ServicioForm({
   }
 
   return (
-    <form action={saveAction} className="space-y-4">
+    <form action={action} className="space-y-4">
+      {actionState?.error && (
+        <p className="mb-3 rounded-lg border border-red-900/50 bg-red-950/40 px-3 py-2 text-sm text-red-300">
+          {actionState.error}
+        </p>
+      )}
       <input type="hidden" name="servicioId" value={servicioId ?? ""} />
       <input type="hidden" name="ot" value={ot} />
       <input type="hidden" name="descripcion" value={descripcion} />
@@ -164,8 +174,8 @@ export function ServicioForm({
             <span className="text-xl font-bold">{`←`}</span>
           </Link>
           <h2 className="flex-1 font-heading text-xl font-bold">{mode === "edit" ? "Editar Servicio" : "Nuevo Servicio"}</h2>
-          <button type="submit" className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 hover:bg-white/20 transition-all active:scale-95">
-            💾
+          <button type="submit" disabled={isPending} className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 hover:bg-white/20 transition-all active:scale-95 disabled:opacity-50">
+            {isPending ? "…" : "💾"}
           </button>
         </div>
 
@@ -241,8 +251,8 @@ export function ServicioForm({
             </select>
           </div>
 
-          <button type="submit" className="w-full rounded-xl bg-primary px-6 py-4 font-heading text-base font-black text-primary-foreground shadow-xl shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95">
-            {mode === "edit" ? "💾 ACTUALIZAR SERVICIO" : "🚀 GUARDAR SERVICIO"}
+          <button type="submit" disabled={isPending} className="w-full rounded-xl bg-primary px-6 py-4 font-heading text-base font-black text-primary-foreground shadow-xl shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50">
+            {isPending ? "Guardando…" : mode === "edit" ? "💾 ACTUALIZAR SERVICIO" : "🚀 GUARDAR SERVICIO"}
           </button>
           {localError && <p className="text-center text-xs font-bold text-destructive animate-bounce">⚠️ {localError}</p>}
         </div>

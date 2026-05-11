@@ -1,12 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useActionState, useState } from "react";
 
 import type { EvaluacionCardRow } from "@/lib/paciente-clinico";
 import { formatFormulaResumida } from "@/lib/paciente-clinico";
 
-import { deleteEvaluacionAction } from "@/app/pacientes/_actions/evaluacion-crud";
+import { deleteEvaluacionAction as rawDeleteAction } from "@/app/pacientes/_actions/evaluacion-crud";
 
 export function EvaluacionesCards({
   pacienteId,
@@ -18,6 +18,7 @@ export function EvaluacionesCards({
   canManage: boolean;
 }) {
   const [openId, setOpenId] = useState<string | null>(null);
+  const [deleteState, deleteAction, isDeleting] = useActionState(rawDeleteAction, null);
 
   return (
     <ul className="space-y-4">
@@ -80,7 +81,7 @@ export function EvaluacionesCards({
 
           {canManage && (
             <form
-              action={deleteEvaluacionAction}
+              action={deleteAction}
               onSubmit={(e) => {
                 if (
                   !confirm(
@@ -96,10 +97,14 @@ export function EvaluacionesCards({
               <input type="hidden" name="evaluacionId" value={r.id} />
               <button
                 type="submit"
-                className="text-[10px] font-black uppercase tracking-widest text-destructive hover:underline"
+                disabled={isDeleting}
+                className="text-[10px] font-black uppercase tracking-widest text-destructive hover:underline disabled:opacity-40"
               >
-                Eliminar Registro
+                {isDeleting ? "Eliminando…" : "Eliminar Registro"}
               </button>
+              {deleteState?.error && (
+                <p className="w-full text-xs font-medium text-destructive">{deleteState.error}</p>
+              )}
             </form>
           )}
         </li>

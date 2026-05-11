@@ -1,34 +1,25 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { assertNoDbError } from "@/lib/supabase/db-error";
+import {
+  PagoRowSchema,
+  SaldoPendienteRowSchema,
+  CountPendientesRowSchema,
+} from "@/lib/financial-queries";
+import { dateOnly } from "@/lib/date-utils";
+import { z } from "zod";
 
-type PagoRow = {
-  monto: number | null;
-};
+const EntregaRowSchema = z.object({
+  estado_entrega: z.string().nullable(),
+  fecha: z.string().nullable(),
+});
 
-type DispensacionRow = {
-  monto_total: number | null;
-  monto_pagado: number | null;
-};
+const CitaRowSchema = z.object({
+  proxima_cita: z.string().nullable(),
+});
 
-type ServicioRow = {
-  monto_total: number | null;
-  a_cuenta: number | null;
-  fecha: string | null;
-  estado: string | null;
-};
-
-type EntregaRow = {
-  estado_entrega: string | null;
-  fecha: string | null;
-};
-
-type CitaRow = {
-  proxima_cita: string | null;
-};
-
-type StockRow = {
-  stock_actual: number | null;
-};
+const StockRowSchema = z.object({
+  stock_actual: z.number().nullable(),
+});
 
 export type DashboardKpis = {
   ventasDia: number;
@@ -58,7 +49,6 @@ export type DashboardSnapshot = {
       serviciosPendientes: boolean;
       stockCritico: boolean;
     };
-    /** Texto exacto devuelto por Supabase cuando una fuente falla. */
     erroresPorFuente: Partial<
       Record<
         | "pagosDia"
@@ -101,13 +91,11 @@ export async function fetchDashboardKpis(
   if (!pacientesHoy.ok && pacientesHoy.mensaje)
     erroresPorFuente.pacientesHoy = pacientesHoy.mensaje;
 
-  const saldoDisp = await sumSaldoDispensaciones(supabase, opticaId);
-  if (!saldoDisp.ok && saldoDisp.mensaje)
-    erroresPorFuente.dispensaciones = saldoDisp.mensaje;
-
-  const saldoServ = await sumSaldoServicios(supabase, opticaId);
-  if (!saldoServ.ok && saldoServ.mensaje)
-    erroresPorFuente.serviciosExtra = saldoServ.mensaje;
+  const saldoPendiente = await rpcSaldoPendiente(supabase, opticaId);
+  if (!saldoPendiente.ok && saldoPendiente.mensaje) {
+    erroresPorFuente.dispensaciones = saldoPendiente.mensaje;
+    erroresPorFuente.serviciosExtra = saldoPendiente.mensaje;
+  }
 
   const citasHoy = await countCitasHoy(supabase, opticaId, startDay, endDay);
   if (!citasHoy.ok && citasHoy.mensaje) erroresPorFuente.citasHoy = citasHoy.mensaje;
@@ -121,9 +109,9 @@ export async function fetchDashboardKpis(
     erroresPorFuente.entregasPendientes = entregasPendientes.mensaje;
   }
 
-  const serviciosPendientes = await countServiciosPendientes(supabase, opticaId);
-  if (!serviciosPendientes.ok && serviciosPendientes.mensaje) {
-    erroresPorFuente.serviciosPendientes = serviciosPendientes.mensaje;
+  const pendientesCount = await rpcCountPendientes(supabase, opticaId);
+  if (!pendientesCount.ok && pendientesCount.mensaje) {
+    erroresPorFuente.serviciosPendientes = pendientesCount.mensaje;
   }
 
   const stockCritico = await countStockCritico(supabase, opticaId);
@@ -135,11 +123,11 @@ export async function fetchDashboardKpis(
     pagosDia: ventasDia.ok,
     pagosMes: ventasMes.ok,
     pacientesHoy: pacientesHoy.ok,
-    dispensaciones: saldoDisp.ok,
-    serviciosExtra: saldoServ.ok,
+    dispensaciones: saldoPendiente.ok,
+    serviciosExtra: saldoPendiente.ok,
     citasHoy: citasHoy.ok,
     entregasPendientes: entregasPendientes.ok,
-    serviciosPendientes: serviciosPendientes.ok,
+    serviciosPendientes: pendientesCount.ok,
     stockCritico: stockCritico.ok
   };
 
@@ -150,10 +138,10 @@ export async function fetchDashboardKpis(
       ventasDia: ventasDia.value,
       ventasMes: ventasMes.value,
       pacientesHoy: pacientesHoy.value,
-      saldosPendientes: saldoDisp.value + saldoServ.value,
+      saldosPendientes: saldoPendiente.value,
       citasHoy: citasHoy.value,
       entregasPendientes: entregasPendientes.value,
-      serviciosPendientes: serviciosPendientes.value,
+      serviciosPendientes: pendientesCount.value,
       stockCritico: stockCritico.value,
       cobrosDia: ventasDia.value
     },
@@ -190,7 +178,8 @@ async function sumPagos(
       .abortSignal(AbortSignal.timeout(12_000));
 
     assertNoDbError(error, "KPI pagos");
-    const value = ((data ?? []) as PagoRow[]).reduce(
+    const rows = z.array(PagoRowSchema).parse(data ?? []);
+    const value = rows.reduce(
       (acc, row) => acc + (row.monto ?? 0),
       0
     );
@@ -224,46 +213,18 @@ async function countPacientesHoy(
   }
 }
 
-async function sumSaldoDispensaciones(
+async function rpcSaldoPendiente(
   supabase: SupabaseClient,
   opticaId: string
 ): Promise<Metric> {
   try {
     const { data, error } = await supabase
-      .from("dispensaciones")
-      .select("monto_total,monto_pagado")
-      .eq("optica_id", opticaId)
+      .rpc("rpc_saldo_pendiente", { p_optica_id: opticaId })
       .abortSignal(AbortSignal.timeout(12_000));
 
-    assertNoDbError(error, "KPI saldo dispensaciones");
-    const value = ((data ?? []) as DispensacionRow[]).reduce((acc, row) => {
-      const saldo = (row.monto_total ?? 0) - (row.monto_pagado ?? 0);
-      return acc + Math.max(0, saldo);
-    }, 0);
-    return { ok: true, value };
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    return failMetric(msg);
-  }
-}
-
-async function sumSaldoServicios(
-  supabase: SupabaseClient,
-  opticaId: string
-): Promise<Metric> {
-  try {
-    const { data, error } = await supabase
-      .from("servicios_extra")
-      .select("monto_total,a_cuenta")
-      .eq("optica_id", opticaId)
-      .abortSignal(AbortSignal.timeout(12_000));
-
-    assertNoDbError(error, "KPI saldo servicios extra");
-    const value = ((data ?? []) as ServicioRow[]).reduce((acc, row) => {
-      const saldo = (row.monto_total ?? 0) - (row.a_cuenta ?? 0);
-      return acc + Math.max(0, saldo);
-    }, 0);
-    return { ok: true, value };
+    assertNoDbError(error, "KPI saldos pendientes");
+    const row = SaldoPendienteRowSchema.parse(data);
+    return { ok: true, value: row.saldo_total };
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     return failMetric(msg);
@@ -308,34 +269,26 @@ async function countEntregasPendientes(
       .abortSignal(AbortSignal.timeout(12_000));
 
     assertNoDbError(error, "KPI entregas pendientes");
-    return { ok: true, value: ((data ?? []) as EntregaRow[]).length };
+    const rows = z.array(EntregaRowSchema).parse(data ?? []);
+    return { ok: true, value: rows.length };
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     return failMetric(msg);
   }
 }
 
-async function countServiciosPendientes(
+async function rpcCountPendientes(
   supabase: SupabaseClient,
   opticaId: string
 ): Promise<Metric> {
   try {
     const { data, error } = await supabase
-      .from("servicios_extra")
-      .select("estado,monto_total,a_cuenta")
-      .eq("optica_id", opticaId)
+      .rpc("rpc_count_pendientes", { p_optica_id: opticaId })
       .abortSignal(AbortSignal.timeout(12_000));
 
     assertNoDbError(error, "KPI servicios pendientes");
-    const rows = (data ?? []) as ServicioRow[];
-    const value = rows.reduce((acc, row) => {
-      const saldo = (row.monto_total ?? 0) - (row.a_cuenta ?? 0);
-      if ((row.estado ?? "").toLowerCase() === "pendiente" || saldo > 0.005) {
-        return acc + 1;
-      }
-      return acc;
-    }, 0);
-    return { ok: true, value };
+    const row = CountPendientesRowSchema.parse(data);
+    return { ok: true, value: row.servicios_pendientes };
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     return failMetric(msg);
@@ -356,7 +309,8 @@ async function countStockCritico(
       .abortSignal(AbortSignal.timeout(12_000));
 
     assertNoDbError(error, "KPI stock crítico");
-    return { ok: true, value: ((data ?? []) as StockRow[]).length };
+    const rows = z.array(StockRowSchema).parse(data ?? []);
+    return { ok: true, value: rows.length };
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     return failMetric(msg);
@@ -386,11 +340,11 @@ function getDateBounds() {
   const startMonthDate = new Date(now.getFullYear(), now.getMonth(), 1);
   const endMonthDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
 
-  return {
-    startDay: toDateOnly(startDayDate),
-    endDay: toDateOnly(endDayDate),
-    startMonth: toDateOnly(startMonthDate),
-    endMonth: toDateOnly(endMonthDate)
+return {
+    startDay: dateOnly(startDayDate),
+    endDay: dateOnly(endDayDate),
+    startMonth: dateOnly(startMonthDate),
+    endMonth: dateOnly(endMonthDate)
   };
 }
 

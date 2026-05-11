@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import type { CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { ACTIVE_OPTICA_COOKIE } from "@/lib/optica-cookie";
+import { ACTIVE_OPTICA_COOKIE, OPTICA_VALIDATED_COOKIE, OPTICA_VALIDATED_TTL_SECS } from "@/lib/optica-cookie";
 import { PIN_VERIFIED_COOKIE } from "@/lib/pin-cookie";
 import { isPinRequiredFromUser } from "@/lib/pin-policy";
 import { getPublicSupabaseEnv } from "@/lib/supabase/env-public";
@@ -130,40 +130,71 @@ async function runSessionMiddleware(request: NextRequest) {
   }
 
   if (user && parsedActiveOptica) {
-    try {
-      const { data, error } = await supabase
-        .from("usuario_optica")
-        .select("optica_id")
-        .eq("user_id", user.id)
-        .eq("optica_id", parsedActiveOptica.opticaId)
-        .limit(1)
-        .abortSignal(AbortSignal.timeout(6000));
+    // M8: Saltar validación si ya se verificó hace menos de 5 minutos
+    const validatedAt = request.cookies.get(OPTICA_VALIDATED_COOKIE)?.value;
+    const now = Date.now();
+    const isValidated =
+      validatedAt &&
+      now - Number(validatedAt) < OPTICA_VALIDATED_TTL_SECS * 1000;
 
-      if (error || !data || data.length === 0) {
-        const url = request.nextUrl.clone();
-        url.pathname = "/seleccion-optica";
-        const res = NextResponse.redirect(url);
-        res.cookies.delete(ACTIVE_OPTICA_COOKIE);
-        return res;
+    if (!isValidated) {
+      try {
+        const { data, error } = await supabase
+          .from("usuario_optica")
+          .select("optica_id,rol")
+          .eq("user_id", user.id)
+          .eq("optica_id", parsedActiveOptica.opticaId)
+          .limit(1)
+          .abortSignal(AbortSignal.timeout(6000));
+
+        if (error || !data || data.length === 0) {
+          const url = request.nextUrl.clone();
+          url.pathname = "/seleccion-optica";
+          const res = NextResponse.redirect(url);
+          res.cookies.delete(ACTIVE_OPTICA_COOKIE);
+          return res;
+        }
+
+        // M3: Si el rol cambió (admin lo modificó), actualizar la cookie
+        const currentRol = data[0]?.rol?.trim().toLowerCase() ?? "";
+        if (currentRol && currentRol !== parsedActiveOptica.rol.trim().toLowerCase()) {
+          const updated = { ...parsedActiveOptica, rol: currentRol };
+          supabaseResponse.cookies.set(ACTIVE_OPTICA_COOKIE, JSON.stringify(updated), {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "lax",
+            path: "/",
+            maxAge: 60 * 60 * 24 * 30,
+          });
+        }
+
+        // Marcar como validado para los próximos 5 minutos
+        supabaseResponse.cookies.set(OPTICA_VALIDATED_COOKIE, String(now), {
+          maxAge: OPTICA_VALIDATED_TTL_SECS,
+          path: "/",
+          sameSite: "lax",
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+        });
+      } catch (err) {
+        console.error(
+          "[middleware] No se pudo validar usuario_optica (red, timeout u otro):",
+          err
+        );
+        return supabaseResponse;
       }
-    } catch (err) {
-      console.error(
-        "[middleware] No se pudo validar usuario_optica (red, timeout u otro):",
-        err
-      );
-      return supabaseResponse;
     }
   }
 
   return supabaseResponse;
 }
 
-function parseActiveOpticaCookie(raw?: string): { opticaId: string } | null {
+function parseActiveOpticaCookie(raw?: string): { opticaId: string; rol: string } | null {
   if (!raw) return null;
   try {
-    const parsed = JSON.parse(raw) as { opticaId?: string };
+    const parsed = JSON.parse(raw) as { opticaId?: string; rol?: string };
     if (!parsed.opticaId || parsed.opticaId.trim().length === 0) return null;
-    return { opticaId: parsed.opticaId };
+    return { opticaId: parsed.opticaId, rol: parsed.rol?.trim().toLowerCase() ?? "" };
   } catch {
     if (process.env.NODE_ENV === "development") {
       console.warn(

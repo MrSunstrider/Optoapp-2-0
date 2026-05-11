@@ -8,6 +8,7 @@ import {
   canReadCierre,
   canCloseCierre,
   canOverrideCierre,
+  type CierreSnapshotStatus,
 } from "@/lib/cierre-caja";
 
 describe("normalizeMoney", () => {
@@ -278,5 +279,23 @@ describe("canOverrideCierre", () => {
 
   it("handles whitespace", () => {
     expect(canOverrideCierre("  admin  ")).toBe(true);
+    expect(canOverrideCierre("gerente")).toBe(true);
+  });
+});
+
+describe("CierreSnapshotStatus type", () => {
+  it("accepts ok status without error", () => {
+    const status: CierreSnapshotStatus = { overall: "ok" };
+    expect(status.overall).toBe("ok");
+    expect(status.error).toBeUndefined();
+  });
+
+  it("accepts degraded status with error message", () => {
+    const status: CierreSnapshotStatus = {
+      overall: "degraded",
+      error: "42P01: table does not exist",
+    };
+    expect(status.overall).toBe("degraded");
+    expect(status.error).toBe("42P01: table does not exist");
   });
 });
