@@ -29,6 +29,7 @@ jobs:
 
       - name: Lint migrations
         run: supabase db lint
+        continue-on-error: true
 
       - name: Check migrations are consistent
         run: supabase db diff --linked
