@@ -20,7 +20,7 @@ import androidx.navigation.NavController
 import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.viewmodel.ReportesViewModel
 import com.example.optoapp.ui.components.DropdownField
-import java.text.SimpleDateFormat
+import com.example.optoapp.util.DateUtils
 import java.util.*
 import kotlinx.coroutines.launch
 
@@ -39,8 +39,10 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
     val ticketPromedio = if (dispensaciones.isNotEmpty()) totalVendido / dispensaciones.size else 0.0
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             TopAppBar(
+                windowInsets = WindowInsets(0, 0, 0, 0),
                 title = { Text("Reportes Financieros") },
                 navigationIcon = {
                     IconButton(onClick = { scope.launch { drawerState.open() } }) {
@@ -89,13 +91,13 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 ReportCard(
                     title = "Total Vendido",
-                    value = "s/. ${String.format("%.2f", totalVendido)}",
+                    value = "s/. ${String.format(java.util.Locale.getDefault(), "%.2f", totalVendido)}",
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.weight(1f)
                 )
                 ReportCard(
                     title = "Por Cobrar",
-                    value = "s/. ${String.format("%.2f", porCobrar)}",
+                    value = "s/. ${String.format(java.util.Locale.getDefault(), "%.2f", porCobrar)}",
                     color = MaterialTheme.colorScheme.error,
                     modifier = Modifier.weight(1f)
                 )
@@ -103,7 +105,7 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
             
             ReportCard(
                 title = "Ticket Promedio",
-                value = "s/. ${String.format("%.2f", ticketPromedio)}",
+                value = "s/. ${String.format(java.util.Locale.getDefault(), "%.2f", ticketPromedio)}",
                 color = MaterialTheme.colorScheme.secondary,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -118,7 +120,7 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                     item { Text("No hay transacciones registradas este día", color = MaterialTheme.colorScheme.onSurfaceVariant) }
                 } else {
                     items(dispensaciones) { disp ->
-                        val date = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(disp.fecha))
+                        val date = DateUtils.formatLocalized(disp.fecha)
                         Card(modifier = Modifier.fillMaxWidth()) {
                             Row(modifier = Modifier.padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                 Column(modifier = Modifier.weight(1f)) {
@@ -127,7 +129,7 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                                 }
                                 Column(horizontalAlignment = Alignment.End) {
                                     Text("s/. ${disp.montoTotal}", fontWeight = FontWeight.Bold)
-                                    Text("Saldo: s/. ${String.format("%.2f", disp.montoTotal - disp.montoPagado)}", fontSize = 12.sp, color = if (disp.montoTotal - disp.montoPagado > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface)
+                                    Text("Saldo: s/. ${String.format(java.util.Locale.getDefault(), "%.2f", disp.montoTotal - disp.montoPagado)}", fontSize = 12.sp, color = if (disp.montoTotal - disp.montoPagado > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface)
                                 }
                             }
                         }

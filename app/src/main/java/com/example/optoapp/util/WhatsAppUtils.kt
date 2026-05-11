@@ -4,12 +4,18 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
+import androidx.core.net.toUri
 
 object WhatsAppUtils {
 
-    fun sendWhatsAppMessage(context: Context, phoneNumber: String, message: String) {
+    fun sendWhatsAppMessage(
+        context: Context,
+        phoneNumber: String,
+        message: String,
+        emptyNumberMessage: String = "El paciente no tiene un número telefónico registrado."
+    ) {
         if (phoneNumber.isBlank()) {
-            Toast.makeText(context, "El paciente no tiene un número telefónico registrado.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, emptyNumberMessage, Toast.LENGTH_SHORT).show()
             return
         }
 
@@ -22,7 +28,7 @@ object WhatsAppUtils {
             }
             
             val intent = Intent(Intent.ACTION_VIEW).apply {
-                data = Uri.parse("https://api.whatsapp.com/send?phone=$cleanPhone&text=${Uri.encode(message)}")
+                data = "https://api.whatsapp.com/send?phone=$cleanPhone&text=${Uri.encode(message)}".toUri()
             }
             context.startActivity(intent)
         } catch (e: Exception) {

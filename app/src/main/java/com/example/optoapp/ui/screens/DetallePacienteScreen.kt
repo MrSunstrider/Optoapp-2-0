@@ -21,6 +21,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import android.widget.Toast
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.optoapp.OptoApplication
@@ -34,9 +35,17 @@ import com.example.optoapp.viewmodel.DispensacionViewModel
 import com.example.optoapp.viewmodel.ServiciosViewModel
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 import com.example.optoapp.util.WhatsAppUtils
+import com.example.optoapp.util.RecetaEvaluacionPdfGenerator
+import com.example.optoapp.util.DispensacionLaboratorioTicket
+import com.example.optoapp.util.LaboratorioTicketContext
+import com.example.optoapp.ui.components.LaboratorioTicketAlertDialog
+import com.example.optoapp.viewmodel.LaboratorioConfigViewModel
+import com.example.optoapp.viewmodel.DeletePacienteResult
+import androidx.compose.material.icons.filled.Science
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -49,22 +58,29 @@ fun DetallePacienteScreen(
     serviciosViewModel: ServiciosViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     var paciente by remember { mutableStateOf<Paciente?>(null) }
     val evaluaciones by evaluacionViewModel.getEvaluacionesByPaciente(id).collectAsState(initial = emptyList())
     val dispensaciones by dispensacionViewModel.getDispensacionesByPaciente(id).collectAsState(initial = emptyList())
-    val servicios by serviciosViewModel.allServicios.map { list -> list.filter { it.pacienteId == id } }.collectAsState(initial = emptyList())
+    val servicios by remember(serviciosViewModel.allServicios, id) {
+        serviciosViewModel.allServicios.map { list -> list.filter { it.pacienteId == id } }
+    }.collectAsState(initial = emptyList())
     
     var selectedTab by remember { mutableIntStateOf(0) }
     val tabs = listOf("Evaluaciones", "Dispensaciones", "Servicios")
     var showWhatsAppMenu by remember { mutableStateOf(false) }
+    var showDeletePacienteDialog by remember { mutableStateOf(false) }
+    var deletingPaciente by remember { mutableStateOf(false) }
 
     LaunchedEffect(id) {
         paciente = pacienteViewModel.getPaciente(id)
     }
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             TopAppBar(
+                windowInsets = WindowInsets(0, 0, 0, 0),
                 title = { Text("Ficha del Paciente", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
@@ -102,7 +118,7 @@ fun DetallePacienteScreen(
                                 
                                 val ultimaEval = evaluaciones.maxByOrNull { it.fecha }
                                 if (ultimaEval?.proximaCita != null) {
-                                    val proxFecha = java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault()).format(java.util.Date(ultimaEval.proximaCita))
+                                    val proxFecha = com.example.optoapp.util.DateUtils.formatLocalized(ultimaEval.proximaCita)
                                     DropdownMenuItem(
                                         text = { Text("Recordar Próxima Cita ($proxFecha)") },
                                         onClick = {
@@ -115,11 +131,36 @@ fun DetallePacienteScreen(
                             }
                         }
                     }
-                    IconButton(onClick = { /* PDF Export */ }) {
-                        Icon(Icons.Default.PictureAsPdf, contentDescription = "Exportar PDF")
+                    IconButton(
+                        onClick = {
+                            val p = paciente
+                            if (p == null) {
+                                Toast.makeText(context, "Esperando datos del paciente…", Toast.LENGTH_SHORT).show()
+                                return@IconButton
+                            }
+                            val ultima = evaluaciones.maxByOrNull { it.fecha }
+                            if (ultima == null) {
+                                Toast.makeText(context, "No hay evaluaciones para generar la fórmula en PDF", Toast.LENGTH_LONG).show()
+                                return@IconButton
+                            }
+                            try {
+                                val file = RecetaEvaluacionPdfGenerator.generate(context, p, ultima)
+                                RecetaEvaluacionPdfGenerator.openPdf(context, file)
+                            } catch (e: Exception) {
+                                Toast.makeText(context, "No se pudo generar el PDF: ${e.message}", Toast.LENGTH_LONG).show()
+                            }
+                        }
+                    ) {
+                        Icon(Icons.Default.PictureAsPdf, contentDescription = "Exportar fórmula en PDF")
                     }
                     IconButton(onClick = { navController.navigate("editarPaciente/${id}") }) {
                         Icon(Icons.Default.Edit, contentDescription = "Editar Perfil")
+                    }
+                    IconButton(
+                        onClick = { showDeletePacienteDialog = true },
+                        enabled = !deletingPaciente
+                    ) {
+                        Icon(Icons.Default.Delete, contentDescription = "Eliminar Paciente")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -129,9 +170,77 @@ fun DetallePacienteScreen(
                     actionIconContentColor = MaterialTheme.colorScheme.onPrimary
                 )
             )
+        },
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = {
+                    when(selectedTab) {
+                        0 -> navController.navigate("nuevaEvaluacion/${id}")
+                        1 -> navController.navigate("nuevaDispensacion/${id}")
+                        2 -> navController.navigate("nuevo_servicio/${id}")
+                    }
+                },
+                modifier = Modifier.navigationBarsPadding(),
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+            ) {
+                Icon(Icons.Default.Add, contentDescription = "Añadir")
+            }
         }
     ) { padding ->
         paciente?.let { p ->
+            if (showDeletePacienteDialog) {
+                AlertDialog(
+                    onDismissRequest = { if (!deletingPaciente) showDeletePacienteDialog = false },
+                    title = { Text("¿Eliminar paciente?") },
+                    text = {
+                        Text(
+                            "Esta acción eliminará también evaluaciones, dispensaciones y servicios relacionados. " +
+                                "Existe un límite diario de seguridad."
+                        )
+                    },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                if (deletingPaciente) return@TextButton
+                                deletingPaciente = true
+                                val pacienteToDelete = p
+                                scope.launch {
+                                    try {
+                                        when (val result = pacienteViewModel.deletePacienteGuarded(pacienteToDelete)) {
+                                            is DeletePacienteResult.Success -> {
+                                                Toast.makeText(
+                                                    context,
+                                                    "Paciente eliminado. Quedan ${result.remainingDeletesToday} eliminaciones hoy.",
+                                                    Toast.LENGTH_LONG
+                                                ).show()
+                                                showDeletePacienteDialog = false
+                                                navController.popBackStack()
+                                            }
+                                            is DeletePacienteResult.Error -> {
+                                                Toast.makeText(context, result.message, Toast.LENGTH_LONG).show()
+                                            }
+                                        }
+                                    } finally {
+                                        deletingPaciente = false
+                                    }
+                                }
+                            },
+                            enabled = !deletingPaciente
+                        ) {
+                            Text("Eliminar", color = MaterialTheme.colorScheme.error)
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(
+                            onClick = { showDeletePacienteDialog = false },
+                            enabled = !deletingPaciente
+                        ) {
+                            Text("Cancelar")
+                        }
+                    }
+                )
+            }
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -194,29 +303,17 @@ fun DetallePacienteScreen(
                         0 -> EvaluacionesList(evaluaciones, p, evaluacionViewModel) { evalId ->
                             navController.navigate("editarEvaluacion/${id}/${evalId}")
                         }
-                        1 -> DispensacionesList(dispensaciones, p) { dispId ->
-                            navController.navigate("editarDispensacion/${id}/${dispId}")
-                        }
+                        1 -> DispensacionesList(
+                            dispensaciones = dispensaciones,
+                            paciente = p,
+                            evaluaciones = evaluaciones,
+                            onEdit = { dispId ->
+                                navController.navigate("editarDispensacion/${id}/${dispId}")
+                            }
+                        )
                         2 -> ServiciosExtraList(servicios) { servId ->
                             navController.navigate("editar_servicio/${servId}")
                         }
-                    }
-                    
-                    FloatingActionButton(
-                        onClick = {
-                            when(selectedTab) {
-                                0 -> navController.navigate("nuevaEvaluacion/${id}")
-                                1 -> navController.navigate("nuevaDispensacion/${id}")
-                                2 -> navController.navigate("nuevo_servicio/${id}")
-                            }
-                        },
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary,
-                        modifier = Modifier
-                            .align(Alignment.BottomEnd)
-                            .padding(24.dp)
-                    ) {
-                        Icon(Icons.Default.Add, contentDescription = "Añadir")
                     }
                 }
             }
@@ -241,7 +338,7 @@ fun EvaluacionesList(
     } else {
         LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             items(evaluaciones) { eval ->
-                val date = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(eval.fecha))
+                val date = com.example.optoapp.util.DateUtils.formatLocalized(eval.fecha)
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
@@ -296,7 +393,7 @@ fun EvaluacionesList(
                                 }
                             }
                         }
-                        val recetaStr = buildString {
+                        val formulaStr = buildString {
                             val hasOd = eval.recetaOdEsf.isNotBlank() || eval.recetaOdCil.isNotBlank()
                             val hasOi = eval.recetaOiEsf.isNotBlank() || eval.recetaOiCil.isNotBlank()
                             if (hasOd) {
@@ -315,15 +412,15 @@ fun EvaluacionesList(
                             if (dOi.isNotBlank()) append("OI: $dOi")
                         }.trim()
 
-                        if (recetaStr.isNotBlank()) {
-                            Text(text = "Receta $recetaStr", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+                        if (formulaStr.isNotBlank()) {
+                            Text(text = "Fórmula $formulaStr", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
                             if (diagStr.isNotBlank()) {
                                 Text(text = "Diag: $diagStr", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         } else if (diagStr.isNotBlank()) {
                             Text("Diagnóstico: $diagStr", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
                         } else {
-                            Text("Sin receta ni diagnóstico", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text("Sin fórmula ni diagnóstico", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 }
@@ -343,8 +440,8 @@ fun EvaluacionesList(
 
 @Composable
 fun ResumenEvaluacionDialog(eval: EvaluacionClinica, paciente: Paciente, onDismiss: () -> Unit, onEdit: () -> Unit) {
-    val date = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(eval.fecha))
-    val proxima = eval.proximaCita?.let { SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(it)) } ?: "No programada"
+    val date = com.example.optoapp.util.DateUtils.formatLocalized(eval.fecha)
+    val proxima = eval.proximaCita?.let { com.example.optoapp.util.DateUtils.formatLocalized(it) } ?: "No programada"
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -361,21 +458,31 @@ fun ResumenEvaluacionDialog(eval: EvaluacionClinica, paciente: Paciente, onDismi
                     Text("Nombre: ${paciente.nombreCompleto}", fontSize = 14.sp)
                     Text("Edad: ${paciente.edad} años", fontSize = 14.sp)
                     if (paciente.telefono.isNotBlank()) Text("Teléfono: ${paciente.telefono}", fontSize = 14.sp)
+                    if (!paciente.historiaOptometrica.isNullOrBlank()) Text("Historia Optométrica: ${paciente.historiaOptometrica}", fontSize = 14.sp)
                     Text("Fecha de Eval: $date", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
                 }
 
                 val showOd = eval.recetaOdEsf.isNotBlank() || eval.recetaOdCil.isNotBlank()
                 val showOi = eval.recetaOiEsf.isNotBlank() || eval.recetaOiCil.isNotBlank()
                 if (showOd || showOi) {
-                    InfoSection("Refracción Final (Gafas)") {
+                    InfoSection("Fórmula final (gafas)") {
                         if (showOd) {
-                            val avOd = if (eval.recetaOdAv.isNotBlank()) " AV: ${eval.recetaOdAv}" else ""
-                            Text("OD: ${eval.recetaOdEsf} / ${eval.recetaOdCil} x ${eval.recetaOdEje}°$avOd", fontSize = 14.sp)
+                            Text("OD: ${eval.recetaOdEsf} / ${eval.recetaOdCil} x ${eval.recetaOdEje}°", fontSize = 14.sp)
                         }
                         if (showOi) {
-                            val avOi = if (eval.recetaOiAv.isNotBlank()) " AV: ${eval.recetaOiAv}" else ""
-                            Text("OI: ${eval.recetaOiEsf} / ${eval.recetaOiCil} x ${eval.recetaOiEje}°$avOi", fontSize = 14.sp)
+                            Text("OI: ${eval.recetaOiEsf} / ${eval.recetaOiCil} x ${eval.recetaOiEje}°", fontSize = 14.sp)
                         }
+                    }
+                }
+
+                val avccOd = eval.recetaOdAv.ifBlank { eval.avCcOdLejos }
+                val avccOi = eval.recetaOiAv.ifBlank { eval.avCcOiLejos }
+                val avccAo = eval.avCcAoPx
+                val hasAvcc = avccOd.isNotBlank() || avccOi.isNotBlank() || avccAo.isNotBlank()
+                if (hasAvcc) {
+                    InfoSection("Agudeza visual (AV CC)") {
+                        Text("AVCC OD: ${if (avccOd.isBlank()) "—" else avccOd}       AV CC AO", fontSize = 14.sp)
+                        Text("AVCC OI: ${if (avccOi.isBlank()) "—" else avccOi}       ${if (avccAo.isBlank()) "—" else avccAo}", fontSize = 14.sp)
                     }
                 }
 
@@ -456,8 +563,8 @@ fun ResumenEvaluacionDialog(eval: EvaluacionClinica, paciente: Paciente, onDismi
             Row {
                 val context = LocalContext.current
                 IconButton(onClick = {
-                    val recetaStr = buildString {
-                        append("Hola ${paciente.nombreCompleto.split(" ").firstOrNull() ?: ""}, esta es tu receta optométrica:\n\n")
+                    val formulaStr = buildString {
+                        append("Hola ${paciente.nombreCompleto.split(" ").firstOrNull() ?: ""}, esta es tu fórmula optométrica:\n\n")
                         val showOd = eval.recetaOdEsf.isNotBlank() || eval.recetaOdCil.isNotBlank()
                         val showOi = eval.recetaOiEsf.isNotBlank() || eval.recetaOiCil.isNotBlank()
                         if (showOd) {
@@ -473,13 +580,13 @@ fun ResumenEvaluacionDialog(eval: EvaluacionClinica, paciente: Paciente, onDismi
                             if (eval.addAv.isNotBlank()) append("AV: ${eval.addAv}\n")
                         }
                         if (eval.proximaCita != null) {
-                            val prox = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(eval.proximaCita))
+                            val prox = com.example.optoapp.util.DateUtils.formatLocalized(eval.proximaCita)
                             append("\n📅 Próximo Control: $prox")
                         }
                     }
-                    WhatsAppUtils.sendWhatsAppMessage(context, paciente.telefono, recetaStr)
+                    WhatsAppUtils.sendWhatsAppMessage(context, paciente.telefono, formulaStr)
                 }) {
-                    Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Enviar Receta a WhatsApp", tint = Color(0xFF25D366))
+                    Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Enviar fórmula a WhatsApp", tint = Color(0xFF25D366))
                 }
                 Spacer(modifier = Modifier.width(8.dp))
                 Button(onClick = { onDismiss(); onEdit() }) { 
@@ -506,15 +613,23 @@ fun InfoSection(title: String, content: @Composable () -> Unit) {
 }
 
 @Composable
-fun DispensacionesList(dispensaciones: List<DispensacionOptica>, paciente: Paciente, onEdit: (String) -> Unit) {
+fun DispensacionesList(
+    dispensaciones: List<DispensacionOptica>,
+    paciente: Paciente,
+    evaluaciones: List<EvaluacionClinica>,
+    onEdit: (String) -> Unit,
+    laboratorioVm: LaboratorioConfigViewModel = hiltViewModel(),
+) {
     val selectedDispForResumen = remember { mutableStateOf<DispensacionOptica?>(null) }
+    val selectedDispForTicket = remember { mutableStateOf<DispensacionOptica?>(null) }
+    val labCfg by laboratorioVm.uiState.collectAsState()
 
     if (dispensaciones.isEmpty()) {
         EmptyListMessage("No hay dispensaciones.")
     } else {
         LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             items(dispensaciones) { disp ->
-                val date = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(disp.fecha))
+                val date = com.example.optoapp.util.DateUtils.formatLocalized(disp.fecha)
                 val saldo = disp.montoTotal - disp.montoPagado
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -526,8 +641,16 @@ fun DispensacionesList(dispensaciones: List<DispensacionOptica>, paciente: Pacie
                     Column(modifier = Modifier.padding(16.dp)) {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                             Text(text = date, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                IconButton(modifier = Modifier.size(24.dp), onClick = { selectedDispForResumen.value = disp }) { 
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                IconButton(modifier = Modifier.size(24.dp), onClick = { selectedDispForTicket.value = disp }) {
+                                    Icon(
+                                        Icons.Filled.Science,
+                                        contentDescription = "Ticket de laboratorio",
+                                        tint = MaterialTheme.colorScheme.tertiary,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                                IconButton(modifier = Modifier.size(24.dp), onClick = { selectedDispForResumen.value = disp }) {
                                     Icon(Icons.Default.Visibility, contentDescription = "Ver Resumen", tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(20.dp))
                                 }
                                 Surface(
@@ -558,6 +681,18 @@ fun DispensacionesList(dispensaciones: List<DispensacionOptica>, paciente: Pacie
         }
     }
     
+    selectedDispForTicket.value?.let { dispTicket ->
+        val ultimaEval = evaluaciones.maxByOrNull { it.fecha }
+        val ticketCtx = LaboratorioTicketContext.fromDispensacion(dispTicket, paciente.nombreCompleto)
+        LaboratorioTicketAlertDialog(
+            onDismiss = { selectedDispForTicket.value = null },
+            ticketTextoCompleto = DispensacionLaboratorioTicket.textoCompleto(ticketCtx, ultimaEval),
+            ticketTextoCompacto = DispensacionLaboratorioTicket.textoCompacto(ticketCtx, ultimaEval),
+            laboratorioNombre = labCfg.laboratorioNombre,
+            laboratorioContacto = labCfg.laboratorioContacto,
+        )
+    }
+
     selectedDispForResumen.value?.let { currentDisp ->
         ResumenDispensacionDialog(
             disp = currentDisp,
@@ -570,7 +705,7 @@ fun DispensacionesList(dispensaciones: List<DispensacionOptica>, paciente: Pacie
 
 @Composable
 fun ResumenDispensacionDialog(disp: DispensacionOptica, paciente: Paciente, onDismiss: () -> Unit, onEdit: () -> Unit) {
-    val date = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(disp.fecha))
+    val date = com.example.optoapp.util.DateUtils.formatLocalized(disp.fecha)
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -584,8 +719,10 @@ fun ResumenDispensacionDialog(disp: DispensacionOptica, paciente: Paciente, onDi
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 InfoSection("Datos del Paciente") {
+                    if (disp.ot.isNotBlank()) Text("OT: ${disp.ot}", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
                     Text("Nombre: ${paciente.nombreCompleto}", fontSize = 14.sp)
                     Text("Edad: ${paciente.edad} años", fontSize = 14.sp)
+                    if (!paciente.historiaOptometrica.isNullOrBlank()) Text("Historia Optométrica: ${paciente.historiaOptometrica}", fontSize = 14.sp)
                     Text("Fecha: $date", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
                 }
 
@@ -605,11 +742,14 @@ fun ResumenDispensacionDialog(disp: DispensacionOptica, paciente: Paciente, onDi
                         val distancia = if (disp.tipoLente == "Monofocal" && disp.distanciaLente.isNotBlank()) " - ${disp.distanciaLente}" else ""
                         Text("Tipo: ${disp.tipoLente}$subtipo$distancia", fontSize = 14.sp)
                     }
+                    if ((disp.tipoLente == "Bifocal" || disp.tipoLente == "Progresivo" || disp.tipoLente == "Ocupacional") && disp.altura.isNotBlank()) {
+                        Text("Altura: ${disp.altura} mm", fontSize = 14.sp)
+                    }
                     if (disp.materialLente.isNotBlank()) Text("Material: ${disp.materialLente}", fontSize = 14.sp)
                     if (disp.colorLente.isNotBlank()) Text("Color: ${disp.colorLente}", fontSize = 14.sp)
-                        if (disp.tratamientos.isNotEmpty()) {
-                            Text("Tratamientos: ${disp.tratamientos.joinToString(", ")}", fontSize = 14.sp)
-                        }
+                    if (disp.tratamientos.isNotEmpty()) {
+                        Text("Tratamientos: ${disp.tratamientos.joinToString(", ")}", fontSize = 14.sp)
+                    }
                         if (disp.notasDiseno.isNotBlank()) Text("Notas: ${disp.notasDiseno}", fontSize = 14.sp)
                     }
                 }
@@ -681,7 +821,7 @@ fun ServiciosExtraList(servicios: List<ServicioExtra>, onEdit: (String) -> Unit)
     } else {
         LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             items(servicios) { serv ->
-                val date = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(serv.fecha))
+                val date = com.example.optoapp.util.DateUtils.formatLocalized(serv.fecha)
                 val saldo = serv.montoTotal - serv.aCuenta
                 Card(
                     modifier = Modifier.fillMaxWidth(),

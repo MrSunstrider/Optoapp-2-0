@@ -6,7 +6,7 @@ import com.example.optoapp.data.*
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import java.util.*
+import java.time.LocalDate
 import javax.inject.Inject
 
 enum class Periodo(val label: String) {
@@ -23,6 +23,15 @@ data class BIUiState(
     val recaudacionProyectada: Double = 0.0,
     val recaudacionCobrada: Double = 0.0,
     val topProductos: List<ProductoRanking> = emptyList(),
+    /** P3-T8: dispensaciones con entrega pendiente en el período (filtro por fecha + óptica). */
+    val entregasPendientesPeriodo: Int = 0,
+    val entregasCompletadasPeriodo: Int = 0,
+    /** Dispensaciones con `montura_id` de catálogo en el período. */
+    val ventasConMonturaCatalogo: Int = 0,
+    /** Monturas activas con stock ≤ mínimo (instantáneo, óptica activa). */
+    val monturasStockBajo: Int = 0,
+    /** Movimientos `SALIDA_VENTA` en el período. */
+    val salidasInventarioVentas: Int = 0,
     val isLoading: Boolean = false
 )
 
@@ -31,9 +40,17 @@ data class ProductoRanking(
     val cantidad: Int
 )
 
+private data class BiCoreFlows(
+    val examenesActual: Int,
+    val examenesAnterior: Int,
+    val dispensaciones: List<DispensacionOptica>,
+    val pagos: List<Pago>
+)
+
 @HiltViewModel
 class BIViewModel @Inject constructor(
-    private val repository: OptoRepository
+    private val repository: OptoRepository,
+    private val sessionManager: SessionManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(BIUiState())
@@ -49,24 +66,42 @@ class BIViewModel @Inject constructor(
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     private fun observeStats() {
-        _uiState.map { it.periodo }
+        combine(
+            _uiState.map { it.periodo }.distinctUntilChanged(),
+            sessionManager.opticaId
+        ) { periodo, opticaId -> periodo to opticaId }
             .distinctUntilChanged()
-            .flatMapLatest { periodo ->
+            .flatMapLatest { (periodo, opticaId) ->
                 val ranges = getRangesForPeriod(periodo)
                 val prevRanges = getPreviousRangesForPeriod(periodo)
-                
+
                 combine(
-                    repository.countEvaluacionesInRange(ranges.first, ranges.second),
-                    repository.countEvaluacionesInRange(prevRanges.first, prevRanges.second),
-                    repository.getDispensacionesByDateRange(ranges.first, ranges.second),
-                    repository.getPagosByDateRange(ranges.first, ranges.second)
-                ) { examsActual, examsAnterior, dispensaciones, pagos ->
-                    
+                    combine(
+                        repository.countEvaluacionesInRangeForOptica(ranges.first, ranges.second, opticaId),
+                        repository.countEvaluacionesInRangeForOptica(prevRanges.first, prevRanges.second, opticaId),
+                        repository.getDispensacionesByDateRangeForOptica(ranges.first, ranges.second, opticaId),
+                        repository.getPagosByDateRangeForOptica(ranges.first, ranges.second, opticaId)
+                    ) { e1, e2, disp, pag ->
+                        BiCoreFlows(e1, e2, disp, pag)
+                    },
+                    repository.getMonturasByOptica(opticaId),
+                    repository.getMovimientosMonturaByOptica(opticaId)
+                ) { core, monturas, movimientos ->
+                    val dispensaciones = core.dispensaciones
+                    val pagos = core.pagos
                     val proyectada = dispensaciones.sumOf { it.montoTotal }
                     val cobrada = pagos.sumOf { it.monto }
-                    
+
+                    val entregasPendientes = dispensaciones.count { it.estadoEntrega.equals("Pendiente", ignoreCase = true) }
+                    val entregasHechas = dispensaciones.count { it.estadoEntrega.equals("Entregado", ignoreCase = true) }
+                    val conMontura = dispensaciones.count { it.monturaId.isNotBlank() }
+                    val stockBajo = monturas.count { m -> m.activo && m.stockActual <= m.stockMinimo }
+                    val salidasVentas = movimientos.count { m ->
+                        m.fecha >= ranges.first && m.fecha <= ranges.second && m.tipo == "SALIDA_VENTA"
+                    }
+
                     val ranking = dispensaciones
-                        .map { d -> 
+                        .map { d ->
                             val material = if (d.materialLente.isNotBlank()) d.materialLente else "Sin Material"
                             val trats = if (d.tratamientos.isNotEmpty()) " (${d.tratamientos.joinToString(", ")})" else ""
                             "$material$trats"
@@ -78,11 +113,16 @@ class BIViewModel @Inject constructor(
 
                     BIUiState(
                         periodo = periodo,
-                        examenesActual = examsActual,
-                        examenesAnterior = examsAnterior,
+                        examenesActual = core.examenesActual,
+                        examenesAnterior = core.examenesAnterior,
                         recaudacionProyectada = proyectada,
                         recaudacionCobrada = cobrada,
                         topProductos = ranking,
+                        entregasPendientesPeriodo = entregasPendientes,
+                        entregasCompletadasPeriodo = entregasHechas,
+                        ventasConMonturaCatalogo = conMontura,
+                        monturasStockBajo = stockBajo,
+                        salidasInventarioVentas = salidasVentas,
                         isLoading = false
                     )
                 }
@@ -92,47 +132,56 @@ class BIViewModel @Inject constructor(
             .launchIn(viewModelScope)
     }
 
-    private fun getRangesForPeriod(periodo: Periodo): Pair<Long, Long> {
-        val cal = Calendar.getInstance()
-        val end = cal.timeInMillis
-        
-        when (periodo) {
+    private fun getRangesForPeriod(periodo: Periodo): Pair<LocalDate, LocalDate> {
+        val today = LocalDate.now()
+        return when (periodo) {
             Periodo.MES_ACTUAL -> {
-                cal.set(Calendar.DAY_OF_MONTH, 1)
+                val start = today.withDayOfMonth(1)
+                val end = start.plusMonths(1).minusDays(1)
+                start to end
             }
             Periodo.TRIMESTRE -> {
-                cal.add(Calendar.MONTH, -3)
+                val quarterStartMonth = ((today.monthValue - 1) / 3) * 3 + 1
+                val start = LocalDate.of(today.year, quarterStartMonth, 1)
+                val end = start.plusMonths(3).minusDays(1)
+                start to end
             }
             Periodo.SEMESTRE -> {
-                cal.add(Calendar.MONTH, -6)
+                val semesterStartMonth = if (today.monthValue <= 6) 1 else 7
+                val start = LocalDate.of(today.year, semesterStartMonth, 1)
+                val end = start.plusMonths(6).minusDays(1)
+                start to end
             }
             Periodo.ANIO -> {
-                cal.add(Calendar.YEAR, -1)
+                val start = LocalDate.of(today.year, 1, 1)
+                val end = LocalDate.of(today.year, 12, 31)
+                start to end
             }
         }
-        cal.set(Calendar.HOUR_OF_DAY, 0)
-        cal.set(Calendar.MINUTE, 0)
-        cal.set(Calendar.SECOND, 0)
-        
-        return cal.timeInMillis to end
     }
 
-    private fun getPreviousRangesForPeriod(periodo: Periodo): Pair<Long, Long> {
-        val cal = Calendar.getInstance()
-        
-        when (periodo) {
+    private fun getPreviousRangesForPeriod(periodo: Periodo): Pair<LocalDate, LocalDate> {
+        val (currentStart, _) = getRangesForPeriod(periodo)
+        return when (periodo) {
             Periodo.MES_ACTUAL -> {
-                cal.add(Calendar.MONTH, -1)
-                cal.set(Calendar.DAY_OF_MONTH, 1)
-                val start = cal.timeInMillis
-                cal.set(Calendar.DAY_OF_MONTH, cal.getActualMaximum(Calendar.DAY_OF_MONTH))
-                return start to cal.timeInMillis
+                val start = currentStart.minusMonths(1)
+                val end = currentStart.minusDays(1)
+                start to end
             }
-            else -> {
-                // Para otros periodos usamos el mismo periodo inmediatamente anterior
-                val currentRange = getRangesForPeriod(periodo)
-                val diff = currentRange.second - currentRange.first
-                return (currentRange.first - diff) to currentRange.first
+            Periodo.TRIMESTRE -> {
+                val start = currentStart.minusMonths(3)
+                val end = currentStart.minusDays(1)
+                start to end
+            }
+            Periodo.SEMESTRE -> {
+                val start = currentStart.minusMonths(6)
+                val end = currentStart.minusDays(1)
+                start to end
+            }
+            Periodo.ANIO -> {
+                val start = currentStart.minusYears(1)
+                val end = currentStart.minusDays(1)
+                start to end
             }
         }
     }

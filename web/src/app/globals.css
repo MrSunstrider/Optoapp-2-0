@@ -1,0 +1,93 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Premium Light Mode - Crisp & Airy */
+    --background: oklch(0.98 0.005 240); /* #F8FAFC - Softest blue tint */
+    --foreground: oklch(0.15 0.04 250); /* Deep Slate */
+    
+    --card: oklch(1 0 0); /* Pure White */
+    --card-foreground: oklch(0.15 0.04 250);
+    
+    --popover: oklch(1 0 0);
+    --popover-foreground: oklch(0.15 0.04 250);
+    
+    --primary: oklch(0.62 0.17 155); /* Vibrant Emerald */
+    --primary-foreground: oklch(0.98 0.01 155);
+    
+    --secondary: oklch(0.96 0.01 250);
+    --secondary-foreground: oklch(0.20 0.05 250);
+    
+    --muted: oklch(0.94 0.01 240);
+    --muted-foreground: oklch(0.45 0.05 250);
+    
+    --accent: oklch(0.92 0.02 240);
+    --accent-foreground: oklch(0.20 0.05 250);
+    
+    --destructive: oklch(0.55 0.22 25);
+    --destructive-foreground: oklch(0.98 0 0);
+    
+    --border: oklch(0.90 0.01 240);
+    --input: oklch(0.90 0.01 240);
+    --ring: oklch(0.62 0.17 155);
+    
+    --radius: 1.25rem;
+  }
+
+  .dark {
+    /* Premium Dark Mode - Deep Navy & Glassmorphism */
+    --background: oklch(0.10 0.03 260); /* Deepest Navy #080C14 */
+    --foreground: oklch(0.95 0.01 240);
+    
+    --card: oklch(0.14 0.03 260); /* Slightly lighter navy for cards */
+    --card-foreground: oklch(0.95 0.01 240);
+    
+    --popover: oklch(0.14 0.03 260);
+    --popover-foreground: oklch(0.95 0.01 240);
+    
+    --primary: oklch(0.65 0.18 155); /* Radiant Emerald */
+    --primary-foreground: oklch(0.10 0.03 260);
+    
+    --secondary: oklch(0.18 0.04 260);
+    --secondary-foreground: oklch(0.95 0.01 240);
+    
+    --muted: oklch(0.18 0.04 260);
+    --muted-foreground: oklch(0.60 0.03 240);
+    
+    --accent: oklch(0.20 0.05 260);
+    --accent-foreground: oklch(0.95 0.01 240);
+    
+    --destructive: oklch(0.50 0.20 25);
+    --destructive-foreground: oklch(0.98 0 0);
+    
+    --border: oklch(0.20 0.04 260);
+    --input: oklch(0.20 0.04 260);
+    --ring: oklch(0.65 0.18 155);
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  ::selection {
+    background-color: var(--primary);
+    color: var(--primary-foreground);
+  }
+}
+
+@layer utilities {
+  .glass-card {
+    @apply bg-card/80 backdrop-blur-md border-white/[0.05] dark:border-white/[0.02];
+  }
+  
+  .text-balance {
+    text-wrap: balance;
+  }
+}

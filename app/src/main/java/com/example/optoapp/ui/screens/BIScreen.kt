@@ -15,7 +15,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -33,6 +32,18 @@ import java.util.*
 fun BIScreen(navController: NavController, viewModel: BIViewModel = hiltViewModel()) {
     val uiState by viewModel.uiState.collectAsState()
     val scrollState = rememberScrollState()
+    val comparativoLabel = when (uiState.periodo) {
+        Periodo.MES_ACTUAL -> "Mes anterior"
+        Periodo.TRIMESTRE -> "Trimestre anterior"
+        Periodo.SEMESTRE -> "Semestre anterior"
+        Periodo.ANIO -> "Año anterior"
+    }
+    val actualLabel = when (uiState.periodo) {
+        Periodo.MES_ACTUAL -> "Mes actual"
+        Periodo.TRIMESTRE -> "Trimestre actual"
+        Periodo.SEMESTRE -> "Semestre actual"
+        Periodo.ANIO -> "Año actual"
+    }
 
     Scaffold(
         topBar = {
@@ -57,8 +68,8 @@ fun BIScreen(navController: NavController, viewModel: BIViewModel = hiltViewMode
                 .padding(padding)
                 .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
                 .verticalScroll(scrollState)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(horizontal = 14.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             // Selector de Periodo
             SingleChoiceSegmentedButtonRow(
@@ -74,6 +85,11 @@ fun BIScreen(navController: NavController, viewModel: BIViewModel = hiltViewMode
                     }
                 }
             }
+            Text(
+                text = "Comparando con: $comparativoLabel",
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
 
             // Exámenes Section
             KPICard(
@@ -81,9 +97,16 @@ fun BIScreen(navController: NavController, viewModel: BIViewModel = hiltViewMode
                 current = uiState.examenesActual.toString(),
                 previous = uiState.examenesAnterior.toString(),
                 icon = Icons.Default.Insights,
-                color = MaterialTheme.colorScheme.primary
+                color = MaterialTheme.colorScheme.primary,
+                previousLabel = comparativoLabel
             ) {
-                BarChart(uiState.examenesActual, uiState.examenesAnterior, Modifier.padding(top = 16.dp))
+                BarChart(
+                    actual = uiState.examenesActual,
+                    anterior = uiState.examenesAnterior,
+                    labelActual = actualLabel,
+                    labelAnterior = comparativoLabel,
+                    modifier = Modifier.padding(top = 16.dp)
+                )
             }
 
             // Recaudación Section
@@ -92,6 +115,7 @@ fun BIScreen(navController: NavController, viewModel: BIViewModel = hiltViewMode
                 current = "s/. ${String.format(Locale.getDefault(), "%.0f", uiState.recaudacionCobrada)}",
                 previous = "Meta: s/. ${String.format(Locale.getDefault(), "%.0f", uiState.recaudacionProyectada)}",
                 color = MaterialTheme.colorScheme.primary,
+                previousLabel = comparativoLabel,
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -110,6 +134,32 @@ fun BIScreen(navController: NavController, viewModel: BIViewModel = hiltViewMode
                             Text("¡Meta cumplida!", fontSize = 12.sp, color = MaterialTheme.colorScheme.tertiary, fontWeight = FontWeight.Bold)
                         }
                     }
+                }
+            }
+
+            // P3-T8: inventario, entregas y movimientos (misma óptica y período que arriba)
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            ) {
+                Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        "Operación e inventario",
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontSize = 18.sp
+                    )
+                    BiMetricRow("Entregas pendientes (en período)", uiState.entregasPendientesPeriodo.toString())
+                    BiMetricRow("Entregas completadas (en período)", uiState.entregasCompletadasPeriodo.toString())
+                    BiMetricRow("Ventas con montura de catálogo", uiState.ventasConMonturaCatalogo.toString())
+                    BiMetricRow("Referencias en stock bajo (ahora)", uiState.monturasStockBajo.toString())
+                    BiMetricRow("Salidas de inventario por venta", uiState.salidasInventarioVentas.toString())
+                    Text(
+                        "Stock bajo y salidas usan inventario y movimientos de la óptica activa.",
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
 
@@ -136,12 +186,25 @@ fun BIScreen(navController: NavController, viewModel: BIViewModel = hiltViewMode
 }
 
 @Composable
+private fun BiMetricRow(label: String, value: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(label, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
+        Text(value, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+    }
+}
+
+@Composable
 fun KPICard(
     title: String,
     current: String,
     previous: String,
     icon: ImageVector? = null,
     color: Color,
+    previousLabel: String = "Anterior",
     content: @Composable () -> Unit
 ) {
     Card(
@@ -184,7 +247,7 @@ fun KPICard(
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
-                    text = if (title.contains("Recaudación")) previous else "Anterior: $previous",
+                    text = if (title.contains("Recaudación")) previous else "$previousLabel: $previous",
                     fontSize = 11.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

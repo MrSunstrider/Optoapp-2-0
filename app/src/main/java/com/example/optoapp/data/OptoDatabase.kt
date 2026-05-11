@@ -1,16 +1,22 @@
 package com.example.optoapp.data
 
 import android.content.Context
+import com.example.optoapp.BuildConfig
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
+import com.example.optoapp.util.LocalDatabaseBackupManager
+import java.util.concurrent.TimeUnit
 
 @Database(
-    entities = [Paciente::class, EvaluacionClinica::class, DispensacionOptica::class, Pago::class, ServicioExtra::class],
-    version = 7,
+    entities = [
+        Paciente::class, EvaluacionClinica::class, DispensacionOptica::class, Pago::class, ServicioExtra::class,
+        Montura::class, MonturaMovimiento::class, SyncEntityState::class
+    ],
+    version = 20,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -20,11 +26,25 @@ abstract class OptoDatabase : RoomDatabase() {
     abstract fun dispensacionDao(): DispensacionDao
     abstract fun pagoDao(): PagoDao
     abstract fun servicioExtraDao(): ServicioExtraDao
+    abstract fun monturaDao(): MonturaDao
+    abstract fun monturaMovimientoDao(): MonturaMovimientoDao
+    abstract fun syncEntityStateDao(): SyncEntityStateDao
 
     companion object {
         @Volatile
         private var INSTANCE: OptoDatabase? = null
 
+        val MIGRATION_7_8 = object : Migration(7, 8) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Añadir campo multi-inquilino a todas las tablas principales
+                // Los registros existentes quedan asignados a 'mi_optica_base'
+                db.execSQL("ALTER TABLE pacientes ADD COLUMN opticaId TEXT NOT NULL DEFAULT 'mi_optica_base'")
+                db.execSQL("ALTER TABLE evaluaciones ADD COLUMN opticaId TEXT NOT NULL DEFAULT 'mi_optica_base'")
+                db.execSQL("ALTER TABLE dispensaciones ADD COLUMN opticaId TEXT NOT NULL DEFAULT 'mi_optica_base'")
+                db.execSQL("ALTER TABLE servicios_extra ADD COLUMN opticaId TEXT NOT NULL DEFAULT 'mi_optica_base'")
+                db.execSQL("ALTER TABLE pagos ADD COLUMN opticaId TEXT NOT NULL DEFAULT 'mi_optica_base'")
+            }
+        }
         val MIGRATION_6_7 = object : Migration(6, 7) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 // Agudeza visual (Nuevos campos Cerca AO)
@@ -56,6 +76,547 @@ abstract class OptoDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * Migración 9 -> 10
+         * Convierte fechas persistidas como epoch millis (INTEGER) a fechas puras ISO (TEXT, yyyy-MM-dd)
+         * para elimininar desfases por zona horaria en campos de solo-fecha.
+         *
+         * Nota: el fix +1 día se aplica solo cuando el patrón de millis parece provenir de "UTC midnight"
+         * (milis mod 1 día ~ 0), que es el caso típico del MaterialDatePicker cuando se trata como instante.
+         */
+        val MIGRATION_8_9 = object : Migration(8, 9) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Gap intencional: bump de versión sin cambios de schema.
+                // Ver commit 08685cd para contexto.
+            }
+        }
+
+        val MIGRATION_9_10 = object : Migration(9, 10) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                val dayMillis = TimeUnit.DAYS.toMillis(1)
+                val utcMidnightThresholdMillis = TimeUnit.HOURS.toMillis(1) // tolerancia
+
+                fun millisToIsoExpr(column: String): String {
+                    // SQLite date() modifiers: unixepoch, localtime, +N day
+                    // Si el epoch parece UTC midnight (mod cercano a 0), sumamos 1 día.
+                    return """
+                        date(
+                          ($column / 1000),
+                          'unixepoch',
+                          'localtime',
+                          CASE WHEN (abs(($column % $dayMillis)) < $utcMidnightThresholdMillis) THEN '+1 day' ELSE '+0 day' END
+                        )
+                    """.trimIndent()
+                }
+
+                // --- Pacientes ---
+                db.execSQL("ALTER TABLE pacientes RENAME TO pacientes_old")
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS pacientes (
+                      id TEXT NOT NULL PRIMARY KEY,
+                      nombreCompleto TEXT NOT NULL,
+                      edad INTEGER NOT NULL,
+                      telefono TEXT NOT NULL,
+                      fechaCreacion TEXT NOT NULL,
+                      dni TEXT,
+                      fechaNacimiento TEXT,
+                      sexo TEXT,
+                      email TEXT,
+                      direccion TEXT,
+                      distrito TEXT,
+                      ocupacion TEXT,
+                      acompanante TEXT,
+                      hobbies TEXT,
+                      ultimasEtiquetas TEXT NOT NULL,
+                      opticaId TEXT NOT NULL
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    INSERT INTO pacientes (
+                      id, nombreCompleto, edad, telefono, fechaCreacion, dni, fechaNacimiento, sexo, email, direccion,
+                      distrito, ocupacion, acompanante, hobbies, ultimasEtiquetas, opticaId
+                    )
+                    SELECT
+                      id, nombreCompleto, edad, telefono,
+                      ${millisToIsoExpr("fechaCreacion")} AS fechaCreacion,
+                      dni, fechaNacimiento, sexo, email, direccion,
+                      distrito, ocupacion, acompanante, hobbies, ultimasEtiquetas, opticaId
+                    FROM pacientes_old
+                    """.trimIndent()
+                )
+                db.execSQL("DROP TABLE pacientes_old")
+
+                // --- Evaluaciones ---
+                db.execSQL("ALTER TABLE evaluaciones RENAME TO evaluaciones_old")
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS evaluaciones (
+                      id TEXT NOT NULL PRIMARY KEY,
+                      pacienteId TEXT NOT NULL,
+                      fecha TEXT NOT NULL,
+                      opticaId TEXT NOT NULL,
+                      motivoConsulta TEXT NOT NULL,
+                      sintomas TEXT NOT NULL,
+                      antecedentesPersonalesOculares TEXT NOT NULL,
+                      antecedentesPersonalesSistemicos TEXT NOT NULL,
+                      antecedentesFamiliaresOculares TEXT NOT NULL,
+                      antecedentesFamiliaresSistemicos TEXT NOT NULL,
+                      medicacion TEXT NOT NULL,
+                      alergias TEXT NOT NULL,
+                      necesidadVisual TEXT NOT NULL,
+                      avScOdLejos TEXT NOT NULL,
+                      avScOiLejos TEXT NOT NULL,
+                      avScOdCerca TEXT NOT NULL,
+                      avScOiCerca TEXT NOT NULL,
+                      avScAo TEXT NOT NULL,
+                      avScAoCerca TEXT NOT NULL,
+                      avCcOdLejos TEXT NOT NULL,
+                      avCcOiLejos TEXT NOT NULL,
+                      avCcOdCerca TEXT NOT NULL,
+                      avCcOiCerca TEXT NOT NULL,
+                      avCcAoPx TEXT NOT NULL,
+                      avCcAoCerca TEXT NOT NULL,
+                      phOd TEXT NOT NULL,
+                      phOi TEXT NOT NULL,
+                      kappaOd TEXT NOT NULL,
+                      kappaOi TEXT NOT NULL,
+                      hirshberg TEXT NOT NULL,
+                      duccionesOd TEXT NOT NULL,
+                      duccionesOi TEXT NOT NULL,
+                      versionesAo TEXT NOT NULL,
+                      estereopsisValor TEXT NOT NULL,
+                      estereopsisSegundos TEXT NOT NULL,
+                      lang TEXT NOT NULL,
+                      worth TEXT NOT NULL,
+                      ishihara TEXT NOT NULL,
+                      farnsworth TEXT NOT NULL,
+                      schirmerOd TEXT NOT NULL,
+                      schirmerOi TEXT NOT NULL,
+                      osdiPuntuacion INTEGER,
+                      osdiClasificacion TEXT NOT NULL,
+                      sensibilidadContraste TEXT NOT NULL,
+                      sensibilidadFrecuencia TEXT NOT NULL,
+                      amsler TEXT NOT NULL,
+                      campoVisual TEXT NOT NULL,
+                      campoVisualDescripcion TEXT NOT NULL,
+                      coverTest6m TEXT NOT NULL,
+                      coverTest40cm TEXT NOT NULL,
+                      coverTest10cm TEXT NOT NULL,
+                      ppcOr TEXT NOT NULL,
+                      ppcLuz TEXT NOT NULL,
+                      ppcFrl TEXT NOT NULL,
+                      reflejoFotomotor TEXT NOT NULL,
+                      reflejoConsensual TEXT NOT NULL,
+                      reflejoAcomodativo TEXT NOT NULL,
+                      k1Od TEXT NOT NULL,
+                      k2Od TEXT NOT NULL,
+                      k1Oi TEXT NOT NULL,
+                      k2Oi TEXT NOT NULL,
+                      objOdEsf TEXT NOT NULL,
+                      objOdCil TEXT NOT NULL,
+                      objOdEje TEXT NOT NULL,
+                      objOiEsf TEXT NOT NULL,
+                      objOiCil TEXT NOT NULL,
+                      objOiEje TEXT NOT NULL,
+                      subjOdEsf TEXT NOT NULL,
+                      subjOdCil TEXT NOT NULL,
+                      subjOdEje TEXT NOT NULL,
+                      subjOiEsf TEXT NOT NULL,
+                      subjOiCil TEXT NOT NULL,
+                      subjOiEje TEXT NOT NULL,
+                      recetaOdEsf TEXT NOT NULL,
+                      recetaOdCil TEXT NOT NULL,
+                      recetaOdEje TEXT NOT NULL,
+                      recetaOdAv TEXT NOT NULL,
+                      recetaOiEsf TEXT NOT NULL,
+                      recetaOiCil TEXT NOT NULL,
+                      recetaOiEje TEXT NOT NULL,
+                      recetaOiAv TEXT NOT NULL,
+                      addCercaOd TEXT NOT NULL,
+                      addCercaOi TEXT NOT NULL,
+                      addIntermediaOd TEXT NOT NULL,
+                      addIntermediaOi TEXT NOT NULL,
+                      addAv TEXT NOT NULL,
+                      dipLejos TEXT NOT NULL,
+                      dipCerca TEXT NOT NULL,
+                      dipIntermedio TEXT NOT NULL,
+                      prismaOdValor TEXT NOT NULL,
+                      prismaOdBase TEXT NOT NULL,
+                      prismaOiValor TEXT NOT NULL,
+                      prismaOiBase TEXT NOT NULL,
+                      diagnostico TEXT NOT NULL,
+                      diagnosticoOd TEXT NOT NULL,
+                      diagnosticoOi TEXT NOT NULL,
+                      diagnosticoOtros TEXT NOT NULL,
+                      planTratamiento TEXT NOT NULL,
+                      observaciones TEXT NOT NULL,
+                      proximaFechaControl TEXT NOT NULL,
+                      proximaCita TEXT,
+                      balanceOd INTEGER NOT NULL,
+                      balanceOi INTEGER NOT NULL,
+                      otrosPresbicia INTEGER NOT NULL,
+                      otrosAnisometropia INTEGER NOT NULL,
+                      otrosAmbliopia INTEGER NOT NULL,
+                      autoPresbicia INTEGER NOT NULL,
+                      autoAnisometropia INTEGER NOT NULL,
+                      autoAmbliopia INTEGER NOT NULL,
+                      lcOdEsf TEXT NOT NULL,
+                      lcOdCil TEXT NOT NULL,
+                      lcOdEje TEXT NOT NULL,
+                      lcOiEsf TEXT NOT NULL,
+                      lcOiCil TEXT NOT NULL,
+                      lcOiEje TEXT NOT NULL,
+                      lcRadioBaseOd TEXT NOT NULL,
+                      lcDiametroOd TEXT NOT NULL,
+                      lcRadioBaseOi TEXT NOT NULL,
+                      lcDiametroOi TEXT NOT NULL,
+                      lcLaboratorio TEXT NOT NULL,
+                      lcTipoLente TEXT NOT NULL,
+                      lcMaterial TEXT NOT NULL,
+                      lcFechaAdaptacion TEXT,
+                      lcObservaciones TEXT NOT NULL,
+                      FOREIGN KEY(pacienteId) REFERENCES pacientes(id) ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    INSERT INTO evaluaciones (
+                      id, pacienteId, fecha, opticaId, motivoConsulta, sintomas, antecedentesPersonalesOculares,
+                      antecedentesPersonalesSistemicos, antecedentesFamiliaresOculares, antecedentesFamiliaresSistemicos,
+                      medicacion, alergias, necesidadVisual,
+                      avScOdLejos, avScOiLejos, avScOdCerca, avScOiCerca, avScAo, avScAoCerca,
+                      avCcOdLejos, avCcOiLejos, avCcOdCerca, avCcOiCerca, avCcAoPx, avCcAoCerca,
+                      phOd, phOi, kappaOd, kappaOi, hirshberg, duccionesOd, duccionesOi, versionesAo,
+                      estereopsisValor, estereopsisSegundos, lang, worth,
+                      ishihara, farnsworth,
+                      schirmerOd, schirmerOi, osdiPuntuacion, osdiClasificacion, sensibilidadContraste, sensibilidadFrecuencia,
+                      amsler, campoVisual, campoVisualDescripcion,
+                      coverTest6m, coverTest40cm, coverTest10cm,
+                      ppcOr, ppcLuz, ppcFrl,
+                      reflejoFotomotor, reflejoConsensual, reflejoAcomodativo,
+                      k1Od, k2Od, k1Oi, k2Oi,
+                      objOdEsf, objOdCil, objOdEje, objOiEsf, objOiCil, objOiEje,
+                      subjOdEsf, subjOdCil, subjOdEje, subjOiEsf, subjOiCil, subjOiEje,
+                      recetaOdEsf, recetaOdCil, recetaOdEje, recetaOdAv,
+                      recetaOiEsf, recetaOiCil, recetaOiEje, recetaOiAv,
+                      addCercaOd, addCercaOi, addIntermediaOd, addIntermediaOi, addAv,
+                      dipLejos, dipCerca, dipIntermedio,
+                      prismaOdValor, prismaOdBase, prismaOiValor, prismaOiBase,
+                      diagnostico, diagnosticoOd, diagnosticoOi, diagnosticoOtros,
+                      planTratamiento, observaciones, proximaFechaControl, proximaCita,
+                      balanceOd, balanceOi,
+                      otrosPresbicia, otrosAnisometropia, otrosAmbliopia,
+                      autoPresbicia, autoAnisometropia, autoAmbliopia,
+                      lcOdEsf, lcOdCil, lcOdEje, lcOiEsf, lcOiCil, lcOiEje,
+                      lcRadioBaseOd, lcDiametroOd, lcRadioBaseOi, lcDiametroOi,
+                      lcLaboratorio, lcTipoLente, lcMaterial, lcFechaAdaptacion, lcObservaciones
+                    )
+                    SELECT
+                      id, pacienteId,
+                      ${millisToIsoExpr("fecha")} AS fecha,
+                      opticaId, motivoConsulta, sintomas, antecedentesPersonalesOculares,
+                      antecedentesPersonalesSistemicos, antecedentesFamiliaresOculares, antecedentesFamiliaresSistemicos,
+                      medicacion, alergias, necesidadVisual,
+                      avScOdLejos, avScOiLejos, avScOdCerca, avScOiCerca, avScAo, avScAoCerca,
+                      avCcOdLejos, avCcOiLejos, avCcOdCerca, avCcOiCerca, avCcAoPx, avCcAoCerca,
+                      phOd, phOi, kappaOd, kappaOi, hirshberg, duccionesOd, duccionesOi, versionesAo,
+                      estereopsisValor, estereopsisSegundos, lang, worth,
+                      ishihara, farnsworth,
+                      schirmerOd, schirmerOi, osdiPuntuacion, osdiClasificacion, sensibilidadContraste, sensibilidadFrecuencia,
+                      amsler, campoVisual, campoVisualDescripcion,
+                      coverTest6m, coverTest40cm, coverTest10cm,
+                      ppcOr, ppcLuz, ppcFrl,
+                      reflejoFotomotor, reflejoConsensual, reflejoAcomodativo,
+                      k1Od, k2Od, k1Oi, k2Oi,
+                      objOdEsf, objOdCil, objOdEje, objOiEsf, objOiCil, objOiEje,
+                      subjOdEsf, subjOdCil, subjOdEje, subjOiEsf, subjOiCil, subjOiEje,
+                      recetaOdEsf, recetaOdCil, recetaOdEje, recetaOdAv,
+                      recetaOiEsf, recetaOiCil, recetaOiEje, recetaOiAv,
+                      addCercaOd, addCercaOi, addIntermediaOd, addIntermediaOi, addAv,
+                      dipLejos, dipCerca, dipIntermedio,
+                      prismaOdValor, prismaOdBase, prismaOiValor, prismaOiBase,
+                      diagnostico, diagnosticoOd, diagnosticoOi, diagnosticoOtros,
+                      planTratamiento, observaciones, proximaFechaControl,
+                      CASE WHEN proximaCita IS NULL THEN NULL ELSE ${millisToIsoExpr("proximaCita")} END AS proximaCita,
+                      balanceOd, balanceOi,
+                      otrosPresbicia, otrosAnisometropia, otrosAmbliopia,
+                      autoPresbicia, autoAnisometropia, autoAmbliopia,
+                      lcOdEsf, lcOdCil, lcOdEje, lcOiEsf, lcOiCil, lcOiEje,
+                      lcRadioBaseOd, lcDiametroOd, lcRadioBaseOi, lcDiametroOi,
+                      lcLaboratorio, lcTipoLente, lcMaterial,
+                      CASE WHEN lcFechaAdaptacion IS NULL THEN NULL ELSE ${millisToIsoExpr("lcFechaAdaptacion")} END AS lcFechaAdaptacion,
+                      lcObservaciones
+                    FROM evaluaciones_old
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_evaluaciones_pacienteId ON evaluaciones(pacienteId)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_evaluaciones_opticaId ON evaluaciones(opticaId)")
+                db.execSQL("DROP TABLE evaluaciones_old")
+
+                // --- Dispensaciones ---
+                db.execSQL("ALTER TABLE dispensaciones RENAME TO dispensaciones_old")
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS dispensaciones (
+                      id TEXT NOT NULL PRIMARY KEY,
+                      pacienteId TEXT NOT NULL,
+                      fecha TEXT NOT NULL,
+                      opticaId TEXT NOT NULL,
+                      tipoMontura TEXT NOT NULL,
+                      materialMontura TEXT NOT NULL,
+                      tipoLente TEXT NOT NULL,
+                      materialLente TEXT NOT NULL,
+                      tratamientos TEXT NOT NULL,
+                      colorLente TEXT NOT NULL,
+                      notasDiseno TEXT NOT NULL,
+                      origenMontura TEXT NOT NULL,
+                      tipoAro TEXT NOT NULL,
+                      descripcionMontura TEXT NOT NULL,
+                      montoTotal REAL NOT NULL,
+                      metodoPago TEXT NOT NULL,
+                      montoPagado REAL NOT NULL,
+                      estadoEntrega TEXT NOT NULL,
+                      fechaVencimientoGarantia TEXT,
+                      distanciaLente TEXT NOT NULL,
+                      subTipoBifocal TEXT NOT NULL,
+                      FOREIGN KEY(pacienteId) REFERENCES pacientes(id) ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    INSERT INTO dispensaciones (
+                      id, pacienteId, fecha, opticaId, tipoMontura, materialMontura, tipoLente, materialLente,
+                      tratamientos, colorLente, notasDiseno, origenMontura, tipoAro, descripcionMontura,
+                      montoTotal, metodoPago, montoPagado, estadoEntrega, fechaVencimientoGarantia, distanciaLente, subTipoBifocal
+                    )
+                    SELECT
+                      id, pacienteId,
+                      ${millisToIsoExpr("fecha")} AS fecha,
+                      opticaId, tipoMontura, materialMontura, tipoLente, materialLente,
+                      tratamientos, colorLente, notasDiseno, origenMontura, tipoAro, descripcionMontura,
+                      montoTotal, metodoPago, montoPagado, estadoEntrega,
+                      fechaVencimientoGarantia,
+                      distanciaLente, subTipoBifocal
+                    FROM dispensaciones_old
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_dispensaciones_pacienteId ON dispensaciones(pacienteId)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_dispensaciones_opticaId ON dispensaciones(opticaId)")
+                db.execSQL("DROP TABLE dispensaciones_old")
+
+                // --- Servicios Extra ---
+                db.execSQL("ALTER TABLE servicios_extra RENAME TO servicios_extra_old")
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS servicios_extra (
+                      id TEXT NOT NULL PRIMARY KEY,
+                      ot TEXT NOT NULL,
+                      descripcion TEXT NOT NULL,
+                      montoTotal REAL NOT NULL,
+                      aCuenta REAL NOT NULL,
+                      estado TEXT NOT NULL,
+                      fecha TEXT NOT NULL,
+                      pacienteId TEXT,
+                      metodoPago TEXT NOT NULL,
+                      opticaId TEXT NOT NULL,
+                      FOREIGN KEY(pacienteId) REFERENCES pacientes(id) ON DELETE SET NULL
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    INSERT INTO servicios_extra (
+                      id, ot, descripcion, montoTotal, aCuenta, estado, fecha, pacienteId, metodoPago, opticaId
+                    )
+                    SELECT
+                      id, ot, descripcion, montoTotal, aCuenta, estado,
+                      ${millisToIsoExpr("fecha")} AS fecha,
+                      pacienteId, metodoPago, opticaId
+                    FROM servicios_extra_old
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_servicios_extra_pacienteId ON servicios_extra(pacienteId)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_servicios_extra_opticaId ON servicios_extra(opticaId)")
+                db.execSQL("DROP TABLE servicios_extra_old")
+
+                // --- Pagos ---
+                db.execSQL("ALTER TABLE pagos RENAME TO pagos_old")
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS pagos (
+                      id TEXT NOT NULL PRIMARY KEY,
+                      dispensacionId TEXT,
+                      servicioExtraId TEXT,
+                      fecha TEXT NOT NULL,
+                      tipo TEXT NOT NULL,
+                      monto REAL NOT NULL,
+                      metodoPago TEXT NOT NULL,
+                      nota TEXT NOT NULL,
+                      opticaId TEXT NOT NULL,
+                      FOREIGN KEY(dispensacionId) REFERENCES dispensaciones(id) ON DELETE CASCADE,
+                      FOREIGN KEY(servicioExtraId) REFERENCES servicios_extra(id) ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    INSERT INTO pagos (
+                      id, dispensacionId, servicioExtraId, fecha, tipo, monto, metodoPago, nota, opticaId
+                    )
+                    SELECT
+                      id, dispensacionId, servicioExtraId,
+                      ${millisToIsoExpr("fecha")} AS fecha,
+                      tipo, monto, metodoPago, nota, opticaId
+                    FROM pagos_old
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_pagos_dispensacionId ON pagos(dispensacionId)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_pagos_servicioExtraId ON pagos(servicioExtraId)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_pagos_opticaId ON pagos(opticaId)")
+                db.execSQL("DROP TABLE pagos_old")
+            }
+        }
+
+        val MIGRATION_10_11 = object : Migration(10, 11) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE evaluaciones ADD COLUMN dipTotalMm REAL")
+                db.execSQL("ALTER TABLE evaluaciones ADD COLUMN dnpOdMm REAL")
+                db.execSQL("ALTER TABLE evaluaciones ADD COLUMN dnpOiMm REAL")
+            }
+        }
+
+        val MIGRATION_11_12 = object : Migration(11, 12) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE dispensaciones ADD COLUMN altura TEXT NOT NULL DEFAULT ''")
+            }
+        }
+
+        val MIGRATION_12_13 = object : Migration(12, 13) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE dispensaciones ADD COLUMN ot TEXT NOT NULL DEFAULT ''")
+            }
+        }
+
+        val MIGRATION_13_14 = object : Migration(13, 14) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS monturas (
+                        id TEXT NOT NULL PRIMARY KEY,
+                        sku TEXT NOT NULL,
+                        marca TEXT NOT NULL,
+                        modelo TEXT NOT NULL,
+                        color TEXT NOT NULL,
+                        talla TEXT NOT NULL,
+                        costo REAL NOT NULL,
+                        precio REAL NOT NULL,
+                        stockActual INTEGER NOT NULL,
+                        stockMinimo INTEGER NOT NULL,
+                        activo INTEGER NOT NULL,
+                        opticaId TEXT NOT NULL
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_monturas_sku_opticaId ON monturas(sku, opticaId)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_monturas_opticaId ON monturas(opticaId)")
+            }
+        }
+
+        val MIGRATION_14_15 = object : Migration(14, 15) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE dispensaciones ADD COLUMN monturaId TEXT NOT NULL DEFAULT ''")
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS montura_movimientos (
+                        id TEXT NOT NULL PRIMARY KEY,
+                        monturaId TEXT NOT NULL,
+                        fecha TEXT NOT NULL,
+                        tipo TEXT NOT NULL,
+                        cantidad INTEGER NOT NULL,
+                        stockPrevio INTEGER NOT NULL,
+                        stockNuevo INTEGER NOT NULL,
+                        referenciaId TEXT NOT NULL,
+                        nota TEXT NOT NULL,
+                        opticaId TEXT NOT NULL,
+                        FOREIGN KEY(monturaId) REFERENCES monturas(id) ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_montura_movimientos_monturaId ON montura_movimientos(monturaId)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_montura_movimientos_opticaId ON montura_movimientos(opticaId)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_montura_movimientos_fecha ON montura_movimientos(fecha)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_montura_movimientos_referenciaId ON montura_movimientos(referenciaId)")
+            }
+        }
+
+        val MIGRATION_15_16 = object : Migration(15, 16) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    UPDATE dispensaciones
+                    SET ot = ot || '-d' || rowid
+                    WHERE length(trim(ot)) > 0
+                    AND rowid NOT IN (
+                        SELECT MIN(rowid) FROM dispensaciones
+                        WHERE length(trim(ot)) > 0
+                        GROUP BY opticaId, UPPER(TRIM(ot))
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    CREATE UNIQUE INDEX IF NOT EXISTS index_dispensaciones_optica_ot_unique
+                    ON dispensaciones(opticaId, UPPER(TRIM(ot)))
+                    WHERE length(trim(ot)) > 0
+                    """.trimIndent()
+                )
+            }
+        }
+
+        val MIGRATION_16_17 = object : Migration(16, 17) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "ALTER TABLE evaluaciones ADD COLUMN citaEstado TEXT NOT NULL DEFAULT 'programada'"
+                )
+            }
+        }
+
+        val MIGRATION_17_18 = object : Migration(17, 18) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS sync_entity_state (
+                        opticaId TEXT NOT NULL,
+                        entityType TEXT NOT NULL,
+                        entityId TEXT NOT NULL,
+                        status TEXT NOT NULL,
+                        lastError TEXT NOT NULL DEFAULT '',
+                        updatedAt INTEGER NOT NULL,
+                        PRIMARY KEY (opticaId, entityType, entityId)
+                    )
+                    """.trimIndent()
+                )
+            }
+        }
+
+        val MIGRATION_18_19 = object : Migration(18, 19) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE pacientes ADD COLUMN historiaOptometrica TEXT")
+            }
+        }
+
+        val MIGRATION_19_20 = object : Migration(19, 20) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE monturas ADD COLUMN tipoAro TEXT NOT NULL DEFAULT ''")
+                db.execSQL("ALTER TABLE monturas ADD COLUMN materialMontura TEXT NOT NULL DEFAULT ''")
+            }
+        }
+
         fun getDatabase(context: Context): OptoDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -63,8 +624,17 @@ abstract class OptoDatabase : RoomDatabase() {
                     OptoDatabase::class.java,
                     "opto_database"
                 )
-                .addMigrations(MIGRATION_6_7)
-                .fallbackToDestructiveMigration(false) // Simplificado para desarrollo, pero respeta MIGRATION_6_7
+                .addMigrations(MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17, MIGRATION_17_18, MIGRATION_18_19, MIGRATION_19_20)
+                .addCallback(object : RoomDatabase.Callback() {
+                    override fun onOpen(db: SupportSQLiteDatabase) {
+                        super.onOpen(db)
+                        LocalDatabaseBackupManager.backupIfNeeded(context.applicationContext, "opto_database")
+                    }
+                })
+                .let { builder ->
+                    // Seguridad local: evitar borrado silencioso en producción.
+                    if (BuildConfig.DEBUG) builder.fallbackToDestructiveMigration(true) else builder
+                }
                 .build()
                 INSTANCE = instance
                 instance

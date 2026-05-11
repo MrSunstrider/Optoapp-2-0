@@ -1,7 +1,10 @@
 package com.example.optoapp.ui.screens
 
+import android.app.Activity
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -22,27 +25,35 @@ import androidx.navigation.NavController
 import com.example.optoapp.OptoApplication
 import com.example.optoapp.data.Paciente
 import com.example.optoapp.viewmodel.PacienteViewModel
+import com.example.optoapp.viewmodel.SubscriptionViewModel
+import com.example.optoapp.subscription.SubscriptionTier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.example.optoapp.util.DateUtils
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.*
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-fun PacientesListScreen(navController: NavController, drawerState: DrawerState, viewModel: PacienteViewModel = hiltViewModel()) {
+fun PacientesListScreen(navController: NavController, drawerState: DrawerState, viewModel: PacienteViewModel = hiltViewModel(), subscriptionVm: SubscriptionViewModel = hiltViewModel()) {
     val pacientes by viewModel.pacientes.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
     val activeFilter by viewModel.activeFilter.collectAsState()
+    val canAddPaciente by subscriptionVm.canAddPaciente.collectAsState()
+    val tier by subscriptionVm.tier.collectAsState()
+    val context = LocalContext.current
+    var showPaywall by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
+    LaunchedEffect(Unit) {
+        subscriptionVm.refreshPlanFromServer()
+    }
+
     Scaffold(
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             TopAppBar(
+                windowInsets = WindowInsets(0, 0, 0, 0),
                 title = {
-                    Column {
-                        Text("OptoApp", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                        Text("Lista de Pacientes", fontSize = 14.sp)
-                    }
+                    Text("Pacientes", fontSize = 20.sp, fontWeight = FontWeight.Bold)
                 },
                 navigationIcon = {
                     IconButton(onClick = { scope.launch { drawerState.open() } }) {
@@ -52,11 +63,42 @@ fun PacientesListScreen(navController: NavController, drawerState: DrawerState, 
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { navController.navigate("nuevoPaciente") }) {
+            FloatingActionButton(onClick = {
+                if (canAddPaciente) navController.navigate("nuevoPaciente")
+                else showPaywall = true
+            },
+                modifier = Modifier.navigationBarsPadding()
+            ) {
                 Icon(Icons.Default.Add, contentDescription = "Añadir Paciente")
             }
         }
     ) { padding ->
+        if (showPaywall) {
+            AlertDialog(
+                onDismissRequest = { showPaywall = false },
+                title = { Text("Límite del plan gratuito") },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("Has alcanzado el máximo de pacientes del plan gratuito. Pasa a PRO para registros ilimitados.")
+                        Text("Plan actual: ${if (tier == SubscriptionTier.PRO) "PRO" else "Gratuito"}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            val act = context as? Activity
+                            if (act != null) {
+                                subscriptionVm.launchProPurchase(act) { android.widget.Toast.makeText(context, it, android.widget.Toast.LENGTH_LONG).show() }
+                            }
+                            showPaywall = false
+                        }
+                    ) { Text("Actualizar plan") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showPaywall = false }) { Text("Cerrar") }
+                }
+            )
+        }
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -73,19 +115,20 @@ fun PacientesListScreen(navController: NavController, drawerState: DrawerState, 
             )
             Spacer(modifier = Modifier.height(16.dp))
             
-            Row(
+            FlowRow(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 FilterChip(
                     selected = activeFilter == "Saldo Pendiente",
                     onClick = { viewModel.setFilter("Saldo Pendiente") },
-                    label = { Text("Saldo Pendiente") }
+                    label = { Text("Saldo Pendiente", fontSize = 12.sp) }
                 )
                 FilterChip(
                     selected = activeFilter == "Estado de entrega",
                     onClick = { viewModel.setFilter("Estado de entrega") },
-                    label = { Text("Estado de entrega: Pendiente") }
+                    label = { Text("Pendientes Entrega", fontSize = 12.sp) }
                 )
             }
             
@@ -93,6 +136,7 @@ fun PacientesListScreen(navController: NavController, drawerState: DrawerState, 
 
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(bottom = 88.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(pacientes) { paciente ->
@@ -108,8 +152,6 @@ fun PacientesListScreen(navController: NavController, drawerState: DrawerState, 
 
 @Composable
 fun PacienteRow(paciente: Paciente, onClick: () -> Unit) {
-    val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-    
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -146,7 +188,7 @@ fun PacienteRow(paciente: Paciente, onClick: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Creado: ${dateFormat.format(Date(paciente.fechaCreacion))}",
+                text = "Creado: ${DateUtils.formatLocalized(paciente.fechaCreacion)}",
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

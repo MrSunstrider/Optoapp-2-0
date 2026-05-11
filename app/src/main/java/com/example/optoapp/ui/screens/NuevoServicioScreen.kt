@@ -1,31 +1,31 @@
 package com.example.optoapp.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.example.optoapp.data.ServicioExtra
+import com.example.optoapp.data.FinanzasRemoteDefaults
 import com.example.optoapp.ui.components.DropdownField
 import com.example.optoapp.viewmodel.ServiciosViewModel
 import com.example.optoapp.ui.components.OptoTextField
 import com.example.optoapp.util.DateUtils
-import java.text.SimpleDateFormat
 import java.util.*
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -36,9 +36,15 @@ import com.example.optoapp.ui.components.AbonoDialog
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NuevoServicioScreen(navController: NavController, pacienteId: String? = null, servicioId: String? = null, viewModel: ServiciosViewModel = hiltViewModel()) {
-    val scope = rememberCoroutineScope()
     val uiState by viewModel.uiState.collectAsState()
     val pacientes by viewModel.pacientes.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(uiState.error) {
+        val msg = uiState.error ?: return@LaunchedEffect
+        snackbarHostState.showSnackbar(msg)
+        viewModel.clearServicioError()
+    }
 
     var pSearchQuery by remember { mutableStateOf("") }
     val filteredPacientes = if (pSearchQuery.isEmpty()) pacientes 
@@ -54,7 +60,7 @@ fun NuevoServicioScreen(navController: NavController, pacienteId: String? = null
     }
 
     val datePickerState = rememberDatePickerState(
-        initialSelectedDateMillis = DateUtils.dateToLong(DateUtils.longToDate(uiState.fecha)),
+        initialSelectedDateMillis = DateUtils.localDateToPickerMillis(uiState.fecha),
         yearRange = 1920..2080
     )
     var showDatePicker by remember { mutableStateOf(false) }
@@ -65,7 +71,7 @@ fun NuevoServicioScreen(navController: NavController, pacienteId: String? = null
             confirmButton = {
                 TextButton(onClick = {
                     datePickerState.selectedDateMillis?.let { mills ->
-                        viewModel.updateUiState { it.copy(fecha = DateUtils.dateToLong(DateUtils.longToDate(mills))) }
+                        viewModel.updateUiState { it.copy(fecha = DateUtils.pickerMillisToLocalDate(mills)) }
                     }
                     showDatePicker = false
                 }) { Text("OK") }
@@ -76,8 +82,11 @@ fun NuevoServicioScreen(navController: NavController, pacienteId: String? = null
     }
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
+                windowInsets = WindowInsets(0, 0, 0, 0),
                 title = { Text(if (servicioId == null || servicioId == "null") "Nuevo Servicio" else "Editar Servicio") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
@@ -105,7 +114,57 @@ fun NuevoServicioScreen(navController: NavController, pacienteId: String? = null
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             OptoTextField(value = uiState.ot, onValueChange = { viewModel.updateUiState { s -> s.copy(ot = it) } }, label = "OT (Opcional)")
-            OptoTextField(value = uiState.descripcion, onValueChange = { viewModel.updateUiState { s -> s.copy(descripcion = it) } }, label = "Descripción")
+            
+            var showMonturaDialog by remember { mutableStateOf(false) }
+            val monturas by viewModel.monturas.collectAsState()
+
+            if (showMonturaDialog) {
+                AlertDialog(
+                    onDismissRequest = { showMonturaDialog = false },
+                    title = { Text("Seleccionar Producto") },
+                    text = {
+                        Column {
+                            if (monturas.isEmpty()) {
+                                Text("No hay monturas con stock en el inventario.", style = MaterialTheme.typography.bodySmall)
+                            } else {
+                                LazyColumn(modifier = Modifier.heightIn(max = 400.dp)) {
+                                    items(monturas) { montura ->
+                                        ListItem(
+                                            headlineContent = { Text("${montura.marca} ${montura.modelo}") },
+                                            supportingContent = { Text("Color: ${montura.color} | SKU: ${montura.sku}") },
+                                            trailingContent = { Text("s/. ${montura.precio}", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary) },
+                                            modifier = Modifier.clickable {
+                                                viewModel.updateUiState { s -> 
+                                                    s.copy(
+                                                        descripcion = "${montura.marca} ${montura.modelo} (${montura.sku})",
+                                                        montoTotal = montura.precio.toString()
+                                                    ) 
+                                                }
+                                                showMonturaDialog = false
+                                            }
+                                        )
+                                        HorizontalDivider(thickness = 0.5.dp)
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    confirmButton = {
+                        TextButton(onClick = { showMonturaDialog = false }) { Text("Cerrar") }
+                    }
+                )
+            }
+
+            OptoTextField(
+                value = uiState.descripcion, 
+                onValueChange = { viewModel.updateUiState { s -> s.copy(descripcion = it) } }, 
+                label = "Descripción",
+                trailingIcon = {
+                    IconButton(onClick = { showMonturaDialog = true }) {
+                        Icon(Icons.Default.Inventory2, contentDescription = "Vincular Inventario", tint = MaterialTheme.colorScheme.primary)
+                    }
+                }
+            )
             
             OptoTextField(
                 value = uiState.montoTotal, 
@@ -137,7 +196,7 @@ fun NuevoServicioScreen(navController: NavController, pacienteId: String? = null
                             if (pago.nota.isNotEmpty()) {
                                 Text(pago.nota, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
-                            Text(SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(pago.fecha)), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(DateUtils.formatLocalized(pago.fecha), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         Row {
                             var showEditDialog by remember { mutableStateOf(false) }
@@ -146,6 +205,18 @@ fun NuevoServicioScreen(navController: NavController, pacienteId: String? = null
                                     pago = pago,
                                     onDismiss = { showEditDialog = false },
                                     onConfirm = { updatedPago: Pago ->
+                                        val total = uiState.montoTotal.toDoubleOrNull() ?: 0.0
+                                        val otrosAbonos = uiState.pagos
+                                            .filter { it.id != pago.id }
+                                            .sumOf { it.monto }
+                                        if (total <= 0.0) {
+                                            viewModel.updateUiState { it.copy(error = FinanzasRemoteDefaults.Messages.MONTO_TOTAL_INVALIDO) }
+                                            return@AbonoDialog
+                                        }
+                                        if (otrosAbonos + updatedPago.monto > total) {
+                                            viewModel.updateUiState { it.copy(error = FinanzasRemoteDefaults.Messages.ABONO_MAYOR_QUE_TOTAL) }
+                                            return@AbonoDialog
+                                        }
                                         viewModel.updatePagoLocal(updatedPago)
                                         showEditDialog = false
                                     }
@@ -165,8 +236,19 @@ fun NuevoServicioScreen(navController: NavController, pacienteId: String? = null
             var showAddDialog by remember { mutableStateOf(false) }
             if (showAddDialog) {
                 AbonoDialog(
+                    defaultFecha = DateUtils.today(),
                     onDismiss = { showAddDialog = false },
                     onConfirm = { nuevoPago: Pago ->
+                        val total = uiState.montoTotal.toDoubleOrNull() ?: 0.0
+                        val totalConNuevo = uiState.pagos.sumOf { it.monto } + nuevoPago.monto
+                        if (total <= 0.0) {
+                            viewModel.updateUiState { it.copy(error = FinanzasRemoteDefaults.Messages.MONTO_TOTAL_INVALIDO) }
+                            return@AbonoDialog
+                        }
+                        if (totalConNuevo > total) {
+                            viewModel.updateUiState { it.copy(error = FinanzasRemoteDefaults.Messages.ABONO_MAYOR_QUE_TOTAL) }
+                            return@AbonoDialog
+                        }
                         viewModel.addPago(nuevoPago)
                         showAddDialog = false
                     }
@@ -208,8 +290,7 @@ fun NuevoServicioScreen(navController: NavController, pacienteId: String? = null
             )
 
             OutlinedButton(onClick = { showDatePicker = true }, modifier = Modifier.fillMaxWidth()) {
-                val fmt = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-                Text("Fecha: ${fmt.format(Date(uiState.fecha))}")
+                Text("Fecha: ${DateUtils.formatLocalized(uiState.fecha)}")
             }
 
             Text("Asociar a Paciente (Opcional)", fontWeight = FontWeight.Bold)

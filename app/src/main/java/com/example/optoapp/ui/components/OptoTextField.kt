@@ -13,20 +13,22 @@ fun OptoTextField(
     value: String,
     onValueChange: (String) -> Unit,
     label: String,
-    modifier: Modifier = Modifier.fillMaxWidth(),
+    modifier: Modifier = Modifier,
     keyboardType: KeyboardType = KeyboardType.Text,
     isError: Boolean = false,
     supportingText: String? = null,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    trailingIcon: @Composable (() -> Unit)? = null
 ) {
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
         label = { Text(label) },
-        modifier = modifier,
+        modifier = modifier.fillMaxWidth(),
         keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
         isError = isError,
         supportingText = supportingText?.let { { Text(it) } },
-        enabled = enabled
+        enabled = enabled,
+        trailingIcon = trailingIcon
     )
 }
