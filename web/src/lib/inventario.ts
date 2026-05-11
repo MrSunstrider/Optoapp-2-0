@@ -103,7 +103,7 @@ async function queryMonturasSafe(
   return (basic.data ?? []) as MonturaBaseRow[];
 }
 
-function mapMontura(row: MonturaBaseRow): MonturaItem {
+export function mapMontura(row: MonturaBaseRow): MonturaItem {
   return {
     id: row.id,
     sku: row.sku?.trim() || row.id.slice(0, 8),
