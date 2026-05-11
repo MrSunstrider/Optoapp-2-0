@@ -15,7 +15,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "No autorizado." }, { status: 401 });
   }
 
-  const rl = checkRateLimit("pin-change:" + user.id);
+  const rl = await checkRateLimit("pin-change:" + user.id);
   if (!rl.allowed) {
     return NextResponse.json({ error: "Demasiados intentos. Espere 1 minuto." }, { status: 429 });
   }

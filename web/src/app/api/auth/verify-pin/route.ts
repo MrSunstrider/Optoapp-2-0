@@ -16,7 +16,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Sesión no válida." }, { status: 401 });
   }
 
-  const rl = checkRateLimit("pin-verify:" + user.id);
+  const rl = await checkRateLimit("pin-verify:" + user.id);
   if (!rl.allowed) {
     return NextResponse.json({ error: "Demasiados intentos. Espere 1 minuto." }, { status: 429 });
   }

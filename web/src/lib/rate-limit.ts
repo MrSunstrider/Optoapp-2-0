@@ -1,21 +1,27 @@
-const attempts = new Map<string, { count: number; resetAt: number }>();
+import { createClient } from "@/lib/supabase/server";
+import { z } from "zod";
 
 const WINDOW_MS = 60_000;
 const MAX_ATTEMPTS = 5;
 
-export function checkRateLimit(key: string): { allowed: boolean; remaining: number } {
-  const now = Date.now();
-  const entry = attempts.get(key);
+const RateLimitResultSchema = z.object({
+  allowed: z.boolean(),
+  remaining: z.number(),
+});
 
-  if (!entry || now > entry.resetAt) {
-    attempts.set(key, { count: 1, resetAt: now + WINDOW_MS });
-    return { allowed: true, remaining: MAX_ATTEMPTS - 1 };
+export async function checkRateLimit(
+  key: string
+): Promise<{ allowed: boolean; remaining: number }> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("check_rate_limit", {
+    p_limit_key: key,
+    p_window_ms: WINDOW_MS,
+    p_max_attempts: MAX_ATTEMPTS,
+  });
+  if (error) throw error;
+  const parsed = RateLimitResultSchema.safeParse(data);
+  if (!parsed.success) {
+    throw new Error(`Unexpected rate-limit response shape: ${parsed.error.message}`);
   }
-
-  entry.count++;
-  if (entry.count > MAX_ATTEMPTS) {
-    return { allowed: false, remaining: 0 };
-  }
-
-  return { allowed: true, remaining: MAX_ATTEMPTS - entry.count };
+  return parsed.data;
 }
