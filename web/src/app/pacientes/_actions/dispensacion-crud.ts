@@ -2,18 +2,21 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { z } from "zod";
 
 import { getActiveOpticaContext } from "@/lib/optica-context";
 import { canManagePacientes } from "@/lib/roles";
 import { createClient } from "@/lib/supabase/server";
 
-type PagoInput = {
-  id: string;
-  fecha: string;
-  monto: number;
-  metodoPago: string;
-  nota: string;
-};
+const PagoInputSchema = z.object({
+  id: z.string(),
+  fecha: z.string(),
+  monto: z.number(),
+  metodoPago: z.string(),
+  nota: z.string(),
+});
+
+type PagoInput = z.infer<typeof PagoInputSchema>;
 
 function text(formData: FormData, key: string): string {
   return String(formData.get(key) ?? "").trim();
@@ -25,30 +28,17 @@ function parseMonto(raw: string): number {
 }
 
 function parsePagos(raw: string): PagoInput[] {
-  try {
-    const arr = JSON.parse(raw) as PagoInput[];
-    if (!Array.isArray(arr)) return [];
-    return arr
-      .map((p) => ({
-        id: String(p.id ?? "").trim(),
-        fecha: String(p.fecha ?? "").trim(),
-        monto: Number(p.monto ?? 0),
-        metodoPago: String(p.metodoPago ?? "").trim(),
-        nota: String(p.nota ?? "").trim()
-      }));
-  } catch {
-    return [];
-  }
+  const arr = JSON.parse(raw);
+  const parsed = z.array(PagoInputSchema).safeParse(arr);
+  if (!parsed.success) throw new Error("Invalid pagos data");
+  return parsed.data;
 }
 
 function parseDeletedIds(raw: string): string[] {
-  try {
-    const arr = JSON.parse(raw) as string[];
-    if (!Array.isArray(arr)) return [];
-    return arr.map((x) => String(x).trim()).filter(Boolean);
-  } catch {
-    return [];
-  }
+  const arr = JSON.parse(raw);
+  const parsed = z.array(z.string()).safeParse(arr);
+  if (!parsed.success) throw new Error("Invalid deleted-ids data");
+  return parsed.data.map((x) => x.trim()).filter(Boolean);
 }
 
 function todayIsoDate(): string {
@@ -90,6 +80,7 @@ export async function saveDispensacionAction(formData: FormData) {
   const errorBase = dispensacionId
     ? `/pacientes/${pacienteId}/dispensaciones/${dispensacionId}/editar`
     : `/pacientes/${pacienteId}/dispensaciones/nueva`;
+  if (!pacienteId) redirect(`${errorBase}?error=guardar`);
 
   const requiresAltura =
     tipoLente === "Bifocal" || tipoLente === "Progresivo" || tipoLente === "Ocupacional";
@@ -130,73 +121,49 @@ export async function saveDispensacionAction(formData: FormData) {
   const finalId = dispensacionId || crypto.randomUUID();
   const finalMonturaId = origenMontura === "Tienda" ? monturaId : "";
 
-  async function adjustStockAndLog(id: string, delta: number, note: string, tipo: string) {
-    const { data: mRow, error: mErr } = await supabase
-      .from("monturas")
-      .select("stock_actual")
-      .eq("id", id)
-      .eq("optica_id", opticaId)
-      .maybeSingle();
-    if (mErr || !mRow) return { ok: false as const, insufficient: false };
-    const before = Number(mRow.stock_actual ?? 0);
-    if (delta < 0 && before < Math.abs(delta)) return { ok: false as const, insufficient: true };
-    const after = before + delta;
-    const { error: upErr } = await supabase
-      .from("monturas")
-      .update({ stock_actual: after })
-      .eq("id", id)
-      .eq("optica_id", opticaId);
-    if (upErr) return { ok: false as const, insufficient: false };
-    const mov = {
-      id: crypto.randomUUID(),
-      montura_id: id,
-      fecha: fecha,
-      tipo,
-      cantidad: Math.abs(delta),
-      stock_previo: before,
-      stock_nuevo: after,
-      referencia_id: finalId,
-      nota: note,
-      optica_id: opticaId
-    };
-    await supabase.from("montura_movimientos").insert(mov);
-    return { ok: true as const, insufficient: false };
+  function isStockResult(v: unknown): v is { ok: boolean; error?: string } {
+    return typeof v === "object" && v !== null && "ok" in v;
   }
 
   if (previousMonturaId && previousMonturaId !== finalMonturaId) {
-    const r = await adjustStockAndLog(
-      previousMonturaId,
-      +1,
-      "Reversion por edicion de dispensacion",
-      "AJUSTE"
-    );
-    if (!r.ok) {
+    const { data: r, error: rpcErr } = await supabase.rpc("rpc_adjust_montura_stock", {
+      p_montura_id: previousMonturaId,
+      p_optica_id: opticaId,
+      p_delta: 1,
+      p_reference_id: finalId,
+      p_note: "Reversion por edicion de dispensacion",
+      p_tipo: "AJUSTE",
+      p_fecha: fecha,
+    });
+    const result = isStockResult(r) ? r : null;
+    if (rpcErr || !result?.ok) {
       redirect(`${errorBase}?error=guardar`);
     }
   }
   if (finalMonturaId && finalMonturaId !== previousMonturaId) {
-    const r = await adjustStockAndLog(
-      finalMonturaId,
-      -1,
-      "Salida por venta en dispensacion",
-      "SALIDA_VENTA"
-    );
-    if (!r.ok && r.insufficient) {
-      redirect(`${errorBase}?error=stock`);
-    }
-    if (!r.ok) {
+    const { data: r, error: rpcErr } = await supabase.rpc("rpc_adjust_montura_stock", {
+      p_montura_id: finalMonturaId,
+      p_optica_id: opticaId,
+      p_delta: -1,
+      p_reference_id: finalId,
+      p_note: "Salida por venta en dispensacion",
+      p_tipo: "SALIDA_VENTA",
+      p_fecha: fecha,
+    });
+    const result = isStockResult(r) ? r : null;
+    if (rpcErr || !result?.ok) {
+      if (result?.error === "insufficient") {
+        redirect(`${errorBase}?error=stock`);
+      }
       redirect(`${errorBase}?error=guardar`);
     }
   }
 
   const tratamientos = (() => {
-    try {
-      const arr = JSON.parse(tratamientosRaw) as string[];
-      if (!Array.isArray(arr)) return [];
-      return Array.from(new Set(arr.map((x) => String(x).trim()).filter((x) => x && x !== "Ninguno")));
-    } catch {
-      return [];
-    }
+    const arr = JSON.parse(tratamientosRaw);
+    const parsed = z.array(z.string()).safeParse(arr);
+    if (!parsed.success) return [];
+    return Array.from(new Set(parsed.data.map((x) => x.trim()).filter((x) => x && x !== "Ninguno")));
   })();
 
   const payload = {
