@@ -6,21 +6,13 @@ import {
   fetchCierreCaja,
   normalizeFechaCierre
 } from "@/lib/cierre-caja";
-import { getActiveOpticaContext } from "@/lib/optica-context";
-import { createClient } from "@/lib/supabase/server";
 import { CierreCajaSchema } from "@/lib/api-schemas";
+import { requireUserAndOptica } from "@/lib/api-auth";
 
 export async function POST(request: Request) {
-  const supabase = await createClient();
-  const {
-    data: { user }
-  } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "No autorizado." }, { status: 401 });
-
-  const activeOptica = await getActiveOpticaContext();
-  if (!activeOptica) {
-    return NextResponse.json({ error: "Sin óptica activa." }, { status: 400 });
-  }
+  const session = await requireUserAndOptica();
+  if (session instanceof NextResponse) return session;
+  const { supabase, user, optica: activeOptica } = session;
 
   let raw: unknown;
   try {

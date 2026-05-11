@@ -9,20 +9,12 @@ import {
 } from "@/lib/cierre-caja";
 import { formatOpticaActivaLine } from "@/lib/optica-display";
 import { fetchOpticaFiscal } from "@/lib/optica-fiscal";
-import { getActiveOpticaContext } from "@/lib/optica-context";
-import { createClient } from "@/lib/supabase/server";
+import { requireUserAndOptica } from "@/lib/api-auth";
 
 export async function GET(request: Request) {
-  const supabase = await createClient();
-  const {
-    data: { user }
-  } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "No autorizado." }, { status: 401 });
-
-  const activeOptica = await getActiveOpticaContext();
-  if (!activeOptica) {
-    return NextResponse.json({ error: "Sin óptica activa." }, { status: 400 });
-  }
+  const session = await requireUserAndOptica();
+  if (session instanceof NextResponse) return session;
+  const { supabase, optica: activeOptica } = session;
 
   const url = new URL(request.url);
   const fecha = normalizeFechaCierre(url.searchParams.get("fecha") ?? undefined);

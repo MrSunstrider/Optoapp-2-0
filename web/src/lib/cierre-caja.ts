@@ -1,15 +1,18 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { z } from "zod";
 import { assertNoDbError } from "@/lib/supabase/db-error";
+import { CierreCajaResumenRowSchema } from "@/lib/financial-queries";
+import { dateOnly } from "@/lib/date-utils";
 
-type PagoRow = {
-  id: string;
-  fecha: string | null;
-  monto: number | null;
-  metodo_pago: string | null;
-  dispensacion_id?: string | null;
-  servicio_extra_id?: string | null;
-  nota?: string | null;
-};
+const PagoRowSchema = z.object({
+  id: z.string(),
+  fecha: z.string().nullable(),
+  monto: z.number().nullable(),
+  metodo_pago: z.string().nullable(),
+  dispensacion_id: z.string().nullable().optional(),
+  servicio_extra_id: z.string().nullable().optional(),
+  nota: z.string().nullable().optional(),
+});
 
 export type CierrePeriodo = {
   fecha: string;
@@ -26,6 +29,11 @@ export type CierreTx = {
   referencia: string;
 };
 
+export type CierreSnapshotStatus = {
+  overall: "ok" | "degraded";
+  error?: string;
+};
+
 export type CierreSnapshot = {
   fecha: string;
   efectivo: number;
@@ -33,6 +41,8 @@ export type CierreSnapshot = {
   tarjeta: number;
   total: number;
   transacciones: CierreTx[];
+  /** M2: status indicates whether the data is real or fallback-empty after a DB error */
+  status: CierreSnapshotStatus;
 };
 
 export type CierreFormalStatus = {
@@ -71,21 +81,22 @@ export async function fetchCierreCaja(
     .gte("fecha", period.from)
     .lt("fecha", period.toExclusive)
     .abortSignal(AbortSignal.timeout(12_000));
+
   if (error) {
-    console.warn("[Cierre de caja] Advertencia al consultar pagos:", error.message, error.code);
-    // Retornamos estructura vacía en caso de que la tabla pagos no exista (42P01)
-    // o le falten columnas por una migración incompleta (42703) o problemas de permisos.
+    // M2: signal to the UI that data is incomplete rather than silently returning $0.00
+    console.warn("[Cierre de caja] Error al consultar pagos:", error.message, error.code);
     return {
       fecha: period.fecha,
       efectivo: 0,
       movilTrans: 0,
       tarjeta: 0,
       total: 0,
-      transacciones: []
+      transacciones: [],
+      status: { overall: "degraded", error: error.message },
     };
   }
 
-  const rows = (data ?? []) as PagoRow[];
+  const rows = z.array(PagoRowSchema).parse(data ?? []);
 
   let efectivoCents = 0;
   let movilTransCents = 0;
@@ -127,7 +138,15 @@ export async function fetchCierreCaja(
   const movilTrans = fromCents(movilTransCents);
   const tarjeta = fromCents(tarjetaCents);
   const total = fromCents(efectivoCents + movilTransCents + tarjetaCents);
-  return { fecha: period.fecha, efectivo, movilTrans, tarjeta, total, transacciones };
+  return {
+    fecha: period.fecha,
+    efectivo,
+    movilTrans,
+    tarjeta,
+    total,
+    transacciones,
+    status: { overall: "ok" },
+  };
 }
 
 export function money(v: number): string {
@@ -169,7 +188,7 @@ export async function fetchCierreFormalStatus(
     .maybeSingle();
 
   if (error) {
-    console.warn("[Cierre de caja] Advertencia al consultar cierres_caja:", error.message, error.code);
+    console.warn("[Cierre de caja] Error al consultar cierres_caja:", error.message, error.code);
     return {
       featureEnabled: false,
       exists: false,
@@ -190,12 +209,14 @@ export async function fetchCierreFormalStatus(
       closeId: null
     };
   }
-  const row = data as {
-    id: string;
-    estado?: string | null;
-    cerrado_at?: string | null;
-    cerrado_por?: string | null;
-  };
+
+  const CierreCajaRowSchema = z.object({
+    id: z.string(),
+    estado: z.string().nullable().optional(),
+    cerrado_at: z.string().nullable().optional(),
+    cerrado_por: z.string().nullable().optional(),
+  });
+  const row = CierreCajaRowSchema.parse(data);
   return {
     featureEnabled: true,
     exists: true,
@@ -206,21 +227,8 @@ export async function fetchCierreFormalStatus(
   };
 }
 
-export function mapMedioPago(raw: string | null): CierreTx["medioPago"] {
-  const v = (raw ?? "").trim().toLowerCase();
-  if (!v || v.includes("efectivo")) return "Efectivo";
-  if (v.includes("tarjeta")) return "Tarjeta";
-  if (
-    v.includes("yape") ||
-    v.includes("plin") ||
-    v.includes("transfer") ||
-    v.includes("movil") ||
-    v.includes("móvil")
-  ) {
-    return "Móvil/Trans";
-  }
-  return "Otro";
-}
+import { mapMedioPago } from "@/lib/payment-methods";
+export { mapMedioPago };
 
 export function normalizeMoney(value: number): number {
   if (!Number.isFinite(value)) return 0;
@@ -233,24 +241,4 @@ export function toCents(value: number): number {
 
 export function fromCents(cents: number): number {
   return Math.round(cents) / 100;
-}
-
-export function dateOnly(date: Date, timeZone?: string | null): string {
-  if (timeZone && timeZone !== "auto") {
-    try {
-      const formatter = new Intl.DateTimeFormat("en-CA", {
-        timeZone,
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit"
-      });
-      return formatter.format(date); // Retorna YYYY-MM-DD directamente
-    } catch (e) {
-      console.warn("[dateOnly] Zona horaria inválida:", timeZone, e);
-    }
-  }
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
 }

@@ -93,26 +93,26 @@ describe("canAccessConfigModule", () => {
 
   describe("seguridad, suscripciones, laboratorio modules", () => {
     it("allow admin", () => {
-      for (const module of ["seguridad", "suscripciones", "laboratorio"] as ConfigModuleKey[]) {
-        expect(canAccessConfigModule("admin", module)).toBe(true);
+      for (const mod of ["seguridad", "suscripciones", "laboratorio"] as ConfigModuleKey[]) {
+        expect(canAccessConfigModule("admin", mod)).toBe(true);
       }
     });
 
     it("block invitado", () => {
-      for (const module of ["seguridad", "suscripciones", "laboratorio"] as ConfigModuleKey[]) {
-        expect(canAccessConfigModule("invitado", module)).toBe(false);
+      for (const mod of ["seguridad", "suscripciones", "laboratorio"] as ConfigModuleKey[]) {
+        expect(canAccessConfigModule("invitado", mod)).toBe(false);
       }
     });
 
     it("block lectura", () => {
-      for (const module of ["seguridad", "suscripciones", "laboratorio"] as ConfigModuleKey[]) {
-        expect(canAccessConfigModule("lectura", module)).toBe(false);
+      for (const mod of ["seguridad", "suscripciones", "laboratorio"] as ConfigModuleKey[]) {
+        expect(canAccessConfigModule("lectura", mod)).toBe(false);
       }
     });
 
     it("allow asesor", () => {
-      for (const module of ["seguridad", "suscripciones", "laboratorio"] as ConfigModuleKey[]) {
-        expect(canAccessConfigModule("asesor", module)).toBe(true);
+      for (const mod of ["seguridad", "suscripciones", "laboratorio"] as ConfigModuleKey[]) {
+        expect(canAccessConfigModule("asesor", mod)).toBe(true);
       }
     });
   });

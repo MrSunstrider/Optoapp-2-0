@@ -99,7 +99,7 @@ describe("saveDispensacionAction — stock adjustment via RPC", () => {
 
   it("calls rpc_adjust_montura_stock with delta=-1 for new montura sale", async () => {
     try {
-      await saveDispensacionAction(makeFormData());
+      await saveDispensacionAction(null, makeFormData());
     } catch {
       // redirect is expected — continue
     }
@@ -117,7 +117,7 @@ describe("saveDispensacionAction — stock adjustment via RPC", () => {
 
   it("calls rpc twice when montura changes (restore old, decrement new)", async () => {
     try {
-      await saveDispensacionAction(
+      await saveDispensacionAction(null, 
         makeFormData({
           previousMonturaId: "mont-0",
           monturaId: "mont-1",
@@ -159,7 +159,7 @@ describe("saveDispensacionAction — stock adjustment via RPC", () => {
     });
 
     await expect(
-      saveDispensacionAction(makeFormData()),
+      saveDispensacionAction(null, makeFormData()),
     ).rejects.toThrow("/pacientes/pat-1/dispensaciones/nueva?error=stock");
   });
 
@@ -170,7 +170,7 @@ describe("saveDispensacionAction — stock adjustment via RPC", () => {
     });
 
     await expect(
-      saveDispensacionAction(makeFormData()),
+      saveDispensacionAction(null, makeFormData()),
     ).rejects.toThrow("/pacientes/pat-1/dispensaciones/nueva?error=guardar");
   });
 
@@ -181,13 +181,13 @@ describe("saveDispensacionAction — stock adjustment via RPC", () => {
     });
 
     await expect(
-      saveDispensacionAction(makeFormData()),
+      saveDispensacionAction(null, makeFormData()),
     ).rejects.toThrow("/pacientes/pat-1/dispensaciones/nueva?error=guardar");
   });
 
   it("does NOT call rpc when origenMontura is not Tienda", async () => {
     try {
-      await saveDispensacionAction(
+      await saveDispensacionAction(null, 
         makeFormData({ origenMontura: "Proveedor" }),
       );
     } catch {
@@ -199,7 +199,7 @@ describe("saveDispensacionAction — stock adjustment via RPC", () => {
 
   it("does NOT call rpc when previousMonturaId equals finalMonturaId", async () => {
     try {
-      await saveDispensacionAction(
+      await saveDispensacionAction(null, 
         makeFormData({ previousMonturaId: "mont-1", monturaId: "mont-1" }),
       );
     } catch {
@@ -216,13 +216,13 @@ describe("saveDispensacionAction — stock adjustment via RPC", () => {
     });
 
     await expect(
-      saveDispensacionAction(makeFormData()),
+      saveDispensacionAction(null, makeFormData()),
     ).rejects.toThrow("/pacientes/pat-1/dispensaciones/nueva?error=guardar");
   });
 
   it("passes correct p_fecha to RPC", async () => {
     try {
-      await saveDispensacionAction(makeFormData({ fecha: "2025-12-25" }));
+      await saveDispensacionAction(null, makeFormData({ fecha: "2025-12-25" }));
     } catch {
       // redirect is expected
     }
@@ -235,7 +235,7 @@ describe("saveDispensacionAction — stock adjustment via RPC", () => {
 
   it("passes correct parameters for an edit (dispensacionId set)", async () => {
     try {
-      await saveDispensacionAction(
+      await saveDispensacionAction(null, 
         makeFormData({ dispensacionId: "disp-1", previousMonturaId: "mont-0" }),
       );
     } catch {

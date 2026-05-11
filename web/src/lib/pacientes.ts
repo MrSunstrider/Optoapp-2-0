@@ -56,56 +56,25 @@ export type FetchPacientesOptions = {
 async function collectIdsSaldoPendiente(
   supabase: SupabaseClient,
   opticaId: string
-): Promise<Set<string>> {
-  const ids = new Set<string>();
-  const { data: d, error: e1 } = await supabase
-    .from("dispensaciones")
-    .select("paciente_id,monto_total,monto_pagado")
-    .eq("optica_id", opticaId)
+): Promise<string[]> {
+  const { data, error } = await supabase
+    .rpc("rpc_pacientes_con_saldo", { p_optica_id: opticaId })
     .abortSignal(AbortSignal.timeout(15_000));
-  assertNoDbError(e1, "Dispensaciones (filtro saldo)");
-  for (const row of d ?? []) {
-    const total = Number(row.monto_total ?? 0);
-    const pag = Number(row.monto_pagado ?? 0);
-    if (total - pag > 0.005) ids.add(String(row.paciente_id));
-  }
-  const { data: s, error: e2 } = await supabase
-    .from("servicios_extra")
-    .select("paciente_id,monto_total,a_cuenta")
-    .eq("optica_id", opticaId)
-    .abortSignal(AbortSignal.timeout(15_000));
-  assertNoDbError(e2, "Servicios extra (filtro saldo)");
-  for (const row of s ?? []) {
-    const total = Number(row.monto_total ?? 0);
-    const ac = Number(row.a_cuenta ?? 0);
-    if (total - ac > 0.005) ids.add(String(row.paciente_id));
-  }
-  return ids;
+
+  assertNoDbError(error, "Pacientes con saldo pendiente");
+  return data ?? [];
 }
 
 async function collectIdsEntregaPendiente(
   supabase: SupabaseClient,
   opticaId: string
-): Promise<Set<string>> {
-  const ids = new Set<string>();
-  const { data: d, error: e1 } = await supabase
-    .from("dispensaciones")
-    .select("paciente_id,estado_entrega")
-    .eq("optica_id", opticaId)
-    .eq("estado_entrega", "Pendiente")
+): Promise<string[]> {
+  const { data, error } = await supabase
+    .rpc("rpc_pacientes_con_entrega_pendiente", { p_optica_id: opticaId })
     .abortSignal(AbortSignal.timeout(15_000));
-  assertNoDbError(e1, "Dispensaciones (filtro entrega)");
-  for (const row of d ?? []) ids.add(String(row.paciente_id));
 
-  const { data: s, error: e2 } = await supabase
-    .from("servicios_extra")
-    .select("paciente_id,estado")
-    .eq("optica_id", opticaId)
-    .eq("estado", "Pendiente")
-    .abortSignal(AbortSignal.timeout(15_000));
-  assertNoDbError(e2, "Servicios extra (filtro entrega)");
-  for (const row of s ?? []) ids.add(String(row.paciente_id));
-  return ids;
+  assertNoDbError(error, "Pacientes con entrega pendiente");
+  return data ?? [];
 }
 
 async function chipFilterIds(

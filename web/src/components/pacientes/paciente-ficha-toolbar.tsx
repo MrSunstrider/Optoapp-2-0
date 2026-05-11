@@ -2,7 +2,7 @@
 
 import type { SVGProps } from "react";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useActionState, useMemo, useState } from "react";
 
 import { canDeletePaciente } from "@/lib/roles";
 
@@ -76,6 +76,8 @@ export function PacienteFichaToolbar({
   editarHref: string;
   rol: string;
 }) {
+  const [deleteState, deleteAction, deletePending] = useActionState(deletePacienteAction, null);
+
   const [menuOpen, setMenuOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [pdfWarnOpen, setPdfWarnOpen] = useState(false);
@@ -269,8 +271,13 @@ Si deseas agendar tu cita de control, responde a este mensaje y con gusto te coo
               <p>Se eliminará el expediente completo, incluyendo evaluaciones y dispensaciones.</p>
             </div>
 
-            <form action={deletePacienteAction} className="mt-8 space-y-4">
+            <form action={deleteAction} className="mt-8 space-y-4">
               <input type="hidden" name="id" value={pacienteId} />
+              {deleteState?.error && (
+                <p className="rounded-lg border border-red-900/50 bg-red-950/40 px-3 py-2 text-sm text-red-300 text-center">
+                  {deleteState.error}
+                </p>
+              )}
               <div className="space-y-1">
                 <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 text-center mb-2">
                   Escribe <span className="text-foreground">ELIMINAR</span> para confirmar
@@ -285,9 +292,10 @@ Si deseas agendar tu cita de control, responde a este mensaje y con gusto te coo
               <div className="flex flex-col gap-2">
                 <button
                   type="submit"
-                  className="rounded-xl bg-destructive px-6 py-4 font-heading text-base font-black text-white shadow-xl shadow-destructive/20 transition-all hover:scale-[1.02] active:scale-95"
+                  disabled={deletePending}
+                  className="rounded-xl bg-destructive px-6 py-4 font-heading text-base font-black text-white shadow-xl shadow-destructive/20 transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50"
                 >
-                  ELIMINAR PERMANENTEMENTE
+                  {deletePending ? "Eliminando…" : "ELIMINAR PERMANENTEMENTE"}
                 </button>
                 <button
                   type="button"

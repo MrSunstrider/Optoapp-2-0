@@ -20,7 +20,11 @@ class OptoRepository(
     private val monturaDao: MonturaDao,
     private val monturaMovimientoDao: MonturaMovimientoDao,
     private val syncStateTracker: SyncStateTracker,
-    private val postSaveSyncScheduler: Lazy<com.example.optoapp.sync.PostSaveSyncScheduler>
+    private val postSaveSyncScheduler: Lazy<com.example.optoapp.sync.PostSaveSyncScheduler>,
+    // Repositorios especializados
+    val pacienteRepo: PacienteRepository,
+    val dispensacionRepo: DispensacionRepository,
+    val syncRepo: SyncRepository
 ) {
     companion object {
         private const val TAG = "OptoRepository"
@@ -41,258 +45,193 @@ class OptoRepository(
     private fun triggerHistorialSync(opticaId: String) {
         postSaveSyncScheduler.get().scheduleHistorialSync(opticaId)
     }
+
+    // ── Paciente ─────────────────────────────────────────────────────────────
+
     fun pacientesFlowForOptica(opticaId: String): Flow<List<Paciente>> =
-        pacienteDao.getPacientesByOptica(opticaId)
+        pacienteRepo.pacientesFlowForOptica(opticaId)
 
     fun countPacientesForOptica(opticaId: String): Flow<Int> =
-        pacienteDao.countByOptica(opticaId)
+        pacienteRepo.countPacientesForOptica(opticaId)
 
     fun searchPacientesForOptica(opticaId: String, query: String): Flow<List<Paciente>> =
-        if (query.isEmpty()) pacienteDao.getPacientesByOptica(opticaId)
-        else pacienteDao.searchPacientesForOptica(opticaId, query)
+        pacienteRepo.searchPacientesForOptica(opticaId, query)
 
     fun getPacientesWithPendingBalanceForOptica(opticaId: String): Flow<List<Paciente>> =
-        pacienteDao.getPacientesWithPendingBalanceForOptica(opticaId)
+        pacienteRepo.getPacientesWithPendingBalanceForOptica(opticaId)
 
     fun getPacientesWithPendingDeliveryForOptica(opticaId: String): Flow<List<Paciente>> =
-        pacienteDao.getPacientesWithPendingDeliveryForOptica(opticaId)
-    
-    suspend fun getPacienteById(id: String): Resource<Paciente> {
-        return try {
-            val paciente = pacienteDao.getPacienteById(id)
-            if (paciente != null) Resource.Success(paciente)
-            else Resource.Error("Paciente no encontrado")
-        } catch (e: Exception) {
-            Resource.Error(e.message ?: "Error al obtener paciente")
-        }
-    }
-    
-    suspend fun insertPaciente(paciente: Paciente) {
-        pacienteDao.insertPaciente(paciente)
-        triggerPacientesSync(paciente.opticaId)
-    }
-    
-    suspend fun updatePaciente(paciente: Paciente) {
-        pacienteDao.updatePaciente(paciente)
-        triggerPacientesSync(paciente.opticaId)
-    }
-    
-    suspend fun deletePaciente(paciente: Paciente) = pacienteDao.deletePaciente(paciente)
-    
-    fun getEvaluacionesByPaciente(pacienteId: String): Flow<List<EvaluacionClinica>> = 
-        evaluacionDao.getEvaluacionesByPaciente(pacienteId)
+        pacienteRepo.getPacientesWithPendingDeliveryForOptica(opticaId)
 
-    /** Evaluaciones con próxima cita en [start, end] (por fecha de cita), óptica actual. */
+    suspend fun getPacienteById(id: String): Resource<Paciente> =
+        pacienteRepo.getPacienteById(id)
+
+    suspend fun insertPaciente(paciente: Paciente) {
+        pacienteRepo.insertPaciente(paciente)
+        triggerPacientesSync(paciente.opticaId)
+    }
+
+    suspend fun updatePaciente(paciente: Paciente) {
+        pacienteRepo.updatePaciente(paciente)
+        triggerPacientesSync(paciente.opticaId)
+    }
+
+    suspend fun deletePaciente(paciente: Paciente) = pacienteRepo.deletePaciente(paciente)
+
+    // ── Evaluación ───────────────────────────────────────────────────────────
+
+    fun getEvaluacionesByPaciente(pacienteId: String): Flow<List<EvaluacionClinica>> =
+        pacienteRepo.getEvaluacionesByPaciente(pacienteId)
+
     fun getEvaluacionesProximaCitaEnRango(opticaId: String, start: LocalDate, end: LocalDate): Flow<List<EvaluacionClinica>> =
-        evaluacionDao.getEvaluacionesConProximaCitaEnRango(opticaId, start, end)
-        
-    fun countEvaluacionesInRange(start: LocalDate, end: LocalDate): Flow<Int> = evaluacionDao.countEvaluacionesInRange(start, end)
+        pacienteRepo.getEvaluacionesProximaCitaEnRango(opticaId, start, end)
+
+    fun countEvaluacionesInRange(start: LocalDate, end: LocalDate): Flow<Int> =
+        pacienteRepo.countEvaluacionesInRange(start, end)
 
     fun countEvaluacionesInRangeForOptica(start: LocalDate, end: LocalDate, opticaId: String): Flow<Int> =
-        evaluacionDao.countEvaluacionesInRangeForOptica(start, end, opticaId)
+        pacienteRepo.countEvaluacionesInRangeForOptica(start, end, opticaId)
 
-    fun getDispensacionesByDateRange(start: LocalDate, end: LocalDate): Flow<List<DispensacionOptica>> =
-        dispensacionDao.getDispensacionesByDateRange(start, end)
+    suspend fun getEvaluacionById(id: String): Resource<EvaluacionClinica> =
+        pacienteRepo.getEvaluacionById(id)
 
-    fun getDispensacionesByDateRangeForOptica(start: LocalDate, end: LocalDate, opticaId: String): Flow<List<DispensacionOptica>> =
-        dispensacionDao.getDispensacionesByDateRangeForOptica(start, end, opticaId)
-        
-    suspend fun getEvaluacionById(id: String): Resource<EvaluacionClinica> {
-        return try {
-            val evaluacion = evaluacionDao.getEvaluacionById(id)
-            if (evaluacion != null) Resource.Success(evaluacion)
-            else Resource.Error("Evaluación no encontrada")
-        } catch (e: Exception) {
-            Resource.Error(e.message ?: "Error al obtener evaluación")
-        }
-    }
-        
-    suspend fun deleteEvaluacion(evaluacion: EvaluacionClinica) = evaluacionDao.deleteEvaluacion(evaluacion)
-    
+    suspend fun deleteEvaluacion(evaluacion: EvaluacionClinica) = pacienteRepo.deleteEvaluacion(evaluacion)
+
     suspend fun insertEvaluacion(evaluacion: EvaluacionClinica) {
-        evaluacionDao.insertEvaluacion(evaluacion)
+        pacienteRepo.insertEvaluacion(evaluacion)
         triggerHistorialSync(evaluacion.opticaId)
     }
-    
+
     suspend fun updateEvaluacion(evaluacion: EvaluacionClinica) {
-        evaluacionDao.updateEvaluacion(evaluacion)
+        pacienteRepo.updateEvaluacion(evaluacion)
         triggerHistorialSync(evaluacion.opticaId)
     }
-    
-    fun getDispensacionesByPaciente(pacienteId: String): Flow<List<DispensacionOptica>> = 
-        dispensacionDao.getDispensacionesByPaciente(pacienteId)
-        
-    fun getAllDispensaciones(): Flow<List<DispensacionOptica>> = dispensacionDao.getAllDispensaciones()
+
+    // ── Dispensación ─────────────────────────────────────────────────────────
+
+    fun getDispensacionesByPaciente(pacienteId: String): Flow<List<DispensacionOptica>> =
+        dispensacionRepo.getDispensacionesByPaciente(pacienteId)
+
+    fun getAllDispensaciones(): Flow<List<DispensacionOptica>> =
+        dispensacionRepo.getAllDispensaciones()
 
     fun getAllDispensacionesForOptica(opticaId: String): Flow<List<DispensacionOptica>> =
-        dispensacionDao.getAllDispensacionesForOptica(opticaId)
+        dispensacionRepo.getAllDispensacionesForOptica(opticaId)
 
-    fun getTotalVendido(): Flow<Double?> = dispensacionDao.getTotalVendido()
+    fun getTotalVendido(): Flow<Double?> = dispensacionRepo.getTotalVendido()
 
-    fun getTotalPagado(): Flow<Double?> = dispensacionDao.getTotalPagado()
+    fun getTotalPagado(): Flow<Double?> = dispensacionRepo.getTotalPagado()
 
     fun getTotalVendidoForOptica(opticaId: String): Flow<Double?> =
-        dispensacionDao.getTotalVendidoForOptica(opticaId)
+        dispensacionRepo.getTotalVendidoForOptica(opticaId)
 
     fun getTotalPagadoForOptica(opticaId: String): Flow<Double?> =
-        dispensacionDao.getTotalPagadoForOptica(opticaId)
-    
-    suspend fun getDispensacionById(id: String): Resource<DispensacionOptica> {
-        return try {
-            val dispensacion = dispensacionDao.getDispensacionById(id)
-            if (dispensacion != null) Resource.Success(dispensacion)
-            else Resource.Error("Dispensación no encontrada")
-        } catch (e: Exception) {
-            Resource.Error(e.message ?: "Error al obtener dispensación")
-        }
-    }
-        
+        dispensacionRepo.getTotalPagadoForOptica(opticaId)
+
+    fun getDispensacionesByDateRange(start: LocalDate, end: LocalDate): Flow<List<DispensacionOptica>> =
+        dispensacionRepo.getDispensacionesByDateRange(start, end)
+
+    fun getDispensacionesByDateRangeForOptica(start: LocalDate, end: LocalDate, opticaId: String): Flow<List<DispensacionOptica>> =
+        dispensacionRepo.getDispensacionesByDateRangeForOptica(start, end, opticaId)
+
+    suspend fun getDispensacionById(id: String): Resource<DispensacionOptica> =
+        dispensacionRepo.getDispensacionById(id)
+
     suspend fun insertDispensacion(dispensacion: DispensacionOptica) {
-        dispensacionDao.insertDispensacion(dispensacion)
+        dispensacionRepo.insertDispensacion(dispensacion)
         triggerFinanzasSync(dispensacion.opticaId)
     }
-    
+
     suspend fun updateDispensacion(dispensacion: DispensacionOptica) {
-        dispensacionDao.updateDispensacion(dispensacion)
+        dispensacionRepo.updateDispensacion(dispensacion)
         triggerFinanzasSync(dispensacion.opticaId)
     }
-    
-    suspend fun deleteDispensacionById(id: String): Int = dispensacionDao.deleteById(id)
+
+    suspend fun deleteDispensacionById(id: String): Int =
+        dispensacionRepo.deleteDispensacionById(id)
 
     suspend fun deleteDispensacion(dispensacion: DispensacionOptica) {
-        dispensacionDao.deleteById(dispensacion.id)
-        // Registrar tombstone para que el siguiente sync elimine de Supabase
+        dispensacionRepo.deleteDispensacionById(dispensacion.id)
         syncStateTracker.markDeleted(dispensacion.opticaId, "dispensacion", dispensacion.id)
         triggerFinanzasSync(dispensacion.opticaId)
     }
 
-    /** True si otra dispensación de la misma óptica ya usa esta OT (misma cadena ignorando mayúsculas/espacios). */
-    suspend fun existsDuplicateOt(opticaId: String, ot: String, excludeDispensacionId: String?): Boolean {
-        val n = ot.trim()
-        if (n.isEmpty()) return false
-        val ex = excludeDispensacionId.orEmpty()
-        return dispensacionDao.countDispensacionesWithSameOt(opticaId, n, ex) > 0
-    }
+    suspend fun existsDuplicateOt(opticaId: String, ot: String, excludeDispensacionId: String?): Boolean =
+        dispensacionRepo.existsDuplicateOt(opticaId, ot, excludeDispensacionId)
 
-    /** Siguiente correlativo `OT-<año>-####` según OT existentes de la óptica para ese año. */
-    suspend fun suggestNextOt(opticaId: String, fecha: LocalDate): String {
-        val year = fecha.year.toString()
-        val ots = dispensacionDao.getOtsWithYearPrefix(opticaId, year)
-        val regex = Regex("^OT-$year-(\\d+)$", RegexOption.IGNORE_CASE)
-        var max = 0
-        for (ot in ots) {
-            regex.find(ot.trim())?.groupValues?.get(1)?.toIntOrNull()?.let { if (it > max) max = it }
-        }
-        val next = max + 1
-        return "OT-$year-" + next.toString().padStart(4, '0')
-    }
+    suspend fun suggestNextOt(opticaId: String, fecha: LocalDate): String =
+        dispensacionRepo.suggestNextOt(opticaId, fecha)
 
-    /** Siguiente correlativo `HO-<año>-####` para historia optométrica en la óptica activa. */
-    suspend fun suggestNextHistoriaOptometrica(opticaId: String): String {
-        val historias = pacienteDao.getHistoriasOptometricasByOptica(opticaId)
-        val year = LocalDate.now().year.toString()
-        val regex = Regex("^HO-$year-(\\d+)$", RegexOption.IGNORE_CASE)
-        var max = 0
-        for (historia in historias) {
-            regex.find(historia.trim())?.groupValues?.get(1)?.toIntOrNull()?.let { if (it > max) max = it }
-        }
-        val next = max + 1
-        return "HO-$year-" + next.toString().padStart(4, '0')
-    }
+    suspend fun suggestNextHistoriaOptometrica(opticaId: String): String =
+        pacienteRepo.suggestNextHistoriaOptometrica(opticaId)
 
-    /** True si ya existe esa historia optométrica en la misma óptica (ignorando mayúsculas/espacios). */
-    suspend fun existsDuplicateHistoriaOptometrica(opticaId: String, historia: String, excludePacienteId: String?): Boolean {
-        val n = historia.trim()
-        if (n.isEmpty()) return false
-        val ex = excludePacienteId.orEmpty()
-        return pacienteDao.countPacientesByHistoriaOptometrica(opticaId, n, ex) > 0
-    }
-    
-    fun getPagosByDispensacion(dispensacionId: String): Flow<List<Pago>> = pagoDao.getPagosByDispensacion(dispensacionId)
-    
+    suspend fun existsDuplicateHistoriaOptometrica(opticaId: String, historia: String, excludePacienteId: String?): Boolean =
+        pacienteRepo.existsDuplicateHistoriaOptometrica(opticaId, historia, excludePacienteId)
+
+    // ── Pagos ────────────────────────────────────────────────────────────────
+
+    fun getPagosByDispensacion(dispensacionId: String): Flow<List<Pago>> =
+        dispensacionRepo.getPagosByDispensacion(dispensacionId)
+
     suspend fun insertPago(pago: Pago) {
-        pagoDao.insertPago(pago)
+        dispensacionRepo.insertPago(pago)
         triggerFinanzasSync(pago.opticaId)
     }
 
-    suspend fun getPagoById(id: String): Pago? = pagoDao.getPagoById(id)
-    suspend fun reassignPagosDispensacion(oldDispensacionId: String, newDispensacionId: String): Int =
-        pagoDao.reassignDispensacionId(oldDispensacionId, newDispensacionId)
+    suspend fun getPagoById(id: String): Pago? = dispensacionRepo.getPagoById(id)
 
-    /**
-     * Borra un abono. Si ya existía en BD, registra un movimiento de anulación el día [fechaAnulacion]
-     * (importe negativo) para que cierre de caja refleje la salida o reversión en la fecha correcta.
-     */
+    suspend fun reassignPagosDispensacion(oldDispensacionId: String, newDispensacionId: String): Int =
+        dispensacionRepo.reassignPagosDispensacion(oldDispensacionId, newDispensacionId)
+
     suspend fun deletePagoRegistrandoAnulacionEnCaja(
         pago: Pago,
         opticaId: String,
         fechaAnulacion: LocalDate = DateUtils.today()
-    ) {
-        val existing = pagoDao.getPagoById(pago.id)
-        if (existing != null && existing.monto != 0.0) {
-            val reversal = Pago(
-                id = UUID.randomUUID().toString(),
-                dispensacionId = existing.dispensacionId,
-                servicioExtraId = existing.servicioExtraId,
-                fecha = fechaAnulacion,
-                tipo = "Anulación",
-                monto = -existing.monto,
-                metodoPago = existing.metodoPago,
-                nota = "Anula abono ${existing.id.take(8)}… (${DateUtils.formatLocalized(existing.fecha)})",
-                opticaId = opticaId
-            )
-            pagoDao.insertPago(reversal)
-        }
-        pagoDao.deletePago(pago)
-    }
+    ) = dispensacionRepo.deletePagoRegistrandoAnulacionEnCaja(pago, opticaId, fechaAnulacion)
 
-    suspend fun deletePago(pago: Pago) = pagoDao.deletePago(pago)
-    
-    fun getPagosByServicioExtra(servicioExtraId: String): Flow<List<Pago>> = 
-        pagoDao.getPagosByServicioExtra(servicioExtraId)
-        
+    suspend fun deletePago(pago: Pago) = dispensacionRepo.deletePago(pago)
+
+    fun getPagosByServicioExtra(servicioExtraId: String): Flow<List<Pago>> =
+        dispensacionRepo.getPagosByServicioExtra(servicioExtraId)
+
     fun getPagosByDateRange(start: LocalDate, end: LocalDate): Flow<List<Pago>> =
-        pagoDao.getPagosByDateRange(start, end)
+        dispensacionRepo.getPagosByDateRange(start, end)
 
     fun getPagosByDateRangeForOptica(start: LocalDate, end: LocalDate, opticaId: String): Flow<List<Pago>> =
-        pagoDao.getPagosByDateRangeForOptica(start, end, opticaId)
+        dispensacionRepo.getPagosByDateRangeForOptica(start, end, opticaId)
 
-    // Servicios Extra
-    fun getAllServicios(): Flow<List<ServicioExtra>> = servicioExtraDao.getAllServicios()
+    // ── Servicios Extra ──────────────────────────────────────────────────────
+
+    fun getAllServicios(): Flow<List<ServicioExtra>> =
+        dispensacionRepo.getAllServicios()
 
     fun getAllServiciosForOptica(opticaId: String): Flow<List<ServicioExtra>> =
-        servicioExtraDao.getAllServiciosForOptica(opticaId)
-    
-    fun getServiciosByPaciente(pacienteId: String): Flow<List<ServicioExtra>> = servicioExtraDao.getServiciosByPaciente(pacienteId)
-    
-    suspend fun getServicioById(id: String): Resource<ServicioExtra> {
-        return try {
-            val servicio = servicioExtraDao.getServicioById(id)
-            if (servicio != null) Resource.Success(servicio)
-            else Resource.Error("Servicio no encontrado")
-        } catch (e: Exception) {
-            Resource.Error(e.message ?: "Error al obtener servicio")
-        }
-    }
-    
+        dispensacionRepo.getAllServiciosForOptica(opticaId)
+
+    fun getServiciosByPaciente(pacienteId: String): Flow<List<ServicioExtra>> =
+        dispensacionRepo.getServiciosByPaciente(pacienteId)
+
+    suspend fun getServicioById(id: String): Resource<ServicioExtra> =
+        dispensacionRepo.getServicioById(id)
+
     suspend fun insertServicio(servicio: ServicioExtra) {
-        servicioExtraDao.insertServicio(servicio)
+        dispensacionRepo.insertServicio(servicio)
         triggerFinanzasSync(servicio.opticaId)
     }
-    
+
     suspend fun updateServicio(servicio: ServicioExtra) {
-        servicioExtraDao.updateServicio(servicio)
+        dispensacionRepo.updateServicio(servicio)
         triggerFinanzasSync(servicio.opticaId)
     }
-    
+
     suspend fun deleteServicio(servicio: ServicioExtra) {
-        servicioExtraDao.deleteServicio(servicio)
-        // Registrar tombstone para que el siguiente sync elimine de Supabase
+        dispensacionRepo.deleteServicio(servicio)
         syncStateTracker.markDeleted(servicio.opticaId, "servicio_extra", servicio.id)
         triggerFinanzasSync(servicio.opticaId)
     }
 
-    // Monturas
+    // ── Monturas ─────────────────────────────────────────────────────────────
+
     fun getMonturasByOptica(opticaId: String): Flow<List<Montura>> =
         monturaDao.getMonturasByOptica(opticaId)
 
@@ -326,98 +265,81 @@ class OptoRepository(
         if (changed > 0) triggerInventarioSync(opticaId)
         return changed
     }
+
     fun getMovimientosMonturaByOptica(opticaId: String): Flow<List<MonturaMovimiento>> =
         monturaMovimientoDao.getMovimientosByOptica(opticaId)
+
     fun getMovimientosByMontura(monturaId: String): Flow<List<MonturaMovimiento>> =
         monturaMovimientoDao.getMovimientosByMontura(monturaId)
+
     suspend fun insertMonturaMovimiento(movimiento: MonturaMovimiento) {
         monturaMovimientoDao.insertMovimiento(movimiento)
         triggerInventarioSync(movimiento.opticaId)
     }
 
-    // ─── Métodos de sincronización (Fase 3) ──────────────────────────────────
-    // Devuelven una lista completa en un instante dado (snapshot), usados por los
-    // Use Cases de sincronización que necesitan leer todos los registros de una vez.
+    // ─── Sync Snapshot Methods ───────────────────────────────────────────────
 
-    /** Alias de upsert para la bajada de datos desde Supabase. */
     suspend fun upsertPaciente(paciente: Paciente) = pacienteDao.insertPaciente(paciente)
 
-    /** Alias de upsert para la bajada de inventario desde Supabase (no dispara sync post-guardado). */
     suspend fun upsertMontura(montura: Montura) = monturaDao.insertMontura(montura)
 
-    /** Alias de upsert para la bajada de movimientos desde Supabase (no dispara sync post-guardado). */
     suspend fun upsertMonturaMovimiento(movimiento: MonturaMovimiento) =
         monturaMovimientoDao.insertMovimiento(movimiento)
 
-    /** Snapshot de pacientes de la óptica activa (sync upload). */
     suspend fun getPacientesSnapshotForOptica(opticaId: String): List<Paciente> =
-        pacienteDao.getPacientesListByOptica(opticaId)
+        pacienteRepo.getPacientesSnapshotForOptica(opticaId)
 
-    /** Snapshot de evaluaciones de la óptica activa. */
     suspend fun getEvaluacionesSnapshotForOptica(opticaId: String): List<EvaluacionClinica> =
-        evaluacionDao.getEvaluacionesListByOptica(opticaId)
+        pacienteRepo.getEvaluacionesSnapshotForOptica(opticaId)
 
-    /** Snapshot de dispensaciones de la óptica activa. */
     suspend fun getDispensacionesSnapshotForOptica(opticaId: String): List<DispensacionOptica> =
-        dispensacionDao.getDispensacionesListByOptica(opticaId)
+        dispensacionRepo.getDispensacionesSnapshotForOptica(opticaId)
 
-    /** Snapshot de pagos de la óptica activa. */
     suspend fun getPagosSnapshotForOptica(opticaId: String): List<Pago> =
-        pagoDao.getPagosListByOptica(opticaId)
+        dispensacionRepo.getPagosSnapshotForOptica(opticaId)
 
-    /** Snapshot de servicios extra de la óptica activa. */
     suspend fun getServiciosSnapshotForOptica(opticaId: String): List<ServicioExtra> =
-        servicioExtraDao.getServiciosListByOptica(opticaId)
+        dispensacionRepo.getServiciosSnapshotForOptica(opticaId)
 
-    /** Snapshot de monturas de la óptica activa (sync inventario). */
     suspend fun getMonturasSnapshotForOptica(opticaId: String): List<Montura> =
-        monturaDao.getMonturasListByOptica(opticaId)
+        syncRepo.getMonturasSnapshotForOptica(opticaId)
 
-    /** Snapshot de movimientos de montura de la óptica activa (sync inventario). */
     suspend fun getMovimientosMonturaSnapshotForOptica(opticaId: String): List<MonturaMovimiento> =
-        monturaMovimientoDao.getMovimientosListByOptica(opticaId)
+        syncRepo.getMovimientosMonturaSnapshotForOptica(opticaId)
 
-    /** Retorna todos los registros marcados como eliminados pendientes de sync remoto. */
+    // ─── Sync State ──────────────────────────────────────────────────────────
+
     suspend fun getPendingDeletions(opticaId: String): List<SyncEntityState> =
-        syncStateTracker.dao.getPendingDeletions(opticaId)
+        syncRepo.getPendingDeletions(opticaId)
 
-    /** Limpia el tombstone después de que la eliminación fue confirmada en Supabase. */
     suspend fun clearDeletionState(opticaId: String, type: String, id: String) =
-        syncStateTracker.dao.clearEntityState(opticaId, type, id)
+        syncRepo.clearDeletionState(opticaId, type, id)
 
     // ─────────────────────────────────────────────────────────────────────────
 
     suspend fun clearAllData() {
-        servicioExtraDao.deleteAll()
-        pagoDao.deleteAll()
-        dispensacionDao.deleteAll()
+        dispensacionRepo.deleteAll()
         evaluacionDao.deleteAll()
         pacienteDao.deleteAll()
     }
 
-    /**
-     * Reasigna filas creadas con el tenant legacy `mi_optica_base` al [currentOpticaId] de sesión SaaS,
-     * para que aparezcan en listas filtradas y entren en el snapshot de sync.
-     */
     suspend fun reassignLegacyMiOpticaBaseTo(currentOpticaId: String) {
         if (currentOpticaId.isBlank() || currentOpticaId == SessionManager.LEGACY_OPTICA_ID) return
-        val p = pacienteDao.reassignFromLegacyMiOpticaBase(currentOpticaId)
-        val e = evaluacionDao.reassignFromLegacyMiOpticaBase(currentOpticaId)
-        val d = dispensacionDao.reassignFromLegacyMiOpticaBase(currentOpticaId)
-        val s = servicioExtraDao.reassignFromLegacyMiOpticaBase(currentOpticaId)
-        val pg = pagoDao.reassignFromLegacyMiOpticaBase(currentOpticaId)
-        val n = p + e + d + s + pg
-        if (n > 0) Log.d(TAG, "Reasignadas $n filas de mi_optica_base → opticaId=$currentOpticaId (p=$p e=$e d=$d s=$s pg=$pg)")
+        val pacienteResult = pacienteRepo.reassignFromLegacyMiOpticaBase(currentOpticaId)
+        val dispensacionResult = dispensacionRepo.reassignFromLegacyMiOpticaBase(currentOpticaId)
+        if (pacienteResult + dispensacionResult > 0) {
+            Log.d(TAG, "Reasignadas ${pacienteResult + dispensacionResult} filas de mi_optica_base → opticaId=$currentOpticaId")
+        }
     }
-    
+
     suspend fun getBackupDataForOptica(opticaId: String): BackupData {
         return BackupData(
             sourceOpticaId = opticaId,
-            pacientes = pacienteDao.getPacientesListByOptica(opticaId),
-            evaluaciones = evaluacionDao.getEvaluacionesListByOptica(opticaId),
-            dispensaciones = dispensacionDao.getDispensacionesListByOptica(opticaId),
-            pagos = pagoDao.getPagosListByOptica(opticaId),
-            serviciosExtra = servicioExtraDao.getServiciosListByOptica(opticaId)
+            pacientes = pacienteRepo.getPacientesSnapshotForOptica(opticaId),
+            evaluaciones = pacienteRepo.getEvaluacionesSnapshotForOptica(opticaId),
+            dispensaciones = dispensacionRepo.getDispensacionesSnapshotForOptica(opticaId),
+            pagos = dispensacionRepo.getPagosSnapshotForOptica(opticaId),
+            serviciosExtra = dispensacionRepo.getServiciosSnapshotForOptica(opticaId)
         )
     }
 
@@ -446,92 +368,54 @@ class OptoRepository(
     )
 
     private fun Pago.withDefaults(): Pago = this
-
     private fun ServicioExtra.withDefaults(): ServicioExtra = this
 
     suspend fun restoreBackup(backupData: BackupData, currentOpticaId: String) {
         clearAllData()
-        
-        backupData.pacientes?.forEach { 
-            try { 
-                insertPaciente(it.withDefaults().copy(opticaId = currentOpticaId)) 
-            } catch(e: Exception) { 
-                e.printStackTrace() 
-            } 
+
+        backupData.pacientes?.forEach {
+            try {
+                insertPaciente(it.withDefaults().copy(opticaId = currentOpticaId))
+            } catch(e: Exception) {
+                e.printStackTrace()
+            }
         }
-        
-        backupData.evaluaciones?.forEach { 
-            try { 
-                insertEvaluacion(it.withDefaults().copy(opticaId = currentOpticaId)) 
-            } catch(e: Exception) { 
-                e.printStackTrace() 
-            } 
+
+        backupData.evaluaciones?.forEach {
+            try {
+                insertEvaluacion(it.withDefaults().copy(opticaId = currentOpticaId))
+            } catch(e: Exception) {
+                e.printStackTrace()
+            }
         }
-        
-        backupData.dispensaciones?.forEach { 
-            try { 
-                insertDispensacion(it.withDefaults().copy(opticaId = currentOpticaId)) 
-            } catch(e: Exception) { 
-                e.printStackTrace() 
-            } 
+
+        backupData.dispensaciones?.forEach {
+            try {
+                insertDispensacion(it.withDefaults().copy(opticaId = currentOpticaId))
+            } catch(e: Exception) {
+                e.printStackTrace()
+            }
         }
-        
-        backupData.pagos?.forEach { 
-            try { 
-                insertPago(it.withDefaults().copy(opticaId = currentOpticaId)) 
-            } catch(e: Exception) { 
-                e.printStackTrace() 
-            } 
+
+        backupData.pagos?.forEach {
+            try {
+                insertPago(it.withDefaults().copy(opticaId = currentOpticaId))
+            } catch(e: Exception) {
+                e.printStackTrace()
+            }
         }
-        
-        backupData.serviciosExtra?.forEach { 
-            try { 
-                insertServicio(it.withDefaults().copy(opticaId = currentOpticaId)) 
-            } catch(e: Exception) { 
-                e.printStackTrace() 
-            } 
+
+        backupData.serviciosExtra?.forEach {
+            try {
+                insertServicio(it.withDefaults().copy(opticaId = currentOpticaId))
+            } catch(e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 
-    suspend fun resolveDuplicatePacientesByHistoria(opticaId: String): DuplicateHoResolutionResult {
-        val pacientes = pacienteDao.getPacientesListByOptica(opticaId)
-        val grouped = pacientes
-            .mapNotNull { p ->
-                val ho = p.historiaOptometrica?.trim()?.uppercase().orEmpty()
-                if (ho.isBlank()) null else ho to p
-            }
-            .groupBy({ it.first }, { it.second })
-            .filterValues { it.size > 1 }
-        if (grouped.isEmpty()) return DuplicateHoResolutionResult()
-
-        var mergedPacientes = 0
-        var movedEvaluaciones = 0
-        var movedDispensaciones = 0
-        var movedServicios = 0
-
-        database.withTransaction {
-            grouped.forEach { (_, rows) ->
-                val canonical = rows.minByOrNull { it.fechaCreacion } ?: return@forEach
-                rows.forEach { duplicate ->
-                    if (duplicate.id == canonical.id) return@forEach
-
-                    val mergedCanonical = canonical.mergeWith(duplicate)
-                    pacienteDao.updatePaciente(mergedCanonical)
-                    movedEvaluaciones += pacienteDao.reassignEvaluacionesPaciente(duplicate.id, canonical.id)
-                    movedDispensaciones += pacienteDao.reassignDispensacionesPaciente(duplicate.id, canonical.id)
-                    movedServicios += pacienteDao.reassignServiciosPaciente(duplicate.id, canonical.id)
-                    pacienteDao.deletePacienteById(duplicate.id)
-                    mergedPacientes++
-                }
-            }
-        }
-        return DuplicateHoResolutionResult(
-            mergedPacientes = mergedPacientes,
-            movedEvaluaciones = movedEvaluaciones,
-            movedDispensaciones = movedDispensaciones,
-            movedServicios = movedServicios
-        )
-    }
+    suspend fun resolveDuplicatePacientesByHistoria(opticaId: String): DuplicateHoResolutionResult =
+        pacienteRepo.resolveDuplicatePacientesByHistoria(opticaId, database)
 }
 
 data class DuplicateHoResolutionResult(
@@ -540,27 +424,6 @@ data class DuplicateHoResolutionResult(
     val movedDispensaciones: Int = 0,
     val movedServicios: Int = 0
 )
-
-private fun Paciente.mergeWith(other: Paciente): Paciente {
-    fun chooseText(primary: String?, fallback: String?): String? =
-        primary?.takeIf { it.isNotBlank() } ?: fallback?.takeIf { it.isNotBlank() }
-    return copy(
-        nombreCompleto = if (nombreCompleto.isNotBlank()) nombreCompleto else other.nombreCompleto,
-        edad = maxOf(edad, other.edad),
-        telefono = chooseText(telefono, other.telefono).orEmpty(),
-        dni = chooseText(dni, other.dni),
-        fechaNacimiento = fechaNacimiento ?: other.fechaNacimiento,
-        sexo = chooseText(sexo, other.sexo),
-        email = chooseText(email, other.email),
-        historiaOptometrica = chooseText(historiaOptometrica, other.historiaOptometrica),
-        direccion = chooseText(direccion, other.direccion),
-        distrito = chooseText(distrito, other.distrito),
-        ocupacion = chooseText(ocupacion, other.ocupacion),
-        acompanante = chooseText(acompanante, other.acompanante),
-        hobbies = chooseText(hobbies, other.hobbies),
-        ultimasEtiquetas = (ultimasEtiquetas + other.ultimasEtiquetas).distinct()
-    )
-}
 
 data class BackupData(
     val version: Int = 3,

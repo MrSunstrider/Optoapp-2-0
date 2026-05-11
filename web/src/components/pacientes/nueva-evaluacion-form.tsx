@@ -1,9 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useActionState } from "react";
 
-type SaveEvaluacionAction = (formData: FormData) => void | Promise<void>;
+type SaveEvaluacionAction = (
+  prevState: { error?: string } | null,
+  formData: FormData
+) => Promise<{ error?: string } | null>;
 
 type EvaluacionDraft = {
   fecha: string;
@@ -279,6 +282,8 @@ export function NuevaEvaluacionForm({
   initialData,
   saveEvaluacionAction
 }: Props) {
+  const [actionState, action, isPending] = useActionState(saveEvaluacionAction, null);
+
   const storageKey = useMemo(
     () => `optoapp:web:evaluacion-form:${mode}:${pacienteId}:${evaluacionId ?? "new"}`,
     [mode, pacienteId, evaluacionId]
@@ -529,7 +534,12 @@ export function NuevaEvaluacionForm({
   ];
 
   return (
-    <form action={saveEvaluacionAction} onSubmit={handleSubmit} className="space-y-4">
+    <form action={action} onSubmit={handleSubmit} className="space-y-4">
+      {actionState?.error && (
+        <p className="mb-3 rounded-lg border border-red-900/50 bg-red-950/40 px-3 py-2 text-sm text-red-300">
+          {actionState.error}
+        </p>
+      )}
       {hiddenPairs.map(([k, v]) => (
         <input key={k} type="hidden" name={k} value={v} />
       ))}
@@ -539,7 +549,7 @@ export function NuevaEvaluacionForm({
         <div className="flex items-center gap-3 bg-primary px-4 py-4 text-primary-foreground shadow-md">
           <Link href={backHref} className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 hover:bg-white/20 transition-all active:scale-95" aria-label="Volver a evaluaciones"><span className="text-xl font-bold">{"←"}</span></Link>
           <h2 className="flex-1 font-heading text-xl font-bold">{mode === "edit" ? "Editar Evaluación" : "Nueva Evaluación"}</h2>
-          <button type="submit" className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 hover:bg-white/20 transition-all active:scale-95" title="Guardar evaluación" aria-label="Guardar evaluación">💾</button>
+          <button type="submit" disabled={isPending} className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 hover:bg-white/20 transition-all active:scale-95 disabled:opacity-50" title="Guardar evaluación" aria-label="Guardar evaluación">{isPending ? "…" : "💾"}</button>
         </div>
 
         <div className="flex flex-wrap gap-2 border-b border-border px-4 py-4 bg-foreground/[0.01]">
@@ -582,7 +592,7 @@ export function NuevaEvaluacionForm({
             <ContactologiaTab draft={draft} update={update} inputCls={inputCls} />
           )}
           {activeTab === "Cierre" && (
-            <CierreTab draft={draft} update={update} inputCls={inputCls} mode={mode} />
+            <CierreTab draft={draft} update={update} inputCls={inputCls} mode={mode} isPending={isPending} />
           )}
         </div>
       </div>
@@ -760,12 +770,14 @@ function CierreTab({
   draft,
   update,
   inputCls,
-  mode
+  mode,
+  isPending
 }: {
   draft: EvaluacionDraft;
   update: <K extends keyof EvaluacionDraft>(key: K, value: EvaluacionDraft[K]) => void;
   inputCls: string;
   mode: "create" | "edit";
+  isPending: boolean;
 }) {
   const cardCls = "space-y-4 rounded-2xl border border-border bg-foreground/[0.02] p-5 shadow-sm";
   const hasProxCita = draft.proximaCita.trim() !== "";
@@ -960,9 +972,10 @@ function CierreTab({
 
       <button
         type="submit"
-        className="w-full rounded-lg bg-sky-400 px-4 py-2.5 text-sm font-semibold text-zinc-900"
+        disabled={isPending}
+        className="w-full rounded-lg bg-sky-400 px-4 py-2.5 text-sm font-semibold text-zinc-900 disabled:opacity-50"
       >
-        {mode === "edit" ? "Actualizar Evaluacion" : "Guardar Evaluacion"}
+        {isPending ? "Guardando…" : mode === "edit" ? "Actualizar Evaluacion" : "Guardar Evaluacion"}
       </button>
     </div>
   );

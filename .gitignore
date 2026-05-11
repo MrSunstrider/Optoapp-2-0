@@ -29,6 +29,17 @@ java_pid*
 # Build results
 **/build/
 
+# IDE/Editor specific
+.cursorrules
+.atl/
+
+# Stale root files
+TestDates.kt
+
+# JVM crash logs
+hs_err_pid*.log
+replay_pid*.log
+
 # Web app artifacts
 web/node_modules/
 web/.next/

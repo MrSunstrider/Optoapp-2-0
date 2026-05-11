@@ -1,14 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useRef, useState, useTransition } from "react";
+import { useActionState, useMemo, useRef, useState, useTransition } from "react";
 
 import type { PacienteDetalleRow } from "@/lib/pacientes";
 import { localTodayDateOnly } from "@/lib/pacientes";
 
 import { suggestHistoriaOptometricaAction } from "@/app/pacientes/_actions/paciente-crud";
 
-type ActionFn = (formData: FormData) => void | Promise<void>;
+type ActionFn = (
+  prevState: { error?: string } | null,
+  formData: FormData
+) => Promise<{ error?: string } | null>;
 
 function formatFechaRegistroLabel(iso: string): string {
   if (!iso || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return "—";
@@ -43,6 +46,8 @@ export function PacienteForm({
 }) {
   const isDark = variant === "materialDark";
   const isCreate = mode === "create";
+
+  const [formState, formAction, formPending] = useActionState(action, null);
 
   const [historia, setHistoria] = useState(
     () => defaultValues?.historia_optometrica ?? ""
@@ -104,10 +109,15 @@ export function PacienteForm({
     : "shrink-0 rounded-md border border-border bg-card px-3 py-2 text-sm font-medium hover:bg-accent";
 
   return (
-    <form action={action} className={shell}>
+    <form action={formAction} className={shell}>
       {pacienteId && <input type="hidden" name="id" value={pacienteId} />}
       <input type="hidden" name="fechaCreacion" value={fechaCreacionIso} />
       {errorBanner}
+      {formState?.error && (
+        <p className="rounded-lg border border-red-900/50 bg-red-950/40 px-3 py-2 text-sm text-red-300">
+          {formState.error}
+        </p>
+      )}
 
       {/* 1. Fecha de registro — control tipo renglón (paridad app) */}
       <div className={isDark ? "" : ""}>
@@ -318,8 +328,8 @@ export function PacienteForm({
       </div>
 
       <div className="flex flex-wrap gap-3 pt-4">
-        <button type="submit" className={btnPrimary}>
-          {submitLabel}
+        <button type="submit" disabled={formPending} className={btnPrimary + (formPending ? " opacity-50" : "")}>
+          {formPending ? "Guardando…" : submitLabel}
         </button>
         <Link href={cancelHref} className={btnGhost + " inline-flex items-center justify-center"}>
           Cancelar

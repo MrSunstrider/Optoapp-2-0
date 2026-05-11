@@ -83,6 +83,22 @@ export default async function CierreCajaPage({
           </div>
         </header>
 
+        {snapshot.status.overall === "degraded" && (
+          <div className="rounded-2xl border border-amber-500/30 bg-amber-50 px-6 py-4 dark:bg-amber-950/30">
+            <div className="flex items-start gap-3">
+              <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
+              <div className="text-sm text-amber-800 dark:text-amber-200">
+                <p className="font-bold">Cierre con datos degradados</p>
+                <p className="mt-1 text-amber-700 dark:text-amber-300">
+                  {snapshot.status.error
+                    ? `Error: ${snapshot.status.error}`
+                    : "No se pudieron cargar todos los datos. Los montos mostrados pueden estar incompletos."}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
           <div className="lg:col-span-2">
             <PaymentSummaryCards
