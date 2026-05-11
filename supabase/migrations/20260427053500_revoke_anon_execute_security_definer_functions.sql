@@ -14,12 +14,13 @@ revoke execute on function public.guard_pacientes_delete() from anon;
 revoke execute on function public.has_optica_role(uuid, text, text[]) from anon;
 revoke execute on function public.is_internal_owner() from anon;
 revoke execute on function public.opticas_lock_plan_from_clients() from anon;
--- rls_auto_enable is a Supabase-managed function, not available in preview branches / local Docker
-DO LANGUAGE plpgsql $$
+-- rls_auto_enable is a Supabase-managed function; it may not exist in local/CI/preview environments.
+-- The revoke is only needed where the function exists (production Supabase).
+DO $$
 BEGIN
-  EXECUTE 'revoke execute on function public.rls_auto_enable() from anon';
-EXCEPTION WHEN undefined_function THEN
-  NULL;
+  IF EXISTS (SELECT 1 FROM pg_proc p JOIN pg_namespace n ON p.pronamespace = n.oid WHERE n.nspname = 'public' AND p.proname = 'rls_auto_enable') THEN
+    EXECUTE 'revoke execute on function public.rls_auto_enable() from anon';
+  END IF;
 END;
 $$;
 revoke execute on function public.sync_user_profiles_from_auth() from anon;
