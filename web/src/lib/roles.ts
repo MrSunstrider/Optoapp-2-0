@@ -1,3 +1,6 @@
+// Roles del sistema. Los roles internos (superadmin, staff, interno) se manejan
+// exclusivamente en lib/config/permissions.ts para configuración de plataforma.
+// No están definidos aquí porque operan a nivel de SaaS, no de óptica.
 const ROLES_CON_BI = new Set(["admin", "especialista", "gerente"]);
 const ROLES_COMERCIALES = new Set(["asesor", "asesora", "ventas"]);
 const ROLES_SIN_EXPORTACION = new Set(["invitado"]);
