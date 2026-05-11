@@ -3,6 +3,8 @@ import {
   PagoRowSchema,
   DispensacionRowSchema,
   ServicioExtraRowSchema,
+  ResumenFinancieroRowSchema,
+  CierreCajaResumenRowSchema,
 } from "@/lib/financial-queries";
 
 describe("PagoRowSchema", () => {
@@ -231,5 +233,79 @@ describe("queryDispensaciones applies optional filters", () => {
 
     expect(calls.find((c) => c.method === "gte")).toBeUndefined();
     expect(calls.find((c) => c.method === "lt")).toBeUndefined();
+  });
+});
+
+describe("ResumenFinancieroRowSchema", () => {
+  it("parses a valid resumen financiero RPC response", () => {
+    const result = ResumenFinancieroRowSchema.safeParse({
+      ingresos_cobrados: 5000,
+      ventas_emitidas: 8000,
+      saldo_pendiente: 3000,
+      total_movimientos: 150,
+      ticket_promedio: 53.33,
+      fecha_inicio: "2026-05-01",
+      fecha_fin_exclusiva: "2026-06-01",
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.ingresos_cobrados).toBe(5000);
+      expect(result.data.total_movimientos).toBe(150);
+      expect(result.data.fecha_inicio).toBe("2026-05-01");
+    }
+  });
+
+  it("rejects missing fields", () => {
+    const result = ResumenFinancieroRowSchema.safeParse({
+      ingresos_cobrados: 5000,
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects non-numeric total_movimientos", () => {
+    const result = ResumenFinancieroRowSchema.safeParse({
+      ingresos_cobrados: 5000,
+      ventas_emitidas: 8000,
+      saldo_pendiente: 3000,
+      total_movimientos: "150",
+      ticket_promedio: 53.33,
+      fecha_inicio: "2026-05-01",
+      fecha_fin_exclusiva: "2026-06-01",
+    });
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("CierreCajaResumenRowSchema", () => {
+  it("parses a valid cierre caja resumen RPC response", () => {
+    const result = CierreCajaResumenRowSchema.safeParse({
+      efectivo: 1200.5,
+      movil_trans: 300,
+      tarjeta: 450,
+      total: 1950.5,
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.efectivo).toBe(1200.5);
+      expect(result.data.movil_trans).toBe(300);
+      expect(result.data.total).toBe(1950.5);
+    }
+  });
+
+  it("rejects missing fields", () => {
+    const result = CierreCajaResumenRowSchema.safeParse({
+      efectivo: 1200,
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects non-numeric values", () => {
+    const result = CierreCajaResumenRowSchema.safeParse({
+      efectivo: "1200",
+      movil_trans: 300,
+      tarjeta: 450,
+      total: 1950,
+    });
+    expect(result.success).toBe(false);
   });
 });

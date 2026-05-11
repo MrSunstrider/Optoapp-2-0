@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
-import { resolveRange, labelForPeriodo } from "@/lib/reportes-financieros";
+import { resolveRange, labelForPeriodo, type ReporteFinancieroResult } from "@/lib/reportes-financieros";
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -50,7 +50,7 @@ describe("resolveRange", () => {
     expect(result.endExclusive).toBe("2026-06-01");
   });
 
-  it('handles December for "mes" (year boundary)', () => {
+  it("handles December for mes (year boundary)", () => {
     vi.setSystemTime(new Date("2026-12-15T10:30:00"));
     const result = resolveRange("mes");
     expect(result.start).toBe("2026-12-01");
@@ -91,5 +91,40 @@ describe("labelForPeriodo", () => {
   it("returns undefined for unknown periodo (no switch default)", () => {
     const result = labelForPeriodo("unknown" as never);
     expect(result).toBeUndefined();
+  });
+});
+
+describe("ReporteFinancieroResult type", () => {
+  it("includes status field with overall: ok on success", () => {
+    // Type-level test: verify the interface exists
+    const result: ReporteFinancieroResult = {
+      periodoLabel: "Mes",
+      ingresosCobrados: 100,
+      ventasEmitidas: 200,
+      saldoPendiente: 50,
+      totalMovimientos: 10,
+      ticketPromedio: 20,
+      fechaInicio: "2026-05-01",
+      fechaFinExclusiva: "2026-06-01",
+      status: { overall: "ok" },
+    };
+    expect(result.status.overall).toBe("ok");
+    expect(result.status.error).toBeUndefined();
+  });
+
+  it("includes status field with overall: degraded on error", () => {
+    const result: ReporteFinancieroResult = {
+      periodoLabel: "Mes",
+      ingresosCobrados: 0,
+      ventasEmitidas: 0,
+      saldoPendiente: 0,
+      totalMovimientos: 0,
+      ticketPromedio: 0,
+      fechaInicio: "2026-05-01",
+      fechaFinExclusiva: "2026-06-01",
+      status: { overall: "degraded", error: "RPC failed" },
+    };
+    expect(result.status.overall).toBe("degraded");
+    expect(result.status.error).toBe("RPC failed");
   });
 });

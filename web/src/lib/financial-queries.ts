@@ -29,6 +29,27 @@ export const CountPendientesRowSchema = z.object({
   servicios_pendientes: z.number(),
 });
 
+/** Zod schema for rpc_resumen_financiero response */
+export const ResumenFinancieroRowSchema = z.object({
+  ingresos_cobrados: z.number(),
+  ventas_emitidas: z.number(),
+  saldo_pendiente: z.number(),
+  total_movimientos: z.number(),
+  ticket_promedio: z.number(),
+  fecha_inicio: z.string(),
+  fecha_fin_exclusiva: z.string(),
+});
+export type ResumenFinancieroRow = z.infer<typeof ResumenFinancieroRowSchema>;
+
+/** Zod schema for rpc_cierre_caja_resumen response */
+export const CierreCajaResumenRowSchema = z.object({
+  efectivo: z.number(),
+  movil_trans: z.number(),
+  tarjeta: z.number(),
+  total: z.number(),
+});
+export type CierreCajaResumenRow = z.infer<typeof CierreCajaResumenRowSchema>;
+
 export type FinancialQueryOpts = {
   dateFrom?: string;
   dateTo?: string;

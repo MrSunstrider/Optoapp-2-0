@@ -6,6 +6,7 @@ import { fetchDashboardKpis } from "@/lib/dashboard-kpis";
 import { getActiveOpticaContext } from "@/lib/optica-context";
 import { createClient } from "@/lib/supabase/server";
 import { canViewBiAndReports, canAccessModule } from "@/lib/roles";
+import { dateOnly } from "@/lib/date-utils";
 
 const ExportTypeSchema = z.enum([
   "pendientes",
@@ -328,9 +329,4 @@ function toCsvLine(values: Array<string>) {
     .join(",");
 }
 
-function dateOnly(date: Date): string {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
-}
+

@@ -5,6 +5,7 @@ import {
   SaldoPendienteRowSchema,
   CountPendientesRowSchema,
 } from "@/lib/financial-queries";
+import { dateOnly } from "@/lib/date-utils";
 import { z } from "zod";
 
 const EntregaRowSchema = z.object({
@@ -339,11 +340,11 @@ function getDateBounds() {
   const startMonthDate = new Date(now.getFullYear(), now.getMonth(), 1);
   const endMonthDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
 
-  return {
-    startDay: toDateOnly(startDayDate),
-    endDay: toDateOnly(endDayDate),
-    startMonth: toDateOnly(startMonthDate),
-    endMonth: toDateOnly(endMonthDate)
+return {
+    startDay: dateOnly(startDayDate),
+    endDay: dateOnly(endDayDate),
+    startMonth: dateOnly(startMonthDate),
+    endMonth: dateOnly(endMonthDate)
   };
 }
 

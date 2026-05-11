@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { assertNoDbError } from "@/lib/supabase/db-error";
+import { dateOnly } from "@/lib/date-utils";
 
 export type AgendaPeriodo = "hoy" | "semana" | "mes";
 
@@ -53,7 +54,7 @@ export function getAgendaPeriodBounds(periodo: AgendaPeriodo): {
     end.setDate(start.getDate() + 30);
     note = "Rango: próximos 30 días desde hoy.";
   }
-  return { from: toDateOnly(start), toExclusive: toDateOnly(end), note };
+  return { from: dateOnly(start), toExclusive: dateOnly(end), note };
 }
 
 export async function fetchAgendaItems(
@@ -121,13 +122,6 @@ export function formatAgendaDate(iso: string): string {
     month: "short",
     year: "numeric"
   });
-}
-
-function toDateOnly(date: Date): string {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
 }
 
 function parseDateTimeSafe(raw: string): { date: Date; hour: string | null } | null {
