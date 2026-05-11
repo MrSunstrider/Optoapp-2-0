@@ -8,13 +8,7 @@ import { getActiveOpticaContext } from "@/lib/optica-context";
 import { fetchOpticaFiscal } from "@/lib/optica-fiscal";
 import { canAccessModule, canManagePacientes } from "@/lib/roles";
 import { createClient } from "@/lib/supabase/server";
-
-function todayDateOnly(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
-    d.getDate()
-  ).padStart(2, "0")}`;
-}
+import { today } from "@/lib/date-utils";
 
 export default async function NuevoServicioGeneralPage({
   searchParams
@@ -37,7 +31,7 @@ export default async function NuevoServicioGeneralPage({
       .order("nombre_completo", { ascending: true })
   ]);
   const opticaLine = formatOpticaActivaLine(activeOptica.nombre, fiscal);
-  const today = todayDateOnly();
+  const todayStr = today();
   const errorMap: Record<string, string> = {
     descripcion_monto_requeridos: "Completa la descripción y el monto total para guardar.",
     monto_no_numerico: "El monto total no es un número válido.",
@@ -62,15 +56,15 @@ export default async function NuevoServicioGeneralPage({
           returnTo="/servicios-varios"
           errorBase="/servicios-varios/nuevo"
           opticaLine={opticaLine}
-          todayDate={today}
-          pacientes={(pacientesResp.data ?? []) as { id: string; nombre_completo: string | null }[]}
-          saveAction={saveServicioAction}
-          initial={{
-            ot: "",
-            descripcion: "",
-            montoTotal: "",
-            estado: "Pendiente",
-            fecha: today,
+          todayDate={todayStr}
+           pacientes={(pacientesResp.data ?? []) as { id: string; nombre_completo: string | null }[]}
+           saveAction={saveServicioAction}
+           initial={{
+             ot: "",
+             descripcion: "",
+             montoTotal: "",
+             estado: "Pendiente",
+             fecha: todayStr,
             pacienteId: "",
             pagos: []
           }}

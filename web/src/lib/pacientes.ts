@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { assertNoDbError } from "@/lib/supabase/db-error";
 import { escapeIlikeFragment } from "@/lib/sanitize";
+import { today } from "@/lib/date-utils";
 
 export const PacienteListRowSchema = z.object({
   id: z.string(),
@@ -235,11 +236,7 @@ export async function fetchHistoriaRowsForOptica(
 }
 
 export function localTodayDateOnly(): string {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const day = String(now.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
+  return today();
 }
 
 export type PacienteRow = PacienteListRow;

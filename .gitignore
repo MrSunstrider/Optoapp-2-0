@@ -46,3 +46,5 @@ web/.next/
 web/.env.local
 # Coverage output
 web/coverage/
+# TypeScript build info (auto-generated, changes every build)
+web/tsconfig.tsbuildinfo
