@@ -15,11 +15,11 @@ revoke execute on function public.has_optica_role(uuid, text, text[]) from anon;
 revoke execute on function public.is_internal_owner() from anon;
 revoke execute on function public.opticas_lock_plan_from_clients() from anon;
 -- rls_auto_enable is a Supabase-managed function, not available in preview branches / local Docker
-DO LANGUAGE plpgsql 
+DO LANGUAGE plpgsql $$
 BEGIN
   EXECUTE 'revoke execute on function public.rls_auto_enable() from anon';
 EXCEPTION WHEN undefined_function THEN
   NULL;
 END;
-;
+$$;
 revoke execute on function public.sync_user_profiles_from_auth() from anon;
