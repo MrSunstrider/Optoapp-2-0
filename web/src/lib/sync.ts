@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { z } from "zod";
 
 export type SyncEntityStatus = {
   key: "pacientes" | "evaluaciones" | "dispensaciones" | "servicios_extra" | "inventario";
@@ -87,7 +88,26 @@ export async function runManualSync(
   };
 }
 
-async function fetchTelemetry(supabase: SupabaseClient, opticaId: string) {
+const TelemetryRowSchema = z.object({
+  last_sync_at: z.string().nullable().optional(),
+  last_status: z.string().nullable().optional(),
+  last_stage: z.string().nullable().optional(),
+  last_error: z.string().nullable().optional(),
+  updated_at: z.string().nullable().optional(),
+});
+
+type TelemetryResult = {
+  lastSyncAt: string | null;
+  lastStatus: string;
+  lastStage: string;
+  lastError: string;
+  updatedAt: string | null;
+};
+
+async function fetchTelemetry(
+  supabase: SupabaseClient,
+  opticaId: string
+): Promise<TelemetryResult> {
   const { data, error } = await supabase
     .from("sync_telemetry_optica")
     .select("last_sync_at,last_status,last_stage,last_error,updated_at")
@@ -96,28 +116,22 @@ async function fetchTelemetry(supabase: SupabaseClient, opticaId: string) {
 
   if (error?.code === "42P01") {
     return {
-      lastSyncAt: null as string | null,
+      lastSyncAt: null,
       lastStatus: "idle",
       lastStage: "",
       lastError: "",
-      updatedAt: null as string | null
+      updatedAt: null,
     };
   }
 
-  const row = (data ?? {}) as {
-    last_sync_at?: string | null;
-    last_status?: string | null;
-    last_stage?: string | null;
-    last_error?: string | null;
-    updated_at?: string | null;
-  };
+  const row = TelemetryRowSchema.parse(data ?? {});
 
   return {
     lastSyncAt: row.last_sync_at ?? null,
     lastStatus: row.last_status ?? "idle",
     lastStage: row.last_stage ?? "",
     lastError: row.last_error ?? "",
-    updatedAt: row.updated_at ?? null
+    updatedAt: row.updated_at ?? null,
   };
 }
 
@@ -185,82 +199,111 @@ async function countSafe(
 }
 
 async function countDispensacionesPendientes(supabase: SupabaseClient, opticaId: string) {
-  const { data, error } = await supabase
-    .from("dispensaciones")
-    .select("id,estado_entrega")
-    .eq("optica_id", opticaId)
-    .abortSignal(AbortSignal.timeout(12_000));
-  if (error) {
+  const [totalRes, pendingRes] = await Promise.all([
+    supabase
+      .from("dispensaciones")
+      .select("id", { count: "exact", head: true })
+      .eq("optica_id", opticaId)
+      .abortSignal(AbortSignal.timeout(12_000)),
+    supabase
+      .from("dispensaciones")
+      .select("id", { count: "exact", head: true })
+      .eq("optica_id", opticaId)
+      .eq("estado_entrega", "Pendiente")
+      .abortSignal(AbortSignal.timeout(12_000)),
+  ]);
+  if (totalRes.error || pendingRes.error) {
     return { ok: false as const, key: "dispensaciones" as const, label: "Dispensaciones" };
   }
-  const rows = (data ?? []) as Array<{ id: string; estado_entrega?: string | null }>;
-  const pendingCount = rows.filter((r) => String(r.estado_entrega ?? "") === "Pendiente").length;
   return {
     ok: true as const,
     key: "dispensaciones" as const,
     label: "Dispensaciones",
-    pendingCount,
-    totalCount: rows.length
+    pendingCount: pendingRes.count ?? 0,
+    totalCount: totalRes.count ?? 0,
   };
 }
 
 async function countServiciosPendientes(supabase: SupabaseClient, opticaId: string) {
-  const { data, error } = await supabase
-    .from("servicios_extra")
-    .select("id,estado")
-    .eq("optica_id", opticaId)
-    .abortSignal(AbortSignal.timeout(12_000));
-  if (error) {
+  const [totalRes, pendingRes] = await Promise.all([
+    supabase
+      .from("servicios_extra")
+      .select("id", { count: "exact", head: true })
+      .eq("optica_id", opticaId)
+      .abortSignal(AbortSignal.timeout(12_000)),
+    supabase
+      .from("servicios_extra")
+      .select("id", { count: "exact", head: true })
+      .eq("optica_id", opticaId)
+      .eq("estado", "Pendiente")
+      .abortSignal(AbortSignal.timeout(12_000)),
+  ]);
+  if (totalRes.error || pendingRes.error) {
     return { ok: false as const, key: "servicios_extra" as const, label: "Servicios extra" };
   }
-  const rows = (data ?? []) as Array<{ id: string; estado?: string | null }>;
-  const pendingCount = rows.filter((r) => String(r.estado ?? "") === "Pendiente").length;
   return {
     ok: true as const,
     key: "servicios_extra" as const,
     label: "Servicios extra",
-    pendingCount,
-    totalCount: rows.length
+    pendingCount: pendingRes.count ?? 0,
+    totalCount: totalRes.count ?? 0,
   };
 }
 
 async function countEvaluacionesPendientes(supabase: SupabaseClient, opticaId: string) {
-  const { data, error } = await supabase
-    .from("evaluaciones")
-    .select("id,cita_estado,proxima_cita")
-    .eq("optica_id", opticaId)
-    .not("proxima_cita", "is", null)
-    .abortSignal(AbortSignal.timeout(12_000));
-  if (error) return { ok: false as const, key: "evaluaciones" as const, label: "Evaluaciones" };
-  const rows = (data ?? []) as Array<{ cita_estado?: string | null }>;
-  const pendingCount = rows.filter((r) => {
-    const status = String(r.cita_estado ?? "programada").toLowerCase();
-    return status !== "atendida" && status !== "cancelada";
-  }).length;
+  const [totalRes, pendingRes] = await Promise.all([
+    supabase
+      .from("evaluaciones")
+      .select("id", { count: "exact", head: true })
+      .eq("optica_id", opticaId)
+      .not("proxima_cita", "is", null)
+      .abortSignal(AbortSignal.timeout(12_000)),
+    supabase
+      .from("evaluaciones")
+      .select("id", { count: "exact", head: true })
+      .eq("optica_id", opticaId)
+      .not("proxima_cita", "is", null)
+      .or(
+        "cita_estado.is.null,and(cita_estado.neq.atendida,cita_estado.neq.cancelada)"
+      )
+      .abortSignal(AbortSignal.timeout(12_000)),
+  ]);
+  if (totalRes.error || pendingRes.error) {
+    return { ok: false as const, key: "evaluaciones" as const, label: "Evaluaciones" };
+  }
   return {
     ok: true as const,
     key: "evaluaciones" as const,
     label: "Evaluaciones",
-    pendingCount,
-    totalCount: rows.length
+    pendingCount: pendingRes.count ?? 0,
+    totalCount: totalRes.count ?? 0,
   };
 }
 
 async function countInventarioCritico(supabase: SupabaseClient, opticaId: string) {
-  const { data, error } = await supabase
-    .from("monturas")
-    .select("id,stock_actual")
-    .eq("optica_id", opticaId)
-    .eq("activo", true)
-    .abortSignal(AbortSignal.timeout(12_000));
-  if (error) return { ok: false as const, key: "inventario" as const, label: "Inventario" };
-  const rows = (data ?? []) as Array<{ stock_actual?: number | null }>;
-  const pendingCount = rows.filter((r) => Number(r.stock_actual ?? 0) <= 2).length;
+  const [totalRes, criticoRes] = await Promise.all([
+    supabase
+      .from("monturas")
+      .select("id", { count: "exact", head: true })
+      .eq("optica_id", opticaId)
+      .eq("activo", true)
+      .abortSignal(AbortSignal.timeout(12_000)),
+    supabase
+      .from("monturas")
+      .select("id", { count: "exact", head: true })
+      .eq("optica_id", opticaId)
+      .eq("activo", true)
+      .lte("stock_actual", 2)
+      .abortSignal(AbortSignal.timeout(12_000)),
+  ]);
+  if (totalRes.error || criticoRes.error) {
+    return { ok: false as const, key: "inventario" as const, label: "Inventario" };
+  }
   return {
     ok: true as const,
     key: "inventario" as const,
     label: "Inventario",
-    pendingCount,
-    totalCount: rows.length
+    pendingCount: criticoRes.count ?? 0,
+    totalCount: totalRes.count ?? 0,
   };
 }
