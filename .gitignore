@@ -33,3 +33,5 @@ java_pid*
 web/node_modules/
 web/.next/
 web/.env.local
+# Coverage output
+web/coverage/
