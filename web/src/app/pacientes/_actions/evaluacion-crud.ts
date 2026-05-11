@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 
 import { getActiveOpticaContext } from "@/lib/optica-context";
-import { canManagePacientes } from "@/lib/roles";
+import { canDeletePaciente } from "@/lib/roles";
 import { createClient } from "@/lib/supabase/server";
 
 export async function deleteEvaluacionAction(
@@ -12,7 +12,7 @@ export async function deleteEvaluacionAction(
 ): Promise<{ error?: string } | null> {
   const activeOptica = await getActiveOpticaContext();
   if (!activeOptica) return { error: "Sin óptica activa" };
-  if (!canManagePacientes(activeOptica.rol)) return { error: "Sin permiso" };
+  if (!canDeletePaciente(activeOptica.rol)) return { error: "Solo admin o gerente pueden eliminar evaluaciones." };
 
   const pacienteId = String(formData.get("pacienteId") ?? "").trim();
   const evalId = String(formData.get("evaluacionId") ?? "").trim();
