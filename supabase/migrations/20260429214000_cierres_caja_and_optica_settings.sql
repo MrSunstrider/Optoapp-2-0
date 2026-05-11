@@ -1,3 +1,14 @@
+-- La funcion update_updated_at() se define aqui porque las triggers de esta migracion la referencian.
+-- Se definio originalmente en 20260510000000 como fix, pero necesita existir antes para CI / preview branches.
+create or replace function public.update_updated_at()
+returns trigger
+language plpgsql as $$
+begin
+  new.updated_at := timezone('utc', now());
+  return new;
+end;
+$$;
+
 -- Cierre de caja formal por optica y fecha operativa.
 create table if not exists public.cierres_caja (
   id uuid primary key default gen_random_uuid(),
