@@ -2,37 +2,45 @@ package com.example.optoapp.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Paleta Médica Profesional (Modo Claro)
-val PrimaryBlue = Color(0xFF2C3E50)      // Azul Profundo
-val PrimaryDark = Color(0xFF1A4D5E)      // Azul Petróleo
-val AccentGreen = Color(0xFF27AE60)      // Verde Salud
-val ErrorRed = Color(0xFFE74C3C)         // Rojo Coral (Alertas/Saldos)
-val WarningGold = Color(0xFFF1C40F)      // Dorado Suave (Citas)
+// --- Modo Claro (mayor contraste, esmeralda como web) ---
+val Primary = Color(0xFF059669)           // Verde Esmeralda
+val PrimaryDark_s = Color(0xFF047857)     // Verde más oscuro (secondary)
+val AccentGreen = Color(0xFF10B981)       // Verde brillante
+val ErrorRed = Color(0xFFDC2626)          // Rojo
+val WarningGold = Color(0xFFD97706)       // Ámbar
 
-// Fondos y Superficies (Modo Claro)
-val BackgroundWhite = Color(0xFFFAFAFA)  // Blanco Neutro
-val SurfaceGray = Color(0xFFF2F4F4)      // Gris Arena Cálido
-val TextDark = Color(0xFF2C3E50)         // Texto Principal
-val TextSecondary = Color(0xFF7F8C8D)    // Texto Secundario
+// Fondos claro
+val BackgroundLight = Color(0xFFF5F7FA)   // Fondo suave
+val SurfaceLight = Color(0xFFFFFFFF)      // Blanco
+val SurfaceLightMuted = Color(0xFFF0F2F5) // Card bg
+val BorderLight = Color(0xFFD0D5DD)       // Bordes visibles
 
-// Paleta Médica Profesional (Modo Oscuro)
-val PrimaryBlueDark = Color(0xFF8AB4F8)  // Azul Claro
-val PrimaryDarkDark = Color(0xFF4DB6AC)  // Verde Azulado
-val AccentGreenDark = Color(0xFF81C784)  // Verde Suave
-val ErrorRedDark = Color(0xFFE57373)     // Rojo Naranja Suave
+// Textos claro
+val TextPrimary = Color(0xFF0F172A)       // Casi negro
+val TextSecondary = Color(0xFF475569)      // Gris oscuro
 
-// Fondos y Superficies (Modo Oscuro)
-val BackgroundDark = Color(0xFF121212)
-val SurfaceDark = Color(0xFF1E1E1E)
-val TextLight = Color(0xFFECEFF1)
-val TextSecondaryLight = Color(0xFFB0BEC5)
-val SurfaceGrayDark = Color(0xFF2C3E50)  // Gris azulado oscuro
+// --- Modo Oscuro (Deep Navy como web) ---
+val PrimaryDark = Color(0xFF34D399)        // Verde esmeralda brillante
+val PrimaryDarkVariant = Color(0xFF6EE7B7)
+val AccentGreenDark = Color(0xFF6EE7B7)
+val ErrorRedDark = Color(0xFFF87171)
+val WarningGoldDark = Color(0xFFFBBF24)
 
-// Colores por defecto de Material 3 (para compatibilidad)
-val Purple80 = Color(0xFFD0BCFF)
-val PurpleGrey80 = Color(0xFFCCC2DC)
-val Pink80 = Color(0xFFEFB8C8)
+// Fondos oscuros
+val BackgroundDark = Color(0xFF080C14)     // Deep Navy
+val SurfaceDark = Color(0xFF111827)        // Card
+val SurfaceDarkMuted = Color(0xFF1E293B)   // Gris azulado
 
-val Blue40 = Color(0xFF2196F3)
-val BlueGrey40 = Color(0xFF607D8B)
-val Pink40 = Color(0xFF7D5260)
+// Textos oscuros
+val TextPrimaryDark = Color(0xFFF1F5F9)
+val TextSecondaryDark = Color(0xFF94A3B8)
+
+// --- Alias de compatibilidad ---
+val PrimaryBlue = Primary
+val PrimaryBlueDark = PrimaryDark
+val BackgroundWhite = BackgroundLight
+val TextDark = TextPrimary
+val TextLight = TextPrimaryDark
+val TextSecondaryLight = TextSecondaryDark
+val SurfaceGray = SurfaceLightMuted
+val SurfaceGrayDark = SurfaceDarkMuted
