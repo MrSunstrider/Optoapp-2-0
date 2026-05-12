@@ -66,30 +66,52 @@ fun MainDrawerScreen(
                         .fillMaxHeight()
                         .verticalScroll(rememberScrollState())
                 ) {
+                    // Header con logo y óptica
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(24.dp),
+                            .padding(vertical = 28.dp, horizontal = 24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.AccountCircle,
-                            contentDescription = "Avatar",
-                            modifier = Modifier.size(80.dp),
-                            tint = MaterialTheme.colorScheme.primary
-                        )
+                        Surface(
+                            shape = MaterialTheme.shapes.medium,
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                            modifier = Modifier.size(64.dp)
+                        ) {
+                            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                Text(
+                                    text = "O",
+                                    style = MaterialTheme.typography.headlineLarge,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    fontWeight = androidx.compose.ui.text.font.FontWeight.Black
+                                )
+                            }
+                        }
                         Spacer(modifier = Modifier.height(12.dp))
-                        Text(text = "OptoApp", style = MaterialTheme.typography.titleLarge)
                         Text(
-                            text = opticaHeader.nombreOptica,
-                            style = MaterialTheme.typography.bodyMedium,
+                            text = "OptoApp",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = androidx.compose.ui.text.font.FontWeight.Black
+                        )
+                        Text(
+                            text = opticaHeader.nombreOptica.ifBlank { "Sin óptica" },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
                     }
-                    HorizontalDivider()
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+
+                    // Gestión
+                    Text(
+                        text = "GESTIÓN",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                        modifier = Modifier.padding(start = 24.dp, top = 16.dp, bottom = 4.dp)
+                    )
                     NavigationDrawerItem(
-                        label = { Text("Pacientes") },
+                        label = { Text("Pacientes", fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold) },
                         selected = currentRoute == "pacientes",
                         onClick = {
                             scope.launch { drawerState.close() }
@@ -101,7 +123,7 @@ fun MainDrawerScreen(
                         modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                     )
                     NavigationDrawerItem(
-                        label = { Text("Servicios Varios") },
+                        label = { Text("Servicios Varios", fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold) },
                         selected = currentRoute == "servicios_extra",
                         onClick = {
                             scope.launch { drawerState.close() }
@@ -112,7 +134,7 @@ fun MainDrawerScreen(
                     )
                     if (showOperacionHoy) {
                         NavigationDrawerItem(
-                            label = { Text("Operación de Hoy") },
+                            label = { Text("Operación de Hoy", fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold) },
                             selected = currentRoute == "operacion_hoy",
                             onClick = {
                                 scope.launch { drawerState.close() }
@@ -122,18 +144,16 @@ fun MainDrawerScreen(
                             modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                         )
                     }
-                    NavigationDrawerItem(
-                        label = { Text("Configuración") },
-                        selected = currentRoute == "configuracion",
-                        onClick = {
-                            scope.launch { drawerState.close() }
-                            navController.navigate("configuracion")
-                        },
-                        icon = { Icon(Icons.Default.Settings, contentDescription = null) },
-                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+
+                    // Programación
+                    Text(
+                        text = "PROGRAMACIÓN",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                        modifier = Modifier.padding(start = 24.dp, top = 16.dp, bottom = 4.dp)
                     )
                     NavigationDrawerItem(
-                        label = { Text("Agenda") },
+                        label = { Text("Agenda", fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold) },
                         selected = currentRoute == "agenda",
                         onClick = {
                             scope.launch { drawerState.close() }
@@ -143,7 +163,7 @@ fun MainDrawerScreen(
                         modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                     )
                     NavigationDrawerItem(
-                        label = { Text("Inventario") },
+                        label = { Text("Inventario", fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold) },
                         selected = currentRoute == "monturas",
                         onClick = {
                             scope.launch { drawerState.close() }
@@ -152,42 +172,70 @@ fun MainDrawerScreen(
                         icon = { Icon(Icons.Default.Inventory2, contentDescription = null) },
                         modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                     )
-                    if (showCierreCaja) {
-                        NavigationDrawerItem(
-                            label = { Text("Cierre de Caja") },
-                            selected = currentRoute == "cierre_caja",
-                            onClick = {
-                                scope.launch { drawerState.close() }
-                                navController.navigate("cierre_caja")
-                            },
-                            icon = { Icon(Icons.Default.AccountBalanceWallet, contentDescription = null) },
-                            modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+
+                    // Finanzas
+                    if (showCierreCaja || showBiYReportes) {
+                        Text(
+                            text = "FINANZAS",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                            modifier = Modifier.padding(start = 24.dp, top = 16.dp, bottom = 4.dp)
                         )
-                    }
-                    if (showBiYReportes) {
-                        NavigationDrawerItem(
-                            label = { Text("Estadísticas (BI)") },
-                            selected = currentRoute == "estadisticas_bi",
-                            onClick = {
-                                scope.launch { drawerState.close() }
-                                navController.navigate("estadisticas_bi")
-                            },
-                            icon = { Icon(Icons.Default.BarChart, contentDescription = null) },
-                            modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
-                        )
-                        NavigationDrawerItem(
-                            label = { Text("Reportes") },
-                            selected = currentRoute == "reportes",
-                            onClick = {
-                                scope.launch { drawerState.close() }
-                                navController.navigate("reportes")
-                            },
-                            icon = { Icon(Icons.Default.DateRange, contentDescription = null) },
-                            modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
-                        )
+                        if (showCierreCaja) {
+                            NavigationDrawerItem(
+                                label = { Text("Cierre de Caja", fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold) },
+                                selected = currentRoute == "cierre_caja",
+                                onClick = {
+                                    scope.launch { drawerState.close() }
+                                    navController.navigate("cierre_caja")
+                                },
+                                icon = { Icon(Icons.Default.AccountBalanceWallet, contentDescription = null) },
+                                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                            )
+                        }
+                        if (showBiYReportes) {
+                            NavigationDrawerItem(
+                                label = { Text("Estadísticas (BI)", fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold) },
+                                selected = currentRoute == "estadisticas_bi",
+                                onClick = {
+                                    scope.launch { drawerState.close() }
+                                    navController.navigate("estadisticas_bi")
+                                },
+                                icon = { Icon(Icons.Default.BarChart, contentDescription = null) },
+                                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                            )
+                            NavigationDrawerItem(
+                                label = { Text("Reportes", fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold) },
+                                selected = currentRoute == "reportes",
+                                onClick = {
+                                    scope.launch { drawerState.close() }
+                                    navController.navigate("reportes")
+                                },
+                                icon = { Icon(Icons.Default.DateRange, contentDescription = null) },
+                                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                            )
+                        }
                     }
 
-                    // Paso 5.2: Botón de Sincronización Cloud
+                    // Sistema
+                    Text(
+                        text = "SISTEMA",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                        modifier = Modifier.padding(start = 24.dp, top = 16.dp, bottom = 4.dp)
+                    )
+                    NavigationDrawerItem(
+                        label = { Text("Configuración", fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold) },
+                        selected = currentRoute == "configuracion",
+                        onClick = {
+                            scope.launch { drawerState.close() }
+                            navController.navigate("configuracion")
+                        },
+                        icon = { Icon(Icons.Default.Settings, contentDescription = null) },
+                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                    )
+
+                    // Sync + Error handling
                     val context = androidx.compose.ui.platform.LocalContext.current
 
                     LaunchedEffect(syncState) {
@@ -239,7 +287,10 @@ fun MainDrawerScreen(
 
                     NavigationDrawerItem(
                         label = {
-                            Text(if (syncState is com.example.optoapp.viewmodel.SyncState.Loading) "Sincronizando..." else "Sincronizar Cloud")
+                            Text(
+                                if (syncState is com.example.optoapp.viewmodel.SyncState.Loading) "Sincronizando..." else "Sincronizar Cloud",
+                                fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold
+                            )
                         },
                         selected = false,
                         onClick = {
@@ -256,9 +307,9 @@ fun MainDrawerScreen(
                         },
                         modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                     )
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp, horizontal = 16.dp))
                     NavigationDrawerItem(
-                        label = { Text("Cerrar Sesión") },
+                        label = { Text("Cerrar Sesión", color = MaterialTheme.colorScheme.error) },
                         selected = false,
                         onClick = {
                             scope.launch {
@@ -272,7 +323,7 @@ fun MainDrawerScreen(
                         icon = { Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Salir") },
                         modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
                 }
             }
         }
