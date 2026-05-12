@@ -7,17 +7,22 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -105,6 +110,7 @@ fun PacientesListScreen(navController: NavController, drawerState: DrawerState, 
                 .padding(padding)
                 .padding(horizontal = 16.dp)
         ) {
+            // Search bar
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { viewModel.onSearchQueryChange(it) },
@@ -113,37 +119,52 @@ fun PacientesListScreen(navController: NavController, drawerState: DrawerState, 
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                 shape = MaterialTheme.shapes.medium
             )
-            Spacer(modifier = Modifier.height(16.dp))
-            
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Filter chips
+            val filters = listOf("Todos", "Saldo Pendiente", "Entrega")
             FlowRow(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                FilterChip(
-                    selected = activeFilter == "Saldo Pendiente",
-                    onClick = { viewModel.setFilter("Saldo Pendiente") },
-                    label = { Text("Saldo Pendiente", fontSize = 12.sp) }
-                )
-                FilterChip(
-                    selected = activeFilter == "Estado de entrega",
-                    onClick = { viewModel.setFilter("Estado de entrega") },
-                    label = { Text("Pendientes Entrega", fontSize = 12.sp) }
-                )
+                filters.forEach { filter ->
+                    val isSelected = when (filter) {
+                        "Todos" -> activeFilter == "" || activeFilter == "Todos"
+                        "Saldo Pendiente" -> activeFilter == "Saldo Pendiente"
+                        "Entrega" -> activeFilter == "Estado de entrega" || activeFilter == "Entrega"
+                        else -> false
+                    }
+                    FilterChip(
+                        selected = isSelected,
+                        onClick = {
+                            viewModel.setFilter(
+                                when (filter) {
+                                    "Todos" -> ""
+                                    "Saldo Pendiente" -> "Saldo Pendiente"
+                                    "Entrega" -> "Estado de entrega"
+                                    else -> ""
+                                }
+                            )
+                        },
+                        label = { Text(filter, fontSize = 12.sp, fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal) }
+                    )
+                }
             }
-            
+
             Spacer(modifier = Modifier.height(16.dp))
 
+            // Patient list
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(bottom = 88.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                items(pacientes) { paciente ->
-                    PacienteRow(paciente) {
+                items(pacientes, key = { it.id }) { paciente ->
+                    PacienteCard(paciente) {
                         navController.navigate("detallePaciente/${paciente.id}")
                     }
-                    HorizontalDivider()
                 }
             }
         }
@@ -151,54 +172,108 @@ fun PacientesListScreen(navController: NavController, drawerState: DrawerState, 
 }
 
 @Composable
-fun PacienteRow(paciente: Paciente, onClick: () -> Unit) {
-    Column(
+private fun PacienteCard(paciente: Paciente, onClick: () -> Unit) {
+    Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(vertical = 8.dp)
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            Text(
-                text = paciente.nombreCompleto,
-                fontWeight = FontWeight.Bold,
-                fontSize = 16.sp,
-                color = MaterialTheme.colorScheme.primary
-            )
-            Text(
-                text = "ID: ${paciente.id.take(8)}",
-                fontSize = 12.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-        Spacer(modifier = Modifier.height(4.dp))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Text(text = "Edad: ${paciente.edad}", fontSize = 14.sp)
-            Text(text = "Tel: ${paciente.telefono}", fontSize = 14.sp)
-        }
-        Spacer(modifier = Modifier.height(4.dp))
-        Row(
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "Creado: ${DateUtils.formatLocalized(paciente.fechaCreacion)}",
-                fontSize = 12.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            paciente.ultimasEtiquetas.take(2).forEach { etiqueta ->
-                SuggestionChip(
-                    onClick = {},
-                    label = { Text(etiqueta, fontSize = 10.sp) },
-                    modifier = Modifier.height(24.dp).padding(horizontal = 2.dp)
-                )
+            // Avatar with gradient background
+            Surface(
+                modifier = Modifier.size(48.dp),
+                shape = RoundedCornerShape(14.dp),
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Default.Person,
+                        contentDescription = null,
+                        modifier = Modifier.size(26.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+
+            // Patient info
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = paciente.nombreCompleto,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Text(
+                        text = "ID: ${paciente.id.take(8)}",
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Edad: ${paciente.edad}",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "Tel: ${paciente.telefono}",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "Creado: ${DateUtils.formatLocalized(paciente.fechaCreacion)}",
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    // Tags/chips
+                    paciente.ultimasEtiquetas.take(2).forEach { etiqueta ->
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                        ) {
+                            Text(
+                                text = etiqueta,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                            )
+                        }
+                    }
+                }
             }
         }
     }

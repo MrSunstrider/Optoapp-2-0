@@ -36,11 +36,6 @@ import androidx.navigation.NavController
 import com.example.optoapp.viewmodel.AuthState
 import com.example.optoapp.viewmodel.AuthViewModel
 
-/**
- * FASE 4 – Paso 4.1
- * Pantalla de login SaaS. Se muestra cuando el PIN local fue validado pero
- * no hay sesión activa de Supabase guardada en DataStore.
- */
 @Composable
 fun LoginScreen(
     navController: NavController,
@@ -67,14 +62,12 @@ fun LoginScreen(
             }
             return@LaunchedEffect
         }
-        // Varios locales: Success antes de saveSession; aún no hay isLoggedIn
         if (pendingMemberships.isNotEmpty()) {
             navController.navigate("seleccion_optica") {
                 popUpTo("login") { inclusive = true }
             }
             return@LaunchedEffect
         }
-        // Un solo flujo: exige sesión persistida para no reaccionar a Success "viejo" (p. ej. otra instancia de ViewModel).
         if (!isLoggedIn) return@LaunchedEffect
         val dest = if (isPinRequired == true) "pin" else "main"
         navController.navigate(dest) {
@@ -109,6 +102,22 @@ fun LoginScreen(
                 enter = fadeIn() + slideInVertically { -40 }
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    // Logo "O" in a rounded square
+                    Surface(
+                        shape = RoundedCornerShape(20.dp),
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(72.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Text(
+                                text = "O",
+                                fontSize = 36.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = MaterialTheme.colorScheme.onPrimary
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
                     Text(
                         text = "OptoApp",
                         fontSize = 40.sp,
@@ -116,8 +125,8 @@ fun LoginScreen(
                         color = MaterialTheme.colorScheme.primary
                     )
                     Text(
-                        text = "Acceso a tu cuenta",
-                        fontSize = 15.sp,
+                        text = "Clinical Software 2026",
+                        fontSize = 13.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center
                     )
@@ -200,23 +209,22 @@ fun LoginScreen(
                         exit    = fadeOut()
                     ) {
                         if (authState is AuthState.Error) {
-                            Card(
-                                colors = CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.errorContainer
-                                ),
+                            Surface(
+                                color = MaterialTheme.colorScheme.error.copy(alpha = 0.12f),
                                 shape = RoundedCornerShape(8.dp)
                             ) {
                                 Text(
                                     text = (authState as AuthState.Error).message,
-                                    color = MaterialTheme.colorScheme.onErrorContainer,
+                                    color = MaterialTheme.colorScheme.error,
                                     modifier = Modifier.padding(12.dp),
-                                    fontSize = 13.sp
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Medium
                                 )
                             }
                         }
                     }
 
-                    // ─── Botón Ingresar ───────────────────────────────────────
+                    // ─── Botón Entrar al Sistema ──────────────────────────────
                     Button(
                         onClick = {
                             focusManager.clearFocus()
@@ -237,9 +245,9 @@ fun LoginScreen(
                             )
                         } else {
                             Text(
-                                text = "Ingresar",
+                                text = "ENTRAR AL SISTEMA",
                                 fontSize = 16.sp,
-                                fontWeight = FontWeight.SemiBold
+                                fontWeight = FontWeight.Bold
                             )
                         }
                     }
@@ -255,23 +263,10 @@ fun LoginScreen(
                             .height(48.dp),
                         shape = RoundedCornerShape(12.dp)
                     ) {
-                        Text("Continuar con Google")
-                    }
-
-                    OutlinedButton(
-                        onClick = {
-                            focusManager.clearFocus()
-                            viewModel.register(email, password) { msg ->
-                                Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
-                            }
-                        },
-                        enabled = email.isNotBlank() && password.length >= 6 && authState !is AuthState.Loading,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(48.dp),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Text("Crear cuenta")
+                        Text(
+                            "Continuar con Google",
+                            fontWeight = FontWeight.Medium
+                        )
                     }
                 }
             }
