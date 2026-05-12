@@ -77,6 +77,9 @@ export async function crearOptica(
   const { error: opticaErr } = await supabase.from("opticas").insert({
     id: opticaId,
     nombre: nombre.trim(),
+    plan_code: "free",
+    max_pacientes_por_optica: null,
+    max_usuarios_por_optica: null
   });
   if (opticaErr) return { ok: false, error: "No se pudo crear la óptica." };
 

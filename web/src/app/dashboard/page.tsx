@@ -118,21 +118,28 @@ export default async function DashboardPage() {
 
           {/* Right Section - Alerts & Health */}
           <div className="space-y-6">
-            <section className="rounded-3xl border border-border/50 bg-card p-6 shadow-sm shadow-foreground/[0.02]">
-              <div className="flex items-center justify-between mb-6">
+            <section className="rounded-3xl border border-border/40 bg-gradient-to-br from-card to-card/80 p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-5">
                 <h2 className="font-heading text-lg font-bold text-foreground">Alertas</h2>
-                <TrendingUp className="h-4 w-4 text-primary opacity-40" />
+                <div className="rounded-full bg-foreground/[0.03] p-2">
+                  <TrendingUp className="h-4 w-4 text-primary/60" />
+                </div>
               </div>
               
               <div className="space-y-3">
                 {alertas.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-10 text-center space-y-4">
-                    <div className="h-12 w-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-500">
-                      <CheckCircle2 className="h-6 w-6" />
+                    <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-emerald-500/15 to-emerald-500/5 flex items-center justify-center shadow-inner">
+                      <CheckCircle2 className="h-7 w-7 text-emerald-500" />
                     </div>
-                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest leading-relaxed">
-                      Operación <br/> al 100%
-                    </p>
+                    <div>
+                      <p className="text-xs font-bold text-foreground uppercase tracking-widest leading-relaxed">
+                        Todo en orden
+                      </p>
+                      <p className="text-[10px] font-medium text-muted-foreground/60 mt-1">
+                        Sin incidencias pendientes
+                      </p>
+                    </div>
                   </div>
                 ) : (
                   alertas.map((alerta, idx) => (
@@ -144,7 +151,7 @@ export default async function DashboardPage() {
                           : "bg-primary/5 text-primary border border-primary/10"
                       }`}
                     >
-                      <AlertTriangle className="h-4 w-4 shrink-0" />
+                      <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
                       <p className="leading-relaxed">{alerta.texto}</p>
                     </div>
                   ))
@@ -153,16 +160,22 @@ export default async function DashboardPage() {
             </section>
 
             {/* Quick Actions / Status */}
-            <div className="rounded-3xl bg-foreground/[0.02] border border-border/40 p-6">
-              <h3 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/50 mb-4">Acceso Rápido</h3>
-              <div className="space-y-2">
+            <div className="rounded-3xl bg-gradient-to-br from-foreground/[0.02] to-foreground/[0.01] border border-border/40 p-6">
+              <h3 className="text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground/60 mb-4">Acceso Rápido</h3>
+              <div className="space-y-1">
                 <Link href="/reportes" className="flex items-center justify-between p-3 rounded-xl hover:bg-card hover:shadow-sm transition-all group">
                   <span className="text-xs font-bold text-foreground">Ver Reportes</span>
-                  <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                  <ArrowRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-primary transition-colors" />
                 </Link>
+                <div className="h-px bg-border/30 mx-3" />
                 <Link href="/pacientes" className="flex items-center justify-between p-3 rounded-xl hover:bg-card hover:shadow-sm transition-all group">
                   <span className="text-xs font-bold text-foreground">Lista de Pacientes</span>
-                  <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                  <ArrowRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-primary transition-colors" />
+                </Link>
+                <div className="h-px bg-border/30 mx-3" />
+                <Link href="/sincronizar" className="flex items-center justify-between p-3 rounded-xl hover:bg-card hover:shadow-sm transition-all group">
+                  <span className="text-xs font-bold text-foreground">Sincronizar Cloud</span>
+                  <ArrowRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-primary transition-colors" />
                 </Link>
               </div>
             </div>
@@ -189,24 +202,24 @@ function BentoKpi({
   href: string;
 }) {
   return (
-    <Link href={href} className="group relative flex flex-col justify-between overflow-hidden rounded-[2.5rem] border border-border/50 bg-card p-8 shadow-sm transition-all hover:shadow-xl hover:-translate-y-1">
+    <Link href={href} className="group relative flex flex-col justify-between overflow-hidden rounded-[2.5rem] border border-border/50 bg-card p-8 shadow-sm transition-all duration-300 hover:shadow-lg hover:-translate-y-1 hover:border-primary/20">
       <div className="flex items-center justify-between">
-        <div className="rounded-2xl bg-foreground/[0.03] p-3 group-hover:bg-primary/10 transition-colors">
+        <div className="rounded-2xl bg-gradient-to-br from-foreground/[0.03] to-foreground/[0.06] p-3.5 group-hover:from-primary/10 group-hover:to-primary/5 transition-all duration-300 shadow-inner">
           {icon}
         </div>
         {highlight && (
-          <div className="flex h-2 w-2">
-            <div className="absolute inline-flex h-2 w-2 animate-ping rounded-full bg-destructive opacity-75"></div>
-            <div className="relative inline-flex h-2 w-2 rounded-full bg-destructive"></div>
+          <div className="flex h-2.5 w-2.5">
+            <div className="absolute inline-flex h-2.5 w-2.5 animate-ping rounded-full bg-destructive opacity-75"></div>
+            <div className="relative inline-flex h-2.5 w-2.5 rounded-full bg-destructive"></div>
           </div>
         )}
       </div>
       
       <div className="mt-8">
-        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/50">
+        <p className="text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground/60">
           {etiqueta}
         </p>
-        <div className="flex items-baseline gap-2 mt-1">
+        <div className="flex items-baseline gap-2 mt-1.5">
           <p className="font-heading text-4xl font-black text-foreground tabular-nums tracking-tighter">
             {valor}
           </p>
@@ -214,8 +227,11 @@ function BentoKpi({
         <p className="mt-2 text-xs font-medium text-muted-foreground/60">{subtexto}</p>
       </div>
 
-      <div className="absolute bottom-4 right-8 translate-x-4 opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100">
-        <ArrowRight className="h-5 w-5 text-primary" />
+      <div className="absolute bottom-5 right-8 opacity-0 transition-all duration-300 group-hover:opacity-100 group-hover:translate-x-0 translate-x-3">
+        <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-primary">
+          <span>Ver más</span>
+          <ArrowRight className="h-3.5 w-3.5" />
+        </div>
       </div>
     </Link>
   );

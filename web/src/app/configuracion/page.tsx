@@ -5,7 +5,25 @@ import { CONFIG_MODULES } from "@/lib/config/modules";
 import { canAccessConfigModule } from "@/lib/config/permissions";
 import { getActiveOpticaContext } from "@/lib/optica-context";
 import { fetchDashboardKpis } from "@/lib/dashboard-kpis";
+import type { ConfigModuleKey } from "@/lib/config/permissions";
 import { createClient } from "@/lib/supabase/server";
+
+type ModuleGroup = { title: string; keys: ConfigModuleKey[] };
+
+const MODULE_GROUPS: ModuleGroup[] = [
+  {
+    title: "Seguridad y Acceso",
+    keys: ["seguridad", "usuarios-roles"]
+  },
+  {
+    title: "Datos de la Óptica",
+    keys: ["fiscal", "sucursales", "laboratorio"]
+  },
+  {
+    title: "Sistema",
+    keys: ["suscripciones", "gestion-datos", "plan-admin"]
+  }
+];
 
 export default async function ConfiguracionPage() {
   const activeOptica = await getActiveOpticaContext();
@@ -18,7 +36,7 @@ export default async function ConfiguracionPage() {
   return (
     <AppShell role={activeOptica.rol} opticaName={activeOptica.nombre}>
       <div className="min-h-screen bg-background p-4 sm:p-8 text-foreground transition-colors duration-300">
-        <div className="mx-auto w-full max-w-5xl space-y-8">
+        <div className="mx-auto w-full max-w-5xl space-y-10">
           <div className="flex flex-col gap-1">
             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/70">Panel Administrativo</p>
             <h1 className="font-heading text-4xl font-black tracking-tight text-foreground sm:text-5xl">Configuración</h1>
@@ -26,19 +44,35 @@ export default async function ConfiguracionPage() {
               Administra la seguridad, operaciones y datos maestros de tu óptica.
             </p>
           </div>
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-            {CONFIG_MODULES.map((item) => (
-              <ModuleCard
-                key={item.key}
-                href={`/configuracion/${item.key}`}
-                title={item.title}
-                description={item.description}
-                blocked={!canAccessConfigModule(activeOptica.rol, item.key)}
-              />
-            ))}
+
+          <div className="space-y-8">
+            {MODULE_GROUPS.map((group) => {
+              const modules = group.keys
+                .map((key) => CONFIG_MODULES.find((m) => m.key === key))
+                .filter(Boolean);
+              if (modules.length === 0) return null;
+              return (
+                <section key={group.title}>
+                  <h2 className="text-xs font-black uppercase tracking-[0.15em] text-muted-foreground/50 mb-4 px-1">
+                    {group.title}
+                  </h2>
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                    {modules.map((item) => (
+                      <ModuleCard
+                        key={item!.key}
+                        href={`/configuracion/${item!.key}`}
+                        title={item!.title}
+                        description={item!.description}
+                        blocked={!canAccessConfigModule(activeOptica.rol, item!.key)}
+                      />
+                    ))}
+                  </div>
+                </section>
+              );
+            })}
           </div>
 
-          <section className="rounded-3xl border border-border bg-card p-6 shadow-xl shadow-foreground/[0.02]">
+          <section className="rounded-3xl border border-border/40 bg-gradient-to-br from-card to-card/80 p-6 shadow-sm">
             <h2 className="font-heading text-lg font-bold text-foreground mb-4">Estado del Sistema</h2>
             <div className="flex items-center gap-3 mb-6 p-4 rounded-2xl bg-foreground/[0.02]">
               <div className={`h-3 w-3 rounded-full animate-pulse ${snapshot.status.overall === "ok" ? "bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.5)]" : "bg-amber-500 shadow-[0_0_12px_rgba(245,158,11,0.5)]"}`} />
