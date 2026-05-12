@@ -246,6 +246,15 @@ fun ConfiguracionScreen(
                 .padding(horizontal = 14.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            // ─── SEGURIDAD Y ACCESO ─────────────────────────────────────────
+            Text(
+                text = "SEGURIDAD Y ACCESO",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(start = 2.dp, top = 8.dp)
+            )
+
             SecuritySection(
                 pinHasBeenSet = pinHasBeenSet,
                 isPinRequired = isPinRequired,
@@ -271,6 +280,15 @@ fun ConfiguracionScreen(
                 }
             )
             
+            // ─── SISTEMA ────────────────────────────────────────────────────────
+            Text(
+                text = "SISTEMA",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(start = 2.dp, top = 8.dp)
+            )
+
             // Preferencias
             Card {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -338,6 +356,15 @@ fun ConfiguracionScreen(
                     }
                 }
             }
+
+            // ─── DATOS DE LA ÓPTICA ──────────────────────────────────────────
+            Text(
+                text = "DATOS DE LA ÓPTICA",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(start = 2.dp, top = 8.dp)
+            )
 
             Card {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
