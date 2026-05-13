@@ -5,7 +5,9 @@ import com.example.optoapp.data.Montura
 import com.example.optoapp.data.MonturaMovimiento
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Resource
-import com.example.optoapp.sync.rethrowIfCancellation
+import com.example.optoapp.sync.errorLabelForException
+import kotlinx.coroutines.CancellationException
+import java.io.IOException
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.serialization.SerialName
@@ -58,9 +60,13 @@ class SyncInventarioUseCase @Inject constructor(
                     downloadedMovimientos = movDown
                 )
             )
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: IOException) {
+            Log.e(TAG, "Error en red sincronizando inventario: ${e.message}", e)
+            Resource.Error("Error sincronizando inventario: ${e.localizedMessage}")
         } catch (e: Exception) {
-            rethrowIfCancellation(e)
-            Log.e(TAG, "Error en sincronización de inventario", e)
+            Log.e(TAG, "Error inesperado sincronizando inventario: ${e.message}", e)
             Resource.Error("Error sincronizando inventario: ${e.localizedMessage}")
         }
     }
@@ -77,8 +83,14 @@ class SyncInventarioUseCase @Inject constructor(
             rows.chunked(UPSERT_BATCH_SIZE).forEach { chunk ->
                 supabase.postgrest[TABLE_MONTURAS].upsert(chunk)
             }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: IOException) {
+            Log.e(TAG, "Error en red subiendo monturas: ${e.message}", e)
+            syncStateTracker.markError(opticaId, "upload_monturas", "batch", e.message)
+            throw e
         } catch (e: Exception) {
-            rethrowIfCancellation(e)
+            Log.e(TAG, "Error inesperado subiendo monturas: ${e.message}", e)
             syncStateTracker.markError(opticaId, "upload_monturas", "batch", e.message)
             throw e
         }
@@ -99,8 +111,14 @@ class SyncInventarioUseCase @Inject constructor(
             rows.chunked(UPSERT_BATCH_SIZE).forEach { chunk ->
                 supabase.postgrest[TABLE_MOVIMIENTOS].upsert(chunk)
             }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: IOException) {
+            Log.e(TAG, "Error en red subiendo movimientos: ${e.message}", e)
+            syncStateTracker.markError(opticaId, "upload_montura_movimientos", "batch", e.message)
+            throw e
         } catch (e: Exception) {
-            rethrowIfCancellation(e)
+            Log.e(TAG, "Error inesperado subiendo movimientos: ${e.message}", e)
             syncStateTracker.markError(opticaId, "upload_montura_movimientos", "batch", e.message)
             throw e
         }
@@ -116,8 +134,13 @@ class SyncInventarioUseCase @Inject constructor(
         remotos.forEach { r ->
             try {
                 repository.upsertMontura(r.toEntity())
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: IOException) {
+                Log.e(TAG, "Error en red descargando monturas: ${e.message}", e)
+                syncStateTracker.markError(opticaId, "montura", r.id, e.message)
             } catch (e: Exception) {
-                rethrowIfCancellation(e)
+                Log.e(TAG, "Error inesperado descargando monturas: ${e.message}", e)
                 syncStateTracker.markError(opticaId, "montura", r.id, e.message)
             }
         }
@@ -131,8 +154,13 @@ class SyncInventarioUseCase @Inject constructor(
         remotos.forEach { r ->
             try {
                 repository.upsertMonturaMovimiento(r.toEntity())
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: IOException) {
+                Log.e(TAG, "Error en red descargando movimientos: ${e.message}", e)
+                syncStateTracker.markError(opticaId, "montura_movimiento", r.id, e.message)
             } catch (e: Exception) {
-                rethrowIfCancellation(e)
+                Log.e(TAG, "Error inesperado descargando movimientos: ${e.message}", e)
                 syncStateTracker.markError(opticaId, "montura_movimiento", r.id, e.message)
             }
         }

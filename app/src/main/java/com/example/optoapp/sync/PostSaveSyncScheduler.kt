@@ -2,6 +2,8 @@ package com.example.optoapp.sync
 
 import android.util.Log
 import com.example.optoapp.data.Resource
+import kotlinx.coroutines.CancellationException
+import java.io.IOException
 import com.example.optoapp.di.ApplicationScope
 import com.example.optoapp.domain.SyncFinanzasUseCase
 import com.example.optoapp.domain.SyncHistorialUseCase
@@ -61,8 +63,12 @@ class PostSaveSyncScheduler @Inject constructor(
                         else -> Log.d(TAG, "Sync pacientes post-guardado OK")
                     }
                 }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: IOException) {
+                Log.e(TAG, "Error en red sync pacientes post-guardado: ${e.message}", e)
             } catch (e: Exception) {
-                Log.e(TAG, "Sync pacientes post-guardado", e)
+                Log.e(TAG, "Error inesperado sync pacientes post-guardado: ${e.message}", e)
             }
         }
     }
@@ -78,8 +84,12 @@ class PostSaveSyncScheduler @Inject constructor(
                         else -> Log.d(TAG, "Sync historial post-guardado OK")
                     }
                 }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: IOException) {
+                Log.e(TAG, "Error en red sync historial post-guardado: ${e.message}", e)
             } catch (e: Exception) {
-                Log.e(TAG, "Sync historial post-guardado", e)
+                Log.e(TAG, "Error inesperado sync historial post-guardado: ${e.message}", e)
             }
         }
     }
@@ -95,8 +105,12 @@ class PostSaveSyncScheduler @Inject constructor(
                         else -> Log.d(TAG, "Sync finanzas post-guardado OK")
                     }
                 }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: IOException) {
+                Log.e(TAG, "Error en red sync finanzas post-guardado: ${e.message}", e)
             } catch (e: Exception) {
-                Log.e(TAG, "Sync finanzas post-guardado", e)
+                Log.e(TAG, "Error inesperado sync finanzas post-guardado: ${e.message}", e)
             }
         }
     }
@@ -111,8 +125,12 @@ class PostSaveSyncScheduler @Inject constructor(
                         else -> Log.d(TAG, "Sync inventario post-guardado OK")
                     }
                 }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: IOException) {
+                Log.e(TAG, "Error en red sync inventario post-guardado: ${e.message}", e)
             } catch (e: Exception) {
-                Log.e(TAG, "Sync inventario post-guardado", e)
+                Log.e(TAG, "Error inesperado sync inventario post-guardado: ${e.message}", e)
             }
         }
     }

@@ -1,5 +1,9 @@
 package com.example.optoapp.domain.command
 
+import android.util.Log
+import kotlinx.coroutines.CancellationException
+import java.io.IOException
+
 interface Command {
     suspend fun execute(): Result<String>
     suspend fun undo(): Result<Unit> = Result.success(Unit) // Opcional
@@ -14,7 +18,13 @@ class BackupCommand(
             val data = repository.getBackupDataForOptica(opticaId)
             // Lógica para guardar en archivo o nube
             Result.success("Backup generado exitosamente")
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: IOException) {
+            Log.e("BackupCommand", "Error en red generando backup: ${e.message}", e)
+            Result.failure(e)
         } catch (e: Exception) {
+            Log.e("BackupCommand", "Error inesperado generando backup: ${e.message}", e)
             Result.failure(e)
         }
     }

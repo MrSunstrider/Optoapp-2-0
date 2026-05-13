@@ -13,7 +13,9 @@ import com.example.optoapp.data.SyncTelemetry
 import com.example.optoapp.data.SyncTelemetryRemoteRow
 import com.example.optoapp.data.MembershipRepository
 import com.example.optoapp.subscription.SubscriptionManager
-import com.example.optoapp.sync.rethrowIfCancellation
+import com.example.optoapp.sync.errorLabelForException
+import kotlinx.coroutines.CancellationException
+import java.io.IOException
 import com.example.optoapp.util.SyncErrorSanitizer
 import com.example.optoapp.domain.SyncFinanzasUseCase
 import com.example.optoapp.domain.SyncHistorialUseCase
@@ -176,9 +178,12 @@ class SyncViewModel @Inject constructor(
                     recordRemoteSyncTelemetry(opticaId, "ok", "inventario", null)
                 }
             }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: IOException) {
+            Log.e(TAG, "Error en red en sync silenciosa: ${e.message}", e)
         } catch (e: Exception) {
-            rethrowIfCancellation(e)
-            Log.w(TAG, "Sync silenciosa: excepción no controlada", e)
+            Log.e(TAG, "Error inesperado en sync silenciosa: ${e.message}", e)
         } finally {
             _isSilentSyncing.value = false
         }

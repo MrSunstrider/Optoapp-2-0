@@ -4,6 +4,8 @@ import android.content.Intent
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.CancellationException
+import java.io.IOException
 import com.example.optoapp.data.OpticaMembership
 import com.example.optoapp.viewmodel.auth.AuthDelegate
 import com.example.optoapp.viewmodel.auth.BackupDelegate
@@ -96,8 +98,13 @@ class AuthViewModel @Inject constructor(
             _pendingMemberships.value = result.memberships
             if (result.requiresOnboarding) _needsOnboarding.value = true
             _authState.value = AuthState.Success
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: IOException) {
+            Log.e(TAG, "Error en red de login: ${e.message}", e)
+            _authState.value = AuthState.Error("Sin conexión a internet")
         } catch (e: Exception) {
-            Log.e(TAG, "Error de login", e)
+            Log.e(TAG, "Error inesperado de login: ${e.message}", e)
             _authState.value = AuthState.Error(
                 when {
                     e.message?.contains("Invalid login credentials", ignoreCase = true) == true ->
@@ -115,8 +122,13 @@ class AuthViewModel @Inject constructor(
         _pendingMemberships.value = emptyList()
         try {
             authDelegate.loginWithGoogle()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: IOException) {
+            Log.e(TAG, "Error en red iniciando login con Google: ${e.message}", e)
+            _authState.value = AuthState.Error("No se pudo iniciar Google: ${e.localizedMessage}")
         } catch (e: Exception) {
-            Log.e(TAG, "Error iniciando login con Google", e)
+            Log.e(TAG, "Error inesperado iniciando login con Google: ${e.message}", e)
             _authState.value = AuthState.Error("No se pudo iniciar Google: ${e.localizedMessage}")
         }
     }
@@ -173,8 +185,12 @@ class AuthViewModel @Inject constructor(
             if (!valid) {
                 logout()
             }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: IOException) {
+            Log.w(TAG, "Error en red verificando sesión existente: ${e.localizedMessage}")
         } catch (e: Exception) {
-            Log.w(TAG, "No se pudo verificar sesión existente: ${e.localizedMessage}")
+            Log.w(TAG, "Error inesperado verificando sesión existente: ${e.localizedMessage}")
         } finally {
             _isAuthChecked.value = true
         }

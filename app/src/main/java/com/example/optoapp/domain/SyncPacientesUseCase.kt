@@ -4,7 +4,9 @@ import android.util.Log
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Paciente
 import com.example.optoapp.data.Resource
-import com.example.optoapp.sync.rethrowIfCancellation
+import com.example.optoapp.sync.errorLabelForException
+import kotlinx.coroutines.CancellationException
+import java.io.IOException
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.serialization.SerialName
@@ -37,9 +39,13 @@ class SyncPacientesUseCase @Inject constructor(
             val downloaded = if (downloadAfterUpload) download(opticaId) else 0
             Log.d(TAG, "Pacientes: fin OK (subidos=$uploaded, bajados=$downloaded)")
             Resource.Success(PacientesSyncResult(uploaded, downloaded))
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: IOException) {
+            Log.e(TAG, "Error en red sincronizando pacientes: ${e.message}", e)
+            Resource.Error("Error sincronizando pacientes: ${e.localizedMessage}")
         } catch (e: Exception) {
-            rethrowIfCancellation(e)
-            Log.e(TAG, "Error en sincronización de pacientes", e)
+            Log.e(TAG, "Error inesperado sincronizando pacientes: ${e.message}", e)
             Resource.Error("Error sincronizando pacientes: ${e.localizedMessage}")
         }
     }
@@ -102,8 +108,14 @@ class SyncPacientesUseCase @Inject constructor(
         )
         try {
             supabase.postgrest[TABLE].upsert(finalRows)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: IOException) {
+            Log.e(TAG, "Error en red subiendo pacientes: ${e.message}", e)
+            syncStateTracker.markError(opticaId, "upload_pacientes", "batch", e.message)
+            throw e
         } catch (e: Exception) {
-            rethrowIfCancellation(e)
+            Log.e(TAG, "Error inesperado subiendo pacientes: ${e.message}", e)
             syncStateTracker.markError(opticaId, "upload_pacientes", "batch", e.message)
             throw e
         }
@@ -130,8 +142,13 @@ class SyncPacientesUseCase @Inject constructor(
                 val local = remoto.toEntity()
                 repository.upsertPaciente(local)
                 syncStateTracker.markSynced(opticaId, "paciente", local.id)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: IOException) {
+                Log.e(TAG, "Error en red descargando paciente: ${e.message}", e)
+                syncStateTracker.markError(opticaId, "paciente", remoto.id, e.message)
             } catch (e: Exception) {
-                rethrowIfCancellation(e)
+                Log.e(TAG, "Error inesperado descargando paciente: ${e.message}", e)
                 syncStateTracker.markError(opticaId, "paciente", remoto.id, e.message)
             }
         }
