@@ -15,6 +15,7 @@ import kotlinx.coroutines.launch
 import java.util.Locale
 import java.util.UUID
 import java.time.LocalDate
+import com.example.optoapp.notifications.NotificationHelper
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import com.example.optoapp.util.DateUtils
 import javax.inject.Inject
@@ -144,7 +145,8 @@ data class EvaluacionUiState(
 class EvaluacionViewModel @Inject constructor(
     private val repository: com.example.optoapp.data.OptoRepository,
     private val sessionManager: com.example.optoapp.data.SessionManager,
-    private val postSaveSyncScheduler: PostSaveSyncScheduler
+    private val postSaveSyncScheduler: PostSaveSyncScheduler,
+    private val notificationHelper: NotificationHelper
 ) : ViewModel() {
     private data class DipParseResult(
         val dipTotalMm: Double? = null,
@@ -392,6 +394,22 @@ class EvaluacionViewModel @Inject constructor(
             val pResult = repository.getPacienteById(pacienteId)
             val pName = if (pResult is com.example.optoapp.data.Resource.Success) pResult.data?.nombreCompleto ?: "Paciente" else "Paciente"
             onComplete(ev.id, pName)
+        }
+    }
+
+    fun saveAndScheduleReminder(
+        pacienteId: String,
+        evaluacionId: String?,
+        programarRecordatorio: Boolean,
+        onComplete: (String) -> Unit
+    ) {
+        saveEvaluacion(pacienteId, evaluacionId) { savedId, pName ->
+            if (programarRecordatorio && _uiState.value.proximaCita != null) {
+                notificationHelper.scheduleWorkManagerReminder(pName, _uiState.value.proximaCita!!, savedId)
+            } else {
+                notificationHelper.cancelReminder(savedId)
+            }
+            onComplete(savedId)
         }
     }
 

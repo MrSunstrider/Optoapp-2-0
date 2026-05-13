@@ -1,8 +1,5 @@
 package com.example.optoapp.ui.screens
 
-import android.app.Activity
-import android.content.ClipData
-import android.content.ClipboardManager
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
@@ -13,15 +10,10 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -33,19 +25,19 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.example.optoapp.BuildConfig
 import com.example.optoapp.R
-import com.example.optoapp.billing.PlayBillingManager
 import com.example.optoapp.data.AppRoles
 import com.example.optoapp.data.SecurityManager
-import com.example.optoapp.subscription.PlanCode
-import com.example.optoapp.ui.components.DropdownField
-import com.example.optoapp.ui.components.OptoTextField
 import com.example.optoapp.ui.components.config.ClinicalIntegritySection
+import com.example.optoapp.ui.components.config.FiscalDraftUpdate
+import com.example.optoapp.ui.components.config.DataManagementCard
 import com.example.optoapp.ui.components.config.FiscalDataSection
+import com.example.optoapp.ui.components.config.LaboratorySection
 import com.example.optoapp.ui.components.config.PlanManagementSection
 import com.example.optoapp.ui.components.config.SecuritySection
+import com.example.optoapp.ui.components.config.SubscriptionCard
 import com.example.optoapp.ui.components.config.SucursalesSection
+import com.example.optoapp.ui.components.config.SyncDiagnosticsCard
 import com.example.optoapp.ui.components.config.SystemSection
 import com.example.optoapp.ui.components.config.UsuariosRolesSection
 import com.example.optoapp.viewmodel.AuthViewModel
@@ -59,10 +51,6 @@ import com.example.optoapp.viewmodel.SyncDiagnosticsViewModel
 import com.example.optoapp.viewmodel.SyncState
 import com.example.optoapp.viewmodel.SyncViewModel
 import kotlinx.coroutines.launch
-import java.time.OffsetDateTime
-import java.time.format.DateTimeFormatter
-import java.time.format.FormatStyle
-import java.time.ZoneId
 
 private const val INTERNAL_OWNER_EMAIL = "jaermadera@gmail.com"
 
@@ -159,8 +147,8 @@ fun ConfiguracionScreen(
         }
     }
 
-    val pinHasBeenSet by viewModel.pinHasBeenSet.collectAsState(initial = true)
-    val isPinRequired by viewModel.isPinRequired.collectAsState(initial = true)
+    val pinHasBeenSet by settingsVm.pinHasBeenSet.collectAsState(initial = true)
+    val isPinRequired by settingsVm.isPinRequired.collectAsState(initial = true)
     val remindersEnabled by settingsVm.remindersEnabled.collectAsState()
     val notificationPermissionGranted =
         Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
@@ -259,11 +247,11 @@ fun ConfiguracionScreen(
                 onPinActualChange = { pinActual = it },
                 onNuevoPinChange = { nuevoPin = it },
                 onConfirmPinChange = { confirmPin = it },
-                onPinRequiredChange = { viewModel.togglePinRequired(it) },
+                onPinRequiredChange = { settingsVm.togglePinRequired(it) },
                 onUpdatePin = {
                     if (nuevoPin == confirmPin && SecurityManager.isValidPin(nuevoPin)) {
                         scope.launch {
-                            viewModel.updatePin(pinActual, nuevoPin)
+                            settingsVm.updatePin(pinActual, nuevoPin)
                             dialogMsg = context.getString(R.string.config_security_pin_updated)
                             showDialog = true
                             pinActual = ""; nuevoPin = ""; confirmPin = ""
@@ -296,34 +284,13 @@ fun ConfiguracionScreen(
 
             // ─── DATOS DE LA ÓPTICA ──────────────────────────────────────────
             SectionHeader("DATOS DE LA ÓPTICA")
-
-            Card {
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text(stringResource(R.string.config_laboratory_section_title), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                    Text(
-                        stringResource(R.string.config_laboratory_section_description),
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    OptoTextField(
-                        value = labNombre,
-                        onValueChange = { labNombre = it },
-                        label = stringResource(R.string.config_laboratory_name_label)
-                    )
-                    OptoTextField(
-                        value = labContacto,
-                        onValueChange = { labContacto = it },
-                        label = stringResource(R.string.config_laboratory_contact_label),
-                        keyboardType = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Phone).keyboardType
-                    )
-                    Button(
-                        onClick = { laboratorioVm.save(labNombre, labContacto) },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(stringResource(R.string.config_laboratory_save_action))
-                    }
-                }
-            }
+            LaboratorySection(
+                labNombre = labNombre,
+                labContacto = labContacto,
+                onLabNombreChange = { labNombre = it },
+                onLabContactoChange = { labContacto = it },
+                onSave = { laboratorioVm.save(labNombre, labContacto) }
+            )
 
             if (canManageUsers) {
                 FiscalDataSection(
@@ -404,11 +371,28 @@ fun ConfiguracionScreen(
             }
 
             // ─── SUSCRIPCIÓN ────────────────────────────────────────────────
-            SubscriptionCard(planCode, devProOverride, subscriptionVm, context)
+            SubscriptionCard(
+                planCode = planCode,
+                devProOverride = devProOverride,
+                subscriptionVm = subscriptionVm,
+                context = context
+            )
             // ─── SINCRONIZACIÓN ─────────────────────────────────────────────
-            SyncDiagnosticsCard(syncErrors, remoteSyncTelemetry, remoteSyncTelemetryLoading, remoteSyncTelemetryError, userTimeZone, syncDiagVm, context)
+            SyncDiagnosticsCard(
+                syncErrors = syncErrors,
+                remoteSyncTelemetry = remoteSyncTelemetry,
+                remoteSyncTelemetryLoading = remoteSyncTelemetryLoading,
+                remoteSyncTelemetryError = remoteSyncTelemetryError,
+                userTimeZone = userTimeZone,
+                syncDiagVm = syncDiagVm,
+                context = context
+            )
             // ─── GESTIÓN DE DATOS ───────────────────────────────────────────
-            DataManagementCard(canManageBackups, createBackupLauncher, restoreBackupLauncher)
+            DataManagementCard(
+                canManageBackups = canManageBackups,
+                createBackupLauncher = createBackupLauncher,
+                restoreBackupLauncher = restoreBackupLauncher
+            )
         }
     }
 
@@ -431,250 +415,4 @@ private fun SectionHeader(text: String) {
         fontWeight = FontWeight.Bold,
         modifier = Modifier.padding(start = 2.dp, top = 8.dp)
     )
-}
-
-@Composable
-private fun SubscriptionCard(
-    planCode: PlanCode,
-    devProOverride: Boolean,
-    subscriptionVm: SubscriptionViewModel,
-    context: Context
-) {
-    Card {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(stringResource(R.string.config_subscription_section_title), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-            val planLabel = when (planCode) {
-                PlanCode.FREE -> "Free (máx. ${com.example.optoapp.subscription.SubscriptionManager.FREE_MAX_PACIENTES} pacientes)"
-                PlanCode.PRO_INDIVIDUAL -> "Pro Individual (1 óptica)"
-                PlanCode.PRO_MULTISITE_15 -> "Pro Multi-sede 15"
-                PlanCode.ENTERPRISE -> "Enterprise"
-                PlanCode.DEV_OWNER -> "Dev Owner (interno, ilimitado y exento de facturación)"
-            }
-            Text(stringResource(R.string.config_subscription_plan_label, planLabel), fontSize = 14.sp)
-            if (BuildConfig.DEBUG && BuildConfig.FORCE_PRO_DEV) {
-                Text(
-                    stringResource(R.string.config_subscription_force_pro_debug),
-                    fontSize = 11.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            Text(
-                stringResource(R.string.config_subscription_play_product, PlayBillingManager.SUBSCRIPTION_PRODUCT_ID),
-                fontSize = 11.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            if (planCode != PlanCode.DEV_OWNER) {
-                Button(
-                    onClick = {
-                        val act = context as? Activity
-                        if (act != null) {
-                            subscriptionVm.launchProPurchase(act) { msg ->
-                                Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
-                            }
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(stringResource(R.string.config_subscription_buy_action))
-                }
-            } else {
-                AssistChip(
-                    onClick = {},
-                    label = { Text(stringResource(R.string.config_subscription_internal_billing_disabled)) }
-                )
-            }
-            if (BuildConfig.DEBUG) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(stringResource(R.string.config_subscription_dev_mode_title), fontSize = 14.sp)
-                        Text(stringResource(R.string.config_subscription_dev_mode_desc), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                    Switch(
-                        checked = devProOverride,
-                        onCheckedChange = { subscriptionVm.setDevProOverride(it) }
-                    )
-                }
-            }
-            OutlinedButton(
-                onClick = { subscriptionVm.refreshPlanFromServer() },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(stringResource(R.string.config_subscription_sync_plan_action))
-            }
-        }
-    }
-}
-
-@Composable
-private fun SyncDiagnosticsCard(
-    syncErrors: List<com.example.optoapp.data.SyncEntityState>,
-    remoteSyncTelemetry: com.example.optoapp.data.SyncTelemetryRemoteRow?,
-    remoteSyncTelemetryLoading: Boolean,
-    remoteSyncTelemetryError: String?,
-    userTimeZone: String?,
-    syncDiagVm: SyncDiagnosticsViewModel,
-    context: Context
-) {
-    Card {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(stringResource(R.string.config_sync_diag_section_title), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-            Text(
-                stringResource(R.string.config_sync_diag_desc),
-                fontSize = 12.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            Surface(
-                color = MaterialTheme.colorScheme.surfaceVariant,
-                shape = MaterialTheme.shapes.extraSmall,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(8.dp)) {
-                    val systemZone = java.time.ZoneId.systemDefault().id
-                    val effectiveZone = userTimeZone ?: systemZone
-                    val localNow = java.time.ZonedDateTime.now(java.time.ZoneId.of(effectiveZone))
-
-                    Text("Reloj Efectivo: ${localNow.format(java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss"))}", fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                    Text("Sistema: $systemZone | Manual: ${userTimeZone ?: "Ninguna"}", fontSize = 10.sp)
-                    Text("Fecha Operativa: ${localNow.toLocalDate()}", fontSize = 10.sp)
-                }
-            }
-
-            HorizontalDivider()
-            Text("Estado remoto (servidor)", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            if (remoteSyncTelemetryLoading) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    CircularProgressIndicator(modifier = Modifier.size(14.dp), strokeWidth = 2.dp)
-                    Text("Consultando última sincronización remota…", fontSize = 12.sp)
-                }
-            } else {
-                val remote = remoteSyncTelemetry
-                if (remote == null) {
-                    Text("Sin registro remoto aún para esta óptica.", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                } else {
-                    val statusColor = if (remote.lastStatus == "ok") MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.error
-                    Text("Estado: ${remote.lastStatus.uppercase()}", fontSize = 12.sp, color = statusColor, fontWeight = FontWeight.SemiBold)
-                    Text("Etapa: ${remote.lastStage.ifBlank { "n/a" }}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface)
-                    Text("Última sync: ${formatRemoteSyncDateTime(remote.lastSyncAt, userTimeZone)}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface)
-                    Text("Actualizado ${formatRelativeSyncAge(remote.lastSyncAt)}", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    if (remote.lastError.isNotBlank()) {
-                        Text("Error: ${remote.lastError}", fontSize = 11.sp, color = MaterialTheme.colorScheme.error)
-                    }
-                }
-            }
-            remoteSyncTelemetryError?.let { err ->
-                Text("No se pudo leer telemetría remota: $err", fontSize = 11.sp, color = MaterialTheme.colorScheme.error)
-            }
-            OutlinedButton(onClick = { syncDiagVm.refreshRemoteTelemetry() }, modifier = Modifier.fillMaxWidth()) {
-                Text("Actualizar estado remoto")
-            }
-            HorizontalDivider()
-            if (syncErrors.isEmpty()) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Icon(Icons.Filled.CheckCircle, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(22.dp))
-                    Text(stringResource(R.string.config_sync_diag_empty), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
-                }
-            } else {
-                OutlinedButton(
-                    onClick = {
-                        val body = syncErrors.joinToString("\n\n") { row ->
-                            buildString {
-                                appendLine("${row.entityType} · ${row.entityId}")
-                                appendLine("Estado: ${row.status}")
-                                appendLine("Error: ${row.lastError}")
-                                append("Actualizado (ms): ${row.updatedAt}")
-                            }
-                        }
-                        val clip = ClipData.newPlainText("Errores sincronización OptoApp", body)
-                        val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                        cm.setPrimaryClip(clip)
-                        Toast.makeText(context, context.getString(R.string.config_sync_copied_to_clipboard), Toast.LENGTH_SHORT).show()
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Icon(Icons.Filled.ContentCopy, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(stringResource(R.string.config_sync_copy_all, syncErrors.size))
-                }
-                TextButton(onClick = {
-                    syncDiagVm.clearErrorHistory()
-                    Toast.makeText(context, context.getString(R.string.config_sync_cleared), Toast.LENGTH_SHORT).show()
-                }, modifier = Modifier.fillMaxWidth()) {
-                    Text(stringResource(R.string.config_sync_clear_list))
-                }
-                LazyColumn(modifier = Modifier.heightIn(max = 220.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    items(syncErrors, key = { "${it.entityType}-${it.entityId}-${it.updatedAt}" }) { row ->
-                        Text("${row.entityType} · ${row.entityId.take(12)}… → ${row.lastError}", fontSize = 11.sp, color = MaterialTheme.colorScheme.error)
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun DataManagementCard(
-    canManageBackups: Boolean,
-    createBackupLauncher: androidx.activity.result.ActivityResultLauncher<String>,
-    restoreBackupLauncher: androidx.activity.result.ActivityResultLauncher<String>
-) {
-    Card {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(stringResource(R.string.config_data_section_title), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-            Text(stringResource(R.string.config_data_section_desc), fontSize = 14.sp)
-            if (!canManageBackups) {
-                Text(stringResource(R.string.config_data_admin_only_backup), fontSize = 12.sp, color = MaterialTheme.colorScheme.error)
-            }
-            Button(
-                onClick = { createBackupLauncher.launch("OptoApp_Backup_${System.currentTimeMillis()}.json") },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = canManageBackups
-            ) {
-                Text(stringResource(R.string.config_backup_download_action))
-            }
-            HorizontalDivider()
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(stringResource(R.string.config_data_restore_warning), fontSize = 12.sp, color = MaterialTheme.colorScheme.error)
-            }
-            OutlinedButton(
-                onClick = { restoreBackupLauncher.launch("application/json") },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = canManageBackups,
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
-            ) {
-                Text(stringResource(R.string.config_backup_restore_action))
-            }
-        }
-    }
-}
-
-private fun formatRemoteSyncDateTime(raw: String?, overrideZoneId: String?): String {
-    if (raw.isNullOrBlank()) return "No disponible"
-    return runCatching {
-        val utcDate = OffsetDateTime.parse(raw)
-        val zoneId = if (!overrideZoneId.isNullOrBlank()) ZoneId.of(overrideZoneId) else java.util.TimeZone.getDefault().toZoneId()
-        val localDate = utcDate.atZoneSameInstant(zoneId)
-        localDate.format(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM))
-    }.getOrDefault(raw ?: "")
-}
-
-private fun formatRelativeSyncAge(raw: String?): String {
-    if (raw.isNullOrBlank()) return "hace un momento"
-    return runCatching {
-        val then = OffsetDateTime.parse(raw).toInstant()
-        val now = java.time.Instant.now()
-        val seconds = java.time.Duration.between(then, now).seconds.coerceAtLeast(0)
-        when {
-            seconds < 60 -> "hace menos de 1 min"
-            seconds < 3600 -> "hace ${seconds / 60} min"
-            seconds < 86400 -> "hace ${seconds / 3600} h"
-            else -> "hace ${seconds / 86400} d"
-        }
-    }.getOrDefault("recientemente")
 }

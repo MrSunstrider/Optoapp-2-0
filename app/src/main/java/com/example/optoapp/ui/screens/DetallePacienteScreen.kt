@@ -2,7 +2,6 @@ package com.example.optoapp.ui.screens
 
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Chat
@@ -19,18 +18,17 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.optoapp.data.Paciente
+import com.example.optoapp.ui.components.paciente.DeletePacienteDialog
 import com.example.optoapp.ui.components.paciente.DispensacionesList
 import com.example.optoapp.ui.components.paciente.EvaluacionesList
 import com.example.optoapp.ui.components.paciente.PacienteInfoHeader
+import com.example.optoapp.ui.components.paciente.PacienteWhatsAppMenu
 import com.example.optoapp.ui.components.paciente.ServiciosExtraList
-import com.example.optoapp.util.DispensacionLaboratorioTicket
-import com.example.optoapp.util.LaboratorioTicketContext
 import com.example.optoapp.util.RecetaEvaluacionPdfGenerator
 import com.example.optoapp.util.WhatsAppUtils
 import com.example.optoapp.viewmodel.DeletePacienteResult
 import com.example.optoapp.viewmodel.DispensacionViewModel
 import com.example.optoapp.viewmodel.EvaluacionViewModel
-import com.example.optoapp.viewmodel.LaboratorioConfigViewModel
 import com.example.optoapp.viewmodel.PacienteViewModel
 import com.example.optoapp.viewmodel.ServiciosViewModel
 import kotlinx.coroutines.flow.map
@@ -81,43 +79,16 @@ fun DetallePacienteScreen(
                         IconButton(onClick = { showWhatsAppMenu = true }) {
                             Icon(Icons.AutoMirrored.Filled.Chat, contentDescription = "WhatsApp")
                         }
-                        DropdownMenu(
-                            expanded = showWhatsAppMenu,
-                            onDismissRequest = { showWhatsAppMenu = false }
-                        ) {
-                            paciente?.let { p ->
-                                val nombre = p.nombreCompleto.split(" ").firstOrNull() ?: ""
-
-                                DropdownMenuItem(
-                                    text = { Text("Mensaje Libre (Saludo)") },
-                                    onClick = {
-                                        showWhatsAppMenu = false
-                                        WhatsAppUtils.sendWhatsAppMessage(context, p.telefono, "Hola $nombre,")
-                                    }
-                                )
-
-                                DropdownMenuItem(
-                                    text = { Text("Invitación Control Anual") },
-                                    onClick = {
-                                        showWhatsAppMenu = false
-                                        val msg = "Hola $nombre, te saludamos de Óptica Sersa Visual y Preventiva. Nos preocupamos por tu salud visual; te recordamos que ya se cumplió un año desde tu última evaluación y te invitamos a visitarnos para tu control optométrico anual. ¡Esperamos verte pronto!"
-                                        WhatsAppUtils.sendWhatsAppMessage(context, p.telefono, msg)
-                                    }
-                                )
-
-                                val ultimaEval = evaluaciones.maxByOrNull { it.fecha }
-                                if (ultimaEval?.proximaCita != null) {
-                                    val proxFecha = com.example.optoapp.util.DateUtils.formatLocalized(ultimaEval.proximaCita)
-                                    DropdownMenuItem(
-                                        text = { Text("Recordar Próxima Cita ($proxFecha)") },
-                                        onClick = {
-                                            showWhatsAppMenu = false
-                                            val msg = "Hola $nombre, te saludamos de Óptica Sersa Visual y Preventiva. Te recordamos cordialmente que tienes una cita de control optométrico programada con nosotros para el día $proxFecha. ¡Te esperamos!"
-                                            WhatsAppUtils.sendWhatsAppMessage(context, p.telefono, msg)
-                                        }
-                                    )
+                        paciente?.let { p ->
+                            PacienteWhatsAppMenu(
+                                expanded = showWhatsAppMenu,
+                                paciente = p,
+                                evaluaciones = evaluaciones,
+                                onDismiss = { showWhatsAppMenu = false },
+                                onSendMessage = { msg ->
+                                    WhatsAppUtils.sendWhatsAppMessage(context, p.telefono, msg)
                                 }
-                            }
+                            )
                         }
                     }
                     IconButton(
@@ -179,55 +150,33 @@ fun DetallePacienteScreen(
     ) { padding ->
         paciente?.let { p ->
             if (showDeletePacienteDialog) {
-                AlertDialog(
-                    onDismissRequest = { if (!deletingPaciente) showDeletePacienteDialog = false },
-                    title = { Text("¿Eliminar paciente?") },
-                    text = {
-                        Text(
-                            "Esta acción eliminará también evaluaciones, dispensaciones y servicios relacionados. " +
-                                "Existe un límite diario de seguridad."
-                        )
-                    },
-                    confirmButton = {
-                        TextButton(
-                            onClick = {
-                                if (deletingPaciente) return@TextButton
-                                deletingPaciente = true
-                                val pacienteToDelete = p
-                                scope.launch {
-                                    try {
-                                        when (val result = pacienteViewModel.deletePacienteGuarded(pacienteToDelete)) {
-                                            is DeletePacienteResult.Success -> {
-                                                Toast.makeText(
-                                                    context,
-                                                    "Paciente eliminado. Quedan ${result.remainingDeletesToday} eliminaciones hoy.",
-                                                    Toast.LENGTH_LONG
-                                                ).show()
-                                                showDeletePacienteDialog = false
-                                                navController.popBackStack()
-                                            }
-                                            is DeletePacienteResult.Error -> {
-                                                Toast.makeText(context, result.message, Toast.LENGTH_LONG).show()
-                                            }
-                                        }
-                                    } finally {
-                                        deletingPaciente = false
+                DeletePacienteDialog(
+                    deleting = deletingPaciente,
+                    onDismiss = { showDeletePacienteDialog = false },
+                    onConfirm = {
+                        deletingPaciente = true
+                        scope.launch {
+                            try {
+                                when (val result = pacienteViewModel.deletePacienteGuarded(p)) {
+                                    is DeletePacienteResult.Success -> {
+                                        Toast.makeText(
+                                            context,
+                                            "Paciente eliminado. Quedan ${result.remainingDeletesToday} eliminaciones hoy.",
+                                            Toast.LENGTH_LONG
+                                        ).show()
+                                        showDeletePacienteDialog = false
+                                        navController.popBackStack()
+                                    }
+                                    is DeletePacienteResult.Error -> {
+                                        Toast.makeText(context, result.message, Toast.LENGTH_LONG).show()
                                     }
                                 }
-                            },
-                            enabled = !deletingPaciente
-                        ) {
-                            Text("Eliminar", color = MaterialTheme.colorScheme.error)
+                            } finally {
+                                deletingPaciente = false
+                            }
                         }
                     },
-                    dismissButton = {
-                        TextButton(
-                            onClick = { showDeletePacienteDialog = false },
-                            enabled = !deletingPaciente
-                        ) {
-                            Text("Cancelar")
-                        }
-                    }
+                    onCancel = { showDeletePacienteDialog = false }
                 )
             }
             Column(
