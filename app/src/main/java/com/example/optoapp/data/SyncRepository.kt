@@ -1,5 +1,8 @@
 package com.example.optoapp.data
 
+import com.example.optoapp.data.montura.MonturaDao
+import com.example.optoapp.data.montura.MonturaMovimientoDao
+
 /**
  * Repositorio especializado en operaciones de estado de sincronización (sync state)
  * y snapshots para subida remota (Supabase).

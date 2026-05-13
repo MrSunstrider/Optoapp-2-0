@@ -5,6 +5,10 @@ import androidx.room.withTransaction
 import dagger.Lazy
 import kotlinx.coroutines.flow.Flow
 
+import com.example.optoapp.data.montura.MonturaDao
+import com.example.optoapp.data.montura.MonturaMovimientoDao
+import com.example.optoapp.data.pago.PagoDao
+import com.example.optoapp.data.servicio.ServicioExtraDao
 import com.google.gson.annotations.SerializedName
 import java.time.LocalDate
 import java.util.UUID
