@@ -1,5 +1,6 @@
 package com.example.optoapp.domain.sync.strategies
 
+import android.util.Log
 import com.example.optoapp.data.Resource
 import com.example.optoapp.domain.SyncFinanzasUseCase
 import com.example.optoapp.domain.SyncHistorialUseCase
@@ -7,6 +8,8 @@ import com.example.optoapp.domain.SyncInventarioUseCase
 import com.example.optoapp.domain.SyncPacientesUseCase
 import com.example.optoapp.domain.sync.SyncResult
 import com.example.optoapp.domain.sync.SyncStrategy
+import kotlinx.coroutines.CancellationException
+import java.io.IOException
 import javax.inject.Inject
 
 /**
@@ -34,7 +37,13 @@ class FullSyncStrategy @Inject constructor(
             if (iResult is Resource.Error) return SyncResult.Error(iResult.message ?: "Error en inventario")
 
             SyncResult.Success
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: IOException) {
+            Log.e("FullSyncStrategy", "Error en red en sync completa: ${e.message}", e)
+            SyncResult.Error(e.localizedMessage ?: "Error en red en sincronización")
         } catch (e: Exception) {
+            Log.e("FullSyncStrategy", "Error inesperado en sync completa: ${e.message}", e)
             SyncResult.Error(e.localizedMessage ?: "Error inesperado en sincronización")
         }
     }

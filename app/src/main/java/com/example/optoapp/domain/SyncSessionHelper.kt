@@ -3,6 +3,8 @@ package com.example.optoapp.domain
 import android.util.Log
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
+import kotlinx.coroutines.CancellationException
+import java.io.IOException
 
 /**
  * P0-T4: reduce fallos de sync por JWT cercano a expirar; no sustituye el auto-refresh del plugin Auth.
@@ -18,8 +20,12 @@ object SyncSessionHelper {
             }
             supabase.auth.refreshCurrentSession()
             Log.d(TAG, "Sesión refrescada explícitamente antes de sincronizar")
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: IOException) {
+            Log.w(TAG, "Error en red refrescando sesión (se intenta sync igual): ${e.message}")
         } catch (e: Exception) {
-            Log.w(TAG, "No se pudo refrescar sesión (se intenta sync igual): ${e.message}")
+            Log.w(TAG, "Error inesperado refrescando sesión (se intenta sync igual): ${e.message}")
         }
     }
 
