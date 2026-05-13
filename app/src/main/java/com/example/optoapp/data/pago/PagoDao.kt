@@ -1,6 +1,7 @@
 package com.example.optoapp.data.pago
 
 import androidx.room.*
+import com.example.optoapp.data.Pago
 import kotlinx.coroutines.flow.Flow
 import java.time.LocalDate
 

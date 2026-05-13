@@ -1,5 +1,6 @@
 package com.example.optoapp.data
 
+import com.example.optoapp.data.montura.MonturaDao
 import com.example.optoapp.data.montura.MonturaMovimientoDao
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider

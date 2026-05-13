@@ -1,6 +1,7 @@
 package com.example.optoapp.data.montura
 
 import androidx.room.*
+import com.example.optoapp.data.MonturaMovimiento
 import kotlinx.coroutines.flow.Flow
 
 @Dao
