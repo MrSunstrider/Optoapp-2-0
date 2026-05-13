@@ -13,7 +13,7 @@ import com.example.optoapp.data.SyncTelemetry
 import com.example.optoapp.data.SyncTelemetryRemoteRow
 import com.example.optoapp.data.MembershipRepository
 import com.example.optoapp.subscription.SubscriptionManager
-import com.example.optoapp.util.rethrowIfCancellation
+import com.example.optoapp.sync.rethrowIfCancellation
 import com.example.optoapp.util.SyncErrorSanitizer
 import com.example.optoapp.domain.SyncFinanzasUseCase
 import com.example.optoapp.domain.SyncHistorialUseCase
