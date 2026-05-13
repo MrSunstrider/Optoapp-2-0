@@ -1,6 +1,7 @@
 package com.example.optoapp.data
 
 import com.example.optoapp.data.pago.PagoDao
+import com.example.optoapp.data.servicio.ServicioExtraDao
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import kotlinx.coroutines.flow.first

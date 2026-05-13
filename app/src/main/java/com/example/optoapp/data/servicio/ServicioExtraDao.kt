@@ -1,6 +1,7 @@
 package com.example.optoapp.data.servicio
 
 import androidx.room.*
+import com.example.optoapp.data.ServicioExtra
 import kotlinx.coroutines.flow.Flow
 
 @Dao

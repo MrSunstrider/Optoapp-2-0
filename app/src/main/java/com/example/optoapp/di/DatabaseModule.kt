@@ -1,19 +1,11 @@
 package com.example.optoapp.di
 
 import android.content.Context
-import com.example.optoapp.data.OptoDatabase
-import com.example.optoapp.data.DispensacionRepository
-import com.example.optoapp.data.OptoRepository
-import com.example.optoapp.data.SyncRepository
-import com.example.optoapp.data.dispensacion.DispensacionDao
+import com.example.optoapp.data.*
 import com.example.optoapp.data.montura.MonturaDao
 import com.example.optoapp.data.montura.MonturaMovimientoDao
 import com.example.optoapp.data.pago.PagoDao
 import com.example.optoapp.data.servicio.ServicioExtraDao
-import com.example.optoapp.data.EvaluacionDao
-import com.example.optoapp.data.PacienteDao
-import com.example.optoapp.data.PacienteRepository
-import com.example.optoapp.data.SyncEntityStateDao
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import com.example.optoapp.viewmodel.auth.AuthDelegate
 import com.example.optoapp.viewmodel.auth.BackupDelegate
