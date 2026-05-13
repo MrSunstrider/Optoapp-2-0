@@ -112,7 +112,7 @@ class EvaluacionViewModelTest {
 
     @Test
     fun anisometropiaUmbral_isTwoDioptrias() {
-        assertEquals(2.0, EvaluacionViewModel.ANISOMETROPIA_UMBRAL_DIOPTRIAS, 0.001)
+        assertEquals(2.0, ANISOMETROPIA_UMBRAL_DIOPTRIAS, 0.001)
     }
 
     // ─── saveEvaluacion method contract ────────────────────────────────
