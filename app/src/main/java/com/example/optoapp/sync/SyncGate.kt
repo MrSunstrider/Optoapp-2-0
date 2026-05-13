@@ -1,11 +1,19 @@
 package com.example.optoapp.sync
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.sync.Mutex
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Un solo [Mutex] para toda la sincronización con Supabase: evita carreras y upserts concurrentes.
+ * Las cancelaciones de corrutina no son fallos de red/datos.
+ */
+fun rethrowIfCancellation(e: Throwable) {
+    if (e is CancellationException) throw e
+}
+
+/**
+ * Un solo [Mutex] para toda la sincronización con Supabase.
  */
 @Singleton
 class SyncGate @Inject constructor() {

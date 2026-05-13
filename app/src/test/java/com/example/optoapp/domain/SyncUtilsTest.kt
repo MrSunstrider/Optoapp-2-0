@@ -9,8 +9,8 @@ import org.junit.Test
  * and SyncHistorialUseCase / SyncPacientesUseCase (normalizedHistoriaKey).
  *
  * normalizedOtForUnique is a top-level `internal` function — callable directly.
- * normalizedHistoriaKey is an instance method on both UseCase classes (same logic);
- * this file verifies the logic contract that both implementations share.
+ * normalizedHistoriaKey was extracted to a top-level `internal` function in
+ * SyncHistorialUseCase.kt — callable directly from this package.
  */
 class SyncUtilsTest {
 
@@ -41,45 +41,30 @@ class SyncUtilsTest {
         assertNull(normalizedOtForUnique("   "))
     }
 
-    // ── normalizedHistoriaKey logic (identical in both UseCases) ──────────
+    // ── normalizedHistoriaKey (extracted to top-level in SyncHistorialUseCase.kt) ─
 
     @Test
     fun normalizedHistoriaKey_trimsAndUppercases() {
-        val result = normalizedHistoriaKeyHelper("ho-001")
-        assertEquals("HO-001", result)
+        assertEquals("HO-001", normalizedHistoriaKey("ho-001"))
     }
 
     @Test
     fun normalizedHistoriaKey_trimsWhitespace() {
-        val result = normalizedHistoriaKeyHelper("  Ho-002  ")
-        assertEquals("HO-002", result)
+        assertEquals("HO-002", normalizedHistoriaKey("  Ho-002  "))
     }
 
     @Test
     fun normalizedHistoriaKey_nullInput_returnsNull() {
-        assertNull(normalizedHistoriaKeyHelper(null))
+        assertNull(normalizedHistoriaKey(null))
     }
 
     @Test
     fun normalizedHistoriaKey_emptyInput_returnsNull() {
-        assertNull(normalizedHistoriaKeyHelper(""))
+        assertNull(normalizedHistoriaKey(""))
     }
 
     @Test
     fun normalizedHistoriaKey_blankInput_returnsNull() {
-        assertNull(normalizedHistoriaKeyHelper("   "))
-    }
-
-    /**
-     * Replicates the exact logic of `normalizedHistoriaKey` from
-     * SyncHistorialUseCase and SyncPacientesUseCase (both are identical).
-     *
-     * Both UseCases define this as an `internal` member function, which
-     * requires class instantiation with Hilt deps to call directly.
-     * This helper verifies the logic contract instead.
-     */
-    private fun normalizedHistoriaKeyHelper(historia: String?): String? {
-        val normalized = historia?.trim()?.uppercase().orEmpty()
-        return normalized.ifBlank { null }
+        assertNull(normalizedHistoriaKey("   "))
     }
 }
