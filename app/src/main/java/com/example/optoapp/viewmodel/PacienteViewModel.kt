@@ -3,6 +3,8 @@ package com.example.optoapp.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.optoapp.data.OptoRepository
+import java.io.IOException
+import kotlinx.coroutines.CancellationException
 import com.example.optoapp.data.Paciente
 import com.example.optoapp.data.SessionManager
 import com.example.optoapp.data.Resource
@@ -138,6 +140,12 @@ class PacienteViewModel @Inject constructor(
             val used = sessionManager.incrementPacienteDeleteCountToday(oid)
             postSaveSyncScheduler.schedulePacientesSync(oid)
             DeletePacienteResult.Success((DAILY_DELETE_LIMIT - used).coerceAtLeast(0))
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: IOException) {
+            DeletePacienteResult.Error(
+                "No se pudo eliminar el paciente: ${e.localizedMessage ?: "error desconocido"}"
+            )
         } catch (e: Exception) {
             DeletePacienteResult.Error(
                 "No se pudo eliminar el paciente: ${e.localizedMessage ?: "error desconocido"}"

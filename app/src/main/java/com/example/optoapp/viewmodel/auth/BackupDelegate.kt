@@ -4,6 +4,8 @@ import com.example.optoapp.data.ISessionManager
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.util.BackupImportValidator
 import io.github.jan.supabase.SupabaseClient
+import java.io.IOException
+import kotlinx.coroutines.CancellationException
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.encodeToString
@@ -84,6 +86,10 @@ class BackupDelegate @Inject constructor(
             assertBackupOperationAllowed("restore", sourceOpticaId, currentOpticaId)
             repository.restoreBackup(data, currentOpticaId)
             "Base de datos restaurada correctamente."
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: IOException) {
+            "Error al restaurar: ${e.message ?: "desconocido"}"
         } catch (e: Exception) {
             "Error al restaurar: ${e.message ?: "desconocido"}"
         }
