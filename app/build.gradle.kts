@@ -92,6 +92,7 @@ dependencies {
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.security.crypto)
     implementation(libs.gson)
+    implementation(libs.kotlinx.serialization.json)
 
     // Room
     implementation(libs.androidx.room.runtime)
@@ -119,6 +120,7 @@ dependencies {
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.androidx.test.core)
+    testImplementation(libs.mockk)
     testImplementation("org.robolectric:robolectric:4.14.1")
     testImplementation("androidx.work:work-testing:2.9.0")
     androidTestImplementation(libs.androidx.junit)

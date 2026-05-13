@@ -3,7 +3,9 @@ package com.example.optoapp.data
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import com.google.gson.annotations.SerializedName
+import com.example.optoapp.data.LocalDateSerializer
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import java.time.LocalDate
 
 @Entity(
@@ -13,19 +15,22 @@ import java.time.LocalDate
         Index(value = ["opticaId"])
     ]
 )
+@Serializable
 data class Paciente(
     @PrimaryKey val id: String,
-    @SerializedName("nombreCompleto", alternate = ["nombre_completo"])
+    @SerialName("nombreCompleto")
     val nombreCompleto: String,
     val edad: Int,
     val telefono: String,
-    @SerializedName("fechaCreacion", alternate = ["fecha_creacion"])
+    @SerialName("fechaCreacion")
+    @Serializable(with = LocalDateSerializer::class)
     val fechaCreacion: LocalDate,
     val dni: String? = null,
+    @Serializable(with = LocalDateSerializer::class)
     val fechaNacimiento: LocalDate? = null,
     val sexo: String? = null,
     val email: String? = null,
-    @SerializedName("historiaOptometrica", alternate = ["historia_optometrica"])
+    @SerialName("historiaOptometrica")
     val historiaOptometrica: String? = null,
     val direccion: String? = null,
     val distrito: String? = null,
@@ -33,6 +38,6 @@ data class Paciente(
     val acompanante: String? = null,
     val hobbies: String? = null,
     val ultimasEtiquetas: List<String> = emptyList(),
-    @SerializedName("opticaId", alternate = ["optica_id"])
+    @SerialName("opticaId")
     val opticaId: String = "mi_optica_base"
 )

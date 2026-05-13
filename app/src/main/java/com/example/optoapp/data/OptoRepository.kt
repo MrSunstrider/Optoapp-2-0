@@ -9,7 +9,17 @@ import com.example.optoapp.data.montura.MonturaDao
 import com.example.optoapp.data.montura.MonturaMovimientoDao
 import com.example.optoapp.data.pago.PagoDao
 import com.example.optoapp.data.servicio.ServicioExtraDao
-import com.google.gson.annotations.SerializedName
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
+import kotlinx.serialization.json.JsonDecoder
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.decodeFromJsonElement
+import kotlinx.serialization.json.jsonObject
 import java.time.LocalDate
 import java.util.UUID
 import com.example.optoapp.util.DateUtils
@@ -429,17 +439,56 @@ data class DuplicateHoResolutionResult(
     val movedServicios: Int = 0
 )
 
+@Serializable
 data class BackupData(
     val version: Int = 3,
     val dateExported: Long = System.currentTimeMillis(),
     val appIdentifier: String = "OptoApp-2.0",
-    @SerializedName("source_optica_id")
+    @SerialName("source_optica_id")
     val sourceOpticaId: String? = null,
     val pacientes: List<Paciente>? = emptyList(),
     val evaluaciones: List<EvaluacionClinica>? = emptyList(),
-    @SerializedName("dispensaciones", alternate = ["ordenes", "ventas"])
+    @SerialName("dispensaciones")
     val dispensaciones: List<DispensacionOptica>? = emptyList(),
     val pagos: List<Pago>? = emptyList(),
-    @SerializedName("serviciosExtra", alternate = ["servicios", "otrosServicios"])
+    @SerialName("serviciosExtra")
     val serviciosExtra: List<ServicioExtra>? = emptyList()
 )
+
+object BackupDataSerializer : KSerializer<BackupData> {
+    private val delegate = BackupData.serializer()
+
+    override val descriptor: SerialDescriptor = delegate.descriptor
+
+    override fun serialize(encoder: Encoder, value: BackupData) {
+        encoder.encodeSerializableValue(delegate, value)
+    }
+
+    override fun deserialize(decoder: Decoder): BackupData {
+        val jsonDecoder = decoder as JsonDecoder
+        val root = jsonDecoder.decodeJsonElement().jsonObject
+        val patched = patchAlternateKeys(root)
+        return jsonDecoder.json.decodeFromJsonElement(delegate, patched)
+    }
+
+    private fun patchAlternateKeys(root: JsonObject): JsonObject {
+        val map = root.toMutableMap()
+        patchKey(map, "dispensaciones", "ordenes", "ventas")
+        patchKey(map, "serviciosExtra", "servicios", "otrosServicios")
+        return JsonObject(map)
+    }
+
+    private fun patchKey(map: MutableMap<String, JsonElement>, primary: String, vararg alternates: String) {
+        if (map.containsKey(primary)) {
+            alternates.forEach { map.remove(it) }
+        } else {
+            for (alt in alternates) {
+                val element = map.remove(alt)
+                if (element != null) {
+                    map[primary] = element
+                    return
+                }
+            }
+        }
+    }
+}
