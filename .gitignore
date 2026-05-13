@@ -36,6 +36,9 @@ java_pid*
 # Stale root files
 TestDates.kt
 
+# Kotlin compiler output
+.kotlin/
+
 # JVM crash logs
 hs_err_pid*.log
 replay_pid*.log
