@@ -5,7 +5,9 @@ import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.FinanzasRemoteDefaults
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Resource
-import com.example.optoapp.sync.rethrowIfCancellation
+import com.example.optoapp.sync.errorLabelForException
+import kotlinx.coroutines.CancellationException
+import java.io.IOException
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.delay
@@ -82,9 +84,13 @@ class SyncFinanzasUseCase @Inject constructor(
                     downloadedPagos = pagosDown
                 )
             )
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: IOException) {
+            Log.e(TAG, "Error en red sincronizando finanzas: ${e.message}", e)
+            Resource.Error("Error sincronizando finanzas: ${e.localizedMessage}")
         } catch (e: Exception) {
-            rethrowIfCancellation(e)
-            Log.e(TAG, "Error en sincronización financiera", e)
+            Log.e(TAG, "Error inesperado sincronizando finanzas: ${e.message}", e)
             Resource.Error("Error sincronizando finanzas: ${e.localizedMessage}")
         }
     }
@@ -113,9 +119,12 @@ class SyncFinanzasUseCase @Inject constructor(
                 }
                 repository.clearDeletionState(opticaId, tombstone.entityType, tombstone.entityId)
                 Log.d(TAG, "Eliminado remoto ${tombstone.entityType}/${tombstone.entityId}")
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: IOException) {
+                Log.e(TAG, "Error en red eliminando remoto ${tombstone.entityType}/${tombstone.entityId}: ${e.message}", e)
             } catch (e: Exception) {
-                rethrowIfCancellation(e)
-                Log.w(TAG, "No se pudo eliminar remoto ${tombstone.entityType}/${tombstone.entityId}: ${e.message}")
+                Log.e(TAG, "Error inesperado eliminando remoto ${tombstone.entityType}/${tombstone.entityId}: ${e.message}", e)
             }
         }
     }
@@ -135,9 +144,13 @@ class SyncFinanzasUseCase @Inject constructor(
                     filter { eq("optica_id", opticaRemota) }
                 }
                 .decodeList<DispensacionRemotaLookup>()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: IOException) {
+            Log.w(TAG, "Error en red consultando dispensaciones remotas: ${e.message}")
+            emptyList()
         } catch (e: Exception) {
-            rethrowIfCancellation(e)
-            Log.w(TAG, "No se pudo consultar dispensaciones remotas para reconciliar OT: ${e.message}")
+            Log.w(TAG, "Error inesperado consultando dispensaciones remotas: ${e.message}")
             emptyList()
         }
         val remoteIdByOt = remotosExistentes
@@ -203,8 +216,14 @@ class SyncFinanzasUseCase @Inject constructor(
                     supabase.postgrest[TABLE_DISPENSACIONES].upsert(chunk)
                 }
             }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: IOException) {
+            Log.e(TAG, "Error en red subiendo dispensaciones: ${e.message}", e)
+            syncStateTracker.markError(opticaId, "upload_dispensaciones", "batch", e.message)
+            throw e
         } catch (e: Exception) {
-            rethrowIfCancellation(e)
+            Log.e(TAG, "Error inesperado subiendo dispensaciones: ${e.message}", e)
             syncStateTracker.markError(opticaId, "upload_dispensaciones", "batch", e.message)
             throw e
         }
@@ -228,9 +247,13 @@ class SyncFinanzasUseCase @Inject constructor(
                     filter { eq("optica_id", opticaRemota) }
                 }
                 .decodeList<ServicioRemotoLookup>()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: IOException) {
+            Log.w(TAG, "Error en red consultando servicios remotos: ${e.message}")
+            emptyList()
         } catch (e: Exception) {
-            rethrowIfCancellation(e)
-            Log.w(TAG, "No se pudo consultar servicios remotos para reconciliar OT: ${e.message}")
+            Log.w(TAG, "Error inesperado consultando servicios remotos: ${e.message}")
             emptyList()
         }
         val remoteIdByOt = remotosExistentes
@@ -263,8 +286,14 @@ class SyncFinanzasUseCase @Inject constructor(
                     supabase.postgrest[TABLE_SERVICIOS].upsert(chunk)
                 }
             }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: IOException) {
+            Log.e(TAG, "Error en red subiendo servicios extra: ${e.message}", e)
+            syncStateTracker.markError(opticaId, "upload_servicios_extra", "batch", e.message)
+            throw e
         } catch (e: Exception) {
-            rethrowIfCancellation(e)
+            Log.e(TAG, "Error inesperado subiendo servicios extra: ${e.message}", e)
             syncStateTracker.markError(opticaId, "upload_servicios_extra", "batch", e.message)
             throw e
         }
@@ -289,8 +318,14 @@ class SyncFinanzasUseCase @Inject constructor(
                     supabase.postgrest[TABLE_PAGOS].upsert(chunk)
                 }
             }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: IOException) {
+            Log.e(TAG, "Error en red subiendo pagos: ${e.message}", e)
+            syncStateTracker.markError(opticaId, "upload_pagos", "batch", e.message)
+            throw e
         } catch (e: Exception) {
-            rethrowIfCancellation(e)
+            Log.e(TAG, "Error inesperado subiendo pagos: ${e.message}", e)
             syncStateTracker.markError(opticaId, "upload_pagos", "batch", e.message)
             throw e
         }
@@ -310,8 +345,17 @@ class SyncFinanzasUseCase @Inject constructor(
             try {
                 block()
                 return
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: IOException) {
+                Log.e(TAG, "Error en red en $opName: ${e.message}", e)
+                lastError = e
+                val shouldRetry = isTransientNetworkError(e)
+                if (!shouldRetry || attempt == NETWORK_RETRY_ATTEMPTS - 1) throw e
+                val backoffMs = 400L * (attempt + 1)
+                Log.w(TAG, "$opName fallo de red (intento ${attempt + 1}/$NETWORK_RETRY_ATTEMPTS). Reintentando en ${backoffMs}ms")
             } catch (e: Exception) {
-                rethrowIfCancellation(e)
+                Log.e(TAG, "Error inesperado en $opName: ${e.message}", e)
                 lastError = e
                 val shouldRetry = isTransientNetworkError(e)
                 if (!shouldRetry || attempt == NETWORK_RETRY_ATTEMPTS - 1) throw e
@@ -347,8 +391,13 @@ class SyncFinanzasUseCase @Inject constructor(
                 val local = r.toEntity()
                 repository.insertDispensacion(local)
                 syncStateTracker.markSynced(opticaId, "dispensacion", local.id)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: IOException) {
+                Log.e(TAG, "Error en red descargando dispensación: ${e.message}", e)
+                syncStateTracker.markError(opticaId, "dispensacion", r.id, e.message)
             } catch (e: Exception) {
-                rethrowIfCancellation(e)
+                Log.e(TAG, "Error inesperado descargando dispensación: ${e.message}", e)
                 syncStateTracker.markError(opticaId, "dispensacion", r.id, e.message)
             }
         }
@@ -364,8 +413,13 @@ class SyncFinanzasUseCase @Inject constructor(
                 val local = r.toEntity()
                 repository.insertServicio(local)
                 syncStateTracker.markSynced(opticaId, "servicio_extra", local.id)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: IOException) {
+                Log.e(TAG, "Error en red descargando servicio extra: ${e.message}", e)
+                syncStateTracker.markError(opticaId, "servicio_extra", r.id, e.message)
             } catch (e: Exception) {
-                rethrowIfCancellation(e)
+                Log.e(TAG, "Error inesperado descargando servicio extra: ${e.message}", e)
                 syncStateTracker.markError(opticaId, "servicio_extra", r.id, e.message)
             }
         }
@@ -383,8 +437,13 @@ class SyncFinanzasUseCase @Inject constructor(
                 val local = r.toEntity()
                 repository.insertPago(local)
                 syncStateTracker.markSynced(opticaId, "pago", local.id)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: IOException) {
+                Log.e(TAG, "Error en red descargando pago: ${e.message}", e)
+                syncStateTracker.markError(opticaId, "pago", r.id, e.message)
             } catch (e: Exception) {
-                rethrowIfCancellation(e)
+                Log.e(TAG, "Error inesperado descargando pago: ${e.message}", e)
                 syncStateTracker.markError(opticaId, "pago", r.id, e.message)
             }
         }
