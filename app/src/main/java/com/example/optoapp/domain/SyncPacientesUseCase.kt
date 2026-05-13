@@ -4,7 +4,7 @@ import android.util.Log
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Paciente
 import com.example.optoapp.data.Resource
-import com.example.optoapp.util.rethrowIfCancellation
+import com.example.optoapp.sync.rethrowIfCancellation
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.serialization.SerialName
@@ -153,11 +153,6 @@ class SyncPacientesUseCase @Inject constructor(
                 }
                 .toMap()
         }.getOrDefault(emptyMap())
-    }
-
-    internal fun normalizedHistoriaKey(historia: String?): String? {
-        val normalized = historia?.trim()?.uppercase().orEmpty()
-        return normalized.ifBlank { null }
     }
 }
 
