@@ -1,9 +1,12 @@
 package com.example.optoapp.data
 
+import android.util.Log
 import com.example.optoapp.data.pago.PagoDao
 import com.example.optoapp.data.servicio.ServicioExtraDao
 import com.example.optoapp.util.DateUtils
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
+import java.io.IOException
 import java.time.LocalDate
 import java.util.UUID
 
@@ -48,7 +51,13 @@ class DispensacionRepository(
             val dispensacion = dispensacionDao.getDispensacionById(id)
             if (dispensacion != null) Resource.Success(dispensacion)
             else Resource.Error("Dispensación no encontrada")
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: IOException) {
+            Log.e(TAG, "getDispensacionById: id=$id", e)
+            Resource.Error("Error de red al obtener dispensación")
         } catch (e: Exception) {
+            Log.e(TAG, "getDispensacionById: id=$id", e)
             Resource.Error(e.message ?: "Error al obtener dispensación")
         }
     }
@@ -168,7 +177,13 @@ class DispensacionRepository(
             val servicio = servicioExtraDao.getServicioById(id)
             if (servicio != null) Resource.Success(servicio)
             else Resource.Error("Servicio no encontrado")
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: IOException) {
+            Log.e(TAG, "getServicioById: id=$id", e)
+            Resource.Error("Error de red al obtener servicio")
         } catch (e: Exception) {
+            Log.e(TAG, "getServicioById: id=$id", e)
             Resource.Error(e.message ?: "Error al obtener servicio")
         }
     }
@@ -187,4 +202,8 @@ class DispensacionRepository(
 
     suspend fun getServiciosSnapshotForOptica(opticaId: String): List<ServicioExtra> =
         servicioExtraDao.getServiciosListByOptica(opticaId)
+
+    companion object {
+        private const val TAG = "DispensacionRepository"
+    }
 }
