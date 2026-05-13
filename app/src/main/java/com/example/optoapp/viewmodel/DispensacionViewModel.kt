@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.EvaluacionClinica
 import com.example.optoapp.data.FinanzasRemoteDefaults
-import com.example.optoapp.data.MonturaMovimiento
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Resource
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -21,6 +20,7 @@ import com.example.optoapp.data.Pago
 import java.time.LocalDate
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import com.example.optoapp.util.DateUtils
+import com.example.optoapp.util.DispensacionStockHelper
 
 data class DispensacionUiState(
     val pacienteNombre: String = "",
@@ -58,7 +58,8 @@ data class DispensacionUiState(
 class DispensacionViewModel @Inject constructor(
     private val repository: com.example.optoapp.data.OptoRepository,
     private val sessionManager: com.example.optoapp.data.SessionManager,
-    private val postSaveSyncScheduler: PostSaveSyncScheduler
+    private val postSaveSyncScheduler: PostSaveSyncScheduler,
+    private val stockHelper: DispensacionStockHelper
 ) : ViewModel() {
     companion object {
         private const val ORIGEN_TIENDA = "Tienda"
@@ -257,49 +258,31 @@ class DispensacionViewModel @Inject constructor(
                 altura = if (requiereAltura) s.altura.trim() else ""
             )
 
-            suspend fun registrarMovimiento(monturaId: String, delta: Int, referencia: String, nota: String, tipo: String) {
-                val stockAntes = (repository.getMonturaById(monturaId) as? Resource.Success)?.data?.stockActual ?: return
-                val changed = repository.adjustMonturaStock(monturaId, currentOpticaId, delta)
-                if (changed > 0) {
-                    val stockDespues = stockAntes + delta
-                    repository.insertMonturaMovimiento(
-                        MonturaMovimiento(
-                            id = UUID.randomUUID().toString(),
-                            monturaId = monturaId,
-                            fecha = s.fecha,
-                            tipo = tipo,
-                            cantidad = kotlin.math.abs(delta),
-                            stockPrevio = stockAntes,
-                            stockNuevo = stockDespues,
-                            referenciaId = referencia,
-                            nota = nota,
-                            opticaId = currentOpticaId
-                        )
-                    )
-                } else if (delta < 0) {
-                    _uiState.update { it.copy(error = "Stock insuficiente para la montura seleccionada.") }
-                }
-            }
-
             val monturaAnteriorId = dispensacionAnterior?.monturaId?.takeIf { it.isNotBlank() } ?: ""
             if (monturaAnteriorId.isNotBlank() && monturaAnteriorId != monturaActualId) {
-                registrarMovimiento(
+                stockHelper.adjustStockAndRegistrarMovimiento(
                     monturaId = monturaAnteriorId,
+                    opticaId = currentOpticaId,
                     delta = 1,
-                    referencia = finalId,
-                    nota = "Reversión por edición de dispensación",
-                    tipo = "AJUSTE"
+                    tipo = "AJUSTE",
+                    referenciaId = finalId,
+                    nota = "Reversión por edición de dispensación"
                 )
+                postSaveSyncScheduler.scheduleInventarioSync(currentOpticaId)
             }
             if (monturaActualId.isNotBlank() && monturaActualId != monturaAnteriorId) {
-                registrarMovimiento(
+                stockHelper.adjustStockAndRegistrarMovimiento(
                     monturaId = monturaActualId,
+                    opticaId = currentOpticaId,
                     delta = -1,
-                    referencia = finalId,
-                    nota = "Salida por venta en dispensación",
-                    tipo = "SALIDA_VENTA"
-                )
+                    tipo = "SALIDA_VENTA",
+                    referenciaId = finalId,
+                    nota = "Salida por venta en dispensación"
+                ).onFailure { e ->
+                    _uiState.update { it.copy(error = e.message ?: "Stock insuficiente para la montura seleccionada.") }
+                }
                 if (_uiState.value.error != null) return@launch
+                postSaveSyncScheduler.scheduleInventarioSync(currentOpticaId)
             }
 
             if (dispensacionId != null && dispensacionId != "null") {
