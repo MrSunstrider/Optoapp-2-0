@@ -5,7 +5,11 @@ import org.junit.Assert.*
 import org.junit.Test
 
 /**
- * Tests for AuthViewModel public API — pure logic only.
+ * Tests for AuthViewModel — baseline + static contracts.
+ *
+ * AuthViewModel requires Hilt for construction (AuthDelegate, BackupDelegate depend
+ * on Android/Supabase deps). The delegates' pure logic is tested in their own
+ * test classes (AuthDelegateTest, BackupDelegateTest, PinDelegateTest).
  */
 class AuthViewModelTest {
 
