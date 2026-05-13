@@ -15,12 +15,27 @@ import kotlinx.coroutines.flow.map
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
+interface ISessionManager {
+    val isLoggedIn: Flow<Boolean>
+    val opticaId: Flow<String>
+    val opticaRol: Flow<String>
+    val userEmail: Flow<String>
+    val userName: Flow<String>
+    val userTimeZone: Flow<String?>
+    val lastLoginTimestamp: Flow<Long>
+    val pinHasBeenSet: Flow<Boolean>
+    val isPinRequired: Flow<Boolean>
+    suspend fun saveSession(opticaId: String, email: String, name: String = "", rol: String = "admin")
+    suspend fun clearSession()
+    suspend fun setPinRequired(required: Boolean)
+}
+
 /**
  * FASE 4 – Paso 4.3
  * Persiste los datos de sesión SaaS en DataStore.
  * Reutiliza el mismo dataStore que SecurityManager (mismo archivo "settings").
  */
-class SessionManager(private val context: Context) {
+class SessionManager(private val context: Context) : ISessionManager {
     
     private val masterKeyAlias = MasterKeys.getOrCreate(MasterKeys.AES256_GCM_SPEC)
     
@@ -48,13 +63,13 @@ class SessionManager(private val context: Context) {
 
     // ─── Lectura reactiva ─────────────────────────────────────────────────────
 
-    val isLoggedIn: Flow<Boolean> = context.dataStore.data
+    override val isLoggedIn: Flow<Boolean> = context.dataStore.data
         .map { prefs: Preferences -> prefs[IS_LOGGED_IN] ?: false }
 
-    val opticaId: Flow<String> = _opticaIdFlow
+    override val opticaId: Flow<String> = _opticaIdFlow
 
     /** Rol en la óptica activa (tabla usuario_optica). */
-    val opticaRol: Flow<String> = _opticaRolFlow
+    override val opticaRol: Flow<String> = _opticaRolFlow
 
     private fun getSecureOpticaId(): String {
         return encryptedPrefs.getString("saas_optica_id", LEGACY_OPTICA_ID) ?: LEGACY_OPTICA_ID
@@ -64,22 +79,22 @@ class SessionManager(private val context: Context) {
         return encryptedPrefs.getString("saas_optica_rol", "admin") ?: "admin"
     }
 
-    val userEmail: Flow<String> = context.dataStore.data
+    override val userEmail: Flow<String> = context.dataStore.data
         .map { _: Preferences -> encryptedPrefs.getString("saas_user_email", "") ?: "" }
 
-    val userName: Flow<String> = context.dataStore.data
+    override val userName: Flow<String> = context.dataStore.data
         .map { prefs: Preferences -> prefs[USER_NAME] ?: "" }
 
-    val lastLoginTimestamp: Flow<Long> = context.dataStore.data
+    override val lastLoginTimestamp: Flow<Long> = context.dataStore.data
         .map { prefs: Preferences -> prefs[LAST_LOGIN_TS] ?: 0L }
 
-    val pinHasBeenSet: Flow<Boolean> = context.dataStore.data
+    override val pinHasBeenSet: Flow<Boolean> = context.dataStore.data
         .map { prefs: Preferences -> prefs[PIN_HAS_BEEN_SET] ?: false }
 
-    val isPinRequired: Flow<Boolean> = context.dataStore.data
+    override val isPinRequired: Flow<Boolean> = context.dataStore.data
         .map { prefs: Preferences -> prefs[IS_PIN_REQUIRED] ?: true }
 
-    val userTimeZone: Flow<String?> = context.dataStore.data
+    override val userTimeZone: Flow<String?> = context.dataStore.data
         .map { prefs: Preferences -> prefs[USER_TIMEZONE] }
 
     // ─── Escritura ────────────────────────────────────────────────────────────
@@ -91,7 +106,7 @@ class SessionManager(private val context: Context) {
         }
     }
 
-    suspend fun saveSession(opticaId: String, email: String, name: String = "", rol: String = "admin") {
+    override suspend fun saveSession(opticaId: String, email: String, name: String, rol: String) {
         encryptedPrefs.edit().apply {
             putString("saas_optica_id", opticaId)
             putString("saas_user_email", email)
@@ -116,11 +131,11 @@ class SessionManager(private val context: Context) {
         return context.dataStore.data.first()[PIN_HAS_BEEN_SET] ?: false
     }
 
-    suspend fun setPinRequired(required: Boolean) {
+    override suspend fun setPinRequired(required: Boolean) {
         context.dataStore.edit { prefs -> prefs[IS_PIN_REQUIRED] = required }
     }
 
-    suspend fun clearSession() {
+    override suspend fun clearSession() {
         encryptedPrefs.edit { clear() }
         _opticaIdFlow.value = LEGACY_OPTICA_ID
         _opticaRolFlow.value = "admin"

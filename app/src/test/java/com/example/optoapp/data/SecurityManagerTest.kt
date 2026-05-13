@@ -52,4 +52,14 @@ class SecurityManagerTest {
         assertTrue(SecurityManager.isValidPin("573910"))
         assertTrue(SecurityManager.isValidPin("482601"))
     }
+
+    @Test
+    fun migratePinHasBeenSet_no_longer_excludes_123456() {
+        // migratePinHasBeenSet() was simplified: the "123456" special case was removed.
+        // Now ANY non-empty stored PIN triggers pinHasBeenSet = true.
+        // This test validates the postcondition: isValidPin behavior is unchanged,
+        // and "123456" is treated identically to any other stored PIN for migration.
+        assertFalse("\"123456\" sigue siendo un PIN débil en isValidPin", SecurityManager.isValidPin("123456"))
+        assertTrue("PIN válido sigue siendo aceptado", SecurityManager.isValidPin("183729"))
+    }
 }

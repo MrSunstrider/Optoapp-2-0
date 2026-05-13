@@ -25,6 +25,7 @@ import kotlin.coroutines.resume
 /**
  * P2-T2: cliente Google Play Billing (suscripción). Crea el producto `SUBSCRIPTION_PRODUCT_ID` en Play Console.
  */
+@Deprecated("Sin uso en alpha. Mantener por posible reactivación.")
 @Singleton
 class PlayBillingManager @Inject constructor(
     @ApplicationContext private val app: Context,
