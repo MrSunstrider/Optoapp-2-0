@@ -3,6 +3,8 @@ package com.example.optoapp.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.optoapp.data.Montura
+import java.io.IOException
+import kotlinx.coroutines.CancellationException
 import com.example.optoapp.data.MonturaMovimiento
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Resource
@@ -163,6 +165,10 @@ class MonturasViewModel @Inject constructor(
                         success = "Producto guardado"
                     )
                 }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: IOException) {
+                _uiState.update { it.copy(error = "Error al guardar: ${e.message}") }
             } catch (e: Exception) {
                 val msg = if (e.message?.contains("UNIQUE") == true) "El SKU ya existe para otro producto." 
                           else "Error al guardar: ${e.message}"

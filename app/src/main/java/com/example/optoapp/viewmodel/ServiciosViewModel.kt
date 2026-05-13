@@ -3,6 +3,8 @@ package com.example.optoapp.viewmodel
 import android.database.sqlite.SQLiteConstraintException
 import android.util.Log
 import androidx.lifecycle.ViewModel
+import java.io.IOException
+import kotlinx.coroutines.CancellationException
 import androidx.lifecycle.viewModelScope
 import com.example.optoapp.data.FinanzasRemoteDefaults
 import com.example.optoapp.data.OptoRepository
@@ -204,6 +206,13 @@ class ServiciosViewModel @Inject constructor(
                     it.copy(
                         error = "No se pudo guardar: revisa el paciente asociado o deja el servicio sin paciente."
                     )
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: IOException) {
+                Log.e(TAG, "Guardar servicio: error de red/IO", e)
+                _uiState.update {
+                    it.copy(error = e.message ?: "No se pudo guardar el servicio.")
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Guardar servicio", e)

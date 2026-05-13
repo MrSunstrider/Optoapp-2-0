@@ -3,6 +3,8 @@ package com.example.optoapp.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.optoapp.data.MembershipRepository
+import java.io.IOException
+import kotlinx.coroutines.CancellationException
 import com.example.optoapp.data.OpticaFiscalSettings
 import com.example.optoapp.data.OpticaFiscalSettingsStore
 import com.example.optoapp.data.SessionManager
@@ -241,6 +243,14 @@ class FiscalConfigViewModel @Inject constructor(
                     }
                     _status.value = _status.value.copy(loading = false, message = null, error = friendly)
                 }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: IOException) {
+                _status.value = _status.value.copy(
+                    loading = false,
+                    message = null,
+                    error = e.localizedMessage ?: "Ocurrió un error inesperado al guardar datos fiscales."
+                )
             } catch (e: Exception) {
                 _status.value = _status.value.copy(
                     loading = false,

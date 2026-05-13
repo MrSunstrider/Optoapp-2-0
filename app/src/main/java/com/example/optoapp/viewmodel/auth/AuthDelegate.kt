@@ -4,6 +4,8 @@ import android.content.Context
 import android.content.Intent
 import android.util.Log
 import androidx.core.content.edit
+import java.io.IOException
+import kotlinx.coroutines.CancellationException
 import com.example.optoapp.BuildConfig
 import com.example.optoapp.data.ISecurityManager
 import com.example.optoapp.data.ISessionManager
@@ -140,7 +142,13 @@ open class AuthDelegate @Inject constructor(
             }
             runCatching { supabase.auth.signOut() }
             "Cuenta creada. Ahora un admin/gerente debe asignarte rol en la óptica."
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: IOException) {
+            Log.e(TAG, "Registro: error de red", e)
+            "No se pudo crear la cuenta: ${e.localizedMessage ?: "error desconocido"}"
         } catch (e: Exception) {
+            Log.e(TAG, "Registro", e)
             "No se pudo crear la cuenta: ${e.localizedMessage ?: "error desconocido"}"
         }
     }
@@ -235,8 +243,12 @@ open class AuthDelegate @Inject constructor(
     suspend fun logout() {
         try {
             supabase.auth.signOut()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: IOException) {
+            Log.w(TAG, "Error en signOut (ignorado): ${e.localizedMessage}", e)
         } catch (e: Exception) {
-            Log.w(TAG, "Error en signOut (ignorado): ${e.localizedMessage}")
+            Log.w(TAG, "Error en signOut (ignorado): ${e.localizedMessage}", e)
         }
         sessionManager.clearSession()
     }

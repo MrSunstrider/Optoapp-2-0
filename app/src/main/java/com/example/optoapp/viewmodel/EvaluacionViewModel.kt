@@ -164,6 +164,20 @@ class EvaluacionViewModel @Inject constructor(
          * Ejemplo: OD −3.50 −1.00 → EE = −4.00 D; OI −4.25 → EE = −4.25 D → |Δ| = 0.25 D → no anisometropía.
          */
         const val ANISOMETROPIA_UMBRAL_DIOPTRIAS = 2.0
+
+        /** Pure logic: parse Snellen "20/XX" to logMAR. */
+        fun parseSnellenToLogMar(snellen: String): Double? {
+            return try {
+                val clean = snellen.trim()
+                if (!clean.contains("/")) return null
+                val parts = clean.split("/")
+                if (parts.size != 2) return null
+                val denominator = parts[1].trim().toDoubleOrNull() ?: return null
+                if (denominator <= 0) return null
+                val decimalAV = 20.0 / denominator
+                -Math.log10(decimalAV)
+            } catch (e: NumberFormatException) { return null }
+        }
     }
 
     private val _uiState = MutableStateFlow(EvaluacionUiState())
@@ -483,18 +497,8 @@ class EvaluacionViewModel @Inject constructor(
         }
     }
 
-    private fun parseSnellenToLogMar(snellen: String): Double? {
-        try {
-            val clean = snellen.trim()
-            if (!clean.contains("/")) return null
-            val parts = clean.split("/")
-            if (parts.size != 2) return null
-            val denominator = parts[1].trim().toDoubleOrNull() ?: return null
-            if (denominator <= 0) return null
-            val decimalAV = 20.0 / denominator
-            return -Math.log10(decimalAV)
-        } catch (e: Exception) { return null }
-    }
+    private fun parseSnellenToLogMar(snellen: String): Double? =
+        Companion.parseSnellenToLogMar(snellen)
 
     fun updateDiagnosticAuto() {
         _uiState.update { s ->
