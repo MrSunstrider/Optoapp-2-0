@@ -28,6 +28,10 @@ import com.example.optoapp.subscription.SubscriptionManager
 import com.example.optoapp.ui.components.DropdownField
 import com.example.optoapp.viewmodel.AuthViewModel
 
+@Deprecated(
+    "Flujo 'crear óptica' migrado a web. Este Onboarding se usaba tras el registro inicial " +
+        "cuando el usuario no tenía membresías. Ahora el usuario debe crear óptica desde la web.",
+)
 @Composable
 fun OnboardingOpticaScreen(
     navController: NavController,

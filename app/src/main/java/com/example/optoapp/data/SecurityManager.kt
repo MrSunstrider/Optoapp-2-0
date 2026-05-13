@@ -3,6 +3,8 @@
 package com.example.optoapp.data
 
 import android.content.Context
+import android.content.SharedPreferences
+import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.core.content.edit
@@ -18,7 +20,22 @@ import kotlinx.coroutines.launch
 
 val Context.dataStore by preferencesDataStore(name = "settings")
 
-class SecurityManager(private val context: Context) {
+interface ISecurityManager {
+    val userPin: Flow<String>
+    suspend fun savePin(pin: String)
+}
+
+class SecurityManager(
+    private val context: Context,
+    private val dataStore: DataStore<Preferences> = context.dataStore,
+    private val encryptedPrefs: SharedPreferences = EncryptedSharedPreferences.create(
+        "secure_security_prefs",
+        MasterKeys.getOrCreate(MasterKeys.AES256_GCM_SPEC),
+        context,
+        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+    )
+) : ISecurityManager {
 
     companion object {
         const val PIN_LENGTH = 6
@@ -37,22 +54,13 @@ class SecurityManager(private val context: Context) {
     }
 
     private val prefPinHasBeenSet = booleanPreferencesKey("pref_pin_has_been_set")
-    private val masterKeyAlias = MasterKeys.getOrCreate(MasterKeys.AES256_GCM_SPEC)
-    
-    private val encryptedPrefs = EncryptedSharedPreferences.create(
-        "secure_security_prefs",
-        masterKeyAlias,
-        context,
-        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-    )
 
-    val pinHasBeenSet: Flow<Boolean> = context.dataStore.data
+    val pinHasBeenSet: Flow<Boolean> = dataStore.data
         .map { prefs -> prefs[prefPinHasBeenSet] ?: false }
 
     private val _pinFlow = MutableStateFlow(getSecurePin())
 
-    val userPin: Flow<String> = _pinFlow
+    override val userPin: Flow<String> = _pinFlow
 
     init {
         CoroutineScope(Dispatchers.IO).launch {
@@ -63,8 +71,8 @@ class SecurityManager(private val context: Context) {
     private suspend fun migratePinHasBeenSet() {
         if (pinHasBeenSet.first()) return
         val stored = getSecurePin()
-        if (stored.isNotEmpty() && stored != "123456") {
-            context.dataStore.edit { prefs ->
+        if (stored.isNotEmpty()) {
+            dataStore.edit { prefs ->
                 prefs[prefPinHasBeenSet] = true
             }
         }
@@ -79,11 +87,11 @@ class SecurityManager(private val context: Context) {
         return getSecurePin()
     }
 
-    suspend fun savePin(pin: String) {
+    override suspend fun savePin(pin: String) {
         encryptedPrefs.edit { putString("user_pin", pin) }
         _pinFlow.value = pin
         
-        context.dataStore.edit { prefs -> 
+        dataStore.edit { prefs -> 
             prefs[prefPinHasBeenSet] = true
             prefs.remove(stringPreferencesKey("user_pin"))
         }

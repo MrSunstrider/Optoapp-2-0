@@ -28,6 +28,7 @@ enum class PlanCode {
     DEV_OWNER
 }
 
+@Deprecated("Sin uso en alpha. Mantener por posible reactivación.")
 @Singleton
 class SubscriptionManager @Inject constructor(
     @ApplicationContext private val context: Context,
