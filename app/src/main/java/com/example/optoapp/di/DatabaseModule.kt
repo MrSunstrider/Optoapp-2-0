@@ -10,11 +10,11 @@ import com.example.optoapp.sync.PostSaveSyncScheduler
 import com.example.optoapp.viewmodel.auth.AuthDelegate
 import com.example.optoapp.viewmodel.auth.BackupDelegate
 import com.example.optoapp.viewmodel.auth.PinDelegate
-import com.google.gson.Gson
 import dagger.Lazy
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import kotlinx.serialization.json.Json
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import io.github.jan.supabase.SupabaseClient
@@ -132,7 +132,10 @@ object DatabaseModule {
 
     @Provides
     @Singleton
-    fun provideGson(): Gson = Gson()
+    fun provideBackupJson(): Json = Json {
+        ignoreUnknownKeys = true
+        encodeDefaults = true
+    }
 
     @Provides
     @Singleton
@@ -158,6 +161,6 @@ object DatabaseModule {
         repository: OptoRepository,
         sessionManager: SessionManager,
         supabase: SupabaseClient,
-        gson: Gson
-    ): BackupDelegate = BackupDelegate(repository, sessionManager, supabase, gson)
+        backupJson: Json
+    ): BackupDelegate = BackupDelegate(repository, sessionManager, supabase, backupJson)
 }
