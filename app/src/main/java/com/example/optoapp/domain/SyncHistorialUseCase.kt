@@ -3,13 +3,11 @@ package com.example.optoapp.domain
 import android.util.Log
 import com.example.optoapp.data.EvaluacionClinica
 import com.example.optoapp.data.OptoRepository
+import com.example.optoapp.data.Paciente
 import com.example.optoapp.data.Resource
-import com.example.optoapp.util.rethrowIfCancellation
+import com.example.optoapp.sync.rethrowIfCancellation
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
-import java.time.LocalDate
 import javax.inject.Inject
 
 /**
@@ -17,6 +15,9 @@ import javax.inject.Inject
  * Sincronización de Evaluaciones Clínicas (historial clínico).
  *
  * DTOs (EvaluacionRemota, HistorialSyncResult) y extensiones (toRemoto) viven en SyncHistorialDto.kt.
+ *
+ * La orquestación upload → download ocurre en [invoke].
+ * La lógica de FK-map se delega a [buildUploadRows] (función pura testeable).
  */
 class SyncHistorialUseCase @Inject constructor(
     private val repository: OptoRepository,
@@ -29,14 +30,17 @@ class SyncHistorialUseCase @Inject constructor(
         private const val TABLE = "evaluaciones"
     }
 
+    /**
+     * Ejecuta la sincronización completa: upload local → download remoto.
+     */
     suspend operator fun invoke(
         opticaId: String,
         downloadAfterUpload: Boolean = true
     ): Resource<HistorialSyncResult> {
         return try {
             Log.d(TAG, "Evaluaciones: inicio sync (opticaId=$opticaId, download=$downloadAfterUpload)")
-            val uploaded = upload(opticaId)
-            val downloaded = if (downloadAfterUpload) download(opticaId) else 0
+            val uploaded = uploadEvaluaciones(opticaId)
+            val downloaded = if (downloadAfterUpload) downloadEvaluaciones(opticaId) else 0
             Log.d(TAG, "Evaluaciones: fin OK (subidas=$uploaded, bajadas=$downloaded)")
             Resource.Success(HistorialSyncResult(uploaded, downloaded))
         } catch (e: Exception) {
@@ -46,7 +50,7 @@ class SyncHistorialUseCase @Inject constructor(
         }
     }
 
-    private suspend fun upload(opticaId: String): Int {
+    private suspend fun uploadEvaluaciones(opticaId: String): Int {
         val evaluaciones = repository.getEvaluacionesSnapshotForOptica(opticaId)
 
         if (evaluaciones.isEmpty()) {
@@ -65,36 +69,17 @@ class SyncHistorialUseCase @Inject constructor(
             Log.w(TAG, "Error al consultar pacientes remotos para FK check: ${e.localizedMessage}")
         }.getOrDefault(emptyList())
 
-        val remoteByHistoria = remotePacientes
-            .mapNotNull { rp ->
-                val key = normalizedHistoriaKey(rp.historiaOptometrica) ?: return@mapNotNull null
-                key to rp.id
-            }
-            .toMap()
+        val finalRows = buildUploadRows(evaluaciones, localPacientes, remotePacientes, opticaId)
 
-        val remapPacienteId = localPacientes.mapNotNull { lp ->
-            val key = normalizedHistoriaKey(lp.historiaOptometrica) ?: return@mapNotNull null
-            val remoteId = remoteByHistoria[key] ?: return@mapNotNull null
-            if (remoteId == lp.id) return@mapNotNull null
-            lp.id to remoteId
-        }.toMap()
-
-        val remotePacienteIds = remotePacientes.map { it.id }.toSet()
-        val rows = evaluaciones.mapNotNull { ev ->
-            val finalPacienteId = remapPacienteId[ev.pacienteId] ?: ev.pacienteId
-            if (finalPacienteId !in remotePacienteIds) {
-                syncStateTracker.markError(
-                    opticaId,
-                    "evaluacion",
-                    ev.id,
-                    "Paciente remoto inexistente para paciente_id=$finalPacienteId. Se omite para evitar FK."
-                )
-                return@mapNotNull null
-            }
-            ev.toRemoto().copy(opticaId = opticaId, pacienteId = finalPacienteId)
+        val inputIds = evaluaciones.map { it.id }.toSet()
+        val outputIds = finalRows.map { it.id }.toSet()
+        (inputIds - outputIds).forEach { skippedId ->
+            syncStateTracker.markError(
+                opticaId, "evaluacion", skippedId,
+                "Paciente remoto inexistente. Se omite para evitar FK."
+            )
         }
 
-        val finalRows = rows.distinctBy { it.id }
         if (finalRows.isEmpty()) {
             syncStateTracker.markSynced(opticaId, "upload_evaluaciones", "batch")
             return 0
@@ -115,7 +100,7 @@ class SyncHistorialUseCase @Inject constructor(
         return finalRows.size
     }
 
-    private suspend fun download(opticaId: String): Int {
+    private suspend fun downloadEvaluaciones(opticaId: String): Int {
         val remotos = supabase.postgrest[TABLE]
             .select {
                 filter { eq("optica_id", opticaId) }
@@ -138,11 +123,61 @@ class SyncHistorialUseCase @Inject constructor(
         Log.d(TAG, "Descargadas ${remotos.size} evaluaciones desde Supabase.")
         return remotos.size
     }
+}
 
-    internal fun normalizedHistoriaKey(historia: String?): String? {
-        val normalized = historia?.trim()?.uppercase().orEmpty()
-        return normalized.ifBlank { null }
+/**
+ * Construye las filas [EvaluacionRemota] listas para upsert a Supabase,
+ * mapeando FK de pacientes locales → remotos vía historia optométrica.
+ *
+ * Es una función pura (sin side effects) para facilitar tests unitarios.
+ *
+ * @param evaluaciones evaluaciones locales a subir
+ * @param localPacientes pacientes locales (para leer historiaOptometrica)
+ * @param remotePacientes pacientes remotos (para resolver FK)
+ * @param opticaId óptica a la que pertenecen los datos
+ * @return lista de filas deduplicadas por id, lista para upsert
+ */
+internal fun buildUploadRows(
+    evaluaciones: List<EvaluacionClinica>,
+    localPacientes: List<Paciente>,
+    remotePacientes: List<PacienteRemoto>,
+    opticaId: String
+): List<EvaluacionRemota> {
+    val remoteByHistoria = remotePacientes
+        .mapNotNull { rp ->
+            val key = normalizedHistoriaKey(rp.historiaOptometrica) ?: return@mapNotNull null
+            key to rp.id
+        }
+        .toMap()
+
+    val remapPacienteId = localPacientes.mapNotNull { lp ->
+        val key = normalizedHistoriaKey(lp.historiaOptometrica) ?: return@mapNotNull null
+        val remoteId = remoteByHistoria[key] ?: return@mapNotNull null
+        if (remoteId == lp.id) return@mapNotNull null
+        lp.id to remoteId
+    }.toMap()
+
+    val remotePacienteIds = remotePacientes.map { it.id }.toSet()
+
+    val rows = evaluaciones.mapNotNull { ev ->
+        val finalPacienteId = remapPacienteId[ev.pacienteId] ?: ev.pacienteId
+        if (finalPacienteId !in remotePacienteIds) return@mapNotNull null
+        ev.toRemoto().copy(opticaId = opticaId, pacienteId = finalPacienteId)
     }
+
+    return rows.distinctBy { it.id }
+}
+
+/**
+ * Normaliza una historia clínica para comparación como clave única.
+ *
+ * Aplica trim + uppercase, y retorna `null` si el resultado es blank.
+ * Usada por [SyncHistorialUseCase] y [SyncPacientesUseCase] para mapear
+ * pacientes locales a remotos vía su historia optométrica.
+ */
+internal fun normalizedHistoriaKey(historia: String?): String? {
+    val normalized = historia?.trim()?.uppercase().orEmpty()
+    return normalized.ifBlank { null }
 }
 
 // PacienteRemoto is defined in SyncPacientesUseCase.kt (same package).
