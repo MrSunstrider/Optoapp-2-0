@@ -5,7 +5,9 @@ import com.example.optoapp.data.EvaluacionClinica
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Paciente
 import com.example.optoapp.data.Resource
-import com.example.optoapp.sync.rethrowIfCancellation
+import com.example.optoapp.sync.errorLabelForException
+import kotlinx.coroutines.CancellationException
+import java.io.IOException
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import javax.inject.Inject
@@ -43,9 +45,13 @@ class SyncHistorialUseCase @Inject constructor(
             val downloaded = if (downloadAfterUpload) downloadEvaluaciones(opticaId) else 0
             Log.d(TAG, "Evaluaciones: fin OK (subidas=$uploaded, bajadas=$downloaded)")
             Resource.Success(HistorialSyncResult(uploaded, downloaded))
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: IOException) {
+            Log.e(TAG, "Error en red sincronizando evaluaciones: ${e.message}", e)
+            Resource.Error("Error sincronizando historial clínico: ${e.localizedMessage}")
         } catch (e: Exception) {
-            rethrowIfCancellation(e)
-            Log.e(TAG, "Error en sincronización de evaluaciones", e)
+            Log.e(TAG, "Error inesperado sincronizando evaluaciones: ${e.message}", e)
             Resource.Error("Error sincronizando historial clínico: ${e.localizedMessage}")
         }
     }
@@ -86,8 +92,14 @@ class SyncHistorialUseCase @Inject constructor(
         }
         try {
             supabase.postgrest[TABLE].upsert(finalRows)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: IOException) {
+            Log.e(TAG, "Error en red subiendo evaluaciones: ${e.message}", e)
+            syncStateTracker.markError(opticaId, "upload_evaluaciones", "batch", e.message)
+            throw e
         } catch (e: Exception) {
-            rethrowIfCancellation(e)
+            Log.e(TAG, "Error inesperado subiendo evaluaciones: ${e.message}", e)
             syncStateTracker.markError(opticaId, "upload_evaluaciones", "batch", e.message)
             throw e
         }
@@ -114,8 +126,13 @@ class SyncHistorialUseCase @Inject constructor(
                 val local = remoto.toEntity()
                 repository.insertEvaluacion(local)
                 syncStateTracker.markSynced(opticaId, "evaluacion", local.id)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: IOException) {
+                Log.e(TAG, "Error en red descargando evaluación: ${e.message}", e)
+                syncStateTracker.markError(opticaId, "evaluacion", remoto.id, e.message)
             } catch (e: Exception) {
-                rethrowIfCancellation(e)
+                Log.e(TAG, "Error inesperado descargando evaluación: ${e.message}", e)
                 syncStateTracker.markError(opticaId, "evaluacion", remoto.id, e.message)
             }
         }
