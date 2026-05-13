@@ -4,7 +4,8 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import com.google.gson.annotations.SerializedName
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import java.time.LocalDate
 
 @Entity(
@@ -20,14 +21,16 @@ import java.time.LocalDate
         Index(value = ["opticaId"])
     ]
 )
+@Serializable
 data class DispensacionOptica(
     @PrimaryKey val id: String,
     val ot: String = "",
     val monturaId: String = "",
-    @SerializedName("pacienteId", alternate = ["paciente_id"])
+    @SerialName("pacienteId")
     val pacienteId: String,
+    @Serializable(with = LocalDateSerializer::class)
     val fecha: LocalDate,
-    @SerializedName("opticaId", alternate = ["optica_id"])
+    @SerialName("opticaId")
     val opticaId: String = "mi_optica_base",
     val tipoMontura: String = "",
     val materialMontura: String = "",
@@ -39,14 +42,15 @@ data class DispensacionOptica(
     val origenMontura: String = "",
     val tipoAro: String = "",
     val descripcionMontura: String = "",
-    @SerializedName("montoTotal", alternate = ["monto_total"])
+    @SerialName("montoTotal")
     val montoTotal: Double = 0.0,
-    @SerializedName("metodoPago", alternate = ["metodo_pago"])
+    @SerialName("metodoPago")
     val metodoPago: String = "",
-    @SerializedName("montoPagado", alternate = ["monto_pagado"])
+    @SerialName("montoPagado")
     val montoPagado: Double = 0.0,
-    @SerializedName("estadoEntrega", alternate = ["estado_entrega"])
+    @SerialName("estadoEntrega")
     val estadoEntrega: String = "Pendiente",
+    @Serializable(with = LocalDateSerializer::class)
     val fechaVencimientoGarantia: LocalDate? = null,
     val distanciaLente: String = "",
     val altura: String = "",
@@ -75,19 +79,21 @@ data class DispensacionOptica(
         Index(value = ["opticaId"])
     ]
 )
+@Serializable
 data class Pago(
     @PrimaryKey val id: String,
-    @SerializedName("dispensacionId", alternate = ["dispensacion_id"])
+    @SerialName("dispensacionId")
     val dispensacionId: String? = null,
-    @SerializedName("servicioExtraId", alternate = ["servicio_extra_id"])
+    @SerialName("servicioExtraId")
     val servicioExtraId: String? = null,
+    @Serializable(with = LocalDateSerializer::class)
     val fecha: LocalDate,
     val tipo: String,
     val monto: Double,
-    @SerializedName("metodoPago", alternate = ["metodo_pago"])
+    @SerialName("metodoPago")
     val metodoPago: String = "",
     val nota: String = "",
-    @SerializedName("opticaId", alternate = ["optica_id"])
+    @SerialName("opticaId")
     val opticaId: String = "mi_optica_base"
 )
 
@@ -104,21 +110,23 @@ data class Pago(
         Index(value = ["opticaId"])
     ]
 )
+@Serializable
 data class ServicioExtra(
     @PrimaryKey val id: String,
     val ot: String = "",
     val descripcion: String,
-    @SerializedName("montoTotal", alternate = ["monto_total"])
+    @SerialName("montoTotal")
     val montoTotal: Double,
-    @SerializedName("aCuenta", alternate = ["a_cuenta"])
+    @SerialName("aCuenta")
     val aCuenta: Double,
     val estado: String, // Pendiente, Entregado
+    @Serializable(with = LocalDateSerializer::class)
     val fecha: LocalDate,
-    @SerializedName("pacienteId", alternate = ["paciente_id"])
+    @SerialName("pacienteId")
     val pacienteId: String? = null, // Opcional
-    @SerializedName("metodoPago", alternate = ["metodo_pago"])
+    @SerialName("metodoPago")
     val metodoPago: String = "",
-    @SerializedName("opticaId", alternate = ["optica_id"])
+    @SerialName("opticaId")
     val opticaId: String = "mi_optica_base"
 )
 
@@ -129,6 +137,7 @@ data class ServicioExtra(
         Index(value = ["sku", "opticaId"], unique = true)
     ]
 )
+@Serializable
 data class Montura(
     @PrimaryKey val id: String,
     val sku: String = "",
@@ -143,7 +152,7 @@ data class Montura(
     val activo: Boolean = true,
     val tipoAro: String = "",
     val materialMontura: String = "",
-    @SerializedName("opticaId", alternate = ["optica_id"])
+    @SerialName("opticaId")
     val opticaId: String = "mi_optica_base"
 )
 
@@ -164,9 +173,11 @@ data class Montura(
         )
     ]
 )
+@Serializable
 data class MonturaMovimiento(
     @PrimaryKey val id: String,
     val monturaId: String,
+    @Serializable(with = LocalDateSerializer::class)
     val fecha: LocalDate = LocalDate.now(),
     val tipo: String, // ENTRADA, SALIDA_VENTA, AJUSTE
     val cantidad: Int,
@@ -174,6 +185,6 @@ data class MonturaMovimiento(
     val stockNuevo: Int,
     val referenciaId: String = "",
     val nota: String = "",
-    @SerializedName("opticaId", alternate = ["optica_id"])
+    @SerialName("opticaId")
     val opticaId: String = "mi_optica_base"
 )
