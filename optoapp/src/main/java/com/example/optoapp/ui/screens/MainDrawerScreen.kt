@@ -1,15 +1,11 @@
 package com.example.optoapp.ui.screens
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import com.example.optoapp.data.AppRoles
-import com.example.optoapp.util.SyncErrorSanitizer
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -51,281 +47,25 @@ fun MainDrawerScreen(
     LaunchedEffect(Unit) {
         syncViewModel.performSilentSync()
     }
-    
-    var showErrorDialog by remember { mutableStateOf(false) }
-    var errorMessage by remember { mutableStateOf("") }
-    
+
     val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
 
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
-            ModalDrawerSheet {
-                Column(
-                    modifier = Modifier
-                        .fillMaxHeight()
-                        .verticalScroll(rememberScrollState())
-                ) {
-                    // Header con logo y óptica
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 28.dp, horizontal = 24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Surface(
-                            shape = MaterialTheme.shapes.medium,
-                            color = MaterialTheme.colorScheme.primaryContainer,
-                            modifier = Modifier.size(64.dp)
-                        ) {
-                            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                Text(
-                                    text = "O",
-                                    style = MaterialTheme.typography.headlineLarge,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                    fontWeight = androidx.compose.ui.text.font.FontWeight.Black
-                                )
-                            }
-                        }
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Text(
-                            text = "OptoApp",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = androidx.compose.ui.text.font.FontWeight.Black
-                        )
-                        Text(
-                            text = opticaHeader.nombreOptica.ifBlank { "Sin óptica" },
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-
-                    // Gestión
-                    Text(
-                        text = "GESTIÓN",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                        modifier = Modifier.padding(start = 24.dp, top = 16.dp, bottom = 4.dp)
-                    )
-                    NavigationDrawerItem(
-                        label = { Text("Pacientes", fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold) },
-                        selected = currentRoute == "pacientes",
-                        onClick = {
-                            scope.launch { drawerState.close() }
-                            navController.navigate("pacientes") {
-                                popUpTo("pacientes") { inclusive = true }
-                            }
-                        },
-                        icon = { Icon(Icons.Default.Person, contentDescription = null) },
-                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
-                    )
-                    NavigationDrawerItem(
-                        label = { Text("Servicios Varios", fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold) },
-                        selected = currentRoute == "servicios_extra",
-                        onClick = {
-                            scope.launch { drawerState.close() }
-                            navController.navigate("servicios_extra")
-                        },
-                        icon = { Icon(Icons.Default.AddShoppingCart, contentDescription = null) },
-                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
-                    )
-                    if (showOperacionHoy) {
-                        NavigationDrawerItem(
-                            label = { Text("Operación de Hoy", fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold) },
-                            selected = currentRoute == "operacion_hoy",
-                            onClick = {
-                                scope.launch { drawerState.close() }
-                                navController.navigate("operacion_hoy")
-                            },
-                            icon = { Icon(Icons.Default.Today, contentDescription = null) },
-                            modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
-                        )
-                    }
-
-                    // Programación
-                    Text(
-                        text = "PROGRAMACIÓN",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                        modifier = Modifier.padding(start = 24.dp, top = 16.dp, bottom = 4.dp)
-                    )
-                    NavigationDrawerItem(
-                        label = { Text("Agenda", fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold) },
-                        selected = currentRoute == "agenda",
-                        onClick = {
-                            scope.launch { drawerState.close() }
-                            navController.navigate("agenda")
-                        },
-                        icon = { Icon(Icons.Default.CalendarMonth, contentDescription = null) },
-                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
-                    )
-                    NavigationDrawerItem(
-                        label = { Text("Inventario", fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold) },
-                        selected = currentRoute == "monturas",
-                        onClick = {
-                            scope.launch { drawerState.close() }
-                            navController.navigate("monturas")
-                        },
-                        icon = { Icon(Icons.Default.Inventory2, contentDescription = null) },
-                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
-                    )
-
-                    // Finanzas
-                    if (showCierreCaja || showBiYReportes) {
-                        Text(
-                            text = "FINANZAS",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                            modifier = Modifier.padding(start = 24.dp, top = 16.dp, bottom = 4.dp)
-                        )
-                        if (showCierreCaja) {
-                            NavigationDrawerItem(
-                                label = { Text("Cierre de Caja", fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold) },
-                                selected = currentRoute == "cierre_caja",
-                                onClick = {
-                                    scope.launch { drawerState.close() }
-                                    navController.navigate("cierre_caja")
-                                },
-                                icon = { Icon(Icons.Default.AccountBalanceWallet, contentDescription = null) },
-                                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
-                            )
-                        }
-                        if (showBiYReportes) {
-                            NavigationDrawerItem(
-                                label = { Text("Estadísticas (BI)", fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold) },
-                                selected = currentRoute == "estadisticas_bi",
-                                onClick = {
-                                    scope.launch { drawerState.close() }
-                                    navController.navigate("estadisticas_bi")
-                                },
-                                icon = { Icon(Icons.Default.BarChart, contentDescription = null) },
-                                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
-                            )
-                            NavigationDrawerItem(
-                                label = { Text("Reportes", fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold) },
-                                selected = currentRoute == "reportes",
-                                onClick = {
-                                    scope.launch { drawerState.close() }
-                                    navController.navigate("reportes")
-                                },
-                                icon = { Icon(Icons.Default.DateRange, contentDescription = null) },
-                                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
-                            )
-                        }
-                    }
-
-                    // Sistema
-                    Text(
-                        text = "SISTEMA",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                        modifier = Modifier.padding(start = 24.dp, top = 16.dp, bottom = 4.dp)
-                    )
-                    NavigationDrawerItem(
-                        label = { Text("Configuración", fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold) },
-                        selected = currentRoute == "configuracion",
-                        onClick = {
-                            scope.launch { drawerState.close() }
-                            navController.navigate("configuracion")
-                        },
-                        icon = { Icon(Icons.Default.Settings, contentDescription = null) },
-                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
-                    )
-
-                    // Sync + Error handling
-                    val context = androidx.compose.ui.platform.LocalContext.current
-
-                    LaunchedEffect(syncState) {
-                        when (syncState) {
-                            is com.example.optoapp.viewmodel.SyncState.Success -> {
-                                android.widget.Toast.makeText(
-                                    context,
-                                    (syncState as com.example.optoapp.viewmodel.SyncState.Success).message,
-                                    android.widget.Toast.LENGTH_SHORT
-                                ).show()
-                                syncViewModel.clearSyncUiState()
-                            }
-                            is com.example.optoapp.viewmodel.SyncState.Error -> {
-                                errorMessage = SyncErrorSanitizer.forUserMessage(
-                                    (syncState as com.example.optoapp.viewmodel.SyncState.Error).message
-                                )
-                                showErrorDialog = true
-                            }
-                            else -> {}
-                        }
-                    }
-
-                    if (showErrorDialog) {
-                        AlertDialog(
-                            onDismissRequest = {
-                                showErrorDialog = false
-                                syncViewModel.clearSyncUiState()
-                            },
-                            confirmButton = {
-                                TextButton(onClick = {
-                                    showErrorDialog = false
-                                    syncViewModel.clearSyncUiState()
-                                }) { Text("Entendido") }
-                            },
-                            title = {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(Icons.Default.Error, contentDescription = null, tint = MaterialTheme.colorScheme.error)
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text("Error de Sincronización")
-                                }
-                            },
-                            text = {
-                                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                                    Text(errorMessage)
-                                }
-                            }
-                        )
-                    }
-
-                    NavigationDrawerItem(
-                        label = {
-                            Text(
-                                if (syncState is com.example.optoapp.viewmodel.SyncState.Loading) "Sincronizando..." else "Sincronizar Cloud",
-                                fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold
-                            )
-                        },
-                        selected = false,
-                        onClick = {
-                            if (syncState !is com.example.optoapp.viewmodel.SyncState.Loading) {
-                                syncViewModel.performFullSync()
-                            }
-                        },
-                        icon = {
-                            if (syncState is com.example.optoapp.viewmodel.SyncState.Loading) {
-                                CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
-                            } else {
-                                Icon(Icons.Default.CloudSync, contentDescription = null)
-                            }
-                        },
-                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
-                    )
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp, horizontal = 16.dp))
-                    NavigationDrawerItem(
-                        label = { Text("Cerrar Sesión", color = MaterialTheme.colorScheme.error) },
-                        selected = false,
-                        onClick = {
-                            scope.launch {
-                                drawerState.close()
-                                authViewModel.logout()
-                                parentNavController.navigate("login") {
-                                    popUpTo(parentNavController.graph.id) { inclusive = true }
-                                }
-                            }
-                        },
-                        icon = { Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Salir") },
-                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                }
-            }
+            DrawerContent(
+                currentRoute = currentRoute,
+                drawerState = drawerState,
+                navController = navController,
+                opticaHeader = opticaHeader,
+                showCierreCaja = showCierreCaja,
+                showBiYReportes = showBiYReportes,
+                showOperacionHoy = showOperacionHoy,
+                syncState = syncState,
+                syncViewModel = syncViewModel,
+                authViewModel = authViewModel,
+                parentNavController = parentNavController
+            )
         }
     ) {
         Column {
