@@ -7,6 +7,7 @@ import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.coroutines.CancellationException
+import java.io.IOException
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -25,10 +26,13 @@ class MembershipRepository @Inject constructor(
             supabase.postgrest[TABLE_UO]
                 .select { filter { eq("user_id", uid) } }
                 .decodeList<UsuarioOpticaDto>()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: IOException) {
+            Log.e(TAG, "fetchMembershipsForCurrentUser: uid=$uid", e)
+            emptyList()
         } catch (e: Exception) {
-            if (e !is CancellationException) {
-                Log.w(TAG, "fetchMembershipsForCurrentUser falló (uid=$uid): ${e.message}", e)
-            }
+            Log.e(TAG, "fetchMembershipsForCurrentUser: uid=$uid", e)
             emptyList()
         }
         if (rows.isEmpty()) return emptyList()
@@ -53,7 +57,13 @@ class MembershipRepository @Inject constructor(
                 .select { filter { eq("optica_id", opticaId) } }
                 .decodeList<OpticaMemberRow>()
                 .sortedWith(compareBy({ it.email.lowercase() }, { it.userId }))
-        } catch (_: Exception) {
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: IOException) {
+            Log.e(TAG, "fetchMembersForOptica: opticaId=$opticaId", e)
+            emptyList()
+        } catch (e: Exception) {
+            Log.e(TAG, "fetchMembersForOptica: opticaId=$opticaId", e)
             emptyList()
         }
     }
@@ -85,7 +95,11 @@ class MembershipRepository @Inject constructor(
             Result.success(Unit)
         } catch (e: CancellationException) {
             throw e
+        } catch (e: IOException) {
+            Log.e(TAG, "assignRoleByEmail: opticaId=$opticaId, email=$normalizedEmail", e)
+            Result.failure(e)
         } catch (e: Exception) {
+            Log.e(TAG, "assignRoleByEmail: opticaId=$opticaId, email=$normalizedEmail", e)
             Result.failure(e)
         }
     }
@@ -128,7 +142,11 @@ class MembershipRepository @Inject constructor(
             Result.success(OpticaMembership(opticaId = opticaId, nombre = nombre, rol = "admin"))
         } catch (e: CancellationException) {
             throw e
+        } catch (e: IOException) {
+            Log.e(TAG, "createOpticaForCurrentUser: nombre=$nombre", e)
+            Result.failure(e)
         } catch (e: Exception) {
+            Log.e(TAG, "createOpticaForCurrentUser: nombre=$nombre", e)
             Result.failure(e)
         }
     }
@@ -152,7 +170,11 @@ class MembershipRepository @Inject constructor(
             )
         } catch (e: CancellationException) {
             throw e
+        } catch (e: IOException) {
+            Log.e(TAG, "fetchPlanSettings: opticaId=$opticaId", e)
+            Result.failure(e)
         } catch (e: Exception) {
+            Log.e(TAG, "fetchPlanSettings: opticaId=$opticaId", e)
             Result.failure(e)
         }
     }
@@ -174,7 +196,11 @@ class MembershipRepository @Inject constructor(
             Result.success(Unit)
         } catch (e: CancellationException) {
             throw e
+        } catch (e: IOException) {
+            Log.e(TAG, "updatePlanSettings: opticaId=$opticaId", e)
+            Result.failure(e)
         } catch (e: Exception) {
+            Log.e(TAG, "updatePlanSettings: opticaId=$opticaId", e)
             Result.failure(e)
         }
     }
@@ -185,7 +211,13 @@ class MembershipRepository @Inject constructor(
                 .select { filter { eq("id", opticaId) } }
                 .decodeList<OpticaDto>()
             list.firstOrNull()?.nombre.orEmpty()
-        } catch (_: Exception) {
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: IOException) {
+            Log.e(TAG, "fetchOpticaNombre: opticaId=$opticaId", e)
+            ""
+        } catch (e: Exception) {
+            Log.e(TAG, "fetchOpticaNombre: opticaId=$opticaId", e)
             ""
         }
     }
@@ -201,7 +233,13 @@ class MembershipRepository @Inject constructor(
             row?.planCode?.lowercase()?.trim()?.ifBlank { null }
                 ?: row?.plan?.lowercase()?.trim()?.ifBlank { null }
                 ?: "free"
-        } catch (_: Exception) {
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: IOException) {
+            Log.e(TAG, "fetchOpticaPlan: opticaId=$opticaId", e)
+            null
+        } catch (e: Exception) {
+            Log.e(TAG, "fetchOpticaPlan: opticaId=$opticaId", e)
             null
         }
     }
@@ -220,7 +258,11 @@ class MembershipRepository @Inject constructor(
             row.laboratorioNombre to row.laboratorioContacto
         } catch (e: CancellationException) {
             throw e
-        } catch (_: Exception) {
+        } catch (e: IOException) {
+            Log.e(TAG, "fetchOpticaLaboratorioSettings: opticaId=$opticaId", e)
+            null
+        } catch (e: Exception) {
+            Log.e(TAG, "fetchOpticaLaboratorioSettings: opticaId=$opticaId", e)
             null
         }
     }
@@ -245,7 +287,11 @@ class MembershipRepository @Inject constructor(
             )
         } catch (e: CancellationException) {
             throw e
-        } catch (_: Exception) {
+        } catch (e: IOException) {
+            Log.e(TAG, "fetchOpticaFiscalSettings: opticaId=$opticaId", e)
+            null
+        } catch (e: Exception) {
+            Log.e(TAG, "fetchOpticaFiscalSettings: opticaId=$opticaId", e)
             null
         }
     }
@@ -274,7 +320,11 @@ class MembershipRepository @Inject constructor(
             )
         } catch (e: CancellationException) {
             throw e
-        } catch (_: Exception) {
+        } catch (e: IOException) {
+            Log.e(TAG, "fetchOpticaHeaderSummary: opticaId=$opticaId", e)
+            null
+        } catch (e: Exception) {
+            Log.e(TAG, "fetchOpticaHeaderSummary: opticaId=$opticaId", e)
             null
         }
     }
@@ -336,7 +386,11 @@ class MembershipRepository @Inject constructor(
             Result.success(Unit)
         } catch (e: CancellationException) {
             throw e
+        } catch (e: IOException) {
+            Log.e(TAG, "updateOpticaFiscalSettings: opticaId=$opticaId", e)
+            Result.failure(e)
         } catch (e: Exception) {
+            Log.e(TAG, "updateOpticaFiscalSettings: opticaId=$opticaId", e)
             Result.failure(e)
         }
     }
@@ -364,7 +418,11 @@ class MembershipRepository @Inject constructor(
             Result.success(Unit)
         } catch (e: CancellationException) {
             throw e
+        } catch (e: IOException) {
+            Log.e(TAG, "updateOpticaLaboratorioSettings: opticaId=$opticaId", e)
+            Result.failure(e)
         } catch (e: Exception) {
+            Log.e(TAG, "updateOpticaLaboratorioSettings: opticaId=$opticaId", e)
             Result.failure(e)
         }
     }
