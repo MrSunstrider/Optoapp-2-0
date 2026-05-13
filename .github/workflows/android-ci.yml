@@ -2,14 +2,14 @@ name: Android CI
 
 on:
   push:
-    branches: [version-saas, main]
+    branches: [main]
     paths:
-      - "app/**"
+      - "optoapp/**"
       - ".github/workflows/android-ci.yml"
   pull_request:
-    branches: [version-saas, main]
+    branches: [main]
     paths:
-      - "app/**"
+      - "optoapp/**"
 
 jobs:
   test:
