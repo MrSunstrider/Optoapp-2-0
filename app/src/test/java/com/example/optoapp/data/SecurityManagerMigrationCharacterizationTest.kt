@@ -112,7 +112,7 @@ class SecurityManagerMigrationCharacterizationTest {
     @Test
     fun `ISecurityManager tiene metodo getUserPin`() {
         val methods = ISecurityManager::class.java.declaredMethods.map { it.name }
-        assertTrue("userPin debe tener getter", methods.any { it.contains("userPin") })
+        assertTrue("userPin debe tener getter. Got: $methods", methods.any { it == "getUserPin" })
     }
 
     @Test
