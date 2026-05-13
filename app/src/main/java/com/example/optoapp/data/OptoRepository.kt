@@ -3,7 +3,9 @@ package com.example.optoapp.data
 import android.util.Log
 import androidx.room.withTransaction
 import dagger.Lazy
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
+import java.io.IOException
 
 import com.example.optoapp.data.montura.MonturaDao
 import com.example.optoapp.data.montura.MonturaMovimientoDao
@@ -244,7 +246,13 @@ class OptoRepository(
             val montura = monturaDao.getMonturaById(id)
             if (montura != null) Resource.Success(montura)
             else Resource.Error("Montura no encontrada")
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: IOException) {
+            Log.e(TAG, "Error de red al obtener montura", e)
+            Resource.Error(e.message ?: "Error al obtener montura")
         } catch (e: Exception) {
+            Log.e(TAG, "Error inesperado al obtener montura", e)
             Resource.Error(e.message ?: "Error al obtener montura")
         }
     }
@@ -380,40 +388,50 @@ class OptoRepository(
         backupData.pacientes?.forEach {
             try {
                 insertPaciente(it.withDefaults().copy(opticaId = currentOpticaId))
+            } catch(e: CancellationException) {
+                throw e
             } catch(e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "Error al restaurar paciente", e)
             }
         }
 
         backupData.evaluaciones?.forEach {
             try {
                 insertEvaluacion(it.withDefaults().copy(opticaId = currentOpticaId))
+            } catch(e: CancellationException) {
+                throw e
             } catch(e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "Error al restaurar evaluación", e)
             }
         }
 
         backupData.dispensaciones?.forEach {
             try {
                 insertDispensacion(it.withDefaults().copy(opticaId = currentOpticaId))
+            } catch(e: CancellationException) {
+                throw e
             } catch(e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "Error al restaurar dispensación", e)
             }
         }
 
         backupData.pagos?.forEach {
             try {
                 insertPago(it.withDefaults().copy(opticaId = currentOpticaId))
+            } catch(e: CancellationException) {
+                throw e
             } catch(e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "Error al restaurar pago", e)
             }
         }
 
         backupData.serviciosExtra?.forEach {
             try {
                 insertServicio(it.withDefaults().copy(opticaId = currentOpticaId))
+            } catch(e: CancellationException) {
+                throw e
             } catch(e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "Error al restaurar servicio extra", e)
             }
         }
     }

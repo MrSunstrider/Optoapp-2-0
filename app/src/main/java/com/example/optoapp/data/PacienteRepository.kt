@@ -1,7 +1,10 @@
 package com.example.optoapp.data
 
+import android.util.Log
 import androidx.room.withTransaction
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
+import java.io.IOException
 import java.time.LocalDate
 
 /**
@@ -33,7 +36,13 @@ class PacienteRepository(
             val paciente = pacienteDao.getPacienteById(id)
             if (paciente != null) Resource.Success(paciente)
             else Resource.Error("Paciente no encontrado")
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: IOException) {
+            Log.e(TAG, "getPacienteById: id=$id", e)
+            Resource.Error("Error de red al obtener paciente")
         } catch (e: Exception) {
+            Log.e(TAG, "getPacienteById: id=$id", e)
             Resource.Error(e.message ?: "Error al obtener paciente")
         }
     }
@@ -89,7 +98,13 @@ class PacienteRepository(
             val evaluacion = evaluacionDao.getEvaluacionById(id)
             if (evaluacion != null) Resource.Success(evaluacion)
             else Resource.Error("Evaluación no encontrada")
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: IOException) {
+            Log.e(TAG, "getEvaluacionById: id=$id", e)
+            Resource.Error("Error de red al obtener evaluación")
         } catch (e: Exception) {
+            Log.e(TAG, "getEvaluacionById: id=$id", e)
             Resource.Error(e.message ?: "Error al obtener evaluación")
         }
     }
@@ -151,6 +166,10 @@ class PacienteRepository(
             movedDispensaciones = movedDispensaciones,
             movedServicios = movedServicios
         )
+    }
+
+    companion object {
+        private const val TAG = "PacienteRepository"
     }
 }
 
