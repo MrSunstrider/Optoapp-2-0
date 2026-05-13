@@ -100,7 +100,6 @@ fun NuevaEvaluacionScreen(
     var showLcDatePicker by remember { mutableStateOf(false) }
     var showOsdiDialog by remember { mutableStateOf(false) }
     val context = androidx.compose.ui.platform.LocalContext.current
-    val notificationHelper = remember { com.example.optoapp.notifications.NotificationHelper(context) }
 
     val datePickerState = rememberDatePickerState(
         initialSelectedDateMillis = DateUtils.localDateToPickerMillis(uiState.fecha),
@@ -185,12 +184,7 @@ fun NuevaEvaluacionScreen(
         val sharedPreferences = context.getSharedPreferences("optoapp_prefs", Context.MODE_PRIVATE)
         val programarRecordatorioGlobal = sharedPreferences.getBoolean("pref_enable_reminders", true)
 
-        viewModel.saveEvaluacion(pacienteId, evaluacionId) { savedId, pName ->
-            if (programarRecordatorioGlobal && uiState.proximaCita != null) {
-                notificationHelper.scheduleWorkManagerReminder(pName, uiState.proximaCita!!, savedId)
-            } else {
-                notificationHelper.cancelReminder(savedId)
-            }
+        viewModel.saveAndScheduleReminder(pacienteId, evaluacionId, programarRecordatorioGlobal) {
             navController.popBackStack()
         }
     }
