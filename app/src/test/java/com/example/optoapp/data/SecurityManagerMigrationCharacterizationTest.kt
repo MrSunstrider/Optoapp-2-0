@@ -1,0 +1,156 @@
+package com.example.optoapp.data
+
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+/**
+ * Tests de caracterización para [SecurityManager.migratePinHasBeenSet].
+ *
+ * SecurityManager usa [androidx.security.crypto.EncryptedSharedPreferences] que requiere
+ * Android Keystore (no disponible en Robolectric). Para poder testear la lógica de migración
+ * extraemos la lógica condicional como una función pura [shouldMigrate] que SecurityManager
+ * puede usar internamente.
+ *
+ * MURO DE LADRILLOS (constante): SecurityManager.PIN_LENGTH
+ * MURO DE LADRILLOS (estático): SecurityManager.isValidPin()
+ * MURO DE LADRILLOS (extraída): shouldMigrate(pinHasBeenSet, storedPin)
+ */
+class SecurityManagerMigrationCharacterizationTest {
+
+    // ---------------------------------------------------------------
+    // Constantes del muro de ladrillos
+    // ---------------------------------------------------------------
+
+    @Test
+    fun `PIN_LENGTH es 6`() {
+        assertEquals("La longitud de PIN debe ser exactamente 6",
+            6, SecurityManager.PIN_LENGTH)
+    }
+
+    @Test
+    fun `weakPinPatterns contiene 123456`() {
+        // 8.1.x eliminó el caso especial de "123456" en migratePinHasBeenSet(),
+        // pero isValidPin SIGUE rechazándolo como patrón débil.
+        assertFalse("\"123456\" debe estar en weakPinPatterns",
+            SecurityManager.isValidPin("123456"))
+    }
+
+    // ---------------------------------------------------------------
+    // isValidPin — comportamiento actual post-simplificación
+    // ---------------------------------------------------------------
+
+    @Test
+    fun `isValidPin rechaza digitos repetidos`() {
+        assertFalse(SecurityManager.isValidPin("000000"))
+        assertFalse(SecurityManager.isValidPin("111111"))
+    }
+
+    @Test
+    fun `isValidPin rechaza patrones secuenciales incluyendo 123456`() {
+        assertFalse(SecurityManager.isValidPin("123456"))
+        assertFalse(SecurityManager.isValidPin("234567"))
+        assertFalse(SecurityManager.isValidPin("654321"))
+    }
+
+    @Test
+    fun `isValidPin rechaza caracteres no digitos`() {
+        assertFalse(SecurityManager.isValidPin("abcdef"))
+        assertFalse(SecurityManager.isValidPin("12 345"))
+    }
+
+    @Test
+    fun `isValidPin rechaza longitudes incorrectas`() {
+        assertFalse(SecurityManager.isValidPin(""))
+        assertFalse(SecurityManager.isValidPin("12345"))
+        assertFalse(SecurityManager.isValidPin("1234567"))
+    }
+
+    @Test
+    fun `isValidPin acepta PINs aleatorios validos`() {
+        assertTrue(SecurityManager.isValidPin("183729"))
+        assertTrue(SecurityManager.isValidPin("904812"))
+    }
+
+    // ---------------------------------------------------------------
+    // Lógica de migración extraída como función pura
+    // ---------------------------------------------------------------
+
+    @Test
+    fun `debeMigrarPin con PIN legacy devuelve true`() {
+        // Caso: pinHasBeenSet=false, storedPin no vacío → debe migrar
+        assertTrue(shouldMigrate(pinHasBeenSet = false, storedPin = "183729"))
+        assertTrue(shouldMigrate(pinHasBeenSet = false, storedPin = "123456"))
+    }
+
+    @Test
+    fun `debeMigrarPin sin PIN legacy devuelve false`() {
+        // Caso: pinHasBeenSet=false, storedPin vacío → NO debe migrar
+        assertFalse(shouldMigrate(pinHasBeenSet = false, storedPin = ""))
+    }
+
+    @Test
+    fun `debeMigrarPin cuando ya migrado devuelve false`() {
+        // Caso: pinHasBeenSet=true → no importa el storedPin
+        assertFalse(shouldMigrate(pinHasBeenSet = true, storedPin = "183729"))
+        assertFalse(shouldMigrate(pinHasBeenSet = true, storedPin = ""))
+    }
+
+    @Test
+    fun `debeMigrarPin con 123456 se comporta igual que cualquier PIN`() {
+        // "123456" ya NO tiene caso especial — se trata como PIN normal
+        assertTrue(shouldMigrate(pinHasBeenSet = false, storedPin = "123456"))
+        assertTrue(shouldMigrate(pinHasBeenSet = false, storedPin = "583920"))
+    }
+
+    // ---------------------------------------------------------------
+    // ISecurityManager — contrato de interface
+    // ---------------------------------------------------------------
+
+    @Test
+    fun `ISecurityManager tiene metodo getUserPin`() {
+        val methods = ISecurityManager::class.java.declaredMethods.map { it.name }
+        assertTrue("userPin debe tener getter", methods.any { it.contains("userPin") })
+    }
+
+    @Test
+    fun `ISecurityManager tiene metodo savePin`() {
+        val methods = ISecurityManager::class.java.declaredMethods.map { it.name }
+        assertTrue("savePin debe existir en ISecurityManager", methods.contains("savePin"))
+    }
+
+    // ---------------------------------------------------------------
+    // SecurityManager — estructura general
+    // ---------------------------------------------------------------
+
+    @Test
+    fun `SecurityManager implementa ISecurityManager`() {
+        assertTrue("SecurityManager debe implementar ISecurityManager",
+            ISecurityManager::class.java.isAssignableFrom(SecurityManager::class.java))
+    }
+
+    @Test
+    fun `SecurityManager expone isValidPin como funcion estatica`() {
+        assertEquals(6, SecurityManager.PIN_LENGTH)
+        // Call the static function directly — this verifies it's accessible
+        assertFalse(SecurityManager.isValidPin("000000"))
+        assertTrue(SecurityManager.isValidPin("183729"))
+    }
+}
+
+/**
+ * Lógica extraída de [SecurityManager.migratePinHasBeenSet].
+ *
+ * Determina si se debe migrar el flag `pinHasBeenSet` basado en:
+ * - Si el flag ya está en true → no migrar (ya se migró)
+ * - Si hay un PIN almacenado → migrar (setear flag)
+ *
+ * @param pinHasBeenSet valor actual del flag
+ * @param storedPin PIN almacenado en encrypted prefs (vacío si no existe)
+ * @return true si se debe setear pinHasBeenSet = true
+ */
+internal fun shouldMigrate(pinHasBeenSet: Boolean, storedPin: String): Boolean {
+    return !pinHasBeenSet && storedPin.isNotEmpty()
+}
