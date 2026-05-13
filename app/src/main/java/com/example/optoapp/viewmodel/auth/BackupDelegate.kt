@@ -3,10 +3,11 @@ package com.example.optoapp.viewmodel.auth
 import com.example.optoapp.data.ISessionManager
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.util.BackupImportValidator
-import com.google.gson.Gson
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.flow.first
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import javax.inject.Inject
@@ -21,7 +22,7 @@ class BackupDelegate @Inject constructor(
     private val repository: OptoRepository,
     private val sessionManager: ISessionManager,
     private val supabase: SupabaseClient,
-    private val gson: Gson
+    private val backupJson: Json
 ) {
     companion object {
         private const val TAG = "BackupDelegate"
@@ -62,7 +63,7 @@ class BackupDelegate @Inject constructor(
         val rol = sessionManager.opticaRol.first().trim().lowercase()
         checkExportAdmin(rol)?.let { throw IllegalStateException(it) }
         assertBackupOperationAllowed("export", oid, oid)
-        return gson.toJson(repository.getBackupDataForOptica(oid))
+        return backupJson.encodeToString(repository.getBackupDataForOptica(oid))
     }
 
     /**

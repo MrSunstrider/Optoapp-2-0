@@ -4,7 +4,9 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import com.google.gson.annotations.SerializedName
+import com.example.optoapp.data.LocalDateSerializer
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import java.time.LocalDate
 
 @Entity(
@@ -20,9 +22,11 @@ import java.time.LocalDate
         Index(value = ["opticaId"])
     ]
 )
+@Serializable
 data class EvaluacionClinica(
     @PrimaryKey val id: String,
     val pacienteId: String,
+    @Serializable(with = LocalDateSerializer::class)
     val fecha: LocalDate,
     val opticaId: String = "mi_optica_base",
     val motivoConsulta: String = "",
@@ -107,11 +111,11 @@ data class EvaluacionClinica(
 
     // DIP o DNP
     val dipLejos: String = "", val dipCerca: String = "", val dipIntermedio: String = "",
-    @SerializedName("dipTotalMm", alternate = ["dip_total_mm"])
+    @SerialName("dipTotalMm")
     val dipTotalMm: Double? = null,
-    @SerializedName("dnpOdMm", alternate = ["dnp_od_mm"])
+    @SerialName("dnpOdMm")
     val dnpOdMm: Double? = null,
-    @SerializedName("dnpOiMm", alternate = ["dnp_oi_mm"])
+    @SerialName("dnpOiMm")
     val dnpOiMm: Double? = null,
 
     // Prismas
@@ -125,6 +129,7 @@ data class EvaluacionClinica(
     val planTratamiento: String = "",
     val observaciones: String = "",
     val proximaFechaControl: String = "",
+    @Serializable(with = LocalDateSerializer::class)
     val proximaCita: LocalDate? = null,
     /** programada | confirmada | asistio | no_asistio | reprogramada */
     val citaEstado: String = "programada",
@@ -143,6 +148,6 @@ data class EvaluacionClinica(
     val lcRadioBaseOd: String = "", val lcDiametroOd: String = "",
     val lcRadioBaseOi: String = "", val lcDiametroOi: String = "",
     val lcLaboratorio: String = "", val lcTipoLente: String = "",
-    val lcMaterial: String = "", val lcFechaAdaptacion: LocalDate? = null,
+    val lcMaterial: String = "", @Serializable(with = LocalDateSerializer::class) val lcFechaAdaptacion: LocalDate? = null,
     val lcObservaciones: String = ""
 )
