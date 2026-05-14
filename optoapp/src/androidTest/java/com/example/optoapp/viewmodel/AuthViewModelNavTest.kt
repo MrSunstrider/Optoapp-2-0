@@ -2,7 +2,9 @@ package com.example.optoapp.viewmodel
 
 import android.content.Context
 import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.datastore.preferences.core.edit
 import androidx.security.crypto.MasterKeys
+import com.example.optoapp.data.dataStore
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.coroutines.flow.first
