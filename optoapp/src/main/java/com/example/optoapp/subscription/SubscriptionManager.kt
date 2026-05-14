@@ -1,6 +1,8 @@
 package com.example.optoapp.subscription
 
 import android.content.Context
+import androidx.annotation.VisibleForTesting
+import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
@@ -30,40 +32,45 @@ enum class PlanCode {
 
 @Deprecated("Sin uso en alpha. Mantener por posible reactivación.")
 @Singleton
-class SubscriptionManager @Inject constructor(
+open class SubscriptionManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val membershipRepository: MembershipRepository
 ) {
+
+    /** Override in tests to inject a fake DataStore. */
+    @VisibleForTesting
+    internal var dataStore: DataStore<Preferences> = context.dataStore
 
     private val keyDevPro = booleanPreferencesKey("sub_dev_pro")
     private val keyCachedPlan = stringPreferencesKey("sub_cached_plan")
 
     /** Solo true en builds de debug; en release nunca se expone el flag aunque quedara en DataStore. */
-    val devProOverride: Flow<Boolean> = context.dataStore.data.map {
-        isDevProEffective(it)
-    }
+    val devProOverride: Flow<Boolean>
+        get() = dataStore.data.map { isDevProEffective(it) }
 
     /**
      * Tier efectivo: override dev, plan en caché (post-sync o compra), o FREE.
      */
-    val tier: Flow<SubscriptionTier> = combine(
-        context.dataStore.data.map { isDevProEffective(it) },
-        context.dataStore.data.map { (it[keyCachedPlan] ?: "free").lowercase().trim() }
-    ) { dev, planStr ->
-        when {
-            dev -> SubscriptionTier.PRO
-            toPlanCode(planStr) != PlanCode.FREE -> SubscriptionTier.PRO
-            else -> SubscriptionTier.FREE
+    val tier: Flow<SubscriptionTier>
+        get() = combine(
+            dataStore.data.map { isDevProEffective(it) },
+            dataStore.data.map { (it[keyCachedPlan] ?: "free").lowercase().trim() }
+        ) { dev, planStr ->
+            when {
+                dev -> SubscriptionTier.PRO
+                toPlanCode(planStr) != PlanCode.FREE -> SubscriptionTier.PRO
+                else -> SubscriptionTier.FREE
+            }
         }
-    }
 
-    val planCode: Flow<PlanCode> = context.dataStore.data.map {
-        toPlanCode((it[keyCachedPlan] ?: "free").lowercase().trim())
-    }
+    val planCode: Flow<PlanCode>
+        get() = dataStore.data.map {
+            toPlanCode((it[keyCachedPlan] ?: "free").lowercase().trim())
+        }
 
-    suspend fun refreshPlanFromServer(opticaId: String) {
+    open suspend fun refreshPlanFromServer(opticaId: String) {
         val plan = membershipRepository.fetchOpticaPlan(opticaId) ?: return
-        context.dataStore.edit { prefs -> prefs[keyCachedPlan] = plan.lowercase().trim() }
+        dataStore.edit { prefs -> prefs[keyCachedPlan] = plan.lowercase().trim() }
     }
 
     fun maxPacientes(tier: SubscriptionTier): Int = when (tier) {
@@ -81,12 +88,13 @@ class SubscriptionManager @Inject constructor(
 
     suspend fun setDevProOverride(enabled: Boolean) {
         if (enabled && !BuildConfig.DEBUG) return
-        context.dataStore.edit { prefs ->
+        dataStore.edit { prefs ->
             if (enabled) prefs[keyDevPro] = true else prefs.remove(keyDevPro)
         }
     }
 
-    private fun isDevProEffective(prefs: Preferences): Boolean {
+    @VisibleForTesting
+    internal open fun isDevProEffective(prefs: Preferences): Boolean {
         if (!BuildConfig.DEBUG) return false
         if (BuildConfig.FORCE_PRO_DEV) return true
         return prefs[keyDevPro] == true
@@ -94,7 +102,7 @@ class SubscriptionManager @Inject constructor(
 
     /** Tras compra verificada en Play Billing (o prueba). */
     suspend fun setProFromLocalCache() {
-        context.dataStore.edit { it[keyCachedPlan] = "pro_individual" }
+        dataStore.edit { it[keyCachedPlan] = "pro_individual" }
     }
 
     private fun toPlanCode(raw: String): PlanCode = when (raw.lowercase().trim()) {

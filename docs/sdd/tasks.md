@@ -188,7 +188,7 @@ Resumen: **P0-T1 … T5 = DONE** para la fase actual (bloque estabilidad/sync op
 
 ## P4 - Web ecosistema (seguro, confiable y persistente)
 
-Referencia principal: `docs/guia-web-ecosistema-seguro.md`.
+Referencia principal: `docs/OPTOAPP-DOCUMENTACION.md` (sección 7).
 
 ### P4-T1 Baseline web segura (Next.js + Supabase SSR) [DONE]
 - Objetivo: habilitar base web con sesion segura y rutas protegidas.
@@ -275,7 +275,7 @@ Referencia principal: `docs/guia-web-ecosistema-seguro.md`.
 - Definition of Done:
   - criterios de salida cumplidos y validados por QA funcional.
 - Avance:
-  - se crea checklist formal de release en `docs/web-readiness-checklist.md` con:
+  - se crea checklist formal de release en `docs/OPTOAPP-DOCUMENTACION.md` (sección 8) con:
     - seguridad, multi-tenant, pruebas funcionales por modulo/rol,
     - criterios GO/NO-GO,
     - protocolo de rollback y evidencia de cierre.

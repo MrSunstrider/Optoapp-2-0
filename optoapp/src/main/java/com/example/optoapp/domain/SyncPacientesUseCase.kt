@@ -18,7 +18,7 @@ import javax.inject.Inject
  * FASE 3 – Paso 3.1
  * Sincronización bidireccional de Pacientes.
  */
-class SyncPacientesUseCase @Inject constructor(
+open class SyncPacientesUseCase @Inject constructor(
     private val repository: OptoRepository,
     private val supabase: SupabaseClient,
     private val syncStateTracker: com.example.optoapp.data.SyncStateTracker
