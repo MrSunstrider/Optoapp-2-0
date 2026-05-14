@@ -61,6 +61,7 @@ fun NuevoServicioScreen(navController: NavController, pacienteId: String? = null
     val monturas by viewModel.monturas.collectAsState()
 
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.surface,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {

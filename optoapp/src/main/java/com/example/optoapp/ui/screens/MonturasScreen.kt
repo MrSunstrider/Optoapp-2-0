@@ -89,6 +89,7 @@ fun MonturasScreen(
     }
 
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.surface,
         topBar = {
             TopAppBar(
                 title = { Text("Inventario General") },

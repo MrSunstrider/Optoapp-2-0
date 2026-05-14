@@ -39,6 +39,7 @@ fun SeleccionOpticaScreen(
     }
 
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.surface,
         topBar = {
             TopAppBar(title = { Text("Seleccionar óptica") })
         }

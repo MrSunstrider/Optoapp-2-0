@@ -53,6 +53,7 @@ fun CierreCajaScreen(
     }
 
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.surface,
         topBar = {
             TopAppBar(
                 windowInsets = WindowInsets(0, 0, 0, 0),
