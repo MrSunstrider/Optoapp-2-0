@@ -52,6 +52,7 @@ fun PacientesListScreen(navController: NavController, drawerState: DrawerState, 
     }
 
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.surface,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             TopAppBar(
