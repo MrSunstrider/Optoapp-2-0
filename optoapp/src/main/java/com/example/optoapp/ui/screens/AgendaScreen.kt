@@ -117,6 +117,7 @@ fun AgendaScreen(
     }
 
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.surface,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             TopAppBar(

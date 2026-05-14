@@ -46,6 +46,7 @@ fun BIScreen(navController: NavController, viewModel: BIViewModel = hiltViewMode
     }
 
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.surface,
         topBar = {
             TopAppBar(
                 title = { Text("Panel de Estadísticas", fontWeight = FontWeight.Bold) },

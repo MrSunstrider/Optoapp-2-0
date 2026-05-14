@@ -39,6 +39,7 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
     val ticketPromedio = if (dispensaciones.isNotEmpty()) totalVendido / dispensaciones.size else 0.0
 
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.surface,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             TopAppBar(
