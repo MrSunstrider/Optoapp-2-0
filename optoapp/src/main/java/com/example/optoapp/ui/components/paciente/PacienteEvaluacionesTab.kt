@@ -42,7 +42,8 @@ fun EvaluacionesList(
                         val notificationHelper = com.example.optoapp.notifications.NotificationHelper(context)
                         notificationHelper.cancelReminder(eval.id)
                         evaluacionViewModel.deleteEvaluacion(eval.id) { }
-                    }
+                    },
+                    onResumen = { selectedEvalForResumen.value = eval }
                 )
             }
         }
