@@ -1,5 +1,6 @@
 package com.example.optoapp.ui.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -68,7 +69,11 @@ fun MainDrawerScreen(
             )
         }
     ) {
-        Column {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+        ) {
             // Indicador discreto de sincronización de fondo
             if (isSilentSyncing) {
                 LinearProgressIndicator(
