@@ -21,6 +21,14 @@ import com.example.optoapp.viewmodel.SyncState
 import com.example.optoapp.viewmodel.SyncViewModel
 import com.example.optoapp.util.SyncErrorSanitizer
 
+private fun NavController.navigateDrawer(route: String) {
+    navigate(route) {
+        popUpTo(graph.startDestinationId) { saveState = true }
+        launchSingleTop = true
+        restoreState = true
+    }
+}
+
 @Composable
 fun DrawerContent(
     currentRoute: String?,
@@ -141,9 +149,7 @@ fun DrawerContent(
             selected = currentRoute == "pacientes",
             onClick = {
                 scope.launch { drawerState.close() }
-                navController.navigate("pacientes") {
-                    popUpTo("pacientes") { inclusive = true }
-                }
+                navController.navigateDrawer("pacientes")
             },
             icon = { Icon(Icons.Default.Person, contentDescription = null) },
             modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
@@ -153,7 +159,7 @@ fun DrawerContent(
             selected = currentRoute == "servicios_extra",
             onClick = {
                 scope.launch { drawerState.close() }
-                navController.navigate("servicios_extra")
+                navController.navigateDrawer("servicios_extra")
             },
             icon = { Icon(Icons.Default.AddShoppingCart, contentDescription = null) },
             modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
@@ -164,7 +170,7 @@ fun DrawerContent(
                 selected = currentRoute == "operacion_hoy",
                 onClick = {
                     scope.launch { drawerState.close() }
-                    navController.navigate("operacion_hoy")
+                    navController.navigateDrawer("operacion_hoy")
                 },
                 icon = { Icon(Icons.Default.Today, contentDescription = null) },
                 modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
@@ -183,7 +189,7 @@ fun DrawerContent(
             selected = currentRoute == "agenda",
             onClick = {
                 scope.launch { drawerState.close() }
-                navController.navigate("agenda")
+                navController.navigateDrawer("agenda")
             },
             icon = { Icon(Icons.Default.CalendarMonth, contentDescription = null) },
             modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
@@ -193,7 +199,7 @@ fun DrawerContent(
             selected = currentRoute == "monturas",
             onClick = {
                 scope.launch { drawerState.close() }
-                navController.navigate("monturas")
+                navController.navigateDrawer("monturas")
             },
             icon = { Icon(Icons.Default.Inventory2, contentDescription = null) },
             modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
@@ -213,7 +219,7 @@ fun DrawerContent(
                     selected = currentRoute == "cierre_caja",
                     onClick = {
                         scope.launch { drawerState.close() }
-                        navController.navigate("cierre_caja")
+                        navController.navigateDrawer("cierre_caja")
                     },
                     icon = { Icon(Icons.Default.AccountBalanceWallet, contentDescription = null) },
                     modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
@@ -225,7 +231,7 @@ fun DrawerContent(
                     selected = currentRoute == "estadisticas_bi",
                     onClick = {
                         scope.launch { drawerState.close() }
-                        navController.navigate("estadisticas_bi")
+                        navController.navigateDrawer("estadisticas_bi")
                     },
                     icon = { Icon(Icons.Default.BarChart, contentDescription = null) },
                     modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
@@ -235,7 +241,7 @@ fun DrawerContent(
                     selected = currentRoute == "reportes",
                     onClick = {
                         scope.launch { drawerState.close() }
-                        navController.navigate("reportes")
+                        navController.navigateDrawer("reportes")
                     },
                     icon = { Icon(Icons.Default.DateRange, contentDescription = null) },
                     modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
@@ -255,7 +261,7 @@ fun DrawerContent(
             selected = currentRoute == "configuracion",
             onClick = {
                 scope.launch { drawerState.close() }
-                navController.navigate("configuracion")
+                navController.navigateDrawer("configuracion")
             },
             icon = { Icon(Icons.Default.Settings, contentDescription = null) },
             modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
