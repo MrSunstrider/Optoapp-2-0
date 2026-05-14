@@ -5,7 +5,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -113,8 +112,7 @@ private fun AddSection(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiState)
                 Spacer(Modifier.width(4.dp))
                 Switch(
                     checked = uiState.isAddAo,
-                    onCheckedChange = { newVal -> onUpdate(uiState.copy(isAddAo = newVal)) },
-                    modifier = Modifier.scale(0.8f)
+                    onCheckedChange = { newVal -> onUpdate(uiState.copy(isAddAo = newVal)) }
                 )
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
