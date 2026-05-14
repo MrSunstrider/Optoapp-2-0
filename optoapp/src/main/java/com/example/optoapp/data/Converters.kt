@@ -1,24 +1,21 @@
 package com.example.optoapp.data
 
 import androidx.room.TypeConverter
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.decodeFromString
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
 class Converters {
+    private val json = Json { ignoreUnknownKeys = true }
     private val isoFormatter = DateTimeFormatter.ISO_LOCAL_DATE
 
     @TypeConverter
-    fun fromStringList(value: List<String>): String {
-        return Gson().toJson(value)
-    }
+    fun fromStringList(value: List<String>): String = json.encodeToString(value)
 
     @TypeConverter
-    fun toStringList(value: String): List<String> {
-        val listType = object : TypeToken<List<String>>() {}.type
-        return Gson().fromJson(value, listType)
-    }
+    fun toStringList(value: String): List<String> = json.decodeFromString(value)
 
     @TypeConverter
     fun fromLocalDate(value: LocalDate?): String? = value?.format(isoFormatter)
