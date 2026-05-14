@@ -1,6 +1,5 @@
 package com.example.optoapp.ui.screens
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -69,11 +68,11 @@ fun MainDrawerScreen(
             )
         }
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = MaterialTheme.colorScheme.background
         ) {
+            Column(modifier = Modifier.fillMaxSize()) {
             // Indicador discreto de sincronización de fondo
             if (isSilentSyncing) {
                 LinearProgressIndicator(
@@ -195,6 +194,7 @@ fun MainDrawerScreen(
                 composable("estadisticas_bi") { BIScreen(navController) }
                 composable("configuracion") { ConfiguracionScreen(navController, drawerState, syncViewModel) }
             }
+        }
         }
     }
 }
