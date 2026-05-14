@@ -1,5 +1,8 @@
 package com.example.optoapp.data
 
+import com.example.optoapp.data.membership.MembershipDataSource
+import com.example.optoapp.data.membership.OpticaQueryHelper
+import com.example.optoapp.data.membership.OpticaSettingsDataSource
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.auth.auth
@@ -31,7 +34,10 @@ class MembershipRepositoryErrorTest {
         val authMock = mockk<Auth>(relaxed = true)
         every { authMock.currentUserOrNull() } returns null
         every { any<SupabaseClient>().auth } returns authMock
-        repo = MembershipRepository(supabase)
+        val opticaQueryHelper = OpticaQueryHelper(supabase)
+        val membershipDataSource = MembershipDataSource(supabase, opticaQueryHelper)
+        val opticaSettingsDataSource = OpticaSettingsDataSource(supabase)
+        repo = MembershipRepository(membershipDataSource, opticaSettingsDataSource)
     }
 
     @After

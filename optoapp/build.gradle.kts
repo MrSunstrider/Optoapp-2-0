@@ -152,34 +152,55 @@ tasks.withType<KotlinCompile>().configureEach {
     }
 }
 
-// JaCoCo coverage (unit tests)
+val jacocoFileFilter = listOf(
+    "**/R.class",
+    "**/R$*.class",
+    "**/BuildConfig.*",
+    "**/Manifest*.*",
+    "**/databinding/*",
+    "**/android/databinding/*",
+    "**/di/*",
+    "**/Dagger*",
+    "**/*Hilt*",
+    "**/*_Factory*",
+    "**/*_MembersInjector*",
+    "**/BR.class"
+)
+
+val jacocoKotlinClasses = layout.buildDirectory.dir("intermediates/built_in_kotlinc/debug/compileDebugKotlin/classes")
+val jacocoJavaClasses = layout.buildDirectory.dir("intermediates/javac/debug/classes")
+val jacocoExecData = files(layout.buildDirectory.dir("outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec"))
+
+// JaCoCo coverage report (unit tests)
 val jacocoTestReport by tasks.registering(JacocoReport::class) {
     dependsOn("testDebugUnitTest")
     reports {
         xml.required.set(true)
         html.required.set(true)
     }
-    val fileFilter = listOf(
-        "**/R.class",
-        "**/R$*.class",
-        "**/BuildConfig.*",
-        "**/Manifest*.*",
-        "**/databinding/*",
-        "**/android/databinding/*",
-        "**/di/*",
-        "**/Dagger*",
-        "**/*Hilt*",
-        "**/*_Factory*",
-        "**/*_MembersInjector*",
-        "**/BR.class"
-    )
-    val kotlinClasses = layout.buildDirectory.dir("intermediates/built_in_kotlinc/debug/compileDebugKotlin/classes")
-    val javaClasses = layout.buildDirectory.dir("intermediates/javac/debug/classes")
     sourceDirectories.setFrom(files("src/main/java"))
     classDirectories.setFrom(
-        fileTree(kotlinClasses) { exclude(fileFilter) },
-        fileTree(javaClasses) { exclude(fileFilter) }
+        fileTree(jacocoKotlinClasses) { exclude(jacocoFileFilter) },
+        fileTree(jacocoJavaClasses) { exclude(jacocoFileFilter) }
     )
-    executionData.setFrom(files(layout.buildDirectory.dir("outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec")))
+    executionData.setFrom(jacocoExecData)
+}
+
+// JaCoCo coverage verification (CI gate)
+val jacocoCoverageVerification by tasks.registering(JacocoCoverageVerification::class) {
+    dependsOn("testDebugUnitTest")
+    violationRules {
+        rule {
+            limit {
+                minimum = "0.05".toBigDecimal()
+                counter = "INSTRUCTION"
+            }
+        }
+    }
+    classDirectories.setFrom(
+        fileTree(jacocoKotlinClasses) { exclude(jacocoFileFilter) },
+        fileTree(jacocoJavaClasses) { exclude(jacocoFileFilter) }
+    )
+    executionData.setFrom(jacocoExecData)
 }
 

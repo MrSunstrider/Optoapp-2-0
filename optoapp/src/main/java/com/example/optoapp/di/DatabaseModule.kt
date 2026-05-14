@@ -2,10 +2,13 @@ package com.example.optoapp.di
 
 import android.content.Context
 import com.example.optoapp.data.*
+import com.example.optoapp.data.backup.BackupRestoreCoordinator
 import com.example.optoapp.data.montura.MonturaDao
+import com.example.optoapp.data.montura.MonturaInventoryCoordinator
 import com.example.optoapp.data.montura.MonturaMovimientoDao
 import com.example.optoapp.data.pago.PagoDao
 import com.example.optoapp.data.servicio.ServicioExtraDao
+import com.example.optoapp.data.sync.SyncSnapshotCoordinator
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import com.example.optoapp.viewmodel.auth.AuthDelegate
 import com.example.optoapp.viewmodel.auth.BackupDelegate
@@ -97,36 +100,60 @@ object DatabaseModule {
     ): SyncRepository = SyncRepository(syncStateTracker, monturaDao, monturaMovimientoDao)
 
     @Provides
+    fun provideSyncSnapshotCoordinator(
+        pacienteDao: PacienteDao,
+        monturaDao: MonturaDao,
+        monturaMovimientoDao: MonturaMovimientoDao,
+        pacienteRepo: PacienteRepository,
+        dispensacionRepo: DispensacionRepository,
+        syncRepo: SyncRepository
+    ): SyncSnapshotCoordinator = SyncSnapshotCoordinator(
+        pacienteDao, monturaDao, monturaMovimientoDao, pacienteRepo, dispensacionRepo, syncRepo
+    )
+
+    @Provides
+    fun provideBackupRestoreCoordinator(
+        pacienteRepo: PacienteRepository,
+        dispensacionRepo: DispensacionRepository,
+        evaluacionDao: EvaluacionDao,
+        pacienteDao: PacienteDao,
+        postSaveSyncScheduler: Lazy<PostSaveSyncScheduler>
+    ): BackupRestoreCoordinator = BackupRestoreCoordinator(
+        pacienteRepo, dispensacionRepo, evaluacionDao, pacienteDao, postSaveSyncScheduler
+    )
+
+    @Provides
+    fun provideMonturaInventoryCoordinator(
+        monturaDao: MonturaDao,
+        monturaMovimientoDao: MonturaMovimientoDao,
+        postSaveSyncScheduler: Lazy<PostSaveSyncScheduler>
+    ): MonturaInventoryCoordinator = MonturaInventoryCoordinator(
+        monturaDao, monturaMovimientoDao, postSaveSyncScheduler
+    )
+
+    @Provides
     @Singleton
     fun provideOptoRepository(
         database: OptoDatabase,
-        pacienteDao: PacienteDao,
-        evaluacionDao: EvaluacionDao,
-        dispensacionDao: DispensacionDao,
-        pagoDao: PagoDao,
-        servicioExtraDao: ServicioExtraDao,
-        monturaDao: MonturaDao,
-        monturaMovimientoDao: MonturaMovimientoDao,
         syncStateTracker: SyncStateTracker,
         postSaveSyncScheduler: Lazy<PostSaveSyncScheduler>,
         pacienteRepo: PacienteRepository,
         dispensacionRepo: DispensacionRepository,
-        syncRepo: SyncRepository
+        syncRepo: SyncRepository,
+        snapshotCoordinator: SyncSnapshotCoordinator,
+        backupCoordinator: BackupRestoreCoordinator,
+        monturaCoordinator: MonturaInventoryCoordinator
     ): OptoRepository {
         return OptoRepository(
             database,
-            pacienteDao,
-            evaluacionDao,
-            dispensacionDao,
-            pagoDao,
-            servicioExtraDao,
-            monturaDao,
-            monturaMovimientoDao,
             syncStateTracker,
             postSaveSyncScheduler,
             pacienteRepo,
             dispensacionRepo,
-            syncRepo
+            syncRepo,
+            snapshotCoordinator,
+            backupCoordinator,
+            monturaCoordinator
         )
     }
 

@@ -1,5 +1,8 @@
 package com.example.optoapp.data
 
+import com.example.optoapp.data.membership.MembershipDataSource
+import com.example.optoapp.data.membership.OpticaQueryHelper
+import com.example.optoapp.data.membership.OpticaSettingsDataSource
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.auth.auth
@@ -32,7 +35,10 @@ class MembershipRepositoryTest {
         supabase = mockk()
         auth = mockk()
         every { supabase.auth } returns auth
-        repo = MembershipRepository(supabase)
+        val opticaQueryHelper = OpticaQueryHelper(supabase)
+        val membershipDataSource = MembershipDataSource(supabase, opticaQueryHelper)
+        val opticaSettingsDataSource = OpticaSettingsDataSource(supabase)
+        repo = MembershipRepository(membershipDataSource, opticaSettingsDataSource)
     }
 
     // ── Sin sesión — early returns ──────────────────────────────────────────
