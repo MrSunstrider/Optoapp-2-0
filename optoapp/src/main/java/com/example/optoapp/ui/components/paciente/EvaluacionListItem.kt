@@ -20,7 +20,8 @@ import com.example.optoapp.util.DateUtils
 fun EvaluacionListItem(
     eval: EvaluacionClinica,
     onEdit: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onResumen: () -> Unit
 ) {
     val date = DateUtils.formatLocalized(eval.fecha)
     var showDeleteDialog by remember { mutableStateOf(false) }
@@ -44,6 +45,9 @@ fun EvaluacionListItem(
                     Text(text = date, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                 }
                 Row {
+                    IconButton(onClick = onResumen) {
+                        Icon(Icons.Default.Visibility, contentDescription = "Ver Resumen", tint = MaterialTheme.colorScheme.secondary)
+                    }
                     IconButton(onClick = onEdit) {
                         Icon(Icons.Default.Edit, contentDescription = "Editar", tint = MaterialTheme.colorScheme.primary)
                     }
