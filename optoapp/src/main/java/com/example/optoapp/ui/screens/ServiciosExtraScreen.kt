@@ -33,12 +33,42 @@ fun ServiciosExtraScreen(navController: NavController, drawerState: DrawerState,
     val servicios by viewModel.allServicios.collectAsState()
     val scope = rememberCoroutineScope()
     var searchQuery by remember { mutableStateOf("") }
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    val showDeleteDialog by viewModel.showDeleteDialog.collectAsState()
+    val servicioToDelete by viewModel.servicioToDelete.collectAsState()
+    val deleteError by viewModel.deleteError.collectAsState()
 
     val filteredServicios = if (searchQuery.isEmpty()) servicios 
     else servicios.filter { it.descripcion.contains(searchQuery, ignoreCase = true) || it.ot.contains(searchQuery, ignoreCase = true) }
 
+    LaunchedEffect(deleteError) {
+        val error = deleteError ?: return@LaunchedEffect
+        snackbarHostState.showSnackbar(error)
+        viewModel.clearDeleteError()
+    }
+
+    if (showDeleteDialog && servicioToDelete != null) {
+        AlertDialog(
+            onDismissRequest = { viewModel.dismissDeleteDialog() },
+            title = { Text("¿Eliminar servicio?", fontWeight = FontWeight.Bold) },
+            text = { Text("¿Eliminar ${servicioToDelete!!.descripcion}?") },
+            confirmButton = {
+                TextButton(onClick = { viewModel.confirmDelete() }) {
+                    Text("Eliminar", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.dismissDeleteDialog() }) {
+                    Text("Cancelar")
+                }
+            }
+        )
+    }
+
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 windowInsets = WindowInsets(0, 0, 0, 0),
@@ -88,7 +118,7 @@ fun ServiciosExtraScreen(navController: NavController, drawerState: DrawerState,
                     items(filteredServicios) { servicio ->
                         ServicioRow(servicio, 
                             onEdit = { navController.navigate("editar_servicio/${servicio.id}") },
-                            onDelete = { viewModel.deleteServicio(servicio) }
+                            onDelete = { viewModel.showDeleteConfirmation(servicio) }
                         )
                         HorizontalDivider()
                     }

@@ -53,6 +53,17 @@ class ServiciosViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(ServiciosUiState())
     val uiState: StateFlow<ServiciosUiState> = _uiState.asStateFlow()
 
+    // -- Delete confirmation dialog state --
+
+    private val _showDeleteDialog = MutableStateFlow(false)
+    val showDeleteDialog: StateFlow<Boolean> = _showDeleteDialog.asStateFlow()
+
+    private val _servicioToDelete = MutableStateFlow<ServicioExtra?>(null)
+    val servicioToDelete: StateFlow<ServicioExtra?> = _servicioToDelete.asStateFlow()
+
+    private val _deleteError = MutableStateFlow<String?>(null)
+    val deleteError: StateFlow<String?> = _deleteError.asStateFlow()
+
     init {
         viewModelScope.launch {
             val oid = sessionManager.opticaId.first()
@@ -223,9 +234,35 @@ class ServiciosViewModel @Inject constructor(
         }
     }
 
-    fun deleteServicio(servicio: ServicioExtra) {
+    fun showDeleteConfirmation(servicio: ServicioExtra) {
+        _servicioToDelete.value = servicio
+        _showDeleteDialog.value = true
+        _deleteError.value = null
+    }
+
+    fun dismissDeleteDialog() {
+        _showDeleteDialog.value = false
+        _servicioToDelete.value = null
+        _deleteError.value = null
+    }
+
+    fun confirmDelete() {
+        val servicio = _servicioToDelete.value ?: return
         viewModelScope.launch {
-            repository.deleteServicio(servicio)
+            try {
+                repository.deleteServicio(servicio)
+                _showDeleteDialog.value = false
+                _servicioToDelete.value = null
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.e(TAG, "Eliminar servicio", e)
+                _deleteError.value = e.message ?: "No se pudo eliminar el servicio."
+            }
         }
+    }
+
+    fun clearDeleteError() {
+        _deleteError.value = null
     }
 }
