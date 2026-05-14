@@ -2,6 +2,7 @@ package com.example.optoapp.data
 
 import android.content.Context
 import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.datastore.preferences.core.edit
 import androidx.security.crypto.MasterKeys
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
