@@ -53,19 +53,21 @@ fun MainDrawerScreen(
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
-            DrawerContent(
-                currentRoute = currentRoute,
-                drawerState = drawerState,
-                navController = navController,
-                opticaHeader = opticaHeader,
-                showCierreCaja = showCierreCaja,
-                showBiYReportes = showBiYReportes,
-                showOperacionHoy = showOperacionHoy,
-                syncState = syncState,
-                syncViewModel = syncViewModel,
-                authViewModel = authViewModel,
-                parentNavController = parentNavController
-            )
+            ModalDrawerSheet {
+                DrawerContent(
+                    currentRoute = currentRoute,
+                    drawerState = drawerState,
+                    navController = navController,
+                    opticaHeader = opticaHeader,
+                    showCierreCaja = showCierreCaja,
+                    showBiYReportes = showBiYReportes,
+                    showOperacionHoy = showOperacionHoy,
+                    syncState = syncState,
+                    syncViewModel = syncViewModel,
+                    authViewModel = authViewModel,
+                    parentNavController = parentNavController
+                )
+            }
         }
     ) {
         Surface(
