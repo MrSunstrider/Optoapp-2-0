@@ -7,6 +7,11 @@ plugins {
     alias(libs.plugins.hilt)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
+    jacoco
+}
+
+jacoco {
+    toolVersion = "0.8.12"
 }
 
 val localProperties = Properties().apply {
@@ -54,6 +59,10 @@ android {
     }
 
     buildTypes {
+        debug {
+            enableAndroidTestCoverage = true
+            enableUnitTestCoverage = true
+        }
         release {
             isMinifyEnabled = true
             proguardFiles(
@@ -91,7 +100,6 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.security.crypto)
-    implementation(libs.gson)
     implementation(libs.kotlinx.serialization.json)
 
     // Room
@@ -144,5 +152,34 @@ tasks.withType<KotlinCompile>().configureEach {
     }
 }
 
-
+// JaCoCo coverage (unit tests)
+val jacocoTestReport by tasks.registering(JacocoReport::class) {
+    dependsOn("testDebugUnitTest")
+    reports {
+        xml.required.set(true)
+        html.required.set(true)
+    }
+    val fileFilter = listOf(
+        "**/R.class",
+        "**/R$*.class",
+        "**/BuildConfig.*",
+        "**/Manifest*.*",
+        "**/databinding/*",
+        "**/android/databinding/*",
+        "**/di/*",
+        "**/Dagger*",
+        "**/*Hilt*",
+        "**/*_Factory*",
+        "**/*_MembersInjector*",
+        "**/BR.class"
+    )
+    val kotlinClasses = layout.buildDirectory.dir("intermediates/built_in_kotlinc/debug/compileDebugKotlin/classes")
+    val javaClasses = layout.buildDirectory.dir("intermediates/javac/debug/classes")
+    sourceDirectories.setFrom(files("src/main/java"))
+    classDirectories.setFrom(
+        fileTree(kotlinClasses) { exclude(fileFilter) },
+        fileTree(javaClasses) { exclude(fileFilter) }
+    )
+    executionData.setFrom(files(layout.buildDirectory.dir("outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec")))
+}
 
