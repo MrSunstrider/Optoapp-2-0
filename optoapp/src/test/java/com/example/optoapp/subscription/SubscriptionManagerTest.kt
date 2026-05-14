@@ -6,6 +6,9 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.example.optoapp.data.FakeDataStore
 import com.example.optoapp.data.MembershipRepository
+import com.example.optoapp.data.membership.MembershipDataSource
+import com.example.optoapp.data.membership.OpticaQueryHelper
+import com.example.optoapp.data.membership.OpticaSettingsDataSource
 import io.github.jan.supabase.createSupabaseClient
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
@@ -35,7 +38,10 @@ class SubscriptionManagerTest {
     fun setUp() {
         fakeDataStore = FakeDataStore()
         val dummySupabase = createSupabaseClient("https://test.supabase.co", "test-key") { }
-        val dummyMembership = MembershipRepository(dummySupabase)
+        val dummyMembership = MembershipRepository(
+            MembershipDataSource(dummySupabase, OpticaQueryHelper(dummySupabase)),
+            OpticaSettingsDataSource(dummySupabase)
+        )
         subscriptionManager = object : SubscriptionManager(
             context = RuntimeEnvironment.getApplication().applicationContext,
             membershipRepository = dummyMembership
@@ -155,7 +161,10 @@ class SubscriptionManagerTest {
         val dummySupabase = createSupabaseClient("https://test.supabase.co", "test-key") { }
         val proManager = object : SubscriptionManager(
             context = RuntimeEnvironment.getApplication().applicationContext,
-            membershipRepository = MembershipRepository(dummySupabase)
+            membershipRepository = MembershipRepository(
+                MembershipDataSource(dummySupabase, OpticaQueryHelper(dummySupabase)),
+                OpticaSettingsDataSource(dummySupabase)
+            )
         ) {
             override fun isDevProEffective(prefs: Preferences): Boolean = true
         }
@@ -181,7 +190,10 @@ class SubscriptionManagerTest {
         val dummySupabase2 = createSupabaseClient("https://test.supabase.co", "test-key") { }
         val manager = object : SubscriptionManager(
             context = RuntimeEnvironment.getApplication().applicationContext,
-            membershipRepository = MembershipRepository(dummySupabase2)
+            membershipRepository = MembershipRepository(
+                MembershipDataSource(dummySupabase2, OpticaQueryHelper(dummySupabase2)),
+                OpticaSettingsDataSource(dummySupabase2)
+            )
         ) {
             override fun isDevProEffective(prefs: Preferences): Boolean = false
             override suspend fun refreshPlanFromServer(opticaId: String) {
@@ -208,7 +220,10 @@ class SubscriptionManagerTest {
         val dummySupabase3 = createSupabaseClient("https://test.supabase.co", "test-key") { }
         val manager = object : SubscriptionManager(
             context = RuntimeEnvironment.getApplication().applicationContext,
-            membershipRepository = MembershipRepository(dummySupabase3)
+            membershipRepository = MembershipRepository(
+                MembershipDataSource(dummySupabase3, OpticaQueryHelper(dummySupabase3)),
+                OpticaSettingsDataSource(dummySupabase3)
+            )
         ) {
             override fun isDevProEffective(prefs: Preferences): Boolean = false
             override suspend fun refreshPlanFromServer(opticaId: String) {

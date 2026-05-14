@@ -1,9 +1,12 @@
 package com.example.optoapp.data
 
+import com.example.optoapp.data.backup.BackupRestoreCoordinator
 import com.example.optoapp.data.montura.MonturaDao
+import com.example.optoapp.data.montura.MonturaInventoryCoordinator
 import com.example.optoapp.data.montura.MonturaMovimientoDao
 import com.example.optoapp.data.pago.PagoDao
 import com.example.optoapp.data.servicio.ServicioExtraDao
+import com.example.optoapp.data.sync.SyncSnapshotCoordinator
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
@@ -63,20 +66,26 @@ class OptoRepositoryTest {
         val dispensacionRepo = DispensacionRepository(dispensacionDao, pagoDao, servicioExtraDao)
         val syncRepo = SyncRepository(syncStateTracker, monturaDao, monturaMovimientoDao)
 
+        val snapshotCoordinator = SyncSnapshotCoordinator(
+            pacienteDao, monturaDao, monturaMovimientoDao, pacienteRepo, dispensacionRepo, syncRepo
+        )
+        val backupCoordinator = BackupRestoreCoordinator(
+            pacienteRepo, dispensacionRepo, evaluacionDao, pacienteDao, postSaveSyncScheduler
+        )
+        val monturaCoordinator = MonturaInventoryCoordinator(
+            monturaDao, monturaMovimientoDao, postSaveSyncScheduler
+        )
+
         repo = OptoRepository(
             database = db,
-            pacienteDao = pacienteDao,
-            evaluacionDao = evaluacionDao,
-            dispensacionDao = dispensacionDao,
-            pagoDao = pagoDao,
-            servicioExtraDao = servicioExtraDao,
-            monturaDao = monturaDao,
-            monturaMovimientoDao = monturaMovimientoDao,
             syncStateTracker = syncStateTracker,
             postSaveSyncScheduler = postSaveSyncScheduler,
             pacienteRepo = pacienteRepo,
             dispensacionRepo = dispensacionRepo,
-            syncRepo = syncRepo
+            syncRepo = syncRepo,
+            snapshotCoordinator = snapshotCoordinator,
+            backupCoordinator = backupCoordinator,
+            monturaCoordinator = monturaCoordinator
         )
     }
 

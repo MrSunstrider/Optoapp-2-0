@@ -1,9 +1,12 @@
 package com.example.optoapp.data
 
+import com.example.optoapp.data.backup.BackupRestoreCoordinator
 import com.example.optoapp.data.montura.MonturaDao
+import com.example.optoapp.data.montura.MonturaInventoryCoordinator
 import com.example.optoapp.data.montura.MonturaMovimientoDao
 import com.example.optoapp.data.pago.PagoDao
 import com.example.optoapp.data.servicio.ServicioExtraDao
+import com.example.optoapp.data.sync.SyncSnapshotCoordinator
 import dagger.Lazy
 import io.mockk.coEvery
 import io.mockk.every
@@ -64,20 +67,26 @@ class OptoRepositoryErrorTest {
         dispensacionRepo = mockk(relaxed = true)
         syncRepo = mockk(relaxed = true)
 
+        val snapshotCoordinator = SyncSnapshotCoordinator(
+            pacienteDao, monturaDao, monturaMovimientoDao, pacienteRepo, dispensacionRepo, syncRepo
+        )
+        val backupCoordinator = BackupRestoreCoordinator(
+            pacienteRepo, dispensacionRepo, evaluacionDao, pacienteDao, scheduler
+        )
+        val monturaCoordinator = MonturaInventoryCoordinator(
+            monturaDao, monturaMovimientoDao, scheduler
+        )
+
         repo = OptoRepository(
             database = database,
-            pacienteDao = pacienteDao,
-            evaluacionDao = evaluacionDao,
-            dispensacionDao = dispensacionDao,
-            pagoDao = pagoDao,
-            servicioExtraDao = servicioExtraDao,
-            monturaDao = monturaDao,
-            monturaMovimientoDao = monturaMovimientoDao,
             syncStateTracker = syncStateTracker,
             postSaveSyncScheduler = scheduler,
             pacienteRepo = pacienteRepo,
             dispensacionRepo = dispensacionRepo,
-            syncRepo = syncRepo
+            syncRepo = syncRepo,
+            snapshotCoordinator = snapshotCoordinator,
+            backupCoordinator = backupCoordinator,
+            monturaCoordinator = monturaCoordinator
         )
     }
 
