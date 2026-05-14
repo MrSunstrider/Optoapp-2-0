@@ -20,7 +20,7 @@ import javax.inject.Inject
  *
  * Upload -> Download para paridad entre dispositivos.
  */
-class SyncInventarioUseCase @Inject constructor(
+open class SyncInventarioUseCase @Inject constructor(
     private val repository: OptoRepository,
     private val supabase: SupabaseClient,
     private val syncStateTracker: com.example.optoapp.data.SyncStateTracker

@@ -1,31 +1,28 @@
 package com.example.optoapp.ui.screens
 
-import android.app.Activity
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import android.widget.Toast
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.optoapp.data.Paciente
 import com.example.optoapp.viewmodel.PacienteViewModel
 import com.example.optoapp.viewmodel.SubscriptionViewModel
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import kotlinx.coroutines.launch
+import com.example.optoapp.ui.components.paciente.PacienteFormSections
 import com.example.optoapp.util.DateUtils
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.UUID
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -53,9 +50,6 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
     var acompanante by remember { mutableStateOf("") }
     var hobbies by remember { mutableStateOf("") }
     var fechaCreacion by remember { mutableStateOf(DateUtils.today()) }
-
-    var expandedSexo by remember { mutableStateOf(false) }
-    val sexos = listOf("Masculino", "Femenino")
 
     var saving by remember { mutableStateOf(false) }
     var showDuplicateHoWarning by remember { mutableStateOf(false) }
@@ -97,10 +91,10 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
             confirmButton = {
                 TextButton(
                     onClick = {
-                        val act = ctx as? Activity
-                        if (act != null) {
-                            subscriptionVm.launchProPurchase(act) { Toast.makeText(ctx, it, Toast.LENGTH_LONG).show() }
-                        }
+                        subscriptionVm.launchProPurchase(
+                            onSuccess = { Toast.makeText(ctx, "PRO activado — pacientes ilimitados.", Toast.LENGTH_LONG).show() },
+                            onError = { Toast.makeText(ctx, it, Toast.LENGTH_LONG).show() }
+                        )
                         showPaywall = false
                     }
                 ) { Text("Actualizar plan") }
@@ -158,140 +152,44 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            OutlinedButton(
-                onClick = { showDatePicker = true },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Fecha de Registro: ${DateUtils.formatLocalized(fechaCreacion)}")
-            }
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                OutlinedTextField(
-                    value = historiaOptometrica,
-                    onValueChange = { historiaOptometrica = it },
-                    label = { Text("N° Historia Optométrica") },
-                    modifier = Modifier.weight(1f)
-                )
-                TextButton(
-                    onClick = {
-                        scope.launch {
-                            historiaOptometrica = viewModel.suggestHistoriaOptometrica()
-                        }
-                    },
-                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
-                ) {
-                    Text("Sugerir HO", maxLines = 1, overflow = TextOverflow.Ellipsis)
-                }
-            }
-
-            OutlinedTextField(
-                value = nombreCompleto,
-                onValueChange = { nombreCompleto = it },
-                label = { Text("Nombre Completo *") },
-                modifier = Modifier.fillMaxWidth()
-            )
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(
-                    value = edad,
-                    onValueChange = { if (it.all { char -> char.isDigit() }) edad = it },
-                    label = { Text("Edad *") },
-                    modifier = Modifier.weight(1f),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-                )
-                OutlinedTextField(
-                    value = telefono,
-                    onValueChange = { telefono = it },
-                    label = { Text("Teléfono *") },
-                    modifier = Modifier.weight(2f),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone)
-                )
-            }
-            OutlinedTextField(
-                value = dni,
-                onValueChange = { dni = it },
-                label = { Text("DNI / Cédula") },
-                modifier = Modifier.fillMaxWidth()
-            )
-            OutlinedTextField(
-                value = fechaNacimiento,
-                onValueChange = { fechaNacimiento = it },
-                label = { Text("Fecha de Nacimiento (dd/mm/aaaa)") },
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            ExposedDropdownMenuBox(
-                expanded = expandedSexo,
-                onExpandedChange = { expandedSexo = !expandedSexo }
-            ) {
-                OutlinedTextField(
-                    value = sexo,
-                    onValueChange = {},
-                    readOnly = true,
-                    label = { Text("Sexo") },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedSexo) },
-                    modifier = Modifier.menuAnchor().fillMaxWidth()
-                )
-                ExposedDropdownMenu(
-                    expanded = expandedSexo,
-                    onDismissRequest = { expandedSexo = false }
-                ) {
-                    sexos.forEach { selectionOption ->
-                        DropdownMenuItem(
-                            text = { Text(selectionOption) },
-                            onClick = {
-                                sexo = selectionOption
-                                expandedSexo = false
-                            }
-                        )
+            PacienteFormSections(
+                nombreCompleto = nombreCompleto,
+                onNombreCompletoChange = { nombreCompleto = it },
+                edad = edad,
+                onEdadChange = { edad = it },
+                telefono = telefono,
+                onTelefonoChange = { telefono = it },
+                dni = dni,
+                onDniChange = { dni = it },
+                historiaOptometrica = historiaOptometrica,
+                onHistoriaOptometricaChange = { historiaOptometrica = it },
+                fechaNacimiento = fechaNacimiento,
+                onFechaNacimientoChange = { fechaNacimiento = it },
+                sexo = sexo,
+                onSexoChange = { sexo = it },
+                email = email,
+                onEmailChange = { email = it },
+                direccion = direccion,
+                onDireccionChange = { direccion = it },
+                distrito = distrito,
+                onDistritoChange = { distrito = it },
+                ocupacion = ocupacion,
+                onOcupacionChange = { ocupacion = it },
+                acompanante = acompanante,
+                onAcompananteChange = { acompanante = it },
+                hobbies = hobbies,
+                onHobbiesChange = { hobbies = it },
+                fechaCreacion = fechaCreacion,
+                onShowDatePicker = { showDatePicker = true },
+                onSuggestHo = {
+                    scope.launch {
+                        historiaOptometrica = viewModel.suggestHistoriaOptometrica()
                     }
                 }
-            }
-
-            OutlinedTextField(
-                value = email,
-                onValueChange = { email = it },
-                label = { Text("Correo Electrónico") },
-                modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
-            )
-            OutlinedTextField(
-                value = direccion,
-                onValueChange = { direccion = it },
-                label = { Text("Dirección") },
-                modifier = Modifier.fillMaxWidth()
-            )
-            OutlinedTextField(
-                value = distrito,
-                onValueChange = { distrito = it },
-                label = { Text("Distrito") },
-                modifier = Modifier.fillMaxWidth()
-            )
-            OutlinedTextField(
-                value = ocupacion,
-                onValueChange = { ocupacion = it },
-                label = { Text("Ocupación") },
-                modifier = Modifier.fillMaxWidth()
-            )
-            OutlinedTextField(
-                value = acompanante,
-                onValueChange = { acompanante = it },
-                label = { Text("Acompañante") },
-                modifier = Modifier.fillMaxWidth()
-            )
-            OutlinedTextField(
-                value = hobbies,
-                onValueChange = { hobbies = it },
-                label = { Text("Hobbies / Hábitos") },
-                modifier = Modifier.fillMaxWidth(),
-                minLines = 2
             )
 
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)

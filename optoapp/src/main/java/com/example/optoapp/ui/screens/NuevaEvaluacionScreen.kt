@@ -17,36 +17,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.example.optoapp.ui.components.AnamnesisSection
-import com.example.optoapp.ui.components.CierreSection
-import com.example.optoapp.ui.components.ContactologiaSection
-import com.example.optoapp.ui.components.ExamenVisualSection
 import com.example.optoapp.ui.components.OSDIDialog
-import com.example.optoapp.ui.components.RefraccionSection
+import com.example.optoapp.ui.components.evaluacion.AnamnesisSection
+import com.example.optoapp.ui.components.evaluacion.CierreSection
+import com.example.optoapp.ui.components.evaluacion.ContactologiaSection
+import com.example.optoapp.ui.components.evaluacion.ExamenVisualSection
+import com.example.optoapp.ui.components.evaluacion.RefraccionSection
 import com.example.optoapp.viewmodel.EvaluacionViewModel
 import com.example.optoapp.util.DateUtils
-
-val basesPrisma = listOf("Nasal", "Temporal", "Superior", "Inferior")
-val diagnosticosRefraccion = listOf(
-    "Emetropía",
-    "Miopía",
-    "Hipermetropía",
-    "Astigmatismo miópico simple",
-    "Astigmatismo miópico compuesto",
-    "Astigmatismo hipermetrópico simple",
-    "Astigmatismo hipermetrópico compuesto",
-    "Astigmatismo mixto",
-    "Balance"
-)
-
-val tiposLC = listOf("Blanda", "Rígida (RGP)", "Tórica", "Multifocal", "Cosmética")
-val materialesLC = listOf("Hidrogel", "Silicona Hidrogel", "PMMA", "Gas Permeable")
-val estereopsisOptions = listOf("Normal", "Reducida", "Ausente")
-val langOptions = listOf("Positivo", "Negativo")
-val worthOptions = listOf("Fusión normal", "Supresión OD", "Supresión OI", "Diplopía")
-val farnsworthOptions = listOf("Normal", "Deutan", "Protan", "Tritan")
-val sensibilidadOptions = listOf("Normal", "Disminuida")
-val campoVisualOptions = listOf("Normal", "Anomalía detectada")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

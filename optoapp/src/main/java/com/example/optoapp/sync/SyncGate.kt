@@ -16,6 +16,6 @@ fun rethrowIfCancellation(e: Throwable) {
  * Un solo [Mutex] para toda la sincronización con Supabase.
  */
 @Singleton
-class SyncGate @Inject constructor() {
-    val mutex = Mutex()
+class SyncGate @Inject constructor() : ISyncGate {
+    override val mutex = Mutex()
 }

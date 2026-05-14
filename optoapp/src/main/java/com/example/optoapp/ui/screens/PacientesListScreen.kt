@@ -1,6 +1,5 @@
 package com.example.optoapp.ui.screens
 
-import android.app.Activity
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -91,10 +90,10 @@ fun PacientesListScreen(navController: NavController, drawerState: DrawerState, 
                 confirmButton = {
                     TextButton(
                         onClick = {
-                            val act = context as? Activity
-                            if (act != null) {
-                                subscriptionVm.launchProPurchase(act) { android.widget.Toast.makeText(context, it, android.widget.Toast.LENGTH_LONG).show() }
-                            }
+                            subscriptionVm.launchProPurchase(
+                                onSuccess = { android.widget.Toast.makeText(context, "PRO activado — pacientes ilimitados.", android.widget.Toast.LENGTH_LONG).show() },
+                                onError = { android.widget.Toast.makeText(context, it, android.widget.Toast.LENGTH_LONG).show() }
+                            )
                             showPaywall = false
                         }
                     ) { Text("Actualizar plan") }

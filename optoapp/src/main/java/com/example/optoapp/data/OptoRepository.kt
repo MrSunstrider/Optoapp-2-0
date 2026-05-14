@@ -26,7 +26,7 @@ import java.time.LocalDate
 import java.util.UUID
 import com.example.optoapp.util.DateUtils
 
-class OptoRepository(
+open class OptoRepository(
     private val database: OptoDatabase,
     private val pacienteDao: PacienteDao,
     private val evaluacionDao: EvaluacionDao,

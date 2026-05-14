@@ -1,6 +1,5 @@
 package com.example.optoapp.ui.components.config
 
-import android.app.Activity
 import android.content.Context
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
@@ -51,12 +50,10 @@ fun SubscriptionCard(
             if (planCode != PlanCode.DEV_OWNER) {
                 Button(
                     onClick = {
-                        val act = context as? Activity
-                        if (act != null) {
-                            subscriptionVm.launchProPurchase(act) { msg ->
-                                Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
-                            }
-                        }
+                        subscriptionVm.launchProPurchase(
+                            onSuccess = { Toast.makeText(context, "PRO activado — pacientes ilimitados.", Toast.LENGTH_LONG).show() },
+                            onError = { msg -> Toast.makeText(context, msg, Toast.LENGTH_LONG).show() }
+                        )
                     },
                     modifier = Modifier.fillMaxWidth()
                 ) {

@@ -21,7 +21,7 @@ import javax.inject.Inject
  * La orquestación upload → download ocurre en [invoke].
  * La lógica de FK-map se delega a [buildUploadRows] (función pura testeable).
  */
-class SyncHistorialUseCase @Inject constructor(
+open class SyncHistorialUseCase @Inject constructor(
     private val repository: OptoRepository,
     private val supabase: SupabaseClient,
     private val syncStateTracker: com.example.optoapp.data.SyncStateTracker
