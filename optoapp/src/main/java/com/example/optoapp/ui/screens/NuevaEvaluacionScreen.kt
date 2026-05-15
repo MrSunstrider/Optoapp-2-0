@@ -212,7 +212,7 @@ fun NuevaEvaluacionScreen(
                     .fillMaxSize()
                     .padding(16.dp)
                     .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 when (selectedTab) {
                     0 -> AnamnesisSection(

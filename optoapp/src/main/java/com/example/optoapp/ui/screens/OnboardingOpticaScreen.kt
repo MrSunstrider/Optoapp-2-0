@@ -63,7 +63,7 @@ fun OnboardingOpticaScreen(
         modifier = Modifier
             .fillMaxSize()
             .padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Text("Bienvenido a OptoApp", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
         Text("Crea tu óptica para empezar en modo gratuito.")

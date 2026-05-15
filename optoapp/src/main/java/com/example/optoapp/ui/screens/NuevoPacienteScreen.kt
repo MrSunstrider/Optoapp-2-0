@@ -151,7 +151,7 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
                 .padding(padding)
                 .padding(16.dp)
                 .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             PacienteFormSections(
                 nombreCompleto = nombreCompleto,

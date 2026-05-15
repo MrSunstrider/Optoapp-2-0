@@ -196,7 +196,7 @@ fun AgendaScreen(
             } else {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(filas, key = { it.evaluacion.id }) { fila ->
                     val e = fila.evaluacion

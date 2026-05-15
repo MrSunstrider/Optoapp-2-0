@@ -110,7 +110,7 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
                 .padding(padding)
                 .padding(16.dp)
                 .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             OutlinedButton(onClick = { showDatePicker = true }, modifier = Modifier.fillMaxWidth()) {
                 Text("Fecha: ${DateUtils.formatLocalized(uiState.fecha)}")
