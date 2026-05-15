@@ -144,7 +144,7 @@ fun BIScreen(navController: NavController, viewModel: BIViewModel = hiltViewMode
                 shape = RoundedCornerShape(24.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
             ) {
-                Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
                         "Operación e inventario",
                         fontWeight = FontWeight.Bold,
@@ -170,7 +170,7 @@ fun BIScreen(navController: NavController, viewModel: BIViewModel = hiltViewMode
                 shape = RoundedCornerShape(24.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
             ) {
-                Column(modifier = Modifier.padding(20.dp)) {
+        Column(modifier = Modifier.padding(16.dp)) {
                     Text("Top 5 Productos", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, fontSize = 18.sp)
                     Spacer(modifier = Modifier.height(16.dp))
                     if (uiState.topProductos.isEmpty()) {
@@ -181,7 +181,7 @@ fun BIScreen(navController: NavController, viewModel: BIViewModel = hiltViewMode
                 }
             }
             
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
