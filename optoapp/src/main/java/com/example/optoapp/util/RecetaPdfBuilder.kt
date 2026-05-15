@@ -1,6 +1,7 @@
 package com.example.optoapp.util
 
 import android.graphics.Canvas
+import android.graphics.Path
 import android.graphics.RectF
 import android.graphics.pdf.PdfDocument
 import android.text.Layout
@@ -9,6 +10,7 @@ import android.text.TextPaint
 import androidx.core.graphics.withTranslation
 import com.example.optoapp.data.EvaluacionClinica
 import com.example.optoapp.data.Paciente
+import java.time.LocalDate
 
 /**
  * Builder para generar [PdfDocument] de fórmula optométrica / resumen clínico.
@@ -29,40 +31,35 @@ class RecetaPdfBuilder {
     // ─── Public API ─────────────────────────────────────────────────────────
 
     /**
-     * Dibuja la cabecera del PDF: título, subtítulo, tarjeta de paciente.
+     * Dibuja la cabecera del PDF: título centrado + tarjeta de paciente.
      */
     fun addHeader(paciente: Paciente, eval: EvaluacionClinica): RecetaPdfBuilder {
         initPage()
 
-        val title = layoutText("Fórmula optométrica", PdfStyle.titlePaint, contentWidth())
+        // Título centrado
+        val title = layoutText("FÓRMULA OPTOMÉTRICA", PdfStyle.titlePaint, contentWidth(), Layout.Alignment.ALIGN_CENTER)
         drawStaticLayout(title, PdfStyle.MARGIN, y)
-        advance(title.height + 4f)
-
-        val subtitle = layoutText(
-            "Resumen clínico · Documento para el paciente",
-            PdfStyle.subtitlePaint,
-            contentWidth()
-        )
-        drawStaticLayout(subtitle, PdfStyle.MARGIN, y)
-        advance(subtitle.height + 18f)
+        advance(title.height + 12f)
 
         drawHorizontalRule()
-        advance(16f)
+        advance(12f)
 
-        // Patient card
-        val patientLines = buildString {
-            appendLine(paciente.nombreCompleto)
-            append("Edad ${paciente.edad} años")
-            if (paciente.telefono.isNotBlank()) append("  ·  ${paciente.telefono}")
+        // Patient info card – estructura tipo ficha
+        val infoLines = buildString {
+            append("Nombre: ${paciente.nombreCompleto}")
+            append("    Edad: ${paciente.edad} años")
+            if (paciente.dni?.isNotBlank() == true) append("    DNI: ${paciente.dni}")
             appendLine()
-            appendLine("Evaluación: ${DateUtils.formatLocalized(eval.fecha)}")
+            if (paciente.distrito?.isNotBlank() == true) append("Distrito: ${paciente.distrito}")
+            if (paciente.telefono.isNotBlank()) append("    Celular: ${paciente.telefono}")
+            appendLine()
+            append("Fecha de evaluación: ${DateUtils.formatLocalized(eval.fecha)}")
         }
-        val patientInnerW = contentWidth() - (2 * PdfStyle.CARD_PAD).toInt()
-        val patientTitle = layoutText("Paciente", PdfStyle.labelPaint, patientInnerW)
-        val patientBody = layoutText(patientLines.trimEnd(), PdfStyle.bodyPaint, patientInnerW)
-        val cardH = PdfStyle.CARD_PAD + patientTitle.height + 6f + patientBody.height + PdfStyle.CARD_PAD
+        val innerW = contentWidth() - (2 * PdfStyle.CARD_PAD).toInt()
+        val infoBody = layoutText(infoLines.trimEnd(), PdfStyle.bodyPaint, innerW)
+        val cardH = PdfStyle.CARD_PAD + infoBody.height + PdfStyle.CARD_PAD
 
-        ensureSpace(cardH + 24f)
+        ensureSpace(cardH + 20f)
 
         val cardRect = RectF(
             PdfStyle.MARGIN, y,
@@ -70,13 +67,8 @@ class RecetaPdfBuilder {
         )
         canvas.drawRoundRect(cardRect, PdfStyle.CARD_RADIUS, PdfStyle.CARD_RADIUS, PdfStyle.cardFillPaint)
         canvas.drawRoundRect(cardRect, PdfStyle.CARD_RADIUS, PdfStyle.CARD_RADIUS, PdfStyle.cardStrokePaint)
-        drawStaticLayout(patientTitle, PdfStyle.MARGIN + PdfStyle.CARD_PAD, y + PdfStyle.CARD_PAD)
-        drawStaticLayout(
-            patientBody,
-            PdfStyle.MARGIN + PdfStyle.CARD_PAD,
-            y + PdfStyle.CARD_PAD + patientTitle.height + 6f
-        )
-        advance(cardH + 22f)
+        drawStaticLayout(infoBody, PdfStyle.MARGIN + PdfStyle.CARD_PAD, y + PdfStyle.CARD_PAD)
+        advance(cardH + 20f)
 
         return this
     }
@@ -101,117 +93,105 @@ class RecetaPdfBuilder {
     }
 
     /**
-     * Dibuja la sección de diagnóstico y condiciones clínicas.
+     * Dibuja la sección de diagnóstico combinado con condiciones asociadas.
      */
     fun addDiagnostico(eval: EvaluacionClinica): RecetaPdfBuilder {
         val diag = buildString {
-            if (eval.diagnostico.isNotBlank()) appendLine(eval.diagnostico)
             val dOd = eval.diagnosticoOd.firstOrNull().orEmpty()
             val dOi = eval.diagnosticoOi.firstOrNull().orEmpty()
-            if (dOd.isNotBlank()) appendLine("OD: $dOd")
-            if (dOi.isNotBlank()) appendLine("OI: $dOi")
-            if (eval.diagnosticoOtros.isNotEmpty()) {
-                appendLine("Otros: ${eval.diagnosticoOtros.joinToString(", ")}")
+            if (dOd.isNotBlank() && dOi.isNotBlank()) {
+                appendLine("OD: $dOd   |   OI: $dOi")
+            } else if (dOd.isNotBlank()) {
+                appendLine("OD: $dOd")
+            } else if (dOi.isNotBlank()) {
+                appendLine("OI: $dOi")
+            }
+            if (eval.diagnostico.isNotBlank()) {
+                appendLine(eval.diagnostico)
+            }
+            // Presbicia y otras condiciones
+            val condiciones = buildList {
+                if (eval.otrosPresbicia) add("Presbicia")
+                if (eval.otrosAnisometropia) add("Anisometropía")
+                if (eval.otrosAmbliopia) add("Ambliopía")
+            }
+            if (condiciones.isNotEmpty()) {
+                appendLine("Condiciones: ${condiciones.joinToString(", ")}")
             }
         }
-        if (diag.isNotBlank()) section("Diagnóstico", diag)
+        if (diag.isNotBlank()) sectionWithBadge("Diagnóstico", diag.trimEnd())
         return this
     }
 
     /**
-     * Dibuja "Condiciones asociadas" a partir de flags booleanos.
-     */
-    fun addCondicionesAsociadas(eval: EvaluacionClinica): RecetaPdfBuilder {
-        val cond = buildList {
-            if (eval.otrosPresbicia) add("Presbicia")
-            if (eval.otrosAnisometropia) add("Anisometropía")
-            if (eval.otrosAmbliopia) add("Ambliopía")
-        }.joinToString("\n")
-        if (cond.isNotBlank()) section("Condiciones asociadas", cond)
-        return this
-    }
-
-    /**
-     * Dibuja "Prismas" a partir de los valores y bases OD/OI.
+     * Dibuja "Prismas" con triángulo de base abajo centrado.
      */
     fun addPrismas(eval: EvaluacionClinica): RecetaPdfBuilder {
-        val prisma = buildString {
-            if (eval.prismaOdValor.isNotBlank()) appendLine("OD: ${eval.prismaOdValor} (base ${eval.prismaOdBase})")
-            if (eval.prismaOiValor.isNotBlank()) appendLine("OI: ${eval.prismaOiValor} (base ${eval.prismaOiBase})")
+        val hasOd = eval.prismaOdValor.isNotBlank()
+        val hasOi = eval.prismaOiValor.isNotBlank()
+        if (!hasOd && !hasOi) return this
+
+        val prismaText = buildString {
+            if (hasOd) appendLine("OD: ${eval.prismaOdValor}Δ  base ${eval.prismaOdBase}")
+            if (hasOi) appendLine("OI: ${eval.prismaOiValor}Δ  base ${eval.prismaOiBase}")
         }
-        if (prisma.isNotBlank()) section("Prismas", prisma)
+
+        val innerW = contentWidth() - PdfStyle.SECTION_BAR_W.toInt() - 12
+        val titleSl = layoutText("Prismas", PdfStyle.sectionPaint, innerW)
+        val bodySl = layoutText(prismaText.trimEnd(), PdfStyle.bodyPaint, innerW)
+        val contentH = titleSl.height + 8f + bodySl.height + 12f
+        val blockH = contentH + 16f
+        if (!spaceAvailable(blockH)) newPage()
+
+        val blockTop = y
+        // Section bar
+        val barRect = RectF(
+            PdfStyle.MARGIN, blockTop,
+            PdfStyle.MARGIN + PdfStyle.SECTION_BAR_W, blockTop + contentH
+        )
+        canvas.drawRoundRect(barRect, 2f, 2f, PdfStyle.sectionBarPaint)
+
+        drawStaticLayout(titleSl, PdfStyle.MARGIN + PdfStyle.SECTION_BAR_W + 12f, blockTop)
+        drawStaticLayout(bodySl, PdfStyle.MARGIN + PdfStyle.SECTION_BAR_W + 12f, blockTop + titleSl.height + 8f)
+
+        // Triángulo de base abajo centrado
+        val triSize = 24f
+        val triX = PdfStyle.PAGE_W - PdfStyle.MARGIN - triSize - 8f
+        val triY = blockTop + 4f
+        val triangle = Path().apply {
+            moveTo(triX, triY)                          // vértice superior
+            lineTo(triX + triSize / 2f, triY + triSize)  // base derecha
+            lineTo(triX - triSize / 2f, triY + triSize)  // base izquierda
+            close()
+        }
+        canvas.drawPath(triangle, PdfStyle.prismaTrianglePaint)
+
+        advance(contentH + 18f)
         return this
     }
 
     /**
-     * Dibuja "Queratometría" a partir de K1/K2 OD/OI.
-     */
-    fun addQueratometria(eval: EvaluacionClinica): RecetaPdfBuilder {
-        val q = buildString {
-            val ko = eval.k1Od.isNotBlank() || eval.k2Od.isNotBlank()
-            val ki = eval.k1Oi.isNotBlank() || eval.k2Oi.isNotBlank()
-            if (ko) appendLine("OD: ${eval.k1Od} / ${eval.k2Od}")
-            if (ki) appendLine("OI: ${eval.k1Oi} / ${eval.k2Oi}")
-        }
-        if (q.isNotBlank()) section("Queratometría", q)
-        return this
-    }
-
-    /**
-     * Dibuja "Contactología" cuando hay datos de LC.
-     */
-    fun addContactologia(eval: EvaluacionClinica): RecetaPdfBuilder {
-        if (eval.lcOdEsf.isNotBlank() || eval.lcOiEsf.isNotBlank()) {
-            section(
-                "Contactología",
-                "Incluye datos de adaptación de lentes de contacto (evaluación completa en la aplicación)."
-            )
-        }
-        return this
-    }
-
-    /**
-     * Dibuja "Plan de tratamiento" cuando hay contenido.
-     */
-    fun addPlanTratamiento(eval: EvaluacionClinica): RecetaPdfBuilder {
-        if (eval.planTratamiento.isNotBlank()) {
-            section("Plan de tratamiento", eval.planTratamiento)
-        }
-        return this
-    }
-
-    /**
-     * Dibuja "Observaciones" cuando hay contenido.
-     */
-    fun addObservaciones(eval: EvaluacionClinica): RecetaPdfBuilder {
-        if (eval.observaciones.isNotBlank()) {
-            section("Observaciones", eval.observaciones)
-        }
-        return this
-    }
-
-    /**
-     * Dibuja "Seguimiento" con próxima cita y fecha de control.
+     * Dibuja "Seguimiento" con próxima cita (por defecto 1 año después).
      */
     fun addSeguimiento(eval: EvaluacionClinica): RecetaPdfBuilder {
-        val proximaBlock = buildString {
-            if (eval.proximaCita != null) {
-                appendLine("Próxima cita: ${DateUtils.formatLocalized(eval.proximaCita)}")
-            }
-            if (eval.proximaFechaControl.isNotBlank()) {
-                appendLine("Próximo control: ${eval.proximaFechaControl}")
-            }
+        val proximaCitaStr = if (eval.proximaCita != null) {
+            DateUtils.formatLocalized(eval.proximaCita!!)
+        } else {
+            // Por defecto: 1 año después de la evaluación
+            val oneYearLater = eval.fecha.plusYears(1)
+            DateUtils.formatLocalized(oneYearLater)
         }
-        if (proximaBlock.isNotBlank()) {
-            section("Seguimiento", proximaBlock.trim())
+        val block = buildString {
+            append("Próxima cita sugerida: $proximaCitaStr")
         }
+        sectionWithBadge("Seguimiento", block)
         return this
     }
 
     /**
-     * Dibuja una sección genérica con barra de acento lateral.
+     * Dibuja una sección genérica con badge de acento lateral.
      */
-    fun section(title: String, body: String) {
+    fun sectionWithBadge(title: String, body: String) {
         if (body.isBlank()) return
         val innerW = contentWidth() - PdfStyle.SECTION_BAR_W.toInt() - 12
         val t = layoutText(title, PdfStyle.sectionPaint, innerW)
@@ -314,5 +294,3 @@ class RecetaPdfBuilder {
 
     private fun contentWidth(): Int = (PdfStyle.PAGE_W - 2 * PdfStyle.MARGIN).toInt()
 }
-
-
