@@ -9,6 +9,9 @@ on:
       - "build.gradle.kts"
       - "settings.gradle.kts"
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -43,4 +46,3 @@ jobs:
           name: "OptoApp v${{ steps.version.outputs.version }}"
           body: "Build automático del branch main."
           files: optoapp/build/outputs/apk/debug/optoapp-debug.apk
-          generate_release_notes: true
