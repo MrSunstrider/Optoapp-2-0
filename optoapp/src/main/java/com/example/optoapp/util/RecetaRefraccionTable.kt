@@ -94,11 +94,17 @@ object RefraccionTableBuilder {
         val nearRows = listOf(
             Row("OD", listOf(
                 Cell(dash(eval.addCercaOd), Layout.Alignment.ALIGN_CENTER),
-                Cell(dash(eval.addIntermediaOd), Layout.Alignment.ALIGN_CENTER)
+                Cell(dash(eval.addIntermediaOd), Layout.Alignment.ALIGN_CENTER),
+                Cell(dash(eval.dipCerca), Layout.Alignment.ALIGN_CENTER),
+                Cell(dash(eval.avCcOdCerca.ifBlank { eval.avScOdCerca }), Layout.Alignment.ALIGN_CENTER),
+                Cell(dash(eval.avCcAoCerca.ifBlank { eval.avScAoCerca }), Layout.Alignment.ALIGN_CENTER)
             )),
             Row("OI", listOf(
                 Cell(dash(eval.addCercaOi), Layout.Alignment.ALIGN_CENTER),
-                Cell(dash(eval.addIntermediaOi), Layout.Alignment.ALIGN_CENTER)
+                Cell(dash(eval.addIntermediaOi), Layout.Alignment.ALIGN_CENTER),
+                Cell(dash(eval.dipCerca), Layout.Alignment.ALIGN_CENTER),
+                Cell(dash(eval.avCcOiCerca.ifBlank { eval.avScOiCerca }), Layout.Alignment.ALIGN_CENTER),
+                Cell(dash(eval.avCcAoCerca.ifBlank { eval.avScAoCerca }), Layout.Alignment.ALIGN_CENTER)
             ))
         )
 
@@ -188,20 +194,24 @@ object RefraccionTableBuilder {
         cy += gap
 
         // ─── 2. Visión Próxima ─────────────────────────────────────────────────
+        // Columns: label | Cerca | Intermedia | DIP/DNP | AV | AV/AO
+        // Cerca e Intermedia reemplazan a Esfera, Cilindro, Eje (ocupan sus mismas posiciones)
+        // DIP/DNP, AV, AV/AO mantienen mismas posiciones que en Visión Lejana
+        val nearColCercaInter = (colEsf + colCil + colEje) / 2f  // dividir espacio de 3 cols en 2
+
         val nearTitleSl = sl("Visión Próxima", PdfStyle.sectionPaint, innerW.toInt(), Layout.Alignment.ALIGN_NORMAL)
         drawSl(nearTitleSl, margin, cy)
         cy += sectionTitleH
 
         val nearTableTop = cy
-        val nearColW = (innerW - labelColW) / 2f  // 2 data columns: Cerca, Intermedia
 
         // Header
         canvas.drawRect(margin, cy, xRight, cy + rowH, PdfStyle.headerStripPaint)
-        val nearHeaders = listOf("", "Cerca", "Intermedia")
-        val nearXPos = listOf(xLab, xEsf, xEsf + nearColW)
+        val nearHeaders = listOf("", "Cerca", "Intermedia", "DIP/DNP", "AV", "AV / AO")
+        val nearXPos = listOf(xLab, xEsf, xEsf + nearColCercaInter, xDip, xAv, xAvAo)
+        val nearWidths = listOf(labelColW, nearColCercaInter, nearColCercaInter, colDip, colAv, colAvAo)
         nearHeaders.forEachIndexed { i, h ->
-            val w = if (i == 0) labelColW else nearColW
-            val hs = sl(h, headerPaint, (w - 4).toInt().coerceAtLeast(8), Layout.Alignment.ALIGN_CENTER)
+            val hs = sl(h, headerPaint, (nearWidths[i] - 4).toInt().coerceAtLeast(8), Layout.Alignment.ALIGN_CENTER)
             drawSl(hs, nearXPos[i] + 2, cy + (rowH - hs.height) / 2f)
         }
         cy += rowH
@@ -212,24 +222,28 @@ object RefraccionTableBuilder {
             if (bgPaint != null) canvas.drawRect(margin, cy, xRight, cy + rowH, bgPaint)
             val labelSl = sl(row.label, labelPaint, (labelColW - 4).toInt().coerceAtLeast(8), Layout.Alignment.ALIGN_CENTER)
             drawSl(labelSl, xLab + 2, cy + (rowH - labelSl.height) / 2f)
+            val nearDataX = listOf(xEsf, xEsf + nearColCercaInter, xDip, xAv, xAvAo)
+            val nearDataW = listOf(nearColCercaInter, nearColCercaInter, colDip, colAv, colAvAo)
             row.cells.forEachIndexed { ci, cell ->
-                val cx = xEsf + ci * nearColW
-                val cw = (nearColW - 4).toInt().coerceAtLeast(8)
+                val cw = (nearDataW[ci] - 4).toInt().coerceAtLeast(8)
                 val cellSl = sl(cell.text, valuePaint, cw, cell.align)
-                drawSl(cellSl, cx + 2, cy + (rowH - cellSl.height) / 2f)
+                drawSl(cellSl, nearDataX[ci] + 2, cy + (rowH - cellSl.height) / 2f)
             }
             cy += rowH
         }
 
-        // Near grid lines – only inner columns; right border is continuous
+        // Near grid lines – 6 columns
         var nly = nearTableTop
         val nearTotalRows = 1 + nearRows.size
         for (i in 0 until nearTotalRows) {
             canvas.drawLine(margin, nly, xRight, nly, PdfStyle.gridStrokePaint)
             canvas.drawLine(margin, nly, margin, nly + rowH, PdfStyle.gridStrokePaint)
             canvas.drawLine(xRight, nly, xRight, nly + rowH, PdfStyle.gridStrokePaint)
+            // Vertical dividers for 5 data columns
             canvas.drawLine(xEsf, nly, xEsf, nly + rowH, PdfStyle.gridStrokePaint)
-            canvas.drawLine(xEsf + nearColW, nly, xEsf + nearColW, nly + rowH, PdfStyle.gridStrokePaint)
+            canvas.drawLine(xEsf + nearColCercaInter, nly, xEsf + nearColCercaInter, nly + rowH, PdfStyle.gridStrokePaint)
+            canvas.drawLine(xDip, nly, xDip, nly + rowH, PdfStyle.gridStrokePaint)
+            canvas.drawLine(xAv, nly, xAv, nly + rowH, PdfStyle.gridStrokePaint)
             nly += rowH
         }
 
