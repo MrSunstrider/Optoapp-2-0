@@ -1,3 +1,4 @@
+@file:Suppress("DEPRECATION")
 package com.example.optoapp.ui.components.config
 
 import android.content.Context

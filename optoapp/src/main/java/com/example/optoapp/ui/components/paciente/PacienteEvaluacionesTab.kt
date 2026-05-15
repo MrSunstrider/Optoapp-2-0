@@ -18,7 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.optoapp.data.EvaluacionClinica
 import com.example.optoapp.data.Paciente
-import com.example.optoapp.util.WhatsAppUtils
+import com.example.optoapp.util.FileShareUtils
 
 @Composable
 fun EvaluacionesList(
@@ -205,7 +205,7 @@ fun ResumenEvaluacionDialog(eval: EvaluacionClinica, paciente: Paciente, onDismi
                             append("\nPróximo Control: $prox")
                         }
                     }
-                    WhatsAppUtils.sendWhatsAppMessage(context, paciente.telefono, formulaStr)
+                    FileShareUtils.sendWhatsAppMessage(context, paciente.telefono, formulaStr)
                 }) {
                     Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Enviar fórmula a WhatsApp", tint = Color(0xFF25D366))
                 }

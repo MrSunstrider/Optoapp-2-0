@@ -25,7 +25,7 @@ import com.example.optoapp.ui.components.paciente.PacienteInfoHeader
 import com.example.optoapp.ui.components.paciente.PacienteWhatsAppMenu
 import com.example.optoapp.ui.components.paciente.ServiciosExtraList
 import com.example.optoapp.util.RecetaEvaluacionPdfGenerator
-import com.example.optoapp.util.WhatsAppUtils
+import com.example.optoapp.util.FileShareUtils
 import com.example.optoapp.viewmodel.DeletePacienteResult
 import com.example.optoapp.viewmodel.DispensacionViewModel
 import com.example.optoapp.viewmodel.EvaluacionViewModel
@@ -87,7 +87,7 @@ fun DetallePacienteScreen(
                                 evaluaciones = evaluaciones,
                                 onDismiss = { showWhatsAppMenu = false },
                                 onSendMessage = { msg ->
-                                    WhatsAppUtils.sendWhatsAppMessage(context, p.telefono, msg)
+                                    FileShareUtils.sendWhatsAppMessage(context, p.telefono, msg)
                                 }
                             )
                         }

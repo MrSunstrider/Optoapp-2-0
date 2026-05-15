@@ -43,7 +43,7 @@ object DateUtils {
     fun fromIso(value: String): LocalDate = LocalDate.parse(value, isoFormatter)
 
     fun formatLocalized(date: LocalDate): String {
-        val formatter = DateTimeFormatter.ofPattern("dd 'de' MMMM 'de' yyyy", Locale("es", "PE"))
+        val formatter = DateTimeFormatter.ofPattern("dd 'de' MMMM 'de' yyyy", Locale.forLanguageTag("es-PE"))
         return date.format(formatter)
     }
 

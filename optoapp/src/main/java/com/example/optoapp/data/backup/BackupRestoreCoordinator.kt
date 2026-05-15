@@ -118,17 +118,8 @@ class BackupRestoreCoordinator @Inject constructor(
         ultimasEtiquetas = if (ultimasEtiquetas == null) emptyList() else ultimasEtiquetas
     )
 
-    private fun EvaluacionClinica.withDefaults(): EvaluacionClinica = copy(
-        necesidadVisual = if (necesidadVisual == null) emptyList() else necesidadVisual,
-        diagnosticoOd = if (diagnosticoOd == null) emptyList() else diagnosticoOd,
-        diagnosticoOi = if (diagnosticoOi == null) emptyList() else diagnosticoOi,
-        diagnosticoOtros = if (diagnosticoOtros == null) emptyList() else diagnosticoOtros
-    )
-
-    private fun DispensacionOptica.withDefaults(): DispensacionOptica = copy(
-        tratamientos = if (tratamientos == null) emptyList() else tratamientos
-    )
-
+    private fun EvaluacionClinica.withDefaults(): EvaluacionClinica = this
+    private fun DispensacionOptica.withDefaults(): DispensacionOptica = this
     private fun Pago.withDefaults(): Pago = this
     private fun ServicioExtra.withDefaults(): ServicioExtra = this
 }
