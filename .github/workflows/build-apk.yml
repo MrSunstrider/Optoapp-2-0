@@ -1,0 +1,37 @@
+name: build-apk
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "optoapp/**"
+      - "gradle/**"
+      - "build.gradle.kts"
+      - "settings.gradle.kts"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: "temurin"
+
+      - name: Setup local.properties
+        run: |
+          echo "supabase.url=${{ secrets.SUPABASE_URL }}" >> local.properties
+          echo "supabase.anon.key=${{ secrets.SUPABASE_ANON_KEY }}" >> local.properties
+
+      - name: Build debug APK
+        working-directory: ./
+        run: ./gradlew :optoapp:assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: optoapp-debug
+          path: optoapp/build/outputs/apk/debug/optoapp-debug.apk
