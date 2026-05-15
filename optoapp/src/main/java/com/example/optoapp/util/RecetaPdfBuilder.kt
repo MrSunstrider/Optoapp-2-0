@@ -44,29 +44,30 @@ class RecetaPdfBuilder {
         drawHorizontalRule()
         advance(12f)
 
-        // Patient info card – estructura tipo ficha
-        val boldLine = "${paciente.nombreCompleto}    Edad: ${paciente.edad} años${paciente.dni?.let { "    DNI: $it" } ?: ""}"
-        val regularLines = buildString {
-            if (paciente.distrito?.isNotBlank() == true) append("Distrito: ${paciente.distrito}")
-            if (paciente.telefono.isNotBlank()) append("    Celular: ${paciente.telefono}")
-            appendLine()
-            append("Fecha de evaluación: ${DateUtils.formatLocalized(eval.fecha)}")
-        }
+        // Patient info card
         val innerW = contentWidth() - (2 * PdfStyle.CARD_PAD).toInt()
-        val boldLayout = layoutText(boldLine, PdfStyle.bodyBoldPaint, innerW)
-        val regularLayout = layoutText(regularLines.trimEnd(), PdfStyle.bodyPaint, innerW)
-        val cardH = PdfStyle.CARD_PAD + boldLayout.height + 6f + regularLayout.height + PdfStyle.CARD_PAD
+        val titleLabel = layoutText("Paciente", PdfStyle.labelPaint, innerW)
+        val infoLines = buildString {
+            append(paciente.nombreCompleto)
+            append("  ·  Edad: ${paciente.edad} años")
+            if (paciente.dni?.isNotBlank() == true) append("  ·  DNI: ${paciente.dni}")
+            if (paciente.historiaOptometrica?.isNotBlank() == true) append("  ·  HO: ${paciente.historiaOptometrica}")
+            appendLine()
+            if (paciente.distrito?.isNotBlank() == true) append("Distrito: ${paciente.distrito}  ")
+            if (paciente.telefono.isNotBlank()) append("Celular: ${paciente.telefono}")
+            appendLine()
+            append("Evaluación: ${DateUtils.formatLocalized(eval.fecha)}")
+        }
+        val infoLayout = layoutText(infoLines.trimEnd(), PdfStyle.bodyBoldPaint, innerW)
+        val cardH = PdfStyle.CARD_PAD + titleLabel.height + 6f + infoLayout.height + PdfStyle.CARD_PAD
 
         ensureSpace(cardH + 20f)
 
-        val cardRect = RectF(
-            PdfStyle.MARGIN, y,
-            PdfStyle.PAGE_W - PdfStyle.MARGIN, y + cardH
-        )
+        val cardRect = RectF(PdfStyle.MARGIN, y, PdfStyle.PAGE_W - PdfStyle.MARGIN, y + cardH)
         canvas.drawRoundRect(cardRect, PdfStyle.CARD_RADIUS, PdfStyle.CARD_RADIUS, PdfStyle.cardFillPaint)
         canvas.drawRoundRect(cardRect, PdfStyle.CARD_RADIUS, PdfStyle.CARD_RADIUS, PdfStyle.cardStrokePaint)
-        drawStaticLayout(boldLayout, PdfStyle.MARGIN + PdfStyle.CARD_PAD, y + PdfStyle.CARD_PAD)
-        drawStaticLayout(regularLayout, PdfStyle.MARGIN + PdfStyle.CARD_PAD, y + PdfStyle.CARD_PAD + boldLayout.height + 6f)
+        drawStaticLayout(titleLabel, PdfStyle.MARGIN + PdfStyle.CARD_PAD, y + PdfStyle.CARD_PAD)
+        drawStaticLayout(infoLayout, PdfStyle.MARGIN + PdfStyle.CARD_PAD, y + PdfStyle.CARD_PAD + titleLabel.height + 6f)
         advance(cardH + 20f)
 
         return this
