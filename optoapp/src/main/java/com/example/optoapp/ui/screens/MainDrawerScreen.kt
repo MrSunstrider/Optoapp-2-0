@@ -21,6 +21,9 @@ import com.example.optoapp.viewmodel.AuthViewModel
 import com.example.optoapp.viewmodel.OpticaHeaderViewModel
 import kotlinx.coroutines.launch
 
+/** CompositionLocal para que cualquier pantalla pueda mostrar Snackbar sin acoplamiento. */
+val LocalSnackbarHostState = staticCompositionLocalOf { SnackbarHostState() }
+
 @Composable
 fun MainDrawerScreen(
     parentNavController: NavController,
@@ -49,7 +52,10 @@ fun MainDrawerScreen(
     }
 
     val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
+    val snackbarHostState = remember { SnackbarHostState() }
+    val snackbarScope = rememberCoroutineScope()
 
+    CompositionLocalProvider(LocalSnackbarHostState provides snackbarHostState) {
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
@@ -117,7 +123,8 @@ fun MainDrawerScreen(
                     )
                 }
             }
-            NavHost(navController = navController, startDestination = "pacientes", modifier = Modifier.weight(1f)) {
+            Box(modifier = Modifier.weight(1f)) {
+                NavHost(navController = navController, startDestination = "pacientes", modifier = Modifier.fillMaxSize()) {
                 composable("pacientes") { PacientesListScreen(navController, drawerState) }
                 composable("agenda") { AgendaScreen(navController, drawerState) }
                 composable("nuevoPaciente") { NuevoPacienteScreen(navController) }
@@ -195,8 +202,14 @@ fun MainDrawerScreen(
                 composable("cierre_caja") { CierreCajaScreen(navController) }
                 composable("estadisticas_bi") { BIScreen(navController) }
                 composable("configuracion") { ConfiguracionScreen(navController, drawerState, syncViewModel) }
+                    }
+                    SnackbarHost(
+                        hostState = snackbarHostState,
+                        modifier = Modifier.align(Alignment.BottomCenter).padding(16.dp)
+                    )
+                }
             }
         }
-        }
     }
+}
 }
