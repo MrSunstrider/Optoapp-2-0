@@ -217,22 +217,22 @@ fun NuevaEvaluacionScreen(
                 when (selectedTab) {
                     0 -> AnamnesisSection(
                         uiState = uiState,
-                        onUpdate = { viewModel.updateUiState { it } },
+                        onUpdate = { s -> viewModel.updateUiState { s } },
                         onShowDatePicker = { showDatePicker = true }
                     )
                     1 -> ExamenVisualSection(
                         uiState = uiState,
-                        onUpdate = { viewModel.updateUiState { it } },
+                        onUpdate = { s -> viewModel.updateUiState { s } },
                         onShowOsdiDialog = { showOsdiDialog = true }
                     )
                     2 -> RefraccionSection(
                         uiState = uiState,
-                        onUpdate = { viewModel.updateUiState { it } },
+                        onUpdate = { s -> viewModel.updateUiState { s } },
                         viewModel = viewModel
                     )
                     3 -> ContactologiaSection(
                         uiState = uiState,
-                        onUpdate = { viewModel.updateUiState { it } },
+                        onUpdate = { s -> viewModel.updateUiState { s } },
                         aplicarRecorteOd = aplicarRecorteOd,
                         aplicarRecorteOi = aplicarRecorteOi,
                         onRecorteOdChange = { aplicarRecorteOd = it },
@@ -241,7 +241,7 @@ fun NuevaEvaluacionScreen(
                     )
                     4 -> CierreSection(
                         uiState = uiState,
-                        onUpdate = { viewModel.updateUiState { it } },
+                        onUpdate = { s -> viewModel.updateUiState { s } },
                         onShowProximaDatePicker = { showProximaDatePicker = true },
                         onSave = { saveAction() },
                         evaluacionId = evaluacionId

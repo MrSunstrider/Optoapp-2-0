@@ -95,7 +95,7 @@ fun NuevoServicioScreen(navController: NavController, pacienteId: String? = null
         ) {
             ServicioForm(
                 uiState = uiState,
-                onUpdate = { viewModel.updateUiState { it } },
+                onUpdate = { s -> viewModel.updateUiState { s } },
                 monturas = monturas,
                 pacientes = pacientes,
                 onAddPago = { viewModel.addPago(it) },

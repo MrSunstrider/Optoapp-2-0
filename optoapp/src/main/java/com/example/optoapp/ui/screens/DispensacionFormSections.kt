@@ -155,23 +155,21 @@ fun MonturaInfoSection(
                         placeholder = { Text("Ej: Ray-Ban, RX-1234...") },
                         leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Buscar") },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                        modifier = Modifier.menuAnchor().fillMaxWidth()
+                        modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryEditable).fillMaxWidth()
                     )
                     ExposedDropdownMenu(
                         expanded = expanded && filteredMonturas.isNotEmpty(),
                         onDismissRequest = { expanded = false }
                     ) {
                         filteredMonturas.forEach { montura ->
-                            DropdownMenuItem(
-                                text = {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Column(modifier = Modifier.weight(1f)) {
-                                            Text("${montura.marca} ${montura.modelo}", fontWeight = FontWeight.Bold)
-                                            Text("SKU: ${montura.sku} | ${montura.color}",
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text("${montura.marca} ${montura.modelo}", fontWeight = FontWeight.Bold)
+                                    Text("SKU: ${montura.sku} | ${montura.color}",
                                                 style = MaterialTheme.typography.bodySmall)
                                         }
                                         Text("Stock: ${montura.stockActual}",
