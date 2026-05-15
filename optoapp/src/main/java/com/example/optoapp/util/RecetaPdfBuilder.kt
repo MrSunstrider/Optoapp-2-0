@@ -45,19 +45,17 @@ class RecetaPdfBuilder {
         advance(12f)
 
         // Patient info card – estructura tipo ficha
-        val infoLines = buildString {
-            append("Nombre: ${paciente.nombreCompleto}")
-            append("    Edad: ${paciente.edad} años")
-            if (paciente.dni?.isNotBlank() == true) append("    DNI: ${paciente.dni}")
-            appendLine()
+        val boldLine = "${paciente.nombreCompleto}    Edad: ${paciente.edad} años${paciente.dni?.let { "    DNI: $it" } ?: ""}"
+        val regularLines = buildString {
             if (paciente.distrito?.isNotBlank() == true) append("Distrito: ${paciente.distrito}")
             if (paciente.telefono.isNotBlank()) append("    Celular: ${paciente.telefono}")
             appendLine()
             append("Fecha de evaluación: ${DateUtils.formatLocalized(eval.fecha)}")
         }
         val innerW = contentWidth() - (2 * PdfStyle.CARD_PAD).toInt()
-        val infoBody = layoutText(infoLines.trimEnd(), PdfStyle.bodyPaint, innerW)
-        val cardH = PdfStyle.CARD_PAD + infoBody.height + PdfStyle.CARD_PAD
+        val boldLayout = layoutText(boldLine, PdfStyle.bodyBoldPaint, innerW)
+        val regularLayout = layoutText(regularLines.trimEnd(), PdfStyle.bodyPaint, innerW)
+        val cardH = PdfStyle.CARD_PAD + boldLayout.height + 6f + regularLayout.height + PdfStyle.CARD_PAD
 
         ensureSpace(cardH + 20f)
 
@@ -67,7 +65,8 @@ class RecetaPdfBuilder {
         )
         canvas.drawRoundRect(cardRect, PdfStyle.CARD_RADIUS, PdfStyle.CARD_RADIUS, PdfStyle.cardFillPaint)
         canvas.drawRoundRect(cardRect, PdfStyle.CARD_RADIUS, PdfStyle.CARD_RADIUS, PdfStyle.cardStrokePaint)
-        drawStaticLayout(infoBody, PdfStyle.MARGIN + PdfStyle.CARD_PAD, y + PdfStyle.CARD_PAD)
+        drawStaticLayout(boldLayout, PdfStyle.MARGIN + PdfStyle.CARD_PAD, y + PdfStyle.CARD_PAD)
+        drawStaticLayout(regularLayout, PdfStyle.MARGIN + PdfStyle.CARD_PAD, y + PdfStyle.CARD_PAD + boldLayout.height + 6f)
         advance(cardH + 20f)
 
         return this
@@ -99,27 +98,29 @@ class RecetaPdfBuilder {
         val diag = buildString {
             val dOd = eval.diagnosticoOd.firstOrNull().orEmpty()
             val dOi = eval.diagnosticoOi.firstOrNull().orEmpty()
-            if (dOd.isNotBlank() && dOi.isNotBlank()) {
-                appendLine("OD: $dOd   |   OI: $dOi")
-            } else if (dOd.isNotBlank()) {
-                appendLine("OD: $dOd")
-            } else if (dOi.isNotBlank()) {
-                appendLine("OI: $dOi")
-            }
-            if (eval.diagnostico.isNotBlank()) {
-                appendLine(eval.diagnostico)
-            }
-            // Presbicia y otras condiciones
-            val condiciones = buildList {
-                if (eval.otrosPresbicia) add("Presbicia")
-                if (eval.otrosAnisometropia) add("Anisometropía")
-                if (eval.otrosAmbliopia) add("Ambliopía")
-            }
-            if (condiciones.isNotEmpty()) {
-                appendLine("Condiciones: ${condiciones.joinToString(", ")}")
-            }
+            if (dOd.isNotBlank()) appendLine("OD: $dOd")
+            if (dOi.isNotBlank()) appendLine("OI: $dOi")
+            if (eval.diagnostico.isNotBlank()) appendLine(eval.diagnostico)
+            if (eval.otrosPresbicia) appendLine("Presbicia")
+            if (eval.otrosAnisometropia) appendLine("Anisometropía")
+            if (eval.otrosAmbliopia) appendLine("Ambliopía")
+            appendLine()
+            append("Tratamiento: Uso de lentes correctores.")
         }
-        if (diag.isNotBlank()) sectionWithBadge("Diagnóstico", diag.trimEnd())
+        val innerW = contentWidth() - PdfStyle.SECTION_BAR_W.toInt() - 12
+        val t = layoutText("Diagnóstico", PdfStyle.sectionPaint, innerW)
+        val b = layoutText(diag.trimEnd(), PdfStyle.bodyBoldPaint, innerW)
+        val contentH = t.height + 8f + b.height
+        val blockH = contentH + 16f
+        if (!spaceAvailable(blockH)) newPage()
+
+        val blockTop = y
+        val barRect = RectF(PdfStyle.MARGIN, blockTop, PdfStyle.MARGIN + PdfStyle.SECTION_BAR_W, blockTop + contentH)
+        canvas.drawRoundRect(barRect, 2f, 2f, PdfStyle.sectionBarPaint)
+
+        drawStaticLayout(t, PdfStyle.MARGIN + PdfStyle.SECTION_BAR_W + 12f, blockTop)
+        drawStaticLayout(b, PdfStyle.MARGIN + PdfStyle.SECTION_BAR_W + 12f, blockTop + t.height + 8f)
+        advance(contentH + 18f)
         return this
     }
 

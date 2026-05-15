@@ -102,6 +102,14 @@ object PdfStyle {
         }
     }
 
+    val bodyBoldPaint: TextPaint by lazy {
+        TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = COLOR_TEXT
+            textSize = 10.5f
+            typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD)
+        }
+    }
+
     val bodyPaint: TextPaint by lazy {
         TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
             color = COLOR_TEXT
