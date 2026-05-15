@@ -117,7 +117,7 @@ fun PacienteFormSections(
             readOnly = true,
             label = { Text("Sexo") },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedSexo) },
-            modifier = Modifier.menuAnchor().fillMaxWidth()
+            modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth()
         )
         ExposedDropdownMenu(
             expanded = expandedSexo,
