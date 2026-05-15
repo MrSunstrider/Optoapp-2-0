@@ -123,7 +123,7 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                     items(dispensaciones) { disp ->
                         val date = DateUtils.formatLocalized(disp.fecha)
                         Card(modifier = Modifier.fillMaxWidth()) {
-                            Row(modifier = Modifier.padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                            Row(modifier = Modifier.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(date, fontWeight = FontWeight.Bold)
                                     Text("Pago: ${disp.metodoPago}", fontSize = 12.sp)
