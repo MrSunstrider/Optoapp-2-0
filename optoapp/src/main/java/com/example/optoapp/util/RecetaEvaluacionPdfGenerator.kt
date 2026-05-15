@@ -29,12 +29,6 @@ object RecetaEvaluacionPdfGenerator {
             .addHeader(paciente, eval)
             .addRefraccion(eval)
             .addDiagnostico(eval)
-            .addCondicionesAsociadas(eval)
-            .addPrismas(eval)
-            .addQueratometria(eval)
-            .addContactologia(eval)
-            .addPlanTratamiento(eval)
-            .addObservaciones(eval)
             .addSeguimiento(eval)
             .build()
 

@@ -134,6 +134,14 @@ object PdfStyle {
         }
     }
 
+    val prismaTrianglePaint: Paint by lazy {
+        Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = COLOR_ACCENT
+            style = Paint.Style.FILL
+            alpha = 60
+        }
+    }
+
     val smallPaint: TextPaint by lazy {
         TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
             color = COLOR_TEXT_MUTED
