@@ -20,7 +20,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.optoapp.util.WhatsAppUtils
+import com.example.optoapp.util.FileShareUtils
 
 @Composable
 fun LaboratorioTicketAlertDialog(
@@ -66,7 +66,7 @@ fun LaboratorioTicketAlertDialog(
             ) {
                 if (laboratorioContacto.isNotBlank()) {
                     TextButton(onClick = {
-                        WhatsAppUtils.sendWhatsAppMessage(
+                        FileShareUtils.sendWhatsAppMessage(
                             context,
                             laboratorioContacto,
                             mensajeWhatsappLab,

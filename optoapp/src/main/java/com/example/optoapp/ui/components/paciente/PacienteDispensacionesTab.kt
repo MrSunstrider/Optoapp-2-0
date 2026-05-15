@@ -24,7 +24,7 @@ import com.example.optoapp.data.Paciente
 import com.example.optoapp.ui.components.LaboratorioTicketAlertDialog
 import com.example.optoapp.util.DispensacionLaboratorioTicket
 import com.example.optoapp.util.LaboratorioTicketContext
-import com.example.optoapp.util.WhatsAppUtils
+import com.example.optoapp.util.FileShareUtils
 import com.example.optoapp.viewmodel.LaboratorioConfigViewModel
 import java.util.Locale
 
@@ -217,7 +217,7 @@ fun ResumenDispensacionDialog(disp: DispensacionOptica, paciente: Paciente, onDi
                             append(" Te recordamos que tienes un saldo pendiente de s/. $formattedSaldo.")
                         }
                     }
-                    WhatsAppUtils.sendWhatsAppMessage(context, paciente.telefono, msg)
+                    FileShareUtils.sendWhatsAppMessage(context, paciente.telefono, msg)
                 }) {
                     Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "WhatsApp", tint = Color(0xFF25D366))
                 }
