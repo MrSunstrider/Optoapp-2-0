@@ -2,7 +2,6 @@ package com.example.optoapp.util
 
 import android.graphics.Canvas
 import android.graphics.Path
-import android.graphics.RectF
 import android.text.Layout
 import android.text.StaticLayout
 import android.text.TextPaint
@@ -10,6 +9,7 @@ import com.example.optoapp.data.EvaluacionClinica
 
 /**
  * Draws the complete prescription table: distance vision, near vision, and prisms.
+ * The rightmost column (AV/AO) spans the full height and the outer right border is continuous.
  */
 object RefraccionTableBuilder {
 
@@ -27,31 +27,29 @@ object RefraccionTableBuilder {
 
         if (!hasRx) return yPos
 
-        val pageW = PdfStyle.PAGE_W
         val margin = PdfStyle.MARGIN
-        val innerW = pageW - 2 * margin
-        val colW = innerW / 6f  // 6 columns: Esf, Cil, Eje, DIP/DNP, AV, AV/AO
-
-        val x0 = margin
-        val x1 = x0 + colW
-        val x2 = x1 + colW
-        val x3 = x2 + colW
-        val x4 = x3 + colW
-        val x5 = x4 + colW
-        val x6 = x5 + colW
-
+        val innerW = PdfStyle.PAGE_W - 2 * margin
         val labelColW = 36f
-        val dataStartX = x0 + labelColW
         val dataW = innerW - labelColW
-        val dColW = dataW / 6f
 
-        val dx0 = dataStartX
-        val dx1 = dx0 + dColW
-        val dx2 = dx1 + dColW
-        val dx3 = dx2 + dColW
-        val dx4 = dx3 + dColW
-        val dx5 = dx4 + dColW
-        val dx6 = dx5 + dColW
+        // Column distribution: Esf(1) Cil(1) Eje(1) DIP/DNP(1) AV(1) AV/AO(2) = 7 units
+        val unitW = dataW / 7f
+        val colEsf = unitW
+        val colCil = unitW
+        val colEje = unitW
+        val colDip = unitW
+        val colAv  = unitW
+        val colAvAo = unitW * 2f
+
+        // X positions for distance columns
+        val xLab = margin
+        val xEsf = xLab + labelColW
+        val xCil = xEsf + colEsf
+        val xEje = xCil + colCil
+        val xDip = xEje + colEje
+        val xAv  = xDip + colDip
+        val xAvAo = xAv + colAv
+        val xRight = xAvAo + colAvAo  // outer right edge = full width
 
         fun sl(text: String, paint: TextPaint, w: Int, align: Layout.Alignment): StaticLayout =
             StaticLayout.Builder.obtain(text, 0, text.length, paint, w.coerceAtLeast(8))
@@ -60,17 +58,19 @@ object RefraccionTableBuilder {
                 .setIncludePad(false)
                 .build()
 
-        data class Cell(val text: String, val align: Layout.Alignment)
-        data class Row(val label: String, val cells: List<Cell>)
-
-        val rowH = 28f
         val headerPaint = PdfStyle.tableHeaderPaint
         val labelPaint = PdfStyle.labelPaint
         val valuePaint = PdfStyle.rxValuePaint
+        val rowH = 28f
+        val sectionTitleH = 22f
+        val gap = 6f
 
         fun dash(s: String) = if (s.isBlank()) "—" else s
 
-        // ── Section 1: Visión Lejana ──────────────────────────────────────────
+        data class Cell(val text: String, val align: Layout.Alignment)
+        data class Row(val label: String, val cells: List<Cell>)
+
+        // ── Distance Vision ─────────────────────────────────────────────────────
         val distRows = listOf(
             Row("OD", listOf(
                 Cell(dash(eval.recetaOdEsf), Layout.Alignment.ALIGN_CENTER),
@@ -90,7 +90,7 @@ object RefraccionTableBuilder {
             ))
         )
 
-        // ── Section 2: Visión Próxima ─────────────────────────────────────────
+        // ── Near Vision ─────────────────────────────────────────────────────────
         val nearRows = listOf(
             Row("OD", listOf(
                 Cell(dash(eval.addCercaOd), Layout.Alignment.ALIGN_CENTER),
@@ -102,7 +102,7 @@ object RefraccionTableBuilder {
             ))
         )
 
-        // ── Section 3: Prismas ────────────────────────────────────────────────
+        // ── Prismas ─────────────────────────────────────────────────────────────
         val prismaRows = listOf(
             Row("OD", listOf(
                 Cell(dash(eval.prismaOdValor), Layout.Alignment.ALIGN_CENTER),
@@ -116,248 +116,196 @@ object RefraccionTableBuilder {
             ))
         )
 
-        // ── Calculate total height ─────────────────────────────────────────────
-        val sectionTitleH = 24f
-        val distHeaderH = rowH
-        val distBodyH = rowH * distRows.size
-        val nearHeaderH = rowH
-        val nearBodyH = rowH * nearRows.size
-        val prismaHeaderH = rowH
-        val prismaBodyH = rowH * prismaRows.size
+        // ── Calculate heights ───────────────────────────────────────────────────
+        val pad = 8f
+        val distH = sectionTitleH + rowH + distRows.size * rowH
+        val nearH = sectionTitleH + rowH + nearRows.size * rowH
+        // Prisma solo 4/7 de ancho, calculated later
+        val prismaBodyH = rowH + prismaRows.size * rowH
+        val totalH = pad + distH + gap + nearH + gap + sectionTitleH + prismaBodyH + pad + 8f
 
-        val gap = 8f
-        val pad = 10f
-
-        val distBlockH = sectionTitleH + distHeaderH + distBodyH + gap
-        val nearBlockH = sectionTitleH + nearHeaderH + nearBodyH + gap
-        val prismaBlockH = sectionTitleH + prismaHeaderH + prismaBodyH + gap
-
-        val totalH = pad + distBlockH + nearBlockH + prismaBlockH + pad
-
-        val sectionTPaint = PdfStyle.sectionPaint
-        val sectionW = innerW.toInt()
-
-        ensureSpace(totalH + 20f)
+        ensureSpace(totalH + 16f)
 
         var cy = yPos + pad
 
-        // ─── Helper to draw a section ─────────────────────────────────────────
-        fun drawSection(
-            title: String,
-            headerLabels: List<String>,
-            rows: List<Row>,
-            startX: Float,
-            colWs: List<Float>,
-            extraCellCount: Int = 0,
-            drawExtra: ((Float, Float, Float) -> Unit)? = null
-        ) {
-            // Section title
-            val titleSl = sl(title, sectionTPaint, sectionW, Layout.Alignment.ALIGN_NORMAL)
-            drawSl(titleSl, margin, cy)
-            cy += sectionTitleH
+        // Helper: draw a divider line across full width
+        fun fullDivider(yy: Float) {
+            canvas.drawLine(margin, yy, xRight, yy, PdfStyle.gridStrokePaint)
+        }
 
-            val tableTop = cy
-            val hCount = headerLabels.size
-            val totalColW = colWs.sum()
-            val endX = startX + totalColW
+        // ─── 1. Visión Lejana ─────────────────────────────────────────────────
+        val distTitleSl = sl("Visión Lejana", PdfStyle.sectionPaint, innerW.toInt(), Layout.Alignment.ALIGN_NORMAL)
+        drawSl(distTitleSl, margin, cy)
+        cy += sectionTitleH
 
-            // Header row background
-            canvas.drawRect(startX, cy, endX, cy + rowH, PdfStyle.headerStripPaint)
+        val tableTop = cy
 
-            // Header cells
-            var hx = startX
-            headerLabels.forEachIndexed { i, h ->
-                val hs = sl(h, headerPaint, (colWs[i] - 4).toInt().coerceAtLeast(8), Layout.Alignment.ALIGN_CENTER)
-                drawSl(hs, hx + 2, cy + (rowH - hs.height) / 2f)
-                hx += colWs[i]
+        // Header row with background
+        canvas.drawRect(margin, cy, xRight, cy + rowH, PdfStyle.headerStripPaint)
+        val distHeaders = listOf("", "Esfera", "Cilindro", "Eje", "DIP/DNP", "AV", "AV / AO")
+        val distXPos = listOf(xLab, xEsf, xCil, xEje, xDip, xAv, xAvAo)
+        val distWidths = listOf(labelColW, colEsf, colCil, colEje, colDip, colAv, colAvAo)
+        distHeaders.forEachIndexed { i, h ->
+            val hs = sl(h, headerPaint, (distWidths[i] - 4).toInt().coerceAtLeast(8), Layout.Alignment.ALIGN_CENTER)
+            drawSl(hs, distXPos[i] + 2, cy + (rowH - hs.height) / 2f)
+        }
+        cy += rowH
+
+        // Distance data rows
+        distRows.forEachIndexed { ri, row ->
+            val bgPaint = if (ri > 0 && ri % 2 == 0) PdfStyle.altRowPaint else null
+            if (bgPaint != null) canvas.drawRect(margin, cy, xRight, cy + rowH, bgPaint)
+            val labelSl = sl(row.label, labelPaint, (labelColW - 4).toInt().coerceAtLeast(8), Layout.Alignment.ALIGN_CENTER)
+            drawSl(labelSl, xLab + 2, cy + (rowH - labelSl.height) / 2f)
+            val dataX = listOf(xEsf, xCil, xEje, xDip, xAv, xAvAo)
+            val dataWList = listOf(colEsf, colCil, colEje, colDip, colAv, colAvAo)
+            row.cells.forEachIndexed { ci, cell ->
+                val cw = (dataWList[ci] - 4).toInt().coerceAtLeast(8)
+                val cellSl = sl(cell.text, valuePaint, cw, cell.align)
+                drawSl(cellSl, dataX[ci] + 2, cy + (rowH - cellSl.height) / 2f)
             }
             cy += rowH
+        }
 
-            // Data rows
-            rows.forEachIndexed { ri, row ->
-                val rh = rowH
-                if (ri > 0 && ri % 2 == 0) {
-                    canvas.drawRect(startX, cy, endX, cy + rh, PdfStyle.altRowPaint)
-                }
-                // Label cell
-                val labelSl = sl(row.label, labelPaint, (colWs[0] - 4).toInt().coerceAtLeast(8), Layout.Alignment.ALIGN_CENTER)
-                drawSl(labelSl, startX + 2, cy + (rh - labelSl.height) / 2f)
-
-                // Data cells
-                var cx = startX + colWs[0]
-                row.cells.forEachIndexed { ci, cell ->
-                    val cellSl = sl(cell.text, valuePaint, (colWs[ci + 1] - 4).toInt().coerceAtLeast(8), cell.align)
-                    drawSl(cellSl, cx + 2, cy + (rh - cellSl.height) / 2f)
-                    cx += colWs[ci + 1]
-                }
-
-                // Draw extra cells if any (e.g. for prism split)
-                if (extraCellCount > 0 && drawExtra != null) {
-                    drawExtra(startX, cy, rh)
-                }
-
-                cy += rh
-            }
-
-            // Grid lines
-            canvas.drawLine(startX, tableTop, endX, tableTop, PdfStyle.gridStrokePaint)
-            var ly = tableTop
-            val totalRows = 1 + rows.size // header + data
-            for (i in 0 until totalRows) {
-                canvas.drawLine(startX, ly, endX, ly, PdfStyle.gridStrokePaint)
-                canvas.drawLine(startX, ly, startX, ly + rowH, PdfStyle.gridStrokePaint)
-                canvas.drawLine(endX, ly, endX, ly + rowH, PdfStyle.gridStrokePaint)
-                // Vertical dividers
-                var vx = startX
-                for (w in colWs) {
-                    vx += w
-                    canvas.drawLine(vx, ly, vx, ly + rowH, PdfStyle.gridStrokePaint)
-                }
+        // Distance grid
+        fun drawGridLines(topY: Float, rows: Int, xs: List<Float>) {
+            val endX = xs.last()
+            var ly = topY
+            for (i in 0 until rows) {
+                canvas.drawLine(xs[0], ly, endX, ly, PdfStyle.gridStrokePaint)
+                xs.forEach { x -> canvas.drawLine(x, ly, x, ly + rowH, PdfStyle.gridStrokePaint) }
+                // Rightmost border: AV/AO column right edge (xRight)
+                canvas.drawLine(xRight, ly, xRight, ly + rowH, PdfStyle.gridStrokePaint)
                 ly += rowH
             }
         }
 
-        // ── 1. Visión Lejana ──────────────────────────────────────────────────
-        drawSection(
-            title = "Visión Lejana",
-            headerLabels = listOf("", "Esfera", "Cilindro", "Eje", "DIP/DNP", "AV", "AV / AO"),
-            rows = distRows,
-            startX = dataStartX - labelColW,
-            colWs = listOf(labelColW, dColW, dColW, dColW, dColW, dColW, dColW)
-        )
+        drawGridLines(tableTop, 1 + distRows.size, listOf(margin, xEsf, xCil, xEje, xDip, xAv, xAvAo, xRight))
+
+        // Full-width separator after distance
+        cy += gap
+        fullDivider(cy)
         cy += gap
 
-        // ── 2. Visión Próxima ─────────────────────────────────────────────────
-        val nearColW = (dataW + labelColW) / 3f  // 3 columns: label, Cerca, Intermedia
-        val nearX0 = margin
-        val nearX1 = nearX0 + nearColW
-        val nearX2 = nearX1 + nearColW
-
-        // Section title
-        val nearTitleSl = sl("Visión Próxima", sectionTPaint, sectionW, Layout.Alignment.ALIGN_NORMAL)
+        // ─── 2. Visión Próxima ─────────────────────────────────────────────────
+        val nearTitleSl = sl("Visión Próxima", PdfStyle.sectionPaint, innerW.toInt(), Layout.Alignment.ALIGN_NORMAL)
         drawSl(nearTitleSl, margin, cy)
         cy += sectionTitleH
 
         val nearTableTop = cy
-        val nearEndX = nearX0 + nearColW * 3
+        val nearColW = (innerW - labelColW) / 2f  // 2 data columns: Cerca, Intermedia
 
         // Header
-        canvas.drawRect(nearX0, cy, nearEndX, cy + rowH, PdfStyle.headerStripPaint)
+        canvas.drawRect(margin, cy, xRight, cy + rowH, PdfStyle.headerStripPaint)
         val nearHeaders = listOf("", "Cerca", "Intermedia")
-        var nhx = nearX0
-        nearHeaders.forEach { h ->
-            val hs = sl(h, headerPaint, (nearColW - 4).toInt().coerceAtLeast(8), Layout.Alignment.ALIGN_CENTER)
-            drawSl(hs, nhx + 2, cy + (rowH - hs.height) / 2f)
-            nhx += nearColW
+        val nearXPos = listOf(xLab, xEsf, xEsf + nearColW)
+        nearHeaders.forEachIndexed { i, h ->
+            val w = if (i == 0) labelColW else nearColW
+            val hs = sl(h, headerPaint, (w - 4).toInt().coerceAtLeast(8), Layout.Alignment.ALIGN_CENTER)
+            drawSl(hs, nearXPos[i] + 2, cy + (rowH - hs.height) / 2f)
         }
         cy += rowH
 
-        // Data rows
+        // Near data rows
         nearRows.forEachIndexed { ri, row ->
-            val rh = rowH
-            if (ri > 0 && ri % 2 == 0) {
-                canvas.drawRect(nearX0, cy, nearEndX, cy + rh, PdfStyle.altRowPaint)
-            }
-            val labelSl = sl(row.label, labelPaint, (nearColW - 4).toInt().coerceAtLeast(8), Layout.Alignment.ALIGN_CENTER)
-            drawSl(labelSl, nearX0 + 2, cy + (rh - labelSl.height) / 2f)
-
+            val bgPaint = if (ri > 0 && ri % 2 == 0) PdfStyle.altRowPaint else null
+            if (bgPaint != null) canvas.drawRect(margin, cy, xRight, cy + rowH, bgPaint)
+            val labelSl = sl(row.label, labelPaint, (labelColW - 4).toInt().coerceAtLeast(8), Layout.Alignment.ALIGN_CENTER)
+            drawSl(labelSl, xLab + 2, cy + (rowH - labelSl.height) / 2f)
             row.cells.forEachIndexed { ci, cell ->
-                val cx = nearX1 + ci * nearColW
-                val cellSl = sl(cell.text, valuePaint, (nearColW - 4).toInt().coerceAtLeast(8), cell.align)
-                drawSl(cellSl, cx + 2, cy + (rh - cellSl.height) / 2f)
+                val cx = xEsf + ci * nearColW
+                val cw = (nearColW - 4).toInt().coerceAtLeast(8)
+                val cellSl = sl(cell.text, valuePaint, cw, cell.align)
+                drawSl(cellSl, cx + 2, cy + (rowH - cellSl.height) / 2f)
             }
-            cy += rh
+            cy += rowH
         }
 
-        // Near grid lines
-        canvas.drawLine(nearX0, nearTableTop, nearEndX, nearTableTop, PdfStyle.gridStrokePaint)
+        // Near grid lines – only inner columns; right border is continuous
         var nly = nearTableTop
         val nearTotalRows = 1 + nearRows.size
         for (i in 0 until nearTotalRows) {
-            canvas.drawLine(nearX0, nly, nearEndX, nly, PdfStyle.gridStrokePaint)
-            canvas.drawLine(nearX0, nly, nearX0, nly + rowH, PdfStyle.gridStrokePaint)
-            canvas.drawLine(nearEndX, nly, nearEndX, nly + rowH, PdfStyle.gridStrokePaint)
-            canvas.drawLine(nearX1, nly, nearX1, nly + rowH, PdfStyle.gridStrokePaint)
-            canvas.drawLine(nearX2, nly, nearX2, nly + rowH, PdfStyle.gridStrokePaint)
+            canvas.drawLine(margin, nly, xRight, nly, PdfStyle.gridStrokePaint)
+            canvas.drawLine(margin, nly, margin, nly + rowH, PdfStyle.gridStrokePaint)
+            canvas.drawLine(xRight, nly, xRight, nly + rowH, PdfStyle.gridStrokePaint)
+            canvas.drawLine(xEsf, nly, xEsf, nly + rowH, PdfStyle.gridStrokePaint)
+            canvas.drawLine(xEsf + nearColW, nly, xEsf + nearColW, nly + rowH, PdfStyle.gridStrokePaint)
             nly += rowH
         }
 
+        // Full-width separator after near
         cy += gap
+        fullDivider(cy)
+        cy += 4f
 
-        // ── 3. Prismas ─────────────────────────────────────────────────────────
+        // ─── 3. Prismas ─────────────────────────────────────────────────────────
         // Prisma solo ocupa 4 de las 7 columnas de ancho
         val oneSeventh = innerW / 7f
-        val prismaWidth = oneSeventh * 4f
-        val prismaColW = oneSeventh  // 4 columnas iguales
-        val pX0 = margin
-        val pX1 = pX0 + prismaColW
-        val pX2 = pX1 + prismaColW
-        val pX3 = pX2 + prismaColW
-        val pEndX = pX0 + prismaWidth
-
-        // Separador horizontal superior (ancho completo) + inicio del bloque
-        canvas.drawLine(margin, cy, margin + innerW, cy, PdfStyle.gridStrokePaint)
-
-        // Triangle in top-left of prisma section
-        val triSize = 16f
-        val triX = pX0 + 6f
-        val triY = cy + 6f
-        val triangle = Path().apply {
-            moveTo(triX, triY)                         // top vertex
-            lineTo(triX + triSize / 2f, triY + triSize) // bottom-right
-            lineTo(triX - triSize / 2f, triY + triSize) // bottom-left
-            close()
-        }
-        canvas.drawPath(triangle, PdfStyle.prismaTrianglePaint)
-
-        // Section title
-        val pTitleSl = sl("Prisma", sectionTPaint, sectionW, Layout.Alignment.ALIGN_NORMAL)
-        drawSl(pTitleSl, margin + 28f, cy)
+        val prismaColW = oneSeventh
+        val pLabel = margin
+        val pPD = pLabel + prismaColW
+        val pBase = pPD + prismaColW
+        val pEje = pBase + prismaColW
+        val pRight = pEje + prismaColW  // right edge of prisma box (4/7)
+        val prismaTitleSl = sl("Prisma", PdfStyle.sectionPaint, innerW.toInt(), Layout.Alignment.ALIGN_NORMAL)
+        drawSl(prismaTitleSl, margin + 4f, cy)
         cy += sectionTitleH
 
         val prismaTableTop = cy
 
+        // Draw triangle icon
+        val triSize = 16f
+        val triX = pLabel + 4f
+        val triY = cy + 4f
+        val triangle = Path().apply {
+            moveTo(triX, triY)
+            lineTo(triX + triSize / 2f, triY + triSize)
+            lineTo(triX - triSize / 2f, triY + triSize)
+            close()
+        }
+        canvas.drawPath(triangle, PdfStyle.prismaTrianglePaint)
+
         // Header
-        canvas.drawRect(pX0, cy, pEndX, cy + rowH, PdfStyle.headerStripPaint)
+        canvas.drawRect(pLabel, cy, pRight, cy + rowH, PdfStyle.headerStripPaint)
         val prismaHeaders = listOf("", "PD", "Base", "Eje")
-        var phx = pX0
-        prismaHeaders.forEach { h ->
+        val prismaXPos = listOf(pLabel, pPD, pBase, pEje)
+        prismaHeaders.forEachIndexed { i, h ->
             val hs = sl(h, headerPaint, (prismaColW - 4).toInt().coerceAtLeast(8), Layout.Alignment.ALIGN_CENTER)
-            drawSl(hs, phx + 2, cy + (rowH - hs.height) / 2f)
-            phx += prismaColW
+            drawSl(hs, prismaXPos[i] + 2, cy + (rowH - hs.height) / 2f)
         }
         cy += rowH
 
-        // Data rows
+        // Prisma data rows
         prismaRows.forEachIndexed { ri, row ->
-            val rh = rowH
-            if (ri > 0 && ri % 2 == 0) {
-                canvas.drawRect(pX0, cy, pEndX, cy + rh, PdfStyle.altRowPaint)
-            }
+            val bgPaint = if (ri > 0 && ri % 2 == 0) PdfStyle.altRowPaint else null
+            if (bgPaint != null) canvas.drawRect(pLabel, cy, pRight, cy + rowH, bgPaint)
             val labelSl = sl(row.label, labelPaint, (prismaColW - 4).toInt().coerceAtLeast(8), Layout.Alignment.ALIGN_CENTER)
-            drawSl(labelSl, pX0 + 2, cy + (rh - labelSl.height) / 2f)
-
+            drawSl(labelSl, pLabel + 2, cy + (rowH - labelSl.height) / 2f)
             row.cells.forEachIndexed { ci, cell ->
-                val cx = pX1 + ci * prismaColW
-                val cellSl = sl(cell.text, valuePaint, (prismaColW - 4).toInt().coerceAtLeast(8), cell.align)
-                drawSl(cellSl, cx + 2, cy + (rh - cellSl.height) / 2f)
+                val cx = pPD + ci * prismaColW
+                val cw = (prismaColW - 4).toInt().coerceAtLeast(8)
+                val cellSl = sl(cell.text, valuePaint, cw, cell.align)
+                drawSl(cellSl, cx + 2, cy + (rowH - cellSl.height) / 2f)
             }
-            cy += rh
+            cy += rowH
         }
 
-        // Prisma grid lines — solo 4/7 del ancho
-        canvas.drawLine(pX0, prismaTableTop, pEndX, prismaTableTop, PdfStyle.gridStrokePaint)
+        // Prisma grid lines – only within 4/7 width; outer right border continues
         var ply = prismaTableTop
         val prismaTotalRows = 1 + prismaRows.size
         for (i in 0 until prismaTotalRows) {
-            canvas.drawLine(pX0, ply, pEndX, ply, PdfStyle.gridStrokePaint)
-            canvas.drawLine(pX0, ply, pX0, ply + rowH, PdfStyle.gridStrokePaint)
-            canvas.drawLine(pEndX, ply, pEndX, ply + rowH, PdfStyle.gridStrokePaint)
-            canvas.drawLine(pX1, ply, pX1, ply + rowH, PdfStyle.gridStrokePaint)
-            canvas.drawLine(pX2, ply, pX2, ply + rowH, PdfStyle.gridStrokePaint)
-            canvas.drawLine(pX3, ply, pX3, ply + rowH, PdfStyle.gridStrokePaint)
+            canvas.drawLine(pLabel, ply, pRight, ply, PdfStyle.gridStrokePaint)
+            canvas.drawLine(pLabel, ply, pLabel, ply + rowH, PdfStyle.gridStrokePaint)
+            // Prisma right edge at 4/7
+            canvas.drawLine(pRight, ply, pRight, ply + rowH, PdfStyle.gridStrokePaint)
+            canvas.drawLine(pPD, ply, pPD, ply + rowH, PdfStyle.gridStrokePaint)
+            canvas.drawLine(pBase, ply, pBase, ply + rowH, PdfStyle.gridStrokePaint)
+            canvas.drawLine(pEje, ply, pEje, ply + rowH, PdfStyle.gridStrokePaint)
             ply += rowH
         }
+
+        // Close the outer right border at the bottom of prisma (full width)
+        canvas.drawLine(xRight, prismaTableTop, xRight, cy, PdfStyle.gridStrokePaint)
 
         cy += pad
 
