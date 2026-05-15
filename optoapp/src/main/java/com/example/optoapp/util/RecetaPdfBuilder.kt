@@ -105,23 +105,9 @@ class RecetaPdfBuilder {
             if (eval.otrosPresbicia) appendLine("Presbicia")
             if (eval.otrosAnisometropia) appendLine("Anisometropía")
             if (eval.otrosAmbliopia) appendLine("Ambliopía")
-            appendLine()
-            append("Tratamiento: Uso de lentes correctores.")
         }
-        val innerW = contentWidth() - PdfStyle.SECTION_BAR_W.toInt() - 12
-        val t = layoutText("Diagnóstico", PdfStyle.sectionPaint, innerW)
-        val b = layoutText(diag.trimEnd(), PdfStyle.bodyBoldPaint, innerW)
-        val contentH = t.height + 8f + b.height
-        val blockH = contentH + 16f
-        if (!spaceAvailable(blockH)) newPage()
-
-        val blockTop = y
-        val barRect = RectF(PdfStyle.MARGIN, blockTop, PdfStyle.MARGIN + PdfStyle.SECTION_BAR_W, blockTop + contentH)
-        canvas.drawRoundRect(barRect, 2f, 2f, PdfStyle.sectionBarPaint)
-
-        drawStaticLayout(t, PdfStyle.MARGIN + PdfStyle.SECTION_BAR_W + 12f, blockTop)
-        drawStaticLayout(b, PdfStyle.MARGIN + PdfStyle.SECTION_BAR_W + 12f, blockTop + t.height + 8f)
-        advance(contentH + 18f)
+        if (diag.isNotBlank()) sectionWithBadge("Diagnóstico", diag.trimEnd())
+        sectionWithBadge("Tratamiento", "Uso de lentes correctores.")
         return this
     }
 
@@ -197,7 +183,7 @@ class RecetaPdfBuilder {
         if (body.isBlank()) return
         val innerW = contentWidth() - PdfStyle.SECTION_BAR_W.toInt() - 12
         val t = layoutText(title, PdfStyle.sectionPaint, innerW)
-        val b = layoutText(body.trim(), PdfStyle.bodyPaint, innerW)
+        val b = layoutText(body.trim(), PdfStyle.bodyBoldPaint, innerW)
         val contentH = t.height + 8f + b.height
         val blockH = contentH + 16f
         if (!spaceAvailable(blockH)) newPage()
