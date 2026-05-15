@@ -92,7 +92,7 @@ class SessionManager(private val context: Context) : ISessionManager {
         .map { prefs: Preferences -> prefs[PIN_HAS_BEEN_SET] ?: false }
 
     override val isPinRequired: Flow<Boolean> = context.dataStore.data
-        .map { prefs: Preferences -> prefs[IS_PIN_REQUIRED] ?: true }
+        .map { prefs: Preferences -> prefs[IS_PIN_REQUIRED] ?: false }
 
     override val userTimeZone: Flow<String?> = context.dataStore.data
         .map { prefs: Preferences -> prefs[USER_TIMEZONE] }

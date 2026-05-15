@@ -45,11 +45,15 @@ fun OnboardingOpticaScreen(
     var loading by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     val needsOnboarding by viewModel.needsOnboarding.collectAsState()
-    val isPinRequired by viewModel.isPinRequired.collectAsState(initial = false)
+    val pinHasBeenSet by viewModel.pinHasBeenSet.collectAsState(initial = null)
 
     LaunchedEffect(needsOnboarding) {
         if (!needsOnboarding) {
-            navController.navigate(if (isPinRequired) "pin" else "main") {
+            val dest = when {
+                pinHasBeenSet == false -> "create_pin"
+                else -> "main"
+            }
+            navController.navigate(dest) {
                 popUpTo("onboarding_optica") { inclusive = true }
             }
         }
