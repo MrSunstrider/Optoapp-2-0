@@ -27,8 +27,7 @@ jobs:
           echo "supabase.anon.key=${{ secrets.SUPABASE_ANON_KEY }}" >> local.properties
 
       - name: Build debug APK
-        working-directory: ./
-        run: ./gradlew :optoapp:assembleDebug
+        run: chmod +x gradlew && ./gradlew :optoapp:assembleDebug
 
       - name: Get version name
         id: version
