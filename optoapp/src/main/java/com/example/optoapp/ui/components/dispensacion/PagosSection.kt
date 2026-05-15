@@ -69,21 +69,15 @@ fun PagosSection(
                         Row {
                             var showEditDialog by remember { mutableStateOf(false) }
                             if (showEditDialog) {
+                                val otrosAbonos = uiState.pagos
+                                    .filter { it.id != pago.id }
+                                    .sumOf { it.monto }
+                                val maximo = (total - otrosAbonos).coerceAtLeast(0.0)
                                 AbonoDialog(
                                     pago = pago,
+                                    montoMaximo = maximo,
                                     onDismiss = { showEditDialog = false },
                                     onConfirm = { updatedPago: Pago ->
-                                        val otrosAbonos = uiState.pagos
-                                            .filter { it.id != pago.id }
-                                            .sumOf { it.monto }
-                                        if (total <= 0.0) {
-                                            onUpdate(uiState.copy(error = FinanzasRemoteDefaults.Messages.MONTO_TOTAL_INVALIDO))
-                                            return@AbonoDialog
-                                        }
-                                        if (otrosAbonos + updatedPago.monto > total) {
-                                            onUpdate(uiState.copy(error = FinanzasRemoteDefaults.Messages.ABONO_MAYOR_QUE_TOTAL))
-                                            return@AbonoDialog
-                                        }
                                         onUpdatePago(updatedPago)
                                         showEditDialog = false
                                     }
@@ -102,19 +96,13 @@ fun PagosSection(
 
             var showAddDialog by remember { mutableStateOf(false) }
             if (showAddDialog) {
+                val pagadoActual = uiState.pagos.sumOf { it.monto }
+                val maximo = (total - pagadoActual).coerceAtLeast(0.0)
                 AbonoDialog(
                     defaultFecha = DateUtils.today(),
+                    montoMaximo = maximo,
                     onDismiss = { showAddDialog = false },
                     onConfirm = { nuevoPago: Pago ->
-                        val totalConNuevo = uiState.pagos.sumOf { it.monto } + nuevoPago.monto
-                        if (total <= 0.0) {
-                            onUpdate(uiState.copy(error = FinanzasRemoteDefaults.Messages.MONTO_TOTAL_INVALIDO))
-                            return@AbonoDialog
-                        }
-                        if (totalConNuevo > total) {
-                            onUpdate(uiState.copy(error = FinanzasRemoteDefaults.Messages.ABONO_MAYOR_QUE_TOTAL))
-                            return@AbonoDialog
-                        }
                         onAddPago(nuevoPago)
                         showAddDialog = false
                     }

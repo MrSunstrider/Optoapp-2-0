@@ -252,22 +252,16 @@ fun FinancieraInfoSection(
                         Row {
                             var showEditDialog by remember { mutableStateOf(false) }
                             if (showEditDialog) {
+                                val totalActual = uiState.montoTotal.toDoubleOrNull() ?: 0.0
+                                val otrosAbonos = uiState.pagos
+                                    .filter { it.id != pago.id }
+                                    .sumOf { it.monto }
+                                val maximo = (totalActual - otrosAbonos).coerceAtLeast(0.0)
                                 AbonoDialog(
                                     pago = pago,
+                                    montoMaximo = maximo,
                                     onDismiss = { showEditDialog = false },
                                     onConfirm = { updatedPago: Pago ->
-                                        val totalActual = uiState.montoTotal.toDoubleOrNull() ?: 0.0
-                                        val otrosAbonos = uiState.pagos
-                                            .filter { it.id != pago.id }
-                                            .sumOf { it.monto }
-                                        if (totalActual <= 0.0) {
-                                            onUpdate(uiState.copy(error = FinanzasRemoteDefaults.Messages.MONTO_TOTAL_INVALIDO))
-                                            return@AbonoDialog
-                                        }
-                                        if (otrosAbonos + updatedPago.monto > totalActual) {
-                                            onUpdate(uiState.copy(error = FinanzasRemoteDefaults.Messages.ABONO_MAYOR_QUE_TOTAL))
-                                            return@AbonoDialog
-                                        }
                                         onUpdatePago(updatedPago)
                                         showEditDialog = false
                                     }
@@ -286,20 +280,14 @@ fun FinancieraInfoSection(
 
             var showAddDialog by remember { mutableStateOf(false) }
             if (showAddDialog) {
+                val totalActual = uiState.montoTotal.toDoubleOrNull() ?: 0.0
+                val pagadoActual = uiState.pagos.sumOf { it.monto }
+                val maximo = (totalActual - pagadoActual).coerceAtLeast(0.0)
                 AbonoDialog(
                     defaultFecha = DateUtils.today(),
+                    montoMaximo = maximo,
                     onDismiss = { showAddDialog = false },
                     onConfirm = { nuevoPago: Pago ->
-                        val totalActual = uiState.montoTotal.toDoubleOrNull() ?: 0.0
-                        val totalConNuevo = uiState.pagos.sumOf { it.monto } + nuevoPago.monto
-                        if (totalActual <= 0.0) {
-                            onUpdate(uiState.copy(error = FinanzasRemoteDefaults.Messages.MONTO_TOTAL_INVALIDO))
-                            return@AbonoDialog
-                        }
-                        if (totalConNuevo > totalActual) {
-                            onUpdate(uiState.copy(error = FinanzasRemoteDefaults.Messages.ABONO_MAYOR_QUE_TOTAL))
-                            return@AbonoDialog
-                        }
                         onAddPago(nuevoPago)
                         showAddDialog = false
                     }
