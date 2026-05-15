@@ -242,6 +242,7 @@ object RefraccionTableBuilder {
             canvas.drawLine(xEsf + nearColCercaInter, nly, xEsf + nearColCercaInter, nly + rowH, PdfStyle.gridStrokePaint)
             canvas.drawLine(xDip, nly, xDip, nly + rowH, PdfStyle.gridStrokePaint)
             canvas.drawLine(xAv, nly, xAv, nly + rowH, PdfStyle.gridStrokePaint)
+            canvas.drawLine(xAvAo, nly, xAvAo, nly + rowH, PdfStyle.gridStrokePaint)
             nly += rowH
         }
 
