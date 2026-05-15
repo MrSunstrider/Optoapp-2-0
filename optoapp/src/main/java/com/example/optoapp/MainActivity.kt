@@ -10,6 +10,8 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavType
@@ -17,8 +19,10 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.optoapp.ui.components.UpdateDialog
 import com.example.optoapp.ui.screens.*
 import com.example.optoapp.ui.theme.OptoAppTheme
+import com.example.optoapp.util.UpdateChecker
 import com.example.optoapp.viewmodel.AuthViewModel
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -87,11 +91,25 @@ fun OptoAppNavigation(authViewModel: AuthViewModel) {
 
     NavHost(navController = navController, startDestination = "loading") {
         composable("loading") {
+            val context = androidx.compose.ui.platform.LocalContext.current
+            var updateInfo by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<UpdateChecker.UpdateInfo?>(null) }
+
             androidx.compose.foundation.layout.Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = androidx.compose.ui.Alignment.Center
             ) {
                 androidx.compose.material3.CircularProgressIndicator()
+            }
+
+            // Checkear actualización al inicio
+            LaunchedEffect(Unit) {
+                withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    updateInfo = UpdateChecker.check(context)
+                }
+            }
+
+            updateInfo?.let { info ->
+                UpdateDialog(updateInfo = info, onDismiss = { updateInfo = null })
             }
             
             // Redirección inicial tras verificar sesión

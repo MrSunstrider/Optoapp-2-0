@@ -30,8 +30,18 @@ jobs:
         working-directory: ./
         run: ./gradlew :optoapp:assembleDebug
 
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
+      - name: Get version name
+        id: version
+        run: |
+          VERSION=$(grep "versionName" optoapp/build.gradle.kts | head -1 | sed 's/.*"\(.*\)".*/\1/')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=v${VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
         with:
-          name: optoapp-debug
-          path: optoapp/build/outputs/apk/debug/optoapp-debug.apk
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: "OptoApp v${{ steps.version.outputs.version }}"
+          body: "Build automático del branch main."
+          files: optoapp/build/outputs/apk/debug/optoapp-debug.apk
+          generate_release_notes: true
