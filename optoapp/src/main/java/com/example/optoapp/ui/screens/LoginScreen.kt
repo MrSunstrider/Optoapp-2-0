@@ -102,18 +102,18 @@ fun LoginScreen(
                 enter = fadeIn() + slideInVertically { -40 }
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    // Logo "O" in a rounded square
+                    // Logo: ojo dentro de círculo (emula la "O")
                     Surface(
                         shape = RoundedCornerShape(20.dp),
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(72.dp)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
-                            Text(
-                                text = "O",
-                                fontSize = 36.sp,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = MaterialTheme.colorScheme.onPrimary
+                            Icon(
+                                imageVector = Icons.Default.Visibility,
+                                contentDescription = "OptoApp",
+                                modifier = Modifier.size(40.dp),
+                                tint = MaterialTheme.colorScheme.onPrimary
                             )
                         }
                     }
@@ -128,6 +128,12 @@ fun LoginScreen(
                         text = "Clinical Software 2026",
                         fontSize = 13.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center
+                    )
+                    Text(
+                        text = "v${com.example.optoapp.BuildConfig.VERSION_NAME}",
+                        fontSize = 10.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                         textAlign = TextAlign.Center
                     )
                 }
