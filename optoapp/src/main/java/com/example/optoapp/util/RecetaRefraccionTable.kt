@@ -13,6 +13,75 @@ import com.example.optoapp.data.EvaluacionClinica
  */
 object RefraccionTableBuilder {
 
+    // ── Data types for testable table content ─────────────────────────────────
+
+    data class Cell(val text: String, val align: Layout.Alignment = Layout.Alignment.ALIGN_CENTER)
+    data class Row(val label: String, val cells: List<Cell>)
+
+    data class TableData(
+        val hasRx: Boolean,
+        val distRows: List<Row>,
+        val nearRows: List<Row>,
+        val prismaRows: List<Row>
+    )
+
+    /** Extracts table data from an evaluation — pure logic, no Canvas dependency. */
+    fun prepareData(eval: EvaluacionClinica): TableData {
+        val hasRx = eval.recetaOdEsf.isNotBlank() || eval.recetaOdCil.isNotBlank() ||
+            eval.recetaOiEsf.isNotBlank() || eval.recetaOiCil.isNotBlank()
+
+        fun dash(s: String) = if (s.isBlank()) "—" else s
+
+        val distRows = listOf(
+            Row("OD", listOf(
+                Cell(dash(eval.recetaOdEsf)),
+                Cell(dash(eval.recetaOdCil)),
+                Cell(dash(eval.recetaOdEje)),
+                Cell(dash(eval.dipLejos)),
+                Cell(dash(eval.recetaOdAv.ifBlank { eval.avCcOdLejos })),
+                Cell(dash(eval.avCcAoPx))
+            )),
+            Row("OI", listOf(
+                Cell(dash(eval.recetaOiEsf)),
+                Cell(dash(eval.recetaOiCil)),
+                Cell(dash(eval.recetaOiEje)),
+                Cell(dash(eval.dipCerca)),
+                Cell(dash(eval.recetaOiAv.ifBlank { eval.avCcOiLejos })),
+                Cell(dash(eval.avCcAoPx))
+            ))
+        )
+
+        val nearRows = listOf(
+            Row("OD", listOf(
+                Cell(dash(eval.addCercaOd)),
+                Cell(dash(eval.addIntermediaOd)),
+                Cell(dash(eval.dipCerca)),
+                Cell(dash(eval.avCcAoCerca.ifBlank { eval.avScAoCerca }))
+            )),
+            Row("OI", listOf(
+                Cell(dash(eval.addCercaOi)),
+                Cell(dash(eval.addIntermediaOi)),
+                Cell(dash(eval.dipCerca)),
+                Cell(dash(eval.avCcAoCerca.ifBlank { eval.avScAoCerca }))
+            ))
+        )
+
+        val prismaRows = listOf(
+            Row("OD", listOf(
+                Cell(dash(eval.prismaOdValor)),
+                Cell(dash(eval.prismaOdBase)),
+                Cell("")
+            )),
+            Row("OI", listOf(
+                Cell(dash(eval.prismaOiValor)),
+                Cell(dash(eval.prismaOiBase)),
+                Cell("")
+            ))
+        )
+
+        return TableData(hasRx = hasRx, distRows = distRows, nearRows = nearRows, prismaRows = prismaRows)
+    }
+
     fun draw(
         eval: EvaluacionClinica,
         canvas: Canvas,
@@ -22,10 +91,12 @@ object RefraccionTableBuilder {
         layoutText: (String, TextPaint, Int, Layout.Alignment) -> StaticLayout,
         advance: (Float) -> Unit
     ): Float {
-        val hasRx = eval.recetaOdEsf.isNotBlank() || eval.recetaOdCil.isNotBlank() ||
-            eval.recetaOiEsf.isNotBlank() || eval.recetaOiCil.isNotBlank()
+        val data = prepareData(eval)
+        if (!data.hasRx) return yPos
 
-        if (!hasRx) return yPos
+        val distRows = data.distRows
+        val nearRows = data.nearRows
+        val prismaRows = data.prismaRows
 
         val margin = PdfStyle.MARGIN
         val innerW = PdfStyle.PAGE_W - 2 * margin
@@ -64,61 +135,6 @@ object RefraccionTableBuilder {
         val rowH = 28f
         val sectionTitleH = 22f
         val gap = 6f
-
-        fun dash(s: String) = if (s.isBlank()) "—" else s
-
-        data class Cell(val text: String, val align: Layout.Alignment)
-        data class Row(val label: String, val cells: List<Cell>)
-
-        // ── Distance Vision ─────────────────────────────────────────────────────
-        val distRows = listOf(
-            Row("OD", listOf(
-                Cell(dash(eval.recetaOdEsf), Layout.Alignment.ALIGN_CENTER),
-                Cell(dash(eval.recetaOdCil), Layout.Alignment.ALIGN_CENTER),
-                Cell(dash(eval.recetaOdEje), Layout.Alignment.ALIGN_CENTER),
-                Cell(dash(eval.dipLejos), Layout.Alignment.ALIGN_CENTER),
-                Cell(dash(eval.recetaOdAv.ifBlank { eval.avCcOdLejos }), Layout.Alignment.ALIGN_CENTER),
-                Cell(dash(eval.avCcAoPx), Layout.Alignment.ALIGN_CENTER)
-            )),
-            Row("OI", listOf(
-                Cell(dash(eval.recetaOiEsf), Layout.Alignment.ALIGN_CENTER),
-                Cell(dash(eval.recetaOiCil), Layout.Alignment.ALIGN_CENTER),
-                Cell(dash(eval.recetaOiEje), Layout.Alignment.ALIGN_CENTER),
-                Cell(dash(eval.dipCerca), Layout.Alignment.ALIGN_CENTER),
-                Cell(dash(eval.recetaOiAv.ifBlank { eval.avCcOiLejos }), Layout.Alignment.ALIGN_CENTER),
-                Cell(dash(eval.avCcAoPx), Layout.Alignment.ALIGN_CENTER)
-            ))
-        )
-
-        // ── Near Vision ─────────────────────────────────────────────────────────
-        val nearRows = listOf(
-            Row("OD", listOf(
-                Cell(dash(eval.addCercaOd), Layout.Alignment.ALIGN_CENTER),
-                Cell(dash(eval.addIntermediaOd), Layout.Alignment.ALIGN_CENTER),
-                Cell(dash(eval.dipCerca), Layout.Alignment.ALIGN_CENTER),
-                Cell(dash(eval.avCcAoCerca.ifBlank { eval.avScAoCerca }), Layout.Alignment.ALIGN_CENTER)
-            )),
-            Row("OI", listOf(
-                Cell(dash(eval.addCercaOi), Layout.Alignment.ALIGN_CENTER),
-                Cell(dash(eval.addIntermediaOi), Layout.Alignment.ALIGN_CENTER),
-                Cell(dash(eval.dipCerca), Layout.Alignment.ALIGN_CENTER),
-                Cell(dash(eval.avCcAoCerca.ifBlank { eval.avScAoCerca }), Layout.Alignment.ALIGN_CENTER)
-            ))
-        )
-
-        // ── Prismas ─────────────────────────────────────────────────────────────
-        val prismaRows = listOf(
-            Row("OD", listOf(
-                Cell(dash(eval.prismaOdValor), Layout.Alignment.ALIGN_CENTER),
-                Cell(dash(eval.prismaOdBase), Layout.Alignment.ALIGN_CENTER),
-                Cell("", Layout.Alignment.ALIGN_CENTER)
-            )),
-            Row("OI", listOf(
-                Cell(dash(eval.prismaOiValor), Layout.Alignment.ALIGN_CENTER),
-                Cell(dash(eval.prismaOiBase), Layout.Alignment.ALIGN_CENTER),
-                Cell("", Layout.Alignment.ALIGN_CENTER)
-            ))
-        )
 
         // ── Calculate heights ───────────────────────────────────────────────────
         val pad = 8f
