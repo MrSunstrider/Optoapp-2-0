@@ -162,14 +162,16 @@ fun MonturaInfoSection(
                         onDismissRequest = { expanded = false }
                     ) {
                         filteredMonturas.forEach { montura ->
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text("${montura.marca} ${montura.modelo}", fontWeight = FontWeight.Bold)
-                                    Text("SKU: ${montura.sku} | ${montura.color}",
+                            DropdownMenuItem(
+                                text = {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text("${montura.marca} ${montura.modelo}", fontWeight = FontWeight.Bold)
+                                            Text("SKU: ${montura.sku} | ${montura.color}",
                                                 style = MaterialTheme.typography.bodySmall)
                                         }
                                         Text("Stock: ${montura.stockActual}",
