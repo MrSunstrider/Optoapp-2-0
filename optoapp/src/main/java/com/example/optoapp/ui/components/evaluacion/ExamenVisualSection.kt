@@ -28,6 +28,10 @@ fun ExamenVisualSection(
         OptoTextField(value = uiState.avScOdLejos, onValueChange = { onUpdate(uiState.copy(avScOdLejos = it)) }, label = "OD", modifier = Modifier.weight(1f))
         OptoTextField(value = uiState.avScOiLejos, onValueChange = { onUpdate(uiState.copy(avScOiLejos = it)) }, label = "OI", modifier = Modifier.weight(1f))
     }
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        OptoTextField(value = uiState.phOd, onValueChange = { onUpdate(uiState.copy(phOd = it)) }, label = "PH OD", modifier = Modifier.weight(1f))
+        OptoTextField(value = uiState.phOi, onValueChange = { onUpdate(uiState.copy(phOi = it)) }, label = "PH OI", modifier = Modifier.weight(1f))
+    }
 
     Spacer(modifier = Modifier.height(8.dp))
     Text("Agudeza Visual CON corrección PX", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
@@ -138,10 +142,6 @@ private fun OtrasPruebasCard(
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
             Text("Exámenes Previos", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OptoTextField(value = uiState.phOd, onValueChange = { onUpdate(uiState.copy(phOd = it)) }, label = "PH OD", modifier = Modifier.weight(1f))
-                OptoTextField(value = uiState.phOi, onValueChange = { onUpdate(uiState.copy(phOi = it)) }, label = "PH OI", modifier = Modifier.weight(1f))
-            }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OptoTextField(value = uiState.kappaOd, onValueChange = { onUpdate(uiState.copy(kappaOd = it)) }, label = "Kappa OD", modifier = Modifier.weight(1f))
                 OptoTextField(value = uiState.kappaOi, onValueChange = { onUpdate(uiState.copy(kappaOi = it)) }, label = "Kappa OI", modifier = Modifier.weight(1f))
