@@ -3,7 +3,12 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
+    <!-- Fondo del ojo (círculo interior blanco) -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M31,54a23,23 0,1 0,46,0a23,23 0,1 0,-46,0zM54,41a13,13 0,1 1,0,26a13,13 0,1 1,0,-26z" />
+        android:pathData="M54,27C35,27 19,37.5 12,54c7,16.5 23,27 42,27s35,-10.5 42,-27C89,37.5 73,27 54,27zM54,72c-9.94,0 -18,-8.06 -18,-18s8.06,-18 18,-18 18,8.06 18,18 -8.06,18 -18,18z" />
+    <!-- Pupila -->
+    <path
+        android:fillColor="#1E5B8C"
+        android:pathData="M54,40.5c-7.46,0 -13.5,6.04 -13.5,13.5s6.04,13.5 13.5,13.5 13.5,-6.04 13.5,-13.5 -6.04,-13.5 -13.5,-13.5z" />
 </vector>
