@@ -274,16 +274,22 @@ fun LoginScreen(
                             fontWeight = FontWeight.Medium
                         )
                     }
+
+                    // ─── Botón Crear Cuenta ───────────────────────────────────
+                    OutlinedButton(
+                        onClick = { navController.navigate("register") },
+                        modifier = Modifier.fillMaxWidth().height(48.dp),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text(
+                            "Crear cuenta con correo electrónico",
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
                 }
             }
 
             // ─── Pie ──────────────────────────────────────────────────────────
-            TextButton(onClick = { navController.navigate("register") }) {
-                Text(
-                    "Crear cuenta con correo electrónico",
-                    fontWeight = FontWeight.Medium
-                )
-            }
             Text(
                 text = "Si ya tienes cuenta, contacta al administrador de tu óptica.",
                 fontSize = 12.sp,

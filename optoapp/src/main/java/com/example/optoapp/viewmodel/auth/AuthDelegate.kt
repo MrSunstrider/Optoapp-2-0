@@ -162,7 +162,12 @@ open class AuthDelegate @Inject constructor(
             "No se pudo crear la cuenta: ${e.localizedMessage ?: "error desconocido"}"
         } catch (e: Exception) {
             Log.e(TAG, "Registro", e)
-            "No se pudo crear la cuenta: ${e.localizedMessage ?: "error desconocido"}"
+            val msg = e.localizedMessage ?: "error desconocido"
+            when {
+                msg.contains("password", ignoreCase = true) ->
+                    "La contraseña debe tener al menos: minúsculas, MAYÚSCULAS, números y símbolos especiales."
+                else -> "No se pudo crear la cuenta: $msg"
+            }
         }
     }
 

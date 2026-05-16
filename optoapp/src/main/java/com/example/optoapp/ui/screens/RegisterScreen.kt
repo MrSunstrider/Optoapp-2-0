@@ -100,6 +100,12 @@ fun RegisterScreen(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
+            Text(
+                text = "La contraseña debe tener: minúsculas, MAYÚSCULAS, números y símbolos.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+            )
+
             Spacer(Modifier.height(8.dp))
 
             OutlinedTextField(
@@ -179,6 +185,10 @@ fun RegisterScreen(
                     localError = when {
                         email.isBlank() -> "Ingresa un correo electrónico"
                         password.length < 6 -> "La contraseña debe tener al menos 6 caracteres"
+                        !password.any { it.isLowerCase() } -> "Falta una minúscula en la contraseña"
+                        !password.any { it.isUpperCase() } -> "Falta una MAYÚSCULA en la contraseña"
+                        !password.any { it.isDigit() } -> "Falta un número en la contraseña"
+                        !password.any { !it.isLetterOrDigit() } -> "Falta un símbolo especial en la contraseña"
                         password != confirmPassword -> "Las contraseñas no coinciden"
                         else -> null
                     }
