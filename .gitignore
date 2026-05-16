@@ -48,7 +48,8 @@ replay_pid*.log
 web/node_modules/
 web/.next/
 web/.env.local
-# Coverage output
 web/coverage/
-# TypeScript build info (auto-generated, changes every build)
 web/tsconfig.tsbuildinfo
+
+# Optoweb branch artifacts (no debe estar en main)
+optoweb/
