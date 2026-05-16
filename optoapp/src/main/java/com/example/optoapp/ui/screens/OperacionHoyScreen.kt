@@ -19,7 +19,6 @@ import androidx.navigation.NavController
 import com.example.optoapp.data.AppRoles
 import com.example.optoapp.util.FileShareUtils
 import com.example.optoapp.util.InventarioMonturasPdfGenerator
-import com.example.optoapp.util.OperacionExportUtils
 import com.example.optoapp.viewmodel.AuthViewModel
 import com.example.optoapp.viewmodel.OperacionHoyViewModel
 import java.util.Locale
@@ -35,8 +34,6 @@ fun OperacionHoyScreen(
     val uiState by viewModel.uiState.collectAsState()
     val opticaRol by authViewModel.opticaRol.collectAsState(initial = "admin")
     val canView = AppRoles.canViewOperacionHoy(opticaRol)
-    val canExportPendientes = AppRoles.canExportPendientes(opticaRol)
-    val canExportCierre = AppRoles.canExportCierreCaja(opticaRol)
     val canExportInventario = AppRoles.canExportInventario(opticaRol)
 
     Scaffold(
@@ -167,38 +164,12 @@ fun OperacionHoyScreen(
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Button(
                             modifier = Modifier.weight(1f),
-                            enabled = canExportPendientes,
-                            onClick = {
-                                val file = OperacionExportUtils.exportPendientesCsv(context, uiState.dispensacionesPendientes, uiState.serviciosPendientes)
-                                FileShareUtils.shareFile(context, file, "text/csv", "Compartir pendientes")
-                            }
-                        ) { Text("Pendientes", maxLines = 1) }
-                        OutlinedButton(
-                            modifier = Modifier.weight(1f),
-                            enabled = canExportCierre,
-                            onClick = {
-                                val file = OperacionExportUtils.exportCierreDiaCsv(context, uiState.fecha, uiState.pagosHoy)
-                                FileShareUtils.shareFile(context, file, "text/csv", "Compartir cierre")
-                            }
-                        ) { Text("Cierre", maxLines = 1) }
-                    }
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Button(
-                            modifier = Modifier.weight(1f),
-                            enabled = canExportInventario,
-                            onClick = {
-                                val file = OperacionExportUtils.exportInventarioCsv(context, uiState.monturas)
-                                FileShareUtils.shareFile(context, file, "text/csv", "Compartir inventario CSV")
-                            }
-                        ) { Text("Inventario CSV", maxLines = 1) }
-                        OutlinedButton(
-                            modifier = Modifier.weight(1f),
                             enabled = canExportInventario,
                             onClick = {
                                 val file = InventarioMonturasPdfGenerator.generate(context, uiState.monturas)
                                 FileShareUtils.sharePdf(context, file, "Compartir inventario PDF")
                             }
-                        ) { Text("PDF", maxLines = 1) }
+                        ) { Text("Inventario PDF", maxLines = 1) }
                     }
                     OutlinedButton(onClick = { viewModel.refresh() }, modifier = Modifier.fillMaxWidth()) {
                         Icon(Icons.Default.Refresh, contentDescription = null)

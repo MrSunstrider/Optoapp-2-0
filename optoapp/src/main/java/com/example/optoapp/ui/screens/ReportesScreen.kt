@@ -5,7 +5,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -21,12 +21,15 @@ import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.viewmodel.ReportesViewModel
 import com.example.optoapp.ui.components.DropdownField
 import com.example.optoapp.util.DateUtils
+import com.example.optoapp.util.FileShareUtils
+import com.example.optoapp.util.ReporteFinancieroPdfGenerator
 import java.util.*
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hiltViewModel()) {
+    val context = LocalContext.current
     val dispensaciones by viewModel.allDispensaciones.collectAsState()
     val scope = rememberCoroutineScope()
     
@@ -51,8 +54,18 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                     }
                 },
                 actions = {
-                    IconButton(onClick = { /* Print logic */ }) {
-                        Icon(Icons.Default.Info, contentDescription = "Info")
+                    IconButton(onClick = {
+                        val pdf = ReporteFinancieroPdfGenerator.generate(
+                            context = context,
+                            dispensaciones = dispensaciones,
+                            periodo = periodo,
+                            totalVendido = totalVendido,
+                            porCobrar = porCobrar,
+                            ticketPromedio = ticketPromedio
+                        )
+                        FileShareUtils.sharePdf(context, pdf, "Compartir reporte financiero")
+                    }) {
+                        Icon(Icons.Default.PictureAsPdf, contentDescription = "Generar PDF")
                     }
                 }
             )

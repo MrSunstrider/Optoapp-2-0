@@ -47,7 +47,7 @@ fun RefraccionSection(
     }
 
     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-    Text("Fórmula final (gafas)", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+    Text("VL Fórmula Optométrica", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         OptoTextField(
             value = uiState.recetaOdEsf,
@@ -88,7 +88,7 @@ fun RefraccionSection(
             modifier = Modifier.weight(1f).onFocusChanged { if (!it.isFocused) viewModel.normalizeAndTranspose("OI") }
         )
     }
-    Text("AV CC FINAL", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary)
+    Text("VL AV CC", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary)
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         OptoTextField(value = uiState.recetaOdAv, onValueChange = { onUpdate(uiState.copy(recetaOdAv = it)) }, label = "AV OD", modifier = Modifier.weight(1f))
         OptoTextField(value = uiState.recetaOiAv, onValueChange = { onUpdate(uiState.copy(recetaOiAv = it)) }, label = "AV OI", modifier = Modifier.weight(1f))
@@ -116,10 +116,11 @@ private fun AddSection(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiState)
                     onCheckedChange = { newVal -> onUpdate(uiState.copy(isAddAo = newVal)) }
                 )
             }
+            Text("VP Cerca/Interm", fontWeight = FontWeight.SemiBold, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OptoTextField(value = uiState.addCercaOd, onValueChange = { onUpdate(uiState.copy(addCercaOd = it)) }, label = "Add OD", modifier = Modifier.weight(1f))
                 OptoTextField(value = uiState.addCercaOi, onValueChange = { onUpdate(uiState.copy(addCercaOi = it)) }, label = "Add OI", modifier = Modifier.weight(1f), enabled = !uiState.isAddAo)
-                OptoTextField(value = uiState.addAv, onValueChange = { onUpdate(uiState.copy(addAv = it)) }, label = "AV Add", modifier = Modifier.weight(1f))
+                OptoTextField(value = uiState.addAv, onValueChange = { onUpdate(uiState.copy(addAv = it)) }, label = "AV VP", modifier = Modifier.weight(1f))
             }
         }
     }
