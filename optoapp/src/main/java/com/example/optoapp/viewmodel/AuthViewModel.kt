@@ -267,6 +267,9 @@ class AuthViewModel @Inject constructor(
             raw.contains("policy", ignoreCase = true) ||
             raw.contains("RLS", ignoreCase = true) ->
             "No tienes permisos para crear una nueva óptica con esta cuenta."
+        raw.contains("Sesión requerida", ignoreCase = true) ||
+            raw.contains("sesión requerida", ignoreCase = true) ->
+            "Revisa tu correo electrónico y confirma la cuenta. Luego inicia sesión para crear tu óptica."
         raw.isBlank() -> "No se pudo crear la óptica."
         else -> raw
     }

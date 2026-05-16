@@ -31,18 +31,18 @@ open class OpticaSettingsDataSource @Inject constructor(
         fiscalDocTipo: String = "",
         fiscalDocNumero: String = "",
         razonSocial: String = "",
-        direccionFiscal: String = ""
+        direccionFiscal: String = "",
+        userId: String? = null
     ): Result<OpticaMembership> {
-        var uid = supabase.auth.currentUserOrNull()?.id
+        var uid = userId
         if (uid == null) {
-            // Reintentar hasta 5 veces con backoff progresivo
-            for (attempt in 1..5) {
-                runCatching {
-                    supabase.auth.refreshCurrentSession()
+            uid = supabase.auth.currentUserOrNull()?.id
+            if (uid == null) {
+                for (attempt in 1..5) {
                     delay(attempt * 400L)
                     uid = supabase.auth.currentUserOrNull()?.id
+                    if (uid != null) break
                 }
-                if (uid != null) break
             }
         }
         if (uid == null) {

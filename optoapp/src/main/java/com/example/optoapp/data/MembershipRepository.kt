@@ -24,10 +24,11 @@ open class MembershipRepository @Inject constructor(
         fiscalDocTipo: String = "",
         fiscalDocNumero: String = "",
         razonSocial: String = "",
-        direccionFiscal: String = ""
+        direccionFiscal: String = "",
+        userId: String? = null
     ): Result<OpticaMembership> =
         opticaSettingsDataSource.createOpticaForCurrentUser(
-            nombreOptica, fiscalDocTipo, fiscalDocNumero, razonSocial, direccionFiscal
+            nombreOptica, fiscalDocTipo, fiscalDocNumero, razonSocial, direccionFiscal, userId
         )
 
     suspend fun fetchPlanSettings(opticaId: String): Result<PlanSettings> =

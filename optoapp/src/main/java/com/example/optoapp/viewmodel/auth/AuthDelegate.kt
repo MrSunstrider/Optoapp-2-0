@@ -124,7 +124,7 @@ open class AuthDelegate @Inject constructor(
         }
 
         if (hasSession) {
-            SyncSessionHelper.refreshSessionBeforeSync(supabase)
+            // No refrescar: la sesión es nueva y el refresh token puede no estar listo
             return null // success — no error message
         }
 
@@ -150,10 +150,14 @@ open class AuthDelegate @Inject constructor(
             // Esperar hasta 6s a que la sesión se establezca (confirmación automática)
             repeat(20) {
                 val session = runCatching { supabase.auth.currentSessionOrNull() }.getOrNull()
-                if (session != null) return null // success: sesión activa
+                if (session != null) {
+                    // Verificar que la sesión sea de usuario autenticado, no anónima
+                    val user = supabase.auth.currentUserOrNull()
+                    if (user != null) return null // success: sesión de usuario real
+                }
                 delay(300)
             }
-            // No hay sesión → probablemente requiere confirmación de email
+            // No hay sesión de usuario → probablemente requiere confirmación de email
             "Revisa tu correo electrónico y haz clic en el enlace de confirmación."
         } catch (e: CancellationException) {
             throw e
@@ -203,6 +207,7 @@ open class AuthDelegate @Inject constructor(
 
     private var pendingLoginEmail: String = ""
     private var pendingLoginName: String = ""
+    private var pendingUserId: String = ""
 
     suspend fun resolvePostLogin(
         emailFallback: String? = null,
@@ -210,12 +215,10 @@ open class AuthDelegate @Inject constructor(
     ): PostLoginResult {
         var user = supabase.auth.currentUserOrNull()
         if (user == null) {
+            // Reintentar con espera progresiva (sin refrescar, la sesión ya debería estar)
             for (attempt in 1..5) {
-                runCatching {
-                    supabase.auth.refreshCurrentSession()
-                    delay(attempt * 400L)
-                    user = supabase.auth.currentUserOrNull()
-                }
+                delay(attempt * 400L)
+                user = supabase.auth.currentUserOrNull()
                 if (user != null) break
             }
         }
@@ -225,6 +228,7 @@ open class AuthDelegate @Inject constructor(
 
         pendingLoginEmail = email
         pendingLoginName = nombre
+        pendingUserId = finalUser.id
 
         val memberships = membershipRepository.fetchMembershipsForCurrentUser()
 
@@ -354,7 +358,8 @@ open class AuthDelegate @Inject constructor(
             fiscalDocTipo = fiscalDocTipo,
             fiscalDocNumero = fiscalDocNumero,
             razonSocial = razonSocial,
-            direccionFiscal = direccionFiscal
+            direccionFiscal = direccionFiscal,
+            userId = pendingUserId.ifBlank { null }
         )
         if (result.isSuccess) {
             val m = result.getOrNull()!!

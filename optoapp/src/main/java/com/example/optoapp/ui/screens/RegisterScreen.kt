@@ -95,7 +95,7 @@ fun RegisterScreen(
                 fontWeight = FontWeight.Bold
             )
             Text(
-                text = "Te llegará un correo de confirmación. Luego podrás iniciar sesión.",
+                text = "Te llegará un correo de confirmación. Haz clic en el enlace para activar tu cuenta, luego inicia sesión y crea tu óptica.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
