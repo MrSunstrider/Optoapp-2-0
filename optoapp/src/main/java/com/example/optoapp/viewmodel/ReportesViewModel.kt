@@ -34,17 +34,16 @@ class ReportesViewModel @Inject constructor(
     fun setAnio(a: String) { _anio.value = a }
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    val allDispensaciones: StateFlow<List<DispensacionOptica>> = combine(
-        sessionManager.opticaId,
-        _periodo,
-        _anio
-    ) { opticaId, p, a -> Triple(opticaId, p, a) }
-        .flatMapLatest { (opticaId, p, a) ->
-            repository.getAllDispensacionesForOptica(opticaId).map { list ->
+    val allDispensaciones: StateFlow<List<DispensacionOptica>> = sessionManager.opticaId
+        .flatMapLatest { opticaId ->
+            combine(
+                repository.getAllDispensacionesForOptica(opticaId),
+                _periodo,
+                _anio
+            ) { list, p, a ->
                 val now = java.time.LocalDate.now()
                 list.filter { disp ->
                     val date = disp.fecha
-
                     when (p) {
                         "Diario" -> date.isEqual(now)
                         "Semanal" -> {
