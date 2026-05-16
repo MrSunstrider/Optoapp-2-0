@@ -58,12 +58,22 @@ android {
         manifestPlaceholders["SUPABASE_REDIRECT_HOST"] = supabaseRedirectHost
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = localProperties.getProperty("keystore.path")?.let { rootProject.file(it) }
+            storePassword = localProperties.getProperty("keystore.password", "")
+            keyAlias = localProperties.getProperty("key.alias", "")
+            keyPassword = localProperties.getProperty("key.password", "")
+        }
+    }
+
     buildTypes {
         debug {
             enableAndroidTestCoverage = true
             enableUnitTestCoverage = true
         }
         release {
+            signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),

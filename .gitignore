@@ -25,6 +25,7 @@ java_pid*
 # Android Studio
 *.keystore
 !debug.keystore
+*.jks
 
 # Build results
 **/build/
