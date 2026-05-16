@@ -1,6 +1,7 @@
 package com.example.optoapp.util
 
 import android.graphics.Canvas
+import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.RectF
 import android.graphics.pdf.PdfDocument
@@ -41,9 +42,13 @@ class RecetaPdfBuilder {
         drawStaticLayout(title, PdfStyle.MARGIN, y)
         advance(title.height + 6f)
 
-        // Nombre comercial de la óptica
+        // Nombre comercial de la óptica (más grande y negrita)
         if (opticaNombre.isNotBlank()) {
-            val opticaLabel = layoutText(opticaNombre, PdfStyle.subtitlePaint, contentWidth(), Layout.Alignment.ALIGN_CENTER)
+            val opticaPaint = TextPaint(PdfStyle.subtitlePaint).apply {
+                textSize = 12f
+                typeface = android.graphics.Typeface.create(android.graphics.Typeface.SANS_SERIF, android.graphics.Typeface.BOLD)
+            }
+            val opticaLabel = layoutText(opticaNombre, opticaPaint, contentWidth(), Layout.Alignment.ALIGN_CENTER)
             drawStaticLayout(opticaLabel, PdfStyle.MARGIN, y)
             advance(opticaLabel.height + 8f)
         } else {
@@ -55,37 +60,69 @@ class RecetaPdfBuilder {
 
         // Patient info card
         val innerW = contentWidth() - (2 * PdfStyle.CARD_PAD).toInt()
+        val leftX = PdfStyle.MARGIN + PdfStyle.CARD_PAD
+        val colW = innerW / 2
 
         val pacienteTitlePaint = TextPaint(PdfStyle.sectionPaint).apply { textSize = 13f }
-        val fieldLabelPaint = TextPaint(PdfStyle.bodyBoldPaint).apply { textSize = 10f }
-        val fieldValuePaint = TextPaint(PdfStyle.bodyPaint).apply { textSize = 10f }
+        val labelPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = PdfStyle.COLOR_TEXT
+            textSize = 10.5f
+            typeface = android.graphics.Typeface.create(android.graphics.Typeface.SANS_SERIF, android.graphics.Typeface.BOLD)
+        }
+        val valuePaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = PdfStyle.COLOR_TEXT
+            textSize = 10.5f
+            typeface = android.graphics.Typeface.create(android.graphics.Typeface.SANS_SERIF, android.graphics.Typeface.NORMAL)
+        }
 
         val titleLabel = layoutText("Paciente", pacienteTitlePaint, innerW)
 
-        // Construir cada campo como label + valor en la misma línea
-        val fieldLines = buildString {
-            append("Nombre: ${paciente.nombreCompleto}   Edad: ${paciente.edad} años")
-            appendLine()
-            if (paciente.historiaOptometrica?.isNotBlank() == true) append("HO: ${paciente.historiaOptometrica}   ")
-            if (paciente.dni?.isNotBlank() == true) append("DNI: ${paciente.dni}")
-            appendLine()
-            if (paciente.telefono.isNotBlank()) append("Celular: ${paciente.telefono}   ")
-            if (paciente.distrito?.isNotBlank() == true) append("Distrito: ${paciente.distrito}")
-            appendLine()
-            append("Evaluación: ${DateUtils.formatLocalized(eval.fecha)}")
-        }
-        val infoLayout = layoutText(fieldLines.trimEnd(), fieldValuePaint, innerW)
-
-        // Altura de la tarjeta: padding + título + espacio + contenido + padding
-        val cardH = PdfStyle.CARD_PAD + titleLabel.height + 8f + infoLayout.height + PdfStyle.CARD_PAD
+        // Calcular la altura del contenido: cada fila = textSize * 1.5
+        val rowH = (labelPaint.textSize * 1.5f)
+        val fieldCount = 4
+        val contentH = fieldCount * rowH
+        val cardH = PdfStyle.CARD_PAD + titleLabel.height + 8f + contentH + PdfStyle.CARD_PAD
 
         ensureSpace(cardH + 20f)
 
         val cardRect = RectF(PdfStyle.MARGIN, y, PdfStyle.PAGE_W - PdfStyle.MARGIN, y + cardH)
         canvas.drawRoundRect(cardRect, PdfStyle.CARD_RADIUS, PdfStyle.CARD_RADIUS, PdfStyle.cardFillPaint)
         canvas.drawRoundRect(cardRect, PdfStyle.CARD_RADIUS, PdfStyle.CARD_RADIUS, PdfStyle.cardStrokePaint)
-        drawStaticLayout(titleLabel, PdfStyle.MARGIN + PdfStyle.CARD_PAD, y + PdfStyle.CARD_PAD)
-        drawStaticLayout(infoLayout, PdfStyle.MARGIN + PdfStyle.CARD_PAD, y + PdfStyle.CARD_PAD + titleLabel.height + 8f)
+
+        // Título "Paciente"
+        drawStaticLayout(titleLabel, leftX, y + PdfStyle.CARD_PAD)
+        val contentY = y + PdfStyle.CARD_PAD + titleLabel.height + 8f
+
+        // Helper para dibujar label + value con dos columnas
+        fun drawFieldRow(yPos: Float, leftLabel: String, leftValue: String, rightLabel: String, rightValue: String) {
+            val sep = 4f
+            // Columna izquierda
+            canvas.drawText(leftLabel, leftX, yPos + labelPaint.textSize, labelPaint)
+            canvas.drawText(leftValue, leftX + labelPaint.measureText(leftLabel), yPos + labelPaint.textSize, valuePaint)
+            // Columna derecha
+            val rightLblW = labelPaint.measureText(rightLabel)
+            canvas.drawText(rightLabel, leftX + colW, yPos + labelPaint.textSize, labelPaint)
+            canvas.drawText(rightValue, leftX + colW + rightLblW, yPos + labelPaint.textSize, valuePaint)
+        }
+
+        // Fila 1: Nombre + Edad
+        drawFieldRow(contentY, "Nombre: ", paciente.nombreCompleto, "Edad: ", "${paciente.edad} años")
+
+        // Fila 2: HO + DNI
+        val hoVal = paciente.historiaOptometrica?.ifBlank { null } ?: "—"
+        val dniVal = paciente.dni?.ifBlank { null } ?: "—"
+        drawFieldRow(contentY + rowH, "HO: ", hoVal, "DNI: ", dniVal)
+
+        // Fila 3: Celular + Distrito
+        val celVal = paciente.telefono.ifBlank { "—" }
+        val disVal = paciente.distrito?.ifBlank { null } ?: "—"
+        drawFieldRow(contentY + rowH * 2, "Celular: ", celVal, "Distrito: ", disVal)
+
+        // Fila 4: Evaluación (ocupa toda la fila, centrada en la columna izq)
+        val evalFecha = DateUtils.formatLocalized(eval.fecha)
+        canvas.drawText("Evaluación: ", leftX, contentY + rowH * 3 + labelPaint.textSize, labelPaint)
+        canvas.drawText(evalFecha, leftX + labelPaint.measureText("Evaluación: "), contentY + rowH * 3 + labelPaint.textSize, valuePaint)
+
         advance(cardH + 20f)
 
         return this
