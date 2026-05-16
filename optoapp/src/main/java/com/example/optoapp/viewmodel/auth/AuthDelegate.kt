@@ -114,13 +114,13 @@ open class AuthDelegate @Inject constructor(
         }
 
         var hasSession = false
-        repeat(10) {
+        repeat(20) {
             val session = runCatching { supabase.auth.currentSessionOrNull() }.getOrNull()
             if (session != null) {
                 hasSession = true
                 return@repeat
             }
-            delay(200)
+            delay(300)
         }
 
         if (hasSession) {
@@ -147,11 +147,11 @@ open class AuthDelegate @Inject constructor(
                 this.email = email
                 this.password = password
             }
-            // Esperar hasta 3s a que la sesión se establezca (confirmación automática)
-            repeat(15) {
+            // Esperar hasta 6s a que la sesión se establezca (confirmación automática)
+            repeat(20) {
                 val session = runCatching { supabase.auth.currentSessionOrNull() }.getOrNull()
                 if (session != null) return null // success: sesión activa
-                delay(200)
+                delay(300)
             }
             // No hay sesión → probablemente requiere confirmación de email
             "Revisa tu correo electrónico y haz clic en el enlace de confirmación."
@@ -203,10 +203,17 @@ open class AuthDelegate @Inject constructor(
         emailFallback: String? = null,
         nameFallback: String? = null
     ): PostLoginResult {
-        val user = supabase.auth.currentUserOrNull()
-            ?: throw IllegalStateException("No se encontró usuario autenticado")
-        val email = user.email?.trim().orEmpty().ifBlank { emailFallback.orEmpty() }
-        val nombre = Companion.extractDisplayName(user, emailFallback, nameFallback)
+        var user = supabase.auth.currentUserOrNull()
+        if (user == null) {
+            runCatching {
+                supabase.auth.refreshCurrentSession()
+                delay(500)
+                user = supabase.auth.currentUserOrNull()
+            }
+        }
+        val finalUser = user ?: throw IllegalStateException("No se encontró usuario autenticado")
+        val email = finalUser.email?.trim().orEmpty().ifBlank { emailFallback.orEmpty() }
+        val nombre = Companion.extractDisplayName(finalUser, emailFallback, nameFallback)
 
         pendingLoginEmail = email
         pendingLoginName = nombre
