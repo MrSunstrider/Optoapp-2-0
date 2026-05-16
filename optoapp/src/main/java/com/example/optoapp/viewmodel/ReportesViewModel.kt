@@ -47,8 +47,10 @@ class ReportesViewModel @Inject constructor(
                     when (p) {
                         "Diario" -> date.isEqual(now)
                         "Semanal" -> {
-                            val weekFields = java.time.temporal.WeekFields.of(java.util.Locale.getDefault())
-                            date.year == now.year && date.get(weekFields.weekOfYear()) == now.get(weekFields.weekOfYear())
+                            val dayOfWeek = now.dayOfWeek.value // 1=Lunes, 7=Domingo
+                            val startOfWeek = now.minusDays(dayOfWeek.toLong() - 1)
+                            val endOfWeek = startOfWeek.plusDays(7)
+                            !date.isBefore(startOfWeek) && date.isBefore(endOfWeek)
                         }
                         "Este mes" -> date.year == now.year && date.month == now.month
                         "Este año" -> date.year == now.year
