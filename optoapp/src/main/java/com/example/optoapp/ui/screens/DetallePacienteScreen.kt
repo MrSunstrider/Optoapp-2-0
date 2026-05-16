@@ -17,6 +17,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
+import androidx.activity.ComponentActivity
 import com.example.optoapp.data.Paciente
 import com.example.optoapp.ui.components.paciente.DeletePacienteDialog
 import com.example.optoapp.ui.components.paciente.DispensacionesList
@@ -29,6 +30,7 @@ import com.example.optoapp.util.FileShareUtils
 import com.example.optoapp.viewmodel.DeletePacienteResult
 import com.example.optoapp.viewmodel.DispensacionViewModel
 import com.example.optoapp.viewmodel.EvaluacionViewModel
+import com.example.optoapp.viewmodel.OpticaHeaderViewModel
 import com.example.optoapp.viewmodel.PacienteViewModel
 import com.example.optoapp.viewmodel.ServiciosViewModel
 import kotlinx.coroutines.flow.map
@@ -42,7 +44,8 @@ fun DetallePacienteScreen(
     pacienteViewModel: PacienteViewModel = hiltViewModel(),
     evaluacionViewModel: EvaluacionViewModel = hiltViewModel(),
     dispensacionViewModel: DispensacionViewModel = hiltViewModel(),
-    serviciosViewModel: ServiciosViewModel = hiltViewModel()
+    serviciosViewModel: ServiciosViewModel = hiltViewModel(),
+    opticaHeaderVm: OpticaHeaderViewModel = hiltViewModel(LocalContext.current as ComponentActivity)
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -105,7 +108,8 @@ fun DetallePacienteScreen(
                                 return@IconButton
                             }
                             try {
-                                val file = RecetaEvaluacionPdfGenerator.generate(context, p, ultima)
+                                val opticaNombre = opticaHeaderVm.uiState.value.nombreOptica
+                                val file = RecetaEvaluacionPdfGenerator.generate(context, p, ultima, opticaNombre)
                                 RecetaEvaluacionPdfGenerator.openPdf(context, file)
                             } catch (e: Exception) {
                                 Toast.makeText(context, "No se pudo generar el PDF: ${e.message}", Toast.LENGTH_LONG).show()

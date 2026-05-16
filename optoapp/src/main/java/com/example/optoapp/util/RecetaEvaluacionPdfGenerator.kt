@@ -19,14 +19,14 @@ import java.io.FileOutputStream
  */
 object RecetaEvaluacionPdfGenerator {
 
-    fun generate(context: Context, paciente: Paciente, eval: EvaluacionClinica): File {
+    fun generate(context: Context, paciente: Paciente, eval: EvaluacionClinica, opticaNombre: String = ""): File {
         val dir = File(context.cacheDir, "recetas").apply { mkdirs() }
         val safeName = "formula_${paciente.id.take(12)}_${eval.fecha}.pdf"
             .replace(Regex("[^a-zA-Z0-9._-]"), "_")
         val out = File(dir, safeName)
 
         val doc = RecetaPdfBuilder()
-            .addHeader(paciente, eval)
+            .addHeader(paciente, eval, opticaNombre)
             .addRefraccion(eval)
             .addDiagnostico(eval)
             .addSeguimiento(eval)

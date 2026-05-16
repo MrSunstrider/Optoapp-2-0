@@ -31,35 +31,53 @@ class RecetaPdfBuilder {
     // ─── Public API ─────────────────────────────────────────────────────────
 
     /**
-     * Dibuja la cabecera del PDF: título centrado + tarjeta de paciente.
+     * Dibuja la cabecera del PDF: título centrado + nombre comercial + tarjeta de paciente.
      */
-    fun addHeader(paciente: Paciente, eval: EvaluacionClinica): RecetaPdfBuilder {
+    fun addHeader(paciente: Paciente, eval: EvaluacionClinica, opticaNombre: String = ""): RecetaPdfBuilder {
         initPage()
 
         // Título centrado
         val title = layoutText("FÓRMULA OPTOMÉTRICA", PdfStyle.titlePaint, contentWidth(), Layout.Alignment.ALIGN_CENTER)
         drawStaticLayout(title, PdfStyle.MARGIN, y)
-        advance(title.height + 12f)
+        advance(title.height + 6f)
+
+        // Nombre comercial de la óptica
+        if (opticaNombre.isNotBlank()) {
+            val opticaLabel = layoutText(opticaNombre, PdfStyle.subtitlePaint, contentWidth(), Layout.Alignment.ALIGN_CENTER)
+            drawStaticLayout(opticaLabel, PdfStyle.MARGIN, y)
+            advance(opticaLabel.height + 8f)
+        } else {
+            advance(6f)
+        }
 
         drawHorizontalRule()
-        advance(12f)
+        advance(14f)
 
         // Patient info card
         val innerW = contentWidth() - (2 * PdfStyle.CARD_PAD).toInt()
-        val titleLabel = layoutText("Paciente", PdfStyle.labelPaint, innerW)
-        val infoLines = buildString {
-            append(paciente.nombreCompleto)
-            append("  ·  Edad: ${paciente.edad} años")
-            if (paciente.dni?.isNotBlank() == true) append("  ·  DNI: ${paciente.dni}")
-            if (paciente.historiaOptometrica?.isNotBlank() == true) append("  ·  HO: ${paciente.historiaOptometrica}")
+
+        val pacienteTitlePaint = TextPaint(PdfStyle.sectionPaint).apply { textSize = 13f }
+        val fieldLabelPaint = TextPaint(PdfStyle.bodyBoldPaint).apply { textSize = 10f }
+        val fieldValuePaint = TextPaint(PdfStyle.bodyPaint).apply { textSize = 10f }
+
+        val titleLabel = layoutText("Paciente", pacienteTitlePaint, innerW)
+
+        // Construir cada campo como label + valor en la misma línea
+        val fieldLines = buildString {
+            append("Nombre: ${paciente.nombreCompleto}   Edad: ${paciente.edad} años")
             appendLine()
-            if (paciente.distrito?.isNotBlank() == true) append("Distrito: ${paciente.distrito}  ")
-            if (paciente.telefono.isNotBlank()) append("Celular: ${paciente.telefono}")
+            if (paciente.historiaOptometrica?.isNotBlank() == true) append("HO: ${paciente.historiaOptometrica}   ")
+            if (paciente.dni?.isNotBlank() == true) append("DNI: ${paciente.dni}")
+            appendLine()
+            if (paciente.telefono.isNotBlank()) append("Celular: ${paciente.telefono}   ")
+            if (paciente.distrito?.isNotBlank() == true) append("Distrito: ${paciente.distrito}")
             appendLine()
             append("Evaluación: ${DateUtils.formatLocalized(eval.fecha)}")
         }
-        val infoLayout = layoutText(infoLines.trimEnd(), PdfStyle.bodyBoldPaint, innerW)
-        val cardH = PdfStyle.CARD_PAD + titleLabel.height + 6f + infoLayout.height + PdfStyle.CARD_PAD
+        val infoLayout = layoutText(fieldLines.trimEnd(), fieldValuePaint, innerW)
+
+        // Altura de la tarjeta: padding + título + espacio + contenido + padding
+        val cardH = PdfStyle.CARD_PAD + titleLabel.height + 8f + infoLayout.height + PdfStyle.CARD_PAD
 
         ensureSpace(cardH + 20f)
 
@@ -67,7 +85,7 @@ class RecetaPdfBuilder {
         canvas.drawRoundRect(cardRect, PdfStyle.CARD_RADIUS, PdfStyle.CARD_RADIUS, PdfStyle.cardFillPaint)
         canvas.drawRoundRect(cardRect, PdfStyle.CARD_RADIUS, PdfStyle.CARD_RADIUS, PdfStyle.cardStrokePaint)
         drawStaticLayout(titleLabel, PdfStyle.MARGIN + PdfStyle.CARD_PAD, y + PdfStyle.CARD_PAD)
-        drawStaticLayout(infoLayout, PdfStyle.MARGIN + PdfStyle.CARD_PAD, y + PdfStyle.CARD_PAD + titleLabel.height + 6f)
+        drawStaticLayout(infoLayout, PdfStyle.MARGIN + PdfStyle.CARD_PAD, y + PdfStyle.CARD_PAD + titleLabel.height + 8f)
         advance(cardH + 20f)
 
         return this
