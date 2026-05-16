@@ -228,6 +228,12 @@ object RefraccionTableBuilder {
                 val cellSl = sl(cell.text, valuePaint, cw, cell.align)
                 drawSl(cellSl, nearDataX[ci] + 2, cy + (rowH - cellSl.height) / 2f)
             }
+            // Tachado en AV/AO si no hay datos
+            val avAoData = eval.avCcAoCerca
+            if (avAoData.isBlank()) {
+                val strikeY = cy + rowH / 2f
+                canvas.drawLine(xAvAo + 4f, strikeY, xRight - 4f, strikeY, PdfStyle.strikePaint)
+            }
             cy += rowH
         }
 

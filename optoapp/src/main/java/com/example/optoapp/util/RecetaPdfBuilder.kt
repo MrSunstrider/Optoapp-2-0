@@ -61,7 +61,9 @@ class RecetaPdfBuilder {
         // Patient info card
         val innerW = contentWidth() - (2 * PdfStyle.CARD_PAD).toInt()
         val leftX = PdfStyle.MARGIN + PdfStyle.CARD_PAD
-        val colW = innerW / 2
+        val rightEdge = PdfStyle.PAGE_W - PdfStyle.MARGIN - PdfStyle.CARD_PAD
+        val cardWidth = rightEdge - leftX
+        val midX = leftX + cardWidth / 2
 
         val pacienteTitlePaint = TextPaint(PdfStyle.sectionPaint).apply { textSize = 13f }
         val labelPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -75,7 +77,9 @@ class RecetaPdfBuilder {
             typeface = android.graphics.Typeface.create(android.graphics.Typeface.SANS_SERIF, android.graphics.Typeface.NORMAL)
         }
 
-        val titleLabel = layoutText("Paciente", pacienteTitlePaint, innerW)
+        // Título "Paciente" centrado
+        val titleLabel = layoutText("Paciente", pacienteTitlePaint, innerW, Layout.Alignment.ALIGN_CENTER)
+        val titleX = leftX + (cardWidth - titleLabel.width) / 2
 
         // Calcular la altura del contenido: cada fila = textSize * 1.5
         val rowH = (labelPaint.textSize * 1.5f)
@@ -89,20 +93,25 @@ class RecetaPdfBuilder {
         canvas.drawRoundRect(cardRect, PdfStyle.CARD_RADIUS, PdfStyle.CARD_RADIUS, PdfStyle.cardFillPaint)
         canvas.drawRoundRect(cardRect, PdfStyle.CARD_RADIUS, PdfStyle.CARD_RADIUS, PdfStyle.cardStrokePaint)
 
-        // Título "Paciente"
-        drawStaticLayout(titleLabel, leftX, y + PdfStyle.CARD_PAD)
+        // Título "Paciente" centrado dentro de la tarjeta
+        drawStaticLayout(titleLabel, titleX, y + PdfStyle.CARD_PAD)
         val contentY = y + PdfStyle.CARD_PAD + titleLabel.height + 8f
 
-        // Helper para dibujar label + value con dos columnas
+        // Calcular el ancho máximo de las etiquetas para alinear los valores
+        val leftLabels = listOf("Nombre: ", "HO: ", "Celular: ", "Evaluación: ")
+        val rightLabels = listOf("Edad: ", "DNI: ", "Distrito: ")
+        val maxLeftW = leftLabels.maxOf { labelPaint.measureText(it) }
+        val maxRightW = rightLabels.maxOf { labelPaint.measureText(it) }
+        val gap = 6f
+
+        // Helper: dibuja label + value con alineación tabular
         fun drawFieldRow(yPos: Float, leftLabel: String, leftValue: String, rightLabel: String, rightValue: String) {
-            val sep = 4f
             // Columna izquierda
             canvas.drawText(leftLabel, leftX, yPos + labelPaint.textSize, labelPaint)
-            canvas.drawText(leftValue, leftX + labelPaint.measureText(leftLabel), yPos + labelPaint.textSize, valuePaint)
+            canvas.drawText(leftValue, leftX + maxLeftW + gap, yPos + labelPaint.textSize, valuePaint)
             // Columna derecha
-            val rightLblW = labelPaint.measureText(rightLabel)
-            canvas.drawText(rightLabel, leftX + colW, yPos + labelPaint.textSize, labelPaint)
-            canvas.drawText(rightValue, leftX + colW + rightLblW, yPos + labelPaint.textSize, valuePaint)
+            canvas.drawText(rightLabel, midX, yPos + labelPaint.textSize, labelPaint)
+            canvas.drawText(rightValue, midX + maxRightW + gap, yPos + labelPaint.textSize, valuePaint)
         }
 
         // Fila 1: Nombre + Edad
@@ -118,10 +127,10 @@ class RecetaPdfBuilder {
         val disVal = paciente.distrito?.ifBlank { null } ?: "—"
         drawFieldRow(contentY + rowH * 2, "Celular: ", celVal, "Distrito: ", disVal)
 
-        // Fila 4: Evaluación (ocupa toda la fila, centrada en la columna izq)
+        // Fila 4: Evaluación
         val evalFecha = DateUtils.formatLocalized(eval.fecha)
         canvas.drawText("Evaluación: ", leftX, contentY + rowH * 3 + labelPaint.textSize, labelPaint)
-        canvas.drawText(evalFecha, leftX + labelPaint.measureText("Evaluación: "), contentY + rowH * 3 + labelPaint.textSize, valuePaint)
+        canvas.drawText(evalFecha, leftX + maxLeftW + gap, contentY + rowH * 3 + labelPaint.textSize, valuePaint)
 
         advance(cardH + 20f)
 

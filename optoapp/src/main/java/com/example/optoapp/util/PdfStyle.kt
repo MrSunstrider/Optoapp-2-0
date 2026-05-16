@@ -77,6 +77,14 @@ object PdfStyle {
         Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.argb(30, 30, 91, 140) }
     }
 
+    val strikePaint: Paint by lazy {
+        Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = COLOR_TEXT
+            strokeWidth = 1.5f
+            style = Paint.Style.STROKE
+        }
+    }
+
     // ─── TextPaint presets ──────────────────────────────────────────────────
 
     val titlePaint: TextPaint by lazy {
