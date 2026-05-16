@@ -2,8 +2,8 @@ package com.example.optoapp.viewmodel
 
 import android.content.Context
 import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKey
 import androidx.datastore.preferences.core.edit
-import androidx.security.crypto.MasterKeys
 import com.example.optoapp.data.dataStore
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -42,11 +42,13 @@ class AuthViewModelNavTest {
     @Test
     fun pinHasBeenSet_isFalse_whenNoPinConfigured() = runBlocking {
         // Clear both ESP and DataStore to simulate fresh install
-        val masterKeyAlias = MasterKeys.getOrCreate(MasterKeys.AES256_GCM_SPEC)
+        val masterKey = MasterKey.Builder(context)
+            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+            .build()
         EncryptedSharedPreferences.create(
-            "secure_security_prefs",
-            masterKeyAlias,
             context,
+            "secure_security_prefs",
+            masterKey,
             EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
             EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
         ).edit().clear().apply()
@@ -62,11 +64,13 @@ class AuthViewModelNavTest {
 
     @Test
     fun pinHasBeenSet_isTrue_afterSettingPin() = runBlocking {
-        val masterKeyAlias = MasterKeys.getOrCreate(MasterKeys.AES256_GCM_SPEC)
+        val masterKey = MasterKey.Builder(context)
+            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+            .build()
         val encryptedPrefs = EncryptedSharedPreferences.create(
-            "secure_security_prefs",
-            masterKeyAlias,
             context,
+            "secure_security_prefs",
+            masterKey,
             EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
             EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
         )

@@ -2,8 +2,8 @@ package com.example.optoapp.data
 
 import android.content.Context
 import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKey
 import androidx.datastore.preferences.core.edit
-import androidx.security.crypto.MasterKeys
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.coroutines.flow.first
@@ -27,11 +27,13 @@ class SecurityManagerInstrumentedTest {
     fun setUp() {
         context = ApplicationProvider.getApplicationContext()
         // Clear ESP before each test
-        val masterKeyAlias = MasterKeys.getOrCreate(MasterKeys.AES256_GCM_SPEC)
+        val masterKey = MasterKey.Builder(context)
+            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+            .build()
         val encryptedPrefs = EncryptedSharedPreferences.create(
-            "secure_security_prefs",
-            masterKeyAlias,
             context,
+            "secure_security_prefs",
+            masterKey,
             EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
             EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
         )
@@ -72,11 +74,13 @@ class SecurityManagerInstrumentedTest {
     @Test
     fun migration_autoSetsFlag_whenCustomPinExists() = runBlocking {
         // Pre-seed ESP with a custom PIN (simulating existing user)
-        val masterKeyAlias = MasterKeys.getOrCreate(MasterKeys.AES256_GCM_SPEC)
+        val masterKey = MasterKey.Builder(context)
+            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+            .build()
         val encryptedPrefs = EncryptedSharedPreferences.create(
-            "secure_security_prefs",
-            masterKeyAlias,
             context,
+            "secure_security_prefs",
+            masterKey,
             EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
             EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
         )
@@ -95,11 +99,13 @@ class SecurityManagerInstrumentedTest {
     @Test
     fun migration_doesNotSetFlag_whenDefaultPin() = runBlocking {
         // Pre-seed ESP with default "123456"
-        val masterKeyAlias = MasterKeys.getOrCreate(MasterKeys.AES256_GCM_SPEC)
+        val masterKey = MasterKey.Builder(context)
+            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+            .build()
         val encryptedPrefs = EncryptedSharedPreferences.create(
-            "secure_security_prefs",
-            masterKeyAlias,
             context,
+            "secure_security_prefs",
+            masterKey,
             EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
             EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
         )

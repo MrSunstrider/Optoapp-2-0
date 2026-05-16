@@ -1,5 +1,3 @@
-@file:Suppress("DEPRECATION")
-
 package com.example.optoapp.data
 
 import android.content.Context
@@ -9,7 +7,7 @@ import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.core.content.edit
 import androidx.security.crypto.EncryptedSharedPreferences
-import androidx.security.crypto.MasterKeys
+import androidx.security.crypto.MasterKey
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -29,9 +27,11 @@ class SecurityManager(
     private val context: Context,
     private val dataStore: DataStore<Preferences> = context.dataStore,
     private val encryptedPrefs: SharedPreferences = EncryptedSharedPreferences.create(
-        "secure_security_prefs",
-        MasterKeys.getOrCreate(MasterKeys.AES256_GCM_SPEC),
         context,
+        "secure_security_prefs",
+        MasterKey.Builder(context)
+            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+            .build(),
         EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
         EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
     )
