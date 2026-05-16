@@ -147,18 +147,11 @@ open class AuthDelegate @Inject constructor(
                 this.email = email
                 this.password = password
             }
-            // Esperar hasta 6s a que la sesión se establezca (confirmación automática)
-            repeat(20) {
-                val session = runCatching { supabase.auth.currentSessionOrNull() }.getOrNull()
-                if (session != null) {
-                    // Verificar que la sesión sea de usuario autenticado, no anónima
-                    val user = supabase.auth.currentUserOrNull()
-                    if (user != null) return null // success: sesión de usuario real
-                }
-                delay(300)
-            }
-            // No hay sesión de usuario → probablemente requiere confirmación de email
-            "Revisa tu correo electrónico y haz clic en el enlace de confirmación."
+            // El registro con email SIEMPRE requiere confirmación
+            // Incluso si el SDK crea una sesión temporal, el usuario debe confirmar su email
+            // antes de poder crear ópticas (la política RLS lo bloquea)
+            delay(1000)
+            "Revisa tu correo electrónico y haz clic en el enlace de confirmación. Luego inicia sesión para crear tu óptica."
         } catch (e: CancellationException) {
             throw e
         } catch (e: IOException) {

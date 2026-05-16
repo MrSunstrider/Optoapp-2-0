@@ -1,6 +1,7 @@
 package com.example.optoapp.data.membership
 
 import android.util.Log
+import com.example.optoapp.BuildConfig
 import com.example.optoapp.data.OpticaDto
 import com.example.optoapp.data.OpticaFiscalPatch
 import com.example.optoapp.data.OpticaFiscalSettings
@@ -18,6 +19,9 @@ import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import java.io.IOException
+import java.io.OutputStreamWriter
+import java.net.HttpURLConnection
+import java.net.URL
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -52,29 +56,48 @@ open class OpticaSettingsDataSource @Inject constructor(
         val nombre = nombreOptica.trim()
         if (nombre.isBlank()) return Result.failure(IllegalArgumentException("Nombre de óptica requerido"))
         val opticaId = "opt_" + UUID.randomUUID().toString().replace("-", "").take(16)
+        // Obtener el access token de la sesión del usuario
+        val accessToken = runCatching { supabase.auth.currentSessionOrNull()?.accessToken }.getOrNull()
+        if (accessToken.isNullOrBlank()) {
+            Log.w(TAG, "createOpticaForCurrentUser: sin accessToken")
+            return Result.failure(IllegalStateException("Sin sesión"))
+        }
         return try {
-            supabase.postgrest[TABLE_OPTICAS].insert(
-                listOf(
-                    OpticaInsertDto(
-                        id = opticaId,
-                        nombre = nombre,
-                        plan = "free",
-                        planCode = "free",
-                        maxOpticas = 1,
-                        maxPacientesPorOptica = 20,
-                        maxUsuariosPorOptica = 2,
-                        planSource = "manual",
-                        planStatus = "active",
-                        fiscalDocTipo = fiscalDocTipo.trim().uppercase(),
-                        fiscalDocNumero = fiscalDocNumero.trim(),
-                        razonSocial = razonSocial.trim(),
-                        direccionFiscal = direccionFiscal.trim()
-                    )
-                )
+            val apiKey = BuildConfig.SUPABASE_ANON_KEY
+            val baseUrl = BuildConfig.SUPABASE_URL.trimEnd('/')
+            val dto = OpticaInsertDto(
+                id = opticaId, nombre = nombre,
+                plan = "free", planCode = "free", maxOpticas = 1,
+                maxPacientesPorOptica = 20, maxUsuariosPorOptica = 2,
+                planSource = "manual", planStatus = "active",
+                fiscalDocTipo = fiscalDocTipo.trim().uppercase(),
+                fiscalDocNumero = fiscalDocNumero.trim(),
+                razonSocial = razonSocial.trim(),
+                direccionFiscal = direccionFiscal.trim()
             )
-            supabase.postgrest[TABLE_UO].insert(
-                listOf(UsuarioOpticaUpsertDto(userId = uid, opticaId = opticaId, rol = "admin"))
+            val jsonBody = kotlinx.serialization.json.Json.encodeToString(
+                kotlinx.serialization.builtins.ListSerializer(kotlinx.serialization.serializer<OpticaInsertDto>()),
+                listOf(dto)
             )
+            fun post(path: String, body: String): Int {
+                val url = URL("$baseUrl/rest/v1/$path")
+                val conn = url.openConnection() as HttpURLConnection
+                conn.requestMethod = "POST"
+                conn.doOutput = true
+                conn.setRequestProperty("Authorization", "Bearer $accessToken")
+                conn.setRequestProperty("apikey", apiKey)
+                conn.setRequestProperty("Content-Type", "application/json")
+                conn.setRequestProperty("Prefer", "return=minimal")
+                OutputStreamWriter(conn.outputStream).use { it.write(body) }
+                val code = conn.responseCode
+                conn.disconnect()
+                return code
+            }
+            val opticaCode = post("opticas", jsonBody)
+            if (opticaCode !in 200..299) return Result.failure(IllegalStateException("Error creando óptica ($opticaCode)"))
+            val uoBody = """[{"user_id":"$uid","optica_id":"$opticaId","rol":"admin"}]"""
+            val uoCode = post("usuario_optica", uoBody)
+            if (uoCode !in 200..299) return Result.failure(IllegalStateException("Error creando membresía ($uoCode)"))
             Result.success(OpticaMembership(opticaId = opticaId, nombre = nombre, rol = "admin"))
         } catch (e: CancellationException) {
             throw e
