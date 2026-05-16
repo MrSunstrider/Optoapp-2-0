@@ -53,13 +53,15 @@ object RefraccionTableBuilder {
                 Cell(dash(eval.addCercaOd)),
                 Cell(dash(eval.addIntermediaOd)),
                 Cell(dash(eval.dipCerca)),
-                Cell(dash(eval.avCcAoCerca.ifBlank { eval.avScAoCerca }))
+                Cell(dash(eval.avCcAoCerca.ifBlank { eval.avScAoCerca })),
+                Cell("—")
             )),
             Row("OI", listOf(
                 Cell(dash(eval.addCercaOi)),
                 Cell(dash(eval.addIntermediaOi)),
                 Cell(dash(eval.dipCerca)),
-                Cell(dash(eval.avCcAoCerca.ifBlank { eval.avScAoCerca }))
+                Cell(dash(eval.avCcAoCerca.ifBlank { eval.avScAoCerca })),
+                Cell("—")
             ))
         )
 
@@ -227,12 +229,6 @@ object RefraccionTableBuilder {
                 val cw = (nearDataW[ci] - 4).toInt().coerceAtLeast(8)
                 val cellSl = sl(cell.text, valuePaint, cw, cell.align)
                 drawSl(cellSl, nearDataX[ci] + 2, cy + (rowH - cellSl.height) / 2f)
-            }
-            // Tachado en AV/AO si no hay datos
-            val avAoData = eval.avCcAoCerca
-            if (avAoData.isBlank()) {
-                val strikeY = cy + rowH / 2f
-                canvas.drawLine(xAvAo + 4f, strikeY, xRight - 4f, strikeY, PdfStyle.strikePaint)
             }
             cy += rowH
         }
