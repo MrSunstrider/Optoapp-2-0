@@ -163,7 +163,7 @@ fun MonturasScreen(
                             onClick = {
                                 val pdf = InventarioMonturasPdfGenerator.generate(context, filtradas)
                                 lastGeneratedPdf = pdf
-                                FileShareUtils.sharePdf(context, pdf, "Compartir reporte de inventario")
+                                FileShareUtils.openPdf(context, pdf, "Abrir reporte de inventario")
                             }
                         ) {
                             Text("Generar PDF")

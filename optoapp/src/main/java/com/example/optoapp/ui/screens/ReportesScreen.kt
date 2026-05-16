@@ -63,7 +63,7 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                             porCobrar = porCobrar,
                             ticketPromedio = ticketPromedio
                         )
-                        FileShareUtils.sharePdf(context, pdf, "Compartir reporte financiero")
+                        FileShareUtils.openPdf(context, pdf, "Abrir reporte financiero")
                     }) {
                         Icon(Icons.Default.PictureAsPdf, contentDescription = "Generar PDF")
                     }

@@ -106,7 +106,7 @@ fun DetallePacienteScreen(
                             }
                             try {
                                 val file = RecetaEvaluacionPdfGenerator.generate(context, p, ultima)
-                                FileShareUtils.sharePdf(context, file, "Compartir fórmula en PDF")
+                                RecetaEvaluacionPdfGenerator.openPdf(context, file)
                             } catch (e: Exception) {
                                 Toast.makeText(context, "No se pudo generar el PDF: ${e.message}", Toast.LENGTH_LONG).show()
                             }

@@ -167,7 +167,7 @@ fun OperacionHoyScreen(
                             enabled = canExportInventario,
                             onClick = {
                                 val file = InventarioMonturasPdfGenerator.generate(context, uiState.monturas)
-                                FileShareUtils.sharePdf(context, file, "Compartir inventario PDF")
+                                FileShareUtils.openPdf(context, file, "Abrir inventario PDF")
                             }
                         ) { Text("Inventario PDF", maxLines = 1) }
                     }
