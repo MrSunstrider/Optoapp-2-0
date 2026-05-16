@@ -130,15 +130,15 @@ object RefraccionTableBuilder {
         val headerPaint = PdfStyle.tableHeaderPaint
         val labelPaint = PdfStyle.labelPaint
         val valuePaint = PdfStyle.rxValuePaint
-        val rowH = 28f
-        val sectionTitleH = 20f
-        val gap = 6f
+        val rowH = 24f
+        val sectionTitleH = 18f
+        val gap = 4f
 
         val pad = 8f
         val distH = sectionTitleH + rowH + distRows.size * rowH
         val nearH = sectionTitleH + rowH + nearRows.size * rowH
         val prismaBodyH = rowH + prismaRows.size * rowH
-        val totalH = pad + distH + gap + nearH + gap + sectionTitleH + prismaBodyH + pad + 8f
+        val totalH = pad + distH + gap + nearH + gap + sectionTitleH + prismaBodyH + pad + 4f
 
         ensureSpace(totalH + 16f)
 

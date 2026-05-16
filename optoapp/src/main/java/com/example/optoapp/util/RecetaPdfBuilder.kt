@@ -82,12 +82,12 @@ class RecetaPdfBuilder {
         val titleX = leftX + (cardWidth - titleLabel.width) / 2
 
         // Calcular la altura del contenido: cada fila = textSize * 1.5
-        val rowH = (labelPaint.textSize * 1.5f)
+        val rowH = (labelPaint.textSize * 1.3f)
         val fieldCount = 4
         val contentH = fieldCount * rowH
-        val cardH = PdfStyle.CARD_PAD + titleLabel.height + 8f + contentH + PdfStyle.CARD_PAD
+        val cardH = PdfStyle.CARD_PAD + titleLabel.height + 6f + contentH + PdfStyle.CARD_PAD
 
-        ensureSpace(cardH + 20f)
+        ensureSpace(cardH + 16f)
 
         val cardRect = RectF(PdfStyle.MARGIN, y, PdfStyle.PAGE_W - PdfStyle.MARGIN, y + cardH)
         canvas.drawRoundRect(cardRect, PdfStyle.CARD_RADIUS, PdfStyle.CARD_RADIUS, PdfStyle.cardFillPaint)
@@ -218,7 +218,7 @@ class RecetaPdfBuilder {
         }
         canvas.drawPath(triangle, PdfStyle.prismaTrianglePaint)
 
-        advance(contentH + 18f)
+        advance(contentH + 12f)
         return this
     }
 
@@ -261,16 +261,16 @@ class RecetaPdfBuilder {
 
         drawStaticLayout(t, PdfStyle.MARGIN + PdfStyle.SECTION_BAR_W + 12f, blockTop)
         drawStaticLayout(b, PdfStyle.MARGIN + PdfStyle.SECTION_BAR_W + 12f, blockTop + t.height + 8f)
-        advance(contentH + 18f)
+        advance(contentH + 12f)
     }
 
     /**
      * Finaliza el documento y retorna el [PdfDocument] con pie de página.
      */
     fun build(): PdfDocument {
-        advance(8f)
+        advance(4f)
         drawHorizontalRule()
-        advance(14f)
+        advance(8f)
 
         val footerText = "Documento generado con OptoApp · No sustituye la valoración clínica presencial ni la firma del profesional."
         val footerLayout = layoutText(

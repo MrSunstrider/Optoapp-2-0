@@ -134,14 +134,27 @@ open class AuthDelegate @Inject constructor(
 
     //── Register ──────────────────────────────────────────────────────────────
 
-    suspend fun register(email: String, password: String): String {
+    /**
+     * Registra con email y espera la sesión. Si hay confirmación de email,
+     * la sesión no se establece inmediatamente y retorna un mensaje indicando
+     * que revise su correo.
+     *
+     * @return null si ok (sesión lista), o un mensaje de error/información.
+     */
+    suspend fun register(email: String, password: String): String? {
         return try {
             supabase.auth.signUpWith(Email) {
                 this.email = email
                 this.password = password
             }
-            runCatching { supabase.auth.signOut() }
-            "Cuenta creada. Ahora un admin/gerente debe asignarte rol en la óptica."
+            // Esperar hasta 3s a que la sesión se establezca (confirmación automática)
+            repeat(15) {
+                val session = runCatching { supabase.auth.currentSessionOrNull() }.getOrNull()
+                if (session != null) return null // success: sesión activa
+                delay(200)
+            }
+            // No hay sesión → probablemente requiere confirmación de email
+            "Revisa tu correo electrónico y haz clic en el enlace de confirmación."
         } catch (e: CancellationException) {
             throw e
         } catch (e: IOException) {

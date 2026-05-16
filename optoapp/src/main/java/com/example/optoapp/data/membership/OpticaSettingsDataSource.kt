@@ -16,6 +16,7 @@ import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.delay
 import java.io.IOException
 import java.util.UUID
 import javax.inject.Inject
@@ -32,8 +33,16 @@ open class OpticaSettingsDataSource @Inject constructor(
         razonSocial: String = "",
         direccionFiscal: String = ""
     ): Result<OpticaMembership> {
-        val uid = supabase.auth.currentUserOrNull()?.id
-            ?: return Result.failure(IllegalStateException("Sin sesión"))
+        var uid = supabase.auth.currentUserOrNull()?.id
+        if (uid == null) {
+            // Reintentar: refrescar sesión y esperar antes de rendirse
+            runCatching {
+                supabase.auth.refreshCurrentSession()
+                delay(500)
+                uid = supabase.auth.currentUserOrNull()?.id
+            }
+        }
+        if (uid == null) return Result.failure(IllegalStateException("Sin sesión"))
         val nombre = nombreOptica.trim()
         if (nombre.isBlank()) return Result.failure(IllegalArgumentException("Nombre de óptica requerido"))
         val opticaId = "opt_" + UUID.randomUUID().toString().replace("-", "").take(16)

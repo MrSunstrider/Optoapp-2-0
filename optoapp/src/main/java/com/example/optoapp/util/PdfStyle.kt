@@ -11,12 +11,12 @@ object PdfStyle {
 
     const val PAGE_W = 595
     const val PAGE_H = 842
-    const val MARGIN = 48f
-    const val BOTTOM_SAFE = 56f
-    const val TABLE_CELL_PAD = 8f
-    const val ACCENT_BAR_H = 5f
-    const val CARD_RADIUS = 10f
-    const val CARD_PAD = 14f
+    const val MARGIN = 42f
+    const val BOTTOM_SAFE = 36f
+    const val TABLE_CELL_PAD = 6f
+    const val ACCENT_BAR_H = 4f
+    const val CARD_RADIUS = 8f
+    const val CARD_PAD = 10f
     const val SECTION_BAR_W = 4f
 
     // ─── Colors (raw ARGB ints, no Android dependency) ──────────────────────

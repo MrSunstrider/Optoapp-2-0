@@ -136,6 +136,7 @@ fun OptoAppNavigation(authViewModel: AuthViewModel) {
         composable("create_pin") { CreatePinScreen(navController, viewModel = authViewModel) }
         composable("pin") { PinScreen(navController, viewModel = authViewModel) }
         composable("login") { LoginScreen(navController, viewModel = authViewModel) }
+        composable("register") { RegisterScreen(navController, viewModel = authViewModel) }
         composable("onboarding_optica") { OnboardingOpticaScreen(navController, viewModel = authViewModel) }
         composable("seleccion_optica") { SeleccionOpticaScreen(navController, viewModel = authViewModel) }
         composable("main") { MainDrawerScreen(navController, authViewModel = authViewModel) }

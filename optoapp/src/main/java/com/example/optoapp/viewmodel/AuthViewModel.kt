@@ -152,8 +152,27 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-    fun register(email: String, password: String, onFinished: (String) -> Unit) = viewModelScope.launch {
-        onFinished(authDelegate.register(email, password))
+    fun register(email: String, password: String) = viewModelScope.launch {
+        _authState.value = AuthState.Loading
+        _pendingMemberships.value = emptyList()
+        val error = authDelegate.register(email, password)
+        if (error != null) {
+            _authState.value = AuthState.Error(error)
+            return@launch
+        }
+        // Sesión activa, resolver post-login (membresías u onboarding)
+        try {
+            val r = authDelegate.resolvePostLogin(
+                emailFallback = email,
+                nameFallback = email.substringBefore("@")
+            )
+            _pendingMemberships.value = r.memberships
+            if (r.requiresOnboarding) _needsOnboarding.value = true
+            _authState.value = AuthState.Success
+        } catch (e: Exception) {
+            Log.e(TAG, "Error post-registro: ${e.message}", e)
+            _authState.value = AuthState.Error("Cuenta creada. Inicia sesión para continuar.")
+        }
     }
 
     suspend fun selectOptica(membership: OpticaMembership) {

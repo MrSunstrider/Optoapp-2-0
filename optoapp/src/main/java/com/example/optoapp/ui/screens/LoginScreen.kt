@@ -278,8 +278,14 @@ fun LoginScreen(
             }
 
             // ─── Pie ──────────────────────────────────────────────────────────
+            TextButton(onClick = { navController.navigate("register") }) {
+                Text(
+                    "Crear cuenta con correo electrónico",
+                    fontWeight = FontWeight.Medium
+                )
+            }
             Text(
-                text = "Si no tienes cuenta, contacta al administrador de tu óptica.",
+                text = "Si ya tienes cuenta, contacta al administrador de tu óptica.",
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
