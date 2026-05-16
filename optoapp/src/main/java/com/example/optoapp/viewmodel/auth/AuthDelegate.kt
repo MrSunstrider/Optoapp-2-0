@@ -210,10 +210,13 @@ open class AuthDelegate @Inject constructor(
     ): PostLoginResult {
         var user = supabase.auth.currentUserOrNull()
         if (user == null) {
-            runCatching {
-                supabase.auth.refreshCurrentSession()
-                delay(500)
-                user = supabase.auth.currentUserOrNull()
+            for (attempt in 1..5) {
+                runCatching {
+                    supabase.auth.refreshCurrentSession()
+                    delay(attempt * 400L)
+                    user = supabase.auth.currentUserOrNull()
+                }
+                if (user != null) break
             }
         }
         val finalUser = user ?: throw IllegalStateException("No se encontró usuario autenticado")

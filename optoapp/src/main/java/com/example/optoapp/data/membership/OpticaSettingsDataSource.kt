@@ -35,14 +35,20 @@ open class OpticaSettingsDataSource @Inject constructor(
     ): Result<OpticaMembership> {
         var uid = supabase.auth.currentUserOrNull()?.id
         if (uid == null) {
-            // Reintentar: refrescar sesión y esperar antes de rendirse
-            runCatching {
-                supabase.auth.refreshCurrentSession()
-                delay(500)
-                uid = supabase.auth.currentUserOrNull()?.id
+            // Reintentar hasta 5 veces con backoff progresivo
+            for (attempt in 1..5) {
+                runCatching {
+                    supabase.auth.refreshCurrentSession()
+                    delay(attempt * 400L)
+                    uid = supabase.auth.currentUserOrNull()?.id
+                }
+                if (uid != null) break
             }
         }
-        if (uid == null) return Result.failure(IllegalStateException("Sin sesión"))
+        if (uid == null) {
+            Log.w(TAG, "createOpticaForCurrentUser: no se pudo recuperar sesión tras reintentos")
+            return Result.failure(IllegalStateException("Sin sesión"))
+        }
         val nombre = nombreOptica.trim()
         if (nombre.isBlank()) return Result.failure(IllegalArgumentException("Nombre de óptica requerido"))
         val opticaId = "opt_" + UUID.randomUUID().toString().replace("-", "").take(16)
