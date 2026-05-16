@@ -6,6 +6,7 @@ import com.example.optoapp.data.membership.OpticaSettingsDataSource
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.auth.auth
+import android.util.Log
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
@@ -32,6 +33,8 @@ class MembershipRepositoryTest {
     @Before
     fun setUp() {
         mockkStatic("io.github.jan.supabase.auth.AuthKt")
+        mockkStatic("android.util.Log")
+        every { Log.w(any<String>(), any<String>()) } returns 0
         supabase = mockk()
         auth = mockk()
         every { supabase.auth } returns auth

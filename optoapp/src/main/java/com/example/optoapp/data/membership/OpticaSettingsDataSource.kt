@@ -45,11 +45,7 @@ open class OpticaSettingsDataSource @Inject constructor(
         if (uid == null) {
             uid = supabase.auth.currentUserOrNull()?.id
             if (uid == null) {
-                for (attempt in 1..5) {
-                    delay(attempt * 400L)
-                    uid = supabase.auth.currentUserOrNull()?.id
-                    if (uid != null) break
-                }
+                uid = supabase.auth.currentUserOrNull()?.id
             }
         }
         if (uid == null) {

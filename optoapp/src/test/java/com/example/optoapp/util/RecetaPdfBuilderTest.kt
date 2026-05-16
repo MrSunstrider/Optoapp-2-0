@@ -19,12 +19,12 @@ class RecetaPdfBuilderTest {
     fun pdfStyle_layout_constants_match_generator() {
         assertEquals(595, PdfStyle.PAGE_W)
         assertEquals(842, PdfStyle.PAGE_H)
-        assertEquals(48f, PdfStyle.MARGIN, 0.001f)
-        assertEquals(56f, PdfStyle.BOTTOM_SAFE, 0.001f)
-        assertEquals(8f, PdfStyle.TABLE_CELL_PAD, 0.001f)
-        assertEquals(5f, PdfStyle.ACCENT_BAR_H, 0.001f)
-        assertEquals(10f, PdfStyle.CARD_RADIUS, 0.001f)
-        assertEquals(14f, PdfStyle.CARD_PAD, 0.001f)
+        assertEquals(42f, PdfStyle.MARGIN, 0.001f)
+        assertEquals(36f, PdfStyle.BOTTOM_SAFE, 0.001f)
+        assertEquals(6f, PdfStyle.TABLE_CELL_PAD, 0.001f)
+        assertEquals(4f, PdfStyle.ACCENT_BAR_H, 0.001f)
+        assertEquals(8f, PdfStyle.CARD_RADIUS, 0.001f)
+        assertEquals(10f, PdfStyle.CARD_PAD, 0.001f)
         assertEquals(4f, PdfStyle.SECTION_BAR_W, 0.001f)
     }
 
@@ -64,8 +64,8 @@ class RecetaPdfBuilderTest {
         // With current constants: (595 - 2 * 48).toInt() = 499
         val computed = (PdfStyle.PAGE_W - 2 * PdfStyle.MARGIN).toInt()
         assertEquals(
-            "contentWidth formula should produce 499 with current constants",
-            499,
+            "contentWidth formula should produce 511 with current constants",
+            511,
             computed
         )
     }

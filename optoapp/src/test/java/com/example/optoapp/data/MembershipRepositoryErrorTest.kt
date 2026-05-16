@@ -6,6 +6,7 @@ import com.example.optoapp.data.membership.OpticaSettingsDataSource
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.auth.auth
+import android.util.Log
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
@@ -31,6 +32,8 @@ class MembershipRepositoryErrorTest {
     fun setUp() {
         // auth is an extension property on SupabaseClient — mockkStatic to intercept
         mockkStatic("io.github.jan.supabase.auth.AuthKt")
+        mockkStatic("android.util.Log")
+        every { Log.w(any<String>(), any<String>()) } returns 0
         val authMock = mockk<Auth>(relaxed = true)
         every { authMock.currentUserOrNull() } returns null
         every { any<SupabaseClient>().auth } returns authMock
