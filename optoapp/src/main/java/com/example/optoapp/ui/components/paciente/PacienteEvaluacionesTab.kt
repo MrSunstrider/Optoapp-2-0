@@ -5,20 +5,17 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Assignment
-import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.optoapp.data.EvaluacionClinica
 import com.example.optoapp.data.Paciente
-import com.example.optoapp.util.FileShareUtils
 
 @Composable
 fun EvaluacionesList(
@@ -86,7 +83,7 @@ fun ResumenEvaluacionDialog(eval: EvaluacionClinica, paciente: Paciente, onDismi
                 val showOd = eval.recetaOdEsf.isNotBlank() || eval.recetaOdCil.isNotBlank()
                 val showOi = eval.recetaOiEsf.isNotBlank() || eval.recetaOiCil.isNotBlank()
                 if (showOd || showOi) {
-                    InfoSection("Fórmula final (gafas)") {
+                    InfoSection("VL Fórmula Optométrica") {
                         if (showOd) {
                             Text("OD: ${eval.recetaOdEsf} / ${eval.recetaOdCil} x ${eval.recetaOdEje}°", fontSize = 14.sp)
                         }
@@ -101,7 +98,7 @@ fun ResumenEvaluacionDialog(eval: EvaluacionClinica, paciente: Paciente, onDismi
                 val avccAo = eval.avCcAoPx
                 val hasAvcc = avccOd.isNotBlank() || avccOi.isNotBlank() || avccAo.isNotBlank()
                 if (hasAvcc) {
-                    InfoSection("Agudeza visual (AV CC)") {
+                    InfoSection("VL AV CC") {
                         Text("AVCC OD: ${if (avccOd.isBlank()) "—" else avccOd}       AV CC AO", fontSize = 14.sp)
                         Text("AVCC OI: ${if (avccOi.isBlank()) "—" else avccOi}       ${if (avccAo.isBlank()) "—" else avccAo}", fontSize = 14.sp)
                     }
@@ -112,7 +109,7 @@ fun ResumenEvaluacionDialog(eval: EvaluacionClinica, paciente: Paciente, onDismi
                     InfoSection("Adición (ADD)") {
                         if (eval.addCercaOd.isNotBlank()) Text("OD: ${eval.addCercaOd}", fontSize = 14.sp)
                         if (eval.addCercaOi.isNotBlank()) Text("OI: ${eval.addCercaOi}", fontSize = 14.sp)
-                        if (eval.addAv.isNotBlank()) Text("AV: ${eval.addAv}", fontSize = 14.sp)
+                        if (eval.addAv.isNotBlank()) Text("AV VP: ${eval.addAv}", fontSize = 14.sp)
                     }
                 }
 
@@ -182,34 +179,6 @@ fun ResumenEvaluacionDialog(eval: EvaluacionClinica, paciente: Paciente, onDismi
         },
         confirmButton = {
             Row {
-                val context = LocalContext.current
-                IconButton(onClick = {
-                    val formulaStr = buildString {
-                        append("Hola ${paciente.nombreCompleto.split(" ").firstOrNull() ?: ""}, esta es tu fórmula optométrica:\n\n")
-                        val showOd = eval.recetaOdEsf.isNotBlank() || eval.recetaOdCil.isNotBlank()
-                        val showOi = eval.recetaOiEsf.isNotBlank() || eval.recetaOiCil.isNotBlank()
-                        if (showOd) {
-                            append("Ojo Derecho (OD): ${eval.recetaOdEsf} / ${eval.recetaOdCil} x ${eval.recetaOdEje}°\n")
-                        }
-                        if (showOi) {
-                            append("Ojo Izquierdo (OI): ${eval.recetaOiEsf} / ${eval.recetaOiCil} x ${eval.recetaOiEje}°\n")
-                        }
-                        if (eval.addCercaOd.isNotBlank() || eval.addCercaOi.isNotBlank() || eval.addAv.isNotBlank()) {
-                            append("\nAdición:\n")
-                            if (eval.addCercaOd.isNotBlank()) append("OD: ${eval.addCercaOd}\n")
-                            if (eval.addCercaOi.isNotBlank()) append("OI: ${eval.addCercaOi}\n")
-                            if (eval.addAv.isNotBlank()) append("AV: ${eval.addAv}\n")
-                        }
-                        if (eval.proximaCita != null) {
-                            val prox = com.example.optoapp.util.DateUtils.formatLocalized(eval.proximaCita)
-                            append("\nPróximo Control: $prox")
-                        }
-                    }
-                    FileShareUtils.sendWhatsAppMessage(context, paciente.telefono, formulaStr)
-                }) {
-                    Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Enviar fórmula a WhatsApp", tint = Color(0xFF25D366))
-                }
-                Spacer(modifier = Modifier.width(8.dp))
                 Button(onClick = { onDismiss(); onEdit() }) {
                     Icon(Icons.Default.Edit, null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(8.dp))

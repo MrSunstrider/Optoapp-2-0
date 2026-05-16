@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
@@ -93,6 +94,7 @@ fun MonturasScreen(
         topBar = {
             TopAppBar(
                 title = { Text("Inventario General") },
+                windowInsets = WindowInsets(0, 0, 0, 0),
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
@@ -161,7 +163,7 @@ fun MonturasScreen(
                             onClick = {
                                 val pdf = InventarioMonturasPdfGenerator.generate(context, filtradas)
                                 lastGeneratedPdf = pdf
-                                FileShareUtils.openPdf(context, pdf, "Abrir reporte de inventario")
+                                FileShareUtils.sharePdf(context, pdf, "Compartir reporte de inventario")
                             }
                         ) {
                             Text("Generar PDF")

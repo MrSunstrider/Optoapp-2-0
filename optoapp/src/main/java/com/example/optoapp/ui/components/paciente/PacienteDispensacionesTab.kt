@@ -6,14 +6,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -24,7 +21,6 @@ import com.example.optoapp.data.Paciente
 import com.example.optoapp.ui.components.LaboratorioTicketAlertDialog
 import com.example.optoapp.util.DispensacionLaboratorioTicket
 import com.example.optoapp.util.LaboratorioTicketContext
-import com.example.optoapp.util.FileShareUtils
 import com.example.optoapp.viewmodel.LaboratorioConfigViewModel
 import java.util.Locale
 
@@ -205,23 +201,6 @@ fun ResumenDispensacionDialog(disp: DispensacionOptica, paciente: Paciente, onDi
         },
         confirmButton = {
             Row {
-                val context = LocalContext.current
-                IconButton(onClick = {
-                    val saldo = disp.montoTotal - disp.montoPagado
-                    val formattedSaldo = String.format(Locale.getDefault(), "%.2f", saldo)
-                    val nombre = paciente.nombreCompleto.split(" ").firstOrNull() ?: ""
-
-                    val msg = buildString {
-                        append("Hola $nombre, tus lentes ya están listos para recoger.")
-                        if (saldo > 0) {
-                            append(" Te recordamos que tienes un saldo pendiente de s/. $formattedSaldo.")
-                        }
-                    }
-                    FileShareUtils.sendWhatsAppMessage(context, paciente.telefono, msg)
-                }) {
-                    Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "WhatsApp", tint = Color(0xFF25D366))
-                }
-                Spacer(modifier = Modifier.width(8.dp))
                 Button(onClick = { onDismiss(); onEdit() }) {
                     Icon(Icons.Default.Edit, null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(8.dp))
