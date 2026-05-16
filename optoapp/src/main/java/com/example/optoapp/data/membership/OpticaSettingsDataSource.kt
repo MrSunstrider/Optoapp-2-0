@@ -17,7 +17,9 @@ import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 import java.io.IOException
 import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
@@ -36,7 +38,8 @@ open class OpticaSettingsDataSource @Inject constructor(
         fiscalDocNumero: String = "",
         razonSocial: String = "",
         direccionFiscal: String = "",
-        userId: String? = null
+        userId: String? = null,
+        overrideAccessToken: String? = null
     ): Result<OpticaMembership> {
         var uid = userId
         if (uid == null) {
@@ -56,13 +59,15 @@ open class OpticaSettingsDataSource @Inject constructor(
         val nombre = nombreOptica.trim()
         if (nombre.isBlank()) return Result.failure(IllegalArgumentException("Nombre de óptica requerido"))
         val opticaId = "opt_" + UUID.randomUUID().toString().replace("-", "").take(16)
-        // Obtener el access token de la sesión del usuario
-        val accessToken = runCatching { supabase.auth.currentSessionOrNull()?.accessToken }.getOrNull()
+        // Usar el token que nos pasaron, o intentar obtenerlo de la sesión
+        val accessToken = if (!overrideAccessToken.isNullOrBlank()) overrideAccessToken
+        else runCatching { supabase.auth.currentSessionOrNull()?.accessToken }.getOrNull()
         if (accessToken.isNullOrBlank()) {
             Log.w(TAG, "createOpticaForCurrentUser: sin accessToken")
             return Result.failure(IllegalStateException("Sin sesión"))
         }
         return try {
+            withContext(Dispatchers.IO) {
             val apiKey = BuildConfig.SUPABASE_ANON_KEY
             val baseUrl = BuildConfig.SUPABASE_URL.trimEnd('/')
             val dto = OpticaInsertDto(
@@ -94,11 +99,12 @@ open class OpticaSettingsDataSource @Inject constructor(
                 return code
             }
             val opticaCode = post("opticas", jsonBody)
-            if (opticaCode !in 200..299) return Result.failure(IllegalStateException("Error creando óptica ($opticaCode)"))
+            if (opticaCode !in 200..299) return@withContext Result.failure(IllegalStateException("Error creando óptica ($opticaCode)"))
             val uoBody = """[{"user_id":"$uid","optica_id":"$opticaId","rol":"admin"}]"""
             val uoCode = post("usuario_optica", uoBody)
-            if (uoCode !in 200..299) return Result.failure(IllegalStateException("Error creando membresía ($uoCode)"))
+            if (uoCode !in 200..299) return@withContext Result.failure(IllegalStateException("Error creando membresía ($uoCode)"))
             Result.success(OpticaMembership(opticaId = opticaId, nombre = nombre, rol = "admin"))
+        }
         } catch (e: CancellationException) {
             throw e
         } catch (e: IOException) {

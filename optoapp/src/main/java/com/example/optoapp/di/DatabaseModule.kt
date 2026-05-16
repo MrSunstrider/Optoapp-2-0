@@ -172,8 +172,9 @@ object DatabaseModule {
         repository: OptoRepository,
         membershipRepository: MembershipRepository,
         supabase: SupabaseClient,
+        fiscalStore: OpticaFiscalSettingsStore,
         @ApplicationContext context: Context
-    ): AuthDelegate = AuthDelegate(securityManager, sessionManager, repository, membershipRepository, supabase, context)
+    ): AuthDelegate = AuthDelegate(securityManager, sessionManager, repository, membershipRepository, supabase, fiscalStore, context)
 
     @Provides
     @Singleton

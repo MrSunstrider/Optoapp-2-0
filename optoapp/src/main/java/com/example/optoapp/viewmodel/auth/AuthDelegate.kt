@@ -10,6 +10,8 @@ import com.example.optoapp.BuildConfig
 import com.example.optoapp.data.ISecurityManager
 import com.example.optoapp.data.ISessionManager
 import com.example.optoapp.data.MembershipRepository
+import com.example.optoapp.data.OpticaFiscalSettings
+import com.example.optoapp.data.OpticaFiscalSettingsStore
 import com.example.optoapp.data.OpticaMembership
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.domain.SyncSessionHelper
@@ -41,6 +43,7 @@ open class AuthDelegate @Inject constructor(
     private val repository: OptoRepository,
     private val membershipRepository: MembershipRepository,
     private val supabase: SupabaseClient,
+    private val fiscalStore: OpticaFiscalSettingsStore,
     @ApplicationContext private val appContext: Context
 ) {
     companion object {
@@ -97,6 +100,10 @@ open class AuthDelegate @Inject constructor(
             this.email = email
             this.password = password
         }
+        // Guardar el access token inmediatamente después del login
+        pendingAccessToken = runCatching {
+            supabase.auth.currentSessionOrNull()?.accessToken
+        }.getOrNull().orEmpty()
     }
 
     suspend fun loginWithGoogle() {
@@ -201,6 +208,7 @@ open class AuthDelegate @Inject constructor(
     private var pendingLoginEmail: String = ""
     private var pendingLoginName: String = ""
     private var pendingUserId: String = ""
+    private var pendingAccessToken: String = ""
 
     suspend fun resolvePostLogin(
         emailFallback: String? = null,
@@ -222,6 +230,11 @@ open class AuthDelegate @Inject constructor(
         pendingLoginEmail = email
         pendingLoginName = nombre
         pendingUserId = finalUser.id
+        if (pendingAccessToken.isBlank()) {
+            pendingAccessToken = runCatching {
+                supabase.auth.currentSessionOrNull()?.accessToken
+            }.getOrNull().orEmpty()
+        }
 
         val memberships = membershipRepository.fetchMembershipsForCurrentUser()
 
@@ -352,7 +365,8 @@ open class AuthDelegate @Inject constructor(
             fiscalDocNumero = fiscalDocNumero,
             razonSocial = razonSocial,
             direccionFiscal = direccionFiscal,
-            userId = pendingUserId.ifBlank { null }
+            userId = pendingUserId.ifBlank { null },
+            overrideAccessToken = pendingAccessToken.ifBlank { null }
         )
         if (result.isSuccess) {
             val m = result.getOrNull()!!
@@ -362,6 +376,16 @@ open class AuthDelegate @Inject constructor(
                 name = name,
                 rol = "admin"
             )
+            // Guardar datos fiscales localmente para que aparezcan en Configuración
+            runCatching {
+                fiscalStore.save(m.opticaId, OpticaFiscalSettings(
+                    nombreComercial = nombreOptica.trim(),
+                    docTipo = fiscalDocTipo.trim().uppercase(),
+                    docNumero = fiscalDocNumero.trim(),
+                    razonSocial = razonSocial.trim(),
+                    direccionFiscal = direccionFiscal.trim()
+                ))
+            }
         }
         return result
     }
