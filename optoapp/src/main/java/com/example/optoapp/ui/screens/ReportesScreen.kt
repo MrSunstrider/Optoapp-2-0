@@ -55,15 +55,25 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                 },
                 actions = {
                     IconButton(onClick = {
-                        val pdf = ReporteFinancieroPdfGenerator.generate(
-                            context = context,
-                            dispensaciones = dispensaciones,
-                            periodo = periodo,
-                            totalVendido = totalVendido,
-                            porCobrar = porCobrar,
-                            ticketPromedio = ticketPromedio
-                        )
-                        FileShareUtils.openPdf(context, pdf, "Abrir reporte financiero")
+                        scope.launch {
+                            try {
+                                val pdf = ReporteFinancieroPdfGenerator.generate(
+                                    context = context,
+                                    dispensaciones = dispensaciones,
+                                    periodo = periodo,
+                                    totalVendido = totalVendido,
+                                    porCobrar = porCobrar,
+                                    ticketPromedio = ticketPromedio
+                                )
+                                FileShareUtils.openPdf(context, pdf, "Abrir reporte financiero")
+                            } catch (e: Exception) {
+                                android.widget.Toast.makeText(
+                                    context,
+                                    "Error al generar PDF: ${e.localizedMessage}",
+                                    android.widget.Toast.LENGTH_LONG
+                                ).show()
+                            }
+                        }
                     }) {
                         Icon(Icons.Default.PictureAsPdf, contentDescription = "Generar PDF")
                     }

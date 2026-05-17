@@ -80,7 +80,7 @@ fun MonturasScreen(
             text = {
                 MonturaEditForm(
                     form = uiState.form,
-                    onUpdate = { viewModel.updateForm { it } },
+                    onUpdate = { newForm -> viewModel.updateForm { newForm } },
                     error = uiState.error
                 )
             },
