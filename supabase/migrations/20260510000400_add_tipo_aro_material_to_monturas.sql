@@ -1,0 +1,2 @@
+ALTER TABLE monturas ADD COLUMN tipo_aro TEXT NOT NULL DEFAULT '';
+ALTER TABLE monturas ADD COLUMN material_montura TEXT NOT NULL DEFAULT '';

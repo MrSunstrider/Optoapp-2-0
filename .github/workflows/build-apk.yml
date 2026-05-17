@@ -1,0 +1,49 @@
+name: build-apk
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "optoapp/**"
+      - "gradle/**"
+      - "build.gradle.kts"
+      - "settings.gradle.kts"
+      - ".github/workflows/build-apk.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: "temurin"
+
+      - name: Setup local.properties
+        run: |
+          echo "supabase.url=${{ secrets.SUPABASE_URL }}" >> local.properties
+          echo "supabase.anon.key=${{ secrets.SUPABASE_ANON_KEY }}" >> local.properties
+
+      - name: Build debug APK
+        run: chmod +x gradlew && ./gradlew :optoapp:assembleDebug
+
+      - name: Get version name
+        id: version
+        run: |
+          VERSION=$(grep "versionName" optoapp/build.gradle.kts | head -1 | sed 's/.*"\(.*\)".*/\1/')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=v${VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: "OptoApp v${{ steps.version.outputs.version }}"
+          body: "Build automático del branch main."
+          files: optoapp/build/outputs/apk/debug/optoapp-debug.apk

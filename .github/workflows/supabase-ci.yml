@@ -1,0 +1,36 @@
+name: Supabase CI
+
+on:
+  push:
+    branches: [version-saas, main]
+    paths:
+      - "supabase/migrations/**"
+      - "supabase/config.toml"
+      - ".github/workflows/supabase-ci.yml"
+  pull_request:
+    branches: [version-saas, main]
+    paths:
+      - "supabase/migrations/**"
+      - "supabase/config.toml"
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Start local Supabase
+        run: supabase start
+        timeout-minutes: 5
+
+      - name: Lint migrations
+        run: supabase db lint
+        continue-on-error: true
+
+      - name: Check migrations are consistent
+        run: supabase db diff --linked
+        continue-on-error: true

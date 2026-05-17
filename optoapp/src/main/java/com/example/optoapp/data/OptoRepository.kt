@@ -1,0 +1,188 @@
+package com.example.optoapp.data
+
+import android.util.Log
+import com.example.optoapp.data.backup.BackupRestoreCoordinator
+import com.example.optoapp.data.montura.MonturaInventoryCoordinator
+import com.example.optoapp.data.sync.SyncSnapshotCoordinator
+import com.example.optoapp.util.DateUtils
+import dagger.Lazy
+import kotlinx.coroutines.flow.Flow
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
+import kotlinx.serialization.json.JsonDecoder
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.decodeFromJsonElement
+import kotlinx.serialization.json.jsonObject
+import java.time.LocalDate
+
+open class OptoRepository(
+    private val database: OptoDatabase,
+    private val syncStateTracker: SyncStateTracker,
+    private val postSaveSyncScheduler: Lazy<com.example.optoapp.sync.PostSaveSyncScheduler>,
+    val pacienteRepo: PacienteRepository,
+    val dispensacionRepo: DispensacionRepository,
+    val syncRepo: SyncRepository,
+    val snapshotCoordinator: SyncSnapshotCoordinator,
+    val backupCoordinator: BackupRestoreCoordinator,
+    val monturaCoordinator: MonturaInventoryCoordinator
+) {
+    companion object {
+        private const val TAG = "OptoRepository"
+    }
+
+    // -- Paciente --
+    fun pacientesFlowForOptica(opticaId: String) = pacienteRepo.pacientesFlowForOptica(opticaId)
+    fun countPacientesForOptica(opticaId: String) = pacienteRepo.countPacientesForOptica(opticaId)
+    fun searchPacientesForOptica(opticaId: String, query: String) = pacienteRepo.searchPacientesForOptica(opticaId, query)
+    fun getPacientesWithPendingBalanceForOptica(opticaId: String) = pacienteRepo.getPacientesWithPendingBalanceForOptica(opticaId)
+    fun getPacientesWithPendingDeliveryForOptica(opticaId: String) = pacienteRepo.getPacientesWithPendingDeliveryForOptica(opticaId)
+    suspend fun getPacienteById(id: String) = pacienteRepo.getPacienteById(id)
+    suspend fun insertPaciente(paciente: Paciente) { pacienteRepo.insertPaciente(paciente); postSaveSyncScheduler.get().schedulePacientesSync(paciente.opticaId) }
+    suspend fun updatePaciente(paciente: Paciente) { pacienteRepo.updatePaciente(paciente); postSaveSyncScheduler.get().schedulePacientesSync(paciente.opticaId) }
+    suspend fun deletePaciente(paciente: Paciente) = pacienteRepo.deletePaciente(paciente)
+
+    // -- Evaluacion --
+    fun getEvaluacionesByPaciente(pacienteId: String) = pacienteRepo.getEvaluacionesByPaciente(pacienteId)
+    fun getEvaluacionesProximaCitaEnRango(opticaId: String, start: LocalDate, end: LocalDate) = pacienteRepo.getEvaluacionesProximaCitaEnRango(opticaId, start, end)
+    fun countEvaluacionesInRange(start: LocalDate, end: LocalDate) = pacienteRepo.countEvaluacionesInRange(start, end)
+    fun countEvaluacionesInRangeForOptica(start: LocalDate, end: LocalDate, opticaId: String) = pacienteRepo.countEvaluacionesInRangeForOptica(start, end, opticaId)
+    suspend fun getEvaluacionById(id: String) = pacienteRepo.getEvaluacionById(id)
+    suspend fun deleteEvaluacion(evaluacion: EvaluacionClinica) = pacienteRepo.deleteEvaluacion(evaluacion)
+    suspend fun insertEvaluacion(evaluacion: EvaluacionClinica) { pacienteRepo.insertEvaluacion(evaluacion); postSaveSyncScheduler.get().scheduleHistorialSync(evaluacion.opticaId) }
+    suspend fun updateEvaluacion(evaluacion: EvaluacionClinica) { pacienteRepo.updateEvaluacion(evaluacion); postSaveSyncScheduler.get().scheduleHistorialSync(evaluacion.opticaId) }
+
+    // -- Dispensacion --
+    fun getDispensacionesByPaciente(pacienteId: String) = dispensacionRepo.getDispensacionesByPaciente(pacienteId)
+    fun getAllDispensaciones() = dispensacionRepo.getAllDispensaciones()
+    fun getAllDispensacionesForOptica(opticaId: String) = dispensacionRepo.getAllDispensacionesForOptica(opticaId)
+    fun getTotalVendido() = dispensacionRepo.getTotalVendido()
+    fun getTotalPagado() = dispensacionRepo.getTotalPagado()
+    fun getTotalVendidoForOptica(opticaId: String) = dispensacionRepo.getTotalVendidoForOptica(opticaId)
+    fun getTotalPagadoForOptica(opticaId: String) = dispensacionRepo.getTotalPagadoForOptica(opticaId)
+    fun getDispensacionesByDateRange(start: LocalDate, end: LocalDate) = dispensacionRepo.getDispensacionesByDateRange(start, end)
+    fun getDispensacionesByDateRangeForOptica(start: LocalDate, end: LocalDate, opticaId: String) = dispensacionRepo.getDispensacionesByDateRangeForOptica(start, end, opticaId)
+    suspend fun getDispensacionById(id: String) = dispensacionRepo.getDispensacionById(id)
+    suspend fun insertDispensacion(dispensacion: DispensacionOptica) { dispensacionRepo.insertDispensacion(dispensacion); postSaveSyncScheduler.get().scheduleFinanzasSync(dispensacion.opticaId) }
+    suspend fun updateDispensacion(dispensacion: DispensacionOptica) { dispensacionRepo.updateDispensacion(dispensacion); postSaveSyncScheduler.get().scheduleFinanzasSync(dispensacion.opticaId) }
+    suspend fun deleteDispensacionById(id: String) = dispensacionRepo.deleteDispensacionById(id)
+    suspend fun deleteDispensacion(dispensacion: DispensacionOptica) { dispensacionRepo.deleteDispensacionById(dispensacion.id); syncStateTracker.markDeleted(dispensacion.opticaId, "dispensacion", dispensacion.id); postSaveSyncScheduler.get().scheduleFinanzasSync(dispensacion.opticaId) }
+    suspend fun existsDuplicateOt(opticaId: String, ot: String, excludeDispensacionId: String?) = dispensacionRepo.existsDuplicateOt(opticaId, ot, excludeDispensacionId)
+    suspend fun suggestNextOt(opticaId: String, fecha: LocalDate) = dispensacionRepo.suggestNextOt(opticaId, fecha)
+    suspend fun suggestNextHistoriaOptometrica(opticaId: String) = pacienteRepo.suggestNextHistoriaOptometrica(opticaId)
+    suspend fun existsDuplicateHistoriaOptometrica(opticaId: String, historia: String, excludePacienteId: String?) = pacienteRepo.existsDuplicateHistoriaOptometrica(opticaId, historia, excludePacienteId)
+
+    // -- Pagos --
+    fun getPagosByDispensacion(dispensacionId: String) = dispensacionRepo.getPagosByDispensacion(dispensacionId)
+    suspend fun insertPago(pago: Pago) { dispensacionRepo.insertPago(pago); postSaveSyncScheduler.get().scheduleFinanzasSync(pago.opticaId) }
+    suspend fun getPagoById(id: String) = dispensacionRepo.getPagoById(id)
+    suspend fun reassignPagosDispensacion(oldDispensacionId: String, newDispensacionId: String) = dispensacionRepo.reassignPagosDispensacion(oldDispensacionId, newDispensacionId)
+    suspend fun deletePagoRegistrandoAnulacionEnCaja(pago: Pago, opticaId: String, fechaAnulacion: LocalDate = DateUtils.today()) = dispensacionRepo.deletePagoRegistrandoAnulacionEnCaja(pago, opticaId, fechaAnulacion)
+    suspend fun deletePago(pago: Pago) = dispensacionRepo.deletePago(pago)
+    fun getPagosByServicioExtra(servicioExtraId: String) = dispensacionRepo.getPagosByServicioExtra(servicioExtraId)
+    fun getPagosByDateRange(start: LocalDate, end: LocalDate) = dispensacionRepo.getPagosByDateRange(start, end)
+    fun getPagosByDateRangeForOptica(start: LocalDate, end: LocalDate, opticaId: String) = dispensacionRepo.getPagosByDateRangeForOptica(start, end, opticaId)
+
+    // -- Servicios Extra --
+    fun getAllServicios() = dispensacionRepo.getAllServicios()
+    fun getAllServiciosForOptica(opticaId: String) = dispensacionRepo.getAllServiciosForOptica(opticaId)
+    fun getServiciosByPaciente(pacienteId: String) = dispensacionRepo.getServiciosByPaciente(pacienteId)
+    suspend fun getServicioById(id: String) = dispensacionRepo.getServicioById(id)
+    suspend fun insertServicio(servicio: ServicioExtra) { dispensacionRepo.insertServicio(servicio); postSaveSyncScheduler.get().scheduleFinanzasSync(servicio.opticaId) }
+    suspend fun updateServicio(servicio: ServicioExtra) { dispensacionRepo.updateServicio(servicio); postSaveSyncScheduler.get().scheduleFinanzasSync(servicio.opticaId) }
+    suspend fun deleteServicio(servicio: ServicioExtra) { dispensacionRepo.deleteServicio(servicio); syncStateTracker.markDeleted(servicio.opticaId, "servicio_extra", servicio.id); postSaveSyncScheduler.get().scheduleFinanzasSync(servicio.opticaId) }
+
+    // -- Monturas --
+    fun getMonturasByOptica(opticaId: String) = monturaCoordinator.getMonturasByOptica(opticaId)
+    suspend fun getMonturaById(id: String) = monturaCoordinator.getMonturaById(id)
+    suspend fun insertMontura(montura: Montura) = monturaCoordinator.insertMontura(montura)
+    suspend fun updateMontura(montura: Montura) = monturaCoordinator.updateMontura(montura)
+    suspend fun deleteMontura(montura: Montura) = monturaCoordinator.deleteMontura(montura)
+    suspend fun adjustMonturaStock(monturaId: String, opticaId: String, delta: Int) = monturaCoordinator.adjustMonturaStock(monturaId, opticaId, delta)
+    fun getMovimientosMonturaByOptica(opticaId: String) = monturaCoordinator.getMovimientosMonturaByOptica(opticaId)
+    fun getMovimientosByMontura(monturaId: String) = monturaCoordinator.getMovimientosByMontura(monturaId)
+    suspend fun insertMonturaMovimiento(movimiento: MonturaMovimiento) = monturaCoordinator.insertMonturaMovimiento(movimiento)
+
+    // -- Sync Snapshots --
+    suspend fun upsertPaciente(paciente: Paciente) = snapshotCoordinator.upsertPaciente(paciente)
+    suspend fun upsertMontura(montura: Montura) = snapshotCoordinator.upsertMontura(montura)
+    suspend fun upsertMonturaMovimiento(movimiento: MonturaMovimiento) = snapshotCoordinator.upsertMonturaMovimiento(movimiento)
+    suspend fun getPacientesSnapshotForOptica(opticaId: String) = snapshotCoordinator.getPacientesSnapshotForOptica(opticaId)
+    suspend fun getEvaluacionesSnapshotForOptica(opticaId: String) = snapshotCoordinator.getEvaluacionesSnapshotForOptica(opticaId)
+    suspend fun getDispensacionesSnapshotForOptica(opticaId: String) = snapshotCoordinator.getDispensacionesSnapshotForOptica(opticaId)
+    suspend fun getPagosSnapshotForOptica(opticaId: String) = snapshotCoordinator.getPagosSnapshotForOptica(opticaId)
+    suspend fun getServiciosSnapshotForOptica(opticaId: String) = snapshotCoordinator.getServiciosSnapshotForOptica(opticaId)
+    suspend fun getMonturasSnapshotForOptica(opticaId: String) = snapshotCoordinator.getMonturasSnapshotForOptica(opticaId)
+    suspend fun getMovimientosMonturaSnapshotForOptica(opticaId: String) = snapshotCoordinator.getMovimientosMonturaSnapshotForOptica(opticaId)
+
+    // -- Sync State --
+    suspend fun getPendingDeletions(opticaId: String) = syncRepo.getPendingDeletions(opticaId)
+    suspend fun clearDeletionState(opticaId: String, type: String, id: String) = syncRepo.clearDeletionState(opticaId, type, id)
+
+    // -- Reasignacion legacy --
+    suspend fun reassignLegacyMiOpticaBaseTo(currentOpticaId: String) {
+        if (currentOpticaId.isBlank() || currentOpticaId == SessionManager.LEGACY_OPTICA_ID) return
+        val pacienteResult = pacienteRepo.reassignFromLegacyMiOpticaBase(currentOpticaId)
+        val dispensacionResult = dispensacionRepo.reassignFromLegacyMiOpticaBase(currentOpticaId)
+        if (pacienteResult + dispensacionResult > 0) {
+            Log.d(TAG, "Reasignadas ${pacienteResult + dispensacionResult} filas de mi_optica_base → opticaId=$currentOpticaId")
+        }
+    }
+
+    // -- Backup / Restore --
+    suspend fun getBackupDataForOptica(opticaId: String) = backupCoordinator.getBackupDataForOptica(opticaId)
+    suspend fun restoreBackup(backupData: BackupData, currentOpticaId: String) = backupCoordinator.restoreBackup(backupData, currentOpticaId)
+
+    // -- Deduplicacion --
+    suspend fun resolveDuplicatePacientesByHistoria(opticaId: String) = pacienteRepo.resolveDuplicatePacientesByHistoria(opticaId, database)
+}
+
+data class DuplicateHoResolutionResult(
+    val mergedPacientes: Int = 0,
+    val movedEvaluaciones: Int = 0,
+    val movedDispensaciones: Int = 0,
+    val movedServicios: Int = 0
+)
+
+@Serializable
+data class BackupData(
+    val version: Int = 3,
+    val dateExported: Long = System.currentTimeMillis(),
+    val appIdentifier: String = "OptoApp-2.0",
+    @SerialName("source_optica_id")
+    val sourceOpticaId: String? = null,
+    val pacientes: List<Paciente>? = emptyList(),
+    val evaluaciones: List<EvaluacionClinica>? = emptyList(),
+    @SerialName("dispensaciones")
+    val dispensaciones: List<DispensacionOptica>? = emptyList(),
+    val pagos: List<Pago>? = emptyList(),
+    @SerialName("serviciosExtra")
+    val serviciosExtra: List<ServicioExtra>? = emptyList()
+)
+
+object BackupDataSerializer : KSerializer<BackupData> {
+    private val delegate = BackupData.serializer()
+    override val descriptor: SerialDescriptor = delegate.descriptor
+    override fun serialize(encoder: Encoder, value: BackupData) = encoder.encodeSerializableValue(delegate, value)
+    override fun deserialize(decoder: Decoder): BackupData {
+        val jsonDecoder = decoder as JsonDecoder
+        val root = jsonDecoder.decodeJsonElement().jsonObject
+        return jsonDecoder.json.decodeFromJsonElement(delegate, patchAlternateKeys(root))
+    }
+
+    private fun patchAlternateKeys(root: JsonObject): JsonObject {
+        val map = root.toMutableMap()
+        patchKey(map, "dispensaciones", "ordenes", "ventas")
+        patchKey(map, "serviciosExtra", "servicios", "otrosServicios")
+        return JsonObject(map)
+    }
+
+    private fun patchKey(map: MutableMap<String, JsonElement>, primary: String, vararg alternates: String) {
+        if (map.containsKey(primary)) alternates.forEach { map.remove(it) }
+        else for (alt in alternates) { val element = map.remove(alt); if (element != null) { map[primary] = element; return } }
+    }
+}

@@ -15,6 +15,9 @@ app/build
 .cxx
 local.properties
 
+# Supabase CLI (binario descargado; no versionar)
+/tools/supabase-cli/
+
 # Memory dumps
 *.hprof
 java_pid*
@@ -22,7 +25,34 @@ java_pid*
 # Android Studio
 *.keystore
 !debug.keystore
+*.jks
 
 # Build results
 **/build/
+
+# Nested git repo (managed separately)
 /Optoapp-2-0-saas/
+
+# IDE/Editor specific
+.cursorrules
+.atl/
+
+# Stale root files
+TestDates.kt
+
+# Kotlin compiler output
+.kotlin/
+
+# JVM crash logs
+hs_err_pid*.log
+replay_pid*.log
+
+# Web app artifacts
+web/node_modules/
+web/.next/
+web/.env.local
+web/coverage/
+web/tsconfig.tsbuildinfo
+
+# Optoweb branch artifacts (no debe estar en main)
+optoweb/

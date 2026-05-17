@@ -18,4 +18,4 @@ dependencyResolutionManagement {
     }
 }
 rootProject.name = "OptoApp"
-include(":app")
+include(":optoapp")

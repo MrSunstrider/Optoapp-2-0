@@ -1,0 +1,235 @@
+package com.example.optoapp.ui.components.servicio
+
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.example.optoapp.data.FinanzasRemoteDefaults
+import com.example.optoapp.data.Montura
+import com.example.optoapp.data.Paciente
+import com.example.optoapp.data.Pago
+import com.example.optoapp.ui.components.AbonoDialog
+import com.example.optoapp.ui.components.DropdownField
+import com.example.optoapp.ui.components.OptoTextField
+import com.example.optoapp.util.DateUtils
+import com.example.optoapp.viewmodel.ServiciosUiState
+import java.util.*
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ServicioForm(
+    uiState: ServiciosUiState,
+    onUpdate: (ServiciosUiState) -> Unit,
+    monturas: List<Montura>,
+    pacientes: List<Paciente>,
+    onAddPago: (Pago) -> Unit,
+    onUpdatePago: (Pago) -> Unit,
+    onRemovePago: (Pago) -> Unit,
+    onShowDatePicker: () -> Unit
+) {
+    OptoTextField(value = uiState.ot, onValueChange = { onUpdate(uiState.copy(ot = it)) }, label = "OT (Opcional)")
+
+    var showMonturaDialog by remember { mutableStateOf(false) }
+
+    if (showMonturaDialog) {
+        AlertDialog(
+            onDismissRequest = { showMonturaDialog = false },
+            title = { Text("Seleccionar Producto") },
+            text = {
+                Column {
+                    if (monturas.isEmpty()) {
+                        Text("No hay monturas con stock en el inventario.", style = MaterialTheme.typography.bodySmall)
+                    } else {
+                        LazyColumn(modifier = Modifier.heightIn(max = 400.dp)) {
+                            items(monturas) { montura ->
+                                ListItem(
+                                    headlineContent = { Text("${montura.marca} ${montura.modelo}") },
+                                    supportingContent = { Text("Color: ${montura.color} | SKU: ${montura.sku}") },
+                                    trailingContent = { Text("s/. ${montura.precio}", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary) },
+                                    modifier = Modifier.clickable {
+                                        onUpdate(uiState.copy(
+                                            descripcion = "${montura.marca} ${montura.modelo} (${montura.sku})",
+                                            montoTotal = montura.precio.toString()
+                                        ))
+                                        showMonturaDialog = false
+                                    }
+                                )
+                                HorizontalDivider(thickness = 0.5.dp)
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showMonturaDialog = false }) { Text("Cerrar") }
+            }
+        )
+    }
+
+    OptoTextField(
+        value = uiState.descripcion,
+        onValueChange = { onUpdate(uiState.copy(descripcion = it)) },
+        label = "Descripción",
+        trailingIcon = {
+            IconButton(onClick = { showMonturaDialog = true }) {
+                Icon(Icons.Default.Inventory2, contentDescription = "Vincular Inventario", tint = MaterialTheme.colorScheme.primary)
+            }
+        }
+    )
+
+    OptoTextField(
+        value = uiState.montoTotal,
+        onValueChange = { onUpdate(uiState.copy(montoTotal = it)) },
+        label = "Monto Total",
+        keyboardType = KeyboardType.Decimal
+    )
+
+    HorizontalDivider()
+
+    Text("Historial de Abonos", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+
+    val total = uiState.montoTotal.toDoubleOrNull() ?: 0.0
+    val pagado = uiState.pagos.sumOf { it.monto }
+    val saldo = total - pagado
+
+    uiState.pagos.forEach { pago ->
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+        ) {
+            Row(
+                modifier = Modifier.padding(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("${pago.metodoPago}: s/. ${String.format(Locale.getDefault(), "%.2f", pago.monto)}", fontWeight = FontWeight.Bold)
+                    if (pago.nota.isNotEmpty()) {
+                        Text(pago.nota, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    Text(DateUtils.formatLocalized(pago.fecha), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Row {
+                    var showEditDialog by remember { mutableStateOf(false) }
+                    if (showEditDialog) {
+                        val otrosAbonos = uiState.pagos
+                            .filter { it.id != pago.id }
+                            .sumOf { it.monto }
+                        val maximo = (total - otrosAbonos).coerceAtLeast(0.0)
+                        AbonoDialog(
+                            pago = pago,
+                            montoMaximo = maximo,
+                            onDismiss = { showEditDialog = false },
+                            onConfirm = { updatedPago: Pago ->
+                                onUpdatePago(updatedPago)
+                                showEditDialog = false
+                            }
+                        )
+                    }
+                    IconButton(onClick = { showEditDialog = true }) {
+                        Icon(Icons.Default.Edit, contentDescription = "Editar", tint = MaterialTheme.colorScheme.primary)
+                    }
+                    IconButton(onClick = { onRemovePago(pago) }) {
+                        Icon(Icons.Default.Delete, contentDescription = "Borrar", tint = MaterialTheme.colorScheme.error)
+                    }
+                }
+            }
+        }
+    }
+
+    var showAddDialog by remember { mutableStateOf(false) }
+    if (showAddDialog) {
+        val pagadoActual = uiState.pagos.sumOf { it.monto }
+        val maximo = (total - pagadoActual).coerceAtLeast(0.0)
+        AbonoDialog(
+            defaultFecha = DateUtils.today(),
+            montoMaximo = maximo,
+            onDismiss = { showAddDialog = false },
+            onConfirm = { nuevoPago: Pago ->
+                onAddPago(nuevoPago)
+                showAddDialog = false
+            }
+        )
+    }
+
+    OutlinedButton(
+        onClick = { showAddDialog = true },
+        modifier = Modifier.fillMaxWidth(),
+        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary)
+    ) {
+        Icon(Icons.Default.Add, contentDescription = null)
+        Spacer(Modifier.width(8.dp))
+        Text("Agregar Abono")
+    }
+
+    HorizontalDivider()
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text("Saldo Restante:", fontWeight = FontWeight.Bold)
+            Text(
+                text = "s/. ${String.format(Locale.getDefault(), "%.2f", saldo)}",
+                fontSize = 24.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = if (saldo > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary
+            )
+        }
+    }
+
+    DropdownField(
+        label = "Estado",
+        selected = uiState.estado,
+        options = listOf("Pendiente", "Entregado"),
+        onSelected = { onUpdate(uiState.copy(estado = it)) }
+    )
+
+    OutlinedButton(onClick = onShowDatePicker, modifier = Modifier.fillMaxWidth()) {
+        Text("Fecha: ${DateUtils.formatLocalized(uiState.fecha)}")
+    }
+
+    Text("Asociar a Paciente (Opcional)", fontWeight = FontWeight.Bold)
+    var pExpanded by remember { mutableStateOf(false) }
+    var pSearchQuery by remember { mutableStateOf("") }
+    val filteredPacientes = if (pSearchQuery.isEmpty()) pacientes
+    else pacientes.filter { it.nombreCompleto.contains(pSearchQuery, ignoreCase = true) }
+    val currentPacienteName = pacientes.find { it.id == uiState.pacienteId }?.nombreCompleto ?: "Ninguno"
+
+    ExposedDropdownMenuBox(expanded = pExpanded, onExpandedChange = { pExpanded = !pExpanded }) {
+        OutlinedTextField(
+            value = pSearchQuery.ifBlank { if (pExpanded) "" else currentPacienteName },
+            onValueChange = { pSearchQuery = it },
+            label = { Text("Buscar Paciente...") },
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = pExpanded) },
+            modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryEditable).fillMaxWidth(),
+            colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors()
+        )
+        ExposedDropdownMenu(expanded = pExpanded, onDismissRequest = { pExpanded = false }) {
+            DropdownMenuItem(text = { Text("Ninguno") }, onClick = {
+                onUpdate(uiState.copy(pacienteId = null))
+                pSearchQuery = ""
+                pExpanded = false
+            })
+            filteredPacientes.forEach { p ->
+                DropdownMenuItem(text = { Text(p.nombreCompleto) }, onClick = {
+                    onUpdate(uiState.copy(pacienteId = p.id))
+                    pSearchQuery = ""
+                    pExpanded = false
+                })
+            }
+        }
+    }
+}

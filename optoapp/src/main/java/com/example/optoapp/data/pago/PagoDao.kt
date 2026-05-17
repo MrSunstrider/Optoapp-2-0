@@ -1,0 +1,48 @@
+package com.example.optoapp.data.pago
+
+import androidx.room.*
+import com.example.optoapp.data.Pago
+import kotlinx.coroutines.flow.Flow
+import java.time.LocalDate
+
+@Dao
+interface PagoDao {
+    @Query("SELECT * FROM pagos WHERE id = :id")
+    suspend fun getPagoById(id: String): Pago?
+
+    @Query("SELECT * FROM pagos WHERE dispensacionId = :dispensacionId ORDER BY fecha DESC")
+    fun getPagosByDispensacion(dispensacionId: String): Flow<List<Pago>>
+
+    @Query("SELECT * FROM pagos WHERE servicioExtraId = :servicioExtraId ORDER BY fecha DESC")
+    fun getPagosByServicioExtra(servicioExtraId: String): Flow<List<Pago>>
+
+    @Query("SELECT * FROM pagos WHERE fecha >= :start AND fecha <= :end ORDER BY fecha DESC")
+    fun getPagosByDateRange(start: LocalDate, end: LocalDate): Flow<List<Pago>>
+
+    @Query("SELECT * FROM pagos WHERE fecha >= :start AND fecha <= :end AND opticaId = :opticaId ORDER BY fecha DESC")
+    fun getPagosByDateRangeForOptica(start: LocalDate, end: LocalDate, opticaId: String): Flow<List<Pago>>
+
+    @Upsert
+    suspend fun insertPago(pago: Pago)
+
+    @Update
+    suspend fun updatePago(pago: Pago)
+
+    @Delete
+    suspend fun deletePago(pago: Pago)
+
+    @Query("DELETE FROM pagos")
+    suspend fun deleteAll()
+
+    @Query("UPDATE pagos SET opticaId = :newOpticaId WHERE opticaId = 'mi_optica_base'")
+    suspend fun reassignFromLegacyMiOpticaBase(newOpticaId: String): Int
+
+    @Query("SELECT * FROM pagos")
+    suspend fun getAllPagos(): List<Pago>
+
+    @Query("SELECT * FROM pagos WHERE opticaId = :opticaId")
+    suspend fun getPagosListByOptica(opticaId: String): List<Pago>
+
+    @Query("UPDATE pagos SET dispensacionId = :newDispensacionId WHERE dispensacionId = :oldDispensacionId")
+    suspend fun reassignDispensacionId(oldDispensacionId: String, newDispensacionId: String): Int
+}
