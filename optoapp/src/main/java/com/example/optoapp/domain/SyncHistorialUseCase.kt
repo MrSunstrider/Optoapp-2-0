@@ -65,7 +65,7 @@ open class SyncHistorialUseCase @Inject constructor(
         }
 
         val localPacientes = repository.getPacientesSnapshotForOptica(opticaId)
-        val remotePacientes = runCatching {
+        var remotePacientes = runCatching {
             supabase.postgrest["pacientes"]
                 .select {
                     filter { eq("optica_id", opticaId) }
@@ -74,6 +74,57 @@ open class SyncHistorialUseCase @Inject constructor(
         }.onFailure { e ->
             Log.w(TAG, "Error al consultar pacientes remotos para FK check: ${e.localizedMessage}")
         }.getOrDefault(emptyList())
+
+        // Self-healing: si hay evaluaciones cuyo paciente existe localmente pero no en remoto,
+        // subir ese paciente primero para evitar el error de FK.
+        val remotePacienteIds = remotePacientes.map { it.id }.toSet()
+        val localPacienteIds = localPacientes.map { it.id }.toSet()
+        val orphanPacienteIds = evaluaciones
+            .map { it.pacienteId }
+            .distinct()
+            .filter { pid -> pid !in remotePacienteIds && pid in localPacienteIds }
+
+        if (orphanPacienteIds.isNotEmpty()) {
+            Log.w(TAG, "Self-heal: ${orphanPacienteIds.size} pacientes locales no existen en remoto. Subiendo antes de evaluaciones.")
+            val orphanPacientes = localPacientes.filter { it.id in orphanPacienteIds }
+            val pacienteRows = orphanPacientes.map { p ->
+                PacienteRemoto(
+                    id = p.id,
+                    nombreCompleto = p.nombreCompleto.ifBlank { "-" },
+                    edad = p.edad,
+                    telefono = p.telefono.ifBlank { "-" },
+                    fechaCreacion = p.fechaCreacion.toString(),
+                    dni = p.dni ?: "",
+                    fechaNacimiento = p.fechaNacimiento?.toString(),
+                    sexo = p.sexo ?: "",
+                    email = p.email ?: "",
+                    historiaOptometrica = p.historiaOptometrica ?: "",
+                    direccion = p.direccion ?: "",
+                    distrito = p.distrito ?: "",
+                    ocupacion = p.ocupacion ?: "",
+                    acompanante = p.acompanante ?: "",
+                    hobbies = p.hobbies ?: "",
+                    ultimasEtiquetas = p.ultimasEtiquetas.joinToString(","),
+                    opticaId = opticaId
+                )
+            }
+            runCatching {
+                supabase.postgrest["pacientes"].upsert(pacienteRows)
+            }.onFailure { e ->
+                Log.e(TAG, "Self-heal: error al subir pacientes huérfanos: ${e.localizedMessage}")
+            }
+
+            // Re-consultar pacientes remotos para incluir los recién subidos
+            remotePacientes = runCatching {
+                supabase.postgrest["pacientes"]
+                    .select {
+                        filter { eq("optica_id", opticaId) }
+                    }
+                    .decodeList<PacienteRemoto>()
+            }.onFailure { e ->
+                Log.e(TAG, "Self-heal: error al re-consultar pacientes remotos: ${e.localizedMessage}")
+            }.getOrDefault(remotePacientes)
+        }
 
         val finalRows = buildUploadRows(evaluaciones, localPacientes, remotePacientes, opticaId)
 
