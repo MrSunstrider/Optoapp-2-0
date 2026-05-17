@@ -164,7 +164,7 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
                     readOnly = true,
                     label = { Text("Sexo") },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedSexo) },
-                    modifier = Modifier.menuAnchor().fillMaxWidth()
+                    modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth()
                 )
                 ExposedDropdownMenu(
                     expanded = expandedSexo,
