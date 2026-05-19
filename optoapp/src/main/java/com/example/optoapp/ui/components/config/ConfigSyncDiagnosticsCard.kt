@@ -14,6 +14,7 @@ import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.SyncProblem
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -167,15 +168,24 @@ private fun SessionHealthSection(
 ) {
     Text("Salud de sesión", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
-    val (icon, iconColor, label) = when {
-        sessionHealth.hasValidSession -> Icons.Filled.CheckCircle to MaterialTheme.colorScheme.tertiary to "Sesión activa"
-        sessionHealth.consecutiveRefreshFailures > 0 -> Icons.Filled.SyncProblem to MaterialTheme.colorScheme.error to "Fallo al renovar token"
-        else -> Icons.Filled.Warning to MaterialTheme.colorScheme.error to "Sin sesión"
+    val sessionIcon = when {
+        sessionHealth.hasValidSession -> Icons.Filled.CheckCircle
+        sessionHealth.consecutiveRefreshFailures > 0 -> Icons.Filled.SyncProblem
+        else -> Icons.Filled.Warning
+    }
+    val sessionColor = when {
+        sessionHealth.hasValidSession -> MaterialTheme.colorScheme.tertiary
+        else -> MaterialTheme.colorScheme.error
+    }
+    val sessionLabel = when {
+        sessionHealth.hasValidSession -> "Sesión activa"
+        sessionHealth.consecutiveRefreshFailures > 0 -> "Fallo al renovar token"
+        else -> "Sin sesión"
     }
 
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        Icon(icon, contentDescription = null, tint = iconColor, modifier = Modifier.size(20.dp))
-        Text(label, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = iconColor)
+        Icon(sessionIcon, contentDescription = null, tint = sessionColor, modifier = Modifier.size(20.dp))
+        Text(sessionLabel, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = sessionColor)
     }
 
     if (sessionHealth.lastRefreshAtMs > 0L) {
