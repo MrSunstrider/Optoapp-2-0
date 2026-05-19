@@ -2,12 +2,15 @@ package com.example.optoapp.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.optoapp.data.SessionHealth
 import com.example.optoapp.data.SyncTelemetryRemoteRow
 import com.example.optoapp.data.SyncEntityState
 import com.example.optoapp.data.SyncEntityStateDao
 import com.example.optoapp.data.SessionManager
+import com.example.optoapp.util.BackgroundErrorCollector
 import com.example.optoapp.util.SyncErrorSanitizer
 import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.postgrest
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
@@ -29,7 +32,8 @@ import javax.inject.Inject
 class SyncDiagnosticsViewModel @Inject constructor(
     private val syncEntityStateDao: SyncEntityStateDao,
     private val sessionManager: SessionManager,
-    private val supabase: SupabaseClient
+    private val supabase: SupabaseClient,
+    private val bgErrorCollector: BackgroundErrorCollector
 ) : ViewModel() {
     companion object {
         private const val REMOTE_TELEMETRY_RETRY_ATTEMPTS = 3
@@ -49,12 +53,46 @@ class SyncDiagnosticsViewModel @Inject constructor(
     private val _remoteTelemetryError = MutableStateFlow<String?>(null)
     val remoteTelemetryError: StateFlow<String?> = _remoteTelemetryError.asStateFlow()
 
+    // ── Sesión salud ─────────────────────────────────────────────────────────
+
+    private val _sessionHealth = MutableStateFlow(SessionHealth())
+    val sessionHealth: StateFlow<SessionHealth> = _sessionHealth.asStateFlow()
+
+    val backgroundErrors = bgErrorCollector.errors
+
     init {
         viewModelScope.launch {
             sessionManager.opticaId.collectLatest { oid ->
                 fetchRemoteTelemetry(oid)
             }
         }
+        viewModelScope.launch {
+            refreshSessionHealth()
+        }
+    }
+
+    /**
+     * Actualiza el estado de salud de la sesión. Se llama al iniciar y
+     * puede llamarse manualmente desde la UI.
+     */
+    fun refreshSessionHealth() {
+        viewModelScope.launch {
+            val session = runCatching { supabase.auth.currentSessionOrNull() }.getOrNull()
+            val user = runCatching { supabase.auth.currentUserOrNull() }.getOrNull()
+            val hasToken = session != null && !session.accessToken.isNullOrBlank()
+            _sessionHealth.value = SessionHealth(
+                hasValidSession = user != null && hasToken,
+                tokenExpiresAtMs = 0L, // supabase-kt no expone expires_at directamente
+                lastRefreshSuccessful = hasToken,
+                recentBackgroundErrors = bgErrorCollector.errors.value
+            )
+        }
+    }
+
+    /** Limpia los errores de background. */
+    fun clearBackgroundErrors() {
+        bgErrorCollector.clear()
+        _sessionHealth.value = _sessionHealth.value.copy(recentBackgroundErrors = emptyList())
     }
 
     fun refreshRemoteTelemetry() = viewModelScope.launch {

@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import android.widget.Toast
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -27,7 +28,9 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.optoapp.OptoApplication
+import com.example.optoapp.data.AppRoles
 import com.example.optoapp.data.Paciente
+import com.example.optoapp.viewmodel.AuthViewModel
 import com.example.optoapp.viewmodel.PacienteViewModel
 import com.example.optoapp.viewmodel.SubscriptionViewModel
 import com.example.optoapp.subscription.SubscriptionTier
@@ -37,12 +40,14 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-fun PacientesListScreen(navController: NavController, drawerState: DrawerState, viewModel: PacienteViewModel = hiltViewModel(), subscriptionVm: SubscriptionViewModel = hiltViewModel()) {
+fun PacientesListScreen(navController: NavController, drawerState: DrawerState, viewModel: PacienteViewModel = hiltViewModel(), subscriptionVm: SubscriptionViewModel = hiltViewModel(), authViewModel: AuthViewModel = hiltViewModel()) {
     val pacientes by viewModel.pacientes.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
     val activeFilter by viewModel.activeFilter.collectAsState()
     val canAddPaciente by subscriptionVm.canAddPaciente.collectAsState()
     val tier by subscriptionVm.tier.collectAsState()
+    val opticaRol by authViewModel.opticaRol.collectAsState(initial = "admin")
+    val canCreateEdit = AppRoles.canCreateEditPacientes(opticaRol)
     val context = LocalContext.current
     var showPaywall by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
@@ -69,7 +74,9 @@ fun PacientesListScreen(navController: NavController, drawerState: DrawerState, 
         },
         floatingActionButton = {
             FloatingActionButton(onClick = {
-                if (canAddPaciente) navController.navigate("nuevoPaciente")
+                if (!canCreateEdit) {
+                    Toast.makeText(context, "Tu rol no permite crear pacientes.", Toast.LENGTH_SHORT).show()
+                } else if (canAddPaciente) navController.navigate("nuevoPaciente")
                 else showPaywall = true
             },
                 modifier = Modifier.navigationBarsPadding()

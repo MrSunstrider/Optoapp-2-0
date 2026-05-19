@@ -7,6 +7,7 @@ import kotlinx.coroutines.CancellationException
 import java.io.IOException
 import com.example.optoapp.di.ApplicationScope
 import com.example.optoapp.domain.SyncFinanzasUseCase
+import com.example.optoapp.util.BackgroundErrorCollector
 import com.example.optoapp.domain.SyncHistorialUseCase
 import com.example.optoapp.domain.SyncInventarioUseCase
 import com.example.optoapp.domain.SyncPacientesUseCase
@@ -34,7 +35,8 @@ open class PostSaveSyncScheduler @Inject constructor(
     private val syncPacientesUseCase: SyncPacientesUseCase? = null,
     private val syncHistorialUseCase: SyncHistorialUseCase? = null,
     private val syncFinanzasUseCase: SyncFinanzasUseCase? = null,
-    private val syncInventarioUseCase: SyncInventarioUseCase? = null
+    private val syncInventarioUseCase: SyncInventarioUseCase? = null,
+    private val bgErrorCollector: BackgroundErrorCollector? = null
 ) {
     private val scheduleMutex = Mutex()
     private val pendingJobs = mutableMapOf<String, Job>()
@@ -147,19 +149,24 @@ open class PostSaveSyncScheduler @Inject constructor(
     }
 
     protected open suspend fun ensureSessionForPostSaveSync(stage: String): Boolean {
-        return runCatching {
-            SyncSessionHelper.refreshSessionBeforeSync(supabase)
-            val currentUser = supabase.auth.currentUserOrNull()
-            if (currentUser == null) {
-                Log.w(TAG, "Sync $stage post-guardado cancelada: sesión Supabase no activa")
-                false
-            } else {
-                true
-            }
-        }.getOrElse { e ->
-            Log.w(TAG, "Sync $stage post-guardado cancelada: no se pudo validar sesión (${e.localizedMessage})")
-            false
+        if (!SyncSessionHelper.refreshSessionBeforeSync(supabase)) {
+            Log.w(TAG, "Sync $stage post-guardado cancelada: no se pudo refrescar sesión")
+            bgErrorCollector?.record("auth", "Post-save sync $stage cancelada: refresh JWT falló")
+            return false
         }
+        val currentUser = runCatching { supabase.auth.currentUserOrNull() }.getOrNull()
+        if (currentUser == null) {
+            Log.w(TAG, "Sync $stage post-guardado cancelada: sesión Supabase no activa")
+            bgErrorCollector?.record("auth", "Post-save sync $stage cancelada: sin sesión")
+            return false
+        }
+        val session = runCatching { supabase.auth.currentSessionOrNull() }.getOrNull()
+        if (session?.accessToken.isNullOrBlank()) {
+            Log.w(TAG, "Sync $stage post-guardado cancelada: JWT inválido o expirado")
+            bgErrorCollector?.record("auth", "Post-save sync $stage cancelada: JWT inválido")
+            return false
+        }
+        return true
     }
 
     companion object {

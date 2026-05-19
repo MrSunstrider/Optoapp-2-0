@@ -16,6 +16,7 @@ import com.example.optoapp.subscription.SubscriptionManager
 import com.example.optoapp.sync.errorLabelForException
 import kotlinx.coroutines.CancellationException
 import java.io.IOException
+import com.example.optoapp.util.BackgroundErrorCollector
 import com.example.optoapp.util.SyncErrorSanitizer
 import com.example.optoapp.domain.SyncFinanzasUseCase
 import com.example.optoapp.domain.SyncHistorialUseCase
@@ -64,7 +65,8 @@ class SyncViewModel @Inject constructor(
     private val syncInventarioUseCase: SyncInventarioUseCase,
     private val syncGate: SyncGate,
     private val syncManager: SyncManager,
-    private val supabaseObserver: com.example.optoapp.domain.observer.SupabaseObserver
+    private val supabaseObserver: com.example.optoapp.domain.observer.SupabaseObserver,
+    private val bgErrorCollector: BackgroundErrorCollector
 ) : ViewModel() {
 
     companion object {
@@ -92,7 +94,11 @@ class SyncViewModel @Inject constructor(
             return@launch
         }
 
-        SyncSessionHelper.refreshSessionBeforeSync(supabase)
+        if (!SyncSessionHelper.refreshSessionBeforeSync(supabase)) {
+            bgErrorCollector.record("auth", "Full sync cancelada: no se pudo refrescar el JWT")
+            _syncState.value = SyncState.Error("Tu sesión expiró. Vuelve a iniciar sesión.")
+            return@launch
+        }
         val contextCheck = ensureSyncContext()
         if (contextCheck != null) {
             _syncState.value = SyncState.Error(contextCheck)
@@ -140,7 +146,11 @@ class SyncViewModel @Inject constructor(
         _isSilentSyncing.value = true
         try {
             syncGate.mutex.withLock {
-                SyncSessionHelper.refreshSessionBeforeSync(supabase)
+                if (!SyncSessionHelper.refreshSessionBeforeSync(supabase)) {
+                    Log.w(TAG, "Sync silenciosa cancelada: sesión expirada")
+                    bgErrorCollector.record("auth", "Silent sync cancelada: JWT expirado")
+                    return@withLock
+                }
                 var hasErrors = false
                 when (val p = syncPacientesUseCase(opticaId, downloadAfterUpload = false)) {
                     is Resource.Error -> {
@@ -237,6 +247,10 @@ class SyncViewModel @Inject constructor(
     }
 
     private suspend fun ensureSyncContext(): String? {
+        val session = runCatching { supabase.auth.currentSessionOrNull() }.getOrNull()
+        if (session == null || session.accessToken.isNullOrBlank()) {
+            return "Tu sesión de Supabase no está activa. Vuelve a iniciar sesión."
+        }
         val currentUser = runCatching { supabase.auth.currentUserOrNull() }.getOrNull()
             ?: return "Tu sesión de Supabase no está activa. Vuelve a iniciar sesión."
         val opticaId = sessionManager.opticaId.first()

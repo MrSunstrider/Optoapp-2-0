@@ -10,8 +10,12 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.filled.SyncProblem
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -19,6 +23,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.optoapp.R
+import com.example.optoapp.data.BackgroundError
+import com.example.optoapp.data.SessionHealth
 import com.example.optoapp.data.SyncEntityState
 import com.example.optoapp.data.SyncTelemetryRemoteRow
 import com.example.optoapp.viewmodel.SyncDiagnosticsViewModel
@@ -37,8 +43,12 @@ fun SyncDiagnosticsCard(
     syncDiagVm: SyncDiagnosticsViewModel,
     context: Context
 ) {
+    val sessionHealth by syncDiagVm.sessionHealth.collectAsState()
+    val backgroundErrors by syncDiagVm.backgroundErrors.collectAsState()
+
     Card {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            // ── HEADER ──────────────────────────────────────────────────────
             Text(stringResource(R.string.config_sync_diag_section_title), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
             Text(
                 stringResource(R.string.config_sync_diag_desc),
@@ -46,6 +56,7 @@ fun SyncDiagnosticsCard(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
+            // ── RELOJ ───────────────────────────────────────────────────────
             Surface(
                 color = MaterialTheme.colorScheme.surfaceVariant,
                 shape = MaterialTheme.shapes.extraSmall,
@@ -55,19 +66,24 @@ fun SyncDiagnosticsCard(
                     val systemZone = java.time.ZoneId.systemDefault().id
                     val effectiveZone = userTimeZone ?: systemZone
                     val localNow = java.time.ZonedDateTime.now(java.time.ZoneId.of(effectiveZone))
-
-                    Text("Reloj Efectivo: ${localNow.format(java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss"))}", fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                    Text("Sistema: $systemZone | Manual: ${userTimeZone ?: "Ninguna"}", fontSize = 10.sp)
-                    Text("Fecha Operativa: ${localNow.toLocalDate()}", fontSize = 10.sp)
+                    Text("Reloj: ${localNow.format(java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss"))}", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                    Text("Zona: $effectiveZone", fontSize = 10.sp)
                 }
             }
 
             HorizontalDivider()
+
+            // ── SALUD DE SESIÓN ────────────────────────────────────────────
+            SessionHealthSection(sessionHealth = sessionHealth, onRefresh = { syncDiagVm.refreshSessionHealth() })
+
+            HorizontalDivider()
+
+            // ── ESTADO REMOTO ──────────────────────────────────────────────
             Text("Estado remoto (servidor)", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             if (remoteSyncTelemetryLoading) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     CircularProgressIndicator(modifier = Modifier.size(14.dp), strokeWidth = 2.dp)
-                    Text("Consultando última sincronización remota…", fontSize = 12.sp)
+                    Text("Consultando última sync remota…", fontSize = 12.sp)
                 }
             } else {
                 val remote = remoteSyncTelemetry
@@ -90,7 +106,15 @@ fun SyncDiagnosticsCard(
             OutlinedButton(onClick = { syncDiagVm.refreshRemoteTelemetry() }, modifier = Modifier.fillMaxWidth()) {
                 Text("Actualizar estado remoto")
             }
+
             HorizontalDivider()
+
+            // ── ERRORES DE BACKGROUND ──────────────────────────────────────
+            BackgroundErrorsSection(backgroundErrors = backgroundErrors, onClear = { syncDiagVm.clearBackgroundErrors() })
+
+            HorizontalDivider()
+
+            // ── ERRORES DE SYNC POR ENTIDAD ────────────────────────────────
             if (syncErrors.isEmpty()) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Icon(Icons.Filled.CheckCircle, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(22.dp))
@@ -133,6 +157,115 @@ fun SyncDiagnosticsCard(
         }
     }
 }
+
+// ── SESIÓN ────────────────────────────────────────────────────────────────────
+
+@Composable
+private fun SessionHealthSection(
+    sessionHealth: SessionHealth,
+    onRefresh: () -> Unit
+) {
+    Text("Salud de sesión", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+
+    val (icon, iconColor, label) = when {
+        sessionHealth.hasValidSession -> Icons.Filled.CheckCircle to MaterialTheme.colorScheme.tertiary to "Sesión activa"
+        sessionHealth.consecutiveRefreshFailures > 0 -> Icons.Filled.SyncProblem to MaterialTheme.colorScheme.error to "Fallo al renovar token"
+        else -> Icons.Filled.Warning to MaterialTheme.colorScheme.error to "Sin sesión"
+    }
+
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Icon(icon, contentDescription = null, tint = iconColor, modifier = Modifier.size(20.dp))
+        Text(label, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = iconColor)
+    }
+
+    if (sessionHealth.lastRefreshAtMs > 0L) {
+        val ago = (System.currentTimeMillis() - sessionHealth.lastRefreshAtMs) / 1000
+        Text("Último refresh: ${
+            when {
+                ago < 60 -> "hace ${ago}s"
+                ago < 3600 -> "hace ${ago / 60}min"
+                else -> "hace ${ago / 3600}h"
+            }
+        }", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+
+    if (sessionHealth.lastRefreshError.isNotBlank()) {
+        Text("Error: ${sessionHealth.lastRefreshError}", fontSize = 11.sp, color = MaterialTheme.colorScheme.error)
+    }
+
+    if (sessionHealth.consecutiveRefreshFailures > 0) {
+        Text("Fallos consecutivos: ${sessionHealth.consecutiveRefreshFailures}", fontSize = 11.sp, color = MaterialTheme.colorScheme.error)
+    }
+
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        OutlinedButton(onClick = onRefresh, modifier = Modifier.height(32.dp)) {
+            Text("Verificar", fontSize = 11.sp)
+        }
+    }
+}
+
+// ── ERRORES DE BACKGROUND ──────────────────────────────────────────────────────
+
+@Composable
+private fun BackgroundErrorsSection(
+    backgroundErrors: List<BackgroundError>,
+    onClear: () -> Unit
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Text("Errores silenciosos (background)", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        if (backgroundErrors.isNotEmpty()) {
+            Surface(color = MaterialTheme.colorScheme.errorContainer, shape = MaterialTheme.shapes.small) {
+                Text(
+                    "${backgroundErrors.size}",
+                    fontSize = 10.sp,
+                    color = MaterialTheme.colorScheme.onErrorContainer,
+                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                )
+            }
+        }
+    }
+
+    if (backgroundErrors.isEmpty()) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Icon(Icons.Filled.CheckCircle, contentDescription = null, tint = MaterialTheme.colorScheme.tertiary, modifier = Modifier.size(18.dp))
+            Text("Sin errores ocultos registrados", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    } else {
+        Text(
+            "Errores de auth/sync que normalmente se tragan. Visibles acá para diagnóstico.",
+            fontSize = 11.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        if (backgroundErrors.size > 5) {
+            TextButton(onClick = onClear, modifier = Modifier.fillMaxWidth()) {
+                Text("Limpiar historial")
+            }
+        }
+        LazyColumn(modifier = Modifier.heightIn(max = 180.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            items(backgroundErrors.takeLast(20).reversed(), key = { "${it.source}-${it.timestampMs}" }) { err ->
+                Surface(
+                    color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f),
+                    shape = MaterialTheme.shapes.extraSmall,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(6.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Icon(Icons.Filled.Error, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(12.dp))
+                            Text("[${err.source}]", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error)
+                        }
+                        Text(err.message, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurface, maxLines = 2)
+                    }
+                }
+            }
+        }
+    }
+}
+
+// ── HELPERS DE FECHA ──────────────────────────────────────────────────────────
 
 private fun formatRemoteSyncDateTime(raw: String?, overrideZoneId: String?): String {
     if (raw.isNullOrBlank()) return "No disponible"

@@ -38,6 +38,7 @@ fun DrawerContent(
     showCierreCaja: Boolean,
     showBiYReportes: Boolean,
     showOperacionHoy: Boolean,
+    showConfiguracion: Boolean,
     syncState: SyncState,
     syncViewModel: SyncViewModel,
     authViewModel: AuthViewModel,
@@ -256,16 +257,18 @@ fun DrawerContent(
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
             modifier = Modifier.padding(start = 24.dp, top = 16.dp, bottom = 4.dp)
         )
-        NavigationDrawerItem(
-            label = { Text("Configuración", fontWeight = FontWeight.SemiBold) },
-            selected = currentRoute == "configuracion",
-            onClick = {
-                scope.launch { drawerState.close() }
-                navController.navigateDrawer("configuracion")
-            },
-            icon = { Icon(Icons.Default.Settings, contentDescription = null) },
-            modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
-        )
+        if (showConfiguracion) {
+            NavigationDrawerItem(
+                label = { Text("Configuración", fontWeight = FontWeight.SemiBold) },
+                selected = currentRoute == "configuracion",
+                onClick = {
+                    scope.launch { drawerState.close() }
+                    navController.navigateDrawer("configuracion")
+                },
+                icon = { Icon(Icons.Default.Settings, contentDescription = null) },
+                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+            )
+        }
 
         // Sync + Logout
         NavigationDrawerItem(

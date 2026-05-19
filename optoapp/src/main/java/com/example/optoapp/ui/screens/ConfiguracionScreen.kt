@@ -87,9 +87,9 @@ fun ConfiguracionScreen(
 
     val canManageUsers = AppRoles.canManageUsers(opticaRol)
     val canManagePlans = AppRoles.canManagePlans(opticaRol)
-    val canManageBackups = opticaRol.trim().equals("admin", ignoreCase = true)
+    val canManageBackups = AppRoles.canManageBackups(opticaRol)
     val canUseInternalPlan = userEmail.trim().equals(INTERNAL_OWNER_EMAIL, ignoreCase = true)
-    val canAssignAdminRole = opticaRol.trim().equals("admin", ignoreCase = true)
+    val canAssignAdminRole = AppRoles.canAssignAdminRole(opticaRol)
     val allowedRoles = remember(canAssignAdminRole) {
         if (canAssignAdminRole) listOf("especialista", "asesor", "asesora", "ventas", "invitado", "gerente", "admin")
         else listOf("especialista", "asesor", "asesora", "ventas", "invitado", "gerente")

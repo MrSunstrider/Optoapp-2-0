@@ -8,27 +8,52 @@ import java.io.IOException
 
 /**
  * P0-T4: reduce fallos de sync por JWT cercano a expirar; no sustituye el auto-refresh del plugin Auth.
+ *
+ * [refreshSessionBeforeSync] retorna `true` si la sesión está OK (recién refrescada o aún válida),
+ * `false` si no hay sesión o el refresh falló — los callers DEBEN abortar la sync si retorna false.
  */
 object SyncSessionHelper {
     private const val TAG = "SyncSession"
 
-    suspend fun refreshSessionBeforeSync(supabase: SupabaseClient) {
-        try {
-            if (supabase.auth.currentSessionOrNull() == null) {
-                Log.w(TAG, "Sin sesión Supabase; la sync probablemente fallará por RLS")
-                return
-            }
+    /**
+     * Refresca la sesión Supabase antes de sincronizar.
+     *
+     * @return `true` si la sesión es válida para usar, `false` si debe abortarse la sync.
+     */
+    suspend fun refreshSessionBeforeSync(supabase: SupabaseClient): Boolean {
+        val session = runCatching { supabase.auth.currentSessionOrNull() }.getOrNull()
+        if (session == null) {
+            Log.w(TAG, "Sin sesión Supabase; la sync debe abortarse")
+            return false
+        }
+
+        return try {
             supabase.auth.refreshCurrentSession()
             Log.d(TAG, "Sesión refrescada explícitamente antes de sincronizar")
+
+            // Verificación post-refresh: confirmar que el JWT realmente se actualizó
+            val refreshedSession = runCatching { supabase.auth.currentSessionOrNull() }.getOrNull()
+            if (refreshedSession?.accessToken.isNullOrBlank()) {
+                Log.w(TAG, "Sesión sin accessToken tras refresh; abortando sync")
+                false
+            } else {
+                true
+            }
         } catch (e: CancellationException) {
             throw e
         } catch (e: IOException) {
-            Log.w(TAG, "Error en red refrescando sesión (se intenta sync igual): ${e.message}")
+            Log.w(TAG, "Error en red refrescando sesión: ${e.message}")
+            // No podemos confirmar que el token es válido — abortar para evitar 401s masivos
+            false
         } catch (e: Exception) {
-            Log.w(TAG, "Error inesperado refrescando sesión (se intenta sync igual): ${e.message}")
+            Log.w(TAG, "Error inesperado refrescando sesión: ${e.message}")
+            false
         }
     }
 
+    /**
+     * Retorna `true` si el mensaje de error parece un error de autenticación Supabase.
+     */
     fun looksLikeAuthError(message: String?): Boolean {
         if (message.isNullOrBlank()) return false
         val m = message.lowercase()

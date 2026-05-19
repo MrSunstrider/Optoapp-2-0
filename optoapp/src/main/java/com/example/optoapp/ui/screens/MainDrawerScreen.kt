@@ -45,6 +45,7 @@ fun MainDrawerScreen(
     val showCierreCaja = AppRoles.canViewCierreCaja(opticaRol)
     val showBiYReportes = AppRoles.canViewBiAndReports(opticaRol)
     val showOperacionHoy = AppRoles.canViewOperacionHoy(opticaRol)
+    val showConfiguracion = AppRoles.canManageUsers(opticaRol)
 
     // Sincronización automática al entrar al dashboard
     LaunchedEffect(Unit) {
@@ -68,6 +69,7 @@ fun MainDrawerScreen(
                     showCierreCaja = showCierreCaja,
                     showBiYReportes = showBiYReportes,
                     showOperacionHoy = showOperacionHoy,
+                    showConfiguracion = showConfiguracion,
                     syncState = syncState,
                     syncViewModel = syncViewModel,
                     authViewModel = authViewModel,

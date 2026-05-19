@@ -42,6 +42,8 @@ import com.example.optoapp.ui.components.monturas.MonturaEditForm
 import com.example.optoapp.ui.components.monturas.MonturaListSection
 import com.example.optoapp.util.FileShareUtils
 import com.example.optoapp.util.InventarioMonturasPdfGenerator
+import com.example.optoapp.data.AppRoles
+import com.example.optoapp.viewmodel.AuthViewModel
 import com.example.optoapp.viewmodel.MonturasViewModel
 import java.io.File
 import java.util.Locale
@@ -50,11 +52,14 @@ import java.util.Locale
 @Composable
 fun MonturasScreen(
     navController: NavController,
-    viewModel: MonturasViewModel = hiltViewModel()
+    viewModel: MonturasViewModel = hiltViewModel(),
+    authViewModel: AuthViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
     val monturas by viewModel.monturas.collectAsState()
+    val opticaRol by authViewModel.opticaRol.collectAsState(initial = "admin")
+    val canEdit = AppRoles.canEditInventory(opticaRol)
     var lastGeneratedPdf by remember { mutableStateOf<File?>(null) }
 
     val filtradas = monturas.filter {
@@ -101,8 +106,10 @@ fun MonturasScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { viewModel.startCreate() }) {
-                        Icon(Icons.Default.Add, contentDescription = "Nuevo producto")
+                    if (canEdit) {
+                        IconButton(onClick = { viewModel.startCreate() }) {
+                            Icon(Icons.Default.Add, contentDescription = "Nuevo producto")
+                        }
                     }
                 }
             )
