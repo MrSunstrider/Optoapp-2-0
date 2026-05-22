@@ -7,7 +7,7 @@ import android.os.Build
 import androidx.core.content.FileProvider
 import com.example.optoapp.BuildConfig
 import io.github.jan.supabase.SupabaseClient
-import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Order
 import kotlinx.serialization.Serializable
 import java.io.File
@@ -24,8 +24,8 @@ object UpdateChecker {
     @Serializable
     data class AppRelease(
         val version: String = "",
-        val apk_download_url: String = "",
-        val release_notes: String = "",
+        @kotlinx.serialization.SerialName("apk_download_url")
+        val apkDownloadUrl: String = "",
     )
 
     data class UpdateInfo(
@@ -40,8 +40,11 @@ object UpdateChecker {
      */
     suspend fun check(supabase: SupabaseClient): UpdateInfo? {
         return try {
-            val releases = supabase.from("app_releases")
-                .select().order("version", Order.DESCENDING).limit(1)
+            val releases = supabase.postgrest["app_releases"]
+                .select {
+                    order("version", Order.DESCENDING)
+                    limit(1)
+                }
                 .decodeList<AppRelease>()
 
             val latestRelease = releases.firstOrNull() ?: return null
@@ -52,8 +55,8 @@ object UpdateChecker {
 
             UpdateInfo(
                 latestVersion = latest,
-                downloadUrl = latestRelease.apk_download_url,
-                releaseUrl = latestRelease.apk_download_url
+                downloadUrl = latestRelease.apkDownloadUrl,
+                releaseUrl = latestRelease.apkDownloadUrl
             )
         } catch (_: Exception) {
             null // Silencio si no hay red o la consulta falla
