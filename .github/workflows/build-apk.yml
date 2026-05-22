@@ -1,7 +1,16 @@
 name: build-apk
 
 on:
+  workflow_dispatch:
   push:
+    branches: [main]
+    paths:
+      - "optoapp/**"
+      - "gradle/**"
+      - "build.gradle.kts"
+      - "settings.gradle.kts"
+      - ".github/workflows/build-apk.yml"
+  pull_request:
     branches: [main]
     paths:
       - "optoapp/**"
@@ -12,6 +21,7 @@ on:
 
 permissions:
   contents: write
+  pull-requests: read
 
 jobs:
   build:
@@ -26,15 +36,17 @@ jobs:
           distribution: "temurin"
 
       - name: Setup local.properties
+        if: github.event_name != 'pull_request'
         run: |
           echo "supabase.url=${{ secrets.SUPABASE_URL }}" >> local.properties
           echo "supabase.anon.key=${{ secrets.SUPABASE_ANON_KEY }}" >> local.properties
 
       - name: Build debug APK
-        run: chmod +x gradlew && ./gradlew :optoapp:assembleDebug
+        run: chmod +x gradlew && ./gradlew :optoapp:assembleDebug --stacktrace
 
       - name: Get version name
         id: version
+        if: github.event_name != 'pull_request'
         run: |
           VERSION=$(grep "versionName" optoapp/build.gradle.kts | head -1 | sed 's/.*"\(.*\)".*/\1/')
           echo "version=$VERSION" >> $GITHUB_OUTPUT
@@ -42,6 +54,7 @@ jobs:
 
       - name: Check if release tag exists
         id: check_release
+        if: github.event_name != 'pull_request'
         run: |
           if gh release view "${{ steps.version.outputs.tag }}" --repo ${{ github.repository }} &>/dev/null; then
             echo "exists=true" >> $GITHUB_OUTPUT
@@ -52,7 +65,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
 
       - name: Create Release
-        if: steps.check_release.outputs.exists == 'false'
+        if: github.event_name != 'pull_request' && steps.check_release.outputs.exists == 'false'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.version.outputs.tag }}
