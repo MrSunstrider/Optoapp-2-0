@@ -14,21 +14,23 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
 import com.example.optoapp.ui.components.UpdateDialog
 import com.example.optoapp.ui.screens.*
 import com.example.optoapp.ui.theme.OptoAppTheme
 import com.example.optoapp.util.UpdateChecker
 import com.example.optoapp.viewmodel.AuthViewModel
 import dagger.hilt.android.AndroidEntryPoint
+import io.github.jan.supabase.SupabaseClient
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     private val authViewModel: AuthViewModel by viewModels()
+
+    @Inject lateinit var supabaseClient: SupabaseClient
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -58,7 +60,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    OptoAppNavigation(authViewModel)
+                    OptoAppNavigation(authViewModel, supabaseClient)
                 }
             }
         }
@@ -72,7 +74,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun OptoAppNavigation(authViewModel: AuthViewModel) {
+fun OptoAppNavigation(authViewModel: AuthViewModel, supabaseClient: SupabaseClient) {
     val navController = rememberNavController()
 
     val isAuthChecked by authViewModel.isAuthChecked.collectAsState()
@@ -91,7 +93,6 @@ fun OptoAppNavigation(authViewModel: AuthViewModel) {
 
     NavHost(navController = navController, startDestination = "loading") {
         composable("loading") {
-            val context = androidx.compose.ui.platform.LocalContext.current
             var updateInfo by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<UpdateChecker.UpdateInfo?>(null) }
 
             androidx.compose.foundation.layout.Box(
@@ -101,10 +102,10 @@ fun OptoAppNavigation(authViewModel: AuthViewModel) {
                 androidx.compose.material3.CircularProgressIndicator()
             }
 
-            // Checkear actualización al inicio
+            // Checkear actualización al inicio (consulta Supabase, no GitHub)
             LaunchedEffect(Unit) {
                 withContext(kotlinx.coroutines.Dispatchers.IO) {
-                    updateInfo = UpdateChecker.check(context)
+                    updateInfo = UpdateChecker.check(supabaseClient)
                 }
             }
 

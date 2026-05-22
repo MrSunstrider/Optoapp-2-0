@@ -6,31 +6,26 @@ import android.net.Uri
 import android.os.Build
 import androidx.core.content.FileProvider
 import com.example.optoapp.BuildConfig
+import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.query.Order
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
 import java.io.File
 import java.io.FileOutputStream
 import java.net.URL
 
 /**
- * Checkea si hay una versión nueva en GitHub Releases.
- * Si la hay, descarga el APK y abre el instalador.
+ * Checkea si hay una versión nueva consultando la tabla app_releases en Supabase.
+ * El CI (build-apk.yml) inserta en esa tabla via Edge Function después de crear una GitHub Release.
+ * Si hay versión nueva descarga el APK y abre el instalador.
  */
 object UpdateChecker {
 
-    private val json = Json { ignoreUnknownKeys = true }
-
     @Serializable
-    data class GitHubRelease(
-        val tagName: String = "",
-        val htmlUrl: String = "",
-        val assets: List<ReleaseAsset> = emptyList()
-    )
-
-    @Serializable
-    data class ReleaseAsset(
-        val name: String = "",
-        val browserDownloadUrl: String = ""
+    data class AppRelease(
+        val version: String = "",
+        val apk_download_url: String = "",
+        val release_notes: String = "",
     )
 
     data class UpdateInfo(
@@ -40,29 +35,28 @@ object UpdateChecker {
     )
 
     /**
-     * Consulta GitHub API y retorna [UpdateInfo] si hay versión más nueva.
+     * Consulta Supabase y retorna [UpdateInfo] si hay versión más nueva.
+     * @param supabase Cliente Supabase ya autenticado (de la app).
      */
-    fun check(context: Context): UpdateInfo? {
+    suspend fun check(supabase: SupabaseClient): UpdateInfo? {
         return try {
-            val repoUrl = "https://api.github.com/repos/MrSunstrider/Optoapp-2-0/releases/latest"
-            val body = URL(repoUrl).readText()
-            val release = json.decodeFromString<GitHubRelease>(body)
+            val releases = supabase.from("app_releases")
+                .select().order("version", Order.DESCENDING).limit(1)
+                .decodeList<AppRelease>()
 
+            val latestRelease = releases.firstOrNull() ?: return null
             val current = BuildConfig.VERSION_NAME
-            val latest = release.tagName.removePrefix("v")
+            val latest = latestRelease.version
 
             if (!isNewer(latest, current)) return null
 
-            val apkAsset = release.assets.firstOrNull { it.name.endsWith(".apk") }
-            val downloadUrl = apkAsset?.browserDownloadUrl ?: release.htmlUrl
-
             UpdateInfo(
                 latestVersion = latest,
-                downloadUrl = downloadUrl,
-                releaseUrl = release.htmlUrl
+                downloadUrl = latestRelease.apk_download_url,
+                releaseUrl = latestRelease.apk_download_url
             )
         } catch (_: Exception) {
-            null // Silencio si no hay red o el API falla
+            null // Silencio si no hay red o la consulta falla
         }
     }
 
@@ -97,7 +91,7 @@ object UpdateChecker {
             }
             context.startActivity(intent)
         } catch (_: Exception) {
-            // Si falla la descarga, abrir la release en el navegador
+            // Si falla la descarga, abrir la URL en el navegador
             try {
                 val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
                 context.startActivity(intent)

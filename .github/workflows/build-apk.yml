@@ -72,3 +72,15 @@ jobs:
           name: "OptoApp v${{ steps.version.outputs.version }}"
           body: "Build automático del branch main."
           files: optoapp/build/outputs/apk/debug/optoapp-debug.apk
+
+      - name: Track release in Supabase
+        if: github.event_name != 'pull_request' && steps.check_release.outputs.exists == 'false'
+        run: |
+          curl -s -X POST "https://sflhtihqdhrlryeyrzdo.supabase.co/functions/v1/track-release" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "version": "${{ steps.version.outputs.version }}",
+              "apk_download_url": "https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.tag }}/optoapp-debug.apk",
+              "release_notes": "Build automático del branch main."
+            }'
