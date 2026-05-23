@@ -50,8 +50,6 @@ export default async function NuevaDispensacionPage({
     total_mayor_0: "El monto total debe ser mayor a 0.",
     pago_mayor_0: "El pago debe ser mayor a 0.",
     pago_mayor_total: "El pago no puede ser mayor al total.",
-    ot_duplicada:
-      'Ya existe una dispensación con esta OT en esta óptica. Usa otra OT o "Sugerir OT".',
     stock: "Stock insuficiente para la montura seleccionada.",
     guardar: "No se pudo guardar la dispensación."
   };
@@ -74,20 +72,23 @@ export default async function NuevaDispensacionPage({
         initial={{
           fecha: today,
           ot: "",
-          tipoLente: "",
-          subTipoBifocal: "",
-          distanciaLente: "",
-          altura: "",
-          materialLente: "",
-          tratamientos: [],
-          colorLente: "",
-          notasDiseno: "",
-          origenMontura: "Tienda",
-          monturaId: "",
-          previousMonturaId: "",
-          tipoAro: "",
-          materialMontura: "",
-          descripcionMontura: "",
+          items: [{
+            id: crypto.randomUUID(),
+            tipoLente: "",
+            subTipoBifocal: "",
+            distanciaLente: "",
+            altura: "",
+            materialLente: "",
+            tratamientos: [],
+            colorLente: "",
+            notasDiseno: "",
+            origenMontura: "Tienda",
+            monturaId: "",
+            tipoAro: "",
+            materialMontura: "",
+            descripcionMontura: ""
+          }],
+          previousItemIds: [],
           montoTotal: "",
           estadoEntrega: "Pendiente",
           pagos: []
