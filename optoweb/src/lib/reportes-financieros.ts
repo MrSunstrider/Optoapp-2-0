@@ -14,6 +14,10 @@ export type ReporteFinanciero = {
   ticketPromedio: number;
   fechaInicio: string;
   fechaFinExclusiva: string;
+  /** Cobros de dispensaciones del período actual */
+  ingresosPeriodoActual: number;
+  /** Cobros de dispensaciones de períodos anteriores */
+  ingresosPeriodosAnteriores: number;
 };
 
 /** Status indicating whether the data is real or fallback-empty after a DB error */
@@ -34,17 +38,56 @@ export async function fetchReporteFinanciero(
   const range = resolveRange(periodo);
 
   try {
-    const { data, error } = await supabase
-      .rpc("rpc_resumen_financiero", {
-        p_optica_id: opticaId,
-        p_from: range.start,
-        p_to: range.endExclusive,
-      })
-      .abortSignal(AbortSignal.timeout(12_000));
+    const [rpcResp, pagosResp, dispResp] = await Promise.all([
+      supabase
+        .rpc("rpc_resumen_financiero", {
+          p_optica_id: opticaId,
+          p_from: range.start,
+          p_to: range.endExclusive,
+        })
+        .abortSignal(AbortSignal.timeout(12_000)),
+      supabase
+        .from("pagos")
+        .select("id,monto,dispensacion_id")
+        .eq("optica_id", opticaId)
+        .gte("fecha", range.start)
+        .lt("fecha", range.endExclusive)
+        .abortSignal(AbortSignal.timeout(10_000)),
+      supabase
+        .from("dispensaciones")
+        .select("id,fecha")
+        .eq("optica_id", opticaId)
+        .abortSignal(AbortSignal.timeout(10_000)),
+    ]);
 
-    assertNoDbError(error, "Reporte financiero RPC");
+    assertNoDbError(rpcResp.error, "Reporte financiero RPC");
 
-    const row = ResumenFinancieroRowSchema.parse(data);
+    const row = ResumenFinancieroRowSchema.parse(rpcResp.data);
+
+    // Calcular desglose: pagos del período que pertenecen a dispensaciones del período
+    const dispMap = new Map<string, string>();
+    if (dispResp.data) {
+      for (const d of dispResp.data as { id: string; fecha: string | null }[]) {
+        if (d.fecha) dispMap.set(d.id, d.fecha);
+      }
+    }
+
+    let ingresosPeriodoActual = 0;
+    let ingresosPeriodosAnteriores = 0;
+    if (pagosResp.data) {
+      for (const p of pagosResp.data as { monto: number | null; dispensacion_id: string | null }[]) {
+        const monto = Number(p.monto ?? 0);
+        if (!Number.isFinite(monto) || monto <= 0) continue;
+        const dispFecha = p.dispensacion_id ? dispMap.get(p.dispensacion_id) : undefined;
+        if (dispFecha && dispFecha >= range.start && dispFecha < range.endExclusive) {
+          ingresosPeriodoActual += monto;
+        } else if (dispFecha) {
+          ingresosPeriodosAnteriores += monto;
+        } else {
+          ingresosPeriodoActual += monto;
+        }
+      }
+    }
 
     return {
       periodoLabel: labelForPeriodo(periodo),
@@ -55,6 +98,8 @@ export async function fetchReporteFinanciero(
       ticketPromedio: row.ticket_promedio,
       fechaInicio: row.fecha_inicio,
       fechaFinExclusiva: row.fecha_fin_exclusiva,
+      ingresosPeriodoActual,
+      ingresosPeriodosAnteriores,
       status: { overall: "ok" },
     };
   } catch (e) {
@@ -68,6 +113,8 @@ export async function fetchReporteFinanciero(
       ticketPromedio: 0,
       fechaInicio: range.start,
       fechaFinExclusiva: range.endExclusive,
+      ingresosPeriodoActual: 0,
+      ingresosPeriodosAnteriores: 0,
       status: { overall: "degraded", error: msg },
     };
   }

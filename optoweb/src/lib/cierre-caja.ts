@@ -40,6 +40,8 @@ export type CierreSnapshot = {
   movilTrans: number;
   tarjeta: number;
   total: number;
+  ventasHoy: number;
+  cobrosAtrasados: number;
   transacciones: CierreTx[];
   /** M2: status indicates whether the data is real or fallback-empty after a DB error */
   status: CierreSnapshotStatus;
@@ -74,33 +76,47 @@ export async function fetchCierreCaja(
   fecha: string
 ): Promise<CierreSnapshot> {
   const period = resolveCierrePeriodo(fecha);
-  const { data, error } = await supabase
-    .from("pagos")
-    .select("id,fecha,monto,metodo_pago,dispensacion_id,servicio_extra_id,nota")
-    .eq("optica_id", opticaId)
-    .gte("fecha", period.from)
-    .lt("fecha", period.toExclusive)
-    .abortSignal(AbortSignal.timeout(12_000));
 
-  if (error) {
-    // M2: signal to the UI that data is incomplete rather than silently returning $0.00
-    console.warn("[Cierre de caja] Error al consultar pagos:", error.message, error.code);
+  const [pagosResp, dispResp] = await Promise.all([
+    supabase
+      .from("pagos")
+      .select("id,fecha,monto,metodo_pago,dispensacion_id,servicio_extra_id,nota")
+      .eq("optica_id", opticaId)
+      .gte("fecha", period.from)
+      .lt("fecha", period.toExclusive)
+      .abortSignal(AbortSignal.timeout(12_000)),
+    // Cargar dispensaciones para clasificar pagos
+    supabase
+      .from("dispensaciones")
+      .select("id,fecha")
+      .eq("optica_id", opticaId)
+      .abortSignal(AbortSignal.timeout(12_000)),
+  ]);
+
+  if (pagosResp.error) {
+    console.warn("[Cierre de caja] Error al consultar pagos:", pagosResp.error.message, pagosResp.error.code);
     return {
-      fecha: period.fecha,
-      efectivo: 0,
-      movilTrans: 0,
-      tarjeta: 0,
-      total: 0,
+      fecha: period.fecha, efectivo: 0, movilTrans: 0, tarjeta: 0, total: 0,
+      ventasHoy: 0, cobrosAtrasados: 0,
       transacciones: [],
-      status: { overall: "degraded", error: error.message },
+      status: { overall: "degraded", error: pagosResp.error.message },
     };
   }
 
-  const rows = z.array(PagoRowSchema).parse(data ?? []);
+  const rows = z.array(PagoRowSchema).parse(pagosResp.data ?? []);
+  const dispMap = new Map<string, string>();
+  if (dispResp.data) {
+    for (const d of dispResp.data as { id: string; fecha: string | null }[]) {
+      if (d.fecha) dispMap.set(d.id, d.fecha);
+    }
+  }
 
   let efectivoCents = 0;
   let movilTransCents = 0;
   let tarjetaCents = 0;
+  let ventasHoyCents = 0;
+  let cobrosAtrasadosCents = 0;
+
   const transacciones = rows
     .map((row) => {
       const monto = normalizeMoney(Number(row.monto ?? 0));
@@ -109,6 +125,12 @@ export async function fetchCierreCaja(
       if (medio === "Efectivo") efectivoCents += cents;
       else if (medio === "Móvil/Trans") movilTransCents += cents;
       else if (medio === "Tarjeta") tarjetaCents += cents;
+
+      // Clasificar: ¿el pago pertenece a una dispensación de hoy?
+      const dispFecha = row.dispensacion_id ? dispMap.get(row.dispensacion_id) ?? null : null;
+      if (dispFecha === period.from) ventasHoyCents += cents;
+      else if (dispFecha !== null && dispFecha < period.from) cobrosAtrasadosCents += cents;
+      else ventasHoyCents += cents; // pagos sin dispensación o con misma fecha
 
       const tipoOperacion = row.servicio_extra_id
         ? "Servicio Extra"
@@ -138,12 +160,11 @@ export async function fetchCierreCaja(
   const movilTrans = fromCents(movilTransCents);
   const tarjeta = fromCents(tarjetaCents);
   const total = fromCents(efectivoCents + movilTransCents + tarjetaCents);
+  const ventasHoy = fromCents(ventasHoyCents);
+  const cobrosAtrasados = fromCents(cobrosAtrasadosCents);
   return {
-    fecha: period.fecha,
-    efectivo,
-    movilTrans,
-    tarjeta,
-    total,
+    fecha: period.fecha, efectivo, movilTrans, tarjeta, total,
+    ventasHoy, cobrosAtrasados,
     transacciones,
     status: { overall: "ok" },
   };

@@ -140,6 +140,26 @@ export default async function ReportesPage({
             variant="default"
           />
         </div>
+
+        {/* Desglose de cobros del período */}
+        <div className="rounded-2xl border border-border/50 bg-foreground/[0.02] p-6 space-y-3">
+          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
+            Cobros del período
+          </p>
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">Ventas del período</span>
+            <span className="font-bold text-emerald-500">{money(data.ingresosPeriodoActual)}</span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">Cobros de períodos anteriores</span>
+            <span className="font-bold text-amber-500">{money(data.ingresosPeriodosAnteriores)}</span>
+          </div>
+          <hr className="border-border/50" />
+          <div className="flex justify-between text-sm font-bold">
+            <span>Total cobrado</span>
+            <span className="text-primary">{money(data.ingresosPeriodoActual + data.ingresosPeriodosAnteriores)}</span>
+          </div>
+        </div>
       </div>
     </AppShell>
   );

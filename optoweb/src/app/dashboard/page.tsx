@@ -1,4 +1,4 @@
-import { Activity, TrendingUp, TrendingDown, Package, Eye, Calendar, ArrowRight } from "lucide-react";
+import { Activity, TrendingUp, TrendingDown, Package, Eye, Calendar, ArrowRight, AlertTriangle, AlertCircle } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { fetchDashboardKpis } from "@/lib/dashboard-kpis";
 import { formatOpticaActivaLine } from "@/lib/optica-display";
@@ -15,14 +15,28 @@ export default async function DashboardPage() {
   const activeOptica = await getActiveOpticaContext();
   if (!activeOptica) redirect("/seleccion-optica");
 
-  const [snapshot, fiscal, syncSnapshot] = await Promise.all([
+  const [snapshot, fiscal, syncSnapshot, stockResp] = await Promise.all([
     fetchDashboardKpis(supabase, activeOptica.opticaId),
     fetchOpticaFiscal(supabase, activeOptica.opticaId),
-    fetchSyncSnapshot(supabase, activeOptica.opticaId)
+    fetchSyncSnapshot(supabase, activeOptica.opticaId),
+    // Productos en stock crítico
+    supabase
+      .from("monturas")
+      .select("id,sku,marca,modelo,stock_actual,stock_minimo")
+      .eq("optica_id", activeOptica.opticaId)
+      .eq("activo", true)
+      .lte("stock_actual", 2)
+      .order("stock_actual", { ascending: true })
+      .abortSignal(AbortSignal.timeout(8_000)),
   ]);
 
   const kpis = snapshot.kpis;
   const opticaLine = formatOpticaActivaLine(activeOptica.nombre, fiscal);
+
+  const stockCriticoMonturas = (stockResp.data ?? []) as {
+    id: string; sku: string | null; marca: string | null;
+    modelo: string | null; stock_actual: number | null; stock_minimo: number | null;
+  }[];
 
   return (
     <AppShell role={activeOptica.rol} opticaName={activeOptica.nombre}>
@@ -54,7 +68,13 @@ export default async function DashboardPage() {
           <MiniKpi label="Exámenes hoy" value={String(kpis.citasHoy)} icon={<Activity className="h-5 w-5" />} />
           <MiniKpi label="Entregas pend." value={String(kpis.entregasPendientes)} icon={<Package className="h-5 w-5" />} highlight={kpis.entregasPendientes > 0} />
           <MiniKpi label="Cobros hoy" value={money(kpis.cobrosDia)} icon={<TrendingUp className="h-5 w-5" />} />
-          <MiniKpi label="Stock crítico" value={String(kpis.stockCritico)} icon={<Activity className="h-5 w-5" />} highlight={kpis.stockCritico > 0} />
+          <MiniKpi
+            label="Stock crítico"
+            value={String(kpis.stockCritico)}
+            icon={<AlertTriangle className="h-5 w-5" />}
+            highlight={kpis.stockCritico > 0}
+            href={kpis.stockCritico > 0 ? "/inventario" : undefined}
+          />
         </div>
 
         {/* Main grid */}
@@ -77,6 +97,30 @@ export default async function DashboardPage() {
                 <MetricRow label="Servicios pendientes" value={String(kpis.serviciosPendientes)} />
                 <MetricRow label="Stock crítico" value={String(kpis.stockCritico)} highlight={kpis.stockCritico > 0} />
               </div>
+              {/* Lista de productos críticos */}
+              {kpis.stockCritico > 0 && stockCriticoMonturas.length > 0 && (
+                <div className="mt-4 space-y-2 rounded-2xl bg-destructive/5 border border-destructive/20 p-4">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-destructive/70">
+                    Productos por reponer
+                  </p>
+                  {stockCriticoMonturas.slice(0, 5).map((m) => (
+                    <div key={m.id} className="flex justify-between text-xs">
+                      <span className="text-muted-foreground">
+                        {m.sku ?? ""} {m.marca ?? ""} {m.modelo ?? ""}
+                      </span>
+                      <span className="font-bold text-destructive">
+                        {m.stock_actual ?? 0}/{m.stock_minimo ?? 0}
+                      </span>
+                    </div>
+                  ))}
+                  {stockCriticoMonturas.length > 5 && (
+                    <p className="text-xs text-muted-foreground/60">
+                      ... y {stockCriticoMonturas.length - 5} más.{" "}
+                      <Link href="/inventario" className="text-primary underline">Ver todo</Link>
+                    </p>
+                  )}
+                </div>
+              )}
               <p className="mt-4 text-xs text-muted-foreground/60">Datos del período activo.</p>
             </section>
           </div>
@@ -114,9 +158,9 @@ export default async function DashboardPage() {
   );
 }
 
-function MiniKpi({ label, value, icon, highlight = false }: { label: string; value: string; icon: React.ReactNode; highlight?: boolean }) {
-  return (
-    <div className="relative rounded-2xl border border-border bg-card p-4 shadow-sm">
+function MiniKpi({ label, value, icon, highlight = false, href }: { label: string; value: string; icon: React.ReactNode; highlight?: boolean; href?: string }) {
+  const content = (
+    <div className="relative rounded-2xl border border-border bg-card p-4 shadow-sm transition-all hover:shadow-md">
       <div className="flex items-center justify-between">
         <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">{label}</span>
         <div className={`rounded-lg p-1.5 ${highlight ? "bg-destructive/10 text-destructive" : "bg-primary/10 text-primary"}`}>
@@ -128,6 +172,11 @@ function MiniKpi({ label, value, icon, highlight = false }: { label: string; val
       </p>
     </div>
   );
+
+  if (href) {
+    return <Link href={href} className="block group">{content}</Link>;
+  }
+  return content;
 }
 
 function StatCard({ title, current, previous, children }: { title: string; current: string; previous: string; children: React.ReactNode }) {

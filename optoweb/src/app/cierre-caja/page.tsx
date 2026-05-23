@@ -99,12 +99,31 @@ export default async function CierreCajaPage({
         )}
 
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 space-y-6">
             <PaymentSummaryCards
               efectivo={snapshot.efectivo}
               movilTrans={snapshot.movilTrans}
               tarjeta={snapshot.tarjeta}
             />
+            {/* Desglose ventas hoy vs cobros atrasados */}
+            <div className="rounded-2xl border border-border/50 bg-foreground/[0.02] p-5 space-y-3">
+              <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
+                Desglose
+              </p>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Ventas de hoy</span>
+                <span className="font-bold text-emerald-500">S/ {snapshot.ventasHoy.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Cobros atrasados</span>
+                <span className="font-bold text-amber-500">S/ {snapshot.cobrosAtrasados.toFixed(2)}</span>
+              </div>
+              <hr className="border-border/50" />
+              <div className="flex justify-between text-sm font-bold">
+                <span>Total ingresado hoy</span>
+                <span className="text-primary">S/ {(snapshot.ventasHoy + snapshot.cobrosAtrasados).toFixed(2)}</span>
+              </div>
+            </div>
           </div>
           <div>
             <TotalCard total={snapshot.total} />
