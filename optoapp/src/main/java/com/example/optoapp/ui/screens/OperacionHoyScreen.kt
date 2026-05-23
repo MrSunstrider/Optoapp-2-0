@@ -33,6 +33,13 @@ fun OperacionHoyScreen(
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
     val opticaRol by authViewModel.opticaRol.collectAsState(initial = "admin")
+
+    // Mostrar error si ocurrió al cargar datos
+    LaunchedEffect(uiState.error) {
+        uiState.error?.let { msg ->
+            android.widget.Toast.makeText(context, msg, android.widget.Toast.LENGTH_LONG).show()
+        }
+    }
     val canView = AppRoles.canViewOperacionHoy(opticaRol)
     val canExportInventario = AppRoles.canExportInventario(opticaRol)
 

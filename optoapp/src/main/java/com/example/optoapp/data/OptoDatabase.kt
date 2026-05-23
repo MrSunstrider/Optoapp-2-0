@@ -1,7 +1,6 @@
 package com.example.optoapp.data
 
 import android.content.Context
-import com.example.optoapp.BuildConfig
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
@@ -68,10 +67,6 @@ abstract class OptoDatabase : RoomDatabase() {
                         LocalDatabaseBackupManager.backupIfNeeded(context.applicationContext, "opto_database")
                     }
                 })
-                .let { builder ->
-                    // Seguridad local: evitar borrado silencioso en producción.
-                    if (BuildConfig.DEBUG) builder.fallbackToDestructiveMigration(true) else builder
-                }
                 .build()
                 INSTANCE = instance
                 instance
