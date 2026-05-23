@@ -2,6 +2,7 @@ package com.example.optoapp.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Pago
 import com.example.optoapp.data.SessionManager
@@ -16,6 +17,8 @@ import javax.inject.Inject
 data class CierreCajaUiState(
     val fecha: LocalDate = DateUtils.today(),
     val pagos: List<Pago> = emptyList(),
+    val ventasHoy: Double = 0.0,
+    val cobrosAtrasados: Double = 0.0,
     val isLoading: Boolean = false
 )
 
@@ -49,10 +52,26 @@ class CierreCajaViewModel @Inject constructor(
         ) { fecha, opticaId -> fecha to opticaId }
             .distinctUntilChanged()
             .flatMapLatest { (fecha, opticaId) ->
-                repository.getPagosByDateRangeForOptica(fecha, fecha, opticaId)
+                combine(
+                    repository.getPagosByDateRangeForOptica(fecha, fecha, opticaId),
+                    repository.getAllDispensacionesForOptica(opticaId)
+                ) { pagos: List<Pago>, dispensaciones: List<DispensacionOptica> ->
+                    val dispMap = dispensaciones.associateBy { it.id }
+                    var ventasHoy = 0.0
+                    var cobrosAtrasados = 0.0
+                    pagos.forEach { pago ->
+                        val dispFecha = pago.dispensacionId?.let { id -> dispMap[id]?.fecha }
+                        when {
+                            dispFecha == fecha -> ventasHoy += pago.monto
+                            dispFecha != null && dispFecha < fecha -> cobrosAtrasados += pago.monto
+                            else -> ventasHoy += pago.monto
+                        }
+                    }
+                    Triple(pagos, ventasHoy, cobrosAtrasados)
+                }
             }
-            .onEach { lista ->
-                _uiState.update { it.copy(pagos = lista, isLoading = false) }
+            .onEach { (pagos, ventasHoy, cobrosAtrasados) ->
+                _uiState.update { it.copy(pagos = pagos, ventasHoy = ventasHoy, cobrosAtrasados = cobrosAtrasados, isLoading = false) }
             }.launchIn(viewModelScope)
     }
     

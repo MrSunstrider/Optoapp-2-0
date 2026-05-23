@@ -29,6 +29,7 @@ class DispensacionRepositoryTest {
 
     private lateinit var db: OptoDatabase
     private lateinit var dispensacionDao: DispensacionDao
+    private lateinit var dispensacionItemDao: DispensacionItemDao
     private lateinit var pagoDao: PagoDao
     private lateinit var servicioExtraDao: ServicioExtraDao
     private lateinit var pacienteDao: PacienteDao
@@ -41,10 +42,11 @@ class DispensacionRepositoryTest {
             OptoDatabase::class.java
         ).allowMainThreadQueries().build()
         dispensacionDao = db.dispensacionDao()
+        dispensacionItemDao = db.dispensacionItemDao()
         pagoDao = db.pagoDao()
         servicioExtraDao = db.servicioExtraDao()
         pacienteDao = db.pacienteDao()
-        repo = DispensacionRepository(dispensacionDao, pagoDao, servicioExtraDao)
+        repo = DispensacionRepository(dispensacionDao, dispensacionItemDao, pagoDao, servicioExtraDao)
     }
 
     @After
@@ -129,19 +131,6 @@ class DispensacionRepositoryTest {
 
         assertEquals(1, rows)
         assertNull(dispensacionDao.getDispensacionById("d_del"))
-    }
-
-    @Test
-    fun existsDuplicateOt_detectsDuplicate() = runBlocking {
-        insertDummyPaciente()
-        dispensacionDao.insertDispensacion(DispensacionOptica(
-            id = "d1", pacienteId = "p_dummy", fecha = LocalDate.parse("2026-01-15"),
-            opticaId = "o1", ot = "OT-2026-0001"
-        ))
-
-        val isDuplicate = repo.existsDuplicateOt("o1", "OT-2026-0001", null)
-
-        assertTrue(isDuplicate)
     }
 
     @Test

@@ -58,12 +58,13 @@ class OptoRepositoryTest {
         pagoDao = db.pagoDao()
         servicioExtraDao = db.servicioExtraDao()
         monturaMovimientoDao = db.monturaMovimientoDao()
+        val dispensacionItemDao = db.dispensacionItemDao()
 
         val syncStateTracker = mockk<SyncStateTracker>(relaxed = true)
         val postSaveSyncScheduler = mockk<Lazy<PostSaveSyncScheduler>>(relaxed = true)
 
         val pacienteRepo = PacienteRepository(pacienteDao, evaluacionDao)
-        val dispensacionRepo = DispensacionRepository(dispensacionDao, pagoDao, servicioExtraDao)
+        val dispensacionRepo = DispensacionRepository(dispensacionDao, dispensacionItemDao, pagoDao, servicioExtraDao)
         val syncRepo = SyncRepository(syncStateTracker, monturaDao, monturaMovimientoDao)
 
         val snapshotCoordinator = SyncSnapshotCoordinator(

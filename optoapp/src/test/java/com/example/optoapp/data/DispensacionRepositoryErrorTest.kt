@@ -28,6 +28,7 @@ import java.io.IOException
 class DispensacionRepositoryErrorTest {
 
     private lateinit var dispensacionDao: DispensacionDao
+    private lateinit var dispensacionItemDao: DispensacionItemDao
     private lateinit var pagoDao: PagoDao
     private lateinit var servicioExtraDao: ServicioExtraDao
     private lateinit var repo: DispensacionRepository
@@ -35,9 +36,10 @@ class DispensacionRepositoryErrorTest {
     @Before
     fun setUp() {
         dispensacionDao = mockk()
+        dispensacionItemDao = mockk()
         pagoDao = mockk()
         servicioExtraDao = mockk()
-        repo = DispensacionRepository(dispensacionDao, pagoDao, servicioExtraDao)
+        repo = DispensacionRepository(dispensacionDao, dispensacionItemDao, pagoDao, servicioExtraDao)
     }
 
     @After

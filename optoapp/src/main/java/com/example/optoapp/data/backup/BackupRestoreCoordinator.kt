@@ -114,8 +114,7 @@ class BackupRestoreCoordinator @Inject constructor(
         distrito = distrito ?: "",
         ocupacion = ocupacion ?: "",
         acompanante = acompanante ?: "",
-        hobbies = hobbies ?: "",
-        ultimasEtiquetas = if (ultimasEtiquetas == null) emptyList() else ultimasEtiquetas
+        hobbies = hobbies ?: ""
     )
 
     private fun EvaluacionClinica.withDefaults(): EvaluacionClinica = this

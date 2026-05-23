@@ -1,6 +1,7 @@
 package com.example.optoapp.domain
 
 import android.util.Log
+import com.example.optoapp.data.DispensacionItem
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.SyncStateTracker
 import io.github.jan.supabase.SupabaseClient
@@ -22,8 +23,31 @@ class DownloadSyncCoordinator @Inject constructor(
     companion object {
         private const val TAG = "SyncFinanzas"
         private const val TABLE_DISPENSACIONES = "dispensaciones"
+        private const val TABLE_DISPENSACION_ITEMS = "dispensacion_items"
         private const val TABLE_SERVICIOS = "servicios_extra"
         private const val TABLE_PAGOS = "pagos"
+    }
+
+    suspend fun downloadDispensacionItems(opticaId: String): Int {
+        val remotos = supabase.postgrest[TABLE_DISPENSACION_ITEMS]
+            .select { filter { eq("optica_id", opticaId) } }
+            .decodeList<DispensacionItemRemota>()
+        remotos.forEach { r ->
+            try {
+                val local = r.toEntity()
+                repository.insertDispensacionItem(local)
+                syncStateTracker.markSynced(opticaId, "dispensacion_item", local.id)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: IOException) {
+                Log.e(TAG, "Error descargando item de dispensación: ${e.message}", e)
+                syncStateTracker.markError(opticaId, "dispensacion_item", r.id, e.message)
+            } catch (e: Exception) {
+                Log.e(TAG, "Error inesperado descargando item de dispensación: ${e.message}", e)
+                syncStateTracker.markError(opticaId, "dispensacion_item", r.id, e.message)
+            }
+        }
+        return remotos.size
     }
 
     suspend fun downloadDispensaciones(opticaId: String): Int {

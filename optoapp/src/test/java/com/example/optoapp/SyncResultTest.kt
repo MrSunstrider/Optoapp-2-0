@@ -8,7 +8,8 @@ import org.junit.Test
 class SyncResultTest {
     @Test
     fun successIsObject() {
-        assertTrue(SyncResult.Success is SyncResult)
+        val success: SyncResult = SyncResult.Success
+        assertTrue(success is SyncResult.Success)
     }
 
     @Test

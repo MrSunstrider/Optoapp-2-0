@@ -208,8 +208,10 @@ class AuthViewModel @Inject constructor(
             throw e
         } catch (e: IOException) {
             Log.w(TAG, "Error en red verificando sesión existente: ${e.localizedMessage}")
+            logout()
         } catch (e: Exception) {
             Log.w(TAG, "Error inesperado verificando sesión existente: ${e.localizedMessage}")
+            logout()
         } finally {
             _isAuthChecked.value = true
         }

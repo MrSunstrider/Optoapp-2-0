@@ -71,11 +71,11 @@ open class AuthDelegate @Inject constructor(
                 .ifBlank { "Usuario" }
         }
 
-        /** Pure logic: check if a timestamp is within 24h of now. */
-        fun isTimestampWithin24h(lastLoginTimestamp: Long): Boolean {
+        /** Pure logic: check if a timestamp is within the session window (3h) of now. */
+        fun isTimestampWithinSessionWindow(lastLoginTimestamp: Long): Boolean {
             if (lastLoginTimestamp == 0L) return false
             val diffHours = (System.currentTimeMillis() - lastLoginTimestamp) / (1000 * 60 * 60)
-            return diffHours < 24
+            return diffHours < 3
         }
     }
 
@@ -91,7 +91,7 @@ open class AuthDelegate @Inject constructor(
     //── Sesión ────────────────────────────────────────────────────────────────
 
     suspend fun isSessionTimeValid(): Boolean =
-        isTimestampWithin24h(sessionManager.lastLoginTimestamp.first())
+        isTimestampWithinSessionWindow(sessionManager.lastLoginTimestamp.first())
 
     //── Login ─────────────────────────────────────────────────────────────────
 
@@ -299,19 +299,55 @@ open class AuthDelegate @Inject constructor(
 
     //── Check session al inicio ───────────────────────────────────────────────
 
+    /**
+     * Valida la sesión al iniciar la app.
+     *
+     * 1. Si hay sesión cachead a local, intenta refrescar el JWT contra Supabase.
+     *    - Éxito → sesión válida, restaura estado.
+     *    - Error de red → fallback al timestamp local (ventana de 3h).
+     *    - Otro error → sesión inválida, logout.
+     * 2. Si no hay sesión local → logout directo.
+     */
     suspend fun checkExistingSession(): Boolean {
         val session = supabase.auth.currentSessionOrNull()
-        return if (session == null || !isSessionTimeValid()) {
-            if (BuildConfig.DEBUG) {
-                Log.d(TAG, "Sesión inexistente o expirada por tiempo (24h). Limpiando...")
+        if (session == null) {
+            if (BuildConfig.DEBUG) Log.d(TAG, "Sin sesión local. Limpiando...")
+            logout()
+            return false
+        }
+
+        return try {
+            supabase.auth.refreshCurrentSession()
+            val refreshed = supabase.auth.currentSessionOrNull()
+            if (refreshed?.accessToken.isNullOrBlank()) {
+                if (BuildConfig.DEBUG) Log.d(TAG, "JWT vacío tras refresh. Limpiando...")
+                logout()
+                false
+            } else {
+                if (BuildConfig.DEBUG) Log.d(TAG, "JWT validado contra Supabase. Sesión activa.")
+                val oid = sessionManager.opticaId.first()
+                repository.reassignLegacyMiOpticaBaseTo(oid)
+                rescheduleFutureRemindersIfEnabled(oid)
+                true
             }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: IOException) {
+            // Sin conexión: fallback al timestamp local (3h)
+            if (BuildConfig.DEBUG) Log.d(TAG, "Sin red al validar JWT, fallback a timestamp local.")
+            if (!isSessionTimeValid()) {
+                logout()
+                false
+            } else {
+                val oid = sessionManager.opticaId.first()
+                repository.reassignLegacyMiOpticaBaseTo(oid)
+                rescheduleFutureRemindersIfEnabled(oid)
+                true
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error validando sesión contra Supabase: ${e.message}", e)
             logout()
             false
-        } else {
-            val oid = sessionManager.opticaId.first()
-            repository.reassignLegacyMiOpticaBaseTo(oid)
-            rescheduleFutureRemindersIfEnabled(oid)
-            true
         }
     }
 

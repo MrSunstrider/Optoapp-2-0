@@ -16,6 +16,7 @@ import java.util.UUID
  */
 class DispensacionRepository(
     private val dispensacionDao: DispensacionDao,
+    private val dispensacionItemDao: DispensacionItemDao,
     private val pagoDao: PagoDao,
     private val servicioExtraDao: ServicioExtraDao
 ) {
@@ -75,14 +76,6 @@ class DispensacionRepository(
     suspend fun getDispensacionesSnapshotForOptica(opticaId: String): List<DispensacionOptica> =
         dispensacionDao.getDispensacionesListByOptica(opticaId)
 
-    /** True si otra dispensación de la misma óptica ya usa esta OT (misma cadena ignorando mayúsculas/espacios). */
-    suspend fun existsDuplicateOt(opticaId: String, ot: String, excludeDispensacionId: String?): Boolean {
-        val n = ot.trim()
-        if (n.isEmpty()) return false
-        val ex = excludeDispensacionId.orEmpty()
-        return dispensacionDao.countDispensacionesWithSameOt(opticaId, n, ex) > 0
-    }
-
     /** Siguiente correlativo `OT-<año>-####` según OT existentes de la óptica para ese año. */
     suspend fun suggestNextOt(opticaId: String, fecha: LocalDate): String {
         val year = fecha.year.toString()
@@ -104,10 +97,35 @@ class DispensacionRepository(
     }
 
     suspend fun deleteAll() {
+        dispensacionItemDao.deleteAll()
         servicioExtraDao.deleteAll()
         pagoDao.deleteAll()
         dispensacionDao.deleteAll()
     }
+
+    // ── Items de Dispensación ─────────────────────────────────────────────────
+
+    fun getItemsByDispensacion(dispensacionId: String): Flow<List<DispensacionItem>> =
+        dispensacionItemDao.getItemsByDispensacion(dispensacionId)
+
+    suspend fun getItemsListByDispensacion(dispensacionId: String): List<DispensacionItem> =
+        dispensacionItemDao.getItemsListByDispensacion(dispensacionId)
+
+    suspend fun getItemsListByOptica(opticaId: String): List<DispensacionItem> =
+        dispensacionItemDao.getItemsListByOptica(opticaId)
+
+    suspend fun insertDispensacionItem(item: DispensacionItem) {
+        dispensacionItemDao.insertItem(item)
+    }
+
+    suspend fun deleteDispensacionItemById(id: String): Int =
+        dispensacionItemDao.deleteById(id)
+
+    suspend fun deleteItemsByDispensacionId(dispensacionId: String): Int =
+        dispensacionItemDao.deleteByDispensacionId(dispensacionId)
+
+    suspend fun getAllDispensacionItems(): List<DispensacionItem> =
+        dispensacionItemDao.getAllItems()
 
     // ── Pagos ────────────────────────────────────────────────────────────────
 

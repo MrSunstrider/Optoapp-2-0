@@ -38,6 +38,9 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
     
     val totalVendido by viewModel.totalVendido.collectAsState()
     val totalPagado by viewModel.totalPagado.collectAsState()
+    val totalCobrado by viewModel.totalCobrado.collectAsState()
+    val cobrosPeriodo by viewModel.cobrosPeriodo.collectAsState()
+    val ventasPeriodo = totalCobrado - cobrosPeriodo
     val porCobrar = totalVendido - totalPagado
     val ticketPromedio = if (dispensaciones.isNotEmpty()) totalVendido / dispensaciones.size else 0.0
 
@@ -133,6 +136,32 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                 color = MaterialTheme.colorScheme.secondary,
                 modifier = Modifier.fillMaxWidth()
             )
+
+            // Desglose de cobros
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+            ) {
+                Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text("Cobros del período", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text("Ventas del período", fontSize = 13.sp)
+                        Text("s/. ${String.format(java.util.Locale.getDefault(), "%.2f", ventasPeriodo)}",
+                            fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.tertiary)
+                    }
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text("Cobros de períodos anteriores", fontSize = 13.sp)
+                        Text("s/. ${String.format(java.util.Locale.getDefault(), "%.2f", cobrosPeriodo)}",
+                            fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.secondary)
+                    }
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 2.dp))
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text("Total cobrado", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                        Text("s/. ${String.format(java.util.Locale.getDefault(), "%.2f", totalCobrado)}",
+                            fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                    }
+                }
+            }
 
             Text("Detalle de Ventas", fontWeight = FontWeight.Bold, fontSize = 18.sp)
             

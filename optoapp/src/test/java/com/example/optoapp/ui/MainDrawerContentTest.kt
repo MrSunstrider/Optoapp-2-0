@@ -68,14 +68,14 @@ class MainDrawerContentTest {
 
     @Test
     fun syncState_idle_isDeclared() {
-        val idle = SyncState.Idle
-        assertTrue(idle is SyncState)
+        val idle: SyncState = SyncState.Idle
+        assertTrue(idle is SyncState.Idle)
     }
 
     @Test
     fun syncState_loading_isDeclared() {
-        val loading = SyncState.Loading
-        assertTrue(loading is SyncState)
+        val loading: SyncState = SyncState.Loading
+        assertTrue(loading is SyncState.Loading)
     }
 
     @Test

@@ -128,8 +128,33 @@ fun CierreCajaScreen(
                 }
             }
             
-            Spacer(modifier = Modifier.height(24.dp))
-            
+            // ─── Desglose ventas hoy vs cobros atrasados ────────────────
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+            ) {
+                Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text("Desglose", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text("Ventas de hoy", fontSize = 13.sp)
+                        Text("s/. ${String.format(Locale.getDefault(), "%.2f", uiState.ventasHoy)}",
+                            fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.tertiary)
+                    }
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text("Cobros atrasados", fontSize = 13.sp)
+                        Text("s/. ${String.format(Locale.getDefault(), "%.2f", uiState.cobrosAtrasados)}",
+                            fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.secondary)
+                    }
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 2.dp))
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text("Total ingresado hoy", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                        Text("s/. ${String.format(Locale.getDefault(), "%.2f", uiState.ventasHoy + uiState.cobrosAtrasados)}",
+                            fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
             Text("Detalle de Transacciones", fontWeight = FontWeight.Bold, fontSize = 18.sp)
             
             Spacer(modifier = Modifier.height(8.dp))

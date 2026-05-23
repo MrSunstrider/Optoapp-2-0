@@ -1,5 +1,6 @@
 package com.example.optoapp.domain
 
+import com.example.optoapp.data.DispensacionItem
 import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.FinanzasRemoteDefaults
 import com.example.optoapp.data.Pago
@@ -109,11 +110,49 @@ data class PagoRemoto(
     )
 }
 
+@Serializable
+data class DispensacionItemRemota(
+    val id: String,
+    @SerialName("dispensacion_id") val dispensacionId: String,
+    // Lente
+    @SerialName("tipo_lente") val tipoLente: String? = null,
+    @SerialName("material_lente") val materialLente: String? = null,
+    val tratamientos: String? = null,
+    @SerialName("color_lente") val colorLente: String? = null,
+    @SerialName("distancia_lente") val distanciaLente: String? = null,
+    val altura: String? = null,
+    @SerialName("sub_tipo_bifocal") val subTipoBifocal: String? = null,
+    @SerialName("notas_diseno") val notasDiseno: String? = null,
+    // Montura
+    @SerialName("montura_id") val monturaId: String? = null,
+    @SerialName("origen_montura") val origenMontura: String? = null,
+    @SerialName("tipo_aro") val tipoAro: String? = null,
+    @SerialName("material_montura") val materialMontura: String? = null,
+    @SerialName("descripcion_montura") val descripcionMontura: String? = null,
+    @SerialName("tipo_montura") val tipoMontura: String? = null,
+    @SerialName("optica_id") val opticaId: String = "mi_optica_base"
+) {
+    fun toEntity() = DispensacionItem(
+        id = id, dispensacionId = dispensacionId,
+        tipoLente = tipoLente ?: "", materialLente = materialLente ?: "",
+        tratamientos = tratamientos?.split(",")?.filter { it.isNotBlank() } ?: emptyList(),
+        colorLente = colorLente ?: "", distanciaLente = distanciaLente ?: "",
+        altura = altura ?: "", subTipoBifocal = subTipoBifocal ?: "",
+        notasDiseno = notasDiseno ?: "",
+        monturaId = monturaId ?: "", origenMontura = origenMontura ?: "",
+        tipoAro = tipoAro ?: "", materialMontura = materialMontura ?: "",
+        descripcionMontura = descripcionMontura ?: "", tipoMontura = tipoMontura ?: "",
+        opticaId = opticaId.ifBlank { "mi_optica_base" }
+    )
+}
+
 data class FinanzasSyncResult(
     val uploadedDispensaciones: Int,
+    val uploadedDispensacionItems: Int = 0,
     val uploadedServicios: Int,
     val uploadedPagos: Int,
     val downloadedDispensaciones: Int,
+    val downloadedDispensacionItems: Int = 0,
     val downloadedServicios: Int,
     val downloadedPagos: Int
 )
@@ -155,6 +194,18 @@ fun Pago.toRemoto(): PagoRemoto = PagoRemoto(
     metodoPago = metodoPago.trim().ifBlank { FinanzasRemoteDefaults.Pago.METODO_PAGO_VACIO },
     nota = nota.trim(),
     opticaId = opticaId.trim().ifBlank { FinanzasRemoteDefaults.OPTICA_ID_FALLBACK }
+)
+
+fun DispensacionItem.toRemoto(): DispensacionItemRemota = DispensacionItemRemota(
+    id = id, dispensacionId = dispensacionId,
+    tipoLente = tipoLente, materialLente = materialLente,
+    tratamientos = tratamientos.joinToString(","), colorLente = colorLente,
+    distanciaLente = distanciaLente, altura = altura,
+    subTipoBifocal = subTipoBifocal, notasDiseno = notasDiseno,
+    monturaId = monturaId, origenMontura = origenMontura,
+    tipoAro = tipoAro, materialMontura = materialMontura,
+    descripcionMontura = descripcionMontura, tipoMontura = tipoMontura,
+    opticaId = opticaId.ifBlank { "mi_optica_base" }
 )
 
 fun ServicioExtra.toRemoto(): ServicioRemoto = ServicioRemoto(

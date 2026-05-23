@@ -1,6 +1,7 @@
 package com.example.optoapp.domain
 
 import android.util.Log
+import com.example.optoapp.data.DispensacionItem
 import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.FinanzasRemoteDefaults
 import com.example.optoapp.data.OptoRepository
@@ -26,6 +27,7 @@ class UploadSyncCoordinator @Inject constructor(
     companion object {
         private const val TAG = "SyncFinanzas"
         private const val TABLE_DISPENSACIONES = "dispensaciones"
+        private const val TABLE_DISPENSACION_ITEMS = "dispensacion_items"
         private const val TABLE_PAGOS = "pagos"
         private const val TABLE_SERVICIOS = "servicios_extra"
         private const val UPSERT_BATCH_SIZE = 80
@@ -204,6 +206,38 @@ class UploadSyncCoordinator @Inject constructor(
             syncStateTracker.markSynced(opticaId, "servicio_extra", s.id)
         }
         return servicios.size
+    }
+
+    suspend fun uploadDispensacionItems(opticaId: String): Int {
+        val items = repository.getDispensacionItemsSnapshotForOptica(opticaId)
+        if (items.isEmpty()) {
+            syncStateTracker.markSynced(opticaId, "upload_dispensacion_items", "batch")
+            return 0
+        }
+        val opticaRemota = opticaId.trim().ifBlank { FinanzasRemoteDefaults.OPTICA_ID_FALLBACK }
+        val rows = items.map { it.toRemoto().copy(opticaId = opticaRemota) }.distinctBy { it.id }
+        try {
+            rows.chunked(UPSERT_BATCH_SIZE).forEachIndexed { index, chunk ->
+                networkRetryHelper.retryNetwork("upsert:$TABLE_DISPENSACION_ITEMS:chunk${index + 1}") {
+                    supabase.postgrest[TABLE_DISPENSACION_ITEMS].upsert(chunk)
+                }
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: IOException) {
+            Log.e(TAG, "Error en red subiendo items de dispensación: ${e.message}", e)
+            syncStateTracker.markError(opticaId, "upload_dispensacion_items", "batch", e.message)
+            throw e
+        } catch (e: Exception) {
+            Log.e(TAG, "Error inesperado subiendo items de dispensación: ${e.message}", e)
+            syncStateTracker.markError(opticaId, "upload_dispensacion_items", "batch", e.message)
+            throw e
+        }
+        syncStateTracker.markSynced(opticaId, "upload_dispensacion_items", "batch")
+        items.forEach { item ->
+            syncStateTracker.markSynced(opticaId, "dispensacion_item", item.id)
+        }
+        return items.size
     }
 
     suspend fun uploadPagos(opticaId: String): Int {

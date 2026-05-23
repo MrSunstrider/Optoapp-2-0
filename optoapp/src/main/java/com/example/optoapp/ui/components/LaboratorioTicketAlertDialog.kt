@@ -31,6 +31,7 @@ fun LaboratorioTicketAlertDialog(
     laboratorioContacto: String,
 ) {
     val context = LocalContext.current
+    @Suppress("DEPRECATION")
     val clipboardManager = LocalClipboardManager.current
     val mensajeWhatsappLab = buildString {
         if (laboratorioNombre.isNotBlank()) {
@@ -76,6 +77,7 @@ fun LaboratorioTicketAlertDialog(
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     TextButton(onClick = {
+                        @Suppress("DEPRECATION")
                         clipboardManager.setText(AnnotatedString(ticketTextoCompacto))
                     }) { Text("Copiar") }
                     TextButton(onClick = {

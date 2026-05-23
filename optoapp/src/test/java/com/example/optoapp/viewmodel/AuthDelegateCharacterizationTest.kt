@@ -18,8 +18,8 @@ class AuthDelegateCharacterizationTest {
 
     @Test
     fun authStateIdle_dataClass() {
-        val s1 = AuthState.Idle
-        val s2 = AuthState.Idle
+        val s1: AuthState = AuthState.Idle
+        val s2: AuthState = AuthState.Idle
         assertEquals(s1, s2)
         assertFalse(s1 is AuthState.Loading)
         assertFalse(s1 is AuthState.Error)
@@ -28,7 +28,7 @@ class AuthDelegateCharacterizationTest {
 
     @Test
     fun authStateLoading_isNotIdle() {
-        val loading = AuthState.Loading
+        val loading: AuthState = AuthState.Loading
         assertNotEquals(AuthState.Idle, loading)
         assertFalse(loading is AuthState.Success)
         assertFalse(loading is AuthState.Error)
@@ -36,7 +36,7 @@ class AuthDelegateCharacterizationTest {
 
     @Test
     fun authStateError_holdsMessage() {
-        val error = AuthState.Error("Email o contraseña incorrectos")
+        val error: AuthState = AuthState.Error("Email o contraseña incorrectos")
         assertTrue(error is AuthState.Error)
         assertEquals("Email o contraseña incorrectos", (error as AuthState.Error).message)
     }
@@ -64,9 +64,10 @@ class AuthDelegateCharacterizationTest {
 
     @Test
     fun authStateSuccess_dataClass() {
-        assertTrue(AuthState.Success is AuthState.Success)
-        assertFalse(AuthState.Success is AuthState.Error)
-        assertFalse(AuthState.Success is AuthState.Loading)
+        val success: AuthState = AuthState.Success
+        assertTrue(success is AuthState.Success)
+        assertFalse(success is AuthState.Error)
+        assertFalse(success is AuthState.Loading)
     }
 
     // ─── State machine: MutableStateFlow<AuthState> pattern ────────────
@@ -116,27 +117,27 @@ class AuthDelegateCharacterizationTest {
     // ─── Session time validation logic (from isSessionTimeValid) ────────
 
     @Test
-    fun sessionTimeValid_within24h_returnsTrue() {
+    fun sessionTimeValid_within3h_returnsTrue() {
         val lastTs = System.currentTimeMillis() - (1000L * 60 * 60 * 2) // 2 hours ago
         val now = System.currentTimeMillis()
         val diffHours = (now - lastTs) / (1000 * 60 * 60)
-        assertTrue("Expected diffHours < 24 but was $diffHours", diffHours < 24)
+        assertTrue("Expected diffHours < 3 but was $diffHours", diffHours < 3)
     }
 
     @Test
     fun sessionTimeValid_exactlyAtThreshold_returnsTrue() {
-        val lastTs = System.currentTimeMillis() - (1000L * 60 * 60 * 23) // 23 hours ago
+        val lastTs = System.currentTimeMillis() - (1000L * 60 * 60 * 2) // 2 hours ago (safe within 3h)
         val now = System.currentTimeMillis()
         val diffHours = (now - lastTs) / (1000 * 60 * 60)
-        assertTrue(diffHours < 24)
+        assertTrue(diffHours < 3)
     }
 
     @Test
-    fun sessionTimeValid_expiredAfter24h_returnsFalse() {
-        val lastTs = System.currentTimeMillis() - (1000L * 60 * 60 * 25) // 25 hours ago
+    fun sessionTimeValid_expiredAfter3h_returnsFalse() {
+        val lastTs = System.currentTimeMillis() - (1000L * 60 * 60 * 4) // 4 hours ago
         val now = System.currentTimeMillis()
         val diffHours = (now - lastTs) / (1000 * 60 * 60)
-        assertFalse("Expected diffHours >= 24 but was $diffHours", diffHours < 24)
+        assertFalse("Expected diffHours >= 3 but was $diffHours", diffHours < 3)
     }
 
     @Test
@@ -150,7 +151,7 @@ class AuthDelegateCharacterizationTest {
         val lastTs = 1000L // epoch 1 second
         val now = System.currentTimeMillis()
         val diffHours = (now - lastTs) / (1000 * 60 * 60)
-        assertFalse(diffHours < 24)
+        assertFalse(diffHours < 3)
     }
 
     // ─── PendingMemberships flow pattern ─────────────────────────────────

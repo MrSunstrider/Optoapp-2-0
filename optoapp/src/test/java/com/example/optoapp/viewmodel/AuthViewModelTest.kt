@@ -68,7 +68,7 @@ class AuthViewModelTest {
 
     @Test
     fun authStateSuccess_isNotError() {
-        val success = AuthState.Success
+        val success: AuthState = AuthState.Success
         assertFalse(success is AuthState.Error)
     }
 }

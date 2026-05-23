@@ -1,5 +1,6 @@
 package com.example.optoapp.data.sync
 
+import com.example.optoapp.data.DispensacionItem
 import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.DispensacionRepository
 import com.example.optoapp.data.EvaluacionClinica
@@ -40,6 +41,9 @@ class SyncSnapshotCoordinator @Inject constructor(
 
     suspend fun getDispensacionesSnapshotForOptica(opticaId: String): List<DispensacionOptica> =
         dispensacionRepo.getDispensacionesSnapshotForOptica(opticaId)
+
+    suspend fun getDispensacionItemsSnapshotForOptica(opticaId: String): List<DispensacionItem> =
+        dispensacionRepo.getItemsListByOptica(opticaId)
 
     suspend fun getPagosSnapshotForOptica(opticaId: String): List<Pago> =
         dispensacionRepo.getPagosSnapshotForOptica(opticaId)

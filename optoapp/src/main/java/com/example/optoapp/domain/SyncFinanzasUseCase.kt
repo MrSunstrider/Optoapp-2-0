@@ -41,23 +41,29 @@ class SyncFinanzasUseCase @Inject constructor(
 
             val dispUp = uploadSyncCoordinator.uploadDispensaciones(opticaId)
             Log.d(TAG, "Finanzas: upload dispensaciones=$dispUp")
+            val itemsUp = uploadSyncCoordinator.uploadDispensacionItems(opticaId)
+            Log.d(TAG, "Finanzas: upload dispensacion_items=$itemsUp")
             val servUp = uploadSyncCoordinator.uploadServicios(opticaId)
             Log.d(TAG, "Finanzas: upload servicios_extra=$servUp")
             val pagosUp = uploadSyncCoordinator.uploadPagos(opticaId)
             Log.d(TAG, "Finanzas: upload pagos=$pagosUp")
 
             val dispDown: Int
+            val itemsDown: Int
             val servDown: Int
             val pagosDown: Int
             if (downloadAfterUpload) {
                 dispDown = downloadSyncCoordinator.downloadDispensaciones(opticaId)
                 Log.d(TAG, "Finanzas: download dispensaciones=$dispDown")
+                itemsDown = downloadSyncCoordinator.downloadDispensacionItems(opticaId)
+                Log.d(TAG, "Finanzas: download dispensacion_items=$itemsDown")
                 servDown = downloadSyncCoordinator.downloadServicios(opticaId)
                 Log.d(TAG, "Finanzas: download servicios_extra=$servDown")
                 pagosDown = downloadSyncCoordinator.downloadPagos(opticaId)
                 Log.d(TAG, "Finanzas: download pagos=$pagosDown; fin OK")
             } else {
                 dispDown = 0
+                itemsDown = 0
                 servDown = 0
                 pagosDown = 0
                 Log.d(TAG, "Finanzas: fin upload-only OK")
@@ -66,9 +72,11 @@ class SyncFinanzasUseCase @Inject constructor(
             Resource.Success(
                 FinanzasSyncResult(
                     uploadedDispensaciones = dispUp,
+                    uploadedDispensacionItems = itemsUp,
                     uploadedServicios = servUp,
                     uploadedPagos = pagosUp,
                     downloadedDispensaciones = dispDown,
+                    downloadedDispensacionItems = itemsDown,
                     downloadedServicios = servDown,
                     downloadedPagos = pagosDown
                 )

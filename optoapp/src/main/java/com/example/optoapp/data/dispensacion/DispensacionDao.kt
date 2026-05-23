@@ -54,16 +54,6 @@ interface DispensacionDao {
     @Query("SELECT SUM(montoPagado) FROM dispensaciones WHERE opticaId = :opticaId")
     fun getTotalPagadoForOptica(opticaId: String): Flow<Double?>
 
-    @Query(
-        """
-        SELECT COUNT(*) FROM dispensaciones
-        WHERE opticaId = :opticaId
-        AND UPPER(TRIM(ot)) = UPPER(TRIM(:otNorm))
-        AND (:excludeId = '' OR id != :excludeId)
-        """
-    )
-    suspend fun countDispensacionesWithSameOt(opticaId: String, otNorm: String, excludeId: String): Int
-
     @Query("SELECT ot FROM dispensaciones WHERE opticaId = :opticaId AND ot LIKE ('OT-' || :year || '-%')")
     suspend fun getOtsWithYearPrefix(opticaId: String, year: String): List<String>
 

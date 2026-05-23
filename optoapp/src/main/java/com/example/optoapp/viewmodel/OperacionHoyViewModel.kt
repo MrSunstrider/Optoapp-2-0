@@ -28,6 +28,7 @@ data class OperacionHoyUiState(
     val entregasPendientes: Int = 0,
     val cobrosHoy: Double = 0.0,
     val stockCritico: Int = 0,
+    val monturasStockCritico: List<Montura> = emptyList(),
     val alertas: List<String> = emptyList(),
     val pagosHoy: List<Pago> = emptyList(),
     val dispensacionesPendientes: List<DispensacionOptica> = emptyList(),
@@ -97,9 +98,19 @@ class OperacionHoyViewModel @Inject constructor(
 
                     val dispPendientes = dispensaciones.filter { it.estadoEntrega.equals("Pendiente", ignoreCase = true) }
                     val servPendientes = servicios.filter { it.estado.equals("Pendiente", ignoreCase = true) }
-                    val stockCritico = monturas.count { it.activo && it.stockActual <= it.stockMinimo }
+                    val monturasCriticas = monturas.filter { it.activo && it.stockActual <= it.stockMinimo }
+                        .sortedBy { it.stockActual - it.stockMinimo }
+                    val stockCritico = monturasCriticas.size
                     val alertas = buildList {
-                        if (stockCritico > 0) add("Hay $stockCritico monturas en stock crítico.")
+                        if (stockCritico > 0) {
+                            add("Productos por reponer: $stockCritico")
+                            monturasCriticas.take(5).forEach { m ->
+                                add("• ${m.sku} ${m.marca} ${m.modelo}: ${m.stockActual}/${m.stockMinimo}")
+                            }
+                            if (monturasCriticas.size > 5) {
+                                add("... y ${monturasCriticas.size - 5} más. Toca Stock Crítico para ver todos.")
+                            }
+                        }
                         val atrasadas = dispPendientes.count { it.fecha.isBefore(today) }
                         if (atrasadas > 0) add("Hay $atrasadas entregas pendientes con fecha anterior a hoy.")
                         if (servPendientes.isNotEmpty()) add("Servicios extra pendientes: ${servPendientes.size}.")
@@ -111,6 +122,7 @@ class OperacionHoyViewModel @Inject constructor(
                         entregasPendientes = dispPendientes.size + servPendientes.size,
                         cobrosHoy = pagosHoy.sumOf { it.monto },
                         stockCritico = stockCritico,
+                        monturasStockCritico = monturasCriticas,
                         alertas = alertas,
                         pagosHoy = pagosHoy,
                         dispensacionesPendientes = dispPendientes,

@@ -53,6 +53,9 @@ object DatabaseModule {
     fun provideDispensacionDao(database: OptoDatabase): DispensacionDao = database.dispensacionDao()
 
     @Provides
+    fun provideDispensacionItemDao(database: OptoDatabase): DispensacionItemDao = database.dispensacionItemDao()
+
+    @Provides
     fun providePagoDao(database: OptoDatabase): PagoDao = database.pagoDao()
 
     @Provides
@@ -88,9 +91,10 @@ object DatabaseModule {
     @Provides
     fun provideDispensacionRepository(
         dispensacionDao: DispensacionDao,
+        dispensacionItemDao: DispensacionItemDao,
         pagoDao: PagoDao,
         servicioExtraDao: ServicioExtraDao
-    ): DispensacionRepository = DispensacionRepository(dispensacionDao, pagoDao, servicioExtraDao)
+    ): DispensacionRepository = DispensacionRepository(dispensacionDao, dispensacionItemDao, pagoDao, servicioExtraDao)
 
     @Provides
     fun provideSyncRepository(

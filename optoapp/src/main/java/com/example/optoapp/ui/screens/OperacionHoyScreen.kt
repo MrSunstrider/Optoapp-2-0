@@ -114,7 +114,8 @@ fun OperacionHoyScreen(
                     label = "Stock Crítico",
                     value = uiState.stockCritico.toString(),
                     color = if (uiState.stockCritico > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
-                    highlight = uiState.stockCritico > 0
+                    highlight = uiState.stockCritico > 0,
+                    onClick = if (uiState.stockCritico > 0) {{ navController.navigate("monturas") }} else null
                 )
             }
 
@@ -189,9 +190,11 @@ private fun KpiCard(
     label: String,
     value: String,
     color: androidx.compose.ui.graphics.Color,
-    highlight: Boolean = false
+    highlight: Boolean = false,
+    onClick: (() -> Unit)? = null
 ) {
     Card(
+        onClick = onClick ?: {},
         modifier = modifier,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)

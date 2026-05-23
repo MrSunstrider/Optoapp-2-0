@@ -71,7 +71,10 @@ open class OptoRepository(
     suspend fun updateDispensacion(dispensacion: DispensacionOptica) { dispensacionRepo.updateDispensacion(dispensacion); postSaveSyncScheduler.get().scheduleFinanzasSync(dispensacion.opticaId) }
     suspend fun deleteDispensacionById(id: String) = dispensacionRepo.deleteDispensacionById(id)
     suspend fun deleteDispensacion(dispensacion: DispensacionOptica) { dispensacionRepo.deleteDispensacionById(dispensacion.id); syncStateTracker.markDeleted(dispensacion.opticaId, "dispensacion", dispensacion.id); postSaveSyncScheduler.get().scheduleFinanzasSync(dispensacion.opticaId) }
-    suspend fun existsDuplicateOt(opticaId: String, ot: String, excludeDispensacionId: String?) = dispensacionRepo.existsDuplicateOt(opticaId, ot, excludeDispensacionId)
+    suspend fun insertDispensacionItem(item: DispensacionItem) { dispensacionRepo.insertDispensacionItem(item); postSaveSyncScheduler.get().scheduleFinanzasSync(item.opticaId) }
+    suspend fun deleteDispensacionItemById(id: String, opticaId: String) { dispensacionRepo.deleteDispensacionItemById(id); syncStateTracker.markDeleted(opticaId, "dispensacion_item", id) }
+    suspend fun deleteItemsByDispensacionId(dispensacionId: String) = dispensacionRepo.deleteItemsByDispensacionId(dispensacionId)
+    suspend fun getDispensacionItemsByDispensacion(dispensacionId: String) = dispensacionRepo.getItemsListByDispensacion(dispensacionId)
     suspend fun suggestNextOt(opticaId: String, fecha: LocalDate) = dispensacionRepo.suggestNextOt(opticaId, fecha)
     suspend fun suggestNextHistoriaOptometrica(opticaId: String) = pacienteRepo.suggestNextHistoriaOptometrica(opticaId)
     suspend fun existsDuplicateHistoriaOptometrica(opticaId: String, historia: String, excludePacienteId: String?) = pacienteRepo.existsDuplicateHistoriaOptometrica(opticaId, historia, excludePacienteId)
@@ -114,6 +117,7 @@ open class OptoRepository(
     suspend fun getPacientesSnapshotForOptica(opticaId: String) = snapshotCoordinator.getPacientesSnapshotForOptica(opticaId)
     suspend fun getEvaluacionesSnapshotForOptica(opticaId: String) = snapshotCoordinator.getEvaluacionesSnapshotForOptica(opticaId)
     suspend fun getDispensacionesSnapshotForOptica(opticaId: String) = snapshotCoordinator.getDispensacionesSnapshotForOptica(opticaId)
+    suspend fun getDispensacionItemsSnapshotForOptica(opticaId: String) = snapshotCoordinator.getDispensacionItemsSnapshotForOptica(opticaId)
     suspend fun getPagosSnapshotForOptica(opticaId: String) = snapshotCoordinator.getPagosSnapshotForOptica(opticaId)
     suspend fun getServiciosSnapshotForOptica(opticaId: String) = snapshotCoordinator.getServiciosSnapshotForOptica(opticaId)
     suspend fun getMonturasSnapshotForOptica(opticaId: String) = snapshotCoordinator.getMonturasSnapshotForOptica(opticaId)

@@ -55,9 +55,9 @@ class PacienteViewModelCatchRefactorTest {
 
     @Test
     fun `deletePacienteResult Error holds message`() {
-        val error = DeletePacienteResult.Error("No se pudo eliminar el paciente: error")
+        val error: DeletePacienteResult = DeletePacienteResult.Error("No se pudo eliminar el paciente: error")
         assertTrue(error is DeletePacienteResult.Error)
-        assertEquals("No se pudo eliminar el paciente: error", error.message)
+        assertEquals("No se pudo eliminar el paciente: error", (error as DeletePacienteResult.Error).message)
     }
 
     // ─── CancellationException rethrow pattern ──────────────────────────

@@ -12,35 +12,35 @@ import org.junit.Test
  * Unit tests for AuthDelegate pure logic extracted to companion object methods.
  *
  * - [AuthDelegate.extractDisplayName] — pure function
- * - [AuthDelegate.isTimestampWithin24h] — pure function
+ * - [AuthDelegate.isTimestampWithinSessionWindow] — pure function
  *
  * Supabase-dependent methods (login, register, logout) require integration tests.
  */
 class AuthDelegateTest {
 
-    // ─── isTimestampWithin24h ─────────────────────────────────────────────
+    // ─── isTimestampWithinSessionWindow ───────────────────────────────────
 
     @Test
-    fun `isTimestampWithin24h zero timestamp returns false`() {
-        assertFalse(AuthDelegate.isTimestampWithin24h(0L))
+    fun `isTimestampWithinSessionWindow zero timestamp returns false`() {
+        assertFalse(AuthDelegate.isTimestampWithinSessionWindow(0L))
     }
 
     @Test
-    fun `isTimestampWithin24h within 24h returns true`() {
+    fun `isTimestampWithinSessionWindow within 3h returns true`() {
         val ts = System.currentTimeMillis() - 1000L * 60 * 60 * 2
-        assertTrue(AuthDelegate.isTimestampWithin24h(ts))
+        assertTrue(AuthDelegate.isTimestampWithinSessionWindow(ts))
     }
 
     @Test
-    fun `isTimestampWithin24h just under 24h returns true`() {
-        val ts = System.currentTimeMillis() - 1000L * 60 * 60 * 23
-        assertTrue(AuthDelegate.isTimestampWithin24h(ts))
+    fun `isTimestampWithinSessionWindow just under 3h returns true`() {
+        val ts = System.currentTimeMillis() - 1000L * 60 * 60 * 2 // 2h
+        assertTrue(AuthDelegate.isTimestampWithinSessionWindow(ts))
     }
 
     @Test
-    fun `isTimestampWithin24h over 24h returns false`() {
-        val ts = System.currentTimeMillis() - 1000L * 60 * 60 * 25
-        assertFalse(AuthDelegate.isTimestampWithin24h(ts))
+    fun `isTimestampWithinSessionWindow over 3h returns false`() {
+        val ts = System.currentTimeMillis() - 1000L * 60 * 60 * 4
+        assertFalse(AuthDelegate.isTimestampWithinSessionWindow(ts))
     }
 
     // ─── extractDisplayName ───────────────────────────────────────────────

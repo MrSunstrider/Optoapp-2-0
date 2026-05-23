@@ -31,13 +31,13 @@ class PacienteViewModelTest {
 
     @Test
     fun deletePacienteResultSuccess_isNotError() {
-        val result = DeletePacienteResult.Success(remainingDeletesToday = 5)
+        val result: DeletePacienteResult = DeletePacienteResult.Success(remainingDeletesToday = 5)
         assertFalse(result is DeletePacienteResult.Error)
     }
 
     @Test
     fun deletePacienteResultError_isNotSuccess() {
-        val result = DeletePacienteResult.Error("Error")
+        val result: DeletePacienteResult = DeletePacienteResult.Error("Error")
         assertFalse(result is DeletePacienteResult.Success)
     }
 

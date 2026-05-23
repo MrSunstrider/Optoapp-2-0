@@ -5,6 +5,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -16,6 +17,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.optoapp.ui.components.OptoTextField
+import com.example.optoapp.ui.components.dispensacion.LenteForm
 import com.example.optoapp.viewmodel.DispensacionViewModel
 import com.example.optoapp.util.DateUtils
 
@@ -26,8 +28,6 @@ import com.example.optoapp.util.DateUtils
 fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, dispensacionId: String? = null, viewModel: DispensacionViewModel = hiltViewModel()) {
     val uiState by viewModel.uiState.collectAsState()
     val monturasActivas by viewModel.monturasActivas.collectAsState()
-    var showDuplicateOtWarning by remember { mutableStateOf(false) }
-    var duplicateOtWarningText by remember { mutableStateOf("") }
     LaunchedEffect(dispensacionId) {
         if (dispensacionId != null) {
             viewModel.loadDispensacion(dispensacionId)
@@ -35,13 +35,6 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
     }
     LaunchedEffect(pacienteId) {
         viewModel.loadPacienteNombre(pacienteId)
-    }
-    LaunchedEffect(uiState.error) {
-        val msg = uiState.error.orEmpty()
-        if (msg.contains("Ya existe una dispensación con esta OT", ignoreCase = true)) {
-            duplicateOtWarningText = msg
-            showDuplicateOtWarning = true
-        }
     }
 
     var showDatePicker by remember { mutableStateOf(false) }
@@ -64,19 +57,6 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
         ) {
             DatePicker(state = datePickerState)
         }
-    }
-
-    if (showDuplicateOtWarning) {
-        AlertDialog(
-            onDismissRequest = { showDuplicateOtWarning = false },
-            title = { Text("Advertencia de OT duplicada") },
-            text = { Text(duplicateOtWarningText) },
-            confirmButton = {
-                TextButton(onClick = { showDuplicateOtWarning = false }) {
-                    Text("Entendido")
-                }
-            }
-        )
     }
 
     val saveAction = {
@@ -131,17 +111,35 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
                 }
             }
 
-            LenteInfoSection(
-                uiState = uiState,
-                onUpdate = { newState -> viewModel.updateUiState { newState } }
+            // ─── Items (lente + montura) ────────────────────────────────────
+            Text(
+                "Productos",
+                fontWeight = FontWeight.Bold,
+                fontSize = 16.sp,
+                color = MaterialTheme.colorScheme.primary
             )
 
-            MonturaInfoSection(
-                uiState = uiState,
-                monturasActivas = monturasActivas,
-                onUpdate = { newState -> viewModel.updateUiState { newState } }
-            )
+            uiState.items.forEachIndexed { index, item ->
+                LenteForm(
+                    item = item,
+                    index = index,
+                    isOnlyItem = uiState.items.size <= 1,
+                    monturasActivas = monturasActivas,
+                    onUpdate = { updated -> viewModel.updateItem(index, updated) },
+                    onRemove = { viewModel.removeItem(index) }
+                )
+            }
 
+            OutlinedButton(
+                onClick = { viewModel.addItem() },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(Icons.Default.Add, contentDescription = null)
+                Spacer(Modifier.width(8.dp))
+                Text("Agregar otro producto (lente + montura)")
+            }
+
+            // ─── Financiera ──────────────────────────────────────────────────
             FinancieraInfoSection(
                 uiState = uiState,
                 onUpdate = { newState -> viewModel.updateUiState { newState } },
@@ -149,7 +147,7 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
                 onUpdatePago = { pago -> viewModel.updatePagoLocal(pago) },
                 onRemovePago = { pago -> viewModel.removePagoLocal(pago) }
             )
-            
+
             Button(onClick = { saveAction() }, modifier = Modifier.fillMaxWidth()) {
                 Text(if (dispensacionId == null) "Confirmar Orden" else "Actualizar Orden")
             }

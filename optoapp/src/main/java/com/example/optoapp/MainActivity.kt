@@ -138,7 +138,7 @@ fun OptoAppNavigation(authViewModel: AuthViewModel, supabaseClient: SupabaseClie
         composable("pin") { PinScreen(navController, viewModel = authViewModel) }
         composable("login") { LoginScreen(navController, viewModel = authViewModel) }
         composable("register") { RegisterScreen(navController, viewModel = authViewModel) }
-        composable("onboarding_optica") { OnboardingOpticaScreen(navController, viewModel = authViewModel) }
+        composable("onboarding_optica") { @Suppress("DEPRECATION") OnboardingOpticaScreen(navController, viewModel = authViewModel) }
         composable("seleccion_optica") { SeleccionOpticaScreen(navController, viewModel = authViewModel) }
         composable("main") { MainDrawerScreen(navController, authViewModel = authViewModel) }
     }
