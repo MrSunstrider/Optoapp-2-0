@@ -2,14 +2,28 @@
 
 import Link from "next/link";
 import { useActionState, useMemo, useState } from "react";
-import type { DispensacionFormProps, PagoDraft } from "@/lib/dispensacion-types";
-import {
-  ORIGEN_MONTURA,
-  TIPO_ARO,
-  MATERIAL_MONTURA,
-} from "@/lib/dispensacion-types";
-import { LentesForm } from "./dispensacion/LentesForm";
+import type { DispensacionFormProps, ItemDraft, PagoDraft } from "@/lib/dispensacion-types";
+import { ItemCard } from "./dispensacion/LentesForm";
 import { PagosSection } from "./dispensacion/PagosSection";
+
+function emptyItem(): ItemDraft {
+  return {
+    id: crypto.randomUUID(),
+    tipoLente: "",
+    subTipoBifocal: "",
+    distanciaLente: "",
+    altura: "",
+    materialLente: "",
+    tratamientos: [],
+    colorLente: "",
+    notasDiseno: "",
+    origenMontura: "",
+    monturaId: "",
+    tipoAro: "",
+    materialMontura: "",
+    descripcionMontura: "",
+  };
+}
 
 export function DispensacionForm({
   pacienteId,
@@ -26,27 +40,10 @@ export function DispensacionForm({
 
   const [fecha, setFecha] = useState(initial.fecha || todayDate);
   const [ot, setOt] = useState(initial.ot);
-  const [tipoLente, setTipoLente] = useState(initial.tipoLente);
-  const [subTipoBifocal, setSubTipoBifocal] = useState(initial.subTipoBifocal);
-  const [distanciaLente, setDistanciaLente] = useState(initial.distanciaLente);
-  const [altura, setAltura] = useState(initial.altura);
-  const [materialLente, setMaterialLente] = useState(initial.materialLente);
-  const [tratamientos, setTratamientos] = useState<string[]>(
-    initial.tratamientos.length > 0 ? initial.tratamientos : [],
+  const [items, setItems] = useState<ItemDraft[]>(
+    initial.items.length > 0 ? initial.items : [emptyItem()],
   );
-  const [colorLente, setColorLente] = useState(initial.colorLente);
-  const [notasDiseno, setNotasDiseno] = useState(initial.notasDiseno);
-  const [origenMontura, setOrigenMontura] = useState(
-    initial.origenMontura || "Tienda",
-  );
-  const [monturaId, setMonturaId] = useState(initial.monturaId);
-  const [tipoAro, setTipoAro] = useState(initial.tipoAro);
-  const [materialMontura, setMaterialMontura] = useState(
-    initial.materialMontura,
-  );
-  const [descripcionMontura, setDescripcionMontura] = useState(
-    initial.descripcionMontura,
-  );
+  const [itemsToDelete, setItemsToDelete] = useState<string[]>([]);
   const [montoTotal, setMontoTotal] = useState(initial.montoTotal);
   const [estadoEntrega, setEstadoEntrega] = useState(
     initial.estadoEntrega || "Pendiente",
@@ -59,15 +56,27 @@ export function DispensacionForm({
     [initial.pagos],
   );
 
-  const monturasDisponibles = useMemo(
-    () =>
-      monturas.filter(
-        (m) =>
-          (m.activo ?? true) &&
-          ((m.stock_actual ?? 0) > 0 || m.id === monturaId),
-      ),
-    [monturaId, monturas],
-  );
+  function updateItem(index: number, item: ItemDraft) {
+    setItems((prev) => {
+      const next = [...prev];
+      next[index] = item;
+      return next;
+    });
+  }
+
+  function addItem() {
+    setItems((prev) => [...prev, emptyItem()]);
+  }
+
+  function removeItem(index: number) {
+    setItems((prev) => {
+      const removed = prev[index];
+      const toDelete = removed.id ? [...itemsToDelete, removed.id] : itemsToDelete;
+      setItemsToDelete(toDelete);
+      const next = prev.filter((_, i) => i !== index);
+      return next.length === 0 ? [emptyItem()] : next;
+    });
+  }
 
   async function suggestOt() {
     const res = await fetch(
@@ -89,33 +98,22 @@ export function DispensacionForm({
 
       <input type="hidden" name="pacienteId" value={pacienteId} />
       <input type="hidden" name="dispensacionId" value={dispensacionId ?? ""} />
-      <input
-        type="hidden"
-        name="previousMonturaId"
-        value={initial.previousMonturaId}
-      />
       <input type="hidden" name="fecha" value={fecha} />
       <input type="hidden" name="ot" value={ot} />
-      <input type="hidden" name="tipoLente" value={tipoLente} />
-      <input type="hidden" name="subTipoBifocal" value={subTipoBifocal} />
-      <input type="hidden" name="distanciaLente" value={distanciaLente} />
-      <input type="hidden" name="altura" value={altura} />
-      <input type="hidden" name="materialLente" value={materialLente} />
       <input
         type="hidden"
-        name="tratamientosJson"
-        value={JSON.stringify(tratamientos)}
+        name="itemsJson"
+        value={JSON.stringify(items)}
       />
-      <input type="hidden" name="colorLente" value={colorLente} />
-      <input type="hidden" name="notasDiseno" value={notasDiseno} />
-      <input type="hidden" name="origenMontura" value={origenMontura} />
-      <input type="hidden" name="monturaId" value={monturaId} />
-      <input type="hidden" name="tipoAro" value={tipoAro} />
-      <input type="hidden" name="materialMontura" value={materialMontura} />
       <input
         type="hidden"
-        name="descripcionMontura"
-        value={descripcionMontura}
+        name="itemsDeleteJson"
+        value={JSON.stringify(itemsToDelete)}
+      />
+      <input
+        type="hidden"
+        name="previousItemIdsJson"
+        value={JSON.stringify(initial.previousItemIds)}
       />
       <input type="hidden" name="montoTotal" value={montoTotal} />
       <input type="hidden" name="estadoEntrega" value={estadoEntrega} />
@@ -192,102 +190,30 @@ export function DispensacionForm({
             </div>
           </div>
 
-          <LentesForm
-            tipoLente={tipoLente}
-            setTipoLente={setTipoLente}
-            subTipoBifocal={subTipoBifocal}
-            setSubTipoBifocal={setSubTipoBifocal}
-            distanciaLente={distanciaLente}
-            setDistanciaLente={setDistanciaLente}
-            altura={altura}
-            setAltura={setAltura}
-            materialLente={materialLente}
-            setMaterialLente={setMaterialLente}
-            tratamientos={tratamientos}
-            setTratamientos={setTratamientos}
-            colorLente={colorLente}
-            setColorLente={setColorLente}
-            notasDiseno={notasDiseno}
-            setNotasDiseno={setNotasDiseno}
-          />
-
-          <section className="rounded-xl border border-zinc-700 bg-zinc-800/40 p-3 space-y-2">
-            <h3 className="font-semibold text-sky-300">
-              Informacion de Montura
+          {/* Items (lente + montura) */}
+          <div className="space-y-4">
+            <h3 className="font-heading text-sm font-bold text-primary">
+              Productos
             </h3>
-
-            <select
-              value={origenMontura}
-              onChange={(e) => {
-                setOrigenMontura(e.target.value);
-                if (e.target.value !== "Tienda") setMonturaId("");
-              }}
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2"
+            {items.map((item, i) => (
+              <ItemCard
+                key={item.id}
+                item={item}
+                index={i}
+                isOnly={items.length <= 1}
+                monturas={monturas}
+                onChange={(updated) => updateItem(i, updated)}
+                onRemove={() => removeItem(i)}
+              />
+            ))}
+            <button
+              type="button"
+              onClick={addItem}
+              className="w-full rounded-xl border-2 border-dashed border-primary/30 py-3 text-sm font-bold text-primary/60 transition-all hover:border-primary/60 hover:text-primary/80 active:scale-[0.98]"
             >
-              {ORIGEN_MONTURA.map((x) => (
-                <option key={x} value={x}>
-                  {x}
-                </option>
-              ))}
-            </select>
-
-            {origenMontura === "Tienda" && (
-              <select
-                value={monturaId}
-                onChange={(e) => {
-                  const id = e.target.value;
-                  setMonturaId(id);
-                  const m = monturasDisponibles.find((x) => x.id === id);
-                  if (m)
-                    setDescripcionMontura(
-                      `${m.marca ?? ""} ${m.modelo ?? ""}`.trim(),
-                    );
-                }}
-                className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2"
-              >
-                <option value="">Montura de inventario</option>
-                {monturasDisponibles.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {(m.sku ?? m.id)} - {(m.marca ?? "").trim()}{" "}
-                    {(m.modelo ?? "").trim()} (Stock: {m.stock_actual ?? 0})
-                  </option>
-                ))}
-              </select>
-            )}
-
-            <select
-              value={tipoAro}
-              onChange={(e) => setTipoAro(e.target.value)}
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2"
-            >
-              <option value="">Tipo de Aro</option>
-              {TIPO_ARO.map((x) => (
-                <option key={x} value={x}>
-                  {x}
-                </option>
-              ))}
-            </select>
-
-            <select
-              value={materialMontura}
-              onChange={(e) => setMaterialMontura(e.target.value)}
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2"
-            >
-              <option value="">Material</option>
-              {MATERIAL_MONTURA.map((x) => (
-                <option key={x} value={x}>
-                  {x}
-                </option>
-              ))}
-            </select>
-
-            <input
-              value={descripcionMontura}
-              onChange={(e) => setDescripcionMontura(e.target.value)}
-              placeholder="Descripción (Marca, Modelo)"
-              className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm font-medium transition-all focus:border-primary focus:ring-1 focus:ring-primary outline-none"
-            />
-          </section>
+              + Agregar otro producto (lente + montura)
+            </button>
+          </div>
 
           <PagosSection
             montoTotal={montoTotal}

@@ -20,6 +20,23 @@ export type PagoDraft = {
   nota: string;
 };
 
+export type ItemDraft = {
+  id: string;
+  tipoLente: string;
+  subTipoBifocal: string;
+  distanciaLente: string;
+  altura: string;
+  materialLente: string;
+  tratamientos: string[];
+  colorLente: string;
+  notasDiseno: string;
+  origenMontura: string;
+  monturaId: string;
+  tipoAro: string;
+  materialMontura: string;
+  descripcionMontura: string;
+};
+
 export type DispensacionFormProps = {
   pacienteId: string;
   dispensacionId?: string;
@@ -30,20 +47,8 @@ export type DispensacionFormProps = {
   initial: {
     fecha: string;
     ot: string;
-    tipoLente: string;
-    subTipoBifocal: string;
-    distanciaLente: string;
-    altura: string;
-    materialLente: string;
-    tratamientos: string[];
-    colorLente: string;
-    notasDiseno: string;
-    origenMontura: string;
-    monturaId: string;
-    previousMonturaId: string;
-    tipoAro: string;
-    materialMontura: string;
-    descripcionMontura: string;
+    items: ItemDraft[];
+    previousItemIds: string[];
     montoTotal: string;
     estadoEntrega: string;
     pagos: PagoDraft[];
