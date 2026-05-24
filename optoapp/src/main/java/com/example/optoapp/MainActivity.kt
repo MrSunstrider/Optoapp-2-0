@@ -82,6 +82,16 @@ fun OptoAppNavigation(authViewModel: AuthViewModel, supabaseClient: SupabaseClie
     val pinHasBeenSet by authViewModel.pinHasBeenSet.collectAsState(initial = null)
     val isPinRequired by authViewModel.isPinRequired.collectAsState(initial = null)
 
+    // Update check: vive fuera del NavHost para que sobreviva a la navegación.
+    // Si estuviera dentro de composable("loading"), el estado se destruía al navegar
+    // y el diálogo nunca aparecía (race condition con el check de auth local).
+    var updateInfo by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<UpdateChecker.UpdateInfo?>(null) }
+    LaunchedEffect(Unit) {
+        withContext(kotlinx.coroutines.Dispatchers.IO) {
+            updateInfo = UpdateChecker.check(supabaseClient)
+        }
+    }
+
     // Guardia global: si la sesión se invalida, volver al login vaciando la pila
     LaunchedEffect(isLoggedIn) {
         if (isLoggedIn == false) {
@@ -93,8 +103,6 @@ fun OptoAppNavigation(authViewModel: AuthViewModel, supabaseClient: SupabaseClie
 
     NavHost(navController = navController, startDestination = "loading") {
         composable("loading") {
-            var updateInfo by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<UpdateChecker.UpdateInfo?>(null) }
-
             androidx.compose.foundation.layout.Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = androidx.compose.ui.Alignment.Center
@@ -102,17 +110,6 @@ fun OptoAppNavigation(authViewModel: AuthViewModel, supabaseClient: SupabaseClie
                 androidx.compose.material3.CircularProgressIndicator()
             }
 
-            // Checkear actualización al inicio (consulta Supabase, no GitHub)
-            LaunchedEffect(Unit) {
-                withContext(kotlinx.coroutines.Dispatchers.IO) {
-                    updateInfo = UpdateChecker.check(supabaseClient)
-                }
-            }
-
-            updateInfo?.let { info ->
-                UpdateDialog(updateInfo = info, onDismiss = { updateInfo = null })
-            }
-            
             // Redirección inicial tras verificar sesión
             LaunchedEffect(isAuthChecked) {
                 if (isAuthChecked) {
@@ -141,6 +138,11 @@ fun OptoAppNavigation(authViewModel: AuthViewModel, supabaseClient: SupabaseClie
         composable("onboarding_optica") { @Suppress("DEPRECATION") OnboardingOpticaScreen(navController, viewModel = authViewModel) }
         composable("seleccion_optica") { SeleccionOpticaScreen(navController, viewModel = authViewModel) }
         composable("main") { MainDrawerScreen(navController, authViewModel = authViewModel) }
+    }
+
+    // UpdateCheck sobrevive a la navegación — se muestra sobre la pantalla activa
+    updateInfo?.let { info ->
+        UpdateDialog(updateInfo = info, onDismiss = { updateInfo = null })
     }
 }
 
