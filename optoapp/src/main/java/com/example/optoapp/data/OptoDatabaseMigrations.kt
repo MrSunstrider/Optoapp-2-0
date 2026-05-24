@@ -593,29 +593,34 @@ val MIGRATION_19_20 = object : Migration(19, 20) {
  */
 val MIGRATION_20_21 = object : Migration(20, 21) {
     override fun migrate(db: SupportSQLiteDatabase) {
+        // Limpiar tabla e índices de intentos fallidos previos (nombres incorrectos idx_*, DEFAULTs)
+        db.execSQL("DROP INDEX IF EXISTS idx_dispensacion_items_dispensacion_id")
+        db.execSQL("DROP INDEX IF EXISTS idx_dispensacion_items_optica_id")
+        db.execSQL("DROP TABLE IF EXISTS dispensacion_items")
+
         db.execSQL("""
-            CREATE TABLE IF NOT EXISTS dispensacion_items (
+            CREATE TABLE dispensacion_items (
                 id TEXT NOT NULL PRIMARY KEY,
                 dispensacion_id TEXT NOT NULL,
-                tipo_lente TEXT NOT NULL DEFAULT '',
-                material_lente TEXT NOT NULL DEFAULT '',
-                tratamientos TEXT NOT NULL DEFAULT '[]',
-                color_lente TEXT NOT NULL DEFAULT '',
-                distancia_lente TEXT NOT NULL DEFAULT '',
-                altura TEXT NOT NULL DEFAULT '',
-                sub_tipo_bifocal TEXT NOT NULL DEFAULT '',
-                notas_diseno TEXT NOT NULL DEFAULT '',
-                montura_id TEXT NOT NULL DEFAULT '',
-                origen_montura TEXT NOT NULL DEFAULT '',
-                tipo_aro TEXT NOT NULL DEFAULT '',
-                material_montura TEXT NOT NULL DEFAULT '',
-                descripcion_montura TEXT NOT NULL DEFAULT '',
-                tipo_montura TEXT NOT NULL DEFAULT '',
-                optica_id TEXT NOT NULL DEFAULT 'mi_optica_base',
+                tipo_lente TEXT NOT NULL,
+                material_lente TEXT NOT NULL,
+                tratamientos TEXT NOT NULL,
+                color_lente TEXT NOT NULL,
+                distancia_lente TEXT NOT NULL,
+                altura TEXT NOT NULL,
+                sub_tipo_bifocal TEXT NOT NULL,
+                notas_diseno TEXT NOT NULL,
+                montura_id TEXT NOT NULL,
+                origen_montura TEXT NOT NULL,
+                tipo_aro TEXT NOT NULL,
+                material_montura TEXT NOT NULL,
+                descripcion_montura TEXT NOT NULL,
+                tipo_montura TEXT NOT NULL,
+                optica_id TEXT NOT NULL,
                 FOREIGN KEY (dispensacion_id) REFERENCES dispensaciones(id) ON DELETE CASCADE
             )
         """)
-        db.execSQL("CREATE INDEX IF NOT EXISTS idx_dispensacion_items_dispensacion_id ON dispensacion_items(dispensacion_id)")
-        db.execSQL("CREATE INDEX IF NOT EXISTS idx_dispensacion_items_optica_id ON dispensacion_items(optica_id)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_dispensacion_items_dispensacion_id ON dispensacion_items(dispensacion_id)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_dispensacion_items_optica_id ON dispensacion_items(optica_id)")
     }
 }
