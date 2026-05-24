@@ -28,6 +28,7 @@ class OptoDatabaseMigrationTest {
         assertEquals(MIGRATION_17_18, OptoDatabase.MIGRATION_17_18)
         assertEquals(MIGRATION_18_19, OptoDatabase.MIGRATION_18_19)
         assertEquals(MIGRATION_19_20, OptoDatabase.MIGRATION_19_20)
+        assertEquals(MIGRATION_20_21, OptoDatabase.MIGRATION_20_21)
     }
 
     @Test
@@ -35,7 +36,7 @@ class OptoDatabaseMigrationTest {
         val migrations = listOf(
             MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11,
             MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16,
-            MIGRATION_16_17, MIGRATION_17_18, MIGRATION_18_19, MIGRATION_19_20
+            MIGRATION_16_17, MIGRATION_17_18, MIGRATION_18_19, MIGRATION_19_20, MIGRATION_20_21
         )
 
         for (i in 0 until migrations.size - 1) {
@@ -48,41 +49,41 @@ class OptoDatabaseMigrationTest {
     }
 
     @Test
-    fun first_migration_starts_at_6_and_last_ends_at_20() {
+    fun first_migration_starts_at_6_and_last_ends_at_21() {
         assertEquals(6, MIGRATION_6_7.startVersion)
         assertEquals(7, MIGRATION_6_7.endVersion)
-        assertEquals(19, MIGRATION_19_20.startVersion)
-        assertEquals(20, MIGRATION_19_20.endVersion)
+        assertEquals(20, MIGRATION_20_21.startVersion)
+        assertEquals(21, MIGRATION_20_21.endVersion)
     }
 
     // ─── 3.0.2 — Schema version characterization ────────────────────────
     //
     // Room @Database has CLASS retention (not RUNTIME), so annotation
     // is not visible via reflection at runtime. These tests verify the
-    // expected version (20) as a documented constant matching the source:
-    //   @Database(entities = [...], version = 20) in OptoDatabase.kt
+    // expected version (21) as a documented constant matching the source:
+    //   @Database(entities = [...], version = 21) in OptoDatabase.kt
     // Changing this version triggers a Room migration — it MUST be preserved.
 
     @Test
-    fun databaseVersion_is20() {
-        // The last migration ends at version 20, which must match @Database(version = 20)
+    fun databaseVersion_is21() {
+        // The last migration ends at version 21, which must match @Database(version = 21)
         // in OptoDatabase.kt. If someone bumps @Database version without adding a migration,
         // this test catches the inconsistency.
-        val chainVersion = MIGRATION_19_20.endVersion
+        val chainVersion = MIGRATION_20_21.endVersion
         assertEquals(
-            "Room schema version must remain 20 — changing it triggers migration. " +
-                "Source: @Database(version = 20) in OptoDatabase.kt. " +
-                "MIGRATION_19_20.endVersion ($chainVersion) must match.",
-            20,
+            "Room schema version must remain 21 — changing it triggers migration. " +
+                "Source: @Database(version = 21) in OptoDatabase.kt. " +
+                "MIGRATION_20_21.endVersion ($chainVersion) must match.",
+            21,
             chainVersion
         )
     }
 
     @Test
     fun databaseVersion_migration_chain_ends_at_current_version() {
-        // The last migration ends at version 20 — this must match the @Database version
-        assertEquals(20, MIGRATION_19_20.endVersion)
-        assertEquals(MIGRATION_19_20.endVersion, MIGRATION_19_20.startVersion + 1)
+        // The last migration ends at version 21 — this must match the @Database version
+        assertEquals(21, MIGRATION_20_21.endVersion)
+        assertEquals(MIGRATION_20_21.endVersion, MIGRATION_20_21.startVersion + 1)
     }
 
     // ─── 3.0.3 — DAO accessibility via OptoDatabase abstract methods ───
