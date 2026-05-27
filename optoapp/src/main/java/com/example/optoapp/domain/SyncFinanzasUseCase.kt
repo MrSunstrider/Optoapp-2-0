@@ -17,7 +17,7 @@ import javax.inject.Inject
  *
  * Delega la ejecución a helpers extraídos para mantener la clase por debajo de 250 líneas.
  */
-class SyncFinanzasUseCase @Inject constructor(
+open class SyncFinanzasUseCase @Inject constructor(
     private val deletionSyncHelper: DeletionSyncHelper,
     private val uploadSyncCoordinator: UploadSyncCoordinator,
     private val downloadSyncCoordinator: DownloadSyncCoordinator,
