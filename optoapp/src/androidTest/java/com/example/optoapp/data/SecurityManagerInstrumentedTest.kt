@@ -48,8 +48,10 @@ class SecurityManagerInstrumentedTest {
     }
 
     @After
-    fun tearDown() = runBlocking {
-        context.dataStore.edit { it.clear() }
+    fun tearDown() {
+        runBlocking {
+            context.dataStore.edit { it.clear() }
+        }
     }
 
     @Test
