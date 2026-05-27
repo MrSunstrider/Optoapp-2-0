@@ -5,7 +5,7 @@ import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.EvaluacionClinica
 import com.example.optoapp.data.Paciente
 import com.example.optoapp.data.Pago
-import com.example.optoapp.data.dispensacion.ServicioExtra
+import com.example.optoapp.data.ServicioExtra
 import java.time.LocalDate
 import java.util.UUID
 

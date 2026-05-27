@@ -1,5 +1,7 @@
 package com.example.optoapp.ui
 
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
@@ -186,7 +188,7 @@ class DispensacionFlowTest {
                 value = "",
                 onValueChange = {},
                 label = "N° OT (OT-AAAA-####)",
-                modifier = androidx.compose.ui.Modifier.testTag(TestTags.DISPENSACION_OT_FIELD)
+                modifier = Modifier.testTag(TestTags.DISPENSACION_OT_FIELD)
             )
         }
 
@@ -201,7 +203,7 @@ class DispensacionFlowTest {
                 value = otValue,
                 onValueChange = { otValue = it },
                 label = "N° OT (OT-AAAA-####)",
-                modifier = androidx.compose.ui.Modifier.testTag(TestTags.DISPENSACION_OT_FIELD)
+                modifier = Modifier.testTag(TestTags.DISPENSACION_OT_FIELD)
             )
         }
 

@@ -1,34 +1,24 @@
 package com.example.optoapp.fakes
 
 import com.example.optoapp.data.Resource
-import com.example.optoapp.data.pacientes.PacientesSyncResult
-import com.example.optoapp.domain.SyncFinanzasUseCase
-import com.example.optoapp.domain.SyncHistorialUseCase
-import com.example.optoapp.domain.SyncInventarioUseCase
-import com.example.optoapp.domain.SyncPacientesUseCase
-import javax.inject.Inject
-import javax.inject.Singleton
+import com.example.optoapp.domain.PacientesSyncResult
 
 /**
- * Fake [SyncPacientesUseCase] that records invocations instead of calling Supabase.
+ * Standalone fake for SyncPacientesUseCase — tracks invocations.
  *
- * Use in Hilt integration tests to verify the sync chain is triggered
- * without needing the test Supabase project schema.
+ * Does NOT extend the real use case because `invoke` is a final operator.
+ * Provides the same `invoke` signature for testing purposes.
  */
-@Singleton
-class FakeSyncPacientesUseCase @Inject constructor() : SyncPacientesUseCase(
-    deletionSyncHelper = null!!,
-    uploadSyncCoordinator = null!!,
-    downloadSyncCoordinator = null!!,
-    networkRetryHelper = null!!
-) {
+class FakeSyncPacientesUseCase {
+
     var uploadCallCount = 0
     var downloadCallCount = 0
     var lastOpticaId: String? = null
 
-    override suspend fun invoke(
+    /** Matches the signature of [com.example.optoapp.domain.SyncPacientesUseCase.invoke]. */
+    suspend fun invoke(
         opticaId: String,
-        downloadAfterUpload: Boolean
+        downloadAfterUpload: Boolean = true
     ): Resource<PacientesSyncResult> {
         uploadCallCount++
         lastOpticaId = opticaId
@@ -38,22 +28,14 @@ class FakeSyncPacientesUseCase @Inject constructor() : SyncPacientesUseCase(
 }
 
 /**
- * Fake [SyncHistorialUseCase] that records invocations.
+ * Standalone fake for SyncHistorialUseCase — tracks invocations.
  */
-@Singleton
-class FakeSyncHistorialUseCase @Inject constructor() : SyncHistorialUseCase(
-    pacienteRepository = null!!,
-    evaluacionDao = null!!,
-    uploadSyncCoordinator = null!!,
-    downloadSyncCoordinator = null!!,
-    networkRetryHelper = null!!,
-    postSaveSyncScheduler = null!!,
-    supabase = null!!
-) {
+class FakeSyncHistorialUseCase {
+
     var callCount = 0
     var lastOpticaId: String? = null
 
-    override suspend fun invoke(opticaId: String): Resource<Unit> {
+    suspend fun invoke(opticaId: String): Resource<Unit> {
         callCount++
         lastOpticaId = opticaId
         return Resource.Success(Unit)
@@ -61,21 +43,14 @@ class FakeSyncHistorialUseCase @Inject constructor() : SyncHistorialUseCase(
 }
 
 /**
- * Fake [SyncFinanzasUseCase] that records invocations.
- * This class is `open` to enable test fakes. Must be kept in sync with
- * the real constructor signature.
+ * Standalone fake for SyncFinanzasUseCase — tracks invocations.
  */
-@Singleton
-class FakeSyncFinanzasUseCase @Inject constructor() : SyncFinanzasUseCase(
-    deletionSyncHelper = null!!,
-    uploadSyncCoordinator = null!!,
-    downloadSyncCoordinator = null!!,
-    networkRetryHelper = null!!
-) {
+class FakeSyncFinanzasUseCase {
+
     var callCount = 0
     var lastOpticaId: String? = null
 
-    override suspend fun invoke(opticaId: String): Resource<Unit> {
+    suspend fun invoke(opticaId: String): Resource<Unit> {
         callCount++
         lastOpticaId = opticaId
         return Resource.Success(Unit)
@@ -83,19 +58,14 @@ class FakeSyncFinanzasUseCase @Inject constructor() : SyncFinanzasUseCase(
 }
 
 /**
- * Fake [SyncInventarioUseCase] that records invocations.
+ * Standalone fake for SyncInventarioUseCase — tracks invocations.
  */
-@Singleton
-class FakeSyncInventarioUseCase @Inject constructor() : SyncInventarioUseCase(
-    syncRepository = null!!,
-    uploadSyncCoordinator = null!!,
-    downloadSyncCoordinator = null!!,
-    networkRetryHelper = null!!
-) {
+class FakeSyncInventarioUseCase {
+
     var callCount = 0
     var lastOpticaId: String? = null
 
-    override suspend fun invoke(opticaId: String): Resource<Unit> {
+    suspend fun invoke(opticaId: String): Resource<Unit> {
         callCount++
         lastOpticaId = opticaId
         return Resource.Success(Unit)

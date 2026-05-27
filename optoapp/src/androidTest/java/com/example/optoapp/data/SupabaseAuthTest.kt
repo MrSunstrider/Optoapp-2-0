@@ -90,13 +90,19 @@ class SupabaseAuthTest {
     @Test
     fun register_new_user_returns_session() = runBlocking {
         val client = supabase!!
-        val result = client.auth.signUpWith(Email) {
+
+        // Act: register user (follows production pattern from AuthDelegate)
+        client.auth.signUpWith(Email) {
             email = testEmail
             password = testPassword
         }
-        assertNotNull("Session must be non-null after signup", result.session)
-        assertNotNull("User must be non-null after signup", result.user)
-        testUserId = result.user!!.id
+
+        // Assert: session and user should be available after signup
+        val session = client.auth.currentSessionOrNull()
+        val user = client.auth.currentUserOrNull()
+        assertNotNull("Session must be non-null after signup", session)
+        assertNotNull("User must be non-null after signup", user)
+        testUserId = user!!.id
     }
 
     @Test
@@ -104,23 +110,26 @@ class SupabaseAuthTest {
         val client = supabase!!
 
         // Arrange: register a user first
-        val signUpResult = client.auth.signUpWith(Email) {
+        client.auth.signUpWith(Email) {
             email = testEmail
             password = testPassword
         }
-        assertNotNull("Signup must succeed", signUpResult.session)
-        testUserId = signUpResult.user!!.id
+        val registeredUser = client.auth.currentUserOrNull()
+        assertNotNull("User must exist after signup", registeredUser)
+        testUserId = registeredUser!!.id
 
-        // Act: login with the same credentials
-        val signInResult = client.auth.signInWith(Email) {
+        // Act: sign in with the same credentials
+        client.auth.signInWith(Email) {
             email = testEmail
             password = testPassword
         }
 
         // Assert
-        assertNotNull("Session must be non-null after login", signInResult.session)
-        assertNotNull("User must be non-null after login", signInResult.user)
-        assertEquals("User ID must match registered user", testUserId, signInResult.user!!.id)
+        val session = client.auth.currentSessionOrNull()
+        val user = client.auth.currentUserOrNull()
+        assertNotNull("Session must be non-null after login", session)
+        assertNotNull("User must be non-null after login", user)
+        assertEquals("User ID must match registered user", testUserId, user!!.id)
     }
 
     @Test
@@ -128,12 +137,13 @@ class SupabaseAuthTest {
         val client = supabase!!
 
         // Register a user
-        val signUpResult = client.auth.signUpWith(Email) {
+        client.auth.signUpWith(Email) {
             email = testEmail
             password = testPassword
         }
-        assertNotNull("Signup must succeed", signUpResult.session)
-        testUserId = signUpResult.user!!.id
+        val registeredUser = client.auth.currentUserOrNull()
+        assertNotNull("User must exist after signup", registeredUser)
+        testUserId = registeredUser!!.id
 
         // Act & Assert: login with wrong password must throw
         val exception = org.junit.Assert.assertThrows(Exception::class.java) {

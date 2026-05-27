@@ -15,6 +15,7 @@ import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeNotNull
 import org.junit.Assume.assumeTrue
@@ -54,7 +55,7 @@ class SyncFlowTest {
     private val fakeSyncUseCase = FakeSyncPacientesUseCase()
 
     // Test identifiers — suffixed with timestamp for isolation.
-    private val runId = "sync-test-${System.currentTimeMillis().takeLast(6)}"
+    private val runId = "sync-test-${System.currentTimeMillis().toString().takeLast(6)}"
     val testOpticaId = "optica-$runId"
     private val testUserId = "user-$runId"
     private val testEmail = "$runId@optoapp-test.local"
@@ -87,11 +88,11 @@ class SyncFlowTest {
 
         // Bootstrap test environment: user, optica, membership.
         val admin = adminClient!!
-        val signUpResult = admin.auth.signUpWith(Email) {
+        admin.auth.signUpWith(Email) {
             email = testEmail
             password = testPassword
         }
-        authUserId = signUpResult.user?.id
+        authUserId = admin.auth.currentUserOrNull()?.id
             ?: error("Failed to create test user")
 
         // Create test optica.
