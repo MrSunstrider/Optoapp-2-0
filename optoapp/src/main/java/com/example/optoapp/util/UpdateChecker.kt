@@ -10,21 +10,47 @@ import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Order
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.SerialName
 import java.io.File
 import java.io.FileOutputStream
+import java.net.HttpURLConnection
 import java.net.URL
 
 /**
- * Checkea si hay una versión nueva consultando la tabla app_releases en Supabase.
- * El CI (build-apk.yml) inserta en esa tabla via Edge Function después de crear una GitHub Release.
- * Si hay versión nueva descarga el APK y abre el instalador.
+ * Checkea si hay una versión nueva usando una cadena de respaldo:
+ *
+ * 1. [tryCheckGithub] — API pública de GitHub Releases (sin auth, pública).
+ * 2. [tryCheckSupabase] — consulta la tabla `app_releases` en Supabase.
+ *
+ * Si el primario falla (rate limit, sin red), cae al secundario.
+ * Si ambos fallan, retorna null silenciosamente.
+ *
+ * El CI (build-apk.yml) crea GitHub Releases y llama a la Edge Function
+ * track-release que inserta en `app_releases`.
  */
 object UpdateChecker {
+
+    private const val GITHUB_REPO = "MrSunstrider/Optoapp-2-0"
+    private const val GITHUB_API = "https://api.github.com/repos/$GITHUB_REPO/releases/latest"
+    private const val GITHUB_WEB = "https://github.com/$GITHUB_REPO/releases/latest"
+
+    @Serializable
+    private data class GitHubRelease(
+        @SerialName("tag_name") val tagName: String = "",
+        @SerialName("html_url") val htmlUrl: String = "",
+        val assets: List<GitHubAsset> = emptyList(),
+    )
+
+    @Serializable
+    private data class GitHubAsset(
+        @SerialName("browser_download_url") val browserDownloadUrl: String = "",
+    )
 
     @Serializable
     data class AppRelease(
         val version: String = "",
-        @kotlinx.serialization.SerialName("apk_download_url")
+        @SerialName("apk_download_url")
         val apkDownloadUrl: String = "",
     )
 
@@ -34,11 +60,67 @@ object UpdateChecker {
         val releaseUrl: String
     )
 
+    // ─── Cadena de respaldo ─────────────────────────────────────────────
+
     /**
-     * Consulta Supabase y retorna [UpdateInfo] si hay versión más nueva.
-     * @param supabase Cliente Supabase ya autenticado (de la app).
+     * @param supabase Si se provee, se usa como respaldo si GitHub falla.
      */
-    suspend fun check(supabase: SupabaseClient): UpdateInfo? {
+    suspend fun check(supabase: SupabaseClient? = null): UpdateInfo? {
+        // 1 — GitHub Releases API (primario)
+        tryCheckGithub()?.let { return it }
+
+        // 2 — Supabase app_releases (respaldo)
+        if (supabase != null) {
+            tryCheckSupabase(supabase)?.let { return it }
+        }
+
+        return null
+    }
+
+    // ─── Primario: GitHub API ───────────────────────────────────────────
+
+    /**
+     * Consulta la API pública de GitHub Releases.
+     * No requiere autenticación (60 req/hora para IPs públicas).
+     */
+    private suspend fun tryCheckGithub(): UpdateInfo? {
+        return try {
+            val json = URL(GITHUB_API).readTextWithTimeout()
+            val release: GitHubRelease = jsonParser.decodeFromString(json)
+            val tag = release.tagName.removePrefix("v")
+            val current = BuildConfig.VERSION_NAME
+
+            if (!isNewer(tag, current)) return null
+
+            val apkUrl = release.assets
+                .firstOrNull { it.browserDownloadUrl.isNotBlank() }
+                ?.browserDownloadUrl
+
+            UpdateInfo(
+                latestVersion = tag,
+                downloadUrl = apkUrl ?: release.htmlUrl,
+                releaseUrl = release.htmlUrl.ifBlank { GITHUB_WEB },
+            )
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    /** Lee el body de una URL con timeout de 8s. */
+    private fun URL.readTextWithTimeout(): String {
+        val conn = openConnection() as HttpURLConnection
+        conn.connectTimeout = 8_000
+        conn.readTimeout = 8_000
+        return conn.inputStream.bufferedReader().readText()
+    }
+
+    // ─── Respaldo: Supabase ─────────────────────────────────────────────
+
+    /**
+     * Consulta la tabla `app_releases` en Supabase.
+     * El CI inserta aquí via Edge Function track-release.
+     */
+    private suspend fun tryCheckSupabase(supabase: SupabaseClient): UpdateInfo? {
         return try {
             val releases = supabase.postgrest["app_releases"]
                 .select {
@@ -56,12 +138,14 @@ object UpdateChecker {
             UpdateInfo(
                 latestVersion = latest,
                 downloadUrl = latestRelease.apkDownloadUrl,
-                releaseUrl = latestRelease.apkDownloadUrl
+                releaseUrl = latestRelease.apkDownloadUrl,
             )
         } catch (_: Exception) {
-            null // Silencio si no hay red o la consulta falla
+            null
         }
     }
+
+    // ─── Descarga e instalación ─────────────────────────────────────────
 
     /**
      * Descarga el APK y abre el intent de instalación.
@@ -81,7 +165,7 @@ object UpdateChecker {
                 FileProvider.getUriForFile(
                     context,
                     "${context.packageName}.fileprovider",
-                    apk
+                    apk,
                 )
             } else {
                 Uri.fromFile(apk)
@@ -115,3 +199,6 @@ object UpdateChecker {
         return false
     }
 }
+
+/** Singleton Json con ignoreUnknownKeys para tolerar campos extra de la API de GitHub. */
+private val jsonParser = Json { ignoreUnknownKeys = true }
