@@ -5,13 +5,13 @@ import androidx.test.core.app.ApplicationProvider
 import com.example.optoapp.data.DispensacionDao
 import com.example.optoapp.data.DispensacionItemDao
 import com.example.optoapp.data.EvaluacionDao
-import com.example.optoapp.data.MonturaDao
-import com.example.optoapp.data.MonturaMovimientoDao
 import com.example.optoapp.data.OptoDatabase
 import com.example.optoapp.data.PacienteDao
-import com.example.optoapp.data.PagoDao
-import com.example.optoapp.data.ServicioExtraDao
 import com.example.optoapp.data.SyncEntityStateDao
+import com.example.optoapp.data.montura.MonturaDao
+import com.example.optoapp.data.montura.MonturaMovimientoDao
+import com.example.optoapp.data.pago.PagoDao
+import com.example.optoapp.data.servicio.ServicioExtraDao
 import org.junit.rules.TestRule
 import org.junit.runner.Description
 import org.junit.runners.model.Statement
