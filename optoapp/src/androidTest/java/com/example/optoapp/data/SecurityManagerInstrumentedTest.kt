@@ -6,6 +6,7 @@ import androidx.security.crypto.MasterKey
 import androidx.datastore.preferences.core.edit
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -73,6 +74,32 @@ class SecurityManagerInstrumentedTest {
         assertTrue(securityManager.pinHasBeenSet.first())
     }
 
+    /** Poll [condition] every 200ms until it returns true, up to [timeoutMs]. */
+    private suspend fun awaitTrue(
+        timeoutMs: Long = 10_000,
+        condition: suspend () -> Boolean
+    ) {
+        val deadline = System.currentTimeMillis() + timeoutMs
+        while (System.currentTimeMillis() < deadline) {
+            if (condition()) return
+            delay(200)
+        }
+        throw AssertionError("Timed out after ${timeoutMs}ms waiting for condition")
+    }
+
+    /**
+     * Give the background [SecurityManager] migration coroutine time to execute,
+     * then verify [condition] is still false. The migration runs on [Dispatchers.IO]
+     * and completes within milliseconds — this guard prevents races on slow CI.
+     */
+    private suspend fun awaitStillFalse(
+        timeoutMs: Long = 3_000,
+        condition: suspend () -> Boolean
+    ) {
+        delay(timeoutMs)
+        assertFalse("Condition should remain false after migration window", condition())
+    }
+
     @Test
     fun migration_autoSetsFlag_whenCustomPinExists() = runBlocking {
         // Pre-seed ESP with a custom PIN (simulating existing user)
@@ -91,8 +118,8 @@ class SecurityManagerInstrumentedTest {
         // Create new SecurityManager — migration should auto-set the flag
         val sm = SecurityManager(context)
 
-        // Give migration coroutine time to complete
-        Thread.sleep(1000)
+        // Wait for the background migration coroutine to finish
+        awaitTrue { sm.pinHasBeenSet.first() }
 
         assertTrue(sm.pinHasBeenSet.first())
         assertEquals("998877", sm.getStoredPin())
@@ -116,7 +143,8 @@ class SecurityManagerInstrumentedTest {
         // Create new SecurityManager — migration should NOT set the flag
         val sm = SecurityManager(context)
 
-        Thread.sleep(1000)
+        // Give the background migration time to run, then verify flag stayed false
+        awaitStillFalse { sm.pinHasBeenSet.first() }
 
         assertFalse(sm.pinHasBeenSet.first())
         assertEquals("", sm.getStoredPin())

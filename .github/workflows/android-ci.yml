@@ -11,12 +11,17 @@
 #   SUPABASE_TEST_SERVICE_KEY — Service-role key for test data cleanup
 #
 # See openspec/changes/android-e2e-tests/ for the full design and specs.
+#
+# NOTE: June 2nd 2026 — GitHub removes Node 20 runners.
+# All actions updated to versions that target Node 24 natively.
+#   actions/checkout@v6, actions/setup-java@v5, actions/upload-artifact@v7
+# gradle/actions/setup-gradle@v4 still targets Node 20 — force flag handles it.
 
 name: Android CI
 
 env:
-  # Opt into Node.js 24 before GitHub forces it on June 2nd, 2026
-  # https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+  # gradle/actions/setup-gradle@v4 still targets Node 20;
+  # the three other actions are already Node 24 native via their major versions.
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 on:
@@ -39,9 +44,9 @@ jobs:
   unit-tests:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: "temurin"
           java-version: 17
@@ -53,10 +58,10 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
 
       - name: Run unit tests
-        run: ./gradlew testDebugUnitTest --stacktrace
+        run: ./gradlew testDebugUnitTest --stacktrace --scan
 
       - name: Assemble debug APK
-        run: ./gradlew assembleDebug --stacktrace
+        run: ./gradlew assembleDebug --stacktrace --scan
 
   # ────────────────────────────────────────────────────────
   # Job 2: Android instrumented tests (emulator)
@@ -72,7 +77,7 @@ jobs:
       matrix:
         api-level: [34]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Enable KVM group perms
         run: |
@@ -81,7 +86,7 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: "temurin"
           java-version: 17
@@ -109,10 +114,13 @@ jobs:
           target: google_apis
           arch: x86_64
           profile: pixel_6
-          script: ./gradlew :optoapp:connectedDebugAndroidTest
+          boot-timeout: 600
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none -camera-front none -memory 2048 -cores 2
+          script: ./gradlew :optoapp:connectedDebugAndroidTest --stacktrace --scan
 
       - name: Upload test results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: android-test-results-${{ matrix.api-level }}
@@ -121,8 +129,9 @@ jobs:
             optoapp/build/reports/androidTests/
 
       - name: Upload emulator logs
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: emulator-logs-${{ matrix.api-level }}
           path: ${{ github.workspace }}/android-emulator-logcat.txt
+          if-no-files-found: warn

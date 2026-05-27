@@ -38,6 +38,8 @@ class SecurityManager(
 ) : ISecurityManager {
 
     companion object {
+        /** PIN asignado automáticamente en fresh install hasta que el usuario lo cambie. */
+        const val DEFAULT_PIN = "123456"
         const val PIN_LENGTH = 6
 
         fun isValidPin(pin: String): Boolean {
@@ -71,7 +73,8 @@ class SecurityManager(
     private suspend fun migratePinHasBeenSet() {
         if (pinHasBeenSet.first()) return
         val stored = getSecurePin()
-        if (stored.isNotEmpty()) {
+        // El PIN por defecto (asignado en fresh install) no counts como "seteado por el usuario".
+        if (stored.isNotEmpty() && stored != DEFAULT_PIN) {
             dataStore.edit { prefs ->
                 prefs[prefPinHasBeenSet] = true
             }
