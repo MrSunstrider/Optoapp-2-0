@@ -13,6 +13,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -25,6 +26,7 @@ import com.example.optoapp.ui.components.paciente.EvaluacionesList
 import com.example.optoapp.ui.components.paciente.PacienteInfoHeader
 import com.example.optoapp.ui.components.paciente.PacienteWhatsAppMenu
 import com.example.optoapp.ui.components.paciente.ServiciosExtraList
+import com.example.optoapp.testing.TestTags
 import com.example.optoapp.util.RecetaEvaluacionPdfGenerator
 import com.example.optoapp.util.FileShareUtils
 import com.example.optoapp.viewmodel.DeletePacienteResult

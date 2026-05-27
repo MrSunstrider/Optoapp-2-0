@@ -18,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.graphics.Color
 import android.widget.Toast
 import androidx.compose.ui.platform.LocalContext
@@ -35,6 +36,7 @@ import com.example.optoapp.viewmodel.PacienteViewModel
 import com.example.optoapp.viewmodel.SubscriptionViewModel
 import com.example.optoapp.subscription.SubscriptionTier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.example.optoapp.testing.TestTags
 import com.example.optoapp.util.DateUtils
 import kotlinx.coroutines.launch
 
@@ -164,7 +166,7 @@ fun PacientesListScreen(navController: NavController, drawerState: DrawerState, 
 
             // Patient list
             LazyColumn(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.fillMaxSize().testTag(TestTags.PACIENTE_LISTA),
                 contentPadding = PaddingValues(bottom = 88.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {

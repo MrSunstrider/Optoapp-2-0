@@ -10,11 +10,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.optoapp.data.AppRoles
+import com.example.optoapp.testing.TestTags
 import com.example.optoapp.util.SyncErrorSanitizer
 import com.example.optoapp.viewmodel.AuthViewModel
 import com.example.optoapp.viewmodel.OpticaHeaderUi
@@ -108,7 +110,7 @@ fun MainDrawerContent(
                     }
                 },
                 icon = { Icon(Icons.Default.Person, contentDescription = null) },
-                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding).testTag(TestTags.NAV_DRAWER_MENU)
             )
             NavigationDrawerItem(
                 label = { Text("Servicios Varios", fontWeight = FontWeight.SemiBold) },
@@ -148,7 +150,7 @@ fun MainDrawerContent(
                     navController.navigate("agenda")
                 },
                 icon = { Icon(Icons.Default.CalendarMonth, contentDescription = null) },
-                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding).testTag(TestTags.NAV_BOTTOM_AGENDA)
             )
             NavigationDrawerItem(
                 label = { Text("Inventario", fontWeight = FontWeight.SemiBold) },
@@ -220,7 +222,7 @@ fun MainDrawerContent(
                     navController.navigate("configuracion")
                 },
                 icon = { Icon(Icons.Default.Settings, contentDescription = null) },
-                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding).testTag(TestTags.NAV_DRAWER_CONFIGURACION)
             )
 
             // Sync + Error handling
