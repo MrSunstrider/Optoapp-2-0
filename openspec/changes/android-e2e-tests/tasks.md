@@ -50,4 +50,4 @@ Chain strategy: stacked-to-main
 
 ## Phase 4: CI Pipeline
 
-- [ ] 4.1 Update `.github/workflows/android-ci.yml` — add `android-test` job running on `ubuntu-latest` with `reactivecircus/android-emulator-runner` (API 34, google_apis, x86_64), inject `SUPABASE_TEST_*` secrets into `local.properties`, upload `androidTest-results/` and emulator logs as artifacts, skip on PRs
+- [x] 4.1 Update `.github/workflows/android-ci.yml` — add `android-test` job running on `ubuntu-latest` with `reactivecircus/android-emulator-runner` (API 34, google_apis, x86_64, pixel_6), inject `SUPABASE_TEST_*` secrets into `local.properties`, upload `androidTest-results/` and emulator logs as artifacts, skip on PRs
