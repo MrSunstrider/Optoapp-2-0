@@ -69,7 +69,7 @@ class SupabaseAuthTest {
         // Attempt to clean up the test user via the Admin API.
         // This requires SUPABASE_TEST_SERVICE_KEY to be set in local.properties.
         val userId = testUserId ?: return@runBlocking
-        val serviceKey = System.getProperty("SUPABASE_TEST_SERVICE_KEY", "")
+        val serviceKey = BuildConfig.SUPABASE_TEST_SERVICE_KEY
         if (serviceKey.isNotBlank()) {
             try {
                 val adminClient = createSupabaseClient(
