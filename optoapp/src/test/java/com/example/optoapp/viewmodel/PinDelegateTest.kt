@@ -23,8 +23,13 @@ class PinDelegateTest {
 
     private class FakeSecurityManager : ISecurityManager {
         private val _userPin = MutableStateFlow("")
+        private val _pinHasBeenSet = MutableStateFlow(false)
         override val userPin: Flow<String> = _userPin.asStateFlow()
-        override suspend fun savePin(pin: String) { _userPin.value = pin }
+        override val pinHasBeenSet: Flow<Boolean> = _pinHasBeenSet.asStateFlow()
+        override suspend fun savePin(pin: String) {
+            _userPin.value = pin
+            _pinHasBeenSet.value = pin.isNotEmpty()
+        }
     }
 
     private class FakeSessionManager : ISessionManager {
@@ -227,9 +232,9 @@ class PinDelegateTest {
     // ─── pinHasBeenSet / isPinRequired delegation ─────────────────────────
 
     @Test
-    fun `pinHasBeenSet delegates to sessionManager`() {
-        val sess = FakeSessionManager()
-        val delegate = PinDelegate(FakeSecurityManager(), sess)
+    fun `pinHasBeenSet delegates to securityManager`() {
+        val sec = FakeSecurityManager()
+        val delegate = PinDelegate(sec, FakeSessionManager())
         assertNotNull(delegate.pinHasBeenSet)
     }
 

@@ -25,7 +25,7 @@ class PinDelegate @Inject constructor(
     private val _pinInput = MutableStateFlow("")
     val pinInput: StateFlow<String> = _pinInput.asStateFlow()
 
-    val pinHasBeenSet: Flow<Boolean> = sessionManager.pinHasBeenSet
+    val pinHasBeenSet: Flow<Boolean> = securityManager.pinHasBeenSet
     val isPinRequired: Flow<Boolean> = sessionManager.isPinRequired
 
     fun onPinDigit(digit: String) {

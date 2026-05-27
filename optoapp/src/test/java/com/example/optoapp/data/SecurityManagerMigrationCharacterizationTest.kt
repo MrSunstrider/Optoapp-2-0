@@ -79,10 +79,19 @@ class SecurityManagerMigrationCharacterizationTest {
     // ---------------------------------------------------------------
 
     @Test
-    fun `debeMigrarPin con PIN legacy devuelve true`() {
-        // Caso: pinHasBeenSet=false, storedPin no vacío → debe migrar
+    fun `debeMigrarPin con PIN legacy personalizado devuelve true`() {
+        // Caso: pinHasBeenSet=false, storedPin personalizado (no default) → debe migrar
         assertTrue(shouldMigrate(pinHasBeenSet = false, storedPin = "183729"))
-        assertTrue(shouldMigrate(pinHasBeenSet = false, storedPin = "123456"))
+        assertTrue(shouldMigrate(pinHasBeenSet = false, storedPin = "583920"))
+    }
+
+    @Test
+    fun `debeMigrarPin con DEFAULT_PIN devuelve false`() {
+        // El PIN por defecto "123456" NO debe disparar la migración
+        assertFalse(
+            "El PIN default no debe migrar flag pinHasBeenSet",
+            shouldMigrate(pinHasBeenSet = false, storedPin = SecurityManager.DEFAULT_PIN)
+        )
     }
 
     @Test
@@ -96,13 +105,7 @@ class SecurityManagerMigrationCharacterizationTest {
         // Caso: pinHasBeenSet=true → no importa el storedPin
         assertFalse(shouldMigrate(pinHasBeenSet = true, storedPin = "183729"))
         assertFalse(shouldMigrate(pinHasBeenSet = true, storedPin = ""))
-    }
-
-    @Test
-    fun `debeMigrarPin con 123456 se comporta igual que cualquier PIN`() {
-        // "123456" ya NO tiene caso especial — se trata como PIN normal
-        assertTrue(shouldMigrate(pinHasBeenSet = false, storedPin = "123456"))
-        assertTrue(shouldMigrate(pinHasBeenSet = false, storedPin = "583920"))
+        assertFalse(shouldMigrate(pinHasBeenSet = true, storedPin = SecurityManager.DEFAULT_PIN))
     }
 
     // ---------------------------------------------------------------
@@ -119,6 +122,13 @@ class SecurityManagerMigrationCharacterizationTest {
     fun `ISecurityManager tiene metodo savePin`() {
         val methods = ISecurityManager::class.java.declaredMethods.map { it.name }
         assertTrue("savePin debe existir en ISecurityManager", methods.contains("savePin"))
+    }
+
+    @Test
+    fun `ISecurityManager tiene getter pinHasBeenSet`() {
+        val methods = ISecurityManager::class.java.declaredMethods.map { it.name }
+        assertTrue("pinHasBeenSet debe tener getter en ISecurityManager. Got: $methods",
+            methods.any { it == "getPinHasBeenSet" })
     }
 
     // ---------------------------------------------------------------
@@ -145,12 +155,14 @@ class SecurityManagerMigrationCharacterizationTest {
  *
  * Determina si se debe migrar el flag `pinHasBeenSet` basado en:
  * - Si el flag ya está en true → no migrar (ya se migró)
- * - Si hay un PIN almacenado → migrar (setear flag)
+ * - Si hay un PIN almacenado y NO es el default → migrar (setear flag)
+ * - El PIN default ([SecurityManager.DEFAULT_PIN]) se asigna en fresh install
+ *   y no cuenta como "seteado por el usuario".
  *
  * @param pinHasBeenSet valor actual del flag
  * @param storedPin PIN almacenado en encrypted prefs (vacío si no existe)
  * @return true si se debe setear pinHasBeenSet = true
  */
 internal fun shouldMigrate(pinHasBeenSet: Boolean, storedPin: String): Boolean {
-    return !pinHasBeenSet && storedPin.isNotEmpty()
+    return !pinHasBeenSet && storedPin.isNotEmpty() && storedPin != SecurityManager.DEFAULT_PIN
 }

@@ -5,7 +5,6 @@ import android.content.SharedPreferences
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.test.core.app.ApplicationProvider
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertFalse
@@ -34,9 +33,7 @@ class SecurityManagerMigrationTest {
         val context: Context = ApplicationProvider.getApplicationContext()
         val sm: SecurityManager = SecurityManager(context, fakeDataStore, fakePrefs)
 
-        // Give the init-block coroutine (Dispatchers.IO) time to complete
-        delay(100)
-
+        // Migration se ejecuta lazy al leer pinHasBeenSet — no se necesita delay
         val pinSet: Boolean = sm.pinHasBeenSet.first()
         assertFalse("Sin PIN legacy, pinHasBeenSet debe ser false",
             pinSet)
@@ -55,8 +52,7 @@ class SecurityManagerMigrationTest {
         val context: Context = ApplicationProvider.getApplicationContext()
         val sm: SecurityManager = SecurityManager(context, fakeDataStore, fakePrefs)
 
-        delay(100)
-
+        // La migración corre como parte de pinHasBeenSet.first() — lazy y síncrono
         val pinSet: Boolean = sm.pinHasBeenSet.first()
         assertTrue("Con PIN legacy, pinHasBeenSet debe migrar a true",
             pinSet)
@@ -73,10 +69,10 @@ class SecurityManagerMigrationTest {
             edit().putString("user_pin", "183729").apply()
         }
         val context: Context = ApplicationProvider.getApplicationContext()
-        @Suppress("UNUSED_VARIABLE")
         val sm: SecurityManager = SecurityManager(context, fakeDataStore, fakePrefs)
 
-        delay(100)
+        // Leer pinHasBeenSet dispara la migración lazy
+        sm.pinHasBeenSet.first()
 
         assertTrue("PIN aleatorio debe ser válido",
             SecurityManager.isValidPin("183729"))

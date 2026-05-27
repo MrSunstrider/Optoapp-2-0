@@ -1,5 +1,6 @@
 package com.example.optoapp.data
 
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -54,12 +55,11 @@ class SecurityManagerTest {
     }
 
     @Test
-    fun migratePinHasBeenSet_no_longer_excludes_123456() {
-        // migratePinHasBeenSet() was simplified: the "123456" special case was removed.
-        // Now ANY non-empty stored PIN triggers pinHasBeenSet = true.
-        // This test validates the postcondition: isValidPin behavior is unchanged,
-        // and "123456" is treated identically to any other stored PIN for migration.
-        assertFalse("\"123456\" sigue siendo un PIN débil en isValidPin", SecurityManager.isValidPin("123456"))
-        assertTrue("PIN válido sigue siendo aceptado", SecurityManager.isValidPin("183729"))
+    fun migratePinHasBeenSet_excludes_default_pin() {
+        // "123456" es DEFAULT_PIN — asignado en fresh install, no cuenta como PIN del usuario.
+        // La migración NO debe setear pinHasBeenSet para "123456".
+        assertFalse("\"123456\" sigue siendo PIN débil en isValidPin", SecurityManager.isValidPin("123456"))
+        assertEquals("DEFAULT_PIN debe ser 123456", "123456", SecurityManager.DEFAULT_PIN)
+        assertTrue("PIN personalizado sigue siendo aceptado", SecurityManager.isValidPin("183729"))
     }
 }
