@@ -44,9 +44,9 @@ Chain strategy: stacked-to-main
 
 ## Phase 3: Supabase Instrumented Tests
 
-- [ ] 3.1 Write `optoapp/src/androidTest/java/com/example/optoapp/data/SupabaseAuthTest.kt` — register unique user, login existing/wrong password, session persists; uses `BuildConfig` credentials and `@After` cleanup via Admin API
-- [ ] 3.2 Write `optoapp/src/androidTest/java/com/example/optoapp/data/SyncFlowTest.kt` — insert patient/evaluation into Room with `syncStatus=PENDING`, trigger sync coordinator, verify rows appear in Supabase `pacientes`/`historial` within 30s
-- [ ] 3.3 Write `optoapp/src/androidTest/java/com/example/optoapp/data/OfflineSyncTest.kt` — network failure keeps data in Room with `PENDING` status; queue resumes and syncs on reconnect
+- [x] 3.1 Write `optoapp/src/androidTest/java/com/example/optoapp/data/SupabaseAuthTest.kt` — register unique user, login existing/wrong password, session persists; uses `BuildConfig` credentials and `@After` cleanup via Admin API
+- [x] 3.2 Write `optoapp/src/androidTest/java/com/example/optoapp/data/SyncFlowTest.kt` — insert patient/evaluation into Room with `syncStatus=PENDING`, trigger sync coordinator, verify rows appear in Supabase `pacientes`/`historial` within 30s
+- [x] 3.3 Write `optoapp/src/androidTest/java/com/example/optoapp/data/OfflineSyncTest.kt` — network failure keeps data in Room with `PENDING` status; queue resumes and syncs on reconnect
 
 ## Phase 4: CI Pipeline
 
