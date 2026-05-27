@@ -7,9 +7,11 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.optoapp.testing.TestTags
 import com.example.optoapp.ui.components.DropdownField
 import com.example.optoapp.ui.components.OptoTextField
 import com.example.optoapp.util.DateUtils
@@ -32,7 +34,7 @@ fun CierreSection(
     Spacer(modifier = Modifier.height(12.dp))
     Button(
         onClick = onSave,
-        modifier = Modifier.fillMaxWidth().height(56.dp),
+        modifier = Modifier.fillMaxWidth().height(56.dp).testTag(TestTags.EVALUACION_GUARDAR_BTN),
         shape = RoundedCornerShape(12.dp)
     ) {
         Icon(Icons.Default.Check, null)

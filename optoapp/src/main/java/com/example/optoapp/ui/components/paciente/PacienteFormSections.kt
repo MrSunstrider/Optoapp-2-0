@@ -5,8 +5,9 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.unit.dp
+import com.example.optoapp.testing.TestTags
 import com.example.optoapp.util.DateUtils
 import java.time.LocalDate
 
@@ -76,21 +77,21 @@ fun PacienteFormSections(
         value = nombreCompleto,
         onValueChange = onNombreCompletoChange,
         label = { Text("Nombre Completo *") },
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth().testTag(TestTags.PACIENTE_NOMBRE_FIELD)
     )
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         OutlinedTextField(
             value = edad,
             onValueChange = { if (it.all { char -> char.isDigit() }) onEdadChange(it) },
             label = { Text("Edad *") },
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.weight(1f).testTag(TestTags.PACIENTE_EDAD_FIELD),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
         )
         OutlinedTextField(
             value = telefono,
             onValueChange = onTelefonoChange,
             label = { Text("Teléfono *") },
-            modifier = Modifier.weight(2f),
+            modifier = Modifier.weight(2f).testTag(TestTags.PACIENTE_TELEFONO_FIELD),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone)
         )
     }
@@ -139,14 +140,14 @@ fun PacienteFormSections(
         value = email,
         onValueChange = onEmailChange,
         label = { Text("Correo Electrónico") },
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().testTag(TestTags.PACIENTE_EMAIL_FIELD),
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
     )
     OutlinedTextField(
         value = direccion,
         onValueChange = onDireccionChange,
         label = { Text("Dirección") },
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth().testTag(TestTags.PACIENTE_DIRECCION_FIELD)
     )
     OutlinedTextField(
         value = distrito,

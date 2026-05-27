@@ -11,11 +11,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.example.optoapp.testing.TestTags
 import com.example.optoapp.ui.components.OptoTextField
 import com.example.optoapp.ui.components.dispensacion.LenteForm
 import com.example.optoapp.viewmodel.DispensacionViewModel
@@ -65,6 +67,7 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
         }
     }
     Scaffold(
+        modifier = Modifier.testTag(TestTags.DISPENSACION_SCREEN_ROOT),
         containerColor = MaterialTheme.colorScheme.surface,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
@@ -104,7 +107,7 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
                     value = uiState.ot,
                     onValueChange = { viewModel.updateUiState { s -> s.copy(ot = it) } },
                     label = "N° OT (OT-AAAA-####)",
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f).testTag(TestTags.DISPENSACION_OT_FIELD)
                 )
                 TextButton(onClick = { viewModel.suggestOt() }) {
                     Text("Sugerir OT", fontSize = 13.sp)
@@ -132,7 +135,7 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
 
             OutlinedButton(
                 onClick = { viewModel.addItem() },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth().testTag(TestTags.DISPENSACION_AGREGAR_ITEM_BTN)
             ) {
                 Icon(Icons.Default.Add, contentDescription = null)
                 Spacer(Modifier.width(8.dp))
@@ -148,7 +151,7 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
                 onRemovePago = { pago -> viewModel.removePagoLocal(pago) }
             )
 
-            Button(onClick = { saveAction() }, modifier = Modifier.fillMaxWidth()) {
+            Button(onClick = { saveAction() }, modifier = Modifier.fillMaxWidth().testTag(TestTags.DISPENSACION_GUARDAR_BTN)) {
                 Text(if (dispensacionId == null) "Confirmar Orden" else "Actualizar Orden")
             }
             if (!uiState.error.isNullOrBlank()) {

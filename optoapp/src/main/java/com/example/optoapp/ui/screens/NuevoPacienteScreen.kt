@@ -10,10 +10,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import android.widget.Toast
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.optoapp.data.Paciente
+import com.example.optoapp.testing.TestTags
 import com.example.optoapp.viewmodel.PacienteViewModel
 import com.example.optoapp.viewmodel.SubscriptionViewModel
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -131,6 +133,7 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
     }
 
     Scaffold(
+        modifier = Modifier.testTag(TestTags.PACIENTE_SCREEN_ROOT),
         containerColor = MaterialTheme.colorScheme.surface,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
@@ -257,7 +260,7 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
                         }
                     },
                     enabled = !saving,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f).testTag(TestTags.PACIENTE_GUARDAR_BTN)
                 ) {
                     Text(if (saving) "Guardando…" else "Guardar")
                 }

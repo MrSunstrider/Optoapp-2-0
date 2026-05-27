@@ -23,6 +23,7 @@ import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -33,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.example.optoapp.testing.TestTags
 import com.example.optoapp.viewmodel.AuthState
 import com.example.optoapp.viewmodel.AuthViewModel
 
@@ -78,6 +80,7 @@ fun LoginScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .testTag(TestTags.LOGIN_SCREEN_ROOT)
             .background(
                 Brush.verticalGradient(
                     colors = listOf(
@@ -168,7 +171,7 @@ fun LoginScreen(
                             onNext = { focusManager.moveFocus(FocusDirection.Down) }
                         ),
                         singleLine = true,
-                        modifier   = Modifier.fillMaxWidth(),
+                        modifier   = Modifier.fillMaxWidth().testTag(TestTags.LOGIN_EMAIL_FIELD),
                         shape = RoundedCornerShape(12.dp)
                     )
 
@@ -204,7 +207,7 @@ fun LoginScreen(
                             }
                         ),
                         singleLine = true,
-                        modifier   = Modifier.fillMaxWidth(),
+                        modifier   = Modifier.fillMaxWidth().testTag(TestTags.LOGIN_PASSWORD_FIELD),
                         shape = RoundedCornerShape(12.dp)
                     )
 
@@ -217,7 +220,8 @@ fun LoginScreen(
                         if (authState is AuthState.Error) {
                             Surface(
                                 color = MaterialTheme.colorScheme.error.copy(alpha = 0.12f),
-                                shape = RoundedCornerShape(8.dp)
+                                shape = RoundedCornerShape(8.dp),
+                                modifier = Modifier.testTag(TestTags.LOGIN_ERROR_MESSAGE)
                             ) {
                                 Text(
                                     text = (authState as AuthState.Error).message,
@@ -240,7 +244,8 @@ fun LoginScreen(
                                 && authState !is AuthState.Loading,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(52.dp),
+                            .height(52.dp)
+                            .testTag(TestTags.LOGIN_INGRESAR_BTN),
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         if (authState is AuthState.Loading) {

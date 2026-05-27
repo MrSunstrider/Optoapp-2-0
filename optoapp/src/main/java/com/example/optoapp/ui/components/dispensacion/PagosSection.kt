@@ -9,12 +9,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.optoapp.data.FinanzasRemoteDefaults
 import com.example.optoapp.data.Pago
+import com.example.optoapp.testing.TestTags
 import com.example.optoapp.ui.components.AbonoDialog
 import com.example.optoapp.ui.components.DropdownField
 import com.example.optoapp.ui.components.OptoTextField
@@ -38,7 +40,8 @@ fun PagosSection(
                 value = uiState.montoTotal,
                 onValueChange = { onUpdate(uiState.copy(montoTotal = it)) },
                 label = "Monto Total",
-                keyboardType = KeyboardType.Decimal
+                keyboardType = KeyboardType.Decimal,
+                modifier = Modifier.testTag(TestTags.DISPENSACION_MONTO_TOTAL)
             )
 
             HorizontalDivider()
