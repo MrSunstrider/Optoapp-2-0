@@ -82,13 +82,14 @@ fun OptoAppNavigation(authViewModel: AuthViewModel, supabaseClient: SupabaseClie
     val pinHasBeenSet by authViewModel.pinHasBeenSet.collectAsState(initial = null)
     val isPinRequired by authViewModel.isPinRequired.collectAsState(initial = null)
 
-    // Update check: vive fuera del NavHost para que sobreviva a la navegación.
-    // Si estuviera dentro de composable("loading"), el estado se destruía al navegar
-    // y el diálogo nunca aparecía (race condition con el check de auth local).
+    // Update check: corre SOLO después de que el usuario esté autenticado.
+    // isLoggedIn cambia de null/true y el LaunchedEffect se re-dispara.
     var updateInfo by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<UpdateChecker.UpdateInfo?>(null) }
-    LaunchedEffect(Unit) {
-        withContext(kotlinx.coroutines.Dispatchers.IO) {
-            updateInfo = UpdateChecker.check(supabaseClient)
+    LaunchedEffect(isLoggedIn) {
+        if (isLoggedIn == true) {
+            withContext(kotlinx.coroutines.Dispatchers.IO) {
+                updateInfo = UpdateChecker.check(supabaseClient)
+            }
         }
     }
 
