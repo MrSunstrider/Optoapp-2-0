@@ -6,9 +6,9 @@
 # 2. android-test — runs ONLY on push to main/version-saas (emulator is slow)
 #
 # Required GitHub Secrets:
-#   SUPABASE_TEST_URL        — Test Supabase project URL
-#   SUPABASE_TEST_ANON_KEY   — Test Supabase anonymous key
-#   SUPABASE_TEST_SERVICE_KEY — Optional. Service-role key for test data cleanup
+#   SUPABASE_TEST_URL        — Test Supabase project URL (also injected as supabase.url for production modules)
+#   SUPABASE_TEST_ANON_KEY   — Test Supabase anonymous key (also injected as supabase.anon.key)
+#   SUPABASE_TEST_SERVICE_KEY — Service-role key for test data cleanup
 #
 # See openspec/changes/android-e2e-tests/ for the full design and specs.
 
@@ -91,8 +91,12 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Configure Supabase test credentials
+      - name: Configure Supabase credentials
         run: |
+          # Production modules use supabase.url / supabase.anon.key — point them to test project
+          echo "supabase.url=${{ secrets.SUPABASE_TEST_URL }}" >> local.properties
+          echo "supabase.anon.key=${{ secrets.SUPABASE_TEST_ANON_KEY }}" >> local.properties
+          # Test modules use supabase.test.*
           echo "supabase.test.url=${{ secrets.SUPABASE_TEST_URL }}" >> local.properties
           echo "supabase.test.anon.key=${{ secrets.SUPABASE_TEST_ANON_KEY }}" >> local.properties
           echo "supabase.test.service.key=${{ secrets.SUPABASE_TEST_SERVICE_KEY }}" >> local.properties

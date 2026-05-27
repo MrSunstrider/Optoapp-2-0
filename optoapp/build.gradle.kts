@@ -35,7 +35,7 @@ android {
         
         multiDexEnabled = true
 
-        testInstrumentationRunner = "dagger.hilt.android.testing.HiltTestRunner"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true
         }
@@ -166,8 +166,8 @@ dependencies {
     androidTestImplementation(libs.espresso.idling.resource)
     androidTestImplementation(libs.androidx.test.rules)
 
-    // Hilt testing (for HiltTestRunner + @HiltAndroidTest)
-    androidTestImplementation("com.google.dagger:hilt-android-testing:2.59.2")
+    // Hilt testing (for future @HiltAndroidTest if HiltTestRunner is resolved)
+    // androidTestImplementation(libs.hilt.android.testing)
 }
 
 tasks.withType<KotlinCompile>().configureEach {
