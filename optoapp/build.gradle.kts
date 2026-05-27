@@ -40,6 +40,9 @@ android {
             useSupportLibrary = true
         }
 
+        val supabaseTestUrl = escapeForBuildConfigField(localProperties.getProperty("supabase.test.url", ""))
+        val supabaseTestAnonKey = escapeForBuildConfigField(localProperties.getProperty("supabase.test.anon.key", ""))
+
         val supabaseUrl = escapeForBuildConfigField(localProperties.getProperty("supabase.url", ""))
         val supabaseAnonKey = escapeForBuildConfigField(localProperties.getProperty("supabase.anon.key", ""))
         val supabaseRedirectScheme = escapeForBuildConfigField(
@@ -49,6 +52,8 @@ android {
             localProperties.getProperty("supabase.redirect.host", "auth")
         )
         val forceProDev = localProperties.getProperty("optoapp.dev.force_pro", "false").equals("true", ignoreCase = true)
+        buildConfigField("String", "SUPABASE_TEST_URL", "\"$supabaseTestUrl\"")
+        buildConfigField("String", "SUPABASE_TEST_ANON_KEY", "\"$supabaseTestAnonKey\"")
         buildConfigField("String", "SUPABASE_URL", "\"$supabaseUrl\"")
         buildConfigField("String", "SUPABASE_ANON_KEY", "\"$supabaseAnonKey\"")
         buildConfigField("String", "SUPABASE_REDIRECT_SCHEME", "\"$supabaseRedirectScheme\"")
