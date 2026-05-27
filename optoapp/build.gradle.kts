@@ -168,7 +168,6 @@ dependencies {
 
     // Hilt testing (for HiltTestRunner + @HiltAndroidTest)
     androidTestImplementation("com.google.dagger:hilt-android-testing:2.59.2")
-    kspAndroidTest("com.google.dagger:hilt-compiler:2.59.2")
 }
 
 tasks.withType<KotlinCompile>().configureEach {
