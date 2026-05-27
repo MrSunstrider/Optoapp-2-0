@@ -9,12 +9,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.optoapp.data.SecurityManager
+import com.example.optoapp.testing.TestTags
 import com.example.optoapp.viewmodel.AuthViewModel
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import kotlinx.coroutines.launch
@@ -29,6 +31,7 @@ fun PinScreen(navController: NavController, viewModel: AuthViewModel = hiltViewM
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .testTag(TestTags.PIN_SCREEN_ROOT)
             .background(
                 Brush.verticalGradient(
                     colors = listOf(
@@ -83,7 +86,8 @@ fun PinScreen(navController: NavController, viewModel: AuthViewModel = hiltViewM
             // ─── PIN Dots ────────────────────────────────────────────────────
             Row(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.testTag(TestTags.PIN_INPUT_FIELD)
             ) {
                 repeat(SecurityManager.PIN_LENGTH) { index ->
                     val filled = index < pinInput.length
@@ -103,7 +107,8 @@ fun PinScreen(navController: NavController, viewModel: AuthViewModel = hiltViewM
             if (errorMessage != null) {
                 Surface(
                     color = MaterialTheme.colorScheme.error.copy(alpha = 0.12f),
-                    shape = RoundedCornerShape(8.dp)
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.testTag(TestTags.PIN_ERROR_MESSAGE)
                 ) {
                     Text(
                         text = errorMessage!!,
@@ -182,7 +187,8 @@ fun PinScreen(navController: NavController, viewModel: AuthViewModel = hiltViewM
                                     },
                                     modifier = Modifier
                                         .weight(1f)
-                                        .height(64.dp),
+                                        .height(64.dp)
+                                        .then(if (isOk) Modifier.testTag(TestTags.PIN_CONFIRMAR_BTN) else Modifier),
                                     shape = RoundedCornerShape(16.dp),
                                     colors = ButtonDefaults.buttonColors(
                                         containerColor = when {

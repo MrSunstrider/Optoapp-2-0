@@ -12,11 +12,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.example.optoapp.testing.TestTags
 import com.example.optoapp.ui.components.OSDIDialog
 import com.example.optoapp.ui.components.evaluacion.AnamnesisSection
 import com.example.optoapp.ui.components.evaluacion.CierreSection
@@ -168,6 +170,7 @@ fun NuevaEvaluacionScreen(
     }
 
     Scaffold(
+        modifier = Modifier.testTag(TestTags.EVALUACION_SCREEN_ROOT),
         containerColor = MaterialTheme.colorScheme.surface,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
@@ -180,7 +183,7 @@ fun NuevaEvaluacionScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { saveAction() }) {
+                    IconButton(onClick = { saveAction() }, modifier = Modifier.testTag(TestTags.EVALUACION_GUARDAR_BTN)) {
                         Icon(Icons.Default.Check, contentDescription = "Guardar")
                     }
                 },

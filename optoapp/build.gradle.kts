@@ -35,10 +35,14 @@ android {
         
         multiDexEnabled = true
 
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner = "dagger.hilt.android.testing.HiltTestRunner"
         vectorDrawables {
             useSupportLibrary = true
         }
+
+        val supabaseTestUrl = escapeForBuildConfigField(localProperties.getProperty("supabase.test.url", ""))
+        val supabaseTestAnonKey = escapeForBuildConfigField(localProperties.getProperty("supabase.test.anon.key", ""))
+        val supabaseTestServiceKey = escapeForBuildConfigField(localProperties.getProperty("supabase.test.service.key", ""))
 
         val supabaseUrl = escapeForBuildConfigField(localProperties.getProperty("supabase.url", ""))
         val supabaseAnonKey = escapeForBuildConfigField(localProperties.getProperty("supabase.anon.key", ""))
@@ -49,6 +53,9 @@ android {
             localProperties.getProperty("supabase.redirect.host", "auth")
         )
         val forceProDev = localProperties.getProperty("optoapp.dev.force_pro", "false").equals("true", ignoreCase = true)
+        buildConfigField("String", "SUPABASE_TEST_URL", "\"$supabaseTestUrl\"")
+        buildConfigField("String", "SUPABASE_TEST_ANON_KEY", "\"$supabaseTestAnonKey\"")
+        buildConfigField("String", "SUPABASE_TEST_SERVICE_KEY", "\"$supabaseTestServiceKey\"")
         buildConfigField("String", "SUPABASE_URL", "\"$supabaseUrl\"")
         buildConfigField("String", "SUPABASE_ANON_KEY", "\"$supabaseAnonKey\"")
         buildConfigField("String", "SUPABASE_REDIRECT_SCHEME", "\"$supabaseRedirectScheme\"")
@@ -154,6 +161,13 @@ dependencies {
     androidTestImplementation(libs.kotlinx.coroutines.test)
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.core)
+
+    // E2E test infrastructure
+    androidTestImplementation(libs.espresso.idling.resource)
+    androidTestImplementation(libs.androidx.test.rules)
+
+    // Hilt testing (for @UninstallModules in future Compose UI test phases)
+    androidTestImplementation(libs.hilt.android.testing)
 }
 
 tasks.withType<KotlinCompile>().configureEach {
