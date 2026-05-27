@@ -1,5 +1,9 @@
 name: build-apk
 
+env:
+  # Opt into Node.js 24 before GitHub forces it on June 2nd, 2026
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 on:
   workflow_dispatch:
   push:

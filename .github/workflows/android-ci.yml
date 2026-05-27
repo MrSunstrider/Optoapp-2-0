@@ -14,6 +14,11 @@
 
 name: Android CI
 
+env:
+  # Opt into Node.js 24 before GitHub forces it on June 2nd, 2026
+  # https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 on:
   workflow_dispatch:
   push:
