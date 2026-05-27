@@ -166,8 +166,9 @@ dependencies {
     androidTestImplementation(libs.espresso.idling.resource)
     androidTestImplementation(libs.androidx.test.rules)
 
-    // Hilt testing (for @UninstallModules in future Compose UI test phases)
-    androidTestImplementation(libs.hilt.android.testing)
+    // Hilt testing (for HiltTestRunner + @HiltAndroidTest)
+    androidTestImplementation("com.google.dagger:hilt-android-testing:2.59.2")
+    kspAndroidTest("com.google.dagger:hilt-compiler:2.59.2")
 }
 
 tasks.withType<KotlinCompile>().configureEach {
