@@ -114,7 +114,7 @@ jobs:
           target: google_apis
           arch: x86_64
           profile: pixel_6
-          boot-timeout: 600
+          emulator-boot-timeout: 600
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none -camera-front none -memory 2048 -cores 2
           script: ./gradlew :optoapp:connectedDebugAndroidTest --stacktrace --scan
