@@ -5,6 +5,7 @@ import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.EvaluacionClinica
 import com.example.optoapp.data.Paciente
 import com.example.optoapp.data.Pago
+import com.example.optoapp.data.dispensacion.ServicioExtra
 import java.time.LocalDate
 import java.util.UUID
 
@@ -118,6 +119,32 @@ object TestDataFactory {
         dispensacionId = dispensacionId,
         tipoLente = tipoLente,
         materialLente = materialLente,
+        opticaId = opticaId
+    )
+
+    // ── Servicio Extra ────────────────────────────────────────────────────────
+
+    fun createTestServicioExtra(
+        id: String = generateId(),
+        ot: String = "OT-TEST-${timestampSuffix()}",
+        descripcion: String = "Servicio adicional test",
+        montoTotal: Double = 50.0,
+        aCuenta: Double = 25.0,
+        estado: String = "Pendiente",
+        fecha: LocalDate = LocalDate.now(),
+        pacienteId: String? = null,
+        metodoPago: String = "Efectivo",
+        opticaId: String = "test-optica"
+    ): ServicioExtra = ServicioExtra(
+        id = id,
+        ot = ot,
+        descripcion = descripcion,
+        montoTotal = montoTotal,
+        aCuenta = aCuenta,
+        estado = estado,
+        fecha = fecha,
+        pacienteId = pacienteId,
+        metodoPago = metodoPago,
         opticaId = opticaId
     )
 
