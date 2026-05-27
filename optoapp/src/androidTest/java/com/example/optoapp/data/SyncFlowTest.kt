@@ -132,20 +132,22 @@ class SyncFlowTest {
     }
 
     @After
-    fun tearDown() = runBlocking {
-        val admin = adminClient ?: return@runBlocking
-        try {
-            // Clean up test data via service_role (bypasses RLS).
-            admin.postgrest["pacientes"].delete { filter { eq("optica_id", testOpticaId) } }
-            admin.postgrest["historial"].delete { filter { eq("optica_id", testOpticaId) } }
-            admin.postgrest["dispensaciones"].delete { filter { eq("optica_id", testOpticaId) } }
-            admin.postgrest["usuario_optica"].delete { filter { eq("optica_id", testOpticaId) } }
-            admin.postgrest["opticas"].delete { filter { eq("id", testOpticaId) } }
-            authUserId?.let { uid ->
-                runCatching { admin.auth.admin.deleteUser(uid) }
+    fun tearDown() {
+        runBlocking {
+            val admin = adminClient ?: return@runBlocking
+            try {
+                // Clean up test data via service_role (bypasses RLS).
+                admin.postgrest["pacientes"].delete { filter { eq("optica_id", testOpticaId) } }
+                admin.postgrest["historial"].delete { filter { eq("optica_id", testOpticaId) } }
+                admin.postgrest["dispensaciones"].delete { filter { eq("optica_id", testOpticaId) } }
+                admin.postgrest["usuario_optica"].delete { filter { eq("optica_id", testOpticaId) } }
+                admin.postgrest["opticas"].delete { filter { eq("id", testOpticaId) } }
+                authUserId?.let { uid ->
+                    runCatching { admin.auth.admin.deleteUser(uid) }
+                }
+            } catch (_: Exception) {
+                // Cleanup failure is non-fatal.
             }
-        } catch (_: Exception) {
-            // Cleanup failure is non-fatal.
         }
     }
 

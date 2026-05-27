@@ -65,26 +65,26 @@ class SupabaseAuthTest {
     }
 
     @After
-    fun tearDown() = runBlocking {
-        // Attempt to clean up the test user via the Admin API.
-        // This requires SUPABASE_TEST_SERVICE_KEY to be set in local.properties.
-        val userId = testUserId ?: return@runBlocking
-        val serviceKey = BuildConfig.SUPABASE_TEST_SERVICE_KEY
-        if (serviceKey.isNotBlank()) {
-            try {
-                val adminClient = createSupabaseClient(
-                    supabaseUrl = BuildConfig.SUPABASE_TEST_URL,
-                    supabaseKey = serviceKey
-                ) {
-                    install(Auth)
+    fun tearDown() {
+        runBlocking {
+            // Attempt to clean up the test user via the Admin API.
+            val userId = testUserId ?: return@runBlocking
+            val serviceKey = BuildConfig.SUPABASE_TEST_SERVICE_KEY
+            if (serviceKey.isNotBlank()) {
+                try {
+                    val adminClient = createSupabaseClient(
+                        supabaseUrl = BuildConfig.SUPABASE_TEST_URL,
+                        supabaseKey = serviceKey
+                    ) {
+                        install(Auth)
+                    }
+                    runCatching { adminClient.auth.admin.deleteUser(userId) }
+                } catch (_: Exception) {
+                    // Cleanup failure is non-fatal.
                 }
-                // Attempt admin user deletion (may fail if service key is wrong)
-                runCatching { adminClient.auth.admin.deleteUser(userId) }
-            } catch (_: Exception) {
-                // Cleanup failure is non-fatal — the test already ran.
             }
+            supabase = null
         }
-        supabase = null
     }
 
     @Test

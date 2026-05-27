@@ -64,6 +64,7 @@ jobs:
   # NOTE: Does NOT block PR merges — skipped on pull_request
   # ────────────────────────────────────────────────────────
   android-test:
+    needs: unit-tests
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 30
