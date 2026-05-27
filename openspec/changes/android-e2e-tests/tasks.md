@@ -28,7 +28,7 @@ Chain strategy: stacked-to-main
 ## Phase 1: Test Infrastructure
 
 - [x] 1.1 Create `optoapp/src/main/java/com/example/optoapp/testing/TestTags.kt` with constants for Login, PIN, Paciente, Evaluación, Dispensación, and Navigation screens
-- [ ] 1.2 Add `@TestTag` annotations to production composables: `LoginScreen`, `NuevoPacienteScreen`, `NuevaEvaluacionScreen`, `NuevaDispensacionScreen`, and navigation bars
+- [x] 1.2 Add `@TestTag` annotations to production composables: `LoginScreen`, `NuevoPacienteScreen`, `NuevaEvaluacionScreen`, `NuevaDispensacionScreen`, and navigation bars
 - [x] 1.3 Create `optoapp/src/androidTest/java/com/example/optoapp/factories/TestDataFactory.kt` with inline factories for `Paciente`, `EvaluacionClinica`, `DispensacionOptica`
 - [x] 1.4 Create `optoapp/src/androidTest/java/com/example/optoapp/rules/TestDatabaseRule.kt` — Room in-memory DB with `allowMainThreadQueries()`, auto-create in `@Before`, close in `@After`
 - [x] 1.5 Create fakes in `optoapp/src/androidTest/java/com/example/optoapp/fakes/`: `FakePacienteRepository`, `FakeEvaluacionRepository`, `FakeDispensacionRepository` with in-memory storage for P0 flows
@@ -36,11 +36,11 @@ Chain strategy: stacked-to-main
 
 ## Phase 2: Compose UI Flow Tests
 
-- [ ] 2.1 Write `optoapp/src/androidTest/java/com/example/optoapp/ui/LoginFlowTest.kt` — valid login→PIN navigation, wrong password error, empty fields validation using `createAndroidComposeRule<MainActivity>()`
-- [ ] 2.2 Write `optoapp/src/androidTest/java/com/example/optoapp/ui/PacienteFlowTest.kt` — create patient with all fields, required field validation, and list display
-- [ ] 2.3 Write `optoapp/src/androidTest/java/com/example/optoapp/ui/EvaluacionFlowTest.kt` — complete evaluation with auto-diagnosis, partial evaluation blocks save
-- [ ] 2.4 Write `optoapp/src/androidTest/java/com/example/optoapp/ui/DispensacionFlowTest.kt` — add items, configure OT/lens/mounture, enter payment, save; empty items blocks save
-- [ ] 2.5 Write `optoapp/src/androidTest/java/com/example/optoapp/ui/NavigationTest.kt` — bottom nav switches sections, drawer menu opens and navigates
+- [x] 2.1 Write `optoapp/src/androidTest/java/com/example/optoapp/ui/LoginFlowTest.kt` — valid login→PIN navigation, wrong password error, empty fields validation using `createAndroidComposeRule<MainActivity>()`
+- [x] 2.2 Write `optoapp/src/androidTest/java/com/example/optoapp/ui/PacienteFlowTest.kt` — create patient with all fields, required field validation, and list display
+- [x] 2.3 Write `optoapp/src/androidTest/java/com/example/optoapp/ui/EvaluacionFlowTest.kt` — complete evaluation with auto-diagnosis, partial evaluation blocks save
+- [x] 2.4 Write `optoapp/src/androidTest/java/com/example/optoapp/ui/DispensacionFlowTest.kt` — add items, configure OT/lens/mounture, enter payment, save; empty items blocks save
+- [x] 2.5 Write `optoapp/src/androidTest/java/com/example/optoapp/ui/NavigationTest.kt` — bottom nav switches sections, drawer menu opens and navigates
 
 ## Phase 3: Supabase Instrumented Tests
 
