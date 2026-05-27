@@ -35,7 +35,7 @@ android {
         
         multiDexEnabled = true
 
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner = "dagger.hilt.android.testing.HiltTestRunner"
         vectorDrawables {
             useSupportLibrary = true
         }
