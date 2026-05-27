@@ -35,8 +35,10 @@ class AuthViewModelNavTest {
     }
 
     @After
-    fun tearDown() = runBlocking {
-        context.dataStore.edit { it.clear() }
+    fun tearDown() {
+        runBlocking {
+            context.dataStore.edit { it.clear() }
+        }
     }
 
     @Test
