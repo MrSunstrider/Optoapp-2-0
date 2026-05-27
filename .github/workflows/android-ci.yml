@@ -1,3 +1,17 @@
+# Android CI
+#
+# Runs two independent test suites:
+#
+# 1. unit-tests  — runs on every push/PR to main/version-saas (touching optoapp/)
+# 2. android-test — runs ONLY on push to main/version-saas (emulator is slow)
+#
+# Required GitHub Secrets:
+#   SUPABASE_TEST_URL        — Test Supabase project URL
+#   SUPABASE_TEST_ANON_KEY   — Test Supabase anonymous key
+#   SUPABASE_TEST_SERVICE_KEY — Optional. Service-role key for test data cleanup
+#
+# See openspec/changes/android-e2e-tests/ for the full design and specs.
+
 name: Android CI
 
 on:
@@ -13,7 +27,11 @@ on:
       - "optoapp/**"
 
 jobs:
-  test:
+  # ────────────────────────────────────────────────────────
+  # Job 1: Unit tests — fast, runs on every PR
+  # Trigger: push OR pull_request to main/version-saas
+  # ────────────────────────────────────────────────────────
+  unit-tests:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -34,3 +52,67 @@ jobs:
 
       - name: Assemble debug APK
         run: ./gradlew assembleDebug --stacktrace
+
+  # ────────────────────────────────────────────────────────
+  # Job 2: Android instrumented tests (emulator)
+  # Trigger: push to main/version-saas ONLY (not on PRs)
+  # NOTE: Does NOT block PR merges — skipped on pull_request
+  # ────────────────────────────────────────────────────────
+  android-test:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      matrix:
+        api-level: [34]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Enable KVM group perms
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | \
+            sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: 17
+
+      - name: Make gradlew executable
+        run: chmod +x gradlew
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Configure Supabase test credentials
+        run: |
+          echo "supabase.test.url=${{ secrets.SUPABASE_TEST_URL }}" >> local.properties
+          echo "supabase.test.anon.key=${{ secrets.SUPABASE_TEST_ANON_KEY }}" >> local.properties
+          echo "supabase.test.service.key=${{ secrets.SUPABASE_TEST_SERVICE_KEY }}" >> local.properties
+
+      - name: Run instrumented tests
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api-level }}
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          script: ./gradlew :optoapp:connectedDebugAndroidTest
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: android-test-results-${{ matrix.api-level }}
+          path: |
+            optoapp/build/outputs/androidTest-results/
+            optoapp/build/reports/androidTests/
+
+      - name: Upload emulator logs
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: emulator-logs-${{ matrix.api-level }}
+          path: ${{ github.workspace }}/android-emulator-logcat.txt
