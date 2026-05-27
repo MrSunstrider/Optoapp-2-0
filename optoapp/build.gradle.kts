@@ -154,6 +154,13 @@ dependencies {
     androidTestImplementation(libs.kotlinx.coroutines.test)
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.core)
+
+    // E2E test infrastructure
+    androidTestImplementation(libs.espresso.idling.resource)
+    androidTestImplementation(libs.androidx.test.rules)
+
+    // Hilt testing (for @UninstallModules in future Compose UI test phases)
+    androidTestImplementation(libs.hilt.android.testing)
 }
 
 tasks.withType<KotlinCompile>().configureEach {
