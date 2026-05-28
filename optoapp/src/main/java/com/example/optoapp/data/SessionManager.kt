@@ -26,6 +26,9 @@ interface ISessionManager {
     suspend fun saveSession(opticaId: String, email: String, name: String = "", rol: String = "admin")
     suspend fun clearSession()
     suspend fun setPinRequired(required: Boolean)
+    suspend fun saveRememberedEmail(email: String)
+    suspend fun getRememberedEmail(): String
+    suspend fun clearRememberedEmail()
 }
 
 /**
@@ -53,12 +56,13 @@ class SessionManager(private val context: Context) : ISessionManager {
     companion object {
         const val LEGACY_OPTICA_ID = "mi_optica_base"
 
-        private val IS_LOGGED_IN     = booleanPreferencesKey("saas_logged_in")
-        private val USER_NAME        = stringPreferencesKey("saas_user_name")
-        private val LAST_LOGIN_TS    = longPreferencesKey("saas_last_login_ts")
-        private val IS_PIN_REQUIRED  = booleanPreferencesKey("pref_is_pin_required")
-        private val USER_TIMEZONE    = stringPreferencesKey("pref_user_timezone")
-        private val PIN_HAS_BEEN_SET = booleanPreferencesKey("pref_pin_has_been_set")
+        private val IS_LOGGED_IN        = booleanPreferencesKey("saas_logged_in")
+        private val USER_NAME           = stringPreferencesKey("saas_user_name")
+        private val LAST_LOGIN_TS       = longPreferencesKey("saas_last_login_ts")
+        private val IS_PIN_REQUIRED     = booleanPreferencesKey("pref_is_pin_required")
+        private val USER_TIMEZONE       = stringPreferencesKey("pref_user_timezone")
+        private val PIN_HAS_BEEN_SET    = booleanPreferencesKey("pref_pin_has_been_set")
+        private val REMEMBERED_EMAIL_KEY = stringPreferencesKey("pref_remembered_email")
     }
 
     // ─── Lectura reactiva ─────────────────────────────────────────────────────
@@ -133,6 +137,26 @@ class SessionManager(private val context: Context) : ISessionManager {
 
     override suspend fun setPinRequired(required: Boolean) {
         context.dataStore.edit { prefs -> prefs[IS_PIN_REQUIRED] = required }
+    }
+
+    //── Recordar Cuenta ────────────────────────────────────────────────────
+
+    /**
+     * Guarda el email para pre-cargarlo en el login si el usuario marcó
+     * "Recordar Cuenta".
+     */
+    override suspend fun saveRememberedEmail(email: String) {
+        context.dataStore.edit { prefs -> prefs[REMEMBERED_EMAIL_KEY] = email }
+    }
+
+    /** Recupera el email guardado por "Recordar Cuenta". */
+    override suspend fun getRememberedEmail(): String {
+        return context.dataStore.data.first()[REMEMBERED_EMAIL_KEY] ?: ""
+    }
+
+    /** Limpia el email recordado (cuando el usuario desmarca el checkbox). */
+    override suspend fun clearRememberedEmail() {
+        context.dataStore.edit { prefs -> prefs.remove(REMEMBERED_EMAIL_KEY) }
     }
 
     override suspend fun clearSession() {

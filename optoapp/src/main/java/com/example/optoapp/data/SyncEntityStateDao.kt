@@ -29,6 +29,9 @@ interface SyncEntityStateDao {
     @Query("SELECT * FROM sync_entity_state WHERE opticaId = :opticaId AND status = 'deleted'")
     suspend fun getPendingDeletions(opticaId: String): List<SyncEntityState>
 
+    @Query("SELECT * FROM sync_entity_state WHERE opticaId = :opticaId AND status = 'pending' ORDER BY updatedAt ASC")
+    fun getPendingForOptica(opticaId: String): Flow<List<SyncEntityState>>
+
     @Query("DELETE FROM sync_entity_state WHERE opticaId = :opticaId AND entityType = :type AND entityId = :id")
     suspend fun clearEntityState(opticaId: String, type: String, id: String)
 }

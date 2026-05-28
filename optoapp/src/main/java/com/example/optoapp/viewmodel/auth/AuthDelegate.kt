@@ -440,6 +440,20 @@ open class AuthDelegate @Inject constructor(
         return membershipRepository.createOpticaForCurrentUser(nombreOptica)
     }
 
+    //── Recordar Cuenta ────────────────────────────────────────────────────
+
+    suspend fun saveRememberedEmail(email: String) {
+        sessionManager.saveRememberedEmail(email)
+    }
+
+    suspend fun getRememberedEmail(): String = sessionManager.getRememberedEmail()
+
+    suspend fun clearRememberedEmail() {
+        sessionManager.clearRememberedEmail()
+    }
+
+    //── Resolver duplicados (admin/gerente) ────────────────────────────────
+
     suspend fun resolveDuplicateHistorias(): String {
         val rol = sessionManager.opticaRol.first().trim().lowercase()
         if (rol !in setOf("admin", "gerente")) {

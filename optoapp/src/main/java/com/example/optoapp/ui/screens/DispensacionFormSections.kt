@@ -3,6 +3,8 @@ package com.example.optoapp.ui.screens
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.ArrowDropUp
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Search
@@ -66,10 +68,8 @@ fun MonturaInfoSection(
                         }
                 }
 
-                ExposedDropdownMenuBox(
-                    expanded = expanded && filteredMonturas.isNotEmpty(),
-                    onExpandedChange = { expanded = it }
-                ) {
+                BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+                    val anchorWidth = maxWidth
                     OutlinedTextField(
                         value = monturaQuery,
                         onValueChange = {
@@ -77,17 +77,26 @@ fun MonturaInfoSection(
                             if (it.isEmpty()) {
                                 onUpdate(uiState.copy(monturaId = "", descripcionMontura = ""))
                             }
-                            expanded = true
+                            if (!expanded) expanded = true
                         },
                         label = { Text("Buscar montura por marca, modelo o SKU") },
                         placeholder = { Text("Ej: Ray-Ban, RX-1234...") },
                         leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Buscar") },
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                        modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryEditable).fillMaxWidth()
+                        trailingIcon = {
+                            IconButton(onClick = { expanded = !expanded }) {
+                                Icon(
+                                    if (expanded) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown,
+                                    contentDescription = null
+                                )
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
                     )
-                    ExposedDropdownMenu(
+                    DropdownMenu(
                         expanded = expanded && filteredMonturas.isNotEmpty(),
-                        onDismissRequest = { expanded = false }
+                        onDismissRequest = { expanded = false },
+                        modifier = Modifier.width(anchorWidth)
                     ) {
                         filteredMonturas.forEach { montura ->
                             DropdownMenuItem(

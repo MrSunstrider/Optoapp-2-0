@@ -17,6 +17,7 @@ object TestTags {
     const val LOGIN_PASSWORD_FIELD = "login_password_field"
     const val LOGIN_INGRESAR_BTN = "login_ingresar_btn"
     const val LOGIN_ERROR_MESSAGE = "login_error_message"
+    const val LOGIN_REMEMBER_ACCOUNT_CHECK = "login_remember_account_check"
     const val LOGIN_SCREEN_ROOT = "login_screen_root"
 
     // ── PIN Screen ───────────────────────────────────────────────────────────

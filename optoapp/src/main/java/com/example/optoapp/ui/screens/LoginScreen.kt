@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -49,15 +50,33 @@ fun LoginScreen(
     val needsOnboarding by viewModel.needsOnboarding.collectAsState()
     val focusManager = LocalFocusManager.current
 
-    var email    by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    var showPassword by remember { mutableStateOf(false) }
+    var email           by remember { mutableStateOf("") }
+    var password        by remember { mutableStateOf("") }
+    var showPassword    by remember { mutableStateOf(false) }
+    var rememberAccount by remember { mutableStateOf(false) }
 
     val isPinRequired by viewModel.isPinRequired.collectAsState(initial = false)
     val isLoggedIn by viewModel.isLoggedIn.collectAsState(initial = false)
 
+    // Cargar email recordado al iniciar la pantalla
+    LaunchedEffect(Unit) {
+        val saved = viewModel.getRememberedEmail()
+        if (saved.isNotBlank()) {
+            email = saved
+            rememberAccount = true
+        }
+    }
+
     LaunchedEffect(authState, pendingMemberships, isLoggedIn, needsOnboarding) {
         if (authState !is AuthState.Success) return@LaunchedEffect
+
+        // Recordar cuenta: guardar o limpiar según el checkbox
+        if (rememberAccount) {
+            viewModel.saveRememberedEmail(email)
+        } else {
+            viewModel.clearRememberedEmail()
+        }
+
         if (needsOnboarding) {
             navController.navigate("onboarding_optica") {
                 popUpTo("login") { inclusive = true }
@@ -211,6 +230,25 @@ fun LoginScreen(
                         shape = RoundedCornerShape(12.dp)
                     )
 
+                    // ─── Recordar Cuenta ───────────────────────────────────────
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag(TestTags.LOGIN_REMEMBER_ACCOUNT_CHECK)
+                    ) {
+                        Checkbox(
+                            checked = rememberAccount,
+                            onCheckedChange = { rememberAccount = it }
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "Recordar Cuenta",
+                            fontSize = 14.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
                     // ─── Error message ────────────────────────────────────────
                     AnimatedVisibility(
                         visible = authState is AuthState.Error,
@@ -274,6 +312,12 @@ fun LoginScreen(
                             .height(48.dp),
                         shape = RoundedCornerShape(12.dp)
                     ) {
+                        Icon(
+                            painter = painterResource(com.example.optoapp.R.drawable.ic_google_logo),
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             "Continuar con Google",
                             fontWeight = FontWeight.Medium
@@ -286,6 +330,12 @@ fun LoginScreen(
                         modifier = Modifier.fillMaxWidth().height(48.dp),
                         shape = RoundedCornerShape(12.dp)
                     ) {
+                        Icon(
+                            imageVector = Icons.Default.Email,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             "Crear cuenta con correo electrónico",
                             fontWeight = FontWeight.Medium

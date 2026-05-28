@@ -178,7 +178,7 @@ class OfflineSyncTest {
             evaluacionDao.getEvaluacionById(evaluacion.id))
 
         // Verify pending markers exist.
-        val allPending = syncDao.observeErrorsForOptica(testOpticaId).first()
+        val allPending = syncDao.getPendingForOptica(testOpticaId).first()
         assertTrue("Pending markers should exist in sync_entity_state",
             allPending.isNotEmpty())
     }

@@ -25,7 +25,6 @@ import com.example.optoapp.util.DateUtils
 import com.example.optoapp.viewmodel.ServiciosUiState
 import java.util.*
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ServicioForm(
     uiState: ServiciosUiState,
@@ -207,17 +206,39 @@ fun ServicioForm(
     else pacientes.filter { it.nombreCompleto.contains(pSearchQuery, ignoreCase = true) }
     val currentPacienteName = pacientes.find { it.id == uiState.pacienteId }?.nombreCompleto ?: "Ninguno"
 
-    ExposedDropdownMenuBox(expanded = pExpanded, onExpandedChange = { pExpanded = !pExpanded }) {
+    // Usamos Box + DropdownMenu en vez de ExposedDropdownMenuBox para evitar
+    // que el menú se posicione fuera de la pantalla (ocurre cuando el campo
+    // está al final de un scroll).
+    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+        val anchorWidth = maxWidth
+
         OutlinedTextField(
-            value = pSearchQuery.ifBlank { if (pExpanded) "" else currentPacienteName },
-            onValueChange = { pSearchQuery = it },
+            value = if (pExpanded) pSearchQuery else currentPacienteName,
+            onValueChange = {
+                pSearchQuery = it
+                if (!pExpanded) pExpanded = true
+            },
             label = { Text("Buscar Paciente...") },
-            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = pExpanded) },
-            modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryEditable).fillMaxWidth(),
-            colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors()
+            leadingIcon = {
+                Icon(Icons.Default.Search, contentDescription = null)
+            },
+            trailingIcon = {
+                IconButton(onClick = { pExpanded = !pExpanded }) {
+                    Icon(
+                        if (pExpanded) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown,
+                        contentDescription = null
+                    )
+                }
+            },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true
         )
-        ExposedDropdownMenu(expanded = pExpanded, onDismissRequest = { pExpanded = false }) {
+
+        DropdownMenu(
+            expanded = pExpanded,
+            onDismissRequest = { pExpanded = false },
+            modifier = Modifier.width(anchorWidth)
+        ) {
             DropdownMenuItem(text = { Text("Ninguno") }, onClick = {
                 onUpdate(uiState.copy(pacienteId = null))
                 pSearchQuery = ""

@@ -13,6 +13,7 @@ import androidx.test.filters.LargeTest
 import com.example.optoapp.testing.TestTags
 import com.example.optoapp.ui.components.dispensacion.PagosSection
 import com.example.optoapp.viewmodel.DispensacionUiState
+import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -207,9 +208,11 @@ class DispensacionFlowTest {
             )
         }
 
+        composeTestRule.waitForIdle()
+
         composeTestRule.onNodeWithTag(TestTags.DISPENSACION_OT_FIELD)
             .performTextInput("OT-2026-0001")
 
-        assert(otValue == "OT-2026-0001") { "Expected 'OT-2026-0001' but got '$otValue'" }
+        assertEquals("OT-2026-0001", otValue)
     }
 }

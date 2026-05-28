@@ -47,6 +47,9 @@ class PinDelegateTest {
         override suspend fun saveSession(opticaId: String, email: String, name: String, rol: String) {}
         override suspend fun clearSession() {}
         override suspend fun setPinRequired(required: Boolean) { _isPinRequired.value = required }
+        override suspend fun saveRememberedEmail(email: String) {}
+        override suspend fun getRememberedEmail(): String = ""
+        override suspend fun clearRememberedEmail() {}
     }
 
     // ─── pinInput management ──────────────────────────────────────────────

@@ -2,6 +2,9 @@ package com.example.optoapp.ui.components.paciente
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.ArrowDropUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -12,7 +15,6 @@ import com.example.optoapp.testing.TestTags
 import com.example.optoapp.util.DateUtils
 import java.time.LocalDate
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PacienteFormSections(
     nombreCompleto: String,
@@ -109,21 +111,27 @@ fun PacienteFormSections(
         modifier = Modifier.fillMaxWidth()
     )
 
-    ExposedDropdownMenuBox(
-        expanded = expandedSexo,
-        onExpandedChange = { expandedSexo = !expandedSexo }
-    ) {
+    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+        val anchorWidth = maxWidth
         OutlinedTextField(
             value = sexo,
             onValueChange = {},
             readOnly = true,
             label = { Text("Sexo") },
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedSexo) },
-            modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth()
+            trailingIcon = {
+                IconButton(onClick = { expandedSexo = !expandedSexo }) {
+                    Icon(
+                        if (expandedSexo) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown,
+                        contentDescription = null
+                    )
+                }
+            },
+            modifier = Modifier.fillMaxWidth()
         )
-        ExposedDropdownMenu(
+        DropdownMenu(
             expanded = expandedSexo,
-            onDismissRequest = { expandedSexo = false }
+            onDismissRequest = { expandedSexo = false },
+            modifier = Modifier.width(anchorWidth)
         ) {
             sexos.forEach { selectionOption ->
                 DropdownMenuItem(

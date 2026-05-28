@@ -188,6 +188,18 @@ class AuthViewModel @Inject constructor(
         return memberships.size > 1
     }
 
+    //── Recordar Cuenta ────────────────────────────────────────────────────────
+
+    fun saveRememberedEmail(email: String) = viewModelScope.launch {
+        authDelegate.saveRememberedEmail(email)
+    }
+
+    suspend fun getRememberedEmail(): String = authDelegate.getRememberedEmail()
+
+    fun clearRememberedEmail() = viewModelScope.launch {
+        authDelegate.clearRememberedEmail()
+    }
+
     //── Logout ─────────────────────────────────────────────────────────────────
 
     suspend fun logout() {
