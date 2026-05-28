@@ -30,8 +30,8 @@ android {
         applicationId = "com.example.optoapp"
         minSdk = 24
         targetSdk = 36
-        versionCode = 6
-        versionName = "1.1.4"
+        versionCode = 7
+        versionName = "1.1.5"
         
         multiDexEnabled = true
 
@@ -67,10 +67,15 @@ android {
 
     signingConfigs {
         create("release") {
-            storeFile = localProperties.getProperty("keystore.path")?.let { rootProject.file(it) }
-            storePassword = localProperties.getProperty("keystore.password", "")
-            keyAlias = localProperties.getProperty("key.alias", "")
-            keyPassword = localProperties.getProperty("key.password", "")
+            // CI usa env vars (KEYSTORE_PATH, etc.), local usa local.properties
+            storeFile = System.getenv("KEYSTORE_PATH")?.let { file(it) }
+                ?: localProperties.getProperty("keystore.path")?.let { rootProject.file(it) }
+            storePassword = System.getenv("KEYSTORE_PASSWORD")
+                ?: localProperties.getProperty("keystore.password", "")
+            keyAlias = System.getenv("KEY_ALIAS")
+                ?: localProperties.getProperty("key.alias", "")
+            keyPassword = System.getenv("KEY_PASSWORD")
+                ?: localProperties.getProperty("key.password", "")
         }
     }
 

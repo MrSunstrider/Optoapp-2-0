@@ -1,7 +1,6 @@
 name: build-apk
 
 env:
-  # Opt into Node.js 24 before GitHub forces it on June 2nd, 2026
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 on:
@@ -45,8 +44,19 @@ jobs:
           echo "supabase.url=${{ secrets.SUPABASE_URL }}" >> local.properties
           echo "supabase.anon.key=${{ secrets.SUPABASE_ANON_KEY }}" >> local.properties
 
-      - name: Build debug APK
-        run: chmod +x gradlew && ./gradlew :optoapp:assembleDebug --stacktrace --scan
+      - name: Decode keystore
+        if: github.event_name != 'pull_request'
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > ${{ runner.temp }}/optoapp-release.keystore
+        shell: bash
+
+      - name: Build signed release APK
+        run: chmod +x gradlew && ./gradlew :optoapp:assembleRelease --stacktrace --scan
+        env:
+          KEYSTORE_PATH: ${{ runner.temp }}/optoapp-release.keystore
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
       - name: Get version name
         id: version
@@ -75,7 +85,7 @@ jobs:
           tag_name: ${{ steps.version.outputs.tag }}
           name: "OptoApp v${{ steps.version.outputs.version }}"
           body: "Build automático del branch main."
-          files: optoapp/build/outputs/apk/debug/optoapp-debug.apk
+          files: optoapp/build/outputs/apk/release/optoapp-release.apk
 
       - name: Track release in Supabase
         if: github.event_name != 'pull_request' && steps.check_release.outputs.exists == 'false'
@@ -85,6 +95,6 @@ jobs:
             -H "Content-Type: application/json" \
             -d '{
               "version": "${{ steps.version.outputs.version }}",
-              "apk_download_url": "https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.tag }}/optoapp-debug.apk",
+              "apk_download_url": "https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.tag }}/optoapp-release.apk",
               "release_notes": "Build automático del branch main."
             }'
