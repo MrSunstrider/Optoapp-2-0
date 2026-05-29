@@ -1,14 +1,14 @@
 package com.example.optoapp.ui.components
 
-import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.ArrowDropUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 
 @Composable
 fun DropdownField(
@@ -17,38 +17,63 @@ fun DropdownField(
     options: List<String>,
     onSelected: (String) -> Unit
 ) {
-    var expanded by remember { mutableStateOf(false) }
-    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-        val anchorWidth = maxWidth
-        OutlinedTextField(
-            value = selected,
-            onValueChange = {},
-            readOnly = true,
-            label = { Text(label) },
-            trailingIcon = {
-                IconButton(onClick = { expanded = !expanded }) {
-                    Icon(
-                        if (expanded) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown,
-                        contentDescription = null
-                    )
+    var showDialog by remember { mutableStateOf(false) }
+
+    OutlinedTextField(
+        value = selected,
+        onValueChange = {},
+        readOnly = true,
+        label = { Text(label) },
+        trailingIcon = {
+            IconButton(onClick = { showDialog = true }) {
+                Icon(Icons.Default.ArrowDropDown, contentDescription = null)
+            }
+        },
+        modifier = Modifier.fillMaxWidth()
+    )
+
+    if (showDialog) {
+        AlertDialog(
+            onDismissRequest = { showDialog = false },
+            title = {
+                Text(label, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    options.forEach { opt ->
+                        val isSelected = opt == selected
+                        Surface(
+                            onClick = {
+                                onSelected(opt)
+                                showDialog = false
+                            },
+                            color = if (isSelected) MaterialTheme.colorScheme.primaryContainer
+                            else MaterialTheme.colorScheme.surface,
+                            shape = MaterialTheme.shapes.small,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                RadioButton(
+                                    selected = isSelected,
+                                    onClick = null
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                Text(
+                                    text = opt,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
+                                )
+                            }
+                        }
+                    }
                 }
             },
-            modifier = Modifier.fillMaxWidth()
-        )
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-            modifier = Modifier.width(anchorWidth)
-        ) {
-            options.forEach { opt ->
-                DropdownMenuItem(
-                    text = { Text(opt) },
-                    onClick = {
-                        onSelected(opt)
-                        expanded = false
-                    }
-                )
+            confirmButton = {
+                TextButton(onClick = { showDialog = false }) { Text("Cancelar") }
             }
-        }
+        )
     }
 }

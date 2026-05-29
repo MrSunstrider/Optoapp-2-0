@@ -93,7 +93,6 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
                 .padding(padding)
                 .padding(16.dp)
                 .navigationBarsPadding()
-                .imePadding()
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {

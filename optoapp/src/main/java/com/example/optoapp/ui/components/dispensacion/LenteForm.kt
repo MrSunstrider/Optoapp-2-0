@@ -3,8 +3,6 @@ package com.example.optoapp.ui.components.dispensacion
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.ArrowDropUp
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
@@ -24,6 +22,7 @@ import com.example.optoapp.viewmodel.DispensacionItemUi
  * Formulario para UN item (lente + montura) dentro de una dispensación.
  * Se repite por cada lente/montura que necesite el paciente.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LenteForm(
     item: DispensacionItemUi,
@@ -158,33 +157,26 @@ fun LenteForm(
                         it.sku.contains(monturaQuery, ignoreCase = true)
                     }
 
-                BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-                    val anchorWidth = maxWidth
+                ExposedDropdownMenuBox(
+                    expanded = expanded && filteredMonturas.isNotEmpty(),
+                    onExpandedChange = { expanded = it }
+                ) {
                     OutlinedTextField(
                         value = monturaQuery,
                         onValueChange = {
                             monturaQuery = it
                             if (it.isEmpty()) onUpdate(item.copy(monturaId = "", descripcionMontura = ""))
-                            if (!expanded) expanded = true
+                            expanded = true
                         },
                         label = { Text("Buscar montura") },
                         placeholder = { Text("Ej: Ray-Ban, RX-1234...") },
                         leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Buscar") },
-                        trailingIcon = {
-                            IconButton(onClick = { expanded = !expanded }) {
-                                Icon(
-                                    if (expanded) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown,
-                                    contentDescription = null
-                                )
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                        modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryEditable).fillMaxWidth()
                     )
-                    DropdownMenu(
+                    ExposedDropdownMenu(
                         expanded = expanded && filteredMonturas.isNotEmpty(),
-                        onDismissRequest = { expanded = false },
-                        modifier = Modifier.width(anchorWidth)
+                        onDismissRequest = { expanded = false }
                     ) {
                         filteredMonturas.forEach { montura ->
                             DropdownMenuItem(

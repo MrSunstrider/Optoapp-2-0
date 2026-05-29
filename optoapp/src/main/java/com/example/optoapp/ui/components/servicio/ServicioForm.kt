@@ -25,6 +25,7 @@ import com.example.optoapp.util.DateUtils
 import com.example.optoapp.viewmodel.ServiciosUiState
 import java.util.*
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ServicioForm(
     uiState: ServiciosUiState,
@@ -36,6 +37,10 @@ fun ServicioForm(
     onRemovePago: (Pago) -> Unit,
     onShowDatePicker: () -> Unit
 ) {
+    OutlinedButton(onClick = onShowDatePicker, modifier = Modifier.fillMaxWidth()) {
+        Text("Fecha: ${DateUtils.formatLocalized(uiState.fecha)}")
+    }
+
     OptoTextField(value = uiState.ot, onValueChange = { onUpdate(uiState.copy(ot = it)) }, label = "OT (Opcional)")
 
     var showMonturaDialog by remember { mutableStateOf(false) }
@@ -195,10 +200,6 @@ fun ServicioForm(
         onSelected = { onUpdate(uiState.copy(estado = it)) }
     )
 
-    OutlinedButton(onClick = onShowDatePicker, modifier = Modifier.fillMaxWidth()) {
-        Text("Fecha: ${DateUtils.formatLocalized(uiState.fecha)}")
-    }
-
     Text("Asociar a Paciente (Opcional)", fontWeight = FontWeight.Bold)
     var pExpanded by remember { mutableStateOf(false) }
     var pSearchQuery by remember { mutableStateOf("") }
@@ -206,39 +207,17 @@ fun ServicioForm(
     else pacientes.filter { it.nombreCompleto.contains(pSearchQuery, ignoreCase = true) }
     val currentPacienteName = pacientes.find { it.id == uiState.pacienteId }?.nombreCompleto ?: "Ninguno"
 
-    // Usamos Box + DropdownMenu en vez de ExposedDropdownMenuBox para evitar
-    // que el menú se posicione fuera de la pantalla (ocurre cuando el campo
-    // está al final de un scroll).
-    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-        val anchorWidth = maxWidth
-
+    ExposedDropdownMenuBox(expanded = pExpanded, onExpandedChange = { pExpanded = !pExpanded }) {
         OutlinedTextField(
-            value = if (pExpanded) pSearchQuery else currentPacienteName,
-            onValueChange = {
-                pSearchQuery = it
-                if (!pExpanded) pExpanded = true
-            },
+            value = pSearchQuery.ifBlank { if (pExpanded) "" else currentPacienteName },
+            onValueChange = { pSearchQuery = it },
             label = { Text("Buscar Paciente...") },
-            leadingIcon = {
-                Icon(Icons.Default.Search, contentDescription = null)
-            },
-            trailingIcon = {
-                IconButton(onClick = { pExpanded = !pExpanded }) {
-                    Icon(
-                        if (pExpanded) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown,
-                        contentDescription = null
-                    )
-                }
-            },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = pExpanded) },
+            modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryEditable).fillMaxWidth(),
+            colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors()
         )
-
-        DropdownMenu(
-            expanded = pExpanded,
-            onDismissRequest = { pExpanded = false },
-            modifier = Modifier.width(anchorWidth)
-        ) {
+        ExposedDropdownMenu(expanded = pExpanded, onDismissRequest = { pExpanded = false }) {
             DropdownMenuItem(text = { Text("Ninguno") }, onClick = {
                 onUpdate(uiState.copy(pacienteId = null))
                 pSearchQuery = ""

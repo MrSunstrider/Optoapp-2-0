@@ -1,13 +1,15 @@
 package com.example.optoapp.ui.components.paciente
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.ArrowDropUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.input.KeyboardType
@@ -47,7 +49,7 @@ fun PacienteFormSections(
     onShowDatePicker: () -> Unit,
     onSuggestHo: () -> Unit
 ) {
-    var expandedSexo by remember { mutableStateOf(false) }
+    var showSexoDialog by remember { mutableStateOf(false) }
     val sexos = listOf("Masculino", "Femenino")
 
     OutlinedButton(
@@ -111,38 +113,62 @@ fun PacienteFormSections(
         modifier = Modifier.fillMaxWidth()
     )
 
-    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-        val anchorWidth = maxWidth
-        OutlinedTextField(
-            value = sexo,
-            onValueChange = {},
-            readOnly = true,
-            label = { Text("Sexo") },
-            trailingIcon = {
-                IconButton(onClick = { expandedSexo = !expandedSexo }) {
-                    Icon(
-                        if (expandedSexo) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown,
-                        contentDescription = null
-                    )
+    OutlinedTextField(
+        value = sexo,
+        onValueChange = {},
+        readOnly = true,
+        label = { Text("Sexo") },
+        trailingIcon = {
+            IconButton(onClick = { showSexoDialog = true }) {
+                Icon(Icons.Default.ArrowDropDown, contentDescription = null)
+            }
+        },
+        modifier = Modifier.fillMaxWidth()
+    )
+
+    if (showSexoDialog) {
+        AlertDialog(
+            onDismissRequest = { showSexoDialog = false },
+            title = {
+                Text("Sexo", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    sexos.forEach { opt ->
+                        val isSelected = opt == sexo
+                        Surface(
+                            onClick = {
+                                onSexoChange(opt)
+                                showSexoDialog = false
+                            },
+                            color = if (isSelected) MaterialTheme.colorScheme.primaryContainer
+                            else MaterialTheme.colorScheme.surface,
+                            shape = MaterialTheme.shapes.small,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                RadioButton(
+                                    selected = isSelected,
+                                    onClick = null
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                Text(
+                                    text = opt,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
+                                )
+                            }
+                        }
+                    }
                 }
             },
-            modifier = Modifier.fillMaxWidth()
-        )
-        DropdownMenu(
-            expanded = expandedSexo,
-            onDismissRequest = { expandedSexo = false },
-            modifier = Modifier.width(anchorWidth)
-        ) {
-            sexos.forEach { selectionOption ->
-                DropdownMenuItem(
-                    text = { Text(selectionOption) },
-                    onClick = {
-                        onSexoChange(selectionOption)
-                        expandedSexo = false
-                    }
-                )
+            confirmButton = {
+                TextButton(onClick = { showSexoDialog = false }) { Text("Cancelar") }
             }
-        }
+        )
     }
 
     OutlinedTextField(

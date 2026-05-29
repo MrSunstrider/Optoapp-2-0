@@ -215,7 +215,6 @@ fun NuevaEvaluacionScreen(
                     .fillMaxSize()
                     .padding(16.dp)
                     .navigationBarsPadding()
-                    .imePadding()
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
