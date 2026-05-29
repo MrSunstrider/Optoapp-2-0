@@ -124,6 +124,9 @@ dependencies {
     implementation(libs.androidx.security.crypto)
     implementation(libs.kotlinx.serialization.json)
 
+    // MediaPipe (on-device face landmarking)
+    implementation(libs.mediapipe.tasks.vision)
+
     // Room
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)

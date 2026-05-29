@@ -25,6 +25,7 @@ billing = "7.1.1"
 coroutines = "1.9.0"
 kotlinxSerializationJson = "1.8.0"
 mockk = "1.13.14"
+mediapipe = "0.10.14"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -71,6 +72,7 @@ mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
 espresso-idling-resource = { group = "androidx.test.espresso", name = "espresso-idling-resource", version.ref = "espressoCore" }
 androidx-test-rules = { group = "androidx.test", name = "rules", version = "1.5.0" }
 hilt-android-testing = { group = "com.google.dagger", name = "hilt-android-testing", version.ref = "hilt" }
+mediapipe-tasks-vision = { group = "com.google.mediapipe", name = "tasks-vision", version.ref = "mediapipe" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
