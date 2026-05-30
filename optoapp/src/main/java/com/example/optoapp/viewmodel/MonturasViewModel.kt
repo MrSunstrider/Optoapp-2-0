@@ -36,7 +36,11 @@ data class MonturaFormState(
     val stockMinimo: String = "",
     val activo: Boolean = true,
     val tipoAro: String = "",
-    val materialMontura: String = ""
+    val materialMontura: String = "",
+    val anchoMm: String = "",
+    val puenteMm: String = "",
+    val alturaMm: String = "",
+    val imagenUri: String = ""
 )
 
 data class MonturasUiState(
@@ -93,7 +97,11 @@ class MonturasViewModel @Inject constructor(
                     stockMinimo = montura.stockMinimo.toString(),
                     activo = montura.activo,
                     tipoAro = montura.tipoAro,
-                    materialMontura = montura.materialMontura
+                    materialMontura = montura.materialMontura,
+                    anchoMm = if (montura.anchoMm == null) "" else montura.anchoMm.toString(),
+                    puenteMm = if (montura.puenteMm == null) "" else montura.puenteMm.toString(),
+                    alturaMm = if (montura.alturaMm == null) "" else montura.alturaMm.toString(),
+                    imagenUri = montura.imagenUri ?: ""
                 )
             )
         }
@@ -151,6 +159,10 @@ class MonturasViewModel @Inject constructor(
                     activo = form.activo,
                     tipoAro = form.tipoAro.trim(),
                     materialMontura = form.materialMontura.trim(),
+                    anchoMm = form.anchoMm.replace(",", ".").toDoubleOrNull(),
+                    puenteMm = form.puenteMm.replace(",", ".").toDoubleOrNull(),
+                    alturaMm = form.alturaMm.replace(",", ".").toDoubleOrNull(),
+                    imagenUri = form.imagenUri.trim().ifEmpty { null },
                     opticaId = opticaId
                 )
                 when (repository.getMonturaById(montura.id)) {
