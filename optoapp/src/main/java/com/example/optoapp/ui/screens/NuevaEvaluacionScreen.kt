@@ -1,6 +1,13 @@
 package com.example.optoapp.ui.screens
 
+import android.Manifest
 import android.content.Context
+import android.content.pm.PackageManager
+import android.net.Uri
+import androidx.core.content.ContextCompat
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.FileProvider
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -81,6 +88,38 @@ fun NuevaEvaluacionScreen(
     var showOsdiDialog by remember { mutableStateOf(false) }
     val context = androidx.compose.ui.platform.LocalContext.current
 
+    // ─── DIP measurement from camera (iris-based) ────────────────────────
+    val dipPhotoUri = remember { mutableStateOf<Uri?>(null) }
+    val dipCameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture()
+    ) { success: Boolean ->
+        if (success) {
+            dipPhotoUri.value?.let { uri ->
+                viewModel.measureDipFromPhoto(uri)
+            }
+        }
+    }
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted: Boolean ->
+        if (granted && dipPhotoUri.value != null) {
+            dipCameraLauncher.launch(dipPhotoUri.value)
+        } else if (!granted) {
+            viewModel.updateUiState { it.copy(error = "Permiso de cámara requerido para medir DIP") }
+        }
+    }
+    val onMeasureDipClick: () -> Unit = {
+        val photoFile = java.io.File(context.cacheDir, "dip_photos/dip_${System.currentTimeMillis()}.jpg")
+        photoFile.parentFile?.mkdirs()
+        val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", photoFile)
+        dipPhotoUri.value = uri
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+            dipCameraLauncher.launch(uri)
+        } else {
+            cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+        }
+    }
+
     val datePickerState = rememberDatePickerState(
         initialSelectedDateMillis = DateUtils.localDateToPickerMillis(uiState.fecha),
         yearRange = 1920..2080
@@ -160,6 +199,20 @@ fun NuevaEvaluacionScreen(
         )
     }
 
+    // AlertDialog para errores visibles
+    if (uiState.error != null) {
+        AlertDialog(
+            onDismissRequest = { viewModel.updateUiState { it.copy(error = null) } },
+            title = { Text("Aviso") },
+            text = { Text(uiState.error ?: "") },
+            confirmButton = {
+                TextButton(onClick = { viewModel.updateUiState { it.copy(error = null) } }) {
+                    Text("OK")
+                }
+            }
+        )
+    }
+
     val saveAction = {
         val sharedPreferences = context.getSharedPreferences("optoapp_prefs", Context.MODE_PRIVATE)
         val programarRecordatorioGlobal = sharedPreferences.getBoolean("pref_enable_reminders", true)
@@ -229,10 +282,11 @@ fun NuevaEvaluacionScreen(
                         onUpdate = { s -> viewModel.updateUiState { s } },
                         onShowOsdiDialog = { showOsdiDialog = true }
                     )
-                    2 -> RefraccionSection(
+                     2 -> RefraccionSection(
                         uiState = uiState,
                         onUpdate = { s -> viewModel.updateUiState { s } },
-                        viewModel = viewModel
+                        viewModel = viewModel,
+                        onMeasureDipClick = onMeasureDipClick
                     )
                     3 -> ContactologiaSection(
                         uiState = uiState,

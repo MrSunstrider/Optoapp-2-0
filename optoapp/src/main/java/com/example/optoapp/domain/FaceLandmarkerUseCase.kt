@@ -24,7 +24,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class FaceLandmarkerUseCase @Inject constructor(
-    private val faceLandmarker: FaceLandmarker
+    private val faceLandmarker: FaceLandmarker?
 ) {
 
     /**
@@ -49,8 +49,10 @@ class FaceLandmarkerUseCase @Inject constructor(
      * @throws LowConfidenceException if the detection confidence is below 0.8.
      */
     suspend fun detect(bitmap: Bitmap): Result = withContext(Dispatchers.IO) {
+        val landmarker = faceLandmarker
+            ?: throw MediaPipeNotAvailableException("MediaPipe no disponible en este dispositivo")
         val mpImage = BitmapImageBuilder(bitmap).build()
-        val detectionResult = faceLandmarker.detect(mpImage)
+        val detectionResult = landmarker.detect(mpImage)
 
         val faceLandmarks = detectionResult?.faceLandmarks()
             ?: throw NoFaceDetectedException("No face detected in the image")
@@ -96,3 +98,8 @@ class NoFaceDetectedException(message: String) : Exception(message)
  * Thrown when face detection confidence is below the acceptable threshold.
  */
 class LowConfidenceException(message: String) : Exception(message)
+
+/**
+ * Thrown when MediaPipe runtime is not available on this device.
+ */
+class MediaPipeNotAvailableException(message: String) : Exception(message)

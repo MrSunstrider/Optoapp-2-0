@@ -1,8 +1,12 @@
 package com.example.optoapp.ui.components.evaluacion
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
@@ -20,7 +24,8 @@ import com.example.optoapp.viewmodel.EvaluacionViewModel
 fun RefraccionSection(
     uiState: EvaluacionUiState,
     onUpdate: (EvaluacionUiState) -> Unit,
-    viewModel: EvaluacionViewModel
+    viewModel: EvaluacionViewModel,
+    onMeasureDipClick: () -> Unit = {}
 ) {
     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
     Text("Refracción Objetiva", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
@@ -98,7 +103,7 @@ fun RefraccionSection(
     }
 
     AddSection(uiState, onUpdate)
-    DipSection(uiState, onUpdate)
+    DipSection(uiState, onUpdate, viewModel, onMeasureDipClick)
     PrismasSection(uiState, onUpdate)
 }
 
@@ -129,13 +134,28 @@ private fun AddSection(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiState)
 }
 
 @Composable
-private fun DipSection(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiState) -> Unit) {
+private fun DipSection(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiState) -> Unit, viewModel: EvaluacionViewModel, onMeasureDipClick: () -> Unit) {
+    val isMeasuring by viewModel.isMeasuringDip.collectAsState()
+
     OutlinedCard(
         modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
         colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text("DIP (Distancia Interpupilar)", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                Text("DIP (Distancia Interpupilar)", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, modifier = Modifier.weight(1f))
+                IconButton(
+                    onClick = onMeasureDipClick,
+                    enabled = !isMeasuring,
+                    modifier = Modifier.size(44.dp)
+                ) {
+                    if (isMeasuring) {
+                        CircularProgressIndicator(modifier = Modifier.size(26.dp), strokeWidth = 3.dp)
+                    } else {
+                        Icon(Icons.Default.CameraAlt, contentDescription = "Medir DIP con cámara", modifier = Modifier.size(28.dp))
+                    }
+                }
+            }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OptoTextField(value = uiState.dipLejos, onValueChange = { onUpdate(uiState.copy(dipLejos = it)) }, label = "DIP Lejos", modifier = Modifier.weight(1f).testTag(TestTags.EVALUACION_DIP_FIELD))
                 OptoTextField(value = uiState.dipCerca, onValueChange = { onUpdate(uiState.copy(dipCerca = it)) }, label = "DIP Cerca", modifier = Modifier.weight(1f))

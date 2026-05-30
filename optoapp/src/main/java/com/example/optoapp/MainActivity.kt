@@ -116,7 +116,7 @@ fun OptoAppNavigation(authViewModel: AuthViewModel, supabaseClient: SupabaseClie
                 if (isAuthChecked) {
                     val dest = when {
                         isLoggedIn == false -> "login"
-                        pinHasBeenSet == false -> "create_pin"
+                        pinHasBeenSet == false && isPinRequired == true -> "create_pin"
                         isPinRequired == true -> "pin"
                         else -> "main"
                     }
