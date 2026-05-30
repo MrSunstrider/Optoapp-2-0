@@ -204,6 +204,18 @@ fun MainDrawerScreen(
                 composable("cierre_caja") { CierreCajaScreen(navController) }
                 composable("estadisticas_bi") { BIScreen(navController) }
                 composable("configuracion") { ConfiguracionScreen(navController, drawerState, syncViewModel) }
+                composable("virtual_try_on/{pacienteId}") { backStackEntry ->
+                    val pid = backStackEntry.arguments?.getString("pacienteId")
+                    if (pid.isNullOrBlank()) {
+                        LaunchedEffect(Unit) { navController.popBackStack() }
+                        Box(Modifier.fillMaxSize())
+                    } else {
+                        VirtualTryOnScreen(
+                            pacienteId = pid,
+                            onNavigateBack = { navController.popBackStack() }
+                        )
+                    }
+                }
                     }
                     SnackbarHost(
                         hostState = snackbarHostState,

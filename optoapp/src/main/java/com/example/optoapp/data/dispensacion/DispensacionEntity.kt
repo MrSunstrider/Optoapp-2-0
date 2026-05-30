@@ -152,6 +152,14 @@ data class Montura(
     val activo: Boolean = true,
     val tipoAro: String = "",
     val materialMontura: String = "",
+    @SerialName("anchoMm")
+    val anchoMm: Double? = null,
+    @SerialName("puenteMm")
+    val puenteMm: Double? = null,
+    @SerialName("alturaMm")
+    val alturaMm: Double? = null,
+    @SerialName("imagenUri")
+    val imagenUri: String? = null,
     @SerialName("opticaId")
     val opticaId: String = "mi_optica_base"
 )

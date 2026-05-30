@@ -58,6 +58,11 @@ fun MonturaEditForm(
         OptoTextField(form.stockActual, { v -> onUpdate(form.copy(stockActual = v)) }, "Stock inicial", keyboardType = KeyboardType.Number)
         OptoTextField(form.stockMinimo, { v -> onUpdate(form.copy(stockMinimo = v)) }, "Alerta stock mínimo", keyboardType = KeyboardType.Number)
 
+        OptoTextField(form.anchoMm, { v -> onUpdate(form.copy(anchoMm = v)) }, "Ancho (mm)", keyboardType = KeyboardType.Decimal)
+        OptoTextField(form.puenteMm, { v -> onUpdate(form.copy(puenteMm = v)) }, "Puente (mm)", keyboardType = KeyboardType.Decimal)
+        OptoTextField(form.alturaMm, { v -> onUpdate(form.copy(alturaMm = v)) }, "Altura (mm)", keyboardType = KeyboardType.Decimal)
+        OptoTextField(form.imagenUri, { v -> onUpdate(form.copy(imagenUri = v)) }, "Imagen (URI opcional)")
+
         Text("* Campos obligatorios", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }

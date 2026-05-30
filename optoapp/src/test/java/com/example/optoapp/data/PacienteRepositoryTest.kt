@@ -7,6 +7,7 @@ import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -175,6 +176,60 @@ class PacienteRepositoryTest {
         val isDuplicate = repo.existsDuplicateHistoriaOptometrica("o1", "HO-2026-0001", null)
 
         assertTrue(isDuplicate)
+    }
+
+    // ─── Virtual Try-On: measurement persistence ──────────────────────────
+
+    @Test
+    fun updateEvaluacion_persistsDIPandDNPmeasurements() = runBlocking {
+        val paciente = Paciente(
+            id = "p_meas", nombreCompleto = "Paciente Medidas", edad = 35, telefono = "999",
+            fechaCreacion = LocalDate.parse("2026-01-01"), opticaId = "o1"
+        )
+        pacienteDao.insertPaciente(paciente)
+
+        val evaluacion = EvaluacionClinica(
+            id = "eval_meas", pacienteId = "p_meas", fecha = LocalDate.parse("2026-05-29"),
+            opticaId = "o1"
+        )
+        evaluacionDao.insertEvaluacion(evaluacion)
+
+        val updated = evaluacion.copy(
+            dipTotalMm = 63.5,
+            dnpOdMm = 31.0,
+            dnpOiMm = 32.5
+        )
+        repo.updateEvaluacion(updated)
+
+        val eval = evaluacionDao.getEvaluacionById("eval_meas")!!
+        assertEquals(63.5, eval.dipTotalMm!!, 0.001)
+        assertEquals(31.0, eval.dnpOdMm!!, 0.001)
+        assertEquals(32.5, eval.dnpOiMm!!, 0.001)
+    }
+
+    @Test
+    fun updateEvaluacion_persistsNullMeasurements() = runBlocking {
+        val paciente = Paciente(
+            id = "p_null", nombreCompleto = "Paciente Null", edad = 40, telefono = "888",
+            fechaCreacion = LocalDate.parse("2026-01-01"), opticaId = "o1"
+        )
+        pacienteDao.insertPaciente(paciente)
+
+        val evaluacion = EvaluacionClinica(
+            id = "eval_null", pacienteId = "p_null",
+            fecha = LocalDate.parse("2026-05-29"), opticaId = "o1",
+            dipTotalMm = 62.0, dnpOdMm = 30.5, dnpOiMm = 31.5
+        )
+        evaluacionDao.insertEvaluacion(evaluacion)
+
+        val cleared = evaluacion.copy(dipTotalMm = null, dnpOdMm = null, dnpOiMm = null)
+        repo.updateEvaluacion(cleared)
+
+        val result = evaluacionDao.getEvaluacionById("eval_null")
+        assertNotNull(result)
+        assertNull("dipTotalMm debe poder ser null", result!!.dipTotalMm)
+        assertNull("dnpOdMm debe poder ser null", result.dnpOdMm)
+        assertNull("dnpOiMm debe poder ser null", result.dnpOiMm)
     }
 
     @Test

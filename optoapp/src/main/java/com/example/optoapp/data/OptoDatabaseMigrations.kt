@@ -624,3 +624,16 @@ val MIGRATION_20_21 = object : Migration(20, 21) {
         db.execSQL("CREATE INDEX IF NOT EXISTS index_dispensacion_items_optica_id ON dispensacion_items(optica_id)")
     }
 }
+
+/**
+ * Virtual Try-On: Añade columnas opcionales de metadatos de montura necesarias para
+ * el escalado y posicionamiento del overlay (ancho, puente, altura, imagen PNG).
+ */
+val MIGRATION_21_22 = object : Migration(21, 22) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE monturas ADD COLUMN anchoMm REAL")
+        db.execSQL("ALTER TABLE monturas ADD COLUMN puenteMm REAL")
+        db.execSQL("ALTER TABLE monturas ADD COLUMN alturaMm REAL")
+        db.execSQL("ALTER TABLE monturas ADD COLUMN imagenUri TEXT")
+    }
+}
