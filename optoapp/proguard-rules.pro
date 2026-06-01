@@ -1,17 +1,19 @@
-# Proguard rules for OptoApp
+# ─── App classes needed by Hilt/DI ────────────────────────────────────
+-keep class com.example.optoapp.di.MediaPipeModule { *; }
+-keep class com.example.optoapp.domain.FaceLandmarkerUseCase { *; }
+-keep class com.example.optoapp.domain.IrisMeasurementExtractor { *; }
+-keep class com.example.optoapp.domain.FaceMeasurementExtractor { *; }
+-keep class com.example.optoapp.viewmodel.dip.** { *; }
+
+# ─── Data layer (Room entities, DAOs) ─────────────────────────────────
 -keep class com.example.optoapp.data.** { *; }
 
-# ─── MediaPipe ────────────────────────────────────────────────────────────
--dontobfuscate
--keep class com.google.mediapipe.tasks.** { *; }
--keep class com.google.mediapipe.framework.** { *; }
+# ─── MediaPipe (all packages - R8 obfuscates enums used by reflection) ─
+-keep class com.google.mediapipe.** { *; }
 -dontwarn com.google.mediapipe.proto.**
 -dontwarn com.google.mediapipe.framework.GraphProfiler
 -dontwarn com.google.mediapipe.framework.Graph
 
-# Cuando actives isMinifyEnabled en release, reduce ruido en logcat (no aplica con minify desactivado).
--assumenosideeffects class android.util.Log {
-    public static int v(...);
-    public static int d(...);
-    public static int i(...);
-}
+# ─── Keep dependencies used by MediaPipe via reflection ────────────────
+-keep class com.google.common.flogger.** { *; }
+-keep class com.google.protobuf.** { *; }
