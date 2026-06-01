@@ -144,17 +144,18 @@ private fun DipSection(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiState)
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                 Text("DIP (Distancia Interpupilar)", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, modifier = Modifier.weight(1f))
-                IconButton(
-                    onClick = onMeasureDipClick,
-                    enabled = !isMeasuring,
-                    modifier = Modifier.size(44.dp)
-                ) {
-                    if (isMeasuring) {
-                        CircularProgressIndicator(modifier = Modifier.size(26.dp), strokeWidth = 3.dp)
-                    } else {
-                        Icon(Icons.Default.CameraAlt, contentDescription = "Medir DIP con cámara", modifier = Modifier.size(28.dp))
-                    }
-                }
+                // DIP automático deshabilitado temporalmente
+                // IconButton(
+                //     onClick = onMeasureDipClick,
+                //     enabled = !isMeasuring,
+                //     modifier = Modifier.size(44.dp)
+                // ) {
+                //     if (isMeasuring) {
+                //         CircularProgressIndicator(modifier = Modifier.size(26.dp), strokeWidth = 3.dp)
+                //     } else {
+                //         Icon(Icons.Default.CameraAlt, contentDescription = "Medir DIP con cámara", modifier = Modifier.size(28.dp))
+                //     }
+                // }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OptoTextField(value = uiState.dipLejos, onValueChange = { onUpdate(uiState.copy(dipLejos = it)) }, label = "DIP Lejos", modifier = Modifier.weight(1f).testTag(TestTags.EVALUACION_DIP_FIELD))
