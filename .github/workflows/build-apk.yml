@@ -39,33 +39,23 @@ jobs:
           distribution: "temurin"
 
       - name: Setup local.properties
-        if: github.event_name != 'pull_request'
         run: |
           echo "supabase.url=${{ secrets.SUPABASE_URL }}" >> local.properties
           echo "supabase.anon.key=${{ secrets.SUPABASE_ANON_KEY }}" >> local.properties
 
       - name: Decode keystore
-        if: github.event_name != 'pull_request'
         run: |
           printf '%s' "$KEYSTORE_B64" | base64 -d > "${{ runner.temp }}/optoapp-release.keystore"
         env:
           KEYSTORE_B64: ${{ secrets.KEYSTORE_BASE64 }}
 
-      - name: Generate debug keystore for PR
-        if: github.event_name == 'pull_request'
-        run: |
-          keytool -genkey -v -keystore "${{ runner.temp }}/optoapp-release.keystore" \
-            -alias optoapp -keyalg RSA -keysize 2048 -validity 365 \
-            -storepass android -keypass android \
-            -dname "CN=PR Build, OU=Dev, O=OptoApp, L=Unknown, ST=Unknown, C=US"
-
-      - name: Build release APK (with R8)
+      - name: Build signed release APK
         run: chmod +x gradlew && ./gradlew :optoapp:assembleRelease --stacktrace
         env:
           KEYSTORE_PATH: ${{ runner.temp }}/optoapp-release.keystore
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD || 'android' }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS || 'optoapp' }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD || 'android' }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
       - name: Get version name
         id: version
