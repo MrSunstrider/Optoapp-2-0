@@ -51,19 +51,21 @@ jobs:
         env:
           KEYSTORE_B64: ${{ secrets.KEYSTORE_BASE64 }}
 
-      - name: Build APK
+      - name: Generate debug keystore for PR
+        if: github.event_name == 'pull_request'
         run: |
-          chmod +x gradlew
-          if [ "${{ github.event_name }}" != "pull_request" ]; then
-            ./gradlew :optoapp:assembleRelease --stacktrace
-          else
-            ./gradlew :optoapp:assembleDebug --stacktrace
-          fi
+          keytool -genkey -v -keystore "${{ runner.temp }}/optoapp-release.keystore" \
+            -alias optoapp -keyalg RSA -keysize 2048 -validity 365 \
+            -storepass android -keypass android \
+            -dname "CN=PR Build, OU=Dev, O=OptoApp, L=Unknown, ST=Unknown, C=US"
+
+      - name: Build release APK (with R8)
+        run: chmod +x gradlew && ./gradlew :optoapp:assembleRelease --stacktrace
         env:
           KEYSTORE_PATH: ${{ runner.temp }}/optoapp-release.keystore
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD || 'android' }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS || 'optoapp' }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD || 'android' }}
 
       - name: Get version name
         id: version
