@@ -51,8 +51,14 @@ jobs:
         env:
           KEYSTORE_B64: ${{ secrets.KEYSTORE_BASE64 }}
 
-      - name: Build signed release APK
-        run: chmod +x gradlew && ./gradlew :optoapp:assembleRelease --stacktrace --scan
+      - name: Build APK
+        run: |
+          chmod +x gradlew
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            ./gradlew :optoapp:assembleRelease --stacktrace
+          else
+            ./gradlew :optoapp:assembleDebug --stacktrace
+          fi
         env:
           KEYSTORE_PATH: ${{ runner.temp }}/optoapp-release.keystore
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
