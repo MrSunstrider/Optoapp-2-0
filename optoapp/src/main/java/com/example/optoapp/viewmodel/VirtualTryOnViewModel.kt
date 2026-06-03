@@ -360,7 +360,7 @@ class VirtualTryOnViewModel @Inject constructor(
     fun saveMeasurementsToEvaluacion(pacienteId: String) {
         val measurements = latestMeasurements ?: return
 
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch {
             try {
                 val evaluaciones = pacienteRepository
                     .getEvaluacionesByPaciente(pacienteId)
