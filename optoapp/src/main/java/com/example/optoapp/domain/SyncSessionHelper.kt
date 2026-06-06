@@ -10,13 +10,15 @@ import java.io.IOException
  * P0-T4: reduce fallos de sync por JWT cercano a expirar; no sustituye el auto-refresh del plugin Auth.
  *
  * [refreshSessionBeforeSync] retorna `true` si la sesión está OK (recién refrescada o aún válida),
- * `false` si no hay sesión o el refresh falló — los callers DEBEN abortar la sync si retorna false.
+ * `false` si no hay sesión, el refresh falló, o el server devolvió una sesión anónima
+ * (refresh token inválido/expirado) — los callers DEBEN abortar la sync si retorna false.
  */
 object SyncSessionHelper {
     private const val TAG = "SyncSession"
 
     /**
-     * Refresca la sesión Supabase antes de sincronizar.
+     * Refresca la sesión Supabase antes de sincronizar y verifica que la sesión
+     * post-refresh corresponda a un usuario autenticado (no anónimo).
      *
      * @return `true` si la sesión es válida para usar, `false` si debe abortarse la sync.
      */
@@ -35,10 +37,18 @@ object SyncSessionHelper {
             val refreshedSession = runCatching { supabase.auth.currentSessionOrNull() }.getOrNull()
             if (refreshedSession?.accessToken.isNullOrBlank()) {
                 Log.w(TAG, "Sesión sin accessToken tras refresh; abortando sync")
-                false
-            } else {
-                true
+                return false
             }
+
+            // Verificar que NO sea una sesión anónima — cuando el refresh token expiró,
+            // el server devuelve una sesión con role: "anon" en vez de lanzar error.
+            val currentUser = runCatching { supabase.auth.currentUserOrNull() }.getOrNull()
+            if (currentUser == null) {
+                Log.w(TAG, "Refresh devolvió sesión anónima (refresh token inválido/expirado); abortando sync")
+                return false
+            }
+
+            true
         } catch (e: CancellationException) {
             throw e
         } catch (e: IOException) {

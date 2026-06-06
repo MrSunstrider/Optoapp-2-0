@@ -307,6 +307,10 @@ open class AuthDelegate @Inject constructor(
      *    - Error de red → fallback al timestamp local (ventana de 3h).
      *    - Otro error → sesión inválida, logout.
      * 2. Si no hay sesión local → logout directo.
+     *
+     * Nota: cuando el refresh token expiró, Supabase devuelve una sesión anónima
+     * (role: "anon") en vez de lanzar error. Por eso NO basta con verificar
+     * accessToken — también se verifica currentUserOrNull() post-refresh.
      */
     suspend fun checkExistingSession(): Boolean {
         val session = supabase.auth.currentSessionOrNull()
@@ -321,6 +325,11 @@ open class AuthDelegate @Inject constructor(
             val refreshed = supabase.auth.currentSessionOrNull()
             if (refreshed?.accessToken.isNullOrBlank()) {
                 if (BuildConfig.DEBUG) Log.d(TAG, "JWT vacío tras refresh. Limpiando...")
+                logout()
+                false
+            } else if (supabase.auth.currentUserOrNull() == null) {
+                // Refresh devolvió sesión anónima (refresh token inválido/expirado)
+                if (BuildConfig.DEBUG) Log.d(TAG, "Sesión anónima tras refresh. Limpiando...")
                 logout()
                 false
             } else {
