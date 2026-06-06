@@ -114,8 +114,19 @@ private fun AddSection(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiState)
         colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                Text("Adición (ADD)", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, modifier = Modifier.weight(1f))
+            Text("VP Cerca/Intermedio", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Cerca", fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                Spacer(Modifier.width(8.dp))
+                Switch(
+                    checked = uiState.isVpCerca,
+                    onCheckedChange = { onUpdate(uiState.copy(isVpCerca = it)) }
+                )
+                Spacer(Modifier.width(8.dp))
+                Text("Intermedio", fontSize = 13.sp, fontWeight = FontWeight.Medium)
+            }
+            Text("Adición", fontWeight = FontWeight.SemiBold, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("A/O", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.width(4.dp))
                 Switch(
@@ -123,7 +134,6 @@ private fun AddSection(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiState)
                     onCheckedChange = { newVal -> onUpdate(uiState.copy(isAddAo = newVal)) }
                 )
             }
-            Text("VP Cerca/Interm", fontWeight = FontWeight.SemiBold, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OptoTextField(value = uiState.addCercaOd, onValueChange = { onUpdate(uiState.copy(addCercaOd = it)) }, label = "Add OD", modifier = Modifier.weight(1f))
                 OptoTextField(value = uiState.addCercaOi, onValueChange = { onUpdate(uiState.copy(addCercaOi = it)) }, label = "Add OI", modifier = Modifier.weight(1f), enabled = !uiState.isAddAo)
@@ -158,7 +168,17 @@ private fun DipSection(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiState)
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OptoTextField(value = uiState.dipLejos, onValueChange = { onUpdate(uiState.copy(dipLejos = it)) }, label = "DIP Lejos", modifier = Modifier.weight(1f).testTag(TestTags.EVALUACION_DIP_FIELD))
-                OptoTextField(value = uiState.dipCerca, onValueChange = { onUpdate(uiState.copy(dipCerca = it)) }, label = "DIP Cerca", modifier = Modifier.weight(1f))
+                val dipLabel = dipLabelForVpMode(uiState.isVpCerca)
+                val dipValue = if (uiState.isVpCerca) uiState.dipCerca else uiState.dipIntermedio
+                OptoTextField(
+                    value = dipValue,
+                    onValueChange = { newVal ->
+                        if (uiState.isVpCerca) onUpdate(uiState.copy(dipCerca = newVal))
+                        else onUpdate(uiState.copy(dipIntermedio = newVal))
+                    },
+                    label = dipLabel,
+                    modifier = Modifier.weight(1f)
+                )
             }
         }
     }
@@ -189,3 +209,7 @@ private fun PrismasSection(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiSt
 }
 
 internal val basesPrisma = listOf("Nasal", "Temporal", "Superior", "Inferior")
+
+/** Returns the DIP section label depending on whether VP is Cerca (near) or Intermedio (intermediate). */
+internal fun dipLabelForVpMode(isVpCerca: Boolean): String =
+    if (isVpCerca) "DIP Cerca" else "DIP Intermedio"

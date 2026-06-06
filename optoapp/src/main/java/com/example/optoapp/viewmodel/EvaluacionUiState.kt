@@ -119,6 +119,7 @@ data class EvaluacionUiState(
     val lcMaterial: String = "", val lcFechaAdaptacion: LocalDate? = null,
     val lcObservaciones: String = "",
 
+    val isVpCerca: Boolean = true,
     val isAddAo: Boolean = false,
     val isLoading: Boolean = false,
     val error: String? = null

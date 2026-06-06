@@ -1,5 +1,6 @@
 package com.example.optoapp.viewmodel
 
+import com.example.optoapp.ui.components.evaluacion.dipLabelForVpMode
 import org.junit.Assert.*
 import org.junit.Test
 import java.time.LocalDate
@@ -40,6 +41,7 @@ class EvaluacionViewModelTest {
         assertEquals(true, state.autoPresbicia)
         assertEquals(true, state.autoAnisometropia)
         assertEquals(true, state.autoAmbliopia)
+        assertEquals(true, state.isVpCerca)
     }
 
     @Test
@@ -125,6 +127,18 @@ class EvaluacionViewModelTest {
             assertNotNull(name)
         }
         assertNotNull(lambda)
+    }
+
+    // ─── dipLabelForVpMode (DipSection helper) ─────────────────────────
+
+    @Test
+    fun dipLabelForVpMode_cercaMode() {
+        assertEquals("DIP Cerca", dipLabelForVpMode(true))
+    }
+
+    @Test
+    fun dipLabelForVpMode_intermedioMode() {
+        assertEquals("DIP Intermedio", dipLabelForVpMode(false))
     }
 
     // ─── saveAndScheduleReminder method contract ───────────────────────

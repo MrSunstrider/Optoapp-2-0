@@ -55,5 +55,8 @@ web/.env.local
 web/coverage/
 web/tsconfig.tsbuildinfo
 
+# Vercel
+.vercel/
+
 # Optoweb branch artifacts (no debe estar en main)
 optoweb/
