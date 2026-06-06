@@ -77,7 +77,6 @@ class MainActivity : ComponentActivity() {
 fun OptoAppNavigation(authViewModel: AuthViewModel, supabaseClient: SupabaseClient) {
     val navController = rememberNavController()
 
-    val isAuthChecked by authViewModel.isAuthChecked.collectAsState()
     val isLoggedIn by authViewModel.isLoggedIn.collectAsState(initial = null)
     val pinHasBeenSet by authViewModel.pinHasBeenSet.collectAsState(initial = null)
     val isPinRequired by authViewModel.isPinRequired.collectAsState(initial = null)
@@ -102,35 +101,7 @@ fun OptoAppNavigation(authViewModel: AuthViewModel, supabaseClient: SupabaseClie
         }
     }
 
-    NavHost(navController = navController, startDestination = "loading") {
-        composable("loading") {
-            androidx.compose.foundation.layout.Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = androidx.compose.ui.Alignment.Center
-            ) {
-                androidx.compose.material3.CircularProgressIndicator()
-            }
-
-            // Redirección inicial tras verificar sesión
-            LaunchedEffect(isAuthChecked) {
-                if (isAuthChecked) {
-                    val dest = when {
-                        isLoggedIn == false -> "login"
-                        pinHasBeenSet == false && isPinRequired == true -> "create_pin"
-                        isPinRequired == true -> "pin"
-                        else -> "main"
-                    }
-                    // Evitar navegar si ya estamos en el destino (prevención simple)
-                    if (navController.currentDestination?.route != dest) {
-                        navController.navigate(dest) {
-                            popUpTo("loading") { inclusive = true }
-                        }
-                    }
-                } else if (isAuthChecked == false) {
-                    authViewModel.checkExistingSession()
-                }
-            }
-        }
+    NavHost(navController = navController, startDestination = "login") {
 
         composable("create_pin") { CreatePinScreen(navController, viewModel = authViewModel) }
         composable("pin") { PinScreen(navController, viewModel = authViewModel) }

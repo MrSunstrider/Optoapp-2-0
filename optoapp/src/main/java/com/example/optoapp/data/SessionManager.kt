@@ -29,6 +29,9 @@ interface ISessionManager {
     suspend fun saveRememberedEmail(email: String)
     suspend fun getRememberedEmail(): String
     suspend fun clearRememberedEmail()
+    suspend fun saveRememberedPassword(password: String)
+    suspend fun getRememberedPassword(): String
+    suspend fun clearRememberedPassword()
 }
 
 /**
@@ -63,6 +66,7 @@ class SessionManager(private val context: Context) : ISessionManager {
         private val USER_TIMEZONE       = stringPreferencesKey("pref_user_timezone")
         private val PIN_HAS_BEEN_SET    = booleanPreferencesKey("pref_pin_has_been_set")
         private val REMEMBERED_EMAIL_KEY = stringPreferencesKey("pref_remembered_email")
+        private val REMEMBERED_PASSWORD_KEY = stringPreferencesKey("pref_remembered_password")
     }
 
     // ─── Lectura reactiva ─────────────────────────────────────────────────────
@@ -157,6 +161,18 @@ class SessionManager(private val context: Context) : ISessionManager {
     /** Limpia el email recordado (cuando el usuario desmarca el checkbox). */
     override suspend fun clearRememberedEmail() {
         context.dataStore.edit { prefs -> prefs.remove(REMEMBERED_EMAIL_KEY) }
+    }
+
+    override suspend fun saveRememberedPassword(password: String) {
+        context.dataStore.edit { prefs -> prefs[REMEMBERED_PASSWORD_KEY] = password }
+    }
+
+    override suspend fun getRememberedPassword(): String {
+        return context.dataStore.data.first()[REMEMBERED_PASSWORD_KEY] ?: ""
+    }
+
+    override suspend fun clearRememberedPassword() {
+        context.dataStore.edit { prefs -> prefs.remove(REMEMBERED_PASSWORD_KEY) }
     }
 
     override suspend fun clearSession() {

@@ -200,6 +200,16 @@ class AuthViewModel @Inject constructor(
         authDelegate.clearRememberedEmail()
     }
 
+    fun saveRememberedPassword(password: String) = viewModelScope.launch {
+        authDelegate.saveRememberedPassword(password)
+    }
+
+    suspend fun getRememberedPassword(): String = authDelegate.getRememberedPassword()
+
+    fun clearRememberedPassword() = viewModelScope.launch {
+        authDelegate.clearRememberedPassword()
+    }
+
     //── Logout ─────────────────────────────────────────────────────────────────
 
     suspend fun logout() {

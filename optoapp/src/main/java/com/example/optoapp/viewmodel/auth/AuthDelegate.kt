@@ -461,6 +461,16 @@ open class AuthDelegate @Inject constructor(
         sessionManager.clearRememberedEmail()
     }
 
+    suspend fun saveRememberedPassword(password: String) {
+        sessionManager.saveRememberedPassword(password)
+    }
+
+    suspend fun getRememberedPassword(): String = sessionManager.getRememberedPassword()
+
+    suspend fun clearRememberedPassword() {
+        sessionManager.clearRememberedPassword()
+    }
+
     //── Resolver duplicados (admin/gerente) ────────────────────────────────
 
     suspend fun resolveDuplicateHistorias(): String {
