@@ -50,6 +50,9 @@ class PinDelegateTest {
         override suspend fun saveRememberedEmail(email: String) {}
         override suspend fun getRememberedEmail(): String = ""
         override suspend fun clearRememberedEmail() {}
+        override suspend fun saveRememberedPassword(password: String) {}
+        override suspend fun getRememberedPassword(): String = ""
+        override suspend fun clearRememberedPassword() {}
     }
 
     // ─── pinInput management ──────────────────────────────────────────────

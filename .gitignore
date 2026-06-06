@@ -35,6 +35,7 @@ java_pid*
 
 # IDE/Editor specific
 .cursorrules
+.cursor/
 .atl/
 
 # Stale root files
