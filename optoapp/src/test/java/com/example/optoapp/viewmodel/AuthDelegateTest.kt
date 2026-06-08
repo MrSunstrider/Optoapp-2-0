@@ -2,6 +2,7 @@ package com.example.optoapp.viewmodel
 
 import com.example.optoapp.viewmodel.auth.AuthDelegate
 import io.github.jan.supabase.auth.user.UserInfo
+import kotlin.time.ExperimentalTime
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -45,6 +46,7 @@ class AuthDelegateTest {
 
     // ─── extractDisplayName ───────────────────────────────────────────────
 
+    @OptIn(ExperimentalTime::class)
     private fun userInfo(
         id: String = "u1",
         email: String? = null,

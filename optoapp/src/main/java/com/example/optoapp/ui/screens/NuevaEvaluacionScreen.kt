@@ -88,38 +88,6 @@ fun NuevaEvaluacionScreen(
     var showOsdiDialog by remember { mutableStateOf(false) }
     val context = androidx.compose.ui.platform.LocalContext.current
 
-    // ─── DIP measurement from camera (iris-based) ────────────────────────
-    val dipPhotoUri = remember { mutableStateOf<Uri?>(null) }
-    val dipCameraLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.TakePicture()
-    ) { success: Boolean ->
-        if (success) {
-            dipPhotoUri.value?.let { uri ->
-                viewModel.measureDipFromPhoto(uri)
-            }
-        }
-    }
-    val cameraPermissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission()
-    ) { granted: Boolean ->
-        if (granted && dipPhotoUri.value != null) {
-            dipCameraLauncher.launch(dipPhotoUri.value)
-        } else if (!granted) {
-            viewModel.updateUiState { it.copy(error = "Permiso de cámara requerido para medir DIP") }
-        }
-    }
-    val onMeasureDipClick: () -> Unit = {
-        val photoFile = java.io.File(context.cacheDir, "dip_photos/dip_${System.currentTimeMillis()}.jpg")
-        photoFile.parentFile?.mkdirs()
-        val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", photoFile)
-        dipPhotoUri.value = uri
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
-            dipCameraLauncher.launch(uri)
-        } else {
-            cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
-        }
-    }
-
     val datePickerState = rememberDatePickerState(
         initialSelectedDateMillis = DateUtils.localDateToPickerMillis(uiState.fecha),
         yearRange = 1920..2080
@@ -285,8 +253,7 @@ fun NuevaEvaluacionScreen(
                      2 -> RefraccionSection(
                         uiState = uiState,
                         onUpdate = { s -> viewModel.updateUiState { s } },
-                        viewModel = viewModel,
-                        onMeasureDipClick = onMeasureDipClick
+                        viewModel = viewModel
                     )
                     3 -> ContactologiaSection(
                         uiState = uiState,

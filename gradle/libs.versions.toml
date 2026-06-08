@@ -25,7 +25,7 @@ billing = "7.1.1"
 coroutines = "1.9.0"
 kotlinxSerializationJson = "1.8.0"
 mockk = "1.13.14"
-mediapipe = "0.10.14"
+
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -55,11 +55,11 @@ androidx-hilt-navigation-compose = { group = "androidx.hilt", name = "hilt-navig
 androidx-work-runtime-ktx = { group = "androidx.work", name = "work-runtime-ktx", version.ref = "work" }
 androidx-hilt-work = { group = "androidx.hilt", name = "hilt-work", version.ref = "hiltWork" }
 desugar-jdk-libs = { group = "com.android.tools", name = "desugar_jdk_libs", version.ref = "desugar" }
-supabase-bom = { group = "io.github.jan-tennert.supabase", name = "bom", version = "3.0.1" }
-supabase-auth = { group = "io.github.jan-tennert.supabase", name = "auth-kt", version = "3.0.1" }
-supabase-postgrest = { group = "io.github.jan-tennert.supabase", name = "postgrest-kt", version = "3.0.1" }
-supabase-realtime = { group = "io.github.jan-tennert.supabase", name = "realtime-kt", version = "3.0.1" }
-ktor-client-cio = { group = "io.ktor", name = "ktor-client-cio", version = "3.0.0" }
+supabase-bom = { group = "io.github.jan-tennert.supabase", name = "bom", version = "3.6.0" }
+supabase-auth = { group = "io.github.jan-tennert.supabase", name = "auth-kt", version = "3.6.0" }
+supabase-postgrest = { group = "io.github.jan-tennert.supabase", name = "postgrest-kt", version = "3.6.0" }
+supabase-realtime = { group = "io.github.jan-tennert.supabase", name = "realtime-kt", version = "3.6.0" }
+ktor-client-cio = { group = "io.ktor", name = "ktor-client-cio", version = "3.4.3" }
 androidx-security-crypto = { group = "androidx.security", name = "security-crypto", version.ref = "securityCrypto" }
 billing-ktx = { group = "com.android.billingclient", name = "billing-ktx", version.ref = "billing" }
 androidx-room-testing = { group = "androidx.room", name = "room-testing", version.ref = "room" }
@@ -72,7 +72,7 @@ mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
 espresso-idling-resource = { group = "androidx.test.espresso", name = "espresso-idling-resource", version.ref = "espressoCore" }
 androidx-test-rules = { group = "androidx.test", name = "rules", version = "1.5.0" }
 hilt-android-testing = { group = "com.google.dagger", name = "hilt-android-testing", version.ref = "hilt" }
-mediapipe-tasks-vision = { group = "com.google.mediapipe", name = "tasks-vision", version.ref = "mediapipe" }
+
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

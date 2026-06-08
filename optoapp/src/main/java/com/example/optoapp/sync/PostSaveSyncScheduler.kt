@@ -64,10 +64,11 @@ open class PostSaveSyncScheduler @Inject constructor(
 
     open fun schedulePacientesSync(opticaId: String) {
         scheduleDebounced(key = "pacientes:$opticaId") {
-            if (!ensureSessionForPostSaveSync("pacientes")) return@scheduleDebounced
             onBeforeSync?.invoke("pacientes")
             try {
                 syncGate.mutex.withLock {
+                    // P0-T4: session check DENTRO del mutex para evitar race conditions
+                    if (!ensureSessionForPostSaveSync("pacientes")) return@withLock
                     when (val r = syncPacientesUseCase!!(opticaId)) {
                         is Resource.Error -> Log.w(TAG, "Sync pacientes post-guardado: ${r.message}")
                         else -> Log.d(TAG, "Sync pacientes post-guardado OK")
@@ -85,10 +86,11 @@ open class PostSaveSyncScheduler @Inject constructor(
 
     open fun scheduleHistorialSync(opticaId: String) {
         scheduleDebounced(key = "historial:$opticaId") {
-            if (!ensureSessionForPostSaveSync("historial")) return@scheduleDebounced
             onBeforeSync?.invoke("historial")
             try {
                 syncGate.mutex.withLock {
+                    // P0-T4: session check DENTRO del mutex para evitar race conditions
+                    if (!ensureSessionForPostSaveSync("historial")) return@withLock
                     syncPacientesUseCase!!(opticaId)
                     when (val r = syncHistorialUseCase!!(opticaId)) {
                         is Resource.Error -> Log.w(TAG, "Sync historial post-guardado: ${r.message}")
@@ -107,10 +109,11 @@ open class PostSaveSyncScheduler @Inject constructor(
 
     open fun scheduleFinanzasSync(opticaId: String) {
         scheduleDebounced(key = "finanzas:$opticaId") {
-            if (!ensureSessionForPostSaveSync("finanzas")) return@scheduleDebounced
             onBeforeSync?.invoke("finanzas")
             try {
                 syncGate.mutex.withLock {
+                    // P0-T4: session check DENTRO del mutex para evitar race conditions
+                    if (!ensureSessionForPostSaveSync("finanzas")) return@withLock
                     syncPacientesUseCase!!(opticaId)
                     when (val r = syncFinanzasUseCase!!(opticaId)) {
                         is Resource.Error -> Log.w(TAG, "Sync finanzas post-guardado: ${r.message}")
@@ -129,10 +132,11 @@ open class PostSaveSyncScheduler @Inject constructor(
 
     open fun scheduleInventarioSync(opticaId: String) {
         scheduleDebounced(key = "inventario:$opticaId") {
-            if (!ensureSessionForPostSaveSync("inventario")) return@scheduleDebounced
             onBeforeSync?.invoke("inventario")
             try {
                 syncGate.mutex.withLock {
+                    // P0-T4: session check DENTRO del mutex para evitar race conditions
+                    if (!ensureSessionForPostSaveSync("inventario")) return@withLock
                     when (val r = syncInventarioUseCase!!(opticaId)) {
                         is Resource.Error -> Log.w(TAG, "Sync inventario post-guardado: ${r.message}")
                         else -> Log.d(TAG, "Sync inventario post-guardado OK")

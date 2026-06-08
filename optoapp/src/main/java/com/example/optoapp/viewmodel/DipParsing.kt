@@ -1,4 +1,4 @@
-package com.example.optoapp.viewmodel.dip
+package com.example.optoapp.viewmodel
 
 /**
  * Result of parsing a DIP (Distancia Interpupilar) or DNP (Distancia Naso-Pupilar) string.
@@ -13,7 +13,10 @@ data class DipParseResult(
     val dnpOiMm: Double? = null
 )
 
-/** Pure parser/formatter for DIP (Distancia Interpupilar) and DNP values. */
+/**
+ * Pure parser/formatter for DIP (Distancia Interpupilar) and DNP values.
+ * Used for manual text entry in the evaluation form.
+ */
 object DipParser {
 
     /**

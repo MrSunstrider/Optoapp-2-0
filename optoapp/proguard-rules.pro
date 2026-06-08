@@ -1,15 +1,7 @@
-# Proguard rules for OptoApp
+# Proguard rules for OptoApp — R8 full mode (minify + obfuscate + optimize)
 -keep class com.example.optoapp.data.** { *; }
 
-# ─── MediaPipe ────────────────────────────────────────────────────────────
--dontobfuscate
--keep class com.google.mediapipe.tasks.** { *; }
--keep class com.google.mediapipe.framework.** { *; }
--dontwarn com.google.mediapipe.proto.**
--dontwarn com.google.mediapipe.framework.GraphProfiler
--dontwarn com.google.mediapipe.framework.Graph
-
-# Cuando actives isMinifyEnabled en release, reduce ruido en logcat (no aplica con minify desactivado).
+# Reduce ruido en logcat (release builds)
 -assumenosideeffects class android.util.Log {
     public static int v(...);
     public static int d(...);

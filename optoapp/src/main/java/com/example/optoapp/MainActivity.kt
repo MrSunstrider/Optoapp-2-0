@@ -45,6 +45,9 @@ class MainActivity : ComponentActivity() {
 
         authViewModel.handleAuthDeepLinkIntent(intent)
 
+        // P0-T4: validar sesión Supabase al arranque vs. confiar ciegamente en DataStore
+        authViewModel.checkExistingSession()
+
         // Sincronizar zona horaria global (SaaS Ready)
         lifecycleScope.launch {
             authViewModel.userTimeZone.collect { tz ->

@@ -30,8 +30,8 @@ android {
         applicationId = "com.example.optoapp"
         minSdk = 24
         targetSdk = 36
-        versionCode = 8
-        versionName = "1.2.0"
+        versionCode = 9
+        versionName = "1.3.0"
         
         multiDexEnabled = true
 
@@ -123,9 +123,6 @@ dependencies {
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.security.crypto)
     implementation(libs.kotlinx.serialization.json)
-
-    // MediaPipe (on-device face landmarking)
-    implementation(libs.mediapipe.tasks.vision)
 
     // Room
     implementation(libs.androidx.room.runtime)

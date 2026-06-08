@@ -60,3 +60,6 @@ web/tsconfig.tsbuildinfo
 
 # Optoweb branch artifacts (no debe estar en main)
 optoweb/
+
+# Local archive of removed features (no va al repo)
+_archive/

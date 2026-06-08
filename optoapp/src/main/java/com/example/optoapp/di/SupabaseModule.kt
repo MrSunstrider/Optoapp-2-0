@@ -33,6 +33,9 @@ object SupabaseModule {
                 host = BuildConfig.SUPABASE_REDIRECT_HOST
                 scheme = BuildConfig.SUPABASE_REDIRECT_SCHEME
                 defaultExternalAuthAction = ExternalAuthAction.CustomTabs()
+                // P0-T4: evitar que el Auth plugin limpie la sesión en background
+                // y desactive el auto-refresh, lo que causa RLS 401 en syncs posteriores.
+                enableLifecycleCallbacks = false
             }
         }
     }

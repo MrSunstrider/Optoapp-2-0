@@ -205,19 +205,6 @@ fun DrawerContent(
             icon = { Icon(Icons.Default.Inventory2, contentDescription = null) },
             modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
         )
-        NavigationDrawerItem(
-            label = { Text("Prueba Virtual", fontWeight = FontWeight.SemiBold) },
-            selected = currentRoute == "pacientes",
-            onClick = {
-                scope.launch { drawerState.close() }
-                // MVP: navigate to patient list for patient selection,
-                // then navigate to virtual_try_on/{pacienteId}
-                navController.navigateDrawer("pacientes")
-            },
-            icon = { Icon(Icons.Default.Visibility, contentDescription = null) },
-            modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
-        )
-
         // Finanzas
         if (showCierreCaja || showBiYReportes) {
             Text(
