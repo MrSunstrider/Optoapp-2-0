@@ -1,9 +1,13 @@
 package com.example.optoapp.viewmodel.diagnostico
 
+import kotlin.math.abs
 import kotlin.math.log10
 
 /** Pure functions for refraction parsing and clinical diagnosis calculation. */
 object DiagnosticoCalculator {
+
+    /** Epsilon for floating-point zero comparison (aligned with web). */
+    private const val EPS = 1e-4
 
     /**
      * Parses a refraction string value into a [Double].
@@ -22,6 +26,7 @@ object DiagnosticoCalculator {
      * Calculates a clinical diagnosis label from spherical and cylindrical values.
      *
      * Uses negative cylinder convention (transposes positive cylinder internally).
+     * Uses epsilon tolerance against float drift (aligned with web classifyRefraccion).
      * Returns "" when both inputs are null/empty.
      */
     fun calcularDiagnostico(esferaStr: String, cilindroStr: String): String {
@@ -39,18 +44,20 @@ object DiagnosticoCalculator {
             c = -c
         }
 
-        val meridian1 = e
-        val meridian2 = e + c
+        val m1 = e
+        val m2 = e + c
+
+        fun eq0(x: Double) = abs(x) < EPS
 
         return when {
-            meridian1 == 0.0 && meridian2 == 0.0 -> "Emetropía"
-            meridian1 < 0.0 && c == 0.0 -> "Miopía"
-            meridian1 > 0.0 && c == 0.0 -> "Hipermetropía"
-            (meridian1 == 0.0 && meridian2 < 0.0) || (meridian1 < 0.0 && meridian2 == 0.0) -> "Astigmatismo miópico simple"
-            (meridian1 == 0.0 && meridian2 > 0.0) || (meridian1 > 0.0 && meridian2 == 0.0) -> "Astigmatismo hipermetrópico simple"
-            meridian1 < 0.0 && meridian2 < 0.0 -> "Astigmatismo miópico compuesto"
-            meridian1 > 0.0 && meridian2 > 0.0 -> "Astigmatismo hipermetrópico compuesto"
-            (meridian1 > 0.0 && meridian2 < 0.0) || (meridian1 < 0.0 && meridian2 > 0.0) -> "Astigmatismo mixto"
+            eq0(m1) && eq0(m2) -> "Emetropía"
+            m1 < 0.0 && eq0(c) -> "Miopía"
+            m1 > 0.0 && eq0(c) -> "Hipermetropía"
+            (eq0(m1) && m2 < 0.0) || (eq0(m2) && m1 < 0.0) -> "Astigmatismo miópico simple"
+            (eq0(m1) && m2 > 0.0) || (eq0(m2) && m1 > 0.0) -> "Astigmatismo hipermetrópico simple"
+            m1 < 0.0 && m2 < 0.0 -> "Astigmatismo miópico compuesto"
+            m1 > 0.0 && m2 > 0.0 -> "Astigmatismo hipermetrópico compuesto"
+            (m1 > 0.0 && m2 < 0.0) || (m1 < 0.0 && m2 > 0.0) -> "Astigmatismo mixto"
             else -> "Astigmatismo mixto"
         }
     }
@@ -58,16 +65,16 @@ object DiagnosticoCalculator {
     /**
      * Converts a Snellen visual acuity string (e.g. "20/20") to LogMAR.
      *
+     * Accepts optional spaces around the slash ("20 / 40") — aligned with web.
      * Returns null for invalid formats, missing slash, zero denominator, or
      * unparseable input.
      */
     fun parseSnellenToLogMar(snellen: String): Double? {
         try {
             val clean = snellen.trim()
-            if (!clean.contains("/")) return null
-            val parts = clean.split("/")
-            if (parts.size != 2) return null
-            val denominator = parts[1].trim().toDoubleOrNull() ?: return null
+            val regex = Regex("""(\d+)\s*/\s*(\d+)""")
+            val m = regex.find(clean) ?: return null
+            val denominator = m.groupValues[2].toDoubleOrNull() ?: return null
             if (denominator <= 0) return null
             val decimalAV = 20.0 / denominator
             return -log10(decimalAV)

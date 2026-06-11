@@ -39,8 +39,12 @@ class SecurityManager(
 ) : ISecurityManager {
 
     companion object {
-        /** PIN asignado automáticamente en fresh install hasta que el usuario lo cambie. */
-        const val DEFAULT_PIN = "123456"
+        /**
+         * PIN de desarrollo usado SOLO cuando no hay PIN almacenado.
+         * NUNCA se asigna automáticamente — el usuario crea su PIN en CreatePinScreen.
+         * Este valor existe únicamente para evitar nulls en flujos de desarrollo/test.
+         */
+        const val DEV_FALLBACK_PIN = "999999"
         const val PIN_LENGTH = 6
 
         fun isValidPin(pin: String): Boolean {
@@ -76,8 +80,8 @@ class SecurityManager(
         val alreadySet = dataStore.data.first()[prefPinHasBeenSet] ?: false
         if (alreadySet) return
         val stored = getSecurePin()
-        // El PIN por defecto (asignado en fresh install) no cuenta como "seteado por el usuario".
-        if (stored.isNotEmpty() && stored != DEFAULT_PIN) {
+        // El PIN de desarrollo no cuenta como "seteado por el usuario".
+        if (stored.isNotEmpty() && stored != DEV_FALLBACK_PIN) {
             dataStore.edit { prefs ->
                 prefs[prefPinHasBeenSet] = true
             }

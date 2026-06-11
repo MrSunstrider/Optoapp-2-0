@@ -55,11 +55,10 @@ class SecurityManagerTest {
     }
 
     @Test
-    fun migratePinHasBeenSet_excludes_default_pin() {
-        // "123456" es DEFAULT_PIN — asignado en fresh install, no cuenta como PIN del usuario.
-        // La migración NO debe setear pinHasBeenSet para "123456".
-        assertFalse("\"123456\" sigue siendo PIN débil en isValidPin", SecurityManager.isValidPin("123456"))
-        assertEquals("DEFAULT_PIN debe ser 123456", "123456", SecurityManager.DEFAULT_PIN)
+    fun migratePinHasBeenSet_excludes_dev_fallback_pin() {
+        // "999999" es DEV_FALLBACK_PIN — existe solo como desarrollo, no cuenta como PIN del usuario.
+        assertFalse("DEV_FALLBACK_PIN debe ser inválido en isValidPin", SecurityManager.isValidPin("999999"))
+        assertEquals("DEV_FALLBACK_PIN debe ser 999999", "999999", SecurityManager.DEV_FALLBACK_PIN)
         assertTrue("PIN personalizado sigue siendo aceptado", SecurityManager.isValidPin("183729"))
     }
 }

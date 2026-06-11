@@ -54,7 +54,11 @@ data class DispensacionOptica(
     val fechaVencimientoGarantia: LocalDate? = null,
     val distanciaLente: String = "",
     val altura: String = "",
-    val subTipoBifocal: String = ""
+    val subTipoBifocal: String = "",
+    @SerialName("updatedAt")
+    val updatedAt: String? = null,
+    @SerialName("updatedBy")
+    val updatedBy: String? = null
 )
 
 @Entity(
@@ -94,7 +98,11 @@ data class Pago(
     val metodoPago: String = "",
     val nota: String = "",
     @SerialName("opticaId")
-    val opticaId: String = "mi_optica_base"
+    val opticaId: String = "mi_optica_base",
+    @SerialName("updatedAt")
+    val updatedAt: String? = null,
+    @SerialName("updatedBy")
+    val updatedBy: String? = null
 )
 
 @Entity(
@@ -127,7 +135,11 @@ data class ServicioExtra(
     @SerialName("metodoPago")
     val metodoPago: String = "",
     @SerialName("opticaId")
-    val opticaId: String = "mi_optica_base"
+    val opticaId: String = "mi_optica_base",
+    @SerialName("updatedAt")
+    val updatedAt: String? = null,
+    @SerialName("updatedBy")
+    val updatedBy: String? = null
 )
 
 @Entity(
@@ -161,7 +173,11 @@ data class Montura(
     @SerialName("imagenUri")
     val imagenUri: String? = null,
     @SerialName("opticaId")
-    val opticaId: String = "mi_optica_base"
+    val opticaId: String = "mi_optica_base",
+    @SerialName("updatedAt")
+    val updatedAt: String? = null,
+    @SerialName("updatedBy")
+    val updatedBy: String? = null
 )
 
 @Entity(
@@ -194,5 +210,9 @@ data class MonturaMovimiento(
     val referenciaId: String = "",
     val nota: String = "",
     @SerialName("opticaId")
-    val opticaId: String = "mi_optica_base"
+    val opticaId: String = "mi_optica_base",
+    @SerialName("updatedAt")
+    val updatedAt: String? = null,
+    @SerialName("updatedBy")
+    val updatedBy: String? = null
 )

@@ -22,7 +22,8 @@ class UploadSyncCoordinator @Inject constructor(
     private val supabase: SupabaseClient,
     private val syncStateTracker: SyncStateTracker,
     private val mergeHandler: DispensacionMergeHandler,
-    private val networkRetryHelper: NetworkRetryHelper
+    private val networkRetryHelper: NetworkRetryHelper,
+    private val conflictHelper: com.example.optoapp.domain.sync.ConflictHelper
 ) {
     companion object {
         private const val TAG = "SyncFinanzas"
@@ -114,8 +115,16 @@ class UploadSyncCoordinator @Inject constructor(
             uniqueById[row.id] = localId to row
         }
         val rows = uniqueById.values.map { it.second }
+        // Detección de conflictos batch antes de upsert
+        val safeIds = conflictHelper.filterConflicts(
+            tableName = TABLE_DISPENSACIONES,
+            opticaId = opticaId,
+            entityType = "dispensacion",
+            localEntities = rows.map { com.example.optoapp.domain.sync.LocalEntity(it.id, it.updatedAt) }
+        ).map { it.id }.toSet()
+        val safeRows = rows.filter { it.id in safeIds }
         try {
-            rows.chunked(UPSERT_BATCH_SIZE).forEachIndexed { index, chunk ->
+            safeRows.chunked(UPSERT_BATCH_SIZE).forEachIndexed { index, chunk ->
                 networkRetryHelper.retryNetwork("upsert:$TABLE_DISPENSACIONES:chunk${index + 1}") {
                     supabase.postgrest[TABLE_DISPENSACIONES].upsert(chunk)
                 }
@@ -184,8 +193,15 @@ class UploadSyncCoordinator @Inject constructor(
             uniqueRows[dedupeKey] = reconciled
         }
         val rows = uniqueRows.values.toList().distinctBy { it.id }
+        val safeIds = conflictHelper.filterConflicts(
+            tableName = TABLE_SERVICIOS,
+            opticaId = opticaId,
+            entityType = "servicio_extra",
+            localEntities = rows.map { com.example.optoapp.domain.sync.LocalEntity(it.id, it.updatedAt) }
+        ).map { it.id }.toSet()
+        val safeRows = rows.filter { it.id in safeIds }
         try {
-            rows.chunked(UPSERT_BATCH_SIZE).forEachIndexed { index, chunk ->
+            safeRows.chunked(UPSERT_BATCH_SIZE).forEachIndexed { index, chunk ->
                 networkRetryHelper.retryNetwork("upsert:$TABLE_SERVICIOS:chunk${index + 1}") {
                     supabase.postgrest[TABLE_SERVICIOS].upsert(chunk)
                 }

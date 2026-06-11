@@ -637,3 +637,35 @@ val MIGRATION_21_22 = object : Migration(21, 22) {
         db.execSQL("ALTER TABLE monturas ADD COLUMN imagenUri TEXT")
     }
 }
+
+val MIGRATION_22_23 = object : Migration(22, 23) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        // Añadir updatedAt/updatedBy para detección de conflictos de sync
+        db.execSQL("ALTER TABLE pacientes ADD COLUMN updatedAt TEXT")
+        db.execSQL("ALTER TABLE pacientes ADD COLUMN updatedBy TEXT")
+        db.execSQL("ALTER TABLE evaluaciones ADD COLUMN updatedAt TEXT")
+        db.execSQL("ALTER TABLE evaluaciones ADD COLUMN updatedBy TEXT")
+        db.execSQL("ALTER TABLE dispensaciones ADD COLUMN updatedAt TEXT")
+        db.execSQL("ALTER TABLE dispensaciones ADD COLUMN updatedBy TEXT")
+        db.execSQL("ALTER TABLE pagos ADD COLUMN updatedAt TEXT")
+        db.execSQL("ALTER TABLE pagos ADD COLUMN updatedBy TEXT")
+        db.execSQL("ALTER TABLE servicios_extra ADD COLUMN updatedAt TEXT")
+        db.execSQL("ALTER TABLE servicios_extra ADD COLUMN updatedBy TEXT")
+        db.execSQL("ALTER TABLE monturas ADD COLUMN updatedAt TEXT")
+        db.execSQL("ALTER TABLE monturas ADD COLUMN updatedBy TEXT")
+        db.execSQL("ALTER TABLE montura_movimientos ADD COLUMN updatedAt TEXT")
+        db.execSQL("ALTER TABLE montura_movimientos ADD COLUMN updatedBy TEXT")
+
+        // Nueva tabla para registrar conflictos de sync
+        db.execSQL("""
+            CREATE TABLE IF NOT EXISTS conflict_records (
+                entityId TEXT NOT NULL PRIMARY KEY,
+                opticaId TEXT NOT NULL,
+                entityType TEXT NOT NULL,
+                localSnapshot TEXT NOT NULL,
+                remoteSnapshot TEXT NOT NULL,
+                detectedAt INTEGER NOT NULL DEFAULT 0
+            )
+        """)
+    }
+}

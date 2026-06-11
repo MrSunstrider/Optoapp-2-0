@@ -1,5 +1,6 @@
 package com.example.optoapp.viewmodel
 
+import com.example.optoapp.viewmodel.diagnostico.DiagnosticoCalculator
 import java.util.Locale
 import kotlin.math.abs
 
@@ -8,56 +9,6 @@ import kotlin.math.abs
  * solo se considera si |EE(OD) − EE(OI)| ≥ 2.0 D
  */
 const val ANISOMETROPIA_UMBRAL_DIOPTRIAS = 2.0
-
-/** Pure logic: parse Snellen "20/XX" to logMAR. */
-fun parseSnellenToLogMar(snellen: String): Double? {
-    return try {
-        val clean = snellen.trim()
-        if (!clean.contains("/")) return null
-        val parts = clean.split("/")
-        if (parts.size != 2) return null
-        val denominator = parts[1].trim().toDoubleOrNull() ?: return null
-        if (denominator <= 0) return null
-        val decimalAV = 20.0 / denominator
-        -Math.log10(decimalAV)
-    } catch (e: NumberFormatException) { return null }
-}
-
-fun parseRefraction(v: String): Double? {
-    val clean = v.lowercase().trim()
-    if (clean in listOf("plano", "neutro", "pl", "nt")) return 0.0
-    return clean.replace(",", ".").toDoubleOrNull()
-}
-
-fun calcularDiagnostico(esferaStr: String, cilindroStr: String): String {
-    val esf = parseRefraction(esferaStr)
-    val cil = parseRefraction(cilindroStr)
-
-    if (esf == null && cil == null) return ""
-
-    var e = esf ?: 0.0
-    var c = cil ?: 0.0
-
-    if (c > 0) {
-        e += c
-        c = -c
-    }
-
-    val meridian1 = e
-    val meridian2 = e + c
-
-    return when {
-        meridian1 == 0.0 && meridian2 == 0.0 -> "Emetropía"
-        meridian1 < 0.0 && c == 0.0 -> "Miopía"
-        meridian1 > 0.0 && c == 0.0 -> "Hipermetropía"
-        (meridian1 == 0.0 && meridian2 < 0.0) || (meridian1 < 0.0 && meridian2 == 0.0) -> "Astigmatismo miópico simple"
-        (meridian1 == 0.0 && meridian2 > 0.0) || (meridian1 > 0.0 && meridian2 == 0.0) -> "Astigmatismo hipermetrópico simple"
-        meridian1 < 0.0 && meridian2 < 0.0 -> "Astigmatismo miópico compuesto"
-        meridian1 > 0.0 && meridian2 > 0.0 -> "Astigmatismo hipermetrópico compuesto"
-        (meridian1 > 0.0 && meridian2 < 0.0) || (meridian1 < 0.0 && meridian2 > 0.0) -> "Astigmatismo mixto"
-        else -> "Astigmatismo mixto"
-    }
-}
 
 fun computeDiagnosticoAuto(state: EvaluacionUiState): EvaluacionUiState {
     val isTextBalOd = sequenceOf(state.recetaOdEsf, state.recetaOdCil, state.recetaOdEje).any { it.trim().lowercase().contains("bal") }
@@ -70,11 +21,11 @@ fun computeDiagnosticoAuto(state: EvaluacionUiState): EvaluacionUiState {
     val hasDataOi = state.recetaOiEsf.trim().isNotEmpty() || state.recetaOiCil.trim().isNotEmpty()
 
     val diagOd = if (effBalanceOd) "Balance"
-    else if (hasDataOd) calcularDiagnostico(state.recetaOdEsf, state.recetaOdCil)
+    else if (hasDataOd) DiagnosticoCalculator.calcularDiagnostico(state.recetaOdEsf, state.recetaOdCil)
     else ""
 
     val diagOi = if (effBalanceOi) "Balance"
-    else if (hasDataOi) calcularDiagnostico(state.recetaOiEsf, state.recetaOiCil)
+    else if (hasDataOi) DiagnosticoCalculator.calcularDiagnostico(state.recetaOiEsf, state.recetaOiCil)
     else ""
 
     return state.copy(
@@ -93,11 +44,11 @@ fun computeOtrosAuto(state: EvaluacionUiState): EvaluacionUiState {
     val newAddOi = if (state.isAddAo) state.addCercaOd else state.addCercaOi
 
     val addValStr = if (state.addCercaOd.isNotEmpty()) state.addCercaOd else newAddOi
-    val addVal = parseRefraction(addValStr) ?: 0.0
+    val addVal = DiagnosticoCalculator.parseRefraction(addValStr) ?: 0.0
     val presbiciaVal = addVal > 0
 
-    val eeOd = (parseRefraction(state.recetaOdEsf) ?: 0.0) + ((parseRefraction(state.recetaOdCil) ?: 0.0) / 2.0)
-    val eeOi = (parseRefraction(state.recetaOiEsf) ?: 0.0) + ((parseRefraction(state.recetaOiCil) ?: 0.0) / 2.0)
+    val eeOd = (DiagnosticoCalculator.parseRefraction(state.recetaOdEsf) ?: 0.0) + ((DiagnosticoCalculator.parseRefraction(state.recetaOdCil) ?: 0.0) / 2.0)
+    val eeOi = (DiagnosticoCalculator.parseRefraction(state.recetaOiEsf) ?: 0.0) + ((DiagnosticoCalculator.parseRefraction(state.recetaOiCil) ?: 0.0) / 2.0)
 
     val anisometropiaVal = if (!effBalanceOd && !effBalanceOi &&
         state.recetaOdEsf.isNotEmpty() && state.recetaOiEsf.isNotEmpty()
@@ -107,8 +58,8 @@ fun computeOtrosAuto(state: EvaluacionUiState): EvaluacionUiState {
         false
     }
 
-    val logMarOd = parseSnellenToLogMar(state.avCcOdLejos)
-    val logMarOi = parseSnellenToLogMar(state.avCcOiLejos)
+    val logMarOd = DiagnosticoCalculator.parseSnellenToLogMar(state.avCcOdLejos)
+    val logMarOi = DiagnosticoCalculator.parseSnellenToLogMar(state.avCcOiLejos)
     val ambliopiaVal = if (logMarOd != null && logMarOi != null) {
         abs(logMarOd - logMarOi) >= 0.19
     } else state.otrosAmbliopia
@@ -126,8 +77,8 @@ fun normalizeAndTranspose(state: EvaluacionUiState, ojo: String): EvaluacionUiSt
     val cilStr = if (ojo == "OD") state.recetaOdCil else state.recetaOiCil
     val ejeStr = if (ojo == "OD") state.recetaOdEje else state.recetaOiEje
 
-    val eVal = parseRefraction(esfStr) ?: return state
-    val cVal = parseRefraction(cilStr) ?: return state
+    val eVal = DiagnosticoCalculator.parseRefraction(esfStr) ?: return state
+    val cVal = DiagnosticoCalculator.parseRefraction(cilStr) ?: return state
     val ejeVal = ejeStr.toIntOrNull() ?: 0
 
     if (cVal > 0) {

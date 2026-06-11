@@ -24,7 +24,8 @@ import javax.inject.Inject
 open class SyncHistorialUseCase @Inject constructor(
     private val repository: OptoRepository,
     private val supabase: SupabaseClient,
-    private val syncStateTracker: com.example.optoapp.data.SyncStateTracker
+    private val syncStateTracker: com.example.optoapp.data.SyncStateTracker,
+    private val conflictHelper: com.example.optoapp.domain.sync.ConflictHelper
 ) {
 
     companion object {
@@ -126,16 +127,25 @@ open class SyncHistorialUseCase @Inject constructor(
             }.getOrDefault(remotePacientes)
         }
 
-        val finalRows = buildUploadRows(evaluaciones, localPacientes, remotePacientes, opticaId)
+        val builtRows = buildUploadRows(evaluaciones, localPacientes, remotePacientes, opticaId)
 
         val inputIds = evaluaciones.map { it.id }.toSet()
-        val outputIds = finalRows.map { it.id }.toSet()
+        val outputIds = builtRows.map { it.id }.toSet()
         (inputIds - outputIds).forEach { skippedId ->
             syncStateTracker.markError(
                 opticaId, "evaluacion", skippedId,
                 "Paciente remoto inexistente. Se omite para evitar FK."
             )
         }
+
+        // Detección de conflictos
+        val conflictSafe = conflictHelper.filterConflicts(
+            tableName = TABLE,
+            opticaId = opticaId,
+            entityType = "evaluacion",
+            localEntities = builtRows.map { com.example.optoapp.domain.sync.LocalEntity(it.id, it.updatedAt) }
+        )
+        val finalRows = builtRows.filter { r -> conflictSafe.any { it.id == r.id } }
 
         if (finalRows.isEmpty()) {
             syncStateTracker.markSynced(opticaId, "upload_evaluaciones", "batch")

@@ -36,7 +36,9 @@ data class DispensacionRemota(
     @SerialName("fecha_vencimiento_garantia") val fechaVencimientoGarantia: String? = null,
     @SerialName("distancia_lente") val distanciaLente: String? = null,
     val altura: String? = null,
-    @SerialName("sub_tipo_bifocal") val subTipoBifocal: String? = null
+    @SerialName("sub_tipo_bifocal") val subTipoBifocal: String? = null,
+    @SerialName("updated_at") val updatedAt: String? = null,
+    @SerialName("updated_by") val updatedBy: String? = null
 ) {
     fun toEntity() = DispensacionOptica(
         id = id, ot = ot ?: "", monturaId = monturaId ?: "", pacienteId = pacienteId,
@@ -52,7 +54,9 @@ data class DispensacionRemota(
         fechaVencimientoGarantia = fechaVencimientoGarantia?.let(LocalDate::parse),
         distanciaLente = distanciaLente ?: "",
         altura = altura ?: "",
-        subTipoBifocal = subTipoBifocal ?: ""
+        subTipoBifocal = subTipoBifocal ?: "",
+        updatedAt = updatedAt,
+        updatedBy = updatedBy
     )
 
     internal fun optId(remoteId: String) = remoteId.ifBlank { "mi_optica_base" }
@@ -69,7 +73,9 @@ data class ServicioRemoto(
     val fecha: String,
     @SerialName("paciente_id") val pacienteId: String? = null,
     @SerialName("metodo_pago") val metodoPago: String = "",
-    @SerialName("optica_id") val opticaId: String
+    @SerialName("optica_id") val opticaId: String,
+    @SerialName("updated_at") val updatedAt: String? = null,
+    @SerialName("updated_by") val updatedBy: String? = null
 ) {
     fun toEntity() = ServicioExtra(
         id = id,
@@ -81,7 +87,9 @@ data class ServicioRemoto(
         fecha = LocalDate.parse(fecha),
         pacienteId = pacienteId?.takeIf { it.isNotBlank() },
         metodoPago = metodoPago.remotoServicioExtraMetodoToLocal(),
-        opticaId = opticaId.trim().ifBlank { FinanzasRemoteDefaults.OPTICA_ID_FALLBACK }
+        opticaId = opticaId.trim().ifBlank { FinanzasRemoteDefaults.OPTICA_ID_FALLBACK },
+        updatedAt = updatedAt,
+        updatedBy = updatedBy
     )
 }
 
@@ -95,7 +103,9 @@ data class PagoRemoto(
     val monto: Double = 0.0,
     @SerialName("metodo_pago") val metodoPago: String = "",
     val nota: String? = null,
-    @SerialName("optica_id") val opticaId: String = "mi_optica_base"
+    @SerialName("optica_id") val opticaId: String = "mi_optica_base",
+    @SerialName("updated_at") val updatedAt: String? = null,
+    @SerialName("updated_by") val updatedBy: String? = null
 ) {
     fun toEntity() = Pago(
         id = id,
@@ -106,7 +116,9 @@ data class PagoRemoto(
         monto = monto,
         metodoPago = metodoPago,
         nota = nota ?: "",
-        opticaId = opticaId.trim().ifBlank { FinanzasRemoteDefaults.OPTICA_ID_FALLBACK }
+        opticaId = opticaId.trim().ifBlank { FinanzasRemoteDefaults.OPTICA_ID_FALLBACK },
+        updatedAt = updatedAt,
+        updatedBy = updatedBy
     )
 }
 
@@ -181,7 +193,8 @@ fun DispensacionOptica.toRemoto(): DispensacionRemota = DispensacionRemota(
     montoTotal = montoTotal, metodoPago = metodoPago,
     montoPagado = montoPagado, estadoEntrega = estadoEntrega,
     fechaVencimientoGarantia = fechaVencimientoGarantia?.toString(),
-    distanciaLente = distanciaLente, altura = altura, subTipoBifocal = subTipoBifocal
+    distanciaLente = distanciaLente, altura = altura, subTipoBifocal = subTipoBifocal,
+    updatedAt = updatedAt, updatedBy = updatedBy
 )
 
 fun Pago.toRemoto(): PagoRemoto = PagoRemoto(
@@ -193,7 +206,9 @@ fun Pago.toRemoto(): PagoRemoto = PagoRemoto(
     monto = monto,
     metodoPago = metodoPago.trim().ifBlank { FinanzasRemoteDefaults.Pago.METODO_PAGO_VACIO },
     nota = nota.trim(),
-    opticaId = opticaId.trim().ifBlank { FinanzasRemoteDefaults.OPTICA_ID_FALLBACK }
+    opticaId = opticaId.trim().ifBlank { FinanzasRemoteDefaults.OPTICA_ID_FALLBACK },
+    updatedAt = updatedAt,
+    updatedBy = updatedBy
 )
 
 fun DispensacionItem.toRemoto(): DispensacionItemRemota = DispensacionItemRemota(
@@ -218,7 +233,9 @@ fun ServicioExtra.toRemoto(): ServicioRemoto = ServicioRemoto(
     fecha = fecha.toString(),
     pacienteId = pacienteId?.trim()?.takeIf { it.isNotBlank() },
     metodoPago = metodoPago.trim().ifBlank { FinanzasRemoteDefaults.ServicioExtra.METODO_PAGO_ROW },
-    opticaId = opticaId.trim().ifBlank { FinanzasRemoteDefaults.OPTICA_ID_FALLBACK }
+    opticaId = opticaId.trim().ifBlank { FinanzasRemoteDefaults.OPTICA_ID_FALLBACK },
+    updatedAt = updatedAt,
+    updatedBy = updatedBy
 )
 
 // ── Helper functions ─────────────────────────────────────────────────────────

@@ -5,6 +5,8 @@ import javax.inject.Singleton
 
 /**
  * P0-T5: persiste estado por fila tras bajar/subir desde Supabase.
+ *
+ * Soportados: synced | error | deleted | conflicted
  */
 @Singleton
 class SyncStateTracker @Inject constructor(
@@ -48,4 +50,25 @@ class SyncStateTracker @Inject constructor(
             )
         )
     }
+
+    /** Marca una entidad como en conflicto — requiere resolución manual. */
+    suspend fun markConflicted(opticaId: String, entityType: String, entityId: String) {
+        dao.upsert(
+            SyncEntityState(
+                opticaId = opticaId,
+                entityType = entityType,
+                entityId = entityId,
+                status = "conflicted",
+                lastError = "",
+                updatedAt = System.currentTimeMillis()
+            )
+        )
+    }
+
+    /** Query estados por óptica */
+    suspend fun getConflictedCount(opticaId: String): Int =
+        dao.countByStatus(opticaId, "conflicted")
+
+    suspend fun getErrorsCount(opticaId: String): Int =
+        dao.countByStatus(opticaId, "error")
 }

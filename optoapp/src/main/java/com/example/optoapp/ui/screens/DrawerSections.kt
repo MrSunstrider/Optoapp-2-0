@@ -48,6 +48,7 @@ fun DrawerContent(
     var showErrorDialog by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
     val context = androidx.compose.ui.platform.LocalContext.current
+    val conflictCount by syncViewModel.conflictCount.collectAsState()
 
     LaunchedEffect(syncState) {
         when (syncState) {
@@ -249,6 +250,9 @@ fun DrawerContent(
             }
         }
 
+        // Sync + Conflictos — refrescar al abrir
+        LaunchedEffect(Unit) { syncViewModel.refreshConflicts() }
+
         // Sistema
         Text(
             text = "SISTEMA",
@@ -265,6 +269,38 @@ fun DrawerContent(
                     navController.navigateDrawer("configuracion")
                 },
                 icon = { Icon(Icons.Default.Settings, contentDescription = null) },
+                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+            )
+        }
+
+        // Conflictos
+        if (conflictCount > 0) {
+            NavigationDrawerItem(
+                label = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("Conflictos", fontWeight = FontWeight.SemiBold)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Badge(containerColor = MaterialTheme.colorScheme.error) {
+                            Text(
+                                conflictCount.toString(),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onError
+                            )
+                        }
+                    }
+                },
+                selected = currentRoute == "conflictos",
+                onClick = {
+                    scope.launch { drawerState.close() }
+                    navController.navigateDrawer("conflictos")
+                },
+                icon = {
+                    Icon(
+                        Icons.Default.Warning,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                },
                 modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
             )
         }

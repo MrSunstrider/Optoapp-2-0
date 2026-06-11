@@ -86,11 +86,11 @@ class SecurityManagerMigrationCharacterizationTest {
     }
 
     @Test
-    fun `debeMigrarPin con DEFAULT_PIN devuelve false`() {
-        // El PIN por defecto "123456" NO debe disparar la migración
+    fun `debeMigrarPin con DEV_FALLBACK_PIN devuelve false`() {
+        // "999999" es el fallback de desarrollo, no debe migrar flag pinHasBeenSet
         assertFalse(
-            "El PIN default no debe migrar flag pinHasBeenSet",
-            shouldMigrate(pinHasBeenSet = false, storedPin = SecurityManager.DEFAULT_PIN)
+            "DEV_FALLBACK_PIN no debe migrar flag pinHasBeenSet",
+            shouldMigrate(pinHasBeenSet = false, storedPin = SecurityManager.DEV_FALLBACK_PIN)
         )
     }
 
@@ -105,7 +105,7 @@ class SecurityManagerMigrationCharacterizationTest {
         // Caso: pinHasBeenSet=true → no importa el storedPin
         assertFalse(shouldMigrate(pinHasBeenSet = true, storedPin = "183729"))
         assertFalse(shouldMigrate(pinHasBeenSet = true, storedPin = ""))
-        assertFalse(shouldMigrate(pinHasBeenSet = true, storedPin = SecurityManager.DEFAULT_PIN))
+        assertFalse(shouldMigrate(pinHasBeenSet = true, storedPin = SecurityManager.DEV_FALLBACK_PIN))
     }
 
     // ---------------------------------------------------------------
@@ -156,13 +156,13 @@ class SecurityManagerMigrationCharacterizationTest {
  * Determina si se debe migrar el flag `pinHasBeenSet` basado en:
  * - Si el flag ya está en true → no migrar (ya se migró)
  * - Si hay un PIN almacenado y NO es el default → migrar (setear flag)
- * - El PIN default ([SecurityManager.DEFAULT_PIN]) se asigna en fresh install
- *   y no cuenta como "seteado por el usuario".
+ * - El PIN de desarrollo ([SecurityManager.DEV_FALLBACK_PIN]) no cuenta como
+ *   "seteado por el usuario".
  *
  * @param pinHasBeenSet valor actual del flag
  * @param storedPin PIN almacenado en encrypted prefs (vacío si no existe)
  * @return true si se debe setear pinHasBeenSet = true
  */
 internal fun shouldMigrate(pinHasBeenSet: Boolean, storedPin: String): Boolean {
-    return !pinHasBeenSet && storedPin.isNotEmpty() && storedPin != SecurityManager.DEFAULT_PIN
+    return !pinHasBeenSet && storedPin.isNotEmpty() && storedPin != SecurityManager.DEV_FALLBACK_PIN
 }

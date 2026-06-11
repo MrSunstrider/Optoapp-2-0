@@ -149,5 +149,9 @@ data class EvaluacionClinica(
     val lcRadioBaseOi: String = "", val lcDiametroOi: String = "",
     val lcLaboratorio: String = "", val lcTipoLente: String = "",
     val lcMaterial: String = "", @Serializable(with = LocalDateSerializer::class) val lcFechaAdaptacion: LocalDate? = null,
-    val lcObservaciones: String = ""
+    val lcObservaciones: String = "",
+    @SerialName("updatedAt")
+    val updatedAt: String? = null,
+    @SerialName("updatedBy")
+    val updatedBy: String? = null
 )

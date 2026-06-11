@@ -71,6 +71,9 @@ object DatabaseModule {
     fun provideSyncEntityStateDao(database: OptoDatabase): SyncEntityStateDao = database.syncEntityStateDao()
 
     @Provides
+    fun provideConflictDao(database: OptoDatabase): ConflictDao = database.conflictDao()
+
+    @Provides
     @Singleton
     fun provideSecurityManager(@ApplicationContext context: Context): SecurityManager {
         return SecurityManager(context)

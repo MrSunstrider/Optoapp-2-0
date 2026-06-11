@@ -6,6 +6,8 @@ import android.util.Log
 import android.net.NetworkCapabilities
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.optoapp.data.ConflictDao
+import com.example.optoapp.data.ConflictRecord
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Resource
 import com.example.optoapp.data.SessionManager
@@ -23,8 +25,6 @@ import com.example.optoapp.domain.SyncHistorialUseCase
 import com.example.optoapp.domain.SyncInventarioUseCase
 import com.example.optoapp.domain.SyncPacientesUseCase
 import com.example.optoapp.domain.SyncSessionHelper
-import com.example.optoapp.domain.sync.SyncManager
-import com.example.optoapp.domain.sync.SyncResult
 import com.example.optoapp.sync.SyncGate
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
@@ -64,7 +64,7 @@ class SyncViewModel @Inject constructor(
     private val syncFinanzasUseCase: SyncFinanzasUseCase,
     private val syncInventarioUseCase: SyncInventarioUseCase,
     private val syncGate: SyncGate,
-    private val syncManager: SyncManager,
+    private val conflictDao: ConflictDao,
     private val supabaseObserver: com.example.optoapp.domain.observer.SupabaseObserver,
     private val bgErrorCollector: BackgroundErrorCollector
 ) : ViewModel() {
@@ -79,13 +79,76 @@ class SyncViewModel @Inject constructor(
     private val _isSilentSyncing = MutableStateFlow(false)
     val isSilentSyncing: StateFlow<Boolean> = _isSilentSyncing.asStateFlow()
 
+    // ─── Estado de conflictos ──────────────────────────────────────────────
+    private val _conflicts = MutableStateFlow<List<ConflictRecord>>(emptyList())
+    val conflicts: StateFlow<List<ConflictRecord>> = _conflicts.asStateFlow()
+
+    private val _conflictCount = MutableStateFlow(0)
+    val conflictCount: StateFlow<Int> = _conflictCount.asStateFlow()
+
+    /** Carga la lista de conflictos desde la DB local. */
+    fun refreshConflicts() {
+        viewModelScope.launch {
+            val opticaId = sessionManager.opticaId.first()
+            if (opticaId.isBlank() || opticaId == SessionManager.LEGACY_OPTICA_ID) return@launch
+            val list = conflictDao.getConflicts(opticaId)
+            _conflicts.value = list
+            _conflictCount.value = list.size
+        }
+    }
+
+    /** Resuelve un conflicto: sube la versión local forzando el upsert. */
+    fun resolveKeepMine(entity: ConflictRecord) {
+        viewModelScope.launch {
+            val opticaId = sessionManager.opticaId.first()
+            try {
+                // Forzar re-upload: el ConflictHelper ya no lo frena porque
+                // resolvemos manualmente. Simplemente hacemos un sync completo
+                // que subirá la versión local (porque no hay conflicto tras resolver).
+                conflictDao.resolveConflict(entity.entityId, opticaId)
+                _conflicts.value = _conflicts.value.filter { it.entityId != entity.entityId }
+                _conflictCount.value = _conflicts.value.size
+                Log.d(TAG, "Conflicto resuelto (keep mine): ${entity.entityType}/${entity.entityId}")
+            } catch (e: Exception) {
+                Log.e(TAG, "Error resolviendo conflicto: ${e.message}", e)
+            }
+        }
+    }
+
+    /** Resuelve un conflicto: baja la versión remota. */
+    fun resolveAcceptTheirs(entity: ConflictRecord) {
+        viewModelScope.launch {
+            val opticaId = sessionManager.opticaId.first()
+            try {
+                // Forzar download: hacemos un sync completo que bajará la versión remota
+                conflictDao.resolveConflict(entity.entityId, opticaId)
+                _conflicts.value = _conflicts.value.filter { it.entityId != entity.entityId }
+                _conflictCount.value = _conflicts.value.size
+                Log.d(TAG, "Conflicto resuelto (accept theirs): ${entity.entityType}/${entity.entityId}")
+            } catch (e: Exception) {
+                Log.e(TAG, "Error resolviendo conflicto: ${e.message}", e)
+            }
+        }
+    }
+
+    /** Descarta un conflicto sin resolverlo (lo deja para después). */
+    fun dismissConflict(entity: ConflictRecord) {
+        viewModelScope.launch {
+            val opticaId = sessionManager.opticaId.first()
+            conflictDao.resolveConflict(entity.entityId, opticaId)
+            _conflicts.value = _conflicts.value.filter { it.entityId != entity.entityId }
+            _conflictCount.value = _conflicts.value.size
+        }
+    }
+
     /** Vuelve el estado de UI de sync a inactivo (tras mensaje o cierre de diálogo). */
     fun clearSyncUiState() {
         _syncState.value = SyncState.Idle
     }
 
     /**
-     * Dispara la sincronización manual completa (Bidireccional) usando el patrón Strategy.
+     * Dispara la sincronización manual completa (Bidireccional).
+     * Llama a los 4 UseCases secuencialmente, upload + download.
      */
     fun performFullSync() = viewModelScope.launch {
         _syncState.value = SyncState.Loading
@@ -108,24 +171,32 @@ class SyncViewModel @Inject constructor(
         val opticaId = sessionManager.opticaId.first()
         repository.reassignLegacyMiOpticaBaseTo(opticaId)
 
-        val outcome = syncGate.mutex.withLock {
-            syncManager.switchToFullSync()
-            syncManager.performSync(opticaId)
+        var hasErrors = false
+        syncGate.mutex.withLock {
+            // Ejecutar UseCases secuencialmente (orden: pacientes → historial → finanzas → inventario)
+            val p = syncPacientesUseCase(opticaId, downloadAfterUpload = true)
+            if (p is Resource.Error) { hasErrors = true; Log.w(TAG, "Full sync (pacientes): ${p.message}") }
+
+            val h = syncHistorialUseCase(opticaId, downloadAfterUpload = true)
+            if (h is Resource.Error) { hasErrors = true; Log.w(TAG, "Full sync (historial): ${h.message}") }
+
+            val f = syncFinanzasUseCase(opticaId, downloadAfterUpload = true)
+            if (f is Resource.Error) { hasErrors = true; Log.w(TAG, "Full sync (finanzas): ${f.message}") }
+
+            val i = syncInventarioUseCase(opticaId, downloadAfterUpload = true)
+            if (i is Resource.Error) { hasErrors = true; Log.w(TAG, "Full sync (inventario): ${i.message}") }
         }
 
-        when (outcome) {
-            is SyncResult.Error -> {
-                val msg = SyncErrorSanitizer.forUserMessage(outcome.message)
-                syncTelemetry.recordFullSyncError(outcome.message)
-                _syncState.value = SyncState.Error(msg)
-            }
-            is SyncResult.Success -> {
-                syncTelemetry.recordFullSyncSuccess()
-                recordRemoteSyncTelemetry(opticaId, "ok", "finalizado", null)
-                runCatching { subscriptionManager.refreshPlanFromServer(opticaId) }
-                _syncState.value = SyncState.Success("Sincronización completada con éxito")
-            }
-            else -> { /* Otros estados si existieran */ }
+        if (hasErrors) {
+            bgErrorCollector.record("sync", "Full sync completada con errores")
+            syncTelemetry.recordFullSyncError("Algunos módulos reportaron errores")
+            recordRemoteSyncTelemetry(opticaId, "error", "finalizado", "Algunos módulos con error")
+            _syncState.value = SyncState.Error("Sincronización completada con errores. Revisa el estado de sync para más detalles.")
+        } else {
+            syncTelemetry.recordFullSyncSuccess()
+            recordRemoteSyncTelemetry(opticaId, "ok", "finalizado", null)
+            runCatching { subscriptionManager.refreshPlanFromServer(opticaId) }
+            _syncState.value = SyncState.Success("Sincronización completada con éxito")
         }
     }
 

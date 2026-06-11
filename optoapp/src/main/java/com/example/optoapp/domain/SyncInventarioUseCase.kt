@@ -23,7 +23,8 @@ import javax.inject.Inject
 open class SyncInventarioUseCase @Inject constructor(
     private val repository: OptoRepository,
     private val supabase: SupabaseClient,
-    private val syncStateTracker: com.example.optoapp.data.SyncStateTracker
+    private val syncStateTracker: com.example.optoapp.data.SyncStateTracker,
+    private val conflictHelper: com.example.optoapp.domain.sync.ConflictHelper
 ) {
     companion object {
         private const val TAG = "SyncInventario"
@@ -75,12 +76,20 @@ open class SyncInventarioUseCase @Inject constructor(
         val rows = repository.getMonturasSnapshotForOptica(opticaId)
             .map { it.toRemoto().copy(opticaId = opticaId) }
             .distinctBy { it.id }
-        if (rows.isEmpty()) {
+        // Detección de conflictos antes de upsert
+        val safeIds = conflictHelper.filterConflicts(
+            tableName = TABLE_MONTURAS,
+            opticaId = opticaId,
+            entityType = "montura",
+            localEntities = rows.map { com.example.optoapp.domain.sync.LocalEntity(it.id, it.updatedAt) }
+        ).map { it.id }.toSet()
+        val rows2 = rows.filter { it.id in safeIds }
+        if (rows2.isEmpty()) {
             syncStateTracker.markSynced(opticaId, "upload_monturas", "batch")
             return 0
         }
         try {
-            rows.chunked(UPSERT_BATCH_SIZE).forEach { chunk ->
+            rows2.chunked(UPSERT_BATCH_SIZE).forEach { chunk ->
                 supabase.postgrest[TABLE_MONTURAS].upsert(chunk)
             }
         } catch (e: CancellationException) {
@@ -95,7 +104,7 @@ open class SyncInventarioUseCase @Inject constructor(
             throw e
         }
         syncStateTracker.markSynced(opticaId, "upload_monturas", "batch")
-        rows.forEach { m -> syncStateTracker.markSynced(opticaId, "montura", m.id) }
+        rows2.forEach { m -> syncStateTracker.markSynced(opticaId, "montura", m.id) }
         return rows.size
     }
 
@@ -190,7 +199,9 @@ private data class MonturaRemota(
     val activo: Boolean = true,
     @SerialName("tipo_aro") val tipoAro: String = "",
     @SerialName("material_montura") val materialMontura: String = "",
-    @SerialName("optica_id") val opticaId: String
+    @SerialName("optica_id") val opticaId: String,
+    @SerialName("updated_at") val updatedAt: String? = null,
+    @SerialName("updated_by") val updatedBy: String? = null
 ) {
     fun toEntity() = Montura(
         id = id,
@@ -206,7 +217,9 @@ private data class MonturaRemota(
         activo = activo,
         tipoAro = tipoAro,
         materialMontura = materialMontura,
-        opticaId = opticaId
+        opticaId = opticaId,
+        updatedAt = updatedAt,
+        updatedBy = updatedBy
     )
 }
 
@@ -221,7 +234,9 @@ private data class MonturaMovimientoRemoto(
     @SerialName("stock_nuevo") val stockNuevo: Int,
     @SerialName("referencia_id") val referenciaId: String = "",
     val nota: String = "",
-    @SerialName("optica_id") val opticaId: String
+    @SerialName("optica_id") val opticaId: String,
+    @SerialName("updated_at") val updatedAt: String? = null,
+    @SerialName("updated_by") val updatedBy: String? = null
 ) {
     fun toEntity() = MonturaMovimiento(
         id = id,
@@ -233,7 +248,9 @@ private data class MonturaMovimientoRemoto(
         stockNuevo = stockNuevo,
         referenciaId = referenciaId,
         nota = nota,
-        opticaId = opticaId
+        opticaId = opticaId,
+        updatedAt = updatedAt,
+        updatedBy = updatedBy
     )
 }
 
@@ -251,7 +268,9 @@ private fun Montura.toRemoto(): MonturaRemota = MonturaRemota(
     activo = activo,
     tipoAro = tipoAro.trim(),
     materialMontura = materialMontura.trim(),
-    opticaId = opticaId
+    opticaId = opticaId,
+    updatedAt = updatedAt,
+    updatedBy = updatedBy
 )
 
 private fun MonturaMovimiento.toRemoto(): MonturaMovimientoRemoto = MonturaMovimientoRemoto(
@@ -264,6 +283,8 @@ private fun MonturaMovimiento.toRemoto(): MonturaMovimientoRemoto = MonturaMovim
     stockNuevo = stockNuevo,
     referenciaId = referenciaId.trim(),
     nota = nota.trim(),
-    opticaId = opticaId
+    opticaId = opticaId,
+    updatedAt = updatedAt,
+    updatedBy = updatedBy
 )
 

@@ -204,6 +204,7 @@ fun MainDrawerScreen(
                 composable("cierre_caja") { CierreCajaScreen(navController) }
                 composable("estadisticas_bi") { BIScreen(navController) }
                 composable("configuracion") { ConfiguracionScreen(navController, drawerState, syncViewModel) }
+                composable("conflictos") { ConflictosScreen(navController, syncViewModel) }
                     }
                     SnackbarHost(
                         hostState = snackbarHostState,

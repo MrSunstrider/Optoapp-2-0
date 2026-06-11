@@ -4,153 +4,16 @@ import org.junit.Assert.*
 import org.junit.Test
 import java.time.LocalDate
 
+/**
+ * Tests for [EvaluacionDiagnosticoHelper].
+ *
+ * Low-level parser/calculator tests (parseRefraction, calcularDiagnostico,
+ * parseSnellenToLogMar) have been removed — they are fully covered by
+ * [com.example.optoapp.viewmodel.diagnostico.DiagnosticoCalculatorTest].
+ * This file tests only the higher-level helper functions, which now
+ * delegate to DiagnosticoCalculator as the single source of truth.
+ */
 class EvaluacionDiagnosticoHelperTest {
-
-    // ─── parseRefraction ─────────────────────────────────────────────
-
-    @Test
-    fun parseRefraction_plano_returnsZero() {
-        val result = parseRefraction("plano")
-        assertNotNull(result)
-        assertEquals(0.0, result!!, 0.001)
-    }
-
-    @Test
-    fun parseRefraction_PL_returnsZero() {
-        val result = parseRefraction("PL")
-        assertNotNull(result)
-        assertEquals(0.0, result!!, 0.001)
-    }
-
-    @Test
-    fun parseRefraction_neutro_returnsZero() {
-        val result = parseRefraction("neutro")
-        assertNotNull(result)
-        assertEquals(0.0, result!!, 0.001)
-    }
-
-    @Test
-    fun parseRefraction_negativeValue_returnsCorrect() {
-        val result = parseRefraction("-1.50")
-        assertNotNull(result)
-        assertEquals(-1.5, result!!, 0.001)
-    }
-
-    @Test
-    fun parseRefraction_positiveValue_returnsCorrect() {
-        val result = parseRefraction("+2.00")
-        assertNotNull(result)
-        assertEquals(2.0, result!!, 0.001)
-    }
-
-    @Test
-    fun parseRefraction_invalidString_returnsNull() {
-        assertNull(parseRefraction("abc"))
-    }
-
-    @Test
-    fun parseRefraction_commaDecimal_returnsCorrect() {
-        val result = parseRefraction("-0,75")
-        assertNotNull(result)
-        assertEquals(-0.75, result!!, 0.001)
-    }
-
-    @Test
-    fun parseRefraction_emptyString_returnsNull() {
-        assertNull(parseRefraction(""))
-    }
-
-    @Test
-    fun parseRefraction_ntAbbreviation_returnsZero() {
-        val result = parseRefraction("nt")
-        assertNotNull(result)
-        assertEquals(0.0, result!!, 0.001)
-    }
-
-    // ─── calcularDiagnostico ─────────────────────────────────────────
-
-    @Test
-    fun calcularDiagnostico_bothNull_returnsEmpty() {
-        assertEquals("", calcularDiagnostico("", ""))
-    }
-
-    @Test
-    fun calcularDiagnostico_miopiaPura_returnsMiopia() {
-        assertEquals("Miopía", calcularDiagnostico("-1.00", ""))
-    }
-
-    @Test
-    fun calcularDiagnostico_hipermetropiaPura_returnsHipermetropia() {
-        assertEquals("Hipermetropía", calcularDiagnostico("+1.00", ""))
-    }
-
-    @Test
-    fun calcularDiagnostico_emetropia_returnsEmetropia() {
-        assertEquals("Emetropía", calcularDiagnostico("0.00", ""))
-    }
-
-    @Test
-    fun calcularDiagnostico_astigmatismoMiopicoCompuesto_returnsCorrect() {
-        assertEquals("Astigmatismo miópico compuesto", calcularDiagnostico("-1.00", "-0.50"))
-    }
-
-    @Test
-    fun calcularDiagnostico_astigmatismoMixto_returnsCorrect() {
-        // +1.00 / -2.50 → meridian1 = +1.0, meridian2 = +1.0 + (-2.5) = -1.5 → one positive, one negative
-        assertEquals("Astigmatismo mixto", calcularDiagnostico("+1.00", "-2.50"))
-    }
-
-    @Test
-    fun calcularDiagnostico_planoCil_returnsMiopia() {
-        assertEquals("Miopía", calcularDiagnostico("-2.00", "0.00"))
-    }
-
-    // ─── parseSnellenToLogMar ───────────────────────────────────────
-
-    @Test
-    fun parseSnellenToLogMar_2020_returnsZero() {
-        val result = parseSnellenToLogMar("20/20")
-        assertNotNull(result)
-        assertEquals(0.0, result!!, 0.001)
-    }
-
-    @Test
-    fun parseSnellenToLogMar_2040_returnsCorrect() {
-        val result = parseSnellenToLogMar("20/40")
-        assertNotNull(result)
-        val expected = -Math.log10(20.0 / 40.0)
-        assertEquals(expected, result!!, 0.001)
-    }
-
-    @Test
-    fun parseSnellenToLogMar_20200_returnsOne() {
-        val result = parseSnellenToLogMar("20/200")
-        assertNotNull(result)
-        val expected = -Math.log10(20.0 / 200.0)
-        assertEquals(expected, result!!, 0.001)
-    }
-
-    @Test
-    fun parseSnellenToLogMar_invalid_returnsNull() {
-        assertNull(parseSnellenToLogMar("abc"))
-    }
-
-    @Test
-    fun parseSnellenToLogMar_noSlash_returnsNull() {
-        assertNull(parseSnellenToLogMar("2020"))
-    }
-
-    @Test
-    fun parseSnellenToLogMar_zeroDenominator_returnsNull() {
-        assertNull(parseSnellenToLogMar("20/0"))
-    }
-
-    @Test
-    fun parseSnellenToLogMar_trimmed_works() {
-        val result = parseSnellenToLogMar("  20/20  ")
-        assertNotNull(result)
-        assertEquals(0.0, result!!, 0.001)
-    }
 
     // ─── computeDiagnosticoAuto ──────────────────────────────────────
 

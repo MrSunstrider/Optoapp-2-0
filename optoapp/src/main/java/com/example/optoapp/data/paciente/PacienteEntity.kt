@@ -39,5 +39,9 @@ data class Paciente(
     val hobbies: String? = null,
     val ultimasEtiquetas: List<String> = emptyList(),
     @SerialName("opticaId")
-    val opticaId: String = "mi_optica_base"
+    val opticaId: String = "mi_optica_base",
+    @SerialName("updatedAt")
+    val updatedAt: String? = null,
+    @SerialName("updatedBy")
+    val updatedBy: String? = null
 )

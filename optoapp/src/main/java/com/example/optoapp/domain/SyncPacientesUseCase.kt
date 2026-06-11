@@ -21,7 +21,8 @@ import javax.inject.Inject
 open class SyncPacientesUseCase @Inject constructor(
     private val repository: OptoRepository,
     private val supabase: SupabaseClient,
-    private val syncStateTracker: com.example.optoapp.data.SyncStateTracker
+    private val syncStateTracker: com.example.optoapp.data.SyncStateTracker,
+    private val conflictHelper: com.example.optoapp.domain.sync.ConflictHelper
 ) {
 
     companion object {
@@ -96,7 +97,16 @@ open class SyncPacientesUseCase @Inject constructor(
             filteredRows += row
         }
 
-        val finalRows = filteredRows.distinctBy { it.id }
+        val deduplicated = filteredRows.distinctBy { it.id }
+
+        // Detección de conflictos: comparar updated_at local vs remoto
+        val conflictSafe = conflictHelper.filterConflicts(
+            tableName = TABLE,
+            opticaId = opticaId,
+            entityType = "paciente",
+            localEntities = deduplicated.map { com.example.optoapp.domain.sync.LocalEntity(it.id, it.updatedAt) }
+        )
+        val finalRows = deduplicated.filter { r -> conflictSafe.any { it.id == r.id } }
 
         if (finalRows.isEmpty()) {
             syncStateTracker.markSynced(opticaId, "upload_pacientes", "batch")
@@ -191,7 +201,9 @@ data class PacienteRemoto(
     val acompanante: String? = null,
     val hobbies: String? = null,
     @SerialName("ultimas_etiquetas") val ultimasEtiquetas: String? = null,
-    @SerialName("optica_id") val opticaId: String = "mi_optica_base"
+    @SerialName("optica_id") val opticaId: String = "mi_optica_base",
+    @SerialName("updated_at") val updatedAt: String? = null,
+    @SerialName("updated_by") val updatedBy: String? = null
 ) {
     fun toEntity(): Paciente = Paciente(
         id               = id,
@@ -213,7 +225,9 @@ data class PacienteRemoto(
             ?.split(",")
             ?.filter { it.isNotBlank() }
             ?: emptyList(),
-        opticaId         = opticaId.ifBlank { "mi_optica_base" }
+        opticaId         = opticaId.ifBlank { "mi_optica_base" },
+        updatedAt        = updatedAt,
+        updatedBy        = updatedBy
     )
 }
 
@@ -234,7 +248,9 @@ private fun Paciente.toRemoto(): PacienteRemoto = PacienteRemoto(
     acompanante       = acompanante ?: "",
     hobbies           = hobbies ?: "",
     ultimasEtiquetas = ultimasEtiquetas.joinToString(","),
-    opticaId         = opticaId.ifBlank { "mi_optica_base" }
+    opticaId         = opticaId.ifBlank { "mi_optica_base" },
+    updatedAt        = updatedAt,
+    updatedBy        = updatedBy
 )
 
 data class PacientesSyncResult(val uploaded: Int, val downloaded: Int)

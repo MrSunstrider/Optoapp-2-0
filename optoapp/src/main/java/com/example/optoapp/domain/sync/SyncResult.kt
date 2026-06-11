@@ -6,7 +6,3 @@ sealed class SyncResult {
     data class Error(val message: String) : SyncResult()
     object NoConnection : SyncResult()
 }
-
-interface SyncStrategy {
-    suspend fun executeSync(opticaId: String): SyncResult
-}
