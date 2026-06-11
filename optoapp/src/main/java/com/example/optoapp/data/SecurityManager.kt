@@ -80,8 +80,8 @@ class SecurityManager(
         val alreadySet = dataStore.data.first()[prefPinHasBeenSet] ?: false
         if (alreadySet) return
         val stored = getSecurePin()
-        // El PIN de desarrollo no cuenta como "seteado por el usuario".
-        if (stored.isNotEmpty() && stored != DEV_FALLBACK_PIN) {
+        // Solo un PIN válido (no débil, no default) cuenta como "seteado por el usuario".
+        if (stored.isNotEmpty() && isValidPin(stored)) {
             dataStore.edit { prefs ->
                 prefs[prefPinHasBeenSet] = true
             }
