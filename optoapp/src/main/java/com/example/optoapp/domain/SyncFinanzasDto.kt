@@ -7,6 +7,7 @@ import com.example.optoapp.data.Pago
 import com.example.optoapp.data.ServicioExtra
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import java.time.Instant
 import java.time.LocalDate
 
 // ── Remote DTOs ──────────────────────────────────────────────────────────────
@@ -194,7 +195,7 @@ fun DispensacionOptica.toRemoto(): DispensacionRemota = DispensacionRemota(
     montoPagado = montoPagado, estadoEntrega = estadoEntrega,
     fechaVencimientoGarantia = fechaVencimientoGarantia?.toString(),
     distanciaLente = distanciaLente, altura = altura, subTipoBifocal = subTipoBifocal,
-    updatedAt = updatedAt, updatedBy = updatedBy
+    updatedAt = updatedAt ?: Instant.now().toString(), updatedBy = updatedBy
 )
 
 fun Pago.toRemoto(): PagoRemoto = PagoRemoto(
@@ -207,7 +208,7 @@ fun Pago.toRemoto(): PagoRemoto = PagoRemoto(
     metodoPago = metodoPago.trim().ifBlank { FinanzasRemoteDefaults.Pago.METODO_PAGO_VACIO },
     nota = nota.trim(),
     opticaId = opticaId.trim().ifBlank { FinanzasRemoteDefaults.OPTICA_ID_FALLBACK },
-    updatedAt = updatedAt,
+    updatedAt = updatedAt ?: Instant.now().toString(),
     updatedBy = updatedBy
 )
 
@@ -234,7 +235,7 @@ fun ServicioExtra.toRemoto(): ServicioRemoto = ServicioRemoto(
     pacienteId = pacienteId?.trim()?.takeIf { it.isNotBlank() },
     metodoPago = metodoPago.trim().ifBlank { FinanzasRemoteDefaults.ServicioExtra.METODO_PAGO_ROW },
     opticaId = opticaId.trim().ifBlank { FinanzasRemoteDefaults.OPTICA_ID_FALLBACK },
-    updatedAt = updatedAt,
+    updatedAt = updatedAt ?: Instant.now().toString(),
     updatedBy = updatedBy
 )
 

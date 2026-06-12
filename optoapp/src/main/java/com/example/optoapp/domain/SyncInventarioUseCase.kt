@@ -12,6 +12,7 @@ import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import java.time.Instant
 import java.time.LocalDate
 import javax.inject.Inject
 
@@ -200,8 +201,7 @@ private data class MonturaRemota(
     @SerialName("tipo_aro") val tipoAro: String = "",
     @SerialName("material_montura") val materialMontura: String = "",
     @SerialName("optica_id") val opticaId: String,
-    @SerialName("updated_at") val updatedAt: String? = null,
-    @SerialName("updated_by") val updatedBy: String? = null
+    @SerialName("updated_at") val updatedAt: String? = null
 ) {
     fun toEntity() = Montura(
         id = id,
@@ -218,8 +218,7 @@ private data class MonturaRemota(
         tipoAro = tipoAro,
         materialMontura = materialMontura,
         opticaId = opticaId,
-        updatedAt = updatedAt,
-        updatedBy = updatedBy
+        updatedAt = updatedAt
     )
 }
 
@@ -234,9 +233,7 @@ private data class MonturaMovimientoRemoto(
     @SerialName("stock_nuevo") val stockNuevo: Int,
     @SerialName("referencia_id") val referenciaId: String = "",
     val nota: String = "",
-    @SerialName("optica_id") val opticaId: String,
-    @SerialName("updated_at") val updatedAt: String? = null,
-    @SerialName("updated_by") val updatedBy: String? = null
+    @SerialName("optica_id") val opticaId: String
 ) {
     fun toEntity() = MonturaMovimiento(
         id = id,
@@ -248,9 +245,7 @@ private data class MonturaMovimientoRemoto(
         stockNuevo = stockNuevo,
         referenciaId = referenciaId,
         nota = nota,
-        opticaId = opticaId,
-        updatedAt = updatedAt,
-        updatedBy = updatedBy
+        opticaId = opticaId
     )
 }
 
@@ -269,8 +264,7 @@ private fun Montura.toRemoto(): MonturaRemota = MonturaRemota(
     tipoAro = tipoAro.trim(),
     materialMontura = materialMontura.trim(),
     opticaId = opticaId,
-    updatedAt = updatedAt,
-    updatedBy = updatedBy
+    updatedAt = updatedAt ?: Instant.now().toString()
 )
 
 private fun MonturaMovimiento.toRemoto(): MonturaMovimientoRemoto = MonturaMovimientoRemoto(
@@ -283,8 +277,6 @@ private fun MonturaMovimiento.toRemoto(): MonturaMovimientoRemoto = MonturaMovim
     stockNuevo = stockNuevo,
     referenciaId = referenciaId.trim(),
     nota = nota.trim(),
-    opticaId = opticaId,
-    updatedAt = updatedAt,
-    updatedBy = updatedBy
+    opticaId = opticaId
 )
 

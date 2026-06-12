@@ -8,6 +8,7 @@ import com.example.optoapp.data.Resource
 import com.example.optoapp.sync.errorLabelForException
 import kotlinx.coroutines.CancellationException
 import java.io.IOException
+import java.time.Instant
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import javax.inject.Inject
@@ -106,7 +107,8 @@ open class SyncHistorialUseCase @Inject constructor(
                     acompanante = p.acompanante ?: "",
                     hobbies = p.hobbies ?: "",
                     ultimasEtiquetas = p.ultimasEtiquetas.joinToString(","),
-                    opticaId = opticaId
+                    opticaId = opticaId,
+                    updatedAt = Instant.now().toString()
                 )
             }
             runCatching {

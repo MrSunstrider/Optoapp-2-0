@@ -4,11 +4,14 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
+import android.widget.Toast
 import androidx.core.content.FileProvider
 import com.example.optoapp.BuildConfig
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Order
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.SerialName
@@ -36,14 +39,14 @@ object UpdateChecker {
     private const val GITHUB_WEB = "https://github.com/$GITHUB_REPO/releases/latest"
 
     @Serializable
-    private data class GitHubRelease(
+    internal data class GitHubRelease(
         @SerialName("tag_name") val tagName: String = "",
         @SerialName("html_url") val htmlUrl: String = "",
         val assets: List<GitHubAsset> = emptyList(),
     )
 
     @Serializable
-    private data class GitHubAsset(
+    internal data class GitHubAsset(
         @SerialName("browser_download_url") val browserDownloadUrl: String = "",
     )
 
@@ -59,6 +62,12 @@ object UpdateChecker {
         val downloadUrl: String,
         val releaseUrl: String
     )
+
+    /** Resultado de la operación de descarga/instalación. */
+    sealed class DownloadResult {
+        data object Success : DownloadResult()
+        data class Error(val message: String) : DownloadResult()
+    }
 
     // ─── Cadena de respaldo ─────────────────────────────────────────────
 
@@ -85,7 +94,9 @@ object UpdateChecker {
      */
     private suspend fun tryCheckGithub(): UpdateInfo? {
         return try {
-            val json = URL(GITHUB_API).readTextWithTimeout()
+            val json = withContext(Dispatchers.IO) {
+                URL(GITHUB_API).readTextWithTimeout()
+            }
             val release: GitHubRelease = jsonParser.decodeFromString(json)
             val tag = release.tagName.removePrefix("v")
             val current = BuildConfig.VERSION_NAME
@@ -148,46 +159,93 @@ object UpdateChecker {
     // ─── Descarga e instalación ─────────────────────────────────────────
 
     /**
-     * Descarga el APK y abre el intent de instalación.
+     * Descarga el APK en segundo plano y abre el intent de instalación.
+     *
+     * @param context Contexto de la aplicación.
+     * @param url URL de descarga del APK.
+     * @param onError Callback opcional para notificar errores al usuario.
+     * @return [DownloadResult] indicando si la operación fue exitosa.
      */
-    fun downloadAndInstall(context: Context, url: String) {
-        try {
-            val dir = File(context.cacheDir, "updates").apply { mkdirs() }
-            val apk = File(dir, "optoapp-update.apk")
+    suspend fun downloadAndInstall(
+        context: Context,
+        url: String,
+        onError: ((String) -> Unit)? = { msg ->
+            Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
+        }
+    ): DownloadResult {
+        return withContext(Dispatchers.IO) {
+            try {
+                val dir = File(context.cacheDir, "updates").apply { mkdirs() }
+                val apk = File(dir, "optoapp-update.apk")
 
-            URL(url).openStream().use { input ->
-                FileOutputStream(apk).use { output ->
-                    input.copyTo(output)
+                URL(url).openStream().use { input ->
+                    FileOutputStream(apk).use { output ->
+                        input.copyTo(output)
+                    }
                 }
-            }
 
-            val uri: Uri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                FileProvider.getUriForFile(
-                    context,
-                    "${context.packageName}.fileprovider",
-                    apk,
-                )
-            } else {
-                Uri.fromFile(apk)
-            }
+                withContext(Dispatchers.Main) {
+                    launchInstallIntent(context, apk, url)
+                }
 
-            val intent = Intent(Intent.ACTION_VIEW).apply {
-                setDataAndType(uri, "application/vnd.android.package-archive")
+                DownloadResult.Success
+            } catch (e: Exception) {
+                val msg = e.localizedMessage ?: "Error al descargar la actualización"
+                withContext(Dispatchers.Main) {
+                    openInBrowser(context, url, msg, onError)
+                }
+                DownloadResult.Error(msg)
+            }
+        }
+    }
+
+    /** Lanza el intent de instalación del APK descargado. */
+    private fun launchInstallIntent(context: Context, apk: File, fallbackUrl: String) {
+        val uri: Uri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            FileProvider.getUriForFile(
+                context,
+                "${context.packageName}.fileprovider",
+                apk,
+            )
+        } else {
+            Uri.fromFile(apk)
+        }
+
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(uri, "application/vnd.android.package-archive")
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+
+        if (intent.resolveActivity(context.packageManager) != null) {
+            context.startActivity(intent)
+        } else {
+            openInBrowser(context, fallbackUrl, "No se pudo iniciar la instalación", null)
+        }
+    }
+
+    /**
+     * Abre la URL de descarga en el navegador como fallback.
+     * En Android 11+ requiere `<queries>` en el manifest (ya agregado).
+     */
+    private fun openInBrowser(
+        context: Context,
+        url: String,
+        logMessage: String,
+        onError: ((String) -> Unit)?
+    ) {
+        try {
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
             context.startActivity(intent)
-        } catch (_: Exception) {
-            // Si falla la descarga, abrir la URL en el navegador
-            try {
-                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                context.startActivity(intent)
-            } catch (_: Exception) { }
+        } catch (e: Exception) {
+            onError?.invoke("$logMessage. Abrí el link manualmente: $url")
         }
     }
 
     /** Compara versiones semánticas (ej: "1.2.3" > "1.1.9"). */
-    private fun isNewer(latest: String, current: String): Boolean {
+    fun isNewer(latest: String, current: String): Boolean {
         val l = latest.split(".").map { it.toIntOrNull() ?: 0 }
         val c = current.split(".").map { it.toIntOrNull() ?: 0 }
         for (i in 0 until maxOf(l.size, c.size)) {
