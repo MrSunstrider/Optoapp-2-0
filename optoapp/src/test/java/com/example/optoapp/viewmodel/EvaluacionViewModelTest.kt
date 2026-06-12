@@ -35,6 +35,7 @@ class EvaluacionViewModelTest {
         assertEquals(false, state.isLoading)
         assertEquals(false, state.balanceOd)
         assertEquals(false, state.balanceOi)
+        assertEquals(false, state.hasAdd)
         assertEquals(false, state.isAddAo)
         assertEquals(false, state.otrosPresbicia)
         assertEquals(false, state.otrosAnisometropia)

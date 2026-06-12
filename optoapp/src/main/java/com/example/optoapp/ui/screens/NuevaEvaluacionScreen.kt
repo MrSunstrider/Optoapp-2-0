@@ -73,6 +73,7 @@ fun NuevaEvaluacionScreen(
 
     LaunchedEffect(
         uiState.addCercaOd, uiState.addCercaOi,
+        uiState.addIntermediaOd, uiState.addIntermediaOi,
         uiState.avCcOdLejos, uiState.avCcOiLejos,
         uiState.isAddAo,
         uiState.recetaOdEsf, uiState.recetaOdCil, uiState.recetaOdEje,

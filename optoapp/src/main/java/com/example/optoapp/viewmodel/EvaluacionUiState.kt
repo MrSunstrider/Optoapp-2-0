@@ -120,6 +120,7 @@ data class EvaluacionUiState(
     val lcObservaciones: String = "",
 
     val isVpCerca: Boolean = true,
+    val hasAdd: Boolean = false,
     val isAddAo: Boolean = false,
     val isLoading: Boolean = false,
     val error: String? = null

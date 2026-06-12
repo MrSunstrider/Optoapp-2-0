@@ -1,20 +1,33 @@
 package com.example.optoapp.ui.components.evaluacion
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.optoapp.testing.TestTags
 import com.example.optoapp.ui.components.DropdownField
 import com.example.optoapp.ui.components.OptoTextField
+import com.example.optoapp.ui.theme.*
 import com.example.optoapp.viewmodel.EvaluacionUiState
 import com.example.optoapp.viewmodel.EvaluacionViewModel
+import java.util.Locale
 
 @Composable
 fun RefraccionSection(
@@ -104,39 +117,298 @@ fun RefraccionSection(
 
 @Composable
 private fun AddSection(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiState) -> Unit) {
-    OutlinedCard(
-        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
-        colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+    val currentAddOd = if (uiState.isVpCerca) uiState.addCercaOd else uiState.addIntermediaOd
+    val currentAddOi = if (uiState.isVpCerca) uiState.addCercaOi else uiState.addIntermediaOi
+
+    Surface(
+        color = SurfaceDarkMuted,
+        shape = RoundedCornerShape(20.dp),
+        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text("VP Cerca/Intermedio", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+            // ── Title + VP toggle ──────────────────────────────────────────
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Cerca", fontSize = 13.sp, fontWeight = FontWeight.Medium)
-                Spacer(Modifier.width(8.dp))
-                Switch(
-                    checked = uiState.isVpCerca,
-                    onCheckedChange = { onUpdate(uiState.copy(isVpCerca = it)) }
-                )
-                Spacer(Modifier.width(8.dp))
-                Text("Intermedio", fontSize = 13.sp, fontWeight = FontWeight.Medium)
-            }
-            Text("Adición", fontWeight = FontWeight.SemiBold, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("A/O", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                Spacer(Modifier.width(4.dp))
-                Switch(
-                    checked = uiState.isAddAo,
-                    onCheckedChange = { newVal -> onUpdate(uiState.copy(isAddAo = newVal)) }
+                Text("Adición", fontWeight = FontWeight.Bold, color = PrimaryDark)
+                Spacer(Modifier.weight(1f))
+                VpSegmentedControl(
+                    isVpCerca = uiState.isVpCerca,
+                    onVpChange = { onUpdate(uiState.copy(isVpCerca = it)) }
                 )
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OptoTextField(value = uiState.addCercaOd, onValueChange = { onUpdate(uiState.copy(addCercaOd = it)) }, label = "Add OD", modifier = Modifier.weight(1f))
-                OptoTextField(value = uiState.addCercaOi, onValueChange = { onUpdate(uiState.copy(addCercaOi = it)) }, label = "Add OI", modifier = Modifier.weight(1f), enabled = !uiState.isAddAo)
-                OptoTextField(value = uiState.addAv, onValueChange = { onUpdate(uiState.copy(addAv = it)) }, label = "AV VP", modifier = Modifier.weight(1f))
+
+            // ── Segmented: Sin Adición / Con Adición ──────────────────────
+            AddicionSegmentedControl(
+                hasAdd = uiState.hasAdd,
+                onHasAddChange = { newHasAdd ->
+                    if (!newHasAdd) {
+                        onUpdate(uiState.copy(
+                            hasAdd = false,
+                            addCercaOd = "", addCercaOi = "",
+                            addIntermediaOd = "", addIntermediaOi = "",
+                            addAv = ""
+                        ))
+                    } else {
+                        onUpdate(uiState.copy(hasAdd = true))
+                    }
+                }
+            )
+
+            // ── Controls when Con Adición ──────────────────────────────────
+            AnimatedVisibility(visible = uiState.hasAdd) {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+
+                    // -- Numeric stepper --
+                    NumericAddStepper(
+                        value = currentAddOd,
+                        onValueChange = { newVal ->
+                            val updated = if (uiState.isAddAo) {
+                                if (uiState.isVpCerca) uiState.copy(addCercaOd = newVal, addCercaOi = newVal)
+                                else uiState.copy(addIntermediaOd = newVal, addIntermediaOi = newVal)
+                            } else {
+                                if (uiState.isVpCerca) uiState.copy(addCercaOd = newVal)
+                                else uiState.copy(addIntermediaOd = newVal)
+                            }
+                            onUpdate(updated)
+                        }
+                    )
+
+                    // -- Quick buttons --
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        listOf("+1.00", "+2.00", "+3.00").forEach { value ->
+                            QuickAddButton(
+                                value = value,
+                                isSelected = currentAddOd == value,
+                                onClick = {
+                                    val updated = if (uiState.isAddAo) {
+                                        if (uiState.isVpCerca) uiState.copy(addCercaOd = value, addCercaOi = value)
+                                        else uiState.copy(addIntermediaOd = value, addIntermediaOi = value)
+                                    } else {
+                                        if (uiState.isVpCerca) uiState.copy(addCercaOd = value)
+                                        else uiState.copy(addIntermediaOd = value)
+                                    }
+                                    onUpdate(updated)
+                                },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                    }
+
+                    // -- A/O toggle --
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("A/O", fontWeight = FontWeight.Bold, color = TextPrimaryDark, fontSize = 14.sp)
+                        Spacer(Modifier.width(8.dp))
+                        Switch(
+                            checked = uiState.isAddAo,
+                            onCheckedChange = { onUpdate(uiState.copy(isAddAo = it)) },
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = PrimaryDark,
+                                checkedTrackColor = PrimaryDark.copy(alpha = 0.3f)
+                            )
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text("Ambos ojos igual", fontSize = 12.sp, color = TextSecondaryDark)
+                    }
+
+                    // -- Result fields --
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OptoTextField(
+                            value = currentAddOd,
+                            onValueChange = { newVal ->
+                                val base = uiState.copy(isAddAo = false)
+                                val updated = if (uiState.isVpCerca) base.copy(addCercaOd = newVal)
+                                else base.copy(addIntermediaOd = newVal)
+                                onUpdate(updated)
+                            },
+                            label = "Add OD",
+                            modifier = Modifier.weight(1f)
+                        )
+                        OptoTextField(
+                            value = if (uiState.isAddAo) currentAddOd else currentAddOi,
+                            onValueChange = { newVal ->
+                                val base = uiState.copy(isAddAo = false)
+                                val updated = if (uiState.isVpCerca) base.copy(addCercaOi = newVal)
+                                else base.copy(addIntermediaOi = newVal)
+                                onUpdate(updated)
+                            },
+                            label = "Add OI",
+                            enabled = !uiState.isAddAo,
+                            modifier = Modifier.weight(1f)
+                        )
+                        OptoTextField(
+                            value = uiState.addAv,
+                            onValueChange = { onUpdate(uiState.copy(addAv = it)) },
+                            label = "AV VP",
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
             }
         }
     }
 }
+
+// ─── Segmented controls ─────────────────────────────────────────────────────
+
+@Composable
+private fun VpSegmentedControl(
+    isVpCerca: Boolean,
+    onVpChange: (Boolean) -> Unit
+) {
+    CustomSegmentedRow(
+        options = listOf("Cerca", "Intermedio"),
+        selectedIndex = if (isVpCerca) 0 else 1,
+        onSelect = { onVpChange(it == 0) }
+    )
+}
+
+@Composable
+private fun AddicionSegmentedControl(
+    hasAdd: Boolean,
+    onHasAddChange: (Boolean) -> Unit
+) {
+    CustomSegmentedRow(
+        options = listOf("Sin Adición", "Con Adición"),
+        selectedIndex = if (hasAdd) 1 else 0,
+        onSelect = { onHasAddChange(it == 1) }
+    )
+}
+
+@Composable
+private fun CustomSegmentedRow(
+    options: List<String>,
+    selectedIndex: Int,
+    onSelect: (Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        color = SurfaceDark,
+        shape = RoundedCornerShape(12.dp),
+        modifier = modifier.fillMaxWidth()
+    ) {
+        Row(modifier = Modifier.padding(3.dp)) {
+            options.forEachIndexed { index, option ->
+                val isSelected = index == selectedIndex
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(if (isSelected) SurfaceDarkMuted else Color.Transparent)
+                        .clickable { onSelect(index) }
+                        .padding(vertical = 8.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = option,
+                        fontSize = 13.sp,
+                        fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                        color = if (isSelected) TextPrimaryDark else TextSecondaryDark
+                    )
+                }
+            }
+        }
+    }
+}
+
+// ─── Numeric stepper ────────────────────────────────────────────────────────
+
+@Composable
+private fun NumericAddStepper(
+    value: String,
+    onValueChange: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val currentVal = value.toDoubleOrNull() ?: 2.0
+
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center
+    ) {
+        CircularStepperButton(
+            icon = Icons.Default.Remove,
+            contentDescription = "Decrementar",
+            onClick = {
+                val newVal = (currentVal - 0.25).coerceAtLeast(0.75)
+                onValueChange(formatAddValue(newVal))
+            }
+        )
+
+        Spacer(Modifier.width(20.dp))
+
+        Text(
+            text = "${formatAddValue(currentVal)} D",
+            fontSize = 28.sp,
+            fontWeight = FontWeight.Bold,
+            color = PrimaryDark
+        )
+
+        Spacer(Modifier.width(20.dp))
+
+        CircularStepperButton(
+            icon = Icons.Default.Add,
+            contentDescription = "Incrementar",
+            onClick = {
+                val newVal = (currentVal + 0.25).coerceAtMost(3.50)
+                onValueChange(formatAddValue(newVal))
+            }
+        )
+    }
+}
+
+@Composable
+private fun CircularStepperButton(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    contentDescription: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        onClick = onClick,
+        modifier = modifier.size(46.dp),
+        shape = CircleShape,
+        color = SurfaceDark,
+        contentColor = TextPrimaryDark,
+        tonalElevation = 0.dp
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Icon(icon, contentDescription = contentDescription, modifier = Modifier.size(22.dp))
+        }
+    }
+}
+
+// ─── Quick buttons ──────────────────────────────────────────────────────────
+
+@Composable
+private fun QuickAddButton(
+    value: String,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        onClick = onClick,
+        modifier = modifier,
+        shape = RoundedCornerShape(12.dp),
+        color = if (isSelected) PrimaryDark.copy(alpha = 0.2f) else SurfaceDark,
+        contentColor = if (isSelected) PrimaryDark else TextPrimaryDark
+    ) {
+        Text(
+            text = value,
+            modifier = Modifier.padding(vertical = 10.dp).fillMaxWidth(),
+            fontSize = 16.sp,
+            fontWeight = FontWeight.SemiBold,
+            textAlign = TextAlign.Center
+        )
+    }
+}
+
+// ─── Helpers ────────────────────────────────────────────────────────────────
+
+private fun formatAddValue(value: Double): String =
+    "+%.2f".format(Locale.US, value)
 
 @Composable
 private fun DipSection(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiState) -> Unit) {

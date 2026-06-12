@@ -156,6 +156,9 @@ fun EvaluacionClinica.toEvaluacionUiState(): EvaluacionUiState {
         lcLaboratorio = e.lcLaboratorio, lcTipoLente = e.lcTipoLente,
         lcMaterial = e.lcMaterial, lcFechaAdaptacion = e.lcFechaAdaptacion,
         lcObservaciones = e.lcObservaciones,
+        hasAdd = e.addCercaOd.isNotEmpty() || e.addCercaOi.isNotEmpty() ||
+            e.addIntermediaOd.isNotEmpty() || e.addIntermediaOi.isNotEmpty() ||
+            e.addAv.isNotEmpty(),
         isAddAo = e.addCercaOd.isNotEmpty() && e.addCercaOd == e.addCercaOi
     )
 }

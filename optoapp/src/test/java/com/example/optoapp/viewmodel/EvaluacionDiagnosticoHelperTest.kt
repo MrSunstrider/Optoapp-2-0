@@ -152,15 +152,81 @@ class EvaluacionDiagnosticoHelperTest {
     }
 
     @Test
-    fun computeOtrosAuto_isAddAo_syncsAdd() {
+    fun computeOtrosAuto_isAddAo_syncsCercaAndIntermediaAdd() {
         val state = EvaluacionUiState(
             fecha = LocalDate.of(2024, 1, 1),
             isAddAo = true,
             addCercaOd = "+2.00",
-            addCercaOi = "+1.50"
+            addCercaOi = "+1.50",
+            addIntermediaOd = "+1.75",
+            addIntermediaOi = "+1.25"
         )
         val result = computeOtrosAuto(state)
         assertEquals("+2.00", result.addCercaOi)
+        assertEquals("+1.75", result.addIntermediaOi)
+    }
+
+    @Test
+    fun computeOtrosAuto_isAddAoFalse_doesNotSyncAdd() {
+        val state = EvaluacionUiState(
+            fecha = LocalDate.of(2024, 1, 1),
+            isAddAo = false,
+            addCercaOd = "+2.00",
+            addCercaOi = "+1.50",
+            addIntermediaOd = "+1.75",
+            addIntermediaOi = "+1.25"
+        )
+        val result = computeOtrosAuto(state)
+        assertEquals("+1.50", result.addCercaOi)
+        assertEquals("+1.25", result.addIntermediaOi)
+    }
+
+    @Test
+    fun computeOtrosAuto_addIntermediaPositive_setsPresbicia() {
+        val state = EvaluacionUiState(
+            fecha = LocalDate.of(2024, 1, 1),
+            addIntermediaOd = "+2.00",
+            autoPresbicia = true
+        )
+        val result = computeOtrosAuto(state)
+        assertTrue("Presbicia should be true when addIntermedia > 0", result.otrosPresbicia)
+    }
+
+    @Test
+    fun computeOtrosAuto_addCercaOiOnlyPositive_setsPresbicia() {
+        // addCercaOd vacío, addCercaOi con valor (A/O off)
+        val state = EvaluacionUiState(
+            fecha = LocalDate.of(2024, 1, 1),
+            addCercaOi = "+2.00",
+            isAddAo = false,
+            autoPresbicia = true
+        )
+        val result = computeOtrosAuto(state)
+        assertTrue("Presbicia should be true when addCercaOi > 0", result.otrosPresbicia)
+    }
+
+    @Test
+    fun computeOtrosAuto_addIntermediaOiOnlyPositive_setsPresbicia() {
+        // Solo addIntermediaOi tiene valor
+        val state = EvaluacionUiState(
+            fecha = LocalDate.of(2024, 1, 1),
+            addIntermediaOi = "+2.00",
+            autoPresbicia = true
+        )
+        val result = computeOtrosAuto(state)
+        assertTrue("Presbicia should be true when addIntermediaOi > 0", result.otrosPresbicia)
+    }
+
+    @Test
+    fun computeOtrosAuto_allAddEmpty_clearsPresbicia() {
+        val state = EvaluacionUiState(
+            fecha = LocalDate.of(2024, 1, 1),
+            addCercaOd = "", addCercaOi = "",
+            addIntermediaOd = "", addIntermediaOi = "",
+            autoPresbicia = true
+        )
+        val result = computeOtrosAuto(state)
+        assertFalse("Presbicia should be false when all add fields empty", result.otrosPresbicia)
     }
 
     @Test
