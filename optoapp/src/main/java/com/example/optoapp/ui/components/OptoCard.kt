@@ -15,7 +15,7 @@ import com.example.optoapp.ui.theme.OptoTokens
 fun OptoCard(
     modifier: Modifier = Modifier,
     elevation: Dp = OptoTokens.elevation.level1,
-    shape: Shape = MaterialTheme.shapes.medium,
+    shape: Shape = OptoTokens.shapes.medium,
     colors: CardColors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
     onClick: (() -> Unit)? = null,
     content: @Composable () -> Unit

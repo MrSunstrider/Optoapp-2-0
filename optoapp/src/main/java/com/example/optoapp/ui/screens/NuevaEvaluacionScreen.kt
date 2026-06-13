@@ -34,6 +34,7 @@ import com.example.optoapp.ui.components.evaluacion.ExamenVisualSection
 import com.example.optoapp.ui.components.evaluacion.RefraccionSection
 import com.example.optoapp.viewmodel.EvaluacionViewModel
 import com.example.optoapp.util.DateUtils
+import com.example.optoapp.ui.components.OptoTopAppBar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -196,9 +197,8 @@ fun NuevaEvaluacionScreen(
         containerColor = MaterialTheme.colorScheme.surface,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
-            TopAppBar(
-                windowInsets = WindowInsets(0, 0, 0, 0),
-                title = { Text(if (evaluacionId == null) "Nueva Evaluación" else "Editar Evaluación") },
+            OptoTopAppBar(
+                title = if (evaluacionId == null) "Nueva Evaluación" else "Editar Evaluación",
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
@@ -208,11 +208,7 @@ fun NuevaEvaluacionScreen(
                     IconButton(onClick = { saveAction() }, modifier = Modifier.testTag(TestTags.EVALUACION_GUARDAR_BTN)) {
                         Icon(Icons.Default.Check, contentDescription = "Guardar")
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                )
+                }
             )
         }
     ) { padding ->

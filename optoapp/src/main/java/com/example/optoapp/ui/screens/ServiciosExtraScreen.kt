@@ -26,6 +26,7 @@ import com.example.optoapp.data.ServicioExtra
 import com.example.optoapp.util.DateUtils
 import kotlinx.coroutines.launch
 import java.util.*
+import com.example.optoapp.ui.components.OptoTopAppBar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -71,9 +72,8 @@ fun ServiciosExtraScreen(navController: NavController, drawerState: DrawerState,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
-            TopAppBar(
-                windowInsets = WindowInsets(0, 0, 0, 0),
-                title = { Text("Servicios Varios") },
+            OptoTopAppBar(
+                title = "Servicios Varios",
                 navigationIcon = {
                     IconButton(onClick = { scope.launch { drawerState.open() } }) {
                         Icon(Icons.Default.Menu, contentDescription = "Menu")

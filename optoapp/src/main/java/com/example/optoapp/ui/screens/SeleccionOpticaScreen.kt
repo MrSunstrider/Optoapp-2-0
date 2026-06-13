@@ -15,6 +15,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.optoapp.viewmodel.AuthViewModel
 import kotlinx.coroutines.launch
+import com.example.optoapp.ui.components.OptoTopAppBar
+import com.example.optoapp.ui.components.OptoCard
 
 /**
  * Elección de óptica cuando el usuario tiene varias membresías ([usuario_optica]).
@@ -41,7 +43,7 @@ fun SeleccionOpticaScreen(
     Scaffold(
         containerColor = MaterialTheme.colorScheme.surface,
         topBar = {
-            TopAppBar(title = { Text("Seleccionar óptica") })
+            OptoTopAppBar(title = "Seleccionar óptica")
         }
     ) { padding ->
         LazyColumn(
@@ -59,7 +61,7 @@ fun SeleccionOpticaScreen(
                 Spacer(Modifier.height(16.dp))
             }
             items(memberships, key = { it.opticaId }) { m ->
-                Card(
+                OptoCard(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable(enabled = !busy) {

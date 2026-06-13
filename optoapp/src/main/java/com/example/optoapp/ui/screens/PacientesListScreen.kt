@@ -39,6 +39,9 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.example.optoapp.testing.TestTags
 import com.example.optoapp.util.DateUtils
 import kotlinx.coroutines.launch
+import com.example.optoapp.ui.components.OptoTopAppBar
+import com.example.optoapp.ui.components.OptoCard
+import com.example.optoapp.ui.theme.OptoTokens
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -62,11 +65,8 @@ fun PacientesListScreen(navController: NavController, drawerState: DrawerState, 
         containerColor = MaterialTheme.colorScheme.surface,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
-            TopAppBar(
-                windowInsets = WindowInsets(0, 0, 0, 0),
-                title = {
-                    Text("Pacientes", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                },
+            OptoTopAppBar(
+                title = "Pacientes",
                 navigationIcon = {
                     IconButton(onClick = { scope.launch { drawerState.open() } }) {
                         Icon(Icons.Default.Menu, contentDescription = "Menu")
@@ -182,15 +182,12 @@ fun PacientesListScreen(navController: NavController, drawerState: DrawerState, 
 
 @Composable
 private fun PacienteCard(paciente: Paciente, onClick: () -> Unit) {
-    Card(
+    OptoCard(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        )
+        shape = OptoTokens.shapes.large,
+        elevation = 1.dp
     ) {
         Row(
             modifier = Modifier

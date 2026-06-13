@@ -26,6 +26,7 @@ import androidx.navigation.NavController
 import com.example.optoapp.viewmodel.BIViewModel
 import com.example.optoapp.viewmodel.Periodo
 import com.example.optoapp.ui.components.*
+import com.example.optoapp.ui.components.OptoTopAppBar
 import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -49,19 +50,13 @@ fun BIScreen(navController: NavController, viewModel: BIViewModel = hiltViewMode
     Scaffold(
         containerColor = MaterialTheme.colorScheme.surface,
         topBar = {
-            TopAppBar(
-                title = { Text("Panel de Estadísticas", fontWeight = FontWeight.Bold) },
-                windowInsets = WindowInsets(0, 0, 0, 0),
+            OptoTopAppBar(
+                title = "Panel de Estadísticas",
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                )
+                }
             )
         }
     ) { padding ->

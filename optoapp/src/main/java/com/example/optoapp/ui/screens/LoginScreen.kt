@@ -38,6 +38,8 @@ import androidx.navigation.NavController
 import com.example.optoapp.testing.TestTags
 import com.example.optoapp.viewmodel.AuthState
 import com.example.optoapp.viewmodel.AuthViewModel
+import com.example.optoapp.ui.components.OptoTopAppBar
+import com.example.optoapp.ui.components.OptoCard
 
 @Composable
 fun LoginScreen(
@@ -170,10 +172,10 @@ fun LoginScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             // ─── Card del formulario ──────────────────────────────────────────
-            Card(
+            OptoCard(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(20.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp),
+                elevation = 4.dp
             ) {
                 Column(
                     modifier = Modifier.padding(24.dp),
