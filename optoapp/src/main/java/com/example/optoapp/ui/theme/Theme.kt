@@ -11,37 +11,56 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
+import com.example.optoapp.ui.theme.OptoTokens
 
 private val DarkColorScheme = darkColorScheme(
-    primary = PrimaryDark,
-    secondary = PrimaryDarkVariant,
-    tertiary = AccentGreenDark,
+    primary = Primary,
+    onPrimary = OnPrimaryDark,
+    primaryContainer = PrimaryDark,
+    secondary = Secondary,
+    onSecondary = OnBackgroundDark,
+    tertiary = SecondaryDark,
+    onTertiary = OnBackgroundDark,
     background = BackgroundDark,
+    onBackground = OnBackgroundDark,
     surface = SurfaceDark,
-    onPrimary = Color(0xFF080C14),
-    onSecondary = Color(0xFF080C14),
-    onTertiary = Color(0xFF080C14),
-    onBackground = TextPrimaryDark,
-    onSurface = TextPrimaryDark,
-    error = ErrorRedDark,
-    secondaryContainer = SurfaceDarkMuted,
-    onSecondaryContainer = TextPrimaryDark
+    onSurface = OnSurfaceDark,
+    surfaceVariant = SurfaceVariantDark,
+    onSurfaceVariant = OnSurfaceVariantDark,
+    outline = OutlineDark,
+    outlineVariant = OutlineVariantDark,
+    error = ErrorDark,
+    onError = OnBackgroundDark,
+    inverseSurface = InverseSurfaceDark,
+    inverseOnSurface = OnSurfaceDark,
+    inversePrimary = PrimaryDark,
+    scrim = Scrim,
+    surfaceTint = SurfaceTintDark
 )
 
 private val LightColorScheme = lightColorScheme(
     primary = Primary,
-    secondary = PrimaryDark_s,
-    tertiary = AccentGreen,
-    background = BackgroundLight,
-    surface = SurfaceLight,
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = TextPrimary,
-    onSurface = TextPrimary,
-    error = ErrorRed,
-    secondaryContainer = SurfaceLightMuted,
-    onSecondaryContainer = TextPrimary
+    onPrimary = OnPrimary,
+    primaryContainer = PrimaryDark,
+    secondary = Secondary,
+    onSecondary = OnBackground,
+    tertiary = SecondaryDark,
+    onTertiary = OnBackground,
+    background = Background,
+    onBackground = OnBackground,
+    surface = Surface,
+    onSurface = OnSurface,
+    surfaceVariant = SurfaceVariant,
+    onSurfaceVariant = OnSurfaceVariant,
+    outline = Outline,
+    outlineVariant = OutlineVariant,
+    error = Error,
+    onError = OnBackground,
+    inverseSurface = InverseSurface,
+    inverseOnSurface = OnSurface,
+    inversePrimary = PrimaryDark,
+    scrim = Scrim,
+    surfaceTint = SurfaceTint
 )
 
 @Composable
@@ -66,6 +85,7 @@ fun OptoAppTheme(
     MaterialTheme(
         colorScheme = colorScheme,
         typography = Typography,
+        shapes = OptoTokens.getShapes(),
         content = content
     )
 }
