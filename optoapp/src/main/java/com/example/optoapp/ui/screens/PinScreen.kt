@@ -3,7 +3,6 @@ package com.example.optoapp.ui.screens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -53,7 +52,7 @@ fun PinScreen(navController: NavController, viewModel: AuthViewModel = hiltViewM
         ) {
             // ─── Logo "O" ────────────────────────────────────────────────────
             Surface(
-                shape = RoundedCornerShape(20.dp),
+                shape = MaterialTheme.shapes.large,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(64.dp)
             ) {
@@ -109,7 +108,7 @@ fun PinScreen(navController: NavController, viewModel: AuthViewModel = hiltViewM
             if (errorMessage != null) {
                 Surface(
                     color = MaterialTheme.colorScheme.error.copy(alpha = 0.12f),
-                    shape = RoundedCornerShape(8.dp),
+                    shape = MaterialTheme.shapes.small,
                     modifier = Modifier.testTag(TestTags.PIN_ERROR_MESSAGE)
                 ) {
                     Text(
@@ -135,7 +134,7 @@ fun PinScreen(navController: NavController, viewModel: AuthViewModel = hiltViewM
 
             // ─── Number Pad ─────────────────────────────────────────────────
             OptoCard(
-                shape = RoundedCornerShape(24.dp),
+                shape = MaterialTheme.shapes.large,
                 elevation = 1.dp
             ) {
                 Column(
@@ -188,7 +187,7 @@ fun PinScreen(navController: NavController, viewModel: AuthViewModel = hiltViewM
                                         .weight(1f)
                                         .height(64.dp)
                                         .then(if (isOk) Modifier.testTag(TestTags.PIN_CONFIRMAR_BTN) else Modifier),
-                                    shape = RoundedCornerShape(16.dp),
+                                    shape = MaterialTheme.shapes.medium,
                                     colors = ButtonDefaults.buttonColors(
                                         containerColor = when {
                                             isOk -> MaterialTheme.colorScheme.primary

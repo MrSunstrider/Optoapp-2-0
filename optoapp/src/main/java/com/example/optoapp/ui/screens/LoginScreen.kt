@@ -7,7 +7,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -135,7 +134,7 @@ fun LoginScreen(
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     // Logo: ojo dentro de círculo (emula la "O")
                     Surface(
-                        shape = RoundedCornerShape(20.dp),
+                        shape = MaterialTheme.shapes.large,
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(72.dp)
                     ) {
@@ -175,7 +174,7 @@ fun LoginScreen(
             // ─── Card del formulario ──────────────────────────────────────────
             OptoCard(
                 modifier = Modifier.fillMaxWidth(),
-                shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp),
+                shape = MaterialTheme.shapes.large,
                 elevation = 4.dp
             ) {
                 Column(
@@ -200,7 +199,7 @@ fun LoginScreen(
                         ),
                         singleLine = true,
                         modifier   = Modifier.fillMaxWidth().testTag(TestTags.LOGIN_EMAIL_FIELD),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = MaterialTheme.shapes.small
                     )
 
                     // Contraseña
@@ -236,7 +235,7 @@ fun LoginScreen(
                         ),
                         singleLine = true,
                         modifier   = Modifier.fillMaxWidth().testTag(TestTags.LOGIN_PASSWORD_FIELD),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = MaterialTheme.shapes.small
                     )
 
                     // ─── Recordar Cuenta ───────────────────────────────────────
@@ -267,7 +266,7 @@ fun LoginScreen(
                         if (authState is AuthState.Error) {
                             Surface(
                                 color = MaterialTheme.colorScheme.error.copy(alpha = 0.12f),
-                                shape = RoundedCornerShape(8.dp),
+                                shape = MaterialTheme.shapes.small,
                                 modifier = Modifier.testTag(TestTags.LOGIN_ERROR_MESSAGE)
                             ) {
                                 Text(
@@ -293,7 +292,7 @@ fun LoginScreen(
                             .fillMaxWidth()
                             .height(52.dp)
                             .testTag(TestTags.LOGIN_INGRESAR_BTN),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = MaterialTheme.shapes.small
                     ) {
                         if (authState is AuthState.Loading) {
                             CircularProgressIndicator(
@@ -319,7 +318,7 @@ fun LoginScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(48.dp),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = MaterialTheme.shapes.small
                     ) {
                         Icon(
                             painter = painterResource(com.example.optoapp.R.drawable.ic_google_logo),
@@ -337,7 +336,7 @@ fun LoginScreen(
                     OutlinedButton(
                         onClick = { navController.navigate("register") },
                         modifier = Modifier.fillMaxWidth().height(48.dp),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = MaterialTheme.shapes.small
                     ) {
                         Icon(
                             imageVector = Icons.Default.Email,

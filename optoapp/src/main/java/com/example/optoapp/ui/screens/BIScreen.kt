@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -139,7 +138,7 @@ fun BIScreen(navController: NavController, viewModel: BIViewModel = hiltViewMode
             // P3-T8: inventario, entregas y movimientos (misma óptica y período que arriba)
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(24.dp),
+                shape = MaterialTheme.shapes.large,
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
             ) {
                 Column(modifier = Modifier.padding(OptoTokens.spacing.lg), verticalArrangement = Arrangement.spacedBy(OptoTokens.spacing.sm)) {
@@ -165,7 +164,7 @@ fun BIScreen(navController: NavController, viewModel: BIViewModel = hiltViewMode
             // Best Sellers Section
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(24.dp),
+                shape = MaterialTheme.shapes.large,
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
             ) {
         Column(modifier = Modifier.padding(OptoTokens.spacing.lg)) {
@@ -208,7 +207,7 @@ fun KPICard(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
+        shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {

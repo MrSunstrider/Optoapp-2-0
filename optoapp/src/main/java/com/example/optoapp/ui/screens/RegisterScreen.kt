@@ -1,7 +1,6 @@
 package com.example.optoapp.ui.screens
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Email
@@ -124,7 +123,7 @@ fun RegisterScreen(
                 ),
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp)
+                shape = MaterialTheme.shapes.small
             )
 
             OutlinedTextField(
@@ -151,7 +150,7 @@ fun RegisterScreen(
                 ),
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp)
+                shape = MaterialTheme.shapes.small
             )
 
             OutlinedTextField(
@@ -170,7 +169,7 @@ fun RegisterScreen(
                 ),
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp)
+                shape = MaterialTheme.shapes.small
             )
 
             val errorMsg = localError ?: (authState as? AuthState.Error)?.message
@@ -201,7 +200,7 @@ fun RegisterScreen(
                 enabled = email.isNotBlank() && password.isNotBlank()
                     && confirmPassword.isNotBlank() && authState !is AuthState.Loading,
                 modifier = Modifier.fillMaxWidth().height(52.dp),
-                shape = RoundedCornerShape(12.dp)
+                shape = MaterialTheme.shapes.small
             ) {
                 if (authState is AuthState.Loading) {
                     CircularProgressIndicator(

@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Menu
@@ -234,7 +233,7 @@ private fun PacienteCard(paciente: Paciente, onClick: () -> Unit) {
             // Avatar with gradient background
             Surface(
                 modifier = Modifier.size(48.dp),
-                shape = RoundedCornerShape(14.dp),
+                shape = MaterialTheme.shapes.small,
                 color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
             ) {
                 Box(contentAlignment = Alignment.Center) {
@@ -302,7 +301,7 @@ private fun PacienteCard(paciente: Paciente, onClick: () -> Unit) {
                     // Tags/chips
                     paciente.ultimasEtiquetas.take(2).forEach { etiqueta ->
                         Surface(
-                            shape = RoundedCornerShape(6.dp),
+                            shape = MaterialTheme.shapes.small,
                             color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
                         ) {
                             Text(
