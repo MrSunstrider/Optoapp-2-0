@@ -89,9 +89,10 @@ fun OptoAppNavigation(authViewModel: AuthViewModel, supabaseClient: SupabaseClie
     var updateInfo by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<UpdateChecker.UpdateInfo?>(null) }
     LaunchedEffect(isLoggedIn) {
         if (isLoggedIn == true) {
-            withContext(kotlinx.coroutines.Dispatchers.IO) {
-                updateInfo = UpdateChecker.check(supabaseClient)
+            val info = withContext(kotlinx.coroutines.Dispatchers.IO) {
+                UpdateChecker.check(supabaseClient)
             }
+            updateInfo = info
         }
     }
 

@@ -18,42 +18,58 @@ fun UpdateDialog(updateInfo: UpdateChecker.UpdateInfo, onDismiss: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var isDownloading by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
 
     AlertDialog(
         onDismissRequest = { if (!isDownloading) onDismiss() },
         icon = { Text("🔄", fontSize = 28.sp) },
         title = {
-            Text("Nueva versión disponible", fontWeight = FontWeight.Bold)
+            Text(
+                if (errorMessage != null) "Error de actualización"
+                else "Nueva versión disponible",
+                fontWeight = FontWeight.Bold
+            )
         },
         text = {
-            if (isDownloading) {
-                Text("Descargando actualización…")
-            } else {
-                Text("Versión ${updateInfo.latestVersion} disponible para descargar.")
+            when {
+                errorMessage != null -> Text(errorMessage ?: "Ocurrió un error al descargar la actualización.")
+                isDownloading -> Text("Descargando actualización…")
+                else -> Text("Versión ${updateInfo.latestVersion} disponible para descargar.")
             }
         },
         confirmButton = {
-            TextButton(
-                onClick = {
-                    if (!isDownloading) {
-                        isDownloading = true
-                        scope.launch {
-                            UpdateChecker.downloadAndInstall(context, updateInfo.downloadUrl)
-                            onDismiss()
+            when {
+                errorMessage != null -> TextButton(onClick = onDismiss) {
+                    Text("Cerrar")
+                }
+                else -> TextButton(
+                    onClick = {
+                        if (!isDownloading) {
+                            isDownloading = true
+                            scope.launch {
+                                val result = UpdateChecker.downloadAndInstall(context, updateInfo.downloadUrl)
+                                if (result is UpdateChecker.DownloadResult.Error) {
+                                    errorMessage = result.message
+                                } else {
+                                    onDismiss()
+                                }
+                            }
                         }
-                    }
-                },
-                enabled = !isDownloading
-            ) {
-                Text(if (isDownloading) "Descargando…" else "Descargar e instalar")
+                    },
+                    enabled = !isDownloading
+                ) {
+                    Text(if (isDownloading) "Descargando…" else "Descargar e instalar")
+                }
             }
         },
         dismissButton = {
-            TextButton(
-                onClick = onDismiss,
-                enabled = !isDownloading
-            ) {
-                Text("Más tarde")
+            if (errorMessage == null) {
+                TextButton(
+                    onClick = onDismiss,
+                    enabled = !isDownloading
+                ) {
+                    Text("Más tarde")
+                }
             }
         }
     )

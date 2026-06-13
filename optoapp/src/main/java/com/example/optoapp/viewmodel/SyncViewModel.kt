@@ -141,6 +141,17 @@ class SyncViewModel @Inject constructor(
         }
     }
 
+    /** Resuelve TODOS los conflictos aceptando la versión de la nube y fuerza re-descarga. */
+    fun acceptAllCloud() {
+        viewModelScope.launch {
+            val opticaId = sessionManager.opticaId.first()
+            conflictDao.clearConflicts(opticaId)
+            _conflicts.value = emptyList()
+            _conflictCount.value = 0
+            performFullSync()
+        }
+    }
+
     /** Vuelve el estado de UI de sync a inactivo (tras mensaje o cierre de diálogo). */
     fun clearSyncUiState() {
         _syncState.value = SyncState.Idle

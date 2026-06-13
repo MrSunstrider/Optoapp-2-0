@@ -56,6 +56,11 @@ fun ConflictosScreen(
                 actions = {
                     if (conflicts.isNotEmpty()) {
                         TextButton(onClick = {
+                            syncViewModel.acceptAllCloud()
+                        }) {
+                            Text("Usar nube para todos")
+                        }
+                        TextButton(onClick = {
                             conflicts.forEach { syncViewModel.dismissConflict(it) }
                         }) {
                             Text("Descartar todos")

@@ -124,23 +124,22 @@ private fun AddSection(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiState)
     val currentAddOi = if (uiState.isVpCerca) uiState.addCercaOi else uiState.addIntermediaOi
 
     Surface(
-        color = SurfaceDarkMuted,
+        color = MaterialTheme.colorScheme.surfaceVariant,
         shape = RoundedCornerShape(20.dp),
         modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            // ── Title + VP toggle ──────────────────────────────────────────
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Adición", fontWeight = FontWeight.Bold, color = PrimaryDark)
-                Spacer(Modifier.weight(1f))
-                OptoSegmentedSelector(
-                    options = listOf("Cerca", "Intermedio"),
-                    selectedIndex = if (uiState.isVpCerca) 0 else 1,
-                    onSelect = { onUpdate(uiState.copy(isVpCerca = it == 0)) }
-                )
-            }
+            // ── Title ──────────────────────────────────────────────────────
+            Text(
+                "Adición",
+                fontWeight = FontWeight.Bold,
+                fontSize = 18.sp,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center
+            )
 
-            // ── Segmented: Sin Adición / Con Adición ──────────────────────
+            // ── TOP: Sin Adición / Con Adición ─────────────────────────────
             OptoSegmentedSelector(
                 options = listOf("Sin Adición", "Con Adición"),
                 selectedIndex = if (uiState.hasAdd) 1 else 0,
@@ -149,8 +148,7 @@ private fun AddSection(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiState)
                         onUpdate(uiState.copy(
                             hasAdd = false,
                             addCercaOd = "", addCercaOi = "",
-                            addIntermediaOd = "", addIntermediaOi = "",
-                            addAv = ""
+                            addIntermediaOd = "", addIntermediaOi = ""
                         ))
                     } else {
                         onUpdate(uiState.copy(hasAdd = true))
@@ -158,11 +156,18 @@ private fun AddSection(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiState)
                 }
             )
 
+            // ── VP mode: Cerca / Intermedio ────────────────────────────────
+            OptoSegmentedSelector(
+                options = listOf("Cerca", "Intermedio"),
+                selectedIndex = if (uiState.isVpCerca) 0 else 1,
+                onSelect = { onUpdate(uiState.copy(isVpCerca = it == 0)) }
+            )
+
             // ── Controls when Con Adición ──────────────────────────────────
             AnimatedVisibility(visible = uiState.hasAdd) {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
 
-                    // -- Numeric stepper --
+                    // -- Numeric stepper (max +4.00) --
                     NumericAddStepper(
                         value = currentAddOd,
                         onValueChange = { newVal ->
@@ -177,12 +182,12 @@ private fun AddSection(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiState)
                         }
                     )
 
-                    // -- Quick buttons --
+                    // -- Quick chips +3.50 and +4.00 --
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        listOf("+1.00", "+2.00", "+3.00").forEach { value ->
+                        listOf("+1.00", "+2.00", "+3.00", "+3.50", "+4.00").forEach { value ->
                             OptoQuickAddChip(
                                 value = value,
                                 isSelected = currentAddOd == value,
@@ -201,23 +206,23 @@ private fun AddSection(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiState)
                         }
                     }
 
-                    // -- A/O toggle --
+                    // -- A/O toggle (above manual fields) --
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("A/O", fontWeight = FontWeight.Bold, color = TextPrimaryDark, fontSize = 14.sp)
+                        Text("A/O", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
                         Spacer(Modifier.width(8.dp))
                         Switch(
                             checked = uiState.isAddAo,
                             onCheckedChange = { onUpdate(uiState.copy(isAddAo = it)) },
                             colors = SwitchDefaults.colors(
-                                checkedThumbColor = PrimaryDark,
-                                checkedTrackColor = PrimaryDark.copy(alpha = 0.3f)
+                                checkedThumbColor = MaterialTheme.colorScheme.primary,
+                                checkedTrackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
                             )
                         )
                         Spacer(Modifier.width(8.dp))
-                        Text("Ambos ojos igual", fontSize = 12.sp, color = TextSecondaryDark)
+                        Text("Ambos ojos igual", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
 
-                    // -- Result fields --
+                    // -- Manual input OD / OI --
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         OptoVisionInput(
                             value = currentAddOd,
@@ -242,14 +247,34 @@ private fun AddSection(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiState)
                             enabled = !uiState.isAddAo,
                             modifier = Modifier.weight(1f)
                         )
-                        OptoVisionInput(
-                            value = uiState.addAv,
-                            onValueChange = { onUpdate(uiState.copy(addAv = it)) },
-                            label = "AV VP",
-                            modifier = Modifier.weight(1f)
-                        )
                     }
                 }
+            }
+
+            // ── AV VP: SIEMPRE visible ───────────────────────────────────
+            HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+            Text(
+                "AV VP",
+                fontWeight = FontWeight.Bold,
+                fontSize = 14.sp,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center
+            )
+            Text(
+                "Aplica a Px présbitas y no présbitas.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center
+            )
+            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                OptoVisionInput(
+                    value = uiState.addAv,
+                    onValueChange = { onUpdate(uiState.copy(addAv = it)) },
+                    label = "AV VP",
+                    modifier = Modifier.width(140.dp)
+                )
             }
         }
     }
@@ -285,7 +310,7 @@ private fun NumericAddStepper(
             text = "${formatAddValue(currentVal)} D",
             fontSize = 28.sp,
             fontWeight = FontWeight.Bold,
-            color = PrimaryDark
+            color = MaterialTheme.colorScheme.primary
         )
 
         Spacer(Modifier.width(20.dp))
@@ -294,7 +319,7 @@ private fun NumericAddStepper(
             icon = Icons.Default.Add,
             contentDescription = "Incrementar",
             onClick = {
-                val newVal = (currentVal + 0.25).coerceAtMost(3.50)
+                val newVal = (currentVal + 0.25).coerceAtMost(4.00)
                 onValueChange(formatAddValue(newVal))
             }
         )

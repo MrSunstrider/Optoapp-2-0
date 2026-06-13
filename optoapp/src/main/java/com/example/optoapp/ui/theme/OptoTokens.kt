@@ -5,16 +5,6 @@ import androidx.compose.material3.Shapes
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
-/**
- * Design tokens for OptoApp's Material 3 theme.
- * 
- * This file contains the single source of truth for:
- * - Color constants (light/dark variants)
- * - Shape definitions (small, medium, large)
- * - Spacing scale (xs, sm, md, lg, xl, xxl)
- * - Elevation levels (level0, level1, level2, level3)
- */
-
 object OptoTokens {
     // --- Spacing tokens ---
     object spacing {
@@ -43,55 +33,71 @@ object OptoTokens {
 
     // --- Color tokens (light theme) ---
     object colors {
-        // Primary palette
-        val primary: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF6D4AFF)  // #6D4AFF
-        val onPrimary: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFFFFFFF)  // #FFFFFF
-        val primaryContainer: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFEDE8FF)  // #EDE8FF
-        
-        // Secondary palette
-        val secondary: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF3DD9A5)  // #3DD9A5
-        
-        // Background and surface
-        val background: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFF5F7FA)  // #F5F7FA
-        val surface: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFFFFFFF)  // #FFFFFF
-        
-        // Additional M3 slots
-        val surfaceVariant: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFE8EAF0)  // #E8EAF0
-        val onSurfaceVariant: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF475569)  // #475569
-        val outline: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFCBD5E1)  // #CBD5E1
-        val outlineVariant: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFE2E8F0)  // #E2E8F0
-        val error: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFDC2626)  // #DC2626
-        val inverseSurface: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF1A0F3D)  // #1A0F3D
-        val scrim: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF000000)  // #000000
-        val surfaceTint: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF6D4AFF)  // #6D4AFF
+        // Primary — deep teal (premium medical)
+        val primary: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF006D6F)
+        val onPrimary: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFFFFFFF)
+        val primaryContainer: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFA0F0F0)
+        val onPrimaryContainer: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF002020)
+        val secondary: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF4A6A70)
+        val onSecondary: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFFFFFFF)
+        val secondaryContainer: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFCDE8E8)
+        val onSecondaryContainer: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF042024)
+        val tertiary: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFB35B5B)
+        val onTertiary: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFFFFFFF)
+        val tertiaryContainer: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFFFD9DA)
+        val onTertiaryContainer: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF401114)
+        val error: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFBA1A1A)
+        val onError: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFFFFFFF)
+        val errorContainer: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFFFDAD6)
+        val onErrorContainer: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF410002)
+        val background: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFF8FCFB)
+        val onBackground: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF191C1C)
+        val surface: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFF8FCFB)
+        val onSurface: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF191C1C)
+        val surfaceVariant: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFDAE5E4)
+        val onSurfaceVariant: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF3F4948)
+        val outline: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF6F7978)
+        val outlineVariant: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFBEC9C8)
+        val scrim: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF000000)
+        val surfaceTint: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF006D6F)
+        val inverseSurface: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF2D3131)
+        val inverseOnSurface: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFEFF1F1)
+        val inversePrimary: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF4EDBDB)
     }
 
     // --- Color tokens (dark theme) ---
     object colorsDark {
-        // Primary palette (dark)
-        val primary: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF9B8AFF)  // #9B8AFF
-        val onPrimary: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF1A0F3D)  // #1A0F3D
-        val primaryContainer: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF2D1F6E)  // #2D1F6E
-        
-        // Secondary palette (dark)
-        val secondary: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF6EE7B7)  // #6EE7B7
-        
-        // Background and surface (dark)
-        val background: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF0B1220)  // #0B1220
-        val surface: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF172033)  // #172033
-        
-        // Additional M3 slots (dark)
-        val surfaceVariant: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF1E293B)  // #1E293B
-        val onSurfaceVariant: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF94A3B8)  // #94A3B8
-        val outline: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF334155)  // #334155
-        val outlineVariant: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF1E293B)  // #1E293B
-        val error: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFF87171)  // #F87171
-        val inverseSurface: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFFFFFFF)  // #FFFFFF
-        val scrim: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF000000)  // #000000
-        val surfaceTint: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF9B8AFF)  // #9B8AFF
+        val primary: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF4EDBDB)
+        val onPrimary: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF003738)
+        val primaryContainer: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF005354)
+        val onPrimaryContainer: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFA0F0F0)
+        val secondary: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFB5CBD1)
+        val onSecondary: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF1F3538)
+        val secondaryContainer: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF364B4F)
+        val onSecondaryContainer: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFCDE8E8)
+        val tertiary: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFFFB3B0)
+        val onTertiary: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF5E1418)
+        val tertiaryContainer: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF7F2C2E)
+        val onTertiaryContainer: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFFFD9DA)
+        val error: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFF2B8B5)
+        val onError: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF601410)
+        val errorContainer: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF8C1D18)
+        val onErrorContainer: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFFFDAD6)
+        val background: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF0E1515)
+        val onBackground: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFE0E3E3)
+        val surface: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF161D1D)
+        val onSurface: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFE0E3E3)
+        val surfaceVariant: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF3F4948)
+        val onSurfaceVariant: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFBEC9C8)
+        val outline: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF889392)
+        val outlineVariant: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF3F4948)
+        val scrim: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF000000)
+        val surfaceTint: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF4EDBDB)
+        val inverseSurface: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFE0E3E3)
+        val inverseOnSurface: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF2D3131)
+        val inversePrimary: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF006D6F)
     }
 
-    // --- Helper function to get shapes for MaterialTheme ---
     fun getShapes(): Shapes = Shapes(
         small = shapes.small,
         medium = shapes.medium,
