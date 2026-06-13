@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.MiscellaneousServices
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -111,7 +112,7 @@ fun ServiciosExtraScreen(navController: NavController, drawerState: DrawerState,
                             modifier = Modifier.padding(OptoTokens.spacing.xl)
                         ) {
                             Icon(
-                                Icons.Default.Search,
+                                Icons.Default.MiscellaneousServices,
                                 contentDescription = null,
                                 modifier = Modifier.size(48.dp),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant

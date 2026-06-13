@@ -89,4 +89,5 @@
     <string name="config_fiscal_moneda_label">Moneda (opcional)</string>
     <string name="config_fiscal_pais_label">País (opcional)</string>
     <string name="config_fiscal_contacto_label">WhatsApp / teléfono de contacto (opcional)</string>
+    <string name="cancelar">Cancelar</string>
 </resources>

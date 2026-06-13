@@ -10,6 +10,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.PersonSearch
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -172,7 +173,7 @@ fun PacientesListScreen(navController: NavController, drawerState: DrawerState, 
                         modifier = Modifier.padding(OptoTokens.spacing.xl)
                     ) {
                         Icon(
-                            Icons.Default.Person,
+                            Icons.Default.PersonSearch,
                             contentDescription = null,
                             modifier = Modifier.size(48.dp),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
@@ -199,7 +200,7 @@ fun PacientesListScreen(navController: NavController, drawerState: DrawerState, 
             LazyColumn(
                 modifier = Modifier.fillMaxSize().testTag(TestTags.PACIENTE_LISTA),
                 contentPadding = PaddingValues(bottom = 88.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+                verticalArrangement = Arrangement.spacedBy(OptoTokens.spacing.md)
             ) {
                 items(pacientes, key = { it.id }) { paciente ->
                     PacienteCard(paciente) {
@@ -226,7 +227,7 @@ private fun PacienteCard(paciente: Paciente, onClick: () -> Unit) {
                 .fillMaxWidth()
                 .padding(OptoTokens.spacing.md),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(14.dp)
+            horizontalArrangement = Arrangement.spacedBy(OptoTokens.spacing.md)
         ) {
             // Avatar with gradient background
             Surface(

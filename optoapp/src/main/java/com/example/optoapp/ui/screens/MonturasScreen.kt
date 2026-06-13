@@ -15,6 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Inventory2
+import androidx.compose.material.icons.outlined.Inventory2
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.Card
@@ -126,7 +127,7 @@ fun MonturasScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 14.dp, vertical = 4.dp),
+                .padding(horizontal = OptoTokens.spacing.md, vertical = OptoTokens.spacing.xs),
             verticalArrangement = Arrangement.spacedBy(OptoTokens.spacing.sm)
         ) {
             OptoTextField(
@@ -145,7 +146,7 @@ fun MonturasScreen(
                         verticalArrangement = Arrangement.spacedBy(OptoTokens.spacing.sm)
                     ) {
                         Icon(
-                            Icons.Default.Inventory2,
+                            Icons.Outlined.Inventory2,
                             contentDescription = null,
                             modifier = Modifier.size(48.dp),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant

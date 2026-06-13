@@ -7,8 +7,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.optoapp.R
 import com.example.optoapp.ui.theme.OptoTokens
 
 @Composable
@@ -73,7 +75,7 @@ fun DropdownField(
                 }
             },
             confirmButton = {
-                TextButton(onClick = { showDialog = false }) { Text("Cancelar") }
+                TextButton(onClick = { showDialog = false }) { Text(stringResource(R.string.cancelar)) }
             }
         )
     }

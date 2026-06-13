@@ -277,4 +277,42 @@ class OptoTokensTest {
         val ratio = contrastRatio(OptoTokens.colorsDark.surface, OptoTokens.colorsDark.onSurfaceVariant)
         assertTrue("Dark surface/onSurfaceVariant contrast $ratio is below 3:1 (AA large)", ratio >= 3.0)
     }
+
+    // --- M11: Additional WCAG AA contrast pairs ---
+
+    @Test
+    fun secondary_onSecondary_light_contrast_meetsAALarge() {
+        val ratio = contrastRatio(OptoTokens.colors.secondary, OptoTokens.colors.onSecondary)
+        assertTrue("Light secondary/onSecondary contrast $ratio is below 3:1 (AA large UI)", ratio >= 3.0)
+    }
+
+    @Test
+    fun secondary_onSecondary_dark_contrast_meetsAALarge() {
+        val ratio = contrastRatio(OptoTokens.colorsDark.secondary, OptoTokens.colorsDark.onSecondary)
+        assertTrue("Dark secondary/onSecondary contrast $ratio is below 3:1 (AA large UI)", ratio >= 3.0)
+    }
+
+    @Test
+    fun error_onError_light_contrast_meetsAA() {
+        val ratio = contrastRatio(OptoTokens.colors.error, OptoTokens.colors.onError)
+        assertTrue("Light error/onError contrast $ratio is below 4.5:1 (AA)", ratio >= 4.5)
+    }
+
+    @Test
+    fun error_onError_dark_contrast_meetsAA() {
+        val ratio = contrastRatio(OptoTokens.colorsDark.error, OptoTokens.colorsDark.onError)
+        assertTrue("Dark error/onError contrast $ratio is below 4.5:1 (AA)", ratio >= 4.5)
+    }
+
+    @Test
+    fun surface_onSurface_light_contrast_meetsAA() {
+        val ratio = contrastRatio(OptoTokens.colors.surface, OptoTokens.colors.onSurface)
+        assertTrue("Light surface/onSurface contrast $ratio is below 4.5:1 (AA)", ratio >= 4.5)
+    }
+
+    @Test
+    fun surface_onSurface_dark_contrast_meetsAA() {
+        val ratio = contrastRatio(OptoTokens.colorsDark.surface, OptoTokens.colorsDark.onSurface)
+        assertTrue("Dark surface/onSurface contrast $ratio is below 4.5:1 (AA)", ratio >= 4.5)
+    }
 }

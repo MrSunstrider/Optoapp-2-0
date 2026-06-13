@@ -145,7 +145,7 @@ fun ConfiguracionScreen(
             navigationIcon = { IconButton(onClick = { scope.launch { drawerState.open() } }) { Icon(Icons.Default.Menu, contentDescription = "Menu") } }
         )
     }) { padding ->
-        Column(modifier = Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(horizontal = 14.dp, vertical = 8.dp),
+        Column(modifier = Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(horizontal = OptoTokens.spacing.md, vertical = OptoTokens.spacing.sm),
             verticalArrangement = Arrangement.spacedBy(OptoTokens.spacing.sm)) {
 
             SectionHeader("SEGURIDAD Y ACCESO")

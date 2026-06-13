@@ -14,30 +14,46 @@ import org.robolectric.RobolectricTestRunner
 @RunWith(RobolectricTestRunner::class)
 class RefraccionSectionTest {
 
-    // ── H7: NumericAddStepper default ──────────────────────────────────────
+    // ── H7 + M12: parseAddValue tests ─────────────────────────────────────
 
     @Test
-    fun `NumericAddStepper defaults to 0_0D when value is empty`() {
-        val currentVal = "".toDoubleOrNull() ?: 0.0
-        assertEquals(0.0, currentVal, 0.001)
+    fun `parseAddValue defaults to 0_0D when value is empty`() {
+        assertEquals(0.0, parseAddValue(""), 0.001)
     }
 
     @Test
-    fun `NumericAddStepper defaults to 0_0D when value is not a number`() {
-        val currentVal = "abc".toDoubleOrNull() ?: 0.0
-        assertEquals(0.0, currentVal, 0.001)
+    fun `parseAddValue defaults to 0_0D when value is not a number`() {
+        assertEquals(0.0, parseAddValue("abc"), 0.001)
     }
 
     @Test
-    fun `NumericAddStepper uses parsed value when valid`() {
-        val currentVal = "1.75".toDoubleOrNull() ?: 0.0
-        assertEquals(1.75, currentVal, 0.001)
+    fun `parseAddValue uses parsed value when valid`() {
+        assertEquals(1.75, parseAddValue("1.75"), 0.001)
     }
 
     @Test
-    fun `NumericAddStepper handles zero value`() {
-        val currentVal = "0.0".toDoubleOrNull() ?: 0.0
-        assertEquals(0.0, currentVal, 0.001)
+    fun `parseAddValue handles zero value`() {
+        assertEquals(0.0, parseAddValue("0.0"), 0.001)
+    }
+
+    // ── M12: formatAddValue tests ─────────────────────────────────────────
+
+    @Test
+    fun `formatAddValue handles positive values with plus sign`() {
+        assertEquals("+1.75", formatAddValue(1.75))
+        assertEquals("+2.00", formatAddValue(2.0))
+        assertEquals("+0.25", formatAddValue(0.25))
+    }
+
+    @Test
+    fun `formatAddValue handles negative values`() {
+        assertEquals("-1.75", formatAddValue(-1.75))
+        assertEquals("-0.50", formatAddValue(-0.5))
+    }
+
+    @Test
+    fun `formatAddValue handles zero`() {
+        assertEquals("+0.00", formatAddValue(0.0))
     }
 
     // ── C6: onFocusLostEye callback ───────────────────────────────────────

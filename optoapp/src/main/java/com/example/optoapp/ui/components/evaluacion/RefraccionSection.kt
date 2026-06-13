@@ -261,7 +261,7 @@ private fun NumericAddStepper(
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val currentVal = value.toDoubleOrNull() ?: 0.0
+    val currentVal = parseAddValue(value)
 
     Row(
         modifier = modifier.fillMaxWidth(),
@@ -322,8 +322,11 @@ private fun CircularStepperButton(
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
-private fun formatAddValue(value: Double): String =
-    "+%.2f".format(Locale.US, value)
+internal fun parseAddValue(value: String): Double =
+    value.toDoubleOrNull() ?: 0.0
+
+internal fun formatAddValue(value: Double): String =
+    if (value >= 0) "+%.2f".format(Locale.US, value) else "%.2f".format(Locale.US, value)
 
 @Composable
 private fun DipSection(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiState) -> Unit) {

@@ -113,7 +113,7 @@ fun CreatePinScreen(navController: NavController, viewModel: AuthViewModel = hil
                     Text(
                         text = errorMessage!!,
                         color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                        modifier = Modifier.padding(horizontal = OptoTokens.spacing.lg, vertical = OptoTokens.spacing.md),
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Medium,
                         textAlign = TextAlign.Center

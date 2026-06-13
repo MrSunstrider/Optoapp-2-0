@@ -50,10 +50,13 @@ object OptoTokens {
         
         // Secondary palette
         val secondary: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF3DD9A5)  // #3DD9A5
+        val onSecondary: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF0F172A)  // #0F172A
         
         // Background and surface
         val background: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFF5F7FA)  // #F5F7FA
+        val onBackground: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF0F172A)  // #0F172A
         val surface: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFFFFFFF)  // #FFFFFF
+        val onSurface: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF0F172A)  // #0F172A
         
         // Additional M3 slots
         val surfaceVariant: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFE8EAF0)  // #E8EAF0
@@ -61,6 +64,7 @@ object OptoTokens {
         val outline: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFCBD5E1)  // #CBD5E1
         val outlineVariant: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFE2E8F0)  // #E2E8F0
         val error: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFDC2626)  // #DC2626
+        val onError: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFFFFFFF)  // #FFFFFF
         val inverseSurface: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF1A0F3D)  // #1A0F3D
         val scrim: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF000000)  // #000000
         val surfaceTint: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF6D4AFF)  // #6D4AFF
@@ -75,10 +79,13 @@ object OptoTokens {
         
         // Secondary palette (dark)
         val secondary: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF6EE7B7)  // #6EE7B7
+        val onSecondary: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF1A0F3D)  // #1A0F3D
         
         // Background and surface (dark)
         val background: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF0B1220)  // #0B1220
+        val onBackground: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFF1F5F9)  // #F1F5F9
         val surface: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF172033)  // #172033
+        val onSurface: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFF1F5F9)  // #F1F5F9
         
         // Additional M3 slots (dark)
         val surfaceVariant: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF1E293B)  // #1E293B
@@ -86,6 +93,7 @@ object OptoTokens {
         val outline: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF334155)  // #334155
         val outlineVariant: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF1E293B)  // #1E293B
         val error: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFF87171)  // #F87171
+        val onError: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF1A0F3D)  // #1A0F3D
         val inverseSurface: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFFFFFFF)  // #FFFFFF
         val scrim: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF000000)  // #000000
         val surfaceTint: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF9B8AFF)  // #9B8AFF

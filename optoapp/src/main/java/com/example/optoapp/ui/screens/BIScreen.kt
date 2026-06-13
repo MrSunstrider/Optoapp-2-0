@@ -66,7 +66,7 @@ fun BIScreen(navController: NavController, viewModel: BIViewModel = hiltViewMode
                 .padding(padding)
                 .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
                 .verticalScroll(scrollState)
-                .padding(horizontal = 14.dp, vertical = 4.dp),
+                .padding(horizontal = OptoTokens.spacing.md, vertical = OptoTokens.spacing.xs),
             verticalArrangement = Arrangement.spacedBy(OptoTokens.spacing.sm)
         ) {
             // Selector de Periodo
@@ -241,7 +241,7 @@ fun KPICard(
                     if (isGrowth) Icons.AutoMirrored.Filled.TrendingUp else Icons.AutoMirrored.Filled.TrendingDown,
                     contentDescription = null,
                     tint = if (isGrowth) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.error,
-                    modifier = Modifier.size(14.dp)
+                    modifier = Modifier.size(OptoTokens.spacing.md)
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(

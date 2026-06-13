@@ -22,6 +22,7 @@ import com.example.optoapp.util.InventarioMonturasPdfGenerator
 import com.example.optoapp.viewmodel.AuthViewModel
 import com.example.optoapp.viewmodel.OperacionHoyViewModel
 import java.util.Locale
+import com.example.optoapp.ui.components.OptoCard
 import com.example.optoapp.ui.components.OptoTopAppBar
 import com.example.optoapp.ui.theme.OptoTokens
 
@@ -119,10 +120,8 @@ fun OperacionHoyScreen(
             }
 
             // Alertas
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+            OptoCard(
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Column(modifier = Modifier.padding(OptoTokens.spacing.lg), verticalArrangement = Arrangement.spacedBy(OptoTokens.spacing.sm)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -149,10 +148,8 @@ fun OperacionHoyScreen(
             }
 
             // Exportaciones
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+            OptoCard(
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Column(modifier = Modifier.padding(OptoTokens.spacing.lg), verticalArrangement = Arrangement.spacedBy(OptoTokens.spacing.md)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -192,11 +189,10 @@ private fun KpiCard(
     highlight: Boolean = false,
     onClick: (() -> Unit)? = null
 ) {
-    Card(
+    OptoCard(
         onClick = onClick ?: {},
         modifier = modifier,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = OptoTokens.elevation.level2
     ) {
         Column(
             modifier = Modifier.padding(OptoTokens.spacing.lg).fillMaxWidth(),
