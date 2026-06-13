@@ -89,8 +89,8 @@ class OptoTokensTest {
     // --- Light theme color token tests ---
     
     @Test
-    fun primary_light_is6D4AFF() {
-        assertEquals(Color(0xFF6D4AFF), OptoTokens.colors.primary)
+    fun primary_light_is006D6F() {
+        assertEquals(Color(0xFF006D6F), OptoTokens.colors.primary)
     }
     
     @Test
@@ -99,53 +99,53 @@ class OptoTokensTest {
     }
     
     @Test
-    fun primaryContainer_light_isEDE8FF() {
-        assertEquals(Color(0xFFEDE8FF), OptoTokens.colors.primaryContainer)
+    fun primaryContainer_light_isA0F0F0() {
+        assertEquals(Color(0xFFA0F0F0), OptoTokens.colors.primaryContainer)
     }
     
     @Test
-    fun secondary_light_is3DD9A5() {
-        assertEquals(Color(0xFF3DD9A5), OptoTokens.colors.secondary)
+    fun secondary_light_is4A6A70() {
+        assertEquals(Color(0xFF4A6A70), OptoTokens.colors.secondary)
     }
     
     @Test
-    fun background_light_isF5F7FA() {
-        assertEquals(Color(0xFFF5F7FA), OptoTokens.colors.background)
+    fun background_light_isF8FCFB() {
+        assertEquals(Color(0xFFF8FCFB), OptoTokens.colors.background)
     }
     
     @Test
-    fun surface_light_isFFFFFF() {
-        assertEquals(Color(0xFFFFFFFF), OptoTokens.colors.surface)
+    fun surface_light_isF8FCFB() {
+        assertEquals(Color(0xFFF8FCFB), OptoTokens.colors.surface)
     }
     
     @Test
-    fun surfaceVariant_light_isE8EAF0() {
-        assertEquals(Color(0xFFE8EAF0), OptoTokens.colors.surfaceVariant)
+    fun surfaceVariant_light_isDAE5E4() {
+        assertEquals(Color(0xFFDAE5E4), OptoTokens.colors.surfaceVariant)
     }
     
     @Test
-    fun onSurfaceVariant_light_is475569() {
-        assertEquals(Color(0xFF475569), OptoTokens.colors.onSurfaceVariant)
+    fun onSurfaceVariant_light_is3F4948() {
+        assertEquals(Color(0xFF3F4948), OptoTokens.colors.onSurfaceVariant)
     }
     
     @Test
-    fun outline_light_isCBD5E1() {
-        assertEquals(Color(0xFFCBD5E1), OptoTokens.colors.outline)
+    fun outline_light_is6F7978() {
+        assertEquals(Color(0xFF6F7978), OptoTokens.colors.outline)
     }
     
     @Test
-    fun outlineVariant_light_isE2E8F0() {
-        assertEquals(Color(0xFFE2E8F0), OptoTokens.colors.outlineVariant)
+    fun outlineVariant_light_isBEC9C8() {
+        assertEquals(Color(0xFFBEC9C8), OptoTokens.colors.outlineVariant)
     }
     
     @Test
-    fun error_light_isDC2626() {
-        assertEquals(Color(0xFFDC2626), OptoTokens.colors.error)
+    fun error_light_isBA1A1A() {
+        assertEquals(Color(0xFFBA1A1A), OptoTokens.colors.error)
     }
     
     @Test
-    fun inverseSurface_light_is1A0F3D() {
-        assertEquals(Color(0xFF1A0F3D), OptoTokens.colors.inverseSurface)
+    fun inverseSurface_light_is2D3131() {
+        assertEquals(Color(0xFF2D3131), OptoTokens.colors.inverseSurface)
     }
     
     @Test
@@ -154,70 +154,70 @@ class OptoTokensTest {
     }
     
     @Test
-    fun surfaceTint_light_is6D4AFF() {
-        assertEquals(Color(0xFF6D4AFF), OptoTokens.colors.surfaceTint)
+    fun surfaceTint_light_is006D6F() {
+        assertEquals(Color(0xFF006D6F), OptoTokens.colors.surfaceTint)
     }
 
     // --- Dark theme color token tests ---
     
     @Test
-    fun primary_dark_is9B8AFF() {
-        assertEquals(Color(0xFF9B8AFF), OptoTokens.colorsDark.primary)
+    fun primary_dark_is4EDBDB() {
+        assertEquals(Color(0xFF4EDBDB), OptoTokens.colorsDark.primary)
     }
     
     @Test
-    fun onPrimary_dark_is1A0F3D() {
-        assertEquals(Color(0xFF1A0F3D), OptoTokens.colorsDark.onPrimary)
+    fun onPrimary_dark_is003738() {
+        assertEquals(Color(0xFF003738), OptoTokens.colorsDark.onPrimary)
     }
     
     @Test
-    fun primaryContainer_dark_is2D1F6E() {
-        assertEquals(Color(0xFF2D1F6E), OptoTokens.colorsDark.primaryContainer)
+    fun primaryContainer_dark_is005354() {
+        assertEquals(Color(0xFF005354), OptoTokens.colorsDark.primaryContainer)
     }
     
     @Test
-    fun secondary_dark_is6EE7B7() {
-        assertEquals(Color(0xFF6EE7B7), OptoTokens.colorsDark.secondary)
+    fun secondary_dark_isB5CBD1() {
+        assertEquals(Color(0xFFB5CBD1), OptoTokens.colorsDark.secondary)
     }
     
     @Test
-    fun background_dark_is0B1220() {
-        assertEquals(Color(0xFF0B1220), OptoTokens.colorsDark.background)
+    fun background_dark_is0E1515() {
+        assertEquals(Color(0xFF0E1515), OptoTokens.colorsDark.background)
     }
     
     @Test
-    fun surface_dark_is172033() {
-        assertEquals(Color(0xFF172033), OptoTokens.colorsDark.surface)
+    fun surface_dark_is161D1D() {
+        assertEquals(Color(0xFF161D1D), OptoTokens.colorsDark.surface)
     }
     
     @Test
-    fun surfaceVariant_dark_is1E293B() {
-        assertEquals(Color(0xFF1E293B), OptoTokens.colorsDark.surfaceVariant)
+    fun surfaceVariant_dark_is3F4948() {
+        assertEquals(Color(0xFF3F4948), OptoTokens.colorsDark.surfaceVariant)
     }
     
     @Test
-    fun onSurfaceVariant_dark_is94A3B8() {
-        assertEquals(Color(0xFF94A3B8), OptoTokens.colorsDark.onSurfaceVariant)
+    fun onSurfaceVariant_dark_isBEC9C8() {
+        assertEquals(Color(0xFFBEC9C8), OptoTokens.colorsDark.onSurfaceVariant)
     }
     
     @Test
-    fun outline_dark_is334155() {
-        assertEquals(Color(0xFF334155), OptoTokens.colorsDark.outline)
+    fun outline_dark_is889392() {
+        assertEquals(Color(0xFF889392), OptoTokens.colorsDark.outline)
     }
     
     @Test
-    fun outlineVariant_dark_is1E293B() {
-        assertEquals(Color(0xFF1E293B), OptoTokens.colorsDark.outlineVariant)
+    fun outlineVariant_dark_is3F4948() {
+        assertEquals(Color(0xFF3F4948), OptoTokens.colorsDark.outlineVariant)
     }
     
     @Test
-    fun error_dark_isF87171() {
-        assertEquals(Color(0xFFF87171), OptoTokens.colorsDark.error)
+    fun error_dark_isF2B8B5() {
+        assertEquals(Color(0xFFF2B8B5), OptoTokens.colorsDark.error)
     }
     
     @Test
-    fun inverseSurface_dark_isFFFFFF() {
-        assertEquals(Color(0xFFFFFFFF), OptoTokens.colorsDark.inverseSurface)
+    fun inverseSurface_dark_isE0E3E3() {
+        assertEquals(Color(0xFFE0E3E3), OptoTokens.colorsDark.inverseSurface)
     }
     
     @Test
@@ -226,8 +226,8 @@ class OptoTokensTest {
     }
     
     @Test
-    fun surfaceTint_dark_is9B8AFF() {
-        assertEquals(Color(0xFF9B8AFF), OptoTokens.colorsDark.surfaceTint)
+    fun surfaceTint_dark_is4EDBDB() {
+        assertEquals(Color(0xFF4EDBDB), OptoTokens.colorsDark.surfaceTint)
     }
 
     // --- WCAG AA Contrast Ratio Tests ---
@@ -262,13 +262,13 @@ class OptoTokensTest {
     
     @Test
     fun background_onBackground_contrast_meetsAA() {
-        val ratio = contrastRatio(OptoTokens.colors.background, Color(0xFF0F172A)) // OnBackground light
+        val ratio = contrastRatio(OptoTokens.colors.background, OptoTokens.colors.onBackground)
         assertTrue("Background/onBackground contrast $ratio is below 4.5:1 (AA)", ratio >= 4.5)
     }
     
     @Test
     fun background_onBackground_dark_contrast_meetsAA() {
-        val ratio = contrastRatio(OptoTokens.colorsDark.background, Color(0xFFF1F5F9)) // OnBackground dark
+        val ratio = contrastRatio(OptoTokens.colorsDark.background, OptoTokens.colorsDark.onBackground)
         assertTrue("Dark background/onBackground contrast $ratio is below 4.5:1 (AA)", ratio >= 4.5)
     }
     
