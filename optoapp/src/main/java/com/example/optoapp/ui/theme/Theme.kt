@@ -13,35 +13,67 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
 private val DarkColorScheme = darkColorScheme(
-    primary = PrimaryDark,
-    secondary = PrimaryDarkVariant,
-    tertiary = AccentGreenDark,
-    background = BackgroundDark,
-    surface = SurfaceDark,
-    onPrimary = Color(0xFF080C14),
-    onSecondary = Color(0xFF080C14),
-    onTertiary = Color(0xFF080C14),
-    onBackground = TextPrimaryDark,
-    onSurface = TextPrimaryDark,
-    error = ErrorRedDark,
-    secondaryContainer = SurfaceDarkMuted,
-    onSecondaryContainer = TextPrimaryDark
+    primary = OptoTokens.colorsDark.primary,
+    onPrimary = OptoTokens.colorsDark.onPrimary,
+    primaryContainer = OptoTokens.colorsDark.primaryContainer,
+    onPrimaryContainer = OptoTokens.colorsDark.onPrimaryContainer,
+    secondary = OptoTokens.colorsDark.secondary,
+    onSecondary = OptoTokens.colorsDark.onSecondary,
+    secondaryContainer = OptoTokens.colorsDark.secondaryContainer,
+    onSecondaryContainer = OptoTokens.colorsDark.onSecondaryContainer,
+    tertiary = OptoTokens.colorsDark.tertiary,
+    onTertiary = OptoTokens.colorsDark.onTertiary,
+    tertiaryContainer = OptoTokens.colorsDark.tertiaryContainer,
+    onTertiaryContainer = OptoTokens.colorsDark.onTertiaryContainer,
+    error = OptoTokens.colorsDark.error,
+    onError = OptoTokens.colorsDark.onError,
+    errorContainer = OptoTokens.colorsDark.errorContainer,
+    onErrorContainer = OptoTokens.colorsDark.onErrorContainer,
+    background = OptoTokens.colorsDark.background,
+    onBackground = OptoTokens.colorsDark.onBackground,
+    surface = OptoTokens.colorsDark.surface,
+    onSurface = OptoTokens.colorsDark.onSurface,
+    surfaceVariant = OptoTokens.colorsDark.surfaceVariant,
+    onSurfaceVariant = OptoTokens.colorsDark.onSurfaceVariant,
+    outline = OptoTokens.colorsDark.outline,
+    outlineVariant = OptoTokens.colorsDark.outlineVariant,
+    inverseSurface = OptoTokens.colorsDark.inverseSurface,
+    inverseOnSurface = OptoTokens.colorsDark.inverseOnSurface,
+    inversePrimary = OptoTokens.colorsDark.inversePrimary,
+    scrim = OptoTokens.colorsDark.scrim,
+    surfaceTint = OptoTokens.colorsDark.surfaceTint
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = Primary,
-    secondary = PrimaryDark_s,
-    tertiary = AccentGreen,
-    background = BackgroundLight,
-    surface = SurfaceLight,
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = TextPrimary,
-    onSurface = TextPrimary,
-    error = ErrorRed,
-    secondaryContainer = SurfaceLightMuted,
-    onSecondaryContainer = TextPrimary
+    primary = OptoTokens.colors.primary,
+    onPrimary = OptoTokens.colors.onPrimary,
+    primaryContainer = OptoTokens.colors.primaryContainer,
+    onPrimaryContainer = OptoTokens.colors.onPrimaryContainer,
+    secondary = OptoTokens.colors.secondary,
+    onSecondary = OptoTokens.colors.onSecondary,
+    secondaryContainer = OptoTokens.colors.secondaryContainer,
+    onSecondaryContainer = OptoTokens.colors.onSecondaryContainer,
+    tertiary = OptoTokens.colors.tertiary,
+    onTertiary = OptoTokens.colors.onTertiary,
+    tertiaryContainer = OptoTokens.colors.tertiaryContainer,
+    onTertiaryContainer = OptoTokens.colors.onTertiaryContainer,
+    error = OptoTokens.colors.error,
+    onError = OptoTokens.colors.onError,
+    errorContainer = OptoTokens.colors.errorContainer,
+    onErrorContainer = OptoTokens.colors.onErrorContainer,
+    background = OptoTokens.colors.background,
+    onBackground = OptoTokens.colors.onBackground,
+    surface = OptoTokens.colors.surface,
+    onSurface = OptoTokens.colors.onSurface,
+    surfaceVariant = OptoTokens.colors.surfaceVariant,
+    onSurfaceVariant = OptoTokens.colors.onSurfaceVariant,
+    outline = OptoTokens.colors.outline,
+    outlineVariant = OptoTokens.colors.outlineVariant,
+    inverseSurface = OptoTokens.colors.inverseSurface,
+    inverseOnSurface = OptoTokens.colors.inverseOnSurface,
+    inversePrimary = OptoTokens.colors.inversePrimary,
+    scrim = OptoTokens.colors.scrim,
+    surfaceTint = OptoTokens.colors.surfaceTint
 )
 
 @Composable
@@ -49,7 +81,6 @@ fun OptoAppTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit
 ) {
-    // Desactivamos dynamicColor para forzar nuestra paleta médica profesional.
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
 
     val view = LocalView.current
@@ -66,6 +97,7 @@ fun OptoAppTheme(
     MaterialTheme(
         colorScheme = colorScheme,
         typography = Typography,
+        shapes = OptoTokens.getShapes(),
         content = content
     )
 }

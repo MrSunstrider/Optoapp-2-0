@@ -25,6 +25,8 @@ import com.example.optoapp.util.FileShareUtils
 import com.example.optoapp.util.ReporteFinancieroPdfGenerator
 import java.util.*
 import kotlinx.coroutines.launch
+import com.example.optoapp.ui.components.OptoTopAppBar
+import com.example.optoapp.ui.components.OptoCard
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -48,9 +50,8 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
         containerColor = MaterialTheme.colorScheme.surface,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
-            TopAppBar(
-                windowInsets = WindowInsets(0, 0, 0, 0),
-                title = { Text("Reportes Financieros") },
+            OptoTopAppBar(
+                title = "Reportes Financieros",
                 navigationIcon = {
                     IconButton(onClick = { scope.launch { drawerState.open() } }) {
                         Icon(Icons.Default.Menu, contentDescription = "Menu")
@@ -138,7 +139,7 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
             )
 
             // Desglose de cobros
-            Card(
+            OptoCard(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
             ) {
@@ -174,7 +175,7 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                 } else {
                     items(dispensaciones) { disp ->
                         val date = DateUtils.formatLocalized(disp.fecha)
-                        Card(modifier = Modifier.fillMaxWidth()) {
+                        OptoCard(modifier = Modifier.fillMaxWidth()) {
                             Row(modifier = Modifier.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(date, fontWeight = FontWeight.Bold)

@@ -21,6 +21,8 @@ import com.example.optoapp.viewmodel.CierreCajaViewModel
 import com.example.optoapp.viewmodel.AuthViewModel
 import com.example.optoapp.util.DateUtils
 import java.util.*
+import com.example.optoapp.ui.components.OptoTopAppBar
+import com.example.optoapp.ui.components.OptoCard
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -55,9 +57,8 @@ fun CierreCajaScreen(
     Scaffold(
         containerColor = MaterialTheme.colorScheme.surface,
         topBar = {
-            TopAppBar(
-                windowInsets = WindowInsets(0, 0, 0, 0),
-                title = { Text("Cierre de Caja", fontSize = 18.sp, fontWeight = FontWeight.Bold) },
+            OptoTopAppBar(
+                title = "Cierre de Caja",
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
@@ -80,7 +81,7 @@ fun CierreCajaScreen(
                 .padding(16.dp)
         ) {
             if (!canView) {
-                Card(modifier = Modifier.fillMaxWidth()) {
+                OptoCard(modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text("Acceso restringido", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error)
                         Text("Tu rol actual no tiene permiso para consultar cierre de caja.")
@@ -113,7 +114,7 @@ fun CierreCajaScreen(
             
             Spacer(modifier = Modifier.height(16.dp))
             
-            Card(
+            OptoCard(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
             ) {

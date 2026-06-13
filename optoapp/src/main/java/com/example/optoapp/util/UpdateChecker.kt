@@ -178,7 +178,12 @@ object UpdateChecker {
                 val dir = File(context.cacheDir, "updates").apply { mkdirs() }
                 val apk = File(dir, "optoapp-update.apk")
 
-                URL(url).openStream().use { input ->
+                val conn = URL(url).openConnection() as HttpURLConnection
+                conn.connectTimeout = 15_000
+                conn.readTimeout = 30_000
+                conn.connect()
+
+                conn.inputStream.use { input ->
                     FileOutputStream(apk).use { output ->
                         input.copyTo(output)
                     }

@@ -25,6 +25,7 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.UUID
 import kotlinx.coroutines.launch
+import com.example.optoapp.ui.components.OptoTopAppBar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -137,9 +138,8 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
         containerColor = MaterialTheme.colorScheme.surface,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
-            TopAppBar(
-                windowInsets = WindowInsets(0, 0, 0, 0),
-                title = { Text(if (pacienteId == null) "Nuevo Paciente" else "Editar Paciente") },
+            OptoTopAppBar(
+                title = if (pacienteId == null) "Nuevo Paciente" else "Editar Paciente",
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")

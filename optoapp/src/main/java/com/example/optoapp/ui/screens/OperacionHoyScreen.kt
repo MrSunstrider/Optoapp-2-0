@@ -22,6 +22,7 @@ import com.example.optoapp.util.InventarioMonturasPdfGenerator
 import com.example.optoapp.viewmodel.AuthViewModel
 import com.example.optoapp.viewmodel.OperacionHoyViewModel
 import java.util.Locale
+import com.example.optoapp.ui.components.OptoTopAppBar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,23 +48,13 @@ fun OperacionHoyScreen(
         containerColor = MaterialTheme.colorScheme.surface,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
-            TopAppBar(
-                windowInsets = WindowInsets(0, 0, 0, 0),
-                title = {
-                    Column {
-                        Text("Operación de Hoy", fontWeight = FontWeight.ExtraBold)
-                        Text("${uiState.fecha}", style = MaterialTheme.typography.bodySmall)
-                    }
-                },
+            OptoTopAppBar(
+                title = "Operación de Hoy",
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface
-                )
+                }
             )
         }
     ) { padding ->

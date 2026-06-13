@@ -17,6 +17,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.optoapp.data.ConflictRecord
 import com.example.optoapp.viewmodel.SyncViewModel
+import com.example.optoapp.ui.components.OptoTopAppBar
+import com.example.optoapp.ui.components.OptoCard
 
 /** Mapa de entityType → etiqueta amigable para mostrar en UI. */
 private val TYPE_LABELS = mapOf(
@@ -44,8 +46,8 @@ fun ConflictosScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Conflictos de sincronización") },
+            OptoTopAppBar(
+                title = "Conflictos de sincronización",
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
@@ -53,6 +55,11 @@ fun ConflictosScreen(
                 },
                 actions = {
                     if (conflicts.isNotEmpty()) {
+                        TextButton(onClick = {
+                            syncViewModel.acceptAllCloud()
+                        }) {
+                            Text("Usar nube para todos")
+                        }
                         TextButton(onClick = {
                             conflicts.forEach { syncViewModel.dismissConflict(it) }
                         }) {
@@ -134,7 +141,7 @@ private fun ConflictCard(
     onAcceptTheirs: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    Card(
+    OptoCard(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)

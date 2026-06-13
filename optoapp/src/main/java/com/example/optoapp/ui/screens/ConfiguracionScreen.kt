@@ -34,6 +34,7 @@ import com.example.optoapp.ui.components.config.SucursalesSection
 import com.example.optoapp.ui.components.config.SyncDiagnosticsCard
 import com.example.optoapp.ui.components.config.SystemSection
 import com.example.optoapp.ui.components.config.UsuariosRolesSection
+import com.example.optoapp.ui.components.OptoTopAppBar
 import com.example.optoapp.viewmodel.AuthViewModel
 import com.example.optoapp.viewmodel.ConfiguracionViewModel
 import com.example.optoapp.viewmodel.FiscalConfigViewModel
@@ -137,8 +138,10 @@ fun ConfiguracionScreen(
     }
 
     Scaffold(containerColor = MaterialTheme.colorScheme.surface, contentWindowInsets = WindowInsets(0, 0, 0, 0), topBar = {
-        TopAppBar(windowInsets = WindowInsets(0, 0, 0, 0), title = { Text(stringResource(R.string.config_title)) },
-            navigationIcon = { IconButton(onClick = { scope.launch { drawerState.open() } }) { Icon(Icons.Default.Menu, contentDescription = "Menu") } })
+        OptoTopAppBar(
+            title = stringResource(R.string.config_title),
+            navigationIcon = { IconButton(onClick = { scope.launch { drawerState.open() } }) { Icon(Icons.Default.Menu, contentDescription = "Menu") } }
+        )
     }) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(horizontal = 14.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)) {
