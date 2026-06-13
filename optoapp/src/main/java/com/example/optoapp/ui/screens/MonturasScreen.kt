@@ -15,8 +15,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Inventory2
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -43,6 +43,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.example.optoapp.ui.components.OptoDialog
 import com.example.optoapp.ui.components.OptoTextField
 import com.example.optoapp.ui.components.monturas.MonturaEditForm
 import com.example.optoapp.ui.components.monturas.MonturaListSection
@@ -85,18 +86,19 @@ fun MonturasScreen(
     val restantes = if (porReponer.isEmpty()) filtradas else filtradas.filter { f -> porReponer.none { it.id == f.id } }
 
     if (uiState.editing) {
-        AlertDialog(
+        OptoDialog(
             onDismissRequest = { viewModel.cancelEdit() },
-            title = { Text(if (uiState.form.id == null) "Nuevo Producto" else "Editar Producto") },
-            text = {
+            title = if (uiState.form.id == null) "Nuevo Producto" else "Editar Producto",
+            confirmText = "Guardar",
+            onConfirm = { viewModel.save() },
+            dismissText = "Cancelar",
+            content = {
                 MonturaEditForm(
                     form = uiState.form,
                     onUpdate = { newForm -> viewModel.updateForm { newForm } },
                     error = uiState.error
                 )
-            },
-            confirmButton = { TextButton(onClick = { viewModel.save() }) { Text("Guardar") } },
-            dismissButton = { TextButton(onClick = { viewModel.cancelEdit() }) { Text("Cancelar") } }
+            }
         )
     }
 

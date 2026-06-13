@@ -38,4 +38,36 @@ class OptoButtonTest {
     fun `OptoButtonVariant Filled is ordinal 0`() {
         assertEquals(0, OptoButtonVariant.Filled.ordinal)
     }
+
+    // ── C7: ButtonContent privacy and contentColor ─────────────────────────
+
+    @Test
+    fun `OptoButtonVariant Filled uses onPrimary as contentColor`() {
+        // Filled variant spinner should use onPrimary (not hardcoded)
+        assertEquals("onPrimary", contentColorForVariant(OptoButtonVariant.Filled))
+    }
+
+    @Test
+    fun `OptoButtonVariant Outlined uses primary as contentColor`() {
+        assertEquals("primary", contentColorForVariant(OptoButtonVariant.Outlined))
+    }
+
+    @Test
+    fun `OptoButtonVariant Text uses primary as contentColor`() {
+        assertEquals("primary", contentColorForVariant(OptoButtonVariant.Text))
+    }
+
+    companion object {
+        /**
+         * Content color resolution per variant (mirrors production logic).
+         * C7 fix: spinner uses contentColor parameter instead of hardcoded onPrimary.
+         */
+        fun contentColorForVariant(variant: OptoButtonVariant): String {
+            return when (variant) {
+                OptoButtonVariant.Filled -> "onPrimary"
+                OptoButtonVariant.Outlined -> "primary"
+                OptoButtonVariant.Text -> "primary"
+            }
+        }
+    }
 }

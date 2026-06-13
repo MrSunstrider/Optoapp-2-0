@@ -40,6 +40,9 @@ import com.example.optoapp.util.DateUtils
 import kotlinx.coroutines.launch
 import com.example.optoapp.ui.components.OptoTopAppBar
 import com.example.optoapp.ui.components.OptoCard
+import com.example.optoapp.ui.components.OptoDialog
+import com.example.optoapp.ui.components.OptoFilterChip
+import com.example.optoapp.ui.components.OptoTextField
 import com.example.optoapp.ui.theme.OptoTokens
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -87,28 +90,23 @@ fun PacientesListScreen(navController: NavController, drawerState: DrawerState, 
         }
     ) { padding ->
         if (showPaywall) {
-            AlertDialog(
+            OptoDialog(
                 onDismissRequest = { showPaywall = false },
-                title = { Text("Límite del plan gratuito") },
-                text = {
+                title = "Límite del plan gratuito",
+                confirmText = "Actualizar plan",
+                onConfirm = {
+                    subscriptionVm.launchProPurchase(
+                        onSuccess = { android.widget.Toast.makeText(context, "PRO activado — pacientes ilimitados.", android.widget.Toast.LENGTH_LONG).show() },
+                        onError = { android.widget.Toast.makeText(context, it, android.widget.Toast.LENGTH_LONG).show() }
+                    )
+                    showPaywall = false
+                },
+                dismissText = "Cerrar",
+                content = {
                     Column(verticalArrangement = Arrangement.spacedBy(OptoTokens.spacing.sm)) {
                         Text("Has alcanzado el máximo de pacientes del plan gratuito. Pasa a PRO para registros ilimitados.")
                         Text("Plan actual: ${if (tier == SubscriptionTier.PRO) "PRO" else "Gratuito"}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
-                },
-                confirmButton = {
-                    TextButton(
-                        onClick = {
-                            subscriptionVm.launchProPurchase(
-                                onSuccess = { android.widget.Toast.makeText(context, "PRO activado — pacientes ilimitados.", android.widget.Toast.LENGTH_LONG).show() },
-                                onError = { android.widget.Toast.makeText(context, it, android.widget.Toast.LENGTH_LONG).show() }
-                            )
-                            showPaywall = false
-                        }
-                    ) { Text("Actualizar plan") }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showPaywall = false }) { Text("Cerrar") }
                 }
             )
         }
@@ -119,13 +117,13 @@ fun PacientesListScreen(navController: NavController, drawerState: DrawerState, 
                 .padding(horizontal = 16.dp)
         ) {
             // Search bar
-            OutlinedTextField(
+            OptoTextField(
                 value = searchQuery,
                 onValueChange = { viewModel.onSearchQueryChange(it) },
+                label = "Buscar",
+                placeholder = "Nombre, ID o teléfono",
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("Buscar por nombre, ID o teléfono...") },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                shape = MaterialTheme.shapes.medium
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) }
             )
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -144,7 +142,7 @@ fun PacientesListScreen(navController: NavController, drawerState: DrawerState, 
                         "Entrega" -> activeFilter == "Estado de entrega" || activeFilter == "Entrega"
                         else -> false
                     }
-                    FilterChip(
+                    OptoFilterChip(
                         selected = isSelected,
                         onClick = {
                             viewModel.setFilter(
@@ -156,7 +154,7 @@ fun PacientesListScreen(navController: NavController, drawerState: DrawerState, 
                                 }
                             )
                         },
-                        label = { Text(filter, fontSize = 12.sp, fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal) }
+                        label = filter
                     )
                 }
             }

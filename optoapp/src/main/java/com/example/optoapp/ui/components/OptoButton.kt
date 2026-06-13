@@ -63,7 +63,7 @@ fun OptoButton(
                 ),
                 elevation = ButtonDefaults.buttonElevation(defaultElevation = OptoTokens.elevation.level1)
             ) {
-                ButtonContent(text, loading, icon)
+                ButtonContent(text, loading, icon, contentColor = MaterialTheme.colorScheme.onPrimary)
             }
         }
         OptoButtonVariant.Outlined -> {
@@ -79,7 +79,7 @@ fun OptoButton(
                 ),
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
             ) {
-                ButtonContent(text, loading, icon)
+                ButtonContent(text, loading, icon, contentColor = MaterialTheme.colorScheme.primary)
             }
         }
         OptoButtonVariant.Text -> {
@@ -92,22 +92,23 @@ fun OptoButton(
                     disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             ) {
-                ButtonContent(text, loading, icon)
+                ButtonContent(text, loading, icon, contentColor = MaterialTheme.colorScheme.primary)
             }
         }
     }
 }
 
 @Composable
-fun ButtonContent(
+private fun ButtonContent(
     text: String,
     loading: Boolean,
-    icon: @Composable (() -> Unit)?
+    icon: @Composable (() -> Unit)?,
+    contentColor: Color
 ) {
     if (loading) {
         CircularProgressIndicator(
             modifier = Modifier.size(24.dp),
-            color = MaterialTheme.colorScheme.onPrimary
+            color = contentColor
         )
     } else {
         Row(

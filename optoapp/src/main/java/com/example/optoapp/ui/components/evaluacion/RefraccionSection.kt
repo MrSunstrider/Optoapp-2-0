@@ -28,14 +28,13 @@ import com.example.optoapp.ui.components.OptoQuickAddChip
 import com.example.optoapp.ui.components.OptoTextField
 import com.example.optoapp.ui.components.OptoVisionInput
 import com.example.optoapp.viewmodel.EvaluacionUiState
-import com.example.optoapp.viewmodel.EvaluacionViewModel
 import java.util.Locale
 
 @Composable
 fun RefraccionSection(
     uiState: EvaluacionUiState,
     onUpdate: (EvaluacionUiState) -> Unit,
-    viewModel: EvaluacionViewModel
+    onFocusLostEye: (String) -> Unit
 ) {
     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
     Text("Refracción Objetiva", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
@@ -70,19 +69,19 @@ fun RefraccionSection(
             value = uiState.recetaOdEsf,
             onValueChange = { onUpdate(uiState.copy(recetaOdEsf = it)) },
             label = "OD Esf",
-            modifier = Modifier.weight(1f).onFocusChanged { if (!it.isFocused) viewModel.normalizeAndTranspose("OD") }.testTag(TestTags.EVALUACION_ESFERA_OD)
+            modifier = Modifier.weight(1f).onFocusChanged { if (!it.isFocused) onFocusLostEye("OD") }.testTag(TestTags.EVALUACION_ESFERA_OD)
         )
         OptoTextField(
             value = uiState.recetaOdCil,
             onValueChange = { onUpdate(uiState.copy(recetaOdCil = it)) },
             label = "OD Cil",
-            modifier = Modifier.weight(1f).onFocusChanged { if (!it.isFocused) viewModel.normalizeAndTranspose("OD") }.testTag(TestTags.EVALUACION_CILINDRO_OD)
+            modifier = Modifier.weight(1f).onFocusChanged { if (!it.isFocused) onFocusLostEye("OD") }.testTag(TestTags.EVALUACION_CILINDRO_OD)
         )
         OptoTextField(
             value = uiState.recetaOdEje,
             onValueChange = { onUpdate(uiState.copy(recetaOdEje = it)) },
             label = "OD Eje",
-            modifier = Modifier.weight(1f).onFocusChanged { if (!it.isFocused) viewModel.normalizeAndTranspose("OD") }
+            modifier = Modifier.weight(1f).onFocusChanged { if (!it.isFocused) onFocusLostEye("OD") }
         )
     }
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -90,19 +89,19 @@ fun RefraccionSection(
             value = uiState.recetaOiEsf,
             onValueChange = { onUpdate(uiState.copy(recetaOiEsf = it)) },
             label = "OI Esf",
-            modifier = Modifier.weight(1f).onFocusChanged { if (!it.isFocused) viewModel.normalizeAndTranspose("OI") }
+            modifier = Modifier.weight(1f).onFocusChanged { if (!it.isFocused) onFocusLostEye("OI") }
         )
         OptoTextField(
             value = uiState.recetaOiCil,
             onValueChange = { onUpdate(uiState.copy(recetaOiCil = it)) },
             label = "OI Cil",
-            modifier = Modifier.weight(1f).onFocusChanged { if (!it.isFocused) viewModel.normalizeAndTranspose("OI") }
+            modifier = Modifier.weight(1f).onFocusChanged { if (!it.isFocused) onFocusLostEye("OI") }
         )
         OptoTextField(
             value = uiState.recetaOiEje,
             onValueChange = { onUpdate(uiState.copy(recetaOiEje = it)) },
             label = "OI Eje",
-            modifier = Modifier.weight(1f).onFocusChanged { if (!it.isFocused) viewModel.normalizeAndTranspose("OI") }
+            modifier = Modifier.weight(1f).onFocusChanged { if (!it.isFocused) onFocusLostEye("OI") }
         )
     }
     Text("VL AV CC", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary)
@@ -262,7 +261,7 @@ private fun NumericAddStepper(
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val currentVal = value.toDoubleOrNull() ?: 2.0
+    val currentVal = value.toDoubleOrNull() ?: 0.0
 
     Row(
         modifier = modifier.fillMaxWidth(),

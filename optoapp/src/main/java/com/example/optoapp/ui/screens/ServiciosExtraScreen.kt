@@ -27,6 +27,8 @@ import com.example.optoapp.util.DateUtils
 import kotlinx.coroutines.launch
 import java.util.*
 import com.example.optoapp.ui.components.OptoTopAppBar
+import com.example.optoapp.ui.components.OptoDialog
+import com.example.optoapp.ui.components.OptoTextField
 import com.example.optoapp.ui.theme.OptoTokens
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -51,20 +53,13 @@ fun ServiciosExtraScreen(navController: NavController, drawerState: DrawerState,
     }
 
     if (showDeleteDialog && servicioToDelete != null) {
-        AlertDialog(
+        OptoDialog(
             onDismissRequest = { viewModel.dismissDeleteDialog() },
-            title = { Text("¿Eliminar servicio?", fontWeight = FontWeight.Bold) },
-            text = { Text("¿Eliminar ${servicioToDelete!!.descripcion}?") },
-            confirmButton = {
-                TextButton(onClick = { viewModel.confirmDelete() }) {
-                    Text("Eliminar", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { viewModel.dismissDeleteDialog() }) {
-                    Text("Cancelar")
-                }
-            }
+            title = "¿Eliminar servicio?",
+            confirmText = "Eliminar",
+            onConfirm = { viewModel.confirmDelete() },
+            dismissText = "Cancelar",
+            content = { Text("¿Eliminar ${servicioToDelete!!.descripcion}?") }
         )
     }
 
@@ -97,13 +92,13 @@ fun ServiciosExtraScreen(navController: NavController, drawerState: DrawerState,
                 .padding(padding)
                 .padding(horizontal = 16.dp)
         ) {
-            OutlinedTextField(
+            OptoTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
+                label = "Buscar",
+                placeholder = "Descripción u OT",
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("Buscar por descripción u OT...") },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                shape = MaterialTheme.shapes.medium
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) }
             )
             Spacer(modifier = Modifier.height(OptoTokens.spacing.md))
 

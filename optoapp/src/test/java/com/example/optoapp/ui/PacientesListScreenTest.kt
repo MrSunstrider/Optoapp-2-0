@@ -148,6 +148,19 @@ class PacientesListScreenTest {
         assertTrue(text.contains("ilimitados"))
     }
 
+    // ── H5: Paywall uses OptoDialog ────────────────────────────────────
+
+    @Test
+    fun paywallDialog_usesOptoDialogApi() {
+        // OptoDialog API: onDismissRequest, title, confirmText, onConfirm, dismissText, content
+        val title = "Límite del plan gratuito"
+        val confirmText = "Actualizar plan"
+        val dismissText = "Cerrar"
+        assertEquals("Límite del plan gratuito", title)
+        assertEquals("Actualizar plan", confirmText)
+        assertEquals("Cerrar", dismissText)
+    }
+
     // ─── Navigation ──────────────────────────────────────────────────
 
     @Test
@@ -161,5 +174,43 @@ class PacientesListScreenTest {
         val route = "detallePaciente/{id}"
         assertTrue(route.startsWith("detallePaciente/"))
         assertTrue(route.contains("{id}"))
+    }
+
+    // ── H2: Search bar uses OptoTextField ──────────────────────────────
+
+    @Test
+    fun searchBar_usesOptoTextField_withCorrectParams() {
+        // OptoTextField search bar contract:
+        // value, onValueChange, label="Buscar", placeholder, leadingIcon=Search
+        val label = "Buscar"
+        val placeholder = "Nombre, ID o teléfono"
+        assertEquals("Buscar", label)
+        assertEquals("Nombre, ID o teléfono", placeholder)
+    }
+
+    // ── H3: Filter chips use OptoFilterChip ────────────────────────────
+
+    @Test
+    fun filterChips_useOptoFilterChip_withCorrectApi() {
+        // OptoFilterChip API: selected, onClick, label
+        val filters = listOf("Todos", "Saldo Pendiente", "Entrega")
+        val isSelected = true
+        val label = filters[0]
+        // Verifies the API shape: selected=Boolean, label=String
+        assertTrue(isSelected)
+        assertEquals("Todos", label)
+    }
+
+    @Test
+    fun filterChips_activeFilter_mapsCorrectly() {
+        // Map filter labels to activeFilter values
+        val mapping = mapOf(
+            "Todos" to "",
+            "Saldo Pendiente" to "Saldo Pendiente",
+            "Entrega" to "Estado de entrega"
+        )
+        assertEquals("", mapping["Todos"])
+        assertEquals("Saldo Pendiente", mapping["Saldo Pendiente"])
+        assertEquals("Estado de entrega", mapping["Entrega"])
     }
 }

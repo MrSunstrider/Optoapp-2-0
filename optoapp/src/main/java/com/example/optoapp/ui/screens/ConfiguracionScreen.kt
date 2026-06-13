@@ -35,6 +35,7 @@ import com.example.optoapp.ui.components.config.SyncDiagnosticsCard
 import com.example.optoapp.ui.components.config.SystemSection
 import com.example.optoapp.ui.components.config.UsuariosRolesSection
 import com.example.optoapp.ui.components.OptoTopAppBar
+import com.example.optoapp.ui.components.OptoDialog
 import com.example.optoapp.ui.theme.OptoTokens
 import com.example.optoapp.viewmodel.AuthViewModel
 import com.example.optoapp.viewmodel.ConfiguracionViewModel
@@ -200,8 +201,12 @@ fun ConfiguracionScreen(
     }
 
     configVm.dialogMessage?.let { msg ->
-        AlertDialog(onDismissRequest = { configVm.dismissDialog() },
-            confirmButton = { TextButton(onClick = { configVm.dismissDialog() }) { Text(stringResource(R.string.config_dialog_ok)) } },
-            title = { Text(stringResource(R.string.config_dialog_info_title)) }, text = { Text(msg) })
+        OptoDialog(
+            onDismissRequest = { configVm.dismissDialog() },
+            title = stringResource(R.string.config_dialog_info_title),
+            confirmText = stringResource(R.string.config_dialog_ok),
+            onConfirm = { configVm.dismissDialog() },
+            content = { Text(msg) }
+        )
     }
 }

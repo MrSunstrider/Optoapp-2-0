@@ -26,6 +26,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.optoapp.testing.TestTags
 import com.example.optoapp.ui.components.OSDIDialog
+import com.example.optoapp.ui.components.OptoDialog
 import com.example.optoapp.ui.components.evaluacion.AnamnesisSection
 import com.example.optoapp.ui.components.evaluacion.CierreSection
 import com.example.optoapp.ui.components.evaluacion.ContactologiaSection
@@ -171,15 +172,12 @@ fun NuevaEvaluacionScreen(
 
     // AlertDialog para errores visibles
     if (uiState.error != null) {
-        AlertDialog(
+        OptoDialog(
             onDismissRequest = { viewModel.updateUiState { it.copy(error = null) } },
-            title = { Text("Aviso") },
-            text = { Text(uiState.error ?: "") },
-            confirmButton = {
-                TextButton(onClick = { viewModel.updateUiState { it.copy(error = null) } }) {
-                    Text("OK")
-                }
-            }
+            title = "Aviso",
+            confirmText = "OK",
+            onConfirm = { viewModel.updateUiState { it.copy(error = null) } },
+            content = { Text(uiState.error ?: "") }
         )
     }
 
@@ -247,10 +245,10 @@ fun NuevaEvaluacionScreen(
                         onUpdate = { s -> viewModel.updateUiState { s } },
                         onShowOsdiDialog = { showOsdiDialog = true }
                     )
-                     2 -> RefraccionSection(
+                    2 -> RefraccionSection(
                         uiState = uiState,
                         onUpdate = { s -> viewModel.updateUiState { s } },
-                        viewModel = viewModel
+                        onFocusLostEye = { viewModel.normalizeAndTranspose(it) }
                     )
                     3 -> ContactologiaSection(
                         uiState = uiState,

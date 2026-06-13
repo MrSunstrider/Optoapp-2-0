@@ -21,7 +21,8 @@ fun OptoTextField(
     trailingIcon: @Composable (() -> Unit)? = null,
     leadingIcon: @Composable (() -> Unit)? = null,
     maxLength: Int? = null,
-    showCharCount: Boolean = false
+    showCharCount: Boolean = false,
+    placeholder: String? = null
 ) {
     OutlinedTextField(
         value = value,
@@ -34,15 +35,16 @@ fun OptoTextField(
             onValueChange(limitedValue)
         },
         label = { Text(label) },
+        placeholder = placeholder?.let { { Text(it) } },
         modifier = modifier.fillMaxWidth(),
         keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
         isError = isError,
         supportingText = when {
-            showCharCount && maxLength != null -> {
-                { Text("${value.length}/$maxLength") }
-            }
             isError -> {
                 { Text(supportingText ?: "Error de entrada") }
+            }
+            showCharCount && maxLength != null -> {
+                { Text("${value.length}/$maxLength") }
             }
             supportingText != null -> {
                 { Text(supportingText) }
