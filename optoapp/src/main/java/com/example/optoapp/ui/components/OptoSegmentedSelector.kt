@@ -4,7 +4,6 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -15,8 +14,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.optoapp.ui.theme.OptoTokens
 
 @Composable
@@ -27,16 +24,16 @@ fun OptoSegmentedSelector(
     modifier: Modifier = Modifier
 ) {
     Surface(
-        color = OptoTokens.colors.surface,
-        shape = OptoTokens.shapes.small,
+        color = MaterialTheme.colorScheme.surface,
+        shape = MaterialTheme.shapes.small,
         modifier = modifier.fillMaxWidth()
     ) {
-        Row(modifier = Modifier.padding(3.dp)) {
+        Row(modifier = Modifier.padding(OptoTokens.spacing.xs)) {
             options.forEachIndexed { index, option ->
                 val isSelected = index == selectedIndex
                 val backgroundColor by animateColorAsState(
                     targetValue = if (isSelected) 
-                        OptoTokens.colors.surfaceVariant 
+                        MaterialTheme.colorScheme.surfaceVariant 
                     else 
                         Color.Transparent,
                     label = "backgroundColor"
@@ -45,22 +42,22 @@ fun OptoSegmentedSelector(
                     targetValue = if (isSelected) 
                         MaterialTheme.colorScheme.onSurface
                     else 
-                        OptoTokens.colors.onSurfaceVariant,
+                        MaterialTheme.colorScheme.onSurfaceVariant,
                     label = "textColor"
                 )
                 
                 Box(
                     modifier = Modifier
                         .weight(1f)
-                        .clip(RoundedCornerShape(10.dp))
+                        .clip(MaterialTheme.shapes.small)
                         .background(backgroundColor)
                         .clickable { onSelect(index) }
-                        .padding(vertical = 8.dp),
+                        .padding(vertical = OptoTokens.spacing.sm),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = option,
-                        fontSize = 13.sp,
+                        style = MaterialTheme.typography.labelLarge,
                         fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
                         color = textColor
                     )

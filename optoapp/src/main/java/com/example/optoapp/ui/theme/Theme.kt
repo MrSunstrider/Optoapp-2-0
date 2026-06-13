@@ -14,9 +14,9 @@ import androidx.core.view.WindowCompat
 import com.example.optoapp.ui.theme.OptoTokens
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Primary,
+    primary = PrimaryDark,
     onPrimary = OnPrimaryDark,
-    primaryContainer = PrimaryDark,
+    primaryContainer = Color(0xFF2D1F6E),
     secondary = Secondary,
     onSecondary = OnBackgroundDark,
     tertiary = SecondaryDark,
@@ -41,7 +41,7 @@ private val DarkColorScheme = darkColorScheme(
 private val LightColorScheme = lightColorScheme(
     primary = Primary,
     onPrimary = OnPrimary,
-    primaryContainer = PrimaryDark,
+    primaryContainer = Color(0xFFEDE8FF),
     secondary = Secondary,
     onSecondary = OnBackground,
     tertiary = SecondaryDark,
