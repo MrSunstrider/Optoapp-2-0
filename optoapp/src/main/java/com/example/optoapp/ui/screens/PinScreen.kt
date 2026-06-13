@@ -20,6 +20,7 @@ import com.example.optoapp.testing.TestTags
 import com.example.optoapp.viewmodel.AuthViewModel
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import kotlinx.coroutines.launch
+import com.example.optoapp.ui.components.OptoCard
 
 @Composable
 fun PinScreen(navController: NavController, viewModel: AuthViewModel = hiltViewModel()) {
@@ -132,12 +133,9 @@ fun PinScreen(navController: NavController, viewModel: AuthViewModel = hiltViewM
             Spacer(modifier = Modifier.height(16.dp))
 
             // ─── Number Pad ─────────────────────────────────────────────────
-            Card(
+            OptoCard(
                 shape = RoundedCornerShape(24.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                )
+                elevation = 1.dp
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp),

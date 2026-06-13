@@ -22,6 +22,7 @@ import com.example.optoapp.ui.components.OptoTextField
 import com.example.optoapp.ui.components.dispensacion.LenteForm
 import com.example.optoapp.viewmodel.DispensacionViewModel
 import com.example.optoapp.util.DateUtils
+import com.example.optoapp.ui.components.OptoTopAppBar
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -71,9 +72,8 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
         containerColor = MaterialTheme.colorScheme.surface,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
-            TopAppBar(
-                windowInsets = WindowInsets(0, 0, 0, 0),
-                title = { Text(if (dispensacionId == null) "Nueva Dispensación" else "Editar Dispensación") },
+            OptoTopAppBar(
+                title = if (dispensacionId == null) "Nueva Dispensación" else "Editar Dispensación",
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")

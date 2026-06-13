@@ -37,6 +37,7 @@ import com.example.optoapp.viewmodel.PacienteViewModel
 import com.example.optoapp.viewmodel.ServiciosViewModel
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import com.example.optoapp.ui.components.OptoTopAppBar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -72,9 +73,8 @@ fun DetallePacienteScreen(
         containerColor = MaterialTheme.colorScheme.surface,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
-            TopAppBar(
-                windowInsets = WindowInsets(0, 0, 0, 0),
-                title = { Text("Ficha del Paciente", fontWeight = FontWeight.Bold) },
+            OptoTopAppBar(
+                title = "Ficha del Paciente",
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
@@ -129,13 +129,7 @@ fun DetallePacienteScreen(
                     ) {
                         Icon(Icons.Default.Delete, contentDescription = "Eliminar Paciente")
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary,
-                    actionIconContentColor = MaterialTheme.colorScheme.onPrimary
-                )
+                }
             )
         },
         floatingActionButton = {
