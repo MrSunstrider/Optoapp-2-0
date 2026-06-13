@@ -27,6 +27,7 @@ import java.util.*
 import kotlinx.coroutines.launch
 import com.example.optoapp.ui.components.OptoTopAppBar
 import com.example.optoapp.ui.components.OptoCard
+import com.example.optoapp.ui.theme.OptoTokens
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -88,11 +89,11 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
         Column(
             modifier = Modifier
                 .padding(padding)
-                .padding(16.dp)
+                .padding(OptoTokens.spacing.lg)
                 .fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(OptoTokens.spacing.sm)
         ) {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(OptoTokens.spacing.sm)) {
                 Box(modifier = Modifier.weight(if (periodo == "Anual") 1f else 2f)) {
                     DropdownField(
                         label = "Período",
@@ -116,7 +117,7 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                 }
             }
             
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(OptoTokens.spacing.sm)) {
                 ReportCard(
                     title = "Total Vendido",
                     value = "s/. ${String.format(java.util.Locale.getDefault(), "%.2f", totalVendido)}",
@@ -143,7 +144,7 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
             ) {
-                Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Column(modifier = Modifier.padding(OptoTokens.spacing.md), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text("Cobros del período", fontWeight = FontWeight.Bold, fontSize = 13.sp)
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text("Ventas del período", fontSize = 13.sp)
@@ -168,7 +169,7 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
             
             LazyColumn(
                 modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(OptoTokens.spacing.sm)
             ) {
                 if (dispensaciones.isEmpty()) {
                     item { Text("No hay transacciones registradas este día", color = MaterialTheme.colorScheme.onSurfaceVariant) }
@@ -176,7 +177,7 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                     items(dispensaciones) { disp ->
                         val date = DateUtils.formatLocalized(disp.fecha)
                         OptoCard(modifier = Modifier.fillMaxWidth()) {
-                            Row(modifier = Modifier.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                            Row(modifier = Modifier.padding(OptoTokens.spacing.lg), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(date, fontWeight = FontWeight.Bold)
                                     Text("Pago: ${disp.metodoPago}", fontSize = 12.sp)
@@ -197,7 +198,7 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
 @Composable
 private fun ReportCard(title: String, value: String, color: Color, modifier: Modifier = Modifier) {
     Card(modifier = modifier) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(OptoTokens.spacing.lg)) {
             Text(title, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text(value, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = color)
         }

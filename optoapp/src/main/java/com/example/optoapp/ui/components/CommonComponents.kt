@@ -9,6 +9,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.optoapp.ui.theme.OptoTokens
 
 @Composable
 fun DropdownField(
@@ -53,14 +54,14 @@ fun DropdownField(
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Row(
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                modifier = Modifier.padding(horizontal = OptoTokens.spacing.sm, vertical = OptoTokens.spacing.xs),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 RadioButton(
                                     selected = isSelected,
                                     onClick = null
                                 )
-                                Spacer(Modifier.width(8.dp))
+                                Spacer(Modifier.width(OptoTokens.spacing.sm))
                                 Text(
                                     text = opt,
                                     style = MaterialTheme.typography.bodyLarge,

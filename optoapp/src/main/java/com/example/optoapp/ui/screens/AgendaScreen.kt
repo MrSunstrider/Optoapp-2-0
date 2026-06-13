@@ -29,6 +29,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import com.example.optoapp.ui.components.OptoTopAppBar
+import com.example.optoapp.ui.theme.OptoTokens
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -139,7 +140,7 @@ fun AgendaScreen(
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(OptoTokens.spacing.sm)
             ) {
                 FilterChip(
                     selected = filtro == AgendaFiltro.HOY,
@@ -191,12 +192,12 @@ fun AgendaScreen(
             } else {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(OptoTokens.spacing.sm)
             ) {
                 items(filas, key = { it.evaluacion.id }) { fila ->
                     val e = fila.evaluacion
                     ElevatedCard(modifier = Modifier.fillMaxWidth()) {
-                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Column(modifier = Modifier.padding(OptoTokens.spacing.lg), verticalArrangement = Arrangement.spacedBy(OptoTokens.spacing.sm)) {
                             Text(fila.nombrePaciente, fontWeight = FontWeight.Bold)
                             Text(
                                 "Cita: ${e.proximaCita?.let { DateUtils.formatLocalized(it) } ?: "—"}",
@@ -214,7 +215,7 @@ fun AgendaScreen(
                             )
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                horizontalArrangement = Arrangement.spacedBy(OptoTokens.spacing.sm)
                             ) {
                                 TextButton(onClick = { reprogramarEvalId = e.id }) {
                                     Text("Reprogramar")

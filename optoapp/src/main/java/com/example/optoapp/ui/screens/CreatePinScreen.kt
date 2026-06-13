@@ -19,6 +19,7 @@ import com.example.optoapp.viewmodel.AuthViewModel
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import kotlinx.coroutines.launch
 import com.example.optoapp.ui.components.OptoCard
+import com.example.optoapp.ui.theme.OptoTokens
 
 @Composable
 fun CreatePinScreen(navController: NavController, viewModel: AuthViewModel = hiltViewModel()) {
@@ -47,7 +48,7 @@ fun CreatePinScreen(navController: NavController, viewModel: AuthViewModel = hil
                 .align(Alignment.Center)
                 .padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(OptoTokens.spacing.lg)
         ) {
             // ─── Logo "O" ────────────────────────────────────────────────────
             Surface(
@@ -87,7 +88,7 @@ fun CreatePinScreen(navController: NavController, viewModel: AuthViewModel = hil
             // ─── PIN Dots ────────────────────────────────────────────────────
             val displayPin = if (step == 1) firstPin else secondPin
             Row(
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(OptoTokens.spacing.md),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 repeat(SecurityManager.PIN_LENGTH) { index ->
@@ -137,8 +138,8 @@ fun CreatePinScreen(navController: NavController, viewModel: AuthViewModel = hil
                 elevation = 1.dp
             ) {
                 Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    modifier = Modifier.padding(OptoTokens.spacing.lg),
+                    verticalArrangement = Arrangement.spacedBy(OptoTokens.spacing.md)
                 ) {
                     val numbers = listOf(
                         listOf("1", "2", "3"),
@@ -150,7 +151,7 @@ fun CreatePinScreen(navController: NavController, viewModel: AuthViewModel = hil
                     numbers.forEach { row ->
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            horizontalArrangement = Arrangement.spacedBy(OptoTokens.spacing.md)
                         ) {
                             row.forEach { char ->
                                 val isOk = char == "OK"

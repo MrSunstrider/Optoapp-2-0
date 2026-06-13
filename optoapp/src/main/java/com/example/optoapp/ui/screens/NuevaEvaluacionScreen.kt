@@ -35,6 +35,7 @@ import com.example.optoapp.ui.components.evaluacion.RefraccionSection
 import com.example.optoapp.viewmodel.EvaluacionViewModel
 import com.example.optoapp.util.DateUtils
 import com.example.optoapp.ui.components.OptoTopAppBar
+import com.example.optoapp.ui.theme.OptoTokens
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -231,10 +232,10 @@ fun NuevaEvaluacionScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(16.dp)
+                    .padding(OptoTokens.spacing.lg)
                     .navigationBarsPadding()
                     .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(OptoTokens.spacing.sm)
             ) {
                 when (selectedTab) {
                     0 -> AnamnesisSection(

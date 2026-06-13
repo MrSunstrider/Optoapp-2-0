@@ -26,6 +26,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.optoapp.subscription.SubscriptionManager
 import com.example.optoapp.ui.components.DropdownField
+import com.example.optoapp.ui.theme.OptoTokens
 import com.example.optoapp.viewmodel.AuthViewModel
 
 @Deprecated(
@@ -62,8 +63,8 @@ fun OnboardingOpticaScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+            .padding(OptoTokens.spacing.xl),
+        verticalArrangement = Arrangement.spacedBy(OptoTokens.spacing.sm)
     ) {
         Text("Bienvenido a OptoApp", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
         Text("Crea tu óptica para empezar en modo gratuito.")

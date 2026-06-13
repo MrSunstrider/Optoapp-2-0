@@ -15,6 +15,7 @@ import androidx.navigation.NavController
 import com.example.optoapp.ui.components.servicio.ServicioForm
 import com.example.optoapp.util.DateUtils
 import com.example.optoapp.ui.components.OptoTopAppBar
+import com.example.optoapp.ui.theme.OptoTokens
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -89,10 +90,10 @@ fun NuevoServicioScreen(navController: NavController, pacienteId: String? = null
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp)
+                .padding(OptoTokens.spacing.lg)
                 .navigationBarsPadding()
                 .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(OptoTokens.spacing.sm)
         ) {
             ServicioForm(
                 uiState = uiState,

@@ -17,6 +17,7 @@ import com.example.optoapp.viewmodel.AuthViewModel
 import kotlinx.coroutines.launch
 import com.example.optoapp.ui.components.OptoTopAppBar
 import com.example.optoapp.ui.components.OptoCard
+import com.example.optoapp.ui.theme.OptoTokens
 
 /**
  * Elección de óptica cuando el usuario tiene varias membresías ([usuario_optica]).
@@ -50,8 +51,8 @@ fun SeleccionOpticaScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+                .padding(OptoTokens.spacing.lg),
+            verticalArrangement = Arrangement.spacedBy(OptoTokens.spacing.sm)
         ) {
             item {
                 Text(
@@ -79,7 +80,7 @@ fun SeleccionOpticaScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(16.dp),
+                            .padding(OptoTokens.spacing.lg),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {

@@ -40,6 +40,7 @@ import com.example.optoapp.viewmodel.AuthState
 import com.example.optoapp.viewmodel.AuthViewModel
 import com.example.optoapp.ui.components.OptoTopAppBar
 import com.example.optoapp.ui.components.OptoCard
+import com.example.optoapp.ui.theme.OptoTokens
 
 @Composable
 fun LoginScreen(
@@ -123,7 +124,7 @@ fun LoginScreen(
                 .align(Alignment.Center)
                 .padding(horizontal = 32.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(OptoTokens.spacing.lg)
         ) {
 
             // ─── Logo / Encabezado ────────────────────────────────────────────
@@ -178,8 +179,8 @@ fun LoginScreen(
                 elevation = 4.dp
             ) {
                 Column(
-                    modifier = Modifier.padding(24.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                    modifier = Modifier.padding(OptoTokens.spacing.xl),
+                    verticalArrangement = Arrangement.spacedBy(OptoTokens.spacing.lg)
                 ) {
 
                     // Email
@@ -272,7 +273,7 @@ fun LoginScreen(
                                 Text(
                                     text = (authState as AuthState.Error).message,
                                     color = MaterialTheme.colorScheme.error,
-                                    modifier = Modifier.padding(12.dp),
+                                    modifier = Modifier.padding(OptoTokens.spacing.md),
                                     fontSize = 13.sp,
                                     fontWeight = FontWeight.Medium
                                 )

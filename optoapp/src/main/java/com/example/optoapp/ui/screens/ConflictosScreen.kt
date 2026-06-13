@@ -19,6 +19,7 @@ import com.example.optoapp.data.ConflictRecord
 import com.example.optoapp.viewmodel.SyncViewModel
 import com.example.optoapp.ui.components.OptoTopAppBar
 import com.example.optoapp.ui.components.OptoCard
+import com.example.optoapp.ui.theme.OptoTokens
 
 /** Mapa de entityType → etiqueta amigable para mostrar en UI. */
 private val TYPE_LABELS = mapOf(
@@ -99,7 +100,7 @@ fun ConflictosScreen(
                     .fillMaxSize()
                     .padding(padding),
                 contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(OptoTokens.spacing.sm)
             ) {
                 item {
                     Text(
@@ -143,7 +144,7 @@ private fun ConflictCard(
         )
     ) {
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(OptoTokens.spacing.lg)
         ) {
             // Header
             Row(
@@ -207,7 +208,7 @@ private fun ConflictCard(
             // Acciones
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(OptoTokens.spacing.sm)
             ) {
                 OutlinedButton(
                     onClick = onKeepMine,

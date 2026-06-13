@@ -23,6 +23,7 @@ import com.example.optoapp.viewmodel.AuthViewModel
 import com.example.optoapp.viewmodel.OperacionHoyViewModel
 import java.util.Locale
 import com.example.optoapp.ui.components.OptoTopAppBar
+import com.example.optoapp.ui.theme.OptoTokens
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -60,12 +61,12 @@ fun OperacionHoyScreen(
     ) { padding ->
         if (!canView) {
             Column(
-                modifier = Modifier.fillMaxSize().padding(padding).padding(24.dp),
+                modifier = Modifier.fillMaxSize().padding(padding).padding(OptoTokens.spacing.xl),
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Icon(Icons.Default.Lock, contentDescription = null, modifier = Modifier.size(48.dp), tint = MaterialTheme.colorScheme.error)
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(OptoTokens.spacing.lg))
                 Text("Acceso restringido", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error)
                 Text("Tu rol no tiene permiso para ver esta sección.", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
@@ -76,12 +77,12 @@ fun OperacionHoyScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp)
+                .padding(OptoTokens.spacing.lg)
                 .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(OptoTokens.spacing.sm)
         ) {
             // KPI Cards Grid
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(OptoTokens.spacing.md)) {
                 KpiCard(
                     modifier = Modifier.weight(1f),
                     icon = Icons.Default.CalendarMonth,
@@ -98,7 +99,7 @@ fun OperacionHoyScreen(
                     highlight = uiState.entregasPendientes > 0
                 )
             }
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(OptoTokens.spacing.md)) {
                 KpiCard(
                     modifier = Modifier.weight(1f),
                     icon = Icons.Default.AttachMoney,
@@ -123,23 +124,23 @@ fun OperacionHoyScreen(
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
             ) {
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(modifier = Modifier.padding(OptoTokens.spacing.lg), verticalArrangement = Arrangement.spacedBy(OptoTokens.spacing.sm)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.Notifications, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                        Spacer(Modifier.width(8.dp))
+                        Spacer(Modifier.width(OptoTokens.spacing.sm))
                         Text("Alertas", fontWeight = FontWeight.Bold)
                     }
                     if (uiState.alertas.isEmpty()) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.CheckCircle, contentDescription = null, tint = MaterialTheme.colorScheme.tertiary)
-                            Spacer(Modifier.width(8.dp))
+                            Spacer(Modifier.width(OptoTokens.spacing.sm))
                             Text("Sin alertas críticas", color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     } else {
                         uiState.alertas.forEach { a ->
                             Row(verticalAlignment = Alignment.Top) {
                                 Icon(Icons.Default.Info, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(16.dp))
-                                Spacer(Modifier.width(8.dp))
+                                Spacer(Modifier.width(OptoTokens.spacing.sm))
                                 Text(a, style = MaterialTheme.typography.bodySmall)
                             }
                         }
@@ -153,14 +154,14 @@ fun OperacionHoyScreen(
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
             ) {
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(modifier = Modifier.padding(OptoTokens.spacing.lg), verticalArrangement = Arrangement.spacedBy(OptoTokens.spacing.md)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.FileDownload, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                        Spacer(Modifier.width(8.dp))
+                        Spacer(Modifier.width(OptoTokens.spacing.sm))
                         Text("Exportaciones", fontWeight = FontWeight.Bold)
                     }
 
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(OptoTokens.spacing.sm)) {
                         Button(
                             modifier = Modifier.weight(1f),
                             enabled = canExportInventario,
@@ -198,7 +199,7 @@ private fun KpiCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
-            modifier = Modifier.padding(16.dp).fillMaxWidth(),
+            modifier = Modifier.padding(OptoTokens.spacing.lg).fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Surface(shape = MaterialTheme.shapes.medium, color = color.copy(alpha = 0.12f), modifier = Modifier.size(40.dp)) {
@@ -206,7 +207,7 @@ private fun KpiCard(
                     Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(22.dp))
                 }
             }
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(OptoTokens.spacing.sm))
             Text(value, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface)
             Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             if (highlight) {

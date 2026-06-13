@@ -19,6 +19,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.example.optoapp.viewmodel.AuthViewModel
 import com.example.optoapp.viewmodel.OpticaHeaderViewModel
+import com.example.optoapp.ui.theme.OptoTokens
 import kotlinx.coroutines.launch
 
 /** CompositionLocal para que cualquier pantalla pueda mostrar Snackbar sin acoplamiento. */
@@ -208,7 +209,7 @@ fun MainDrawerScreen(
                     }
                     SnackbarHost(
                         hostState = snackbarHostState,
-                        modifier = Modifier.align(Alignment.BottomCenter).padding(16.dp)
+                        modifier = Modifier.align(Alignment.BottomCenter).padding(OptoTokens.spacing.lg)
                     )
                 }
             }

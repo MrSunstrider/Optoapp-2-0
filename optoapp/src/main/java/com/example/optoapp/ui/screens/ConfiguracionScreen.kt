@@ -35,6 +35,7 @@ import com.example.optoapp.ui.components.config.SyncDiagnosticsCard
 import com.example.optoapp.ui.components.config.SystemSection
 import com.example.optoapp.ui.components.config.UsuariosRolesSection
 import com.example.optoapp.ui.components.OptoTopAppBar
+import com.example.optoapp.ui.theme.OptoTokens
 import com.example.optoapp.viewmodel.AuthViewModel
 import com.example.optoapp.viewmodel.ConfiguracionViewModel
 import com.example.optoapp.viewmodel.FiscalConfigViewModel
@@ -144,7 +145,7 @@ fun ConfiguracionScreen(
         )
     }) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(horizontal = 14.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            verticalArrangement = Arrangement.spacedBy(OptoTokens.spacing.sm)) {
 
             SectionHeader("SEGURIDAD Y ACCESO")
             SecuritySection(pinHasBeenSet = pinHasBeenSet, isPinRequired = isPinRequired,

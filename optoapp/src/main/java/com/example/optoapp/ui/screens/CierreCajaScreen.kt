@@ -23,6 +23,7 @@ import com.example.optoapp.util.DateUtils
 import java.util.*
 import com.example.optoapp.ui.components.OptoTopAppBar
 import com.example.optoapp.ui.components.OptoCard
+import com.example.optoapp.ui.theme.OptoTokens
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -78,11 +79,11 @@ fun CierreCajaScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp)
+                .padding(OptoTokens.spacing.lg)
         ) {
             if (!canView) {
                 OptoCard(modifier = Modifier.fillMaxWidth()) {
-                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Column(modifier = Modifier.padding(OptoTokens.spacing.lg), verticalArrangement = Arrangement.spacedBy(OptoTokens.spacing.sm)) {
                         Text("Acceso restringido", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error)
                         Text("Tu rol actual no tiene permiso para consultar cierre de caja.")
                     }
@@ -97,7 +98,7 @@ fun CierreCajaScreen(
                 color = MaterialTheme.colorScheme.primary
             )
             
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(OptoTokens.spacing.lg))
             
             // Resumen de Totales
             val totales = viewModel.getTotalesPorMetodo()
@@ -105,20 +106,20 @@ fun CierreCajaScreen(
             
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(OptoTokens.spacing.sm)
             ) {
                 ResumenCard("Efectivo", totales["Efectivo"] ?: 0.0, Modifier.weight(1f), MaterialTheme.colorScheme.tertiary)
                 ResumenCard("Móvil/Trans", (totales["Transferencia"] ?: 0.0) + (totales["Móvil"] ?: 0.0), Modifier.weight(1f), MaterialTheme.colorScheme.secondary)
                 ResumenCard("Tarjeta", totales["Tarjeta"] ?: 0.0, Modifier.weight(1f), MaterialTheme.colorScheme.primary)
             }
             
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(OptoTokens.spacing.lg))
             
             OptoCard(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
             ) {
-                Column(modifier = Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                Column(modifier = Modifier.padding(OptoTokens.spacing.lg), horizontalAlignment = Alignment.CenterHorizontally) {
                     Text("TOTAL RECAUDADO", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                     Text(
                         "s/. ${String.format(Locale.getDefault(), "%.2f", totalGeneral)}",
@@ -134,7 +135,7 @@ fun CierreCajaScreen(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
             ) {
-                Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Column(modifier = Modifier.padding(OptoTokens.spacing.md), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text("Desglose", fontWeight = FontWeight.Bold, fontSize = 13.sp)
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text("Ventas de hoy", fontSize = 13.sp)
@@ -155,10 +156,10 @@ fun CierreCajaScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(OptoTokens.spacing.lg))
             Text("Detalle de Transacciones", fontWeight = FontWeight.Bold, fontSize = 18.sp)
             
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(OptoTokens.spacing.sm))
             
             if (uiState.pagos.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -166,7 +167,7 @@ fun CierreCajaScreen(
                 }
             } else {
                 LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(OptoTokens.spacing.sm),
                     modifier = Modifier.fillMaxSize()
                 ) {
                     items(uiState.pagos) { pago ->
@@ -184,7 +185,7 @@ fun ResumenCard(label: String, monto: Double, modifier: Modifier, color: Color) 
         modifier = modifier,
         colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.1f))
     ) {
-        Column(modifier = Modifier.padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(modifier = Modifier.padding(OptoTokens.spacing.md), horizontalAlignment = Alignment.CenterHorizontally) {
             Text(label, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = color)
             Text(
                 "s/. ${String.format(Locale.getDefault(), "%.0f", monto)}",
@@ -203,7 +204,7 @@ fun TransactionItem(pago: com.example.optoapp.data.Pago) {
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Row(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(OptoTokens.spacing.lg),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {

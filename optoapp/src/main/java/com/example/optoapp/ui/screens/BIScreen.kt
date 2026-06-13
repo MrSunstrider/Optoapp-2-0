@@ -27,6 +27,7 @@ import com.example.optoapp.viewmodel.BIViewModel
 import com.example.optoapp.viewmodel.Periodo
 import com.example.optoapp.ui.components.*
 import com.example.optoapp.ui.components.OptoTopAppBar
+import com.example.optoapp.ui.theme.OptoTokens
 import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -67,7 +68,7 @@ fun BIScreen(navController: NavController, viewModel: BIViewModel = hiltViewMode
                 .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
                 .verticalScroll(scrollState)
                 .padding(horizontal = 14.dp, vertical = 4.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(OptoTokens.spacing.sm)
         ) {
             // Selector de Periodo
             SingleChoiceSegmentedButtonRow(
@@ -141,7 +142,7 @@ fun BIScreen(navController: NavController, viewModel: BIViewModel = hiltViewMode
                 shape = RoundedCornerShape(24.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
             ) {
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(modifier = Modifier.padding(OptoTokens.spacing.lg), verticalArrangement = Arrangement.spacedBy(OptoTokens.spacing.sm)) {
                     Text(
                         "Operación e inventario",
                         fontWeight = FontWeight.Bold,
@@ -167,7 +168,7 @@ fun BIScreen(navController: NavController, viewModel: BIViewModel = hiltViewMode
                 shape = RoundedCornerShape(24.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
             ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(OptoTokens.spacing.lg)) {
                     Text("Top 5 Productos", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, fontSize = 18.sp)
                     Spacer(modifier = Modifier.height(16.dp))
                     if (uiState.topProductos.isEmpty()) {

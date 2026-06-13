@@ -26,6 +26,7 @@ import java.time.format.DateTimeFormatter
 import java.util.UUID
 import kotlinx.coroutines.launch
 import com.example.optoapp.ui.components.OptoTopAppBar
+import com.example.optoapp.ui.theme.OptoTokens
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -152,10 +153,10 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp)
+                .padding(OptoTokens.spacing.lg)
                 .navigationBarsPadding()
                 .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(OptoTokens.spacing.sm)
         ) {
             PacienteFormSections(
                 nombreCompleto = nombreCompleto,
@@ -197,7 +198,7 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                horizontalArrangement = Arrangement.spacedBy(OptoTokens.spacing.lg)
             ) {
                 OutlinedButton(
                     onClick = { navController.popBackStack() },

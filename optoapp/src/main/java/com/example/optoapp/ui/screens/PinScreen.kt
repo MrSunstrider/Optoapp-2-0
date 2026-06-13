@@ -21,6 +21,7 @@ import com.example.optoapp.viewmodel.AuthViewModel
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import kotlinx.coroutines.launch
 import com.example.optoapp.ui.components.OptoCard
+import com.example.optoapp.ui.theme.OptoTokens
 
 @Composable
 fun PinScreen(navController: NavController, viewModel: AuthViewModel = hiltViewModel()) {
@@ -48,7 +49,7 @@ fun PinScreen(navController: NavController, viewModel: AuthViewModel = hiltViewM
                 .align(Alignment.Center)
                 .padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(OptoTokens.spacing.lg)
         ) {
             // ─── Logo "O" ────────────────────────────────────────────────────
             Surface(
@@ -86,7 +87,7 @@ fun PinScreen(navController: NavController, viewModel: AuthViewModel = hiltViewM
 
             // ─── PIN Dots ────────────────────────────────────────────────────
             Row(
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(OptoTokens.spacing.md),
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.testTag(TestTags.PIN_INPUT_FIELD)
             ) {
@@ -138,8 +139,8 @@ fun PinScreen(navController: NavController, viewModel: AuthViewModel = hiltViewM
                 elevation = 1.dp
             ) {
                 Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    modifier = Modifier.padding(OptoTokens.spacing.lg),
+                    verticalArrangement = Arrangement.spacedBy(OptoTokens.spacing.md)
                 ) {
                     val numbers = listOf(
                         listOf("1", "2", "3"),
@@ -151,7 +152,7 @@ fun PinScreen(navController: NavController, viewModel: AuthViewModel = hiltViewM
                     numbers.forEach { row ->
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            horizontalArrangement = Arrangement.spacedBy(OptoTokens.spacing.md)
                         ) {
                             row.forEach { char ->
                                 val isOk = char == "OK"

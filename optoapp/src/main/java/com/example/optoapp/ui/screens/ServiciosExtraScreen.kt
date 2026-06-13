@@ -27,6 +27,7 @@ import com.example.optoapp.util.DateUtils
 import kotlinx.coroutines.launch
 import java.util.*
 import com.example.optoapp.ui.components.OptoTopAppBar
+import com.example.optoapp.ui.theme.OptoTokens
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -104,17 +105,40 @@ fun ServiciosExtraScreen(navController: NavController, drawerState: DrawerState,
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                 shape = MaterialTheme.shapes.medium
             )
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(OptoTokens.spacing.md))
 
             if (filteredServicios.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("No se encontraron servicios.")
+                    if (searchQuery.isEmpty() && servicios.isEmpty()) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(OptoTokens.spacing.sm),
+                            modifier = Modifier.padding(OptoTokens.spacing.xl)
+                        ) {
+                            Icon(
+                                Icons.Default.Search,
+                                contentDescription = null,
+                                modifier = Modifier.size(48.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                "No hay servicios extra registrados",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Button(onClick = { navController.navigate("nuevo_servicio") }) {
+                                Text("Añadir primer servicio")
+                            }
+                        }
+                    } else {
+                        Text("No se encontraron servicios.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
                 }
             } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(bottom = 88.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(OptoTokens.spacing.sm)
                 ) {
                     items(filteredServicios) { servicio ->
                         ServicioRow(servicio, 

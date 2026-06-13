@@ -27,7 +27,6 @@ import com.example.optoapp.ui.components.OptoSegmentedSelector
 import com.example.optoapp.ui.components.OptoQuickAddChip
 import com.example.optoapp.ui.components.OptoTextField
 import com.example.optoapp.ui.components.OptoVisionInput
-import com.example.optoapp.ui.theme.*
 import com.example.optoapp.viewmodel.EvaluacionUiState
 import com.example.optoapp.viewmodel.EvaluacionViewModel
 import java.util.Locale
@@ -124,14 +123,14 @@ private fun AddSection(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiState)
     val currentAddOi = if (uiState.isVpCerca) uiState.addCercaOi else uiState.addIntermediaOi
 
     Surface(
-        color = SurfaceDarkMuted,
+        color = MaterialTheme.colorScheme.surfaceVariant,
         shape = RoundedCornerShape(20.dp),
         modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             // ── Title + VP toggle ──────────────────────────────────────────
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Adición", fontWeight = FontWeight.Bold, color = PrimaryDark)
+                Text("Adición", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                 Spacer(Modifier.weight(1f))
                 OptoSegmentedSelector(
                     options = listOf("Cerca", "Intermedio"),
@@ -203,18 +202,18 @@ private fun AddSection(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiState)
 
                     // -- A/O toggle --
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("A/O", fontWeight = FontWeight.Bold, color = TextPrimaryDark, fontSize = 14.sp)
+                        Text("A/O", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
                         Spacer(Modifier.width(8.dp))
                         Switch(
                             checked = uiState.isAddAo,
                             onCheckedChange = { onUpdate(uiState.copy(isAddAo = it)) },
                             colors = SwitchDefaults.colors(
-                                checkedThumbColor = PrimaryDark,
-                                checkedTrackColor = PrimaryDark.copy(alpha = 0.3f)
+                                checkedThumbColor = MaterialTheme.colorScheme.primary,
+                                checkedTrackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
                             )
                         )
                         Spacer(Modifier.width(8.dp))
-                        Text("Ambos ojos igual", fontSize = 12.sp, color = TextSecondaryDark)
+                        Text("Ambos ojos igual", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
 
                     // -- Result fields --
@@ -285,7 +284,7 @@ private fun NumericAddStepper(
             text = "${formatAddValue(currentVal)} D",
             fontSize = 28.sp,
             fontWeight = FontWeight.Bold,
-            color = PrimaryDark
+            color = MaterialTheme.colorScheme.primary
         )
 
         Spacer(Modifier.width(20.dp))
@@ -312,8 +311,8 @@ private fun CircularStepperButton(
         onClick = onClick,
         modifier = modifier.size(46.dp),
         shape = CircleShape,
-        color = SurfaceDark,
-        contentColor = TextPrimaryDark,
+        color = MaterialTheme.colorScheme.surface,
+        contentColor = MaterialTheme.colorScheme.onSurface,
         tonalElevation = 0.dp
     ) {
         Box(contentAlignment = Alignment.Center) {

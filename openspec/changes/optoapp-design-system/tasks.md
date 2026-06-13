@@ -53,13 +53,13 @@ Chain strategy: feature-branch-chain
 
 ## PR 5: Screen Migration P2 (Colors, Empty States, Spacing)
 
-- [ ] 5.1 Replace 29+ direct color imports → `MaterialTheme.colorScheme.*`
-- [ ] 5.2 Clean `RefraccionSection.kt` hardcoded colors → M3 slots
-- [ ] 5.3 Audit `CommonComponents.kt` — token-based defaults
-- [ ] 5.4 Add empty states (PacientesList, MonturasScreen, ServiciosExtraScreen)
-- [ ] 5.5 Apply `OptoTokens.spacing.*` — replace hardcoded padding/gap
-- [ ] 5.6 Grep-verify: zero RoundedCornerShape outside OptoTokens, zero direct colors outside theme, zero TopAppBar in screens
-- [ ] 5.7 Run tests + `assembleDebug` — all pass
+- [x] 5.1 Replace 29+ direct color imports → `MaterialTheme.colorScheme.*`
+- [x] 5.2 Clean `RefraccionSection.kt` hardcoded colors → M3 slots
+- [x] 5.3 Audit `CommonComponents.kt` — token-based defaults
+- [x] 5.4 Add empty states (PacientesList, MonturasScreen, ServiciosExtraScreen)
+- [x] 5.5 Apply `OptoTokens.spacing.*` — replace hardcoded padding/gap
+- [x] 5.6 Grep-verify: zero RoundedCornerShape outside OptoTokens, zero direct colors outside theme, zero TopAppBar in screens
+- [x] 5.7 Run tests + `assembleDebug` — all pass
 
 ---
 

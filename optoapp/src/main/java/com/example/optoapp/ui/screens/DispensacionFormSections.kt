@@ -20,6 +20,7 @@ import com.example.optoapp.data.Pago
 import com.example.optoapp.ui.components.AbonoDialog
 import com.example.optoapp.ui.components.DropdownField
 import com.example.optoapp.ui.components.OptoTextField
+import com.example.optoapp.ui.theme.OptoTokens
 import com.example.optoapp.util.DateUtils
 import com.example.optoapp.viewmodel.DispensacionUiState
 import java.util.*
@@ -32,7 +33,7 @@ fun MonturaInfoSection(
     onUpdate: (DispensacionUiState) -> Unit
 ) {
     Card {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(modifier = Modifier.padding(OptoTokens.spacing.lg), verticalArrangement = Arrangement.spacedBy(OptoTokens.spacing.sm)) {
             Text("Información de Montura", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
             DropdownField(label = "Origen", selected = uiState.origenMontura, options = listOf("Tienda", "Paciente")) {
                 if (it == "Tienda") onUpdate(uiState.copy(origenMontura = it))
@@ -142,7 +143,7 @@ fun FinancieraInfoSection(
     onRemovePago: (Pago) -> Unit
 ) {
     Card {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(modifier = Modifier.padding(OptoTokens.spacing.lg), verticalArrangement = Arrangement.spacedBy(OptoTokens.spacing.md)) {
             Text("Información Financiera", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
 
             OptoTextField(
@@ -166,7 +167,7 @@ fun FinancieraInfoSection(
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
                 ) {
                     Row(
-                        modifier = Modifier.padding(12.dp),
+                        modifier = Modifier.padding(OptoTokens.spacing.md),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {

@@ -92,7 +92,7 @@ fun PacientesListScreen(navController: NavController, drawerState: DrawerState, 
                 onDismissRequest = { showPaywall = false },
                 title = { Text("Límite del plan gratuito") },
                 text = {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(OptoTokens.spacing.sm)) {
                         Text("Has alcanzado el máximo de pacientes del plan gratuito. Pasa a PRO para registros ilimitados.")
                         Text("Plan actual: ${if (tier == SubscriptionTier.PRO) "PRO" else "Gratuito"}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
@@ -135,7 +135,7 @@ fun PacientesListScreen(navController: NavController, drawerState: DrawerState, 
             val filters = listOf("Todos", "Saldo Pendiente", "Entrega")
             FlowRow(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(OptoTokens.spacing.sm),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 filters.forEach { filter ->
@@ -162,8 +162,42 @@ fun PacientesListScreen(navController: NavController, drawerState: DrawerState, 
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(OptoTokens.spacing.lg))
 
+            if (pacientes.isEmpty()) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(OptoTokens.spacing.sm),
+                        modifier = Modifier.padding(OptoTokens.spacing.xl)
+                    ) {
+                        Icon(
+                            Icons.Default.Person,
+                            contentDescription = null,
+                            modifier = Modifier.size(48.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            "No hay pacientes registrados",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Button(
+                            onClick = {
+                                if (!canCreateEdit) {
+                                    Toast.makeText(context, "Tu rol no permite crear pacientes.", Toast.LENGTH_SHORT).show()
+                                } else if (canAddPaciente) navController.navigate("nuevoPaciente")
+                                else showPaywall = true
+                            }
+                        ) {
+                            Text("Añadir primer paciente")
+                        }
+                    }
+                }
+            } else {
             // Patient list
             LazyColumn(
                 modifier = Modifier.fillMaxSize().testTag(TestTags.PACIENTE_LISTA),
@@ -175,6 +209,7 @@ fun PacientesListScreen(navController: NavController, drawerState: DrawerState, 
                         navController.navigate("detallePaciente/${paciente.id}")
                     }
                 }
+            }
             }
         }
     }
@@ -192,7 +227,7 @@ private fun PacienteCard(paciente: Paciente, onClick: () -> Unit) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
+                .padding(OptoTokens.spacing.md),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(14.dp)
         ) {
@@ -239,7 +274,7 @@ private fun PacienteCard(paciente: Paciente, onClick: () -> Unit) {
                 }
 
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(OptoTokens.spacing.lg),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
@@ -256,7 +291,7 @@ private fun PacienteCard(paciente: Paciente, onClick: () -> Unit) {
 
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(OptoTokens.spacing.sm)
                 ) {
                     Text(
                         text = "Creado: ${DateUtils.formatLocalized(paciente.fechaCreacion)}",
