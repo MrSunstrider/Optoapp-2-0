@@ -23,9 +23,9 @@ fun OptoVisionInput(
         onValueChange = onValueChange,
         label = { Text(label) },
         modifier = modifier.fillMaxWidth(),
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
         isError = isError,
-        supportingText = if (isError) { { Text("Formato inválido. Use 20/20") } } else null,
+        supportingText = if (isError) { { Text("Formato inválido") } } else null,
         enabled = enabled,
         maxLines = 1
     )

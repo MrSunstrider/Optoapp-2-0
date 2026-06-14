@@ -36,12 +36,13 @@ open class SyncInventarioUseCase @Inject constructor(
 
     suspend operator fun invoke(
         opticaId: String,
-        downloadAfterUpload: Boolean = true
+        downloadAfterUpload: Boolean = true,
+        skipUpload: Boolean = false
     ): Resource<InventarioSyncResult> {
         return try {
-            Log.d(TAG, "Inventario: inicio (opticaId=$opticaId, download=$downloadAfterUpload)")
-            val montUp = uploadMonturas(opticaId)
-            val movUp = uploadMovimientos(opticaId)
+            Log.d(TAG, "Inventario: inicio (opticaId=$opticaId, download=$downloadAfterUpload, skipUpload=$skipUpload)")
+            val montUp = if (skipUpload) 0 else uploadMonturas(opticaId)
+            val movUp = if (skipUpload) 0 else uploadMovimientos(opticaId)
             val montDown: Int
             val movDown: Int
             if (downloadAfterUpload) {

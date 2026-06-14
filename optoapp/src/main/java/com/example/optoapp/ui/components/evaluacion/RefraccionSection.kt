@@ -52,19 +52,6 @@ fun RefraccionSection(
     }
 
     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-    Text("Refracción Subjetiva", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        OptoTextField(value = uiState.subjOdEsf, onValueChange = { onUpdate(uiState.copy(subjOdEsf = it)) }, label = "OD Esf", modifier = Modifier.weight(1f))
-        OptoTextField(value = uiState.subjOdCil, onValueChange = { onUpdate(uiState.copy(subjOdCil = it)) }, label = "OD Cil", modifier = Modifier.weight(1f))
-        OptoTextField(value = uiState.subjOdEje, onValueChange = { onUpdate(uiState.copy(subjOdEje = it)) }, label = "OD Eje", modifier = Modifier.weight(1f))
-    }
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        OptoTextField(value = uiState.subjOiEsf, onValueChange = { onUpdate(uiState.copy(subjOiEsf = it)) }, label = "OI Esf", modifier = Modifier.weight(1f))
-        OptoTextField(value = uiState.subjOiCil, onValueChange = { onUpdate(uiState.copy(subjOiCil = it)) }, label = "OI Cil", modifier = Modifier.weight(1f))
-        OptoTextField(value = uiState.subjOiEje, onValueChange = { onUpdate(uiState.copy(subjOiEje = it)) }, label = "OI Eje", modifier = Modifier.weight(1f))
-    }
-
-    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
     Text("VL Fórmula Optométrica", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary)
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         OptoTextField(

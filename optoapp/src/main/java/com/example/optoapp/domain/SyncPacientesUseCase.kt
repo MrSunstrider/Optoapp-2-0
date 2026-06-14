@@ -33,11 +33,12 @@ open class SyncPacientesUseCase @Inject constructor(
 
     suspend operator fun invoke(
         opticaId: String,
-        downloadAfterUpload: Boolean = true
+        downloadAfterUpload: Boolean = true,
+        skipUpload: Boolean = false
     ): Resource<PacientesSyncResult> {
         return try {
-            Log.d(TAG, "Pacientes: inicio sync (opticaId=$opticaId, download=$downloadAfterUpload)")
-            val uploaded = upload(opticaId)
+            Log.d(TAG, "Pacientes: inicio sync (opticaId=$opticaId, download=$downloadAfterUpload, skipUpload=$skipUpload)")
+            val uploaded = if (skipUpload) 0 else upload(opticaId)
             val downloaded = if (downloadAfterUpload) download(opticaId) else 0
             Log.d(TAG, "Pacientes: fin OK (subidos=$uploaded, bajados=$downloaded)")
             Resource.Success(PacientesSyncResult(uploaded, downloaded))

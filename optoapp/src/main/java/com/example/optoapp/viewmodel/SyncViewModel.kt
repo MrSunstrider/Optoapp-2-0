@@ -102,9 +102,6 @@ class SyncViewModel @Inject constructor(
         viewModelScope.launch {
             val opticaId = sessionManager.opticaId.first()
             try {
-                // Forzar re-upload: el ConflictHelper ya no lo frena porque
-                // resolvemos manualmente. Simplemente hacemos un sync completo
-                // que subirá la versión local (porque no hay conflicto tras resolver).
                 conflictDao.resolveConflict(entity.entityId, opticaId)
                 _conflicts.value = _conflicts.value.filter { it.entityId != entity.entityId }
                 _conflictCount.value = _conflicts.value.size
@@ -115,15 +112,25 @@ class SyncViewModel @Inject constructor(
         }
     }
 
-    /** Resuelve un conflicto: baja la versión remota. */
+    /** Resuelve un conflicto: baja la versión remota forzando descarga. */
     fun resolveAcceptTheirs(entity: ConflictRecord) {
         viewModelScope.launch {
             val opticaId = sessionManager.opticaId.first()
             try {
-                // Forzar download: hacemos un sync completo que bajará la versión remota
                 conflictDao.resolveConflict(entity.entityId, opticaId)
                 _conflicts.value = _conflicts.value.filter { it.entityId != entity.entityId }
                 _conflictCount.value = _conflicts.value.size
+                // Forzar descarga del módulo para pisar la data local con la nube
+                if (!SyncSessionHelper.refreshSessionBeforeSync(supabase)) return@launch
+                syncGate.mutex.withLock {
+                    when (entity.entityType) {
+                        "paciente" -> syncPacientesUseCase(opticaId, downloadAfterUpload = true, skipUpload = true)
+                        "evaluacion" -> syncHistorialUseCase(opticaId, downloadAfterUpload = true, skipUpload = true)
+                        "dispensacion", "servicio_extra", "pago" ->
+                            syncFinanzasUseCase(opticaId, downloadAfterUpload = true, skipUpload = true)
+                        "montura" -> syncInventarioUseCase(opticaId, downloadAfterUpload = true, skipUpload = true)
+                    }
+                }
                 Log.d(TAG, "Conflicto resuelto (accept theirs): ${entity.entityType}/${entity.entityId}")
             } catch (e: Exception) {
                 Log.e(TAG, "Error resolviendo conflicto: ${e.message}", e)
@@ -148,7 +155,60 @@ class SyncViewModel @Inject constructor(
             conflictDao.clearConflicts(opticaId)
             _conflicts.value = emptyList()
             _conflictCount.value = 0
-            performFullSync()
+            performFullDownload()
+        }
+    }
+
+    /**
+     * Sincronización solo descarga (sin subir nada).
+     * Útil para resolver conflictos aceptando la versión de la nube,
+     * o para re-sincronizar un dispositivo desde cero.
+     */
+    private suspend fun performFullDownload() {
+        _syncState.value = SyncState.Loading
+        if (!isNetworkAvailable()) {
+            _syncState.value = SyncState.Error("Sin conexión a internet.")
+            return
+        }
+
+        if (!SyncSessionHelper.refreshSessionBeforeSync(supabase)) {
+            bgErrorCollector.record("auth", "Full download cancelada: no se pudo refrescar el JWT")
+            _syncState.value = SyncState.Error("Tu sesión expiró. Vuelve a iniciar sesión.")
+            return
+        }
+        val contextCheck = ensureSyncContext()
+        if (contextCheck != null) {
+            _syncState.value = SyncState.Error(contextCheck)
+            return
+        }
+
+        val opticaId = sessionManager.opticaId.first()
+
+        var hasErrors = false
+        syncGate.mutex.withLock {
+            val p = syncPacientesUseCase(opticaId, downloadAfterUpload = true, skipUpload = true)
+            if (p is Resource.Error) { hasErrors = true; Log.w(TAG, "Full download (pacientes): ${p.message}") }
+
+            val h = syncHistorialUseCase(opticaId, downloadAfterUpload = true, skipUpload = true)
+            if (h is Resource.Error) { hasErrors = true; Log.w(TAG, "Full download (historial): ${h.message}") }
+
+            val f = syncFinanzasUseCase(opticaId, downloadAfterUpload = true, skipUpload = true)
+            if (f is Resource.Error) { hasErrors = true; Log.w(TAG, "Full download (finanzas): ${f.message}") }
+
+            val i = syncInventarioUseCase(opticaId, downloadAfterUpload = true, skipUpload = true)
+            if (i is Resource.Error) { hasErrors = true; Log.w(TAG, "Full download (inventario): ${i.message}") }
+        }
+
+        if (hasErrors) {
+            bgErrorCollector.record("sync", "Full download completada con errores")
+            syncTelemetry.recordFullSyncError("Algunos módulos reportaron errores")
+            recordRemoteSyncTelemetry(opticaId, "error", "finalizado", "Algunos módulos con error")
+            _syncState.value = SyncState.Error("Descarga completada con errores. Revisa el estado de sync para más detalles.")
+        } else {
+            syncTelemetry.recordFullSyncSuccess()
+            recordRemoteSyncTelemetry(opticaId, "ok", "finalizado", null)
+            runCatching { subscriptionManager.refreshPlanFromServer(opticaId) }
+            _syncState.value = SyncState.Success("Datos descargados desde la nube correctamente")
         }
     }
 

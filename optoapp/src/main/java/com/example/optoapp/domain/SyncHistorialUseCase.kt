@@ -39,11 +39,12 @@ open class SyncHistorialUseCase @Inject constructor(
      */
     suspend operator fun invoke(
         opticaId: String,
-        downloadAfterUpload: Boolean = true
+        downloadAfterUpload: Boolean = true,
+        skipUpload: Boolean = false
     ): Resource<HistorialSyncResult> {
         return try {
-            Log.d(TAG, "Evaluaciones: inicio sync (opticaId=$opticaId, download=$downloadAfterUpload)")
-            val uploaded = uploadEvaluaciones(opticaId)
+            Log.d(TAG, "Evaluaciones: inicio sync (opticaId=$opticaId, download=$downloadAfterUpload, skipUpload=$skipUpload)")
+            val uploaded = if (skipUpload) 0 else uploadEvaluaciones(opticaId)
             val downloaded = if (downloadAfterUpload) downloadEvaluaciones(opticaId) else 0
             Log.d(TAG, "Evaluaciones: fin OK (subidas=$uploaded, bajadas=$downloaded)")
             Resource.Success(HistorialSyncResult(uploaded, downloaded))

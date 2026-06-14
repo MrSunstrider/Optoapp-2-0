@@ -32,20 +32,21 @@ open class SyncFinanzasUseCase @Inject constructor(
      */
     suspend operator fun invoke(
         opticaId: String,
-        downloadAfterUpload: Boolean = true
+        downloadAfterUpload: Boolean = true,
+        skipUpload: Boolean = false
     ): Resource<FinanzasSyncResult> {
         return try {
-            Log.d(TAG, "Finanzas: inicio (opticaId=$opticaId, download=$downloadAfterUpload)")
+            Log.d(TAG, "Finanzas: inicio (opticaId=$opticaId, download=$downloadAfterUpload, skipUpload=$skipUpload)")
 
             deletionSyncHelper.pushPendingDeletions(opticaId)
 
-            val dispUp = uploadSyncCoordinator.uploadDispensaciones(opticaId)
+            val dispUp = if (skipUpload) 0 else uploadSyncCoordinator.uploadDispensaciones(opticaId)
             Log.d(TAG, "Finanzas: upload dispensaciones=$dispUp")
-            val itemsUp = uploadSyncCoordinator.uploadDispensacionItems(opticaId)
+            val itemsUp = if (skipUpload) 0 else uploadSyncCoordinator.uploadDispensacionItems(opticaId)
             Log.d(TAG, "Finanzas: upload dispensacion_items=$itemsUp")
-            val servUp = uploadSyncCoordinator.uploadServicios(opticaId)
+            val servUp = if (skipUpload) 0 else uploadSyncCoordinator.uploadServicios(opticaId)
             Log.d(TAG, "Finanzas: upload servicios_extra=$servUp")
-            val pagosUp = uploadSyncCoordinator.uploadPagos(opticaId)
+            val pagosUp = if (skipUpload) 0 else uploadSyncCoordinator.uploadPagos(opticaId)
             Log.d(TAG, "Finanzas: upload pagos=$pagosUp")
 
             val dispDown: Int

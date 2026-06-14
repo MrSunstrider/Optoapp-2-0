@@ -36,7 +36,7 @@ fun OptoSegmentedSelector(
                 val isSelected = index == selectedIndex
                 val backgroundColor by animateColorAsState(
                     targetValue = if (isSelected) 
-                        OptoTokens.colors.surfaceVariant 
+                        MaterialTheme.colorScheme.primaryContainer 
                     else 
                         Color.Transparent,
                     label = "backgroundColor"
