@@ -31,15 +31,19 @@ class ReportesViewModel @Inject constructor(
     private val _anio = MutableStateFlow(Calendar.getInstance().get(Calendar.YEAR).toString())
     val anio: StateFlow<String> = _anio
 
+    private val _fechaDiario = MutableStateFlow(LocalDate.now())
+    val fechaDiario: StateFlow<LocalDate> = _fechaDiario
+
     fun setPeriodo(p: String) { _periodo.value = p }
     fun setAnio(a: String) { _anio.value = a }
+    fun setFechaDiario(fecha: LocalDate) { _fechaDiario.value = fecha }
 
-    private fun dentroDelPeriodo(date: LocalDate, p: String, a: String, now: LocalDate): Boolean {
+    private fun dentroDelPeriodo(date: LocalDate, p: String, a: String, fechaDiario: LocalDate, now: LocalDate): Boolean {
         return when (p) {
-            "Diario" -> date.isEqual(now)
+            "Diario" -> date.isEqual(fechaDiario)
             "Semanal" -> {
-                val dayOfWeek = now.dayOfWeek.value
-                val startOfWeek = now.minusDays(dayOfWeek.toLong() - 1)
+                val dayOfWeek = fechaDiario.dayOfWeek.value
+                val startOfWeek = fechaDiario.minusDays(dayOfWeek.toLong() - 1)
                 val endOfWeek = startOfWeek.plusDays(7)
                 !date.isBefore(startOfWeek) && date.isBefore(endOfWeek)
             }
@@ -56,10 +60,11 @@ class ReportesViewModel @Inject constructor(
             combine(
                 repository.getAllDispensacionesForOptica(opticaId),
                 _periodo,
-                _anio
-            ) { list, p, a ->
+                _anio,
+                _fechaDiario
+            ) { list, p, a, fd ->
                 val now = LocalDate.now()
-                list.filter { disp -> dentroDelPeriodo(disp.fecha, p, a, now) }
+                list.filter { disp -> dentroDelPeriodo(disp.fecha, p, a, fd, now) }
             }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
@@ -78,11 +83,12 @@ class ReportesViewModel @Inject constructor(
                 repository.getPagosByDateRangeForOptica(LocalDate.MIN, LocalDate.MAX, opticaId),
                 _periodo,
                 _anio,
+                _fechaDiario,
                 allDispensaciones
-            ) { pagos, p, a, dispensaciones ->
+            ) { pagos, p, a, fd, dispensaciones ->
                 val now = LocalDate.now()
                 val dispMap = dispensaciones.associateBy { it.id }
-                pagos.filter { pago -> dentroDelPeriodo(pago.fecha, p, a, now) }
+                pagos.filter { pago -> dentroDelPeriodo(pago.fecha, p, a, fd, now) }
                     .sumOf { pago ->
                         // Clasificar: si la dispensación es del período → venta, si no → cobro atrasado
                         pago.monto
@@ -97,14 +103,15 @@ class ReportesViewModel @Inject constructor(
                 repository.getPagosByDateRangeForOptica(LocalDate.MIN, LocalDate.MAX, opticaId),
                 repository.getAllDispensacionesForOptica(opticaId),
                 _periodo,
-                _anio
-            ) { pagos, todasDisp, p, a ->
+                _anio,
+                _fechaDiario
+            ) { pagos, todasDisp, p, a, fd ->
                 val now = LocalDate.now()
                 val dispMap = todasDisp.associateBy { it.id }
-                pagos.filter { pago -> dentroDelPeriodo(pago.fecha, p, a, now) }
+                pagos.filter { pago -> dentroDelPeriodo(pago.fecha, p, a, fd, now) }
                     .sumOf { pago ->
                         val dispFecha = pago.dispensacionId?.let { dispMap[it]?.fecha }
-                        if (dispFecha != null && dentroDelPeriodo(dispFecha, p, a, now)) 0.0
+                        if (dispFecha != null && dentroDelPeriodo(dispFecha, p, a, fd, now)) 0.0
                         else pago.monto
                     }
             }

@@ -17,9 +17,20 @@ import javax.inject.Inject
 data class CierreCajaUiState(
     val fecha: LocalDate = DateUtils.today(),
     val pagos: List<Pago> = emptyList(),
+    val totalVentasHoy: Double = 0.0,
     val ventasHoy: Double = 0.0,
     val cobrosAtrasados: Double = 0.0,
+    val saldoPendiente: Double = 0.0,
     val isLoading: Boolean = false
+)
+
+/** Resultado interno para combinar pagos + ventas + saldo pendiente. */
+private data class CierreCajaResult(
+    val pagos: List<Pago>,
+    val totalVentasHoy: Double,
+    val ventasHoy: Double,
+    val cobrosAtrasados: Double,
+    val saldoPendiente: Double
 )
 
 @HiltViewModel
@@ -67,11 +78,22 @@ class CierreCajaViewModel @Inject constructor(
                             else -> ventasHoy += pago.monto
                         }
                     }
-                    Triple(pagos, ventasHoy, cobrosAtrasados)
+                    // Total de ventas registradas en esta fecha (monto completo de la dispensación)
+                    val ventasDelDia = dispensaciones.filter { it.fecha == fecha }
+                    val totalVentasHoy = ventasDelDia.sumOf { it.montoTotal }
+                    val saldoPendiente = totalVentasHoy - ventasHoy
+                    CierreCajaResult(pagos, totalVentasHoy, ventasHoy, cobrosAtrasados, saldoPendiente)
                 }
             }
-            .onEach { (pagos, ventasHoy, cobrosAtrasados) ->
-                _uiState.update { it.copy(pagos = pagos, ventasHoy = ventasHoy, cobrosAtrasados = cobrosAtrasados, isLoading = false) }
+            .onEach { (pagos, totalVentasHoy, ventasHoy, cobrosAtrasados, saldoPendiente) ->
+                _uiState.update { it.copy(
+                    pagos = pagos,
+                    totalVentasHoy = totalVentasHoy,
+                    ventasHoy = ventasHoy,
+                    cobrosAtrasados = cobrosAtrasados,
+                    saldoPendiente = saldoPendiente,
+                    isLoading = false
+                )}
             }.launchIn(viewModelScope)
     }
     

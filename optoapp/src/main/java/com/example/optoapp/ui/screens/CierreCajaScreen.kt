@@ -99,7 +99,34 @@ fun CierreCajaScreen(
             
             Spacer(modifier = Modifier.height(16.dp))
             
-            // Resumen de Totales
+            // Total Ventas del Día
+            OptoCard(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+            ) {
+                Column(modifier = Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("TOTAL VENTAS DEL DÍA", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Text(
+                        "s/. ${String.format(Locale.getDefault(), "%.2f", uiState.totalVentasHoy)}",
+                        fontSize = 32.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                    if (uiState.saldoPendiente > 0) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            "Saldo pendiente: s/. ${String.format(Locale.getDefault(), "%.2f", uiState.saldoPendiente)}",
+                            fontSize = 14.sp,
+                            color = MaterialTheme.colorScheme.error,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            // Resumen de Totales por método de pago
             val totales = viewModel.getTotalesPorMetodo()
             val totalGeneral = totales.values.sum()
             

@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material3.*
@@ -37,6 +38,26 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
     
     val periodo by viewModel.periodo.collectAsState()
     val anio by viewModel.anio.collectAsState()
+    val fechaDiario by viewModel.fechaDiario.collectAsState()
+    var showDatePicker by remember { mutableStateOf(false) }
+    
+    val datePickerState = rememberDatePickerState(
+        initialSelectedDateMillis = DateUtils.localDateToPickerMillis(fechaDiario)
+    )
+
+    if (showDatePicker) {
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    datePickerState.selectedDateMillis?.let { viewModel.setFechaDiario(DateUtils.pickerMillisToLocalDate(it)) }
+                    showDatePicker = false
+                }) { Text("OK") }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
     
     val totalVendido by viewModel.totalVendido.collectAsState()
     val totalPagado by viewModel.totalPagado.collectAsState()
@@ -93,13 +114,27 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Box(modifier = Modifier.weight(if (periodo == "Anual") 1f else 2f)) {
+                Box(modifier = Modifier.weight(if (periodo == "Anual" || periodo == "Diario") 1f else 2f)) {
                     DropdownField(
                         label = "Período",
                         selected = periodo,
                         options = listOf("Diario", "Semanal", "Este mes", "Este año", "Anual", "Todo"),
                         onSelected = { viewModel.setPeriodo(it) }
                     )
+                }
+                
+                if (periodo == "Diario") {
+                    OutlinedButton(
+                        onClick = {
+                            datePickerState.selectedDateMillis = DateUtils.localDateToPickerMillis(fechaDiario)
+                            showDatePicker = true
+                        },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Icon(Icons.Default.DateRange, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(DateUtils.formatLocalized(fechaDiario), fontSize = 12.sp)
+                    }
                 }
                 
                 if (periodo == "Anual") {
