@@ -175,7 +175,7 @@ private fun AddSection(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiState)
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        listOf("+1.00", "+2.00", "+3.00", "+3.50", "+4.00").forEach { value ->
+                        listOf("+1.00", "+2.00", "+3.00", "+4.00").forEach { value ->
                             OptoQuickAddChip(
                                 value = value,
                                 isSelected = currentAddOd == value,
