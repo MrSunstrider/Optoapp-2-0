@@ -134,12 +134,12 @@ class EvaluacionViewModelTest {
 
     @Test
     fun dipLabelForVpMode_cercaMode() {
-        assertEquals("DIP Cerca", dipLabelForVpMode(true))
+        assertEquals("DNP Cerca", dipLabelForVpMode(true))
     }
 
     @Test
     fun dipLabelForVpMode_intermedioMode() {
-        assertEquals("DIP Intermedio", dipLabelForVpMode(false))
+        assertEquals("DNP Intermedio", dipLabelForVpMode(false))
     }
 
     // ─── saveAndScheduleReminder method contract ───────────────────────
