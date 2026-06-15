@@ -16,6 +16,7 @@ import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -43,7 +44,8 @@ open class PostSaveSyncScheduler @Inject constructor(
     private val bgErrorCollector: BackgroundErrorCollector? = null
 ) {
     private val scheduleMutex = Mutex()
-    private val pendingJobs = mutableMapOf<String, Job>()
+    @VisibleForTesting
+    internal val pendingJobs = mutableMapOf<String, Job>()
 
     /** Test hook — called before each sync attempt, after session validation. */
     @VisibleForTesting
@@ -58,16 +60,16 @@ open class PostSaveSyncScheduler @Inject constructor(
     var suppressSync: Boolean = false
 
     /**
-     * Cancela todos los syncs pendientes.
+     * Cancela todos los syncs pendientes y aguarda su terminación antes de retornar.
      * Debe llamarse antes de [suppressSync] = true para evitar que jobs
      * programados antes del suppress se ejecuten después de la descarga.
      */
-    fun cancelPending() {
-        applicationScope.launch {
-            scheduleMutex.withLock {
-                pendingJobs.values.forEach { it.cancel() }
-                pendingJobs.clear()
+    suspend fun cancelPending() {
+        scheduleMutex.withLock {
+            for (job in pendingJobs.values) {
+                job.cancelAndJoin()
             }
+            pendingJobs.clear()
         }
     }
 
