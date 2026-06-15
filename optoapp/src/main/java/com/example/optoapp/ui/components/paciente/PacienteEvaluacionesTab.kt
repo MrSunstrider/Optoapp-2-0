@@ -115,10 +115,10 @@ fun ResumenEvaluacionDialog(eval: EvaluacionClinica, paciente: Paciente, onDismi
 
                 val hasDip = eval.dipLejos.isNotBlank() || eval.dipIntermedio.isNotBlank() || eval.dipCerca.isNotBlank()
                 if (hasDip) {
-                    InfoSection("DIP (Distancia Interpupilar)") {
-                        if (eval.dipLejos.isNotBlank()) Text("Lejos: ${eval.dipLejos}", fontSize = 14.sp)
-                        if (eval.dipIntermedio.isNotBlank()) Text("Intermedio: ${eval.dipIntermedio}", fontSize = 14.sp)
-                        if (eval.dipCerca.isNotBlank()) Text("Cerca: ${eval.dipCerca}", fontSize = 14.sp)
+                    InfoSection("DIP / DNP") {
+                        if (eval.dipLejos.isNotBlank()) Text("DNP Lejos: ${eval.dipLejos}", fontSize = 14.sp)
+                        if (eval.dipIntermedio.isNotBlank()) Text("DNP Intermedio: ${eval.dipIntermedio}", fontSize = 14.sp)
+                        if (eval.dipCerca.isNotBlank()) Text("DNP Cerca: ${eval.dipCerca}", fontSize = 14.sp)
                     }
                 }
 

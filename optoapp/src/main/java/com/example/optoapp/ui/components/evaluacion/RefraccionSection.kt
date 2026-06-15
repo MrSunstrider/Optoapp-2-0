@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -347,9 +348,9 @@ private fun DipSection(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiState)
         colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text("DIP (Distancia Interpupilar)", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+            Text("DIP / DNP", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OptoTextField(value = uiState.dipLejos, onValueChange = { onUpdate(uiState.copy(dipLejos = it)) }, label = "DIP Lejos", modifier = Modifier.weight(1f).testTag(TestTags.EVALUACION_DIP_FIELD))
+                OptoTextField(value = uiState.dipLejos, onValueChange = { onUpdate(uiState.copy(dipLejos = it)) }, label = "DNP Lejos", keyboardType = KeyboardType.Decimal, modifier = Modifier.weight(1f).testTag(TestTags.EVALUACION_DIP_FIELD))
                 val dipLabel = dipLabelForVpMode(uiState.isVpCerca)
                 val dipValue = if (uiState.isVpCerca) uiState.dipCerca else uiState.dipIntermedio
                 OptoTextField(
@@ -359,6 +360,7 @@ private fun DipSection(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiState)
                         else onUpdate(uiState.copy(dipIntermedio = newVal))
                     },
                     label = dipLabel,
+                    keyboardType = KeyboardType.Decimal,
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -394,4 +396,4 @@ internal val basesPrisma = listOf("Nasal", "Temporal", "Superior", "Inferior")
 
 /** Returns the DIP section label depending on whether VP is Cerca (near) or Intermedio (intermediate). */
 internal fun dipLabelForVpMode(isVpCerca: Boolean): String =
-    if (isVpCerca) "DIP Cerca" else "DIP Intermedio"
+    if (isVpCerca) "DNP Cerca" else "DNP Intermedio"

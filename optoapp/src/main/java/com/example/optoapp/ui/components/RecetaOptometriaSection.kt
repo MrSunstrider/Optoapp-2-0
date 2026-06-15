@@ -9,6 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.optoapp.viewmodel.EvaluacionUiState
@@ -132,10 +133,10 @@ private fun DipSection(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiState)
         colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text("DIP (Distancia Interpupilar)", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+            Text("DIP / DNP", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OptoTextField(value = uiState.dipLejos, onValueChange = { onUpdate(uiState.copy(dipLejos = it)) }, label = "DIP Lejos", modifier = Modifier.weight(1f))
-                OptoTextField(value = uiState.dipCerca, onValueChange = { onUpdate(uiState.copy(dipCerca = it)) }, label = "DIP Cerca", modifier = Modifier.weight(1f))
+                OptoTextField(value = uiState.dipLejos, onValueChange = { onUpdate(uiState.copy(dipLejos = it)) }, label = "DNP Lejos", keyboardType = KeyboardType.Decimal, modifier = Modifier.weight(1f))
+                OptoTextField(value = uiState.dipCerca, onValueChange = { onUpdate(uiState.copy(dipCerca = it)) }, label = "DNP Cerca", keyboardType = KeyboardType.Decimal, modifier = Modifier.weight(1f))
             }
         }
     }
