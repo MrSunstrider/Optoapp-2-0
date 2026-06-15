@@ -190,6 +190,8 @@ class SyncViewModel @Inject constructor(
 
         val opticaId = sessionManager.opticaId.first()
 
+        // Cancelar syncs pendientes y suprimir nuevos durante la descarga
+        postSaveSyncScheduler.cancelPending()
         postSaveSyncScheduler.suppressSync = true
         try {
             var hasErrors = false

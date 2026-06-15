@@ -57,6 +57,20 @@ open class PostSaveSyncScheduler @Inject constructor(
     @Volatile
     var suppressSync: Boolean = false
 
+    /**
+     * Cancela todos los syncs pendientes.
+     * Debe llamarse antes de [suppressSync] = true para evitar que jobs
+     * programados antes del suppress se ejecuten después de la descarga.
+     */
+    fun cancelPending() {
+        applicationScope.launch {
+            scheduleMutex.withLock {
+                pendingJobs.values.forEach { it.cancel() }
+                pendingJobs.clear()
+            }
+        }
+    }
+
     @VisibleForTesting
     protected open fun scheduleDebounced(
         key: String,
