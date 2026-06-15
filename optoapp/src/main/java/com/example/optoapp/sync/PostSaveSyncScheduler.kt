@@ -26,6 +26,10 @@ import javax.inject.Singleton
 /**
  * Ejecuta sync tras guardar en Room en un [CoroutineScope] de aplicación (no se cancela al salir de la pantalla).
  * Usa el mismo [SyncGate] que [com.example.optoapp.viewmodel.SyncViewModel] para no solapar upserts.
+ *
+ * Cuando [suppressSync] está en true, se saltea toda programación de sync.
+ * Usado por [com.example.optoapp.viewmodel.SyncViewModel.performFullDownload]
+ * para evitar que la descarga masiva dispare syncs post-guardado que regeneren conflictos.
  */
 @Singleton
 open class PostSaveSyncScheduler @Inject constructor(
@@ -45,12 +49,21 @@ open class PostSaveSyncScheduler @Inject constructor(
     @VisibleForTesting
     internal var onBeforeSync: (suspend (String) -> Unit)? = null
 
+    /**
+     * Cuando está en true, se saltea toda programación de sync.
+     * Usado por SyncViewModel.performFullDownload() para evitar que la descarga
+     * masiva dispare syncs post-guardado que regeneren conflictos.
+     */
+    @Volatile
+    var suppressSync: Boolean = false
+
     @VisibleForTesting
     protected open fun scheduleDebounced(
         key: String,
         delayMs: Long = 800L,
         block: suspend () -> Unit
     ) {
+        if (suppressSync) return
         applicationScope.launch {
             scheduleMutex.withLock {
                 pendingJobs.remove(key)?.cancel()
@@ -63,11 +76,11 @@ open class PostSaveSyncScheduler @Inject constructor(
     }
 
     open fun schedulePacientesSync(opticaId: String) {
+        if (suppressSync) return
         scheduleDebounced(key = "pacientes:$opticaId") {
             onBeforeSync?.invoke("pacientes")
             try {
                 syncGate.mutex.withLock {
-                    // P0-T4: session check DENTRO del mutex para evitar race conditions
                     if (!ensureSessionForPostSaveSync("pacientes")) return@withLock
                     when (val r = syncPacientesUseCase!!(opticaId)) {
                         is Resource.Error -> Log.w(TAG, "Sync pacientes post-guardado: ${r.message}")
@@ -85,11 +98,11 @@ open class PostSaveSyncScheduler @Inject constructor(
     }
 
     open fun scheduleHistorialSync(opticaId: String) {
+        if (suppressSync) return
         scheduleDebounced(key = "historial:$opticaId") {
             onBeforeSync?.invoke("historial")
             try {
                 syncGate.mutex.withLock {
-                    // P0-T4: session check DENTRO del mutex para evitar race conditions
                     if (!ensureSessionForPostSaveSync("historial")) return@withLock
                     syncPacientesUseCase!!(opticaId)
                     when (val r = syncHistorialUseCase!!(opticaId)) {
@@ -108,11 +121,11 @@ open class PostSaveSyncScheduler @Inject constructor(
     }
 
     open fun scheduleFinanzasSync(opticaId: String) {
+        if (suppressSync) return
         scheduleDebounced(key = "finanzas:$opticaId") {
             onBeforeSync?.invoke("finanzas")
             try {
                 syncGate.mutex.withLock {
-                    // P0-T4: session check DENTRO del mutex para evitar race conditions
                     if (!ensureSessionForPostSaveSync("finanzas")) return@withLock
                     syncPacientesUseCase!!(opticaId)
                     when (val r = syncFinanzasUseCase!!(opticaId)) {
@@ -131,11 +144,11 @@ open class PostSaveSyncScheduler @Inject constructor(
     }
 
     open fun scheduleInventarioSync(opticaId: String) {
+        if (suppressSync) return
         scheduleDebounced(key = "inventario:$opticaId") {
             onBeforeSync?.invoke("inventario")
             try {
                 syncGate.mutex.withLock {
-                    // P0-T4: session check DENTRO del mutex para evitar race conditions
                     if (!ensureSessionForPostSaveSync("inventario")) return@withLock
                     when (val r = syncInventarioUseCase!!(opticaId)) {
                         is Resource.Error -> Log.w(TAG, "Sync inventario post-guardado: ${r.message}")
@@ -177,4 +190,3 @@ open class PostSaveSyncScheduler @Inject constructor(
         private const val TAG = "PostSaveSync"
     }
 }
-

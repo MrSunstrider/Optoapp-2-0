@@ -26,6 +26,7 @@ import com.example.optoapp.domain.SyncInventarioUseCase
 import com.example.optoapp.domain.SyncPacientesUseCase
 import com.example.optoapp.domain.SyncSessionHelper
 import com.example.optoapp.sync.SyncGate
+import com.example.optoapp.sync.PostSaveSyncScheduler
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.postgrest
@@ -66,7 +67,8 @@ class SyncViewModel @Inject constructor(
     private val syncGate: SyncGate,
     private val conflictDao: ConflictDao,
     private val supabaseObserver: com.example.optoapp.domain.observer.SupabaseObserver,
-    private val bgErrorCollector: BackgroundErrorCollector
+    private val bgErrorCollector: BackgroundErrorCollector,
+    private val postSaveSyncScheduler: PostSaveSyncScheduler
 ) : ViewModel() {
 
     companion object {
@@ -164,6 +166,9 @@ class SyncViewModel @Inject constructor(
      * Sincronización solo descarga (sin subir nada).
      * Útil para resolver conflictos aceptando la versión de la nube,
      * o para re-sincronizar un dispositivo desde cero.
+     *
+     * Silencia el PostSaveSyncScheduler para que las inserciones durante
+     * la descarga no disparen syncs post-guardado que regeneren conflictos.
      */
     private suspend fun performFullDownload() {
         _syncState.value = SyncState.Loading
@@ -185,31 +190,36 @@ class SyncViewModel @Inject constructor(
 
         val opticaId = sessionManager.opticaId.first()
 
-        var hasErrors = false
-        syncGate.mutex.withLock {
-            val p = syncPacientesUseCase(opticaId, downloadAfterUpload = true, skipUpload = true)
-            if (p is Resource.Error) { hasErrors = true; Log.w(TAG, "Full download (pacientes): ${p.message}") }
+        postSaveSyncScheduler.suppressSync = true
+        try {
+            var hasErrors = false
+            syncGate.mutex.withLock {
+                val p = syncPacientesUseCase(opticaId, downloadAfterUpload = true, skipUpload = true)
+                if (p is Resource.Error) { hasErrors = true; Log.w(TAG, "Full download (pacientes): ${p.message}") }
 
-            val h = syncHistorialUseCase(opticaId, downloadAfterUpload = true, skipUpload = true)
-            if (h is Resource.Error) { hasErrors = true; Log.w(TAG, "Full download (historial): ${h.message}") }
+                val h = syncHistorialUseCase(opticaId, downloadAfterUpload = true, skipUpload = true)
+                if (h is Resource.Error) { hasErrors = true; Log.w(TAG, "Full download (historial): ${h.message}") }
 
-            val f = syncFinanzasUseCase(opticaId, downloadAfterUpload = true, skipUpload = true)
-            if (f is Resource.Error) { hasErrors = true; Log.w(TAG, "Full download (finanzas): ${f.message}") }
+                val f = syncFinanzasUseCase(opticaId, downloadAfterUpload = true, skipUpload = true)
+                if (f is Resource.Error) { hasErrors = true; Log.w(TAG, "Full download (finanzas): ${f.message}") }
 
-            val i = syncInventarioUseCase(opticaId, downloadAfterUpload = true, skipUpload = true)
-            if (i is Resource.Error) { hasErrors = true; Log.w(TAG, "Full download (inventario): ${i.message}") }
-        }
+                val i = syncInventarioUseCase(opticaId, downloadAfterUpload = true, skipUpload = true)
+                if (i is Resource.Error) { hasErrors = true; Log.w(TAG, "Full download (inventario): ${i.message}") }
+            }
 
-        if (hasErrors) {
-            bgErrorCollector.record("sync", "Full download completada con errores")
-            syncTelemetry.recordFullSyncError("Algunos módulos reportaron errores")
-            recordRemoteSyncTelemetry(opticaId, "error", "finalizado", "Algunos módulos con error")
-            _syncState.value = SyncState.Error("Descarga completada con errores. Revisa el estado de sync para más detalles.")
-        } else {
-            syncTelemetry.recordFullSyncSuccess()
-            recordRemoteSyncTelemetry(opticaId, "ok", "finalizado", null)
-            runCatching { subscriptionManager.refreshPlanFromServer(opticaId) }
-            _syncState.value = SyncState.Success("Datos descargados desde la nube correctamente")
+            if (hasErrors) {
+                bgErrorCollector.record("sync", "Full download completada con errores")
+                syncTelemetry.recordFullSyncError("Algunos módulos reportaron errores")
+                recordRemoteSyncTelemetry(opticaId, "error", "finalizado", "Algunos módulos con error")
+                _syncState.value = SyncState.Error("Descarga completada con errores. Revisa el estado de sync para más detalles.")
+            } else {
+                syncTelemetry.recordFullSyncSuccess()
+                recordRemoteSyncTelemetry(opticaId, "ok", "finalizado", null)
+                runCatching { subscriptionManager.refreshPlanFromServer(opticaId) }
+                _syncState.value = SyncState.Success("Datos descargados desde la nube correctamente")
+            }
+        } finally {
+            postSaveSyncScheduler.suppressSync = false
         }
     }
 
