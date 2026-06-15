@@ -9,6 +9,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.optoapp.data.ConflictDao
 import com.example.optoapp.data.ConflictRecord
 import com.example.optoapp.data.OptoRepository
+import com.example.optoapp.data.SyncEntityStateDao
 import com.example.optoapp.data.Resource
 import com.example.optoapp.data.SessionManager
 import com.example.optoapp.data.SyncTelemetry
@@ -66,6 +67,7 @@ class SyncViewModel @Inject constructor(
     private val syncInventarioUseCase: SyncInventarioUseCase,
     private val syncGate: SyncGate,
     private val conflictDao: ConflictDao,
+    private val syncEntityStateDao: SyncEntityStateDao,
     private val supabaseObserver: com.example.optoapp.domain.observer.SupabaseObserver,
     private val bgErrorCollector: BackgroundErrorCollector,
     private val postSaveSyncScheduler: PostSaveSyncScheduler
@@ -99,11 +101,39 @@ class SyncViewModel @Inject constructor(
         }
     }
 
-    /** Resuelve un conflicto: sube la versión local forzando el upsert. */
+    /**
+     * Dispatches a sync call for a specific entity type.
+     *
+     * @param opticaId the optica to sync.
+     * @param entityType the Room entity type string (e.g. "paciente", "evaluacion").
+     * @param skipUpload when true, skips the upload phase (download-only). When false,
+     *   uploads local data first, then downloads the server's updated_at back to Room.
+     */
+    private suspend fun syncForEntityType(opticaId: String, entityType: String, skipUpload: Boolean) {
+        syncGate.mutex.withLock {
+            when (entityType) {
+                "paciente" -> syncPacientesUseCase(opticaId, skipUpload = skipUpload, downloadAfterUpload = true)
+                "evaluacion" -> syncHistorialUseCase(opticaId, skipUpload = skipUpload, downloadAfterUpload = true)
+                "dispensacion", "servicio_extra", "pago" ->
+                    syncFinanzasUseCase(opticaId, skipUpload = skipUpload, downloadAfterUpload = true)
+                "montura" -> syncInventarioUseCase(opticaId, skipUpload = skipUpload, downloadAfterUpload = true)
+            }
+        }
+    }
+
+    /**
+     * Resolves a conflict by keeping the local version:
+     * uploads the local entity first (skipUpload = false), then deletes the conflict record.
+     *
+     * REQ-A1: upload MUST happen before resolveConflict is called.
+     * REQ-A2: downloadAfterUpload = true ensures the server's updated_at is written back to Room.
+     * REQ-A3: uploading the local entity makes the server agree with local state — no new conflict.
+     */
     fun resolveKeepMine(entity: ConflictRecord) {
         viewModelScope.launch {
             val opticaId = sessionManager.opticaId.first()
             try {
+                syncForEntityType(opticaId, entity.entityType, skipUpload = false)
                 conflictDao.resolveConflict(entity.entityId, opticaId)
                 _conflicts.value = _conflicts.value.filter { it.entityId != entity.entityId }
                 _conflictCount.value = _conflicts.value.size
@@ -122,17 +152,9 @@ class SyncViewModel @Inject constructor(
                 conflictDao.resolveConflict(entity.entityId, opticaId)
                 _conflicts.value = _conflicts.value.filter { it.entityId != entity.entityId }
                 _conflictCount.value = _conflicts.value.size
-                // Forzar descarga del módulo para pisar la data local con la nube
+                // Force download of the module to overwrite local data with cloud version
                 if (!SyncSessionHelper.refreshSessionBeforeSync(supabase)) return@launch
-                syncGate.mutex.withLock {
-                    when (entity.entityType) {
-                        "paciente" -> syncPacientesUseCase(opticaId, downloadAfterUpload = true, skipUpload = true)
-                        "evaluacion" -> syncHistorialUseCase(opticaId, downloadAfterUpload = true, skipUpload = true)
-                        "dispensacion", "servicio_extra", "pago" ->
-                            syncFinanzasUseCase(opticaId, downloadAfterUpload = true, skipUpload = true)
-                        "montura" -> syncInventarioUseCase(opticaId, downloadAfterUpload = true, skipUpload = true)
-                    }
-                }
+                syncForEntityType(opticaId, entity.entityType, skipUpload = true)
                 Log.d(TAG, "Conflicto resuelto (accept theirs): ${entity.entityType}/${entity.entityId}")
             } catch (e: Exception) {
                 Log.e(TAG, "Error resolviendo conflicto: ${e.message}", e)
@@ -150,11 +172,17 @@ class SyncViewModel @Inject constructor(
         }
     }
 
-    /** Resuelve TODOS los conflictos aceptando la versión de la nube y fuerza re-descarga. */
+    /**
+     * Resolves ALL conflicts by accepting the cloud version and forcing a full re-download.
+     *
+     * RC-4: Both conflict_records AND sync_entity_state rows with status = 'conflicted'
+     * are cleared so that the next sync cycle does not re-detect stale conflicts.
+     */
     fun acceptAllCloud() {
         viewModelScope.launch {
             val opticaId = sessionManager.opticaId.first()
             conflictDao.clearConflicts(opticaId)
+            syncEntityStateDao.deleteConflictedForOptica(opticaId)
             _conflicts.value = emptyList()
             _conflictCount.value = 0
             performFullDownload()
