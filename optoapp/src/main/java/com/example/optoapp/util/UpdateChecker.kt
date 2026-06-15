@@ -91,6 +91,10 @@ object UpdateChecker {
     /**
      * Consulta la API pública de GitHub Releases.
      * No requiere autenticación (60 req/hora para IPs públicas).
+     *
+     * SOLO retorna [UpdateInfo] si el release tiene un asset APK real.
+     * Si el release existe pero sin asset APK ([) -> retorna null para que
+     * la cadena de respaldo (Supabase) pueda tomar el control.
      */
     private suspend fun tryCheckGithub(): UpdateInfo? {
         return try {
@@ -104,12 +108,16 @@ object UpdateChecker {
             if (!isNewer(tag, current)) return null
 
             val apkUrl = release.assets
-                .firstOrNull { it.browserDownloadUrl.isNotBlank() }
+                .firstOrNull { it.browserDownloadUrl.isNotBlank() && it.browserDownloadUrl.endsWith(".apk") }
                 ?.browserDownloadUrl
+
+            // NO caer a release.htmlUrl — eso es HTML, no APK.
+            // Si no hay asset APK, que lo resuelva Supabase.
+            if (apkUrl == null) return null
 
             UpdateInfo(
                 latestVersion = tag,
-                downloadUrl = apkUrl ?: release.htmlUrl,
+                downloadUrl = apkUrl,
                 releaseUrl = release.htmlUrl.ifBlank { GITHUB_WEB },
             )
         } catch (_: Exception) {
@@ -159,7 +167,7 @@ object UpdateChecker {
     // ─── Descarga e instalación ─────────────────────────────────────────
 
     /**
-     * Descarga el APK en segundo plano y abre el intent de instalación.
+     * Descarga el APK en segundo plano, lo valida y abre el intent de instalación.
      *
      * @param context Contexto de la aplicación.
      * @param url URL de descarga del APK.
@@ -178,15 +186,32 @@ object UpdateChecker {
                 val dir = File(context.cacheDir, "updates").apply { mkdirs() }
                 val apk = File(dir, "optoapp-update.apk")
 
+                // Limpiar descarga previa fallida
+                if (apk.exists()) apk.delete()
+
                 val conn = URL(url).openConnection() as HttpURLConnection
                 conn.connectTimeout = 15_000
                 conn.readTimeout = 30_000
                 conn.connect()
 
+                // Obtener tamaño esperado antes de descargar
+                val expectedSize = conn.contentLengthLong
+
                 conn.inputStream.use { input ->
                     FileOutputStream(apk).use { output ->
                         input.copyTo(output)
                     }
+                }
+
+                // Validar el APK descargado
+                val validationError = verifyApk(apk, expectedSize)
+                if (validationError != null) {
+                    apk.delete()
+                    val msg = "La descarga está corrupta: $validationError"
+                    withContext(Dispatchers.Main) {
+                        openInBrowser(context, url, msg, onError)
+                    }
+                    return@withContext DownloadResult.Error(msg)
                 }
 
                 withContext(Dispatchers.Main) {
@@ -202,6 +227,38 @@ object UpdateChecker {
                 DownloadResult.Error(msg)
             }
         }
+    }
+
+    /**
+     * Verifica que el archivo descargado sea un APK válido.
+     *
+     * Checks:
+     * - Existe y no está vacío
+     * - Tiene los bytes mágicos de un ZIP (PK) — todo APK es un ZIP
+     * - Si sabíamos el tamaño esperado, verifica que coincida
+     *
+     * @return null si es válido, o un mensaje de error si no.
+     */
+    private fun verifyApk(file: File, expectedSize: Long): String? {
+        if (!file.exists()) return "archivo no encontrado"
+        if (file.length() == 0L) return "archivo vacío"
+        if (file.length() < 1024) return "archivo demasiado pequeño (${file.length()} bytes)"
+
+        if (expectedSize > 0L && file.length() != expectedSize) {
+            return "tamaño incorrecto: esperado $expectedSize, descargado ${file.length()}"
+        }
+
+        // Los APK son archivos ZIP — deben empezar con "PK"
+        val magicBytes = file.inputStream().use { input ->
+            val header = ByteArray(2)
+            if (input.read(header) != 2) return "archivo demasiado pequeño para ser APK"
+            header
+        }
+        if (magicBytes[0] != 0x50.toByte() || magicBytes[1] != 0x4B.toByte()) {
+            return "el archivo descargado no es un APK válido (formato incorrecto)"
+        }
+
+        return null
     }
 
     /** Lanza el intent de instalación del APK descargado. */
