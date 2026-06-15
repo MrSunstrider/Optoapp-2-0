@@ -151,17 +151,39 @@ private fun PrismasSection(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiSt
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text("Prismas", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                OptoTextField(value = uiState.prismaOdValor, onValueChange = { onUpdate(uiState.copy(prismaOdValor = it)) }, label = "Prisma OD", modifier = Modifier.weight(1f))
+                OptoTextField(
+                    value = uiState.prismaOdValor,
+                    onValueChange = { onUpdate(uiState.copy(prismaOdValor = it)) },
+                    label = "Prisma OD",
+                    modifier = Modifier.weight(1f),
+                    trailingIcon = { if (uiState.prismaOdValor.isNotBlank()) PrismaSuffix() }
+                )
                 Box(modifier = Modifier.weight(1f)) {
                     DropdownField(label = "Base", selected = uiState.prismaOdBase, options = com.example.optoapp.ui.screens.basesPrisma, onSelected = { onUpdate(uiState.copy(prismaOdBase = it)) })
                 }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                OptoTextField(value = uiState.prismaOiValor, onValueChange = { onUpdate(uiState.copy(prismaOiValor = it)) }, label = "Prisma OI", modifier = Modifier.weight(1f))
+                OptoTextField(
+                    value = uiState.prismaOiValor,
+                    onValueChange = { onUpdate(uiState.copy(prismaOiValor = it)) },
+                    label = "Prisma OI",
+                    modifier = Modifier.weight(1f),
+                    trailingIcon = { if (uiState.prismaOiValor.isNotBlank()) PrismaSuffix() }
+                )
                 Box(modifier = Modifier.weight(1f)) {
                     DropdownField(label = "Base", selected = uiState.prismaOiBase, options = com.example.optoapp.ui.screens.basesPrisma, onSelected = { onUpdate(uiState.copy(prismaOiBase = it)) })
                 }
             }
         }
     }
+}
+
+/** Suffijo "DP" (dioptrías prismáticas) para campos de prisma. */
+@Composable
+internal fun PrismaSuffix() {
+    Text(
+        "DP",
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+    )
 }
