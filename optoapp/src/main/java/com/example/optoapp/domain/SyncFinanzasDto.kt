@@ -7,10 +7,8 @@ import com.example.optoapp.data.Pago
 import com.example.optoapp.data.ServicioExtra
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import java.time.Instant
 import java.time.LocalDate
 
-// ── Remote DTOs ──────────────────────────────────────────────────────────────
 
 @Serializable
 data class DispensacionRemota(
@@ -182,7 +180,6 @@ internal data class DispensacionRemotaLookup(
     val ot: String? = null
 )
 
-// ── Extension functions ──────────────────────────────────────────────────────
 
 fun DispensacionOptica.toRemoto(): DispensacionRemota = DispensacionRemota(
     id = id, ot = ot, monturaId = monturaId, pacienteId = pacienteId, fecha = fecha.toString(), opticaId = opticaId,
@@ -195,7 +192,7 @@ fun DispensacionOptica.toRemoto(): DispensacionRemota = DispensacionRemota(
     montoPagado = montoPagado, estadoEntrega = estadoEntrega,
     fechaVencimientoGarantia = fechaVencimientoGarantia?.toString(),
     distanciaLente = distanciaLente, altura = altura, subTipoBifocal = subTipoBifocal,
-    updatedAt = updatedAt ?: Instant.now().toString(), updatedBy = updatedBy
+    updatedAt = updatedAt, updatedBy = updatedBy
 )
 
 fun Pago.toRemoto(): PagoRemoto = PagoRemoto(
@@ -208,7 +205,7 @@ fun Pago.toRemoto(): PagoRemoto = PagoRemoto(
     metodoPago = metodoPago.trim().ifBlank { FinanzasRemoteDefaults.Pago.METODO_PAGO_VACIO },
     nota = nota.trim(),
     opticaId = opticaId.trim().ifBlank { FinanzasRemoteDefaults.OPTICA_ID_FALLBACK },
-    updatedAt = updatedAt ?: Instant.now().toString(),
+    updatedAt = updatedAt,
     updatedBy = updatedBy
 )
 
@@ -235,11 +232,10 @@ fun ServicioExtra.toRemoto(): ServicioRemoto = ServicioRemoto(
     pacienteId = pacienteId?.trim()?.takeIf { it.isNotBlank() },
     metodoPago = metodoPago.trim().ifBlank { FinanzasRemoteDefaults.ServicioExtra.METODO_PAGO_ROW },
     opticaId = opticaId.trim().ifBlank { FinanzasRemoteDefaults.OPTICA_ID_FALLBACK },
-    updatedAt = updatedAt ?: Instant.now().toString(),
+    updatedAt = updatedAt,
     updatedBy = updatedBy
 )
 
-// ── Helper functions ─────────────────────────────────────────────────────────
 
 internal fun String?.normalizeOptionalFk(): String? =
     this?.trim()?.takeIf { it.isNotBlank() }

@@ -3,7 +3,6 @@ package com.example.optoapp.domain
 import com.example.optoapp.data.EvaluacionClinica
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import java.time.Instant
 import java.time.LocalDate
 
 data class HistorialSyncResult(val uploaded: Int, val downloaded: Int)
@@ -272,6 +271,6 @@ fun EvaluacionClinica.toRemoto(): EvaluacionRemota = EvaluacionRemota(
     lcLaboratorio = lcLaboratorio, lcTipoLente = lcTipoLente,
     lcMaterial = lcMaterial, lcFechaAdaptacion = lcFechaAdaptacion?.toString(),
     lcObservaciones = lcObservaciones,
-    updatedAt = updatedAt ?: Instant.now().toString(),
+    updatedAt = updatedAt,
     updatedBy = updatedBy
 )
