@@ -27,6 +27,36 @@ class ConflictHelper @Inject constructor(
 ) {
     companion object {
         private const val TAG = "ConflictHelper"
+
+        /**
+         * Compara dos timestamps como [Instant].
+         * Retorna true si local es más nuevo o igual que remoto.
+         *
+         * Tolerancia: si ambos se parsean al mismo Instant, se consideran iguales
+         * aunque el string tenga formatos diferentes (con/sin ms, +00:00 vs Z).
+         */
+        fun isLocalNewerOrEqual(localTs: String, remoteTs: String): Boolean {
+            val local = parseInstant(localTs)
+            val remote = parseInstant(remoteTs)
+            if (local == null || remote == null) {
+                Log.w(TAG, "No se pudieron parsear timestamps, fallback a string comparison: local=$localTs, remote=$remoteTs")
+                return localTs >= remoteTs
+            }
+            return local >= remote
+        }
+
+        /** Parsea un string ISO 8601 a [Instant], tolerando formatos comunes. */
+        private fun parseInstant(ts: String): Instant? {
+            return try {
+                Instant.parse(ts)
+            } catch (_: Exception) {
+                try {
+                    java.time.LocalDateTime.parse(ts).toInstant(java.time.ZoneOffset.UTC)
+                } catch (_: Exception) {
+                    null
+                }
+            }
+        }
     }
 
     /**
@@ -48,7 +78,6 @@ class ConflictHelper @Inject constructor(
     ): List<LocalEntity> {
         if (localEntities.isEmpty()) return localEntities
 
-        // IDs con updatedAt local no nulo — solo esos podemos verificar
         val checkable = localEntities.filter { it.updatedAt != null }
         if (checkable.isEmpty()) return localEntities
 
@@ -58,18 +87,14 @@ class ConflictHelper @Inject constructor(
         val safe = mutableListOf<LocalEntity>()
         for (entity in localEntities) {
             val remoteUpdatedAt = remoteTimestamps[entity.id]
-            // Si no hay updatedAt en local o remoto → subir sin problema
             if (entity.updatedAt == null || remoteUpdatedAt == null) {
                 safe.add(entity)
                 continue
             }
 
-            // Comparar como Instant (no como string) para tolerar diferencias de formato
             if (isLocalNewerOrEqual(entity.updatedAt, remoteUpdatedAt)) {
-                // Local es más nuevo o igual → seguro
                 safe.add(entity)
             } else {
-                // Remoto es más nuevo → CONFLICTO
                 Log.w(TAG, "Conflicto en $entityType/${entity.id}: local=${entity.updatedAt} < remoto=$remoteUpdatedAt")
                 conflictDao.upsertConflict(
                     entityId = entity.id,
@@ -90,39 +115,6 @@ class ConflictHelper @Inject constructor(
     }
 
     /**
-     * Compara dos timestamps como [Instant].
-     * Retorna true si local es más nuevo o igual que remoto.
-     *
-     * Tolerancia: si ambos se parsean al mismo Instant, se consideran iguales
-     * aunque el string tenga formatos diferentes (con/sin ms, +00:00 vs Z).
-     */
-    private fun isLocalNewerOrEqual(localTs: String, remoteTs: String): Boolean {
-        val local = parseInstant(localTs)
-        val remote = parseInstant(remoteTs)
-        if (local == null || remote == null) {
-            // Si no se puede parsear, fallback a comparación de strings
-            Log.w(TAG, "No se pudieron parsear timestamps, fallback a string comparison: local=$localTs, remote=$remoteTs")
-            return localTs >= remoteTs
-        }
-        return local >= remote
-    }
-
-    /** Parsea un string ISO 8601 a [Instant], tolerando formatos comunes. */
-    private fun parseInstant(ts: String): Instant? {
-        return try {
-            Instant.parse(ts)
-        } catch (_: Exception) {
-            // Fallback: intentar con formatos alternativos
-            try {
-                // Formato sin zona horaria (asumir UTC)
-                java.time.LocalDateTime.parse(ts).toInstant(java.time.ZoneOffset.UTC)
-            } catch (_: Exception) {
-                null
-            }
-        }
-    }
-
-    /**
      * Obtiene el mapa id → updated_at desde Supabase para una lista de IDs.
      */
     private suspend fun fetchRemoteUpdatedAt(
@@ -132,8 +124,6 @@ class ConflictHelper @Inject constructor(
     ): Map<String, String> {
         if (ids.isEmpty()) return emptyMap()
         return try {
-            // Traemos TODAS las filas de la óptica y filtramos en memoria
-            // (alternativa: chunk + raw SQL RPC si el volumen es muy grande)
             val allRows = supabase.postgrest[tableName]
                 .select {
                     filter { eq("optica_id", opticaId) }
