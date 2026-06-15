@@ -6,7 +6,9 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import com.example.optoapp.ui.theme.OptoTokens
 
 @Composable
@@ -16,17 +18,19 @@ fun OptoVisionInput(
     label: String,
     modifier: Modifier = Modifier,
     isError: Boolean = false,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    textAlign: TextAlign = TextAlign.Start
 ) {
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
-        label = { Text(label) },
+        label = { Text(label, textAlign = textAlign, modifier = Modifier.fillMaxWidth()) },
         modifier = modifier.fillMaxWidth(),
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
         isError = isError,
         supportingText = if (isError) { { Text("Formato inválido") } } else null,
         enabled = enabled,
-        maxLines = 1
+        maxLines = 1,
+        textStyle = TextStyle(textAlign = textAlign)
     )
 }

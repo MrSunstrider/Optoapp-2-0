@@ -260,7 +260,8 @@ private fun AddSection(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiState)
                     value = uiState.addAv,
                     onValueChange = { onUpdate(uiState.copy(addAv = it)) },
                     label = "AV VP",
-                    modifier = Modifier.width(140.dp)
+                    modifier = Modifier.width(140.dp),
+                    textAlign = TextAlign.Center
                 )
             }
         }
