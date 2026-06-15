@@ -156,6 +156,7 @@ class SyncViewModel @Inject constructor(
             _conflicts.value = emptyList()
             _conflictCount.value = 0
             performFullDownload()
+            refreshConflicts()
         }
     }
 

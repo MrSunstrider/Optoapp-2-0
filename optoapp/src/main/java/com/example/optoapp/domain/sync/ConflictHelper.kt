@@ -6,6 +6,7 @@ import com.example.optoapp.data.SyncStateTracker
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.serialization.Serializable
+import java.time.Instant
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -14,6 +15,9 @@ import javax.inject.Singleton
  * antes de hacer upsert, usando el campo updated_at como referencia.
  *
  * Cada UseCase de sync lo invoca antes del upload masivo.
+ *
+ * Compara timestamps como [Instant] (no como strings) para evitar
+ * falsos conflictos por diferencias de formato (milisegundos, zona horaria).
  */
 @Singleton
 class ConflictHelper @Inject constructor(
@@ -54,13 +58,14 @@ class ConflictHelper @Inject constructor(
         val safe = mutableListOf<LocalEntity>()
         for (entity in localEntities) {
             val remoteUpdatedAt = remoteTimestamps[entity.id]
+            // Si no hay updatedAt en local o remoto → subir sin problema
             if (entity.updatedAt == null || remoteUpdatedAt == null) {
-                // No hay data remota o local para comparar — subir sin problema
                 safe.add(entity)
                 continue
             }
 
-            if (entity.updatedAt >= remoteUpdatedAt) {
+            // Comparar como Instant (no como string) para tolerar diferencias de formato
+            if (isLocalNewerOrEqual(entity.updatedAt, remoteUpdatedAt)) {
                 // Local es más nuevo o igual → seguro
                 safe.add(entity)
             } else {
@@ -70,8 +75,8 @@ class ConflictHelper @Inject constructor(
                     entityId = entity.id,
                     opticaId = opticaId,
                     entityType = entityType,
-                    localSnapshot = entity.updatedAt,      // placeholder: idealmente sería el JSON completo
-                    remoteSnapshot = remoteUpdatedAt        // placeholder
+                    localSnapshot = entity.updatedAt,
+                    remoteSnapshot = remoteUpdatedAt
                 )
                 syncStateTracker.markConflicted(opticaId, entityType, entity.id)
             }
@@ -82,6 +87,39 @@ class ConflictHelper @Inject constructor(
             Log.w(TAG, "$conflictedCount entidades $entityType en conflicto, se omiten del upload")
         }
         return safe
+    }
+
+    /**
+     * Compara dos timestamps como [Instant].
+     * Retorna true si local es más nuevo o igual que remoto.
+     *
+     * Tolerancia: si ambos se parsean al mismo Instant, se consideran iguales
+     * aunque el string tenga formatos diferentes (con/sin ms, +00:00 vs Z).
+     */
+    private fun isLocalNewerOrEqual(localTs: String, remoteTs: String): Boolean {
+        val local = parseInstant(localTs)
+        val remote = parseInstant(remoteTs)
+        if (local == null || remote == null) {
+            // Si no se puede parsear, fallback a comparación de strings
+            Log.w(TAG, "No se pudieron parsear timestamps, fallback a string comparison: local=$localTs, remote=$remoteTs")
+            return localTs >= remoteTs
+        }
+        return local >= remote
+    }
+
+    /** Parsea un string ISO 8601 a [Instant], tolerando formatos comunes. */
+    private fun parseInstant(ts: String): Instant? {
+        return try {
+            Instant.parse(ts)
+        } catch (_: Exception) {
+            // Fallback: intentar con formatos alternativos
+            try {
+                // Formato sin zona horaria (asumir UTC)
+                java.time.LocalDateTime.parse(ts).toInstant(java.time.ZoneOffset.UTC)
+            } catch (_: Exception) {
+                null
+            }
+        }
     }
 
     /**
