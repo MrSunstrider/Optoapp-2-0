@@ -30,8 +30,8 @@ android {
         applicationId = "com.example.optoapp"
         minSdk = 24
         targetSdk = 36
-        versionCode = 19
-        versionName = "1.5.6"
+        versionCode = 20
+        versionName = "1.5.7"
         
         multiDexEnabled = true
 
@@ -67,7 +67,6 @@ android {
 
     signingConfigs {
         create("release") {
-            // CI usa env vars (KEYSTORE_PATH, etc.), local usa local.properties
             storeFile = System.getenv("KEYSTORE_PATH")?.let { file(it) }
                 ?: localProperties.getProperty("keystore.path")?.let { rootProject.file(it) }
             storePassword = System.getenv("KEYSTORE_PASSWORD")
@@ -124,12 +123,10 @@ dependencies {
     implementation(libs.androidx.security.crypto)
     implementation(libs.kotlinx.serialization.json)
 
-    // Room
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
 
-    // Hilt
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
     implementation(libs.androidx.hilt.navigation.compose)
@@ -140,7 +137,6 @@ dependencies {
 
     implementation(libs.billing.ktx)
 
-    // Supabase
     implementation(platform(libs.supabase.bom))
     implementation(libs.supabase.auth)
     implementation(libs.supabase.postgrest)
@@ -153,7 +149,6 @@ dependencies {
     testImplementation(libs.mockk)
     testImplementation("org.robolectric:robolectric:4.14.1")
     testImplementation("androidx.work:work-testing:2.9.0")
-    testImplementation(libs.mockk)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
@@ -161,18 +156,13 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 
-    // Room testing
     androidTestImplementation(libs.androidx.room.testing)
     androidTestImplementation(libs.kotlinx.coroutines.test)
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.core)
 
-    // E2E test infrastructure
     androidTestImplementation(libs.espresso.idling.resource)
     androidTestImplementation(libs.androidx.test.rules)
-
-    // Hilt testing (for future @HiltAndroidTest if HiltTestRunner is resolved)
-    // androidTestImplementation(libs.hilt.android.testing)
 }
 
 tasks.withType<KotlinCompile>().configureEach {
@@ -200,7 +190,6 @@ val jacocoKotlinClasses = layout.buildDirectory.dir("intermediates/built_in_kotl
 val jacocoJavaClasses = layout.buildDirectory.dir("intermediates/javac/debug/classes")
 val jacocoExecData = files(layout.buildDirectory.dir("outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec"))
 
-// JaCoCo coverage report (unit tests)
 val jacocoTestReport by tasks.registering(JacocoReport::class) {
     dependsOn("testDebugUnitTest")
     reports {
@@ -215,7 +204,6 @@ val jacocoTestReport by tasks.registering(JacocoReport::class) {
     executionData.setFrom(jacocoExecData)
 }
 
-// JaCoCo coverage verification (CI gate)
 val jacocoCoverageVerification by tasks.registering(JacocoCoverageVerification::class) {
     dependsOn("testDebugUnitTest")
     violationRules {
