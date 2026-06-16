@@ -12,7 +12,6 @@ import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import java.time.Instant
 import java.time.LocalDate
 import javax.inject.Inject
 
@@ -265,7 +264,7 @@ private fun Montura.toRemoto(): MonturaRemota = MonturaRemota(
     tipoAro = tipoAro.trim(),
     materialMontura = materialMontura.trim(),
     opticaId = opticaId,
-    updatedAt = updatedAt ?: Instant.now().toString()
+    updatedAt = updatedAt
 )
 
 private fun MonturaMovimiento.toRemoto(): MonturaMovimientoRemoto = MonturaMovimientoRemoto(

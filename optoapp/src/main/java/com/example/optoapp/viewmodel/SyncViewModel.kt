@@ -335,7 +335,7 @@ class SyncViewModel @Inject constructor(
                     return@withLock
                 }
                 var hasErrors = false
-                when (val p = syncPacientesUseCase(opticaId, downloadAfterUpload = false)) {
+                when (val p = syncPacientesUseCase(opticaId, downloadAfterUpload = true)) {
                     is Resource.Error -> {
                         hasErrors = true
                         Log.w(TAG, "Sync silenciosa (pacientes): ${p.message}")
@@ -343,7 +343,7 @@ class SyncViewModel @Inject constructor(
                     }
                     else -> {}
                 }
-                when (val h = syncHistorialUseCase(opticaId, downloadAfterUpload = false)) {
+                when (val h = syncHistorialUseCase(opticaId, downloadAfterUpload = true)) {
                     is Resource.Error -> {
                         hasErrors = true
                         Log.w(TAG, "Sync silenciosa (historial): ${h.message}")
@@ -351,7 +351,7 @@ class SyncViewModel @Inject constructor(
                     }
                     else -> {}
                 }
-                when (val f = syncFinanzasUseCase(opticaId, downloadAfterUpload = false)) {
+                when (val f = syncFinanzasUseCase(opticaId, downloadAfterUpload = true)) {
                     is Resource.Error -> {
                         hasErrors = true
                         Log.w(TAG, "Sync silenciosa (finanzas): ${f.message}")
@@ -359,7 +359,7 @@ class SyncViewModel @Inject constructor(
                     }
                     else -> {}
                 }
-                when (val i = syncInventarioUseCase(opticaId, downloadAfterUpload = false)) {
+                when (val i = syncInventarioUseCase(opticaId, downloadAfterUpload = true)) {
                     is Resource.Error -> {
                         hasErrors = true
                         Log.w(TAG, "Sync silenciosa (inventario): ${i.message}")

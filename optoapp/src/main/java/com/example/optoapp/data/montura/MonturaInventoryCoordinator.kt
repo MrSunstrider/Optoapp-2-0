@@ -9,6 +9,7 @@ import dagger.Lazy
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import java.io.IOException
+import java.time.Instant
 import javax.inject.Inject
 
 class MonturaInventoryCoordinator @Inject constructor(
@@ -40,13 +41,15 @@ class MonturaInventoryCoordinator @Inject constructor(
     }
 
     suspend fun insertMontura(montura: Montura) {
-        monturaDao.insertMontura(montura)
-        postSaveSyncScheduler.get().scheduleInventarioSync(montura.opticaId)
+        val stamped = montura.copy(updatedAt = Instant.now().toString())
+        monturaDao.insertMontura(stamped)
+        postSaveSyncScheduler.get().scheduleInventarioSync(stamped.opticaId)
     }
 
     suspend fun updateMontura(montura: Montura) {
-        monturaDao.updateMontura(montura)
-        postSaveSyncScheduler.get().scheduleInventarioSync(montura.opticaId)
+        val stamped = montura.copy(updatedAt = Instant.now().toString())
+        monturaDao.updateMontura(stamped)
+        postSaveSyncScheduler.get().scheduleInventarioSync(stamped.opticaId)
     }
 
     suspend fun deleteMontura(montura: Montura) {

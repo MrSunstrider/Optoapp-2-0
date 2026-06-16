@@ -63,3 +63,6 @@ optoweb/
 
 # Local archive of removed features (no va al repo)
 _archive/
+
+# GGA (Gentleman Guardian Angel) temporary review files
+.gga-review-*.md
