@@ -40,4 +40,7 @@ interface SyncEntityStateDao {
 
     @Query("SELECT * FROM sync_entity_state WHERE opticaId = :opticaId AND status = :status ORDER BY updatedAt DESC")
     suspend fun getByStatus(opticaId: String, status: String): List<SyncEntityState>
+
+    @Query("DELETE FROM sync_entity_state WHERE opticaId = :opticaId AND status = 'conflicted'")
+    suspend fun deleteConflictedForOptica(opticaId: String)
 }
