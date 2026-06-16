@@ -48,19 +48,6 @@ TestDates.kt
 hs_err_pid*.log
 replay_pid*.log
 
-# Web app artifacts
-web/node_modules/
-web/.next/
-web/.env.local
-web/coverage/
-web/tsconfig.tsbuildinfo
-
-# Vercel
-.vercel/
-
-# Optoweb branch artifacts (no debe estar en main)
-optoweb/
-
 # Local archive of removed features (no va al repo)
 _archive/
 
