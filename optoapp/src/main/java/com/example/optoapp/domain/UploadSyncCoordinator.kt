@@ -115,7 +115,6 @@ class UploadSyncCoordinator @Inject constructor(
             uniqueById[row.id] = localId to row
         }
         val rows = uniqueById.values.map { it.second }
-        // Detección de conflictos batch antes de upsert
         val safeIds = conflictHelper.filterConflicts(
             tableName = TABLE_DISPENSACIONES,
             opticaId = opticaId,
@@ -264,8 +263,15 @@ class UploadSyncCoordinator @Inject constructor(
         }
         val opticaRemota = opticaId.trim().ifBlank { FinanzasRemoteDefaults.OPTICA_ID_FALLBACK }
         val rows = pagos.map { it.toRemoto().copy(opticaId = opticaRemota) }.distinctBy { it.id }
+        val safeIds = conflictHelper.filterConflicts(
+            tableName = TABLE_PAGOS,
+            opticaId = opticaId,
+            entityType = "pago",
+            localEntities = rows.map { com.example.optoapp.domain.sync.LocalEntity(it.id, it.updatedAt) }
+        ).map { it.id }.toSet()
+        val safeRows = rows.filter { it.id in safeIds }
         try {
-            rows.chunked(UPSERT_BATCH_SIZE).forEachIndexed { index, chunk ->
+            safeRows.chunked(UPSERT_BATCH_SIZE).forEachIndexed { index, chunk ->
                 networkRetryHelper.retryNetwork("upsert:$TABLE_PAGOS:chunk${index + 1}") {
                     supabase.postgrest[TABLE_PAGOS].upsert(chunk)
                 }

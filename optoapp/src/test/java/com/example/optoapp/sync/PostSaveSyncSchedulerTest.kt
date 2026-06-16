@@ -1,6 +1,8 @@
 package com.example.optoapp.sync
 
 import io.github.jan.supabase.createSupabaseClient
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -113,6 +115,44 @@ class PostSaveSyncSchedulerTest {
 
         // Should not throw because session returns false → block exits early
         scheduler.schedulePacientesSync("o1")
+    }
+
+    // ─── RC-5: cancelPending race fix ─────────────────────────────────────
+
+    @Test
+    fun `cancelPending_awaitsJobCancellation_beforeReturn`() = runTest(testDispatcher) {
+        val scheduler = PostSaveSyncScheduler(
+            applicationScope = testScope,
+            syncGate = SyncGate(),
+            supabase = fakeSupabase
+        )
+        val job = launch { delay(Long.MAX_VALUE) }
+        scheduler.pendingJobs["test-key"] = job
+
+        scheduler.cancelPending()
+
+        assertTrue(
+            "cancelPending must cancel and join all pending jobs before returning (RC-5)",
+            job.isCancelled
+        )
+    }
+
+    @Test
+    fun `cancelPending_clearsPendingJobsMap_afterCancellation`() = runTest(testDispatcher) {
+        val scheduler = PostSaveSyncScheduler(
+            applicationScope = testScope,
+            syncGate = SyncGate(),
+            supabase = fakeSupabase
+        )
+        val job = launch { delay(Long.MAX_VALUE) }
+        scheduler.pendingJobs["test-key"] = job
+
+        scheduler.cancelPending()
+
+        assertTrue(
+            "pendingJobs must be empty after cancelPending (RC-5)",
+            scheduler.pendingJobs.isEmpty()
+        )
     }
 
     // ─── Helpers ───────────────────────────────────────────────────────────

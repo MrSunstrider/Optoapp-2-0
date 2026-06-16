@@ -8,7 +8,6 @@ import com.example.optoapp.data.Resource
 import com.example.optoapp.sync.errorLabelForException
 import kotlinx.coroutines.CancellationException
 import java.io.IOException
-import java.time.Instant
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import javax.inject.Inject
@@ -34,9 +33,6 @@ open class SyncHistorialUseCase @Inject constructor(
         private const val TABLE = "evaluaciones"
     }
 
-    /**
-     * Ejecuta la sincronización completa: upload local → download remoto.
-     */
     suspend operator fun invoke(
         opticaId: String,
         downloadAfterUpload: Boolean = true,
@@ -78,8 +74,8 @@ open class SyncHistorialUseCase @Inject constructor(
             Log.w(TAG, "Error al consultar pacientes remotos para FK check: ${e.localizedMessage}")
         }.getOrDefault(emptyList())
 
-        // Self-healing: si hay evaluaciones cuyo paciente existe localmente pero no en remoto,
-        // subir ese paciente primero para evitar el error de FK.
+        // Self-healing: FK constraint on evaluaciones.paciente_id requires the parent row to exist
+        // in remote before the evaluation upload; uploading orphan patients first prevents the error.
         val remotePacienteIds = remotePacientes.map { it.id }.toSet()
         val localPacienteIds = localPacientes.map { it.id }.toSet()
         val orphanPacienteIds = evaluaciones
@@ -109,7 +105,7 @@ open class SyncHistorialUseCase @Inject constructor(
                     hobbies = p.hobbies ?: "",
                     ultimasEtiquetas = p.ultimasEtiquetas.joinToString(","),
                     opticaId = opticaId,
-                    updatedAt = Instant.now().toString()
+                    updatedAt = p.updatedAt
                 )
             }
             runCatching {
@@ -118,7 +114,7 @@ open class SyncHistorialUseCase @Inject constructor(
                 Log.e(TAG, "Self-heal: error al subir pacientes huérfanos: ${e.localizedMessage}")
             }
 
-            // Re-consultar pacientes remotos para incluir los recién subidos
+            // Re-fetch to include the just-uploaded orphan patients in subsequent FK lookups
             remotePacientes = runCatching {
                 supabase.postgrest["pacientes"]
                     .select {
@@ -261,5 +257,3 @@ internal fun normalizedHistoriaKey(historia: String?): String? {
     return normalized.ifBlank { null }
 }
 
-// PacienteRemoto is defined in SyncPacientesUseCase.kt (same package).
-// It's reused here for the FK check during evaluaciones upload.
