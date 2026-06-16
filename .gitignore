@@ -56,3 +56,12 @@ _archive/
 
 # GGA (Gentleman Guardian Angel) temporary review files
 .gga-review-*.md
+
+# Vercel (optoweb deployment artifacts — not part of this repo)
+.vercel/
+
+# optoweb local files (moved to separate repo)
+optoweb/.env.local
+optoweb/.env.vercel
+optoweb/.next/
+optoweb/node_modules/

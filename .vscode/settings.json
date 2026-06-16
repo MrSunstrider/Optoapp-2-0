@@ -1,8 +1,4 @@
 {
-  "[typescript]": {
-    "editor.defaultFormatter": "denoland.vscode-deno"
-  },
-  "css.lint.unknownAtRules": "ignore",
   "deno.enablePaths": [
     "supabase/functions"
   ],
@@ -24,6 +20,5 @@
   ],
   "files.autoGuessEncoding": false,
   "files.encoding": "utf8",
-  "java.configuration.updateBuildConfiguration": "automatic",
-  "scss.lint.unknownAtRules": "ignore"
+  "java.configuration.updateBuildConfiguration": "automatic"
 }

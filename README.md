@@ -114,7 +114,6 @@ Guia operativa detallada de autenticacion, sync y guardrails de seguridad:
 
 - `docs/guia-operativa-auth-sync-seguridad.md`
 - `docs/changelog-operativo.md`
-- `docs/guia-web-ecosistema-seguro.md` (ruta oficial para version web segura/confiable/persistente)
 
 ---
 
@@ -147,7 +146,6 @@ Guia operativa detallada de autenticacion, sync y guardrails de seguridad:
 
 ## Roadmap
 
-- Version web (Next.js + Supabase)
 - Recordatorios por email / notificaciones
 - Exportacion de informes a PDF
 - Integracion con Google Calendar para citas
