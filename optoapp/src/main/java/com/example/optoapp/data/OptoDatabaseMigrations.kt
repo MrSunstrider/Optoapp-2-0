@@ -6,8 +6,6 @@ import java.util.concurrent.TimeUnit
 
 val MIGRATION_7_8 = object : Migration(7, 8) {
     override fun migrate(db: SupportSQLiteDatabase) {
-        // Añadir campo multi-inquilino a todas las tablas principales
-        // Los registros existentes quedan asignados a 'mi_optica_base'
         db.execSQL("ALTER TABLE pacientes ADD COLUMN opticaId TEXT NOT NULL DEFAULT 'mi_optica_base'")
         db.execSQL("ALTER TABLE evaluaciones ADD COLUMN opticaId TEXT NOT NULL DEFAULT 'mi_optica_base'")
         db.execSQL("ALTER TABLE dispensaciones ADD COLUMN opticaId TEXT NOT NULL DEFAULT 'mi_optica_base'")
@@ -17,43 +15,26 @@ val MIGRATION_7_8 = object : Migration(7, 8) {
 }
 val MIGRATION_6_7 = object : Migration(6, 7) {
     override fun migrate(db: SupportSQLiteDatabase) {
-        // Agudeza visual (Nuevos campos Cerca AO)
         db.execSQL("ALTER TABLE evaluaciones ADD COLUMN avScAoCerca TEXT NOT NULL DEFAULT ''")
         db.execSQL("ALTER TABLE evaluaciones ADD COLUMN avCcAoCerca TEXT NOT NULL DEFAULT ''")
-
-        // Visión binocular y Percepción
         db.execSQL("ALTER TABLE evaluaciones ADD COLUMN estereopsisValor TEXT NOT NULL DEFAULT ''")
         db.execSQL("ALTER TABLE evaluaciones ADD COLUMN estereopsisSegundos TEXT NOT NULL DEFAULT ''")
         db.execSQL("ALTER TABLE evaluaciones ADD COLUMN lang TEXT NOT NULL DEFAULT ''")
         db.execSQL("ALTER TABLE evaluaciones ADD COLUMN worth TEXT NOT NULL DEFAULT ''")
-
-        // Percepción color
         db.execSQL("ALTER TABLE evaluaciones ADD COLUMN ishihara TEXT NOT NULL DEFAULT ''")
         db.execSQL("ALTER TABLE evaluaciones ADD COLUMN farnsworth TEXT NOT NULL DEFAULT ''")
-
-        // Salud Ocular y Función Visual
         db.execSQL("ALTER TABLE evaluaciones ADD COLUMN schirmerOd TEXT NOT NULL DEFAULT ''")
         db.execSQL("ALTER TABLE evaluaciones ADD COLUMN schirmerOi TEXT NOT NULL DEFAULT ''")
         db.execSQL("ALTER TABLE evaluaciones ADD COLUMN osdiPuntuacion INTEGER")
         db.execSQL("ALTER TABLE evaluaciones ADD COLUMN osdiClasificacion TEXT NOT NULL DEFAULT ''")
         db.execSQL("ALTER TABLE evaluaciones ADD COLUMN sensibilidadContraste TEXT NOT NULL DEFAULT ''")
         db.execSQL("ALTER TABLE evaluaciones ADD COLUMN sensibilidadFrecuencia TEXT NOT NULL DEFAULT ''")
-
-        // Otras Pruebas
         db.execSQL("ALTER TABLE evaluaciones ADD COLUMN amsler TEXT NOT NULL DEFAULT ''")
         db.execSQL("ALTER TABLE evaluaciones ADD COLUMN campoVisual TEXT NOT NULL DEFAULT ''")
         db.execSQL("ALTER TABLE evaluaciones ADD COLUMN campoVisualDescripcion TEXT NOT NULL DEFAULT ''")
     }
 }
 
-/**
- * Migración 9 -> 10
- * Convierte fechas persistidas como epoch millis (INTEGER) a fechas puras ISO (TEXT, yyyy-MM-dd)
- * para elimininar desfases por zona horaria en campos de solo-fecha.
- *
- * Nota: el fix +1 día se aplica solo cuando el patrón de millis parece provenir de "UTC midnight"
- * (milis mod 1 día ~ 0), que es el caso típico del MaterialDatePicker cuando se trata como instante.
- */
 val MIGRATION_8_9 = object : Migration(8, 9) {
     override fun migrate(db: SupportSQLiteDatabase) {
         // Gap intencional: bump de versión sin cambios de schema.
@@ -79,7 +60,6 @@ val MIGRATION_9_10 = object : Migration(9, 10) {
                     """.trimIndent()
         }
 
-        // --- Pacientes ---
         db.execSQL("ALTER TABLE pacientes RENAME TO pacientes_old")
         db.execSQL(
             """
@@ -119,7 +99,6 @@ val MIGRATION_9_10 = object : Migration(9, 10) {
         )
         db.execSQL("DROP TABLE pacientes_old")
 
-        // --- Evaluaciones ---
         db.execSQL("ALTER TABLE evaluaciones RENAME TO evaluaciones_old")
         db.execSQL(
             """
@@ -327,7 +306,6 @@ val MIGRATION_9_10 = object : Migration(9, 10) {
         db.execSQL("CREATE INDEX IF NOT EXISTS index_evaluaciones_opticaId ON evaluaciones(opticaId)")
         db.execSQL("DROP TABLE evaluaciones_old")
 
-        // --- Dispensaciones ---
         db.execSQL("ALTER TABLE dispensaciones RENAME TO dispensaciones_old")
         db.execSQL(
             """
@@ -379,7 +357,6 @@ val MIGRATION_9_10 = object : Migration(9, 10) {
         db.execSQL("CREATE INDEX IF NOT EXISTS index_dispensaciones_opticaId ON dispensaciones(opticaId)")
         db.execSQL("DROP TABLE dispensaciones_old")
 
-        // --- Servicios Extra ---
         db.execSQL("ALTER TABLE servicios_extra RENAME TO servicios_extra_old")
         db.execSQL(
             """
@@ -414,7 +391,6 @@ val MIGRATION_9_10 = object : Migration(9, 10) {
         db.execSQL("CREATE INDEX IF NOT EXISTS index_servicios_extra_opticaId ON servicios_extra(opticaId)")
         db.execSQL("DROP TABLE servicios_extra_old")
 
-        // --- Pagos ---
         db.execSQL("ALTER TABLE pagos RENAME TO pagos_old")
         db.execSQL(
             """
@@ -587,10 +563,6 @@ val MIGRATION_19_20 = object : Migration(19, 20) {
     }
 }
 
-/**
- * F2-T1: Agrega tabla dispensacion_items para soportar múltiples lentes por OT.
- * Cada dispensación ahora puede tener 1..N items (lentes).
- */
 val MIGRATION_20_21 = object : Migration(20, 21) {
     override fun migrate(db: SupportSQLiteDatabase) {
         // Limpiar tabla e índices de intentos fallidos previos (nombres incorrectos idx_*, DEFAULTs)
@@ -598,6 +570,8 @@ val MIGRATION_20_21 = object : Migration(20, 21) {
         db.execSQL("DROP INDEX IF EXISTS idx_dispensacion_items_optica_id")
         db.execSQL("DROP TABLE IF EXISTS dispensacion_items")
 
+        // snake_case columns son intencionales: DispensacionItem usa @ColumnInfo(name = "snake_case")
+        // para que Room y Supabase compartan el mismo schema sin mapeo adicional.
         db.execSQL("""
             CREATE TABLE dispensacion_items (
                 id TEXT NOT NULL PRIMARY KEY,
@@ -625,10 +599,6 @@ val MIGRATION_20_21 = object : Migration(20, 21) {
     }
 }
 
-/**
- * Virtual Try-On: Añade columnas opcionales de metadatos de montura necesarias para
- * el escalado y posicionamiento del overlay (ancho, puente, altura, imagen PNG).
- */
 val MIGRATION_21_22 = object : Migration(21, 22) {
     override fun migrate(db: SupportSQLiteDatabase) {
         db.execSQL("ALTER TABLE monturas ADD COLUMN anchoMm REAL")
@@ -656,7 +626,6 @@ val MIGRATION_22_23 = object : Migration(22, 23) {
         db.execSQL("ALTER TABLE montura_movimientos ADD COLUMN updatedAt TEXT")
         db.execSQL("ALTER TABLE montura_movimientos ADD COLUMN updatedBy TEXT")
 
-        // Nueva tabla para registrar conflictos de sync
         db.execSQL("""
             CREATE TABLE IF NOT EXISTS conflict_records (
                 entityId TEXT NOT NULL PRIMARY KEY,
@@ -667,5 +636,11 @@ val MIGRATION_22_23 = object : Migration(22, 23) {
                 detectedAt INTEGER NOT NULL DEFAULT 0
             )
         """)
+    }
+}
+
+val MIGRATION_23_24 = object : Migration(23, 24) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE dispensaciones ADD COLUMN fechaEntrega TEXT")
     }
 }

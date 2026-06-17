@@ -22,6 +22,7 @@ import com.example.optoapp.ui.components.DropdownField
 import com.example.optoapp.ui.components.OptoTextField
 import com.example.optoapp.util.DateUtils
 import com.example.optoapp.viewmodel.DispensacionUiState
+import java.time.LocalDate
 import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -249,8 +250,20 @@ fun FinancieraInfoSection(
                 )
             }
 
-            DropdownField(label = "Estado de Entrega", selected = uiState.estadoEntrega, options = listOf("Pendiente", "Entregado")) {
-                onUpdate(uiState.copy(estadoEntrega = it))
+            DropdownField(label = "Estado de Entrega", selected = uiState.estadoEntrega, options = listOf("Pendiente", "Entregado")) { newEstado ->
+                val newFechaEntrega = when (newEstado) {
+                    "Entregado" -> uiState.fechaEntrega ?: LocalDate.now()
+                    else -> null
+                }
+                onUpdate(uiState.copy(estadoEntrega = newEstado, fechaEntrega = newFechaEntrega))
+            }
+            if (uiState.estadoEntrega == "Entregado" && uiState.fechaEntrega != null) {
+                Text(
+                    text = "Entregado el día ${DateUtils.formatLocalized(uiState.fechaEntrega)}",
+                    fontSize = 13.sp,
+                    color = MaterialTheme.colorScheme.tertiary,
+                    fontWeight = FontWeight.Medium
+                )
             }
         }
     }

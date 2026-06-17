@@ -117,7 +117,6 @@ private fun AddSection(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiState)
         modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            // ── Title ──────────────────────────────────────────────────────
             Text(
                 "Adición",
                 fontWeight = FontWeight.Bold,
@@ -127,7 +126,6 @@ private fun AddSection(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiState)
                 textAlign = TextAlign.Center
             )
 
-            // ── TOP: Sin Adición / Con Adición ─────────────────────────────
             OptoSegmentedSelector(
                 options = listOf("Sin Adición", "Con Adición"),
                 selectedIndex = if (uiState.hasAdd) 1 else 0,
@@ -144,18 +142,15 @@ private fun AddSection(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiState)
                 }
             )
 
-            // ── VP mode: Cerca / Intermedio ────────────────────────────────
             OptoSegmentedSelector(
                 options = listOf("Cerca", "Intermedio"),
                 selectedIndex = if (uiState.isVpCerca) 0 else 1,
                 onSelect = { onUpdate(uiState.copy(isVpCerca = it == 0)) }
             )
 
-            // ── Controls when Con Adición ──────────────────────────────────
             AnimatedVisibility(visible = uiState.hasAdd) {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
 
-                    // -- Numeric stepper (max +4.00) --
                     NumericAddStepper(
                         value = currentAddOd,
                         onValueChange = { newVal ->
@@ -170,7 +165,6 @@ private fun AddSection(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiState)
                         }
                     )
 
-                    // -- Quick chips +3.50 and +4.00 --
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier.fillMaxWidth()
@@ -194,7 +188,6 @@ private fun AddSection(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiState)
                         }
                     }
 
-                    // -- A/O toggle (above manual fields) --
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text("A/O", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
                         Spacer(Modifier.width(8.dp))
@@ -210,7 +203,6 @@ private fun AddSection(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiState)
                         Text("Ambos ojos igual", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
 
-                    // -- Manual input OD / OI --
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         OptoVisionInput(
                             value = currentAddOd,
@@ -239,7 +231,6 @@ private fun AddSection(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiState)
                 }
             }
 
-            // ── AV VP: SIEMPRE visible ───────────────────────────────────
             HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
             Text(
                 "AV VP",
@@ -268,8 +259,6 @@ private fun AddSection(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiState)
         }
     }
 }
-
-// ─── Numeric stepper ────────────────────────────────────────────────────────
 
 @Composable
 private fun NumericAddStepper(
@@ -336,8 +325,6 @@ private fun CircularStepperButton(
     }
 }
 
-// ─── Helpers ────────────────────────────────────────────────────────────────
-
 private fun formatAddValue(value: Double): String =
     "+%.2f".format(Locale.US, value)
 
@@ -380,7 +367,7 @@ private fun PrismasSection(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiSt
                 OptoTextField(
                     value = uiState.prismaOdValor,
                     onValueChange = { onUpdate(uiState.copy(prismaOdValor = it)) },
-                    label = "Prisma OD",
+                    label = "OD",
                     modifier = Modifier.weight(1f),
                     trailingIcon = { if (uiState.prismaOdValor.isNotBlank()) PrismaSuffix() }
                 )
@@ -392,7 +379,7 @@ private fun PrismasSection(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiSt
                 OptoTextField(
                     value = uiState.prismaOiValor,
                     onValueChange = { onUpdate(uiState.copy(prismaOiValor = it)) },
-                    label = "Prisma OI",
+                    label = "OI",
                     modifier = Modifier.weight(1f),
                     trailingIcon = { if (uiState.prismaOiValor.isNotBlank()) PrismaSuffix() }
                 )
@@ -406,7 +393,6 @@ private fun PrismasSection(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiSt
 
 internal val basesPrisma = listOf("Nasal", "Temporal", "Superior", "Inferior")
 
-/** Suffijo "DP" (dioptrías prismáticas) para campos de prisma. */
 @Composable
 internal fun PrismaSuffix() {
     Text(
@@ -416,6 +402,5 @@ internal fun PrismaSuffix() {
     )
 }
 
-/** Returns the DIP section label depending on whether VP is Cerca (near) or Intermedio (intermediate). */
 internal fun dipLabelForVpMode(isVpCerca: Boolean): String =
     if (isVpCerca) "DNP Cerca" else "DNP Intermedio"

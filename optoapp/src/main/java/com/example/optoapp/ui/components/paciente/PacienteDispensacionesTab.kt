@@ -84,6 +84,14 @@ fun DispensacionesList(
                                 }
                             }
                         }
+                        if (disp.fechaEntrega != null) {
+                            Text(
+                                text = "Entregado el ${com.example.optoapp.util.DateUtils.formatLocalized(disp.fechaEntrega)}",
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.tertiary,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(text = "${disp.tipoLente} - ${disp.materialLente}", fontSize = 14.sp, fontWeight = FontWeight.Medium)
                         Spacer(modifier = Modifier.height(4.dp))
@@ -196,6 +204,13 @@ fun ResumenDispensacionDialog(disp: DispensacionOptica, paciente: Paciente, onDi
                         fontWeight = FontWeight.Bold,
                         color = if (disp.estadoEntrega == "Entregado") MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.secondary
                     )
+                    if (disp.fechaEntrega != null) {
+                        Text(
+                            text = "Entregado el día ${com.example.optoapp.util.DateUtils.formatLocalized(disp.fechaEntrega)}",
+                            fontSize = 13.sp,
+                            color = MaterialTheme.colorScheme.tertiary
+                        )
+                    }
                 }
             }
         },

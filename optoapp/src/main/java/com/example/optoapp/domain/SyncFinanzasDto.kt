@@ -32,6 +32,7 @@ data class DispensacionRemota(
     @SerialName("metodo_pago") val metodoPago: String? = null,
     @SerialName("monto_pagado") val montoPagado: Double = 0.0,
     @SerialName("estado_entrega") val estadoEntrega: String? = null,
+    @SerialName("fecha_entrega") val fechaEntrega: String? = null,
     @SerialName("fecha_vencimiento_garantia") val fechaVencimientoGarantia: String? = null,
     @SerialName("distancia_lente") val distanciaLente: String? = null,
     val altura: String? = null,
@@ -50,6 +51,7 @@ data class DispensacionRemota(
         descripcionMontura = descripcionMontura ?: "", montoTotal = montoTotal,
         metodoPago = metodoPago ?: "", montoPagado = montoPagado,
         estadoEntrega = estadoEntrega ?: "",
+        fechaEntrega = fechaEntrega?.let(LocalDate::parse),
         fechaVencimientoGarantia = fechaVencimientoGarantia?.let(LocalDate::parse),
         distanciaLente = distanciaLente ?: "",
         altura = altura ?: "",
@@ -125,7 +127,6 @@ data class PagoRemoto(
 data class DispensacionItemRemota(
     val id: String,
     @SerialName("dispensacion_id") val dispensacionId: String,
-    // Lente
     @SerialName("tipo_lente") val tipoLente: String? = null,
     @SerialName("material_lente") val materialLente: String? = null,
     val tratamientos: String? = null,
@@ -134,7 +135,6 @@ data class DispensacionItemRemota(
     val altura: String? = null,
     @SerialName("sub_tipo_bifocal") val subTipoBifocal: String? = null,
     @SerialName("notas_diseno") val notasDiseno: String? = null,
-    // Montura
     @SerialName("montura_id") val monturaId: String? = null,
     @SerialName("origen_montura") val origenMontura: String? = null,
     @SerialName("tipo_aro") val tipoAro: String? = null,
@@ -190,6 +190,7 @@ fun DispensacionOptica.toRemoto(): DispensacionRemota = DispensacionRemota(
     tipoAro = tipoAro, descripcionMontura = descripcionMontura,
     montoTotal = montoTotal, metodoPago = metodoPago,
     montoPagado = montoPagado, estadoEntrega = estadoEntrega,
+    fechaEntrega = fechaEntrega?.toString(),
     fechaVencimientoGarantia = fechaVencimientoGarantia?.toString(),
     distanciaLente = distanciaLente, altura = altura, subTipoBifocal = subTipoBifocal,
     updatedAt = updatedAt, updatedBy = updatedBy
