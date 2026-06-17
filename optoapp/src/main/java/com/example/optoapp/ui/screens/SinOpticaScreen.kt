@@ -35,7 +35,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.example.optoapp.domain.observer.SupabaseObserver
+import com.example.optoapp.domain.observer.MembershipObserver
 import com.example.optoapp.viewmodel.AuthViewModel
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
@@ -43,7 +43,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun SinOpticaScreen(
     navController: NavController,
-    observer: SupabaseObserver,
+    observer: MembershipObserver,
     viewModel: AuthViewModel = hiltViewModel()
 ) {
     val userEmail by viewModel.userEmail.collectAsState(initial = "")
@@ -55,7 +55,7 @@ fun SinOpticaScreen(
 
     if (waitingMode) {
         LaunchedEffect(Unit) {
-            observer.observeNewMembershipForCurrentUser()
+            observer.observeNewMembership()
                 .catch { /* realtime unavailable — user can still verify manually */ }
                 .collect {
                     val count = viewModel.refreshMembershipsForWaitScreen()

@@ -48,10 +48,6 @@ sealed class SyncState {
     data class Error(val message: String) : SyncState()
 }
 
-/**
- * Paso 5.1: SyncViewModel
- * Orquestador global de la sincronización de datos local <-> nube.
- */
 @HiltViewModel
 class SyncViewModel @Inject constructor(
     @param:ApplicationContext private val context: Context,
@@ -68,7 +64,7 @@ class SyncViewModel @Inject constructor(
     private val syncGate: SyncGate,
     private val conflictDao: ConflictDao,
     private val syncEntityStateDao: SyncEntityStateDao,
-    private val supabaseObserver: com.example.optoapp.domain.observer.SupabaseObserver,
+    private val supabaseObserver: com.example.optoapp.domain.observer.TableObserver,
     private val bgErrorCollector: BackgroundErrorCollector,
     private val postSaveSyncScheduler: PostSaveSyncScheduler
 ) : ViewModel() {
@@ -90,7 +86,6 @@ class SyncViewModel @Inject constructor(
     private val _conflictCount = MutableStateFlow(0)
     val conflictCount: StateFlow<Int> = _conflictCount.asStateFlow()
 
-    /** Carga la lista de conflictos desde la DB local. */
     fun refreshConflicts() {
         viewModelScope.launch {
             val opticaId = sessionManager.opticaId.first()
@@ -144,7 +139,6 @@ class SyncViewModel @Inject constructor(
         }
     }
 
-    /** Resuelve un conflicto: baja la versión remota forzando descarga. */
     fun resolveAcceptTheirs(entity: ConflictRecord) {
         viewModelScope.launch {
             val opticaId = sessionManager.opticaId.first()
@@ -162,7 +156,6 @@ class SyncViewModel @Inject constructor(
         }
     }
 
-    /** Descarta un conflicto sin resolverlo (lo deja para después). */
     fun dismissConflict(entity: ConflictRecord) {
         viewModelScope.launch {
             val opticaId = sessionManager.opticaId.first()
@@ -172,12 +165,8 @@ class SyncViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Resolves ALL conflicts by accepting the cloud version and forcing a full re-download.
-     *
-     * RC-4: Both conflict_records AND sync_entity_state rows with status = 'conflicted'
-     * are cleared so that the next sync cycle does not re-detect stale conflicts.
-     */
+    // RC-4: Both conflict_records AND sync_entity_state rows with status = 'conflicted'
+    // are cleared so that the next sync cycle does not re-detect stale conflicts.
     fun acceptAllCloud() {
         viewModelScope.launch {
             val opticaId = sessionManager.opticaId.first()
@@ -190,14 +179,8 @@ class SyncViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Sincronización solo descarga (sin subir nada).
-     * Útil para resolver conflictos aceptando la versión de la nube,
-     * o para re-sincronizar un dispositivo desde cero.
-     *
-     * Silencia el PostSaveSyncScheduler para que las inserciones durante
-     * la descarga no disparen syncs post-guardado que regeneren conflictos.
-     */
+    // Silencia el PostSaveSyncScheduler para que las inserciones durante
+    // la descarga no disparen syncs post-guardado que regeneren conflictos.
     private suspend fun performFullDownload() {
         _syncState.value = SyncState.Loading
         if (!isNetworkAvailable()) {
@@ -218,7 +201,6 @@ class SyncViewModel @Inject constructor(
 
         val opticaId = sessionManager.opticaId.first()
 
-        // Cancelar syncs pendientes y suprimir nuevos durante la descarga
         postSaveSyncScheduler.cancelPending()
         postSaveSyncScheduler.suppressSync = true
         try {
@@ -253,15 +235,10 @@ class SyncViewModel @Inject constructor(
         }
     }
 
-    /** Vuelve el estado de UI de sync a inactivo (tras mensaje o cierre de diálogo). */
     fun clearSyncUiState() {
         _syncState.value = SyncState.Idle
     }
 
-    /**
-     * Dispara la sincronización manual completa (Bidireccional).
-     * Llama a los 4 UseCases secuencialmente, upload + download.
-     */
     fun performFullSync() = viewModelScope.launch {
         _syncState.value = SyncState.Loading
         if (!isNetworkAvailable()) {
@@ -285,7 +262,6 @@ class SyncViewModel @Inject constructor(
 
         var hasErrors = false
         syncGate.mutex.withLock {
-            // Ejecutar UseCases secuencialmente (orden: pacientes → historial → finanzas → inventario)
             val p = syncPacientesUseCase(opticaId, downloadAfterUpload = true)
             if (p is Resource.Error) { hasErrors = true; Log.w(TAG, "Full sync (pacientes): ${p.message}") }
 
@@ -312,10 +288,6 @@ class SyncViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Sincronización automática silenciosa (solo subida).
-     * No cambia el estado global de UI para no interrumpir al usuario.
-     */
     fun performSilentSync() = viewModelScope.launch {
         val contextCheck = ensureSyncContext()
         if (contextCheck != null) {
@@ -403,16 +375,11 @@ class SyncViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Ejemplo de uso del patrón Observer: Escucha cambios en la telemetría en tiempo real
-     * desde otros dispositivos para la misma óptica.
-     */
     fun observeRemoteTelemetry(opticaId: String) {
         viewModelScope.launch {
             supabaseObserver.observeTable("sync_telemetry_optica", opticaId)
-                .collect { action ->
-                    Log.d(TAG, "Cambio detectado en telemetría remota: $action")
-                    // Aquí se podría disparar una actualización de UI si otro dispositivo finalizó sync
+                .collect {
+                    Log.d(TAG, "Cambio detectado en telemetría remota")
                 }
         }
     }

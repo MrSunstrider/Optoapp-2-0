@@ -20,7 +20,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.optoapp.ui.components.UpdateDialog
 import com.example.optoapp.ui.screens.*
 import com.example.optoapp.ui.theme.OptoAppTheme
-import com.example.optoapp.domain.observer.SupabaseObserver
+import com.example.optoapp.domain.observer.MembershipObserver
 import com.example.optoapp.util.UpdateChecker
 import com.example.optoapp.viewmodel.AuthViewModel
 import dagger.hilt.android.AndroidEntryPoint
@@ -32,7 +32,7 @@ class MainActivity : ComponentActivity() {
     private val authViewModel: AuthViewModel by viewModels()
 
     @Inject lateinit var supabaseClient: SupabaseClient
-    @Inject lateinit var supabaseObserver: com.example.optoapp.domain.observer.SupabaseObserver
+    @Inject lateinit var supabaseObserver: com.example.optoapp.domain.observer.MembershipObserver
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -80,7 +80,7 @@ class MainActivity : ComponentActivity() {
 fun OptoAppNavigation(
     authViewModel: AuthViewModel,
     supabaseClient: SupabaseClient,
-    supabaseObserver: com.example.optoapp.domain.observer.SupabaseObserver
+    supabaseObserver: com.example.optoapp.domain.observer.MembershipObserver
 ) {
     val navController = rememberNavController()
 
