@@ -30,8 +30,8 @@ android {
         applicationId = "com.example.optoapp"
         minSdk = 24
         targetSdk = 36
-        versionCode = 21
-        versionName = "1.5.8"
+        versionCode = 22
+        versionName = "1.5.9"
         
         multiDexEnabled = true
 
@@ -147,8 +147,8 @@ dependencies {
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.androidx.test.core)
     testImplementation(libs.mockk)
-    testImplementation("org.robolectric:robolectric:4.14.1")
-    testImplementation("androidx.work:work-testing:2.9.0")
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.work.testing)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
