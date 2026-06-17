@@ -1,10 +1,12 @@
 package com.example.optoapp.domain.sync
 
 import android.util.Log
+import androidx.annotation.VisibleForTesting
 import com.example.optoapp.data.ConflictDao
 import com.example.optoapp.data.SyncStateTracker
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import java.time.Instant
 import javax.inject.Inject
@@ -20,7 +22,7 @@ import javax.inject.Singleton
  * falsos conflictos por diferencias de formato (milisegundos, zona horaria).
  */
 @Singleton
-class ConflictHelper @Inject constructor(
+open class ConflictHelper @Inject constructor(
     private val supabase: SupabaseClient,
     private val syncStateTracker: SyncStateTracker,
     private val conflictDao: ConflictDao
@@ -45,7 +47,6 @@ class ConflictHelper @Inject constructor(
             return local >= remote
         }
 
-        /** Parsea un string ISO 8601 a [Instant], tolerando formatos comunes. */
         private fun parseInstant(ts: String): Instant? {
             return try {
                 Instant.parse(ts)
@@ -63,6 +64,9 @@ class ConflictHelper @Inject constructor(
      * Filtra una lista de entidades locales, separando las seguras para upsert
      * de las que están en conflicto. Las entidades en conflicto se registran
      * en [ConflictRecord] y en [SyncStateTracker].
+     *
+     * Entities routed to the safe list also have their stale conflict record
+     * cleared via [ConflictDao.resolveConflict] (idempotent auto-heal).
      *
      * @param tableName nombre de la tabla en Supabase (snake_case)
      * @param opticaId óptica activa
@@ -89,11 +93,13 @@ class ConflictHelper @Inject constructor(
             val remoteUpdatedAt = remoteTimestamps[entity.id]
             if (entity.updatedAt == null || remoteUpdatedAt == null) {
                 safe.add(entity)
+                conflictDao.resolveConflict(entity.id, opticaId)
                 continue
             }
 
             if (isLocalNewerOrEqual(entity.updatedAt, remoteUpdatedAt)) {
                 safe.add(entity)
+                conflictDao.resolveConflict(entity.id, opticaId)
             } else {
                 Log.w(TAG, "Conflicto en $entityType/${entity.id}: local=${entity.updatedAt} < remoto=$remoteUpdatedAt")
                 conflictDao.upsertConflict(
@@ -116,43 +122,56 @@ class ConflictHelper @Inject constructor(
 
     /**
      * Obtiene el mapa id → updated_at desde Supabase para una lista de IDs.
+     *
+     * Returns an empty map immediately when [ids] is empty, without any network call.
+     * Delegates the actual remote query to [selectRemoteRows], which is overridable
+     * for testing purposes.
      */
-    private suspend fun fetchRemoteUpdatedAt(
+    internal suspend fun fetchRemoteUpdatedAt(
         tableName: String,
         opticaId: String,
         ids: List<String>
     ): Map<String, String> {
         if (ids.isEmpty()) return emptyMap()
         return try {
-            val allRows = supabase.postgrest[tableName]
-                .select {
-                    filter { eq("optica_id", opticaId) }
-                }
-                .decodeList<RemoteTimestamp>()
-            val idSet = ids.toSet()
-            allRows
-                .mapNotNull { row ->
-                    if (row.id !in idSet) return@mapNotNull null
-                    row.updatedAt?.let { ts -> row.id to ts }
-                }
-                .toMap()
+            val rows = selectRemoteRows(tableName, opticaId, ids)
+            rows.mapNotNull { row -> row.updatedAt?.let { ts -> row.id to ts } }.toMap()
         } catch (e: Exception) {
             Log.e(TAG, "Error fetching remote timestamps from $tableName: ${e.message}")
             emptyMap()
         }
     }
 
-    @Serializable
-    private data class RemoteTimestamp(
-        val id: String,
-        @kotlinx.serialization.SerialName("updated_at")
-        val updatedAt: String? = null
-    )
+    /**
+     * Executes the actual Supabase query for remote timestamps, filtered to exactly
+     * the given [ids]. Extracted as a seam to allow test subclasses in the same module
+     * to override without touching the network.
+     */
+    @VisibleForTesting
+    internal open suspend fun selectRemoteRows(
+        tableName: String,
+        opticaId: String,
+        ids: List<String>
+    ): List<RemoteTimestamp> {
+        return supabase.postgrest[tableName]
+            .select {
+                filter {
+                    eq("optica_id", opticaId)
+                    isIn("id", ids)
+                }
+            }
+            .decodeList()
+    }
 }
 
-/**
- * Representa una entidad local con su id y updatedAt para comparación con remoto.
- */
+/** Internal so test subclasses in the same Gradle module can reference the type without exposing it to consumers. */
+@Serializable
+internal data class RemoteTimestamp(
+    val id: String,
+    @SerialName("updated_at")
+    val updatedAt: String? = null
+)
+
 data class LocalEntity(
     val id: String,
     val updatedAt: String? = null
