@@ -52,12 +52,17 @@ jobs:
           KEYSTORE_B64: ${{ secrets.KEYSTORE_BASE64 }}
 
       - name: Build signed release APK
+        if: github.event_name != 'pull_request'
         run: chmod +x gradlew && ./gradlew :optoapp:assembleRelease --stacktrace --scan
         env:
           KEYSTORE_PATH: ${{ runner.temp }}/optoapp-release.keystore
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+
+      - name: Build debug APK (PR)
+        if: github.event_name == 'pull_request'
+        run: chmod +x gradlew && ./gradlew :optoapp:assembleDebug --stacktrace --scan
 
       - name: Get version name
         id: version
