@@ -40,6 +40,7 @@ data class DispensacionUiState(
 
     val montoTotal: String = "",
     val estadoEntrega: String = "Pendiente",
+    val fechaEntrega: LocalDate? = null,
     val fecha: LocalDate = DateUtils.today(),
     val fechaVencimientoGarantia: LocalDate? = null,
 
@@ -53,7 +54,6 @@ data class DispensacionUiState(
 
 data class DispensacionItemUi(
     val id: String = UUID.randomUUID().toString(),
-    //── Lente ──
     val tipoLente: String = "",
     val distanciaLente: String = "",
     val altura: String = "",
@@ -62,7 +62,6 @@ data class DispensacionItemUi(
     val colorLente: String = "",
     val notasDiseno: String = "",
     val subTipoBifocal: String = "",
-    //── Montura ──
     val monturaId: String = "",
     val origenMontura: String = "",
     val tipoAro: String = "",
@@ -136,7 +135,6 @@ class DispensacionViewModel @Inject constructor(
                     val itemsUi = if (loadedItems.isNotEmpty()) {
                         loadedItems.map { it.toUi() }
                     } else {
-                        // Backward compat: crear item desde los campos del entity
                         listOf(DispensacionItemUi(
                             tipoLente = d.tipoLente, distanciaLente = d.distanciaLente,
                             altura = d.altura, materialLente = d.materialLente,
@@ -157,6 +155,7 @@ class DispensacionViewModel @Inject constructor(
                             tipoMontura = d.tipoMontura,
                             montoTotal = d.montoTotal.toString(),
                             estadoEntrega = d.estadoEntrega,
+                            fechaEntrega = d.fechaEntrega,
                             fecha = d.fecha,
                             fechaVencimientoGarantia = d.fechaVencimientoGarantia,
                             pagos = loadedPagos
@@ -205,8 +204,6 @@ class DispensacionViewModel @Inject constructor(
         _uiState.update(update)
     }
 
-    //── Manejo de items (múltiples lentes) ──────────────────────────────────────
-
     /** Agrega un item de lente vacío a la lista. */
     fun addItem() {
         _uiState.update { s ->
@@ -251,7 +248,6 @@ class DispensacionViewModel @Inject constructor(
         viewModelScope.launch {
             val s = _uiState.value
 
-            // Validar items
             if (s.items.isEmpty()) {
                 _uiState.update { it.copy(error = "Agrega al menos un lente a la dispensación.") }
                 return@launch
@@ -292,15 +288,11 @@ class DispensacionViewModel @Inject constructor(
             _uiState.update { it.copy(error = null) }
             val finalMontoPagado = totalAbonos
 
-            // Cargar items anteriores si estamos editando (para stock)
             val itemsAnteriores = if (dispensacionId != null && dispensacionId != "null") {
                 repository.getDispensacionItemsByDispensacion(dispensacionId)
             } else emptyList()
 
-            val origenMonturaNormalizado = "Tienda" // El header lo hereda del primer item si aplica
             val primerItemMonturaId = if (primerItem.origenMontura == "Tienda") primerItem.monturaId else ""
-
-            // El primer item va a los campos principales del entity (backward compat)
             val disp = DispensacionOptica(
                 id = finalId,
                 ot = s.ot.trim(),
@@ -323,21 +315,19 @@ class DispensacionViewModel @Inject constructor(
                 montoPagado = finalMontoPagado,
                 metodoPago = "",
                 estadoEntrega = s.estadoEntrega,
+                fechaEntrega = s.fechaEntrega,
                 fechaVencimientoGarantia = s.fechaVencimientoGarantia,
                 distanciaLente = if (primerItem.tipoLente == "Monofocal") primerItem.distanciaLente else "",
                 altura = if (requiereAltura) primerItem.altura.trim() else ""
             )
 
-            // Stock: comparar monturas de tienda entre items anteriores y nuevos
             fun isTienda(m: DispensacionItem) = m.origenMontura == "Tienda" && m.monturaId.isNotBlank()
             fun isTiendaUi(m: DispensacionItemUi) = m.origenMontura == "Tienda" && m.monturaId.isNotBlank()
 
             val oldTiendaMonturas = itemsAnteriores.filter { isTienda(it) }.map { it.monturaId }
             val newTiendaMonturas = s.items.filter { isTiendaUi(it) }.map { it.monturaId }
 
-            // Monturas que se quitaron → +1 stock
             val toAddStock = oldTiendaMonturas.filter { id -> id !in newTiendaMonturas }
-            // Monturas que se agregaron → -1 stock
             val toRemoveStock = newTiendaMonturas.filter { id -> id !in oldTiendaMonturas }
 
             toAddStock.forEach { mid ->
@@ -353,15 +343,13 @@ class DispensacionViewModel @Inject constructor(
                 postSaveSyncScheduler.scheduleInventarioSync(currentOpticaId)
             }
 
-            // Guardar/actualizar dispensación header
             if (dispensacionId != null && dispensacionId != "null") {
                 repository.updateDispensacion(disp)
             } else {
                 repository.insertDispensacion(disp)
             }
 
-            // Guardar items (cada uno con su lente + montura)
-            repository.deleteItemsByDispensacionId(finalId) // Limpiar y re-insertar
+            repository.deleteItemsByDispensacionId(finalId)
             s.items.forEachIndexed { _, itemUi ->
                 val requiereAlturaItem = itemUi.tipoLente in setOf("Bifocal", "Progresivo", "Ocupacional")
                 val item = DispensacionItem(
@@ -386,20 +374,17 @@ class DispensacionViewModel @Inject constructor(
                 repository.insertDispensacionItem(item)
             }
 
-            // Eliminar items marcados (solo si estamos editando una existente)
             if (dispensacionId != null && dispensacionId != "null") {
                 s.itemsToDelete.forEach { itemId ->
                     repository.deleteDispensacionItemById(itemId, currentOpticaId)
                 }
             }
 
-            // Guardar pagos vinculados a esta dispensación
             s.pagos.forEach { pago ->
                 val pagoToSave = pago.copy(dispensacionId = finalId, opticaId = currentOpticaId)
                 repository.insertPago(pagoToSave)
             }
 
-            // Eliminar pagos marcados
             s.pagosToDelete.forEach { pago ->
                 repository.deletePagoRegistrandoAnulacionEnCaja(pago, currentOpticaId)
             }

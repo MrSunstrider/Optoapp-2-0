@@ -47,7 +47,6 @@ open class PostSaveSyncScheduler @Inject constructor(
     @VisibleForTesting
     internal val pendingJobs = mutableMapOf<String, Job>()
 
-    /** Test hook — called before each sync attempt, after session validation. */
     @VisibleForTesting
     internal var onBeforeSync: (suspend (String) -> Unit)? = null
 
@@ -120,7 +119,6 @@ open class PostSaveSyncScheduler @Inject constructor(
             try {
                 syncGate.mutex.withLock {
                     if (!ensureSessionForPostSaveSync("historial")) return@withLock
-                    syncPacientesUseCase!!(opticaId)
                     when (val r = syncHistorialUseCase!!(opticaId)) {
                         is Resource.Error -> Log.w(TAG, "Sync historial post-guardado: ${r.message}")
                         else -> Log.d(TAG, "Sync historial post-guardado OK")
@@ -143,7 +141,6 @@ open class PostSaveSyncScheduler @Inject constructor(
             try {
                 syncGate.mutex.withLock {
                     if (!ensureSessionForPostSaveSync("finanzas")) return@withLock
-                    syncPacientesUseCase!!(opticaId)
                     when (val r = syncFinanzasUseCase!!(opticaId)) {
                         is Resource.Error -> Log.w(TAG, "Sync finanzas post-guardado: ${r.message}")
                         else -> Log.d(TAG, "Sync finanzas post-guardado OK")

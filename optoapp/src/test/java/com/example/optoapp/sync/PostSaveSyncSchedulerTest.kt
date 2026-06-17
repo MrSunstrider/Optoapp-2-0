@@ -1,6 +1,11 @@
 package com.example.optoapp.sync
 
+import com.example.optoapp.domain.SyncFinanzasUseCase
+import com.example.optoapp.domain.SyncHistorialUseCase
+import com.example.optoapp.domain.SyncPacientesUseCase
 import io.github.jan.supabase.createSupabaseClient
+import io.mockk.coVerify
+import io.mockk.mockk
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -155,12 +160,70 @@ class PostSaveSyncSchedulerTest {
         )
     }
 
+    // ─── RC-2: scheduler isolation — no pacientes cascade ────────────────────
+
+    @Test
+    fun scheduleHistorialSync_doesNotInvokeSyncPacientes() = runTest(testDispatcher) {
+        val mockSyncPacientes = mockk<SyncPacientesUseCase>(relaxed = true)
+        val mockSyncHistorial = mockk<SyncHistorialUseCase>(relaxed = true)
+        val scheduler = object : PostSaveSyncScheduler(
+            applicationScope = testScope,
+            syncGate = SyncGate(),
+            supabase = fakeSupabase,
+            syncPacientesUseCase = mockSyncPacientes,
+            syncHistorialUseCase = mockSyncHistorial,
+            syncFinanzasUseCase = null,
+            syncInventarioUseCase = null
+        ) {
+            // Allow execution to reach the use-case call site (past the session gate)
+            override suspend fun ensureSessionForPostSaveSync(stage: String): Boolean = true
+
+            override fun scheduleDebounced(
+                key: String,
+                delayMs: Long,
+                block: suspend () -> Unit
+            ) {
+                kotlinx.coroutines.runBlocking { block() }
+            }
+        }
+
+        scheduler.scheduleHistorialSync("optica-1")
+
+        coVerify(exactly = 0) { mockSyncPacientes(any()) }
+    }
+
+    @Test
+    fun scheduleFinanzasSync_doesNotInvokeSyncPacientes() = runTest(testDispatcher) {
+        val mockSyncPacientes = mockk<SyncPacientesUseCase>(relaxed = true)
+        val mockSyncFinanzas = mockk<SyncFinanzasUseCase>(relaxed = true)
+        val scheduler = object : PostSaveSyncScheduler(
+            applicationScope = testScope,
+            syncGate = SyncGate(),
+            supabase = fakeSupabase,
+            syncPacientesUseCase = mockSyncPacientes,
+            syncHistorialUseCase = null,
+            syncFinanzasUseCase = mockSyncFinanzas,
+            syncInventarioUseCase = null
+        ) {
+            // Allow execution to reach the use-case call site (past the session gate)
+            override suspend fun ensureSessionForPostSaveSync(stage: String): Boolean = true
+
+            override fun scheduleDebounced(
+                key: String,
+                delayMs: Long,
+                block: suspend () -> Unit
+            ) {
+                kotlinx.coroutines.runBlocking { block() }
+            }
+        }
+
+        scheduler.scheduleFinanzasSync("optica-1")
+
+        coVerify(exactly = 0) { mockSyncPacientes(any()) }
+    }
+
     // ─── Helpers ───────────────────────────────────────────────────────────
 
-    /**
-     * Creates a scheduler that records [scheduleDebounced] keys.
-     * Does NOT execute the debounced block — only records the key.
-     */
     private fun createKeyRecorder(): Pair<PostSaveSyncScheduler, MutableList<String>> {
         val keys = mutableListOf<String>()
         val scheduler = object : PostSaveSyncScheduler(
@@ -183,10 +246,6 @@ class PostSaveSyncSchedulerTest {
         return scheduler to keys
     }
 
-    /**
-     * Creates a scheduler that records [ensureSessionForPostSaveSync] stage names
-     * and executes the debounced block synchronously.
-     */
     private fun createSessionRecorder(stages: MutableList<String>): PostSaveSyncScheduler {
         return object : PostSaveSyncScheduler(
             applicationScope = testScope,

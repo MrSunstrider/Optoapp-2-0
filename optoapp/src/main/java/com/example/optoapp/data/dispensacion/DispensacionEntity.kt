@@ -51,6 +51,8 @@ data class DispensacionOptica(
     @SerialName("estadoEntrega")
     val estadoEntrega: String = "Pendiente",
     @Serializable(with = LocalDateSerializer::class)
+    val fechaEntrega: LocalDate? = null,
+    @Serializable(with = LocalDateSerializer::class)
     val fechaVencimientoGarantia: LocalDate? = null,
     val distanciaLente: String = "",
     val altura: String = "",

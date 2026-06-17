@@ -8,15 +8,6 @@ import androidx.room.PrimaryKey
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
-/**
- * Item individual de lente dentro de una dispensación.
- *
- * Permite registrar múltiples lentes (lejos, cerca, intermedio, etc.)
- * bajo una misma orden de trabajo (OT). Cada item representa UN lente
- * con sus características ópticas específicas.
- *
- * La dispensación padre (header) conserva montura, montos y estado de entrega.
- */
 @Entity(
     tableName = "dispensacion_items",
     foreignKeys = [ForeignKey(
@@ -37,7 +28,6 @@ data class DispensacionItem(
     @ColumnInfo(name = "dispensacion_id")
     val dispensacionId: String,
 
-    //── Lente ────────────────────────────────────────────────────────────
     @SerialName("tipo_lente")
     @ColumnInfo(name = "tipo_lente")
     val tipoLente: String = "",
@@ -59,7 +49,6 @@ data class DispensacionItem(
     @ColumnInfo(name = "notas_diseno")
     val notasDiseno: String = "",
 
-    //── Montura (cada item puede tener su propia montura) ────────────────
     @SerialName("montura_id")
     @ColumnInfo(name = "montura_id")
     val monturaId: String = "",
