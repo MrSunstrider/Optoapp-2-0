@@ -60,7 +60,6 @@ fun LoginScreen(
     val isPinRequired by viewModel.isPinRequired.collectAsState(initial = false)
     val isLoggedIn by viewModel.isLoggedIn.collectAsState(initial = false)
 
-    // Cargar email y contraseña recordados al iniciar la pantalla
     LaunchedEffect(Unit) {
         val savedEmail = viewModel.getRememberedEmail()
         if (savedEmail.isNotBlank()) {
@@ -76,7 +75,6 @@ fun LoginScreen(
     LaunchedEffect(authState, pendingMemberships, isLoggedIn, needsOnboarding) {
         if (authState !is AuthState.Success) return@LaunchedEffect
 
-        // Recordar cuenta: guardar o limpiar email y contraseña según el checkbox
         if (rememberAccount) {
             viewModel.saveRememberedEmail(email)
             viewModel.saveRememberedPassword(password)
@@ -86,7 +84,7 @@ fun LoginScreen(
         }
 
         if (needsOnboarding) {
-            navController.navigate("onboarding_optica") {
+            navController.navigate("sin_optica") {
                 popUpTo("login") { inclusive = true }
             }
             return@LaunchedEffect

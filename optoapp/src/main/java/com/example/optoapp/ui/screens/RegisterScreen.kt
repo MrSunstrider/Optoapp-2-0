@@ -50,7 +50,7 @@ fun RegisterScreen(
     LaunchedEffect(authState, pendingMemberships, isLoggedIn, needsOnboarding) {
         if (authState !is AuthState.Success) return@LaunchedEffect
         if (needsOnboarding) {
-            navController.navigate("onboarding_optica") {
+            navController.navigate("sin_optica") {
                 popUpTo("register") { inclusive = true }
             }
             return@LaunchedEffect

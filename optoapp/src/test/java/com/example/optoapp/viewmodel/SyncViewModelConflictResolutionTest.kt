@@ -18,7 +18,7 @@ import com.example.optoapp.domain.SyncFinanzasUseCase
 import com.example.optoapp.domain.SyncHistorialUseCase
 import com.example.optoapp.domain.SyncInventarioUseCase
 import com.example.optoapp.domain.SyncPacientesUseCase
-import com.example.optoapp.domain.observer.SupabaseObserver
+import com.example.optoapp.domain.observer.TableObserver
 import com.example.optoapp.subscription.SubscriptionManager
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import com.example.optoapp.sync.SyncGate
@@ -61,7 +61,7 @@ class SyncViewModelConflictResolutionTest {
     private lateinit var syncGate: SyncGate
     private lateinit var conflictDao: ConflictDao
     private lateinit var syncEntityStateDao: SyncEntityStateDao
-    private lateinit var supabaseObserver: SupabaseObserver
+    private lateinit var supabaseObserver: TableObserver
     private lateinit var bgErrorCollector: BackgroundErrorCollector
     private lateinit var postSaveSyncScheduler: PostSaveSyncScheduler
 
