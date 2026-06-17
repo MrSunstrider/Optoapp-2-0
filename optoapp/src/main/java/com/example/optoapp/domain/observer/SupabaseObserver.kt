@@ -2,6 +2,7 @@ package com.example.optoapp.domain.observer
 
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.realtime.FilterOperator
 import io.github.jan.supabase.realtime.PostgresAction
 import io.github.jan.supabase.realtime.PostgresAction.Insert
 import io.github.jan.supabase.realtime.realtime
@@ -33,7 +34,7 @@ class SupabaseObserver @Inject constructor(
         val channel = supabase.realtime.channel(channelId)
         val events = channel.postgresChangeFlow<Insert>(schema = "public") {
             table = "usuario_optica"
-            filter = "user_id=eq.$userId"
+            filter("user_id", FilterOperator.EQ, userId)
         }
         channel.subscribe()
         try {
