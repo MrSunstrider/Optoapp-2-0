@@ -188,6 +188,25 @@ class AuthViewModel @Inject constructor(
         return memberships.size > 1
     }
 
+    suspend fun refreshMembershipsForWaitScreen(): Int {
+        val memberships = authDelegate.prepareOpticaSelection()
+        _pendingMemberships.value = memberships
+        return when {
+            memberships.size == 1 -> {
+                authDelegate.selectOptica(memberships.first())
+                _needsOnboarding.value = false
+                _pendingMemberships.value = emptyList()
+                _authState.value = AuthState.Success
+                1
+            }
+            memberships.size > 1 -> {
+                _needsOnboarding.value = false
+                memberships.size
+            }
+            else -> 0
+        }
+    }
+
     //── Recordar Cuenta ────────────────────────────────────────────────────────
 
     fun saveRememberedEmail(email: String) = viewModelScope.launch {
