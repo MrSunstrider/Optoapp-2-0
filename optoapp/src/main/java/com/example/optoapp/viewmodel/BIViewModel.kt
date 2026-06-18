@@ -23,15 +23,13 @@ data class BIUiState(
     val recaudacionProyectada: Double = 0.0,
     val recaudacionCobrada: Double = 0.0,
     val topProductos: List<ProductoRanking> = emptyList(),
-    /** P3-T8: dispensaciones con entrega pendiente en el período (filtro por fecha + óptica). */
     val entregasPendientesPeriodo: Int = 0,
     val entregasCompletadasPeriodo: Int = 0,
-    /** Dispensaciones con `montura_id` de catálogo en el período. */
     val ventasConMonturaCatalogo: Int = 0,
-    /** Monturas activas con stock ≤ mínimo (instantáneo, óptica activa). */
     val monturasStockBajo: Int = 0,
-    /** Movimientos `SALIDA_VENTA` en el período. */
     val salidasInventarioVentas: Int = 0,
+    val totalModelos: Int = 0,
+    val inventarioStockBajo: Int = 0,
     val isLoading: Boolean = false
 )
 
@@ -111,6 +109,11 @@ class BIViewModel @Inject constructor(
                         .sortedByDescending { it.cantidad }
                         .take(5)
 
+                    val totalModelos = monturas.count { m -> m.activo }
+                    val inventarioStockBajo = monturas.count { m ->
+                        m.activo && m.stockActual <= (if (m.stockMinimo > 0) m.stockMinimo else 2)
+                    }
+
                     BIUiState(
                         periodo = periodo,
                         examenesActual = core.examenesActual,
@@ -123,6 +126,8 @@ class BIViewModel @Inject constructor(
                         ventasConMonturaCatalogo = conMontura,
                         monturasStockBajo = stockBajo,
                         salidasInventarioVentas = salidasVentas,
+                        totalModelos = totalModelos,
+                        inventarioStockBajo = inventarioStockBajo,
                         isLoading = false
                     )
                 }

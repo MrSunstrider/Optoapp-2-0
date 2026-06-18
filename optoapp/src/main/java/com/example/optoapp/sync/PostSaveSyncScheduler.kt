@@ -9,6 +9,7 @@ import com.example.optoapp.di.ApplicationScope
 import com.example.optoapp.domain.SyncFinanzasUseCase
 import com.example.optoapp.domain.SyncOrdenesCompraUseCase
 import com.example.optoapp.domain.SyncProveedoresUseCase
+import com.example.optoapp.domain.SyncInventoryKpisUseCase
 import com.example.optoapp.util.BackgroundErrorCollector
 import com.example.optoapp.domain.SyncHistorialUseCase
 import com.example.optoapp.domain.SyncInventarioUseCase
@@ -42,6 +43,7 @@ open class PostSaveSyncScheduler @Inject constructor(
     private val syncInventarioUseCase: SyncInventarioUseCase? = null,
     private val syncProveedoresUseCase: SyncProveedoresUseCase? = null,
     private val syncOrdenesCompraUseCase: SyncOrdenesCompraUseCase? = null,
+    private val syncInventoryKpisUseCase: SyncInventoryKpisUseCase? = null,
     private val bgErrorCollector: BackgroundErrorCollector? = null
 ) {
     private val scheduleMutex = Mutex()
@@ -220,6 +222,28 @@ open class PostSaveSyncScheduler @Inject constructor(
                 Log.e(TAG, "Error en red sync proveedores post-guardado: ${e.message}", e)
             } catch (e: Exception) {
                 Log.e(TAG, "Error inesperado sync proveedores post-guardado: ${e.message}", e)
+            }
+        }
+    }
+
+    open fun scheduleInventoryKpisSync(opticaId: String) {
+        if (suppressSync) return
+        scheduleDebounced(key = "inventory_kpis:$opticaId") {
+            onBeforeSync?.invoke("inventory_kpis")
+            try {
+                syncGate.mutex.withLock {
+                    if (!ensureSessionForPostSaveSync("inventory_kpis")) return@withLock
+                    when (val r = syncInventoryKpisUseCase!!(opticaId)) {
+                        is Resource.Error -> Log.w(TAG, "Sync inventory KPIs post-guardado: ${r.message}")
+                        else -> Log.d(TAG, "Sync inventory KPIs post-guardado OK")
+                    }
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: IOException) {
+                Log.e(TAG, "Error en red sync inventory KPIs post-guardado: ${e.message}", e)
+            } catch (e: Exception) {
+                Log.e(TAG, "Error inesperado sync inventory KPIs post-guardado: ${e.message}", e)
             }
         }
     }

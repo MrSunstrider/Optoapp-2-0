@@ -12,6 +12,8 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.TrendingDown
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.Insights
+import androidx.compose.material.icons.filled.Inventory
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -69,7 +71,6 @@ fun BIScreen(navController: NavController, viewModel: BIViewModel = hiltViewMode
                 .padding(horizontal = 14.dp, vertical = 4.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // Selector de Periodo
             SingleChoiceSegmentedButtonRow(
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -89,7 +90,6 @@ fun BIScreen(navController: NavController, viewModel: BIViewModel = hiltViewMode
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            // Exámenes Section
             KPICard(
                 title = "Exámenes Realizados",
                 current = uiState.examenesActual.toString(),
@@ -107,7 +107,6 @@ fun BIScreen(navController: NavController, viewModel: BIViewModel = hiltViewMode
                 )
             }
 
-            // Recaudación Section
             KPICard(
                 title = "Recaudación vs. Proyección",
                 current = "s/. ${String.format(Locale.getDefault(), "%.0f", uiState.recaudacionCobrada)}",
@@ -135,7 +134,6 @@ fun BIScreen(navController: NavController, viewModel: BIViewModel = hiltViewMode
                 }
             }
 
-            // P3-T8: inventario, entregas y movimientos (misma óptica y período que arriba)
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(24.dp),
@@ -161,7 +159,27 @@ fun BIScreen(navController: NavController, viewModel: BIViewModel = hiltViewMode
                 }
             }
 
-            // Best Sellers Section
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                KpiMiniCard(
+                    title = "Total Modelos",
+                    value = uiState.totalModelos.toString(),
+                    icon = Icons.Default.Inventory,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.weight(1f)
+                )
+                KpiMiniCard(
+                    title = "Stock Bajo",
+                    value = uiState.inventarioStockBajo.toString(),
+                    icon = Icons.Default.Warning,
+                    color = if (uiState.inventarioStockBajo > 0) MaterialTheme.colorScheme.error
+                        else MaterialTheme.colorScheme.tertiary,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(24.dp),
@@ -262,5 +280,50 @@ fun LegendItem(label: String, color: Color) {
         Box(modifier = Modifier.size(8.dp).background(color, CircleShape))
         Spacer(modifier = Modifier.width(8.dp))
         Text(label, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+@Composable
+fun KpiMiniCard(
+    title: String,
+    value: String,
+    icon: ImageVector,
+    color: Color,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    title,
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    value,
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = color
+                )
+            }
+            Surface(
+                modifier = Modifier.size(36.dp),
+                shape = CircleShape,
+                color = color.copy(alpha = 0.1f)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(18.dp))
+                }
+            }
+        }
     }
 }
