@@ -21,8 +21,10 @@ import com.example.optoapp.domain.SyncPacientesUseCase
 import com.example.optoapp.domain.SyncProveedoresUseCase
 import com.example.optoapp.domain.SyncOrdenesCompraUseCase
 import com.example.optoapp.domain.SyncInventoryKpisUseCase
+import com.example.optoapp.domain.SyncInventarioFisicoUseCase
 import com.example.optoapp.domain.ProveedoresSyncResult
 import com.example.optoapp.domain.OrdenesCompraSyncResult
+import com.example.optoapp.domain.InventarioFisicoSyncResult
 import com.example.optoapp.domain.observer.TableObserver
 import com.example.optoapp.subscription.SubscriptionManager
 import com.example.optoapp.sync.PostSaveSyncScheduler
@@ -109,6 +111,7 @@ class SyncViewModelConflictResolutionTest {
         syncInventarioUseCase = mockk(relaxed = true)
         syncProveedoresUseCase = mockk(relaxed = true)
         val syncOrdenesCompraUseCase: SyncOrdenesCompraUseCase = mockk(relaxed = true)
+        val syncInventarioFisicoUseCase: SyncInventarioFisicoUseCase = mockk(relaxed = true)
         val syncInventoryKpisUseCase: SyncInventoryKpisUseCase = mockk(relaxed = true)
         syncGate = SyncGate() // real SyncGate; its mutex is unlocked by default
         conflictDao = mockk(relaxed = true)
@@ -133,6 +136,9 @@ class SyncViewModelConflictResolutionTest {
         coEvery { syncOrdenesCompraUseCase(any(), any(), any()) } returns Resource.Success(
             OrdenesCompraSyncResult(0, 0, 0, 0)
         )
+        coEvery { syncInventarioFisicoUseCase(any(), any(), any()) } returns Resource.Success(
+            InventarioFisicoSyncResult(0, 0, 0, 0)
+        )
         coEvery { syncInventoryKpisUseCase(any()) } returns Resource.Success(
             com.example.optoapp.domain.InventoryKpiSummary(0, 0, emptyList(), null)
         )
@@ -155,6 +161,7 @@ class SyncViewModelConflictResolutionTest {
             syncInventarioUseCase = syncInventarioUseCase,
             syncProveedoresUseCase = syncProveedoresUseCase,
             syncOrdenesCompraUseCase = syncOrdenesCompraUseCase,
+            syncInventarioFisicoUseCase = syncInventarioFisicoUseCase,
             syncInventoryKpisUseCase = syncInventoryKpisUseCase,
             syncGate = syncGate,
             conflictDao = conflictDao,
