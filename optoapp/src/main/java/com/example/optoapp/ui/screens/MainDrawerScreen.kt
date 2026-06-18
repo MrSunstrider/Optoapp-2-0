@@ -19,6 +19,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.example.optoapp.viewmodel.AuthViewModel
 import com.example.optoapp.viewmodel.OpticaHeaderViewModel
+import com.example.optoapp.ui.screens.ordenescompra.OrdenesCompraScreen
 import kotlinx.coroutines.launch
 
 /** CompositionLocal para que cualquier pantalla pueda mostrar Snackbar sin acoplamiento. */
@@ -35,7 +36,6 @@ fun MainDrawerScreen(
     val scope = rememberCoroutineScope()
     val navController = rememberNavController()
     
-    // Obtenemos el ViewModel de sincronización a nivel de pantalla
     val syncViewModel: com.example.optoapp.viewmodel.SyncViewModel = hiltViewModel()
     val opticaHeaderViewModel: OpticaHeaderViewModel = hiltViewModel()
     val syncState by syncViewModel.syncState.collectAsState()
@@ -47,7 +47,7 @@ fun MainDrawerScreen(
     val showOperacionHoy = AppRoles.canViewOperacionHoy(opticaRol)
     val showConfiguracion = AppRoles.canManageUsers(opticaRol)
 
-    // Sincronización automática al entrar al dashboard
+    // Refresh cloud data so the user always sees the latest shared state on entry
     LaunchedEffect(Unit) {
         syncViewModel.performSilentSync()
     }
@@ -83,7 +83,6 @@ fun MainDrawerScreen(
             color = MaterialTheme.colorScheme.background
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
-            // Indicador discreto de sincronización de fondo
             if (isSilentSyncing) {
                 LinearProgressIndicator(
                     modifier = Modifier.fillMaxWidth().height(2.dp),
@@ -118,8 +117,8 @@ fun MainDrawerScreen(
                 ) {
                     Text(
                         text = "Óptica activa: ${opticaHeader.nombreOptica} · ${opticaHeader.fiscalEtiqueta}",
-                        style = MaterialTheme.typography.labelSmall, // Letra un poco más pequeña y elegante
-                        modifier = Modifier.padding(vertical = 2.dp), // Espacio mínimo
+                        style = MaterialTheme.typography.labelSmall,
+                        modifier = Modifier.padding(vertical = 2.dp),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -190,6 +189,9 @@ fun MainDrawerScreen(
                     ServiciosExtraScreen(navController, drawerState) 
                 }
                 composable("monturas") { MonturasScreen(navController) }
+                composable("proveedores") { ProveedoresScreen(navController) }
+                composable("ordenes_compra") { OrdenesCompraScreen(navController) }
+                composable("inventario_fisico") { com.example.optoapp.ui.screens.inventariofisico.InventarioFisicoScreen(navController) }
                 composable("operacion_hoy") { OperacionHoyScreen(navController) }
                 composable("nuevo_servicio") {
                     NuevoServicioScreen(navController, pacienteId = null)

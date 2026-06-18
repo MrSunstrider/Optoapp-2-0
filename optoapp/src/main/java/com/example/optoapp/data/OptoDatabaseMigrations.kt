@@ -6,8 +6,6 @@ import java.util.concurrent.TimeUnit
 
 val MIGRATION_7_8 = object : Migration(7, 8) {
     override fun migrate(db: SupportSQLiteDatabase) {
-        // Añadir campo multi-inquilino a todas las tablas principales
-        // Los registros existentes quedan asignados a 'mi_optica_base'
         db.execSQL("ALTER TABLE pacientes ADD COLUMN opticaId TEXT NOT NULL DEFAULT 'mi_optica_base'")
         db.execSQL("ALTER TABLE evaluaciones ADD COLUMN opticaId TEXT NOT NULL DEFAULT 'mi_optica_base'")
         db.execSQL("ALTER TABLE dispensaciones ADD COLUMN opticaId TEXT NOT NULL DEFAULT 'mi_optica_base'")
@@ -17,21 +15,17 @@ val MIGRATION_7_8 = object : Migration(7, 8) {
 }
 val MIGRATION_6_7 = object : Migration(6, 7) {
     override fun migrate(db: SupportSQLiteDatabase) {
-        // Agudeza visual (Nuevos campos Cerca AO)
         db.execSQL("ALTER TABLE evaluaciones ADD COLUMN avScAoCerca TEXT NOT NULL DEFAULT ''")
         db.execSQL("ALTER TABLE evaluaciones ADD COLUMN avCcAoCerca TEXT NOT NULL DEFAULT ''")
 
-        // Visión binocular y Percepción
         db.execSQL("ALTER TABLE evaluaciones ADD COLUMN estereopsisValor TEXT NOT NULL DEFAULT ''")
         db.execSQL("ALTER TABLE evaluaciones ADD COLUMN estereopsisSegundos TEXT NOT NULL DEFAULT ''")
         db.execSQL("ALTER TABLE evaluaciones ADD COLUMN lang TEXT NOT NULL DEFAULT ''")
         db.execSQL("ALTER TABLE evaluaciones ADD COLUMN worth TEXT NOT NULL DEFAULT ''")
 
-        // Percepción color
         db.execSQL("ALTER TABLE evaluaciones ADD COLUMN ishihara TEXT NOT NULL DEFAULT ''")
         db.execSQL("ALTER TABLE evaluaciones ADD COLUMN farnsworth TEXT NOT NULL DEFAULT ''")
 
-        // Salud Ocular y Función Visual
         db.execSQL("ALTER TABLE evaluaciones ADD COLUMN schirmerOd TEXT NOT NULL DEFAULT ''")
         db.execSQL("ALTER TABLE evaluaciones ADD COLUMN schirmerOi TEXT NOT NULL DEFAULT ''")
         db.execSQL("ALTER TABLE evaluaciones ADD COLUMN osdiPuntuacion INTEGER")
@@ -39,7 +33,6 @@ val MIGRATION_6_7 = object : Migration(6, 7) {
         db.execSQL("ALTER TABLE evaluaciones ADD COLUMN sensibilidadContraste TEXT NOT NULL DEFAULT ''")
         db.execSQL("ALTER TABLE evaluaciones ADD COLUMN sensibilidadFrecuencia TEXT NOT NULL DEFAULT ''")
 
-        // Otras Pruebas
         db.execSQL("ALTER TABLE evaluaciones ADD COLUMN amsler TEXT NOT NULL DEFAULT ''")
         db.execSQL("ALTER TABLE evaluaciones ADD COLUMN campoVisual TEXT NOT NULL DEFAULT ''")
         db.execSQL("ALTER TABLE evaluaciones ADD COLUMN campoVisualDescripcion TEXT NOT NULL DEFAULT ''")
@@ -724,5 +717,41 @@ val MIGRATION_24_25 = object : Migration(24, 25) {
         // Per-frame counted quantities with system-vs-actual variance tracking
         db.execSQL("CREATE TABLE IF NOT EXISTS inventario_fisico_detalle (id TEXT NOT NULL PRIMARY KEY, inventarioId TEXT NOT NULL, monturaId TEXT NOT NULL, stockSistema INTEGER NOT NULL, stockContado INTEGER, diferencia INTEGER, FOREIGN KEY(inventarioId) REFERENCES inventario_fisico(id) ON DELETE CASCADE, FOREIGN KEY(monturaId) REFERENCES monturas(id))")
         db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_ifd_inventario_montura ON inventario_fisico_detalle(inventarioId, monturaId)")
+    }
+}
+
+val MIGRATION_25_26 = object : Migration(25, 26) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS arqueo_caja (
+                id TEXT NOT NULL PRIMARY KEY,
+                fecha INTEGER NOT NULL,
+                opticaId TEXT NOT NULL,
+                fondoCaja REAL NOT NULL,
+                efectivoContado REAL NOT NULL,
+                tarjetaContado REAL NOT NULL,
+                transferenciaContado REAL NOT NULL,
+                movilContado REAL NOT NULL,
+                efectivoCobrado REAL NOT NULL,
+                tarjetaCobrado REAL NOT NULL,
+                transferenciaCobrado REAL NOT NULL,
+                movilCobrado REAL NOT NULL,
+                diferenciaEfectivo REAL NOT NULL,
+                diferenciaTarjeta REAL NOT NULL,
+                diferenciaTransferencia REAL NOT NULL,
+                diferenciaMovil REAL NOT NULL,
+                diferenciaTotal REAL NOT NULL,
+                cerradoPor TEXT NOT NULL,
+                sellado INTEGER NOT NULL DEFAULT 0,
+                createdAt TEXT NOT NULL,
+                updatedAt TEXT NOT NULL,
+                updatedBy TEXT NOT NULL DEFAULT ''
+            )
+            """.trimIndent()
+        )
+        db.execSQL(
+            "CREATE UNIQUE INDEX IF NOT EXISTS index_arqueo_caja_fecha_opticaId ON arqueo_caja(fecha, opticaId)"
+        )
     }
 }

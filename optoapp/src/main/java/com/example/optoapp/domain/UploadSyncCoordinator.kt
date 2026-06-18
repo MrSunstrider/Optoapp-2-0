@@ -31,6 +31,7 @@ class UploadSyncCoordinator @Inject constructor(
         private const val TABLE_DISPENSACION_ITEMS = "dispensacion_items"
         private const val TABLE_PAGOS = "pagos"
         private const val TABLE_SERVICIOS = "servicios_extra"
+        private const val TABLE_ARQUEO_CAJA = "arqueo_caja"
         private const val UPSERT_BATCH_SIZE = 80
     }
 
@@ -292,5 +293,21 @@ class UploadSyncCoordinator @Inject constructor(
             syncStateTracker.markSynced(opticaId, "pago", p.id)
         }
         return pagos.size
+    }
+
+    suspend fun uploadArqueos(opticaId: String): Int {
+        val localArqueos = repository.getArqueosByOpticaList(opticaId)
+        var uploaded = 0
+        localArqueos.forEach { arqueo ->
+            try {
+                supabase.postgrest[TABLE_ARQUEO_CAJA].upsert(arqueo.toRemota())
+                uploaded++
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.w(TAG, "arqueo upload failed for ${arqueo.id}", e)
+            }
+        }
+        return uploaded
     }
 }

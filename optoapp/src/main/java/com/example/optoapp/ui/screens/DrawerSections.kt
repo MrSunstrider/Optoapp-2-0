@@ -103,7 +103,6 @@ fun DrawerContent(
             .fillMaxHeight()
             .verticalScroll(rememberScrollState())
     ) {
-        // Header con logo y óptica
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -145,7 +144,6 @@ fun DrawerContent(
         }
         HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
 
-        // Gestión
         Text(
             text = "GESTIÓN",
             style = MaterialTheme.typography.labelSmall,
@@ -185,7 +183,6 @@ fun DrawerContent(
             )
         }
 
-        // Programación
         Text(
             text = "PROGRAMACIÓN",
             style = MaterialTheme.typography.labelSmall,
@@ -212,7 +209,16 @@ fun DrawerContent(
             icon = { Icon(Icons.Default.Inventory2, contentDescription = null) },
             modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
         )
-        // Finanzas
+        NavigationDrawerItem(
+            label = { Text("Proveedores", fontWeight = FontWeight.SemiBold) },
+            selected = currentRoute == "proveedores",
+            onClick = {
+                scope.launch { drawerState.close() }
+                navController.navigateDrawer("proveedores")
+            },
+            icon = { Icon(Icons.Default.Business, contentDescription = null) },
+            modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+        )
         if (showCierreCaja || showBiYReportes) {
             Text(
                 text = "FINANZAS",
@@ -259,7 +265,6 @@ fun DrawerContent(
         // Sync + Conflictos — refrescar al abrir
         LaunchedEffect(Unit) { syncViewModel.refreshConflicts() }
 
-        // Sistema
         Text(
             text = "SISTEMA",
             style = MaterialTheme.typography.labelSmall,
@@ -279,7 +284,6 @@ fun DrawerContent(
             )
         }
 
-        // Conflictos
         if (conflictCount > 0) {
             NavigationDrawerItem(
                 label = {
@@ -311,7 +315,6 @@ fun DrawerContent(
             )
         }
 
-        // Sync + Logout
         NavigationDrawerItem(
             label = {
                 Text(

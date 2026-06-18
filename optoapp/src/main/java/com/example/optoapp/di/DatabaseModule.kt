@@ -2,9 +2,11 @@ package com.example.optoapp.di
 
 import android.content.Context
 import com.example.optoapp.data.*
+import com.example.optoapp.data.arqueo.ArqueoCajaDao
 import com.example.optoapp.data.backup.BackupRestoreCoordinator
 import com.example.optoapp.data.inventariofisico.InventarioFisicoDao
 import com.example.optoapp.data.montura.MonturaDao
+import com.example.optoapp.data.montura.MonturaDashboardKpiRepository
 import com.example.optoapp.data.montura.MonturaInventoryCoordinator
 import com.example.optoapp.data.montura.MonturaMovimientoDao
 import com.example.optoapp.data.ordencompra.OrdenCompraDao
@@ -98,6 +100,9 @@ object DatabaseModule {
     fun provideInventarioFisicoDao(database: OptoDatabase): InventarioFisicoDao = database.inventarioFisicoDao()
 
     @Provides
+    fun provideArqueoCajaDao(database: OptoDatabase): ArqueoCajaDao = database.arqueoCajaDao()
+
+    @Provides
     @Singleton
     fun provideSecurityManager(@ApplicationContext context: Context): SecurityManager {
         return SecurityManager(context)
@@ -163,6 +168,12 @@ object DatabaseModule {
     )
 
     @Provides
+    fun provideMonturaDashboardKpiRepository(
+        monturaDao: MonturaDao,
+        monturaMovimientoDao: MonturaMovimientoDao
+    ): MonturaDashboardKpiRepository = MonturaDashboardKpiRepository(monturaDao, monturaMovimientoDao)
+
+    @Provides
     @Singleton
     fun provideOptoRepository(
         database: OptoDatabase,
@@ -173,7 +184,8 @@ object DatabaseModule {
         syncRepo: SyncRepository,
         snapshotCoordinator: SyncSnapshotCoordinator,
         backupCoordinator: BackupRestoreCoordinator,
-        monturaCoordinator: MonturaInventoryCoordinator
+        monturaCoordinator: MonturaInventoryCoordinator,
+        arqueoCajaDao: ArqueoCajaDao
     ): OptoRepository {
         return OptoRepository(
             database,
@@ -184,7 +196,8 @@ object DatabaseModule {
             syncRepo,
             snapshotCoordinator,
             backupCoordinator,
-            monturaCoordinator
+            monturaCoordinator,
+            arqueoCajaDao
         )
     }
 
