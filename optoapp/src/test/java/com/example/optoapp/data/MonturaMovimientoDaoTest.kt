@@ -184,4 +184,49 @@ class MonturaMovimientoDaoTest {
 
         assertTrue(movimientos.isEmpty())
     }
+
+    /**
+     * Regression: Room 2.6+ @Upsert generates `ON CONFLICT(id) DO UPDATE` which only resolves
+     * PK conflicts. A sync download with a different id but same (referenciaId, tipo, monturaId)
+     * crashed with SQLITE_CONSTRAINT_UNIQUE (2067) at login. Fixed by @Insert(REPLACE).
+     */
+    @Test
+    fun insertMovimiento_duplicateSecondaryUniqueKey_replacesRowWithoutThrowing() = runBlocking {
+        val montura = Montura(
+            id = "m1", sku = "S001", marca = "M", modelo = "X",
+            color = "N", talla = "M", costo = 50.0, precio = 100.0,
+            stockActual = 10, stockMinimo = 2, activo = true, opticaId = "o1"
+        )
+        monturaDao.insertMontura(montura)
+
+        val localRow = MonturaMovimiento(
+            id = "mov-local",
+            monturaId = "m1",
+            fecha = LocalDate.parse("2026-06-18"),
+            tipo = "SALIDA_VENTA",
+            cantidad = 1,
+            stockPrevio = 10,
+            stockNuevo = 9,
+            referenciaId = "disp-001",
+            opticaId = "o1"
+        )
+        dao.insertMovimiento(localRow)
+
+        val serverRow = MonturaMovimiento(
+            id = "mov-server",
+            monturaId = "m1",
+            fecha = LocalDate.parse("2026-06-18"),
+            tipo = "SALIDA_VENTA",
+            cantidad = 1,
+            stockPrevio = 10,
+            stockNuevo = 9,
+            referenciaId = "disp-001",
+            opticaId = "o1"
+        )
+        dao.insertMovimiento(serverRow)
+
+        val result = dao.getMovimientosListByOptica("o1")
+        assertEquals(1, result.size)
+        assertEquals("mov-server", result[0].id)
+    }
 }
