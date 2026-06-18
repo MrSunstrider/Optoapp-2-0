@@ -50,4 +50,21 @@ interface MonturaDao {
         precioMax: Double? = null,
         stockBajo: Int = 0
     ): List<Montura>
+
+    @Query("SELECT COUNT(*) FROM monturas WHERE opticaId = :opticaId AND activo = 1")
+    fun getTotalModelosCount(opticaId: String): Flow<Int>
+
+    @Query("SELECT categoria, COUNT(*) as cnt FROM monturas WHERE opticaId = :opticaId AND activo = 1 AND categoria != '' GROUP BY categoria")
+    fun getStockByCategory(opticaId: String): Flow<List<CategoriaCount>>
+
+    @Query("SELECT COUNT(*) FROM monturas WHERE opticaId = :opticaId AND activo = 1 AND stockActual <= COALESCE(NULLIF(stockMinimo, 0), :defaultThreshold)")
+    fun getLowStockCount(opticaId: String, defaultThreshold: Int = 2): Flow<Int>
+
+    @Query("SELECT * FROM monturas WHERE opticaId = :opticaId AND activo = 1 AND stockActual <= COALESCE(NULLIF(stockMinimo, 0), :defaultThreshold)")
+    suspend fun getLowStockList(opticaId: String, defaultThreshold: Int = 2): List<Montura>
 }
+
+data class CategoriaCount(
+    val categoria: String,
+    val cnt: Int
+)
