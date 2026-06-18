@@ -9,6 +9,7 @@ import com.example.optoapp.di.ApplicationScope
 import com.example.optoapp.domain.SyncFinanzasUseCase
 import com.example.optoapp.domain.SyncOrdenesCompraUseCase
 import com.example.optoapp.domain.SyncProveedoresUseCase
+import com.example.optoapp.domain.SyncInventarioFisicoUseCase
 import com.example.optoapp.domain.SyncInventoryKpisUseCase
 import com.example.optoapp.util.BackgroundErrorCollector
 import com.example.optoapp.domain.SyncHistorialUseCase
@@ -43,6 +44,7 @@ open class PostSaveSyncScheduler @Inject constructor(
     private val syncInventarioUseCase: SyncInventarioUseCase? = null,
     private val syncProveedoresUseCase: SyncProveedoresUseCase? = null,
     private val syncOrdenesCompraUseCase: SyncOrdenesCompraUseCase? = null,
+    private val syncInventarioFisicoUseCase: SyncInventarioFisicoUseCase? = null,
     private val syncInventoryKpisUseCase: SyncInventoryKpisUseCase? = null,
     private val bgErrorCollector: BackgroundErrorCollector? = null
 ) {
@@ -54,19 +56,9 @@ open class PostSaveSyncScheduler @Inject constructor(
     @VisibleForTesting
     internal var onBeforeSync: (suspend (String) -> Unit)? = null
 
-    /**
-     * Cuando está en true, se saltea toda programación de sync.
-     * Usado por SyncViewModel.performFullDownload() para evitar que la descarga
-     * masiva dispare syncs post-guardado que regeneren conflictos.
-     */
     @Volatile
     var suppressSync: Boolean = false
 
-    /**
-     * Cancela todos los syncs pendientes y aguarda su terminación antes de retornar.
-     * Debe llamarse antes de [suppressSync] = true para evitar que jobs
-     * programados antes del suppress se ejecuten después de la descarga.
-     */
     suspend fun cancelPending() {
         scheduleMutex.withLock {
             for (job in pendingJobs.values) {
@@ -244,6 +236,28 @@ open class PostSaveSyncScheduler @Inject constructor(
                 Log.e(TAG, "Error en red sync inventory KPIs post-guardado: ${e.message}", e)
             } catch (e: Exception) {
                 Log.e(TAG, "Error inesperado sync inventory KPIs post-guardado: ${e.message}", e)
+            }
+        }
+    }
+
+    open fun scheduleInventarioFisicoSync(opticaId: String) {
+        if (suppressSync) return
+        scheduleDebounced(key = "inventario_fisico:$opticaId") {
+            onBeforeSync?.invoke("inventario_fisico")
+            try {
+                syncGate.mutex.withLock {
+                    if (!ensureSessionForPostSaveSync("inventario_fisico")) return@withLock
+                    when (val r = syncInventarioFisicoUseCase!!(opticaId)) {
+                        is Resource.Error -> Log.w(TAG, "Sync inventario_fisico post-guardado: ${r.message}")
+                        else -> Log.d(TAG, "Sync inventario_fisico post-guardado OK")
+                    }
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: IOException) {
+                Log.e(TAG, "Error en red sync inventario_fisico post-guardado: ${e.message}", e)
+            } catch (e: Exception) {
+                Log.e(TAG, "Error inesperado sync inventario_fisico post-guardado: ${e.message}", e)
             }
         }
     }

@@ -117,7 +117,7 @@ fun MainDrawerScreen(
                 ) {
                     Text(
                         text = "Óptica activa: ${opticaHeader.nombreOptica} · ${opticaHeader.fiscalEtiqueta}",
-                        style = MaterialTheme.typography.labelSmall, // Letra un poco más pequeña y elegante
+                        style = MaterialTheme.typography.labelSmall,
                         modifier = Modifier.padding(vertical = 2.dp),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
@@ -191,6 +191,7 @@ fun MainDrawerScreen(
                 composable("monturas") { MonturasScreen(navController) }
                 composable("proveedores") { ProveedoresScreen(navController) }
                 composable("ordenes_compra") { OrdenesCompraScreen(navController) }
+                composable("inventario_fisico") { com.example.optoapp.ui.screens.inventariofisico.InventarioFisicoScreen(navController) }
                 composable("operacion_hoy") { OperacionHoyScreen(navController) }
                 composable("nuevo_servicio") {
                     NuevoServicioScreen(navController, pacienteId = null)
