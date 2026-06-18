@@ -1,9 +1,6 @@
 -- Sprint A: Data Model Extensions for inventario-v2
 -- ALTER existing tables + 7 CREATE TABLE with RLS
 
--- ============================================================
--- 1. ALTER monturas — 5 new catalog/commercial fields
--- ============================================================
 ALTER TABLE monturas ADD COLUMN IF NOT EXISTS categoria TEXT NOT NULL DEFAULT '';
 ALTER TABLE monturas ADD COLUMN IF NOT EXISTS coleccion TEXT NOT NULL DEFAULT '';
 ALTER TABLE monturas ADD COLUMN IF NOT EXISTS temporada TEXT NOT NULL DEFAULT '';
@@ -13,9 +10,6 @@ ALTER TABLE monturas ADD COLUMN IF NOT EXISTS genero TEXT NOT NULL DEFAULT '';
 CREATE INDEX IF NOT EXISTS idx_monturas_estado_comercial ON monturas(estado_comercial);
 CREATE INDEX IF NOT EXISTS idx_monturas_categoria ON monturas(categoria);
 
--- ============================================================
--- 2. ALTER montura_movimientos — 3 new audit fields
--- ============================================================
 ALTER TABLE montura_movimientos ADD COLUMN IF NOT EXISTS user_id TEXT NOT NULL DEFAULT '';
 ALTER TABLE montura_movimientos ADD COLUMN IF NOT EXISTS costo_unitario DOUBLE PRECISION NOT NULL DEFAULT 0;
 ALTER TABLE montura_movimientos ADD COLUMN IF NOT EXISTS tipo_documento TEXT NOT NULL DEFAULT '';
@@ -23,11 +17,8 @@ ALTER TABLE montura_movimientos ADD COLUMN IF NOT EXISTS tipo_documento TEXT NOT
 CREATE UNIQUE INDEX IF NOT EXISTS idx_movimientos_conflict
   ON montura_movimientos(referencia_id, tipo, montura_id);
 
--- ============================================================
--- 3. CREATE TABLE proveedores
--- ============================================================
 CREATE TABLE IF NOT EXISTS proveedores (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  id TEXT PRIMARY KEY,
   nombre TEXT NOT NULL,
   ruc TEXT NOT NULL,
   telefono TEXT NOT NULL DEFAULT '',
@@ -59,11 +50,8 @@ CREATE POLICY "proveedores_delete"
   ON proveedores FOR DELETE
   USING (optica_id = (auth.jwt() ->> 'optica_id')::text);
 
--- ============================================================
--- 4. CREATE TABLE montura_proveedor
--- ============================================================
 CREATE TABLE IF NOT EXISTS montura_proveedor (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  id TEXT PRIMARY KEY,
   montura_id TEXT NOT NULL REFERENCES monturas(id) ON DELETE CASCADE,
   proveedor_id TEXT NOT NULL REFERENCES proveedores(id) ON DELETE CASCADE,
   costo_proveedor DOUBLE PRECISION NOT NULL DEFAULT 0,
@@ -106,11 +94,8 @@ CREATE POLICY "Users can delete montura_proveedor for their optica"
     )
   );
 
--- ============================================================
--- 5. CREATE TABLE categorias_montura
--- ============================================================
 CREATE TABLE IF NOT EXISTS categorias_montura (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  id TEXT PRIMARY KEY,
   nombre TEXT NOT NULL,
   descripcion TEXT NOT NULL DEFAULT '',
   optica_id TEXT NOT NULL REFERENCES opticas(id),
@@ -135,11 +120,8 @@ CREATE POLICY "Users can delete categorias_montura for their optica"
   ON categorias_montura FOR DELETE
   USING (optica_id = (auth.jwt() ->> 'optica_id')::text);
 
--- ============================================================
--- 6. CREATE TABLE ordenes_compra
--- ============================================================
 CREATE TABLE IF NOT EXISTS ordenes_compra (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  id TEXT PRIMARY KEY,
   numero TEXT NOT NULL,
   proveedor_id TEXT NOT NULL REFERENCES proveedores(id),
   fecha DATE NOT NULL,
@@ -171,11 +153,8 @@ CREATE POLICY "Users can delete ordenes_compra for their optica"
   ON ordenes_compra FOR DELETE
   USING (optica_id = (auth.jwt() ->> 'optica_id')::text);
 
--- ============================================================
--- 7. CREATE TABLE orden_compra_items
--- ============================================================
 CREATE TABLE IF NOT EXISTS orden_compra_items (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  id TEXT PRIMARY KEY,
   orden_id TEXT NOT NULL REFERENCES ordenes_compra(id) ON DELETE CASCADE,
   montura_id TEXT NOT NULL REFERENCES monturas(id),
   cantidad INTEGER NOT NULL,
@@ -217,11 +196,8 @@ CREATE POLICY "Users can delete orden_compra_items for their optica"
     )
   );
 
--- ============================================================
--- 8. CREATE TABLE inventario_fisico
--- ============================================================
 CREATE TABLE IF NOT EXISTS inventario_fisico (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  id TEXT PRIMARY KEY,
   fecha DATE NOT NULL DEFAULT CURRENT_DATE,
   estado TEXT NOT NULL DEFAULT 'EN_PROGRESO',
   optica_id TEXT NOT NULL REFERENCES opticas(id),
@@ -247,11 +223,8 @@ CREATE POLICY "Users can delete inventario_fisico for their optica"
   ON inventario_fisico FOR DELETE
   USING (optica_id = (auth.jwt() ->> 'optica_id')::text);
 
--- ============================================================
--- 9. CREATE TABLE inventario_fisico_detalle
--- ============================================================
 CREATE TABLE IF NOT EXISTS inventario_fisico_detalle (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  id TEXT PRIMARY KEY,
   inventario_id TEXT NOT NULL REFERENCES inventario_fisico(id) ON DELETE CASCADE,
   montura_id TEXT NOT NULL REFERENCES monturas(id),
   stock_sistema INTEGER NOT NULL,
