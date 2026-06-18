@@ -89,6 +89,7 @@ class CierreCajaViewModelTest {
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
 
         viewModel = CierreCajaViewModel(repository, sessionManager)
+        viewModel.setFecha(today)
         testDispatcher.scheduler.advanceUntilIdle()
 
         assertEquals(150.0, viewModel.uiState.value.ventasHoy, 0.001)
@@ -113,6 +114,7 @@ class CierreCajaViewModelTest {
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
 
         viewModel = CierreCajaViewModel(repository, sessionManager)
+        viewModel.setFecha(today)
         testDispatcher.scheduler.advanceUntilIdle()
 
         assertEquals(75.0, viewModel.uiState.value.cobrosAtrasados, 0.001)
@@ -135,6 +137,7 @@ class CierreCajaViewModelTest {
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
 
         viewModel = CierreCajaViewModel(repository, sessionManager)
+        viewModel.setFecha(today)
         testDispatcher.scheduler.advanceUntilIdle()
 
         assertEquals(150.0, viewModel.uiState.value.saldoPendiente, 0.001)
@@ -221,6 +224,7 @@ class CierreCajaViewModelTest {
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
 
         viewModel = CierreCajaViewModel(repository, sessionManager)
+        viewModel.setFecha(today)
         testDispatcher.scheduler.advanceUntilIdle()
 
         val state = viewModel.uiState.value

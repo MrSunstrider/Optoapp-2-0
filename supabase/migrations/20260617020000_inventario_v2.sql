@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS proveedores (
   direccion TEXT NOT NULL DEFAULT '',
   contacto TEXT NOT NULL DEFAULT '',
   activo BOOLEAN NOT NULL DEFAULT true,
-  optica_id UUID NOT NULL REFERENCES opticas(id),
+  optica_id TEXT NOT NULL REFERENCES opticas(id),
   updated_at TIMESTAMPTZ DEFAULT now(),
   updated_by TEXT,
   UNIQUE(ruc, optica_id)
@@ -43,29 +43,29 @@ CREATE TABLE IF NOT EXISTS proveedores (
 
 ALTER TABLE proveedores ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Users can view proveedores for their optica"
+CREATE POLICY "proveedores_select"
   ON proveedores FOR SELECT
-  USING (optica_id = (auth.jwt() ->> 'optica_id')::uuid);
+  USING (optica_id = (auth.jwt() ->> 'optica_id')::text);
 
-CREATE POLICY "Users can insert proveedores for their optica"
+CREATE POLICY "proveedores_insert"
   ON proveedores FOR INSERT
-  WITH CHECK (optica_id = (auth.jwt() ->> 'optica_id')::uuid);
+  WITH CHECK (optica_id = (auth.jwt() ->> 'optica_id')::text);
 
-CREATE POLICY "Users can update proveedores for their optica"
+CREATE POLICY "proveedores_update"
   ON proveedores FOR UPDATE
-  USING (optica_id = (auth.jwt() ->> 'optica_id')::uuid);
+  USING (optica_id = (auth.jwt() ->> 'optica_id')::text);
 
-CREATE POLICY "Users can delete proveedores for their optica"
+CREATE POLICY "proveedores_delete"
   ON proveedores FOR DELETE
-  USING (optica_id = (auth.jwt() ->> 'optica_id')::uuid);
+  USING (optica_id = (auth.jwt() ->> 'optica_id')::text);
 
 -- ============================================================
 -- 4. CREATE TABLE montura_proveedor
 -- ============================================================
 CREATE TABLE IF NOT EXISTS montura_proveedor (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  montura_id UUID NOT NULL REFERENCES monturas(id) ON DELETE CASCADE,
-  proveedor_id UUID NOT NULL REFERENCES proveedores(id) ON DELETE CASCADE,
+  montura_id TEXT NOT NULL REFERENCES monturas(id) ON DELETE CASCADE,
+  proveedor_id TEXT NOT NULL REFERENCES proveedores(id) ON DELETE CASCADE,
   costo_proveedor DOUBLE PRECISION NOT NULL DEFAULT 0,
   precio_sugerido DOUBLE PRECISION NOT NULL DEFAULT 0,
   activo BOOLEAN NOT NULL DEFAULT true,
@@ -78,7 +78,7 @@ CREATE POLICY "Users can view montura_proveedor for their optica"
   ON montura_proveedor FOR SELECT
   USING (
     montura_id IN (
-      SELECT id FROM monturas WHERE optica_id = (auth.jwt() ->> 'optica_id')::uuid
+      SELECT id FROM monturas WHERE optica_id = (auth.jwt() ->> 'optica_id')::text
     )
   );
 
@@ -86,7 +86,7 @@ CREATE POLICY "Users can insert montura_proveedor for their optica"
   ON montura_proveedor FOR INSERT
   WITH CHECK (
     montura_id IN (
-      SELECT id FROM monturas WHERE optica_id = (auth.jwt() ->> 'optica_id')::uuid
+      SELECT id FROM monturas WHERE optica_id = (auth.jwt() ->> 'optica_id')::text
     )
   );
 
@@ -94,7 +94,7 @@ CREATE POLICY "Users can update montura_proveedor for their optica"
   ON montura_proveedor FOR UPDATE
   USING (
     montura_id IN (
-      SELECT id FROM monturas WHERE optica_id = (auth.jwt() ->> 'optica_id')::uuid
+      SELECT id FROM monturas WHERE optica_id = (auth.jwt() ->> 'optica_id')::text
     )
   );
 
@@ -102,7 +102,7 @@ CREATE POLICY "Users can delete montura_proveedor for their optica"
   ON montura_proveedor FOR DELETE
   USING (
     montura_id IN (
-      SELECT id FROM monturas WHERE optica_id = (auth.jwt() ->> 'optica_id')::uuid
+      SELECT id FROM monturas WHERE optica_id = (auth.jwt() ->> 'optica_id')::text
     )
   );
 
@@ -113,7 +113,7 @@ CREATE TABLE IF NOT EXISTS categorias_montura (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   nombre TEXT NOT NULL,
   descripcion TEXT NOT NULL DEFAULT '',
-  optica_id UUID NOT NULL REFERENCES opticas(id),
+  optica_id TEXT NOT NULL REFERENCES opticas(id),
   UNIQUE(nombre, optica_id)
 );
 
@@ -121,19 +121,19 @@ ALTER TABLE categorias_montura ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Users can view categorias_montura for their optica"
   ON categorias_montura FOR SELECT
-  USING (optica_id = (auth.jwt() ->> 'optica_id')::uuid);
+  USING (optica_id = (auth.jwt() ->> 'optica_id')::text);
 
 CREATE POLICY "Users can insert categorias_montura for their optica"
   ON categorias_montura FOR INSERT
-  WITH CHECK (optica_id = (auth.jwt() ->> 'optica_id')::uuid);
+  WITH CHECK (optica_id = (auth.jwt() ->> 'optica_id')::text);
 
 CREATE POLICY "Users can update categorias_montura for their optica"
   ON categorias_montura FOR UPDATE
-  USING (optica_id = (auth.jwt() ->> 'optica_id')::uuid);
+  USING (optica_id = (auth.jwt() ->> 'optica_id')::text);
 
 CREATE POLICY "Users can delete categorias_montura for their optica"
   ON categorias_montura FOR DELETE
-  USING (optica_id = (auth.jwt() ->> 'optica_id')::uuid);
+  USING (optica_id = (auth.jwt() ->> 'optica_id')::text);
 
 -- ============================================================
 -- 6. CREATE TABLE ordenes_compra
@@ -141,11 +141,11 @@ CREATE POLICY "Users can delete categorias_montura for their optica"
 CREATE TABLE IF NOT EXISTS ordenes_compra (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   numero TEXT NOT NULL,
-  proveedor_id UUID NOT NULL REFERENCES proveedores(id),
+  proveedor_id TEXT NOT NULL REFERENCES proveedores(id),
   fecha DATE NOT NULL,
   estado TEXT NOT NULL DEFAULT 'PENDIENTE',
   total DOUBLE PRECISION NOT NULL DEFAULT 0,
-  optica_id UUID NOT NULL REFERENCES opticas(id),
+  optica_id TEXT NOT NULL REFERENCES opticas(id),
   updated_at TIMESTAMPTZ DEFAULT now(),
   updated_by TEXT
 );
@@ -157,27 +157,27 @@ ALTER TABLE ordenes_compra ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Users can view ordenes_compra for their optica"
   ON ordenes_compra FOR SELECT
-  USING (optica_id = (auth.jwt() ->> 'optica_id')::uuid);
+  USING (optica_id = (auth.jwt() ->> 'optica_id')::text);
 
 CREATE POLICY "Users can insert ordenes_compra for their optica"
   ON ordenes_compra FOR INSERT
-  WITH CHECK (optica_id = (auth.jwt() ->> 'optica_id')::uuid);
+  WITH CHECK (optica_id = (auth.jwt() ->> 'optica_id')::text);
 
 CREATE POLICY "Users can update ordenes_compra for their optica"
   ON ordenes_compra FOR UPDATE
-  USING (optica_id = (auth.jwt() ->> 'optica_id')::uuid);
+  USING (optica_id = (auth.jwt() ->> 'optica_id')::text);
 
 CREATE POLICY "Users can delete ordenes_compra for their optica"
   ON ordenes_compra FOR DELETE
-  USING (optica_id = (auth.jwt() ->> 'optica_id')::uuid);
+  USING (optica_id = (auth.jwt() ->> 'optica_id')::text);
 
 -- ============================================================
 -- 7. CREATE TABLE orden_compra_items
 -- ============================================================
 CREATE TABLE IF NOT EXISTS orden_compra_items (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  orden_id UUID NOT NULL REFERENCES ordenes_compra(id) ON DELETE CASCADE,
-  montura_id UUID NOT NULL REFERENCES monturas(id),
+  orden_id TEXT NOT NULL REFERENCES ordenes_compra(id) ON DELETE CASCADE,
+  montura_id TEXT NOT NULL REFERENCES monturas(id),
   cantidad INTEGER NOT NULL,
   costo_unitario DOUBLE PRECISION NOT NULL DEFAULT 0,
   recibido INTEGER NOT NULL DEFAULT 0
@@ -189,7 +189,7 @@ CREATE POLICY "Users can view orden_compra_items for their optica"
   ON orden_compra_items FOR SELECT
   USING (
     orden_id IN (
-      SELECT id FROM ordenes_compra WHERE optica_id = (auth.jwt() ->> 'optica_id')::uuid
+      SELECT id FROM ordenes_compra WHERE optica_id = (auth.jwt() ->> 'optica_id')::text
     )
   );
 
@@ -197,7 +197,7 @@ CREATE POLICY "Users can insert orden_compra_items for their optica"
   ON orden_compra_items FOR INSERT
   WITH CHECK (
     orden_id IN (
-      SELECT id FROM ordenes_compra WHERE optica_id = (auth.jwt() ->> 'optica_id')::uuid
+      SELECT id FROM ordenes_compra WHERE optica_id = (auth.jwt() ->> 'optica_id')::text
     )
   );
 
@@ -205,7 +205,7 @@ CREATE POLICY "Users can update orden_compra_items for their optica"
   ON orden_compra_items FOR UPDATE
   USING (
     orden_id IN (
-      SELECT id FROM ordenes_compra WHERE optica_id = (auth.jwt() ->> 'optica_id')::uuid
+      SELECT id FROM ordenes_compra WHERE optica_id = (auth.jwt() ->> 'optica_id')::text
     )
   );
 
@@ -213,7 +213,7 @@ CREATE POLICY "Users can delete orden_compra_items for their optica"
   ON orden_compra_items FOR DELETE
   USING (
     orden_id IN (
-      SELECT id FROM ordenes_compra WHERE optica_id = (auth.jwt() ->> 'optica_id')::uuid
+      SELECT id FROM ordenes_compra WHERE optica_id = (auth.jwt() ->> 'optica_id')::text
     )
   );
 
@@ -224,7 +224,7 @@ CREATE TABLE IF NOT EXISTS inventario_fisico (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   fecha DATE NOT NULL DEFAULT CURRENT_DATE,
   estado TEXT NOT NULL DEFAULT 'EN_PROGRESO',
-  optica_id UUID NOT NULL REFERENCES opticas(id),
+  optica_id TEXT NOT NULL REFERENCES opticas(id),
   user_id TEXT NOT NULL,
   notas TEXT NOT NULL DEFAULT ''
 );
@@ -233,27 +233,27 @@ ALTER TABLE inventario_fisico ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Users can view inventario_fisico for their optica"
   ON inventario_fisico FOR SELECT
-  USING (optica_id = (auth.jwt() ->> 'optica_id')::uuid);
+  USING (optica_id = (auth.jwt() ->> 'optica_id')::text);
 
 CREATE POLICY "Users can insert inventario_fisico for their optica"
   ON inventario_fisico FOR INSERT
-  WITH CHECK (optica_id = (auth.jwt() ->> 'optica_id')::uuid);
+  WITH CHECK (optica_id = (auth.jwt() ->> 'optica_id')::text);
 
 CREATE POLICY "Users can update inventario_fisico for their optica"
   ON inventario_fisico FOR UPDATE
-  USING (optica_id = (auth.jwt() ->> 'optica_id')::uuid);
+  USING (optica_id = (auth.jwt() ->> 'optica_id')::text);
 
 CREATE POLICY "Users can delete inventario_fisico for their optica"
   ON inventario_fisico FOR DELETE
-  USING (optica_id = (auth.jwt() ->> 'optica_id')::uuid);
+  USING (optica_id = (auth.jwt() ->> 'optica_id')::text);
 
 -- ============================================================
 -- 9. CREATE TABLE inventario_fisico_detalle
 -- ============================================================
 CREATE TABLE IF NOT EXISTS inventario_fisico_detalle (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  inventario_id UUID NOT NULL REFERENCES inventario_fisico(id) ON DELETE CASCADE,
-  montura_id UUID NOT NULL REFERENCES monturas(id),
+  inventario_id TEXT NOT NULL REFERENCES inventario_fisico(id) ON DELETE CASCADE,
+  montura_id TEXT NOT NULL REFERENCES monturas(id),
   stock_sistema INTEGER NOT NULL,
   stock_contado INTEGER,
   diferencia INTEGER,
@@ -266,7 +266,7 @@ CREATE POLICY "Users can view inventario_fisico_detalle for their optica"
   ON inventario_fisico_detalle FOR SELECT
   USING (
     inventario_id IN (
-      SELECT id FROM inventario_fisico WHERE optica_id = (auth.jwt() ->> 'optica_id')::uuid
+      SELECT id FROM inventario_fisico WHERE optica_id = (auth.jwt() ->> 'optica_id')::text
     )
   );
 
@@ -274,7 +274,7 @@ CREATE POLICY "Users can insert inventario_fisico_detalle for their optica"
   ON inventario_fisico_detalle FOR INSERT
   WITH CHECK (
     inventario_id IN (
-      SELECT id FROM inventario_fisico WHERE optica_id = (auth.jwt() ->> 'optica_id')::uuid
+      SELECT id FROM inventario_fisico WHERE optica_id = (auth.jwt() ->> 'optica_id')::text
     )
   );
 
@@ -282,7 +282,7 @@ CREATE POLICY "Users can update inventario_fisico_detalle for their optica"
   ON inventario_fisico_detalle FOR UPDATE
   USING (
     inventario_id IN (
-      SELECT id FROM inventario_fisico WHERE optica_id = (auth.jwt() ->> 'optica_id')::uuid
+      SELECT id FROM inventario_fisico WHERE optica_id = (auth.jwt() ->> 'optica_id')::text
     )
   );
 
@@ -290,6 +290,6 @@ CREATE POLICY "Users can delete inventario_fisico_detalle for their optica"
   ON inventario_fisico_detalle FOR DELETE
   USING (
     inventario_id IN (
-      SELECT id FROM inventario_fisico WHERE optica_id = (auth.jwt() ->> 'optica_id')::uuid
+      SELECT id FROM inventario_fisico WHERE optica_id = (auth.jwt() ->> 'optica_id')::text
     )
   );
