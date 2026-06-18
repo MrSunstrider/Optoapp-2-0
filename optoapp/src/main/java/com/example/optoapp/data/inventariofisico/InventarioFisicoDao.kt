@@ -13,6 +13,9 @@ interface InventarioFisicoDao {
     @Query("SELECT * FROM inventario_fisico WHERE opticaId = :opticaId ORDER BY fecha DESC")
     fun getByOptica(opticaId: String): Flow<List<InventarioFisico>>
 
+    @Query("SELECT * FROM inventario_fisico WHERE opticaId = :opticaId")
+    suspend fun getListByOptica(opticaId: String): List<InventarioFisico>
+
     @Query("SELECT * FROM inventario_fisico WHERE opticaId = :opticaId AND estado = 'EN_PROGRESO'")
     suspend fun getActiveByOptica(opticaId: String): InventarioFisico?
 

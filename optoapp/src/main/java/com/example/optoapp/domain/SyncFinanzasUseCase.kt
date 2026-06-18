@@ -48,12 +48,18 @@ open class SyncFinanzasUseCase @Inject constructor(
             Log.d(TAG, "Finanzas: upload servicios_extra=$servUp")
             val pagosUp = if (skipUpload) 0 else uploadSyncCoordinator.uploadPagos(opticaId)
             Log.d(TAG, "Finanzas: upload pagos=$pagosUp")
+            if (!skipUpload) {
+                val arqueosUp = uploadSyncCoordinator.uploadArqueos(opticaId)
+                Log.d(TAG, "Finanzas: upload arqueo_caja=$arqueosUp")
+            }
 
             val dispDown: Int
             val itemsDown: Int
             val servDown: Int
             val pagosDown: Int
             if (downloadAfterUpload) {
+                val arqueosDown = downloadSyncCoordinator.downloadArqueos(opticaId)
+                Log.d(TAG, "Finanzas: download arqueo_caja=$arqueosDown")
                 dispDown = downloadSyncCoordinator.downloadDispensaciones(opticaId)
                 Log.d(TAG, "Finanzas: download dispensaciones=$dispDown")
                 itemsDown = downloadSyncCoordinator.downloadDispensacionItems(opticaId)

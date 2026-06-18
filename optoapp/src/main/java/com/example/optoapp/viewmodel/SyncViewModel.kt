@@ -24,8 +24,11 @@ import com.example.optoapp.util.SyncErrorSanitizer
 import com.example.optoapp.domain.SyncFinanzasUseCase
 import com.example.optoapp.domain.SyncHistorialUseCase
 import com.example.optoapp.domain.SyncInventarioUseCase
+import com.example.optoapp.domain.SyncInventoryKpisUseCase
 import com.example.optoapp.domain.SyncPacientesUseCase
 import com.example.optoapp.domain.SyncProveedoresUseCase
+import com.example.optoapp.domain.SyncOrdenesCompraUseCase
+import com.example.optoapp.domain.SyncInventarioFisicoUseCase
 import com.example.optoapp.domain.SyncSessionHelper
 import com.example.optoapp.sync.SyncGate
 import com.example.optoapp.sync.PostSaveSyncScheduler
@@ -63,6 +66,9 @@ class SyncViewModel @Inject constructor(
     private val syncFinanzasUseCase: SyncFinanzasUseCase,
     private val syncInventarioUseCase: SyncInventarioUseCase,
     private val syncProveedoresUseCase: SyncProveedoresUseCase,
+    private val syncOrdenesCompraUseCase: SyncOrdenesCompraUseCase,
+    private val syncInventarioFisicoUseCase: SyncInventarioFisicoUseCase,
+    private val syncInventoryKpisUseCase: SyncInventoryKpisUseCase,
     private val syncGate: SyncGate,
     private val conflictDao: ConflictDao,
     private val syncEntityStateDao: SyncEntityStateDao,
@@ -114,6 +120,12 @@ class SyncViewModel @Inject constructor(
                     syncFinanzasUseCase(opticaId, skipUpload = skipUpload, downloadAfterUpload = true)
                 "proveedor", "categoria_montura" ->
                     syncProveedoresUseCase(opticaId, skipUpload = skipUpload, downloadAfterUpload = true)
+                "orden_compra", "orden_compra_item" ->
+                    syncOrdenesCompraUseCase(opticaId, skipUpload = skipUpload, downloadAfterUpload = true)
+                "inventory_kpis" ->
+                    syncInventoryKpisUseCase(opticaId)
+                "inventario_fisico", "inventario_fisico_detalle" ->
+                    syncInventarioFisicoUseCase(opticaId, skipUpload = skipUpload, downloadAfterUpload = true)
                 "montura" -> syncInventarioUseCase(opticaId, skipUpload = skipUpload, downloadAfterUpload = true)
             }
         }
@@ -213,8 +225,17 @@ class SyncViewModel @Inject constructor(
                 val pv = syncProveedoresUseCase(opticaId, downloadAfterUpload = true, skipUpload = true)
                 if (pv is Resource.Error) { hasErrors = true; Log.w(TAG, "Full download (proveedores): ${pv.message}") }
 
+                val oc = syncOrdenesCompraUseCase(opticaId, downloadAfterUpload = true, skipUpload = true)
+                if (oc is Resource.Error) { hasErrors = true; Log.w(TAG, "Full download (ordenes_compra): ${oc.message}") }
+
+                val kpi = syncInventoryKpisUseCase(opticaId)
+                if (kpi is Resource.Error) { hasErrors = true; Log.w(TAG, "Full download (inventory_kpis): ${kpi.message}") }
+
                 val i = syncInventarioUseCase(opticaId, downloadAfterUpload = true, skipUpload = true)
                 if (i is Resource.Error) { hasErrors = true; Log.w(TAG, "Full download (inventario): ${i.message}") }
+
+                val ifx = syncInventarioFisicoUseCase(opticaId, downloadAfterUpload = true, skipUpload = true)
+                if (ifx is Resource.Error) { hasErrors = true; Log.w(TAG, "Full download (inventario_fisico): ${ifx.message}") }
             }
 
             if (hasErrors) {
@@ -272,8 +293,17 @@ class SyncViewModel @Inject constructor(
             val pv = syncProveedoresUseCase(opticaId, downloadAfterUpload = true)
             if (pv is Resource.Error) { hasErrors = true; Log.w(TAG, "Full sync (proveedores): ${pv.message}") }
 
+            val oc = syncOrdenesCompraUseCase(opticaId, downloadAfterUpload = true)
+            if (oc is Resource.Error) { hasErrors = true; Log.w(TAG, "Full sync (ordenes_compra): ${oc.message}") }
+
+            val kpi = syncInventoryKpisUseCase(opticaId)
+            if (kpi is Resource.Error) { hasErrors = true; Log.w(TAG, "Full sync (inventory_kpis): ${kpi.message}") }
+
             val i = syncInventarioUseCase(opticaId, downloadAfterUpload = true)
             if (i is Resource.Error) { hasErrors = true; Log.w(TAG, "Full sync (inventario): ${i.message}") }
+
+            val ifx = syncInventarioFisicoUseCase(opticaId, downloadAfterUpload = true)
+            if (ifx is Resource.Error) { hasErrors = true; Log.w(TAG, "Full sync (inventario_fisico): ${ifx.message}") }
         }
 
         if (hasErrors) {
@@ -340,11 +370,35 @@ class SyncViewModel @Inject constructor(
                     }
                     else -> {}
                 }
+                when (val oc = syncOrdenesCompraUseCase(opticaId, downloadAfterUpload = true)) {
+                    is Resource.Error -> {
+                        hasErrors = true
+                        Log.w(TAG, "Sync silenciosa (ordenes_compra): ${oc.message}")
+                        recordRemoteSyncTelemetry(opticaId, "error", "ordenes_compra", oc.message)
+                    }
+                    else -> {}
+                }
+                when (val kpi = syncInventoryKpisUseCase(opticaId)) {
+                    is Resource.Error -> {
+                        hasErrors = true
+                        Log.w(TAG, "Sync silenciosa (inventory_kpis): ${kpi.message}")
+                        recordRemoteSyncTelemetry(opticaId, "error", "inventory_kpis", kpi.message)
+                    }
+                    else -> {}
+                }
                 when (val i = syncInventarioUseCase(opticaId, downloadAfterUpload = true)) {
                     is Resource.Error -> {
                         hasErrors = true
                         Log.w(TAG, "Sync silenciosa (inventario): ${i.message}")
                         recordRemoteSyncTelemetry(opticaId, "error", "inventario", i.message)
+                    }
+                    else -> {}
+                }
+                when (val ifx = syncInventarioFisicoUseCase(opticaId, downloadAfterUpload = true)) {
+                    is Resource.Error -> {
+                        hasErrors = true
+                        Log.w(TAG, "Sync silenciosa (inventario_fisico): ${ifx.message}")
+                        recordRemoteSyncTelemetry(opticaId, "error", "inventario_fisico", ifx.message)
                     }
                     else -> {}
                 }

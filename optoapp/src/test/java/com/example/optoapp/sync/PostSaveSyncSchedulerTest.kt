@@ -36,11 +36,15 @@ class PostSaveSyncSchedulerTest {
         scheduler.scheduleHistorialSync("optica-1")
         scheduler.scheduleFinanzasSync("optica-1")
         scheduler.scheduleInventarioSync("optica-1")
+        scheduler.scheduleProveedoresSync("optica-1")
+        scheduler.scheduleOrdenCompraSync("optica-1")
 
         assertEquals("pacientes:optica-1", calls[0])
         assertEquals("historial:optica-1", calls[1])
         assertEquals("finanzas:optica-1", calls[2])
         assertEquals("inventario:optica-1", calls[3])
+        assertEquals("proveedores:optica-1", calls[4])
+        assertEquals("ordenes_compra:optica-1", calls[5])
     }
 
     @Test
@@ -77,8 +81,13 @@ class PostSaveSyncSchedulerTest {
         scheduler.scheduleHistorialSync("o1")
         scheduler.scheduleFinanzasSync("o1")
         scheduler.scheduleInventarioSync("o1")
+        scheduler.scheduleProveedoresSync("o1")
+        scheduler.scheduleOrdenCompraSync("o1")
 
-        assertEquals(listOf("pacientes", "historial", "finanzas", "inventario"), stages)
+        assertEquals(
+            listOf("pacientes", "historial", "finanzas", "inventario", "proveedores", "ordenes_compra"),
+            stages
+        )
     }
 
     @Test

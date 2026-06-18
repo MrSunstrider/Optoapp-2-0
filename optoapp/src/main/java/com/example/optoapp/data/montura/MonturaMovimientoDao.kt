@@ -17,4 +17,10 @@ interface MonturaMovimientoDao {
 
     @Query("SELECT * FROM montura_movimientos WHERE opticaId = :opticaId")
     suspend fun getMovimientosListByOptica(opticaId: String): List<MonturaMovimiento>
+
+    @Query("SELECT MAX(fecha) FROM montura_movimientos WHERE opticaId = :opticaId")
+    fun getLastMovementDate(opticaId: String): Flow<java.time.LocalDate?>
+
+    @Query("SELECT * FROM montura_movimientos WHERE opticaId = :opticaId AND fecha >= :since")
+    suspend fun getMovimientosDesde(opticaId: String, since: java.time.LocalDate): List<MonturaMovimiento>
 }
