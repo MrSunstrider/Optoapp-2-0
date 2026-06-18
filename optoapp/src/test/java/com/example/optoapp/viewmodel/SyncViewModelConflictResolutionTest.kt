@@ -18,7 +18,14 @@ import com.example.optoapp.domain.SyncFinanzasUseCase
 import com.example.optoapp.domain.SyncHistorialUseCase
 import com.example.optoapp.domain.SyncInventarioUseCase
 import com.example.optoapp.domain.SyncPacientesUseCase
-import com.example.optoapp.domain.observer.SupabaseObserver
+import com.example.optoapp.domain.SyncProveedoresUseCase
+import com.example.optoapp.domain.SyncOrdenesCompraUseCase
+import com.example.optoapp.domain.SyncInventoryKpisUseCase
+import com.example.optoapp.domain.SyncInventarioFisicoUseCase
+import com.example.optoapp.domain.ProveedoresSyncResult
+import com.example.optoapp.domain.OrdenesCompraSyncResult
+import com.example.optoapp.domain.InventarioFisicoSyncResult
+import com.example.optoapp.domain.observer.TableObserver
 import com.example.optoapp.subscription.SubscriptionManager
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import com.example.optoapp.sync.SyncGate
@@ -58,10 +65,11 @@ class SyncViewModelConflictResolutionTest {
     private lateinit var syncHistorialUseCase: SyncHistorialUseCase
     private lateinit var syncFinanzasUseCase: SyncFinanzasUseCase
     private lateinit var syncInventarioUseCase: SyncInventarioUseCase
+    private lateinit var syncProveedoresUseCase: SyncProveedoresUseCase
     private lateinit var syncGate: SyncGate
     private lateinit var conflictDao: ConflictDao
     private lateinit var syncEntityStateDao: SyncEntityStateDao
-    private lateinit var supabaseObserver: SupabaseObserver
+    private lateinit var supabaseObserver: TableObserver
     private lateinit var bgErrorCollector: BackgroundErrorCollector
     private lateinit var postSaveSyncScheduler: PostSaveSyncScheduler
 
@@ -101,6 +109,10 @@ class SyncViewModelConflictResolutionTest {
         syncHistorialUseCase = mockk(relaxed = true)
         syncFinanzasUseCase = mockk(relaxed = true)
         syncInventarioUseCase = mockk(relaxed = true)
+        syncProveedoresUseCase = mockk(relaxed = true)
+        val syncOrdenesCompraUseCase: SyncOrdenesCompraUseCase = mockk(relaxed = true)
+        val syncInventarioFisicoUseCase: SyncInventarioFisicoUseCase = mockk(relaxed = true)
+        val syncInventoryKpisUseCase: SyncInventoryKpisUseCase = mockk(relaxed = true)
         syncGate = SyncGate() // real SyncGate; its mutex is unlocked by default
         conflictDao = mockk(relaxed = true)
         syncEntityStateDao = mockk(relaxed = true)
@@ -117,6 +129,18 @@ class SyncViewModelConflictResolutionTest {
         )
         coEvery { syncInventarioUseCase(any(), any(), any()) } returns Resource.Success(
             InventarioSyncResult(uploadedMonturas = 0, uploadedMovimientos = 0, downloadedMonturas = 0, downloadedMovimientos = 0)
+        )
+        coEvery { syncProveedoresUseCase(any(), any(), any()) } returns Resource.Success(
+            ProveedoresSyncResult(0, 0, 0, 0)
+        )
+        coEvery { syncOrdenesCompraUseCase(any(), any(), any()) } returns Resource.Success(
+            OrdenesCompraSyncResult(0, 0, 0, 0)
+        )
+        coEvery { syncInventarioFisicoUseCase(any(), any(), any()) } returns Resource.Success(
+            InventarioFisicoSyncResult(0, 0, 0, 0)
+        )
+        coEvery { syncInventoryKpisUseCase(any()) } returns Resource.Success(
+            com.example.optoapp.domain.InventoryKpiSummary(0, 0, emptyList(), null)
         )
 
         coEvery { conflictDao.resolveConflict(any(), any()) } just Runs
@@ -135,6 +159,10 @@ class SyncViewModelConflictResolutionTest {
             syncHistorialUseCase = syncHistorialUseCase,
             syncFinanzasUseCase = syncFinanzasUseCase,
             syncInventarioUseCase = syncInventarioUseCase,
+            syncProveedoresUseCase = syncProveedoresUseCase,
+            syncOrdenesCompraUseCase = syncOrdenesCompraUseCase,
+            syncInventarioFisicoUseCase = syncInventarioFisicoUseCase,
+            syncInventoryKpisUseCase = syncInventoryKpisUseCase,
             syncGate = syncGate,
             conflictDao = conflictDao,
             syncEntityStateDao = syncEntityStateDao,

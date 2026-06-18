@@ -51,7 +51,6 @@ fun MainDrawerContent(
                 .fillMaxHeight()
                 .verticalScroll(rememberScrollState())
         ) {
-            // Header con logo y óptica
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -162,6 +161,26 @@ fun MainDrawerContent(
                 icon = { Icon(Icons.Default.Inventory2, contentDescription = null) },
                 modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
             )
+            NavigationDrawerItem(
+                label = { Text("Órdenes de Compra", fontWeight = FontWeight.SemiBold) },
+                selected = currentRoute == "ordenes_compra",
+                onClick = {
+                    scope.launch { drawerState.close() }
+                    navController.navigate("ordenes_compra")
+                },
+                icon = { Icon(Icons.Default.Receipt, contentDescription = null) },
+                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+            )
+            NavigationDrawerItem(
+                label = { Text("Inventario Físico", fontWeight = FontWeight.SemiBold) },
+                selected = currentRoute == "inventario_fisico",
+                onClick = {
+                    scope.launch { drawerState.close() }
+                    navController.navigate("inventario_fisico")
+                },
+                icon = { Icon(Icons.Default.Inventory, contentDescription = null) },
+                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+            )
 
             // Finanzas
             if (showCierreCaja || showBiYReportes) {
@@ -225,7 +244,6 @@ fun MainDrawerContent(
                 modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding).testTag(TestTags.NAV_DRAWER_CONFIGURACION)
             )
 
-            // Sync + Error handling
             val context = androidx.compose.ui.platform.LocalContext.current
 
             LaunchedEffect(syncState) {

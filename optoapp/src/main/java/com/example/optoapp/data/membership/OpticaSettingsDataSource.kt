@@ -5,13 +5,14 @@ import com.example.optoapp.data.OpticaDto
 import com.example.optoapp.data.OpticaFiscalPatch
 import com.example.optoapp.data.OpticaFiscalSettings
 import com.example.optoapp.data.OpticaHeaderSummary
-import com.example.optoapp.data.OpticaInsertDto
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import com.example.optoapp.data.OpticaLaboratorioPatch
 import com.example.optoapp.data.OpticaMembership
 import com.example.optoapp.data.OpticaPlanSettingsDto
 import com.example.optoapp.data.OpticaPlanUpdateDto
 import com.example.optoapp.data.PlanSettings
-import com.example.optoapp.data.UsuarioOpticaUpsertDto
+
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.postgrest
@@ -52,20 +53,17 @@ open class OpticaSettingsDataSource @Inject constructor(
         if (nombre.isBlank()) return Result.failure(IllegalArgumentException("Nombre de óptica requerido"))
         val opticaId = "opt_" + UUID.randomUUID().toString().replace("-", "").take(16)
         return try {
-            val dto = OpticaInsertDto(
-                id = opticaId, nombre = nombre,
-                plan = "free", planCode = "free", maxOpticas = 1,
-                maxPacientesPorOptica = 20, maxUsuariosPorOptica = 2,
-                planSource = "manual", planStatus = "active",
-                fiscalDocTipo = fiscalDocTipo.trim().uppercase(),
-                fiscalDocNumero = fiscalDocNumero.trim(),
-                razonSocial = razonSocial.trim(),
-                direccionFiscal = direccionFiscal.trim()
+            supabase.postgrest.rpc(
+                "create_optica_for_current_user",
+                buildJsonObject {
+                    put("p_optica_id", opticaId)
+                    put("p_nombre", nombre)
+                    put("p_fiscal_doc_tipo", fiscalDocTipo.trim().uppercase())
+                    put("p_fiscal_doc_numero", fiscalDocNumero.trim())
+                    put("p_razon_social", razonSocial.trim())
+                    put("p_direccion_fiscal", direccionFiscal.trim())
+                }
             )
-            supabase.postgrest[TABLE_OPTICAS].upsert(listOf(dto))
-            supabase.postgrest[TABLE_UO].upsert(listOf(
-                UsuarioOpticaUpsertDto(userId = uid, opticaId = opticaId, rol = "admin")
-            ))
             Result.success(OpticaMembership(opticaId = opticaId, nombre = nombre, rol = "admin"))
         } catch (e: CancellationException) {
             throw e

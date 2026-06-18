@@ -6,7 +6,9 @@ import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Pago
 import com.example.optoapp.data.SessionManager
+import com.example.optoapp.data.arqueo.ArqueoCaja
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -21,7 +23,8 @@ data class CierreCajaUiState(
     val ventasHoy: Double = 0.0,
     val cobrosAtrasados: Double = 0.0,
     val saldoPendiente: Double = 0.0,
-    val isLoading: Boolean = false
+    val isLoading: Boolean = false,
+    val arqueoForFecha: ArqueoCaja? = null
 )
 
 /** Resultado interno para combinar pagos + ventas + saldo pendiente. */
@@ -101,5 +104,26 @@ class CierreCajaViewModel @Inject constructor(
     fun getTotalesPorMetodo(): Map<String, Double> {
         return _uiState.value.pagos.groupBy { it.metodoPago }
             .mapValues { entry -> entry.value.sumOf { it.monto } }
+    }
+
+    // ─── Arqueo integration ───────────────────────────────────────────────
+
+    /**
+     * Returns a cold Flow<ArqueoCaja?> for the given date and optica.
+     * Delegates to OptoRepository.getArqueoByFecha backed by Room.
+     */
+    fun loadArqueoForDate(fecha: LocalDate, opticaId: String): Flow<ArqueoCaja?> =
+        repository.getArqueoByFecha(fecha, opticaId)
+
+    /**
+     * Starts collecting the arqueo for [fecha]/[opticaId] and mirrors it
+     * into [CierreCajaUiState.arqueoForFecha] reactively.
+     */
+    fun observeArqueoForDate(fecha: LocalDate, opticaId: String) {
+        viewModelScope.launch {
+            repository.getArqueoByFecha(fecha, opticaId).collect { arqueo ->
+                _uiState.update { it.copy(arqueoForFecha = arqueo) }
+            }
+        }
     }
 }

@@ -3,13 +3,13 @@ package com.example.optoapp.data.membership
 import android.util.Log
 import com.example.optoapp.data.OpticaMembership
 import com.example.optoapp.data.OpticaMemberRow
-import com.example.optoapp.data.UserProfileRow
 import com.example.optoapp.data.UsuarioOpticaDto
-import com.example.optoapp.data.UsuarioOpticaUpsertDto
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.CancellationException
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -76,20 +76,13 @@ class MembershipDataSource @Inject internal constructor(
         if (normalizedEmail.isBlank()) return Result.failure(IllegalArgumentException("Email requerido"))
         if (normalizedRole.isBlank()) return Result.failure(IllegalArgumentException("Rol requerido"))
         return try {
-            val user = supabase.postgrest[TABLE_USER_PROFILES]
-                .select { filter { eq("email", normalizedEmail) } }
-                .decodeList<UserProfileRow>()
-                .firstOrNull()
-                ?: return Result.failure(IllegalArgumentException("No existe una cuenta con ese email."))
-
-            supabase.postgrest[TABLE_UO].upsert(
-                listOf(
-                    UsuarioOpticaUpsertDto(
-                        userId = user.userId,
-                        opticaId = opticaId,
-                        rol = normalizedRole
-                    )
-                )
+            supabase.postgrest.rpc(
+                "assign_optica_role_by_email",
+                buildJsonObject {
+                    put("p_optica_id", opticaId)
+                    put("p_email", normalizedEmail)
+                    put("p_rol", normalizedRole)
+                }
             )
             Result.success(Unit)
         } catch (e: CancellationException) {
@@ -106,7 +99,6 @@ class MembershipDataSource @Inject internal constructor(
     companion object {
         private const val TAG = "MembershipDataSource"
         private const val TABLE_UO = "usuario_optica"
-        private const val TABLE_USER_PROFILES = "user_profiles"
         private const val TABLE_OPTICA_MEMBERS = "optica_members"
     }
 }

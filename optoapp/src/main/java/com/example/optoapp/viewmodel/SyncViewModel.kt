@@ -24,7 +24,11 @@ import com.example.optoapp.util.SyncErrorSanitizer
 import com.example.optoapp.domain.SyncFinanzasUseCase
 import com.example.optoapp.domain.SyncHistorialUseCase
 import com.example.optoapp.domain.SyncInventarioUseCase
+import com.example.optoapp.domain.SyncInventoryKpisUseCase
 import com.example.optoapp.domain.SyncPacientesUseCase
+import com.example.optoapp.domain.SyncProveedoresUseCase
+import com.example.optoapp.domain.SyncOrdenesCompraUseCase
+import com.example.optoapp.domain.SyncInventarioFisicoUseCase
 import com.example.optoapp.domain.SyncSessionHelper
 import com.example.optoapp.sync.SyncGate
 import com.example.optoapp.sync.PostSaveSyncScheduler
@@ -48,10 +52,6 @@ sealed class SyncState {
     data class Error(val message: String) : SyncState()
 }
 
-/**
- * Paso 5.1: SyncViewModel
- * Orquestador global de la sincronización de datos local <-> nube.
- */
 @HiltViewModel
 class SyncViewModel @Inject constructor(
     @param:ApplicationContext private val context: Context,
@@ -65,10 +65,14 @@ class SyncViewModel @Inject constructor(
     private val syncHistorialUseCase: SyncHistorialUseCase,
     private val syncFinanzasUseCase: SyncFinanzasUseCase,
     private val syncInventarioUseCase: SyncInventarioUseCase,
+    private val syncProveedoresUseCase: SyncProveedoresUseCase,
+    private val syncOrdenesCompraUseCase: SyncOrdenesCompraUseCase,
+    private val syncInventarioFisicoUseCase: SyncInventarioFisicoUseCase,
+    private val syncInventoryKpisUseCase: SyncInventoryKpisUseCase,
     private val syncGate: SyncGate,
     private val conflictDao: ConflictDao,
     private val syncEntityStateDao: SyncEntityStateDao,
-    private val supabaseObserver: com.example.optoapp.domain.observer.SupabaseObserver,
+    private val supabaseObserver: com.example.optoapp.domain.observer.TableObserver,
     private val bgErrorCollector: BackgroundErrorCollector,
     private val postSaveSyncScheduler: PostSaveSyncScheduler
 ) : ViewModel() {
@@ -83,14 +87,12 @@ class SyncViewModel @Inject constructor(
     private val _isSilentSyncing = MutableStateFlow(false)
     val isSilentSyncing: StateFlow<Boolean> = _isSilentSyncing.asStateFlow()
 
-    // ─── Estado de conflictos ──────────────────────────────────────────────
     private val _conflicts = MutableStateFlow<List<ConflictRecord>>(emptyList())
     val conflicts: StateFlow<List<ConflictRecord>> = _conflicts.asStateFlow()
 
     private val _conflictCount = MutableStateFlow(0)
     val conflictCount: StateFlow<Int> = _conflictCount.asStateFlow()
 
-    /** Carga la lista de conflictos desde la DB local. */
     fun refreshConflicts() {
         viewModelScope.launch {
             val opticaId = sessionManager.opticaId.first()
@@ -116,19 +118,19 @@ class SyncViewModel @Inject constructor(
                 "evaluacion" -> syncHistorialUseCase(opticaId, skipUpload = skipUpload, downloadAfterUpload = true)
                 "dispensacion", "servicio_extra", "pago" ->
                     syncFinanzasUseCase(opticaId, skipUpload = skipUpload, downloadAfterUpload = true)
+                "proveedor", "categoria_montura" ->
+                    syncProveedoresUseCase(opticaId, skipUpload = skipUpload, downloadAfterUpload = true)
+                "orden_compra", "orden_compra_item" ->
+                    syncOrdenesCompraUseCase(opticaId, skipUpload = skipUpload, downloadAfterUpload = true)
+                "inventory_kpis" ->
+                    syncInventoryKpisUseCase(opticaId)
+                "inventario_fisico", "inventario_fisico_detalle" ->
+                    syncInventarioFisicoUseCase(opticaId, skipUpload = skipUpload, downloadAfterUpload = true)
                 "montura" -> syncInventarioUseCase(opticaId, skipUpload = skipUpload, downloadAfterUpload = true)
             }
         }
     }
 
-    /**
-     * Resolves a conflict by keeping the local version:
-     * uploads the local entity first (skipUpload = false), then deletes the conflict record.
-     *
-     * REQ-A1: upload MUST happen before resolveConflict is called.
-     * REQ-A2: downloadAfterUpload = true ensures the server's updated_at is written back to Room.
-     * REQ-A3: uploading the local entity makes the server agree with local state — no new conflict.
-     */
     fun resolveKeepMine(entity: ConflictRecord) {
         viewModelScope.launch {
             val opticaId = sessionManager.opticaId.first()
@@ -144,7 +146,6 @@ class SyncViewModel @Inject constructor(
         }
     }
 
-    /** Resuelve un conflicto: baja la versión remota forzando descarga. */
     fun resolveAcceptTheirs(entity: ConflictRecord) {
         viewModelScope.launch {
             val opticaId = sessionManager.opticaId.first()
@@ -162,7 +163,6 @@ class SyncViewModel @Inject constructor(
         }
     }
 
-    /** Descarta un conflicto sin resolverlo (lo deja para después). */
     fun dismissConflict(entity: ConflictRecord) {
         viewModelScope.launch {
             val opticaId = sessionManager.opticaId.first()
@@ -172,12 +172,8 @@ class SyncViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Resolves ALL conflicts by accepting the cloud version and forcing a full re-download.
-     *
-     * RC-4: Both conflict_records AND sync_entity_state rows with status = 'conflicted'
-     * are cleared so that the next sync cycle does not re-detect stale conflicts.
-     */
+    // RC-4: Both conflict_records AND sync_entity_state rows with status = 'conflicted'
+    // are cleared so that the next sync cycle does not re-detect stale conflicts.
     fun acceptAllCloud() {
         viewModelScope.launch {
             val opticaId = sessionManager.opticaId.first()
@@ -190,14 +186,8 @@ class SyncViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Sincronización solo descarga (sin subir nada).
-     * Útil para resolver conflictos aceptando la versión de la nube,
-     * o para re-sincronizar un dispositivo desde cero.
-     *
-     * Silencia el PostSaveSyncScheduler para que las inserciones durante
-     * la descarga no disparen syncs post-guardado que regeneren conflictos.
-     */
+    // Silencia el PostSaveSyncScheduler para que las inserciones durante
+    // la descarga no disparen syncs post-guardado que regeneren conflictos.
     private suspend fun performFullDownload() {
         _syncState.value = SyncState.Loading
         if (!isNetworkAvailable()) {
@@ -218,7 +208,6 @@ class SyncViewModel @Inject constructor(
 
         val opticaId = sessionManager.opticaId.first()
 
-        // Cancelar syncs pendientes y suprimir nuevos durante la descarga
         postSaveSyncScheduler.cancelPending()
         postSaveSyncScheduler.suppressSync = true
         try {
@@ -233,8 +222,20 @@ class SyncViewModel @Inject constructor(
                 val f = syncFinanzasUseCase(opticaId, downloadAfterUpload = true, skipUpload = true)
                 if (f is Resource.Error) { hasErrors = true; Log.w(TAG, "Full download (finanzas): ${f.message}") }
 
+                val pv = syncProveedoresUseCase(opticaId, downloadAfterUpload = true, skipUpload = true)
+                if (pv is Resource.Error) { hasErrors = true; Log.w(TAG, "Full download (proveedores): ${pv.message}") }
+
+                val oc = syncOrdenesCompraUseCase(opticaId, downloadAfterUpload = true, skipUpload = true)
+                if (oc is Resource.Error) { hasErrors = true; Log.w(TAG, "Full download (ordenes_compra): ${oc.message}") }
+
+                val kpi = syncInventoryKpisUseCase(opticaId)
+                if (kpi is Resource.Error) { hasErrors = true; Log.w(TAG, "Full download (inventory_kpis): ${kpi.message}") }
+
                 val i = syncInventarioUseCase(opticaId, downloadAfterUpload = true, skipUpload = true)
                 if (i is Resource.Error) { hasErrors = true; Log.w(TAG, "Full download (inventario): ${i.message}") }
+
+                val ifx = syncInventarioFisicoUseCase(opticaId, downloadAfterUpload = true, skipUpload = true)
+                if (ifx is Resource.Error) { hasErrors = true; Log.w(TAG, "Full download (inventario_fisico): ${ifx.message}") }
             }
 
             if (hasErrors) {
@@ -253,15 +254,10 @@ class SyncViewModel @Inject constructor(
         }
     }
 
-    /** Vuelve el estado de UI de sync a inactivo (tras mensaje o cierre de diálogo). */
     fun clearSyncUiState() {
         _syncState.value = SyncState.Idle
     }
 
-    /**
-     * Dispara la sincronización manual completa (Bidireccional).
-     * Llama a los 4 UseCases secuencialmente, upload + download.
-     */
     fun performFullSync() = viewModelScope.launch {
         _syncState.value = SyncState.Loading
         if (!isNetworkAvailable()) {
@@ -285,7 +281,6 @@ class SyncViewModel @Inject constructor(
 
         var hasErrors = false
         syncGate.mutex.withLock {
-            // Ejecutar UseCases secuencialmente (orden: pacientes → historial → finanzas → inventario)
             val p = syncPacientesUseCase(opticaId, downloadAfterUpload = true)
             if (p is Resource.Error) { hasErrors = true; Log.w(TAG, "Full sync (pacientes): ${p.message}") }
 
@@ -295,8 +290,20 @@ class SyncViewModel @Inject constructor(
             val f = syncFinanzasUseCase(opticaId, downloadAfterUpload = true)
             if (f is Resource.Error) { hasErrors = true; Log.w(TAG, "Full sync (finanzas): ${f.message}") }
 
+            val pv = syncProveedoresUseCase(opticaId, downloadAfterUpload = true)
+            if (pv is Resource.Error) { hasErrors = true; Log.w(TAG, "Full sync (proveedores): ${pv.message}") }
+
+            val oc = syncOrdenesCompraUseCase(opticaId, downloadAfterUpload = true)
+            if (oc is Resource.Error) { hasErrors = true; Log.w(TAG, "Full sync (ordenes_compra): ${oc.message}") }
+
+            val kpi = syncInventoryKpisUseCase(opticaId)
+            if (kpi is Resource.Error) { hasErrors = true; Log.w(TAG, "Full sync (inventory_kpis): ${kpi.message}") }
+
             val i = syncInventarioUseCase(opticaId, downloadAfterUpload = true)
             if (i is Resource.Error) { hasErrors = true; Log.w(TAG, "Full sync (inventario): ${i.message}") }
+
+            val ifx = syncInventarioFisicoUseCase(opticaId, downloadAfterUpload = true)
+            if (ifx is Resource.Error) { hasErrors = true; Log.w(TAG, "Full sync (inventario_fisico): ${ifx.message}") }
         }
 
         if (hasErrors) {
@@ -312,10 +319,6 @@ class SyncViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Sincronización automática silenciosa (solo subida).
-     * No cambia el estado global de UI para no interrumpir al usuario.
-     */
     fun performSilentSync() = viewModelScope.launch {
         val contextCheck = ensureSyncContext()
         if (contextCheck != null) {
@@ -359,11 +362,43 @@ class SyncViewModel @Inject constructor(
                     }
                     else -> {}
                 }
+                when (val pv = syncProveedoresUseCase(opticaId, downloadAfterUpload = true)) {
+                    is Resource.Error -> {
+                        hasErrors = true
+                        Log.w(TAG, "Sync silenciosa (proveedores): ${pv.message}")
+                        recordRemoteSyncTelemetry(opticaId, "error", "proveedores", pv.message)
+                    }
+                    else -> {}
+                }
+                when (val oc = syncOrdenesCompraUseCase(opticaId, downloadAfterUpload = true)) {
+                    is Resource.Error -> {
+                        hasErrors = true
+                        Log.w(TAG, "Sync silenciosa (ordenes_compra): ${oc.message}")
+                        recordRemoteSyncTelemetry(opticaId, "error", "ordenes_compra", oc.message)
+                    }
+                    else -> {}
+                }
+                when (val kpi = syncInventoryKpisUseCase(opticaId)) {
+                    is Resource.Error -> {
+                        hasErrors = true
+                        Log.w(TAG, "Sync silenciosa (inventory_kpis): ${kpi.message}")
+                        recordRemoteSyncTelemetry(opticaId, "error", "inventory_kpis", kpi.message)
+                    }
+                    else -> {}
+                }
                 when (val i = syncInventarioUseCase(opticaId, downloadAfterUpload = true)) {
                     is Resource.Error -> {
                         hasErrors = true
                         Log.w(TAG, "Sync silenciosa (inventario): ${i.message}")
                         recordRemoteSyncTelemetry(opticaId, "error", "inventario", i.message)
+                    }
+                    else -> {}
+                }
+                when (val ifx = syncInventarioFisicoUseCase(opticaId, downloadAfterUpload = true)) {
+                    is Resource.Error -> {
+                        hasErrors = true
+                        Log.w(TAG, "Sync silenciosa (inventario_fisico): ${ifx.message}")
+                        recordRemoteSyncTelemetry(opticaId, "error", "inventario_fisico", ifx.message)
                     }
                     else -> {}
                 }
@@ -403,16 +438,11 @@ class SyncViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Ejemplo de uso del patrón Observer: Escucha cambios en la telemetría en tiempo real
-     * desde otros dispositivos para la misma óptica.
-     */
     fun observeRemoteTelemetry(opticaId: String) {
         viewModelScope.launch {
             supabaseObserver.observeTable("sync_telemetry_optica", opticaId)
-                .collect { action ->
-                    Log.d(TAG, "Cambio detectado en telemetría remota: $action")
-                    // Aquí se podría disparar una actualización de UI si otro dispositivo finalizó sync
+                .collect {
+                    Log.d(TAG, "Cambio detectado en telemetría remota")
                 }
         }
     }

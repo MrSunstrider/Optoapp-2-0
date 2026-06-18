@@ -8,6 +8,7 @@ import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.CancellationException
 import java.io.IOException
+import java.time.LocalDate
 import javax.inject.Inject
 
 /**
@@ -26,6 +27,7 @@ class DownloadSyncCoordinator @Inject constructor(
         private const val TABLE_DISPENSACION_ITEMS = "dispensacion_items"
         private const val TABLE_SERVICIOS = "servicios_extra"
         private const val TABLE_PAGOS = "pagos"
+        private const val TABLE_ARQUEO_CAJA = "arqueo_caja"
     }
 
     suspend fun downloadDispensacionItems(opticaId: String): Int {
@@ -120,5 +122,33 @@ class DownloadSyncCoordinator @Inject constructor(
             }
         }
         return remotos.size
+    }
+
+    suspend fun downloadArqueos(opticaId: String): Int {
+        return try {
+            val remoteArqueos = supabase.postgrest[TABLE_ARQUEO_CAJA]
+                .select { filter { eq("optica_id", opticaId) } }
+                .decodeList<ArqueoCajaRemota>()
+            remoteArqueos.forEach { remote ->
+                try {
+                    val local = repository.getArqueoByFechaSync(
+                        LocalDate.parse(remote.fecha), remote.opticaId
+                    )
+                    if (local == null || remote.updatedAt > local.updatedAt) {
+                        repository.upsertArqueoFromRemote(remote.toLocal())
+                    }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Log.w(TAG, "arqueo upsert failed for ${remote.id}", e)
+                }
+            }
+            remoteArqueos.size
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.w(TAG, "arqueo download failed", e)
+            0
+        }
     }
 }

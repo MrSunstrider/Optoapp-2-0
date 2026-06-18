@@ -10,6 +10,7 @@ import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.auth.ExternalAuthAction
 import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.postgrest.Postgrest
+import io.github.jan.supabase.realtime.Realtime
 import javax.inject.Singleton
 
 @Module
@@ -29,6 +30,7 @@ object SupabaseModule {
                 encodeDefaults = true
             })
             install(Postgrest)
+            install(Realtime)
             install(Auth) {
                 host = BuildConfig.SUPABASE_REDIRECT_HOST
                 scheme = BuildConfig.SUPABASE_REDIRECT_SCHEME
