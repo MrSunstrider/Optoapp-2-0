@@ -593,7 +593,8 @@ val MIGRATION_19_20 = object : Migration(19, 20) {
  */
 val MIGRATION_20_21 = object : Migration(20, 21) {
     override fun migrate(db: SupportSQLiteDatabase) {
-        // Limpiar tabla e índices de intentos fallidos previos (nombres incorrectos idx_*, DEFAULTs)
+        // Clean up failed attempts from pre-MIGRATION_20_21 (wrong index names, missing DEFAULTs)
+        // Column names use snake_case to match @ColumnInfo(name = "...") in DispensacionItemEntity
         db.execSQL("DROP INDEX IF EXISTS idx_dispensacion_items_dispensacion_id")
         db.execSQL("DROP INDEX IF EXISTS idx_dispensacion_items_optica_id")
         db.execSQL("DROP TABLE IF EXISTS dispensacion_items")
@@ -667,5 +668,61 @@ val MIGRATION_22_23 = object : Migration(22, 23) {
                 detectedAt INTEGER NOT NULL DEFAULT 0
             )
         """)
+    }
+}
+
+val MIGRATION_23_24 = object : Migration(23, 24) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        // Version bump only — no schema changes at this step.
+        // MIGRATION_24_25 handles all Sprint A schema changes.
+    }
+}
+
+val MIGRATION_24_25 = object : Migration(24, 25) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        // Catalog/commercial fields for categorised frame search and filtering
+        db.execSQL("ALTER TABLE monturas ADD COLUMN categoria TEXT NOT NULL DEFAULT ''")
+        db.execSQL("ALTER TABLE monturas ADD COLUMN coleccion TEXT NOT NULL DEFAULT ''")
+        db.execSQL("ALTER TABLE monturas ADD COLUMN temporada TEXT NOT NULL DEFAULT ''")
+        db.execSQL("ALTER TABLE monturas ADD COLUMN estadoComercial TEXT NOT NULL DEFAULT ''")
+        db.execSQL("ALTER TABLE monturas ADD COLUMN genero TEXT NOT NULL DEFAULT ''")
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_monturas_estadoComercial ON monturas(estadoComercial)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_monturas_categoria ON monturas(categoria)")
+
+        // Audit trail and composite-key conflict detection (referenciaId+tipo+monturaId)
+        db.execSQL("ALTER TABLE montura_movimientos ADD COLUMN userId TEXT NOT NULL DEFAULT ''")
+        db.execSQL("ALTER TABLE montura_movimientos ADD COLUMN costoUnitario REAL NOT NULL DEFAULT 0.0")
+        db.execSQL("ALTER TABLE montura_movimientos ADD COLUMN tipoDocumento TEXT NOT NULL DEFAULT ''")
+        db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_movimientos_conflict ON montura_movimientos(referenciaId, tipo, monturaId)")
+
+        // Supplier catalog with unique RUC per optica (shared across multiple frames)
+        db.execSQL("CREATE TABLE IF NOT EXISTS proveedores (id TEXT NOT NULL PRIMARY KEY, nombre TEXT NOT NULL, ruc TEXT NOT NULL, telefono TEXT NOT NULL DEFAULT '', email TEXT NOT NULL DEFAULT '', direccion TEXT NOT NULL DEFAULT '', contacto TEXT NOT NULL DEFAULT '', activo INTEGER NOT NULL DEFAULT 1, opticaId TEXT NOT NULL, updatedAt TEXT, updatedBy TEXT)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_proveedores_opticaId ON proveedores(opticaId)")
+        db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_proveedores_ruc_opticaId ON proveedores(ruc, opticaId)")
+
+        // Many-to-many link: each frame can be sourced from multiple suppliers
+        db.execSQL("CREATE TABLE IF NOT EXISTS montura_proveedor (id TEXT NOT NULL PRIMARY KEY, monturaId TEXT NOT NULL, proveedorId TEXT NOT NULL, costoProveedor REAL NOT NULL DEFAULT 0.0, precioSugerido REAL NOT NULL DEFAULT 0.0, activo INTEGER NOT NULL DEFAULT 1, FOREIGN KEY(monturaId) REFERENCES monturas(id) ON DELETE CASCADE, FOREIGN KEY(proveedorId) REFERENCES proveedores(id) ON DELETE CASCADE)")
+        db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_mp_montura_proveedor ON montura_proveedor(monturaId, proveedorId)")
+
+        // User-defined frame categories (e.g. SOL, RECETADOS, DEPORTIVOS)
+        db.execSQL("CREATE TABLE IF NOT EXISTS categorias_montura (id TEXT NOT NULL PRIMARY KEY, nombre TEXT NOT NULL, descripcion TEXT NOT NULL DEFAULT '', opticaId TEXT NOT NULL)")
+        db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_cat_nombre_opticaId ON categorias_montura(nombre, opticaId)")
+
+        // Purchase orders tracking supplier orders with multi-status lifecycle
+        db.execSQL("CREATE TABLE IF NOT EXISTS ordenes_compra (id TEXT NOT NULL PRIMARY KEY, numero TEXT NOT NULL, proveedorId TEXT NOT NULL, fecha TEXT NOT NULL, estado TEXT NOT NULL DEFAULT 'PENDIENTE', total REAL NOT NULL DEFAULT 0.0, opticaId TEXT NOT NULL, updatedAt TEXT, updatedBy TEXT, FOREIGN KEY(proveedorId) REFERENCES proveedores(id))")
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_oc_opticaId ON ordenes_compra(opticaId)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_oc_estado ON ordenes_compra(estado)")
+
+        // Line items for each purchase order (frame + quantity + unit cost)
+        db.execSQL("CREATE TABLE IF NOT EXISTS orden_compra_items (id TEXT NOT NULL PRIMARY KEY, ordenId TEXT NOT NULL, monturaId TEXT NOT NULL, cantidad INTEGER NOT NULL, costoUnitario REAL NOT NULL DEFAULT 0.0, recibido INTEGER NOT NULL DEFAULT 0, FOREIGN KEY(ordenId) REFERENCES ordenes_compra(id) ON DELETE CASCADE, FOREIGN KEY(monturaId) REFERENCES monturas(id))")
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_oci_ordenId ON orden_compra_items(ordenId)")
+
+        // Physical inventory count events per optica (cycle count reconciliation)
+        db.execSQL("CREATE TABLE IF NOT EXISTS inventario_fisico (id TEXT NOT NULL PRIMARY KEY, fecha TEXT NOT NULL, estado TEXT NOT NULL DEFAULT 'EN_PROGRESO', opticaId TEXT NOT NULL, userId TEXT NOT NULL, notas TEXT NOT NULL DEFAULT '', updatedAt TEXT)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_if_opticaId ON inventario_fisico(opticaId)")
+
+        // Per-frame counted quantities with system-vs-actual variance tracking
+        db.execSQL("CREATE TABLE IF NOT EXISTS inventario_fisico_detalle (id TEXT NOT NULL PRIMARY KEY, inventarioId TEXT NOT NULL, monturaId TEXT NOT NULL, stockSistema INTEGER NOT NULL, stockContado INTEGER, diferencia INTEGER, FOREIGN KEY(inventarioId) REFERENCES inventario_fisico(id) ON DELETE CASCADE, FOREIGN KEY(monturaId) REFERENCES monturas(id))")
+        db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_ifd_inventario_montura ON inventario_fisico_detalle(inventarioId, monturaId)")
     }
 }

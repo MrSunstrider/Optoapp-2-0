@@ -3,10 +3,16 @@ package com.example.optoapp.di
 import android.content.Context
 import com.example.optoapp.data.*
 import com.example.optoapp.data.backup.BackupRestoreCoordinator
+import com.example.optoapp.data.inventariofisico.InventarioFisicoDao
 import com.example.optoapp.data.montura.MonturaDao
 import com.example.optoapp.data.montura.MonturaInventoryCoordinator
 import com.example.optoapp.data.montura.MonturaMovimientoDao
+import com.example.optoapp.data.ordencompra.OrdenCompraDao
+import com.example.optoapp.data.ordencompra.OrdenCompraItemDao
 import com.example.optoapp.data.pago.PagoDao
+import com.example.optoapp.data.proveedor.CategoriaMonturaDao
+import com.example.optoapp.data.proveedor.MonturaProveedorDao
+import com.example.optoapp.data.proveedor.ProveedorDao
 import com.example.optoapp.data.servicio.ServicioExtraDao
 import com.example.optoapp.data.sync.SyncSnapshotCoordinator
 import com.example.optoapp.sync.PostSaveSyncScheduler
@@ -72,6 +78,24 @@ object DatabaseModule {
 
     @Provides
     fun provideConflictDao(database: OptoDatabase): ConflictDao = database.conflictDao()
+
+    @Provides
+    fun provideProveedorDao(database: OptoDatabase): ProveedorDao = database.proveedorDao()
+
+    @Provides
+    fun provideMonturaProveedorDao(database: OptoDatabase): MonturaProveedorDao = database.monturaProveedorDao()
+
+    @Provides
+    fun provideCategoriaMonturaDao(database: OptoDatabase): CategoriaMonturaDao = database.categoriaMonturaDao()
+
+    @Provides
+    fun provideOrdenCompraDao(database: OptoDatabase): OrdenCompraDao = database.ordenCompraDao()
+
+    @Provides
+    fun provideOrdenCompraItemDao(database: OptoDatabase): OrdenCompraItemDao = database.ordenCompraItemDao()
+
+    @Provides
+    fun provideInventarioFisicoDao(database: OptoDatabase): InventarioFisicoDao = database.inventarioFisicoDao()
 
     @Provides
     @Singleton

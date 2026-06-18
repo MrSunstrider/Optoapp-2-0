@@ -29,6 +29,10 @@ class OptoDatabaseMigrationTest {
         assertEquals(MIGRATION_18_19, OptoDatabase.MIGRATION_18_19)
         assertEquals(MIGRATION_19_20, OptoDatabase.MIGRATION_19_20)
         assertEquals(MIGRATION_20_21, OptoDatabase.MIGRATION_20_21)
+        assertEquals(MIGRATION_21_22, OptoDatabase.MIGRATION_21_22)
+        assertEquals(MIGRATION_22_23, OptoDatabase.MIGRATION_22_23)
+        assertEquals(MIGRATION_23_24, OptoDatabase.MIGRATION_23_24)
+        assertEquals(MIGRATION_24_25, OptoDatabase.MIGRATION_24_25)
     }
 
     @Test
@@ -36,7 +40,8 @@ class OptoDatabaseMigrationTest {
         val migrations = listOf(
             MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11,
             MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16,
-            MIGRATION_16_17, MIGRATION_17_18, MIGRATION_18_19, MIGRATION_19_20, MIGRATION_20_21
+            MIGRATION_16_17, MIGRATION_17_18, MIGRATION_18_19, MIGRATION_19_20, MIGRATION_20_21,
+            MIGRATION_21_22, MIGRATION_22_23, MIGRATION_23_24, MIGRATION_24_25
         )
 
         for (i in 0 until migrations.size - 1) {
@@ -49,41 +54,40 @@ class OptoDatabaseMigrationTest {
     }
 
     @Test
-    fun first_migration_starts_at_6_and_last_ends_at_21() {
+    fun first_migration_starts_at_6_and_last_ends_at_25() {
         assertEquals(6, MIGRATION_6_7.startVersion)
         assertEquals(7, MIGRATION_6_7.endVersion)
-        assertEquals(20, MIGRATION_20_21.startVersion)
-        assertEquals(21, MIGRATION_20_21.endVersion)
+        assertEquals(24, MIGRATION_24_25.startVersion)
+        assertEquals(25, MIGRATION_24_25.endVersion)
     }
 
     // ─── 3.0.2 — Schema version characterization ────────────────────────
     //
     // Room @Database has CLASS retention (not RUNTIME), so annotation
     // is not visible via reflection at runtime. These tests verify the
-    // expected version (21) as a documented constant matching the source:
-    //   @Database(entities = [...], version = 21) in OptoDatabase.kt
+    // expected version (25) as a documented constant matching the source:
+    //   @Database(entities = [...], version = 25) in OptoDatabase.kt
     // Changing this version triggers a Room migration — it MUST be preserved.
 
     @Test
-    fun databaseVersion_is21() {
-        // The last migration ends at version 21, which must match @Database(version = 21)
+    fun databaseVersion_is25() {
+        // The last migration ends at version 25, which must match @Database(version = 25)
         // in OptoDatabase.kt. If someone bumps @Database version without adding a migration,
         // this test catches the inconsistency.
-        val chainVersion = MIGRATION_20_21.endVersion
+        val chainVersion = MIGRATION_24_25.endVersion
         assertEquals(
-            "Room schema version must remain 21 — changing it triggers migration. " +
-                "Source: @Database(version = 21) in OptoDatabase.kt. " +
-                "MIGRATION_20_21.endVersion ($chainVersion) must match.",
-            21,
+            "Room schema version must remain 25 — changing it triggers migration. " +
+                "Source: @Database(version = 25) in OptoDatabase.kt. " +
+                "MIGRATION_24_25.endVersion ($chainVersion) must match.",
+            25,
             chainVersion
         )
     }
 
     @Test
     fun databaseVersion_migration_chain_ends_at_current_version() {
-        // The last migration ends at version 21 — this must match the @Database version
-        assertEquals(21, MIGRATION_20_21.endVersion)
-        assertEquals(MIGRATION_20_21.endVersion, MIGRATION_20_21.startVersion + 1)
+        assertEquals(25, MIGRATION_24_25.endVersion)
+        assertEquals(MIGRATION_24_25.endVersion, MIGRATION_24_25.startVersion + 1)
     }
 
     // ─── 3.0.3 — DAO accessibility via OptoDatabase abstract methods ───
@@ -101,7 +105,14 @@ class OptoDatabaseMigrationTest {
             "servicioExtraDao" to "ServicioExtraDao",
             "monturaDao" to "MonturaDao",
             "monturaMovimientoDao" to "MonturaMovimientoDao",
-            "syncEntityStateDao" to "SyncEntityStateDao"
+            "syncEntityStateDao" to "SyncEntityStateDao",
+            "conflictDao" to "ConflictDao",
+            "proveedorDao" to "ProveedorDao",
+            "monturaProveedorDao" to "MonturaProveedorDao",
+            "categoriaMonturaDao" to "CategoriaMonturaDao",
+            "ordenCompraDao" to "OrdenCompraDao",
+            "ordenCompraItemDao" to "OrdenCompraItemDao",
+            "inventarioFisicoDao" to "InventarioFisicoDao"
         )
 
         val abstractMethods = OptoDatabase::class.java.declaredMethods
