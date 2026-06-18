@@ -7,6 +7,7 @@ import kotlinx.coroutines.CancellationException
 import java.io.IOException
 import com.example.optoapp.di.ApplicationScope
 import com.example.optoapp.domain.SyncFinanzasUseCase
+import com.example.optoapp.domain.SyncProveedoresUseCase
 import com.example.optoapp.util.BackgroundErrorCollector
 import com.example.optoapp.domain.SyncHistorialUseCase
 import com.example.optoapp.domain.SyncInventarioUseCase
@@ -25,12 +26,9 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Ejecuta sync tras guardar en Room en un [CoroutineScope] de aplicación (no se cancela al salir de la pantalla).
- * Usa el mismo [SyncGate] que [com.example.optoapp.viewmodel.SyncViewModel] para no solapar upserts.
- *
- * Cuando [suppressSync] está en true, se saltea toda programación de sync.
- * Usado por [com.example.optoapp.viewmodel.SyncViewModel.performFullDownload]
- * para evitar que la descarga masiva dispare syncs post-guardado que regeneren conflictos.
+ * Uses ApplicationScope so sync survives screen teardown, and reuses SyncViewModel's
+ * [SyncGate] to prevent overlapping upserts. [suppressSync] is set by performFullDownload
+ * to avoid regenerating conflicts during bulk downloads.
  */
 @Singleton
 open class PostSaveSyncScheduler @Inject constructor(
@@ -41,6 +39,7 @@ open class PostSaveSyncScheduler @Inject constructor(
     private val syncHistorialUseCase: SyncHistorialUseCase? = null,
     private val syncFinanzasUseCase: SyncFinanzasUseCase? = null,
     private val syncInventarioUseCase: SyncInventarioUseCase? = null,
+    private val syncProveedoresUseCase: SyncProveedoresUseCase? = null,
     private val bgErrorCollector: BackgroundErrorCollector? = null
 ) {
     private val scheduleMutex = Mutex()
@@ -120,7 +119,6 @@ open class PostSaveSyncScheduler @Inject constructor(
             try {
                 syncGate.mutex.withLock {
                     if (!ensureSessionForPostSaveSync("historial")) return@withLock
-                    syncPacientesUseCase!!(opticaId)
                     when (val r = syncHistorialUseCase!!(opticaId)) {
                         is Resource.Error -> Log.w(TAG, "Sync historial post-guardado: ${r.message}")
                         else -> Log.d(TAG, "Sync historial post-guardado OK")
@@ -143,7 +141,6 @@ open class PostSaveSyncScheduler @Inject constructor(
             try {
                 syncGate.mutex.withLock {
                     if (!ensureSessionForPostSaveSync("finanzas")) return@withLock
-                    syncPacientesUseCase!!(opticaId)
                     when (val r = syncFinanzasUseCase!!(opticaId)) {
                         is Resource.Error -> Log.w(TAG, "Sync finanzas post-guardado: ${r.message}")
                         else -> Log.d(TAG, "Sync finanzas post-guardado OK")
@@ -177,6 +174,28 @@ open class PostSaveSyncScheduler @Inject constructor(
                 Log.e(TAG, "Error en red sync inventario post-guardado: ${e.message}", e)
             } catch (e: Exception) {
                 Log.e(TAG, "Error inesperado sync inventario post-guardado: ${e.message}", e)
+            }
+        }
+    }
+
+    open fun scheduleProveedoresSync(opticaId: String) {
+        if (suppressSync) return
+        scheduleDebounced(key = "proveedores:$opticaId") {
+            onBeforeSync?.invoke("proveedores")
+            try {
+                syncGate.mutex.withLock {
+                    if (!ensureSessionForPostSaveSync("proveedores")) return@withLock
+                    when (val r = syncProveedoresUseCase!!(opticaId)) {
+                        is Resource.Error -> Log.w(TAG, "Sync proveedores post-guardado: ${r.message}")
+                        else -> Log.d(TAG, "Sync proveedores post-guardado OK")
+                    }
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: IOException) {
+                Log.e(TAG, "Error en red sync proveedores post-guardado: ${e.message}", e)
+            } catch (e: Exception) {
+                Log.e(TAG, "Error inesperado sync proveedores post-guardado: ${e.message}", e)
             }
         }
     }

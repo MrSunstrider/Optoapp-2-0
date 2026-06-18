@@ -16,6 +16,9 @@ interface MonturaProveedorDao {
     @Query("SELECT * FROM montura_proveedor WHERE proveedorId = :proveedorId")
     suspend fun getByProveedor(proveedorId: String): List<MonturaProveedor>
 
+    @Query("SELECT * FROM montura_proveedor WHERE id = :id")
+    suspend fun getById(id: String): MonturaProveedor?
+
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insert(mp: MonturaProveedor)
 

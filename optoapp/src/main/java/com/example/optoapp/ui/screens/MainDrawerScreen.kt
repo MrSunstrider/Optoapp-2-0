@@ -35,7 +35,6 @@ fun MainDrawerScreen(
     val scope = rememberCoroutineScope()
     val navController = rememberNavController()
     
-    // Obtenemos el ViewModel de sincronización a nivel de pantalla
     val syncViewModel: com.example.optoapp.viewmodel.SyncViewModel = hiltViewModel()
     val opticaHeaderViewModel: OpticaHeaderViewModel = hiltViewModel()
     val syncState by syncViewModel.syncState.collectAsState()
@@ -83,7 +82,6 @@ fun MainDrawerScreen(
             color = MaterialTheme.colorScheme.background
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
-            // Indicador discreto de sincronización de fondo
             if (isSilentSyncing) {
                 LinearProgressIndicator(
                     modifier = Modifier.fillMaxWidth().height(2.dp),
@@ -190,6 +188,7 @@ fun MainDrawerScreen(
                     ServiciosExtraScreen(navController, drawerState) 
                 }
                 composable("monturas") { MonturasScreen(navController) }
+                composable("proveedores") { ProveedoresScreen(navController) }
                 composable("operacion_hoy") { OperacionHoyScreen(navController) }
                 composable("nuevo_servicio") {
                     NuevoServicioScreen(navController, pacienteId = null)

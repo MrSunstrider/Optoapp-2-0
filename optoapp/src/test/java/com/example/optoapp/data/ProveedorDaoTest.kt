@@ -104,4 +104,42 @@ class ProveedorDaoTest {
         assertEquals("123", retrieved.telefono)
         assertEquals(false, retrieved.activo)
     }
+
+    @Test
+    fun getActivosByOptica_ordersByNombreAsc() = runBlocking {
+        val dao = db.proveedorDao()
+        dao.insert(Proveedor(id = "p1", nombre = "ZZ Top Optics", ruc = "111", opticaId = "o1"))
+        dao.insert(Proveedor(id = "p2", nombre = "Alpha Vision", ruc = "222", opticaId = "o1"))
+        dao.insert(Proveedor(id = "p3", nombre = "Beta Optical", ruc = "333", opticaId = "o1"))
+
+        val activos = dao.getActivosByOptica("o1").first()
+        assertEquals(3, activos.size)
+        assertEquals("Alpha Vision", activos[0].nombre)
+        assertEquals("Beta Optical", activos[1].nombre)
+        assertEquals("ZZ Top Optics", activos[2].nombre)
+    }
+
+    @Test
+    fun softDelete_setsActivoFalseAndExcludesFromActivos() = runBlocking {
+        val dao = db.proveedorDao()
+        dao.insert(Proveedor(id = "p1", nombre = "Active Corp", ruc = "111", opticaId = "o1"))
+        dao.insert(Proveedor(id = "p2", nombre = "To Deactivate", ruc = "222", opticaId = "o1"))
+
+        val before = dao.getActivosByOptica("o1").first()
+        assertEquals(2, before.size)
+
+        val p2 = dao.getById("p2")!!
+        dao.update(p2.copy(activo = false))
+
+        val after = dao.getActivosByOptica("o1").first()
+        assertEquals(1, after.size)
+        assertEquals("Active Corp", after[0].nombre)
+
+        val retrieved = dao.getById("p2")
+        assertNotNull(retrieved)
+        assertEquals(false, retrieved!!.activo)
+
+        val allList = dao.getListByOptica("o1")
+        assertEquals(2, allList.size)
+    }
 }

@@ -18,6 +18,8 @@ import com.example.optoapp.domain.SyncFinanzasUseCase
 import com.example.optoapp.domain.SyncHistorialUseCase
 import com.example.optoapp.domain.SyncInventarioUseCase
 import com.example.optoapp.domain.SyncPacientesUseCase
+import com.example.optoapp.domain.SyncProveedoresUseCase
+import com.example.optoapp.domain.ProveedoresSyncResult
 import com.example.optoapp.domain.observer.TableObserver
 import com.example.optoapp.subscription.SubscriptionManager
 import com.example.optoapp.sync.PostSaveSyncScheduler
@@ -58,6 +60,7 @@ class SyncViewModelConflictResolutionTest {
     private lateinit var syncHistorialUseCase: SyncHistorialUseCase
     private lateinit var syncFinanzasUseCase: SyncFinanzasUseCase
     private lateinit var syncInventarioUseCase: SyncInventarioUseCase
+    private lateinit var syncProveedoresUseCase: SyncProveedoresUseCase
     private lateinit var syncGate: SyncGate
     private lateinit var conflictDao: ConflictDao
     private lateinit var syncEntityStateDao: SyncEntityStateDao
@@ -101,6 +104,7 @@ class SyncViewModelConflictResolutionTest {
         syncHistorialUseCase = mockk(relaxed = true)
         syncFinanzasUseCase = mockk(relaxed = true)
         syncInventarioUseCase = mockk(relaxed = true)
+        syncProveedoresUseCase = mockk(relaxed = true)
         syncGate = SyncGate() // real SyncGate; its mutex is unlocked by default
         conflictDao = mockk(relaxed = true)
         syncEntityStateDao = mockk(relaxed = true)
@@ -117,6 +121,9 @@ class SyncViewModelConflictResolutionTest {
         )
         coEvery { syncInventarioUseCase(any(), any(), any()) } returns Resource.Success(
             InventarioSyncResult(uploadedMonturas = 0, uploadedMovimientos = 0, downloadedMonturas = 0, downloadedMovimientos = 0)
+        )
+        coEvery { syncProveedoresUseCase(any(), any(), any()) } returns Resource.Success(
+            ProveedoresSyncResult(0, 0, 0, 0)
         )
 
         coEvery { conflictDao.resolveConflict(any(), any()) } just Runs
@@ -135,6 +142,7 @@ class SyncViewModelConflictResolutionTest {
             syncHistorialUseCase = syncHistorialUseCase,
             syncFinanzasUseCase = syncFinanzasUseCase,
             syncInventarioUseCase = syncInventarioUseCase,
+            syncProveedoresUseCase = syncProveedoresUseCase,
             syncGate = syncGate,
             conflictDao = conflictDao,
             syncEntityStateDao = syncEntityStateDao,

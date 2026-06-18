@@ -26,4 +26,28 @@ interface MonturaDao {
 
     @Query("SELECT * FROM monturas WHERE opticaId = :opticaId")
     suspend fun getMonturasListByOptica(opticaId: String): List<Montura>
+
+    @Query("""
+        SELECT * FROM monturas
+        WHERE opticaId = :opticaId
+          AND activo = 1
+          AND (:marca IS NULL OR marca LIKE '%' || :marca || '%')
+          AND (:material IS NULL OR materialMontura LIKE '%' || :material || '%')
+          AND (:categoria IS NULL OR categoria = :categoria)
+          AND (:precioMin IS NULL OR precio >= :precioMin)
+          AND (:precioMax IS NULL OR precio <= :precioMax)
+          AND (CASE WHEN :stockBajo = 0 THEN 1
+                    WHEN :stockBajo = 1 AND stockActual <= stockMinimo THEN 1
+                    ELSE 0 END)
+        ORDER BY marca ASC, modelo ASC
+    """)
+    suspend fun searchMonturas(
+        opticaId: String,
+        marca: String? = null,
+        material: String? = null,
+        categoria: String? = null,
+        precioMin: Double? = null,
+        precioMax: Double? = null,
+        stockBajo: Int = 0
+    ): List<Montura>
 }

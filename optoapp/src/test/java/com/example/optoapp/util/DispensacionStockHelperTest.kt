@@ -23,8 +23,6 @@ class DispensacionStockHelperTest {
         helper = DispensacionStockHelper(monturaDao, movimientoDao)
     }
 
-    // ─── adjustStock() ─────────────────────────────────────────────────────
-
     @Test
     fun adjustStock_reduceStock_returnsAffectedRows() = runTest {
         monturaDao.addMontura(Montura(id = "m1", opticaId = "o1", stockActual = 5))
@@ -74,8 +72,6 @@ class DispensacionStockHelperTest {
         assertEquals(5, monturaDao.getMonturaById("m1")?.stockActual)
     }
 
-    // ─── registrarMovimiento() ─────────────────────────────────────────────
-
     @Test
     fun registrarMovimiento_insertsMovementRecord() = runTest {
         helper.registrarMovimiento(
@@ -118,8 +114,6 @@ class DispensacionStockHelperTest {
         assertEquals(10, movimientos[1].stockPrevio)
         assertEquals(11, movimientos[1].stockNuevo)
     }
-
-    // ─── adjustStockAndRegistrarMovimiento() ───────────────────────────────
 
     @Test
     fun adjustStockAndRegistrarMovimiento_combinesBoth() = runTest {
@@ -183,8 +177,6 @@ class DispensacionStockHelperTest {
     }
 }
 
-// ─── Fakes ───────────────────────────────────────────────────────────────────
-
 internal class FakeMonturaDao : MonturaDao {
     private val monturas = mutableMapOf<String, Montura>()
 
@@ -211,6 +203,24 @@ internal class FakeMonturaDao : MonturaDao {
     override suspend fun deleteMontura(montura: Montura) { monturas.remove(montura.id) }
     override suspend fun getMonturasListByOptica(opticaId: String): List<Montura> =
         monturas.values.filter { it.opticaId == opticaId }
+
+    override suspend fun searchMonturas(
+        opticaId: String,
+        marca: String?,
+        material: String?,
+        categoria: String?,
+        precioMin: Double?,
+        precioMax: Double?,
+        stockBajo: Int
+    ): List<Montura> = monturas.values.filter { m ->
+        m.opticaId == opticaId && m.activo &&
+            (marca == null || m.marca.contains(marca, ignoreCase = true)) &&
+            (material == null || m.materialMontura.contains(material, ignoreCase = true)) &&
+            (categoria == null || m.categoria == categoria) &&
+            (precioMin == null || m.precio >= precioMin) &&
+            (precioMax == null || m.precio <= precioMax) &&
+            (stockBajo == 0 || m.stockActual <= m.stockMinimo)
+    }
 }
 
 internal class FakeMonturaMovimientoDao : MonturaMovimientoDao {
