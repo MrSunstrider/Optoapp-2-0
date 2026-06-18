@@ -40,7 +40,15 @@ data class MonturaFormState(
     val anchoMm: String = "",
     val puenteMm: String = "",
     val alturaMm: String = "",
-    val imagenUri: String = ""
+    val imagenUri: String = "",
+    val categoria: String = "",
+    val coleccion: String = "",
+    val temporada: String = "",
+    val estadoComercial: String = "",
+    val genero: String = "",
+    val selectedProveedorId: String? = null,
+    val costoProveedor: String = "",
+    val precioSugerido: String = ""
 )
 
 data class MonturasUiState(
@@ -48,7 +56,13 @@ data class MonturasUiState(
     val form: MonturaFormState = MonturaFormState(),
     val editing: Boolean = false,
     val error: String? = null,
-    val success: String? = null
+    val success: String? = null,
+    val filterMarca: String? = null,
+    val filterMaterial: String? = null,
+    val filterCategoria: String? = null,
+    val filterPrecioMin: String? = null,
+    val filterPrecioMax: String? = null,
+    val filterStockBajo: Boolean = false
 )
 
 @HiltViewModel
@@ -101,7 +115,12 @@ class MonturasViewModel @Inject constructor(
                     anchoMm = if (montura.anchoMm == null) "" else montura.anchoMm.toString(),
                     puenteMm = if (montura.puenteMm == null) "" else montura.puenteMm.toString(),
                     alturaMm = if (montura.alturaMm == null) "" else montura.alturaMm.toString(),
-                    imagenUri = montura.imagenUri ?: ""
+                    imagenUri = montura.imagenUri ?: "",
+                    categoria = montura.categoria,
+                    coleccion = montura.coleccion,
+                    temporada = montura.temporada,
+                    estadoComercial = montura.estadoComercial,
+                    genero = montura.genero
                 )
             )
         }
@@ -163,6 +182,11 @@ class MonturasViewModel @Inject constructor(
                     puenteMm = form.puenteMm.replace(",", ".").toDoubleOrNull(),
                     alturaMm = form.alturaMm.replace(",", ".").toDoubleOrNull(),
                     imagenUri = form.imagenUri.trim().ifEmpty { null },
+                    categoria = form.categoria.trim(),
+                    coleccion = form.coleccion.trim(),
+                    temporada = form.temporada.trim(),
+                    estadoComercial = form.estadoComercial.trim(),
+                    genero = form.genero.trim(),
                     opticaId = opticaId
                 )
                 when (repository.getMonturaById(montura.id)) {
@@ -193,6 +217,39 @@ class MonturasViewModel @Inject constructor(
         viewModelScope.launch {
             repository.deleteMontura(montura)
             _uiState.update { it.copy(success = "Producto eliminado", error = null) }
+        }
+    }
+
+    fun setFilterMarca(marca: String?) {
+        _uiState.update { it.copy(filterMarca = marca) }
+    }
+
+    fun setFilterMaterial(material: String?) {
+        _uiState.update { it.copy(filterMaterial = material) }
+    }
+
+    fun setFilterCategoria(categoria: String?) {
+        _uiState.update { it.copy(filterCategoria = categoria) }
+    }
+
+    fun setFilterPrecio(min: String?, max: String?) {
+        _uiState.update { it.copy(filterPrecioMin = min, filterPrecioMax = max) }
+    }
+
+    fun toggleFilterStockBajo() {
+        _uiState.update { it.copy(filterStockBajo = !it.filterStockBajo) }
+    }
+
+    fun clearFilters() {
+        _uiState.update {
+            it.copy(
+                filterMarca = null,
+                filterMaterial = null,
+                filterCategoria = null,
+                filterPrecioMin = null,
+                filterPrecioMax = null,
+                filterStockBajo = false
+            )
         }
     }
 

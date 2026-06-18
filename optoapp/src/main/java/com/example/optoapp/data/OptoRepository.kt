@@ -1,6 +1,9 @@
 package com.example.optoapp.data
 
 import android.util.Log
+import com.example.optoapp.data.arqueo.ArqueoCaja
+import com.example.optoapp.data.arqueo.ArqueoCajaDao
+import com.example.optoapp.data.arqueo.IArqueoCajaRepo
 import com.example.optoapp.data.backup.BackupRestoreCoordinator
 import com.example.optoapp.data.montura.MonturaInventoryCoordinator
 import com.example.optoapp.data.sync.SyncSnapshotCoordinator
@@ -30,8 +33,9 @@ open class OptoRepository(
     val syncRepo: SyncRepository,
     val snapshotCoordinator: SyncSnapshotCoordinator,
     val backupCoordinator: BackupRestoreCoordinator,
-    val monturaCoordinator: MonturaInventoryCoordinator
-) {
+    val monturaCoordinator: MonturaInventoryCoordinator,
+    private val arqueoCajaDao: ArqueoCajaDao
+) : IArqueoCajaRepo {
     companion object {
         private const val TAG = "OptoRepository"
     }
@@ -133,6 +137,34 @@ open class OptoRepository(
     suspend fun restoreBackup(backupData: BackupData, currentOpticaId: String) = backupCoordinator.restoreBackup(backupData, currentOpticaId)
 
     suspend fun resolveDuplicatePacientesByHistoria(opticaId: String) = pacienteRepo.resolveDuplicatePacientesByHistoria(opticaId, database)
+
+    // ─── Arqueo de caja ────────────────────────────────────────────────────
+
+    override suspend fun insertArqueo(arqueo: ArqueoCaja) {
+        arqueoCajaDao.insertArqueo(arqueo)
+        postSaveSyncScheduler.get().scheduleFinanzasSync(arqueo.opticaId)
+    }
+
+    suspend fun updateArqueo(arqueo: ArqueoCaja) {
+        arqueoCajaDao.updateArqueo(arqueo)
+        postSaveSyncScheduler.get().scheduleFinanzasSync(arqueo.opticaId)
+    }
+
+    suspend fun upsertArqueoFromRemote(arqueo: ArqueoCaja) {
+        arqueoCajaDao.upsertArqueo(arqueo)
+    }
+
+    fun getArqueoByFecha(fecha: LocalDate, opticaId: String): Flow<ArqueoCaja?> =
+        arqueoCajaDao.getArqueoByFechaAndOptica(fecha, opticaId)
+
+    suspend fun getArqueoByFechaSync(fecha: LocalDate, opticaId: String): ArqueoCaja? =
+        arqueoCajaDao.getArqueoByFechaSync(fecha, opticaId)
+
+    suspend fun getArqueosByOpticaList(opticaId: String): List<ArqueoCaja> =
+        arqueoCajaDao.getArqueosByOpticaList(opticaId)
+
+    fun getArqueosByOptica(opticaId: String): Flow<List<ArqueoCaja>> =
+        arqueoCajaDao.getArqueosByOptica(opticaId)
 }
 
 data class DuplicateHoResolutionResult(

@@ -3,12 +3,14 @@ package com.example.optoapp.domain.sync
 import android.util.Log
 import androidx.annotation.VisibleForTesting
 import com.example.optoapp.data.ConflictDao
+import com.example.optoapp.data.MonturaMovimiento
 import com.example.optoapp.data.SyncStateTracker
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import java.time.Instant
+import java.time.LocalDate
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -57,6 +59,39 @@ open class ConflictHelper @Inject constructor(
                     null
                 }
             }
+        }
+
+        /**
+         * Pure comparison logic: detects conflicts between local and remote
+         * MonturaMovimiento lists using composite key (referenciaId, tipo, monturaId)
+         * and stockNuevo comparison.
+         *
+         * @param local local movimientos to check
+         * @param remote movimientos already in Supabase (same opticaId)
+         * @return Pair of (safe IDs, conflicted IDs)
+         */
+        fun detectConflictMovimientos(
+            local: List<MonturaMovimiento>,
+            remote: List<MonturaMovimiento>
+        ): Pair<List<String>, List<String>> {
+            val remoteByKey = remote.associateBy {
+                Triple(it.referenciaId, it.tipo, it.monturaId)
+            }
+
+            val safe = mutableListOf<String>()
+            val conflicted = mutableListOf<String>()
+
+            for (mov in local) {
+                val key = Triple(mov.referenciaId, mov.tipo, mov.monturaId)
+                val remoteMov = remoteByKey[key]
+                when {
+                    remoteMov == null -> safe.add(mov.id)
+                    remoteMov.stockNuevo == mov.stockNuevo -> safe.add(mov.id)
+                    else -> conflicted.add(mov.id)
+                }
+            }
+
+            return Pair(safe, conflicted)
         }
     }
 
@@ -162,6 +197,43 @@ open class ConflictHelper @Inject constructor(
             }
             .decodeList()
     }
+
+    /**
+     * Fetches remote movimientos matching composite keys, detects conflicts,
+     * flags conflicted movements in SyncStateTracker.
+     *
+     * @return IDs of local movimientos safe to upload
+     */
+    suspend fun filterConflictMovimientos(
+        opticaId: String,
+        localMovimientos: List<MonturaMovimiento>
+    ): List<String> {
+        if (localMovimientos.isEmpty()) return emptyList()
+
+        val remoteMovimientos = try {
+            supabase.postgrest["montura_movimientos"]
+                .select { filter { eq("optica_id", opticaId) } }
+                .decodeList<MovimientoRemotoRow>()
+                .mapNotNull { it.toEntityOrNull() }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error fetching remote movimientos for conflict detection: ${e.message}")
+            emptyList()
+        }
+
+        val (safeIds, conflictedIds) = detectConflictMovimientos(localMovimientos, remoteMovimientos)
+
+        for (id in conflictedIds) {
+            Log.w(TAG, "Conflicto en movimiento $id: stockNuevo difiere del remoto")
+            syncStateTracker.markConflicted(opticaId, "montura_movimiento", id)
+        }
+
+        val conflictedCount = conflictedIds.size
+        if (conflictedCount > 0) {
+            Log.w(TAG, "$conflictedCount movimientos en conflicto, se omiten del upload")
+        }
+
+        return safeIds
+    }
 }
 
 /** Internal so test subclasses in the same Gradle module can reference the type without exposing it to consumers. */
@@ -172,7 +244,41 @@ internal data class RemoteTimestamp(
     val updatedAt: String? = null
 )
 
+/**
+ * Represents a local entity with its id and updatedAt for comparison with remote.
+ */
 data class LocalEntity(
     val id: String,
     val updatedAt: String? = null
 )
+
+/**
+ * Lightweight remote movimiento DTO for conflict detection queries.
+ * Only fetches the fields needed for composite-key + stockNuevo comparison.
+ */
+@Serializable
+private data class MovimientoRemotoRow(
+    val id: String,
+    @SerialName("montura_id") val monturaId: String,
+    val tipo: String,
+    @SerialName("stock_nuevo") val stockNuevo: Int,
+    @SerialName("referencia_id") val referenciaId: String
+) {
+    fun toEntityOrNull(): MonturaMovimiento? {
+        return try {
+            MonturaMovimiento(
+                id = id,
+                monturaId = monturaId,
+                tipo = tipo,
+                cantidad = 0,
+                stockPrevio = 0,
+                stockNuevo = stockNuevo,
+                referenciaId = referenciaId,
+                nota = "",
+                opticaId = ""
+            )
+        } catch (_: Exception) {
+            null
+        }
+    }
+}

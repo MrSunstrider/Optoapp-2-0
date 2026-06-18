@@ -63,6 +63,49 @@ fun MonturaEditForm(
         OptoTextField(form.alturaMm, { v -> onUpdate(form.copy(alturaMm = v)) }, "Altura (mm)", keyboardType = KeyboardType.Decimal)
         OptoTextField(form.imagenUri, { v -> onUpdate(form.copy(imagenUri = v)) }, "Imagen (URI opcional)")
 
+        Text(
+            "Catálogo extendido",
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(top = 8.dp)
+        )
+        DropdownField(
+            label = "Categoría",
+            selected = form.categoria,
+            options = listOf("SOL", "GRADUADA", "DEPORTIVA", "INFANTIL")
+        ) { opt -> onUpdate(form.copy(categoria = opt)) }
+        OptoTextField(form.coleccion, { v -> onUpdate(form.copy(coleccion = v)) }, "Colección")
+        OptoTextField(form.temporada, { v -> onUpdate(form.copy(temporada = v)) }, "Temporada")
+        DropdownField(
+            label = "Estado Comercial",
+            selected = form.estadoComercial,
+            options = listOf("ACTIVO", "DISCONTINUADO", "PROMOCION", "PENDIENTE")
+        ) { opt -> onUpdate(form.copy(estadoComercial = opt)) }
+        DropdownField(
+            label = "Género",
+            selected = form.genero,
+            options = listOf("MASCULINO", "FEMENINO", "UNISEX", "INFANTIL")
+        ) { opt -> onUpdate(form.copy(genero = opt)) }
+
+        Text(
+            "Proveedor (opcional)",
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(top = 8.dp)
+        )
+        OptoTextField(
+            value = form.costoProveedor,
+            onValueChange = { v -> onUpdate(form.copy(costoProveedor = v)) },
+            label = "Costo proveedor",
+            keyboardType = KeyboardType.Decimal
+        )
+        OptoTextField(
+            value = form.precioSugerido,
+            onValueChange = { v -> onUpdate(form.copy(precioSugerido = v)) },
+            label = "Precio sugerido",
+            keyboardType = KeyboardType.Decimal
+        )
+
         Text("* Campos obligatorios", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
