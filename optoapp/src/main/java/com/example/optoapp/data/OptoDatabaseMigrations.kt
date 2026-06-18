@@ -661,6 +661,14 @@ val MIGRATION_24_25 = object : Migration(24, 25) {
         db.execSQL("ALTER TABLE montura_movimientos ADD COLUMN userId TEXT NOT NULL DEFAULT ''")
         db.execSQL("ALTER TABLE montura_movimientos ADD COLUMN costoUnitario REAL NOT NULL DEFAULT 0.0")
         db.execSQL("ALTER TABLE montura_movimientos ADD COLUMN tipoDocumento TEXT NOT NULL DEFAULT ''")
+        // Remove duplicates before creating the unique index — pre-existing rows with the same
+        // (referenciaId, tipo, monturaId) would cause CREATE UNIQUE INDEX to fail, blocking DB open.
+        db.execSQL("""
+            DELETE FROM montura_movimientos
+            WHERE id NOT IN (
+                SELECT MIN(id) FROM montura_movimientos GROUP BY referenciaId, tipo, monturaId
+            )
+        """.trimIndent())
         db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_movimientos_conflict ON montura_movimientos(referenciaId, tipo, monturaId)")
 
         // Supplier catalog with unique RUC per optica (shared across multiple frames)

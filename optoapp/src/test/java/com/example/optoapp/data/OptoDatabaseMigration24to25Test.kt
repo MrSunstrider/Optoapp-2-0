@@ -361,4 +361,90 @@ class OptoDatabaseMigration24to25Test {
         // Clean up
         context.deleteDatabase(dbName)
     }
+
+    /**
+     * Regression: MIGRATION_24_25 crashed at login with UNIQUE constraint failed when
+     * montura_movimientos had pre-existing duplicate (referenciaId, tipo, monturaId) rows.
+     * The CREATE UNIQUE INDEX would fail, blocking DB open on every app start.
+     * Fix: DELETE duplicates before CREATE UNIQUE INDEX.
+     */
+    @Test
+    fun migration24to25_withDuplicateMovimientos_deduplicatesAndSucceeds() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val dbName = "migration-dedup-24to25-test.db"
+        context.deleteDatabase(dbName)
+
+        val factory = FrameworkSQLiteOpenHelperFactory()
+
+        val v24Config = SupportSQLiteOpenHelper.Configuration.builder(context)
+            .name(dbName)
+            .callback(object : SupportSQLiteOpenHelper.Callback(24) {
+                override fun onCreate(db: SupportSQLiteDatabase) {
+                    db.execSQL("""
+                        CREATE TABLE monturas (
+                            id TEXT NOT NULL PRIMARY KEY,
+                            sku TEXT NOT NULL DEFAULT '', marca TEXT NOT NULL DEFAULT '',
+                            modelo TEXT NOT NULL DEFAULT '', color TEXT NOT NULL DEFAULT '',
+                            talla TEXT NOT NULL DEFAULT '', costo REAL NOT NULL DEFAULT 0.0,
+                            precio REAL NOT NULL DEFAULT 0.0, stockActual INTEGER NOT NULL DEFAULT 0,
+                            stockMinimo INTEGER NOT NULL DEFAULT 0, activo INTEGER NOT NULL DEFAULT 1,
+                            tipoAro TEXT NOT NULL DEFAULT '', materialMontura TEXT NOT NULL DEFAULT '',
+                            anchoMm REAL, puenteMm REAL, alturaMm REAL, imagenUri TEXT,
+                            opticaId TEXT NOT NULL DEFAULT 'mi_optica_base', updatedAt TEXT, updatedBy TEXT
+                        )
+                    """)
+                    db.execSQL("""
+                        CREATE TABLE montura_movimientos (
+                            id TEXT NOT NULL PRIMARY KEY, monturaId TEXT NOT NULL,
+                            fecha TEXT NOT NULL, tipo TEXT NOT NULL,
+                            cantidad INTEGER NOT NULL, stockPrevio INTEGER NOT NULL,
+                            stockNuevo INTEGER NOT NULL, referenciaId TEXT NOT NULL DEFAULT '',
+                            nota TEXT NOT NULL DEFAULT '',
+                            opticaId TEXT NOT NULL DEFAULT 'mi_optica_base',
+                            updatedAt TEXT, updatedBy TEXT
+                        )
+                    """)
+                }
+                override fun onUpgrade(db: SupportSQLiteDatabase, oldVersion: Int, newVersion: Int) {}
+            })
+            .build()
+
+        val v24Helper = factory.create(v24Config)
+        val v24Db = v24Helper.writableDatabase
+
+        v24Db.execSQL("INSERT INTO monturas (id, opticaId) VALUES ('m1', 'o1')")
+        // Two duplicates: same (referenciaId='', tipo='AJUSTE', monturaId='m1'), different id
+        v24Db.execSQL("INSERT INTO montura_movimientos (id, monturaId, fecha, tipo, cantidad, stockPrevio, stockNuevo, referenciaId, opticaId) VALUES ('dup-a', 'm1', '2025-01-01', 'AJUSTE', 1, 10, 9, '', 'o1')")
+        v24Db.execSQL("INSERT INTO montura_movimientos (id, monturaId, fecha, tipo, cantidad, stockPrevio, stockNuevo, referenciaId, opticaId) VALUES ('dup-b', 'm1', '2025-01-02', 'AJUSTE', 2, 9, 7, '', 'o1')")
+        // Unique row that must be preserved
+        v24Db.execSQL("INSERT INTO montura_movimientos (id, monturaId, fecha, tipo, cantidad, stockPrevio, stockNuevo, referenciaId, opticaId) VALUES ('unique-1', 'm1', '2025-01-03', 'SALIDA_VENTA', 1, 7, 6, 'disp-001', 'o1')")
+        v24Helper.close()
+
+        val v25Config = SupportSQLiteOpenHelper.Configuration.builder(context)
+            .name(dbName)
+            .callback(object : SupportSQLiteOpenHelper.Callback(25) {
+                override fun onCreate(db: SupportSQLiteDatabase) {}
+                override fun onUpgrade(db: SupportSQLiteDatabase, oldVersion: Int, newVersion: Int) {
+                    if (oldVersion == 24 && newVersion == 25) MIGRATION_24_25.migrate(db)
+                }
+            })
+            .build()
+
+        val v25Helper = factory.create(v25Config)
+        val v25Db = v25Helper.writableDatabase
+
+        val cursor = v25Db.query("SELECT id FROM montura_movimientos ORDER BY id")
+        val surviving = mutableListOf<String>()
+        while (cursor.moveToNext()) surviving.add(cursor.getString(0))
+        cursor.close()
+
+        // One of the two duplicates must have been removed — exactly 2 rows total
+        assertEquals("Expected 2 rows after dedup (one duplicate removed, unique-1 preserved)", 2, surviving.size)
+        assertTrue("unique-1 must be preserved", "unique-1" in surviving)
+        // One of dup-a or dup-b survives (MIN(id) = dup-a alphabetically)
+        assertTrue("One of the AJUSTE duplicates must survive", "dup-a" in surviving || "dup-b" in surviving)
+
+        v25Helper.close()
+        context.deleteDatabase(dbName)
+    }
 }
