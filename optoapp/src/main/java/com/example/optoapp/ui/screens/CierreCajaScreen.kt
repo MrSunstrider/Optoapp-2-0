@@ -355,6 +355,7 @@ fun ArqueoSection(
 
                 Button(
                     onClick = onCerrarDia,
+                    enabled = !arqueoUiState.isSellado,
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                 ) {

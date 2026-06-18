@@ -47,7 +47,6 @@ class ArqueoCajaViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(ArqueoCajaUiState())
     val uiState: StateFlow<ArqueoCajaUiState> = _uiState.asStateFlow()
 
-    // Resolved asynchronously in init — empty until the coroutine completes.
     private var currentUserId: String = ""
 
     init {
@@ -69,6 +68,9 @@ class ArqueoCajaViewModel @Inject constructor(
         }
         viewModelScope.launch {
             val state = _uiState.value
+            // Guard against double-close: if the day is already sealed in this
+            // session, do nothing instead of attempting a duplicate insert.
+            if (state.isSellado) return@launch
             val errors = mutableMapOf<String, String>()
             if (state.fondoCaja < 0) errors["fondoCaja"] = "Cannot be negative"
             if (state.efectivoContado < 0) errors["efectivoContado"] = "Cannot be negative"
@@ -79,10 +81,14 @@ class ArqueoCajaViewModel @Inject constructor(
                 _uiState.update { it.copy(validationErrors = errors) }
                 return@launch
             }
-            val efCobrado    = systemTotals["Efectivo"]      ?: 0.0
-            val tarCobrado   = systemTotals["Tarjeta"]       ?: 0.0
-            val transCobrado = systemTotals["Transferencia"] ?: 0.0
-            val movCobrado   = systemTotals["Móvil"]         ?: 0.0
+            // systemTotals keys come from the UI grouped by método de pago
+            // ("Efectivo", "Tarjeta", "Transferencia", "Móvil") while tests use
+            // lowercase keys. Match case- and accent-insensitively so the
+            // cobrado/diferencia figures are recorded correctly in both cases.
+            val efCobrado    = lookupTotal(systemTotals, "efectivo")
+            val tarCobrado   = lookupTotal(systemTotals, "tarjeta")
+            val transCobrado = lookupTotal(systemTotals, "transferencia")
+            val movCobrado   = lookupTotal(systemTotals, "movil", "móvil")
             val arqueo = ArqueoCaja(
                 id = UUID.randomUUID().toString(),
                 fecha = fecha,
@@ -108,12 +114,32 @@ class ArqueoCajaViewModel @Inject constructor(
                 createdAt = Instant.now().toString(),
                 updatedAt = Instant.now().toString()
             )
-            repo.insertArqueo(arqueo)
-            _uiState.update { it.copy(existingArqueo = arqueo, isSellado = true, validationErrors = emptyMap()) }
+            try {
+                repo.insertArqueo(arqueo)
+                _uiState.update { it.copy(existingArqueo = arqueo, isSellado = true, validationErrors = emptyMap()) }
+            } catch (e: Exception) {
+                // A unique-constraint violation means the day was already closed
+                // (e.g. a rapid double tap or an arqueo synced from another
+                // device). Surface a message instead of letting the uncaught
+                // exception crash the app. The day is already sealed, so reflect
+                // that in the UI state.
+                _uiState.update {
+                    it.copy(
+                        isSellado = true,
+                        validationErrors = mapOf("cerrarDia" to "El día ya fue cerrado.")
+                    )
+                }
+            }
         }
     }
 
     companion object {
+
+        private fun lookupTotal(totals: Map<String, Double>, vararg aliases: String): Double =
+            totals.entries.firstOrNull { entry ->
+                aliases.any { it.equals(entry.key, ignoreCase = true) }
+            }?.value ?: 0.0
+
         fun badgeColorFor(contado: Double, cobrado: Double): BadgeColor = when {
             contado == cobrado -> BadgeColor.GREEN
             cobrado == 0.0    -> BadgeColor.RED

@@ -33,8 +33,12 @@ private class FakeArqueoCajaRepository : IArqueoCajaRepo {
     var insertCallCount = 0
         private set
 
+    /** When true, the next insert throws to emulate a unique-constraint abort. */
+    var throwOnInsert = false
+
     override suspend fun insertArqueo(arqueo: ArqueoCaja) {
         insertCallCount++
+        if (throwOnInsert) throw RuntimeException("UNIQUE constraint failed: arqueo_caja.fecha, arqueo_caja.opticaId")
         store[arqueo.fecha to arqueo.opticaId] = arqueo
     }
 
@@ -209,56 +213,77 @@ class ArqueoCajaViewModelTest {
     }
 
     // -----------------------------------------------------------------------
-    // Test 7: cerrarDia uses title-case keys to look up systemTotals (Bug #4)
+    // Test 7: a unique-constraint violation must NOT crash the app.
+    // The exception is swallowed and surfaced as a validation message, and
+    // the day is marked as sealed.
     // -----------------------------------------------------------------------
     @Test
-    fun totalesUseTitleCaseKeys() = runTest(testDispatcher) {
-        viewModel.setEfectivoContado(500.0)
+    fun duplicate_insert_does_not_crash_and_marks_sealed() = runTest(testDispatcher) {
+        fakeRepo.throwOnInsert = true
+        viewModel.setEfectivoContado(100.0)
 
         viewModel.cerrarDia(
             fecha = testDate,
             opticaId = testOpticaId,
-            systemTotals = mapOf(
-                "Efectivo" to 500.0,
-                "Tarjeta" to 100.0,
-                "Transferencia" to 50.0,
-                "Móvil" to 25.0
-            )
+            systemTotals = mapOf("efectivo" to 100.0)
         )
         testDispatcher.scheduler.advanceUntilIdle()
 
-        val stored = fakeRepo.getStoredArqueo(testDate, testOpticaId)
-        assertNotNull("Arqueo should have been persisted", stored)
-        assertEquals(
-            "efectivoCobrado must be non-zero when Efectivo key is title-case",
-            500.0, stored!!.efectivoCobrado, 0.001
-        )
-        assertEquals(
-            "tarjetaCobrado must be non-zero when Tarjeta key is title-case",
-            100.0, stored.tarjetaCobrado, 0.001
-        )
-        assertEquals(
-            "transferenciaCobrado must be non-zero when Transferencia key is title-case",
-            50.0, stored.transferenciaCobrado, 0.001
-        )
-        assertEquals(
-            "movilCobrado must be non-zero when Móvil key is title-case",
-            25.0, stored.movilCobrado, 0.001
+        val state = viewModel.uiState.value
+        assertTrue("day must be marked sealed after a constraint violation", state.isSellado)
+        assertNotNull(
+            "a user-facing message must be surfaced instead of crashing",
+            state.validationErrors["cerrarDia"]
         )
     }
 
     // -----------------------------------------------------------------------
-    // Test 8: userId is resolved async from SessionManager in init (Bug #3)
-    // The ViewModel must populate currentUserId from the userEmail flow
-    // without blocking the constructor thread.
+    // Test 8: capitalized/accented método keys (as produced by the UI) are
+    // matched so cobrado/diferencia are recorded correctly.
+    // -----------------------------------------------------------------------
+    @Test
+    fun capitalized_method_keys_are_matched() = runTest(testDispatcher) {
+        viewModel.setEfectivoContado(180.0)
+        viewModel.setMovilContado(20.0)
+
+        viewModel.cerrarDia(
+            fecha = testDate,
+            opticaId = testOpticaId,
+            systemTotals = mapOf("Efectivo" to 200.0, "Móvil" to 30.0)
+        )
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val stored = fakeRepo.getStoredArqueo(testDate, testOpticaId)
+        assertNotNull(stored)
+        assertEquals("efectivoCobrado must read the capitalized key", 200.0, stored!!.efectivoCobrado, 0.001)
+        assertEquals("diferenciaEfectivo = 180 - 200", -20.0, stored.diferenciaEfectivo, 0.001)
+        assertEquals("movilCobrado must read the accented key", 30.0, stored.movilCobrado, 0.001)
+        assertEquals("diferenciaMovil = 20 - 30", -10.0, stored.diferenciaMovil, 0.001)
+    }
+
+    // -----------------------------------------------------------------------
+    // Test 9: once the day is sealed in-session, a second cerrarDia is a no-op
+    // (no second insert is attempted).
+    // -----------------------------------------------------------------------
+    @Test
+    fun second_cerrarDia_after_sealed_is_noop() = runTest(testDispatcher) {
+        viewModel.setEfectivoContado(100.0)
+        viewModel.cerrarDia(testDate, testOpticaId, mapOf("efectivo" to 100.0))
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.cerrarDia(testDate, testOpticaId, mapOf("efectivo" to 100.0))
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals("insertArqueo must only be called once across two cerrarDia calls", 1, fakeRepo.insertCallCount)
+    }
+
+    // -----------------------------------------------------------------------
+    // Test 10: userId is resolved async from SessionManager in init
     // -----------------------------------------------------------------------
     @Test
     fun userIdResolvedAsyncWithoutBlocking() = runTest(testDispatcher) {
-        // ViewModel was constructed in setUp with SessionManager returning testUserId.
-        // After the coroutine in init completes, currentUserId must equal the email.
         advanceUntilIdle()
 
-        // Trigger cerrarDia to see the userId stamped on the stored arqueo.
         viewModel.cerrarDia(
             fecha = testDate,
             opticaId = testOpticaId,
@@ -276,7 +301,7 @@ class ArqueoCajaViewModelTest {
     }
 
     // -----------------------------------------------------------------------
-    // Test 9: cerrarDia guard — does NOT persist when userId has not yet resolved
+    // Test 11: cerrarDia guard — does NOT persist when userId has not yet resolved
     // -----------------------------------------------------------------------
     @Test
     fun cerrarDia_empty_userId_does_not_persist() = runTest(testDispatcher) {
@@ -297,7 +322,7 @@ class ArqueoCajaViewModelTest {
     }
 
     // -----------------------------------------------------------------------
-    // Test 10: setFondoCaja value flows through to persisted ArqueoCaja.fondoCaja
+    // Test 12: setFondoCaja value flows through to persisted ArqueoCaja.fondoCaja
     // -----------------------------------------------------------------------
     @Test
     fun setFondoCaja_value_is_persisted_in_arqueo() = runTest(testDispatcher) {
@@ -316,21 +341,7 @@ class ArqueoCajaViewModelTest {
     }
 
     // -----------------------------------------------------------------------
-    // Test 11: cerrarDia called twice inserts twice (VM-level idempotency)
-    // DAO-level REPLACE prevents duplicate-key error; VM makes no attempt to deduplicate.
-    // -----------------------------------------------------------------------
-    @Test
-    fun cerrarDia_called_twice_calls_insertArqueo_twice() = runTest(testDispatcher) {
-        viewModel.cerrarDia(fecha = testDate, opticaId = testOpticaId, systemTotals = emptyMap())
-        testDispatcher.scheduler.advanceUntilIdle()
-        viewModel.cerrarDia(fecha = testDate, opticaId = testOpticaId, systemTotals = emptyMap())
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        assertEquals("Two cerrarDia calls must each call insertArqueo", 2, fakeRepo.insertCallCount)
-    }
-
-    // -----------------------------------------------------------------------
-    // Tests 12–15: badgeColorFor companion — badge color thresholds
+    // Tests 13–16: badgeColorFor companion — badge color thresholds
     // -----------------------------------------------------------------------
     @Test
     fun badgeColorFor_green_when_contado_equals_cobrado() {
