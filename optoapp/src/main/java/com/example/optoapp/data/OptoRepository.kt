@@ -3,6 +3,7 @@ package com.example.optoapp.data
 import android.util.Log
 import com.example.optoapp.data.arqueo.ArqueoCaja
 import com.example.optoapp.data.arqueo.ArqueoCajaDao
+import com.example.optoapp.data.arqueo.IArqueoCajaRepo
 import com.example.optoapp.data.backup.BackupRestoreCoordinator
 import com.example.optoapp.data.montura.MonturaInventoryCoordinator
 import com.example.optoapp.data.sync.SyncSnapshotCoordinator
@@ -34,7 +35,7 @@ open class OptoRepository(
     val backupCoordinator: BackupRestoreCoordinator,
     val monturaCoordinator: MonturaInventoryCoordinator,
     private val arqueoCajaDao: ArqueoCajaDao
-) {
+) : IArqueoCajaRepo {
     companion object {
         private const val TAG = "OptoRepository"
     }
@@ -139,7 +140,7 @@ open class OptoRepository(
 
     // ─── Arqueo de caja ────────────────────────────────────────────────────
 
-    suspend fun insertArqueo(arqueo: ArqueoCaja) {
+    override suspend fun insertArqueo(arqueo: ArqueoCaja) {
         arqueoCajaDao.insertArqueo(arqueo)
         postSaveSyncScheduler.get().scheduleFinanzasSync(arqueo.opticaId)
     }

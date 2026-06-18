@@ -3,6 +3,9 @@ package com.example.optoapp.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.optoapp.data.arqueo.ArqueoCaja
+import com.example.optoapp.data.arqueo.IArqueoCajaRepo
+import com.example.optoapp.di.CurrentUserId
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -11,14 +14,7 @@ import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDate
 import java.util.UUID
-
-import com.example.optoapp.data.arqueo.IArqueoCajaRepo
-
-// ---------------------------------------------------------------------------
-// Minimal repository interface for arqueo persistence.
-// OptoRepository satisfies this via the methods added in T-06.
-// Test fakes implement it directly in-file without production dependencies.
-// ---------------------------------------------------------------------------
+import javax.inject.Inject
 
 // ---------------------------------------------------------------------------
 // ArqueoCajaUiState
@@ -44,21 +40,15 @@ enum class BadgeColor { GREEN, YELLOW, RED }
 // ---------------------------------------------------------------------------
 // ArqueoCajaViewModel
 //
-// Constructor accepts IArqueoCajaRepo + currentUserId so that:
-// - Production: Hilt provides OptoRepository (which implements IArqueoCajaRepo
-//   via the @HiltViewModel companion binding in HiltModule — see T-13).
-// - Tests: use a fake IArqueoCajaRepo with an in-memory map.
-//
-// NOTE: @HiltViewModel is intentionally omitted here because Hilt requires
-// a single @Inject constructor and cannot yet wire IArqueoCajaRepo.
-// T-13 will add the proper @HiltViewModel binding with OptoRepository.
-// For now this class is manually instantiated in tests and indirectly in
-// the screen via a ViewModel factory.
+// HiltViewModel wired via @Inject constructor. IArqueoCajaRepo is bound to
+// OptoRepository in DatabaseModule. currentUserId is provided from
+// SessionManager via the @CurrentUserId qualifier.
 // ---------------------------------------------------------------------------
 
-class ArqueoCajaViewModel(
+@HiltViewModel
+class ArqueoCajaViewModel @Inject constructor(
     private val repo: IArqueoCajaRepo,
-    private val currentUserId: String
+    @CurrentUserId private val currentUserId: String
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ArqueoCajaUiState())

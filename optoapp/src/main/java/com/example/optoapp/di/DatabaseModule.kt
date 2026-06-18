@@ -3,6 +3,7 @@ package com.example.optoapp.di
 import android.content.Context
 import com.example.optoapp.data.*
 import com.example.optoapp.data.arqueo.ArqueoCajaDao
+import com.example.optoapp.data.arqueo.IArqueoCajaRepo
 import com.example.optoapp.data.backup.BackupRestoreCoordinator
 import com.example.optoapp.data.inventariofisico.InventarioFisicoDao
 import com.example.optoapp.data.montura.MonturaDao
@@ -29,6 +30,8 @@ import kotlinx.serialization.json.Json
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import io.github.jan.supabase.SupabaseClient
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import javax.inject.Singleton
 
 // SessionManager se provee aquí porque comparte el mismo DataStore que SecurityManager
@@ -235,4 +238,17 @@ object DatabaseModule {
         supabase: SupabaseClient,
         backupJson: Json
     ): BackupDelegate = BackupDelegate(repository, sessionManager, supabase, backupJson)
+
+    // ─── ArqueoCaja DI bindings ──────────────────────────────────────────
+
+    @Provides
+    fun provideIArqueoCajaRepo(repository: OptoRepository): IArqueoCajaRepo = repository
+
+    @Provides
+    @CurrentUserId
+    fun provideCurrentUserId(sessionManager: SessionManager): String {
+        return runBlocking {
+            sessionManager.userEmail.first()
+        }
+    }
 }
