@@ -1,5 +1,6 @@
 package com.example.optoapp.data
 
+import com.example.optoapp.data.arqueo.ArqueoCajaDao
 import com.example.optoapp.data.backup.BackupRestoreCoordinator
 import com.example.optoapp.data.montura.MonturaDao
 import com.example.optoapp.data.montura.MonturaInventoryCoordinator
@@ -86,7 +87,8 @@ class OptoRepositoryErrorTest {
             syncRepo = syncRepo,
             snapshotCoordinator = snapshotCoordinator,
             backupCoordinator = backupCoordinator,
-            monturaCoordinator = monturaCoordinator
+            monturaCoordinator = monturaCoordinator,
+            arqueoCajaDao = mockk(relaxed = true)
         )
     }
 

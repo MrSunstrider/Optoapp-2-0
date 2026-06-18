@@ -19,7 +19,9 @@ import com.example.optoapp.domain.SyncHistorialUseCase
 import com.example.optoapp.domain.SyncInventarioUseCase
 import com.example.optoapp.domain.SyncPacientesUseCase
 import com.example.optoapp.domain.SyncProveedoresUseCase
+import com.example.optoapp.domain.SyncOrdenesCompraUseCase
 import com.example.optoapp.domain.ProveedoresSyncResult
+import com.example.optoapp.domain.OrdenesCompraSyncResult
 import com.example.optoapp.domain.observer.TableObserver
 import com.example.optoapp.subscription.SubscriptionManager
 import com.example.optoapp.sync.PostSaveSyncScheduler
@@ -105,6 +107,7 @@ class SyncViewModelConflictResolutionTest {
         syncFinanzasUseCase = mockk(relaxed = true)
         syncInventarioUseCase = mockk(relaxed = true)
         syncProveedoresUseCase = mockk(relaxed = true)
+        val syncOrdenesCompraUseCase: SyncOrdenesCompraUseCase = mockk(relaxed = true)
         syncGate = SyncGate() // real SyncGate; its mutex is unlocked by default
         conflictDao = mockk(relaxed = true)
         syncEntityStateDao = mockk(relaxed = true)
@@ -125,6 +128,9 @@ class SyncViewModelConflictResolutionTest {
         coEvery { syncProveedoresUseCase(any(), any(), any()) } returns Resource.Success(
             ProveedoresSyncResult(0, 0, 0, 0)
         )
+        coEvery { syncOrdenesCompraUseCase(any(), any(), any()) } returns Resource.Success(
+            OrdenesCompraSyncResult(0, 0, 0, 0)
+        )
 
         coEvery { conflictDao.resolveConflict(any(), any()) } just Runs
         coEvery { conflictDao.clearConflicts(any()) } just Runs
@@ -143,6 +149,7 @@ class SyncViewModelConflictResolutionTest {
             syncFinanzasUseCase = syncFinanzasUseCase,
             syncInventarioUseCase = syncInventarioUseCase,
             syncProveedoresUseCase = syncProveedoresUseCase,
+            syncOrdenesCompraUseCase = syncOrdenesCompraUseCase,
             syncGate = syncGate,
             conflictDao = conflictDao,
             syncEntityStateDao = syncEntityStateDao,

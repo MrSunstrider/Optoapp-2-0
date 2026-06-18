@@ -162,6 +162,16 @@ fun MainDrawerContent(
                 icon = { Icon(Icons.Default.Inventory2, contentDescription = null) },
                 modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
             )
+            NavigationDrawerItem(
+                label = { Text("Órdenes de Compra", fontWeight = FontWeight.SemiBold) },
+                selected = currentRoute == "ordenes_compra",
+                onClick = {
+                    scope.launch { drawerState.close() }
+                    navController.navigate("ordenes_compra")
+                },
+                icon = { Icon(Icons.Default.Receipt, contentDescription = null) },
+                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+            )
 
             // Finanzas
             if (showCierreCaja || showBiYReportes) {

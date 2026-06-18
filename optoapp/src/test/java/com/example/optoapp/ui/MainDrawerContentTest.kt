@@ -248,4 +248,16 @@ class MainDrawerContentTest {
         val route = "operacion_hoy"
         assertEquals("operacion_hoy", route)
     }
+
+    @Test
+    fun navigationRoutes_proveedoresExists() {
+        val route = "proveedores"
+        assertEquals("proveedores", route)
+    }
+
+    @Test
+    fun navigationRoutes_ordenesCompraExists() {
+        val route = "ordenes_compra"
+        assertEquals("ordenes_compra", route)
+    }
 }

@@ -7,6 +7,7 @@ import kotlinx.coroutines.CancellationException
 import java.io.IOException
 import com.example.optoapp.di.ApplicationScope
 import com.example.optoapp.domain.SyncFinanzasUseCase
+import com.example.optoapp.domain.SyncOrdenesCompraUseCase
 import com.example.optoapp.domain.SyncProveedoresUseCase
 import com.example.optoapp.util.BackgroundErrorCollector
 import com.example.optoapp.domain.SyncHistorialUseCase
@@ -40,6 +41,7 @@ open class PostSaveSyncScheduler @Inject constructor(
     private val syncFinanzasUseCase: SyncFinanzasUseCase? = null,
     private val syncInventarioUseCase: SyncInventarioUseCase? = null,
     private val syncProveedoresUseCase: SyncProveedoresUseCase? = null,
+    private val syncOrdenesCompraUseCase: SyncOrdenesCompraUseCase? = null,
     private val bgErrorCollector: BackgroundErrorCollector? = null
 ) {
     private val scheduleMutex = Mutex()
@@ -174,6 +176,28 @@ open class PostSaveSyncScheduler @Inject constructor(
                 Log.e(TAG, "Error en red sync inventario post-guardado: ${e.message}", e)
             } catch (e: Exception) {
                 Log.e(TAG, "Error inesperado sync inventario post-guardado: ${e.message}", e)
+            }
+        }
+    }
+
+    open fun scheduleOrdenCompraSync(opticaId: String) {
+        if (suppressSync) return
+        scheduleDebounced(key = "ordenes_compra:$opticaId") {
+            onBeforeSync?.invoke("ordenes_compra")
+            try {
+                syncGate.mutex.withLock {
+                    if (!ensureSessionForPostSaveSync("ordenes_compra")) return@withLock
+                    when (val r = syncOrdenesCompraUseCase!!(opticaId)) {
+                        is Resource.Error -> Log.w(TAG, "Sync ordenes_compra post-guardado: ${r.message}")
+                        else -> Log.d(TAG, "Sync ordenes_compra post-guardado OK")
+                    }
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: IOException) {
+                Log.e(TAG, "Error en red sync ordenes_compra post-guardado: ${e.message}", e)
+            } catch (e: Exception) {
+                Log.e(TAG, "Error inesperado sync ordenes_compra post-guardado: ${e.message}", e)
             }
         }
     }

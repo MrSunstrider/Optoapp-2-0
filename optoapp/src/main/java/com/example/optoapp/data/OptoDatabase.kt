@@ -6,6 +6,8 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import androidx.sqlite.db.SupportSQLiteDatabase
+import com.example.optoapp.data.arqueo.ArqueoCaja
+import com.example.optoapp.data.arqueo.ArqueoCajaDao
 import com.example.optoapp.data.inventariofisico.InventarioFisicoDao
 import com.example.optoapp.data.montura.MonturaDao
 import com.example.optoapp.data.montura.MonturaMovimientoDao
@@ -25,9 +27,10 @@ import com.example.optoapp.util.LocalDatabaseBackupManager
         ConflictRecord::class,
         Proveedor::class, MonturaProveedor::class, CategoriaMontura::class,
         OrdenCompra::class, OrdenCompraItem::class,
-        InventarioFisico::class, InventarioFisicoDetalle::class
+        InventarioFisico::class, InventarioFisicoDetalle::class,
+        ArqueoCaja::class
     ],
-    version = 25,
+    version = 26,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -48,6 +51,7 @@ abstract class OptoDatabase : RoomDatabase() {
     abstract fun ordenCompraDao(): OrdenCompraDao
     abstract fun ordenCompraItemDao(): OrdenCompraItemDao
     abstract fun inventarioFisicoDao(): InventarioFisicoDao
+    abstract fun arqueoCajaDao(): ArqueoCajaDao
 
     companion object {
         @Volatile
@@ -73,6 +77,7 @@ abstract class OptoDatabase : RoomDatabase() {
         val MIGRATION_22_23 get() = com.example.optoapp.data.MIGRATION_22_23
         val MIGRATION_23_24 get() = com.example.optoapp.data.MIGRATION_23_24
         val MIGRATION_24_25 get() = com.example.optoapp.data.MIGRATION_24_25
+        val MIGRATION_25_26 get() = com.example.optoapp.data.MIGRATION_25_26
 
         fun getDatabase(context: Context): OptoDatabase {
             return INSTANCE ?: synchronized(this) {
@@ -81,7 +86,7 @@ abstract class OptoDatabase : RoomDatabase() {
                     OptoDatabase::class.java,
                     "opto_database"
                 )
-                .addMigrations(MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17, MIGRATION_17_18, MIGRATION_18_19, MIGRATION_19_20, MIGRATION_20_21, MIGRATION_21_22, MIGRATION_22_23, MIGRATION_23_24, MIGRATION_24_25)
+                .addMigrations(MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17, MIGRATION_17_18, MIGRATION_18_19, MIGRATION_19_20, MIGRATION_20_21, MIGRATION_21_22, MIGRATION_22_23, MIGRATION_23_24, MIGRATION_24_25, MIGRATION_25_26)
                 .addCallback(object : RoomDatabase.Callback() {
                     override fun onOpen(db: SupportSQLiteDatabase) {
                         super.onOpen(db)
