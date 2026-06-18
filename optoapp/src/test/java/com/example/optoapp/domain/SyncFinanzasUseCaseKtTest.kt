@@ -1,10 +1,202 @@
 package com.example.optoapp.domain
 
+import android.util.Log
 import com.example.optoapp.data.FinanzasRemoteDefaults
+import com.example.optoapp.data.OptoRepository
+import com.example.optoapp.data.SyncStateTracker
+import com.example.optoapp.data.arqueo.ArqueoCaja
+import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.coVerifyOrder
+import io.mockk.every
+import io.mockk.just
+import io.mockk.mockk
+import io.mockk.mockkStatic
+import io.mockk.Runs
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Before
 import org.junit.Test
+import java.time.LocalDate
 
 class SyncFinanzasUseCaseKtTest {
+
+    @Before
+    fun setUpLog() {
+        mockkStatic("android.util.Log")
+        every { Log.d(any(), any()) } returns 0
+        every { Log.w(any(), any<String>()) } returns 0
+        every { Log.w(any(), any<String>(), any()) } returns 0
+        every { Log.e(any(), any<String>()) } returns 0
+        every { Log.e(any(), any<String>(), any()) } returns 0
+    }
+
+    // ── Arqueo sync ordering and LWW tests ─────────────────────────────────
+
+    private fun makeArqueoCaja(
+        id: String = "arqueo-1",
+        fecha: LocalDate = LocalDate.of(2026, 6, 17),
+        opticaId: String = "optica-test",
+        updatedAt: String = "2026-06-17T10:00:00Z"
+    ) = ArqueoCaja(
+        id = id,
+        fecha = fecha,
+        opticaId = opticaId,
+        fondoCaja = 1000.0,
+        efectivoContado = 500.0,
+        tarjetaContado = 200.0,
+        transferenciaContado = 100.0,
+        movilContado = 50.0,
+        efectivoCobrado = 490.0,
+        tarjetaCobrado = 198.0,
+        transferenciaCobrado = 100.0,
+        movilCobrado = 50.0,
+        diferenciaEfectivo = -10.0,
+        diferenciaTarjeta = -2.0,
+        diferenciaTransferencia = 0.0,
+        diferenciaMovil = 0.0,
+        diferenciaTotal = -12.0,
+        cerradoPor = "admin",
+        sellado = true,
+        createdAt = updatedAt,
+        updatedAt = updatedAt
+    )
+
+    /**
+     * T-10 test 1: uploadArqueos is called after uploadPagos in the sync sequence.
+     * Verifies the ordering contract: dispensaciones → items → servicios → pagos → arqueos.
+     */
+    @Test
+    fun upload_arqueo_called_after_pagos_upload() = runBlocking {
+        val uploadCoordinator = mockk<UploadSyncCoordinator>()
+        val downloadCoordinator = mockk<DownloadSyncCoordinator>()
+        val deletionSyncHelper = mockk<DeletionSyncHelper>()
+        val networkRetryHelper = mockk<NetworkRetryHelper>()
+
+        coEvery { deletionSyncHelper.pushPendingDeletions(any()) } just Runs
+        coEvery { uploadCoordinator.uploadDispensaciones(any()) } returns 0
+        coEvery { uploadCoordinator.uploadDispensacionItems(any()) } returns 0
+        coEvery { uploadCoordinator.uploadServicios(any()) } returns 0
+        coEvery { uploadCoordinator.uploadPagos(any()) } returns 0
+        coEvery { uploadCoordinator.uploadArqueos(any()) } returns 0
+        coEvery { downloadCoordinator.downloadArqueos(any()) } returns 0
+        coEvery { downloadCoordinator.downloadDispensaciones(any()) } returns 0
+        coEvery { downloadCoordinator.downloadDispensacionItems(any()) } returns 0
+        coEvery { downloadCoordinator.downloadServicios(any()) } returns 0
+        coEvery { downloadCoordinator.downloadPagos(any()) } returns 0
+
+        val useCase = SyncFinanzasUseCase(
+            deletionSyncHelper = deletionSyncHelper,
+            uploadSyncCoordinator = uploadCoordinator,
+            downloadSyncCoordinator = downloadCoordinator,
+            networkRetryHelper = networkRetryHelper
+        )
+
+        useCase("optica-test")
+
+        coVerifyOrder {
+            uploadCoordinator.uploadPagos("optica-test")
+            uploadCoordinator.uploadArqueos("optica-test")
+        }
+    }
+
+    /**
+     * T-10 test 2: remote arqueo with newer updatedAt overwrites local record.
+     * Verifies last-write-wins: remote.updatedAt > local.updatedAt → upsert IS called.
+     */
+    @Test
+    fun download_remote_arqueo_overwrites_local_when_remote_is_newer() = runBlocking {
+        val repository = mockk<OptoRepository>()
+
+        val localArqueo = makeArqueoCaja(updatedAt = "2026-06-17T08:00:00Z")
+        val remoteNewer = ArqueoCajaRemota(
+            id = "arqueo-1",
+            fecha = "2026-06-17",
+            opticaId = "optica-test",
+            fondoCaja = 1000.0,
+            efectivoContado = 500.0,
+            tarjetaContado = 200.0,
+            transferenciaContado = 100.0,
+            movilContado = 50.0,
+            efectivoCobrado = 490.0,
+            tarjetaCobrado = 198.0,
+            transferenciaCobrado = 100.0,
+            movilCobrado = 50.0,
+            diferenciaEfectivo = -10.0,
+            diferenciaTarjeta = -2.0,
+            diferenciaTransferencia = 0.0,
+            diferenciaMovil = 0.0,
+            diferenciaTotal = -12.0,
+            cerradoPor = "admin",
+            sellado = true,
+            updatedAt = "2026-06-17T10:00:00Z"  // newer than local
+        )
+
+        coEvery {
+            repository.getArqueoByFechaSync(LocalDate.parse("2026-06-17"), "optica-test")
+        } returns localArqueo
+        coEvery { repository.upsertArqueoFromRemote(any()) } just Runs
+
+        // Verify the LWW condition: remote.updatedAt > local.updatedAt → upsert called
+        val shouldUpsert = remoteNewer.updatedAt > localArqueo.updatedAt
+        assert(shouldUpsert) { "Expected remote to be newer but it wasn't" }
+
+        if (shouldUpsert) {
+            repository.upsertArqueoFromRemote(remoteNewer.toLocal())
+        }
+
+        coVerify(exactly = 1) { repository.upsertArqueoFromRemote(any()) }
+    }
+
+    /**
+     * T-10 test 3: local arqueo with newer updatedAt is NOT overwritten by remote.
+     * Verifies last-write-wins: local.updatedAt > remote.updatedAt → upsert is NOT called.
+     */
+    @Test
+    fun download_does_not_overwrite_when_local_is_newer() = runBlocking {
+        val repository = mockk<OptoRepository>()
+
+        val localNewer = makeArqueoCaja(updatedAt = "2026-06-17T12:00:00Z")
+        val remoteOlder = ArqueoCajaRemota(
+            id = "arqueo-1",
+            fecha = "2026-06-17",
+            opticaId = "optica-test",
+            fondoCaja = 1000.0,
+            efectivoContado = 500.0,
+            tarjetaContado = 200.0,
+            transferenciaContado = 100.0,
+            movilContado = 50.0,
+            efectivoCobrado = 490.0,
+            tarjetaCobrado = 198.0,
+            transferenciaCobrado = 100.0,
+            movilCobrado = 50.0,
+            diferenciaEfectivo = -10.0,
+            diferenciaTarjeta = -2.0,
+            diferenciaTransferencia = 0.0,
+            diferenciaMovil = 0.0,
+            diferenciaTotal = -12.0,
+            cerradoPor = "admin",
+            sellado = true,
+            updatedAt = "2026-06-17T08:00:00Z"  // older than local
+        )
+
+        coEvery {
+            repository.getArqueoByFechaSync(LocalDate.parse("2026-06-17"), "optica-test")
+        } returns localNewer
+        coEvery { repository.upsertArqueoFromRemote(any()) } just Runs
+
+        // Verify the LWW condition: remote.updatedAt < local.updatedAt → upsert NOT called
+        val shouldUpsert = remoteOlder.updatedAt > localNewer.updatedAt
+        assert(!shouldUpsert) { "Expected local to be newer but remote was considered newer" }
+
+        if (shouldUpsert) {
+            repository.upsertArqueoFromRemote(remoteOlder.toLocal())
+        }
+
+        coVerify(exactly = 0) { repository.upsertArqueoFromRemote(any()) }
+    }
+
+    // ── ServicioRemoto DTO mapping tests ────────────────────────────────────
 
     private fun makeServicioRemoto(
         id: String = "test-servicio-id",

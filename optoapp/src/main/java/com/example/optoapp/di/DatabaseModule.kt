@@ -2,11 +2,19 @@ package com.example.optoapp.di
 
 import android.content.Context
 import com.example.optoapp.data.*
+import com.example.optoapp.data.arqueo.ArqueoCajaDao
 import com.example.optoapp.data.backup.BackupRestoreCoordinator
+import com.example.optoapp.data.inventariofisico.InventarioFisicoDao
 import com.example.optoapp.data.montura.MonturaDao
+import com.example.optoapp.data.montura.MonturaDashboardKpiRepository
 import com.example.optoapp.data.montura.MonturaInventoryCoordinator
 import com.example.optoapp.data.montura.MonturaMovimientoDao
+import com.example.optoapp.data.ordencompra.OrdenCompraDao
+import com.example.optoapp.data.ordencompra.OrdenCompraItemDao
 import com.example.optoapp.data.pago.PagoDao
+import com.example.optoapp.data.proveedor.CategoriaMonturaDao
+import com.example.optoapp.data.proveedor.MonturaProveedorDao
+import com.example.optoapp.data.proveedor.ProveedorDao
 import com.example.optoapp.data.servicio.ServicioExtraDao
 import com.example.optoapp.data.sync.SyncSnapshotCoordinator
 import com.example.optoapp.sync.PostSaveSyncScheduler
@@ -74,6 +82,27 @@ object DatabaseModule {
     fun provideConflictDao(database: OptoDatabase): ConflictDao = database.conflictDao()
 
     @Provides
+    fun provideProveedorDao(database: OptoDatabase): ProveedorDao = database.proveedorDao()
+
+    @Provides
+    fun provideMonturaProveedorDao(database: OptoDatabase): MonturaProveedorDao = database.monturaProveedorDao()
+
+    @Provides
+    fun provideCategoriaMonturaDao(database: OptoDatabase): CategoriaMonturaDao = database.categoriaMonturaDao()
+
+    @Provides
+    fun provideOrdenCompraDao(database: OptoDatabase): OrdenCompraDao = database.ordenCompraDao()
+
+    @Provides
+    fun provideOrdenCompraItemDao(database: OptoDatabase): OrdenCompraItemDao = database.ordenCompraItemDao()
+
+    @Provides
+    fun provideInventarioFisicoDao(database: OptoDatabase): InventarioFisicoDao = database.inventarioFisicoDao()
+
+    @Provides
+    fun provideArqueoCajaDao(database: OptoDatabase): ArqueoCajaDao = database.arqueoCajaDao()
+
+    @Provides
     @Singleton
     fun provideSecurityManager(@ApplicationContext context: Context): SecurityManager {
         return SecurityManager(context)
@@ -139,6 +168,12 @@ object DatabaseModule {
     )
 
     @Provides
+    fun provideMonturaDashboardKpiRepository(
+        monturaDao: MonturaDao,
+        monturaMovimientoDao: MonturaMovimientoDao
+    ): MonturaDashboardKpiRepository = MonturaDashboardKpiRepository(monturaDao, monturaMovimientoDao)
+
+    @Provides
     @Singleton
     fun provideOptoRepository(
         database: OptoDatabase,
@@ -149,7 +184,8 @@ object DatabaseModule {
         syncRepo: SyncRepository,
         snapshotCoordinator: SyncSnapshotCoordinator,
         backupCoordinator: BackupRestoreCoordinator,
-        monturaCoordinator: MonturaInventoryCoordinator
+        monturaCoordinator: MonturaInventoryCoordinator,
+        arqueoCajaDao: ArqueoCajaDao
     ): OptoRepository {
         return OptoRepository(
             database,
@@ -160,7 +196,8 @@ object DatabaseModule {
             syncRepo,
             snapshotCoordinator,
             backupCoordinator,
-            monturaCoordinator
+            monturaCoordinator,
+            arqueoCajaDao
         )
     }
 

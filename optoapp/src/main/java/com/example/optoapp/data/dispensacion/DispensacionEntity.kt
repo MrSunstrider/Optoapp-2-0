@@ -129,7 +129,7 @@ data class ServicioExtra(
     val montoTotal: Double,
     @SerialName("aCuenta")
     val aCuenta: Double,
-    val estado: String, // Pendiente, Entregado
+    val estado: String, // Delivery status lifecycle: Pendiente → Entregado
     @Serializable(with = LocalDateSerializer::class)
     val fecha: LocalDate,
     @SerialName("pacienteId")
@@ -148,7 +148,9 @@ data class ServicioExtra(
     tableName = "monturas",
     indices = [
         Index(value = ["opticaId"]),
-        Index(value = ["sku", "opticaId"], unique = true)
+        Index(value = ["sku", "opticaId"], unique = true),
+        Index(value = ["estadoComercial"]),
+        Index(value = ["categoria"])
     ]
 )
 @Serializable
@@ -174,6 +176,11 @@ data class Montura(
     val alturaMm: Double? = null,
     @SerialName("imagenUri")
     val imagenUri: String? = null,
+    val categoria: String = "",
+    val coleccion: String = "",
+    val temporada: String = "",
+    val estadoComercial: String = "",
+    val genero: String = "",
     @SerialName("opticaId")
     val opticaId: String = "mi_optica_base",
     @SerialName("updatedAt")
@@ -188,7 +195,8 @@ data class Montura(
         Index(value = ["monturaId"]),
         Index(value = ["opticaId"]),
         Index(value = ["fecha"]),
-        Index(value = ["referenciaId"])
+        Index(value = ["referenciaId"]),
+        Index(value = ["referenciaId", "tipo", "monturaId"], unique = true)
     ],
     foreignKeys = [
         ForeignKey(
@@ -216,5 +224,8 @@ data class MonturaMovimiento(
     @SerialName("updatedAt")
     val updatedAt: String? = null,
     @SerialName("updatedBy")
-    val updatedBy: String? = null
+    val updatedBy: String? = null,
+    val userId: String = "",
+    val costoUnitario: Double = 0.0,
+    val tipoDocumento: String = ""
 )
