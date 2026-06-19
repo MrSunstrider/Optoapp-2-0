@@ -1,17 +1,19 @@
 package com.example.optoapp.ui.components.evaluacion
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.optoapp.ui.components.DropdownField
@@ -161,12 +163,6 @@ fun ExamenVisualSection(
     }
 }
 
-// ─── Collapsible Card ────────────────────────────────────────────────────────
-
-/**
- * Tarjeta plegable con toggle No/Sí para mostrar/ocultar contenido.
- * Por defecto arranca cerrada (No). El usuario la expande tocando "Sí".
- */
 @Composable
 private fun CollapsibleExamenCard(
     title: String,
@@ -174,6 +170,11 @@ private fun CollapsibleExamenCard(
     onToggle: (Boolean) -> Unit,
     content: @Composable () -> Unit
 ) {
+    val chevronRotation by animateFloatAsState(
+        targetValue = if (expanded) 180f else 0f,
+        label = "chevron"
+    )
+
     OutlinedCard(
         modifier = Modifier
             .fillMaxWidth()
@@ -183,7 +184,6 @@ private fun CollapsibleExamenCard(
         )
     ) {
         Column {
-            // Header row: title + toggle No / Sí
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -198,25 +198,14 @@ private fun CollapsibleExamenCard(
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.weight(1f)
                 )
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    SwitchableLabel(
-                        label = "No",
-                        isActive = !expanded,
-                        onClick = { onToggle(false) }
-                    )
-                    SwitchableLabel(
-                        label = "Sí",
-                        isActive = expanded,
-                        onClick = { onToggle(true) }
-                    )
-                }
+                Icon(
+                    imageVector = Icons.Default.ExpandMore,
+                    contentDescription = if (expanded) "Colapsar" else "Expandir",
+                    modifier = Modifier.rotate(chevronRotation),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
 
-            // Content: animated collapse
             AnimatedVisibility(
                 visible = expanded,
                 enter = expandVertically(),
@@ -232,31 +221,6 @@ private fun CollapsibleExamenCard(
         }
     }
 }
-
-@Composable
-private fun SwitchableLabel(
-    label: String,
-    isActive: Boolean,
-    onClick: () -> Unit
-) {
-    Surface(
-        onClick = onClick,
-        shape = RoundedCornerShape(6.dp),
-        color = if (isActive) MaterialTheme.colorScheme.primary
-                else MaterialTheme.colorScheme.surfaceVariant,
-        contentColor = if (isActive) MaterialTheme.colorScheme.onPrimary
-                      else MaterialTheme.colorScheme.onSurfaceVariant
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-            textAlign = TextAlign.Center
-        )
-    }
-}
-
-// ─── Dropdown options ─────────────────────────────────────────────────────────
 
 internal val estereopsisOptions = listOf("Normal", "Reducida", "Ausente")
 internal val langOptions = listOf("Positivo", "Negativo")

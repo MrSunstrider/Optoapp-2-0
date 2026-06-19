@@ -6,10 +6,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -19,14 +21,15 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import com.example.optoapp.viewmodel.ServiciosViewModel
 import com.example.optoapp.data.ServicioExtra
-import com.example.optoapp.util.DateUtils
-import kotlinx.coroutines.launch
-import java.util.*
 import com.example.optoapp.ui.components.OptoTopAppBar
+import com.example.optoapp.util.DateUtils
+import com.example.optoapp.viewmodel.ServiciosViewModel
+import kotlinx.coroutines.launch
+import java.time.LocalDate
+import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,14 +37,43 @@ fun ServiciosExtraScreen(navController: NavController, drawerState: DrawerState,
     val servicios by viewModel.allServicios.collectAsState()
     val scope = rememberCoroutineScope()
     var searchQuery by remember { mutableStateOf("") }
+    var selectedDate by remember { mutableStateOf<LocalDate?>(null) }
+    var showDatePicker by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
 
     val showDeleteDialog by viewModel.showDeleteDialog.collectAsState()
     val servicioToDelete by viewModel.servicioToDelete.collectAsState()
     val deleteError by viewModel.deleteError.collectAsState()
 
-    val filteredServicios = if (searchQuery.isEmpty()) servicios 
-    else servicios.filter { it.descripcion.contains(searchQuery, ignoreCase = true) || it.ot.contains(searchQuery, ignoreCase = true) }
+    val filteredServicios = servicios.filter { servicio ->
+        val matchesSearch = searchQuery.isEmpty() ||
+            servicio.descripcion.contains(searchQuery, ignoreCase = true) ||
+            servicio.ot.contains(searchQuery, ignoreCase = true)
+        val matchesDate = selectedDate == null || servicio.fecha == selectedDate
+        matchesSearch && matchesDate
+    }
+
+    val datePickerState = rememberDatePickerState(
+        initialSelectedDateMillis = selectedDate?.let { DateUtils.localDateToPickerMillis(it) }
+    )
+
+    if (showDatePicker) {
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    selectedDate = datePickerState.selectedDateMillis
+                        ?.let { DateUtils.pickerMillisToLocalDate(it) }
+                    showDatePicker = false
+                }) { Text("OK") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) { Text("Cancelar") }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
 
     LaunchedEffect(deleteError) {
         val error = deleteError ?: return@LaunchedEffect
@@ -78,6 +110,16 @@ fun ServiciosExtraScreen(navController: NavController, drawerState: DrawerState,
                     IconButton(onClick = { scope.launch { drawerState.open() } }) {
                         Icon(Icons.Default.Menu, contentDescription = "Menu")
                     }
+                },
+                actions = {
+                    IconButton(onClick = { showDatePicker = true }) {
+                        Icon(
+                            Icons.Default.CalendarMonth,
+                            contentDescription = "Filtrar por fecha",
+                            tint = if (selectedDate != null) MaterialTheme.colorScheme.primary
+                                   else LocalContentColor.current
+                        )
+                    }
                 }
             )
         },
@@ -104,6 +146,19 @@ fun ServiciosExtraScreen(navController: NavController, drawerState: DrawerState,
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                 shape = MaterialTheme.shapes.medium
             )
+
+            if (selectedDate != null) {
+                Spacer(modifier = Modifier.height(8.dp))
+                FilterChip(
+                    selected = true,
+                    onClick = { selectedDate = null },
+                    label = { Text(DateUtils.formatLocalized(selectedDate!!)) },
+                    trailingIcon = {
+                        Icon(Icons.Default.Close, contentDescription = "Quitar filtro de fecha", modifier = Modifier.size(16.dp))
+                    }
+                )
+            }
+
             Spacer(modifier = Modifier.height(12.dp))
 
             if (filteredServicios.isEmpty()) {
