@@ -12,9 +12,12 @@ import io.mockk.unmockkAll
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -22,22 +25,10 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import java.time.LocalDate
-
-// ---------------------------------------------------------------------------
-// CierreCajaViewModelTest
-//
-// Uses MockK to stub OptoRepository and SessionManager, matching the pattern
-// used in SyncViewModelConflictResolutionTest and other ViewModel tests.
-//
-// Tests 1-3 + 6: verify computation logic (ventasHoy, cobrosAtrasados,
-//   saldoPendiente, totalRecaudado) via the existing observePagos() flow.
-// Tests 4-5: verify loadArqueoForDate() — a NEW method added in T-08.
-//   These will fail to compile until T-08 (CierreCajaViewModel update) is done.
-//   That is the expected RED state for those two test cases.
-// ---------------------------------------------------------------------------
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class CierreCajaViewModelTest {
@@ -204,6 +195,80 @@ class CierreCajaViewModelTest {
     }
 
     // -----------------------------------------------------------------------
+    // Test 7: observeArqueoForDate second call supersedes the first collector
+    // REQ-5: at most one active collector must exist at any time.
+    // -----------------------------------------------------------------------
+    @Test
+    fun observeArqueoForDateCancelsPreviousCollector() = runTest {
+        val date1 = LocalDate.of(2026, 6, 17)
+        val date2 = LocalDate.of(2026, 6, 18)
+        val optica = "optica-1"
+
+        // Two independent shared flows for the two dates
+        val flow1 = MutableSharedFlow<ArqueoCaja?>(replay = 1)
+        val flow2 = MutableSharedFlow<ArqueoCaja?>(replay = 1)
+
+        val arqueoForDate2 = ArqueoCaja(
+            id = "arq-2", fecha = date2, opticaId = optica,
+            fondoCaja = 0.0, efectivoContado = 0.0, tarjetaContado = 0.0,
+            transferenciaContado = 0.0, movilContado = 0.0,
+            efectivoCobrado = 0.0, tarjetaCobrado = 0.0,
+            transferenciaCobrado = 0.0, movilCobrado = 0.0,
+            diferenciaEfectivo = 0.0, diferenciaTarjeta = 0.0,
+            diferenciaTransferencia = 0.0, diferenciaMovil = 0.0,
+            diferenciaTotal = 0.0, cerradoPor = "u", sellado = true,
+            createdAt = "2026-06-18T00:00:00Z", updatedAt = "2026-06-18T00:00:00Z"
+        )
+
+        every { repository.getPagosByDateRangeForOptica(any(), any(), any()) } returns flowOf(emptyList())
+        every { repository.getAllDispensacionesForOptica(any()) } returns flowOf(emptyList())
+        every { repository.getArqueoByFecha(date1, optica) } returns flow1
+        every { repository.getArqueoByFecha(date2, optica) } returns flow2
+
+        viewModel = CierreCajaViewModel(repository, sessionManager)
+        advanceUntilIdle()
+
+        // First call — observe date1
+        viewModel.observeArqueoForDate(date1, optica)
+        advanceUntilIdle()
+
+        // Second call — observe date2 (should cancel date1 collector)
+        viewModel.observeArqueoForDate(date2, optica)
+        advanceUntilIdle()
+
+        // Emit from flow2 → should update arqueoForFecha
+        flow2.emit(arqueoForDate2)
+        advanceUntilIdle()
+
+        assertEquals(
+            "arqueoForFecha must reflect the date2 arqueo after switching",
+            "arq-2",
+            viewModel.uiState.value.arqueoForFecha?.id
+        )
+
+        // Now emit from flow1 → must NOT override the date2 result (collector was cancelled)
+        val staleArqueo = ArqueoCaja(
+            id = "arq-1-stale", fecha = date1, opticaId = optica,
+            fondoCaja = 0.0, efectivoContado = 0.0, tarjetaContado = 0.0,
+            transferenciaContado = 0.0, movilContado = 0.0,
+            efectivoCobrado = 0.0, tarjetaCobrado = 0.0,
+            transferenciaCobrado = 0.0, movilCobrado = 0.0,
+            diferenciaEfectivo = 0.0, diferenciaTarjeta = 0.0,
+            diferenciaTransferencia = 0.0, diferenciaMovil = 0.0,
+            diferenciaTotal = 0.0, cerradoPor = "u", sellado = false,
+            createdAt = "2026-06-17T00:00:00Z", updatedAt = "2026-06-17T00:00:00Z"
+        )
+        flow1.emit(staleArqueo)
+        advanceUntilIdle()
+
+        assertEquals(
+            "arqueoForFecha must NOT be overridden by stale date1 emission after switching to date2",
+            "arq-2",
+            viewModel.uiState.value.arqueoForFecha?.id
+        )
+    }
+
+    // -----------------------------------------------------------------------
     // Test 6: totalRecaudado = ventasHoy + cobrosAtrasados
     // spec: ventasHoy=150.0, cobrosAtrasados=50.0 → totalRecaudado=200.0
     // -----------------------------------------------------------------------
@@ -230,5 +295,78 @@ class CierreCajaViewModelTest {
         val state = viewModel.uiState.value
         val totalRecaudado = state.ventasHoy + state.cobrosAtrasados
         assertEquals(200.0, totalRecaudado, 0.001)
+    }
+
+    // -----------------------------------------------------------------------
+    // Test 8: getTotalesPorMetodo groups pagos by metodoPago (title-case keys)
+    // -----------------------------------------------------------------------
+    @Test
+    fun getTotalesPorMetodo_groups_pagos_by_metodoPago() = runTest(testDispatcher) {
+        val pagos = listOf(
+            Pago(id = "p1", fecha = today, tipo = "abono", monto = 100.0, opticaId = opticaId, metodoPago = "Efectivo"),
+            Pago(id = "p2", fecha = today, tipo = "abono", monto = 50.0,  opticaId = opticaId, metodoPago = "Efectivo"),
+            Pago(id = "p3", fecha = today, tipo = "abono", monto = 200.0, opticaId = opticaId, metodoPago = "Tarjeta"),
+            Pago(id = "p4", fecha = today, tipo = "abono", monto = 75.0,  opticaId = opticaId, metodoPago = "Móvil")
+        )
+        every { repository.getPagosByDateRangeForOptica(today, today, opticaId) } returns flowOf(pagos)
+        every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(emptyList())
+
+        viewModel = CierreCajaViewModel(repository, sessionManager)
+        viewModel.setFecha(today)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val totales = viewModel.getTotalesPorMetodo()
+        assertEquals("Efectivo total must be 150.0", 150.0, totales["Efectivo"] ?: 0.0, 0.001)
+        assertEquals("Tarjeta total must be 200.0", 200.0, totales["Tarjeta"] ?: 0.0, 0.001)
+        assertEquals("Móvil total must be 75.0",    75.0,  totales["Móvil"]   ?: 0.0, 0.001)
+    }
+
+    // -----------------------------------------------------------------------
+    // Test 9: getTotalesPorMetodo returns empty map when no pagos exist
+    // -----------------------------------------------------------------------
+    @Test
+    fun getTotalesPorMetodo_empty_pagos_returns_empty_map() = runTest(testDispatcher) {
+        every { repository.getPagosByDateRangeForOptica(today, today, opticaId) } returns flowOf(emptyList())
+        every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(emptyList())
+
+        viewModel = CierreCajaViewModel(repository, sessionManager)
+        viewModel.setFecha(today)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertTrue("getTotalesPorMetodo must return empty map when no pagos exist",
+            viewModel.getTotalesPorMetodo().isEmpty())
+    }
+
+    // -----------------------------------------------------------------------
+    // Test 10: setFecha updates the fecha field in uiState
+    // -----------------------------------------------------------------------
+    @Test
+    fun setFecha_updates_fecha_in_uiState() = runTest(testDispatcher) {
+        every { repository.getPagosByDateRangeForOptica(any(), any(), any()) } returns flowOf(emptyList())
+        every { repository.getAllDispensacionesForOptica(any()) } returns flowOf(emptyList())
+
+        viewModel = CierreCajaViewModel(repository, sessionManager)
+        viewModel.setFecha(yesterday)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals("setFecha must update fecha in uiState", yesterday, viewModel.uiState.value.fecha)
+    }
+
+    // -----------------------------------------------------------------------
+    // Test 11: empty pagos list results in zero amounts and an empty pagos list
+    // -----------------------------------------------------------------------
+    @Test
+    fun empty_pagos_results_in_zero_amounts_and_empty_list() = runTest(testDispatcher) {
+        every { repository.getPagosByDateRangeForOptica(today, today, opticaId) } returns flowOf(emptyList())
+        every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(emptyList())
+
+        viewModel = CierreCajaViewModel(repository, sessionManager)
+        viewModel.setFecha(today)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals(0.0, state.ventasHoy, 0.001)
+        assertEquals(0.0, state.cobrosAtrasados, 0.001)
+        assertTrue("pagos must be empty when no pagos returned", state.pagos.isEmpty())
     }
 }

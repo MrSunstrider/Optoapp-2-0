@@ -1,10 +1,16 @@
 package com.example.optoapp.viewmodel
 
+import com.example.optoapp.data.SessionManager
 import com.example.optoapp.data.arqueo.ArqueoCaja
 import com.example.optoapp.data.arqueo.IArqueoCajaRepo
+import io.mockk.every
+import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -17,8 +23,7 @@ import org.junit.Test
 import java.time.LocalDate
 
 // ---------------------------------------------------------------------------
-// Fake repository used only inside this test file.
-// Implements IArqueoCajaRepo so that no production abstraction is needed.
+// Fake repository — implements IArqueoCajaRepo for test isolation.
 // ---------------------------------------------------------------------------
 
 private class FakeArqueoCajaRepository : IArqueoCajaRepo {
@@ -38,8 +43,7 @@ private class FakeArqueoCajaRepository : IArqueoCajaRepo {
 }
 
 // ---------------------------------------------------------------------------
-// ArqueoCajaViewModelTest — 6 test cases (RED state when written,
-// GREEN after ArqueoCajaViewModel is created with matching IArqueoCajaRepo).
+// ArqueoCajaViewModelTest
 // ---------------------------------------------------------------------------
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -47,6 +51,7 @@ class ArqueoCajaViewModelTest {
 
     private val testDispatcher = UnconfinedTestDispatcher()
     private lateinit var fakeRepo: FakeArqueoCajaRepository
+    private lateinit var sessionManager: SessionManager
     private lateinit var viewModel: ArqueoCajaViewModel
 
     private val testDate = LocalDate.of(2026, 6, 17)
@@ -57,9 +62,11 @@ class ArqueoCajaViewModelTest {
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
         fakeRepo = FakeArqueoCajaRepository()
+        sessionManager = mockk(relaxed = true)
+        every { sessionManager.userEmail } returns flowOf(testUserId)
         viewModel = ArqueoCajaViewModel(
             repo = fakeRepo,
-            currentUserId = testUserId
+            sessionManager = sessionManager
         )
     }
 
@@ -70,7 +77,6 @@ class ArqueoCajaViewModelTest {
 
     // -----------------------------------------------------------------------
     // Test 1: diferenciaEfectivo = efectivoContado - efectivoCobrado
-    // spec: efectivoContado=180.0, sistemaTotals["efectivo"]=200.0 → diferenciaEfectivo=-20.0
     // -----------------------------------------------------------------------
     @Test
     fun diferenciaEfectivo_equals_contado_minus_cobrado() = runTest(testDispatcher) {
@@ -79,7 +85,7 @@ class ArqueoCajaViewModelTest {
         viewModel.cerrarDia(
             fecha = testDate,
             opticaId = testOpticaId,
-            systemTotals = mapOf("efectivo" to 200.0)
+            systemTotals = mapOf("Efectivo" to 200.0)
         )
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -90,23 +96,22 @@ class ArqueoCajaViewModelTest {
 
     // -----------------------------------------------------------------------
     // Test 2: diferenciaTotal = sum of all per-method diferencias
-    // spec: -20, 0, 5, 0 → diferenciaTotal=-15.0
     // -----------------------------------------------------------------------
     @Test
     fun diferenciaTotal_equals_sum_of_all_diferencias() = runTest(testDispatcher) {
-        viewModel.setEfectivoContado(180.0)     // cobrado=200 → diferencia=-20
-        viewModel.setTarjetaContado(150.0)      // cobrado=150 → diferencia=0
-        viewModel.setTransferenciaContado(55.0) // cobrado=50  → diferencia=+5
-        viewModel.setMovilContado(0.0)          // cobrado=0   → diferencia=0
+        viewModel.setEfectivoContado(180.0)
+        viewModel.setTarjetaContado(150.0)
+        viewModel.setTransferenciaContado(55.0)
+        viewModel.setMovilContado(0.0)
 
         viewModel.cerrarDia(
             fecha = testDate,
             opticaId = testOpticaId,
             systemTotals = mapOf(
-                "efectivo" to 200.0,
-                "tarjeta" to 150.0,
-                "transferencia" to 50.0,
-                "movil" to 0.0
+                "Efectivo" to 200.0,
+                "Tarjeta" to 150.0,
+                "Transferencia" to 50.0,
+                "Móvil" to 0.0
             )
         )
         testDispatcher.scheduler.advanceUntilIdle()
@@ -126,7 +131,7 @@ class ArqueoCajaViewModelTest {
         viewModel.cerrarDia(
             fecha = testDate,
             opticaId = testOpticaId,
-            systemTotals = mapOf("efectivo" to 100.0)
+            systemTotals = mapOf("Efectivo" to 100.0)
         )
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -140,7 +145,6 @@ class ArqueoCajaViewModelTest {
 
     // -----------------------------------------------------------------------
     // Test 4: cerrarDia snapshot invariant
-    // Stored efectivoCobrado stays frozen even after external pago changes.
     // -----------------------------------------------------------------------
     @Test
     fun cerrarDia_snapshot_invariant() = runTest(testDispatcher) {
@@ -149,11 +153,10 @@ class ArqueoCajaViewModelTest {
         viewModel.cerrarDia(
             fecha = testDate,
             opticaId = testOpticaId,
-            systemTotals = mapOf("efectivo" to 100.0)
+            systemTotals = mapOf("Efectivo" to 100.0)
         )
         testDispatcher.scheduler.advanceUntilIdle()
 
-        // External pago change does NOT call repo.insertArqueo again
         val storedRow = fakeRepo.getStoredArqueo(testDate, testOpticaId)
         assertNotNull(storedRow)
         assertEquals(
@@ -174,7 +177,7 @@ class ArqueoCajaViewModelTest {
         viewModel.cerrarDia(
             fecha = testDate,
             opticaId = testOpticaId,
-            systemTotals = mapOf("efectivo" to 100.0)
+            systemTotals = mapOf("Efectivo" to 100.0)
         )
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -192,10 +195,10 @@ class ArqueoCajaViewModelTest {
             fecha = testDate,
             opticaId = testOpticaId,
             systemTotals = mapOf(
-                "efectivo" to 0.0,
-                "tarjeta" to 0.0,
-                "transferencia" to 0.0,
-                "movil" to 0.0
+                "Efectivo" to 0.0,
+                "Tarjeta" to 0.0,
+                "Transferencia" to 0.0,
+                "Móvil" to 0.0
             )
         )
         testDispatcher.scheduler.advanceUntilIdle()
@@ -203,5 +206,151 @@ class ArqueoCajaViewModelTest {
         val state = viewModel.uiState.value
         assertTrue("validationErrors must be empty when all contado values are 0.0", state.validationErrors.isEmpty())
         assertEquals("insertArqueo must be called once when validation passes", 1, fakeRepo.insertCallCount)
+    }
+
+    // -----------------------------------------------------------------------
+    // Test 7: cerrarDia uses title-case keys to look up systemTotals (Bug #4)
+    // -----------------------------------------------------------------------
+    @Test
+    fun totalesUseTitleCaseKeys() = runTest(testDispatcher) {
+        viewModel.setEfectivoContado(500.0)
+
+        viewModel.cerrarDia(
+            fecha = testDate,
+            opticaId = testOpticaId,
+            systemTotals = mapOf(
+                "Efectivo" to 500.0,
+                "Tarjeta" to 100.0,
+                "Transferencia" to 50.0,
+                "Móvil" to 25.0
+            )
+        )
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val stored = fakeRepo.getStoredArqueo(testDate, testOpticaId)
+        assertNotNull("Arqueo should have been persisted", stored)
+        assertEquals(
+            "efectivoCobrado must be non-zero when Efectivo key is title-case",
+            500.0, stored!!.efectivoCobrado, 0.001
+        )
+        assertEquals(
+            "tarjetaCobrado must be non-zero when Tarjeta key is title-case",
+            100.0, stored.tarjetaCobrado, 0.001
+        )
+        assertEquals(
+            "transferenciaCobrado must be non-zero when Transferencia key is title-case",
+            50.0, stored.transferenciaCobrado, 0.001
+        )
+        assertEquals(
+            "movilCobrado must be non-zero when Móvil key is title-case",
+            25.0, stored.movilCobrado, 0.001
+        )
+    }
+
+    // -----------------------------------------------------------------------
+    // Test 8: userId is resolved async from SessionManager in init (Bug #3)
+    // The ViewModel must populate currentUserId from the userEmail flow
+    // without blocking the constructor thread.
+    // -----------------------------------------------------------------------
+    @Test
+    fun userIdResolvedAsyncWithoutBlocking() = runTest(testDispatcher) {
+        // ViewModel was constructed in setUp with SessionManager returning testUserId.
+        // After the coroutine in init completes, currentUserId must equal the email.
+        advanceUntilIdle()
+
+        // Trigger cerrarDia to see the userId stamped on the stored arqueo.
+        viewModel.cerrarDia(
+            fecha = testDate,
+            opticaId = testOpticaId,
+            systemTotals = mapOf("Efectivo" to 100.0)
+        )
+        advanceUntilIdle()
+
+        val stored = fakeRepo.getStoredArqueo(testDate, testOpticaId)
+        assertNotNull("Arqueo should have been persisted", stored)
+        assertEquals(
+            "cerradoPor must be the email resolved async from SessionManager",
+            testUserId,
+            stored!!.cerradoPor
+        )
+    }
+
+    // -----------------------------------------------------------------------
+    // Test 9: cerrarDia guard — does NOT persist when userId has not yet resolved
+    // -----------------------------------------------------------------------
+    @Test
+    fun cerrarDia_empty_userId_does_not_persist() = runTest(testDispatcher) {
+        val neverEmittingSession = mockk<SessionManager>(relaxed = true)
+        every { neverEmittingSession.userEmail } returns MutableSharedFlow()
+
+        val vmNoUser = ArqueoCajaViewModel(repo = fakeRepo, sessionManager = neverEmittingSession)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        vmNoUser.cerrarDia(
+            fecha = testDate,
+            opticaId = testOpticaId,
+            systemTotals = mapOf("Efectivo" to 100.0)
+        )
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals("insertArqueo must NOT be called when userId is empty", 0, fakeRepo.insertCallCount)
+    }
+
+    // -----------------------------------------------------------------------
+    // Test 10: setFondoCaja value flows through to persisted ArqueoCaja.fondoCaja
+    // -----------------------------------------------------------------------
+    @Test
+    fun setFondoCaja_value_is_persisted_in_arqueo() = runTest(testDispatcher) {
+        viewModel.setFondoCaja(350.0)
+
+        viewModel.cerrarDia(
+            fecha = testDate,
+            opticaId = testOpticaId,
+            systemTotals = mapOf("Efectivo" to 100.0)
+        )
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val stored = fakeRepo.getStoredArqueo(testDate, testOpticaId)
+        assertNotNull("Arqueo must be persisted", stored)
+        assertEquals("fondoCaja must reflect the value set via setFondoCaja", 350.0, stored!!.fondoCaja, 0.001)
+    }
+
+    // -----------------------------------------------------------------------
+    // Test 11: cerrarDia called twice inserts twice (VM-level idempotency)
+    // DAO-level REPLACE prevents duplicate-key error; VM makes no attempt to deduplicate.
+    // -----------------------------------------------------------------------
+    @Test
+    fun cerrarDia_called_twice_calls_insertArqueo_twice() = runTest(testDispatcher) {
+        viewModel.cerrarDia(fecha = testDate, opticaId = testOpticaId, systemTotals = emptyMap())
+        testDispatcher.scheduler.advanceUntilIdle()
+        viewModel.cerrarDia(fecha = testDate, opticaId = testOpticaId, systemTotals = emptyMap())
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals("Two cerrarDia calls must each call insertArqueo", 2, fakeRepo.insertCallCount)
+    }
+
+    // -----------------------------------------------------------------------
+    // Tests 12–15: badgeColorFor companion — badge color thresholds
+    // -----------------------------------------------------------------------
+    @Test
+    fun badgeColorFor_green_when_contado_equals_cobrado() {
+        assertEquals(BadgeColor.GREEN, ArqueoCajaViewModel.badgeColorFor(200.0, 200.0))
+    }
+
+    @Test
+    fun badgeColorFor_yellow_when_within_5_percent() {
+        // |204 - 200| / 200 = 2% ≤ 5%
+        assertEquals(BadgeColor.YELLOW, ArqueoCajaViewModel.badgeColorFor(204.0, 200.0))
+    }
+
+    @Test
+    fun badgeColorFor_red_when_above_5_percent() {
+        // |215 - 200| / 200 = 7.5% > 5%
+        assertEquals(BadgeColor.RED, ArqueoCajaViewModel.badgeColorFor(215.0, 200.0))
+    }
+
+    @Test
+    fun badgeColorFor_red_when_cobrado_is_zero_and_contado_nonzero() {
+        assertEquals(BadgeColor.RED, ArqueoCajaViewModel.badgeColorFor(100.0, 0.0))
     }
 }
