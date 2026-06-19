@@ -2,13 +2,14 @@ package com.example.optoapp.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.optoapp.data.SessionManager
 import com.example.optoapp.data.arqueo.ArqueoCaja
 import com.example.optoapp.data.arqueo.IArqueoCajaRepo
-import com.example.optoapp.di.CurrentUserId
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.Instant
@@ -37,22 +38,23 @@ data class ArqueoCajaUiState(
 
 enum class BadgeColor { GREEN, YELLOW, RED }
 
-// ---------------------------------------------------------------------------
-// ArqueoCajaViewModel
-//
-// HiltViewModel wired via @Inject constructor. IArqueoCajaRepo is bound to
-// OptoRepository in DatabaseModule. currentUserId is provided from
-// SessionManager via the @CurrentUserId qualifier.
-// ---------------------------------------------------------------------------
-
 @HiltViewModel
 class ArqueoCajaViewModel @Inject constructor(
     private val repo: IArqueoCajaRepo,
-    @CurrentUserId private val currentUserId: String
+    private val sessionManager: SessionManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ArqueoCajaUiState())
     val uiState: StateFlow<ArqueoCajaUiState> = _uiState.asStateFlow()
+
+    // Resolved asynchronously in init — empty until the coroutine completes.
+    private var currentUserId: String = ""
+
+    init {
+        viewModelScope.launch {
+            currentUserId = sessionManager.userEmail.first()
+        }
+    }
 
     fun setFondoCaja(value: Double) { _uiState.update { it.copy(fondoCaja = value) } }
     fun setEfectivoContado(value: Double) { _uiState.update { it.copy(efectivoContado = value) } }
@@ -61,6 +63,10 @@ class ArqueoCajaViewModel @Inject constructor(
     fun setMovilContado(value: Double) { _uiState.update { it.copy(movilContado = value) } }
 
     fun cerrarDia(fecha: LocalDate, opticaId: String, systemTotals: Map<String, Double>) {
+        if (currentUserId.isEmpty()) {
+            // Guard: userId not yet resolved — skip to avoid stamping an empty cerradoPor.
+            return
+        }
         viewModelScope.launch {
             val state = _uiState.value
             val errors = mutableMapOf<String, String>()
@@ -73,10 +79,10 @@ class ArqueoCajaViewModel @Inject constructor(
                 _uiState.update { it.copy(validationErrors = errors) }
                 return@launch
             }
-            val efCobrado    = systemTotals["efectivo"]      ?: 0.0
-            val tarCobrado   = systemTotals["tarjeta"]       ?: 0.0
-            val transCobrado = systemTotals["transferencia"] ?: 0.0
-            val movCobrado   = systemTotals["movil"]         ?: 0.0
+            val efCobrado    = systemTotals["Efectivo"]      ?: 0.0
+            val tarCobrado   = systemTotals["Tarjeta"]       ?: 0.0
+            val transCobrado = systemTotals["Transferencia"] ?: 0.0
+            val movCobrado   = systemTotals["Móvil"]         ?: 0.0
             val arqueo = ArqueoCaja(
                 id = UUID.randomUUID().toString(),
                 fecha = fecha,

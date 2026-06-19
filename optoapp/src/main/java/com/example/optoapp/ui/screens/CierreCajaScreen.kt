@@ -2,20 +2,23 @@ package com.example.optoapp.ui.screens
 
 import android.content.Intent
 import android.widget.Toast
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -23,7 +26,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.optoapp.data.AppRoles
 import com.example.optoapp.data.arqueo.ArqueoCaja
@@ -59,7 +62,6 @@ fun CierreCajaScreen(
         initialSelectedDateMillis = DateUtils.localDateToPickerMillis(uiState.fecha)
     )
 
-    // ── Wire arqueo observation when fecha changes ──────────────────
     LaunchedEffect(uiState.fecha, opticaId) {
         if (opticaId.isNotBlank()) {
             viewModel.observeArqueoForDate(uiState.fecha, opticaId)
@@ -80,7 +82,6 @@ fun CierreCajaScreen(
         }
     }
 
-    // ── PDF export helper ──────────────────────────────────────────
     fun exportPdf(arqueo: ArqueoCaja) {
         val pdfBytes = ArqueoCajaPdfGenerator.generate(arqueo, opticaId)
         val file = File(context.cacheDir, "arqueo_${arqueo.fecha}_${arqueo.opticaId}.pdf")
@@ -106,7 +107,6 @@ fun CierreCajaScreen(
                 },
                 actions = {
                     if (canView) {
-                        // PDF export — available when arqueo exists for date
                         uiState.arqueoForFecha?.let { arqueo ->
                             IconButton(onClick = { exportPdf(arqueo) }) {
                                 Icon(Icons.Default.PictureAsPdf, contentDescription = "Exportar PDF")
@@ -137,7 +137,6 @@ fun CierreCajaScreen(
                 return@Column
             }
 
-            // Header con Fecha
             Text(
                 text = "Reporte del ${DateUtils.formatLocalized(uiState.fecha)}",
                 style = MaterialTheme.typography.titleMedium,
@@ -146,7 +145,6 @@ fun CierreCajaScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Total Ventas del Día
             OptoCard(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
@@ -173,7 +171,6 @@ fun CierreCajaScreen(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Resumen de Totales por método de pago
             val totales = viewModel.getTotalesPorMetodo()
             val totalGeneral = totales.values.sum()
 
@@ -203,7 +200,6 @@ fun CierreCajaScreen(
                 }
             }
 
-            // ─── Desglose ventas hoy vs cobros atrasados ────────────────
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
@@ -231,7 +227,6 @@ fun CierreCajaScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // ─── ARQUEO SECTION (T-11) ─────────────────────────────────
             ArqueoSection(
                 arqueoFromCierre = uiState.arqueoForFecha,
                 arqueoUiState = arqueoUiState,
@@ -256,11 +251,8 @@ fun CierreCajaScreen(
                     Text("No hay transacciones registradas este día", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             } else {
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    items(uiState.pagos) { pago ->
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    uiState.pagos.forEach { pago ->
                         TransactionItem(pago)
                     }
                 }
@@ -268,8 +260,6 @@ fun CierreCajaScreen(
         }
     }
 }
-
-// ─── ARQUEO SECTION ──────────────────────────────────────────────────────────
 
 @Composable
 fun ArqueoSection(
@@ -286,6 +276,11 @@ fun ArqueoSection(
     onCerrarDia: () -> Unit
 ) {
     val isSellado = arqueoFromCierre?.sellado == true
+    var isExpanded by remember { mutableStateOf(false) }
+    val chevronRotation by animateFloatAsState(
+        targetValue = if (isExpanded) 180f else 0f,
+        label = "chevron"
+    )
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -298,26 +293,41 @@ fun ArqueoSection(
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { isExpanded = !isExpanded },
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text("Arqueo de Caja", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                if (isSellado) {
-                    AssistChip(
-                        onClick = {},
-                        label = { Text("SELLADO") },
-                        colors = AssistChipDefaults.assistChipColors(
-                            containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
-                            labelColor = MaterialTheme.colorScheme.primary
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (isSellado) {
+                        AssistChip(
+                            onClick = {},
+                            label = { Text("SELLADO") },
+                            colors = AssistChipDefaults.assistChipColors(
+                                containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                                labelColor = MaterialTheme.colorScheme.primary
+                            )
                         )
+                    }
+                    Icon(
+                        imageVector = Icons.Default.ExpandMore,
+                        contentDescription = if (isExpanded) "Colapsar arqueo" else "Expandir arqueo",
+                        modifier = Modifier.rotate(chevronRotation),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
 
+            AnimatedVisibility(visible = isExpanded) {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+
             if (isSellado) {
                 val arqueo = arqueoFromCierre!!
-                // ── Read-only sealed view ───────────────────────────
                 ReadOnlyField("Fondo de Caja", arqueo.fondoCaja)
                 HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
 
@@ -331,14 +341,12 @@ fun ArqueoSection(
                 ReadOnlyField("Diferencia Total", arqueo.diferenciaTotal)
                 ReadOnlyField("Cerrado por", arqueo.cerradoPor)
             } else {
-                // ── Editable form ──────────────────────────────────
                 ArqueoNumberField("Fondo de Caja", arqueoUiState.fondoCaja, onFondoCajaChange)
                 ArqueoNumberField("Efectivo Contado", arqueoUiState.efectivoContado, onEfectivoContadoChange)
                 ArqueoNumberField("Tarjeta Contado", arqueoUiState.tarjetaContado, onTarjetaContadoChange)
                 ArqueoNumberField("Transferencia Contado", arqueoUiState.transferenciaContado, onTransferenciaContadoChange)
                 ArqueoNumberField("Móvil Contado", arqueoUiState.movilContado, onMovilContadoChange)
 
-                // Validation errors
                 arqueoUiState.validationErrors.forEach { (field, error) ->
                     Text(error, color = MaterialTheme.colorScheme.error, fontSize = 12.sp)
                 }
@@ -353,6 +361,9 @@ fun ArqueoSection(
                     Text("Cerrar Día")
                 }
             }
+
+                } // end Column inside AnimatedVisibility
+            }   // end AnimatedVisibility
         }
     }
 }
@@ -431,8 +442,6 @@ private fun ArqueoReadOnlyRow(
         )
     }
 }
-
-// ─── EXISTING COMPONENTS ─────────────────────────────────────────────────────
 
 @Composable
 fun ResumenCard(label: String, monto: Double, modifier: Modifier, color: Color) {

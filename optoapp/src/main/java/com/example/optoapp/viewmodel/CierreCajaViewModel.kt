@@ -8,9 +8,19 @@ import com.example.optoapp.data.Pago
 import com.example.optoapp.data.SessionManager
 import com.example.optoapp.data.arqueo.ArqueoCaja
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import com.example.optoapp.util.DateUtils
@@ -27,7 +37,6 @@ data class CierreCajaUiState(
     val arqueoForFecha: ArqueoCaja? = null
 )
 
-/** Resultado interno para combinar pagos + ventas + saldo pendiente. */
 private data class CierreCajaResult(
     val pagos: List<Pago>,
     val totalVentasHoy: Double,
@@ -36,6 +45,7 @@ private data class CierreCajaResult(
     val saldoPendiente: Double
 )
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class CierreCajaViewModel @Inject constructor(
     private val repository: OptoRepository,
@@ -45,22 +55,38 @@ class CierreCajaViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(CierreCajaUiState())
     val uiState: StateFlow<CierreCajaUiState> = _uiState.asStateFlow()
 
+    // Drives the single arqueo collector via flatMapLatest — guarantees at most one active collector.
+    private val _arqueoKey = MutableStateFlow<Pair<LocalDate, String>?>(null)
+
     init {
         viewModelScope.launch {
-            sessionManager.userTimeZone.collectLatest { _ ->
+            sessionManager.userTimeZone.collect { _ ->
                 _uiState.update { it.copy(fecha = DateUtils.today()) }
             }
         }
         observePagos()
+        observeArqueo()
+    }
+
+    /** Wires a single flatMapLatest chain so that only one arqueo collector is ever active. */
+    private fun observeArqueo() {
+        _arqueoKey
+            .filterNotNull()
+            .flatMapLatest { (fecha, opticaId) ->
+                repository.getArqueoByFecha(fecha, opticaId)
+            }
+            .onEach { arqueo ->
+                _uiState.update { it.copy(arqueoForFecha = arqueo) }
+            }
+            .launchIn(viewModelScope)
     }
 
     fun setFecha(fecha: LocalDate) {
         _uiState.update { it.copy(fecha = fecha) }
     }
 
-    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     private fun observePagos() {
-        kotlinx.coroutines.flow.combine(
+        combine(
             _uiState.map { it.fecha }.distinctUntilChanged(),
             sessionManager.opticaId
         ) { fecha, opticaId -> fecha to opticaId }
@@ -89,17 +115,19 @@ class CierreCajaViewModel @Inject constructor(
                 }
             }
             .onEach { (pagos, totalVentasHoy, ventasHoy, cobrosAtrasados, saldoPendiente) ->
-                _uiState.update { it.copy(
-                    pagos = pagos,
-                    totalVentasHoy = totalVentasHoy,
-                    ventasHoy = ventasHoy,
-                    cobrosAtrasados = cobrosAtrasados,
-                    saldoPendiente = saldoPendiente,
-                    isLoading = false
-                )}
+                _uiState.update {
+                    it.copy(
+                        pagos = pagos,
+                        totalVentasHoy = totalVentasHoy,
+                        ventasHoy = ventasHoy,
+                        cobrosAtrasados = cobrosAtrasados,
+                        saldoPendiente = saldoPendiente,
+                        isLoading = false
+                    )
+                }
             }.launchIn(viewModelScope)
     }
-    
+
     // Helper to get totals by method
     fun getTotalesPorMetodo(): Map<String, Double> {
         return _uiState.value.pagos.groupBy { it.metodoPago }
@@ -108,22 +136,10 @@ class CierreCajaViewModel @Inject constructor(
 
     // ─── Arqueo integration ───────────────────────────────────────────────
 
-    /**
-     * Returns a cold Flow<ArqueoCaja?> for the given date and optica.
-     * Delegates to OptoRepository.getArqueoByFecha backed by Room.
-     */
     fun loadArqueoForDate(fecha: LocalDate, opticaId: String): Flow<ArqueoCaja?> =
         repository.getArqueoByFecha(fecha, opticaId)
 
-    /**
-     * Starts collecting the arqueo for [fecha]/[opticaId] and mirrors it
-     * into [CierreCajaUiState.arqueoForFecha] reactively.
-     */
     fun observeArqueoForDate(fecha: LocalDate, opticaId: String) {
-        viewModelScope.launch {
-            repository.getArqueoByFecha(fecha, opticaId).collect { arqueo ->
-                _uiState.update { it.copy(arqueoForFecha = arqueo) }
-            }
-        }
+        _arqueoKey.value = fecha to opticaId
     }
 }

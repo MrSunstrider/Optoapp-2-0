@@ -23,7 +23,7 @@ interface ArqueoCajaDao {
     @Query("SELECT * FROM arqueo_caja WHERE fecha = :fecha AND opticaId = :opticaId LIMIT 1")
     suspend fun getArqueoByFechaSync(fecha: LocalDate, opticaId: String): ArqueoCaja?
 
-    @Insert(onConflict = OnConflictStrategy.ABORT)
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertArqueo(a: ArqueoCaja)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
