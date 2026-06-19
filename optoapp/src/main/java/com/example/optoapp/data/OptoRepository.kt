@@ -154,6 +154,24 @@ open class OptoRepository(
         arqueoCajaDao.upsertArqueo(arqueo)
     }
 
+    // ─── Remote-bypass write path ──────────────────────────────────────────
+    // These methods write a record received from the server as-is:
+    //  - NO copy(updatedAt = Instant.now()) — server timestamp is preserved verbatim.
+    //  - NO postSaveSyncScheduler call — download is the terminal step of a sync cycle.
+    // Mirror pattern: upsertArqueoFromRemote above.
+
+    suspend fun upsertServicioFromRemote(servicio: ServicioExtra) =
+        dispensacionRepo.insertServicio(servicio)
+
+    suspend fun upsertDispensacionFromRemote(dispensacion: DispensacionOptica) =
+        dispensacionRepo.insertDispensacion(dispensacion)
+
+    suspend fun upsertPagoFromRemote(pago: Pago) =
+        dispensacionRepo.insertPago(pago)
+
+    suspend fun upsertEvaluacionFromRemote(evaluacion: EvaluacionClinica) =
+        pacienteRepo.insertEvaluacion(evaluacion)
+
     fun getArqueoByFecha(fecha: LocalDate, opticaId: String): Flow<ArqueoCaja?> =
         arqueoCajaDao.getArqueoByFechaAndOptica(fecha, opticaId)
 

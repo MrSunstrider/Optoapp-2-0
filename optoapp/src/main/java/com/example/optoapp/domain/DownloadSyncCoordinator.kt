@@ -61,7 +61,7 @@ class DownloadSyncCoordinator @Inject constructor(
             if (r.id in skipIds) return@forEach
             try {
                 val local = r.toEntity()
-                repository.insertDispensacion(local)
+                repository.upsertDispensacionFromRemote(local)
                 syncStateTracker.markSynced(opticaId, "dispensacion", local.id)
             } catch (e: CancellationException) {
                 throw e
@@ -85,7 +85,7 @@ class DownloadSyncCoordinator @Inject constructor(
             if (r.id in skipIds) return@forEach
             try {
                 val local = r.toEntity()
-                repository.insertServicio(local)
+                repository.upsertServicioFromRemote(local)
                 syncStateTracker.markSynced(opticaId, "servicio_extra", local.id)
             } catch (e: CancellationException) {
                 throw e
@@ -109,7 +109,7 @@ class DownloadSyncCoordinator @Inject constructor(
             if (r.id in skipIds) return@forEach
             try {
                 val local = r.toEntity()
-                repository.insertPago(local)
+                repository.upsertPagoFromRemote(local)
                 syncStateTracker.markSynced(opticaId, "pago", local.id)
             } catch (e: CancellationException) {
                 throw e

@@ -184,7 +184,7 @@ open class SyncHistorialUseCase @Inject constructor(
         remotos.forEach { remoto ->
             try {
                 val local = remoto.toEntity()
-                repository.insertEvaluacion(local)
+                repository.upsertEvaluacionFromRemote(local)
                 syncStateTracker.markSynced(opticaId, "evaluacion", local.id)
             } catch (e: CancellationException) {
                 throw e
