@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.sp
 import com.example.optoapp.R
 import com.example.optoapp.ui.components.DropdownField
 import com.example.optoapp.ui.components.OptoTextField
+import com.example.optoapp.ui.theme.OptoTokens
 import com.example.optoapp.viewmodel.FiscalConfigUi
 
 data class FiscalDraftUpdate(
@@ -33,7 +34,10 @@ fun FiscalDataSection(
     onDraftChange: (FiscalDraftUpdate) -> Unit,
     onSave: () -> Unit
 ) {
-    Card {
+    Card(
+        shape = OptoTokens.shapes.medium,
+        elevation = CardDefaults.cardElevation(defaultElevation = OptoTokens.elevation.level1)
+    ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(stringResource(R.string.config_fiscal_section_title), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
             Text(
@@ -93,7 +97,10 @@ fun ClinicalIntegritySection(
 ) {
     var showConfirmDialog by remember { mutableStateOf(false) }
 
-    Card {
+    Card(
+        shape = OptoTokens.shapes.medium,
+        elevation = CardDefaults.cardElevation(defaultElevation = OptoTokens.elevation.level1)
+    ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(stringResource(R.string.config_clinical_section_title), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
             Text(
@@ -138,7 +145,10 @@ fun UsuariosRolesSection(
     onAssignRole: () -> Unit,
     onRefresh: () -> Unit
 ) {
-    Card {
+    Card(
+        shape = OptoTokens.shapes.medium,
+        elevation = CardDefaults.cardElevation(defaultElevation = OptoTokens.elevation.level1)
+    ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(stringResource(R.string.config_users_roles_section_title), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
             Text(

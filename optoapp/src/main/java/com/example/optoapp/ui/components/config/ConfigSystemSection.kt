@@ -1,16 +1,20 @@
 package com.example.optoapp.ui.components.config
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.optoapp.R
 import com.example.optoapp.ui.components.DropdownField
+import com.example.optoapp.ui.theme.OptoTokens
 
 @Composable
 fun SystemSection(
@@ -24,7 +28,10 @@ fun SystemSection(
     onSendTestNotification: () -> Unit
 ) {
     // Preferencias
-    Card {
+    Card(
+        shape = OptoTokens.shapes.medium,
+        elevation = CardDefaults.cardElevation(defaultElevation = OptoTokens.elevation.level1)
+    ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(stringResource(R.string.config_general_section_title), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
 
@@ -60,6 +67,7 @@ fun SystemSection(
                     onCheckedChange = onRemindersEnabledChanged
                 )
             }
+            // Reminders status badge inline
             val remindersStatusText = when {
                 !notificationPermissionGranted -> stringResource(R.string.config_general_reminders_state_no_permission)
                 !systemNotificationsEnabled -> stringResource(R.string.config_general_reminders_state_system_disabled)
@@ -67,15 +75,34 @@ fun SystemSection(
                 else -> stringResource(R.string.config_general_reminders_state_active)
             }
             val remindersStatusColor = when {
-                !notificationPermissionGranted || !systemNotificationsEnabled -> MaterialTheme.colorScheme.error
-                !remindersEnabled -> MaterialTheme.colorScheme.onSurfaceVariant
-                else -> MaterialTheme.colorScheme.tertiary
+                !notificationPermissionGranted || !systemNotificationsEnabled -> MaterialTheme.colorScheme.errorContainer
+                !remindersEnabled -> MaterialTheme.colorScheme.surfaceVariant
+                else -> MaterialTheme.colorScheme.primaryContainer
             }
-            Text(
-                text = stringResource(R.string.config_general_reminders_state_prefix, remindersStatusText),
-                fontSize = 12.sp,
-                color = remindersStatusColor
-            )
+            val remindersStatusTextColor = when {
+                !notificationPermissionGranted || !systemNotificationsEnabled -> MaterialTheme.colorScheme.onErrorContainer
+                !remindersEnabled -> MaterialTheme.colorScheme.onSurfaceVariant
+                else -> MaterialTheme.colorScheme.onPrimaryContainer
+            }
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = stringResource(R.string.config_general_reminders_state_prefix),
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = remindersStatusText,
+                    fontSize = 10.sp,
+                    color = remindersStatusTextColor,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(remindersStatusColor)
+                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                )
+            }
             OutlinedButton(
                 onClick = onSendTestNotification,
                 modifier = Modifier.fillMaxWidth()

@@ -17,6 +17,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.optoapp.R
+import com.example.optoapp.ui.theme.OptoTokens
 import com.example.optoapp.viewmodel.SyncDiagnosticsViewModel
 
 @Composable
@@ -28,7 +29,10 @@ fun SyncDiagnosticsCard(
     val remoteTelemetry by syncDiagVm.remoteTelemetry.collectAsState()
     val remoteTelemetryLoading by syncDiagVm.remoteTelemetryLoading.collectAsState()
 
-    Card {
+    Card(
+        shape = OptoTokens.shapes.medium,
+        elevation = CardDefaults.cardElevation(defaultElevation = OptoTokens.elevation.level1)
+    ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(stringResource(R.string.config_sync_diag_section_title), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
 

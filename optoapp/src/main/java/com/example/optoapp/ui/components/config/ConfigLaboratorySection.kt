@@ -12,6 +12,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.optoapp.R
 import com.example.optoapp.ui.components.OptoTextField
+import com.example.optoapp.ui.theme.OptoTokens
 
 @Composable
 fun LaboratorySection(
@@ -21,7 +22,10 @@ fun LaboratorySection(
     onLabContactoChange: (String) -> Unit,
     onSave: () -> Unit
 ) {
-    Card {
+    Card(
+        shape = OptoTokens.shapes.medium,
+        elevation = CardDefaults.cardElevation(defaultElevation = OptoTokens.elevation.level1)
+    ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(
                 stringResource(R.string.config_laboratory_section_title),

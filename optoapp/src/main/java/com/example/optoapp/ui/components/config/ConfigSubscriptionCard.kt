@@ -13,6 +13,7 @@ import androidx.compose.ui.unit.sp
 import com.example.optoapp.BuildConfig
 import com.example.optoapp.R
 import com.example.optoapp.subscription.PlanCode
+import com.example.optoapp.ui.theme.OptoTokens
 import com.example.optoapp.viewmodel.SubscriptionViewModel
 
 @Composable
@@ -22,7 +23,10 @@ fun SubscriptionCard(
     subscriptionVm: SubscriptionViewModel,
     context: Context
 ) {
-    Card {
+    Card(
+        shape = OptoTokens.shapes.medium,
+        elevation = CardDefaults.cardElevation(defaultElevation = OptoTokens.elevation.level1)
+    ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(stringResource(R.string.config_subscription_section_title), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
             val planLabel = when (planCode) {

@@ -12,6 +12,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.optoapp.R
+import com.example.optoapp.ui.theme.OptoTokens
 
 @Composable
 fun DataManagementCard(
@@ -19,7 +20,10 @@ fun DataManagementCard(
     createBackupLauncher: androidx.activity.result.ActivityResultLauncher<String>,
     restoreBackupLauncher: androidx.activity.result.ActivityResultLauncher<String>
 ) {
-    Card {
+    Card(
+        shape = OptoTokens.shapes.medium,
+        elevation = CardDefaults.cardElevation(defaultElevation = OptoTokens.elevation.level1)
+    ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(stringResource(R.string.config_data_section_title), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
             Text(stringResource(R.string.config_data_section_desc), fontSize = 14.sp)

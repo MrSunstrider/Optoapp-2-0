@@ -5,6 +5,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -130,21 +131,12 @@ fun LoginScreen(
                 enter = fadeIn() + slideInVertically { -40 }
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    // Logo: ojo dentro de círculo (emula la "O")
-                    Surface(
-                        shape = RoundedCornerShape(20.dp),
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(72.dp)
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(
-                                imageVector = Icons.Default.Visibility,
-                                contentDescription = "OptoApp",
-                                modifier = Modifier.size(40.dp),
-                                tint = MaterialTheme.colorScheme.onPrimary
-                            )
-                        }
-                    }
+                    // Logo
+                    Image(
+                        painter = painterResource(com.example.optoapp.R.drawable.logo_login),
+                        contentDescription = "OptoApp",
+                        modifier = Modifier.size(100.dp)
+                    )
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
                         text = "OptoApp",

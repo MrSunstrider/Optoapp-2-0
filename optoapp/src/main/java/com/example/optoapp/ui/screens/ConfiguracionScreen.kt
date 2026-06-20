@@ -9,7 +9,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -23,6 +25,7 @@ import androidx.navigation.NavController
 import com.example.optoapp.R
 import com.example.optoapp.data.AppRoles
 import com.example.optoapp.ui.components.config.ClinicalIntegritySection
+import com.example.optoapp.ui.components.config.ConfigAboutSection
 import com.example.optoapp.ui.components.config.DataManagementCard
 import com.example.optoapp.ui.components.config.FiscalDataSection
 import com.example.optoapp.ui.components.config.LaboratorySection
@@ -34,6 +37,7 @@ import com.example.optoapp.ui.components.config.SyncDiagnosticsCard
 import com.example.optoapp.ui.components.config.SystemSection
 import com.example.optoapp.ui.components.config.UsuariosRolesSection
 import com.example.optoapp.ui.components.OptoTopAppBar
+import com.example.optoapp.ui.theme.OptoTokens
 import com.example.optoapp.viewmodel.AuthViewModel
 import com.example.optoapp.viewmodel.ConfiguracionViewModel
 import com.example.optoapp.viewmodel.FiscalConfigViewModel
@@ -130,10 +134,10 @@ fun ConfiguracionScreen(
             navigationIcon = { IconButton(onClick = { scope.launch { drawerState.open() } }) { Icon(Icons.Default.Menu, contentDescription = "Menu") } }
         )
     }) { padding ->
-        Column(modifier = Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(horizontal = 14.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(modifier = Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(horizontal = OptoTokens.spacing.lg, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(OptoTokens.spacing.md)) {
 
-            SectionHeader(stringResource(R.string.config_section_security))
+            SectionHeader(stringResource(R.string.config_section_security), icon = Icons.Default.Lock)
             SecuritySection(pinHasBeenSet = pinHasBeenSet, isPinRequired = isPinRequired,
                 pinActual = configVm.pinActual, nuevoPin = configVm.nuevoPin, confirmPin = configVm.confirmPin,
                 onPinActualChange = { configVm.pinActual = it }, onNuevoPinChange = { configVm.nuevoPin = it },
@@ -142,7 +146,7 @@ fun ConfiguracionScreen(
 
             ConfigProfileSection(email = userEmail, rol = opticaRol, opticaName = fiscalUi.nombreComercial)
 
-            SectionHeader(stringResource(R.string.config_section_system))
+            SectionHeader(stringResource(R.string.config_section_system), icon = Icons.Default.Settings)
             SystemSection(userTimeZone = userTimeZone, availableTimeZones = configVm.availableTimeZones,
                 remindersEnabled = remindersEnabled, notificationPermissionGranted = notificationPermissionGranted,
                 systemNotificationsEnabled = systemNotificationsEnabled,
@@ -169,6 +173,8 @@ fun ConfiguracionScreen(
             SubscriptionCard(planCode = planCode, devProOverride = devProOverride, subscriptionVm = subscriptionVm, context = context)
             SyncDiagnosticsCard(syncDiagVm = syncDiagVm, context = context)
             DataManagementCard(canManageBackups = canManageBackups, createBackupLauncher = createBackupLauncher, restoreBackupLauncher = restoreBackupLauncher)
+
+            ConfigAboutSection()
         }
     }
 

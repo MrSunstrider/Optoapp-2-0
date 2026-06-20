@@ -1,11 +1,14 @@
 package com.example.optoapp.ui.components.config
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -13,6 +16,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.optoapp.R
 import com.example.optoapp.data.SecurityManager
+import com.example.optoapp.ui.theme.OptoTokens
 
 @Composable
 fun SecuritySection(
@@ -27,9 +31,33 @@ fun SecuritySection(
     onPinRequiredChange: (Boolean) -> Unit,
     onUpdatePin: () -> Unit
 ) {
-    Card {
+    Card(
+        shape = OptoTokens.shapes.medium,
+        elevation = CardDefaults.cardElevation(defaultElevation = OptoTokens.elevation.level1)
+    ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(stringResource(R.string.config_security_section_title), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(stringResource(R.string.config_security_section_title), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                // PIN status badge
+                val pinStatusText = if (pinHasBeenSet) "PIN activado" else "PIN inactivo"
+                val pinStatusColor = if (pinHasBeenSet) MaterialTheme.colorScheme.primaryContainer
+                    else MaterialTheme.colorScheme.errorContainer
+                val pinStatusTextColor = if (pinHasBeenSet) MaterialTheme.colorScheme.onPrimaryContainer
+                    else MaterialTheme.colorScheme.onErrorContainer
+                Text(
+                    text = pinStatusText,
+                    fontSize = 10.sp,
+                    color = pinStatusTextColor,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(pinStatusColor)
+                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                )
+            }
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
