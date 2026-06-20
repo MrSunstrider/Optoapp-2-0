@@ -32,7 +32,7 @@
     <string name="config_general_section_title">Ajustes Generales</string>
     <string name="config_general_reminders_title">Recordatorios Automáticos</string>
     <string name="config_general_reminders_desc">Aviso el día de la cita alrededor de las 12:00 (hora del teléfono). Si guardas la cita ese mismo día después de las 12:00, se envía un aviso en segundos. Activa las notificaciones del sistema para OptoApp.</string>
-    <string name="config_general_reminders_state_prefix">Estado recordatorios: %1$s</string>
+    <string name="config_general_reminders_state_prefix">Estado recordatorios:</string>
     <string name="config_general_reminders_state_no_permission">Sin permiso de notificaciones (Android 13+).</string>
     <string name="config_general_reminders_state_system_disabled">Notificaciones del sistema desactivadas para OptoApp.</string>
     <string name="config_general_reminders_state_app_disabled">Recordatorios desactivados desde la app.</string>

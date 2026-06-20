@@ -1,5 +1,6 @@
 package com.example.optoapp.ui.screens
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -10,6 +11,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -109,25 +112,10 @@ fun DrawerContent(
                 .padding(vertical = 28.dp, horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Surface(
-                shape = MaterialTheme.shapes.medium,
-                color = MaterialTheme.colorScheme.primaryContainer,
-                modifier = Modifier.size(64.dp)
-            ) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(
-                        text = "O",
-                        style = MaterialTheme.typography.headlineLarge,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        fontWeight = FontWeight.Black
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.height(12.dp))
-            Text(
-                text = "OptoApp",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Black
+            Image(
+                painter = painterResource(com.example.optoapp.R.drawable.logo_login),
+                contentDescription = "OptoApp",
+                modifier = Modifier.fillMaxWidth(0.65f).clip(androidx.compose.foundation.shape.RoundedCornerShape(16.dp))
             )
             Text(
                 text = opticaHeader.nombreOptica.ifBlank { "Sin óptica" },

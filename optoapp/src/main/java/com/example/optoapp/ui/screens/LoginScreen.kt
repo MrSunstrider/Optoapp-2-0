@@ -2,6 +2,9 @@ package com.example.optoapp.ui.screens
 
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
@@ -20,6 +23,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalFocusManager
@@ -125,34 +130,35 @@ fun LoginScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
 
+            Spacer(modifier = Modifier.height(72.dp))
+
             // ─── Logo / Encabezado ────────────────────────────────────────────
+            val blurRadius = remember { Animatable(50f) }
+            LaunchedEffect(Unit) {
+                blurRadius.animateTo(
+                    targetValue = 0f,
+                    animationSpec = tween(durationMillis = 770, easing = FastOutSlowInEasing)
+                )
+            }
+
             AnimatedVisibility(
                 visible = true,
                 enter = fadeIn() + slideInVertically { -40 }
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    // Logo
+                    // Logo — solo imagen, sin texto
                     Image(
                         painter = painterResource(com.example.optoapp.R.drawable.logo_login),
                         contentDescription = "OptoApp",
-                        modifier = Modifier.size(100.dp)
+                        modifier = Modifier
+                            .fillMaxWidth(0.75f)
+                            .clip(androidx.compose.foundation.shape.RoundedCornerShape(16.dp))
+                            .blur(radiusX = blurRadius.value.dp, radiusY = blurRadius.value.dp)
                     )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = "OptoApp",
-                        fontSize = 40.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    Text(
-                        text = "Clinical Software 2026",
-                        fontSize = 13.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center
-                    )
+                    Spacer(modifier = Modifier.height(6.dp))
                     Text(
                         text = "v${com.example.optoapp.BuildConfig.VERSION_NAME}",
-                        fontSize = 10.sp,
+                        fontSize = 13.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                         textAlign = TextAlign.Center
                     )

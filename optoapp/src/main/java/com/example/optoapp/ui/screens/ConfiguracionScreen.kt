@@ -173,8 +173,6 @@ fun ConfiguracionScreen(
             SubscriptionCard(planCode = planCode, devProOverride = devProOverride, subscriptionVm = subscriptionVm, context = context)
             SyncDiagnosticsCard(syncDiagVm = syncDiagVm, context = context)
             DataManagementCard(canManageBackups = canManageBackups, createBackupLauncher = createBackupLauncher, restoreBackupLauncher = restoreBackupLauncher)
-
-            ConfigAboutSection()
         }
     }
 

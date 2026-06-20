@@ -11,8 +11,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import com.example.optoapp.data.Montura
+import com.example.optoapp.ui.theme.OptoTokens
 import java.util.Locale
 
 @Composable
@@ -23,13 +23,14 @@ fun MonturaListSection(
     onDelete: (Montura) -> Unit,
     onEntrada: (Montura) -> Unit
 ) {
-    LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    LazyColumn(verticalArrangement = Arrangement.spacedBy(OptoTokens.spacing.sm)) {
         if (porReponer.isNotEmpty()) {
             item {
                 Text(
                     "Por reponer",
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.error
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(horizontal = OptoTokens.spacing.xs)
                 )
             }
             items(porReponer, key = { "low-${it.id}" }) { m ->
@@ -41,11 +42,12 @@ fun MonturaListSection(
                 )
             }
             item {
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(OptoTokens.spacing.xs))
                 Text(
                     "Todos los productos",
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(horizontal = OptoTokens.spacing.xs)
                 )
             }
         }
@@ -68,8 +70,15 @@ fun MonturaItem(
     onEntrada: () -> Unit
 ) {
     var showDelete by remember { mutableStateOf(false) }
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    ElevatedCard(
+        modifier = Modifier.fillMaxWidth(),
+        shape = OptoTokens.shapes.medium,
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = OptoTokens.elevation.level1)
+    ) {
+        Column(
+            modifier = Modifier.padding(OptoTokens.spacing.md),
+            verticalArrangement = Arrangement.spacedBy(OptoTokens.spacing.xs)
+        ) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Column {
                     Text("${montura.marca} ${montura.modelo}", fontWeight = FontWeight.Bold)

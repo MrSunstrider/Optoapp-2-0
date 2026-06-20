@@ -8,14 +8,20 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Assessment
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.PictureAsPdf
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -24,7 +30,6 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import com.example.optoapp.ui.components.OptoTopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -32,15 +37,16 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.optoapp.ui.components.OptoTextField
 import com.example.optoapp.ui.components.monturas.MonturaEditForm
 import com.example.optoapp.ui.components.monturas.MonturaListSection
+import com.example.optoapp.ui.theme.OptoTokens
 import com.example.optoapp.util.FileShareUtils
 import com.example.optoapp.util.InventarioMonturasPdfGenerator
 import com.example.optoapp.data.AppRoles
@@ -119,74 +125,36 @@ fun MonturasScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 14.dp, vertical = 4.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+                .padding(horizontal = OptoTokens.spacing.lg, vertical = OptoTokens.spacing.sm),
+            verticalArrangement = Arrangement.spacedBy(OptoTokens.spacing.sm)
         ) {
             OptoTextField(
                 value = uiState.query,
                 onValueChange = viewModel::onQueryChange,
-                label = "Buscar por SKU, marca o modelo"
+                label = "Buscar por SKU, marca o modelo",
+                leadingIcon = {
+                    Icon(Icons.Default.Search, contentDescription = "Buscar")
+                }
             )
 
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = if (porReponer.isEmpty()) {
-                        MaterialTheme.colorScheme.surfaceVariant
-                    } else {
-                        MaterialTheme.colorScheme.errorContainer
-                    }
-                )
-            ) {
-                Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text(
-                        text = "Alertas de stock bajo: ${porReponer.size}",
-                        fontWeight = FontWeight.Bold,
-                        color = if (porReponer.isEmpty()) {
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        } else {
-                            MaterialTheme.colorScheme.onErrorContainer
-                        }
-                    )
-                    if (porReponer.isEmpty()) {
-                        Text("No hay productos críticos por reposición.")
-                    } else {
-                        porReponer.take(5).forEach { m ->
-                            Text("- ${m.sku} ${m.marca} ${m.modelo}: ${m.stockActual}/${m.stockMinimo}")
-                        }
-                    }
-                }
-            }
+            StockAlertCard(porReponer = porReponer)
 
-            Card(modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text("Resumen inventario", fontWeight = FontWeight.Bold)
-                    Text("Productos listados: ${filtradas.size}")
-                    Text("Stock total: $stockTotal")
-                    Text("Valor costo: s/. ${String.format(Locale.getDefault(), "%.2f", valorCosto)}")
-                    Text("Valor venta: s/. ${String.format(Locale.getDefault(), "%.2f", valorVenta)}")
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Button(
-                            onClick = {
-                                val pdf = InventarioMonturasPdfGenerator.generate(context, filtradas)
-                                lastGeneratedPdf = pdf
-                                FileShareUtils.openPdf(context, pdf, "Abrir reporte de inventario")
-                            }
-                        ) {
-                            Text("Generar PDF")
-                        }
-                        OutlinedButton(
-                            onClick = {
-                                val file = lastGeneratedPdf ?: InventarioMonturasPdfGenerator.generate(context, filtradas)
-                                lastGeneratedPdf = file
-                                FileShareUtils.sharePdf(context, file, "Compartir reporte de inventario")
-                            }
-                        ) {
-                            Text("Compartir PDF")
-                        }
-                    }
+            SummaryCard(
+                filtradasSize = filtradas.size,
+                stockTotal = stockTotal,
+                valorCosto = valorCosto,
+                valorVenta = valorVenta,
+                onGeneratePdf = {
+                    val pdf = InventarioMonturasPdfGenerator.generate(context, filtradas)
+                    lastGeneratedPdf = pdf
+                    FileShareUtils.openPdf(context, pdf, "Abrir reporte de inventario")
+                },
+                onSharePdf = {
+                    val file = lastGeneratedPdf ?: InventarioMonturasPdfGenerator.generate(context, filtradas)
+                    lastGeneratedPdf = file
+                    FileShareUtils.sharePdf(context, file, "Compartir reporte de inventario")
                 }
-            }
+            )
 
             if (!uiState.error.isNullOrBlank()) {
                 Text(uiState.error ?: "", color = MaterialTheme.colorScheme.error)
@@ -203,5 +171,158 @@ fun MonturasScreen(
                 onEntrada = { viewModel.registrarEntrada(it, 1) }
             )
         }
+    }
+}
+
+@Composable
+private fun StockAlertCard(porReponer: List<com.example.optoapp.data.Montura>) {
+    val hasAlerts = porReponer.isNotEmpty()
+    val containerColor = if (hasAlerts) {
+        MaterialTheme.colorScheme.errorContainer
+    } else {
+        MaterialTheme.colorScheme.surfaceVariant
+    }
+    val contentColor = if (hasAlerts) {
+        MaterialTheme.colorScheme.onErrorContainer
+    } else {
+        MaterialTheme.colorScheme.onSurfaceVariant
+    }
+    val icon = if (hasAlerts) Icons.Default.Warning else Icons.Default.CheckCircle
+
+    ElevatedCard(
+        modifier = Modifier.fillMaxWidth(),
+        shape = OptoTokens.shapes.medium,
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = OptoTokens.elevation.level1),
+        colors = CardDefaults.elevatedCardColors(containerColor = containerColor)
+    ) {
+        Column(
+            modifier = Modifier.padding(OptoTokens.spacing.md),
+            verticalArrangement = Arrangement.spacedBy(OptoTokens.spacing.sm)
+        ) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(OptoTokens.spacing.sm),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = contentColor
+                )
+                Text(
+                    text = "Alertas de stock bajo: ${porReponer.size}",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = contentColor
+                )
+            }
+            if (!hasAlerts) {
+                Text(
+                    "No hay productos críticos por reposición.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = contentColor
+                )
+            } else {
+                porReponer.take(5).forEach { m ->
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(OptoTokens.spacing.xs),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Warning,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                        Text(
+                            "${m.sku} ${m.marca} ${m.modelo}: ${m.stockActual}/${m.stockMinimo}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = contentColor
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SummaryCard(
+    filtradasSize: Int,
+    stockTotal: Int,
+    valorCosto: Double,
+    valorVenta: Double,
+    onGeneratePdf: () -> Unit,
+    onSharePdf: () -> Unit
+) {
+    ElevatedCard(
+        modifier = Modifier.fillMaxWidth(),
+        shape = OptoTokens.shapes.medium,
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = OptoTokens.elevation.level1),
+        colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Column(
+            modifier = Modifier.padding(OptoTokens.spacing.md),
+            verticalArrangement = Arrangement.spacedBy(OptoTokens.spacing.sm)
+        ) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(OptoTokens.spacing.sm),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Assessment,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    "Resumen inventario",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(OptoTokens.spacing.md)
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    KpiItem("Productos", "$filtradasSize")
+                    Spacer(modifier = Modifier.height(OptoTokens.spacing.xs))
+                    KpiItem("Stock total", "$stockTotal")
+                }
+                Column(modifier = Modifier.weight(1f)) {
+                    KpiItem("Valor costo", "S/. ${String.format(Locale.getDefault(), "%.2f", valorCosto)}")
+                    Spacer(modifier = Modifier.height(OptoTokens.spacing.xs))
+                    KpiItem("Valor venta", "S/. ${String.format(Locale.getDefault(), "%.2f", valorVenta)}")
+                }
+            }
+
+            Row(horizontalArrangement = Arrangement.spacedBy(OptoTokens.spacing.sm)) {
+                Button(onClick = onGeneratePdf) {
+                    Icon(Icons.Default.PictureAsPdf, contentDescription = null)
+                    Spacer(modifier = Modifier.width(OptoTokens.spacing.xs))
+                    Text("Generar PDF")
+                }
+                OutlinedButton(onClick = onSharePdf) {
+                    Icon(Icons.Default.PictureAsPdf, contentDescription = null)
+                    Spacer(modifier = Modifier.width(OptoTokens.spacing.xs))
+                    Text("Compartir PDF")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun KpiItem(label: String, value: String) {
+    Column {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface
+        )
     }
 }
