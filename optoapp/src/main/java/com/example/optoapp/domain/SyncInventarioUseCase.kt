@@ -223,7 +223,7 @@ private data class MonturaRemota(
 }
 
 @Serializable
-private data class MonturaMovimientoRemoto(
+data class MonturaMovimientoRemoto(
     val id: String,
     @SerialName("montura_id") val monturaId: String,
     val fecha: String,
@@ -233,7 +233,10 @@ private data class MonturaMovimientoRemoto(
     @SerialName("stock_nuevo") val stockNuevo: Int,
     @SerialName("referencia_id") val referenciaId: String = "",
     val nota: String = "",
-    @SerialName("optica_id") val opticaId: String
+    @SerialName("optica_id") val opticaId: String,
+    @SerialName("user_id") val userId: String = "",
+    @SerialName("costo_unitario") val costoUnitario: Double = 0.0,
+    @SerialName("tipo_documento") val tipoDocumento: String = ""
 ) {
     fun toEntity() = MonturaMovimiento(
         id = id,
@@ -245,7 +248,10 @@ private data class MonturaMovimientoRemoto(
         stockNuevo = stockNuevo,
         referenciaId = referenciaId,
         nota = nota,
-        opticaId = opticaId
+        opticaId = opticaId,
+        userId = userId,
+        costoUnitario = costoUnitario,
+        tipoDocumento = tipoDocumento
     )
 }
 
@@ -267,7 +273,7 @@ private fun Montura.toRemoto(): MonturaRemota = MonturaRemota(
     updatedAt = updatedAt
 )
 
-private fun MonturaMovimiento.toRemoto(): MonturaMovimientoRemoto = MonturaMovimientoRemoto(
+fun MonturaMovimiento.toRemoto(): MonturaMovimientoRemoto = MonturaMovimientoRemoto(
     id = id,
     monturaId = monturaId,
     fecha = fecha.toString(),
@@ -277,6 +283,9 @@ private fun MonturaMovimiento.toRemoto(): MonturaMovimientoRemoto = MonturaMovim
     stockNuevo = stockNuevo,
     referenciaId = referenciaId.trim(),
     nota = nota.trim(),
-    opticaId = opticaId
+    opticaId = opticaId,
+    userId = userId,
+    costoUnitario = costoUnitario,
+    tipoDocumento = tipoDocumento
 )
 

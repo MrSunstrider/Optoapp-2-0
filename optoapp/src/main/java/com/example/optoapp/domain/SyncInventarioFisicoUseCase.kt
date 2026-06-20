@@ -101,7 +101,7 @@ open class SyncInventarioFisicoUseCase @Inject constructor(
         return try {
             val sessions = repository.getListByOptica(opticaId)
             val allDetalles = sessions.flatMap { s -> repository.getDetalles(s.id) }
-                .map { it.toRemoto() }
+                .map { it.toRemoto(opticaId) }
                 .distinctBy { it.id }
             if (allDetalles.isEmpty()) return 0
 
@@ -183,7 +183,7 @@ private data class IFRemoto(
 }
 
 @Serializable
-private data class IFDetalleRemoto(
+internal data class IFDetalleRemoto(
     val id: String,
     @SerialName("inventario_id") val inventarioId: String,
     @SerialName("montura_id") val monturaId: String,
@@ -204,7 +204,8 @@ private fun InventarioFisico.toRemoto(): IFRemoto = IFRemoto(
     opticaId = opticaId, userId = userId, notas = notas, updatedAt = updatedAt
 )
 
-private fun InventarioFisicoDetalle.toRemoto(): IFDetalleRemoto = IFDetalleRemoto(
+internal fun InventarioFisicoDetalle.toRemoto(opticaId: String): IFDetalleRemoto = IFDetalleRemoto(
     id = id, inventarioId = inventarioId, monturaId = monturaId,
-    stockSistema = stockSistema, stockContado = stockContado, diferencia = diferencia
+    stockSistema = stockSistema, stockContado = stockContado, diferencia = diferencia,
+    opticaId = opticaId
 )
