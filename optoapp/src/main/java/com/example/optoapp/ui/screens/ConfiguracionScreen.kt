@@ -26,11 +26,10 @@ import com.example.optoapp.ui.components.config.ClinicalIntegritySection
 import com.example.optoapp.ui.components.config.DataManagementCard
 import com.example.optoapp.ui.components.config.FiscalDataSection
 import com.example.optoapp.ui.components.config.LaboratorySection
-import com.example.optoapp.ui.components.config.PlanManagementSection
+import com.example.optoapp.ui.components.config.ConfigProfileSection
 import com.example.optoapp.ui.components.config.SecuritySection
 import com.example.optoapp.ui.components.config.SectionHeader
 import com.example.optoapp.ui.components.config.SubscriptionCard
-import com.example.optoapp.ui.components.config.SucursalesSection
 import com.example.optoapp.ui.components.config.SyncDiagnosticsCard
 import com.example.optoapp.ui.components.config.SystemSection
 import com.example.optoapp.ui.components.config.UsuariosRolesSection
@@ -39,7 +38,6 @@ import com.example.optoapp.viewmodel.AuthViewModel
 import com.example.optoapp.viewmodel.ConfiguracionViewModel
 import com.example.optoapp.viewmodel.FiscalConfigViewModel
 import com.example.optoapp.viewmodel.LaboratorioConfigViewModel
-import com.example.optoapp.viewmodel.PlanManagementViewModel
 import com.example.optoapp.viewmodel.RoleManagementViewModel
 import com.example.optoapp.viewmodel.SettingsViewModel
 import com.example.optoapp.viewmodel.SubscriptionViewModel
@@ -47,8 +45,6 @@ import com.example.optoapp.viewmodel.SyncDiagnosticsViewModel
 import com.example.optoapp.viewmodel.SyncState
 import com.example.optoapp.viewmodel.SyncViewModel
 import kotlinx.coroutines.launch
-
-private const val INTERNAL_OWNER_EMAIL = "jaermadera@gmail.com"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -63,7 +59,6 @@ fun ConfiguracionScreen(
     subscriptionVm: SubscriptionViewModel = hiltViewModel(),
     syncDiagVm: SyncDiagnosticsViewModel = hiltViewModel(),
     roleVm: RoleManagementViewModel = hiltViewModel(),
-    planVm: PlanManagementViewModel = hiltViewModel(),
     configVm: ConfiguracionViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
@@ -72,24 +67,17 @@ fun ConfiguracionScreen(
     val labUi by laboratorioVm.uiState.collectAsState()
     val planCode by subscriptionVm.planCode.collectAsState()
     val devProOverride by subscriptionVm.devProOverride.collectAsState()
-    val syncErrors by syncDiagVm.errorRows.collectAsState()
     val globalSyncState by syncVm.syncState.collectAsState()
-    val remoteSyncTelemetry by syncDiagVm.remoteTelemetry.collectAsState()
-    val remoteSyncTelemetryLoading by syncDiagVm.remoteTelemetryLoading.collectAsState()
-    val remoteSyncTelemetryError by syncDiagVm.remoteTelemetryError.collectAsState()
     val userTimeZone by settingsVm.userTimeZone.collectAsState()
     val roleUi by roleVm.uiState.collectAsState()
-    val planUi by planVm.uiState.collectAsState()
-    val opticaRol by viewModel.opticaRol.collectAsState(initial = "admin")
     val userEmail by viewModel.userEmail.collectAsState(initial = "")
+    val opticaRol by viewModel.opticaRol.collectAsState(initial = "admin")
     val pinHasBeenSet by settingsVm.pinHasBeenSet.collectAsState(initial = true)
     val isPinRequired by settingsVm.isPinRequired.collectAsState(initial = true)
     val remindersEnabled by settingsVm.remindersEnabled.collectAsState()
 
     val canManageUsers = AppRoles.canManageUsers(opticaRol)
-    val canManagePlans = AppRoles.canManagePlans(opticaRol)
     val canManageBackups = AppRoles.canManageBackups(opticaRol)
-    val canUseInternalPlan = userEmail.trim().equals(INTERNAL_OWNER_EMAIL, ignoreCase = true)
     val canAssignAdminRole = AppRoles.canAssignAdminRole(opticaRol)
     val allowedRoles = remember(canAssignAdminRole) {
         if (canAssignAdminRole) listOf("especialista", "asesor", "asesora", "ventas", "invitado", "gerente", "admin")
@@ -112,7 +100,6 @@ fun ConfiguracionScreen(
         if (msg != null) { configVm.dialogMessage = msg; fiscalVm.clearMessages() }
     }
     LaunchedEffect(canManageUsers) { if (canManageUsers) roleVm.loadMembers() }
-    LaunchedEffect(canManagePlans) { if (canManagePlans) planVm.load() }
     LaunchedEffect(globalSyncState) {
         if (globalSyncState is SyncState.Success || globalSyncState is SyncState.Error) syncDiagVm.refreshRemoteTelemetry()
     }
@@ -146,14 +133,16 @@ fun ConfiguracionScreen(
         Column(modifier = Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(horizontal = 14.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)) {
 
-            SectionHeader("SEGURIDAD Y ACCESO")
+            SectionHeader(stringResource(R.string.config_section_security))
             SecuritySection(pinHasBeenSet = pinHasBeenSet, isPinRequired = isPinRequired,
                 pinActual = configVm.pinActual, nuevoPin = configVm.nuevoPin, confirmPin = configVm.confirmPin,
                 onPinActualChange = { configVm.pinActual = it }, onNuevoPinChange = { configVm.nuevoPin = it },
                 onConfirmPinChange = { configVm.confirmPin = it },
                 onPinRequiredChange = { settingsVm.togglePinRequired(it) }, onUpdatePin = { configVm.updatePin() })
 
-            SectionHeader("SISTEMA")
+            ConfigProfileSection(email = userEmail, rol = opticaRol, opticaName = fiscalUi.nombreComercial)
+
+            SectionHeader(stringResource(R.string.config_section_system))
             SystemSection(userTimeZone = userTimeZone, availableTimeZones = configVm.availableTimeZones,
                 remindersEnabled = remindersEnabled, notificationPermissionGranted = notificationPermissionGranted,
                 systemNotificationsEnabled = systemNotificationsEnabled,
@@ -161,39 +150,24 @@ fun ConfiguracionScreen(
                 onRemindersEnabledChanged = settingsVm::setRemindersEnabled,
                 onSendTestNotification = { settingsVm.sendTestNotification(); Toast.makeText(context, context.getString(R.string.config_notification_test_sent), Toast.LENGTH_LONG).show() })
 
-            SectionHeader("DATOS DE LA ÓPTICA")
+            SectionHeader(stringResource(R.string.config_section_optica_data))
             LaboratorySection(labNombre = configVm.labNombre, labContacto = configVm.labContacto,
                 onLabNombreChange = { configVm.labNombre = it }, onLabContactoChange = { configVm.labContacto = it },
                 onSave = { laboratorioVm.save(configVm.labNombre, configVm.labContacto) })
 
             if (canManageUsers) {
                 FiscalDataSection(fiscalUi = fiscalUi,
-                    onDraftChange = { update -> fiscalVm.updateDraft(nombreComercial = update.nombreComercial, docTipo = update.docTipo, docNumero = update.docNumero, razonSocial = update.razonSocial, direccionFiscal = update.direccionFiscal, distritoCiudadDepartamento = update.distritoCiudadDepartamento, moneda = update.moneda, pais = update.pais, contactoWhatsappTelefono = update.contactoWhatsappTelefono); fiscalVm.clearMessages() },
+                    onDraftChange = { update -> fiscalVm.updateDraft(nombreComercial = update.nombreComercial, docTipo = update.docTipo, docNumero = update.docNumero, razonSocial = update.razonSocial, direccionFiscal = update.direccionFiscal); fiscalVm.clearMessages() },
                     onSave = fiscalVm::save)
-            }
-            if (canManagePlans) {
-                PlanManagementSection(planUi = planUi, canUseInternalPlan = canUseInternalPlan,
-                    onPlanCodeChange = planVm::updatePlanCode, onPlanStatusChange = planVm::updatePlanStatus,
-                    onMaxOpticasChange = planVm::updateMaxOpticas, onMaxPacientesChange = planVm::updateMaxPacientes,
-                    onMaxUsuariosChange = planVm::updateMaxUsuarios, onApplyPreset = { planVm.applyPreset() },
-                    onSave = { planVm.save() }, onReload = { planVm.load() })
             }
             if (canManageUsers) {
                 ClinicalIntegritySection(onResolveDuplicates = { viewModel.resolveDuplicateHistorias { msg -> configVm.dialogMessage = msg } })
                 UsuariosRolesSection(roleUi = roleUi, allowedRoles = allowedRoles, canAssignAdminRole = canAssignAdminRole,
                     onEmailChange = roleVm::updateEmail, onRoleChange = roleVm::updateRole,
                     onAssignRole = { roleVm.assignRole() }, onRefresh = { roleVm.loadMembers() })
-                SucursalesSection(nuevaSucursalNombre = configVm.nuevaSucursalNombre, creatingSucursal = configVm.creatingSucursal,
-                    onNombreChange = { configVm.nuevaSucursalNombre = it },
-                    onCreate = { configVm.creatingSucursal = true
-                        viewModel.createAdditionalOptica(configVm.nuevaSucursalNombre) { ok, msg ->
-                            configVm.creatingSucursal = false; configVm.dialogMessage = msg; if (ok) configVm.nuevaSucursalNombre = ""
-                        } })
             }
             SubscriptionCard(planCode = planCode, devProOverride = devProOverride, subscriptionVm = subscriptionVm, context = context)
-            SyncDiagnosticsCard(syncErrors = syncErrors, remoteSyncTelemetry = remoteSyncTelemetry,
-                remoteSyncTelemetryLoading = remoteSyncTelemetryLoading, remoteSyncTelemetryError = remoteSyncTelemetryError,
-                userTimeZone = userTimeZone, syncDiagVm = syncDiagVm, context = context)
+            SyncDiagnosticsCard(syncDiagVm = syncDiagVm, context = context)
             DataManagementCard(canManageBackups = canManageBackups, createBackupLauncher = createBackupLauncher, restoreBackupLauncher = restoreBackupLauncher)
         }
     }

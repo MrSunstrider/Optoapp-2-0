@@ -50,7 +50,7 @@ fun OrdenCompraEditDialog(
                     label = "Número OC"
                 )
                 if (uiState.error != null) {
-                    Text(uiState.error!!, color = MaterialTheme.colorScheme.error)
+                    Text(uiState.error ?: "", color = MaterialTheme.colorScheme.error)
                 }
                 Row(
                     modifier = Modifier.fillMaxWidth(),

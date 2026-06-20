@@ -57,21 +57,12 @@ class SubscriptionViewModelTest {
     // ─── launchProPurchase alpha bypass ───────────────────────────────────
 
     @Test
-    fun `launchProPurchase dev_owner plan reports error`() {
-        var error: String? = null
-        var success = false
-        launchProPurchase(PlanCode.DEV_OWNER, onSuccess = { success = true }, onError = { error = it })
-        assertTrue("dev_owner should report error", error?.contains("dev_owner") == true)
-        assertFalse("dev_owner should not succeed", success)
-    }
-
-    @Test
-    fun `launchProPurchase non-dev_owner activates PRO`() {
+    fun `launchProPurchase PRO_INDIVIDUAL activates PRO`() {
         var error: String? = null
         var success = false
         launchProPurchase(PlanCode.PRO_INDIVIDUAL, onSuccess = { success = true }, onError = { error = it })
-        assertTrue("non-dev_owner should activate PRO", success)
-        assertEquals("no error for non-dev_owner", null, error)
+        assertTrue("PRO_INDIVIDUAL should activate PRO", success)
+        assertEquals("no error", null, error)
     }
 
     @Test
@@ -96,10 +87,6 @@ class SubscriptionViewModelTest {
         onSuccess: () -> Unit,
         onError: (String) -> Unit
     ) {
-        if (planCode == PlanCode.DEV_OWNER) {
-            onError("Esta óptica usa plan interno dev_owner y no requiere facturación.")
-            return
-        }
         // Alpha: activate PRO directly via setProFromLocalCache()
         onSuccess()
     }

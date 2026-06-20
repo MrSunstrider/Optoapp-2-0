@@ -96,7 +96,7 @@ fun AbonoDialog(
 
                 if (errorMsg != null) {
                     Text(
-                        text = errorMsg!!,
+                        text = errorMsg ?: "",
                         color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.bodySmall,
                         fontWeight = FontWeight.Bold,

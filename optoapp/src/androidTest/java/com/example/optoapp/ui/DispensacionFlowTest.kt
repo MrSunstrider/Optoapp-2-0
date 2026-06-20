@@ -1,5 +1,23 @@
 package com.example.optoapp.ui
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertIsDisplayed
@@ -8,9 +26,14 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import com.example.optoapp.testing.TestTags
+import com.example.optoapp.ui.components.DropdownField
+import com.example.optoapp.ui.components.OptoTextField
 import com.example.optoapp.ui.components.dispensacion.PagosSection
 import com.example.optoapp.viewmodel.DispensacionUiState
 import org.junit.Assert.assertEquals
@@ -214,5 +237,140 @@ class DispensacionFlowTest {
             .performTextInput("OT-2026-0001")
 
         assertEquals("OT-2026-0001", otValue)
+    }
+
+    // ── Form Fields (main dispensación form) ──────────────────────────────
+
+    @Test
+    fun montoTotalField_isDisplayed() {
+        composeTestRule.setContent {
+            OptoTextField(
+                value = "350.00",
+                onValueChange = {},
+                label = "Monto Total",
+                keyboardType = KeyboardType.Decimal
+            )
+        }
+        composeTestRule.onNodeWithText("Monto Total").assertIsDisplayed()
+    }
+
+    @Test
+    fun montoTotalField_acceptsValue() {
+        var value = ""
+        composeTestRule.setContent {
+            OptoTextField(
+                value = value,
+                onValueChange = { value = it },
+                label = "Monto Total",
+                keyboardType = KeyboardType.Decimal
+            )
+        }
+        composeTestRule.onNodeWithText("Monto Total").performTextInput("450.00")
+        assertEquals("450.00", value)
+    }
+
+    @Test
+    fun estadoEntregaDropdown_showsOptions() {
+        composeTestRule.setContent {
+            DropdownField(
+                label = "Estado de Entrega",
+                selected = "Pendiente",
+                options = listOf("Pendiente", "Entregado")
+            ) { }
+        }
+        composeTestRule.onNodeWithText("Estado de Entrega").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Pendiente").assertIsDisplayed()
+    }
+
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    private fun TipoLenteDropdownHarness(
+        selected: String = "Lejos",
+        onSelected: (String) -> Unit = {}
+    ) {
+        var expanded by remember { mutableStateOf(false) }
+        val options = listOf("Lejos", "Cerca", "Bifocal", "Progresivo", "Ocupacional")
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Tipo de Lente", fontWeight = FontWeight.Bold)
+            ExposedDropdownMenuBox(
+                expanded = expanded,
+                onExpandedChange = { expanded = !expanded }
+            ) {
+                OutlinedTextField(
+                    value = selected,
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Tipo de Lente") },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                    modifier = Modifier.menuAnchor().fillMaxWidth()
+                )
+                ExposedDropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false }
+                ) {
+                    options.forEach { option ->
+                        DropdownMenuItem(
+                            text = { Text(option) },
+                            onClick = {
+                                onSelected(option)
+                                expanded = false
+                            }
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
+    fun tipoLenteDropdown_showsDefaultOption() {
+        composeTestRule.setContent { TipoLenteDropdownHarness() }
+        composeTestRule.onNodeWithText("Tipo de Lente").assertIsDisplayed()
+    }
+
+    @Test
+    fun tipoLenteDropdown_showsOptions_whenExpanded() {
+        composeTestRule.setContent { TipoLenteDropdownHarness() }
+        // Click to expand
+        composeTestRule.onNodeWithText("Tipo de Lente").performClick()
+        composeTestRule.onNodeWithText("Lejos").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Cerca").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Progresivo").assertIsDisplayed()
+    }
+
+    @Test
+    fun materialLenteDropdown_renders() {
+        composeTestRule.setContent {
+            DropdownField(
+                label = "Material del Lente",
+                selected = "Orgánico",
+                options = listOf("Orgánico", "Policarbonato", "Trivex", "Mineral")
+            ) { }
+        }
+        composeTestRule.onNodeWithText("Material del Lente").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Orgánico").assertIsDisplayed()
+    }
+
+    @Test
+    fun financieraInfoSection_showsAllLabels() {
+        val uiState = DispensacionUiState(
+            montoTotal = "500.00",
+            estadoEntrega = "Pendiente"
+        )
+        composeTestRule.setContent {
+            com.example.optoapp.ui.screens.FinancieraInfoSection(
+                uiState = uiState,
+                onUpdate = {},
+                onAddPago = {},
+                onUpdatePago = {},
+                onRemovePago = {}
+            )
+        }
+        composeTestRule.onNodeWithText("Información Financiera").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Monto Total").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Historial de Abonos").assertIsDisplayed()
+        composeTestRule.onNodeWithText("SALDO RESTANTE").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Estado de Entrega").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Agregar Abono").assertIsDisplayed()
     }
 }

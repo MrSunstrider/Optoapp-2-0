@@ -95,7 +95,7 @@ class ServiciosViewModel @Inject constructor(
             _uiState.value = _uiState.value.copy(isLoading = true, generatedId = id)
             when (val result = repository.getServicioById(id)) {
                 is Resource.Success -> {
-                    val s = result.data!!
+                    val s = result.data ?: return@launch
                     val loadedPagos = repository.getPagosByServicioExtra(id).first()
                     _uiState.value = ServiciosUiState(
                         id = s.id,

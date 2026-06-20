@@ -113,12 +113,11 @@ class MembershipRepositoryDtosTest {
         val s = OpticaFiscalSettings(
             nombreComercial = "Óptica Test", docTipo = "RUC",
             docNumero = "123", razonSocial = "RS Test",
-            direccionFiscal = "Calle 123", moneda = "PEN",
-            pais = "PE", contactoWhatsappTelefono = "+51999"
+            direccionFiscal = "Calle 123"
         )
         assertEquals("Óptica Test", s.nombreComercial)
         assertEquals("RUC", s.docTipo)
-        assertEquals("PEN", s.moneda)
+        assertEquals("123", s.docNumero)
     }
 
     // ── OpticaHeaderSummary ───────────────────────────────────────────────────
@@ -228,13 +227,10 @@ class MembershipRepositoryDtosTest {
         val patch = OpticaFiscalPatch(
             nombre = "Óptica", fiscalDocTipo = "RUC",
             fiscalDocNumero = "123", razonSocial = "RS",
-            direccionFiscal = "Calle 1",
-            distritoCiudadDepartamento = "Lima",
-            moneda = "PEN", pais = "PE",
-            contactoWhatsappTelefono = "+51999"
+            direccionFiscal = "Calle 1"
         )
         assertEquals("Óptica", patch.nombre)
         assertEquals("RUC", patch.fiscalDocTipo)
-        assertEquals("PEN", patch.moneda)
+        assertEquals("123", patch.fiscalDocNumero)
     }
 }

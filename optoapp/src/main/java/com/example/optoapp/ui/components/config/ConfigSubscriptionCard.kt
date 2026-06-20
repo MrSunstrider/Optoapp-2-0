@@ -1,8 +1,6 @@
-@file:Suppress("DEPRECATION")
 package com.example.optoapp.ui.components.config
 
 import android.content.Context
-import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -14,7 +12,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.optoapp.BuildConfig
 import com.example.optoapp.R
-import com.example.optoapp.billing.PlayBillingManager
 import com.example.optoapp.subscription.PlanCode
 import com.example.optoapp.viewmodel.SubscriptionViewModel
 
@@ -41,29 +38,6 @@ fun SubscriptionCard(
                     stringResource(R.string.config_subscription_force_pro_debug),
                     fontSize = 11.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            Text(
-                stringResource(R.string.config_subscription_play_product, PlayBillingManager.SUBSCRIPTION_PRODUCT_ID),
-                fontSize = 11.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            if (planCode != PlanCode.DEV_OWNER) {
-                Button(
-                    onClick = {
-                        subscriptionVm.launchProPurchase(
-                            onSuccess = { Toast.makeText(context, "PRO activado — pacientes ilimitados.", Toast.LENGTH_LONG).show() },
-                            onError = { msg -> Toast.makeText(context, msg, Toast.LENGTH_LONG).show() }
-                        )
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(stringResource(R.string.config_subscription_buy_action))
-                }
-            } else {
-                AssistChip(
-                    onClick = {},
-                    label = { Text(stringResource(R.string.config_subscription_internal_billing_disabled)) }
                 )
             }
             if (BuildConfig.DEBUG) {

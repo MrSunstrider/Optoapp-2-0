@@ -92,7 +92,11 @@ open class PostSaveSyncScheduler @Inject constructor(
             try {
                 syncGate.mutex.withLock {
                     if (!ensureSessionForPostSaveSync("pacientes")) return@withLock
-                    when (val r = syncPacientesUseCase!!(opticaId)) {
+                    val pacientesUseCase = syncPacientesUseCase ?: run {
+                        Log.w(TAG, "Sync pacientes post-guardado: useCase no inyectado")
+                        return@withLock
+                    }
+                    when (val r = pacientesUseCase(opticaId)) {
                         is Resource.Error -> Log.w(TAG, "Sync pacientes post-guardado: ${r.message}")
                         else -> Log.d(TAG, "Sync pacientes post-guardado OK")
                     }
@@ -114,7 +118,11 @@ open class PostSaveSyncScheduler @Inject constructor(
             try {
                 syncGate.mutex.withLock {
                     if (!ensureSessionForPostSaveSync("historial")) return@withLock
-                    when (val r = syncHistorialUseCase!!(opticaId)) {
+                    val historialUseCase = syncHistorialUseCase ?: run {
+                        Log.w(TAG, "Sync historial post-guardado: useCase no inyectado")
+                        return@withLock
+                    }
+                    when (val r = historialUseCase(opticaId)) {
                         is Resource.Error -> Log.w(TAG, "Sync historial post-guardado: ${r.message}")
                         else -> Log.d(TAG, "Sync historial post-guardado OK")
                     }
@@ -136,7 +144,11 @@ open class PostSaveSyncScheduler @Inject constructor(
             try {
                 syncGate.mutex.withLock {
                     if (!ensureSessionForPostSaveSync("finanzas")) return@withLock
-                    when (val r = syncFinanzasUseCase!!(opticaId)) {
+                    val finanzasUseCase = syncFinanzasUseCase ?: run {
+                        Log.w(TAG, "Sync finanzas post-guardado: useCase no inyectado")
+                        return@withLock
+                    }
+                    when (val r = finanzasUseCase(opticaId)) {
                         is Resource.Error -> Log.w(TAG, "Sync finanzas post-guardado: ${r.message}")
                         else -> Log.d(TAG, "Sync finanzas post-guardado OK")
                     }
@@ -158,7 +170,11 @@ open class PostSaveSyncScheduler @Inject constructor(
             try {
                 syncGate.mutex.withLock {
                     if (!ensureSessionForPostSaveSync("inventario")) return@withLock
-                    when (val r = syncInventarioUseCase!!(opticaId)) {
+                    val inventarioUseCase = syncInventarioUseCase ?: run {
+                        Log.w(TAG, "Sync inventario post-guardado: useCase no inyectado")
+                        return@withLock
+                    }
+                    when (val r = inventarioUseCase(opticaId)) {
                         is Resource.Error -> Log.w(TAG, "Sync inventario post-guardado: ${r.message}")
                         else -> Log.d(TAG, "Sync inventario post-guardado OK")
                     }
@@ -180,7 +196,11 @@ open class PostSaveSyncScheduler @Inject constructor(
             try {
                 syncGate.mutex.withLock {
                     if (!ensureSessionForPostSaveSync("ordenes_compra")) return@withLock
-                    when (val r = syncOrdenesCompraUseCase!!(opticaId)) {
+                    val ordenesCompraUseCase = syncOrdenesCompraUseCase ?: run {
+                        Log.w(TAG, "Sync ordenes_compra post-guardado: useCase no inyectado")
+                        return@withLock
+                    }
+                    when (val r = ordenesCompraUseCase(opticaId)) {
                         is Resource.Error -> Log.w(TAG, "Sync ordenes_compra post-guardado: ${r.message}")
                         else -> Log.d(TAG, "Sync ordenes_compra post-guardado OK")
                     }
@@ -202,7 +222,11 @@ open class PostSaveSyncScheduler @Inject constructor(
             try {
                 syncGate.mutex.withLock {
                     if (!ensureSessionForPostSaveSync("proveedores")) return@withLock
-                    when (val r = syncProveedoresUseCase!!(opticaId)) {
+                    val proveedoresUseCase = syncProveedoresUseCase ?: run {
+                        Log.w(TAG, "Sync proveedores post-guardado: useCase no inyectado")
+                        return@withLock
+                    }
+                    when (val r = proveedoresUseCase(opticaId)) {
                         is Resource.Error -> Log.w(TAG, "Sync proveedores post-guardado: ${r.message}")
                         else -> Log.d(TAG, "Sync proveedores post-guardado OK")
                     }
@@ -224,7 +248,11 @@ open class PostSaveSyncScheduler @Inject constructor(
             try {
                 syncGate.mutex.withLock {
                     if (!ensureSessionForPostSaveSync("inventory_kpis")) return@withLock
-                    when (val r = syncInventoryKpisUseCase!!(opticaId)) {
+                    val inventoryKpisUseCase = syncInventoryKpisUseCase ?: run {
+                        Log.w(TAG, "Sync inventory KPIs post-guardado: useCase no inyectado")
+                        return@withLock
+                    }
+                    when (val r = inventoryKpisUseCase(opticaId)) {
                         is Resource.Error -> Log.w(TAG, "Sync inventory KPIs post-guardado: ${r.message}")
                         else -> Log.d(TAG, "Sync inventory KPIs post-guardado OK")
                     }
@@ -246,7 +274,11 @@ open class PostSaveSyncScheduler @Inject constructor(
             try {
                 syncGate.mutex.withLock {
                     if (!ensureSessionForPostSaveSync("inventario_fisico")) return@withLock
-                    when (val r = syncInventarioFisicoUseCase!!(opticaId)) {
+                    val inventarioFisicoUseCase = syncInventarioFisicoUseCase ?: run {
+                        Log.w(TAG, "Sync inventario_fisico post-guardado: useCase no inyectado")
+                        return@withLock
+                    }
+                    when (val r = inventarioFisicoUseCase(opticaId)) {
                         is Resource.Error -> Log.w(TAG, "Sync inventario_fisico post-guardado: ${r.message}")
                         else -> Log.d(TAG, "Sync inventario_fisico post-guardado OK")
                     }

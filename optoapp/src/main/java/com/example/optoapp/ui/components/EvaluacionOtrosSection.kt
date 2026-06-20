@@ -120,8 +120,8 @@ private fun CitaCard(
     onShowProximaDatePicker: () -> Unit
 ) {
     OutlinedButton(onClick = onShowProximaDatePicker, modifier = Modifier.fillMaxWidth()) {
-        val labelText = if (uiState.proximaCita == null) "Programar Próxima Cita"
-        else "Próxima Cita: ${DateUtils.formatLocalized(uiState.proximaCita!!)}"
+        val labelText = uiState.proximaCita?.let { "Próxima Cita: ${DateUtils.formatLocalized(it)}" }
+            ?: "Programar Próxima Cita"
         Text(labelText)
     }
     if (uiState.proximaCita != null) {

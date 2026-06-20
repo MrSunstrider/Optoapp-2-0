@@ -19,7 +19,7 @@ fun VarianceReportScreen(
     onBack: () -> Unit
 ) {
     val withDiffs = detalles.filter { it.diferencia != null && it.diferencia != 0 }
-    val totalDiff = withDiffs.sumOf { it.diferencia!! }
+    val totalDiff = withDiffs.sumOf { it.diferencia ?: 0 }
     val variants = withDiffs.size
 
     Column(Modifier.fillMaxSize().padding(16.dp)) {

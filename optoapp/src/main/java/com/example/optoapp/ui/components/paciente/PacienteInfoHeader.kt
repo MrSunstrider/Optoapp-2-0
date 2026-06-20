@@ -55,11 +55,15 @@ fun PacienteInfoHeader(paciente: Paciente) {
             }
             Spacer(modifier = Modifier.height(8.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                if (paciente.distrito?.isNotBlank() == true) {
-                    InfoItem(label = "Distrito", value = paciente.distrito!!, modifier = Modifier.weight(1f))
+                paciente.distrito?.let { dist ->
+                    if (dist.isNotBlank()) {
+                        InfoItem(label = "Distrito", value = dist, modifier = Modifier.weight(1f))
+                    }
                 }
-                if (paciente.email?.isNotBlank() == true) {
-                    InfoItem(label = "Email", value = paciente.email!!, modifier = Modifier.weight(1f))
+                paciente.email?.let { em ->
+                    if (em.isNotBlank()) {
+                        InfoItem(label = "Email", value = em, modifier = Modifier.weight(1f))
+                    }
                 }
                 InfoItem(label = "HO", value = paciente.historiaOptometrica ?: "—", modifier = Modifier.weight(1f))
             }

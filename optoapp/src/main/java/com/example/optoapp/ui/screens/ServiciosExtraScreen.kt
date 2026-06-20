@@ -82,10 +82,11 @@ fun ServiciosExtraScreen(navController: NavController, drawerState: DrawerState,
     }
 
     if (showDeleteDialog && servicioToDelete != null) {
+        val servicio = servicioToDelete ?: return
         AlertDialog(
             onDismissRequest = { viewModel.dismissDeleteDialog() },
             title = { Text("¿Eliminar servicio?", fontWeight = FontWeight.Bold) },
-            text = { Text("¿Eliminar ${servicioToDelete!!.descripcion}?") },
+            text = { Text("¿Eliminar ${servicio.descripcion}?") },
             confirmButton = {
                 TextButton(onClick = { viewModel.confirmDelete() }) {
                     Text("Eliminar", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
@@ -148,11 +149,12 @@ fun ServiciosExtraScreen(navController: NavController, drawerState: DrawerState,
             )
 
             if (selectedDate != null) {
+                val date = selectedDate ?: return@Column
                 Spacer(modifier = Modifier.height(8.dp))
                 FilterChip(
                     selected = true,
                     onClick = { selectedDate = null },
-                    label = { Text(DateUtils.formatLocalized(selectedDate!!)) },
+                    label = { Text(DateUtils.formatLocalized(date)) },
                     trailingIcon = {
                         Icon(Icons.Default.Close, contentDescription = "Quitar filtro de fecha", modifier = Modifier.size(16.dp))
                     }

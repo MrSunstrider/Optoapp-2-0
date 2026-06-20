@@ -153,11 +153,7 @@ class MembershipRepositoryTest {
             docTipo = "RUC",
             docNumero = "12345678901",
             razonSocial = "Test SRL",
-            direccionFiscal = "Av Test 123",
-            distritoCiudadDepartamento = "Lima",
-            moneda = "PEN",
-            pais = "PE",
-            contactoWhatsappTelefono = "999888777"
+            direccionFiscal = "Av Test 123"
         )
 
         assertTrue(result.isFailure)

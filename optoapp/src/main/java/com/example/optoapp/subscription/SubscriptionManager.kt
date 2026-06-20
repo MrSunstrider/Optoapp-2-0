@@ -107,7 +107,6 @@ open class SubscriptionManager @Inject constructor(
     private fun toPlanCode(raw: String): PlanCode = when (raw.lowercase().trim()) {
         "pro_multisite_15" -> PlanCode.PRO_MULTISITE_15
         "enterprise" -> PlanCode.ENTERPRISE
-        "dev_owner", "internal_owner" -> PlanCode.DEV_OWNER
         "pro_individual", "pro", "paid", "premium" -> PlanCode.PRO_INDIVIDUAL
         else -> PlanCode.FREE
     }

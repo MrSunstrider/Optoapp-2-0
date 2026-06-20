@@ -29,10 +29,6 @@ data class FiscalConfigUi(
     val docNumero: String = "",
     val razonSocial: String = "",
     val direccionFiscal: String = "",
-    val distritoCiudadDepartamento: String = "",
-    val moneda: String = "",
-    val pais: String = "",
-    val contactoWhatsappTelefono: String = "",
     val loading: Boolean = false,
     val message: String? = null,
     val error: String? = null
@@ -43,11 +39,7 @@ data class FiscalDraft(
     val docTipo: String = "RUC",
     val docNumero: String = "",
     val razonSocial: String = "",
-    val direccionFiscal: String = "",
-    val distritoCiudadDepartamento: String = "",
-    val moneda: String = "",
-    val pais: String = "",
-    val contactoWhatsappTelefono: String = ""
+    val direccionFiscal: String = ""
 ) {
     fun toSettings(): OpticaFiscalSettings =
         OpticaFiscalSettings(
@@ -55,11 +47,7 @@ data class FiscalDraft(
             docTipo = docTipo,
             docNumero = docNumero,
             razonSocial = razonSocial,
-            direccionFiscal = direccionFiscal,
-            distritoCiudadDepartamento = distritoCiudadDepartamento,
-            moneda = moneda,
-            pais = pais,
-            contactoWhatsappTelefono = contactoWhatsappTelefono
+            direccionFiscal = direccionFiscal
         )
 
     companion object {
@@ -69,11 +57,7 @@ data class FiscalDraft(
                 docTipo = settings.docTipo.ifBlank { "RUC" },
                 docNumero = settings.docNumero,
                 razonSocial = settings.razonSocial,
-                direccionFiscal = settings.direccionFiscal,
-                distritoCiudadDepartamento = settings.distritoCiudadDepartamento,
-                moneda = settings.moneda,
-                pais = settings.pais,
-                contactoWhatsappTelefono = settings.contactoWhatsappTelefono
+                direccionFiscal = settings.direccionFiscal
             )
     }
 }
@@ -121,10 +105,6 @@ class FiscalConfigViewModel @Inject constructor(
                 docNumero = draft.docNumero,
                 razonSocial = draft.razonSocial,
                 direccionFiscal = draft.direccionFiscal,
-                distritoCiudadDepartamento = draft.distritoCiudadDepartamento,
-                moneda = draft.moneda,
-                pais = draft.pais,
-                contactoWhatsappTelefono = draft.contactoWhatsappTelefono,
                 loading = status.loading,
                 message = status.message,
                 error = status.error
@@ -137,22 +117,14 @@ class FiscalConfigViewModel @Inject constructor(
         docTipo: String? = null,
         docNumero: String? = null,
         razonSocial: String? = null,
-        direccionFiscal: String? = null,
-        distritoCiudadDepartamento: String? = null,
-        moneda: String? = null,
-        pais: String? = null,
-        contactoWhatsappTelefono: String? = null
+        direccionFiscal: String? = null
     ) {
         _draft.value = _draft.value.copy(
             nombreComercial = nombreComercial ?: _draft.value.nombreComercial,
             docTipo = docTipo ?: _draft.value.docTipo,
             docNumero = docNumero ?: _draft.value.docNumero,
             razonSocial = razonSocial ?: _draft.value.razonSocial,
-            direccionFiscal = direccionFiscal ?: _draft.value.direccionFiscal,
-            distritoCiudadDepartamento = distritoCiudadDepartamento ?: _draft.value.distritoCiudadDepartamento,
-            moneda = moneda ?: _draft.value.moneda,
-            pais = pais ?: _draft.value.pais,
-            contactoWhatsappTelefono = contactoWhatsappTelefono ?: _draft.value.contactoWhatsappTelefono
+            direccionFiscal = direccionFiscal ?: _draft.value.direccionFiscal
         )
         draftDirty = true
     }
@@ -182,10 +154,6 @@ class FiscalConfigViewModel @Inject constructor(
                 val numero = draft.docNumero.trim()
                 val razon = draft.razonSocial.trim()
                 val direccion = draft.direccionFiscal.trim()
-                val distrito = draft.distritoCiudadDepartamento.trim()
-                val monedaNormalized = draft.moneda.trim()
-                val paisNormalized = draft.pais.trim()
-                val contacto = draft.contactoWhatsappTelefono.trim()
                 if (tipo !in setOf("RUC", "RUS")) {
                     _status.value = _status.value.copy(error = "Tipo fiscal inválido. Usa RUC o RUS.", message = null)
                     return@launch
@@ -205,11 +173,7 @@ class FiscalConfigViewModel @Inject constructor(
                     docTipo = tipo,
                     docNumero = numero,
                     razonSocial = razon,
-                    direccionFiscal = direccion,
-                    distritoCiudadDepartamento = distrito,
-                    moneda = monedaNormalized,
-                    pais = paisNormalized,
-                    contactoWhatsappTelefono = contacto
+                    direccionFiscal = direccion
                 )
                 if (result.isSuccess) {
                     store.save(
@@ -219,11 +183,7 @@ class FiscalConfigViewModel @Inject constructor(
                             docTipo = tipo,
                             docNumero = numero,
                             razonSocial = razon,
-                            direccionFiscal = direccion,
-                            distritoCiudadDepartamento = distrito,
-                            moneda = monedaNormalized,
-                            pais = paisNormalized,
-                            contactoWhatsappTelefono = contacto
+                            direccionFiscal = direccion
                         )
                     )
                     draftDirty = false

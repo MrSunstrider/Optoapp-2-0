@@ -56,15 +56,10 @@ open class MembershipRepository @Inject constructor(
         docTipo: String,
         docNumero: String,
         razonSocial: String,
-        direccionFiscal: String,
-        distritoCiudadDepartamento: String,
-        moneda: String,
-        pais: String,
-        contactoWhatsappTelefono: String
+        direccionFiscal: String
     ): Result<Unit> =
         opticaSettingsDataSource.updateOpticaFiscalSettings(
-            opticaId, nombreComercial, docTipo, docNumero, razonSocial,
-            direccionFiscal, distritoCiudadDepartamento, moneda, pais, contactoWhatsappTelefono
+            opticaId, nombreComercial, docTipo, docNumero, razonSocial, direccionFiscal
         )
 
     suspend fun updateOpticaLaboratorioSettings(
