@@ -182,11 +182,7 @@ open class OpticaSettingsDataSource @Inject constructor(
                 docTipo = row.fiscalDocTipo,
                 docNumero = row.fiscalDocNumero,
                 razonSocial = row.razonSocial,
-                direccionFiscal = row.direccionFiscal,
-                distritoCiudadDepartamento = row.distritoCiudadDepartamento,
-                moneda = row.moneda,
-                pais = row.pais,
-                contactoWhatsappTelefono = row.contactoWhatsappTelefono
+                direccionFiscal = row.direccionFiscal
             )
         } catch (e: CancellationException) {
             throw e
@@ -238,11 +234,7 @@ open class OpticaSettingsDataSource @Inject constructor(
         docTipo: String,
         docNumero: String,
         razonSocial: String,
-        direccionFiscal: String,
-        distritoCiudadDepartamento: String,
-        moneda: String,
-        pais: String,
-        contactoWhatsappTelefono: String
+        direccionFiscal: String
     ): Result<Unit> {
         if (supabase.auth.currentUserOrNull() == null) {
             return Result.failure(IllegalStateException("Sin sesión"))
@@ -253,11 +245,7 @@ open class OpticaSettingsDataSource @Inject constructor(
                 fiscalDocTipo = docTipo.trim().uppercase(),
                 fiscalDocNumero = docNumero.trim(),
                 razonSocial = razonSocial.trim(),
-                direccionFiscal = direccionFiscal.trim(),
-                distritoCiudadDepartamento = distritoCiudadDepartamento.trim(),
-                moneda = moneda.trim(),
-                pais = pais.trim(),
-                contactoWhatsappTelefono = contactoWhatsappTelefono.trim()
+                direccionFiscal = direccionFiscal.trim()
             )
             supabase.postgrest[TABLE_OPTICAS].update(patch) {
                 filter { eq("id", opticaId) }
@@ -273,11 +261,7 @@ open class OpticaSettingsDataSource @Inject constructor(
                 persisted.nombre.trim() == patch.nombre &&
                 persisted.fiscalDocNumero.trim() == patch.fiscalDocNumero &&
                 persisted.razonSocial.trim() == patch.razonSocial &&
-                persisted.direccionFiscal.trim() == patch.direccionFiscal &&
-                persisted.distritoCiudadDepartamento.trim() == patch.distritoCiudadDepartamento &&
-                persisted.moneda.trim() == patch.moneda &&
-                persisted.pais.trim() == patch.pais &&
-                persisted.contactoWhatsappTelefono.trim() == patch.contactoWhatsappTelefono
+                persisted.direccionFiscal.trim() == patch.direccionFiscal
             if (!matches) {
                 return Result.failure(
                     IllegalStateException("Supabase no confirmó la persistencia de los datos fiscales. Revisa políticas RLS de opticas.")

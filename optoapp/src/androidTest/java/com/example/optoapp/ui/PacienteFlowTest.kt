@@ -1,15 +1,48 @@
 package com.example.optoapp.ui
 
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import com.example.optoapp.testing.TestTags
+import com.example.optoapp.ui.components.OptoCard
 import com.example.optoapp.ui.components.paciente.PacienteFormSections
+import com.example.optoapp.ui.theme.OptoTokens
 import com.example.optoapp.util.DateUtils
 import org.junit.Rule
 import org.junit.Test
@@ -149,5 +182,147 @@ class PacienteFlowTest {
             .performTextInput("999888777")
 
         assert(captured == "999888777") { "Expected '999888777' but got '$captured'" }
+    }
+
+    // ── Patient List / Navigation ─────────────────────────────────────────
+
+    @Test
+    fun pacienteList_rendersWithTestTag() {
+        composeTestRule.setContent {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .testTag(TestTags.PACIENTE_LISTA),
+                contentPadding = PaddingValues(bottom = 88.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                // Empty list — just verify the container renders
+            }
+        }
+        composeTestRule.onNodeWithTag(TestTags.PACIENTE_LISTA).assertIsDisplayed()
+    }
+
+    @Test
+    fun searchBar_rendersAndAcceptsInput() {
+        var captured = ""
+        composeTestRule.setContent {
+            OutlinedTextField(
+                value = captured,
+                onValueChange = { captured = it },
+                label = { Text("Buscar paciente...") },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Buscar") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+        composeTestRule.onNodeWithText("Buscar paciente...").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Buscar paciente...").performTextInput("Juan")
+        assert(captured == "Juan") { "Expected 'Juan' but got '$captured'" }
+    }
+
+    // ── Patient Detail Card ───────────────────────────────────────────────
+
+    @Composable
+    private fun PacienteCardHarness(
+        nombreCompleto: String = "María García López",
+        edad: Int = 34,
+        telefono: String = "987654321",
+        id: String = "p-abc12345"
+    ) {
+        OptoCard(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = {}),
+            shape = OptoTokens.shapes.large,
+            elevation = 1.dp
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                Surface(
+                    modifier = Modifier.size(48.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Default.Person,
+                            contentDescription = null,
+                            modifier = Modifier.size(26.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = nombreCompleto,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Text(
+                            text = "ID: ${id.take(8)}",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Edad: $edad",
+                            fontSize = 13.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = "Tel: $telefono",
+                            fontSize = 13.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
+    fun pacienteCard_showsNombreCompleto() {
+        composeTestRule.setContent { PacienteCardHarness(nombreCompleto = "María García López") }
+        composeTestRule.onNodeWithText("María García López").assertIsDisplayed()
+    }
+
+    @Test
+    fun pacienteCard_showsEdad() {
+        composeTestRule.setContent { PacienteCardHarness(edad = 34) }
+        composeTestRule.onNodeWithText("Edad: 34").assertIsDisplayed()
+    }
+
+    @Test
+    fun pacienteCard_showsTelefono() {
+        composeTestRule.setContent { PacienteCardHarness(telefono = "987654321") }
+        composeTestRule.onNodeWithText("Tel: 987654321").assertIsDisplayed()
+    }
+
+    @Test
+    fun pacienteCard_showsIdPrefix() {
+        composeTestRule.setContent { PacienteCardHarness(id = "p-abc12345") }
+        composeTestRule.onNodeWithText("ID: p-abc123").assertIsDisplayed()
     }
 }

@@ -26,7 +26,6 @@ import com.example.optoapp.ui.components.OptoTopAppBar
 
 
 @OptIn(ExperimentalMaterial3Api::class)
-@Suppress("DEPRECATION")
 @Composable
 fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, dispensacionId: String? = null, viewModel: DispensacionViewModel = hiltViewModel()) {
     val uiState by viewModel.uiState.collectAsState()
@@ -70,7 +69,7 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
     Scaffold(
         modifier = Modifier.testTag(TestTags.DISPENSACION_SCREEN_ROOT),
         containerColor = MaterialTheme.colorScheme.surface,
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        contentWindowInsets = WindowInsets(0.dp),
         topBar = {
             OptoTopAppBar(
                 title = if (dispensacionId == null) "Nueva Dispensación" else "Editar Dispensación",

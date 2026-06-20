@@ -112,7 +112,7 @@ fun PinScreen(navController: NavController, viewModel: AuthViewModel = hiltViewM
                     modifier = Modifier.testTag(TestTags.PIN_ERROR_MESSAGE)
                 ) {
                     Text(
-                        text = errorMessage!!,
+                        text = errorMessage ?: "",
                         color = MaterialTheme.colorScheme.error,
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
                         fontSize = 13.sp,

@@ -114,10 +114,10 @@ class SubscriptionManagerTest {
     }
 
     @Test
-    fun `planCode resolves DEV_OWNER`() = testScope.runTest {
+    fun `planCode resolves unknown dev_owner to FREE`() = testScope.runTest {
         writePlanToDataStore("dev_owner")
         advanceUntilIdle()
-        assertEquals(PlanCode.DEV_OWNER, subscriptionManager.planCode.first())
+        assertEquals(PlanCode.FREE, subscriptionManager.planCode.first())
     }
 
     @Test

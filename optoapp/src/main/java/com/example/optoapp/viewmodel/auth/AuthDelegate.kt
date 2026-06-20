@@ -386,7 +386,8 @@ open class AuthDelegate @Inject constructor(
                 } else {
                     "Paciente"
                 }
-                helper.scheduleWorkManagerReminder(nombre, cita!!, ev.id)
+                val citaVal = cita ?: continue
+                helper.scheduleWorkManagerReminder(nombre, citaVal, ev.id)
                 scheduled++
             } else {
                 helper.cancelReminder(ev.id)
@@ -420,7 +421,7 @@ open class AuthDelegate @Inject constructor(
             overrideAccessToken = pendingAccessToken.ifBlank { null }
         )
         if (result.isSuccess) {
-            val m = result.getOrNull()!!
+            val m = result.getOrNull() ?: return result
             sessionManager.saveSession(
                 opticaId = m.opticaId,
                 email = email,

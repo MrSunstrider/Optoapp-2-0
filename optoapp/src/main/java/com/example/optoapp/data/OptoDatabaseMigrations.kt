@@ -4,6 +4,13 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import java.util.concurrent.TimeUnit
 
+// ─── Categorización de migraciones ──────────────────────────────────────────
+// v6→v8   : Multióptica (opticaId), campos de evaluación clínica
+// v8→v14  : Expansión modelo evaluaciones (estereopsis, colores, schirmer, etc.)
+// v14→v20 : Inventario (monturas, proveedores, órdenes de compra), dispensaciones
+// v20→v27 : Arqueo de caja, sync_entity_state, sesión multi-dispositivo
+// ─────────────────────────────────────────────────────────────────────────────
+
 val MIGRATION_7_8 = object : Migration(7, 8) {
     override fun migrate(db: SupportSQLiteDatabase) {
         db.execSQL("ALTER TABLE pacientes ADD COLUMN opticaId TEXT NOT NULL DEFAULT 'mi_optica_base'")

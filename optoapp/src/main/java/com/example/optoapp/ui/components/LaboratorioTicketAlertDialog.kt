@@ -1,5 +1,8 @@
 package com.example.optoapp.ui.components
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.content.Intent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -15,9 +18,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.optoapp.util.FileShareUtils
@@ -31,8 +32,7 @@ fun LaboratorioTicketAlertDialog(
     laboratorioContacto: String,
 ) {
     val context = LocalContext.current
-    @Suppress("DEPRECATION")
-    val clipboardManager = LocalClipboardManager.current
+    val clipboardManager = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
     val mensajeWhatsappLab = buildString {
         if (laboratorioNombre.isNotBlank()) {
             appendLine("Hola $laboratorioNombre,")
@@ -77,8 +77,7 @@ fun LaboratorioTicketAlertDialog(
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     TextButton(onClick = {
-                        @Suppress("DEPRECATION")
-                        clipboardManager.setText(AnnotatedString(ticketTextoCompacto))
+                        clipboardManager.setPrimaryClip(ClipData.newPlainText("ticket", ticketTextoCompacto))
                     }) { Text("Copiar") }
                     TextButton(onClick = {
                         val shareIntent = Intent(Intent.ACTION_SEND).apply {

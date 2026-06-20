@@ -111,7 +111,7 @@ fun CreatePinScreen(navController: NavController, viewModel: AuthViewModel = hil
                     shape = RoundedCornerShape(8.dp)
                 ) {
                     Text(
-                        text = errorMessage!!,
+                        text = errorMessage ?: "",
                         color = MaterialTheme.colorScheme.error,
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
                         fontSize = 13.sp,

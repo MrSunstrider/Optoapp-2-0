@@ -27,11 +27,7 @@ data class OpticaFiscalSettings(
     val docTipo: String = "",
     val docNumero: String = "",
     val razonSocial: String = "",
-    val direccionFiscal: String = "",
-    val distritoCiudadDepartamento: String = "",
-    val moneda: String = "",
-    val pais: String = "",
-    val contactoWhatsappTelefono: String = ""
+    val direccionFiscal: String = ""
 )
 
 data class OpticaHeaderSummary(
@@ -130,9 +126,5 @@ internal data class OpticaFiscalPatch(
     @SerialName("fiscal_doc_tipo") val fiscalDocTipo: String,
     @SerialName("fiscal_doc_numero") val fiscalDocNumero: String,
     @SerialName("razon_social") val razonSocial: String,
-    @SerialName("direccion_fiscal") val direccionFiscal: String,
-    @SerialName("distrito_ciudad_departamento") val distritoCiudadDepartamento: String,
-    val moneda: String,
-    val pais: String,
-    @SerialName("contacto_whatsapp_telefono") val contactoWhatsappTelefono: String
+    @SerialName("direccion_fiscal") val direccionFiscal: String
 )

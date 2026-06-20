@@ -103,7 +103,7 @@ fun OnboardingOpticaScreen(
             label = { Text("Dirección fiscal") },
             singleLine = true
         )
-        if (error != null) Text(error!!, color = MaterialTheme.colorScheme.error)
+        if (error != null) Text(error ?: "", color = MaterialTheme.colorScheme.error)
         Button(
             onClick = {
                 loading = true

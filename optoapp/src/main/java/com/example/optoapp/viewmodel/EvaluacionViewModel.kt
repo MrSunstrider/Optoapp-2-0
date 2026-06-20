@@ -34,7 +34,7 @@ class EvaluacionViewModel @Inject constructor(
             _uiState.update { it.copy(isLoading = true) }
             when (val result = repository.getEvaluacionById(evaluacionId)) {
                 is Resource.Success -> {
-                    val e = result.data!!
+                    val e = result.data ?: return@launch
                     val dipFormatted = DipParser.formatDipForUi(e.dipLejos, e.dipTotalMm, e.dnpOdMm, e.dnpOiMm)
                     _uiState.update {
                         e.toEvaluacionUiState().copy(dipLejos = dipFormatted)
@@ -79,7 +79,7 @@ class EvaluacionViewModel @Inject constructor(
     ) {
         saveEvaluacion(pacienteId, evaluacionId) { savedId, pName ->
             if (programarRecordatorio && _uiState.value.proximaCita != null) {
-                notificationHelper.scheduleWorkManagerReminder(pName, _uiState.value.proximaCita!!, savedId)
+                _uiState.value.proximaCita?.let { notificationHelper.scheduleWorkManagerReminder(pName, it, savedId) }
             } else {
                 notificationHelper.cancelReminder(savedId)
             }
@@ -91,9 +91,11 @@ class EvaluacionViewModel @Inject constructor(
         viewModelScope.launch {
             val result = repository.getEvaluacionById(evaluacionId)
             if (result is Resource.Success) {
-                repository.deleteEvaluacion(result.data!!)
-                val oid = sessionManager.opticaId.first()
-                postSaveSyncScheduler.scheduleHistorialSync(oid)
+                result.data?.let { repoData ->
+                    repository.deleteEvaluacion(repoData)
+                    val oid = sessionManager.opticaId.first()
+                    postSaveSyncScheduler.scheduleHistorialSync(oid)
+                }
                 onComplete()
             }
         }

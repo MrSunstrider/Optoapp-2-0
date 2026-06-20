@@ -18,12 +18,6 @@ class OpticaFiscalSettingsStore @Inject constructor(
     private fun keyDocNumero(opticaId: String) = stringPreferencesKey("fiscal_doc_numero_" + sanitize(opticaId))
     private fun keyRazonSocial(opticaId: String) = stringPreferencesKey("fiscal_razon_social_" + sanitize(opticaId))
     private fun keyDireccionFiscal(opticaId: String) = stringPreferencesKey("fiscal_direccion_" + sanitize(opticaId))
-    private fun keyDistritoCiudadDepartamento(opticaId: String) =
-        stringPreferencesKey("fiscal_distrito_ciudad_departamento_" + sanitize(opticaId))
-    private fun keyMoneda(opticaId: String) = stringPreferencesKey("fiscal_moneda_" + sanitize(opticaId))
-    private fun keyPais(opticaId: String) = stringPreferencesKey("fiscal_pais_" + sanitize(opticaId))
-    private fun keyContactoWhatsappTelefono(opticaId: String) =
-        stringPreferencesKey("fiscal_contacto_whatsapp_telefono_" + sanitize(opticaId))
 
     private fun sanitize(opticaId: String): String = opticaId.replace(Regex("[^a-zA-Z0-9_]"), "_")
 
@@ -34,11 +28,7 @@ class OpticaFiscalSettingsStore @Inject constructor(
                 docTipo = prefs[keyDocTipo(opticaId)] ?: "",
                 docNumero = prefs[keyDocNumero(opticaId)] ?: "",
                 razonSocial = prefs[keyRazonSocial(opticaId)] ?: "",
-                direccionFiscal = prefs[keyDireccionFiscal(opticaId)] ?: "",
-                distritoCiudadDepartamento = prefs[keyDistritoCiudadDepartamento(opticaId)] ?: "",
-                moneda = prefs[keyMoneda(opticaId)] ?: "",
-                pais = prefs[keyPais(opticaId)] ?: "",
-                contactoWhatsappTelefono = prefs[keyContactoWhatsappTelefono(opticaId)] ?: ""
+                direccionFiscal = prefs[keyDireccionFiscal(opticaId)] ?: ""
             )
         }
 
@@ -49,10 +39,6 @@ class OpticaFiscalSettingsStore @Inject constructor(
             prefs[keyDocNumero(opticaId)] = settings.docNumero.trim()
             prefs[keyRazonSocial(opticaId)] = settings.razonSocial.trim()
             prefs[keyDireccionFiscal(opticaId)] = settings.direccionFiscal.trim()
-            prefs[keyDistritoCiudadDepartamento(opticaId)] = settings.distritoCiudadDepartamento.trim()
-            prefs[keyMoneda(opticaId)] = settings.moneda.trim()
-            prefs[keyPais(opticaId)] = settings.pais.trim()
-            prefs[keyContactoWhatsappTelefono(opticaId)] = settings.contactoWhatsappTelefono.trim()
         }
     }
 }

@@ -226,13 +226,8 @@ class RecetaPdfBuilder {
      * Dibuja "Seguimiento" con próxima cita (por defecto 1 año después).
      */
     fun addSeguimiento(eval: EvaluacionClinica): RecetaPdfBuilder {
-        val proximaCitaStr = if (eval.proximaCita != null) {
-            DateUtils.formatLocalized(eval.proximaCita!!)
-        } else {
-            // Por defecto: 1 año después de la evaluación
-            val oneYearLater = eval.fecha.plusYears(1)
-            DateUtils.formatLocalized(oneYearLater)
-        }
+        val proximaCitaStr = eval.proximaCita?.let { DateUtils.formatLocalized(it) }
+            ?: DateUtils.formatLocalized(eval.fecha.plusYears(1))
         val block = buildString {
             append("Próxima cita sugerida: $proximaCitaStr")
         }

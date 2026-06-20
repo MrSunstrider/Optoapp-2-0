@@ -115,7 +115,11 @@ fun OptoAppNavigation(
         composable("login") { LoginScreen(navController, viewModel = authViewModel) }
         composable("register") { RegisterScreen(navController, viewModel = authViewModel) }
         composable("sin_optica") { SinOpticaScreen(navController, supabaseObserver, authViewModel) }
-        composable("onboarding_optica") { @Suppress("DEPRECATION") OnboardingOpticaScreen(navController, viewModel = authViewModel) }
+        composable("onboarding_optica") {
+            // TODO: migrar OnboardingOpticaScreen a Navigation Compose type-safe routes (2.7+)
+            @Suppress("DEPRECATION")
+            OnboardingOpticaScreen(navController, viewModel = authViewModel)
+        }
         composable("seleccion_optica") { SeleccionOpticaScreen(navController, viewModel = authViewModel) }
         composable("main") { MainDrawerScreen(navController, authViewModel = authViewModel) }
     }

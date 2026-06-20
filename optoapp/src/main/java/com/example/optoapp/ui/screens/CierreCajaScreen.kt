@@ -1,43 +1,36 @@
 package com.example.optoapp.ui.screens
 
 import android.content.Intent
-import android.widget.Toast
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.optoapp.data.AppRoles
 import com.example.optoapp.data.arqueo.ArqueoCaja
 import com.example.optoapp.viewmodel.ArqueoCajaViewModel
 import com.example.optoapp.viewmodel.AuthViewModel
-import com.example.optoapp.viewmodel.BadgeColor
 import com.example.optoapp.viewmodel.CierreCajaViewModel
 import com.example.optoapp.util.ArqueoCajaPdfGenerator
 import com.example.optoapp.util.DateUtils
 import com.example.optoapp.ui.components.OptoTopAppBar
 import com.example.optoapp.ui.components.OptoCard
+import com.example.optoapp.ui.components.cierre_caja.ArqueoSection
+import com.example.optoapp.ui.components.cierre_caja.ResumenCard
+import com.example.optoapp.ui.components.cierre_caja.TransactionItem
 import java.io.File
 import java.util.*
 
@@ -257,241 +250,6 @@ fun CierreCajaScreen(
                     }
                 }
             }
-        }
-    }
-}
-
-@Composable
-fun ArqueoSection(
-    arqueoFromCierre: ArqueoCaja?,
-    arqueoUiState: com.example.optoapp.viewmodel.ArqueoCajaUiState,
-    systemTotals: Map<String, Double>,
-    fecha: java.time.LocalDate,
-    opticaId: String,
-    onFondoCajaChange: (Double) -> Unit,
-    onEfectivoContadoChange: (Double) -> Unit,
-    onTarjetaContadoChange: (Double) -> Unit,
-    onTransferenciaContadoChange: (Double) -> Unit,
-    onMovilContadoChange: (Double) -> Unit,
-    onCerrarDia: () -> Unit
-) {
-    val isSellado = arqueoFromCierre?.sellado == true
-    var isExpanded by remember { mutableStateOf(false) }
-    val chevronRotation by animateFloatAsState(
-        targetValue = if (isExpanded) 180f else 0f,
-        label = "chevron"
-    )
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isSellado)
-                MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.3f)
-            else
-                MaterialTheme.colorScheme.surfaceVariant
-        )
-    ) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { isExpanded = !isExpanded },
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text("Arqueo de Caja", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    if (isSellado) {
-                        AssistChip(
-                            onClick = {},
-                            label = { Text("SELLADO") },
-                            colors = AssistChipDefaults.assistChipColors(
-                                containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
-                                labelColor = MaterialTheme.colorScheme.primary
-                            )
-                        )
-                    }
-                    Icon(
-                        imageVector = Icons.Default.ExpandMore,
-                        contentDescription = if (isExpanded) "Colapsar arqueo" else "Expandir arqueo",
-                        modifier = Modifier.rotate(chevronRotation),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-
-            AnimatedVisibility(visible = isExpanded) {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-
-            if (isSellado) {
-                val arqueo = arqueoFromCierre!!
-                ReadOnlyField("Fondo de Caja", arqueo.fondoCaja)
-                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
-
-                Text("Método", fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                ArqueoReadOnlyRow("Efectivo", arqueo.efectivoContado, arqueo.efectivoCobrado, arqueo.diferenciaEfectivo)
-                ArqueoReadOnlyRow("Tarjeta", arqueo.tarjetaContado, arqueo.tarjetaCobrado, arqueo.diferenciaTarjeta)
-                ArqueoReadOnlyRow("Transferencia", arqueo.transferenciaContado, arqueo.transferenciaCobrado, arqueo.diferenciaTransferencia)
-                ArqueoReadOnlyRow("Móvil", arqueo.movilContado, arqueo.movilCobrado, arqueo.diferenciaMovil)
-
-                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
-                ReadOnlyField("Diferencia Total", arqueo.diferenciaTotal)
-                ReadOnlyField("Cerrado por", arqueo.cerradoPor)
-            } else {
-                ArqueoNumberField("Fondo de Caja", arqueoUiState.fondoCaja, onFondoCajaChange)
-                ArqueoNumberField("Efectivo Contado", arqueoUiState.efectivoContado, onEfectivoContadoChange)
-                ArqueoNumberField("Tarjeta Contado", arqueoUiState.tarjetaContado, onTarjetaContadoChange)
-                ArqueoNumberField("Transferencia Contado", arqueoUiState.transferenciaContado, onTransferenciaContadoChange)
-                ArqueoNumberField("Móvil Contado", arqueoUiState.movilContado, onMovilContadoChange)
-
-                arqueoUiState.validationErrors.forEach { (field, error) ->
-                    Text(error, color = MaterialTheme.colorScheme.error, fontSize = 12.sp)
-                }
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                Button(
-                    onClick = onCerrarDia,
-                    enabled = !arqueoUiState.isSellado,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                ) {
-                    Text("Cerrar Día")
-                }
-            }
-
-                } // end Column inside AnimatedVisibility
-            }   // end AnimatedVisibility
-        }
-    }
-}
-
-@Composable
-private fun ArqueoNumberField(label: String, value: Double, onValueChange: (Double) -> Unit) {
-    var textValue by remember(value) { mutableStateOf(if (value == 0.0) "" else value.toString()) }
-
-    OutlinedTextField(
-        value = textValue,
-        onValueChange = { newText ->
-            textValue = newText
-            val parsed = newText.toDoubleOrNull()
-            if (parsed != null) onValueChange(parsed)
-        },
-        label = { Text(label) },
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-        singleLine = true,
-        modifier = Modifier.fillMaxWidth()
-    )
-}
-
-@Composable
-private fun ReadOnlyField(label: String, value: Any) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Text(label, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(
-            when (value) {
-                is Double -> "s/. ${String.format(Locale.getDefault(), "%.2f", value)}"
-                else -> value.toString()
-            },
-            fontWeight = FontWeight.Bold,
-            fontSize = 13.sp
-        )
-    }
-}
-
-@Composable
-private fun ArqueoReadOnlyRow(
-    method: String,
-    contado: Double,
-    cobrado: Double,
-    diferencia: Double
-) {
-    val cobradoAmount = cobrado
-    val badgeColor = when {
-        diferencia == 0.0 -> BadgeColor.GREEN
-        cobradoAmount == 0.0 -> BadgeColor.RED
-        else -> {
-            val ratio = kotlin.math.abs(diferencia) / cobradoAmount
-            if (ratio <= 0.05) BadgeColor.YELLOW else BadgeColor.RED
-        }
-    }
-
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(method, fontSize = 13.sp, modifier = Modifier.weight(1f))
-        Text("Cont: ${"%.0f".format(contado)}", fontSize = 11.sp, modifier = Modifier.weight(1f))
-        Text("Cob: ${"%.0f".format(cobrado)}", fontSize = 11.sp, modifier = Modifier.weight(1f))
-        Text(
-            "Dif: ${"%.0f".format(diferencia)}",
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Bold,
-            color = when (badgeColor) {
-                BadgeColor.GREEN -> Color(0xFF2E7D32)
-                BadgeColor.YELLOW -> Color(0xFFF57F17)
-                BadgeColor.RED -> Color(0xFFC62828)
-            },
-            modifier = Modifier.weight(1f)
-        )
-    }
-}
-
-@Composable
-fun ResumenCard(label: String, monto: Double, modifier: Modifier, color: Color) {
-    Card(
-        modifier = modifier,
-        colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.1f))
-    ) {
-        Column(modifier = Modifier.padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(label, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = color)
-            Text(
-                "s/. ${String.format(Locale.getDefault(), "%.0f", monto)}",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.ExtraBold,
-                color = color
-            )
-        }
-    }
-}
-
-@Composable
-fun TransactionItem(pago: com.example.optoapp.data.Pago) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-    ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = if (pago.dispensacionId != null) "Dispensación" else "Servicio Extra",
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Text(pago.metodoPago, fontWeight = FontWeight.Bold)
-                if (pago.nota.isNotEmpty()) {
-                    Text(pago.nota, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-            }
-            Text(
-                "s/. ${String.format(Locale.getDefault(), "%.2f", pago.monto)}",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                color = when {
-                    pago.monto < 0 -> MaterialTheme.colorScheme.error
-                    else -> MaterialTheme.colorScheme.tertiary
-                }
-            )
         }
     }
 }

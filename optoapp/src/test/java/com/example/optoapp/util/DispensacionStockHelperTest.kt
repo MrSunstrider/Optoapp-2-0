@@ -158,4 +158,29 @@ class DispensacionStockHelperTest {
         coVerify { coordinator.adjustMonturaStock("m1", "o1", 3) }
         coVerify { coordinator.insertMonturaMovimiento(any()) }
     }
+
+    @Test
+    fun adjustStock_loadingState_returnsFailure() = runTest {
+        coEvery { coordinator.getMonturaById("m1") } returns Resource.Loading()
+
+        val result = helper.adjustStock("m1", "o1", -1)
+
+        assertTrue(result.isFailure)
+    }
+
+    @Test
+    fun adjustStockAndRegistrarMovimiento_loadingState_returnsFailure() = runTest {
+        coEvery { coordinator.getMonturaById("m1") } returns Resource.Loading()
+
+        val result = helper.adjustStockAndRegistrarMovimiento(
+            monturaId = "m1",
+            opticaId = "o1",
+            delta = -1,
+            tipo = "SALIDA_VENTA",
+            referenciaId = "disp-1",
+            nota = "Venta"
+        )
+
+        assertTrue(result.isFailure)
+    }
 }

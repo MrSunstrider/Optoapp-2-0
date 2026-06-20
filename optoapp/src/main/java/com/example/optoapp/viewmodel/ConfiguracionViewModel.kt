@@ -25,10 +25,6 @@ class ConfiguracionViewModel @Inject constructor(
     var labNombre by mutableStateOf("")
     var labContacto by mutableStateOf("")
 
-    // ─── Sucursal creation ─────────────────────────────────────────────────────
-    var nuevaSucursalNombre by mutableStateOf("")
-    var creatingSucursal by mutableStateOf(false)
-
     // ─── Dialog ────────────────────────────────────────────────────────────────
     var dialogMessage by mutableStateOf<String?>(null)
 

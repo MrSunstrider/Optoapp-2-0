@@ -129,7 +129,7 @@ class DispensacionViewModel @Inject constructor(
             _uiState.update { it.copy(isLoading = true, generatedId = dispensacionId) }
             when (val result = repository.getDispensacionById(dispensacionId)) {
                 is Resource.Success -> {
-                    val d = result.data!!
+                    val d = result.data ?: return@launch
                     val loadedPagos = repository.getPagosByDispensacion(dispensacionId).first()
                     val loadedItems = repository.getDispensacionItemsByDispensacion(dispensacionId)
                     val itemsUi = if (loadedItems.isNotEmpty()) {

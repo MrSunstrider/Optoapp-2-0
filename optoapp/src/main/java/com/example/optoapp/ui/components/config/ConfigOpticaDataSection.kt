@@ -5,6 +5,10 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
@@ -20,11 +24,7 @@ data class FiscalDraftUpdate(
     val docTipo: String? = null,
     val docNumero: String? = null,
     val razonSocial: String? = null,
-    val direccionFiscal: String? = null,
-    val distritoCiudadDepartamento: String? = null,
-    val moneda: String? = null,
-    val pais: String? = null,
-    val contactoWhatsappTelefono: String? = null
+    val direccionFiscal: String? = null
 )
 
 @Composable
@@ -67,27 +67,6 @@ fun FiscalDataSection(
                 onValueChange = { onDraftChange(FiscalDraftUpdate(direccionFiscal = it)) },
                 label = stringResource(R.string.config_fiscal_direccion_label)
             )
-            OptoTextField(
-                value = fiscalUi.distritoCiudadDepartamento,
-                onValueChange = { onDraftChange(FiscalDraftUpdate(distritoCiudadDepartamento = it)) },
-                label = stringResource(R.string.config_fiscal_distrito_label)
-            )
-            OptoTextField(
-                value = fiscalUi.moneda,
-                onValueChange = { onDraftChange(FiscalDraftUpdate(moneda = it)) },
-                label = stringResource(R.string.config_fiscal_moneda_label)
-            )
-            OptoTextField(
-                value = fiscalUi.pais,
-                onValueChange = { onDraftChange(FiscalDraftUpdate(pais = it)) },
-                label = stringResource(R.string.config_fiscal_pais_label)
-            )
-            OptoTextField(
-                value = fiscalUi.contactoWhatsappTelefono,
-                onValueChange = { onDraftChange(FiscalDraftUpdate(contactoWhatsappTelefono = it)) },
-                label = stringResource(R.string.config_fiscal_contacto_label),
-                keyboardType = KeyboardType.Phone
-            )
             Button(
                 onClick = onSave,
                 enabled = !fiscalUi.loading,
@@ -112,6 +91,8 @@ fun FiscalDataSection(
 fun ClinicalIntegritySection(
     onResolveDuplicates: () -> Unit
 ) {
+    var showConfirmDialog by remember { mutableStateOf(false) }
+
     Card {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(stringResource(R.string.config_clinical_section_title), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
@@ -121,12 +102,29 @@ fun ClinicalIntegritySection(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Button(
-                onClick = onResolveDuplicates,
+                onClick = { showConfirmDialog = true },
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(stringResource(R.string.config_clinical_resolve_ho_action))
             }
         }
+    }
+
+    if (showConfirmDialog) {
+        AlertDialog(
+            onDismissRequest = { showConfirmDialog = false },
+            title = { Text(stringResource(R.string.config_clinical_confirm_title)) },
+            text = { Text(stringResource(R.string.config_clinical_confirm_message)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    showConfirmDialog = false
+                    onResolveDuplicates()
+                }) { Text(stringResource(R.string.config_confirm_yes)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showConfirmDialog = false }) { Text(stringResource(R.string.config_confirm_cancel)) }
+            }
+        )
     }
 }
 
@@ -191,124 +189,4 @@ fun UsuariosRolesSection(
     }
 }
 
-@Composable
-fun SucursalesSection(
-    nuevaSucursalNombre: String,
-    creatingSucursal: Boolean,
-    onNombreChange: (String) -> Unit,
-    onCreate: () -> Unit
-) {
-    Card {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text(stringResource(R.string.config_branches_section_title), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-            Text(
-                stringResource(R.string.config_branches_desc),
-                fontSize = 12.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            OptoTextField(
-                value = nuevaSucursalNombre,
-                onValueChange = onNombreChange,
-                label = stringResource(R.string.config_branches_name_label)
-            )
-            Button(
-                onClick = onCreate,
-                enabled = nuevaSucursalNombre.trim().isNotEmpty() && !creatingSucursal,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(
-                    if (creatingSucursal) {
-                        stringResource(R.string.config_branches_creating_action)
-                    } else {
-                        stringResource(R.string.config_branches_create_action)
-                    }
-                )
-            }
-        }
-    }
-}
 
-@Composable
-fun PlanManagementSection(
-    planUi: com.example.optoapp.viewmodel.PlanManagementUiState,
-    canUseInternalPlan: Boolean,
-    onPlanCodeChange: (String) -> Unit,
-    onPlanStatusChange: (String) -> Unit,
-    onMaxOpticasChange: (String) -> Unit,
-    onMaxPacientesChange: (String) -> Unit,
-    onMaxUsuariosChange: (String) -> Unit,
-    onApplyPreset: () -> Unit,
-    onSave: () -> Unit,
-    onReload: () -> Unit
-) {
-    Card {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text(stringResource(R.string.config_plan_management_section_title), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-            Text(stringResource(R.string.config_plan_management_desc), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            DropdownField(
-                label = stringResource(R.string.config_plan_label),
-                selected = planUi.planCode,
-                options = if (canUseInternalPlan) {
-                    listOf("free", "pro_individual", "pro_multisite_15", "enterprise", "dev_owner")
-                } else {
-                    listOf("free", "pro_individual", "pro_multisite_15", "enterprise")
-                },
-                onSelected = onPlanCodeChange
-            )
-            DropdownField(
-                label = stringResource(R.string.config_plan_status_label),
-                selected = planUi.planStatus,
-                options = listOf("active", "grace", "canceled"),
-                onSelected = onPlanStatusChange
-            )
-            OptoTextField(
-                value = planUi.maxOpticasInput,
-                onValueChange = onMaxOpticasChange,
-                label = stringResource(R.string.config_plan_max_opticas_label),
-                keyboardType = KeyboardType.Number
-            )
-            OptoTextField(
-                value = planUi.maxPacientesInput,
-                onValueChange = onMaxPacientesChange,
-                label = stringResource(R.string.config_plan_max_pacientes_label),
-                keyboardType = KeyboardType.Number
-            )
-            OptoTextField(
-                value = planUi.maxUsuariosInput,
-                onValueChange = onMaxUsuariosChange,
-                label = stringResource(R.string.config_plan_max_usuarios_label),
-                keyboardType = KeyboardType.Number
-            )
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    OutlinedButton(
-                        onClick = onApplyPreset,
-                        enabled = !planUi.loading,
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text(stringResource(R.string.config_plan_apply_preset), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-                    }
-                    Button(
-                        onClick = onSave,
-                        enabled = !planUi.loading,
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text(stringResource(R.string.config_plan_save_action), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-                    }
-                }
-                OutlinedButton(
-                    onClick = onReload,
-                    enabled = !planUi.loading,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(stringResource(R.string.config_plan_reload))
-                }
-            }
-            planUi.message?.let { Text(it, color = MaterialTheme.colorScheme.tertiary, fontSize = 12.sp) }
-            planUi.error?.let { Text(it, color = MaterialTheme.colorScheme.error, fontSize = 12.sp) }
-        }
-    }
-}

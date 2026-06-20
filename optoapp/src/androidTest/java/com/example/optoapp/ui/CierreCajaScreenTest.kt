@@ -12,7 +12,7 @@ import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import com.example.optoapp.data.Pago
-import com.example.optoapp.ui.screens.TransactionItem
+import com.example.optoapp.ui.components.cierre_caja.TransactionItem
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith

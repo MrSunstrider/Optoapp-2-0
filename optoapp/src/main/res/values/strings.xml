@@ -89,4 +89,25 @@
     <string name="config_fiscal_moneda_label">Moneda (opcional)</string>
     <string name="config_fiscal_pais_label">País (opcional)</string>
     <string name="config_fiscal_contacto_label">WhatsApp / teléfono de contacto (opcional)</string>
+    <string name="config_sync_session_active">Sesión activa</string>
+    <string name="config_sync_session_inactive">Sin sesión</string>
+    <string name="config_sync_session_token_fail">Fallo al renovar token</string>
+    <string name="config_sync_last_status">Estado remoto (servidor)</string>
+    <string name="config_sync_checking">Consultando última sync remota…</string>
+    <string name="config_sync_no_remote_record">Sin registro remoto aún para esta óptica.</string>
+    <string name="config_sync_status_format">Estado: %1$s</string>
+    <string name="config_sync_last_at_format">Última sync: %1$s</string>
+    <string name="config_sync_unavailable">No disponible</string>
+    <string name="config_sync_verify_now">Verificar sync ahora</string>
+    <string name="config_section_security">SEGURIDAD Y ACCESO</string>
+    <string name="config_section_system">SISTEMA</string>
+    <string name="config_section_optica_data">DATOS DE LA ÓPTICA</string>
+    <string name="config_section_profile">PERFIL</string>
+    <string name="config_clinical_confirm_title">Confirmar acción</string>
+    <string name="config_clinical_confirm_message">¿Estás seguro? Esta acción resolverá duplicados de historia optométrica y no se puede deshacer.</string>
+    <string name="config_confirm_yes">Sí, resolver</string>
+    <string name="config_confirm_cancel">Cancelar</string>
+    <string name="config_profile_email_label">Email</string>
+    <string name="config_profile_rol_label">Rol en óptica</string>
+    <string name="config_profile_version_label">Versión</string>
 </resources>

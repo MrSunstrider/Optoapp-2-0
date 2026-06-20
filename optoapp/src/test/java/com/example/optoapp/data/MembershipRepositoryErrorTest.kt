@@ -87,8 +87,7 @@ class MembershipRepositoryErrorTest {
     @Test
     fun `updateOpticaFiscalSettings no session returns failure`() = runTest {
         val result = repo.updateOpticaFiscalSettings(
-            "opt_abc", "Optica", "RUC", "123", "Razon", "Dir",
-            "Distrito", "PEN", "PE", "123456789"
+            "opt_abc", "Optica", "RUC", "123", "Razon", "Dir"
         )
 
         assertTrue("Expected failure but got $result", result.isFailure)
