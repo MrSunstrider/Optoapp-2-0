@@ -302,7 +302,7 @@ class DispensacionFlowTest {
                     readOnly = true,
                     label = { Text("Tipo de Lente") },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                    modifier = Modifier.menuAnchor().fillMaxWidth()
+                    modifier = Modifier.menuAnchor().fillMaxWidth().testTag("tipoLenteDropdown")
                 )
                 ExposedDropdownMenu(
                     expanded = expanded,
@@ -325,17 +325,20 @@ class DispensacionFlowTest {
     @Test
     fun tipoLenteDropdown_showsDefaultOption() {
         composeTestRule.setContent { TipoLenteDropdownHarness() }
-        composeTestRule.onNodeWithText("Tipo de Lente").assertIsDisplayed()
+        composeTestRule.onNodeWithTag("tipoLenteDropdown").assertIsDisplayed()
     }
 
     @Test
     fun tipoLenteDropdown_showsOptions_whenExpanded() {
         composeTestRule.setContent { TipoLenteDropdownHarness() }
         // Click to expand
-        composeTestRule.onNodeWithText("Tipo de Lente").performClick()
-        composeTestRule.onNodeWithText("Lejos").assertIsDisplayed()
+        composeTestRule.onNodeWithTag("tipoLenteDropdown").performClick()
+        // Lejos is the default selected value, so it appears in both the field and the dropdown
+        // Check for unique options that don't appear in the collapsed field
         composeTestRule.onNodeWithText("Cerca").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Bifocal").assertIsDisplayed()
         composeTestRule.onNodeWithText("Progresivo").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Ocupacional").assertIsDisplayed()
     }
 
     @Test
