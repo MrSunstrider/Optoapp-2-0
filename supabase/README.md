@@ -17,7 +17,7 @@ Tu **project ref** es el subdominio del host: si la URL es `https://xxxxxx.supab
 ### Pasos en PowerShell (raíz del repo)
 
 ```powershell
-cd "c:\Users\usuario\Desktop\Programacion\OptoAppSaaS\Optoapp-2-0\Optoapp-2-0-saas"
+cd "C:\Users\usuario\Desktop\Programacion\OptoServices-SaaS\Optoapp"
 
 $supabase = ".\tools\supabase-cli\supabase.exe"
 
