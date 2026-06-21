@@ -1,6 +1,7 @@
 package com.example.optoapp.domain
 
 import android.util.Log
+import com.example.optoapp.data.ConflictDao
 import com.example.optoapp.data.DispensacionItem
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.SyncStateTracker
@@ -19,7 +20,8 @@ class DownloadSyncCoordinator @Inject constructor(
     private val repository: OptoRepository,
     private val supabase: SupabaseClient,
     private val syncStateTracker: SyncStateTracker,
-    private val deletionSyncHelper: DeletionSyncHelper
+    private val deletionSyncHelper: DeletionSyncHelper,
+    private val conflictDao: ConflictDao
 ) {
     companion object {
         private const val TAG = "SyncFinanzas"
@@ -54,11 +56,13 @@ class DownloadSyncCoordinator @Inject constructor(
 
     suspend fun downloadDispensaciones(opticaId: String): Int {
         val skipIds = deletionSyncHelper.deletedIds(opticaId)
+        val conflictedIds = conflictDao.getConflictEntityIds(opticaId, "dispensacion").toSet()
         val remotos = supabase.postgrest[TABLE_DISPENSACIONES]
             .select { filter { eq("optica_id", opticaId) } }
             .decodeList<DispensacionRemota>()
         remotos.forEach { r ->
             if (r.id in skipIds) return@forEach
+            if (r.id in conflictedIds) return@forEach
             try {
                 val local = r.toEntity()
                 repository.upsertDispensacionFromRemote(local)
@@ -78,11 +82,13 @@ class DownloadSyncCoordinator @Inject constructor(
 
     suspend fun downloadServicios(opticaId: String): Int {
         val skipIds = deletionSyncHelper.deletedIds(opticaId)
+        val conflictedIds = conflictDao.getConflictEntityIds(opticaId, "servicio_extra").toSet()
         val remotos = supabase.postgrest[TABLE_SERVICIOS]
             .select { filter { eq("optica_id", opticaId) } }
             .decodeList<ServicioRemoto>()
         remotos.forEach { r ->
             if (r.id in skipIds) return@forEach
+            if (r.id in conflictedIds) return@forEach
             try {
                 val local = r.toEntity()
                 repository.upsertServicioFromRemote(local)
@@ -102,11 +108,13 @@ class DownloadSyncCoordinator @Inject constructor(
 
     suspend fun downloadPagos(opticaId: String): Int {
         val skipIds = deletionSyncHelper.deletedIds(opticaId)
+        val conflictedIds = conflictDao.getConflictEntityIds(opticaId, "pago").toSet()
         val remotos = supabase.postgrest[TABLE_PAGOS]
             .select { filter { eq("optica_id", opticaId) } }
             .decodeList<PagoRemoto>()
         remotos.forEach { r ->
             if (r.id in skipIds) return@forEach
+            if (r.id in conflictedIds) return@forEach
             try {
                 val local = r.toEntity()
                 repository.upsertPagoFromRemote(local)

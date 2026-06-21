@@ -51,8 +51,7 @@ open class InventarioFisicoRepository @Inject constructor(
                 fecha = LocalDate.now(),
                 estado = "EN_PROGRESO",
                 opticaId = opticaId,
-                userId = userId,
-                updatedAt = Instant.now().toString()
+                userId = userId
             )
             ifDao.insertSession(session)
 
@@ -106,7 +105,7 @@ open class InventarioFisicoRepository @Inject constructor(
             )
             monturaCoordinator.insertMonturaMovimiento(movimiento)
         }
-        ifDao.updateSession(session.copy(estado = "COMPLETADO", updatedAt = Instant.now().toString()))
+        ifDao.updateSession(session.copy(estado = "COMPLETADO"))
     }
 
     open suspend fun upsertSession(session: InventarioFisico) {

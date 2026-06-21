@@ -19,8 +19,7 @@ data class InventarioFisico(
     val estado: String = "EN_PROGRESO",
     val opticaId: String,
     val userId: String,
-    val notas: String = "",
-    val updatedAt: String? = null
+    val notas: String = ""
 )
 
 @Entity(

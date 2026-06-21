@@ -79,7 +79,7 @@ open class SyncInventarioFisicoUseCase @Inject constructor(
                 tableName = TABLE_SESSIONS,
                 opticaId = opticaId,
                 entityType = "inventario_fisico",
-                localEntities = remotos.map { LocalEntity(it.id, it.updatedAt) }
+                localEntities = remotos.map { LocalEntity(it.id) }
             ).map { it.id }.toSet()
             val safeRows = remotos.filter { it.id in safeIds }
             if (safeRows.isEmpty()) return 0
@@ -171,14 +171,13 @@ private data class IFRemoto(
     val estado: String = "EN_PROGRESO",
     @SerialName("optica_id") val opticaId: String = "",
     @SerialName("user_id") val userId: String = "",
-    val notas: String = "",
-    @SerialName("updated_at") val updatedAt: String? = null
+    val notas: String = ""
 ) {
     fun toEntity() = InventarioFisico(
         id = id,
         fecha = fecha?.let { LocalDate.parse(it.take(10)) } ?: LocalDate.now(),
         estado = estado, opticaId = opticaId, userId = userId,
-        notas = notas, updatedAt = updatedAt
+        notas = notas
     )
 }
 
@@ -201,7 +200,7 @@ internal data class IFDetalleRemoto(
 
 private fun InventarioFisico.toRemoto(): IFRemoto = IFRemoto(
     id = id, fecha = fecha.toString(), estado = estado,
-    opticaId = opticaId, userId = userId, notas = notas, updatedAt = updatedAt
+    opticaId = opticaId, userId = userId, notas = notas
 )
 
 internal fun InventarioFisicoDetalle.toRemoto(opticaId: String): IFDetalleRemoto = IFDetalleRemoto(

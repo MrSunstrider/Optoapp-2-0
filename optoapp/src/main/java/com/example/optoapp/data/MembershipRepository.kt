@@ -32,12 +32,6 @@ open class MembershipRepository @Inject constructor(
             nombreOptica, fiscalDocTipo, fiscalDocNumero, razonSocial, direccionFiscal, userId, overrideAccessToken
         )
 
-    suspend fun fetchPlanSettings(opticaId: String): Result<PlanSettings> =
-        opticaSettingsDataSource.fetchPlanSettings(opticaId)
-
-    suspend fun updatePlanSettings(opticaId: String, settings: PlanSettings): Result<Unit> =
-        opticaSettingsDataSource.updatePlanSettings(opticaId, settings)
-
     open suspend fun fetchOpticaPlan(opticaId: String): String? =
         opticaSettingsDataSource.fetchOpticaPlan(opticaId)
 

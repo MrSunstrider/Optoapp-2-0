@@ -4,9 +4,12 @@ import android.content.Context
 import android.net.ConnectivityManager
 import com.example.optoapp.data.ConflictDao
 import com.example.optoapp.data.ConflictRecord
+import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.MembershipRepository
 import com.example.optoapp.data.OptoRepository
+import com.example.optoapp.data.Pago
 import com.example.optoapp.data.Resource
+import com.example.optoapp.data.ServicioExtra
 import com.example.optoapp.data.SessionManager
 import com.example.optoapp.domain.FinanzasSyncResult
 import com.example.optoapp.domain.HistorialSyncResult
@@ -226,6 +229,141 @@ class SyncViewModelConflictResolutionTest {
         viewModel.acceptAllCloud()
         testDispatcher.scheduler.advanceUntilIdle()
 
+        coVerify { conflictDao.clearConflicts(testOpticaId) }
+        coVerify { syncEntityStateDao.deleteConflictedForOptica(testOpticaId) }
+    }
+
+    // ─── Phase 4 RED: resolveKeepMine bump tests ──────────────────────────
+
+    private fun makeServicioConflict(entityId: String) = ConflictRecord(
+        entityId = entityId,
+        opticaId = testOpticaId,
+        entityType = "servicio_extra",
+        localSnapshot = """{"id":"$entityId","descripcion":"Consulta"}""",
+        remoteSnapshot = """{"id":"$entityId","descripcion":"Consulta Remota"}"""
+    )
+
+    private fun makeDispensacionConflict(entityId: String) = ConflictRecord(
+        entityId = entityId,
+        opticaId = testOpticaId,
+        entityType = "dispensacion",
+        localSnapshot = """{"id":"$entityId"}""",
+        remoteSnapshot = """{"id":"$entityId","remote":true}"""
+    )
+
+    private fun makePagoConflict(entityId: String) = ConflictRecord(
+        entityId = entityId,
+        opticaId = testOpticaId,
+        entityType = "pago",
+        localSnapshot = """{"id":"$entityId","monto":100}""",
+        remoteSnapshot = """{"id":"$entityId","monto":200}"""
+    )
+
+    private fun servicio(id: String) = ServicioExtra(
+        id = id,
+        descripcion = "Consulta",
+        montoTotal = 500.0,
+        aCuenta = 0.0,
+        estado = "Pendiente",
+        fecha = java.time.LocalDate.now(),
+        opticaId = testOpticaId
+    )
+
+    private fun dispensacion(id: String) = DispensacionOptica(
+        id = id,
+        pacienteId = "pac-001",
+        fecha = java.time.LocalDate.now(),
+        opticaId = testOpticaId
+    )
+
+    private fun pago(id: String) = Pago(
+        id = id,
+        fecha = java.time.LocalDate.now(),
+        tipo = "efectivo",
+        monto = 100.0,
+        metodoPago = "efectivo",
+        opticaId = testOpticaId
+    )
+
+    @Test
+    fun resolveKeepMine_forServicio_callsUpdateServicioBeforeSync() = runTest(testDispatcher) {
+        val conflict = makeServicioConflict("srv-001")
+        val entity = servicio("srv-001")
+        coEvery { repository.getServicioById("srv-001") } returns Resource.Success(entity)
+        coEvery { repository.updateServicio(any()) } just Runs
+
+        viewModel.resolveKeepMine(conflict)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coVerifyOrder {
+            repository.updateServicio(any())
+            syncFinanzasUseCase(testOpticaId, skipUpload = false, downloadAfterUpload = true)
+        }
+    }
+
+    @Test
+    fun resolveKeepMine_forDispensacion_callsUpdateDispensacionBeforeSync() = runTest(testDispatcher) {
+        val conflict = makeDispensacionConflict("disp-001")
+        val entity = dispensacion("disp-001")
+        coEvery { repository.getDispensacionById("disp-001") } returns Resource.Success(entity)
+        coEvery { repository.updateDispensacion(any()) } just Runs
+
+        viewModel.resolveKeepMine(conflict)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coVerifyOrder {
+            repository.updateDispensacion(any())
+            syncFinanzasUseCase(testOpticaId, skipUpload = false, downloadAfterUpload = true)
+        }
+    }
+
+    @Test
+    fun resolveKeepMine_forPago_callsUpdatePagoBeforeSync() = runTest(testDispatcher) {
+        val conflict = makePagoConflict("pago-001")
+        val entity = pago("pago-001")
+        coEvery { repository.getPagoById("pago-001") } returns entity
+        coEvery { repository.updatePago(any()) } just Runs
+
+        viewModel.resolveKeepMine(conflict)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coVerifyOrder {
+            repository.updatePago(any())
+            syncFinanzasUseCase(testOpticaId, skipUpload = false, downloadAfterUpload = true)
+        }
+    }
+
+    @Test
+    fun resolveKeepMine_retainsConflictRecord_whenSyncFails() = runTest(testDispatcher) {
+        val conflict = makeServicioConflict("srv-fail")
+        val entity = servicio("srv-fail")
+        coEvery { repository.getServicioById("srv-fail") } returns Resource.Success(entity)
+        coEvery { repository.updateServicio(any()) } just Runs
+        coEvery {
+            syncFinanzasUseCase(testOpticaId, skipUpload = false, downloadAfterUpload = true)
+        } returns Resource.Error("network error")
+
+        viewModel.resolveKeepMine(conflict)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coVerify(exactly = 0) { conflictDao.resolveConflict("srv-fail", testOpticaId) }
+    }
+
+    @Test
+    fun resolveKeepMineAll_bumpsAllEntitiesAndClearsConflicts() = runTest(testDispatcher) {
+        val srvConflict = makeServicioConflict("srv-bulk")
+        val pagConflict = makePagoConflict("pago-bulk")
+        coEvery { conflictDao.getConflicts(testOpticaId) } returns listOf(srvConflict, pagConflict)
+        coEvery { repository.getServicioById("srv-bulk") } returns Resource.Success(servicio("srv-bulk"))
+        coEvery { repository.updateServicio(any()) } just Runs
+        coEvery { repository.getPagoById("pago-bulk") } returns pago("pago-bulk")
+        coEvery { repository.updatePago(any()) } just Runs
+
+        viewModel.resolveKeepMineAll()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coVerify { repository.updateServicio(any()) }
+        coVerify { repository.updatePago(any()) }
         coVerify { conflictDao.clearConflicts(testOpticaId) }
         coVerify { syncEntityStateDao.deleteConflictedForOptica(testOpticaId) }
     }

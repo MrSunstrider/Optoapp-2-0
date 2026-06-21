@@ -56,6 +56,11 @@ fun ConflictosScreen(
                 actions = {
                     if (conflicts.isNotEmpty()) {
                         TextButton(onClick = {
+                            syncViewModel.resolveKeepMineAll()
+                        }) {
+                            Text("Usar el mío para todos")
+                        }
+                        TextButton(onClick = {
                             syncViewModel.acceptAllCloud()
                         }) {
                             Text("Usar nube para todos")

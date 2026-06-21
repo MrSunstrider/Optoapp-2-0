@@ -9,9 +9,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import com.example.optoapp.data.OpticaLaboratorioPatch
 import com.example.optoapp.data.OpticaMembership
-import com.example.optoapp.data.OpticaPlanSettingsDto
-import com.example.optoapp.data.OpticaPlanUpdateDto
-import com.example.optoapp.data.PlanSettings
+
 
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
@@ -72,60 +70,6 @@ open class OpticaSettingsDataSource @Inject constructor(
             Result.failure(e)
         } catch (e: Exception) {
             Log.e(TAG, "createOpticaForCurrentUser: nombre=$nombre", e)
-            Result.failure(e)
-        }
-    }
-
-    suspend fun fetchPlanSettings(opticaId: String): Result<PlanSettings> {
-        if (supabase.auth.currentUserOrNull() == null) return Result.failure(IllegalStateException("Sin sesión"))
-        return try {
-            val row = supabase.postgrest[TABLE_OPTICAS]
-                .select { filter { eq("id", opticaId) } }
-                .decodeList<OpticaPlanSettingsDto>()
-                .firstOrNull()
-                ?: return Result.failure(IllegalStateException("No se encontró la óptica"))
-            Result.success(
-                PlanSettings(
-                    planCode = row.planCode.ifBlank { "free" },
-                    maxOpticas = row.maxOpticas,
-                    maxPacientesPorOptica = row.maxPacientesPorOptica,
-                    maxUsuariosPorOptica = row.maxUsuariosPorOptica,
-                    planStatus = row.planStatus.ifBlank { "active" }
-                )
-            )
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: IOException) {
-            Log.e(TAG, "fetchPlanSettings: opticaId=$opticaId", e)
-            Result.failure(e)
-        } catch (e: Exception) {
-            Log.e(TAG, "fetchPlanSettings: opticaId=$opticaId", e)
-            Result.failure(e)
-        }
-    }
-
-    suspend fun updatePlanSettings(opticaId: String, settings: PlanSettings): Result<Unit> {
-        if (supabase.auth.currentUserOrNull() == null) return Result.failure(IllegalStateException("Sin sesión"))
-        return try {
-            supabase.postgrest[TABLE_OPTICAS].update(
-                OpticaPlanUpdateDto(
-                    planCode = settings.planCode.trim().lowercase(),
-                    maxOpticas = settings.maxOpticas,
-                    maxPacientesPorOptica = settings.maxPacientesPorOptica,
-                    maxUsuariosPorOptica = settings.maxUsuariosPorOptica,
-                    planStatus = settings.planStatus.trim().lowercase()
-                )
-            ) {
-                filter { eq("id", opticaId) }
-            }
-            Result.success(Unit)
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: IOException) {
-            Log.e(TAG, "updatePlanSettings: opticaId=$opticaId", e)
-            Result.failure(e)
-        } catch (e: Exception) {
-            Log.e(TAG, "updatePlanSettings: opticaId=$opticaId", e)
             Result.failure(e)
         }
     }

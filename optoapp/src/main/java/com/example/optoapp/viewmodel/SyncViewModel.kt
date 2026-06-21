@@ -113,35 +113,124 @@ class SyncViewModel @Inject constructor(
      */
     private suspend fun syncForEntityType(opticaId: String, entityType: String, skipUpload: Boolean) {
         syncGate.mutex.withLock {
-            when (entityType) {
-                "paciente" -> syncPacientesUseCase(opticaId, skipUpload = skipUpload, downloadAfterUpload = true)
-                "evaluacion" -> syncHistorialUseCase(opticaId, skipUpload = skipUpload, downloadAfterUpload = true)
-                "dispensacion", "servicio_extra", "pago" ->
-                    syncFinanzasUseCase(opticaId, skipUpload = skipUpload, downloadAfterUpload = true)
-                "proveedor", "categoria_montura" ->
-                    syncProveedoresUseCase(opticaId, skipUpload = skipUpload, downloadAfterUpload = true)
-                "orden_compra", "orden_compra_item" ->
-                    syncOrdenesCompraUseCase(opticaId, skipUpload = skipUpload, downloadAfterUpload = true)
-                "inventory_kpis" ->
-                    syncInventoryKpisUseCase(opticaId)
-                "inventario_fisico", "inventario_fisico_detalle" ->
-                    syncInventarioFisicoUseCase(opticaId, skipUpload = skipUpload, downloadAfterUpload = true)
-                "montura" -> syncInventarioUseCase(opticaId, skipUpload = skipUpload, downloadAfterUpload = true)
-            }
+            syncForEntityTypeWithResult(opticaId, entityType, skipUpload)
         }
     }
 
+    /**
+     * Like [syncForEntityType] but called inside an already-held mutex lock and returns
+     * the [Resource] from the use case so callers can detect failure.
+     */
+    private suspend fun syncForEntityTypeWithResult(
+        opticaId: String,
+        entityType: String,
+        skipUpload: Boolean
+    ): Resource<*> = when (entityType) {
+        "paciente" -> syncPacientesUseCase(opticaId, skipUpload = skipUpload, downloadAfterUpload = true)
+        "evaluacion" -> syncHistorialUseCase(opticaId, skipUpload = skipUpload, downloadAfterUpload = true)
+        "dispensacion", "servicio_extra", "pago" ->
+            syncFinanzasUseCase(opticaId, skipUpload = skipUpload, downloadAfterUpload = true)
+        "proveedor", "categoria_montura" ->
+            syncProveedoresUseCase(opticaId, skipUpload = skipUpload, downloadAfterUpload = true)
+        "orden_compra", "orden_compra_item" ->
+            syncOrdenesCompraUseCase(opticaId, skipUpload = skipUpload, downloadAfterUpload = true)
+        "inventory_kpis" ->
+            syncInventoryKpisUseCase(opticaId)
+        "inventario_fisico", "inventario_fisico_detalle" ->
+            syncInventarioFisicoUseCase(opticaId, skipUpload = skipUpload, downloadAfterUpload = true)
+        "montura" -> syncInventarioUseCase(opticaId, skipUpload = skipUpload, downloadAfterUpload = true)
+        else -> Resource.Success(Unit)
+    }
+
+    /**
+     * Bumps the local entity's updatedAt to now so that filterConflicts passes
+     * (local > remote), then uploads, and only clears the conflict record on success.
+     */
     fun resolveKeepMine(entity: ConflictRecord) {
         viewModelScope.launch {
             val opticaId = sessionManager.opticaId.first()
             try {
-                syncForEntityType(opticaId, entity.entityType, skipUpload = false)
-                conflictDao.resolveConflict(entity.entityId, opticaId)
-                _conflicts.value = _conflicts.value.filter { it.entityId != entity.entityId }
-                _conflictCount.value = _conflicts.value.size
-                Log.d(TAG, "Conflicto resuelto (keep mine): ${entity.entityType}/${entity.entityId}")
+                bumpEntityUpdatedAt(entity.entityId, entity.entityType)
+                val syncResult = syncGate.mutex.withLock {
+                    syncForEntityTypeWithResult(opticaId, entity.entityType, skipUpload = false)
+                }
+                if (syncResult !is Resource.Error) {
+                    conflictDao.resolveConflict(entity.entityId, opticaId)
+                    _conflicts.value = _conflicts.value.filter { it.entityId != entity.entityId }
+                    _conflictCount.value = _conflicts.value.size
+                    Log.d(TAG, "Conflicto resuelto (keep mine): ${entity.entityType}/${entity.entityId}")
+                } else {
+                    Log.w(TAG, "Keep mine: sync falló, conflicto retenido: ${entity.entityType}/${entity.entityId}")
+                }
             } catch (e: Exception) {
                 Log.e(TAG, "Error resolviendo conflicto: ${e.message}", e)
+            }
+        }
+    }
+
+    /**
+     * Bumps all active conflicts for the optica: bump each entity's updatedAt to now,
+     * then clear all conflict records and trigger a full sync.
+     *
+     * No opticaId parameter — reads from [SessionManager] like [acceptAllCloud].
+     */
+    fun resolveKeepMineAll() {
+        viewModelScope.launch {
+            val opticaId = sessionManager.opticaId.first()
+            try {
+                val allConflicts = conflictDao.getConflicts(opticaId)
+                allConflicts.forEach { entity ->
+                    runCatching { bumpEntityUpdatedAt(entity.entityId, entity.entityType) }
+                        .onFailure { e ->
+                            Log.w(TAG, "Keep mine all: no se pudo bump ${entity.entityType}/${entity.entityId}: ${e.message}")
+                        }
+                }
+                conflictDao.clearConflicts(opticaId)
+                syncEntityStateDao.deleteConflictedForOptica(opticaId)
+                _conflicts.value = emptyList()
+                _conflictCount.value = 0
+                performFullSync()
+                Log.d(TAG, "Todos los conflictos resueltos (keep mine all): ${allConflicts.size} entidades")
+            } catch (e: Exception) {
+                Log.e(TAG, "Error en resolveKeepMineAll: ${e.message}", e)
+            }
+        }
+    }
+
+    /**
+     * Fetches the entity from Room by [entityId] and [entityType], then calls the
+     * appropriate repository update method which auto-stamps updatedAt = Instant.now().
+     */
+    private suspend fun bumpEntityUpdatedAt(entityId: String, entityType: String) {
+        when (entityType) {
+            "servicio_extra" -> {
+                val result = repository.getServicioById(entityId)
+                val servicio = result.data
+                if (result is Resource.Success && servicio != null) {
+                    repository.updateServicio(servicio)
+                } else {
+                    Log.w(TAG, "bumpEntityUpdatedAt: servicio no encontrado id=$entityId")
+                }
+            }
+            "dispensacion" -> {
+                val result = repository.getDispensacionById(entityId)
+                val dispensacion = result.data
+                if (result is Resource.Success && dispensacion != null) {
+                    repository.updateDispensacion(dispensacion)
+                } else {
+                    Log.w(TAG, "bumpEntityUpdatedAt: dispensacion no encontrada id=$entityId")
+                }
+            }
+            "pago" -> {
+                val pago = repository.getPagoById(entityId)
+                if (pago != null) {
+                    repository.updatePago(pago)
+                } else {
+                    Log.w(TAG, "bumpEntityUpdatedAt: pago no encontrado id=$entityId")
+                }
+            }
+            else -> {
+                Log.d(TAG, "bumpEntityUpdatedAt: tipo no aplica bump: $entityType")
             }
         }
     }

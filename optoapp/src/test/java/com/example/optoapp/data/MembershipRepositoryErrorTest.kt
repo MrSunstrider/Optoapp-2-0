@@ -67,24 +67,6 @@ class MembershipRepositoryErrorTest {
     }
 
     @Test
-    fun `fetchPlanSettings no session returns failure`() = runTest {
-        val result = repo.fetchPlanSettings("opt_abc")
-
-        assertTrue("Expected failure but got $result", result.isFailure)
-        assertEquals("Sin sesión", (result.exceptionOrNull() as? IllegalStateException)?.message)
-    }
-
-    @Test
-    fun `updatePlanSettings no session returns failure`() = runTest {
-        val result = repo.updatePlanSettings(
-            "opt_abc", PlanSettings("free", 1, 20, 2, "active")
-        )
-
-        assertTrue("Expected failure but got $result", result.isFailure)
-        assertEquals("Sin sesión", (result.exceptionOrNull() as? IllegalStateException)?.message)
-    }
-
-    @Test
     fun `updateOpticaFiscalSettings no session returns failure`() = runTest {
         val result = repo.updateOpticaFiscalSettings(
             "opt_abc", "Optica", "RUC", "123", "Razon", "Dir"

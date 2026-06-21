@@ -68,11 +68,7 @@ internal data class OpticaDto(
     @SerialName("fiscal_doc_tipo") val fiscalDocTipo: String = "",
     @SerialName("fiscal_doc_numero") val fiscalDocNumero: String = "",
     @SerialName("razon_social") val razonSocial: String = "",
-    @SerialName("direccion_fiscal") val direccionFiscal: String = "",
-    @SerialName("distrito_ciudad_departamento") val distritoCiudadDepartamento: String = "",
-    val moneda: String = "",
-    val pais: String = "",
-    @SerialName("contacto_whatsapp_telefono") val contactoWhatsappTelefono: String = ""
+    @SerialName("direccion_fiscal") val direccionFiscal: String = ""
 )
 
 @Serializable
@@ -81,37 +77,12 @@ internal data class OpticaInsertDto(
     val nombre: String,
     val plan: String = "free",
     @SerialName("plan_code") val planCode: String = "free",
-    @SerialName("max_opticas") val maxOpticas: Int = 1,
-    @SerialName("max_pacientes_por_optica") val maxPacientesPorOptica: Int = 20,
-    @SerialName("max_usuarios_por_optica") val maxUsuariosPorOptica: Int = 2,
     @SerialName("plan_source") val planSource: String = "manual",
     @SerialName("plan_status") val planStatus: String = "active",
     @SerialName("fiscal_doc_tipo") val fiscalDocTipo: String = "",
     @SerialName("fiscal_doc_numero") val fiscalDocNumero: String = "",
     @SerialName("razon_social") val razonSocial: String = "",
-    @SerialName("direccion_fiscal") val direccionFiscal: String = "",
-    @SerialName("distrito_ciudad_departamento") val distritoCiudadDepartamento: String = "",
-    val moneda: String = "",
-    val pais: String = "",
-    @SerialName("contacto_whatsapp_telefono") val contactoWhatsappTelefono: String = ""
-)
-
-@Serializable
-internal data class OpticaPlanSettingsDto(
-    @SerialName("plan_code") val planCode: String = "free",
-    @SerialName("max_opticas") val maxOpticas: Int? = null,
-    @SerialName("max_pacientes_por_optica") val maxPacientesPorOptica: Int? = null,
-    @SerialName("max_usuarios_por_optica") val maxUsuariosPorOptica: Int? = null,
-    @SerialName("plan_status") val planStatus: String = "active"
-)
-
-@Serializable
-internal data class OpticaPlanUpdateDto(
-    @SerialName("plan_code") val planCode: String,
-    @SerialName("max_opticas") val maxOpticas: Int?,
-    @SerialName("max_pacientes_por_optica") val maxPacientesPorOptica: Int?,
-    @SerialName("max_usuarios_por_optica") val maxUsuariosPorOptica: Int?,
-    @SerialName("plan_status") val planStatus: String
+    @SerialName("direccion_fiscal") val direccionFiscal: String = ""
 )
 
 @Serializable

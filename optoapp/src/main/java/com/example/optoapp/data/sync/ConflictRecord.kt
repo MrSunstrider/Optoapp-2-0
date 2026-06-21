@@ -51,4 +51,7 @@ interface ConflictDao {
 
     @Query("DELETE FROM conflict_records WHERE opticaId = :opticaId")
     suspend fun clearConflicts(opticaId: String)
+
+    @Query("SELECT entityId FROM conflict_records WHERE opticaId = :opticaId AND entityType = :entityType")
+    suspend fun getConflictEntityIds(opticaId: String, entityType: String): List<String>
 }

@@ -30,9 +30,6 @@ java_pid*
 # Build results
 **/build/
 
-# Nested git repo (managed separately)
-/Optoapp-2-0-saas/
-
 # IDE/Editor specific
 .cursorrules
 .cursor/

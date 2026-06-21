@@ -143,7 +143,7 @@ class SyncFlowTest {
             try {
                 // Clean up test data via service_role (bypasses RLS).
                 admin.postgrest["pacientes"].delete { filter { eq("optica_id", testOpticaId) } }
-                admin.postgrest["historial"].delete { filter { eq("optica_id", testOpticaId) } }
+                admin.postgrest["evaluaciones"].delete { filter { eq("optica_id", testOpticaId) } }
                 admin.postgrest["dispensaciones"].delete { filter { eq("optica_id", testOpticaId) } }
                 admin.postgrest["usuario_optica"].delete { filter { eq("optica_id", testOpticaId) } }
                 admin.postgrest["opticas"].delete { filter { eq("id", testOpticaId) } }
@@ -228,7 +228,7 @@ class SyncFlowTest {
             "optica_id" to testOpticaId,
             "fecha_creacion" to paciente.fechaCreacion.toString()
         ))
-        client.postgrest["historial"].upsert(mapOf(
+        client.postgrest["evaluaciones"].upsert(mapOf(
             "id" to evaluacion.id,
             "paciente_id" to paciente.id,
             "optica_id" to testOpticaId,
@@ -241,7 +241,7 @@ class SyncFlowTest {
         val startTime = System.currentTimeMillis()
         var found = false
         while (System.currentTimeMillis() - startTime < 30_000) {
-            val rows = client.postgrest["historial"].select {
+            val rows = client.postgrest["evaluaciones"].select {
                 filter { eq("id", evaluacion.id) }
             }.decodeList<EvaluacionClinica>()
             if (rows.isNotEmpty()) {

@@ -85,29 +85,6 @@ class MembershipRepositoryTest {
     }
 
     @Test
-    fun fetchPlanSettings_noSession_returnsFailure() = runBlocking {
-        every { auth.currentUserOrNull() } returns null
-
-        val result = repo.fetchPlanSettings("optica1")
-
-        assertTrue(result.isFailure)
-        assertTrue(result.exceptionOrNull() is IllegalStateException)
-    }
-
-    @Test
-    fun updatePlanSettings_noSession_returnsFailure() = runBlocking {
-        every { auth.currentUserOrNull() } returns null
-
-        val result = repo.updatePlanSettings(
-            "optica1",
-            PlanSettings(planCode = "free", maxOpticas = 1, maxPacientesPorOptica = 20, maxUsuariosPorOptica = 2, planStatus = "active")
-        )
-
-        assertTrue(result.isFailure)
-        assertTrue(result.exceptionOrNull() is IllegalStateException)
-    }
-
-    @Test
     fun fetchOpticaPlan_noSession_returnsNull() = runBlocking {
         every { auth.currentUserOrNull() } returns null
 

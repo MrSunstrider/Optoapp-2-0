@@ -135,6 +135,10 @@ class DispensacionRepository(
         pagoDao.insertPago(pago)
     }
 
+    suspend fun updatePago(pago: Pago) {
+        pagoDao.updatePago(pago)
+    }
+
     suspend fun getPagoById(id: String): Pago? = pagoDao.getPagoById(id)
 
     suspend fun reassignPagosDispensacion(oldDispensacionId: String, newDispensacionId: String): Int =

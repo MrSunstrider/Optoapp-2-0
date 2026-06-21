@@ -19,7 +19,7 @@ class SyncInventarioFisicoUseCaseKtTest {
         val session = InventarioFisico(
             id = "if1", fecha = LocalDate.of(2026, 6, 17),
             estado = "EN_PROGRESO", opticaId = "o1", userId = "u1",
-            notas = "Conteo trimestral", updatedAt = "2026-06-17T00:00:00Z"
+            notas = "Conteo trimestral"
         )
         assertEquals("if1", session.id)
         assertEquals(LocalDate.of(2026, 6, 17), session.fecha)
@@ -27,7 +27,6 @@ class SyncInventarioFisicoUseCaseKtTest {
         assertEquals("o1", session.opticaId)
         assertEquals("u1", session.userId)
         assertEquals("Conteo trimestral", session.notas)
-        assertEquals("2026-06-17T00:00:00Z", session.updatedAt)
     }
 
     @Test

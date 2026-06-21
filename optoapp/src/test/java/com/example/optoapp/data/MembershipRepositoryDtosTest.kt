@@ -33,16 +33,12 @@ class MembershipRepositoryDtosTest {
             planCode = "premium-2024", laboratorioNombre = "Lab1",
             laboratorioContacto = "123", fiscalDocTipo = "RUC",
             fiscalDocNumero = "12345678", razonSocial = "RS",
-            direccionFiscal = "Av. Siempre Viva", distritoCiudadDepartamento = "Lima",
-            moneda = "PEN", pais = "PE",
-            contactoWhatsappTelefono = "+51999000111"
+            direccionFiscal = "Av. Siempre Viva"
         )
         assertEquals("Mi Óptica", dto.nombre)
         assertEquals("premium-2024", dto.planCode)
         assertEquals("Lab1", dto.laboratorioNombre)
         assertEquals("RUC", dto.fiscalDocTipo)
-        assertEquals("Lima", dto.distritoCiudadDepartamento)
-        assertEquals("PEN", dto.moneda)
     }
 
     // ── OpticaMemberRow ───────────────────────────────────────────────────────
@@ -179,33 +175,7 @@ class MembershipRepositoryDtosTest {
         assertEquals("opt_new", dto.id)
         assertEquals("Nueva", dto.nombre)
         assertEquals("free", dto.plan)
-        assertEquals(1, dto.maxOpticas)
-        assertEquals(20, dto.maxPacientesPorOptica)
-        assertEquals(2, dto.maxUsuariosPorOptica)
         assertEquals("", dto.fiscalDocTipo)
-    }
-
-    // ── OpticaPlanSettingsDto (internal) ──────────────────────────────────────
-
-    @Test
-    fun opticaPlanSettingsDto_defaults() {
-        val dto = OpticaPlanSettingsDto()
-        assertEquals("free", dto.planCode)
-        assertNull(dto.maxOpticas)
-        assertEquals("active", dto.planStatus)
-    }
-
-    // ── OpticaPlanUpdateDto (internal) ────────────────────────────────────────
-
-    @Test
-    fun opticaPlanUpdateDto_constructs() {
-        val dto = OpticaPlanUpdateDto(
-            planCode = "premium", maxOpticas = 5,
-            maxPacientesPorOptica = 200, maxUsuariosPorOptica = 20,
-            planStatus = "active"
-        )
-        assertEquals("premium", dto.planCode)
-        assertEquals(5, dto.maxOpticas)
     }
 
     // ── OpticaLaboratorioPatch (internal) ─────────────────────────────────────
