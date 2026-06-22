@@ -118,7 +118,13 @@ open class ConflictHelper @Inject constructor(
         if (localEntities.isEmpty()) return localEntities
 
         val checkable = localEntities.filter { it.updatedAt != null }
-        if (checkable.isEmpty()) return localEntities
+        if (checkable.isEmpty()) {
+            // All entities lack updatedAt (pre-migration data). They are safe to upload,
+            // but we must still clear any stale conflict_records — otherwise the download
+            // guard blocks their download indefinitely and Room never receives server timestamps.
+            localEntities.forEach { entity -> conflictDao.resolveConflict(entity.id, opticaId) }
+            return localEntities
+        }
 
         val checkableIds = checkable.map { it.id }
         val remoteTimestamps = fetchRemoteUpdatedAt(tableName, opticaId, checkableIds)
