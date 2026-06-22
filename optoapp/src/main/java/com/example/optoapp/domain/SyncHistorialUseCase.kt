@@ -1,8 +1,10 @@
 package com.example.optoapp.domain
 
 import android.util.Log
+import com.example.optoapp.data.ConflictDao
 import com.example.optoapp.data.EvaluacionClinica
 import com.example.optoapp.data.OptoRepository
+import com.example.optoapp.domain.sync.EntitySnapshotSerializer
 import com.example.optoapp.data.Paciente
 import com.example.optoapp.data.Resource
 import com.example.optoapp.sync.errorLabelForException
@@ -25,7 +27,8 @@ open class SyncHistorialUseCase @Inject constructor(
     private val repository: OptoRepository,
     private val supabase: SupabaseClient,
     private val syncStateTracker: com.example.optoapp.data.SyncStateTracker,
-    private val conflictHelper: com.example.optoapp.domain.sync.ConflictHelper
+    private val conflictHelper: com.example.optoapp.domain.sync.ConflictHelper,
+    private val conflictDao: ConflictDao
 ) {
 
     companion object {
@@ -142,7 +145,7 @@ open class SyncHistorialUseCase @Inject constructor(
             tableName = TABLE,
             opticaId = opticaId,
             entityType = "evaluacion",
-            localEntities = builtRows.map { com.example.optoapp.domain.sync.LocalEntity(it.id, it.updatedAt) }
+            localEntities = builtRows.map { com.example.optoapp.domain.sync.LocalEntity(it.id, it.updatedAt, EntitySnapshotSerializer.serialize(it)) }
         )
         val finalRows = builtRows.filter { r -> conflictSafe.any { it.id == r.id } }
 
@@ -173,6 +176,13 @@ open class SyncHistorialUseCase @Inject constructor(
     }
 
     private suspend fun downloadEvaluaciones(opticaId: String): Int {
+        val conflictedIds = try {
+            conflictDao.getConflictEntityIds(opticaId, "evaluacion").toSet()
+        } catch (e: Exception) {
+            Log.e(TAG, "Error querying conflict IDs, proceeding without guard: ${e.message}", e)
+            emptySet()
+        }
+
         val remotos = supabase.postgrest[TABLE]
             .select {
                 filter { eq("optica_id", opticaId) }
@@ -182,6 +192,7 @@ open class SyncHistorialUseCase @Inject constructor(
         if (remotos.isEmpty()) return 0
 
         remotos.forEach { remoto ->
+            if (remoto.id in conflictedIds) return@forEach
             try {
                 val local = remoto.toEntity()
                 repository.upsertEvaluacionFromRemote(local)

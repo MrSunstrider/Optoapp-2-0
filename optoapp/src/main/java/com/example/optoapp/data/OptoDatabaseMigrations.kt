@@ -835,3 +835,13 @@ val MIGRATION_26_27 = object : Migration(26, 27) {
         db.execSQL("PRAGMA foreign_keys=ON")
     }
 }
+
+val MIGRATION_27_28 = object : Migration(27, 28) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        // FR-07: add three snapshot columns to conflict_records for three-way merge.
+        // Existing rows receive the column DEFAULT '{}' — no data migration needed.
+        db.execSQL("ALTER TABLE conflict_records ADD COLUMN baseSnapshot TEXT NOT NULL DEFAULT '{}'")
+        db.execSQL("ALTER TABLE conflict_records ADD COLUMN localData TEXT NOT NULL DEFAULT '{}'")
+        db.execSQL("ALTER TABLE conflict_records ADD COLUMN remoteData TEXT NOT NULL DEFAULT '{}'")
+    }
+}

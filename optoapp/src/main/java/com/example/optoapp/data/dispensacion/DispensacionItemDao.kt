@@ -12,6 +12,9 @@ interface DispensacionItemDao {
     @Query("SELECT * FROM dispensacion_items WHERE dispensacion_id = :dispensacionId ORDER BY rowid")
     suspend fun getItemsListByDispensacion(dispensacionId: String): List<DispensacionItem>
 
+    @Query("SELECT * FROM dispensacion_items WHERE id = :id")
+    suspend fun getById(id: String): DispensacionItem?
+
     @Query("SELECT * FROM dispensacion_items WHERE optica_id = :opticaId")
     suspend fun getItemsListByOptica(opticaId: String): List<DispensacionItem>
 

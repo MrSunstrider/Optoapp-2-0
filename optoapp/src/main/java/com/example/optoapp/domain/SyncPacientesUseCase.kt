@@ -1,7 +1,9 @@
 package com.example.optoapp.domain
 
 import android.util.Log
+import com.example.optoapp.data.ConflictDao
 import com.example.optoapp.data.OptoRepository
+import com.example.optoapp.domain.sync.EntitySnapshotSerializer
 import com.example.optoapp.data.Paciente
 import com.example.optoapp.data.Resource
 import com.example.optoapp.sync.errorLabelForException
@@ -22,7 +24,8 @@ open class SyncPacientesUseCase @Inject constructor(
     private val repository: OptoRepository,
     private val supabase: SupabaseClient,
     private val syncStateTracker: com.example.optoapp.data.SyncStateTracker,
-    private val conflictHelper: com.example.optoapp.domain.sync.ConflictHelper
+    private val conflictHelper: com.example.optoapp.domain.sync.ConflictHelper,
+    private val conflictDao: com.example.optoapp.data.ConflictDao
 ) {
 
     companion object {
@@ -105,7 +108,7 @@ open class SyncPacientesUseCase @Inject constructor(
             tableName = TABLE,
             opticaId = opticaId,
             entityType = "paciente",
-            localEntities = deduplicated.map { com.example.optoapp.domain.sync.LocalEntity(it.id, it.updatedAt) }
+            localEntities = deduplicated.map { com.example.optoapp.domain.sync.LocalEntity(it.id, it.updatedAt, EntitySnapshotSerializer.serialize(it)) }
         )
         val finalRows = deduplicated.filter { r -> conflictSafe.any { it.id == r.id } }
 
@@ -140,6 +143,13 @@ open class SyncPacientesUseCase @Inject constructor(
     }
 
     private suspend fun download(opticaId: String): Int {
+        val conflictedIds = try {
+            conflictDao.getConflictEntityIds(opticaId, "paciente").toSet()
+        } catch (e: Exception) {
+            Log.e(TAG, "Error querying conflict IDs, proceeding without guard: ${e.message}", e)
+            emptySet()
+        }
+
         val remotos = supabase.postgrest[TABLE]
             .select {
                 filter { eq("optica_id", opticaId) }
@@ -149,6 +159,7 @@ open class SyncPacientesUseCase @Inject constructor(
         if (remotos.isEmpty()) return 0
 
         remotos.forEach { remoto ->
+            if (remoto.id in conflictedIds) return@forEach
             try {
                 val local = remoto.toEntity()
                 repository.upsertPaciente(local)

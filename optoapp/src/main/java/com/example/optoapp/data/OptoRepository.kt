@@ -76,6 +76,7 @@ open class OptoRepository(
     suspend fun insertDispensacionItem(item: DispensacionItem) { dispensacionRepo.insertDispensacionItem(item); postSaveSyncScheduler.get().scheduleFinanzasSync(item.opticaId) }
     suspend fun deleteDispensacionItemById(id: String, opticaId: String) { dispensacionRepo.deleteDispensacionItemById(id); syncStateTracker.markDeleted(opticaId, "dispensacion_item", id) }
     suspend fun deleteItemsByDispensacionId(dispensacionId: String) = dispensacionRepo.deleteItemsByDispensacionId(dispensacionId)
+    suspend fun getDispensacionItemById(id: String) = dispensacionRepo.getDispensacionItemById(id)
     suspend fun getDispensacionItemsByDispensacion(dispensacionId: String) = dispensacionRepo.getItemsListByDispensacion(dispensacionId)
     suspend fun suggestNextOt(opticaId: String, fecha: LocalDate) = dispensacionRepo.suggestNextOt(opticaId, fecha)
     suspend fun suggestNextHistoriaOptometrica(opticaId: String) = pacienteRepo.suggestNextHistoriaOptometrica(opticaId)
@@ -108,6 +109,7 @@ open class OptoRepository(
     suspend fun adjustMonturaStock(monturaId: String, opticaId: String, delta: Int) = monturaCoordinator.adjustMonturaStock(monturaId, opticaId, delta)
     fun getMovimientosMonturaByOptica(opticaId: String) = monturaCoordinator.getMovimientosMonturaByOptica(opticaId)
     fun getMovimientosByMontura(monturaId: String) = monturaCoordinator.getMovimientosByMontura(monturaId)
+    suspend fun getMovimientoMonturaById(id: String) = monturaCoordinator.getMovimientoMonturaById(id)
     suspend fun insertMonturaMovimiento(movimiento: MonturaMovimiento) = monturaCoordinator.insertMonturaMovimiento(movimiento)
 
     suspend fun upsertPaciente(paciente: Paciente) = snapshotCoordinator.upsertPaciente(paciente)
@@ -147,9 +149,13 @@ open class OptoRepository(
     }
 
     suspend fun updateArqueo(arqueo: ArqueoCaja) {
-        arqueoCajaDao.updateArqueo(arqueo)
-        postSaveSyncScheduler.get().scheduleFinanzasSync(arqueo.opticaId)
+        val stamped = arqueo.copy(updatedAt = Instant.now().toString())
+        arqueoCajaDao.updateArqueo(stamped)
+        postSaveSyncScheduler.get().scheduleFinanzasSync(stamped.opticaId)
     }
+
+    suspend fun getArqueoById(id: String): ArqueoCaja? =
+        arqueoCajaDao.getArqueoById(id)
 
     suspend fun upsertArqueoFromRemote(arqueo: ArqueoCaja) {
         arqueoCajaDao.upsertArqueo(arqueo)

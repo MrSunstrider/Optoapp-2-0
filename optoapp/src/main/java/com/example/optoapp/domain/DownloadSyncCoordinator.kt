@@ -33,10 +33,18 @@ class DownloadSyncCoordinator @Inject constructor(
     }
 
     suspend fun downloadDispensacionItems(opticaId: String): Int {
+        val conflictedIds = try {
+            conflictDao.getConflictEntityIds(opticaId, "dispensacion_item").toSet()
+        } catch (e: Exception) {
+            Log.e(TAG, "Error querying conflict IDs, proceeding without guard: ${e.message}", e)
+            emptySet()
+        }
+
         val remotos = supabase.postgrest[TABLE_DISPENSACION_ITEMS]
             .select { filter { eq("optica_id", opticaId) } }
             .decodeList<DispensacionItemRemota>()
         remotos.forEach { r ->
+            if (r.id in conflictedIds) return@forEach
             try {
                 val local = r.toEntity()
                 repository.insertDispensacionItem(local)
@@ -134,10 +142,18 @@ class DownloadSyncCoordinator @Inject constructor(
 
     suspend fun downloadArqueos(opticaId: String): Int {
         return try {
+            val conflictedIds = try {
+                conflictDao.getConflictEntityIds(opticaId, "arqueo_caja").toSet()
+            } catch (e: Exception) {
+                Log.e(TAG, "Error querying conflict IDs for arqueos, proceeding without guard: ${e.message}", e)
+                emptySet()
+            }
+
             val remoteArqueos = supabase.postgrest[TABLE_ARQUEO_CAJA]
                 .select { filter { eq("optica_id", opticaId) } }
                 .decodeList<ArqueoCajaRemota>()
             remoteArqueos.forEach { remote ->
+                if (remote.id in conflictedIds) return@forEach
                 try {
                     val local = repository.getArqueoByFechaSync(
                         LocalDate.parse(remote.fecha), remote.opticaId

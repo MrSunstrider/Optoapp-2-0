@@ -39,6 +39,9 @@ open class OrdenCompraRepository @Inject constructor(
     suspend fun getItems(ordenId: String): List<OrdenCompraItem> =
         itemDao.getByOrden(ordenId)
 
+    suspend fun getOrdenItemById(id: String): OrdenCompraItem? =
+        itemDao.getById(id)
+
     open suspend fun create(oc: OrdenCompra, items: List<OrdenCompraItem>) {
         val total = items.sumOf { it.cantidad.toDouble() * it.costoUnitario }
         val stamped = oc.copy(total = total, updatedAt = Instant.now().toString())

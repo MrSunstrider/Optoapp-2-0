@@ -71,6 +71,9 @@ class MonturaInventoryCoordinator @Inject constructor(
     fun getMovimientosByMontura(monturaId: String): Flow<List<MonturaMovimiento>> =
         monturaMovimientoDao.getMovimientosByMontura(monturaId)
 
+    suspend fun getMovimientoMonturaById(id: String): MonturaMovimiento? =
+        monturaMovimientoDao.getMovimientoById(id)
+
     suspend fun insertMonturaMovimiento(movimiento: MonturaMovimiento) {
         monturaMovimientoDao.insertMovimiento(movimiento)
         postSaveSyncScheduler.get().scheduleInventarioSync(movimiento.opticaId)

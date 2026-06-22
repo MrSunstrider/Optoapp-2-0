@@ -143,12 +143,23 @@ open class ConflictHelper @Inject constructor(
                 conflictDao.resolveConflict(entity.id, opticaId)
             } else {
                 Log.w(TAG, "Conflicto en $entityType/${entity.id}: local=${entity.updatedAt} < remoto=$remoteUpdatedAt")
+                // FR-08: Capture full-entity snapshots at conflict detection time
+                val localDataJson = entity.localData.ifBlank { entity.updatedAt ?: "" }
+                val remoteDataJson = try {
+                    fetchRemoteRowJson(tableName, opticaId, entity.id)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error capturing remote snapshot for ${entity.id}: ${e.message}")
+                    "{}"
+                }
                 conflictDao.upsertConflict(
                     entityId = entity.id,
                     opticaId = opticaId,
                     entityType = entityType,
                     localSnapshot = entity.updatedAt,
-                    remoteSnapshot = remoteUpdatedAt
+                    remoteSnapshot = remoteUpdatedAt,
+                    baseSnapshot = "{}",
+                    localData = localDataJson,
+                    remoteData = remoteDataJson
                 )
                 syncStateTracker.markConflicted(opticaId, entityType, entity.id)
             }
@@ -168,7 +179,7 @@ open class ConflictHelper @Inject constructor(
      * Delegates the actual remote query to [selectRemoteRows], which is overridable
      * for testing purposes.
      */
-    internal suspend fun fetchRemoteUpdatedAt(
+    internal open suspend fun fetchRemoteUpdatedAt(
         tableName: String,
         opticaId: String,
         ids: List<String>
@@ -205,8 +216,38 @@ open class ConflictHelper @Inject constructor(
     }
 
     /**
+     * Fetches the full remote row as a JSON string for snapshot capture.
+     *
+     * Used by [filterConflicts] to serialize `remoteData` on conflict detection.
+     * Overridable in tests via a test subclass.
+     *
+     * @return the full Supabase row as JSON, or `"{}"` on any error
+     */
+    @VisibleForTesting
+    internal open suspend fun fetchRemoteRowJson(
+        tableName: String,
+        opticaId: String,
+        entityId: String
+    ): String {
+        return try {
+            val result = supabase.postgrest[tableName]
+                .select {
+                    filter {
+                        eq("optica_id", opticaId)
+                        eq("id", entityId)
+                    }
+                }
+            val rawData = result.data
+            if (rawData.isBlank() || rawData == "[]") "{}" else rawData
+        } catch (e: Exception) {
+            Log.e(TAG, "Error fetching remote row from $tableName/$entityId: ${e.message}")
+            "{}"
+        }
+    }
+
+    /**
      * Fetches remote movimientos matching composite keys, detects conflicts,
-     * flags conflicted movements in SyncStateTracker.
+     * flags conflicted movements in SyncStateTracker AND persists conflict_records.
      *
      * @return IDs of local movimientos safe to upload
      */
@@ -217,10 +258,7 @@ open class ConflictHelper @Inject constructor(
         if (localMovimientos.isEmpty()) return emptyList()
 
         val remoteMovimientos = try {
-            supabase.postgrest["montura_movimientos"]
-                .select { filter { eq("optica_id", opticaId) } }
-                .decodeList<MovimientoRemotoRow>()
-                .mapNotNull { it.toEntityOrNull() }
+            fetchRemoteMovimientos(opticaId)
         } catch (e: Exception) {
             Log.e(TAG, "Error fetching remote movimientos for conflict detection: ${e.message}")
             emptyList()
@@ -230,6 +268,13 @@ open class ConflictHelper @Inject constructor(
 
         for (id in conflictedIds) {
             Log.w(TAG, "Conflicto en movimiento $id: stockNuevo difiere del remoto")
+            conflictDao.upsertConflict(
+                entityId = id,
+                opticaId = opticaId,
+                entityType = "montura_movimiento",
+                localSnapshot = "",
+                remoteSnapshot = ""
+            )
             syncStateTracker.markConflicted(opticaId, "montura_movimiento", id)
         }
 
@@ -239,6 +284,18 @@ open class ConflictHelper @Inject constructor(
         }
 
         return safeIds
+    }
+
+    /**
+     * Fetches remote movimientos from Supabase for conflict detection.
+     * Extracted as a testability seam — test subclasses override to inject canned data.
+     */
+    @VisibleForTesting
+    internal open suspend fun fetchRemoteMovimientos(opticaId: String): List<MonturaMovimiento> {
+        return supabase.postgrest["montura_movimientos"]
+            .select { filter { eq("optica_id", opticaId) } }
+            .decodeList<MovimientoRemotoRow>()
+            .mapNotNull { it.toEntityOrNull() }
     }
 }
 
@@ -251,11 +308,16 @@ internal data class RemoteTimestamp(
 )
 
 /**
- * Represents a local entity with its id and updatedAt for comparison with remote.
+ * Represents a local entity with its id, updatedAt, and optionally serialized full entity data
+ * for snapshot-based three-way merge (Phase B).
+ *
+ * @param localData serialized full entity JSON (kotlinx.serialization format),
+ *                  used for snapshot capture on conflict detection. Defaults to `""`.
  */
 data class LocalEntity(
     val id: String,
-    val updatedAt: String? = null
+    val updatedAt: String? = null,
+    val localData: String = ""
 )
 
 /**
