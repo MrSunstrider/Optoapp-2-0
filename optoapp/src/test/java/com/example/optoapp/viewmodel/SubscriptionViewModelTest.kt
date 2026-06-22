@@ -1,6 +1,7 @@
 package com.example.optoapp.viewmodel
 
 import com.example.optoapp.subscription.PlanCode
+import com.example.optoapp.subscription.SubscriptionManager
 import com.example.optoapp.subscription.SubscriptionTier
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -27,23 +28,15 @@ class SubscriptionViewModelTest {
     }
 
     @Test
-    fun `canAddPaciente returns false when count reaches limit`() {
-        assertFalse(canAddPaciente(SubscriptionTier.FREE, 20) { maxPacientes(it) })
+    fun `canAddPaciente returns true when FREE has no limit`() {
+        assertTrue(canAddPaciente(SubscriptionTier.FREE, 20) { maxPacientes(it) })
+        assertTrue(canAddPaciente(SubscriptionTier.FREE, 100) { maxPacientes(it) })
+        assertTrue(canAddPaciente(SubscriptionTier.FREE, 9999) { maxPacientes(it) })
     }
 
     @Test
     fun `canAddPaciente returns true when count exceeds FREE limit but tier is PRO`() {
         assertTrue(canAddPaciente(SubscriptionTier.PRO, 999) { maxPacientes(it) })
-    }
-
-    @Test
-    fun `canAddPaciente returns true when count just below FREE limit`() {
-        assertTrue(canAddPaciente(SubscriptionTier.FREE, 19) { maxPacientes(it) })
-    }
-
-    @Test
-    fun `canAddPaciente returns false when count exceeds FREE limit`() {
-        assertFalse(canAddPaciente(SubscriptionTier.FREE, 21) { maxPacientes(it) })
     }
 
     @Test
@@ -93,7 +86,7 @@ class SubscriptionViewModelTest {
 
     // Same maxPacientes logic as SubscriptionManager
     private fun maxPacientes(tier: SubscriptionTier): Int = when (tier) {
-        SubscriptionTier.FREE -> 20
+        SubscriptionTier.FREE -> SubscriptionManager.FREE_MAX_PACIENTES
         SubscriptionTier.PRO -> Int.MAX_VALUE
     }
 }

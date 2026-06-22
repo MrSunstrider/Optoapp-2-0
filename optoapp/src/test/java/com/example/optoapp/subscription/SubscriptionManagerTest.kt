@@ -54,9 +54,9 @@ class SubscriptionManagerTest {
     // ─── maxPacientes (pure function) ──────────────────────────────────────
 
     @Test
-    fun `maxPacientes FREE returns FREE_MAX_PACIENTES`() {
+    fun `maxPacientes FREE returns unlimited`() {
         assertEquals(SubscriptionManager.FREE_MAX_PACIENTES, subscriptionManager.maxPacientes(SubscriptionTier.FREE))
-        assertEquals(20, subscriptionManager.maxPacientes(SubscriptionTier.FREE))
+        assertEquals(Int.MAX_VALUE, subscriptionManager.maxPacientes(SubscriptionTier.FREE))
     }
 
     @Test
@@ -67,8 +67,8 @@ class SubscriptionManagerTest {
     // ─── maxOpticas (pure function) ────────────────────────────────────────
 
     @Test
-    fun `maxOpticas FREE returns 1`() {
-        assertEquals(1, subscriptionManager.maxOpticas(PlanCode.FREE))
+    fun `maxOpticas FREE returns unlimited`() {
+        assertNull(subscriptionManager.maxOpticas(PlanCode.FREE))
     }
 
     @Test
