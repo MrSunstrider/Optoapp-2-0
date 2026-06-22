@@ -78,7 +78,7 @@ open class SubscriptionManager @Inject constructor(
     }
 
     fun maxOpticas(planCode: PlanCode): Int? = when (planCode) {
-        PlanCode.FREE -> 1
+        PlanCode.FREE -> null
         PlanCode.PRO_INDIVIDUAL -> 1
         PlanCode.PRO_MULTISITE_15 -> 15
         PlanCode.ENTERPRISE -> null
@@ -112,6 +112,6 @@ open class SubscriptionManager @Inject constructor(
     }
 
     companion object {
-        const val FREE_MAX_PACIENTES = 20
+        const val FREE_MAX_PACIENTES = Int.MAX_VALUE
     }
 }
