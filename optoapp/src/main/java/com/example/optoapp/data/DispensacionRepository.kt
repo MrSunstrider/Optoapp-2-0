@@ -114,6 +114,9 @@ class DispensacionRepository(
     suspend fun getItemsListByOptica(opticaId: String): List<DispensacionItem> =
         dispensacionItemDao.getItemsListByOptica(opticaId)
 
+    suspend fun getDispensacionItemById(id: String): DispensacionItem? =
+        dispensacionItemDao.getById(id)
+
     suspend fun insertDispensacionItem(item: DispensacionItem) {
         dispensacionItemDao.insertItem(item)
     }

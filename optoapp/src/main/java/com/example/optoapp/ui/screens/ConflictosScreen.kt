@@ -16,6 +16,9 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.optoapp.data.ConflictRecord
+import com.example.optoapp.domain.sync.EntitySnapshotSerializer
+import com.example.optoapp.domain.sync.MergeInput
+import com.example.optoapp.domain.sync.ThreeWayMerge
 import com.example.optoapp.viewmodel.SyncViewModel
 import com.example.optoapp.ui.components.OptoTopAppBar
 import com.example.optoapp.ui.components.OptoCard
@@ -27,7 +30,16 @@ private val TYPE_LABELS = mapOf(
     "dispensacion" to "Dispensación",
     "servicio_extra" to "Servicio extra",
     "pago" to "Pago",
-    "montura" to "Montura"
+    "montura" to "Montura",
+    "montura_movimiento" to "Movimiento de montura",
+    "proveedor" to "Proveedor",
+    "categoria_montura" to "Categoría de montura",
+    "orden_compra" to "Orden de compra",
+    "orden_compra_item" to "Ítem de orden de compra",
+    "inventario_fisico" to "Inventario físico",
+    "inventario_fisico_detalle" to "Detalle de inventario físico",
+    "dispensacion_item" to "Ítem de dispensación",
+    "arqueo_caja" to "Arqueo de caja"
 )
 
 private fun entityTypeLabel(type: String): String = TYPE_LABELS[type] ?: type
@@ -183,32 +195,89 @@ private fun ConflictCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Versiones
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("Versión local", style = MaterialTheme.typography.labelSmall)
+            // FR-12: Field-level conflict details when snapshot data is available
+            val hasSnapshotData = EntitySnapshotSerializer.hasSnapshotData(conflict.baseSnapshot)
+            if (hasSnapshotData) {
+                // Compute merge result for field-level diff display
+                val mergeResult = remember(conflict.baseSnapshot, conflict.localData, conflict.remoteData) {
+                    runCatching {
+                        ThreeWayMerge.merge(
+                            MergeInput(
+                                baseJson = EntitySnapshotSerializer.parseSnapshot(conflict.baseSnapshot),
+                                localJson = EntitySnapshotSerializer.parseSnapshot(conflict.localData),
+                                remoteJson = EntitySnapshotSerializer.parseSnapshot(conflict.remoteData)
+                            )
+                        )
+                    }.getOrNull()
+                }
+
+                if (mergeResult != null) {
+                    // Show conflicted fields
+                    if (mergeResult.conflictedFields.isNotEmpty()) {
+                        Text(
+                            "Campos en conflicto:",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        mergeResult.conflictedFields.forEach { field ->
+                            val localVal = EntitySnapshotSerializer
+                                .parseSnapshot(conflict.localData)[field]?.toString() ?: "—"
+                            val remoteVal = EntitySnapshotSerializer
+                                .parseSnapshot(conflict.remoteData)[field]?.toString() ?: "—"
+                            Text(
+                                text = "$field: local=$localVal vs nube=$remoteVal",
+                                style = MaterialTheme.typography.bodySmall,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+                    // Show auto-merged count
+                    if (mergeResult.autoMergedFields.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            "${mergeResult.autoMergedFields.size} campo(s) auto-mergeado(s)",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                } else {
+                    // Fallback if merge computation fails
                     Text(
-                        conflict.localSnapshot.take(19),
+                        "Datos de conflicto disponibles",
                         style = MaterialTheme.typography.bodySmall,
-                        fontWeight = FontWeight.Bold
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                Icon(
-                    Icons.Default.SwapHoriz,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.size(24.dp)
-                )
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("Versión nube", style = MaterialTheme.typography.labelSmall)
-                    Text(
-                        conflict.remoteSnapshot.take(19),
-                        style = MaterialTheme.typography.bodySmall,
-                        fontWeight = FontWeight.Bold
+            } else {
+                // Timestamp-based display (original behavior)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("Versión local", style = MaterialTheme.typography.labelSmall)
+                        Text(
+                            conflict.localSnapshot.take(19),
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    Icon(
+                        Icons.Default.SwapHoriz,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(24.dp)
                     )
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("Versión nube", style = MaterialTheme.typography.labelSmall)
+                        Text(
+                            conflict.remoteSnapshot.take(19),
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
 

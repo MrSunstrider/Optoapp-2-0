@@ -19,7 +19,17 @@ data class ConflictRecord(
     val entityType: String,
     val localSnapshot: String,
     val remoteSnapshot: String,
-    val detectedAt: Long = System.currentTimeMillis()
+    val detectedAt: Long = System.currentTimeMillis(),
+    val baseSnapshot: String = "{}",
+    val localData: String = "{}",
+    val remoteData: String = "{}"
+)
+
+/** Projection of the three snapshot columns for three-way merge resolution. */
+data class ConflictSnapshot(
+    val baseSnapshot: String,
+    val localData: String,
+    val remoteData: String
 )
 
 @Dao
@@ -34,8 +44,14 @@ interface ConflictDao {
     suspend fun countConflicts(opticaId: String): Int
 
     @Query("""
-        INSERT OR REPLACE INTO conflict_records (entityId, opticaId, entityType, localSnapshot, remoteSnapshot, detectedAt)
-        VALUES (:entityId, :opticaId, :entityType, :localSnapshot, :remoteSnapshot, :detectedAt)
+        INSERT OR REPLACE INTO conflict_records (
+            entityId, opticaId, entityType, localSnapshot, remoteSnapshot, detectedAt,
+            baseSnapshot, localData, remoteData
+        )
+        VALUES (
+            :entityId, :opticaId, :entityType, :localSnapshot, :remoteSnapshot, :detectedAt,
+            :baseSnapshot, :localData, :remoteData
+        )
     """)
     suspend fun upsertConflict(
         entityId: String,
@@ -43,7 +59,10 @@ interface ConflictDao {
         entityType: String,
         localSnapshot: String,
         remoteSnapshot: String,
-        detectedAt: Long = System.currentTimeMillis()
+        detectedAt: Long = System.currentTimeMillis(),
+        baseSnapshot: String = "{}",
+        localData: String = "{}",
+        remoteData: String = "{}"
     )
 
     @Query("DELETE FROM conflict_records WHERE entityId = :entityId AND opticaId = :opticaId")
@@ -54,4 +73,7 @@ interface ConflictDao {
 
     @Query("SELECT entityId FROM conflict_records WHERE opticaId = :opticaId AND entityType = :entityType")
     suspend fun getConflictEntityIds(opticaId: String, entityType: String): List<String>
+
+    @Query("SELECT baseSnapshot, localData, remoteData FROM conflict_records WHERE entityId = :entityId AND opticaId = :opticaId")
+    suspend fun getConflictSnapshot(entityId: String, opticaId: String): ConflictSnapshot?
 }

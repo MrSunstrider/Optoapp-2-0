@@ -20,6 +20,9 @@ interface ArqueoCajaDao {
     @Query("SELECT * FROM arqueo_caja WHERE opticaId = :opticaId ORDER BY fecha DESC")
     suspend fun getArqueosByOpticaList(opticaId: String): List<ArqueoCaja>
 
+    @Query("SELECT * FROM arqueo_caja WHERE id = :id")
+    suspend fun getArqueoById(id: String): ArqueoCaja?
+
     @Query("SELECT * FROM arqueo_caja WHERE fecha = :fecha AND opticaId = :opticaId LIMIT 1")
     suspend fun getArqueoByFechaSync(fecha: LocalDate, opticaId: String): ArqueoCaja?
 

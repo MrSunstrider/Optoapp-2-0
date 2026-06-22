@@ -7,7 +7,9 @@ import com.example.optoapp.data.ConflictRecord
 import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.MembershipRepository
 import com.example.optoapp.data.OptoRepository
+import com.example.optoapp.data.OrdenCompraRepository
 import com.example.optoapp.data.Pago
+import com.example.optoapp.data.ProveedorRepository
 import com.example.optoapp.data.Resource
 import com.example.optoapp.data.ServicioExtra
 import com.example.optoapp.data.SessionManager
@@ -61,6 +63,8 @@ class SyncViewModelConflictResolutionTest {
     private lateinit var sessionManager: SessionManager
     private lateinit var membershipRepository: MembershipRepository
     private lateinit var repository: OptoRepository
+    private lateinit var proveedorRepository: ProveedorRepository
+    private lateinit var ordenCompraRepository: OrdenCompraRepository
     private lateinit var syncTelemetry: SyncTelemetry
     private lateinit var subscriptionManager: SubscriptionManager
     private lateinit var supabase: SupabaseClient
@@ -105,6 +109,8 @@ class SyncViewModelConflictResolutionTest {
         sessionManager = mockk(relaxed = true)
         membershipRepository = mockk(relaxed = true)
         repository = mockk(relaxed = true)
+        proveedorRepository = mockk(relaxed = true)
+        ordenCompraRepository = mockk(relaxed = true)
         syncTelemetry = mockk(relaxed = true)
         subscriptionManager = mockk(relaxed = true)
         supabase = mockk(relaxed = true)
@@ -155,6 +161,8 @@ class SyncViewModelConflictResolutionTest {
             sessionManager = sessionManager,
             membershipRepository = membershipRepository,
             repository = repository,
+            proveedorRepository = proveedorRepository,
+            ordenCompraRepository = ordenCompraRepository,
             syncTelemetry = syncTelemetry,
             subscriptionManager = subscriptionManager,
             supabase = supabase,
@@ -182,6 +190,9 @@ class SyncViewModelConflictResolutionTest {
 
     @Test
     fun resolveKeepMine_uploadsLocalEntity_beforeDeletingConflict() = runTest(testDispatcher) {
+        // The new paciente bump branch calls getPacienteById — mock it to avoid NPE from relaxed sealed-class mock
+        coEvery { repository.getPacienteById(pacienteConflict.entityId) } returns Resource.Error("not found in test")
+
         viewModel.resolveKeepMine(pacienteConflict)
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -193,6 +204,8 @@ class SyncViewModelConflictResolutionTest {
 
     @Test
     fun resolveKeepMine_writesServerTimestampToRoom() = runTest(testDispatcher) {
+        coEvery { repository.getPacienteById(pacienteConflict.entityId) } returns Resource.Error("not found in test")
+
         viewModel.resolveKeepMine(pacienteConflict)
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -208,6 +221,7 @@ class SyncViewModelConflictResolutionTest {
     @Test
     fun resolveKeepMine_doesNotRegenerateConflictOnNextSync() = runTest(testDispatcher) {
         coEvery { conflictDao.getConflicts(testOpticaId) } returns emptyList()
+        coEvery { repository.getPacienteById(pacienteConflict.entityId) } returns Resource.Error("not found in test")
 
         viewModel.resolveKeepMine(pacienteConflict)
         testDispatcher.scheduler.advanceUntilIdle()

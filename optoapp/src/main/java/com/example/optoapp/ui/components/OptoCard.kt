@@ -1,40 +1,46 @@
 package com.example.optoapp.ui.components
 
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.material3.Card
 import androidx.compose.material3.CardColors
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.example.optoapp.ui.theme.OptoTokens
 
 @Composable
 fun OptoCard(
     modifier: Modifier = Modifier,
-    elevation: Dp = OptoTokens.elevation.level1,
-    shape: Shape = OptoTokens.shapes.medium,
-    colors: CardColors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+    tonalElevation: Dp = 1.dp,
+    elevation: Dp = 0.dp,
+    shape: Shape = MaterialTheme.shapes.large,
+    colors: CardColors = CardDefaults.cardColors(
+        containerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(tonalElevation)
+    ),
     onClick: (() -> Unit)? = null,
-    content: @Composable () -> Unit
+    content: @Composable ColumnScope.() -> Unit
 ) {
-    val cardElevation = CardDefaults.elevatedCardElevation(defaultElevation = elevation)
+    val cardElevation = CardDefaults.cardElevation(defaultElevation = elevation)
     if (onClick != null) {
-        ElevatedCard(
+        Card(
             onClick = onClick,
             modifier = modifier,
             shape = shape,
             colors = colors,
-            elevation = cardElevation
-        ) { content() }
+            elevation = cardElevation,
+            content = content
+        )
     } else {
-        ElevatedCard(
+        Card(
             modifier = modifier,
             shape = shape,
             colors = colors,
-            elevation = cardElevation
-        ) { content() }
+            elevation = cardElevation,
+            content = content
+        )
     }
 }

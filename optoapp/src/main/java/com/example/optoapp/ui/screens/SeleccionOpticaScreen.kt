@@ -50,10 +50,12 @@ fun SeleccionOpticaScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
+                .statusBarsPadding()
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             item {
+                Spacer(Modifier.height(8.dp))
                 Text(
                     "Tienes acceso a varias ópticas. Elige con cuál trabajar ahora.",
                     style = MaterialTheme.typography.bodyMedium

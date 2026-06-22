@@ -7,6 +7,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -283,6 +284,27 @@ class ConflictHelperTest {
         helper.filterConflicts(TABLE, OPTICA_ID, "paciente", listOf(e2))
 
         coVerify(exactly = 0) { mockConflictDao.resolveConflict(ID2, any()) }
+    }
+
+    // ── RC-4: null updatedAt early-return path auto-heals conflict records ───────
+
+    @Test
+    fun filterConflicts_clearsStaleConflicts_whenAllEntitiesHaveNullUpdatedAt() = runTest {
+        // Regression test: all 78 servicios_extra had null updatedAt (pre-migration data).
+        // The early return for checkable.isEmpty() was skipping resolveConflict(), leaving
+        // conflict_records intact. The download guard then blocked all downloads,
+        // so Room never received the server timestamps — infinite conflict loop.
+        val e1 = LocalEntity(ID1, null)
+        val e2 = LocalEntity(ID2, null)
+        val helper = FakeConflictHelper()
+        coEvery { mockConflictDao.resolveConflict(any(), any()) } returns Unit
+
+        val result = helper.filterConflicts(TABLE, OPTICA_ID, "servicio_extra", listOf(e1, e2))
+
+        assertEquals("All null-updatedAt entities must be returned as safe", 2, result.size)
+        coVerify(exactly = 1) { mockConflictDao.resolveConflict(ID1, OPTICA_ID) }
+        coVerify(exactly = 1) { mockConflictDao.resolveConflict(ID2, OPTICA_ID) }
+        assertFalse("selectRemoteRows must NOT fire when nothing is checkable", helper.selectRemoteRowsCalled)
     }
 
     @Test

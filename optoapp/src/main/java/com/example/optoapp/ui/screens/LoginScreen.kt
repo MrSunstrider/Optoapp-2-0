@@ -115,8 +115,8 @@ fun LoginScreen(
             .background(
                 Brush.verticalGradient(
                     colors = listOf(
-                        MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-                        MaterialTheme.colorScheme.background
+                        MaterialTheme.colorScheme.background,
+                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.20f)
                     )
                 )
             )
@@ -132,7 +132,6 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(72.dp))
 
-            // ─── Logo / Encabezado ────────────────────────────────────────────
             val blurRadius = remember { Animatable(50f) }
             LaunchedEffect(Unit) {
                 blurRadius.animateTo(
@@ -146,19 +145,30 @@ fun LoginScreen(
                 enter = fadeIn() + slideInVertically { -40 }
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    // Logo — solo imagen, sin texto
                     Image(
                         painter = painterResource(com.example.optoapp.R.drawable.logo_login),
                         contentDescription = "OptoApp",
                         modifier = Modifier
-                            .fillMaxWidth(0.75f)
+                            .fillMaxWidth(0.55f)
                             .clip(androidx.compose.foundation.shape.RoundedCornerShape(16.dp))
                             .blur(radiusX = blurRadius.value.dp, radiusY = blurRadius.value.dp)
                     )
-                    Spacer(modifier = Modifier.height(6.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "Optoapp",
+                        style = MaterialTheme.typography.displayLarge,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = "Sistema de gestión óptica",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = "v${com.example.optoapp.BuildConfig.VERSION_NAME}",
-                        fontSize = 13.sp,
+                        style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                         textAlign = TextAlign.Center
                     )
@@ -167,18 +177,15 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // ─── Card del formulario ──────────────────────────────────────────
             OptoCard(
                 modifier = Modifier.fillMaxWidth(),
-                shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp),
-                elevation = 4.dp
+                tonalElevation = 2.dp
             ) {
                 Column(
                     modifier = Modifier.padding(24.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
 
-                    // Email
                     OutlinedTextField(
                         value = email,
                         onValueChange = { email = it.trim() },
@@ -198,7 +205,6 @@ fun LoginScreen(
                         shape = RoundedCornerShape(12.dp)
                     )
 
-                    // Contraseña
                     OutlinedTextField(
                         value = password,
                         onValueChange = { password = it },
@@ -234,7 +240,6 @@ fun LoginScreen(
                         shape = RoundedCornerShape(12.dp)
                     )
 
-                    // ─── Recordar Cuenta ───────────────────────────────────────
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
@@ -253,7 +258,6 @@ fun LoginScreen(
                         )
                     }
 
-                    // ─── Error message ────────────────────────────────────────
                     AnimatedVisibility(
                         visible = authState is AuthState.Error,
                         enter   = fadeIn(),
@@ -276,7 +280,6 @@ fun LoginScreen(
                         }
                     }
 
-                    // ─── Botón Entrar al Sistema ──────────────────────────────
                     Button(
                         onClick = {
                             focusManager.clearFocus()
@@ -328,7 +331,6 @@ fun LoginScreen(
                         )
                     }
 
-                    // ─── Botón Crear Cuenta ───────────────────────────────────
                     OutlinedButton(
                         onClick = { navController.navigate("register") },
                         modifier = Modifier.fillMaxWidth().height(48.dp),
@@ -348,7 +350,6 @@ fun LoginScreen(
                 }
             }
 
-            // ─── Pie ──────────────────────────────────────────────────────────
             Text(
                 text = "Si ya tienes cuenta, contacta al administrador de tu óptica.",
                 fontSize = 12.sp,

@@ -1,7 +1,9 @@
 package com.example.optoapp.domain
 
 import android.util.Log
+import com.example.optoapp.data.ConflictDao
 import com.example.optoapp.data.OrdenCompra
+import com.example.optoapp.domain.sync.EntitySnapshotSerializer
 import com.example.optoapp.data.OrdenCompraItem
 import com.example.optoapp.data.OrdenCompraRepository
 import com.example.optoapp.data.Resource
@@ -24,7 +26,8 @@ open class SyncOrdenesCompraUseCase @Inject constructor(
     private val repository: OrdenCompraRepository,
     private val supabase: SupabaseClient,
     private val syncStateTracker: SyncStateTracker,
-    private val conflictHelper: ConflictHelper
+    private val conflictHelper: ConflictHelper,
+    private val conflictDao: ConflictDao
 ) {
     companion object {
         private const val TAG = "SyncOrdenesCompra"
@@ -82,7 +85,7 @@ open class SyncOrdenesCompraUseCase @Inject constructor(
             tableName = TABLE_OC,
             opticaId = opticaId,
             entityType = "orden_compra",
-            localEntities = rows.map { LocalEntity(it.id, it.updatedAt) }
+            localEntities = rows.map { LocalEntity(it.id, it.updatedAt, EntitySnapshotSerializer.serialize(it)) }
         ).map { it.id }.toSet()
         val safeRows = rows.filter { it.id in safeIds }
         if (safeRows.isEmpty()) return 0
@@ -109,10 +112,18 @@ open class SyncOrdenesCompraUseCase @Inject constructor(
     }
 
     private suspend fun downloadOrdenesCompra(opticaId: String): Int {
+        val conflictedIds = try {
+            conflictDao.getConflictEntityIds(opticaId, "orden_compra").toSet()
+        } catch (e: Exception) {
+            Log.e(TAG, "Error querying conflict IDs, proceeding without guard: ${e.message}", e)
+            emptySet()
+        }
+
         val remotos = supabase.postgrest[TABLE_OC]
             .select { filter { eq("optica_id", opticaId) } }
             .decodeList<OrdenCompraRemota>()
         remotos.forEach { r ->
+            if (r.id in conflictedIds) return@forEach
             try {
                 repository.upsertOrdenCompra(r.toEntity())
             } catch (e: CancellationException) {
@@ -125,10 +136,18 @@ open class SyncOrdenesCompraUseCase @Inject constructor(
     }
 
     private suspend fun downloadItems(opticaId: String): Int {
+        val conflictedIds = try {
+            conflictDao.getConflictEntityIds(opticaId, "orden_compra_item").toSet()
+        } catch (e: Exception) {
+            Log.e(TAG, "Error querying conflict IDs, proceeding without guard: ${e.message}", e)
+            emptySet()
+        }
+
         val remotos = supabase.postgrest[TABLE_ITEMS]
             .select { filter { eq("optica_id", opticaId) } }
             .decodeList<OrdenCompraItemRemoto>()
         remotos.forEach { r ->
+            if (r.id in conflictedIds) return@forEach
             try {
                 repository.upsertItem(r.toEntity())
             } catch (e: CancellationException) {

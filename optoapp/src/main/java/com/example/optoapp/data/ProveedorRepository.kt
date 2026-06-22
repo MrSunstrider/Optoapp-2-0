@@ -4,6 +4,7 @@ import com.example.optoapp.data.proveedor.CategoriaMonturaDao
 import com.example.optoapp.data.proveedor.MonturaProveedorDao
 import com.example.optoapp.data.proveedor.ProveedorDao
 import kotlinx.coroutines.flow.Flow
+import java.time.Instant
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -29,8 +30,10 @@ open class ProveedorRepository @Inject constructor(
     open suspend fun insert(proveedor: Proveedor) =
         proveedorDao.insert(proveedor)
 
-    open suspend fun update(proveedor: Proveedor) =
-        proveedorDao.update(proveedor)
+    open suspend fun update(proveedor: Proveedor) {
+        val stamped = proveedor.copy(updatedAt = Instant.now().toString())
+        proveedorDao.update(stamped)
+    }
 
     open suspend fun softDelete(id: String) {
         val existing = proveedorDao.getById(id) ?: return
