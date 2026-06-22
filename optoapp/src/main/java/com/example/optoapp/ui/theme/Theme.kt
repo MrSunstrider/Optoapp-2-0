@@ -93,7 +93,7 @@ fun OptoAppTheme(
 
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = Typography,
+        typography = AppTypography,
         shapes = OptoTokens.getShapes(),
         content = content
     )

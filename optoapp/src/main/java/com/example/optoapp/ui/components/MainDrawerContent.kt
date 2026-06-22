@@ -2,6 +2,8 @@ package com.example.optoapp.ui.components
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
@@ -51,48 +53,52 @@ fun MainDrawerContent(
                 .fillMaxHeight()
                 .verticalScroll(rememberScrollState())
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 28.dp, horizontal = 24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+            Surface(
+                color = MaterialTheme.colorScheme.primaryContainer,
+                shape = RoundedCornerShape(
+                    bottomStart = 24.dp,
+                    bottomEnd = 24.dp
+                ),
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Surface(
-                    shape = MaterialTheme.shapes.medium,
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    modifier = Modifier.size(64.dp)
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 28.dp, horizontal = 24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = Icons.Default.Visibility,
-                            contentDescription = "OptoApp",
-                            modifier = Modifier.size(36.dp),
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
+                    val initial = opticaHeader.nombreOptica.firstOrNull()?.uppercase() ?: "O"
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(56.dp)
+                    ) {
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Text(
+                                text = initial,
+                                style = MaterialTheme.typography.headlineMedium,
+                                color = MaterialTheme.colorScheme.onPrimary
+                            )
+                        }
                     }
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = opticaHeader.nombreOptica.ifBlank { "Sin óptica" },
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                    Text(
+                        text = "Plan Activo",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                    )
                 }
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    text = "OptoApp",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Black
-                )
-                Text(
-                    text = opticaHeader.nombreOptica.ifBlank { "Sin óptica" },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Text(
-                    text = "v${com.example.optoapp.BuildConfig.VERSION_NAME}",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
-                )
             }
             HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
 
-            // Gestión
             Text(
                 text = "GESTIÓN",
                 style = MaterialTheme.typography.labelSmall,
@@ -134,7 +140,6 @@ fun MainDrawerContent(
                 )
             }
 
-            // Programación
             Text(
                 text = "PROGRAMACIÓN",
                 style = MaterialTheme.typography.labelSmall,
@@ -182,7 +187,6 @@ fun MainDrawerContent(
                 modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
             )
 
-            // Finanzas
             if (showCierreCaja || showBiYReportes) {
                 Text(
                     text = "FINANZAS",
@@ -226,7 +230,6 @@ fun MainDrawerContent(
                 }
             }
 
-            // Sistema
             Text(
                 text = "SISTEMA",
                 style = MaterialTheme.typography.labelSmall,
