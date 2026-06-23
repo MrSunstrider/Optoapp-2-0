@@ -42,9 +42,6 @@
 -keep class androidx.compose.** { *; }
 -keep class androidx.compose.material3.** { *; }
 
-# ---- Keep Google/AndroidX service loader files ----
--keep class * implements com.google.auto.value.AutoValue { *; }
-
 # ---- Reduce log noise in release ----
 -assumenosideeffects class android.util.Log {
     public static int v(...);
@@ -52,6 +49,10 @@
     public static int i(...);
     public static int w(...);
 }
+
+# ---- Android-incompatible classes (used by Ktor but not available on Android) ----
+-dontwarn java.lang.management.ManagementFactory
+-dontwarn java.lang.management.RuntimeMXBean
 
 # ---- Remove debug metadata ----
 -dontwarn java.lang.instrument.ClassFileTransformer
