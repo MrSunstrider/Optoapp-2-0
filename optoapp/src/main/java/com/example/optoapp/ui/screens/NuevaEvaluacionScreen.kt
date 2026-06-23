@@ -62,6 +62,7 @@ fun NuevaEvaluacionScreen(
                 otrosAnisometropia = false,
                 otrosAmbliopia = false
             ) }
+            viewModel.loadPacienteEdadAndCalculateAdd(pacienteId)
         }
     }
 

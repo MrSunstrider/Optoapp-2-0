@@ -111,6 +111,28 @@ class EvaluacionViewModel @Inject constructor(
         _uiState.update { computeOtrosAuto(it) }
     }
 
+    /**
+     * Carga la edad del paciente y auto-calculla la ADD sugerida en la refracción.
+     * Se llama al crear una nueva evaluación. La ADD se puede modificar manualmente después.
+     */
+    fun loadPacienteEdadAndCalculateAdd(pacienteId: String) {
+        viewModelScope.launch {
+            runCatching {
+                val p = repository.getPacienteById(pacienteId)
+                if (p is Resource.Success) {
+                    val add = com.example.optoapp.util.calcularAddPorEdad(p.data?.edad ?: 0)
+                    if (add.isNotBlank()) {
+                        _uiState.update { it.copy(
+                            hasAdd = true,
+                            addCercaOd = add,
+                            addCercaOi = add
+                        ) }
+                    }
+                }
+            }
+        }
+    }
+
     fun normalizeAndTranspose(ojo: String) {
         _uiState.update { normalizeAndTranspose(it, ojo) }
     }
