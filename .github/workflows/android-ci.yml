@@ -116,7 +116,9 @@ jobs:
           profile: pixel_6
           emulator-boot-timeout: 600
           disable-animations: true
-          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none -camera-front none -memory 2048 -cores 2
+          disable-spellchecker: true
+          heap-size: 512m
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none -camera-front none -memory 2048 -cores 2 -timezone America/Lima
           script: ./gradlew :optoapp:connectedDebugAndroidTest --stacktrace --scan
 
       - name: Upload test results
