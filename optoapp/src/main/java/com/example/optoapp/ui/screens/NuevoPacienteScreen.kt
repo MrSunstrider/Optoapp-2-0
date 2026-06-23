@@ -161,7 +161,7 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
                 nombreCompleto = nombreCompleto,
                 onNombreCompletoChange = { nombreCompleto = it },
                 edad = edad,
-                onEdadChange = { edad = it },
+                onEdadChange = {},
                 telefono = telefono,
                 onTelefonoChange = { telefono = it },
                 dni = dni,
@@ -169,7 +169,22 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
                 historiaOptometrica = historiaOptometrica,
                 onHistoriaOptometricaChange = { historiaOptometrica = it },
                 fechaNacimiento = fechaNacimiento,
-                onFechaNacimientoChange = { fechaNacimiento = it },
+                onFechaNacimientoChange = { raw ->
+                    fechaNacimiento = raw
+                    edad = try {
+                        val parts = raw.split("/")
+                        if (parts.size == 3) {
+                            val d = parts[0].toIntOrNull() ?: 0
+                            val m = parts[1].toIntOrNull() ?: 0
+                            val y = parts[2].toIntOrNull() ?: 0
+                            if (d in 1..31 && m in 1..12 && y in 1900..2100) {
+                                val nac = LocalDate.of(y, m, d)
+                                val hoy = DateUtils.today()
+                                (hoy.year - nac.year - if (hoy.dayOfYear < nac.dayOfYear) 1 else 0).toString()
+                            } else edad
+                        } else edad
+                    } catch (_: Exception) { edad }
+                },
                 sexo = sexo,
                 onSexoChange = { sexo = it },
                 email = email,
@@ -213,7 +228,7 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
                             showPaywall = true
                             return@Button
                         }
-                        if (nombreCompleto.isNotBlank() && edad.isNotBlank() && telefono.isNotBlank()) {
+                        if (nombreCompleto.isNotBlank() && fechaNacimiento.isNotBlank() && telefono.isNotBlank()) {
                             val p = Paciente(
                                 id = pacienteId ?: UUID.randomUUID().toString(),
                                 nombreCompleto = nombreCompleto,
