@@ -17,13 +17,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.navigation.NavController
 import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.viewmodel.ReportesViewModel
 import com.example.optoapp.ui.components.DropdownField
 import com.example.optoapp.util.DateUtils
 import com.example.optoapp.util.FileShareUtils
 import com.example.optoapp.util.ReporteFinancieroPdfGenerator
+import java.time.Year
 import java.util.*
 import kotlinx.coroutines.launch
 import com.example.optoapp.ui.components.OptoTopAppBar
@@ -123,7 +123,7 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                     )
                 }
                 
-                if (periodo == "Diario") {
+                if (periodo == "Diario" || periodo == "Semanal") {
                     OutlinedButton(
                         onClick = {
                             datePickerState.selectedDateMillis = DateUtils.localDateToPickerMillis(fechaDiario)
@@ -139,7 +139,7 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                 
                 if (periodo == "Anual") {
                     Box(modifier = Modifier.weight(1f)) {
-                        val currentYear = Calendar.getInstance().get(Calendar.YEAR)
+                        val currentYear = Year.now().value
                         val years = (2020..currentYear + 1).map { it.toString() }
                         DropdownField(
                             label = "Año",
@@ -173,7 +173,6 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                 modifier = Modifier.fillMaxWidth()
             )
 
-            // Desglose de cobros
             OptoCard(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))

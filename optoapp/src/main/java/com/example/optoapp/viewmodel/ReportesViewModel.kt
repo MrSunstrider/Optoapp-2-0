@@ -15,8 +15,8 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
-import java.util.Calendar
 import java.time.LocalDate
+import java.time.Year
 import javax.inject.Inject
 
 @HiltViewModel
@@ -28,7 +28,7 @@ class ReportesViewModel @Inject constructor(
     private val _periodo = MutableStateFlow("Este mes")
     val periodo: StateFlow<String> = _periodo
     
-    private val _anio = MutableStateFlow(Calendar.getInstance().get(Calendar.YEAR).toString())
+    private val _anio = MutableStateFlow(Year.now().value.toString())
     val anio: StateFlow<String> = _anio
 
     private val _fechaDiario = MutableStateFlow(LocalDate.now())
@@ -52,6 +52,18 @@ class ReportesViewModel @Inject constructor(
             "Anual" -> date.year.toString() == a
             else -> true
         }
+    }
+
+    private fun periodDateRange(p: String, a: String, fd: LocalDate, now: LocalDate): Pair<LocalDate, LocalDate> = when (p) {
+        "Diario" -> fd to fd
+        "Semanal" -> {
+            val startOfWeek = fd.minusDays((fd.dayOfWeek.value - 1).toLong())
+            startOfWeek to startOfWeek.plusDays(6)
+        }
+        "Este mes" -> now.withDayOfMonth(1) to now.withDayOfMonth(now.lengthOfMonth())
+        "Este año" -> now.withDayOfYear(1) to now.withDayOfYear(now.lengthOfYear())
+        "Anual" -> LocalDate.of(a.toInt(), 1, 1) to LocalDate.of(a.toInt(), 12, 31)
+        else -> LocalDate.MIN to LocalDate.MAX
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -80,18 +92,20 @@ class ReportesViewModel @Inject constructor(
     val totalCobrado: StateFlow<Double> = sessionManager.opticaId
         .flatMapLatest { opticaId ->
             combine(
-                repository.getPagosByDateRangeForOptica(LocalDate.MIN, LocalDate.MAX, opticaId),
                 _periodo,
                 _anio,
-                _fechaDiario,
-                allDispensaciones
-            ) { pagos, p, a, fd, dispensaciones ->
+                _fechaDiario
+            ) { p, a, fd ->
                 val now = LocalDate.now()
-                val dispMap = dispensaciones.associateBy { it.id }
-                pagos.filter { pago -> dentroDelPeriodo(pago.fecha, p, a, fd, now) }
-                    .sumOf { pago ->
-                        // Clasificar: si la dispensación es del período → venta, si no → cobro atrasado
-                        pago.monto
+                val (start, end) = periodDateRange(p, a, fd, now)
+                Triple(p, a, fd) to (start to end)
+            }.flatMapLatest { (params, range) ->
+                val (p, a, fd) = params
+                val now = LocalDate.now()
+                repository.getPagosByDateRangeForOptica(range.first, range.second, opticaId)
+                    .map { pagos ->
+                        pagos.filter { pago -> dentroDelPeriodo(pago.fecha, p, a, fd, now) }
+                            .sumOf { it.monto }
                     }
             }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
@@ -99,21 +113,23 @@ class ReportesViewModel @Inject constructor(
     @OptIn(ExperimentalCoroutinesApi::class)
     val cobrosPeriodo: StateFlow<Double> = sessionManager.opticaId
         .flatMapLatest { opticaId ->
-            combine(
-                repository.getPagosByDateRangeForOptica(LocalDate.MIN, LocalDate.MAX, opticaId),
-                repository.getAllDispensacionesForOptica(opticaId),
-                _periodo,
-                _anio,
-                _fechaDiario
-            ) { pagos, todasDisp, p, a, fd ->
+            combine(_periodo, _anio, _fechaDiario) { p, a, fd ->
+                Triple(p, a, fd)
+            }.flatMapLatest { (p, a, fd) ->
                 val now = LocalDate.now()
-                val dispMap = todasDisp.associateBy { it.id }
-                pagos.filter { pago -> dentroDelPeriodo(pago.fecha, p, a, fd, now) }
-                    .sumOf { pago ->
-                        val dispFecha = pago.dispensacionId?.let { dispMap[it]?.fecha }
-                        if (dispFecha != null && dentroDelPeriodo(dispFecha, p, a, fd, now)) 0.0
-                        else pago.monto
-                    }
+                val (start, end) = periodDateRange(p, a, fd, now)
+                combine(
+                    repository.getPagosByDateRangeForOptica(start, end, opticaId),
+                    repository.getAllDispensacionesForOptica(opticaId)
+                ) { pagos, todasDisp ->
+                    val dispMap = todasDisp.associateBy { it.id }
+                    pagos.filter { pago -> dentroDelPeriodo(pago.fecha, p, a, fd, now) }
+                        .sumOf { pago ->
+                            val dispFecha = pago.dispensacionId?.let { dispMap[it]?.fecha }
+                            if (dispFecha != null && dentroDelPeriodo(dispFecha, p, a, fd, now)) 0.0
+                            else pago.monto
+                        }
+                }
             }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
 }
