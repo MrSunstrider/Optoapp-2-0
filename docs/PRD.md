@@ -1,7 +1,7 @@
 # OptoApp SaaS — Product Requirements Document (PRD)
 
-> **Versión:** 1.0  
-> **Fecha:** 2026-06-12  
+> **Versión:** 1.1  
+> **Fecha:** 2026-06-22  
 > **Estado:** En desarrollo activo  
 > **Repositorio:** [Optoapp-2-0](https://github.com/MrSunstrider/Optoapp-2-0)
 
@@ -33,7 +33,7 @@ OptoApp SaaS es un sistema de gestión clínica integral para ópticas y optomet
 
 El producto cubre el ciclo completo de atención optométrica: desde la admisión del paciente, la evaluación clínica (con 100+ campos y reglas de diagnóstico automatizadas), la dispensación de lentes/monturas, el control de inventario, hasta el cierre financiero diario y los reportes gerenciales.
 
-**Estado actual:** Desarrollo activo. Android en producción (v1.4.2), Web en fase de hardening pre-release (P4-T5), 76 migraciones de base de datos, CI/CD implementado para Android y Supabase.
+**Estado actual:** Desarrollo activo. Android en producción (v1.8.0), Web en fase de hardening pre-release (P4-T5), 76 migraciones de base de datos, CI/CD implementado para Android y Supabase. App completamente gratuita (sin límites de suscripción).
 
 ---
 
@@ -101,7 +101,7 @@ Ser la plataforma estándar de gestión optométrica en Latinoamérica, donde:
 
 | Plataforma | Stack | Propósito | Estado |
 |------------|-------|-----------|--------|
-| **Android** | Kotlin + Jetpack Compose + Hilt + Room + supabase-kt | Punto de atención offline-first, operación clínica diaria | ✅ Producción (v1.4.2) |
+| **Android** | Kotlin + Jetpack Compose + Hilt + Room + supabase-kt | Punto de atención offline-first, operación clínica diaria | ✅ Producción (v1.8.0) |
 | **Web (OptoWeb)** | Next.js 15 App Router + TypeScript 6 + Tailwind CSS 4 + Supabase SSR | Backoffice, reporting, dashboard gerencial, administración | 🔲 Hardening pre-release (P4-T5) |
 | **Backend** | Supabase (PostgreSQL 17 + Auth + RLS + Edge Functions) | Fuente única de verdad, sincronización, reglas de negocio compartidas | ✅ Producción |
 
@@ -172,8 +172,9 @@ Ser la plataforma estándar de gestión optométrica en Latinoamérica, donde:
 |----------|-----------|--------|
 | Como optometrista, quiero trabajar sin internet y que los datos se sincronicen automáticamente al recuperar conexión | P0 | ✅ |
 | Como admin, quiero ver el estado de sincronización (pendiente/synced/error) por entidad | P1 | ✅ |
-| Como admin, quiero que los conflictos de sync se resuelvan con Last Write Wins | P1 | ✅ |
 | Como operador, quiero que el orden de sync respete dependencias (paciente antes que evaluación) | P0 | ✅ |
+
+> **Estrategia de conflictos:** Last Write Wins puro — no hay download guard ni conflict helper. El último upload pisa al anterior en Supabase. Implementado así porque el guard anterior creaba un ciclo vicioso: download bloqueaba entidades conflictivas → nunca recibían timestamp del server → upload re-detectaba conflicto → loop infinito.
 
 ### 5.8 Epic: Administración y Configuración
 
@@ -189,9 +190,11 @@ Ser la plataforma estándar de gestión optométrica en Latinoamérica, donde:
 
 | Historia | Prioridad | Estado |
 |----------|-----------|--------|
-| Como dueño, quiero suscribirme a un plan (Free/Pro) con límites de pacientes | P1 | ✅ |
-| Como dueño, quiero pagar desde Google Play Store con facturación integrada | P1 | ✅ |
-| Como sistema, quiero restringir funcionalidad según el plan activo | P1 | ✅ |
+| Como dueño, quiero que la app sea completamente gratuita sin límites | P0 | ✅ |
+| Como dueño, quiero facturación integrada por Google Play Store (legacy) | P1 | ✅ |
+| Como sistema, quiero que el plan FREE sea ilimitado (sin tope de pacientes/ópticas) | P1 | ✅ |
+
+> **Nota:** Desde v1.8.0 la app es 100% gratuita — `Int.MAX_VALUE` pacientes, sin límite de ópticas. El esqueleto de suscripciones y Billing Library se mantiene para futura monetización si aplica.
 
 ### 5.10 Epic: Web (OptoWeb)
 
@@ -277,8 +280,10 @@ Ser la plataforma estándar de gestión optométrica en Latinoamérica, donde:
 5. Pagos (requiere dispensación/servicio remoto)
 
 **Estrategia:**
-- Política de conflicto: **Last Write Wins** con `updated_at`
-- Reintentos: backoff exponencial para fallos de red o dependencia temporal
+- Política de conflicto: **Last Write Wins** puro — no hay detección de conflictos ni download guard
+- Upload: todas las entidades locales se suben directamente a Supabase sin filtro de conflictos
+- Download: todas las entidades remotas se descargan e insertan en Room sin bloqueo por conflictos previos
+- Reintentos: backoff exponencial (400ms, 800ms, 1200ms) para fallos de red transitorios
 - Estado local: `pending / synced / error` por fila
 - Observabilidad: telemetría en `sync_telemetry_optica` + UI de diagnóstico en Configuración
 - Cancelaciones de corrutina (`CancellationException`) no se registran como error de negocio
@@ -545,12 +550,13 @@ Ser la plataforma estándar de gestión optométrica en Latinoamérica, donde:
 | Componente | Estado |
 |------------|--------|
 | Android: Core clínico (evaluación, diagnóstico, dispensación) | ✅ Completo |
-| Android: Sync offline-first | ✅ Completo |
+| Android: Sync offline-first (con Last Write Wins) | ✅ Completo |
 | Android: Inventario (monturas + movimientos) | ✅ Completo |
 | Android: Financiero (cierres, KPIs, reportes) | ✅ Completo |
 | Android: Multi-tenant + RLS | ✅ Completo |
-| Android: Suscripciones (Google Play Billing) | ✅ Completo |
+| Android: Suscripciones (FREE ilimitado desde v1.8.0) | ✅ Completo |
 | Android: Backup/Restore | ✅ Completo |
+| Android: ADD auto-cálculo + fecha de nacimiento obligatoria | ✅ v1.8.0 |
 | Web: Auth + middleware + selección de óptica | ✅ Completo |
 | Web: Dashboard + KPIs | ✅ Completo |
 | Web: Pacientes CRUD | ✅ Completo |
@@ -566,6 +572,10 @@ Ser la plataforma estándar de gestión optométrica en Latinoamérica, donde:
 
 | Fecha | Hito |
 |-------|------|
+| 2026-06-22 | Last Write Wins implementado (sincronización sin conflictos) |
+| 2026-06-22 | App 100% gratuita (sin límites de suscripción) |
+| 2026-06-22 | ADD auto-cálculo desde edad del paciente + fecha de nacimiento requerida |
+| 2026-06-22 | v1.8.0 liberado con sync conflict protection y estabilización de CI |
 | 2026-06-11 | Auditoría de columnas en monturas — triggers + `updated_by` |
 | 2026-06-07 | Remoción de columnas legacy Virtual Try-On |
 | 2026-06-01 | Grants de ejecución anónima para helpers `app_private` |

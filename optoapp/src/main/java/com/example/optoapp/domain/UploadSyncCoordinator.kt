@@ -6,7 +6,6 @@ import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.FinanzasRemoteDefaults
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.SyncStateTracker
-import com.example.optoapp.domain.sync.EntitySnapshotSerializer
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.CancellationException
@@ -23,8 +22,7 @@ class UploadSyncCoordinator @Inject constructor(
     private val supabase: SupabaseClient,
     private val syncStateTracker: SyncStateTracker,
     private val mergeHandler: DispensacionMergeHandler,
-    private val networkRetryHelper: NetworkRetryHelper,
-    private val conflictHelper: com.example.optoapp.domain.sync.ConflictHelper
+    private val networkRetryHelper: NetworkRetryHelper
 ) {
     companion object {
         private const val TAG = "SyncFinanzas"
@@ -117,15 +115,8 @@ class UploadSyncCoordinator @Inject constructor(
             uniqueById[row.id] = localId to row
         }
         val rows = uniqueById.values.map { it.second }
-        val safeIds = conflictHelper.filterConflicts(
-            tableName = TABLE_DISPENSACIONES,
-            opticaId = opticaId,
-            entityType = "dispensacion",
-            localEntities = rows.map { com.example.optoapp.domain.sync.LocalEntity(it.id, it.updatedAt, EntitySnapshotSerializer.serialize(it)) }
-        ).map { it.id }.toSet()
-        val safeRows = rows.filter { it.id in safeIds }
         try {
-            safeRows.chunked(UPSERT_BATCH_SIZE).forEachIndexed { index, chunk ->
+            rows.chunked(UPSERT_BATCH_SIZE).forEachIndexed { index, chunk ->
                 networkRetryHelper.retryNetwork("upsert:$TABLE_DISPENSACIONES:chunk${index + 1}") {
                     supabase.postgrest[TABLE_DISPENSACIONES].upsert(chunk)
                 }
@@ -194,15 +185,8 @@ class UploadSyncCoordinator @Inject constructor(
             uniqueRows[dedupeKey] = reconciled
         }
         val rows = uniqueRows.values.toList().distinctBy { it.id }
-        val safeIds = conflictHelper.filterConflicts(
-            tableName = TABLE_SERVICIOS,
-            opticaId = opticaId,
-            entityType = "servicio_extra",
-            localEntities = rows.map { com.example.optoapp.domain.sync.LocalEntity(it.id, it.updatedAt, EntitySnapshotSerializer.serialize(it)) }
-        ).map { it.id }.toSet()
-        val safeRows = rows.filter { it.id in safeIds }
         try {
-            safeRows.chunked(UPSERT_BATCH_SIZE).forEachIndexed { index, chunk ->
+            rows.chunked(UPSERT_BATCH_SIZE).forEachIndexed { index, chunk ->
                 networkRetryHelper.retryNetwork("upsert:$TABLE_SERVICIOS:chunk${index + 1}") {
                     supabase.postgrest[TABLE_SERVICIOS].upsert(chunk)
                 }
@@ -233,15 +217,8 @@ class UploadSyncCoordinator @Inject constructor(
         }
         val opticaRemota = opticaId.trim().ifBlank { FinanzasRemoteDefaults.OPTICA_ID_FALLBACK }
         val rows = items.map { it.toRemoto().copy(opticaId = opticaRemota) }.distinctBy { it.id }
-        val safeIds = conflictHelper.filterConflicts(
-            tableName = TABLE_DISPENSACION_ITEMS,
-            opticaId = opticaId,
-            entityType = "dispensacion_item",
-            localEntities = rows.map { com.example.optoapp.domain.sync.LocalEntity(it.id, "", EntitySnapshotSerializer.serialize(it)) }
-        ).map { it.id }.toSet()
-        val safeRows = rows.filter { it.id in safeIds }
         try {
-            safeRows.chunked(UPSERT_BATCH_SIZE).forEachIndexed { index, chunk ->
+            rows.chunked(UPSERT_BATCH_SIZE).forEachIndexed { index, chunk ->
                 networkRetryHelper.retryNetwork("upsert:$TABLE_DISPENSACION_ITEMS:chunk${index + 1}") {
                     supabase.postgrest[TABLE_DISPENSACION_ITEMS].upsert(chunk)
                 }
@@ -272,15 +249,8 @@ class UploadSyncCoordinator @Inject constructor(
         }
         val opticaRemota = opticaId.trim().ifBlank { FinanzasRemoteDefaults.OPTICA_ID_FALLBACK }
         val rows = pagos.map { it.toRemoto().copy(opticaId = opticaRemota) }.distinctBy { it.id }
-        val safeIds = conflictHelper.filterConflicts(
-            tableName = TABLE_PAGOS,
-            opticaId = opticaId,
-            entityType = "pago",
-            localEntities = rows.map { com.example.optoapp.domain.sync.LocalEntity(it.id, it.updatedAt, EntitySnapshotSerializer.serialize(it)) }
-        ).map { it.id }.toSet()
-        val safeRows = rows.filter { it.id in safeIds }
         try {
-            safeRows.chunked(UPSERT_BATCH_SIZE).forEachIndexed { index, chunk ->
+            rows.chunked(UPSERT_BATCH_SIZE).forEachIndexed { index, chunk ->
                 networkRetryHelper.retryNetwork("upsert:$TABLE_PAGOS:chunk${index + 1}") {
                     supabase.postgrest[TABLE_PAGOS].upsert(chunk)
                 }
@@ -307,16 +277,8 @@ class UploadSyncCoordinator @Inject constructor(
         val localArqueos = repository.getArqueosByOpticaList(opticaId)
         if (localArqueos.isEmpty()) return 0
 
-        val safeIds = conflictHelper.filterConflicts(
-            tableName = TABLE_ARQUEO_CAJA,
-            opticaId = opticaId,
-            entityType = "arqueo_caja",
-            localEntities = localArqueos.map { com.example.optoapp.domain.sync.LocalEntity(it.id, it.updatedAt, EntitySnapshotSerializer.serialize(it)) }
-        ).map { it.id }.toSet()
-
         var uploaded = 0
         localArqueos.forEach { arqueo ->
-            if (arqueo.id !in safeIds) return@forEach
             try {
                 supabase.postgrest[TABLE_ARQUEO_CAJA].upsert(arqueo.toRemota())
                 uploaded++

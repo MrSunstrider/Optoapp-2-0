@@ -1,7 +1,6 @@
 package com.example.optoapp.domain
 
 import android.util.Log
-import com.example.optoapp.data.ConflictDao
 import com.example.optoapp.data.DispensacionItem
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.SyncStateTracker
@@ -20,8 +19,7 @@ class DownloadSyncCoordinator @Inject constructor(
     private val repository: OptoRepository,
     private val supabase: SupabaseClient,
     private val syncStateTracker: SyncStateTracker,
-    private val deletionSyncHelper: DeletionSyncHelper,
-    private val conflictDao: ConflictDao
+    private val deletionSyncHelper: DeletionSyncHelper
 ) {
     companion object {
         private const val TAG = "SyncFinanzas"
@@ -33,18 +31,10 @@ class DownloadSyncCoordinator @Inject constructor(
     }
 
     suspend fun downloadDispensacionItems(opticaId: String): Int {
-        val conflictedIds = try {
-            conflictDao.getConflictEntityIds(opticaId, "dispensacion_item").toSet()
-        } catch (e: Exception) {
-            Log.e(TAG, "Error querying conflict IDs, proceeding without guard: ${e.message}", e)
-            emptySet()
-        }
-
         val remotos = supabase.postgrest[TABLE_DISPENSACION_ITEMS]
             .select { filter { eq("optica_id", opticaId) } }
             .decodeList<DispensacionItemRemota>()
         remotos.forEach { r ->
-            if (r.id in conflictedIds) return@forEach
             try {
                 val local = r.toEntity()
                 repository.insertDispensacionItem(local)
@@ -64,13 +54,11 @@ class DownloadSyncCoordinator @Inject constructor(
 
     suspend fun downloadDispensaciones(opticaId: String): Int {
         val skipIds = deletionSyncHelper.deletedIds(opticaId)
-        val conflictedIds = conflictDao.getConflictEntityIds(opticaId, "dispensacion").toSet()
         val remotos = supabase.postgrest[TABLE_DISPENSACIONES]
             .select { filter { eq("optica_id", opticaId) } }
             .decodeList<DispensacionRemota>()
         remotos.forEach { r ->
             if (r.id in skipIds) return@forEach
-            if (r.id in conflictedIds) return@forEach
             try {
                 val local = r.toEntity()
                 repository.upsertDispensacionFromRemote(local)
@@ -90,13 +78,11 @@ class DownloadSyncCoordinator @Inject constructor(
 
     suspend fun downloadServicios(opticaId: String): Int {
         val skipIds = deletionSyncHelper.deletedIds(opticaId)
-        val conflictedIds = conflictDao.getConflictEntityIds(opticaId, "servicio_extra").toSet()
         val remotos = supabase.postgrest[TABLE_SERVICIOS]
             .select { filter { eq("optica_id", opticaId) } }
             .decodeList<ServicioRemoto>()
         remotos.forEach { r ->
             if (r.id in skipIds) return@forEach
-            if (r.id in conflictedIds) return@forEach
             try {
                 val local = r.toEntity()
                 repository.upsertServicioFromRemote(local)
@@ -116,13 +102,11 @@ class DownloadSyncCoordinator @Inject constructor(
 
     suspend fun downloadPagos(opticaId: String): Int {
         val skipIds = deletionSyncHelper.deletedIds(opticaId)
-        val conflictedIds = conflictDao.getConflictEntityIds(opticaId, "pago").toSet()
         val remotos = supabase.postgrest[TABLE_PAGOS]
             .select { filter { eq("optica_id", opticaId) } }
             .decodeList<PagoRemoto>()
         remotos.forEach { r ->
             if (r.id in skipIds) return@forEach
-            if (r.id in conflictedIds) return@forEach
             try {
                 val local = r.toEntity()
                 repository.upsertPagoFromRemote(local)
@@ -142,18 +126,10 @@ class DownloadSyncCoordinator @Inject constructor(
 
     suspend fun downloadArqueos(opticaId: String): Int {
         return try {
-            val conflictedIds = try {
-                conflictDao.getConflictEntityIds(opticaId, "arqueo_caja").toSet()
-            } catch (e: Exception) {
-                Log.e(TAG, "Error querying conflict IDs for arqueos, proceeding without guard: ${e.message}", e)
-                emptySet()
-            }
-
             val remoteArqueos = supabase.postgrest[TABLE_ARQUEO_CAJA]
                 .select { filter { eq("optica_id", opticaId) } }
                 .decodeList<ArqueoCajaRemota>()
             remoteArqueos.forEach { remote ->
-                if (remote.id in conflictedIds) return@forEach
                 try {
                     val local = repository.getArqueoByFechaSync(
                         LocalDate.parse(remote.fecha), remote.opticaId

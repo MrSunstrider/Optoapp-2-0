@@ -228,7 +228,7 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
                             showPaywall = true
                             return@Button
                         }
-                        if (nombreCompleto.isNotBlank() && fechaNacimiento.isNotBlank() && telefono.isNotBlank()) {
+                        if (nombreCompleto.isNotBlank() && edad.isNotBlank() && telefono.isNotBlank()) {
                             val p = Paciente(
                                 id = pacienteId ?: UUID.randomUUID().toString(),
                                 nombreCompleto = nombreCompleto,

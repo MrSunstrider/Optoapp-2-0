@@ -84,19 +84,21 @@ fun PacienteFormSections(
         label = { Text("Nombre Completo *") },
         modifier = Modifier.fillMaxWidth().testTag(TestTags.PACIENTE_NOMBRE_FIELD)
     )
-    OutlinedTextField(
-        value = fechaNacimiento,
-        onValueChange = onFechaNacimientoChange,
-        label = { Text("Fecha de Nacimiento * (dd/mm/aaaa)") },
-        modifier = Modifier.fillMaxWidth()
-    )
-    OutlinedTextField(
-        value = edad,
-        onValueChange = {},
-        label = { Text("Edad") },
-        enabled = false,
-        modifier = Modifier.fillMaxWidth().testTag(TestTags.PACIENTE_EDAD_FIELD)
-    )
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        OutlinedTextField(
+            value = fechaNacimiento,
+            onValueChange = onFechaNacimientoChange,
+            label = { Text("Fecha Nac. (dd/mm/aaaa)") },
+            modifier = Modifier.weight(2f)
+        )
+        OutlinedTextField(
+            value = edad,
+            onValueChange = { if (it.all { char -> char.isDigit() }) onEdadChange(it) },
+            label = { Text("Edad *") },
+            modifier = Modifier.weight(1f).testTag(TestTags.PACIENTE_EDAD_FIELD),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+        )
+    }
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         OutlinedTextField(
             value = telefono,
