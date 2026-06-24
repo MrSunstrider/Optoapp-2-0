@@ -50,7 +50,7 @@ fun MonturaEditForm(
         DropdownField(label = "Tipo de Aro *", selected = form.tipoAro, options = listOf("Aro Completo", "Semi al aire", "Al aire")) { opt ->
             onUpdate(form.copy(tipoAro = opt))
         }
-        DropdownField(label = "Material *", selected = form.materialMontura, options = listOf("Acetato", "Metal", "Carey", "Econ")) { opt ->
+        DropdownField(label = "Material *", selected = form.materialMontura, options = listOf("Acetato", "Metal", "Carey", "TR-90", "Econ")) { opt ->
             onUpdate(form.copy(materialMontura = opt))
         }
         OptoTextField(form.costo, { v -> onUpdate(form.copy(costo = v)) }, "Costo unitario", keyboardType = KeyboardType.Decimal)

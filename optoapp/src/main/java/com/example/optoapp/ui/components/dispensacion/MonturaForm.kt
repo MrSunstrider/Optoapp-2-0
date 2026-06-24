@@ -115,7 +115,7 @@ fun MonturaForm(
             DropdownField(label = "Tipo de Aro", selected = uiState.tipoAro, options = listOf("Aro Completo", "Semi al aire", "Al aire")) {
                 onUpdate(uiState.copy(tipoAro = it))
             }
-            DropdownField(label = "Material", selected = uiState.materialMontura, options = listOf("Acetato", "Metal", "Carey", "Econ")) {
+            DropdownField(label = "Material", selected = uiState.materialMontura, options = listOf("Acetato", "Metal", "Carey", "TR-90", "Econ")) {
                 onUpdate(uiState.copy(materialMontura = it))
             }
             OptoTextField(value = uiState.descripcionMontura, onValueChange = { onUpdate(uiState.copy(descripcionMontura = it)) }, label = "Descripción (Marca, Modelo)")
