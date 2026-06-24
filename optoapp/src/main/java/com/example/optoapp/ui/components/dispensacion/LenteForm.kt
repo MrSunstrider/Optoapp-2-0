@@ -128,8 +128,11 @@ fun LenteForm(
             if (item.tratamientos.contains("Filtro Discromatopsia")) {
                 Text("Requiere evaluación previa: Ishihara + D-15 + prueba de filtro", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 DropdownField(label = "Tipo de Filtro Discromatopsia", selected = item.filtroDiscromatopsiaTipo, options = listOf(
-                    "", "550 Rojo", "550 Rojo-Violeta", "550 Rojo-Marrón", "600 Rojo",
-                    "Lente A: rojo-verde leve/moderado", "Lente B: rojo-verde fuerte", "Lente C: uso interior", "Lente D: protan (deficiencia roja)", "Lente E: tritan (azul-amarillo)"
+                    "", "550 Rojo", "550 Rojo-Violeta", "550 Rojo-Marrón", "585 nm", "600 Rojo",
+                    "Amarillo 450 nm (tritan)", "Amarillo 500 nm (tritan)",
+                    "EnChroma Indoor", "EnChroma Outdoor",
+                    "Pilestone A: rojo-verde leve/moderado", "Pilestone B: rojo-verde fuerte", "Pilestone C: interior",
+                    "Pilestone D: protan (deficiencia roja)", "Pilestone E: tritan (azul-amarillo)"
                 )) { selected ->
                     onUpdate(item.copy(filtroDiscromatopsiaTipo = selected))
                 }
