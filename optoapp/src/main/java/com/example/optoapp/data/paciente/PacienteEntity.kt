@@ -45,3 +45,14 @@ data class Paciente(
     @SerialName("updatedBy")
     val updatedBy: String? = null
 )
+
+// ── Sexo-based helpers ───────────────────────────────────────────────────────
+
+fun Paciente.esMasculino(): Boolean = sexo.equals("Masculino", ignoreCase = true)
+fun Paciente.esFemenino(): Boolean = sexo.equals("Femenino", ignoreCase = true)
+
+fun Paciente.colorAvatarAlpha(): Float = when {
+    esMasculino() -> 0.12f
+    esFemenino() -> 0.12f
+    else -> 0.12f
+}

@@ -1,6 +1,8 @@
 package com.example.optoapp.ui.screens
 
 import com.example.optoapp.data.AppRoles
+import com.example.optoapp.data.esMasculino
+import com.example.optoapp.data.esFemenino
 import com.example.optoapp.data.Paciente
 import com.example.optoapp.subscription.SubscriptionTier
 import com.example.optoapp.viewmodel.PacienteViewModel
@@ -204,4 +206,38 @@ class PacientesListScreenTest {
         val title = "Pacientes"
         assertEquals("Pacientes", title)
     }
+
+    // ─── RED: Sexo-based avatar styling ───────────────────────────────────
+
+    @Test
+    fun paciente_sexoMasculino_avatarColorIsBlue() {
+        val paciente = Paciente(
+            id = "1", nombreCompleto = "Juan Pérez", edad = 40,
+            telefono = "999888777", fechaCreacion = LocalDate.now(),
+            sexo = "Masculino", opticaId = "optica_1"
+        )
+        assertTrue(paciente.esMasculino())
+    }
+
+    @Test
+    fun paciente_sexoFemenino_avatarColorIsRose() {
+        val paciente = Paciente(
+            id = "2", nombreCompleto = "María García", edad = 30,
+            telefono = "999888777", fechaCreacion = LocalDate.now(),
+            sexo = "Femenino", opticaId = "optica_1"
+        )
+        assertTrue(paciente.esFemenino())
+    }
+
+    @Test
+    fun paciente_sexoNull_avatarColorIsDefault() {
+        val paciente = Paciente(
+            id = "3", nombreCompleto = "Alex Cruz", edad = 25,
+            telefono = "999888777", fechaCreacion = LocalDate.now(),
+            sexo = null, opticaId = "optica_1"
+        )
+        assertFalse(paciente.esMasculino())
+        assertFalse(paciente.esFemenino())
+    }
+
 }

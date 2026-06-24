@@ -1,5 +1,7 @@
 package com.example.optoapp.ui.screens
 
+import com.example.optoapp.data.esMasculino
+import com.example.optoapp.data.esFemenino
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -10,6 +12,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Male
+import androidx.compose.material.icons.filled.Female
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
@@ -196,18 +200,28 @@ private fun PacienteCard(paciente: Paciente, onClick: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            // Avatar with gradient background
+            // Avatar with sexo-based icon and color
+            val avatarColor = when {
+                paciente.esMasculino() -> Color(0xFF2196F3)
+                paciente.esFemenino() -> Color(0xFFE91E63)
+                else -> MaterialTheme.colorScheme.primary
+            }
+            val avatarIcon = when {
+                paciente.esMasculino() -> Icons.Default.Male
+                paciente.esFemenino() -> Icons.Default.Female
+                else -> Icons.Default.Person
+            }
             Surface(
                 modifier = Modifier.size(48.dp),
                 shape = RoundedCornerShape(14.dp),
-                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+                color = avatarColor.copy(alpha = 0.12f)
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
-                        imageVector = Icons.Default.Person,
+                        imageVector = avatarIcon,
                         contentDescription = null,
                         modifier = Modifier.size(26.dp),
-                        tint = MaterialTheme.colorScheme.primary
+                        tint = avatarColor
                     )
                 }
             }
@@ -226,7 +240,11 @@ private fun PacienteCard(paciente: Paciente, onClick: () -> Unit) {
                         text = paciente.nombreCompleto,
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp,
-                        color = MaterialTheme.colorScheme.onSurface,
+                        color = when {
+                            paciente.esMasculino() -> Color(0xFF1976D2)
+                            paciente.esFemenino() -> Color(0xFFC2185B)
+                            else -> MaterialTheme.colorScheme.onSurface
+                        },
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f)
