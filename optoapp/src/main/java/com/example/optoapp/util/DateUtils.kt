@@ -42,6 +42,26 @@ object DateUtils {
 
     fun fromIso(value: String): LocalDate = LocalDate.parse(value, isoFormatter)
 
+    private val displayFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
+
+    fun fromDisplayFormat(value: String): LocalDate? =
+        runCatching { LocalDate.parse(value, displayFormatter) }.getOrNull()
+
+    /**
+     * Auto-formatea input del usuario a dd/MM/yyyy.
+     * Inserta '/' automáticamente después de 2 dígitos (día) y 4 dígitos (mes).
+     * Max 10 caracteres (dd/MM/yyyy completo).
+     */
+    fun formatDateInput(raw: String): String {
+        val digits = raw.filter { it.isDigit() }.take(8)
+        return buildString {
+            for (i in digits.indices) {
+                if (i == 2 || i == 4) append('/')
+                append(digits[i])
+            }
+        }
+    }
+
     fun formatLocalized(date: LocalDate): String {
         val formatter = DateTimeFormatter.ofPattern("dd 'de' MMMM 'de' yyyy", Locale.forLanguageTag("es-PE"))
         return date.format(formatter)

@@ -120,13 +120,13 @@ class EvaluacionViewModel @Inject constructor(
             runCatching {
                 val p = repository.getPacienteById(pacienteId)
                 if (p is Resource.Success) {
-                    val add = com.example.optoapp.util.calcularAddPorEdad(p.data?.edad ?: 0)
-                    if (add.isNotBlank()) {
-                        _uiState.update { it.copy(
-                            hasAdd = true,
-                            addCercaOd = add,
-                            addCercaOi = add
-                        ) }
+                    val edad = p.data?.edad ?: 0
+                    val add = com.example.optoapp.util.calcularAddPorEdad(edad)
+                    _uiState.update { state ->
+                        val withEdad = state.copy(pacienteEdad = edad)
+                        if (add.isNotBlank()) {
+                            withEdad.copy(hasAdd = true, addCercaOd = add, addCercaOi = add)
+                        } else withEdad
                     }
                 }
             }

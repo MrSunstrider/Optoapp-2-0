@@ -122,6 +122,14 @@ data class EvaluacionUiState(
     val isVpCerca: Boolean = true,
     val hasAdd: Boolean = false,
     val isAddAo: Boolean = false,
+    val pacienteEdad: Int? = null,
     val isLoading: Boolean = false,
     val error: String? = null
-)
+) {
+    /**
+     * Cerca/Intermedio selector solo es visible si hay adición activa
+     * o el paciente es presbícita (≥ 40 años).
+     */
+    val shouldShowCercaIntermedio: Boolean
+        get() = hasAdd || (pacienteEdad ?: 0) >= 40
+}

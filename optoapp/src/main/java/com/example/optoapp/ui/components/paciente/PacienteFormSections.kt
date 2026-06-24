@@ -89,7 +89,9 @@ fun PacienteFormSections(
             value = fechaNacimiento,
             onValueChange = onFechaNacimientoChange,
             label = { Text("Fecha Nac. (dd/mm/aaaa)") },
-            modifier = Modifier.weight(2f)
+            modifier = Modifier.weight(2f).testTag(TestTags.PACIENTE_FECHA_NAC_FIELD),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            singleLine = true
         )
         OutlinedTextField(
             value = edad,
@@ -105,7 +107,7 @@ fun PacienteFormSections(
             onValueChange = onTelefonoChange,
             label = { Text("Teléfono *") },
             modifier = Modifier.weight(1f).testTag(TestTags.PACIENTE_TELEFONO_FIELD),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone)
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
         )
         OutlinedTextField(
             value = dni,

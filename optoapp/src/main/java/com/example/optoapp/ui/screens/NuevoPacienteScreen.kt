@@ -21,6 +21,7 @@ import com.example.optoapp.viewmodel.SubscriptionViewModel
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.example.optoapp.ui.components.paciente.PacienteFormSections
 import com.example.optoapp.util.DateUtils
+import com.example.optoapp.util.InputFormatters
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.UUID
@@ -67,7 +68,7 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
                 telefono = it.telefono
                 dni = it.dni ?: ""
                 historiaOptometrica = it.historiaOptometrica ?: ""
-                fechaNacimiento = it.fechaNacimiento?.format(DateTimeFormatter.ISO_LOCAL_DATE) ?: ""
+                fechaNacimiento = it.fechaNacimiento?.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) ?: ""
                 sexo = it.sexo ?: "Masculino"
                 email = it.email ?: ""
                 direccion = it.direccion ?: ""
@@ -163,16 +164,17 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
                 edad = edad,
                 onEdadChange = {},
                 telefono = telefono,
-                onTelefonoChange = { telefono = it },
+                onTelefonoChange = { telefono = InputFormatters.formatPhoneInput(it) },
                 dni = dni,
                 onDniChange = { dni = it },
                 historiaOptometrica = historiaOptometrica,
                 onHistoriaOptometricaChange = { historiaOptometrica = it },
                 fechaNacimiento = fechaNacimiento,
                 onFechaNacimientoChange = { raw ->
-                    fechaNacimiento = raw
+                    val formatted = DateUtils.formatDateInput(raw)
+                    fechaNacimiento = formatted
                     edad = try {
-                        val parts = raw.split("/")
+                        val parts = formatted.split("/")
                         if (parts.size == 3) {
                             val d = parts[0].toIntOrNull() ?: 0
                             val m = parts[1].toIntOrNull() ?: 0
@@ -237,7 +239,7 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
                                 fechaCreacion = fechaCreacion,
                                 dni = dni,
                                 historiaOptometrica = historiaOptometrica,
-                                fechaNacimiento = fechaNacimiento.takeIf { it.isNotBlank() }?.let(LocalDate::parse),
+                                fechaNacimiento = fechaNacimiento.takeIf { it.isNotBlank() }?.let { DateUtils.fromDisplayFormat(it) },
                                 sexo = sexo,
                                 email = email,
                                 direccion = direccion,
@@ -269,6 +271,9 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
                                             popUpTo(currentRoute) { inclusive = true }
                                         }
                                     }
+                                } catch (e: Exception) {
+                                    if (e is kotlinx.coroutines.CancellationException) throw e
+                                    Toast.makeText(ctx, "Error al guardar: ${e.message}", Toast.LENGTH_LONG).show()
                                 } finally {
                                     saving = false
                                 }

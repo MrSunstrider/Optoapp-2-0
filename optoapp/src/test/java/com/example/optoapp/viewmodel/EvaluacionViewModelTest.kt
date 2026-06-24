@@ -61,6 +61,51 @@ class EvaluacionViewModelTest {
         assertNull(state.lcFechaAdaptacion)
         assertNull(state.osdiPuntuacion)
         assertNull(state.error)
+        assertNull(state.pacienteEdad)
+    }
+
+    // ─── Cerca/Intermedio visibility logic ─────────────────────────────
+
+    @Test
+    fun shouldShowCercaIntermedio_noAdd_youngPatient_hidden() {
+        val state = EvaluacionUiState(fecha = LocalDate.of(2024, 1, 1), hasAdd = false, pacienteEdad = 30)
+        assertFalse(state.shouldShowCercaIntermedio)
+    }
+
+    @Test
+    fun shouldShowCercaIntermedio_noAdd_nullAge_hidden() {
+        val state = EvaluacionUiState(fecha = LocalDate.of(2024, 1, 1), hasAdd = false, pacienteEdad = null)
+        assertFalse(state.shouldShowCercaIntermedio)
+    }
+
+    @Test
+    fun shouldShowCercaIntermedio_noAdd_patientOver40_visible() {
+        val state = EvaluacionUiState(fecha = LocalDate.of(2024, 1, 1), hasAdd = false, pacienteEdad = 45)
+        assertTrue(state.shouldShowCercaIntermedio)
+    }
+
+    @Test
+    fun shouldShowCercaIntermedio_noAdd_patientExactly40_visible() {
+        val state = EvaluacionUiState(fecha = LocalDate.of(2024, 1, 1), hasAdd = false, pacienteEdad = 40)
+        assertTrue(state.shouldShowCercaIntermedio)
+    }
+
+    @Test
+    fun shouldShowCercaIntermedio_hasAdd_youngPatient_visible() {
+        val state = EvaluacionUiState(fecha = LocalDate.of(2024, 1, 1), hasAdd = true, pacienteEdad = 25)
+        assertTrue(state.shouldShowCercaIntermedio)
+    }
+
+    @Test
+    fun shouldShowCercaIntermedio_hasAdd_nullAge_visible() {
+        val state = EvaluacionUiState(fecha = LocalDate.of(2024, 1, 1), hasAdd = true, pacienteEdad = null)
+        assertTrue(state.shouldShowCercaIntermedio)
+    }
+
+    @Test
+    fun shouldShowCercaIntermedio_hasAdd_patientOver40_visible() {
+        val state = EvaluacionUiState(fecha = LocalDate.of(2024, 1, 1), hasAdd = true, pacienteEdad = 50)
+        assertTrue(state.shouldShowCercaIntermedio)
     }
 
     @Test
