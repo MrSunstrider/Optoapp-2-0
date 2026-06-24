@@ -45,6 +45,9 @@ data class DispensacionItem(
     @SerialName("sub_tipo_bifocal")
     @ColumnInfo(name = "sub_tipo_bifocal")
     val subTipoBifocal: String = "",
+    @SerialName("filtro_discromatopsia_tipo")
+    @ColumnInfo(name = "filtro_discromatopsia_tipo")
+    val filtroDiscromatopsiaTipo: String = "",
     @SerialName("notas_diseno")
     @ColumnInfo(name = "notas_diseno")
     val notasDiseno: String = "",

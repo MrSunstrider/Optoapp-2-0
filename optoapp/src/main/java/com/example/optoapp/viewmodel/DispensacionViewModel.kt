@@ -61,6 +61,7 @@ data class DispensacionItemUi(
     val tratamientos: List<String> = emptyList(),
     val colorLente: String = "",
     val notasDiseno: String = "",
+    val filtroDiscromatopsiaTipo: String = "",
     val subTipoBifocal: String = "",
     val monturaId: String = "",
     val origenMontura: String = "",
@@ -175,7 +176,7 @@ class DispensacionViewModel @Inject constructor(
         tipoLente = tipoLente, distanciaLente = distanciaLente,
         altura = altura, materialLente = materialLente,
         tratamientos = tratamientos, colorLente = colorLente,
-        notasDiseno = notasDiseno, subTipoBifocal = subTipoBifocal,
+        notasDiseno = notasDiseno, filtroDiscromatopsiaTipo = filtroDiscromatopsiaTipo, subTipoBifocal = subTipoBifocal,
         monturaId = monturaId, origenMontura = origenMontura,
         tipoAro = tipoAro, materialMontura = materialMontura,
         descripcionMontura = descripcionMontura, tipoMontura = tipoMontura

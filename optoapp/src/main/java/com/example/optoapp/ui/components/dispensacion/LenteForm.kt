@@ -101,7 +101,7 @@ fun LenteForm(
             }
 
             Text("Tratamientos", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-            val opts = listOf("Ninguno", "Antireflejo", "Antirayas", "Filtro UV 400", "Fotocromático", "AR Blue Defense")
+            val opts = listOf("Ninguno", "Antireflejo", "Antirayas", "Filtro UV 400", "Fotocromático", "Polarizado", "AR Blue Defense", "Circadian NK55", "Filtro Discromatopsia")
             val currentTrats = if (item.tratamientos.isEmpty()) listOf("Ninguno") else item.tratamientos + "Ninguno"
             currentTrats.distinct().forEachIndexed { idx, selectedValue ->
                 if (idx == 0 || currentTrats[idx - 1] != "Ninguno") {
@@ -124,6 +124,16 @@ fun LenteForm(
 
             OptoTextField(value = item.colorLente, onValueChange = { onUpdate(item.copy(colorLente = it)) }, label = "Color del Lente")
             OptoTextField(value = item.notasDiseno, onValueChange = { onUpdate(item.copy(notasDiseno = it)) }, label = "Notas de Diseño")
+
+            if (item.tratamientos.contains("Filtro Discromatopsia")) {
+                Text("Requiere evaluación previa: Ishihara + D-15 + prueba de filtro", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                DropdownField(label = "Tipo de Filtro Discromatopsia", selected = item.filtroDiscromatopsiaTipo, options = listOf(
+                    "", "550 Rojo", "550 Rojo-Violeta", "550 Rojo-Marrón", "600 Rojo",
+                    "Lente A: rojo-verde leve/moderado", "Lente B: rojo-verde fuerte", "Lente C: uso interior", "Lente D: protan (deficiencia roja)", "Lente E: tritan (azul-amarillo)"
+                )) { selected ->
+                    onUpdate(item.copy(filtroDiscromatopsiaTipo = selected))
+                }
+            }
 
             //── Info de la montura ───────────────────────────────────────
             HorizontalDivider()
