@@ -161,7 +161,7 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
                 nombreCompleto = nombreCompleto,
                 onNombreCompletoChange = { nombreCompleto = it },
                 edad = edad,
-                onEdadChange = {},
+                onEdadChange = { edad = it },
                 telefono = telefono,
                 onTelefonoChange = { telefono = it },
                 dni = dni,
