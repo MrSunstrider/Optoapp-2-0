@@ -109,6 +109,22 @@ class PacienteRepository(
         }
     }
 
+    suspend fun getLastEvaluacionByPacienteId(pacienteId: String): Resource<EvaluacionClinica> {
+        return try {
+            val eval = evaluacionDao.getLastEvaluacionByPacienteId(pacienteId)
+            if (eval != null) Resource.Success(eval)
+            else Resource.Error("No hay evaluaciones")
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: IOException) {
+            Log.e(TAG, "getLastEvaluacionByPacienteId: pacienteId=$pacienteId", e)
+            Resource.Error("Error de red al obtener evaluación")
+        } catch (e: Exception) {
+            Log.e(TAG, "getLastEvaluacionByPacienteId: pacienteId=$pacienteId", e)
+            Resource.Error(e.message ?: "Error al obtener evaluación")
+        }
+    }
+
     suspend fun deleteEvaluacion(evaluacion: EvaluacionClinica) = evaluacionDao.deleteEvaluacion(evaluacion)
 
     suspend fun insertEvaluacion(evaluacion: EvaluacionClinica) {

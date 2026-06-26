@@ -59,4 +59,7 @@ interface DispensacionDao {
 
     @Query("DELETE FROM dispensaciones WHERE id = :id")
     suspend fun deleteById(id: String): Int
+
+    @Query("SELECT * FROM dispensaciones WHERE pacienteId = :pacienteId ORDER BY fecha DESC LIMIT 1")
+    suspend fun getLastDispensacionByPacienteId(pacienteId: String): DispensacionOptica?
 }

@@ -11,6 +11,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -27,7 +29,13 @@ import com.example.optoapp.ui.components.OptoTopAppBar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, dispensacionId: String? = null, viewModel: DispensacionViewModel = hiltViewModel()) {
+fun NuevaDispensacionScreen(
+    navController: NavController,
+    pacienteId: String,
+    dispensacionId: String? = null,
+    focus: String? = null,
+    viewModel: DispensacionViewModel = hiltViewModel(),
+) {
     val uiState by viewModel.uiState.collectAsState()
     val monturasActivas by viewModel.monturasActivas.collectAsState()
     LaunchedEffect(dispensacionId) {
@@ -37,6 +45,14 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
     }
     LaunchedEffect(pacienteId) {
         viewModel.loadPacienteNombre(pacienteId)
+    }
+
+    val scrollState = rememberScrollState()
+    var financieraSectionY by remember { mutableStateOf(0) }
+    LaunchedEffect(focus) {
+        if (focus == "financiero" && financieraSectionY > 0) {
+            scrollState.animateScrollTo(financieraSectionY)
+        }
     }
 
     var showDatePicker by remember { mutableStateOf(false) }
@@ -92,7 +108,7 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
                 .padding(padding)
                 .padding(16.dp)
                 .navigationBarsPadding()
-                .verticalScroll(rememberScrollState()),
+                .verticalScroll(scrollState),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             OutlinedButton(onClick = { showDatePicker = true }, modifier = Modifier.fillMaxWidth()) {
@@ -148,7 +164,8 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
                 onUpdate = { newState -> viewModel.updateUiState { newState } },
                 onAddPago = { pago -> viewModel.addPago(pago) },
                 onUpdatePago = { pago -> viewModel.updatePagoLocal(pago) },
-                onRemovePago = { pago -> viewModel.removePagoLocal(pago) }
+                onRemovePago = { pago -> viewModel.removePagoLocal(pago) },
+                modifier = Modifier.onGloballyPositioned { coords -> financieraSectionY = coords.positionInRoot().y.toInt() }
             )
 
             Button(onClick = { saveAction() }, modifier = Modifier.fillMaxWidth().testTag(TestTags.DISPENSACION_GUARDAR_BTN)) {

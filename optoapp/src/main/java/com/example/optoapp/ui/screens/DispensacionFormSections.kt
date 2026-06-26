@@ -140,9 +140,10 @@ fun FinancieraInfoSection(
     onUpdate: (DispensacionUiState) -> Unit,
     onAddPago: (Pago) -> Unit,
     onUpdatePago: (Pago) -> Unit,
-    onRemovePago: (Pago) -> Unit
+    onRemovePago: (Pago) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    Card {
+    Card(modifier = modifier) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text("Información Financiera", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
 

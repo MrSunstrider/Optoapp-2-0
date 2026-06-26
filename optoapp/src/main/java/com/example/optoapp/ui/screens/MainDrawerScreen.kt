@@ -16,6 +16,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.example.optoapp.viewmodel.AuthViewModel
 import com.example.optoapp.viewmodel.OpticaHeaderViewModel
@@ -172,7 +174,18 @@ fun MainDrawerScreen(
                         NuevaDispensacionScreen(navController, pacienteId = pacienteId)
                     }
                 }
-                composable("editarDispensacion/{pacienteId}/{dispId}") { backStackEntry ->
+                composable(
+                    "editarDispensacion/{pacienteId}/{dispId}?focus={focus}",
+                    arguments = listOf(
+                        navArgument("pacienteId") { type = NavType.StringType },
+                        navArgument("dispId") { type = NavType.StringType },
+                        navArgument("focus") {
+                            type = NavType.StringType
+                            nullable = true
+                            defaultValue = null
+                        }
+                    )
+                ) { backStackEntry ->
                     val pacienteId = backStackEntry.arguments?.getString("pacienteId")
                     if (pacienteId.isNullOrBlank()) {
                         LaunchedEffect(Unit) { navController.popBackStack() }
@@ -181,7 +194,8 @@ fun MainDrawerScreen(
                         NuevaDispensacionScreen(
                             navController,
                             pacienteId = pacienteId,
-                            dispensacionId = backStackEntry.arguments?.getString("dispId")
+                            dispensacionId = backStackEntry.arguments?.getString("dispId"),
+                            focus = backStackEntry.arguments?.getString("focus")
                         )
                     }
                 }

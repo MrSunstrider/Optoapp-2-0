@@ -50,4 +50,7 @@ interface EvaluacionDao {
         """
     )
     fun getEvaluacionesConProximaCitaEnRango(opticaId: String, start: LocalDate, end: LocalDate): Flow<List<EvaluacionClinica>>
+
+    @Query("SELECT * FROM evaluaciones WHERE pacienteId = :pacienteId ORDER BY fecha DESC LIMIT 1")
+    suspend fun getLastEvaluacionByPacienteId(pacienteId: String): EvaluacionClinica?
 }

@@ -52,6 +52,8 @@ object TestTags {
     const val PACIENTE_LISTA = "paciente_lista"
     const val PACIENTE_SCREEN_ROOT = "paciente_screen_root"
     const val PACIENTE_ERROR_MESSAGE = "paciente_error_message"
+    const val PACIENTE_CARD_LAST_EVAL_BTN = "paciente_card_last_eval_btn"
+    const val PACIENTE_CARD_LAST_DISP_BTN = "paciente_card_last_disp_btn"
 
     // ── Evaluación Screen ────────────────────────────────────────────────────
 

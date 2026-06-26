@@ -35,6 +35,7 @@ import androidx.navigation.NavController
 import com.example.optoapp.OptoApplication
 import com.example.optoapp.data.AppRoles
 import com.example.optoapp.data.Paciente
+import com.example.optoapp.data.Resource
 import com.example.optoapp.viewmodel.AuthViewModel
 import com.example.optoapp.viewmodel.PacienteViewModel
 import com.example.optoapp.viewmodel.SubscriptionViewModel
@@ -45,7 +46,11 @@ import com.example.optoapp.util.DateUtils
 import kotlinx.coroutines.launch
 import com.example.optoapp.ui.components.OptoTopAppBar
 import com.example.optoapp.ui.components.OptoCard
+import com.example.optoapp.ui.components.paciente.ResumenDispensacionDialog
+import com.example.optoapp.ui.components.paciente.ResumenEvaluacionDialog
 import com.example.optoapp.ui.theme.OptoTokens
+
+private enum class QuickSummaryDialog { NONE, EVAL, DISP }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -60,6 +65,18 @@ fun PacientesListScreen(navController: NavController, drawerState: DrawerState, 
     val context = LocalContext.current
     var showPaywall by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+
+    var activeDialog by remember { mutableStateOf(QuickSummaryDialog.NONE) }
+    val lastEvalState by viewModel.lastEvaluacion.collectAsState()
+    val lastDispState by viewModel.lastDispensacion.collectAsState()
+    val closeAndResetEval: () -> Unit = {
+        activeDialog = QuickSummaryDialog.NONE
+        viewModel.resetLastEvaluacion()
+    }
+    val closeAndResetDisp: () -> Unit = {
+        activeDialog = QuickSummaryDialog.NONE
+        viewModel.resetLastDispensacion()
+    }
 
     LaunchedEffect(Unit) {
         subscriptionVm.refreshPlanFromServer()
@@ -175,17 +192,106 @@ fun PacientesListScreen(navController: NavController, drawerState: DrawerState, 
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 items(pacientes, key = { it.id }) { paciente ->
-                    PacienteCard(paciente) {
-                        navController.navigate("detallePaciente/${paciente.id}")
+                    PacienteCard(
+                        paciente = paciente,
+                        onClick = { navController.navigate("detallePaciente/${paciente.id}") },
+                        onShowLastEvaluacion = { id ->
+                            activeDialog = QuickSummaryDialog.EVAL
+                            viewModel.loadLastEvaluacion(id)
+                        },
+                        onShowLastDispensacion = { id ->
+                            activeDialog = QuickSummaryDialog.DISP
+                            viewModel.loadLastDispensacion(id)
+                        }
+                    )
+                }
+            }
+        }
+
+        when (activeDialog) {
+            QuickSummaryDialog.EVAL -> {
+                lastEvalState?.let { resource ->
+                    when (resource) {
+                        is Resource.Loading -> Unit
+                        is Resource.Success -> {
+                            val eval = resource.data
+                            if (eval != null) {
+                                val paciente = pacientes.find { it.id == eval.pacienteId } ?: pacientes.firstOrNull()
+                                if (paciente != null) {
+                                    ResumenEvaluacionDialog(
+                                        eval = eval,
+                                        paciente = paciente,
+                                        onDismiss = closeAndResetEval,
+                                        onEdit = { /* no-op from list */ }
+                                    )
+                                } else {
+                                    closeAndResetEval()
+                                }
+                            }
+                        }
+                        is Resource.Error -> {
+                            AlertDialog(
+                                onDismissRequest = closeAndResetEval,
+                                title = { Text("Sin Evaluaciones") },
+                                text = { Text(resource.message ?: "No hay evaluaciones") },
+                                confirmButton = {
+                                    TextButton(onClick = closeAndResetEval) { Text("Cerrar") }
+                                }
+                            )
+                        }
                     }
                 }
             }
+            QuickSummaryDialog.DISP -> {
+                lastDispState?.let { resource ->
+                    when (resource) {
+                        is Resource.Loading -> Unit
+                        is Resource.Success -> {
+                            val disp = resource.data
+                            if (disp != null) {
+                                val paciente = pacientes.find { it.id == disp.pacienteId } ?: pacientes.firstOrNull()
+                                if (paciente != null) {
+                                    ResumenDispensacionDialog(
+                                        disp = disp,
+                                        paciente = paciente,
+                                        onDismiss = closeAndResetDisp,
+                                        onEdit = { /* no-op from list */ },
+                                        onGoToFinanciero = { target ->
+                                            closeAndResetDisp()
+                                            navController.navigate("editarDispensacion/${target.pacienteId}/${target.id}?focus=financiero")
+                                        }
+                                    )
+                                } else {
+                                    closeAndResetDisp()
+                                }
+                            }
+                        }
+                        is Resource.Error -> {
+                            AlertDialog(
+                                onDismissRequest = closeAndResetDisp,
+                                title = { Text("Sin Dispensaciones") },
+                                text = { Text(resource.message ?: "No hay dispensaciones") },
+                                confirmButton = {
+                                    TextButton(onClick = closeAndResetDisp) { Text("Cerrar") }
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+            QuickSummaryDialog.NONE -> Unit
         }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun PacienteCard(paciente: Paciente, onClick: () -> Unit) {
+private fun PacienteCard(
+    paciente: Paciente,
+    onClick: () -> Unit,
+    onShowLastEvaluacion: (String) -> Unit,
+    onShowLastDispensacion: (String) -> Unit,
+) {
     OptoCard(
         modifier = Modifier
             .fillMaxWidth()
@@ -296,6 +402,43 @@ private fun PacienteCard(paciente: Paciente, onClick: () -> Unit) {
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
                             )
                         }
+                    }
+                }
+            }
+
+            // Quick-action buttons (E = última evaluación, D = última dispensación)
+            Column(
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                val evalTooltipState = rememberTooltipState(isPersistent = false)
+                TooltipBox(
+                    positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
+                    tooltip = { PlainTooltip { Text("Última Evaluación") } },
+                    state = evalTooltipState,
+                ) {
+                    IconButton(
+                        onClick = { onShowLastEvaluacion(paciente.id) },
+                        modifier = Modifier
+                            .size(32.dp)
+                            .testTag(TestTags.PACIENTE_CARD_LAST_EVAL_BTN)
+                    ) {
+                        Text("E", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    }
+                }
+                val dispTooltipState = rememberTooltipState(isPersistent = false)
+                TooltipBox(
+                    positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
+                    tooltip = { PlainTooltip { Text("Última Dispensación") } },
+                    state = dispTooltipState,
+                ) {
+                    IconButton(
+                        onClick = { onShowLastDispensacion(paciente.id) },
+                        modifier = Modifier
+                            .size(32.dp)
+                            .testTag(TestTags.PACIENTE_CARD_LAST_DISP_BTN)
+                    ) {
+                        Text("D", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                     }
                 }
             }
