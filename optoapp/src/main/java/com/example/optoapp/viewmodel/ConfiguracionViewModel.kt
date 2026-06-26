@@ -16,19 +16,15 @@ class ConfiguracionViewModel @Inject constructor(
     private val securityManager: SecurityManager
 ) : ViewModel() {
 
-    // ─── PIN form fields ───────────────────────────────────────────────────────
     var pinActual by mutableStateOf("")
     var nuevoPin by mutableStateOf("")
     var confirmPin by mutableStateOf("")
 
-    // ─── Laboratorio form fields ───────────────────────────────────────────────
     var labNombre by mutableStateOf("")
     var labContacto by mutableStateOf("")
 
-    // ─── Dialog ────────────────────────────────────────────────────────────────
     var dialogMessage by mutableStateOf<String?>(null)
 
-    // ─── Static data ───────────────────────────────────────────────────────────
     val availableTimeZones = listOf(
         "Detectar automáticamente",
         "America/Lima", "America/Bogota", "America/Mexico_City",
@@ -42,21 +38,26 @@ class ConfiguracionViewModel @Inject constructor(
     }
 
     fun updatePin() {
-        if (nuevoPin == confirmPin && SecurityManager.isValidPin(nuevoPin)) {
-            viewModelScope.launch {
+        if (nuevoPin != confirmPin || !SecurityManager.isValidPin(nuevoPin)) {
+            dialogMessage = "El nuevo PIN no es válido o no coincide"
+            return
+        }
+        viewModelScope.launch {
+            // Create mode (pinHasBeenSet == false): skip current-PIN validation.
+            // Change mode (pinHasBeenSet == true): require pinActual to match.
+            val hasBeenSet = securityManager.pinHasBeenSet.first()
+            if (hasBeenSet) {
                 val currentPin = securityManager.userPin.first()
                 if (pinActual != currentPin) {
                     dialogMessage = "El PIN actual no coincide"
                     return@launch
                 }
-                securityManager.savePin(nuevoPin)
-                pinActual = ""
-                nuevoPin = ""
-                confirmPin = ""
-                dialogMessage = "PIN actualizado correctamente"
             }
-        } else {
-            dialogMessage = "El nuevo PIN no es válido o no coincide"
+            securityManager.savePin(nuevoPin)
+            pinActual = ""
+            nuevoPin = ""
+            confirmPin = ""
+            dialogMessage = if (hasBeenSet) "PIN actualizado correctamente" else "PIN creado correctamente"
         }
     }
 

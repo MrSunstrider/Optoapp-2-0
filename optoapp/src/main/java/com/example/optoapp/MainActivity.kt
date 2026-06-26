@@ -74,6 +74,31 @@ class MainActivity : ComponentActivity() {
         setIntent(intent)
         authViewModel.handleAuthDeepLinkIntent(intent)
     }
+
+    companion object {
+        /**
+         * Pure route decision for the post-auth nav guard (C3-Default-PIN).
+         *
+         * Priority:
+         *   1. auth not checked yet → null (wait)
+         *   2. not logged in         → "login"
+         *   3. PIN not set           → "create_pin" (force creation on first run)
+         *   4. PIN required          → "pin"        (verify)
+         *   5. otherwise             → "main"       (skip PIN gate)
+         */
+        fun resolvePostAuthRoute(
+            isAuthChecked: Boolean,
+            isLoggedIn: Boolean?,
+            pinHasBeenSet: Boolean?,
+            isPinRequired: Boolean?
+        ): String? = when {
+            !isAuthChecked -> null
+            isLoggedIn != true -> "login"
+            pinHasBeenSet != true -> "create_pin"
+            isPinRequired == true -> "pin"
+            else -> "main"
+        }
+    }
 }
 
 @Composable
@@ -87,6 +112,7 @@ fun OptoAppNavigation(
     val isLoggedIn by authViewModel.isLoggedIn.collectAsState(initial = null)
     val pinHasBeenSet by authViewModel.pinHasBeenSet.collectAsState(initial = null)
     val isPinRequired by authViewModel.isPinRequired.collectAsState(initial = null)
+    val isAuthChecked by authViewModel.isAuthChecked.collectAsState()
 
     // isLoggedIn cambia de null→true; el LaunchedEffect se re-dispara solo cuando hay sesión activa.
     var updateInfo by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<UpdateChecker.UpdateInfo?>(null) }
@@ -103,6 +129,21 @@ fun OptoAppNavigation(
     LaunchedEffect(isLoggedIn) {
         if (isLoggedIn == false) {
             navController.navigate("login") {
+                popUpTo(navController.graph.id) { inclusive = true }
+            }
+        }
+    }
+
+    // C3-Default-PIN: nav guard combinado — create_pin > pin > main.
+    LaunchedEffect(isAuthChecked, isLoggedIn, pinHasBeenSet, isPinRequired) {
+        val target = MainActivity.resolvePostAuthRoute(
+            isAuthChecked = isAuthChecked,
+            isLoggedIn = isLoggedIn,
+            pinHasBeenSet = pinHasBeenSet,
+            isPinRequired = isPinRequired
+        )
+        if (target != null) {
+            navController.navigate(target) {
                 popUpTo(navController.graph.id) { inclusive = true }
             }
         }
