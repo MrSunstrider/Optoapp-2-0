@@ -16,6 +16,8 @@ import androidx.compose.material.icons.filled.Male
 import androidx.compose.material.icons.filled.Female
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -135,9 +137,12 @@ fun PacientesListScreen(navController: NavController, drawerState: DrawerState, 
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 items(pacientes, key = { it.id }) { paciente ->
-                    PacienteCard(paciente) {
-                        navController.navigate("detallePaciente/${paciente.id}")
-                    }
+                    PacienteCard(
+                        paciente = paciente,
+                        onClick = { navController.navigate("detallePaciente/${paciente.id}") },
+                        onEdit = { navController.navigate("editarPaciente/${paciente.id}") },
+                        onDelete = { navController.navigate("detallePaciente/${paciente.id}") }
+                    )
                 }
             }
         }
@@ -145,7 +150,7 @@ fun PacientesListScreen(navController: NavController, drawerState: DrawerState, 
 }
 
 @Composable
-private fun PacienteCard(paciente: Paciente, onClick: () -> Unit) {
+private fun PacienteCard(paciente: Paciente, onClick: () -> Unit, onEdit: () -> Unit, onDelete: () -> Unit) {
     OptoCard(
         modifier = Modifier
             .fillMaxWidth()
@@ -189,30 +194,18 @@ private fun PacienteCard(paciente: Paciente, onClick: () -> Unit) {
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = paciente.nombreCompleto,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp,
-                        color = when {
-                            paciente.esMasculino() -> Color(0xFF1976D2)
-                            paciente.esFemenino() -> Color(0xFFC2185B)
-                            else -> MaterialTheme.colorScheme.onSurface
-                        },
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f)
-                    )
-                    Text(
-                        text = "ID: ${paciente.id.take(8)}",
-                        fontSize = 11.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+                Text(
+                    text = paciente.nombreCompleto,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp,
+                    color = when {
+                        paciente.esMasculino() -> Color(0xFF1976D2)
+                        paciente.esFemenino() -> Color(0xFFC2185B)
+                        else -> MaterialTheme.colorScheme.onSurface
+                    },
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
 
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -232,25 +225,56 @@ private fun PacienteCard(paciente: Paciente, onClick: () -> Unit) {
 
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Text(
-                        text = "Creado: ${DateUtils.formatLocalized(paciente.fechaCreacion)}",
+                        text = DateUtils.formatLocalized(paciente.fechaCreacion),
                         fontSize = 11.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
 
-                    paciente.ultimasEtiquetas.take(2).forEach { etiqueta ->
-                        Surface(
-                            shape = RoundedCornerShape(6.dp),
-                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
-                        ) {
-                            Text(
-                                text = etiqueta,
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                    Text(
+                        text = "·",
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    Text(
+                        text = paciente.id.take(8),
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    Spacer(modifier = Modifier.weight(1f))
+
+                    Surface(
+                        onClick = onEdit,
+                        shape = RoundedCornerShape(8.dp),
+                        color = Color(0xFF1976D2).copy(alpha = 0.15f),
+                        modifier = Modifier.size(34.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                Icons.Default.Edit,
+                                contentDescription = "Editar",
+                                tint = Color(0xFF1976D2),
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+
+                    Surface(
+                        onClick = onDelete,
+                        shape = RoundedCornerShape(8.dp),
+                        color = Color(0xFFE53935).copy(alpha = 0.15f),
+                        modifier = Modifier.size(34.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                Icons.Default.Delete,
+                                contentDescription = "Eliminar",
+                                tint = Color(0xFFE53935),
+                                modifier = Modifier.size(18.dp)
                             )
                         }
                     }
