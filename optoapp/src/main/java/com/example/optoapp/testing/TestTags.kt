@@ -44,6 +44,7 @@ object TestTags {
 
     const val PACIENTE_NOMBRE_FIELD = "paciente_nombre_field"
     const val PACIENTE_EDAD_FIELD = "paciente_edad_field"
+    const val PACIENTE_FECHA_NAC_FIELD = "paciente_fecha_nac_field"
     const val PACIENTE_TELEFONO_FIELD = "paciente_telefono_field"
     const val PACIENTE_EMAIL_FIELD = "paciente_email_field"
     const val PACIENTE_DIRECCION_FIELD = "paciente_direccion_field"

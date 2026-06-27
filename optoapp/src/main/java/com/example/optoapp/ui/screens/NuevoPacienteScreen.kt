@@ -17,10 +17,10 @@ import androidx.navigation.NavController
 import com.example.optoapp.data.Paciente
 import com.example.optoapp.testing.TestTags
 import com.example.optoapp.viewmodel.PacienteViewModel
-import com.example.optoapp.viewmodel.SubscriptionViewModel
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.example.optoapp.ui.components.paciente.PacienteFormSections
 import com.example.optoapp.util.DateUtils
+import com.example.optoapp.util.InputFormatters
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.UUID
@@ -29,15 +29,9 @@ import com.example.optoapp.ui.components.OptoTopAppBar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null, viewModel: PacienteViewModel = hiltViewModel(), subscriptionVm: SubscriptionViewModel = hiltViewModel()) {
+fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null, viewModel: PacienteViewModel = hiltViewModel()) {
     val scope = rememberCoroutineScope()
     val ctx = LocalContext.current
-    val canAdd by subscriptionVm.canAddPaciente.collectAsState()
-    var showPaywall by remember { mutableStateOf(false) }
-
-    LaunchedEffect(Unit) {
-        subscriptionVm.refreshPlanFromServer()
-    }
 
     var nombreCompleto by remember { mutableStateOf("") }
     var edad by remember { mutableStateOf("") }
@@ -67,7 +61,7 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
                 telefono = it.telefono
                 dni = it.dni ?: ""
                 historiaOptometrica = it.historiaOptometrica ?: ""
-                fechaNacimiento = it.fechaNacimiento?.format(DateTimeFormatter.ISO_LOCAL_DATE) ?: ""
+                fechaNacimiento = it.fechaNacimiento?.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) ?: ""
                 sexo = it.sexo ?: "Masculino"
                 email = it.email ?: ""
                 direccion = it.direccion ?: ""
@@ -85,26 +79,6 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
         initialSelectedDateMillis = DateUtils.localDateToPickerMillis(fechaCreacion),
         yearRange = 1920..2080
     )
-
-    if (showPaywall) {
-        AlertDialog(
-            onDismissRequest = { showPaywall = false },
-            title = { Text("Límite del plan gratuito") },
-            text = { Text("No puedes crear más pacientes en el plan gratuito. Actualiza a PRO desde Configuración o compra desde aquí.") },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        subscriptionVm.launchProPurchase(
-                            onSuccess = { Toast.makeText(ctx, "PRO activado — pacientes ilimitados.", Toast.LENGTH_LONG).show() },
-                            onError = { Toast.makeText(ctx, it, Toast.LENGTH_LONG).show() }
-                        )
-                        showPaywall = false
-                    }
-                ) { Text("Actualizar plan") }
-            },
-            dismissButton = { TextButton(onClick = { showPaywall = false }) { Text("Cerrar") } }
-        )
-    }
 
     if (showDatePicker) {
         DatePickerDialog(
@@ -163,16 +137,17 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
                 edad = edad,
                 onEdadChange = {},
                 telefono = telefono,
-                onTelefonoChange = { telefono = it },
+                onTelefonoChange = { telefono = InputFormatters.formatPhoneInput(it) },
                 dni = dni,
                 onDniChange = { dni = it },
                 historiaOptometrica = historiaOptometrica,
                 onHistoriaOptometricaChange = { historiaOptometrica = it },
                 fechaNacimiento = fechaNacimiento,
                 onFechaNacimientoChange = { raw ->
-                    fechaNacimiento = raw
+                    val formatted = DateUtils.formatDateInput(raw)
+                    fechaNacimiento = formatted
                     edad = try {
-                        val parts = raw.split("/")
+                        val parts = formatted.split("/")
                         if (parts.size == 3) {
                             val d = parts[0].toIntOrNull() ?: 0
                             val m = parts[1].toIntOrNull() ?: 0
@@ -224,10 +199,6 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
                 Button(
                     onClick = {
                         if (saving) return@Button
-                        if (pacienteId == null && !canAdd) {
-                            showPaywall = true
-                            return@Button
-                        }
                         if (nombreCompleto.isNotBlank() && edad.isNotBlank() && telefono.isNotBlank()) {
                             val p = Paciente(
                                 id = pacienteId ?: UUID.randomUUID().toString(),
@@ -237,7 +208,7 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
                                 fechaCreacion = fechaCreacion,
                                 dni = dni,
                                 historiaOptometrica = historiaOptometrica,
-                                fechaNacimiento = fechaNacimiento.takeIf { it.isNotBlank() }?.let(LocalDate::parse),
+                                fechaNacimiento = fechaNacimiento.takeIf { it.isNotBlank() }?.let { DateUtils.fromDisplayFormat(it) },
                                 sexo = sexo,
                                 email = email,
                                 direccion = direccion,
@@ -269,6 +240,9 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
                                             popUpTo(currentRoute) { inclusive = true }
                                         }
                                     }
+                                } catch (e: Exception) {
+                                    if (e is kotlinx.coroutines.CancellationException) throw e
+                                    Toast.makeText(ctx, "Error al guardar: ${e.message}", Toast.LENGTH_LONG).show()
                                 } finally {
                                     saving = false
                                 }

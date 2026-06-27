@@ -39,12 +39,8 @@ class SubscriptionViewModel @Inject constructor(
         repository.countPacientesForOptica(oid)
     }
 
-    val canAddPaciente: StateFlow<Boolean> = combine(
-        subscriptionManager.tier,
-        pacienteCount
-    ) { t, count ->
-        count < subscriptionManager.maxPacientes(t)
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
+    val canAddPaciente: StateFlow<Boolean> = kotlinx.coroutines.flow.flowOf(true)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
 
     fun refreshPlanFromServer() = viewModelScope.launch {
         val oid = sessionManager.opticaId.first()

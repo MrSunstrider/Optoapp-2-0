@@ -59,11 +59,13 @@ internal fun AddSection(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiState
                 }
             )
 
-            OptoSegmentedSelector(
-                options = listOf("Cerca", "Intermedio"),
-                selectedIndex = if (uiState.isVpCerca) 0 else 1,
-                onSelect = { onUpdate(uiState.copy(isVpCerca = it == 0)) }
-            )
+            AnimatedVisibility(visible = uiState.shouldShowCercaIntermedio) {
+                OptoSegmentedSelector(
+                    options = listOf("Cerca", "Intermedio"),
+                    selectedIndex = if (uiState.isVpCerca) 0 else 1,
+                    onSelect = { onUpdate(uiState.copy(isVpCerca = it == 0)) }
+                )
+            }
 
             AnimatedVisibility(visible = uiState.hasAdd) {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
