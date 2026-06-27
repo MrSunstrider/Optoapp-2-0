@@ -44,7 +44,9 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        authViewModel.handleAuthDeepLinkIntent(intent)
+        if (intent?.action == Intent.ACTION_VIEW) {
+            authViewModel.handleAuthDeepLinkIntent(intent)
+        }
 
         // P0-T4: validar sesión Supabase al arranque vs. confiar ciegamente en DataStore
         authViewModel.checkExistingSession()

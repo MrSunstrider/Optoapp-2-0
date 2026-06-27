@@ -18,6 +18,7 @@ import com.example.optoapp.domain.SyncSessionHelper
 import com.example.optoapp.notifications.NotificationHelper
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.auth.SignOutScope
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.auth.providers.Google
@@ -286,7 +287,7 @@ open class AuthDelegate @Inject constructor(
 
     suspend fun logout() {
         try {
-            supabase.auth.signOut()
+            supabase.auth.signOut(SignOutScope.GLOBAL)
         } catch (e: CancellationException) {
             throw e
         } catch (e: IOException) {

@@ -8,7 +8,6 @@ import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -65,8 +64,6 @@ class SessionManager(private val context: Context) : ISessionManager {
         private val IS_PIN_REQUIRED     = booleanPreferencesKey("pref_is_pin_required")
         private val USER_TIMEZONE       = stringPreferencesKey("pref_user_timezone")
         private val PIN_HAS_BEEN_SET    = booleanPreferencesKey("pref_pin_has_been_set")
-        private val REMEMBERED_EMAIL_KEY = stringPreferencesKey("pref_remembered_email")
-        private val REMEMBERED_PASSWORD_KEY = stringPreferencesKey("pref_remembered_password")
     }
 
     // ─── Lectura reactiva ─────────────────────────────────────────────────────
@@ -135,10 +132,6 @@ class SessionManager(private val context: Context) : ISessionManager {
         context.dataStore.edit { prefs -> prefs[PIN_HAS_BEEN_SET] = value }
     }
 
-    suspend fun hasBeenSetAtLeastOnce(): Boolean {
-        return context.dataStore.data.first()[PIN_HAS_BEEN_SET] ?: false
-    }
-
     override suspend fun setPinRequired(required: Boolean) {
         context.dataStore.edit { prefs -> prefs[IS_PIN_REQUIRED] = required }
     }
@@ -150,29 +143,29 @@ class SessionManager(private val context: Context) : ISessionManager {
      * "Recordar Cuenta".
      */
     override suspend fun saveRememberedEmail(email: String) {
-        context.dataStore.edit { prefs -> prefs[REMEMBERED_EMAIL_KEY] = email }
+        encryptedPrefs.edit().putString("pref_remembered_email", email).apply()
     }
 
     /** Recupera el email guardado por "Recordar Cuenta". */
     override suspend fun getRememberedEmail(): String {
-        return context.dataStore.data.first()[REMEMBERED_EMAIL_KEY] ?: ""
+        return encryptedPrefs.getString("pref_remembered_email", "") ?: ""
     }
 
     /** Limpia el email recordado (cuando el usuario desmarca el checkbox). */
     override suspend fun clearRememberedEmail() {
-        context.dataStore.edit { prefs -> prefs.remove(REMEMBERED_EMAIL_KEY) }
+        encryptedPrefs.edit().remove("pref_remembered_email").apply()
     }
 
     override suspend fun saveRememberedPassword(password: String) {
-        context.dataStore.edit { prefs -> prefs[REMEMBERED_PASSWORD_KEY] = password }
+        encryptedPrefs.edit().putString("pref_remembered_password", password).apply()
     }
 
     override suspend fun getRememberedPassword(): String {
-        return context.dataStore.data.first()[REMEMBERED_PASSWORD_KEY] ?: ""
+        return encryptedPrefs.getString("pref_remembered_password", "") ?: ""
     }
 
     override suspend fun clearRememberedPassword() {
-        context.dataStore.edit { prefs -> prefs.remove(REMEMBERED_PASSWORD_KEY) }
+        encryptedPrefs.edit().remove("pref_remembered_password").apply()
     }
 
     override suspend fun clearSession() {
@@ -184,6 +177,8 @@ class SessionManager(private val context: Context) : ISessionManager {
             prefs[IS_LOGGED_IN] = false
             prefs[USER_NAME]    = ""
             prefs[LAST_LOGIN_TS] = 0L
+            prefs[IS_PIN_REQUIRED] = false
+            prefs.remove(USER_TIMEZONE)
         }
     }
 

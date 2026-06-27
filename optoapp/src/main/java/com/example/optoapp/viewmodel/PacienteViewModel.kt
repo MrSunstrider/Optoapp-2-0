@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.example.optoapp.data.OptoRepository
 import java.io.IOException
 import kotlinx.coroutines.CancellationException
+import com.example.optoapp.data.DispensacionOptica
+import com.example.optoapp.data.EvaluacionClinica
 import com.example.optoapp.data.Paciente
 import com.example.optoapp.data.SessionManager
 import com.example.optoapp.data.Resource
@@ -73,6 +75,29 @@ class PacienteViewModel @Inject constructor(
 
     fun onSearchQueryChange(query: String) { _searchQuery.value = query }
     fun setFilter(filter: String?) { _activeFilter.value = if (_activeFilter.value == filter) null else filter }
+
+    private val _lastEvaluacion = MutableStateFlow<Resource<EvaluacionClinica>?>(null)
+    val lastEvaluacion: StateFlow<Resource<EvaluacionClinica>?> = _lastEvaluacion
+
+    private val _lastDispensacion = MutableStateFlow<Resource<DispensacionOptica>?>(null)
+    val lastDispensacion: StateFlow<Resource<DispensacionOptica>?> = _lastDispensacion
+
+    fun loadLastEvaluacion(pacienteId: String) {
+        viewModelScope.launch {
+            _lastEvaluacion.value = Resource.Loading()
+            _lastEvaluacion.value = repository.getLastEvaluacionByPacienteId(pacienteId)
+        }
+    }
+
+    fun loadLastDispensacion(pacienteId: String) {
+        viewModelScope.launch {
+            _lastDispensacion.value = Resource.Loading()
+            _lastDispensacion.value = repository.getLastDispensacionByPacienteId(pacienteId)
+        }
+    }
+
+    fun resetLastEvaluacion() { _lastEvaluacion.value = null }
+    fun resetLastDispensacion() { _lastDispensacion.value = null }
 
     /**
      * Persiste el paciente con el [SessionManager.opticaId] activo y encola sync de pacientes (scope de aplicación).

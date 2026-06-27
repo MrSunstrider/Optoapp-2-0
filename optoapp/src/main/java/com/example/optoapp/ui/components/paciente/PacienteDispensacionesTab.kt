@@ -129,7 +129,13 @@ fun DispensacionesList(
 }
 
 @Composable
-fun ResumenDispensacionDialog(disp: DispensacionOptica, paciente: Paciente, onDismiss: () -> Unit, onEdit: () -> Unit) {
+fun ResumenDispensacionDialog(
+    disp: DispensacionOptica,
+    paciente: Paciente,
+    onDismiss: () -> Unit,
+    onEdit: () -> Unit,
+    onGoToFinanciero: ((DispensacionOptica) -> Unit)? = null,
+) {
     val date = com.example.optoapp.util.DateUtils.formatLocalized(disp.fecha)
 
     AlertDialog(
@@ -224,7 +230,14 @@ fun ResumenDispensacionDialog(disp: DispensacionOptica, paciente: Paciente, onDi
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cerrar") }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (onGoToFinanciero != null) {
+                    TextButton(onClick = { onGoToFinanciero(disp) }) {
+                        Text("Ir a Financiero")
+                    }
+                }
+                TextButton(onClick = onDismiss) { Text("Cerrar") }
+            }
         }
     )
 }

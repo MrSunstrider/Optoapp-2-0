@@ -24,6 +24,12 @@ sealed class AuthState {
     data class Error(val message: String) : AuthState()
 }
 
+sealed class AuthError(val userMessage: String) {
+    data object InvalidCredentials : AuthError("Email o contraseña incorrectos")
+    data object Network : AuthError("Sin conexión a internet")
+    data class Unknown(val raw: String) : AuthError("Error: $raw")
+}
+
 /**
  * ViewModel orquestador que delega la lógica de negocio a tres delegates especializados.
  *
@@ -106,9 +112,9 @@ class AuthViewModel @Inject constructor(
                 when {
                     e.message?.contains("Invalid login credentials", ignoreCase = true) == true ->
                         "Email o contraseña incorrectos"
-                    e.message?.contains("network", ignoreCase = true) == true ->
+                    e is IOException ->
                         "Sin conexión a internet"
-                    else -> "Error: ${e.localizedMessage}"
+                    else -> "Error inesperado: ${e.localizedMessage ?: e.javaClass.simpleName}"
                 }
             )
         }

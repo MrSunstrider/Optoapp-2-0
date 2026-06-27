@@ -16,8 +16,6 @@ import androidx.compose.material.icons.filled.Male
 import androidx.compose.material.icons.filled.Female
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -44,7 +42,12 @@ import com.example.optoapp.util.DateUtils
 import kotlinx.coroutines.launch
 import com.example.optoapp.ui.components.OptoTopAppBar
 import com.example.optoapp.ui.components.OptoCard
+import com.example.optoapp.ui.components.paciente.ResumenDispensacionDialog
+import com.example.optoapp.ui.components.paciente.ResumenEvaluacionDialog
+import com.example.optoapp.data.Resource
 import com.example.optoapp.ui.theme.OptoTokens
+
+private enum class QuickSummaryDialog { NONE, EVAL, DISP }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -56,6 +59,18 @@ fun PacientesListScreen(navController: NavController, drawerState: DrawerState, 
     val canCreateEdit = AppRoles.canCreateEditPacientes(opticaRol)
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+
+    var activeDialog by remember { mutableStateOf(QuickSummaryDialog.NONE) }
+    val lastEvalState by viewModel.lastEvaluacion.collectAsState()
+    val lastDispState by viewModel.lastDispensacion.collectAsState()
+    val closeAndResetEval: () -> Unit = {
+        activeDialog = QuickSummaryDialog.NONE
+        viewModel.resetLastEvaluacion()
+    }
+    val closeAndResetDisp: () -> Unit = {
+        activeDialog = QuickSummaryDialog.NONE
+        viewModel.resetLastDispensacion()
+    }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.surface,
@@ -140,8 +155,14 @@ fun PacientesListScreen(navController: NavController, drawerState: DrawerState, 
                     PacienteCard(
                         paciente = paciente,
                         onClick = { navController.navigate("detallePaciente/${paciente.id}") },
-                        onEdit = { navController.navigate("editarPaciente/${paciente.id}") },
-                        onDelete = { navController.navigate("detallePaciente/${paciente.id}") }
+                        onShowLastEvaluacion = { id ->
+                            activeDialog = QuickSummaryDialog.EVAL
+                            viewModel.loadLastEvaluacion(id)
+                        },
+                        onShowLastDispensacion = { id ->
+                            activeDialog = QuickSummaryDialog.DISP
+                            viewModel.loadLastDispensacion(id)
+                        }
                     )
                 }
             }
@@ -149,8 +170,14 @@ fun PacientesListScreen(navController: NavController, drawerState: DrawerState, 
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun PacienteCard(paciente: Paciente, onClick: () -> Unit, onEdit: () -> Unit, onDelete: () -> Unit) {
+private fun PacienteCard(
+    paciente: Paciente,
+    onClick: () -> Unit,
+    onShowLastEvaluacion: (String) -> Unit,
+    onShowLastDispensacion: (String) -> Unit,
+) {
     OptoCard(
         modifier = Modifier
             .fillMaxWidth()
@@ -247,37 +274,116 @@ private fun PacienteCard(paciente: Paciente, onClick: () -> Unit, onEdit: () -> 
 
                     Spacer(modifier = Modifier.weight(1f))
 
-                    Surface(
-                        onClick = onEdit,
-                        shape = RoundedCornerShape(8.dp),
-                        color = Color(0xFF1976D2).copy(alpha = 0.15f),
-                        modifier = Modifier.size(34.dp)
+                    // Quick-action buttons (E = última evaluación, D = última dispensación)
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(
-                                Icons.Default.Edit,
-                                contentDescription = "Editar",
-                                tint = Color(0xFF1976D2),
-                                modifier = Modifier.size(18.dp)
-                            )
+                        val evalTooltipState = rememberTooltipState(isPersistent = false)
+                        TooltipBox(
+                            positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
+                            tooltip = { PlainTooltip { Text("Última Evaluación") } },
+                            state = evalTooltipState,
+                        ) {
+                            IconButton(
+                                onClick = { onShowLastEvaluacion(paciente.id) },
+                                modifier = Modifier
+                                    .size(32.dp)
+                                    .testTag(TestTags.PACIENTE_CARD_LAST_EVAL_BTN)
+                            ) {
+                                Text("E", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            }
                         }
-                    }
+                        val dispTooltipState = rememberTooltipState(isPersistent = false)
+                        TooltipBox(
+                            positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
+                            tooltip = { PlainTooltip { Text("Última Dispensación") } },
+                            state = dispTooltipState,
+                        ) {
+                            IconButton(
+                                onClick = { onShowLastDispensacion(paciente.id) },
+                                modifier = Modifier
+                                    .size(32.dp)
+                                    .testTag(TestTags.PACIENTE_CARD_LAST_DISP_BTN)
+                            ) {
+                                Text("D", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                }
+            }
+        }
 
-                    Surface(
-                        onClick = onDelete,
-                        shape = RoundedCornerShape(8.dp),
-                        color = Color(0xFFE53935).copy(alpha = 0.15f),
-                        modifier = Modifier.size(34.dp)
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(
-                                Icons.Default.Delete,
-                                contentDescription = "Eliminar",
-                                tint = Color(0xFFE53935),
-                                modifier = Modifier.size(18.dp)
+        when (activeDialog) {
+            QuickSummaryDialog.EVAL -> {
+                lastEvalState?.let { resource ->
+                    when (resource) {
+                        is Resource.Loading -> Unit
+                        is Resource.Success -> {
+                            val eval = resource.data
+                            if (eval != null) {
+                                val paciente = pacientes.find { it.id == eval.pacienteId } ?: pacientes.firstOrNull()
+                                if (paciente != null) {
+                                    ResumenEvaluacionDialog(
+                                        eval = eval,
+                                        paciente = paciente,
+                                        onDismiss = closeAndResetEval,
+                                        onEdit = { /* no-op from list */ }
+                                    )
+                                } else {
+                                    closeAndResetEval()
+                                }
+                            }
+                        }
+                        is Resource.Error<*> -> {
+                            AlertDialog(
+                                onDismissRequest = closeAndResetEval,
+                                title = { Text("Sin Evaluaciones") },
+                                text = { Text(resource.message ?: "No hay evaluaciones") },
+                                confirmButton = {
+                                    TextButton(onClick = closeAndResetEval) { Text("Cerrar") }
+                                }
                             )
                         }
                     }
+                }
+            }
+            QuickSummaryDialog.DISP -> {
+                lastDispState?.let { resource ->
+                    when (resource) {
+                        is Resource.Loading -> Unit
+                        is Resource.Success -> {
+                            val disp = resource.data
+                            if (disp != null) {
+                                val paciente = pacientes.find { it.id == disp.pacienteId } ?: pacientes.firstOrNull()
+                                if (paciente != null) {
+                                    ResumenDispensacionDialog(
+                                        disp = disp,
+                                        paciente = paciente,
+                                        onDismiss = closeAndResetDisp,
+                                        onEdit = { /* no-op from list */ },
+                                        onGoToFinanciero = { target ->
+                                            closeAndResetDisp()
+                                            navController.navigate("editarDispensacion/${target.pacienteId}/${target.id}?focus=financiero")
+                                        }
+                                    )
+                                } else {
+                                    closeAndResetDisp()
+                                }
+                            }
+                        }
+                        is Resource.Error<*> -> {
+                            AlertDialog(
+                                onDismissRequest = closeAndResetDisp,
+                                title = { Text("Sin Dispensaciones") },
+                                text = { Text(resource.message ?: "No hay dispensaciones") },
+                                confirmButton = {
+                                    TextButton(onClick = closeAndResetDisp) { Text("Cerrar") }
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+            QuickSummaryDialog.NONE -> Unit
+        }
                 }
             }
         }

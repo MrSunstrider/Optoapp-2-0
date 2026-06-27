@@ -62,6 +62,7 @@ fun LoginScreen(
     var password        by remember { mutableStateOf("") }
     var showPassword    by remember { mutableStateOf(false) }
     var rememberAccount by remember { mutableStateOf(false) }
+    var loginLocalError by remember { mutableStateOf<String?>(null) }
 
     val isPinRequired by viewModel.isPinRequired.collectAsState(initial = false)
     val isLoggedIn by viewModel.isLoggedIn.collectAsState(initial = false)
@@ -280,9 +281,29 @@ fun LoginScreen(
                         }
                     }
 
+                    loginLocalError?.let { err ->
+                        Surface(
+                            color = MaterialTheme.colorScheme.error.copy(alpha = 0.12f),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text(
+                                text = err,
+                                color = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.padding(12.dp),
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+
                     Button(
                         onClick = {
                             focusManager.clearFocus()
+                            if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+                                loginLocalError = "Ingresa un correo electrónico válido"
+                                return@Button
+                            }
+                            loginLocalError = null
                             viewModel.login(email, password)
                         },
                         enabled  = email.isNotBlank() && password.isNotBlank()

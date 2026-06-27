@@ -96,7 +96,7 @@ fun RegisterScreen(
                 fontWeight = FontWeight.Bold
             )
             Text(
-                text = "Te llegará un correo de confirmación. Haz clic en el enlace para activar tu cuenta, luego inicia sesión y crea tu óptica.",
+                text = "Crea tu cuenta para comenzar a gestionar tu óptica.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -165,7 +165,24 @@ fun RegisterScreen(
                     imeAction = ImeAction.Done
                 ),
                 keyboardActions = androidx.compose.foundation.text.KeyboardActions(
-                    onDone = { focusManager.clearFocus() }
+                    onDone = {
+                        focusManager.clearFocus()
+                        // Trigger same validation as the button
+                        localError = when {
+                            email.isBlank() -> "Ingresa un correo electrónico"
+                            !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches() -> "Ingresa un correo electrónico válido"
+                            password.length < 6 -> "La contraseña debe tener al menos 6 caracteres"
+                            !password.any { it.isLowerCase() } -> "Falta una minúscula en la contraseña"
+                            !password.any { it.isUpperCase() } -> "Falta una MAYÚSCULA en la contraseña"
+                            !password.any { it.isDigit() } -> "Falta un número en la contraseña"
+                            !password.any { !it.isLetterOrDigit() } -> "Falta un símbolo especial en la contraseña"
+                            password != confirmPassword -> "Las contraseñas no coinciden"
+                            else -> null
+                        }
+                        if (localError == null) {
+                            viewModel.register(email, password)
+                        }
+                    }
                 ),
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
@@ -185,6 +202,7 @@ fun RegisterScreen(
                 onClick = {
                     localError = when {
                         email.isBlank() -> "Ingresa un correo electrónico"
+                        !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches() -> "Ingresa un correo electrónico válido"
                         password.length < 6 -> "La contraseña debe tener al menos 6 caracteres"
                         !password.any { it.isLowerCase() } -> "Falta una minúscula en la contraseña"
                         !password.any { it.isUpperCase() } -> "Falta una MAYÚSCULA en la contraseña"

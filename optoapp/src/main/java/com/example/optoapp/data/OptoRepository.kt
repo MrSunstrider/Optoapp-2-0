@@ -55,6 +55,7 @@ open class OptoRepository(
     fun countEvaluacionesInRange(start: LocalDate, end: LocalDate) = pacienteRepo.countEvaluacionesInRange(start, end)
     fun countEvaluacionesInRangeForOptica(start: LocalDate, end: LocalDate, opticaId: String) = pacienteRepo.countEvaluacionesInRangeForOptica(start, end, opticaId)
     suspend fun getEvaluacionById(id: String) = pacienteRepo.getEvaluacionById(id)
+    suspend fun getLastEvaluacionByPacienteId(pacienteId: String) = pacienteRepo.getLastEvaluacionByPacienteId(pacienteId)
     suspend fun deleteEvaluacion(evaluacion: EvaluacionClinica) = pacienteRepo.deleteEvaluacion(evaluacion)
     suspend fun insertEvaluacion(evaluacion: EvaluacionClinica) { val stamped = evaluacion.copy(updatedAt = Instant.now().toString()); pacienteRepo.insertEvaluacion(stamped); postSaveSyncScheduler.get().scheduleHistorialSync(stamped.opticaId) }
     suspend fun updateEvaluacion(evaluacion: EvaluacionClinica) { val stamped = evaluacion.copy(updatedAt = Instant.now().toString()); pacienteRepo.updateEvaluacion(stamped); postSaveSyncScheduler.get().scheduleHistorialSync(stamped.opticaId) }
@@ -69,6 +70,7 @@ open class OptoRepository(
     fun getDispensacionesByDateRange(start: LocalDate, end: LocalDate) = dispensacionRepo.getDispensacionesByDateRange(start, end)
     fun getDispensacionesByDateRangeForOptica(start: LocalDate, end: LocalDate, opticaId: String) = dispensacionRepo.getDispensacionesByDateRangeForOptica(start, end, opticaId)
     suspend fun getDispensacionById(id: String) = dispensacionRepo.getDispensacionById(id)
+    suspend fun getLastDispensacionByPacienteId(pacienteId: String) = dispensacionRepo.getLastDispensacionByPacienteId(pacienteId)
     suspend fun insertDispensacion(dispensacion: DispensacionOptica) { val stamped = dispensacion.copy(updatedAt = Instant.now().toString()); dispensacionRepo.insertDispensacion(stamped); postSaveSyncScheduler.get().scheduleFinanzasSync(stamped.opticaId) }
     suspend fun updateDispensacion(dispensacion: DispensacionOptica) { val stamped = dispensacion.copy(updatedAt = Instant.now().toString()); dispensacionRepo.updateDispensacion(stamped); postSaveSyncScheduler.get().scheduleFinanzasSync(stamped.opticaId) }
     suspend fun deleteDispensacionById(id: String) = dispensacionRepo.deleteDispensacionById(id)

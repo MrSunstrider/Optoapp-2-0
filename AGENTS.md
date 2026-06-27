@@ -74,7 +74,7 @@ supabase.anon.key=your-anon-key
 - **No comments explaining WHAT** — only WHY. Code should be self-documenting.
 - **Kotlin**: `camelCase` / `PascalCase`. **PostgreSQL**: `snake_case`. **Android resources**: `snake_case`.
 - **Room column names are camelCase** — they mirror Kotlin field names. Using snake_case in a query silently matches nothing.
-- **Default PIN `123456`** — hardcoded in Android `SecurityManager`, forced on new installs until user changes it.
+- **Default PIN `999999`** (DEV_FALLBACK_PIN) — exists only for dev/test flows, never auto-assigned. Users create PINs in CreatePinScreen. Weak patterns (including `123456` and `999999`) are blocked at creation time.
 - **Configuration cache enabled** in Gradle — clean with `--no-configuration-cache` if stale.
 - **`IMPROVEMENT-PLAN.md`** catalogs known issues (C1-C4 critical, H1-H11 high) — check before starting new work.
 - **Web companion** lives in a separate GitHub repo (`optoapp-web`) — shares the same Supabase DB.

@@ -63,6 +63,22 @@ class DispensacionRepository(
         }
     }
 
+    suspend fun getLastDispensacionByPacienteId(pacienteId: String): Resource<DispensacionOptica> {
+        return try {
+            val disp = dispensacionDao.getLastDispensacionByPacienteId(pacienteId)
+            if (disp != null) Resource.Success(disp)
+            else Resource.Error("No hay dispensaciones")
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: IOException) {
+            Log.e(TAG, "getLastDispensacionByPacienteId: pacienteId=$pacienteId", e)
+            Resource.Error("Error de red al obtener dispensación")
+        } catch (e: Exception) {
+            Log.e(TAG, "getLastDispensacionByPacienteId: pacienteId=$pacienteId", e)
+            Resource.Error(e.message ?: "Error al obtener dispensación")
+        }
+    }
+
     suspend fun insertDispensacion(dispensacion: DispensacionOptica) {
         dispensacionDao.insertDispensacion(dispensacion)
     }
