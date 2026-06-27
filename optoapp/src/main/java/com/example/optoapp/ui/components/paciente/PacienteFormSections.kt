@@ -13,9 +13,72 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.input.TransformedText
+import androidx.compose.ui.text.input.OffsetMapping
 import com.example.optoapp.testing.TestTags
 import com.example.optoapp.util.DateUtils
 import java.time.LocalDate
+
+/** Shows dd/mm/yyyy formatting without changing the underlying digits-only value */
+private object DateSlashTransformation : VisualTransformation {
+    override fun filter(text: androidx.compose.ui.text.AnnotatedString): TransformedText {
+        val digits = text.text
+        val formatted = buildString {
+            for (i in digits.indices) {
+                if (i == 2 || i == 4) append('/')
+                append(digits[i])
+            }
+        }
+        val offsetMapping = object : OffsetMapping {
+            override fun originalToTransformed(offset: Int): Int {
+                return when {
+                    offset <= 2 -> offset
+                    offset <= 4 -> offset + 1
+                    else -> offset + 2
+                }
+            }
+            override fun transformedToOriginal(offset: Int): Int {
+                return when {
+                    offset <= 2 -> offset
+                    offset <= 5 -> offset - 1
+                    else -> offset - 2
+                }
+            }
+        }
+        return TransformedText(androidx.compose.ui.text.AnnotatedString(formatted), offsetMapping)
+    }
+}
+
+/** Shows "XXX XXX XXX" formatting without changing the underlying digits-only value */
+private object PhoneSpaceTransformation : VisualTransformation {
+    override fun filter(text: androidx.compose.ui.text.AnnotatedString): TransformedText {
+        val digits = text.text
+        val formatted = buildString {
+            for (i in digits.indices) {
+                if (i == 3 || i == 6) append(' ')
+                append(digits[i])
+            }
+        }
+        val offsetMapping = object : OffsetMapping {
+            override fun originalToTransformed(offset: Int): Int {
+                return when {
+                    offset <= 3 -> offset
+                    offset <= 6 -> offset + 1
+                    else -> offset + 2
+                }
+            }
+            override fun transformedToOriginal(offset: Int): Int {
+                return when {
+                    offset <= 3 -> offset
+                    offset <= 7 -> offset - 1
+                    else -> offset - 2
+                }
+            }
+        }
+        return TransformedText(androidx.compose.ui.text.AnnotatedString(formatted), offsetMapping)
+    }
+}
 
 @Composable
 fun PacienteFormSections(
@@ -87,10 +150,11 @@ fun PacienteFormSections(
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         OutlinedTextField(
             value = fechaNacimiento,
-            onValueChange = onFechaNacimientoChange,
+            onValueChange = { onFechaNacimientoChange(it.filter { c -> c.isDigit() }.take(8)) },
             label = { Text("Fecha Nac. (dd/mm/aaaa)") },
             modifier = Modifier.weight(2f).testTag(TestTags.PACIENTE_FECHA_NAC_FIELD),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            visualTransformation = DateSlashTransformation,
             singleLine = true
         )
         OutlinedTextField(
@@ -104,9 +168,10 @@ fun PacienteFormSections(
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         OutlinedTextField(
             value = telefono,
-            onValueChange = onTelefonoChange,
+            onValueChange = { onTelefonoChange(it.filter { c -> c.isDigit() }.take(9)) },
             label = { Text("Teléfono *") },
             modifier = Modifier.weight(1f).testTag(TestTags.PACIENTE_TELEFONO_FIELD),
+            visualTransformation = PhoneSpaceTransformation,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
         )
         OutlinedTextField(

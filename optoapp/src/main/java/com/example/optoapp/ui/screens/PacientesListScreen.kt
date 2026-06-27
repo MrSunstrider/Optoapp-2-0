@@ -51,7 +51,12 @@ private enum class QuickSummaryDialog { NONE, EVAL, DISP }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-fun PacientesListScreen(navController: NavController, drawerState: DrawerState, viewModel: PacienteViewModel = hiltViewModel(), authViewModel: AuthViewModel = hiltViewModel()) {
+fun PacientesListScreen(
+    navController: NavController,
+    drawerState: DrawerState,
+    viewModel: PacienteViewModel = hiltViewModel(),
+    authViewModel: AuthViewModel = hiltViewModel()
+) {
     val pacientes by viewModel.pacientes.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
     val activeFilter by viewModel.activeFilter.collectAsState()
@@ -86,11 +91,12 @@ fun PacientesListScreen(navController: NavController, drawerState: DrawerState, 
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = {
-                if (!canCreateEdit) {
-                    Toast.makeText(context, "Tu rol no permite crear pacientes.", Toast.LENGTH_SHORT).show()
-                } else navController.navigate("nuevoPaciente")
-            },
+            FloatingActionButton(
+                onClick = {
+                    if (!canCreateEdit) {
+                        Toast.makeText(context, "Tu rol no permite crear pacientes.", Toast.LENGTH_SHORT).show()
+                    } else navController.navigate("nuevoPaciente")
+                },
                 modifier = Modifier.navigationBarsPadding()
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Añadir Paciente")
@@ -139,7 +145,13 @@ fun PacientesListScreen(navController: NavController, drawerState: DrawerState, 
                                 }
                             )
                         },
-                        label = { Text(filter, fontSize = 12.sp, fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal) }
+                        label = {
+                            Text(
+                                filter,
+                                fontSize = 12.sp,
+                                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
+                            )
+                        }
                     )
                 }
             }
@@ -167,149 +179,6 @@ fun PacientesListScreen(navController: NavController, drawerState: DrawerState, 
                 }
             }
         }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun PacienteCard(
-    paciente: Paciente,
-    onClick: () -> Unit,
-    onShowLastEvaluacion: (String) -> Unit,
-    onShowLastDispensacion: (String) -> Unit,
-) {
-    OptoCard(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
-        shape = OptoTokens.shapes.large,
-        elevation = 1.dp
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(14.dp)
-        ) {
-            val avatarColor = when {
-                paciente.esMasculino() -> Color(0xFF2196F3)
-                paciente.esFemenino() -> Color(0xFFE91E63)
-                else -> MaterialTheme.colorScheme.primary
-            }
-            val avatarIcon = when {
-                paciente.esMasculino() -> Icons.Default.Male
-                paciente.esFemenino() -> Icons.Default.Female
-                else -> Icons.Default.Person
-            }
-            Surface(
-                modifier = Modifier.size(48.dp),
-                shape = RoundedCornerShape(14.dp),
-                color = avatarColor.copy(alpha = 0.12f)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = avatarIcon,
-                        contentDescription = null,
-                        modifier = Modifier.size(26.dp),
-                        tint = avatarColor
-                    )
-                }
-            }
-
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                Text(
-                    text = paciente.nombreCompleto,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp,
-                    color = when {
-                        paciente.esMasculino() -> Color(0xFF1976D2)
-                        paciente.esFemenino() -> Color(0xFFC2185B)
-                        else -> MaterialTheme.colorScheme.onSurface
-                    },
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Edad: ${paciente.edad}",
-                        fontSize = 13.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = "Tel: ${paciente.telefono}",
-                        fontSize = 13.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    Text(
-                        text = DateUtils.formatLocalized(paciente.fechaCreacion),
-                        fontSize = 11.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-
-                    Text(
-                        text = "·",
-                        fontSize = 11.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-
-                    Text(
-                        text = paciente.id.take(8),
-                        fontSize = 11.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-
-                    Spacer(modifier = Modifier.weight(1f))
-
-                    // Quick-action buttons (E = última evaluación, D = última dispensación)
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(4.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        val evalTooltipState = rememberTooltipState(isPersistent = false)
-                        TooltipBox(
-                            positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
-                            tooltip = { PlainTooltip { Text("Última Evaluación") } },
-                            state = evalTooltipState,
-                        ) {
-                            IconButton(
-                                onClick = { onShowLastEvaluacion(paciente.id) },
-                                modifier = Modifier
-                                    .size(32.dp)
-                                    .testTag(TestTags.PACIENTE_CARD_LAST_EVAL_BTN)
-                            ) {
-                                Text("E", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                            }
-                        }
-                        val dispTooltipState = rememberTooltipState(isPersistent = false)
-                        TooltipBox(
-                            positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
-                            tooltip = { PlainTooltip { Text("Última Dispensación") } },
-                            state = dispTooltipState,
-                        ) {
-                            IconButton(
-                                onClick = { onShowLastDispensacion(paciente.id) },
-                                modifier = Modifier
-                                    .size(32.dp)
-                                    .testTag(TestTags.PACIENTE_CARD_LAST_DISP_BTN)
-                            ) {
-                                Text("D", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                }
-            }
-        }
 
         when (activeDialog) {
             QuickSummaryDialog.EVAL -> {
@@ -325,7 +194,7 @@ private fun PacienteCard(
                                         eval = eval,
                                         paciente = paciente,
                                         onDismiss = closeAndResetEval,
-                                        onEdit = { /* no-op from list */ }
+                                        onEdit = { }
                                     )
                                 } else {
                                     closeAndResetEval()
@@ -358,7 +227,7 @@ private fun PacienteCard(
                                         disp = disp,
                                         paciente = paciente,
                                         onDismiss = closeAndResetDisp,
-                                        onEdit = { /* no-op from list */ },
+                                        onEdit = { },
                                         onGoToFinanciero = { target ->
                                             closeAndResetDisp()
                                             navController.navigate("editarDispensacion/${target.pacienteId}/${target.id}?focus=financiero")
@@ -384,6 +253,116 @@ private fun PacienteCard(
             }
             QuickSummaryDialog.NONE -> Unit
         }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PacienteCard(
+    paciente: Paciente,
+    onClick: () -> Unit,
+    onShowLastEvaluacion: (String) -> Unit,
+    onShowLastDispensacion: (String) -> Unit,
+) {
+    OptoCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        shape = OptoTokens.shapes.large,
+        elevation = 1.dp
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            // Avatar
+            val avatarColor = when {
+                paciente.esMasculino() -> Color(0xFF2196F3)
+                paciente.esFemenino() -> Color(0xFFE91E63)
+                else -> MaterialTheme.colorScheme.primary
+            }
+            val avatarIcon = when {
+                paciente.esMasculino() -> Icons.Default.Male
+                paciente.esFemenino() -> Icons.Default.Female
+                else -> Icons.Default.Person
+            }
+            Surface(
+                modifier = Modifier.size(48.dp),
+                shape = RoundedCornerShape(14.dp),
+                color = avatarColor.copy(alpha = 0.12f)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = avatarIcon,
+                        contentDescription = null,
+                        modifier = Modifier.size(26.dp),
+                        tint = avatarColor
+                    )
+                }
+            }
+
+            // Text info
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Text(
+                    text = paciente.nombreCompleto,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp,
+                    color = when {
+                        paciente.esMasculino() -> Color(0xFF1976D2)
+                        paciente.esFemenino() -> Color(0xFFC2185B)
+                        else -> MaterialTheme.colorScheme.onSurface
+                    },
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Edad: ${paciente.edad}",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "Tel: ${paciente.telefono}",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Text(
+                    text = DateUtils.formatLocalized(paciente.fechaCreacion),
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            // E/D buttons — vertical, centered with card
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                IconButton(
+                    onClick = { onShowLastEvaluacion(paciente.id) },
+                    modifier = Modifier
+                        .size(28.dp)
+                        .testTag(TestTags.PACIENTE_CARD_LAST_EVAL_BTN)
+                ) {
+                    Text("E", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                }
+                IconButton(
+                    onClick = { onShowLastDispensacion(paciente.id) },
+                    modifier = Modifier
+                        .size(28.dp)
+                        .testTag(TestTags.PACIENTE_CARD_LAST_DISP_BTN)
+                ) {
+                    Text("D", fontWeight = FontWeight.Bold, fontSize = 13.sp)
                 }
             }
         }

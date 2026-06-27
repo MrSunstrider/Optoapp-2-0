@@ -58,10 +58,10 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
             p?.let {
                 nombreCompleto = it.nombreCompleto
                 edad = it.edad.toString()
-                telefono = it.telefono
+                telefono = it.telefono.filter { c -> c.isDigit() }
                 dni = it.dni ?: ""
                 historiaOptometrica = it.historiaOptometrica ?: ""
-                fechaNacimiento = it.fechaNacimiento?.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) ?: ""
+                fechaNacimiento = it.fechaNacimiento?.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))?.filter { c -> c.isDigit() } ?: ""
                 sexo = it.sexo ?: "Masculino"
                 email = it.email ?: ""
                 direccion = it.direccion ?: ""
@@ -137,15 +137,15 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
                 edad = edad,
                 onEdadChange = {},
                 telefono = telefono,
-                onTelefonoChange = { telefono = InputFormatters.formatPhoneInput(it) },
+                onTelefonoChange = { telefono = it },
                 dni = dni,
                 onDniChange = { dni = it },
                 historiaOptometrica = historiaOptometrica,
                 onHistoriaOptometricaChange = { historiaOptometrica = it },
                 fechaNacimiento = fechaNacimiento,
-                onFechaNacimientoChange = { raw ->
-                    val formatted = DateUtils.formatDateInput(raw)
-                    fechaNacimiento = formatted
+                onFechaNacimientoChange = { digits ->
+                    fechaNacimiento = digits
+                    val formatted = DateUtils.formatDateInput(digits)
                     edad = try {
                         val parts = formatted.split("/")
                         if (parts.size == 3) {
@@ -208,7 +208,7 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
                                 fechaCreacion = fechaCreacion,
                                 dni = dni,
                                 historiaOptometrica = historiaOptometrica,
-                                fechaNacimiento = fechaNacimiento.takeIf { it.isNotBlank() }?.let { DateUtils.fromDisplayFormat(it) },
+                                fechaNacimiento = fechaNacimiento.takeIf { it.isNotBlank() }?.let { DateUtils.fromDisplayFormat(DateUtils.formatDateInput(it)) },
                                 sexo = sexo,
                                 email = email,
                                 direccion = direccion,

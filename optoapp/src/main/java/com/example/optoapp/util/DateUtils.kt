@@ -62,6 +62,11 @@ object DateUtils {
         }
     }
 
+    /** Strip formatting slashes — returns only digits */
+    fun digitsOnly(formatted: String): String {
+        return formatted.filter { it.isDigit() }
+    }
+
     fun formatLocalized(date: LocalDate): String {
         val formatter = DateTimeFormatter.ofPattern("dd 'de' MMMM 'de' yyyy", Locale.forLanguageTag("es-PE"))
         return date.format(formatter)
