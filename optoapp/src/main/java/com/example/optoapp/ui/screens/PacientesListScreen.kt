@@ -32,13 +32,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.example.optoapp.OptoApplication
 import com.example.optoapp.data.AppRoles
 import com.example.optoapp.data.Paciente
 import com.example.optoapp.viewmodel.AuthViewModel
 import com.example.optoapp.viewmodel.PacienteViewModel
-import com.example.optoapp.viewmodel.SubscriptionViewModel
-import com.example.optoapp.subscription.SubscriptionTier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.example.optoapp.testing.TestTags
 import com.example.optoapp.util.DateUtils
@@ -49,21 +46,14 @@ import com.example.optoapp.ui.theme.OptoTokens
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-fun PacientesListScreen(navController: NavController, drawerState: DrawerState, viewModel: PacienteViewModel = hiltViewModel(), subscriptionVm: SubscriptionViewModel = hiltViewModel(), authViewModel: AuthViewModel = hiltViewModel()) {
+fun PacientesListScreen(navController: NavController, drawerState: DrawerState, viewModel: PacienteViewModel = hiltViewModel(), authViewModel: AuthViewModel = hiltViewModel()) {
     val pacientes by viewModel.pacientes.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
     val activeFilter by viewModel.activeFilter.collectAsState()
-    val canAddPaciente by subscriptionVm.canAddPaciente.collectAsState()
-    val tier by subscriptionVm.tier.collectAsState()
     val opticaRol by authViewModel.opticaRol.collectAsState(initial = "admin")
     val canCreateEdit = AppRoles.canCreateEditPacientes(opticaRol)
     val context = LocalContext.current
-    var showPaywall by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
-
-    LaunchedEffect(Unit) {
-        subscriptionVm.refreshPlanFromServer()
-    }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.surface,
@@ -82,8 +72,7 @@ fun PacientesListScreen(navController: NavController, drawerState: DrawerState, 
             FloatingActionButton(onClick = {
                 if (!canCreateEdit) {
                     Toast.makeText(context, "Tu rol no permite crear pacientes.", Toast.LENGTH_SHORT).show()
-                } else if (canAddPaciente) navController.navigate("nuevoPaciente")
-                else showPaywall = true
+                } else navController.navigate("nuevoPaciente")
             },
                 modifier = Modifier.navigationBarsPadding()
             ) {
@@ -91,39 +80,12 @@ fun PacientesListScreen(navController: NavController, drawerState: DrawerState, 
             }
         }
     ) { padding ->
-        if (showPaywall) {
-            AlertDialog(
-                onDismissRequest = { showPaywall = false },
-                title = { Text("Límite del plan gratuito") },
-                text = {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("Has alcanzado el máximo de pacientes del plan gratuito. Pasa a PRO para registros ilimitados.")
-                        Text("Plan actual: ${if (tier == SubscriptionTier.PRO) "PRO" else "Gratuito"}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                },
-                confirmButton = {
-                    TextButton(
-                        onClick = {
-                            subscriptionVm.launchProPurchase(
-                                onSuccess = { android.widget.Toast.makeText(context, "PRO activado — pacientes ilimitados.", android.widget.Toast.LENGTH_LONG).show() },
-                                onError = { android.widget.Toast.makeText(context, it, android.widget.Toast.LENGTH_LONG).show() }
-                            )
-                            showPaywall = false
-                        }
-                    ) { Text("Actualizar plan") }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showPaywall = false }) { Text("Cerrar") }
-                }
-            )
-        }
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
                 .padding(horizontal = 16.dp)
         ) {
-            // Search bar
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { viewModel.onSearchQueryChange(it) },
@@ -135,7 +97,6 @@ fun PacientesListScreen(navController: NavController, drawerState: DrawerState, 
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Filter chips
             val filters = listOf("Todos", "Saldo Pendiente", "Entrega")
             FlowRow(
                 modifier = Modifier.fillMaxWidth(),
@@ -168,7 +129,6 @@ fun PacientesListScreen(navController: NavController, drawerState: DrawerState, 
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Patient list
             LazyColumn(
                 modifier = Modifier.fillMaxSize().testTag(TestTags.PACIENTE_LISTA),
                 contentPadding = PaddingValues(bottom = 88.dp),
@@ -200,7 +160,6 @@ private fun PacienteCard(paciente: Paciente, onClick: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            // Avatar with sexo-based icon and color
             val avatarColor = when {
                 paciente.esMasculino() -> Color(0xFF2196F3)
                 paciente.esFemenino() -> Color(0xFFE91E63)
@@ -226,7 +185,6 @@ private fun PacienteCard(paciente: Paciente, onClick: () -> Unit) {
                 }
             }
 
-            // Patient info
             Column(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
@@ -282,7 +240,6 @@ private fun PacienteCard(paciente: Paciente, onClick: () -> Unit) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
 
-                    // Tags/chips
                     paciente.ultimasEtiquetas.take(2).forEach { etiqueta ->
                         Surface(
                             shape = RoundedCornerShape(6.dp),

@@ -17,7 +17,6 @@ import androidx.navigation.NavController
 import com.example.optoapp.data.Paciente
 import com.example.optoapp.testing.TestTags
 import com.example.optoapp.viewmodel.PacienteViewModel
-import com.example.optoapp.viewmodel.SubscriptionViewModel
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.example.optoapp.ui.components.paciente.PacienteFormSections
 import com.example.optoapp.util.DateUtils
@@ -30,15 +29,9 @@ import com.example.optoapp.ui.components.OptoTopAppBar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null, viewModel: PacienteViewModel = hiltViewModel(), subscriptionVm: SubscriptionViewModel = hiltViewModel()) {
+fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null, viewModel: PacienteViewModel = hiltViewModel()) {
     val scope = rememberCoroutineScope()
     val ctx = LocalContext.current
-    val canAdd by subscriptionVm.canAddPaciente.collectAsState()
-    var showPaywall by remember { mutableStateOf(false) }
-
-    LaunchedEffect(Unit) {
-        subscriptionVm.refreshPlanFromServer()
-    }
 
     var nombreCompleto by remember { mutableStateOf("") }
     var edad by remember { mutableStateOf("") }
@@ -86,26 +79,6 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
         initialSelectedDateMillis = DateUtils.localDateToPickerMillis(fechaCreacion),
         yearRange = 1920..2080
     )
-
-    if (showPaywall) {
-        AlertDialog(
-            onDismissRequest = { showPaywall = false },
-            title = { Text("Límite del plan gratuito") },
-            text = { Text("No puedes crear más pacientes en el plan gratuito. Actualiza a PRO desde Configuración o compra desde aquí.") },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        subscriptionVm.launchProPurchase(
-                            onSuccess = { Toast.makeText(ctx, "PRO activado — pacientes ilimitados.", Toast.LENGTH_LONG).show() },
-                            onError = { Toast.makeText(ctx, it, Toast.LENGTH_LONG).show() }
-                        )
-                        showPaywall = false
-                    }
-                ) { Text("Actualizar plan") }
-            },
-            dismissButton = { TextButton(onClick = { showPaywall = false }) { Text("Cerrar") } }
-        )
-    }
 
     if (showDatePicker) {
         DatePickerDialog(
@@ -226,10 +199,6 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
                 Button(
                     onClick = {
                         if (saving) return@Button
-                        if (pacienteId == null && !canAdd) {
-                            showPaywall = true
-                            return@Button
-                        }
                         if (nombreCompleto.isNotBlank() && edad.isNotBlank() && telefono.isNotBlank()) {
                             val p = Paciente(
                                 id = pacienteId ?: UUID.randomUUID().toString(),

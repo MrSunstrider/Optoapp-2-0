@@ -40,7 +40,6 @@ class AuthViewModel @Inject constructor(
 
     companion object { private const val TAG = "AuthViewModel" }
 
-    //── Estado PIN ─────────────────────────────────────────────────────────────
 
     val pinInput: StateFlow<String> = pinDelegate.pinInput
 
@@ -60,7 +59,6 @@ class AuthViewModel @Inject constructor(
         pinDelegate.togglePinRequired(enabled)
     }
 
-    //── Estado Supabase Auth ───────────────────────────────────────────────────
 
     private val _authState = MutableStateFlow<AuthState>(AuthState.Idle)
     val authState: StateFlow<AuthState> = _authState.asStateFlow()
@@ -84,7 +82,6 @@ class AuthViewModel @Inject constructor(
 
     suspend fun isSessionTimeValid(): Boolean = authDelegate.isSessionTimeValid()
 
-    //── Login ──────────────────────────────────────────────────────────────────
 
     fun login(email: String, password: String) = viewModelScope.launch {
         _authState.value = AuthState.Loading
@@ -207,7 +204,6 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-    //── Recordar Cuenta ────────────────────────────────────────────────────────
 
     fun saveRememberedEmail(email: String) = viewModelScope.launch {
         authDelegate.saveRememberedEmail(email)
@@ -229,7 +225,6 @@ class AuthViewModel @Inject constructor(
         authDelegate.clearRememberedPassword()
     }
 
-    //── Logout ─────────────────────────────────────────────────────────────────
 
     suspend fun logout() {
         authDelegate.logout()
@@ -237,7 +232,6 @@ class AuthViewModel @Inject constructor(
         _authState.value = AuthState.Idle
     }
 
-    //── Restaurar sesión al inicio ─────────────────────────────────────────────
 
     fun checkExistingSession() = viewModelScope.launch {
         try {
@@ -258,7 +252,6 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-    //── Onboarding ─────────────────────────────────────────────────────────────
 
     fun completeOnboardingOptica(
         nombreOptica: String, fiscalDocTipo: String, fiscalDocNumero: String,
@@ -292,7 +285,6 @@ class AuthViewModel @Inject constructor(
         onFinished(authDelegate.resolveDuplicateHistorias())
     }
 
-    //── Backup ─────────────────────────────────────────────────────────────────
 
     suspend fun getBackupJson(): String = backupDelegate.getBackupJson()
 
@@ -300,16 +292,12 @@ class AuthViewModel @Inject constructor(
         onFinished(backupDelegate.restoreBackup(json))
     }
 
-    //── Helpers ────────────────────────────────────────────────────────────────
 
     private fun friendlyOpticaError(raw: String): String = when {
         raw.contains("límite de ópticas", ignoreCase = true) ||
-            raw.contains("max_opticas", ignoreCase = true) ->
-            "Has alcanzado el límite de ópticas de tu plan. Actualiza tu plan para crear más sedes."
-        raw.contains("permission", ignoreCase = true) ||
-            raw.contains("policy", ignoreCase = true) ||
-            raw.contains("RLS", ignoreCase = true) ->
-            "No tienes permisos para crear una nueva óptica con esta cuenta."
+            raw.contains("max_opticas", ignoreCase = true) ||
+            raw.contains("límite de 2", ignoreCase = true) ->
+            "Has alcanzado el límite de 2 ópticas del plan gratuito."
         raw.contains("Sesión requerida", ignoreCase = true) ||
             raw.contains("sesión requerida", ignoreCase = true) ->
             "Revisa tu correo electrónico y confirma la cuenta. Luego inicia sesión para crear tu óptica."
