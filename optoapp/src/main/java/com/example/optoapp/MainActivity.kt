@@ -23,6 +23,7 @@ import com.example.optoapp.ui.theme.OptoAppTheme
 import com.example.optoapp.domain.observer.MembershipObserver
 import com.example.optoapp.util.UpdateChecker
 import com.example.optoapp.viewmodel.AuthViewModel
+import com.example.optoapp.viewmodel.RecoveryState
 import dagger.hilt.android.AndroidEntryPoint
 import io.github.jan.supabase.SupabaseClient
 import javax.inject.Inject
@@ -33,6 +34,11 @@ class MainActivity : ComponentActivity() {
 
     @Inject lateinit var supabaseClient: SupabaseClient
     @Inject lateinit var supabaseObserver: com.example.optoapp.domain.observer.MembershipObserver
+
+    private fun isRecoveryDeepLink(intent: Intent?): Boolean {
+        val fragment = intent?.data?.fragment ?: return false
+        return fragment.contains("type=recovery")
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -45,7 +51,11 @@ class MainActivity : ComponentActivity() {
         }
 
         if (intent?.action == Intent.ACTION_VIEW) {
-            authViewModel.handleAuthDeepLinkIntent(intent)
+            if (isRecoveryDeepLink(intent)) {
+                authViewModel.handleRecoveryDeepLink(intent)
+            } else {
+                authViewModel.handleAuthDeepLinkIntent(intent)
+            }
         }
 
         // P0-T4: validar sesión Supabase al arranque vs. confiar ciegamente en DataStore
@@ -74,7 +84,11 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
-        authViewModel.handleAuthDeepLinkIntent(intent)
+        if (isRecoveryDeepLink(intent)) {
+            authViewModel.handleRecoveryDeepLink(intent)
+        } else {
+            authViewModel.handleAuthDeepLinkIntent(intent)
+        }
     }
 }
 
@@ -89,8 +103,8 @@ fun OptoAppNavigation(
     val isLoggedIn by authViewModel.isLoggedIn.collectAsState(initial = null)
     val pinHasBeenSet by authViewModel.pinHasBeenSet.collectAsState(initial = null)
     val isPinRequired by authViewModel.isPinRequired.collectAsState(initial = null)
+    val recoveryState by authViewModel.recoveryState.collectAsState()
 
-    // isLoggedIn cambia de null→true; el LaunchedEffect se re-dispara solo cuando hay sesión activa.
     var updateInfo by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<UpdateChecker.UpdateInfo?>(null) }
     LaunchedEffect(isLoggedIn) {
         if (isLoggedIn == true) {
@@ -102,11 +116,23 @@ fun OptoAppNavigation(
     }
 
     // Guardia global: si la sesión se invalida, volver al login vaciando la pila
+    // No interfiere con el flujo de recuperación de contraseña
     LaunchedEffect(isLoggedIn) {
-        if (isLoggedIn == false) {
+        if (isLoggedIn == false
+            && recoveryState !is RecoveryState.LinkReceived
+            && recoveryState !is RecoveryState.PasswordUpdated) {
             navController.navigate("login") {
                 popUpTo(navController.graph.id) { inclusive = true }
             }
+        }
+    }
+
+    LaunchedEffect(recoveryState) {
+        when (recoveryState) {
+            is RecoveryState.LinkReceived -> {
+                navController.navigate("new_password")
+            }
+            else -> {} // PasswordUpdated lo maneja NewPasswordScreen (mensaje + botón)
         }
     }
 
@@ -124,6 +150,12 @@ fun OptoAppNavigation(
         }
         composable("seleccion_optica") { SeleccionOpticaScreen(navController, viewModel = authViewModel) }
         composable("main") { MainDrawerScreen(navController, authViewModel = authViewModel) }
+        composable("recovery") {
+            RecoveryScreen(navController = navController, viewModel = authViewModel)
+        }
+        composable("new_password") {
+            NewPasswordScreen(navController = navController, viewModel = authViewModel)
+        }
     }
 
     // UpdateCheck sobrevive a la navegación — se muestra sobre la pantalla activa

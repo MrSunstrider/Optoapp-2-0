@@ -110,4 +110,32 @@
     <string name="config_profile_email_label">Email</string>
     <string name="config_profile_rol_label">Rol en óptica</string>
     <string name="config_profile_version_label">Versión</string>
+
+    <!-- Recovery -->
+    <string name="login_forgot_password">¿Olvidaste tu contraseña?</string>
+    <string name="recovery_title">Recuperar cuenta</string>
+    <string name="recovery_subtitle">Ingresá el correo con el que te registraste</string>
+    <string name="recovery_email_label">Correo electrónico</string>
+    <string name="recovery_send_button">Enviar enlace de recuperación</string>
+    <string name="recovery_sending">Enviando…</string>
+    <string name="recovery_success_title">Correo enviado</string>
+    <string name="recovery_success_message">Si existe una cuenta con ese correo, vas a recibir un enlace para restablecer tu contraseña.</string>
+    <string name="recovery_error_email_invalid">Ingresá un correo electrónico válido</string>
+    <string name="recovery_error_generic">No se pudo enviar el correo. Intentá de nuevo más tarde.</string>
+    <string name="recovery_back_to_login">Volver a inicio de sesión</string>
+
+    <!-- New Password -->
+    <string name="new_password_title">Nueva contraseña</string>
+    <string name="new_password_subtitle">Elegí una contraseña nueva para tu cuenta</string>
+    <string name="new_password_label">Nueva contraseña</string>
+    <string name="new_password_confirm_label">Confirmar contraseña</string>
+    <string name="new_password_save_button">Guardar contraseña</string>
+    <string name="new_password_saving">Guardando…</string>
+    <string name="new_password_success_title">Contraseña actualizada</string>
+    <string name="new_password_success_message">Tu contraseña se actualizó correctamente. Ahora podés iniciar sesión.</string>
+    <string name="new_password_error_weak">Debe tener al menos 6 caracteres, una mayúscula, una minúscula, un número y un símbolo.</string>
+    <string name="new_password_error_mismatch">Las contraseñas no coinciden.</string>
+    <string name="new_password_error_expired">El enlace de recuperación no es válido o expiró. Solicitá uno nuevo.</string>
+    <string name="new_password_error_generic">No se pudo actualizar la contraseña. El enlace puede haber expirado.</string>
+    <string name="new_password_to_login">Volver a iniciar sesión</string>
 </resources>

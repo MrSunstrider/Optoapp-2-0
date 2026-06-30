@@ -30,6 +30,15 @@ sealed class AuthError(val userMessage: String) {
     data class Unknown(val raw: String) : AuthError("Error: $raw")
 }
 
+sealed class RecoveryState {
+    data object Idle : RecoveryState()
+    data object Loading : RecoveryState()
+    data object EmailSent : RecoveryState()
+    data object LinkReceived : RecoveryState()
+    data object PasswordUpdated : RecoveryState()
+    data class Error(val message: String) : RecoveryState()
+}
+
 /**
  * ViewModel orquestador que delega la lógica de negocio a tres delegates especializados.
  *
@@ -87,6 +96,49 @@ class AuthViewModel @Inject constructor(
     val pendingMemberships: StateFlow<List<OpticaMembership>> = _pendingMemberships.asStateFlow()
 
     suspend fun isSessionTimeValid(): Boolean = authDelegate.isSessionTimeValid()
+
+
+    private val _recoveryState = MutableStateFlow<RecoveryState>(RecoveryState.Idle)
+    val recoveryState: StateFlow<RecoveryState> = _recoveryState.asStateFlow()
+
+    fun sendRecoveryEmail(email: String) = viewModelScope.launch {
+        _recoveryState.value = RecoveryState.Loading
+        try {
+            authDelegate.sendRecoveryEmail(email)
+            _recoveryState.value = RecoveryState.EmailSent
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.e(TAG, "Error enviando recovery email", e)
+            _recoveryState.value = RecoveryState.Error(
+                "No se pudo enviar el correo. Intentá de nuevo más tarde."
+            )
+        }
+    }
+
+    fun handleRecoveryDeepLink(intent: Intent?) = viewModelScope.launch {
+        _recoveryState.value = RecoveryState.Loading
+        val error = authDelegate.handleRecoveryDeepLink(intent)
+        if (error != null) {
+            _recoveryState.value = RecoveryState.Error(error)
+            return@launch
+        }
+        _recoveryState.value = RecoveryState.LinkReceived
+    }
+
+    fun updatePassword(newPassword: String) = viewModelScope.launch {
+        _recoveryState.value = RecoveryState.Loading
+        val error = authDelegate.updatePassword(newPassword)
+        if (error != null) {
+            _recoveryState.value = RecoveryState.Error(error)
+            return@launch
+        }
+        _recoveryState.value = RecoveryState.PasswordUpdated
+    }
+
+    fun resetRecoveryState() {
+        _recoveryState.value = RecoveryState.Idle
+    }
 
 
     fun login(email: String, password: String) = viewModelScope.launch {
@@ -163,7 +215,6 @@ class AuthViewModel @Inject constructor(
             _authState.value = AuthState.Error(error)
             return@launch
         }
-        // Sesión activa, resolver post-login (membresías u onboarding)
         try {
             val r = authDelegate.resolvePostLogin(
                 emailFallback = email,
