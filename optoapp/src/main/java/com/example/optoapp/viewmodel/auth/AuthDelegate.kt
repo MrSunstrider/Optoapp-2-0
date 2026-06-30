@@ -6,6 +6,8 @@ import android.util.Log
 import androidx.core.content.edit
 import java.io.IOException
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import com.example.optoapp.BuildConfig
 import com.example.optoapp.data.ISecurityManager
 import com.example.optoapp.data.ISessionManager
@@ -279,6 +281,71 @@ open class AuthDelegate @Inject constructor(
                     requiresSelection = false,
                     requiresOnboarding = true
                 )
+            }
+        }
+    }
+
+    //── Recovery ──────────────────────────────────────────────────────────────
+
+    /** Token crudo del recovery link, para usarlo en la llamada REST directa */
+    private var pendingRecoveryToken: String = ""
+
+    suspend fun sendRecoveryEmail(email: String) {
+        supabase.auth.resetPasswordForEmail(
+            email = email,
+            redirectUrl = "optoapp://auth"
+        )
+    }
+
+    suspend fun handleRecoveryDeepLink(intent: Intent?): String? {
+        val deepLink = intent?.data ?: return "Enlace inválido"
+        Log.d(TAG, "Recibido deeplink recovery: $deepLink")
+        val fragment = deepLink.fragment ?: return "Enlace inválido"
+        val params = fragment.split("&").mapNotNull { pair ->
+            val parts = pair.split("=", limit = 2)
+            if (parts.size == 2) parts[0] to parts[1] else null
+        }.toMap()
+        val accessToken = params["access_token"] ?: return "El enlace de recuperación no es válido o expiró."
+        pendingRecoveryToken = accessToken
+        return null // éxito — el token se usará en updatePassword via REST directa
+    }
+
+    /**
+     * Actualiza la contraseña llamando DIRECTAMENTE a la REST API de Supabase
+     * con el token crudo del recovery link, en vez de usar supabase-kt.
+     * Esto evita el error "bad_jwt: missing sub claim" del token de sesión.
+     */
+    suspend fun updatePassword(newPassword: String): String? {
+        val token = pendingRecoveryToken
+        pendingRecoveryToken = ""
+        if (token.isBlank()) return "Sesión de recuperación no válida."
+
+        return withContext(kotlinx.coroutines.Dispatchers.IO) {
+            try {
+                val url = java.net.URL("${BuildConfig.SUPABASE_URL}/auth/v1/user")
+                val conn = url.openConnection() as java.net.HttpURLConnection
+                conn.requestMethod = "PUT"
+                conn.setRequestProperty("Authorization", "Bearer $token")
+                conn.setRequestProperty("apikey", BuildConfig.SUPABASE_ANON_KEY)
+                conn.setRequestProperty("Content-Type", "application/json")
+                conn.doOutput = true
+                val json = "{\"password\":\"$newPassword\"}"
+                conn.outputStream.write(json.toByteArray(Charsets.UTF_8))
+                val code = conn.responseCode
+                conn.disconnect()
+                if (code in 200..299) null
+                else {
+                    val errorBody = try {
+                        conn.errorStream?.bufferedReader()?.readText() ?: ""
+                    } catch (_: Exception) { "" }
+                    Log.e(TAG, "Error actualizando contraseña via REST: HTTP $code $errorBody")
+                    "No se pudo actualizar la contraseña. (código $code)"
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.e(TAG, "Error en llamada REST updatePassword", e)
+                e.localizedMessage ?: "No se pudo actualizar la contraseña."
             }
         }
     }

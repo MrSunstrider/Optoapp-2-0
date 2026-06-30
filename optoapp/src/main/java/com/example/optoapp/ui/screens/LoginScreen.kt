@@ -131,7 +131,7 @@ fun LoginScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
 
-            Spacer(modifier = Modifier.height(72.dp))
+            Spacer(modifier = Modifier.height(40.dp))
 
             val blurRadius = remember { Animatable(50f) }
             LaunchedEffect(Unit) {
@@ -150,11 +150,10 @@ fun LoginScreen(
                         painter = painterResource(com.example.optoapp.R.drawable.logo_login),
                         contentDescription = "OptoApp",
                         modifier = Modifier
-                            .fillMaxWidth(0.55f)
+                            .fillMaxWidth(0.45f)
                             .clip(androidx.compose.foundation.shape.RoundedCornerShape(16.dp))
                             .blur(radiusX = blurRadius.value.dp, radiusY = blurRadius.value.dp)
                     )
-                    Spacer(modifier = Modifier.height(16.dp))
                     Text(
                         text = "Optoapp",
                         style = MaterialTheme.typography.displayLarge,
@@ -183,8 +182,10 @@ fun LoginScreen(
                 tonalElevation = 2.dp
             ) {
                 Column(
-                    modifier = Modifier.padding(24.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
 
                     OutlinedTextField(
@@ -192,7 +193,7 @@ fun LoginScreen(
                         onValueChange = { email = it.trim() },
                         label = { Text("Correo electrónico") },
                         leadingIcon = {
-                            Icon(Icons.Default.Email, contentDescription = null)
+                            Icon(Icons.Default.Email, contentDescription = "Icono de correo electrónico")
                         },
                         keyboardOptions = KeyboardOptions(
                             keyboardType = KeyboardType.Email,
@@ -211,7 +212,7 @@ fun LoginScreen(
                         onValueChange = { password = it },
                         label = { Text("Contraseña") },
                         leadingIcon = {
-                            Icon(Icons.Default.Lock, contentDescription = null)
+                            Icon(Icons.Default.Lock, contentDescription = "Icono de contraseña")
                         },
                         trailingIcon = {
                             IconButton(onClick = { showPassword = !showPassword }) {
@@ -240,6 +241,18 @@ fun LoginScreen(
                         modifier   = Modifier.fillMaxWidth().testTag(TestTags.LOGIN_PASSWORD_FIELD),
                         shape = RoundedCornerShape(12.dp)
                     )
+
+                    TextButton(
+                        onClick = { navController.navigate("recovery") },
+                        modifier = Modifier.fillMaxWidth().align(Alignment.End)
+                    ) {
+                        Text(
+                            text = "¿Olvidaste tu contraseña?",
+                            color = MaterialTheme.colorScheme.primary,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
 
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -342,7 +355,7 @@ fun LoginScreen(
                     ) {
                         Icon(
                             painter = painterResource(com.example.optoapp.R.drawable.ic_google_logo),
-                            contentDescription = null,
+                            contentDescription = "Logo de Google",
                             modifier = Modifier.size(20.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
@@ -372,7 +385,7 @@ fun LoginScreen(
             }
 
             Text(
-                text = "Si ya tienes cuenta, contacta al administrador de tu óptica.",
+                text = "¿Problemas con tu cuenta? Contacta al administrador de tu óptica.",
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
