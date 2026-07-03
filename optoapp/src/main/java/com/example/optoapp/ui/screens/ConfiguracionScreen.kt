@@ -171,7 +171,7 @@ fun ConfiguracionScreen(
                     onAssignRole = { roleVm.assignRole() }, onRefresh = { roleVm.loadMembers() })
             }
             SubscriptionCard(planCode = planCode, devProOverride = devProOverride, subscriptionVm = subscriptionVm, context = context)
-            SyncDiagnosticsCard(syncDiagVm = syncDiagVm, context = context)
+            SyncDiagnosticsCard(syncDiagVm = syncDiagVm)
             DataManagementCard(canManageBackups = canManageBackups, createBackupLauncher = createBackupLauncher, restoreBackupLauncher = restoreBackupLauncher)
         }
     }

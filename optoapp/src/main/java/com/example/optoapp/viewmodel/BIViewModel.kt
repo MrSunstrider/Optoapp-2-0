@@ -42,7 +42,8 @@ private data class BiCoreFlows(
     val examenesActual: Int,
     val examenesAnterior: Int,
     val dispensaciones: List<DispensacionOptica>,
-    val pagos: List<Pago>
+    val pagos: List<Pago>,
+    val servicios: List<ServicioExtra>
 )
 
 @HiltViewModel
@@ -78,16 +79,18 @@ class BIViewModel @Inject constructor(
                         repository.countEvaluacionesInRangeForOptica(ranges.first, ranges.second, opticaId),
                         repository.countEvaluacionesInRangeForOptica(prevRanges.first, prevRanges.second, opticaId),
                         repository.getDispensacionesByDateRangeForOptica(ranges.first, ranges.second, opticaId),
-                        repository.getPagosByDateRangeForOptica(ranges.first, ranges.second, opticaId)
-                    ) { e1, e2, disp, pag ->
-                        BiCoreFlows(e1, e2, disp, pag)
+                        repository.getPagosByDateRangeForOptica(ranges.first, ranges.second, opticaId),
+                        repository.getAllServiciosForOptica(opticaId)
+                    ) { e1, e2, disp, pag, serv ->
+                        BiCoreFlows(e1, e2, disp, pag, serv)
                     },
                     repository.getMonturasByOptica(opticaId),
                     repository.getMovimientosMonturaByOptica(opticaId)
                 ) { core, monturas, movimientos ->
                     val dispensaciones = core.dispensaciones
                     val pagos = core.pagos
-                    val proyectada = dispensaciones.sumOf { it.montoTotal }
+                    val servicios = core.servicios.filter { it.fecha >= ranges.first && it.fecha <= ranges.second }
+                    val proyectada = dispensaciones.sumOf { it.montoTotal } + servicios.sumOf { it.montoTotal }
                     val cobrada = pagos.sumOf { it.monto }
 
                     val entregasPendientes = dispensaciones.count { it.estadoEntrega.equals("Pendiente", ignoreCase = true) }

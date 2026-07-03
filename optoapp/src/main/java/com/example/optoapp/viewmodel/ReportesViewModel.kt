@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Pago
+import com.example.optoapp.data.ServicioExtra
 import com.example.optoapp.data.SessionManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
@@ -80,13 +81,33 @@ class ReportesViewModel @Inject constructor(
             }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val totalVendido: StateFlow<Double> = allDispensaciones
-        .map { list -> list.sumOf { it.montoTotal } }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val allServiciosDelPeriodo: StateFlow<List<ServicioExtra>> = sessionManager.opticaId
+        .flatMapLatest { opticaId ->
+            combine(
+                repository.getAllServiciosForOptica(opticaId),
+                _periodo,
+                _anio,
+                _fechaDiario
+            ) { list, p, a, fd ->
+                val now = LocalDate.now()
+                list.filter { servicio -> dentroDelPeriodo(servicio.fecha, p, a, fd, now) }
+            }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val totalPagado: StateFlow<Double> = allDispensaciones
-        .map { list -> list.sumOf { it.montoPagado } }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
+    val totalVendido: StateFlow<Double> = combine(
+        allDispensaciones,
+        allServiciosDelPeriodo
+    ) { disps, servs ->
+        disps.sumOf { it.montoTotal } + servs.sumOf { it.montoTotal }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
+
+    val totalPagado: StateFlow<Double> = combine(
+        allDispensaciones,
+        allServiciosDelPeriodo
+    ) { disps, servs ->
+        disps.sumOf { it.montoPagado } + servs.sumOf { it.aCuenta }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val totalCobrado: StateFlow<Double> = sessionManager.opticaId
@@ -120,14 +141,20 @@ class ReportesViewModel @Inject constructor(
                 val (start, end) = periodDateRange(p, a, fd, now)
                 combine(
                     repository.getPagosByDateRangeForOptica(start, end, opticaId),
-                    repository.getAllDispensacionesForOptica(opticaId)
-                ) { pagos, todasDisp ->
+                    repository.getAllDispensacionesForOptica(opticaId),
+                    repository.getAllServiciosForOptica(opticaId)
+                ) { pagos, todasDisp, todasServ ->
                     val dispMap = todasDisp.associateBy { it.id }
+                    val servMap = todasServ.associateBy { it.id }
                     pagos.filter { pago -> dentroDelPeriodo(pago.fecha, p, a, fd, now) }
                         .sumOf { pago ->
                             val dispFecha = pago.dispensacionId?.let { dispMap[it]?.fecha }
-                            if (dispFecha != null && dentroDelPeriodo(dispFecha, p, a, fd, now)) 0.0
-                            else pago.monto
+                            when {
+                                dispFecha != null && dentroDelPeriodo(dispFecha, p, a, fd, now) -> 0.0
+                                pago.dispensacionId == null && pago.servicioExtraId?.let { servMap[it]?.fecha }
+                                    ?.let { dentroDelPeriodo(it, p, a, fd, now) } == true -> 0.0
+                                else -> pago.monto
+                            }
                         }
                 }
             }

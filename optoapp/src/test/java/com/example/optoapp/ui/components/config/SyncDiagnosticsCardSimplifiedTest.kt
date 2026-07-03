@@ -25,22 +25,18 @@ class SyncDiagnosticsCardSimplifiedTest {
         val paramTypes = method.parameterTypes
         val paramNames = paramTypes.map { it.simpleName }
 
-        // After simplification: only SyncDiagnosticsViewModel and Context
+        // After simplification: accepts SyncDiagnosticsViewModel (no Context)
         assertTrue(
             "Debe aceptar SyncDiagnosticsViewModel (encontrado: $paramNames)",
             paramTypes.any { it.simpleName == "SyncDiagnosticsViewModel" }
         )
-        assertTrue(
-            "Debe aceptar Context (encontrado: $paramNames)",
-            paramTypes.any { it.simpleName == "Context" }
-        )
 
-        // Must NOT accept removed params
-        val forbidden = listOf("List", "SyncTelemetryRemoteRow", "Boolean", "String")
+        // Must NOT accept removed params (Context, List, etc.)
+        val forbidden = listOf("Context", "List", "SyncTelemetryRemoteRow", "Boolean", "String")
         val paramSimpleNames = paramTypes.map { it.simpleName }
         val violations = forbidden.filter { it in paramSimpleNames }
         assertTrue(
-            "No debe aceptar parámetros de lista/telemetría/loading (violaciones: $violations)",
+            "No debe aceptar parámetros: Context/lista/telemetría/loading (violaciones: $violations)",
             violations.isEmpty()
         )
     }
