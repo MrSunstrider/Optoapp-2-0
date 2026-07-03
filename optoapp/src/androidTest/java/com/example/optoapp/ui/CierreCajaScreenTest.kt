@@ -30,10 +30,12 @@ class CierreCajaScreenTest {
         metodoPago: String = "Efectivo",
         monto: Double = 50.0,
         dispensacionId: String? = null,
+        servicioExtraId: String? = null,
         nota: String = ""
     ) = Pago(
         id = id,
         dispensacionId = dispensacionId,
+        servicioExtraId = servicioExtraId,
         fecha = LocalDate.now(),
         tipo = "abono",
         monto = monto,
@@ -81,7 +83,7 @@ class CierreCajaScreenTest {
 
     @Test
     fun transactionItem_withoutDispensacionId_showsServicioExtraLabel() {
-        val pago = fakePago("p-1", dispensacionId = null, monto = 80.0)
+        val pago = fakePago("p-1", dispensacionId = null, servicioExtraId = "serv-1", monto = 80.0)
 
         composeTestRule.setContent { TransactionItem(pago) }
 
