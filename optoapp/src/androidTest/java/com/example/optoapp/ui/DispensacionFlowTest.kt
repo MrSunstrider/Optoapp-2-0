@@ -4,13 +4,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -42,23 +41,12 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import java.time.LocalDate
 
-/**
- * Compose UI tests for the Dispensación (Optical Dispensing) form.
- *
- * Tests [PagosSection] (payment information, abonos, totals) and verifies
- * key form fields via [TestTags]. [DispensacionUiState] is a simple data
- * class instantiated directly — no ViewModel required.
- *
- * @see com.example.optoapp.ui.screens.NuevaDispensacionScreen
- */
 @RunWith(AndroidJUnit4::class)
 @LargeTest
 class DispensacionFlowTest {
 
     @get:Rule
     val composeTestRule = createComposeRule()
-
-    // ── PagosSection (Información Financiera) ────────────────────────────────
 
     @Test
     fun pagosSection_showsTitle() {
@@ -197,16 +185,12 @@ class DispensacionFlowTest {
             )
         }
 
-        // Saldo should be 500 - 200 = 300
+
         composeTestRule.onNodeWithText("s/. 300.00").assertIsDisplayed()
     }
 
-    // ── OT Field ──────────────────────────────────────────────────────────────
-
     @Test
     fun otField_isDisplayed() {
-        // The OT field uses OptoTextField with DISPENSACION_OT_FIELD tag.
-        // We test it independently using the OptoTextField component.
         composeTestRule.setContent {
             com.example.optoapp.ui.components.OptoTextField(
                 value = "",
@@ -238,8 +222,6 @@ class DispensacionFlowTest {
 
         assertEquals("OT-2026-0001", otValue)
     }
-
-    // ── Form Fields (main dispensación form) ──────────────────────────────
 
     @Test
     fun montoTotalField_isDisplayed() {
@@ -302,7 +284,7 @@ class DispensacionFlowTest {
                     readOnly = true,
                     label = { Text("Tipo de Lente") },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                    modifier = Modifier.menuAnchor().fillMaxWidth().testTag("tipoLenteDropdown")
+                    modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true).fillMaxWidth().testTag("tipoLenteDropdown")
                 )
                 ExposedDropdownMenu(
                     expanded = expanded,
@@ -331,9 +313,9 @@ class DispensacionFlowTest {
     @Test
     fun tipoLenteDropdown_showsOptions_whenExpanded() {
         composeTestRule.setContent { TipoLenteDropdownHarness() }
-        // Click to expand
+
         composeTestRule.onNodeWithTag("tipoLenteDropdown").performClick()
-        // Lejos is the default selected value, so it appears in both the field and the dropdown
+
         // Check for unique options that don't appear in the collapsed field
         composeTestRule.onNodeWithText("Cerca").assertIsDisplayed()
         composeTestRule.onNodeWithText("Bifocal").assertIsDisplayed()

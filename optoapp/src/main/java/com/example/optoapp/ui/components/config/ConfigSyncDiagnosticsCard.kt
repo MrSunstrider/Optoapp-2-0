@@ -14,9 +14,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -29,6 +31,7 @@ import com.example.optoapp.data.SyncEntityState
 import com.example.optoapp.ui.theme.OptoTokens
 import com.example.optoapp.viewmodel.SessionRepairState
 import com.example.optoapp.viewmodel.SyncDiagnosticsViewModel
+
 @Composable
 fun SyncDiagnosticsCard(
     syncDiagVm: SyncDiagnosticsViewModel
@@ -39,21 +42,22 @@ fun SyncDiagnosticsCard(
     val remoteTelemetryError by syncDiagVm.remoteTelemetryError.collectAsState()
     val errorRows by syncDiagVm.errorRows.collectAsState()
     val backgroundErrors by syncDiagVm.backgroundErrors.collectAsState()
-    val clipboardManager = LocalClipboardManager.current
+    val scope = rememberCoroutineScope()
+    val clipboardManager = LocalClipboard.current
 
     Card(
         shape = OptoTokens.shapes.medium,
         elevation = CardDefaults.cardElevation(defaultElevation = OptoTokens.elevation.level1)
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            // ── Title ───────────────────────────────────────────────────────
+
             Text(
                 stringResource(R.string.config_sync_diag_section_title),
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
             )
 
-            // ── Session health ──────────────────────────────────────────────
+
             val (sessionIcon, sessionColor, sessionLabel) = when {
                 sessionHealth.hasValidSession -> Triple(
                     Icons.Filled.CheckCircle,
@@ -86,7 +90,7 @@ fun SyncDiagnosticsCard(
 
             HorizontalDivider()
 
-            // ── Remote telemetry ────────────────────────────────────────────
+
             Text(
                 stringResource(R.string.config_sync_last_status),
                 fontSize = 12.sp,
@@ -157,7 +161,7 @@ fun SyncDiagnosticsCard(
                 Text(stringResource(R.string.config_sync_verify_now))
             }
 
-            // ── Session repair ─────────────────────────────────────────────
+
             val sessionRepairState by syncDiagVm.sessionRepairState.collectAsState()
             when (val s = sessionRepairState) {
                 is SessionRepairState.Idle -> {
@@ -198,7 +202,7 @@ fun SyncDiagnosticsCard(
 
             HorizontalDivider()
 
-            // ── Local error rows ────────────────────────────────────────────
+
             Text(
                 stringResource(R.string.config_sync_local_errors_title),
                 fontWeight = FontWeight.SemiBold,
@@ -259,7 +263,7 @@ fun SyncDiagnosticsCard(
                             val text = errorRows.joinToString("\n---\n") { row ->
                                 "[${row.entityType}] ${row.entityId}\n${row.lastError}"
                             }
-                            clipboardManager.setText(AnnotatedString(text))
+                            scope.launch { clipboardManager.setText(AnnotatedString(text)) }
                         },
                         modifier = Modifier.weight(1f)
                     ) {
@@ -277,7 +281,7 @@ fun SyncDiagnosticsCard(
                 }
             }
 
-            // ── Background errors ───────────────────────────────────────────
+
             if (backgroundErrors.isNotEmpty()) {
                 HorizontalDivider()
 
