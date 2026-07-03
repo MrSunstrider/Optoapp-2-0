@@ -3,6 +3,7 @@ package com.example.optoapp.viewmodel
 import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Pago
+import com.example.optoapp.data.ServicioExtra
 import com.example.optoapp.data.SessionManager
 import io.mockk.every
 import io.mockk.mockk
@@ -71,6 +72,7 @@ class ReportesViewModelOtrosPeriodosTest {
         repository = mockk(relaxed = true)
         sessionManager = mockk(relaxed = true)
         every { sessionManager.opticaId } returns flowOf(opticaId)
+        every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(emptyList())
     }
 
     @After
@@ -330,6 +332,114 @@ class ReportesViewModelOtrosPeriodosTest {
         advanceUntilIdle()
 
         assertEquals("Todo totalVendido should include all", 300.0, viewModel.totalVendido.value, 0.001)
+    }
+
+    // ===================================================================
+    // Servicios Extra inclusion across periods
+    // ===================================================================
+
+    @Test
+    fun `Semanal totalVendido and totalPagado include servicios extra`() = runTest(testDispatcher) {
+        val dispensaciones = listOf(
+            DispensacionOptica(id = "d1", pacienteId = "p", fecha = currentMonday, montoTotal = 100.0, montoPagado = 60.0, opticaId = opticaId)
+        )
+        val servicios = listOf(
+            ServicioExtra(id = "s1", descripcion = "Servicio", montoTotal = 50.0, aCuenta = 25.0, estado = "Entregado", fecha = currentMonday, opticaId = opticaId)
+        )
+        every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
+        every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(servicios)
+
+        viewModel = ReportesViewModel(repository, sessionManager)
+        activateFlows()
+        viewModel.setPeriodo("Semanal")
+        advanceUntilIdle()
+
+        assertEquals("Semanal totalVendido should include servicios extra", 150.0, viewModel.totalVendido.value, 0.001)
+        assertEquals("Semanal totalPagado should include servicios extra aCuenta", 85.0, viewModel.totalPagado.value, 0.001)
+    }
+
+    @Test
+    fun `Este mes totalVendido and totalPagado include servicios extra`() = runTest(testDispatcher) {
+        val now = LocalDate.now()
+        val dispensaciones = listOf(
+            DispensacionOptica(id = "d1", pacienteId = "p", fecha = now, montoTotal = 100.0, montoPagado = 60.0, opticaId = opticaId)
+        )
+        val servicios = listOf(
+            ServicioExtra(id = "s1", descripcion = "Servicio", montoTotal = 50.0, aCuenta = 25.0, estado = "Entregado", fecha = now, opticaId = opticaId)
+        )
+        every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
+        every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(servicios)
+
+        viewModel = ReportesViewModel(repository, sessionManager)
+        activateFlows()
+        viewModel.setPeriodo("Este mes")
+        advanceUntilIdle()
+
+        assertEquals("Este mes totalVendido should include servicios extra", 150.0, viewModel.totalVendido.value, 0.001)
+        assertEquals("Este mes totalPagado should include servicios extra aCuenta", 85.0, viewModel.totalPagado.value, 0.001)
+    }
+
+    @Test
+    fun `Este año totalVendido and totalPagado include servicios extra`() = runTest(testDispatcher) {
+        val now = LocalDate.now()
+        val dispensaciones = listOf(
+            DispensacionOptica(id = "d1", pacienteId = "p", fecha = now, montoTotal = 100.0, montoPagado = 60.0, opticaId = opticaId)
+        )
+        val servicios = listOf(
+            ServicioExtra(id = "s1", descripcion = "Servicio", montoTotal = 50.0, aCuenta = 25.0, estado = "Entregado", fecha = now, opticaId = opticaId)
+        )
+        every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
+        every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(servicios)
+
+        viewModel = ReportesViewModel(repository, sessionManager)
+        activateFlows()
+        viewModel.setPeriodo("Este año")
+        advanceUntilIdle()
+
+        assertEquals("Este año totalVendido should include servicios extra", 150.0, viewModel.totalVendido.value, 0.001)
+        assertEquals("Este año totalPagado should include servicios extra aCuenta", 85.0, viewModel.totalPagado.value, 0.001)
+    }
+
+    @Test
+    fun `Anual totalVendido and totalPagado include servicios extra`() = runTest(testDispatcher) {
+        val yearDate = LocalDate.of(2025, 6, 1)
+        val dispensaciones = listOf(
+            DispensacionOptica(id = "d1", pacienteId = "p", fecha = yearDate, montoTotal = 100.0, montoPagado = 60.0, opticaId = opticaId)
+        )
+        val servicios = listOf(
+            ServicioExtra(id = "s1", descripcion = "Servicio", montoTotal = 50.0, aCuenta = 25.0, estado = "Entregado", fecha = yearDate, opticaId = opticaId)
+        )
+        every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
+        every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(servicios)
+
+        viewModel = ReportesViewModel(repository, sessionManager)
+        activateFlows()
+        viewModel.setPeriodo("Anual")
+        viewModel.setAnio("2025")
+        advanceUntilIdle()
+
+        assertEquals("Anual totalVendido should include servicios extra", 150.0, viewModel.totalVendido.value, 0.001)
+        assertEquals("Anual totalPagado should include servicios extra aCuenta", 85.0, viewModel.totalPagado.value, 0.001)
+    }
+
+    @Test
+    fun `Todo totalVendido and totalPagado include servicios extra`() = runTest(testDispatcher) {
+        val dispensaciones = listOf(
+            DispensacionOptica(id = "d1", pacienteId = "p", fecha = LocalDate.of(2020, 1, 1), montoTotal = 100.0, montoPagado = 60.0, opticaId = opticaId)
+        )
+        val servicios = listOf(
+            ServicioExtra(id = "s1", descripcion = "Servicio", montoTotal = 50.0, aCuenta = 25.0, estado = "Entregado", fecha = LocalDate.of(2020, 1, 1), opticaId = opticaId)
+        )
+        every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
+        every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(servicios)
+
+        viewModel = ReportesViewModel(repository, sessionManager)
+        activateFlows()
+        viewModel.setPeriodo("Todo")
+        advanceUntilIdle()
+
+        assertEquals("Todo totalVendido should include servicios extra", 150.0, viewModel.totalVendido.value, 0.001)
+        assertEquals("Todo totalPagado should include servicios extra aCuenta", 85.0, viewModel.totalPagado.value, 0.001)
     }
 
     @Test

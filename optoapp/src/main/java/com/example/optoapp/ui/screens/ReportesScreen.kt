@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.example.optoapp.data.DispensacionOptica
+import com.example.optoapp.data.ServicioExtra
 import com.example.optoapp.viewmodel.ReportesViewModel
 import com.example.optoapp.ui.components.DropdownField
 import com.example.optoapp.util.DateUtils
@@ -34,6 +35,7 @@ import com.example.optoapp.ui.components.OptoCard
 fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hiltViewModel()) {
     val context = LocalContext.current
     val dispensaciones by viewModel.allDispensaciones.collectAsState()
+    val serviciosExtra by viewModel.allServiciosDelPeriodo.collectAsState()
     val scope = rememberCoroutineScope()
     
     val periodo by viewModel.periodo.collectAsState()
@@ -85,6 +87,7 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                                 val pdf = ReporteFinancieroPdfGenerator.generate(
                                     context = context,
                                     dispensaciones = dispensaciones,
+                                    serviciosExtra = serviciosExtra,
                                     periodo = periodo,
                                     totalVendido = totalVendido,
                                     porCobrar = porCobrar,
@@ -204,8 +207,8 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                if (dispensaciones.isEmpty()) {
-                    item { Text("No hay transacciones registradas este día", color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                if (dispensaciones.isEmpty() && serviciosExtra.isEmpty()) {
+                    item { Text("No hay transacciones registradas en este período", color = MaterialTheme.colorScheme.onSurfaceVariant) }
                 } else {
                     items(dispensaciones) { disp ->
                         val date = DateUtils.formatLocalized(disp.fecha)
@@ -213,11 +216,26 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                             Row(modifier = Modifier.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(date, fontWeight = FontWeight.Bold)
-                                    Text("Pago: ${disp.metodoPago}", fontSize = 12.sp)
+                                    Text("Dispensación · ${disp.metodoPago}", fontSize = 12.sp)
                                 }
                                 Column(horizontalAlignment = Alignment.End) {
                                     Text("s/. ${disp.montoTotal}", fontWeight = FontWeight.Bold)
                                     Text("Saldo: s/. ${String.format(java.util.Locale.getDefault(), "%.2f", disp.montoTotal - disp.montoPagado)}", fontSize = 12.sp, color = if (disp.montoTotal - disp.montoPagado > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface)
+                                }
+                            }
+                        }
+                    }
+                    items(serviciosExtra) { serv ->
+                        val date = DateUtils.formatLocalized(serv.fecha)
+                        OptoCard(modifier = Modifier.fillMaxWidth()) {
+                            Row(modifier = Modifier.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(date, fontWeight = FontWeight.Bold)
+                                    Text("Servicio Extra · ${serv.descripcion}", fontSize = 12.sp)
+                                }
+                                Column(horizontalAlignment = Alignment.End) {
+                                    Text("s/. ${serv.montoTotal}", fontWeight = FontWeight.Bold)
+                                    Text("Pagado: s/. ${String.format(java.util.Locale.getDefault(), "%.2f", serv.aCuenta)}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface)
                                 }
                             }
                         }

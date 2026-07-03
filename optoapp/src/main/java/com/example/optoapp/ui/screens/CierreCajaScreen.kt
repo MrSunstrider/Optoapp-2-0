@@ -218,6 +218,29 @@ fun CierreCajaScreen(
                 }
             }
 
+            if (uiState.serviciosExtraHoy.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.3f))
+                ) {
+                    Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text("Servicios Extra", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                            Text("s/. ${String.format(Locale.getDefault(), "%.2f", uiState.totalServiciosExtra)}",
+                                fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.secondary)
+                        }
+                        uiState.serviciosExtraHoy.forEach { serv ->
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text(serv.descripcion, fontSize = 12.sp, modifier = Modifier.weight(1f))
+                                Text("s/. ${String.format(Locale.getDefault(), "%.2f", serv.montoTotal)}",
+                                    fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                            }
+                        }
+                    }
+                }
+            }
+
             Spacer(modifier = Modifier.height(16.dp))
 
             ArqueoSection(

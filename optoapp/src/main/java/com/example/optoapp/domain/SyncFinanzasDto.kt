@@ -116,7 +116,7 @@ data class PagoRemoto(
         fecha = LocalDate.parse(fecha),
         tipo = tipo,
         monto = monto,
-        metodoPago = metodoPago,
+        metodoPago = metodoPago.remotoServicioExtraMetodoToLocal(),
         nota = nota ?: "",
         opticaId = opticaId.trim().ifBlank { FinanzasRemoteDefaults.OPTICA_ID_FALLBACK },
         updatedAt = updatedAt,

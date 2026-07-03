@@ -5,6 +5,7 @@ import android.graphics.Paint
 import android.graphics.Typeface
 import android.graphics.pdf.PdfDocument
 import com.example.optoapp.data.DispensacionOptica
+import com.example.optoapp.data.ServicioExtra
 import java.io.File
 import java.io.FileOutputStream
 import java.util.Locale
@@ -18,6 +19,7 @@ object ReporteFinancieroPdfGenerator {
     fun generate(
         context: Context,
         dispensaciones: List<DispensacionOptica>,
+        serviciosExtra: List<ServicioExtra> = emptyList(),
         periodo: String,
         totalVendido: Double,
         porCobrar: Double,
@@ -102,6 +104,29 @@ object ReporteFinancieroPdfGenerator {
             canvas.drawText("S/ ${disp.montoTotal.toMoney()}", MARGIN + 340f, y, textPaint)
             canvas.drawText("S/ ${saldo.toMoney()}", MARGIN + 450f, y, textPaint)
             y += ROW_H
+        }
+
+        if (serviciosExtra.isNotEmpty()) {
+            if (y + ROW_H > PAGE_H - MARGIN) newPage()
+            y += 6f
+            canvas.drawLine(MARGIN, y, PAGE_W - MARGIN, y, textPaint)
+            y += 10f
+            canvas.drawText("SERVICIOS EXTRA", MARGIN, y, subtitlePaint)
+            y += 14f
+            canvas.drawText("Descripción", MARGIN, y, headerPaint)
+            canvas.drawText("Monto", MARGIN + 340f, y, headerPaint)
+            canvas.drawText("Pagado", MARGIN + 450f, y, headerPaint)
+            y += 8f
+            canvas.drawLine(MARGIN, y, PAGE_W - MARGIN, y, textPaint)
+            y += 12f
+
+            serviciosExtra.forEach { serv ->
+                if (y + ROW_H > PAGE_H - MARGIN) newPage()
+                canvas.drawText(serv.descripcion.take(28), MARGIN, y, textPaint)
+                canvas.drawText("S/ ${serv.montoTotal.toMoney()}", MARGIN + 340f, y, textPaint)
+                canvas.drawText("S/ ${serv.aCuenta.toMoney()}", MARGIN + 450f, y, textPaint)
+                y += ROW_H
+            }
         }
 
         doc.finishPage(page)

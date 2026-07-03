@@ -3,6 +3,7 @@ package com.example.optoapp.viewmodel
 import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Pago
+import com.example.optoapp.data.ServicioExtra
 import com.example.optoapp.data.SessionManager
 import com.example.optoapp.data.arqueo.ArqueoCaja
 import io.mockk.every
@@ -54,6 +55,7 @@ class CierreCajaViewModelTest {
         sessionManager = mockk(relaxed = true)
         every { sessionManager.opticaId } returns flowOf(opticaId)
         every { sessionManager.userTimeZone } returns flowOf(null)
+        every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(emptyList())
     }
 
     @After
@@ -132,6 +134,145 @@ class CierreCajaViewModelTest {
         testDispatcher.scheduler.advanceUntilIdle()
 
         assertEquals(150.0, viewModel.uiState.value.saldoPendiente, 0.001)
+    }
+
+    // -----------------------------------------------------------------------
+    // Servicios Extra desglose and dual-ID classification
+    // -----------------------------------------------------------------------
+
+    @Test
+    fun totalVentasHoy_sums_only_dispensaciones() = runTest(testDispatcher) {
+        val dispensaciones = listOf(
+            DispensacionOptica(id = "d1", pacienteId = "pac1", fecha = today, montoTotal = 300.0, opticaId = opticaId)
+        )
+        val servicios = listOf(
+            ServicioExtra(id = "s1", descripcion = "Servicio", montoTotal = 150.0, aCuenta = 50.0, estado = "Entregado", fecha = today, opticaId = opticaId)
+        )
+        every { repository.getPagosByDateRangeForOptica(today, today, opticaId) } returns flowOf(emptyList())
+        every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
+        every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(servicios)
+
+        viewModel = CierreCajaViewModel(repository, sessionManager)
+        viewModel.setFecha(today)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals("totalVentasHoy must remain disp-only", 300.0, viewModel.uiState.value.totalVentasHoy, 0.001)
+    }
+
+    @Test
+    fun totalServiciosExtra_includes_today_servicios() = runTest(testDispatcher) {
+        val servicios = listOf(
+            ServicioExtra(id = "s1", descripcion = "Servicio 1", montoTotal = 100.0, aCuenta = 50.0, estado = "Entregado", fecha = today, opticaId = opticaId),
+            ServicioExtra(id = "s2", descripcion = "Servicio 2", montoTotal = 50.0, aCuenta = 25.0, estado = "Entregado", fecha = yesterday, opticaId = opticaId)
+        )
+        every { repository.getPagosByDateRangeForOptica(today, today, opticaId) } returns flowOf(emptyList())
+        every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(emptyList())
+        every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(servicios)
+
+        viewModel = CierreCajaViewModel(repository, sessionManager)
+        viewModel.setFecha(today)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals("totalServiciosExtra must sum today's servicios", 100.0, viewModel.uiState.value.totalServiciosExtra, 0.001)
+        assertEquals("serviciosExtraHoy must contain only today's servicios", 1, viewModel.uiState.value.serviciosExtraHoy.size)
+    }
+
+    @Test
+    fun totalGeneral_equals_totalVentasHoy_plus_totalServiciosExtra() = runTest(testDispatcher) {
+        val dispensaciones = listOf(
+            DispensacionOptica(id = "d1", pacienteId = "pac1", fecha = today, montoTotal = 300.0, opticaId = opticaId)
+        )
+        val servicios = listOf(
+            ServicioExtra(id = "s1", descripcion = "Servicio", montoTotal = 150.0, aCuenta = 50.0, estado = "Entregado", fecha = today, opticaId = opticaId)
+        )
+        every { repository.getPagosByDateRangeForOptica(today, today, opticaId) } returns flowOf(emptyList())
+        every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
+        every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(servicios)
+
+        viewModel = CierreCajaViewModel(repository, sessionManager)
+        viewModel.setFecha(today)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals("totalGeneral must be sum of both totals", 450.0, viewModel.uiState.value.totalGeneral, 0.001)
+    }
+
+    @Test
+    fun saldoPendiente_equals_totalGeneral_minus_ventasHoy() = runTest(testDispatcher) {
+        val pagos = listOf(
+            Pago(id = "p1", fecha = today, tipo = "Efectivo", monto = 200.0, opticaId = opticaId, dispensacionId = "d1")
+        )
+        val dispensaciones = listOf(
+            DispensacionOptica(id = "d1", pacienteId = "pac1", fecha = today, montoTotal = 300.0, opticaId = opticaId)
+        )
+        val servicios = listOf(
+            ServicioExtra(id = "s1", descripcion = "Servicio", montoTotal = 150.0, aCuenta = 50.0, estado = "Entregado", fecha = today, opticaId = opticaId)
+        )
+        every { repository.getPagosByDateRangeForOptica(today, today, opticaId) } returns flowOf(pagos)
+        every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
+        every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(servicios)
+
+        viewModel = CierreCajaViewModel(repository, sessionManager)
+        viewModel.setFecha(today)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals("saldoPendiente must be totalGeneral - ventasHoy", 250.0, viewModel.uiState.value.saldoPendiente, 0.001)
+    }
+
+    @Test
+    fun ventasHoy_includes_pago_linked_to_today_servicioExtra() = runTest(testDispatcher) {
+        val pagos = listOf(
+            Pago(id = "p1", fecha = today, tipo = "Efectivo", monto = 75.0, opticaId = opticaId, servicioExtraId = "s1")
+        )
+        val servicios = listOf(
+            ServicioExtra(id = "s1", descripcion = "Servicio", montoTotal = 100.0, aCuenta = 75.0, estado = "Entregado", fecha = today, opticaId = opticaId)
+        )
+        every { repository.getPagosByDateRangeForOptica(today, today, opticaId) } returns flowOf(pagos)
+        every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(emptyList())
+        every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(servicios)
+
+        viewModel = CierreCajaViewModel(repository, sessionManager)
+        viewModel.setFecha(today)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals("Payment for today's servicio extra must go to ventasHoy", 75.0, viewModel.uiState.value.ventasHoy, 0.001)
+        assertEquals("No cobros atrasados for same-day servicio payment", 0.0, viewModel.uiState.value.cobrosAtrasados, 0.001)
+    }
+
+    @Test
+    fun cobrosAtrasados_includes_pago_linked_to_older_servicioExtra() = runTest(testDispatcher) {
+        val pagos = listOf(
+            Pago(id = "p1", fecha = today, tipo = "Efectivo", monto = 75.0, opticaId = opticaId, servicioExtraId = "s1")
+        )
+        val servicios = listOf(
+            ServicioExtra(id = "s1", descripcion = "Servicio", montoTotal = 100.0, aCuenta = 75.0, estado = "Entregado", fecha = yesterday, opticaId = opticaId)
+        )
+        every { repository.getPagosByDateRangeForOptica(today, today, opticaId) } returns flowOf(pagos)
+        every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(emptyList())
+        every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(servicios)
+
+        viewModel = CierreCajaViewModel(repository, sessionManager)
+        viewModel.setFecha(today)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals("Payment for older servicio extra must go to cobrosAtrasados", 75.0, viewModel.uiState.value.cobrosAtrasados, 0.001)
+        assertEquals("ventasHoy must not include older servicio payment", 0.0, viewModel.uiState.value.ventasHoy, 0.001)
+    }
+
+    @Test
+    fun orphan_pago_contributes_to_ventasHoy() = runTest(testDispatcher) {
+        val pagos = listOf(
+            Pago(id = "p1", fecha = today, tipo = "Efectivo", monto = 80.0, opticaId = opticaId, dispensacionId = null, servicioExtraId = null)
+        )
+        every { repository.getPagosByDateRangeForOptica(today, today, opticaId) } returns flowOf(pagos)
+        every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(emptyList())
+        every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(emptyList())
+
+        viewModel = CierreCajaViewModel(repository, sessionManager)
+        viewModel.setFecha(today)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals("Orphan payment must stay in ventasHoy", 80.0, viewModel.uiState.value.ventasHoy, 0.001)
+        assertEquals("Orphan payment must not be a cobro atrasado", 0.0, viewModel.uiState.value.cobrosAtrasados, 0.001)
     }
 
     // -----------------------------------------------------------------------
@@ -368,5 +509,34 @@ class CierreCajaViewModelTest {
         assertEquals(0.0, state.ventasHoy, 0.001)
         assertEquals(0.0, state.cobrosAtrasados, 0.001)
         assertTrue("pagos must be empty when no pagos returned", state.pagos.isEmpty())
+    }
+
+    // -----------------------------------------------------------------------
+    // Test 12: getTotalesPorMetodo normalizes "Sin especificar" into ""
+    // -----------------------------------------------------------------------
+    @Test
+    fun getTotalesPorMetodo_groupsSinEspecificarWithEmptyString() = runTest(testDispatcher) {
+        val pagosHoy = listOf(
+            Pago(id = "p1", fecha = today, tipo = "Efectivo", monto = 100.0, metodoPago = "Efectivo", opticaId = opticaId),
+            Pago(id = "p2", fecha = today, tipo = "Efectivo", monto = 50.0,  metodoPago = "Sin especificar", opticaId = opticaId),
+            Pago(id = "p3", fecha = today, tipo = "Efectivo", monto = 30.0,  metodoPago = "", opticaId = opticaId),
+            Pago(id = "p4", fecha = today, tipo = "Tarjeta", monto = 200.0, metodoPago = "Tarjeta", opticaId = opticaId)
+        )
+        val dispensaciones = emptyList<DispensacionOptica>()
+
+        every { repository.getPagosByDateRangeForOptica(today, today, opticaId) } returns flowOf(pagosHoy)
+        every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
+
+        viewModel = CierreCajaViewModel(repository, sessionManager)
+        viewModel.setFecha(today)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val totales = viewModel.getTotalesPorMetodo()
+
+        // "Sin especificar" (50) + "" (30) should be grouped together under ""
+        assertEquals(80.0, totales[""] ?: 0.0, 0.001)
+        assertEquals(100.0, totales["Efectivo"] ?: 0.0, 0.001)
+        assertEquals(200.0, totales["Tarjeta"] ?: 0.0, 0.001)
+        assertEquals("getTotalesPorMetodo should have exactly 3 keys", 3, totales.size)
     }
 }

@@ -99,6 +99,14 @@
     <string name="config_sync_last_at_format">Última sync: %1$s</string>
     <string name="config_sync_unavailable">No disponible</string>
     <string name="config_sync_verify_now">Verificar sync ahora</string>
+    <string name="config_sync_remote_error">Error al consultar servidor: %1$s</string>
+    <string name="config_sync_local_errors_title">Errores locales de sincronización</string>
+    <string name="config_sync_bg_errors_title">Errores en segundo plano</string>
+    <string name="config_sync_bg_errors_empty">Sin errores en segundo plano.</string>
+    <string name="config_sync_bg_errors_clear">Limpiar errores</string>
+    <string name="config_sync_repair_session">Reparar sesión</string>
+    <string name="config_sync_repair_working">Reparando…</string>
+    <string name="config_sync_repair_desc">El ID de óptica no es válido. Revisá la sesión contra el servidor para corregirlo.</string>
     <string name="config_section_security">SEGURIDAD Y ACCESO</string>
     <string name="config_section_system">SISTEMA</string>
     <string name="config_section_optica_data">DATOS DE LA ÓPTICA</string>

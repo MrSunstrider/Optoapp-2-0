@@ -3,6 +3,7 @@ package com.example.optoapp.viewmodel
 import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Pago
+import com.example.optoapp.data.ServicioExtra
 import com.example.optoapp.data.SessionManager
 import io.mockk.every
 import io.mockk.mockk
@@ -57,6 +58,7 @@ class ReportesViewModelDiarioTest {
         repository = mockk(relaxed = true)
         sessionManager = mockk(relaxed = true)
         every { sessionManager.opticaId } returns flowOf(opticaId)
+        every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(emptyList())
     }
 
     @After
@@ -301,6 +303,134 @@ class ReportesViewModelDiarioTest {
         assertEquals(0.0, viewModel.totalPagado.value, 0.001)
         assertEquals(0.0, viewModel.totalCobrado.value, 0.001)
         assertEquals(0.0, viewModel.cobrosPeriodo.value, 0.001)
+    }
+
+    // ===================================================================
+    // Servicios Extra inclusion in totals
+    // ===================================================================
+
+    @Test
+    fun `totalVendido includes ServicioExtra montoTotal when on the selected date`() = runTest(testDispatcher) {
+        val dispensaciones = listOf(
+            DispensacionOptica(id = "d1", pacienteId = "p1", fecha = today, montoTotal = 100.0, opticaId = opticaId)
+        )
+        val servicios = listOf(
+            ServicioExtra(id = "s1", descripcion = "Lente de contacto", montoTotal = 40.0, aCuenta = 20.0, estado = "Entregado", fecha = today, opticaId = opticaId)
+        )
+        every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
+        every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(servicios)
+
+        viewModel = ReportesViewModel(repository, sessionManager)
+        activateFlows()
+        viewModel.setPeriodo("Diario")
+        viewModel.setFechaDiario(today)
+        advanceUntilIdle()
+
+        assertEquals("totalVendido should include disp + servicio montoTotal", 140.0, viewModel.totalVendido.value, 0.001)
+    }
+
+    @Test
+    fun `totalPagado includes ServicioExtra aCuenta when on the selected date`() = runTest(testDispatcher) {
+        val dispensaciones = listOf(
+            DispensacionOptica(id = "d1", pacienteId = "p1", fecha = today, montoTotal = 100.0, montoPagado = 60.0, opticaId = opticaId)
+        )
+        val servicios = listOf(
+            ServicioExtra(id = "s1", descripcion = "Lente de contacto", montoTotal = 40.0, aCuenta = 20.0, estado = "Entregado", fecha = today, opticaId = opticaId)
+        )
+        every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
+        every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(servicios)
+
+        viewModel = ReportesViewModel(repository, sessionManager)
+        activateFlows()
+        viewModel.setPeriodo("Diario")
+        viewModel.setFechaDiario(today)
+        advanceUntilIdle()
+
+        assertEquals("totalPagado should include disp montoPagado + servicio aCuenta", 80.0, viewModel.totalPagado.value, 0.001)
+    }
+
+    @Test
+    fun `cobrosPeriodo does NOT count pago linked to servicioExtraId from the selected date`() = runTest(testDispatcher) {
+        val servicios = listOf(
+            ServicioExtra(id = "s1", descripcion = "Lente de contacto", montoTotal = 40.0, aCuenta = 20.0, estado = "Entregado", fecha = today, opticaId = opticaId)
+        )
+        val pagos = listOf(
+            Pago(id = "p1", fecha = today, tipo = "Efectivo", monto = 20.0, opticaId = opticaId, servicioExtraId = "s1")
+        )
+        every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(emptyList())
+        every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(servicios)
+        every { repository.getPagosByDateRangeForOptica(any(), any(), opticaId) } returns flowOf(pagos)
+
+        viewModel = ReportesViewModel(repository, sessionManager)
+        activateFlows()
+        viewModel.setPeriodo("Diario")
+        viewModel.setFechaDiario(today)
+        advanceUntilIdle()
+
+        assertEquals("Payment for today's servicio extra should not be a cobro atrasado", 0.0, viewModel.cobrosPeriodo.value, 0.001)
+    }
+
+    @Test
+    fun `cobrosPeriodo DOES count pago linked to servicioExtraId from a different date`() = runTest(testDispatcher) {
+        val servicios = listOf(
+            ServicioExtra(id = "s1", descripcion = "Lente de contacto", montoTotal = 40.0, aCuenta = 20.0, estado = "Entregado", fecha = yesterday, opticaId = opticaId)
+        )
+        val pagos = listOf(
+            Pago(id = "p1", fecha = today, tipo = "Efectivo", monto = 20.0, opticaId = opticaId, servicioExtraId = "s1")
+        )
+        every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(emptyList())
+        every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(servicios)
+        every { repository.getPagosByDateRangeForOptica(any(), any(), opticaId) } returns flowOf(pagos)
+
+        viewModel = ReportesViewModel(repository, sessionManager)
+        activateFlows()
+        viewModel.setPeriodo("Diario")
+        viewModel.setFechaDiario(today)
+        advanceUntilIdle()
+
+        assertEquals("Payment for a past servicio extra should be a cobro atrasado", 20.0, viewModel.cobrosPeriodo.value, 0.001)
+    }
+
+    @Test
+    fun `cobrosPeriodo includes orphan pago with neither dispensacionId nor servicioExtraId`() = runTest(testDispatcher) {
+        val pagos = listOf(
+            Pago(id = "p1", fecha = today, tipo = "Efectivo", monto = 75.0, opticaId = opticaId, dispensacionId = null, servicioExtraId = null)
+        )
+        every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(emptyList())
+        every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(emptyList())
+        every { repository.getPagosByDateRangeForOptica(any(), any(), opticaId) } returns flowOf(pagos)
+
+        viewModel = ReportesViewModel(repository, sessionManager)
+        activateFlows()
+        viewModel.setPeriodo("Diario")
+        viewModel.setFechaDiario(today)
+        advanceUntilIdle()
+
+        assertEquals("Orphan payment should go to cobrosPeriodo", 75.0, viewModel.cobrosPeriodo.value, 0.001)
+    }
+
+    @Test
+    fun `cobrosPeriodo dispensacion date wins when both ids are set`() = runTest(testDispatcher) {
+        val dispensaciones = listOf(
+            DispensacionOptica(id = "d1", pacienteId = "p1", fecha = today, montoTotal = 100.0, opticaId = opticaId)
+        )
+        val servicios = listOf(
+            ServicioExtra(id = "s1", descripcion = "Lente de contacto", montoTotal = 40.0, aCuenta = 20.0, estado = "Entregado", fecha = yesterday, opticaId = opticaId)
+        )
+        val pagos = listOf(
+            Pago(id = "p1", fecha = today, tipo = "Efectivo", monto = 50.0, opticaId = opticaId, dispensacionId = "d1", servicioExtraId = "s1")
+        )
+        every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
+        every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(servicios)
+        every { repository.getPagosByDateRangeForOptica(any(), any(), opticaId) } returns flowOf(pagos)
+
+        viewModel = ReportesViewModel(repository, sessionManager)
+        activateFlows()
+        viewModel.setPeriodo("Diario")
+        viewModel.setFechaDiario(today)
+        advanceUntilIdle()
+
+        assertEquals("Dispensacion in-range date should win over out-of-range servicio", 0.0, viewModel.cobrosPeriodo.value, 0.001)
     }
 
     // ===================================================================

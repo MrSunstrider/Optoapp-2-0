@@ -11,6 +11,13 @@ import androidx.compose.ui.unit.sp
 import com.example.optoapp.data.Pago
 import java.util.Locale
 
+/** Pure function: determines the label for a [Pago] in TransactionItem. */
+internal fun transactionLabel(pago: Pago): String = when {
+    pago.dispensacionId != null -> "Dispensación"
+    pago.servicioExtraId != null -> "Servicio Extra"
+    else -> "Pago"
+}
+
 @Composable
 fun TransactionItem(pago: Pago) {
     Card(
@@ -23,7 +30,7 @@ fun TransactionItem(pago: Pago) {
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = if (pago.dispensacionId != null) "Dispensación" else "Servicio Extra",
+                    text = transactionLabel(pago),
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.primary
                 )

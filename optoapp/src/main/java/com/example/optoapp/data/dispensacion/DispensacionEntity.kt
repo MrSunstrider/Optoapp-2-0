@@ -138,6 +138,9 @@ data class ServicioExtra(
     val metodoPago: String = "",
     @SerialName("opticaId")
     val opticaId: String = "mi_optica_base",
+    @SerialName("fechaEntrega")
+    @Serializable(with = LocalDateSerializer::class)
+    val fechaEntrega: LocalDate? = null,
     @SerialName("updatedAt")
     val updatedAt: String? = null,
     @SerialName("updatedBy")

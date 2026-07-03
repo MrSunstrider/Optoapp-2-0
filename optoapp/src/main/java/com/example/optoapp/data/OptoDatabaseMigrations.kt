@@ -845,3 +845,11 @@ val MIGRATION_27_28 = object : Migration(27, 28) {
         db.execSQL("ALTER TABLE conflict_records ADD COLUMN remoteData TEXT NOT NULL DEFAULT '{}'")
     }
 }
+
+val MIGRATION_28_29 = object : Migration(28, 29) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        // Add optional delivery date to servicios_extra, mirroring DispensacionOptica.fechaEntrega.
+        // Nullable TEXT with no default — existing rows back-fill to NULL.
+        db.execSQL("ALTER TABLE servicios_extra ADD COLUMN fecha_entrega TEXT")
+    }
+}
