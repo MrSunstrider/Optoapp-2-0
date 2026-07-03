@@ -86,7 +86,7 @@ jobs:
 
       - name: Create Release
         if: github.event_name != 'pull_request' && steps.check_release.outputs.exists == 'false'
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ steps.version.outputs.tag }}
           name: "OptoApp v${{ steps.version.outputs.version }}"

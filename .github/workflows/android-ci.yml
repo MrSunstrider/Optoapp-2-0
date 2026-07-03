@@ -15,7 +15,7 @@
 # NOTE: June 2nd 2026 — GitHub removes Node 20 runners.
 # All actions updated to versions that target Node 24 natively.
 #   actions/checkout@v6, actions/setup-java@v5, actions/upload-artifact@v7
-# gradle/actions/setup-gradle@v4 still targets Node 20 — force flag handles it.
+#   gradle/actions/setup-gradle@v6 targets Node 24 natively.
 
 name: Android CI
 
@@ -55,7 +55,7 @@ jobs:
         run: chmod +x gradlew
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
 
       - name: Run unit tests
         run: ./gradlew testDebugUnitTest --stacktrace --scan
@@ -96,7 +96,7 @@ jobs:
         run: chmod +x gradlew
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
 
       - name: Configure Supabase credentials
         run: |
