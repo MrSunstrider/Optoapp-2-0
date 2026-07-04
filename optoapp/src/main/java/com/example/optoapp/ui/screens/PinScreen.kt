@@ -32,6 +32,7 @@ fun PinScreen(navController: NavController, viewModel: AuthViewModel = hiltViewM
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .statusBarsPadding()
             .testTag(TestTags.PIN_SCREEN_ROOT)
             .background(
                 Brush.verticalGradient(

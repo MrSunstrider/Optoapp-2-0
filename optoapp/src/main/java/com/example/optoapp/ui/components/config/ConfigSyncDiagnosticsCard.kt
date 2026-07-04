@@ -14,13 +14,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberCoroutineScope
-import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalClipboard
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.AnnotatedString
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -42,8 +42,7 @@ fun SyncDiagnosticsCard(
     val remoteTelemetryError by syncDiagVm.remoteTelemetryError.collectAsState()
     val errorRows by syncDiagVm.errorRows.collectAsState()
     val backgroundErrors by syncDiagVm.backgroundErrors.collectAsState()
-    val scope = rememberCoroutineScope()
-    val clipboardManager = LocalClipboard.current
+    val ctx = LocalContext.current
 
     Card(
         shape = OptoTokens.shapes.medium,
@@ -263,7 +262,8 @@ fun SyncDiagnosticsCard(
                             val text = errorRows.joinToString("\n---\n") { row ->
                                 "[${row.entityType}] ${row.entityId}\n${row.lastError}"
                             }
-                            scope.launch { clipboardManager.setText(AnnotatedString(text)) }
+                            val clipboard = ctx.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                            clipboard.setPrimaryClip(ClipData.newPlainText("sync_errors", text))
                         },
                         modifier = Modifier.weight(1f)
                     ) {

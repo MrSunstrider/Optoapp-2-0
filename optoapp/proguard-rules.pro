@@ -1,3 +1,4 @@
+# GGA — Gentleman Guardian Angel
 # ProGuard/R8 rules for OptoApp — full mode (minify + obfuscate + optimize)
 
 # ---- Keep attributes needed by reflection-based frameworks ----

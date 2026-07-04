@@ -109,7 +109,7 @@ class Migration27To28Test {
         rows.forEachIndexed { index, (id, type, ts) ->
             v27Db.execSQL(
                 "INSERT INTO conflict_records (entityId, opticaId, entityType, localSnapshot, remoteSnapshot, detectedAt) VALUES (?, ?, ?, ?, ?, ?)",
-                arrayOf(id, "optica-test", type, ts, ts, (index + 1).toLong())
+                arrayOf<Any>(id, "optica-test", type, ts, ts, (index + 1).toLong())
             )
         }
 
@@ -225,7 +225,7 @@ class Migration27To28Test {
         val v27Helper = factory.create(v27Config)
         v27Helper.writableDatabase.execSQL(
             "INSERT INTO conflict_records (entityId, opticaId, entityType, localSnapshot, remoteSnapshot, detectedAt) VALUES (?, ?, ?, ?, ?, ?)",
-            arrayOf("fresh-1", "optica-x", "paciente", "T1", "T2", 100L)
+            arrayOf<Any>("fresh-1", "optica-x", "paciente", "T1", "T2", 100L)
         )
         v27Helper.close()
 
@@ -249,7 +249,7 @@ class Migration27To28Test {
                 (entityId, opticaId, entityType, localSnapshot, remoteSnapshot, detectedAt, baseSnapshot, localData, remoteData)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
-            arrayOf(
+            arrayOf<Any>(
                 "fresh-2", "optica-x", "paciente", "T3", "T4", 200L,
                 """{"id":"fresh-2","nombre":"base"}""",
                 """{"id":"fresh-2","nombre":"local"}""",
@@ -327,7 +327,7 @@ class Migration27To28Test {
         // Inserting a row using only defaults for new columns must work (DEFAULT '{}' applies)
         v28Db.execSQL(
             "INSERT INTO conflict_records (entityId, opticaId, entityType, localSnapshot, remoteSnapshot, detectedAt) VALUES (?, ?, ?, ?, ?, ?)",
-            arrayOf("empty-1", "optica-y", "paciente", "T", "T", 1L)
+            arrayOf<Any>("empty-1", "optica-y", "paciente", "T", "T", 1L)
         )
         val rowCursor = v28Db.query("SELECT baseSnapshot, localData, remoteData FROM conflict_records WHERE entityId = 'empty-1'")
         assertTrue(rowCursor.moveToFirst())

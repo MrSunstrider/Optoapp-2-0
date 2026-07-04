@@ -20,7 +20,6 @@ import com.example.optoapp.viewmodel.PacienteViewModel
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.example.optoapp.ui.components.paciente.PacienteFormSections
 import com.example.optoapp.util.DateUtils
-import com.example.optoapp.util.InputFormatters
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.UUID
@@ -135,7 +134,7 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
                 nombreCompleto = nombreCompleto,
                 onNombreCompletoChange = { nombreCompleto = it },
                 edad = edad,
-                onEdadChange = {},
+                onEdadChange = { edad = it; fechaNacimiento = "" },
                 telefono = telefono,
                 onTelefonoChange = { telefono = it },
                 dni = dni,

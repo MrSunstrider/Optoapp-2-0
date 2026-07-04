@@ -32,6 +32,7 @@ fun CreatePinScreen(navController: NavController, viewModel: AuthViewModel = hil
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .statusBarsPadding()
             .background(
                 Brush.verticalGradient(
                     colors = listOf(

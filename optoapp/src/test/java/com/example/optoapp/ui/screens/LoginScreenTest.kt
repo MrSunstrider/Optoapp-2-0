@@ -19,15 +19,10 @@ class LoginScreenTest {
 
     @Test
     fun authState_sealedClassesExist() {
-        val idle = AuthState.Idle
-        val loading = AuthState.Loading
-        val success = AuthState.Success
-        val error = AuthState.Error("test")
-
-        assertTrue(idle is AuthState)
-        assertTrue(loading is AuthState)
-        assertTrue(success is AuthState)
-        assertTrue(error is AuthState)
+        assertNotNull(AuthState.Idle)
+        assertNotNull(AuthState.Loading)
+        assertNotNull(AuthState.Success)
+        assertNotNull(AuthState.Error("test"))
     }
 
     @Test
@@ -229,7 +224,6 @@ class LoginScreenTest {
     fun oauthError_googleLoginFailure_displaysMessage() {
         // When handleAuthDeepLinkIntent fails, AuthState.Error is set
         val errorState = AuthState.Error("No se pudo recuperar la sesión de Google. Reintenta el acceso.")
-        assertTrue(errorState is AuthState.Error)
         assertTrue(errorState.message.contains("Google"))
     }
 
@@ -237,7 +231,6 @@ class LoginScreenTest {
     fun oauthError_authStateError_isDisplayedInScreen() {
         // Screen shows AnimatedVisibility for AuthState.Error with surface
         val error = AuthState.Error("test error")
-        assertTrue(error is AuthState.Error)
         assertEquals("test error", error.message)
     }
 

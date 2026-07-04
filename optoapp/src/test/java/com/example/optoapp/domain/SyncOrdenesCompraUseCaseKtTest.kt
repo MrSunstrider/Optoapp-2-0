@@ -114,7 +114,7 @@ class SyncOrdenesCompraUseCaseKtTest {
     @Test
     fun resourceError_stringMessage() {
         val result = Resource.Error<OrdenesCompraSyncResult>("Network failure")
-        assertTrue(result is Resource.Error)
+        assertEquals("Network failure", result.message)
     }
 
     @Test

@@ -116,7 +116,7 @@ class ServicioExtraMigration28To29Test {
         rows.forEach { (id, desc, monto) ->
             v28Db.execSQL(
                 "INSERT INTO servicios_extra (id, ot, descripcion, montoTotal, aCuenta, estado, fecha, pacienteId, metodoPago, opticaId) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                arrayOf(id, "ot-$id", desc, monto, monto / 2.0, "Pendiente", "2026-06-15", "paciente-1", "Efectivo", "optica-test")
+                arrayOf<Any>(id, "ot-$id", desc, monto, monto / 2.0, "Pendiente", "2026-06-15", "paciente-1", "Efectivo", "optica-test")
             )
         }
 
@@ -228,7 +228,7 @@ class ServicioExtraMigration28To29Test {
         val v28Helper = factory.create(v28Config)
         v28Helper.writableDatabase.execSQL(
             "INSERT INTO servicios_extra (id, ot, descripcion, montoTotal, aCuenta, estado, fecha, pacienteId, metodoPago, opticaId) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            arrayOf("fresh-1", "ot-1", "Servicio v28", 80.0, 40.0, "Entregado", "2026-06-20", "paciente-1", "Tarjeta", "optica-x")
+            arrayOf<Any>("fresh-1", "ot-1", "Servicio v28", 80.0, 40.0, "Entregado", "2026-06-20", "paciente-1", "Tarjeta", "optica-x")
         )
         v28Helper.close()
 
@@ -248,7 +248,7 @@ class ServicioExtraMigration28To29Test {
         // Insert a fresh row supplying fecha_entrega
         v29Db.execSQL(
             "INSERT INTO servicios_extra (id, ot, descripcion, montoTotal, aCuenta, estado, fecha, pacienteId, metodoPago, opticaId, fecha_entrega) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            arrayOf("fresh-2", "ot-2", "Servicio v29", 99.0, 99.0, "Entregado", "2026-07-01", "paciente-2", "Efectivo", "optica-x", "2026-07-01")
+            arrayOf<Any>("fresh-2", "ot-2", "Servicio v29", 99.0, 99.0, "Entregado", "2026-07-01", "paciente-2", "Efectivo", "optica-x", "2026-07-01")
         )
 
         // Verify the fresh row has the provided fecha_entrega
@@ -327,7 +327,7 @@ class ServicioExtraMigration28To29Test {
         // Inserting a row without fecha_entrega must work (column is nullable)
         v29Db.execSQL(
             "INSERT INTO servicios_extra (id, ot, descripcion, montoTotal, aCuenta, estado, fecha, pacienteId, metodoPago, opticaId) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            arrayOf("empty-1", "ot-1", "Servicio vacío", 10.0, 5.0, "Pendiente", "2026-06-30", "paciente-1", "Efectivo", "optica-y")
+            arrayOf<Any>("empty-1", "ot-1", "Servicio vacío", 10.0, 5.0, "Pendiente", "2026-06-30", "paciente-1", "Efectivo", "optica-y")
         )
         val rowCursor = v29Db.query("SELECT fecha_entrega FROM servicios_extra WHERE id = 'empty-1'")
         assertTrue(rowCursor.moveToFirst())

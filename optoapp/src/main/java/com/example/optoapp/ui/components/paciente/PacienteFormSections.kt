@@ -147,6 +147,28 @@ fun PacienteFormSections(
         label = { Text("Nombre Completo *") },
         modifier = Modifier.fillMaxWidth().testTag(TestTags.PACIENTE_NOMBRE_FIELD)
     )
+    val fechaNacError: String? = remember(fechaNacimiento) {
+        if (fechaNacimiento.length != 8) null
+        else {
+            val digits = fechaNacimiento.filter { it.isDigit() }
+            if (digits.length != 8) null
+            else {
+                val d = digits.substring(0, 2).toIntOrNull() ?: 0
+                val m = digits.substring(2, 4).toIntOrNull() ?: 0
+                val y = digits.substring(4, 8).toIntOrNull() ?: 0
+                when {
+                    m !in 1..12 -> "Mes debe ser 1-12"
+                    d !in 1..31 -> "Día debe ser 1-31"
+                    y !in 1900..2100 -> "Año fuera de rango"
+                    else -> try {
+                        java.time.LocalDate.of(y, m, d)
+                        null
+                    } catch (_: Exception) { "Fecha inválida" }
+                }
+            }
+        }
+    }
+
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         OutlinedTextField(
             value = fechaNacimiento,
@@ -155,11 +177,25 @@ fun PacienteFormSections(
             modifier = Modifier.weight(2f).testTag(TestTags.PACIENTE_FECHA_NAC_FIELD),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             visualTransformation = DateSlashTransformation,
-            singleLine = true
+            singleLine = true,
+            isError = fechaNacError != null,
+            supportingText = {
+                if (fechaNacError != null) {
+                    Text(
+                        text = fechaNacError,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
         )
         OutlinedTextField(
             value = edad,
-            onValueChange = { if (it.all { char -> char.isDigit() }) onEdadChange(it) },
+            onValueChange = {
+                if (it.length <= 3 && it.all { char -> char.isDigit() }) {
+                    val num = it.toIntOrNull()
+                    if (num == null || num in 0..120) onEdadChange(it)
+                }
+            },
             label = { Text("Edad *") },
             modifier = Modifier.weight(1f).testTag(TestTags.PACIENTE_EDAD_FIELD),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)

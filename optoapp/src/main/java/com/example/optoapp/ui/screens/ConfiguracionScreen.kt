@@ -128,7 +128,7 @@ fun ConfiguracionScreen(
         } }
     }
 
-    Scaffold(containerColor = MaterialTheme.colorScheme.surface, contentWindowInsets = WindowInsets(0, 0, 0, 0), topBar = {
+    Scaffold(containerColor = MaterialTheme.colorScheme.surface, topBar = {
         OptoTopAppBar(
             title = stringResource(R.string.config_title),
             navigationIcon = { IconButton(onClick = { scope.launch { drawerState.open() } }) { Icon(Icons.Default.Menu, contentDescription = "Menu") } }

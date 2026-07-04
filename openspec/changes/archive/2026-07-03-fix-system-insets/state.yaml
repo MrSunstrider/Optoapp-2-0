@@ -1,0 +1,17 @@
+apply_state: completed
+phases:
+  tests:
+    status: completed
+    detail: Written structural tests for OptoTopAppBar, SeleccionOpticaScreen, and LoginScreen
+  fix_component:
+    status: completed
+    detail: OptoTopAppBar.kt - replaced zero insets with TopAppBarDefaults.windowInsets
+  fix_scaffold:
+    status: completed
+    detail: ConfiguracionScreen and AgendaScreen - removed explicit zero contentWindowInsets
+  fix_nonscaffold:
+    status: completed
+    detail: LoginScreen, PinScreen, CreatePinScreen - added statusBarsPadding()
+  verification:
+    status: completed
+    detail: compileDebugKotlin and testDebugUnitTest both pass

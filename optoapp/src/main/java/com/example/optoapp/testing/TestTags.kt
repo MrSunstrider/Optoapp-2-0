@@ -18,6 +18,7 @@ object TestTags {
     const val LOGIN_INGRESAR_BTN = "login_ingresar_btn"
     const val LOGIN_ERROR_MESSAGE = "login_error_message"
     const val LOGIN_REMEMBER_ACCOUNT_CHECK = "login_remember_account_check"
+    const val LOGIN_OLVIDASTE_BTN = "login_olvidaste_btn"
     const val LOGIN_SCREEN_ROOT = "login_screen_root"
 
     // ── PIN Screen ───────────────────────────────────────────────────────────
@@ -82,4 +83,5 @@ object TestTags {
     const val DISPENSACION_SCREEN_ROOT = "dispensacion_screen_root"
     const val DISPENSACION_ERROR_MESSAGE = "dispensacion_error_message"
     const val DISPENSACION_ITEM_LISTA = "dispensacion_item_lista"
+
 }

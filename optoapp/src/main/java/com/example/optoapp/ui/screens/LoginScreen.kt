@@ -38,7 +38,6 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.optoapp.testing.TestTags
@@ -112,6 +111,7 @@ fun LoginScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .statusBarsPadding()
             .testTag(TestTags.LOGIN_SCREEN_ROOT)
             .background(
                 Brush.verticalGradient(
@@ -124,7 +124,7 @@ fun LoginScreen(
     ) {
         Column(
             modifier = Modifier
-                .fillMaxWidth()
+                .widthIn(max = 420.dp)
                 .align(Alignment.Center)
                 .padding(horizontal = 32.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -242,34 +242,37 @@ fun LoginScreen(
                         shape = RoundedCornerShape(12.dp)
                     )
 
-                    TextButton(
-                        onClick = { navController.navigate("recovery") },
-                        modifier = Modifier.fillMaxWidth().align(Alignment.End)
-                    ) {
-                        Text(
-                            text = "¿Olvidaste tu contraseña?",
-                            color = MaterialTheme.colorScheme.primary,
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-
                     Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .testTag(TestTags.LOGIN_REMEMBER_ACCOUNT_CHECK)
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Checkbox(
-                            checked = rememberAccount,
-                            onCheckedChange = { rememberAccount = it }
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = "Recordar Cuenta",
-                            fontSize = 14.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.testTag(TestTags.LOGIN_REMEMBER_ACCOUNT_CHECK)
+                        ) {
+                            Checkbox(
+                                checked = rememberAccount,
+                                onCheckedChange = { rememberAccount = it }
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "Recordar Cuenta",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Spacer(modifier = Modifier.weight(1f))
+                        TextButton(
+                            onClick = { navController.navigate("recovery") },
+                            modifier = Modifier.testTag(TestTags.LOGIN_OLVIDASTE_BTN)
+                        ) {
+                            Text(
+                                text = "¿Olvidaste tu contraseña?",
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.Medium,
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
                     }
 
                     AnimatedVisibility(
@@ -287,7 +290,7 @@ fun LoginScreen(
                                     text = (authState as AuthState.Error).message,
                                     color = MaterialTheme.colorScheme.error,
                                     modifier = Modifier.padding(12.dp),
-                                    fontSize = 13.sp,
+                                    style = MaterialTheme.typography.bodySmall,
                                     fontWeight = FontWeight.Medium
                                 )
                             }
@@ -303,7 +306,7 @@ fun LoginScreen(
                                 text = err,
                                 color = MaterialTheme.colorScheme.error,
                                 modifier = Modifier.padding(12.dp),
-                                fontSize = 13.sp,
+                                style = MaterialTheme.typography.bodySmall,
                                 fontWeight = FontWeight.Medium
                             )
                         }
@@ -323,7 +326,7 @@ fun LoginScreen(
                                 && authState !is AuthState.Loading,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(52.dp)
+                            .height(48.dp)
                             .testTag(TestTags.LOGIN_INGRESAR_BTN),
                         shape = RoundedCornerShape(12.dp)
                     ) {
@@ -336,7 +339,7 @@ fun LoginScreen(
                         } else {
                             Text(
                                 text = "ENTRAR AL SISTEMA",
-                                fontSize = 16.sp,
+                                style = MaterialTheme.typography.bodyLarge,
                                 fontWeight = FontWeight.Bold
                             )
                         }
@@ -386,7 +389,7 @@ fun LoginScreen(
 
             Text(
                 text = "¿Problemas con tu cuenta? Contacta al administrador de tu óptica.",
-                fontSize = 12.sp,
+                style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(horizontal = 8.dp)

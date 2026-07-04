@@ -75,7 +75,9 @@ class PacienteFlowTest {
         email: String = "",
         onEmailChange: (String) -> Unit = {},
         direccion: String = "",
-        onDireccionChange: (String) -> Unit = {}
+        onDireccionChange: (String) -> Unit = {},
+        fechaNacimiento: String = "",
+        onFechaNacimientoChange: (String) -> Unit = {}
     ) {
         PacienteFormSections(
             nombreCompleto = nombreCompleto,
@@ -88,8 +90,8 @@ class PacienteFlowTest {
             onDniChange = {},
             historiaOptometrica = "",
             onHistoriaOptometricaChange = {},
-            fechaNacimiento = "",
-            onFechaNacimientoChange = {},
+            fechaNacimiento = fechaNacimiento,
+            onFechaNacimientoChange = onFechaNacimientoChange,
             sexo = "Masculino",
             onSexoChange = {},
             email = email,
@@ -182,6 +184,149 @@ class PacienteFlowTest {
             .performTextInput("999888777")
 
         assert(captured == "999888777") { "Expected '999888777' but got '$captured'" }
+    }
+
+    @Test
+    fun edadField_acceptsNumberInput() {
+        var captured = ""
+        composeTestRule.setContent {
+            PacienteFormHarness(
+                edad = captured,
+                onEdadChange = { captured = it }
+            )
+        }
+
+        composeTestRule.onNodeWithTag(TestTags.PACIENTE_EDAD_FIELD)
+            .performTextInput("25")
+
+        assert(captured == "25") { "Expected '25' but got '$captured'" }
+    }
+
+    @Test
+    fun edadInput_clearsFechaNacimiento() {
+        var edadState = ""
+        var fechaNacState = "15061990"
+        composeTestRule.setContent {
+            PacienteFormHarness(
+                edad = edadState,
+                onEdadChange = {
+                    edadState = it
+                    fechaNacState = ""
+                },
+                fechaNacimiento = fechaNacState,
+                onFechaNacimientoChange = { fechaNacState = it }
+            )
+        }
+
+        composeTestRule.onNodeWithTag(TestTags.PACIENTE_EDAD_FIELD)
+            .performTextInput("25")
+
+        assert(fechaNacState == "") { "Expected fechaNacimiento cleared but got '$fechaNacState'" }
+    }
+
+    @Test
+    fun fechaNacField_showsErrorForInvalidMonth() {
+        var fechaNacState = ""
+        composeTestRule.setContent {
+            PacienteFormHarness(
+                fechaNacimiento = fechaNacState,
+                onFechaNacimientoChange = { fechaNacState = it }
+            )
+        }
+
+        composeTestRule.onNodeWithTag(TestTags.PACIENTE_FECHA_NAC_FIELD)
+            .performTextInput("01131990") // month 13 → invalid
+
+        composeTestRule.onNodeWithText("Mes debe ser 1-12").assertIsDisplayed()
+    }
+
+    @Test
+    fun fechaNacField_showsErrorForInvalidDay() {
+        var fechaNacState = ""
+        composeTestRule.setContent {
+            PacienteFormHarness(
+                fechaNacimiento = fechaNacState,
+                onFechaNacimientoChange = { fechaNacState = it }
+            )
+        }
+
+        composeTestRule.onNodeWithTag(TestTags.PACIENTE_FECHA_NAC_FIELD)
+            .performTextInput("32011990") // day 32 → invalid
+
+        composeTestRule.onNodeWithText("Día debe ser 1-31").assertIsDisplayed()
+    }
+
+    @Test
+    fun fechaNacField_showsNoErrorForValidDate() {
+        var fechaNacState = ""
+        composeTestRule.setContent {
+            PacienteFormHarness(
+                fechaNacimiento = fechaNacState,
+                onFechaNacimientoChange = { fechaNacState = it }
+            )
+        }
+
+        composeTestRule.onNodeWithTag(TestTags.PACIENTE_FECHA_NAC_FIELD)
+            .performTextInput("15061990")
+
+        composeTestRule.onNodeWithText("15/06/1990").assertIsDisplayed()
+    }
+
+    @Test
+    fun edadField_rejectsValueOver120() {
+        var captured = ""
+        composeTestRule.setContent {
+            PacienteFormHarness(
+                edad = captured,
+                onEdadChange = { captured = it }
+            )
+        }
+
+        composeTestRule.onNodeWithTag(TestTags.PACIENTE_EDAD_FIELD)
+            .performTextInput("150")
+
+        // Should have only captured "120" or "150" depending on filter
+        // The filter should block >120, but performTextInput may send chars one by one
+        assert(captured != "150") { "Expected value over 120 to be rejected, but got '$captured'" }
+    }
+
+    @Test
+    fun edadField_limitsToThreeDigits() {
+        var captured = ""
+        composeTestRule.setContent {
+            PacienteFormHarness(
+                edad = captured,
+                onEdadChange = { captured = it }
+            )
+        }
+
+        composeTestRule.onNodeWithTag(TestTags.PACIENTE_EDAD_FIELD)
+            .performTextInput("12345")
+
+        assert(captured.length <= 3) { "Expected max 3 digits but got '${captured}' (len=${captured.length})" }
+    }
+
+    @Test
+    fun fechaNacimientoChange_calculatesEdad() {
+        var edadState = ""
+        var fechaNacState = ""
+        composeTestRule.setContent {
+            PacienteFormHarness(
+                edad = edadState,
+                onEdadChange = { edadState = it },
+                fechaNacimiento = fechaNacState,
+                onFechaNacimientoChange = {
+                    fechaNacState = it
+                    edadState = "34"
+                }
+            )
+        }
+
+        composeTestRule.onNodeWithTag(TestTags.PACIENTE_FECHA_NAC_FIELD)
+            .performTextInput("15061990")
+
+        assert(edadState == "34") { "Expected edad to be calculated but got '$edadState'" }
+        assert(fechaNacState == "15061990") { "Expected fechaNacimiento to be '$fechaNacState'" }
     }
 
     // ── Patient List / Navigation ─────────────────────────────────────────

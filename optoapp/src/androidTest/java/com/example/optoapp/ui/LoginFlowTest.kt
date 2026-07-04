@@ -2,11 +2,15 @@ package com.example.optoapp.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.TextButton
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
@@ -26,6 +30,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertIsDisplayed
@@ -173,6 +178,37 @@ class LoginFlowTest {
     }
 
     @Test
+    fun olvidasteButton_isDisplayed() {
+        composeTestRule.setContent {
+            TextButton(
+                onClick = {},
+                modifier = Modifier.fillMaxWidth().testTag(TestTags.LOGIN_OLVIDASTE_BTN)
+            ) {
+                Text("¿Olvidaste tu contraseña?")
+            }
+        }
+        composeTestRule.onNodeWithTag(TestTags.LOGIN_OLVIDASTE_BTN).assertIsDisplayed()
+        composeTestRule.onNodeWithText("¿Olvidaste tu contraseña?").assertIsDisplayed()
+    }
+
+    @Test
+    fun rememberAccountCheckbox_isDisplayed() {
+        composeTestRule.setContent {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag(TestTags.LOGIN_REMEMBER_ACCOUNT_CHECK)
+            ) {
+                Checkbox(checked = true, onCheckedChange = {})
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("Recordar Cuenta")
+            }
+        }
+        composeTestRule.onNodeWithTag(TestTags.LOGIN_REMEMBER_ACCOUNT_CHECK).assertIsDisplayed()
+    }
+
+    @Test
     fun googleOAuthButton_isDisplayed() {
         composeTestRule.setContent {
             OutlinedButton(
@@ -271,7 +307,7 @@ class LoginFlowTest {
     }
 }
 
-/** Tiny horizontal spacer for inline icon+text buttons. */
+/** Keeps icon and text from touching in inline icon+text buttons. */
 @Composable
 private fun SpacerH(width: Int) {
     androidx.compose.foundation.layout.Spacer(
