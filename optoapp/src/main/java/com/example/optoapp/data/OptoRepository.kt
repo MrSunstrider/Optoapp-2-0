@@ -92,7 +92,7 @@ open class OptoRepository(
     suspend fun updatePago(pago: Pago) { val stamped = pago.copy(updatedAt = Instant.now().toString()); dispensacionRepo.updatePago(stamped); postSaveSyncScheduler.get().scheduleFinanzasSync(stamped.opticaId) }
     suspend fun getPagoById(id: String) = dispensacionRepo.getPagoById(id)
     suspend fun reassignPagosDispensacion(oldDispensacionId: String, newDispensacionId: String) = dispensacionRepo.reassignPagosDispensacion(oldDispensacionId, newDispensacionId)
-    suspend fun deletePagoRegistrandoAnulacionEnCaja(pago: Pago, opticaId: String, fechaAnulacion: LocalDate = DateUtils.today()) = dispensacionRepo.deletePagoRegistrandoAnulacionEnCaja(pago, opticaId, fechaAnulacion)
+    suspend fun deletePagoRegistrandoAnulacionEnCaja(pago: Pago, opticaId: String) = dispensacionRepo.deletePagoRegistrandoAnulacionEnCaja(pago, opticaId)
     suspend fun deletePago(pago: Pago) = dispensacionRepo.deletePago(pago)
     fun getPagosByServicioExtra(servicioExtraId: String) = dispensacionRepo.getPagosByServicioExtra(servicioExtraId)
     fun getPagosByDateRange(start: LocalDate, end: LocalDate) = dispensacionRepo.getPagosByDateRange(start, end)

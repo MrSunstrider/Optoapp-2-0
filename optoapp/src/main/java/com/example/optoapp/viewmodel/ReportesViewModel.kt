@@ -7,6 +7,8 @@ import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Pago
 import com.example.optoapp.data.ServicioExtra
 import com.example.optoapp.data.SessionManager
+import com.example.optoapp.data.venta.Venta
+import com.example.optoapp.data.venta.VentaDao
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -23,7 +25,8 @@ import javax.inject.Inject
 @HiltViewModel
 class ReportesViewModel @Inject constructor(
     private val repository: OptoRepository,
-    private val sessionManager: SessionManager
+    private val sessionManager: SessionManager,
+    private val ventaDao: VentaDao
 ) : ViewModel() {
 
     private val _periodo = MutableStateFlow("Este mes")
@@ -95,12 +98,42 @@ class ReportesViewModel @Inject constructor(
             }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val totalVendido: StateFlow<Double> = combine(
-        allDispensaciones,
-        allServiciosDelPeriodo
-    ) { disps, servs ->
-        disps.sumOf { it.montoTotal } + servs.sumOf { it.montoTotal }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val allVentasDelPeriodo: StateFlow<List<Venta>> = sessionManager.opticaId
+        .flatMapLatest { opticaId ->
+            combine(_periodo, _anio, _fechaDiario) { p, a, fd ->
+                val now = LocalDate.now()
+                val (start, end) = periodDateRange(p, a, fd, now)
+                Triple(opticaId, start, end)
+            }.flatMapLatest { (opticaId, start, end) ->
+                combine(
+                    ventaDao.getVentasByOpticaAndDateRange(opticaId, start, end),
+                    allDispensaciones,
+                    allServiciosDelPeriodo
+                ) { ventas, disps, servs ->
+                    if (ventas.isNotEmpty()) ventas
+                    else {
+                        // Fallback: derive from legacy entities when ventas table is not yet populated.
+                        // This ensures backward compatibility during the transition.
+                        val dispVentas = disps.map { d ->
+                            Venta(id = "venta-${d.id}", opticaId = d.opticaId, origen = "dispensacion",
+                                origenId = d.id, pacienteId = d.pacienteId, fecha = d.fecha,
+                                montoTotal = d.montoTotal, estado = "Completado")
+                        }
+                        val servVentas = servs.map { s ->
+                            Venta(id = "venta-${s.id}", opticaId = s.opticaId, origen = "servicio_extra",
+                                origenId = s.id, pacienteId = "", fecha = s.fecha,
+                                montoTotal = s.montoTotal, estado = "Completado")
+                        }
+                        dispVentas + servVentas
+                    }
+                }
+            }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val totalVendido: StateFlow<Double> = allVentasDelPeriodo
+        .map { ventas -> ventas.sumOf { it.montoTotal } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
 
     val totalPagado: StateFlow<Double> = combine(
         allDispensaciones,

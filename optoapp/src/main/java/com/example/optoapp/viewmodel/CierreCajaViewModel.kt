@@ -8,6 +8,8 @@ import com.example.optoapp.data.Pago
 import com.example.optoapp.data.ServicioExtra
 import com.example.optoapp.data.SessionManager
 import com.example.optoapp.data.arqueo.ArqueoCaja
+import com.example.optoapp.data.venta.Venta
+import com.example.optoapp.data.venta.VentaDao
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -31,7 +33,7 @@ data class CierreCajaUiState(
     val fecha: LocalDate = DateUtils.today(),
     val pagos: List<Pago> = emptyList(),
     val totalVentasHoy: Double = 0.0,
-    val serviciosExtraHoy: List<ServicioExtra> = emptyList(),
+    val serviciosExtraHoy: List<Venta> = emptyList(),
     val totalServiciosExtra: Double = 0.0,
     val totalGeneral: Double = 0.0,
     val ventasHoy: Double = 0.0,
@@ -44,7 +46,7 @@ data class CierreCajaUiState(
 private data class CierreCajaResult(
     val pagos: List<Pago>,
     val totalVentasHoy: Double,
-    val serviciosExtraHoy: List<ServicioExtra>,
+    val serviciosExtraHoy: List<Venta>,
     val totalServiciosExtra: Double,
     val totalGeneral: Double,
     val ventasHoy: Double,
@@ -56,7 +58,8 @@ private data class CierreCajaResult(
 @HiltViewModel
 class CierreCajaViewModel @Inject constructor(
     private val repository: OptoRepository,
-    private val sessionManager: SessionManager
+    private val sessionManager: SessionManager,
+    private val ventaDao: VentaDao
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CierreCajaUiState())
@@ -102,8 +105,9 @@ class CierreCajaViewModel @Inject constructor(
                 combine(
                     repository.getPagosByDateRangeForOptica(fecha, fecha, opticaId),
                     repository.getAllDispensacionesForOptica(opticaId),
-                    repository.getAllServiciosForOptica(opticaId)
-                ) { pagos: List<Pago>, dispensaciones: List<DispensacionOptica>, servicios: List<ServicioExtra> ->
+                    repository.getAllServiciosForOptica(opticaId),
+                    ventaDao.getVentasByOpticaAndDateRange(opticaId, fecha, fecha)
+                ) { pagos: List<Pago>, dispensaciones: List<DispensacionOptica>, servicios: List<ServicioExtra>, ventas: List<Venta> ->
                     val dispMap = dispensaciones.associateBy { it.id }
                     val servMap = servicios.associateBy { it.id }
                     var ventasHoy = 0.0
@@ -119,10 +123,10 @@ class CierreCajaViewModel @Inject constructor(
                             else -> ventasHoy += pago.monto
                         }
                     }
-                    // Total de ventas registradas en esta fecha (monto completo de la dispensación)
-                    val ventasDelDia = dispensaciones.filter { it.fecha == fecha }
-                    val totalVentasHoy = ventasDelDia.sumOf { it.montoTotal }
-                    val serviciosExtraHoy = servicios.filter { it.fecha == fecha }
+                    // Revenue totals from canonical ventas table
+                    val ventasDelDia = ventas.filter { it.fecha == fecha }
+                    val totalVentasHoy = ventasDelDia.filter { it.origen == "dispensacion" }.sumOf { it.montoTotal }
+                    val serviciosExtraHoy = ventasDelDia.filter { it.origen == "servicio_extra" }
                     val totalServiciosExtra = serviciosExtraHoy.sumOf { it.montoTotal }
                     val totalGeneral = totalVentasHoy + totalServiciosExtra
                     val saldoPendiente = totalGeneral - ventasHoy

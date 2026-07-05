@@ -185,7 +185,7 @@ class DispensacionRepositoryTest {
         )
         pagoDao.insertPago(pago)
 
-        repo.deletePagoRegistrandoAnulacionEnCaja(pago, "o1", LocalDate.parse("2026-02-01"))
+        repo.deletePagoRegistrandoAnulacionEnCaja(pago, "o1")
 
         // Original deleted
         assertNull(pagoDao.getPagoById("p1"))
@@ -195,7 +195,42 @@ class DispensacionRepositoryTest {
         val reversal = allPagos[0]
         assertEquals(-100.0, reversal.monto, 0.001)
         assertEquals("Anulación", reversal.tipo)
-        assertEquals(LocalDate.parse("2026-02-01"), reversal.fecha)
+        assertEquals(LocalDate.parse("2026-01-15"), reversal.fecha)
+    }
+
+    @Test
+    fun deletePagoRegistrandoAnulacionEnCaja_zeroMontoSkipsReversal() = runBlocking {
+        insertDummyPaciente()
+        dispensacionDao.insertDispensacion(DispensacionOptica(
+            id = "d_zero", pacienteId = "p_dummy", fecha = LocalDate.parse("2026-01-15"),
+            opticaId = "o1"
+        ))
+        val pago = Pago(
+            id = "p_zero", dispensacionId = "d_zero", fecha = LocalDate.parse("2026-01-15"),
+            tipo = "CONTADO", monto = 0.0, metodoPago = "EFECTIVO", opticaId = "o1"
+        )
+        pagoDao.insertPago(pago)
+
+        repo.deletePagoRegistrandoAnulacionEnCaja(pago, "o1")
+
+        // Original deleted
+        assertNull(pagoDao.getPagoById("p_zero"))
+        // No reversal inserted
+        val allPagos = pagoDao.getAllPagos()
+        assertEquals(0, allPagos.size)
+    }
+
+    @Test
+    fun deletePagoRegistrandoAnulacionEnCaja_nonExistentPagoDoesNotCrash() = runBlocking {
+        val pago = Pago(
+            id = "p_ghost", dispensacionId = "d1", fecha = LocalDate.parse("2026-01-15"),
+            tipo = "CONTADO", monto = 100.0, metodoPago = "EFECTIVO", opticaId = "o1"
+        )
+        // pago not inserted — should not throw and should not insert reversal
+        repo.deletePagoRegistrandoAnulacionEnCaja(pago, "o1")
+
+        val allPagos = pagoDao.getAllPagos()
+        assertEquals(0, allPagos.size)
     }
 
     // ── Servicios Extra ─────────────────────────────────────────────────────

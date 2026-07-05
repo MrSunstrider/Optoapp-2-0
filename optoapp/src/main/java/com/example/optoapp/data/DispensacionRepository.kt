@@ -164,13 +164,13 @@ class DispensacionRepository(
         pagoDao.reassignDispensacionId(oldDispensacionId, newDispensacionId)
 
     /**
-     * Borra un abono. Si ya existía en BD, registra un movimiento de anulación el día [fechaAnulacion]
-     * (importe negativo) para que cierre de caja refleje la salida o reversión en la fecha correcta.
+     * Borra un abono. Si ya existía en BD, registra un movimiento de anulación
+     * (importe negativo) en la fecha del abono original para que cierre de caja
+     * refleje la reversión en el período correcto.
      */
     suspend fun deletePagoRegistrandoAnulacionEnCaja(
         pago: Pago,
-        opticaId: String,
-        fechaAnulacion: LocalDate = DateUtils.today()
+        opticaId: String
     ) {
         val existing = pagoDao.getPagoById(pago.id)
         if (existing != null && existing.monto != 0.0) {
@@ -178,7 +178,7 @@ class DispensacionRepository(
                 id = UUID.randomUUID().toString(),
                 dispensacionId = existing.dispensacionId,
                 servicioExtraId = existing.servicioExtraId,
-                fecha = fechaAnulacion,
+                fecha = existing.fecha,
                 tipo = "Anulación",
                 monto = -existing.monto,
                 metodoPago = existing.metodoPago,

@@ -145,7 +145,7 @@ fun CierreCajaScreen(
                 Column(modifier = Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                     Text("TOTAL VENTAS DEL DÍA", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                     Text(
-                        "s/. ${String.format(Locale.getDefault(), "%.2f", uiState.totalVentasHoy)}",
+                        "s/. ${String.format(Locale.getDefault(), "%.2f", uiState.totalGeneral)}",
                         fontSize = 32.sp,
                         fontWeight = FontWeight.ExtraBold,
                         color = MaterialTheme.colorScheme.onPrimaryContainer
@@ -230,10 +230,10 @@ fun CierreCajaScreen(
                             Text("s/. ${String.format(Locale.getDefault(), "%.2f", uiState.totalServiciosExtra)}",
                                 fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.secondary)
                         }
-                        uiState.serviciosExtraHoy.forEach { serv ->
+                        uiState.serviciosExtraHoy.forEach { venta ->
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                Text(serv.descripcion, fontSize = 12.sp, modifier = Modifier.weight(1f))
-                                Text("s/. ${String.format(Locale.getDefault(), "%.2f", serv.montoTotal)}",
+                                Text("Servicio ${venta.origenId.take(8)}", fontSize = 12.sp, modifier = Modifier.weight(1f))
+                                Text("s/. ${String.format(Locale.getDefault(), "%.2f", venta.montoTotal)}",
                                     fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                             }
                         }

@@ -5,6 +5,8 @@ import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Pago
 import com.example.optoapp.data.ServicioExtra
 import com.example.optoapp.data.SessionManager
+import com.example.optoapp.data.venta.Venta
+import com.example.optoapp.data.venta.VentaDao
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
@@ -42,6 +44,7 @@ class ReportesViewModelDiarioTest {
     private val testDispatcher = UnconfinedTestDispatcher()
     private lateinit var repository: OptoRepository
     private lateinit var sessionManager: SessionManager
+    private lateinit var ventaDao: VentaDao
     private lateinit var viewModel: ReportesViewModel
 
     private val opticaId = "optica-test-1"
@@ -57,8 +60,10 @@ class ReportesViewModelDiarioTest {
         every { android.util.Log.e(any(), any<String>(), any()) } returns 0
         repository = mockk(relaxed = true)
         sessionManager = mockk(relaxed = true)
+        ventaDao = mockk(relaxed = true)
         every { sessionManager.opticaId } returns flowOf(opticaId)
         every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(emptyList())
+        every { ventaDao.getVentasByOpticaAndDateRange(opticaId, any(), any()) } returns flowOf(emptyList())
     }
 
     @After
@@ -74,6 +79,7 @@ class ReportesViewModelDiarioTest {
      */
     private fun TestScope.activateFlows() {
         backgroundScope.launch(testDispatcher) { viewModel.allDispensaciones.collect { } }
+        backgroundScope.launch(testDispatcher) { viewModel.allVentasDelPeriodo.collect { } }
         backgroundScope.launch(testDispatcher) { viewModel.totalVendido.collect { } }
         backgroundScope.launch(testDispatcher) { viewModel.totalPagado.collect { } }
         backgroundScope.launch(testDispatcher) { viewModel.totalCobrado.collect { } }
@@ -89,7 +95,7 @@ class ReportesViewModelDiarioTest {
         )
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
 
-        viewModel = ReportesViewModel(repository, sessionManager)
+        viewModel = ReportesViewModel(repository, sessionManager, ventaDao)
         activateFlows()
         viewModel.setPeriodo("Diario")
         viewModel.setFechaDiario(today)
@@ -108,7 +114,7 @@ class ReportesViewModelDiarioTest {
             )
         )
 
-        viewModel = ReportesViewModel(repository, sessionManager)
+        viewModel = ReportesViewModel(repository, sessionManager, ventaDao)
         activateFlows()
         viewModel.setPeriodo("Diario")
         viewModel.setFechaDiario(today)
@@ -125,9 +131,16 @@ class ReportesViewModelDiarioTest {
             DispensacionOptica(id = "d2", pacienteId = "p2", fecha = today, montoTotal = 75.0,  montoPagado = 75.0,  opticaId = opticaId),
             DispensacionOptica(id = "d3", pacienteId = "p3", fecha = yesterday, montoTotal = 300.0, montoPagado = 0.0, opticaId = opticaId)
         )
+        val ventas = listOf(
+            Venta(id = "v1", opticaId = opticaId, origen = "dispensacion", origenId = "d1",
+                pacienteId = "p1", fecha = today, montoTotal = 150.0, estado = "Completado"),
+            Venta(id = "v2", opticaId = opticaId, origen = "dispensacion", origenId = "d2",
+                pacienteId = "p2", fecha = today, montoTotal = 75.0, estado = "Completado")
+        )
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
+        every { ventaDao.getVentasByOpticaAndDateRange(opticaId, today, today) } returns flowOf(ventas)
 
-        viewModel = ReportesViewModel(repository, sessionManager)
+        viewModel = ReportesViewModel(repository, sessionManager, ventaDao)
         activateFlows()
         viewModel.setPeriodo("Diario")
         viewModel.setFechaDiario(today)
@@ -145,7 +158,7 @@ class ReportesViewModelDiarioTest {
             )
         )
 
-        viewModel = ReportesViewModel(repository, sessionManager)
+        viewModel = ReportesViewModel(repository, sessionManager, ventaDao)
         activateFlows()
         viewModel.setPeriodo("Diario")
         viewModel.setFechaDiario(today)
@@ -168,7 +181,7 @@ class ReportesViewModelDiarioTest {
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
         every { repository.getPagosByDateRangeForOptica(any(), any(), opticaId) } returns flowOf(pagos)
 
-        viewModel = ReportesViewModel(repository, sessionManager)
+        viewModel = ReportesViewModel(repository, sessionManager, ventaDao)
         activateFlows()
         viewModel.setPeriodo("Diario")
         viewModel.setFechaDiario(today)
@@ -194,7 +207,7 @@ class ReportesViewModelDiarioTest {
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(todasLasDispensaciones)
         every { repository.getPagosByDateRangeForOptica(any(), any(), opticaId) } returns flowOf(pagos)
 
-        viewModel = ReportesViewModel(repository, sessionManager)
+        viewModel = ReportesViewModel(repository, sessionManager, ventaDao)
         activateFlows()
         viewModel.setPeriodo("Diario")
         viewModel.setFechaDiario(today)
@@ -218,7 +231,7 @@ class ReportesViewModelDiarioTest {
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(todasLasDispensaciones)
         every { repository.getPagosByDateRangeForOptica(any(), any(), opticaId) } returns flowOf(pagos)
 
-        viewModel = ReportesViewModel(repository, sessionManager)
+        viewModel = ReportesViewModel(repository, sessionManager, ventaDao)
         activateFlows()
         viewModel.setPeriodo("Diario")
         viewModel.setFechaDiario(today)
@@ -243,7 +256,7 @@ class ReportesViewModelDiarioTest {
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
         every { repository.getPagosByDateRangeForOptica(any(), any(), opticaId) } returns flowOf(pagos)
 
-        viewModel = ReportesViewModel(repository, sessionManager)
+        viewModel = ReportesViewModel(repository, sessionManager, ventaDao)
         activateFlows()
         viewModel.setPeriodo("Diario")
         viewModel.setFechaDiario(today)
@@ -264,11 +277,21 @@ class ReportesViewModelDiarioTest {
             Pago(id = "p1", fecha = today,    tipo = "Efectivo", monto = 50.0,  opticaId = opticaId, dispensacionId = "d1"),
             Pago(id = "p2", fecha = yesterday, tipo = "Efectivo", monto = 200.0, opticaId = opticaId, dispensacionId = "d2")
         )
+        val ventasToday = listOf(
+            Venta(id = "v1", opticaId = opticaId, origen = "dispensacion", origenId = "d1",
+                pacienteId = "p1", fecha = today, montoTotal = 100.0, estado = "Completado")
+        )
+        val ventasYesterday = listOf(
+            Venta(id = "v2", opticaId = opticaId, origen = "dispensacion", origenId = "d2",
+                pacienteId = "p2", fecha = yesterday, montoTotal = 200.0, estado = "Completado")
+        )
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
         every { repository.getPagosByDateRangeForOptica(any(), any(), opticaId) } returns flowOf(pagos)
+        every { ventaDao.getVentasByOpticaAndDateRange(opticaId, today, today) } returns flowOf(ventasToday)
+        every { ventaDao.getVentasByOpticaAndDateRange(opticaId, yesterday, yesterday) } returns flowOf(ventasYesterday)
 
         // Create with today
-        viewModel = ReportesViewModel(repository, sessionManager)
+        viewModel = ReportesViewModel(repository, sessionManager, ventaDao)
         activateFlows()
         viewModel.setPeriodo("Diario")
         viewModel.setFechaDiario(today)
@@ -292,7 +315,7 @@ class ReportesViewModelDiarioTest {
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(emptyList())
         every { repository.getPagosByDateRangeForOptica(any(), any(), opticaId) } returns flowOf(emptyList())
 
-        viewModel = ReportesViewModel(repository, sessionManager)
+        viewModel = ReportesViewModel(repository, sessionManager, ventaDao)
         activateFlows()
         viewModel.setPeriodo("Diario")
         viewModel.setFechaDiario(today)
@@ -317,10 +340,17 @@ class ReportesViewModelDiarioTest {
         val servicios = listOf(
             ServicioExtra(id = "s1", descripcion = "Lente de contacto", montoTotal = 40.0, aCuenta = 20.0, estado = "Entregado", fecha = today, opticaId = opticaId)
         )
+        val ventas = listOf(
+            Venta(id = "v1", opticaId = opticaId, origen = "dispensacion", origenId = "d1",
+                pacienteId = "p1", fecha = today, montoTotal = 100.0, estado = "Completado"),
+            Venta(id = "v2", opticaId = opticaId, origen = "servicio_extra", origenId = "s1",
+                pacienteId = "p1", fecha = today, montoTotal = 40.0, estado = "Completado")
+        )
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
         every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(servicios)
+        every { ventaDao.getVentasByOpticaAndDateRange(opticaId, today, today) } returns flowOf(ventas)
 
-        viewModel = ReportesViewModel(repository, sessionManager)
+        viewModel = ReportesViewModel(repository, sessionManager, ventaDao)
         activateFlows()
         viewModel.setPeriodo("Diario")
         viewModel.setFechaDiario(today)
@@ -340,7 +370,7 @@ class ReportesViewModelDiarioTest {
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
         every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(servicios)
 
-        viewModel = ReportesViewModel(repository, sessionManager)
+        viewModel = ReportesViewModel(repository, sessionManager, ventaDao)
         activateFlows()
         viewModel.setPeriodo("Diario")
         viewModel.setFechaDiario(today)
@@ -361,7 +391,7 @@ class ReportesViewModelDiarioTest {
         every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(servicios)
         every { repository.getPagosByDateRangeForOptica(any(), any(), opticaId) } returns flowOf(pagos)
 
-        viewModel = ReportesViewModel(repository, sessionManager)
+        viewModel = ReportesViewModel(repository, sessionManager, ventaDao)
         activateFlows()
         viewModel.setPeriodo("Diario")
         viewModel.setFechaDiario(today)
@@ -382,7 +412,7 @@ class ReportesViewModelDiarioTest {
         every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(servicios)
         every { repository.getPagosByDateRangeForOptica(any(), any(), opticaId) } returns flowOf(pagos)
 
-        viewModel = ReportesViewModel(repository, sessionManager)
+        viewModel = ReportesViewModel(repository, sessionManager, ventaDao)
         activateFlows()
         viewModel.setPeriodo("Diario")
         viewModel.setFechaDiario(today)
@@ -400,7 +430,7 @@ class ReportesViewModelDiarioTest {
         every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(emptyList())
         every { repository.getPagosByDateRangeForOptica(any(), any(), opticaId) } returns flowOf(pagos)
 
-        viewModel = ReportesViewModel(repository, sessionManager)
+        viewModel = ReportesViewModel(repository, sessionManager, ventaDao)
         activateFlows()
         viewModel.setPeriodo("Diario")
         viewModel.setFechaDiario(today)
@@ -424,7 +454,7 @@ class ReportesViewModelDiarioTest {
         every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(servicios)
         every { repository.getPagosByDateRangeForOptica(any(), any(), opticaId) } returns flowOf(pagos)
 
-        viewModel = ReportesViewModel(repository, sessionManager)
+        viewModel = ReportesViewModel(repository, sessionManager, ventaDao)
         activateFlows()
         viewModel.setPeriodo("Diario")
         viewModel.setFechaDiario(today)
@@ -454,7 +484,7 @@ class ReportesViewModelDiarioTest {
         every { repository.getAllDispensacionesForOptica(opticaId) } returns dispensacionesFlow
         every { repository.getPagosByDateRangeForOptica(any(), any(), opticaId) } returns flowOf(pagos)
 
-        viewModel = ReportesViewModel(repository, sessionManager)
+        viewModel = ReportesViewModel(repository, sessionManager, ventaDao)
         activateFlows()
         viewModel.setPeriodo("Diario")
         viewModel.setFechaDiario(today)
@@ -489,7 +519,7 @@ class ReportesViewModelDiarioTest {
             repository.getPagosByDateRangeForOptica(capture(startSlot), capture(endSlot), any())
         } returns flowOf(pagos)
 
-        viewModel = ReportesViewModel(repository, sessionManager)
+        viewModel = ReportesViewModel(repository, sessionManager, ventaDao)
         activateFlows()
         viewModel.setPeriodo("Diario")
         viewModel.setFechaDiario(today)

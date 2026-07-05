@@ -3,6 +3,8 @@ package com.example.optoapp.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.optoapp.data.*
+import com.example.optoapp.data.venta.Venta
+import com.example.optoapp.data.venta.VentaDao
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -42,14 +44,14 @@ private data class BiCoreFlows(
     val examenesActual: Int,
     val examenesAnterior: Int,
     val dispensaciones: List<DispensacionOptica>,
-    val pagos: List<Pago>,
-    val servicios: List<ServicioExtra>
+    val pagos: List<Pago>
 )
 
 @HiltViewModel
 class BIViewModel @Inject constructor(
     private val repository: OptoRepository,
-    private val sessionManager: SessionManager
+    private val sessionManager: SessionManager,
+    private val ventaDao: VentaDao
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(BIUiState())
@@ -79,18 +81,17 @@ class BIViewModel @Inject constructor(
                         repository.countEvaluacionesInRangeForOptica(ranges.first, ranges.second, opticaId),
                         repository.countEvaluacionesInRangeForOptica(prevRanges.first, prevRanges.second, opticaId),
                         repository.getDispensacionesByDateRangeForOptica(ranges.first, ranges.second, opticaId),
-                        repository.getPagosByDateRangeForOptica(ranges.first, ranges.second, opticaId),
-                        repository.getAllServiciosForOptica(opticaId)
-                    ) { e1, e2, disp, pag, serv ->
-                        BiCoreFlows(e1, e2, disp, pag, serv)
+                        repository.getPagosByDateRangeForOptica(ranges.first, ranges.second, opticaId)
+                    ) { e1, e2, disp, pag ->
+                        BiCoreFlows(e1, e2, disp, pag)
                     },
+                    ventaDao.getVentasByOpticaAndDateRange(opticaId, ranges.first, ranges.second),
                     repository.getMonturasByOptica(opticaId),
                     repository.getMovimientosMonturaByOptica(opticaId)
-                ) { core, monturas, movimientos ->
+                ) { core, ventas, monturas, movimientos ->
                     val dispensaciones = core.dispensaciones
                     val pagos = core.pagos
-                    val servicios = core.servicios.filter { it.fecha >= ranges.first && it.fecha <= ranges.second }
-                    val proyectada = dispensaciones.sumOf { it.montoTotal } + servicios.sumOf { it.montoTotal }
+                    val proyectada = ventas.sumOf { it.montoTotal }
                     val cobrada = pagos.sumOf { it.monto }
 
                     val entregasPendientes = dispensaciones.count { it.estadoEntrega.equals("Pendiente", ignoreCase = true) }

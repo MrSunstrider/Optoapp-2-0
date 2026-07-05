@@ -18,6 +18,7 @@ import com.example.optoapp.data.proveedor.MonturaProveedorDao
 import com.example.optoapp.data.proveedor.ProveedorDao
 import com.example.optoapp.data.servicio.ServicioExtraDao
 import com.example.optoapp.data.sync.SyncSnapshotCoordinator
+import com.example.optoapp.data.venta.VentaDao
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import com.example.optoapp.viewmodel.auth.AuthDelegate
 import com.example.optoapp.viewmodel.auth.BackupDelegate
@@ -102,6 +103,9 @@ object DatabaseModule {
 
     @Provides
     fun provideArqueoCajaDao(database: OptoDatabase): ArqueoCajaDao = database.arqueoCajaDao()
+
+    @Provides
+    fun provideVentaDao(database: OptoDatabase): VentaDao = database.ventaDao()
 
     @Provides
     @Singleton
