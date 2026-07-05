@@ -71,6 +71,7 @@ class CierreCajaViewModel @Inject constructor(
 
 
     private val _arqueoKey = MutableStateFlow<Pair<LocalDate, String>?>(null)
+    private val _refreshTrigger = MutableStateFlow(0)
 
     init {
         viewModelScope.launch {
@@ -98,11 +99,16 @@ class CierreCajaViewModel @Inject constructor(
         _uiState.update { it.copy(fecha = fecha) }
     }
 
+    fun refresh() {
+        _refreshTrigger.value++
+    }
+
     private fun observePagos() {
         combine(
             _uiState.map { it.fecha }.distinctUntilChanged(),
-            sessionManager.opticaId
-        ) { fecha, opticaId -> fecha to opticaId }
+            sessionManager.opticaId,
+            _refreshTrigger
+        ) { fecha, opticaId, _ -> fecha to opticaId }
             .distinctUntilChanged()
             .flatMapLatest { (fecha, opticaId) ->
                 combine(

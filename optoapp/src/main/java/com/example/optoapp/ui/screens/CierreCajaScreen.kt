@@ -60,6 +60,7 @@ fun CierreCajaScreen(
         if (opticaId.isNotBlank()) {
             viewModel.observeArqueoForDate(uiState.fecha, opticaId)
         }
+        viewModel.refresh()
     }
 
     if (showDatePicker) {
