@@ -230,7 +230,7 @@ fun PacientesListScreen(
                                         onEdit = { },
                                         onGoToFinanciero = { target ->
                                             closeAndResetDisp()
-                                            navController.navigate("editarDispensacion/${target.pacienteId}/${target.id}?focus=financiero")
+                                            navController.navigate("informacion_financiera/${target.id}")
                                         }
                                     )
                                 } else {
