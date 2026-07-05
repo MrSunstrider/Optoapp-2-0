@@ -14,6 +14,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.optoapp.ui.theme.OptoTokens
 
+import androidx.compose.foundation.layout.WindowInsets
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OptoTopAppBar(
@@ -39,7 +41,7 @@ fun OptoTopAppBar(
                 }
             }
         },
-        windowInsets = TopAppBarDefaults.windowInsets,
+        windowInsets = WindowInsets(0.dp),
         modifier = modifier.fillMaxWidth(),
         navigationIcon = {
             if (navigationIcon != null) {
