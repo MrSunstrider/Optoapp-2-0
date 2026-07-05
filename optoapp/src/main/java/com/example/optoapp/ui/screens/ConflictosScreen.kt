@@ -23,12 +23,11 @@ import com.example.optoapp.viewmodel.SyncViewModel
 import com.example.optoapp.ui.components.OptoTopAppBar
 import com.example.optoapp.ui.components.OptoCard
 
-/** Mapa de entityType → etiqueta amigable para mostrar en UI. */
 private val TYPE_LABELS = mapOf(
     "paciente" to "Paciente",
     "evaluacion" to "Evaluación",
     "dispensacion" to "Dispensación",
-    "servicio_extra" to "Servicio extra",
+    "servicio_extra" to "Servicio Varios",
     "pago" to "Pago",
     "montura" to "Montura",
     "montura_movimiento" to "Movimiento de montura",

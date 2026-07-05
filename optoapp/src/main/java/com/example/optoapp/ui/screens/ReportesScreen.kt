@@ -231,7 +231,7 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                             Row(modifier = Modifier.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(date, fontWeight = FontWeight.Bold)
-                                    Text("Servicio Extra · ${serv.descripcion}", fontSize = 12.sp)
+                                    Text("Servicio Varios · ${serv.descripcion}", fontSize = 12.sp)
                                 }
                                 Column(horizontalAlignment = Alignment.End) {
                                     Text("s/. ${serv.montoTotal}", fontWeight = FontWeight.Bold)

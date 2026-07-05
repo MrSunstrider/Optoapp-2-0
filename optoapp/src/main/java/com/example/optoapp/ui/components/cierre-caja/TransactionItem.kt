@@ -11,10 +11,9 @@ import androidx.compose.ui.unit.sp
 import com.example.optoapp.data.Pago
 import java.util.Locale
 
-/** Pure function: determines the label for a [Pago] in TransactionItem. */
 internal fun transactionLabel(pago: Pago): String = when {
     pago.dispensacionId != null -> "Dispensación"
-    pago.servicioExtraId != null -> "Servicio Extra"
+    pago.servicioExtraId != null -> "Servicio Varios"
     else -> "Pago"
 }
 
