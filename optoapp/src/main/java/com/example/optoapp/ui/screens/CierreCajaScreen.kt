@@ -245,6 +245,22 @@ fun CierreCajaScreen(
                     Spacer(modifier = Modifier.height(8.dp))
                 }
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            ArqueoSection(
+                arqueoFromCierre = uiState.arqueoForFecha,
+                arqueoUiState = arqueoUiState,
+                systemTotals = totales,
+                fecha = uiState.fecha,
+                opticaId = opticaId,
+                onFondoCajaChange = arqueoVM::setFondoCaja,
+                onEfectivoContadoChange = arqueoVM::setEfectivoContado,
+                onTarjetaContadoChange = arqueoVM::setTarjetaContado,
+                onTransferenciaContadoChange = arqueoVM::setTransferenciaContado,
+                onMovilContadoChange = arqueoVM::setMovilContado,
+                onCerrarDia = { arqueoVM.cerrarDia(uiState.fecha, opticaId, totales) }
+            )
         }
     }
 }
