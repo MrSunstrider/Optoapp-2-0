@@ -218,17 +218,20 @@ fun CierreCajaScreen(
                 }
             }
 
-            if (uiState.serviciosExtraHoy.isNotEmpty()) {
+            if (uiState.serviciosExtraHoy.isNotEmpty() || uiState.dispensacionesHoy.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(12.dp))
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.3f))
                 ) {
                     Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text("Servicios Extra", fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                            Text("s/. ${String.format(Locale.getDefault(), "%.2f", uiState.totalServiciosExtra)}",
-                                fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.secondary)
+                        Text("Ventas del día (detalle)", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                        uiState.dispensacionesHoy.forEach { venta ->
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text("OT ${venta.origenId.take(8)}", fontSize = 12.sp, modifier = Modifier.weight(1f))
+                                Text("s/. ${String.format(Locale.getDefault(), "%.2f", venta.montoTotal)}",
+                                    fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                            }
                         }
                         uiState.serviciosExtraHoy.forEach { venta ->
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {

@@ -168,12 +168,13 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
                         Text(uiState.estadoEntrega, fontWeight = FontWeight.Bold)
                     }
 
-                    val targetId = dispensacionId ?: uiState.generatedId
-                    OutlinedButton(
-                        onClick = { navController.navigate("informacion_financiera/$targetId") },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("Gestionar Pagos")
+                    if (dispensacionId != null) {
+                        OutlinedButton(
+                            onClick = { navController.navigate("informacion_financiera/$dispensacionId") },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Gestionar Pagos")
+                        }
                     }
                 }
             }

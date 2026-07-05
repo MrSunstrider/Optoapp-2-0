@@ -34,6 +34,7 @@ data class CierreCajaUiState(
     val pagos: List<Pago> = emptyList(),
     val totalVentasHoy: Double = 0.0,
     val serviciosExtraHoy: List<Venta> = emptyList(),
+    val dispensacionesHoy: List<Venta> = emptyList(),
     val totalServiciosExtra: Double = 0.0,
     val totalGeneral: Double = 0.0,
     val ventasHoy: Double = 0.0,
@@ -47,6 +48,7 @@ private data class CierreCajaResult(
     val pagos: List<Pago>,
     val totalVentasHoy: Double,
     val serviciosExtraHoy: List<Venta>,
+    val dispensacionesHoy: List<Venta>,
     val totalServiciosExtra: Double,
     val totalGeneral: Double,
     val ventasHoy: Double,
@@ -65,7 +67,7 @@ class CierreCajaViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(CierreCajaUiState())
     val uiState: StateFlow<CierreCajaUiState> = _uiState.asStateFlow()
 
-    // Drives the single arqueo collector via flatMapLatest — guarantees at most one active collector.
+
     private val _arqueoKey = MutableStateFlow<Pair<LocalDate, String>?>(null)
 
     init {
@@ -78,7 +80,6 @@ class CierreCajaViewModel @Inject constructor(
         observeArqueo()
     }
 
-    /** Wires a single flatMapLatest chain so that only one arqueo collector is ever active. */
     private fun observeArqueo() {
         _arqueoKey
             .filterNotNull()
@@ -123,22 +124,23 @@ class CierreCajaViewModel @Inject constructor(
                             else -> ventasHoy += pago.monto
                         }
                     }
-                    // Revenue totals from canonical ventas table
                     val ventasDelDia = ventas.filter { it.fecha == fecha }
                     val totalVentasHoy = ventasDelDia.filter { it.origen == "dispensacion" }.sumOf { it.montoTotal }
                     val serviciosExtraHoy = ventasDelDia.filter { it.origen == "servicio_extra" }
                     val totalServiciosExtra = serviciosExtraHoy.sumOf { it.montoTotal }
+                    val dispensacionesHoy = ventasDelDia.filter { it.origen == "dispensacion" }
                     val totalGeneral = totalVentasHoy + totalServiciosExtra
                     val saldoPendiente = totalGeneral - ventasHoy
-                    CierreCajaResult(pagos, totalVentasHoy, serviciosExtraHoy, totalServiciosExtra, totalGeneral, ventasHoy, cobrosAtrasados, saldoPendiente)
+                    CierreCajaResult(pagos, totalVentasHoy, serviciosExtraHoy, dispensacionesHoy, totalServiciosExtra, totalGeneral, ventasHoy, cobrosAtrasados, saldoPendiente)
                 }
             }
-            .onEach { (pagos, totalVentasHoy, serviciosExtraHoy, totalServiciosExtra, totalGeneral, ventasHoy, cobrosAtrasados, saldoPendiente) ->
+            .onEach { (pagos, totalVentasHoy, serviciosExtraHoy, dispensacionesHoy, totalServiciosExtra, totalGeneral, ventasHoy, cobrosAtrasados, saldoPendiente) ->
                 _uiState.update {
                     it.copy(
                         pagos = pagos,
                         totalVentasHoy = totalVentasHoy,
                         serviciosExtraHoy = serviciosExtraHoy,
+                        dispensacionesHoy = dispensacionesHoy,
                         totalServiciosExtra = totalServiciosExtra,
                         totalGeneral = totalGeneral,
                         ventasHoy = ventasHoy,
@@ -150,14 +152,12 @@ class CierreCajaViewModel @Inject constructor(
             }.launchIn(viewModelScope)
     }
 
-    // Helper to get totals by method
+
     fun getTotalesPorMetodo(): Map<String, Double> {
         return _uiState.value.pagos.groupBy {
             if (it.metodoPago == "Sin especificar") "" else it.metodoPago
         }.mapValues { entry -> entry.value.sumOf { it.monto } }
     }
-
-    // ─── Arqueo integration ───────────────────────────────────────────────
 
     fun loadArqueoForDate(fecha: LocalDate, opticaId: String): Flow<ArqueoCaja?> =
         repository.getArqueoByFecha(fecha, opticaId)
