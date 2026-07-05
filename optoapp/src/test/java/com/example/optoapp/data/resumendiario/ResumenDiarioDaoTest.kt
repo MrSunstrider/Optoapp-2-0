@@ -74,4 +74,43 @@ class ResumenDiarioDaoTest {
         val result = dao.getByOpticaId("optica1").first()
         assertTrue(result.isEmpty())
     }
+
+    @Test
+    fun getByOpticaAndMonth_returnsRowsForYearMonth() = runBlocking {
+        // Insert July 2026 rows
+        for (day in 1..5) {
+            val date = "2026-07-0$day"
+            dao.upsert(
+                ResumenDiarioEntity(
+                    id = "r_jul_$day",
+                    opticaId = "optica1",
+                    fecha = date,
+                    ventasCantidad = 1,
+                    ventasMontoTotal = 100.0 * day
+                )
+            )
+        }
+        // Insert June 2026 rows
+        dao.upsert(
+            ResumenDiarioEntity(
+                id = "r_jun_1",
+                opticaId = "optica1",
+                fecha = "2026-06-15",
+                ventasCantidad = 1,
+                ventasMontoTotal = 500.0
+            )
+        )
+
+        val julyRows = dao.getByOpticaAndMonth("optica1", "2026-07")
+        assertEquals(5, julyRows.size)
+        // Ordered by fecha ASC
+        assertEquals("2026-07-01", julyRows[0].fecha)
+        assertEquals("2026-07-05", julyRows[4].fecha)
+    }
+
+    @Test
+    fun getByOpticaAndMonth_returnsEmptyForNoData() = runBlocking {
+        val rows = dao.getByOpticaAndMonth("optica1", "2026-06")
+        assertTrue(rows.isEmpty())
+    }
 }

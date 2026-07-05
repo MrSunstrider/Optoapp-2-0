@@ -886,6 +886,13 @@ val MIGRATION_30_31 = object : Migration(30, 31) {
     }
 }
 
+val MIGRATION_32_33 = object : Migration(32, 33) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE pagos ADD COLUMN ventaId TEXT")
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_pagos_ventaId ON pagos(ventaId)")
+    }
+}
+
 val MIGRATION_31_32 = object : Migration(31, 32) {
     override fun migrate(db: SupportSQLiteDatabase) {
         // 1. CREATE categorias_producto (seed table, read-only)

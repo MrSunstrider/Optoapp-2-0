@@ -104,7 +104,9 @@ data class Pago(
     @SerialName("updatedAt")
     val updatedAt: String? = null,
     @SerialName("updatedBy")
-    val updatedBy: String? = null
+    val updatedBy: String? = null,
+    @SerialName("ventaId")
+    val ventaId: String? = null
 )
 
 @Entity(

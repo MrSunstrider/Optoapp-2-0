@@ -111,7 +111,8 @@ data class PagoRemoto(
     val nota: String? = null,
     @SerialName("optica_id") val opticaId: String = "mi_optica_base",
     @SerialName("updated_at") val updatedAt: String? = null,
-    @SerialName("updated_by") val updatedBy: String? = null
+    @SerialName("updated_by") val updatedBy: String? = null,
+    @SerialName("venta_id") val ventaId: String? = null
 ) {
     fun toEntity() = Pago(
         id = id,
@@ -124,7 +125,8 @@ data class PagoRemoto(
         nota = nota ?: "",
         opticaId = opticaId.trim().ifBlank { FinanzasRemoteDefaults.OPTICA_ID_FALLBACK },
         updatedAt = updatedAt,
-        updatedBy = updatedBy
+        updatedBy = updatedBy,
+        ventaId = ventaId
     )
 }
 
