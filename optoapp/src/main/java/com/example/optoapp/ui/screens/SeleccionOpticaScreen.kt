@@ -43,7 +43,7 @@ fun SeleccionOpticaScreen(
     Scaffold(
         containerColor = MaterialTheme.colorScheme.surface,
         topBar = {
-            OptoTopAppBar(title = "Seleccionar óptica")
+            OptoTopAppBar(title = "Seleccionar óptica", useWindowInsets = true)
         }
     ) { padding ->
         LazyColumn(

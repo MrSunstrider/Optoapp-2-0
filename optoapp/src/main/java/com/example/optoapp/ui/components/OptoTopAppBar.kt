@@ -24,7 +24,8 @@ fun OptoTopAppBar(
     navigationIcon: @Composable (() -> Unit)? = null,
     onNavigationClick: (() -> Unit)? = null,
     actions: @Composable () -> Unit = {},
-    subtitle: String? = null
+    subtitle: String? = null,
+    useWindowInsets: Boolean = false
 ) {
     CenterAlignedTopAppBar(
         title = {
@@ -41,7 +42,7 @@ fun OptoTopAppBar(
                 }
             }
         },
-        windowInsets = WindowInsets(0.dp),
+        windowInsets = if (useWindowInsets) TopAppBarDefaults.windowInsets else WindowInsets(0.dp),
         modifier = modifier.fillMaxWidth(),
         navigationIcon = {
             if (navigationIcon != null) {
