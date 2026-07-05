@@ -143,13 +143,43 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
             }
 
             // ─── Financiera ──────────────────────────────────────────────────
-            FinancieraInfoSection(
-                uiState = uiState,
-                onUpdate = { newState -> viewModel.updateUiState { newState } },
-                onAddPago = { pago -> viewModel.addPago(pago) },
-                onUpdatePago = { pago -> viewModel.updatePagoLocal(pago) },
-                onRemovePago = { pago -> viewModel.removePagoLocal(pago) }
-            )
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+            ) {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Información Financiera", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+
+                    val monto = uiState.montoTotal.toDoubleOrNull() ?: 0.0
+                    val pagado = uiState.pagos.sumOf { it.monto }
+                    val saldo = monto - pagado
+
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text("Monto Total:", fontWeight = FontWeight.Medium)
+                        Text("s/. ${"%.2f".format(monto)}", fontWeight = FontWeight.Bold)
+                    }
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text("Saldo:", fontWeight = FontWeight.Medium)
+                        Text(
+                            "s/. ${"%.2f".format(saldo)}",
+                            fontWeight = FontWeight.Bold,
+                            color = if (saldo > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary
+                        )
+                    }
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text("Estado:", fontWeight = FontWeight.Medium)
+                        Text(uiState.estadoEntrega, fontWeight = FontWeight.Bold)
+                    }
+
+                    val targetId = dispensacionId ?: uiState.generatedId
+                    OutlinedButton(
+                        onClick = { navController.navigate("informacion_financiera/$targetId") },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Gestionar Pagos")
+                    }
+                }
+            }
 
             Button(onClick = { saveAction() }, modifier = Modifier.fillMaxWidth().testTag(TestTags.DISPENSACION_GUARDAR_BTN)) {
                 Text(if (dispensacionId == null) "Confirmar Orden" else "Actualizar Orden")

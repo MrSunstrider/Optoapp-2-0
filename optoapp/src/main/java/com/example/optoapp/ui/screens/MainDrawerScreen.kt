@@ -207,6 +207,15 @@ fun MainDrawerScreen(
                 composable("estadisticas_bi") { BIScreen(navController) }
                 composable("configuracion") { ConfiguracionScreen(navController, drawerState, syncViewModel) }
                 composable("conflictos") { ConflictosScreen(navController, syncViewModel) }
+                composable("informacion_financiera/{dispensacionId}") { backStackEntry ->
+                    val dispId = backStackEntry.arguments?.getString("dispensacionId")
+                    if (dispId.isNullOrBlank()) {
+                        LaunchedEffect(Unit) { navController.popBackStack() }
+                        Box(Modifier.fillMaxSize())
+                    } else {
+                        InformacionFinancieraScreen(navController, dispensacionId = dispId)
+                    }
+                }
                     }
                     SnackbarHost(
                         hostState = snackbarHostState,

@@ -134,6 +134,10 @@ fun MonturaInfoSection(
     }
 }
 
+@Deprecated(
+    message = "Use InformacionFinancieraScreen instead",
+    replaceWith = ReplaceWith("InformacionFinancieraScreen(navController, dispensacionId)")
+)
 @Composable
 fun FinancieraInfoSection(
     uiState: DispensacionUiState,

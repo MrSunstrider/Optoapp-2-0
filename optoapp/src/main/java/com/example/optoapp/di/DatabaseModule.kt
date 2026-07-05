@@ -244,4 +244,11 @@ object DatabaseModule {
 
     @Provides
     fun provideIArqueoCajaRepo(repository: OptoRepository): IArqueoCajaRepo = repository
+
+    @Provides
+    @Singleton
+    fun provideDispensacionFinancieraRepository(
+        repository: OptoRepository,
+        ventaDao: VentaDao
+    ): DispensacionFinancieraRepository = DispensacionFinancieraRepositoryImpl(repository, ventaDao)
 }
