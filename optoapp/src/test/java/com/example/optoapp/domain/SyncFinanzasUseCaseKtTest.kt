@@ -15,6 +15,7 @@ import io.mockk.mockkStatic
 import io.mockk.Runs
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import java.time.LocalDate
@@ -264,5 +265,105 @@ class SyncFinanzasUseCaseKtTest {
         val entity = remoto.toEntity()
         assertEquals(0.0, entity.montoTotal, 0.001)
         assertEquals(0.0, entity.aCuenta, 0.001)
+    }
+
+    // ── downloadVentas integration ──────────────────────────────────────────
+
+    @Test
+    fun downloadVentas_called_between_servicios_and_pagos() = runBlocking {
+        val uploadCoordinator = mockk<UploadSyncCoordinator>()
+        val downloadCoordinator = mockk<DownloadSyncCoordinator>()
+        val deletionSyncHelper = mockk<DeletionSyncHelper>()
+        val networkRetryHelper = mockk<NetworkRetryHelper>()
+
+        coEvery { deletionSyncHelper.pushPendingDeletions(any()) } just Runs
+        coEvery { uploadCoordinator.uploadDispensaciones(any()) } returns 0
+        coEvery { uploadCoordinator.uploadDispensacionItems(any()) } returns 0
+        coEvery { uploadCoordinator.uploadServicios(any()) } returns 0
+        coEvery { uploadCoordinator.uploadPagos(any()) } returns 0
+        coEvery { uploadCoordinator.uploadArqueos(any()) } returns 0
+        coEvery { downloadCoordinator.downloadArqueos(any()) } returns 0
+        coEvery { downloadCoordinator.downloadDispensaciones(any()) } returns 0
+        coEvery { downloadCoordinator.downloadDispensacionItems(any()) } returns 0
+        coEvery { downloadCoordinator.downloadServicios(any()) } returns 0
+        coEvery { downloadCoordinator.downloadVentas(any()) } returns 5
+        coEvery { downloadCoordinator.downloadPagos(any()) } returns 0
+
+        val useCase = SyncFinanzasUseCase(
+            deletionSyncHelper = deletionSyncHelper,
+            uploadSyncCoordinator = uploadCoordinator,
+            downloadSyncCoordinator = downloadCoordinator,
+            networkRetryHelper = networkRetryHelper
+        )
+
+        useCase("optica-test")
+
+        coVerifyOrder {
+            downloadCoordinator.downloadServicios("optica-test")
+            downloadCoordinator.downloadVentas("optica-test")
+            downloadCoordinator.downloadPagos("optica-test")
+        }
+    }
+
+    @Test
+    fun syncResult_includes_downloadedVentas_count() = runBlocking {
+        val uploadCoordinator = mockk<UploadSyncCoordinator>()
+        val downloadCoordinator = mockk<DownloadSyncCoordinator>()
+        val deletionSyncHelper = mockk<DeletionSyncHelper>()
+        val networkRetryHelper = mockk<NetworkRetryHelper>()
+
+        coEvery { deletionSyncHelper.pushPendingDeletions(any()) } just Runs
+        coEvery { uploadCoordinator.uploadDispensaciones(any()) } returns 0
+        coEvery { uploadCoordinator.uploadDispensacionItems(any()) } returns 0
+        coEvery { uploadCoordinator.uploadServicios(any()) } returns 0
+        coEvery { uploadCoordinator.uploadPagos(any()) } returns 0
+        coEvery { uploadCoordinator.uploadArqueos(any()) } returns 0
+        coEvery { downloadCoordinator.downloadArqueos(any()) } returns 0
+        coEvery { downloadCoordinator.downloadDispensaciones(any()) } returns 0
+        coEvery { downloadCoordinator.downloadDispensacionItems(any()) } returns 0
+        coEvery { downloadCoordinator.downloadServicios(any()) } returns 0
+        coEvery { downloadCoordinator.downloadVentas(any()) } returns 3
+        coEvery { downloadCoordinator.downloadPagos(any()) } returns 0
+
+        val useCase = SyncFinanzasUseCase(
+            deletionSyncHelper = deletionSyncHelper,
+            uploadSyncCoordinator = uploadCoordinator,
+            downloadSyncCoordinator = downloadCoordinator,
+            networkRetryHelper = networkRetryHelper
+        )
+
+        val result = useCase("optica-test")
+
+        assertTrue(result is com.example.optoapp.data.Resource.Success)
+        val syncResult = (result as com.example.optoapp.data.Resource.Success).data!!
+        assertEquals(3, syncResult.downloadedVentas)
+    }
+
+    @Test
+    fun downloadVentas_not_called_when_downloadAfterUpload_is_false() = runBlocking {
+        val uploadCoordinator = mockk<UploadSyncCoordinator>()
+        val downloadCoordinator = mockk<DownloadSyncCoordinator>()
+        val deletionSyncHelper = mockk<DeletionSyncHelper>()
+        val networkRetryHelper = mockk<NetworkRetryHelper>()
+
+        coEvery { deletionSyncHelper.pushPendingDeletions(any()) } just Runs
+        coEvery { uploadCoordinator.uploadDispensaciones(any()) } returns 0
+        coEvery { uploadCoordinator.uploadDispensacionItems(any()) } returns 0
+        coEvery { uploadCoordinator.uploadServicios(any()) } returns 0
+        coEvery { uploadCoordinator.uploadPagos(any()) } returns 0
+        coEvery { uploadCoordinator.uploadArqueos(any()) } returns 0
+        coEvery { downloadCoordinator.downloadVentas(any()) } returns 0
+        coEvery { downloadCoordinator.downloadPagos(any()) } returns 0
+
+        val useCase = SyncFinanzasUseCase(
+            deletionSyncHelper = deletionSyncHelper,
+            uploadSyncCoordinator = uploadCoordinator,
+            downloadSyncCoordinator = downloadCoordinator,
+            networkRetryHelper = networkRetryHelper
+        )
+
+        useCase("optica-test", downloadAfterUpload = false)
+
+        coVerify(exactly = 0) { downloadCoordinator.downloadVentas(any()) }
     }
 }

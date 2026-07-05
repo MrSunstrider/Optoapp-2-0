@@ -88,7 +88,8 @@ class OptoRepositoryTest {
             snapshotCoordinator = snapshotCoordinator,
             backupCoordinator = backupCoordinator,
             monturaCoordinator = monturaCoordinator,
-            arqueoCajaDao = db.arqueoCajaDao()
+            arqueoCajaDao = db.arqueoCajaDao(),
+            ventaDao = db.ventaDao()
         )
     }
 

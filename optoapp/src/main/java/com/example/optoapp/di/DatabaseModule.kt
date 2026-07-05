@@ -198,7 +198,8 @@ object DatabaseModule {
             snapshotCoordinator,
             backupCoordinator,
             monturaCoordinator,
-            arqueoCajaDao
+            arqueoCajaDao,
+            database.ventaDao()
         )
     }
 

@@ -33,6 +33,11 @@ class OptoDatabaseMigrationTest {
         assertEquals(MIGRATION_22_23, OptoDatabase.MIGRATION_22_23)
         assertEquals(MIGRATION_23_24, OptoDatabase.MIGRATION_23_24)
         assertEquals(MIGRATION_24_25, OptoDatabase.MIGRATION_24_25)
+        assertEquals(MIGRATION_25_26, OptoDatabase.MIGRATION_25_26)
+        assertEquals(MIGRATION_26_27, OptoDatabase.MIGRATION_26_27)
+        assertEquals(MIGRATION_27_28, OptoDatabase.MIGRATION_27_28)
+        assertEquals(MIGRATION_28_29, OptoDatabase.MIGRATION_28_29)
+        assertEquals(MIGRATION_29_30, OptoDatabase.MIGRATION_29_30)
     }
 
     @Test
@@ -41,7 +46,8 @@ class OptoDatabaseMigrationTest {
             MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11,
             MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16,
             MIGRATION_16_17, MIGRATION_17_18, MIGRATION_18_19, MIGRATION_19_20, MIGRATION_20_21,
-            MIGRATION_21_22, MIGRATION_22_23, MIGRATION_23_24, MIGRATION_24_25
+            MIGRATION_21_22, MIGRATION_22_23, MIGRATION_23_24, MIGRATION_24_25,
+            MIGRATION_25_26, MIGRATION_26_27, MIGRATION_27_28, MIGRATION_28_29, MIGRATION_29_30
         )
 
         for (i in 0 until migrations.size - 1) {
@@ -54,11 +60,11 @@ class OptoDatabaseMigrationTest {
     }
 
     @Test
-    fun first_migration_starts_at_6_and_last_ends_at_25() {
+    fun first_migration_starts_at_6_and_last_ends_at_30() {
         assertEquals(6, MIGRATION_6_7.startVersion)
         assertEquals(7, MIGRATION_6_7.endVersion)
-        assertEquals(24, MIGRATION_24_25.startVersion)
-        assertEquals(25, MIGRATION_24_25.endVersion)
+        assertEquals(29, MIGRATION_29_30.startVersion)
+        assertEquals(30, MIGRATION_29_30.endVersion)
     }
 
     // ─── 3.0.2 — Schema version characterization ────────────────────────
@@ -70,24 +76,24 @@ class OptoDatabaseMigrationTest {
     // Changing this version triggers a Room migration — it MUST be preserved.
 
     @Test
-    fun databaseVersion_is25() {
-        // The last migration ends at version 25, which must match @Database(version = 25)
+    fun databaseVersion_is30() {
+        // The last migration ends at version 30, which must match @Database(version = 30)
         // in OptoDatabase.kt. If someone bumps @Database version without adding a migration,
         // this test catches the inconsistency.
-        val chainVersion = MIGRATION_24_25.endVersion
+        val chainVersion = MIGRATION_29_30.endVersion
         assertEquals(
-            "Room schema version must remain 25 — changing it triggers migration. " +
-                "Source: @Database(version = 25) in OptoDatabase.kt. " +
-                "MIGRATION_24_25.endVersion ($chainVersion) must match.",
-            25,
+            "Room schema version must remain 30 — changing it triggers migration. " +
+                "Source: @Database(version = 30) in OptoDatabase.kt. " +
+                "MIGRATION_29_30.endVersion ($chainVersion) must match.",
+            30,
             chainVersion
         )
     }
 
     @Test
     fun databaseVersion_migration_chain_ends_at_current_version() {
-        assertEquals(25, MIGRATION_24_25.endVersion)
-        assertEquals(MIGRATION_24_25.endVersion, MIGRATION_24_25.startVersion + 1)
+        assertEquals(30, MIGRATION_29_30.endVersion)
+        assertEquals(MIGRATION_29_30.endVersion, MIGRATION_29_30.startVersion + 1)
     }
 
     // ─── 3.0.3 — DAO accessibility via OptoDatabase abstract methods ───
@@ -112,7 +118,9 @@ class OptoDatabaseMigrationTest {
             "categoriaMonturaDao" to "CategoriaMonturaDao",
             "ordenCompraDao" to "OrdenCompraDao",
             "ordenCompraItemDao" to "OrdenCompraItemDao",
-            "inventarioFisicoDao" to "InventarioFisicoDao"
+            "inventarioFisicoDao" to "InventarioFisicoDao",
+            "arqueoCajaDao" to "ArqueoCajaDao",
+            "ventaDao" to "VentaDao"
         )
 
         val abstractMethods = OptoDatabase::class.java.declaredMethods

@@ -6,6 +6,7 @@ import com.example.optoapp.data.FinanzasRemoteDefaults
 import com.example.optoapp.data.Pago
 import com.example.optoapp.data.ServicioExtra
 import com.example.optoapp.data.arqueo.ArqueoCaja
+import com.example.optoapp.data.venta.Venta
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import java.time.LocalDate
@@ -125,6 +126,39 @@ data class PagoRemoto(
 }
 
 @Serializable
+data class VentaRemota(
+    val id: String,
+    @SerialName("optica_id") val opticaId: String,
+    val origen: String,
+    @SerialName("origen_id") val origenId: String,
+    @SerialName("paciente_id") val pacienteId: String = "",
+    val fecha: String,
+    @SerialName("fecha_entrega") val fechaEntrega: String? = null,
+    @SerialName("monto_total") val montoTotal: Double,
+    @SerialName("costo_unitario_snapshot") val costoUnitarioSnapshot: Double? = null,
+    val estado: String,
+    @SerialName("created_at") val createdAt: String? = null,
+    @SerialName("updated_at") val updatedAt: String? = null,
+    @SerialName("updated_by") val updatedBy: String? = null
+) {
+    fun toEntity() = Venta(
+        id = id,
+        opticaId = opticaId.trim().ifBlank { "mi_optica_base" },
+        origen = origen,
+        origenId = origenId,
+        pacienteId = pacienteId,
+        fecha = LocalDate.parse(fecha),
+        fechaEntrega = fechaEntrega?.let(LocalDate::parse),
+        montoTotal = montoTotal,
+        costoUnitarioSnapshot = costoUnitarioSnapshot,
+        estado = estado,
+        createdAt = createdAt,
+        updatedAt = updatedAt,
+        updatedBy = updatedBy
+    )
+}
+
+@Serializable
 data class DispensacionItemRemota(
     val id: String,
     @SerialName("dispensacion_id") val dispensacionId: String,
@@ -166,7 +200,8 @@ data class FinanzasSyncResult(
     val downloadedDispensaciones: Int,
     val downloadedDispensacionItems: Int = 0,
     val downloadedServicios: Int,
-    val downloadedPagos: Int
+    val downloadedPagos: Int,
+    val downloadedVentas: Int = 0
 )
 
 @Serializable

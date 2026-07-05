@@ -18,6 +18,7 @@ import kotlinx.coroutines.launch
 import java.util.UUID
 import javax.inject.Inject
 import com.example.optoapp.data.Pago
+import com.example.optoapp.data.venta.Venta
 import java.time.LocalDate
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import com.example.optoapp.util.DateUtils
@@ -205,6 +206,20 @@ class ServiciosViewModel @Inject constructor(
                 state.pagosToDelete.forEach { pago ->
                     repository.deletePagoRegistrandoAnulacionEnCaja(pago, currentOpticaId)
                 }
+
+                val venta = Venta(
+                    id = "v_serv_$finalId",
+                    opticaId = currentOpticaId,
+                    origen = "servicio_extra",
+                    origenId = finalId,
+                    pacienteId = state.pacienteId ?: "",
+                    fecha = state.fecha,
+                    fechaEntrega = null,
+                    montoTotal = montoParsed,
+                    costoUnitarioSnapshot = null,
+                    estado = state.estado
+                )
+                repository.upsertVenta(venta)
 
                 _uiState.update { it.copy(error = null) }
 

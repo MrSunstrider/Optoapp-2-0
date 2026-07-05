@@ -853,3 +853,29 @@ val MIGRATION_28_29 = object : Migration(28, 29) {
         db.execSQL("ALTER TABLE servicios_extra ADD COLUMN fecha_entrega TEXT")
     }
 }
+
+val MIGRATION_29_30 = object : Migration(29, 30) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        // Create canonical ventas ledger table for unified income calculations.
+        // Columns use camelCase per Room convention. Stored as TEXT for LocalDate fields.
+        db.execSQL("""
+            CREATE TABLE IF NOT EXISTS ventas (
+                id TEXT NOT NULL PRIMARY KEY,
+                opticaId TEXT NOT NULL,
+                origen TEXT NOT NULL,
+                origenId TEXT NOT NULL,
+                pacienteId TEXT NOT NULL DEFAULT '',
+                fecha TEXT NOT NULL,
+                fechaEntrega TEXT,
+                montoTotal REAL NOT NULL,
+                costoUnitarioSnapshot REAL,
+                estado TEXT NOT NULL,
+                createdAt TEXT,
+                updatedAt TEXT,
+                updatedBy TEXT
+            )
+        """.trimIndent())
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_ventas_opticaId ON ventas(opticaId)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_ventas_origen_origenId ON ventas(origen, origenId)")
+    }
+}

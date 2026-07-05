@@ -7,6 +7,8 @@ import com.example.optoapp.data.arqueo.IArqueoCajaRepo
 import com.example.optoapp.data.backup.BackupRestoreCoordinator
 import com.example.optoapp.data.montura.MonturaInventoryCoordinator
 import com.example.optoapp.data.sync.SyncSnapshotCoordinator
+import com.example.optoapp.data.venta.Venta
+import com.example.optoapp.data.venta.VentaDao
 import com.example.optoapp.util.DateUtils
 import dagger.Lazy
 import kotlinx.coroutines.flow.Flow
@@ -34,7 +36,8 @@ open class OptoRepository(
     val snapshotCoordinator: SyncSnapshotCoordinator,
     val backupCoordinator: BackupRestoreCoordinator,
     val monturaCoordinator: MonturaInventoryCoordinator,
-    private val arqueoCajaDao: ArqueoCajaDao
+    private val arqueoCajaDao: ArqueoCajaDao,
+    private val ventaDao: VentaDao
 ) : IArqueoCajaRepo {
     companion object {
         private const val TAG = "OptoRepository"
@@ -102,6 +105,8 @@ open class OptoRepository(
     suspend fun insertServicio(servicio: ServicioExtra) { val stamped = servicio.copy(updatedAt = Instant.now().toString()); dispensacionRepo.insertServicio(stamped); postSaveSyncScheduler.get().scheduleFinanzasSync(stamped.opticaId) }
     suspend fun updateServicio(servicio: ServicioExtra) { val stamped = servicio.copy(updatedAt = Instant.now().toString()); dispensacionRepo.updateServicio(stamped); postSaveSyncScheduler.get().scheduleFinanzasSync(stamped.opticaId) }
     suspend fun deleteServicio(servicio: ServicioExtra) { dispensacionRepo.deleteServicio(servicio); syncStateTracker.markDeleted(servicio.opticaId, "servicio_extra", servicio.id); postSaveSyncScheduler.get().scheduleFinanzasSync(servicio.opticaId) }
+
+    suspend fun upsertVenta(venta: Venta) { val stamped = venta.copy(updatedAt = Instant.now().toString()); ventaDao.upsertVenta(stamped); postSaveSyncScheduler.get().scheduleFinanzasSync(stamped.opticaId) }
 
     fun getMonturasByOptica(opticaId: String) = monturaCoordinator.getMonturasByOptica(opticaId)
     suspend fun getMonturaById(id: String) = monturaCoordinator.getMonturaById(id)
@@ -180,6 +185,9 @@ open class OptoRepository(
 
     suspend fun upsertEvaluacionFromRemote(evaluacion: EvaluacionClinica) =
         pacienteRepo.insertEvaluacion(evaluacion)
+
+    suspend fun upsertVentaFromRemote(venta: Venta) =
+        ventaDao.upsertVenta(venta)
 
     fun getArqueoByFecha(fecha: LocalDate, opticaId: String): Flow<ArqueoCaja?> =
         arqueoCajaDao.getArqueoByFechaAndOptica(fecha, opticaId)

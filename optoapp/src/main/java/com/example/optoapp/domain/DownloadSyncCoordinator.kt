@@ -26,6 +26,7 @@ class DownloadSyncCoordinator @Inject constructor(
         private const val TABLE_DISPENSACIONES = "dispensaciones"
         private const val TABLE_DISPENSACION_ITEMS = "dispensacion_items"
         private const val TABLE_SERVICIOS = "servicios_extra"
+        private const val TABLE_VENTAS = "ventas"
         private const val TABLE_PAGOS = "pagos"
         private const val TABLE_ARQUEO_CAJA = "arqueo_caja"
     }
@@ -95,6 +96,30 @@ class DownloadSyncCoordinator @Inject constructor(
             } catch (e: Exception) {
                 Log.e(TAG, "Error inesperado descargando servicio extra: ${e.message}", e)
                 syncStateTracker.markError(opticaId, "servicio_extra", r.id, e.message)
+            }
+        }
+        return remotos.size
+    }
+
+    suspend fun downloadVentas(opticaId: String): Int {
+        val skipIds = deletionSyncHelper.deletedIds(opticaId)
+        val remotos = supabase.postgrest[TABLE_VENTAS]
+            .select { filter { eq("optica_id", opticaId) } }
+            .decodeList<VentaRemota>()
+        remotos.forEach { r ->
+            if (r.id in skipIds) return@forEach
+            try {
+                val local = r.toEntity()
+                repository.upsertVentaFromRemote(local)
+                syncStateTracker.markSynced(opticaId, "venta", local.id)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: IOException) {
+                Log.e(TAG, "Error en red descargando venta: ${e.message}", e)
+                syncStateTracker.markError(opticaId, "venta", r.id, e.message)
+            } catch (e: Exception) {
+                Log.e(TAG, "Error inesperado descargando venta: ${e.message}", e)
+                syncStateTracker.markError(opticaId, "venta", r.id, e.message)
             }
         }
         return remotos.size

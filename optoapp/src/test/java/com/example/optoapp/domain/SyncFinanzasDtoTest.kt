@@ -3,6 +3,7 @@ package com.example.optoapp.domain
 import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.FinanzasRemoteDefaults
 import com.example.optoapp.data.Pago
+import com.example.optoapp.data.venta.Venta
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -211,6 +212,97 @@ class SyncFinanzasDtoTest {
         )
         val remoto = original.toRemoto()
         assertEquals(FinanzasRemoteDefaults.Pago.METODO_PAGO_VACIO, remoto.metodoPago)
+    }
+
+    // ── VentaRemota.toEntity ───────────────────────────────────────────────
+
+    @Test
+    fun ventaRemota_toEntity_mapsSnakeToCamelCase() {
+        val remoto = VentaRemota(
+            id = "v_disp_001",
+            opticaId = "optica-1",
+            origen = "dispensacion",
+            origenId = "disp-001",
+            pacienteId = "pac-1",
+            fecha = "2026-07-01",
+            fechaEntrega = "2026-07-15",
+            montoTotal = 150.0,
+            costoUnitarioSnapshot = 45.0,
+            estado = "Entregado",
+            createdAt = "2026-07-01T10:00:00Z",
+            updatedAt = "2026-07-15T14:00:00Z",
+            updatedBy = "user-1"
+        )
+        val entity = remoto.toEntity()
+
+        assertEquals("v_disp_001", entity.id)
+        assertEquals("optica-1", entity.opticaId)
+        assertEquals("dispensacion", entity.origen)
+        assertEquals("disp-001", entity.origenId)
+        assertEquals("pac-1", entity.pacienteId)
+        assertEquals(LocalDate.of(2026, 7, 1), entity.fecha)
+        assertEquals(LocalDate.of(2026, 7, 15), entity.fechaEntrega)
+        assertEquals(150.0, entity.montoTotal, 0.001)
+        assertEquals(45.0, entity.costoUnitarioSnapshot!!, 0.001)
+        assertEquals("Entregado", entity.estado)
+        assertEquals("2026-07-01T10:00:00Z", entity.createdAt)
+        assertEquals("2026-07-15T14:00:00Z", entity.updatedAt)
+        assertEquals("user-1", entity.updatedBy)
+    }
+
+    @Test
+    fun ventaRemota_toEntity_nullOptionals_mapToNull() {
+        val remoto = VentaRemota(
+            id = "v_serv_002",
+            opticaId = "optica-1",
+            origen = "servicio_extra",
+            origenId = "serv-002",
+            pacienteId = "",
+            fecha = "2026-07-04",
+            montoTotal = 50.0,
+            estado = "Pendiente"
+        )
+        val entity = remoto.toEntity()
+
+        assertEquals("v_serv_002", entity.id)
+        assertNull(entity.fechaEntrega)
+        assertNull(entity.costoUnitarioSnapshot)
+        assertNull(entity.createdAt)
+        assertNull(entity.updatedAt)
+        assertNull(entity.updatedBy)
+        assertEquals("", entity.pacienteId)
+    }
+
+    @Test
+    fun ventaRemota_toEntity_emptyOpticaId_mapsToFallback() {
+        val remoto = VentaRemota(
+            id = "v_disp_003",
+            opticaId = "  ",
+            origen = "dispensacion",
+            origenId = "disp-003",
+            pacienteId = "pac-3",
+            fecha = "2026-07-04",
+            montoTotal = 100.0,
+            estado = "Pendiente"
+        )
+        val entity = remoto.toEntity()
+        assertEquals("mi_optica_base", entity.opticaId)
+    }
+
+    // ── FinanzasSyncResult with downloadedVentas ────────────────────────────
+
+    @Test
+    fun finanzasSyncResult_includesDownloadedVentas() {
+        val result = FinanzasSyncResult(
+            uploadedDispensaciones = 5,
+            uploadedServicios = 3,
+            uploadedPagos = 10,
+            downloadedDispensaciones = 2,
+            downloadedServicios = 1,
+            downloadedPagos = 4,
+            downloadedVentas = 3
+        )
+        assertEquals(3, result.downloadedVentas)
     }
 
     // ── FinanzasSyncResult ────────────────────────────────────────────────

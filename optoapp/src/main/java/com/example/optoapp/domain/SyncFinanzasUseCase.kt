@@ -56,6 +56,7 @@ open class SyncFinanzasUseCase @Inject constructor(
             val dispDown: Int
             val itemsDown: Int
             val servDown: Int
+            val ventasDown: Int
             val pagosDown: Int
             if (downloadAfterUpload) {
                 val arqueosDown = downloadSyncCoordinator.downloadArqueos(opticaId)
@@ -66,12 +67,15 @@ open class SyncFinanzasUseCase @Inject constructor(
                 Log.d(TAG, "Finanzas: download dispensacion_items=$itemsDown")
                 servDown = downloadSyncCoordinator.downloadServicios(opticaId)
                 Log.d(TAG, "Finanzas: download servicios_extra=$servDown")
+                ventasDown = downloadSyncCoordinator.downloadVentas(opticaId)
+                Log.d(TAG, "Finanzas: download ventas=$ventasDown")
                 pagosDown = downloadSyncCoordinator.downloadPagos(opticaId)
                 Log.d(TAG, "Finanzas: download pagos=$pagosDown; fin OK")
             } else {
                 dispDown = 0
                 itemsDown = 0
                 servDown = 0
+                ventasDown = 0
                 pagosDown = 0
                 Log.d(TAG, "Finanzas: fin upload-only OK")
             }
@@ -85,7 +89,8 @@ open class SyncFinanzasUseCase @Inject constructor(
                     downloadedDispensaciones = dispDown,
                     downloadedDispensacionItems = itemsDown,
                     downloadedServicios = servDown,
-                    downloadedPagos = pagosDown
+                    downloadedPagos = pagosDown,
+                    downloadedVentas = ventasDown
                 )
             )
         } catch (e: CancellationException) {

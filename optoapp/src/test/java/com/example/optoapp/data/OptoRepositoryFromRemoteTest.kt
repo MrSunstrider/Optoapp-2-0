@@ -4,6 +4,8 @@ import com.example.optoapp.data.arqueo.ArqueoCajaDao
 import com.example.optoapp.data.backup.BackupRestoreCoordinator
 import com.example.optoapp.data.montura.MonturaInventoryCoordinator
 import com.example.optoapp.data.sync.SyncSnapshotCoordinator
+import com.example.optoapp.data.venta.Venta
+import com.example.optoapp.data.venta.VentaDao
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import dagger.Lazy
 import io.mockk.coVerify
@@ -38,6 +40,7 @@ class OptoRepositoryFromRemoteTest {
 
     private lateinit var dispensacionRepo: DispensacionRepository
     private lateinit var pacienteRepo: PacienteRepository
+    private lateinit var ventaDao: VentaDao
     private lateinit var scheduler: PostSaveSyncScheduler
     private lateinit var schedulerLazy: Lazy<PostSaveSyncScheduler>
     private lateinit var repo: OptoRepository
@@ -46,6 +49,7 @@ class OptoRepositoryFromRemoteTest {
     fun setUp() {
         dispensacionRepo = mockk(relaxed = true)
         pacienteRepo = mockk(relaxed = true)
+        ventaDao = mockk(relaxed = true)
         scheduler = mockk(relaxed = true)
         schedulerLazy = mockk()
         every { schedulerLazy.get() } returns scheduler
@@ -68,7 +72,8 @@ class OptoRepositoryFromRemoteTest {
             snapshotCoordinator = snapshotCoordinator,
             backupCoordinator = backupCoordinator,
             monturaCoordinator = monturaCoordinator,
-            arqueoCajaDao = arqueoCajaDao
+            arqueoCajaDao = arqueoCajaDao,
+            ventaDao = ventaDao
         )
     }
 
@@ -205,6 +210,52 @@ class OptoRepositoryFromRemoteTest {
         repo.updateServicio(entity)
 
         coVerify(exactly = 1) { dispensacionRepo.updateServicio(match { it.updatedAt != null }) }
+        coVerify(exactly = 1) { scheduler.scheduleFinanzasSync(opticaId) }
+    }
+
+    // ── Venta remote bypass: timestamp preserved, scheduler NOT called ──────
+
+    @Test
+    fun `upsertVentaFromRemote passes entity with original updatedAt to DAO`() = runTest {
+        val venta = Venta(
+            id = "v_disp_1", opticaId = opticaId, origen = "dispensacion",
+            origenId = "d1", pacienteId = "p1", fecha = testDate,
+            montoTotal = 100.0, estado = "Pendiente", updatedAt = T_REMOTE
+        )
+
+        repo.upsertVentaFromRemote(venta)
+
+        coVerify(exactly = 1) { ventaDao.upsertVenta(match { it.updatedAt == T_REMOTE }) }
+    }
+
+    @Test
+    fun `upsertVentaFromRemote does NOT call PostSaveSyncScheduler`() = runTest {
+        val venta = Venta(
+            id = "v_disp_1", opticaId = opticaId, origen = "dispensacion",
+            origenId = "d1", pacienteId = "p1", fecha = testDate,
+            montoTotal = 100.0, estado = "Pendiente", updatedAt = T_REMOTE
+        )
+
+        repo.upsertVentaFromRemote(venta)
+
+        coVerify(exactly = 0) { scheduler.scheduleFinanzasSync(any()) }
+        coVerify(exactly = 0) { scheduler.scheduleHistorialSync(any()) }
+        coVerify(exactly = 0) { scheduler.schedulePacientesSync(any()) }
+    }
+
+    // ── Venta local path: stamps timestamp + schedules sync ─────────────────
+
+    @Test
+    fun `upsertVenta stamps updatedAt and schedules finanzas sync`() = runTest {
+        val venta = Venta(
+            id = "v_disp_2", opticaId = opticaId, origen = "dispensacion",
+            origenId = "d2", pacienteId = "p1", fecha = testDate,
+            montoTotal = 200.0, estado = "Pendiente"
+        )
+
+        repo.upsertVenta(venta)
+
+        coVerify(exactly = 1) { ventaDao.upsertVenta(match { it.updatedAt != null }) }
         coVerify(exactly = 1) { scheduler.scheduleFinanzasSync(opticaId) }
     }
 }
