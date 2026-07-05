@@ -64,7 +64,13 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
 
     val saveAction = {
         viewModel.saveDispensacion(pacienteId, dispensacionId) {
-            navController.popBackStack()
+            if (dispensacionId == null) {
+                navController.navigate("informacion_financiera/${viewModel.uiState.value.generatedId}") {
+                    popUpTo("nuevaDispensacion/$pacienteId") { inclusive = true }
+                }
+            } else {
+                navController.popBackStack()
+            }
         }
     }
     Scaffold(
