@@ -194,101 +194,55 @@ fun CierreCajaScreen(
                 }
             }
 
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-            ) {
-                Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text("Desglose", fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text("Ventas de hoy", fontSize = 13.sp)
-                        Text("s/. ${String.format(Locale.getDefault(), "%.2f", uiState.ventasHoy)}",
-                            fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.tertiary)
-                    }
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text("Cobros atrasados", fontSize = 13.sp)
-                        Text("s/. ${String.format(Locale.getDefault(), "%.2f", uiState.cobrosAtrasados)}",
-                            fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.secondary)
-                    }
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 2.dp))
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text("Total ingresado hoy", fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                        Text("s/. ${String.format(Locale.getDefault(), "%.2f", uiState.ventasHoy + uiState.cobrosAtrasados)}",
-                            fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                    }
-                }
-            }
-
-            if (uiState.serviciosExtraHoy.isNotEmpty() || uiState.dispensacionesHoy.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(12.dp))
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.3f))
-                ) {
-                    Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text("Ventas del día (detalle)", fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                        uiState.dispensacionesHoy.forEach { venta ->
-                            val pacienteId = venta.pacienteId
-                            val otLabel = if (venta.ot.isNotBlank()) "OT ${venta.ot}" else venta.origenId.take(8)
-                            Row(
-                                modifier = Modifier.fillMaxWidth()
-                                    .clickable {
-                                        if (pacienteId.isNotBlank()) {
-                                            navController.navigate("editarDispensacion/$pacienteId/${venta.origenId}")
-                                        }
-                                    },
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Text(otLabel, fontSize = 12.sp, modifier = Modifier.weight(1f))
-                                Text("s/. ${String.format(Locale.getDefault(), "%.2f", venta.montoTotal)}",
-                                    fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-                            }
-                        }
-                        uiState.serviciosExtraHoy.forEach { venta ->
-                            Row(
-                                modifier = Modifier.fillMaxWidth()
-                                    .clickable { navController.navigate("editar_servicio/${venta.origenId}") },
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Text("Servicio ${venta.origenId.take(8)}", fontSize = 12.sp, modifier = Modifier.weight(1f))
-                                Text("s/. ${String.format(Locale.getDefault(), "%.2f", venta.montoTotal)}",
-                                    fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-                            }
-                        }
-                    }
-                }
-            }
-
             Spacer(modifier = Modifier.height(16.dp))
-
-            ArqueoSection(
-                arqueoFromCierre = uiState.arqueoForFecha,
-                arqueoUiState = arqueoUiState,
-                systemTotals = totales,
-                fecha = uiState.fecha,
-                opticaId = opticaId,
-                onFondoCajaChange = arqueoVM::setFondoCaja,
-                onEfectivoContadoChange = arqueoVM::setEfectivoContado,
-                onTarjetaContadoChange = arqueoVM::setTarjetaContado,
-                onTransferenciaContadoChange = arqueoVM::setTransferenciaContado,
-                onMovilContadoChange = arqueoVM::setMovilContado,
-                onCerrarDia = { arqueoVM.cerrarDia(uiState.fecha, opticaId, totales) }
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-            Text("Detalle de Transacciones", fontWeight = FontWeight.Bold, fontSize = 18.sp)
-
+            Text("Movimientos del día", fontWeight = FontWeight.Bold, fontSize = 18.sp)
             Spacer(modifier = Modifier.height(8.dp))
 
-            if (uiState.pagos.isEmpty()) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("No hay transacciones registradas este día", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            val todasVentas = uiState.dispensacionesHoy + uiState.serviciosExtraHoy
+            if (todasVentas.isEmpty() && uiState.pagos.isEmpty()) {
+                OptoCard(modifier = Modifier.fillMaxWidth()) {
+                    Text("Sin movimientos este día", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             } else {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    uiState.pagos.forEach { pago ->
-                        TransactionItem(pago)
+                todasVentas.forEach { venta ->
+                    val label = if (venta.origen == "dispensacion") {
+                        if (venta.ot.isNotBlank()) "OT ${venta.ot}" else "Dispensación ${venta.origenId.take(8)}"
+                    } else "Servicio Extra"
+                    val pagosVenta = uiState.pagos.filter {
+                        it.dispensacionId == venta.origenId || it.servicioExtraId == venta.origenId
                     }
+                    val totalPagado = pagosVenta.sumOf { it.monto }
+                    val saldo = venta.montoTotal - totalPagado
+
+                    Card(
+                        modifier = Modifier.fillMaxWidth()
+                            .clickable {
+                                if (venta.origen == "dispensacion" && venta.pacienteId.isNotBlank())
+                                    navController.navigate("editarDispensacion/${venta.pacienteId}/${venta.origenId}")
+                                else navController.navigate("editar_servicio/${venta.origenId}")
+                            },
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text(label, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                Text("s/. ${String.format(Locale.getDefault(), "%.2f", venta.montoTotal)}",
+                                    fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                            }
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text("Pagado: s/. ${String.format(Locale.getDefault(), "%.2f", totalPagado)}", fontSize = 12.sp)
+                                Text("Saldo: s/. ${String.format(Locale.getDefault(), "%.2f", saldo)}",
+                                    fontSize = 12.sp, color = if (saldo > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary)
+                            }
+                            pagosVenta.forEach { pago ->
+                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                    Text("  ${pago.metodoPago}", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text("s/. ${String.format(Locale.getDefault(), "%.2f", pago.monto)}", fontSize = 11.sp)
+                                }
+                            }
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
                 }
             }
         }
