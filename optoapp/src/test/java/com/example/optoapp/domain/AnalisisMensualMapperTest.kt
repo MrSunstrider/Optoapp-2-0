@@ -74,22 +74,6 @@ class AnalisisMensualMapperTest {
 
     @Test
     fun fromJson_emptyMonth_allZeros() {
-        val json = buildJsonObject {
-            put("ventas_mes", 0.0)
-            put("cobros_mes", 0.0)
-            put("margen_neto_pct", 0.0)
-            putJsonArray("margen_por_categoria") {}
-            putJsonObject("deudores") {
-                put("cantidad", 0)
-                put("saldo_total", 0.0)
-            }
-            put("proyeccion_caja", null)
-            putJsonArray("stock_estancado") {}
-            put("valor_inventario", 0.0)
-            put("ventas_mes_anterior", 0.0)
-            put("variacion_ventas_pct", null)
-        }
-
         val result = AnalisisMensual.fromJson(buildJsonObject {
             put("ventas_mes", 0.0)
             put("cobros_mes", 0.0)
@@ -136,5 +120,52 @@ class AnalisisMensualMapperTest {
         assertEquals(0.0, result.cobrosMes, 0.001)
         assertEquals(0.0, result.margenNetoPct, 0.001)
         assertNull(result.proyeccionCaja)
+    }
+
+    // F8-GASTOS-MES RED tests
+
+    @Test
+    fun fromJson_withGastosMes_parsesCorrectly() {
+        val json = buildJsonObject {
+            put("ventas_mes", 15000.0)
+            put("cobros_mes", 12000.0)
+            put("margen_neto_pct", 25.5)
+            putJsonArray("margen_por_categoria") {}
+            putJsonObject("deudores") {
+                put("cantidad", 0)
+                put("saldo_total", 0.0)
+            }
+            putJsonArray("stock_estancado") {}
+            put("valor_inventario", 45000.0)
+            put("ventas_mes_anterior", 12000.0)
+            put("variacion_ventas_pct", null)
+            put("gastos_mes", 3900.0)
+        }
+
+        val result = AnalisisMensual.fromJson(json)
+
+        assertEquals(3900.0, result.gastosMes, 0.001)
+    }
+
+    @Test
+    fun fromJson_withoutGastosMes_defaultsToZero() {
+        val json = buildJsonObject {
+            put("ventas_mes", 15000.0)
+            put("cobros_mes", 12000.0)
+            put("margen_neto_pct", 25.5)
+            putJsonArray("margen_por_categoria") {}
+            putJsonObject("deudores") {
+                put("cantidad", 0)
+                put("saldo_total", 0.0)
+            }
+            putJsonArray("stock_estancado") {}
+            put("valor_inventario", 45000.0)
+            put("ventas_mes_anterior", 12000.0)
+            put("variacion_ventas_pct", null)
+        }
+
+        val result = AnalisisMensual.fromJson(json)
+
+        assertEquals(0.0, result.gastosMes, 0.001)
     }
 }

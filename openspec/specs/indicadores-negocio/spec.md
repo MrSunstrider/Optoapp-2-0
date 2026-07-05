@@ -73,8 +73,21 @@ A Hilt UseCase SHALL exist. Online: calls `rpc_deudores`. Offline: JOINs local R
 - WHEN `invoke('o1')` is called
 - THEN local JOIN query returns cached debtors
 
+### R7: AnalisisMensual — gastosMes Field
+
+The `AnalisisMensual` domain model SHALL include `val gastosMes: Double = 0.0` parsed from the `gastos_mes` key in the RPC JSONB response via `obj.optDouble("gastos_mes")`. Defaults to 0.0 when the key is missing.
+
+#### Scenario: RPC response with gastos_mes is parsed correctly
+- GIVEN an RPC JSONB response with `"gastos_mes": 3900.0`
+- WHEN `AnalisisMensual.fromJson(json)` is called
+- THEN `gastosMes == 3900.0`
+
+#### Scenario: RPC response without gastos_mes defaults to 0
+- GIVEN an RPC JSONB response missing the `gastos_mes` key
+- WHEN `AnalisisMensual.fromJson(json)` is called
+- THEN `gastosMes == 0.0` (no crash)
+
 ## Out of Scope
 
-- Fase 8 recommendation engine
 - Fase 9 UI screens for indicator display
 - Room entities for `margen_por_categoria` or `costos_productos` (server-side only)

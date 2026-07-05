@@ -1,0 +1,55 @@
+package com.example.optoapp.domain
+
+import com.example.optoapp.data.feedbackrecomendacion.FeedbackRecomendacionDao
+import com.example.optoapp.data.feedbackrecomendacion.FeedbackRecomendacionEntity
+import io.mockk.coVerify
+import io.mockk.mockk
+import io.mockk.slot
+import kotlinx.coroutines.runBlocking
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Before
+import org.junit.Test
+
+class FeedbackRecomendacionUseCaseTest {
+
+    private val dao: FeedbackRecomendacionDao = mockk(relaxed = true)
+    private lateinit var useCase: FeedbackRecomendacionUseCase
+
+    @Before
+    fun setUp() {
+        useCase = FeedbackRecomendacionUseCase(dao)
+    }
+
+    @Test
+    fun marcarUtil_callsDaoWithFueUtilTrue() = runBlocking {
+        val entitySlot = slot<FeedbackRecomendacionEntity>()
+
+        useCase.marcarUtil("rec-abc", "optica1")
+
+        coVerify { dao.upsert(capture(entitySlot)) }
+        assertEquals("rec-abc", entitySlot.captured.recomendacionId)
+        assertEquals("optica1", entitySlot.captured.opticaId)
+        assertTrue(entitySlot.captured.fueUtil)
+    }
+
+    @Test
+    fun marcarNoUtil_callsDaoWithFueUtilFalse() = runBlocking {
+        val entitySlot = slot<FeedbackRecomendacionEntity>()
+
+        useCase.marcarNoUtil("rec-xyz", "optica1")
+
+        coVerify { dao.upsert(capture(entitySlot)) }
+        assertEquals("rec-xyz", entitySlot.captured.recomendacionId)
+        assertEquals("optica1", entitySlot.captured.opticaId)
+        assertTrue(!entitySlot.captured.fueUtil)
+    }
+
+    @Test
+    fun marcarUtil_twice_isIdempotent() = runBlocking {
+        useCase.marcarUtil("rec-abc", "optica1")
+        useCase.marcarUtil("rec-abc", "optica1")
+
+        coVerify(exactly = 2) { dao.upsert(any()) }
+    }
+}

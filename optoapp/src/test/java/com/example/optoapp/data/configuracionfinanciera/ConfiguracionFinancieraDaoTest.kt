@@ -8,6 +8,7 @@ import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -51,6 +52,32 @@ class ConfiguracionFinancieraDaoTest {
         assertEquals(15.0, retrieved.margenNetoObjetivo, 0.001)
         assertEquals(30, retrieved.deudaViejaAlertaDias)
         assertEquals(5, retrieved.minVentasParaRecomendar)
+    }
+
+    // F8-CONFIG-DAO RED tests
+
+    @Test
+    fun getByOpticaIdOnce_returnsCorrectConfig() = runBlocking {
+        val config = ConfiguracionFinancieraEntity(
+            opticaId = "optica2",
+            margenNetoObjetivo = 25.0,
+            deudaViejaAlertaDias = 45,
+            minVentasParaRecomendar = 10
+        )
+        dao.upsert(config)
+
+        val retrieved = dao.getByOpticaIdOnce("optica2")
+        assertNotNull(retrieved)
+        assertEquals("optica2", retrieved!!.opticaId)
+        assertEquals(25.0, retrieved.margenNetoObjetivo, 0.001)
+        assertEquals(45, retrieved.deudaViejaAlertaDias)
+        assertEquals(10, retrieved.minVentasParaRecomendar)
+    }
+
+    @Test
+    fun getByOpticaIdOnce_returnsNullForMissing() = runBlocking {
+        val result = dao.getByOpticaIdOnce("nonexistent")
+        assertNull(result)
     }
 
     @Test

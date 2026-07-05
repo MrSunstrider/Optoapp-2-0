@@ -33,6 +33,7 @@ data class AnalisisMensual(
     val valorInventario: Double,
     val ventasMesAnterior: Double,
     val variacionVentasPct: Double?,
+    val gastosMes: Double = 0.0,
     val esOffline: Boolean = false
 ) {
     companion object {
@@ -49,7 +50,8 @@ data class AnalisisMensual(
                 stockEstancado = obj.parseStockEstancado(),
                 valorInventario = obj.optDouble("valor_inventario"),
                 ventasMesAnterior = obj.optDouble("ventas_mes_anterior"),
-                variacionVentasPct = obj.optDoubleNullable("variacion_ventas_pct")
+                variacionVentasPct = obj.optDoubleNullable("variacion_ventas_pct"),
+                gastosMes = obj.optDouble("gastos_mes")
             )
         }
 

@@ -980,3 +980,21 @@ val MIGRATION_31_32 = object : Migration(31, 32) {
         """.trimIndent())
     }
 }
+
+val MIGRATION_33_34 = object : Migration(33, 34) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("""
+            CREATE TABLE IF NOT EXISTS feedback_recomendaciones (
+                recomendacionId TEXT NOT NULL,
+                opticaId TEXT NOT NULL,
+                fueUtil INTEGER NOT NULL,
+                fecha INTEGER NOT NULL,
+                PRIMARY KEY (recomendacionId, opticaId)
+            )
+        """.trimIndent())
+        db.execSQL("""
+            CREATE INDEX IF NOT EXISTS index_feedback_recomendacionId_opticaId
+                ON feedback_recomendaciones(recomendacionId, opticaId)
+        """.trimIndent())
+    }
+}
