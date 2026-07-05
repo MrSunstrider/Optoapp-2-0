@@ -121,6 +121,7 @@ fun CierreCajaScreen(
                 .padding(padding)
                 .padding(horizontal = 16.dp)
                 .verticalScroll(scrollState)
+                .navigationBarsPadding()
         ) {
             if (!canView) {
                 OptoCard(modifier = Modifier.fillMaxWidth()) {

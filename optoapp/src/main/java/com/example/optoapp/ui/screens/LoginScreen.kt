@@ -112,6 +112,7 @@ fun LoginScreen(
         modifier = Modifier
             .fillMaxSize()
             .statusBarsPadding()
+            .navigationBarsPadding()
             .testTag(TestTags.LOGIN_SCREEN_ROOT)
             .background(
                 Brush.verticalGradient(

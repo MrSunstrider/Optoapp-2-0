@@ -134,7 +134,7 @@ fun ConfiguracionScreen(
             navigationIcon = { IconButton(onClick = { scope.launch { drawerState.open() } }) { Icon(Icons.Default.Menu, contentDescription = "Menu") } }
         )
     }) { padding ->
-        Column(modifier = Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(horizontal = OptoTokens.spacing.lg, vertical = 8.dp),
+        Column(modifier = Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).navigationBarsPadding().padding(horizontal = OptoTokens.spacing.lg, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(OptoTokens.spacing.md)) {
 
             SectionHeader(stringResource(R.string.config_section_security), icon = Icons.Default.Lock)
