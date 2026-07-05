@@ -885,3 +885,91 @@ val MIGRATION_30_31 = object : Migration(30, 31) {
         db.execSQL("ALTER TABLE ventas ADD COLUMN ot TEXT NOT NULL DEFAULT ''")
     }
 }
+
+val MIGRATION_31_32 = object : Migration(31, 32) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        // 1. CREATE categorias_producto (seed table, read-only)
+        db.execSQL("""
+            CREATE TABLE IF NOT EXISTS categorias_producto (
+                id TEXT PRIMARY KEY NOT NULL,
+                nombre TEXT NOT NULL,
+                familia TEXT NOT NULL,
+                orden INTEGER NOT NULL DEFAULT 0
+            )
+        """.trimIndent())
+
+        // 2. Seed categorias_producto — 9 rows, idempotent via INSERT OR IGNORE
+        val seed = listOf(
+            listOf("lente_progresivo", "Lentes Progresivos", "lente", 1),
+            listOf("lente_monofocal", "Lentes Monofocales", "lente", 2),
+            listOf("lente_bifocal", "Lentes Bifocales", "lente", 3),
+            listOf("lente_otro", "Otros Lentes", "lente", 9),
+            listOf("montura_premium", "Monturas Premium", "montura", 4),
+            listOf("montura_estandar", "Monturas Estándar", "montura", 5),
+            listOf("montura_economica", "Monturas Económicas", "montura", 6),
+            listOf("servicio_extra", "Servicios Extra", "servicio", 7),
+            listOf("servicio_garantia", "Garantías Extendidas", "servicio", 8)
+        )
+        seed.forEach { (id, nombre, familia, orden) ->
+            db.execSQL(
+                "INSERT OR IGNORE INTO categorias_producto (id, nombre, familia, orden) VALUES (?, ?, ?, ?)",
+                arrayOf<Any>(id, nombre, familia, orden)
+            )
+        }
+
+        // 3. ALTER ventas ADD COLUMN categoriaProductoId
+        db.execSQL("ALTER TABLE ventas ADD COLUMN categoriaProductoId TEXT")
+
+        // 4. CREATE gastos_operativos
+        db.execSQL("""
+            CREATE TABLE IF NOT EXISTS gastos_operativos (
+                id TEXT PRIMARY KEY NOT NULL,
+                opticaId TEXT NOT NULL,
+                categoria TEXT NOT NULL,
+                descripcion TEXT,
+                monto REAL NOT NULL,
+                fecha TEXT NOT NULL,
+                fechaProgramada TEXT,
+                nota TEXT,
+                createdAt TEXT
+            )
+        """.trimIndent())
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_gastos_operativos_opticaId ON gastos_operativos(opticaId)")
+
+        // 5. CREATE resumen_diario
+        db.execSQL("""
+            CREATE TABLE IF NOT EXISTS resumen_diario (
+                id TEXT PRIMARY KEY NOT NULL,
+                opticaId TEXT NOT NULL,
+                fecha TEXT NOT NULL,
+                ventasCantidad INTEGER NOT NULL DEFAULT 0,
+                ventasMontoTotal REAL NOT NULL DEFAULT 0.0,
+                ventasCostoTotal REAL NOT NULL DEFAULT 0.0,
+                cobrosCantidad INTEGER NOT NULL DEFAULT 0,
+                cobrosMontoTotal REAL NOT NULL DEFAULT 0.0,
+                saldoPendienteTotal REAL NOT NULL DEFAULT 0.0,
+                saldoPendienteCantidad INTEGER NOT NULL DEFAULT 0,
+                inventarioValor REAL,
+                inventarioUnidades INTEGER,
+                calculadoEn TEXT
+            )
+        """.trimIndent())
+        db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_resumen_diario_opticaId_fecha ON resumen_diario(opticaId, fecha)")
+
+        // 6. CREATE configuracion_financiera
+        db.execSQL("""
+            CREATE TABLE IF NOT EXISTS configuracion_financiera (
+                opticaId TEXT PRIMARY KEY NOT NULL,
+                margenNetoObjetivo REAL NOT NULL DEFAULT 15.0,
+                ticketPromedioObjetivo REAL,
+                caidaVentasAlertaPct REAL NOT NULL DEFAULT 10.0,
+                deudaViejaAlertaDias INTEGER NOT NULL DEFAULT 30,
+                deudaTotalAlertaMonto REAL NOT NULL DEFAULT 3000.0,
+                stockEstancadoAlertaDias INTEGER NOT NULL DEFAULT 180,
+                stockBajoAlertaUnidades INTEGER NOT NULL DEFAULT 2,
+                minVentasParaRecomendar INTEGER NOT NULL DEFAULT 5,
+                frecuenciaRecalculoDias INTEGER NOT NULL DEFAULT 1
+            )
+        """.trimIndent())
+    }
+}

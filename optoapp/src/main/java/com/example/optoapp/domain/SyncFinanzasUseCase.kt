@@ -48,6 +48,8 @@ open class SyncFinanzasUseCase @Inject constructor(
             Log.d(TAG, "Finanzas: upload servicios_extra=$servUp")
             val pagosUp = if (skipUpload) 0 else uploadSyncCoordinator.uploadPagos(opticaId)
             Log.d(TAG, "Finanzas: upload pagos=$pagosUp")
+            val gastosUp = if (skipUpload) 0 else uploadSyncCoordinator.uploadGastosOperativos(opticaId)
+            Log.d(TAG, "Finanzas: upload gastos_operativos=$gastosUp")
             if (!skipUpload) {
                 val arqueosUp = uploadSyncCoordinator.uploadArqueos(opticaId)
                 Log.d(TAG, "Finanzas: upload arqueo_caja=$arqueosUp")
@@ -58,6 +60,8 @@ open class SyncFinanzasUseCase @Inject constructor(
             val servDown: Int
             val ventasDown: Int
             val pagosDown: Int
+            val resumenDown: Int
+            val configDown: Int
             if (downloadAfterUpload) {
                 val arqueosDown = downloadSyncCoordinator.downloadArqueos(opticaId)
                 Log.d(TAG, "Finanzas: download arqueo_caja=$arqueosDown")
@@ -69,14 +73,20 @@ open class SyncFinanzasUseCase @Inject constructor(
                 Log.d(TAG, "Finanzas: download servicios_extra=$servDown")
                 ventasDown = downloadSyncCoordinator.downloadVentas(opticaId)
                 Log.d(TAG, "Finanzas: download ventas=$ventasDown")
+                resumenDown = downloadSyncCoordinator.downloadResumenDiario(opticaId)
+                Log.d(TAG, "Finanzas: download resumen_diario=$resumenDown")
+                configDown = downloadSyncCoordinator.downloadConfiguracionFinanciera(opticaId)
+                Log.d(TAG, "Finanzas: download configuracion_financiera=$configDown")
                 pagosDown = downloadSyncCoordinator.downloadPagos(opticaId)
-                Log.d(TAG, "Finanzas: download pagos=$pagosDown; fin OK")
+                Log.d(TAG, "Finanzas: download pagos=$pagosDown")
             } else {
                 dispDown = 0
                 itemsDown = 0
                 servDown = 0
                 ventasDown = 0
                 pagosDown = 0
+                resumenDown = 0
+                configDown = 0
                 Log.d(TAG, "Finanzas: fin upload-only OK")
             }
 
@@ -86,11 +96,14 @@ open class SyncFinanzasUseCase @Inject constructor(
                     uploadedDispensacionItems = itemsUp,
                     uploadedServicios = servUp,
                     uploadedPagos = pagosUp,
+                    uploadedGastosOperativos = gastosUp,
                     downloadedDispensaciones = dispDown,
                     downloadedDispensacionItems = itemsDown,
                     downloadedServicios = servDown,
                     downloadedPagos = pagosDown,
-                    downloadedVentas = ventasDown
+                    downloadedVentas = ventasDown,
+                    downloadedResumenesDiarios = resumenDown,
+                    downloadedConfiguracionesFinancieras = configDown
                 )
             )
         } catch (e: CancellationException) {

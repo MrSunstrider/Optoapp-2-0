@@ -5,7 +5,15 @@ import com.example.optoapp.data.arqueo.ArqueoCaja
 import com.example.optoapp.data.arqueo.ArqueoCajaDao
 import com.example.optoapp.data.arqueo.IArqueoCajaRepo
 import com.example.optoapp.data.backup.BackupRestoreCoordinator
+import com.example.optoapp.data.categoriaproducto.CategoriaProductoDao
+import com.example.optoapp.data.categoriaproducto.CategoriaProductoEntity
+import com.example.optoapp.data.configuracionfinanciera.ConfiguracionFinancieraDao
+import com.example.optoapp.data.configuracionfinanciera.ConfiguracionFinancieraEntity
+import com.example.optoapp.data.gastooperativo.GastoOperativoDao
+import com.example.optoapp.data.gastooperativo.GastoOperativoEntity
 import com.example.optoapp.data.montura.MonturaInventoryCoordinator
+import com.example.optoapp.data.resumendiario.ResumenDiarioDao
+import com.example.optoapp.data.resumendiario.ResumenDiarioEntity
 import com.example.optoapp.data.sync.SyncSnapshotCoordinator
 import com.example.optoapp.data.venta.Venta
 import com.example.optoapp.data.venta.VentaDao
@@ -37,7 +45,11 @@ open class OptoRepository(
     val backupCoordinator: BackupRestoreCoordinator,
     val monturaCoordinator: MonturaInventoryCoordinator,
     private val arqueoCajaDao: ArqueoCajaDao,
-    private val ventaDao: VentaDao
+    private val ventaDao: VentaDao,
+    private val gastoOperativoDao: GastoOperativoDao,
+    private val resumenDiarioDao: ResumenDiarioDao,
+    private val configuracionFinancieraDao: ConfiguracionFinancieraDao,
+    private val categoriaProductoDao: CategoriaProductoDao
 ) : IArqueoCajaRepo {
     companion object {
         private const val TAG = "OptoRepository"
@@ -202,6 +214,55 @@ open class OptoRepository(
 
     fun getArqueosByOptica(opticaId: String): Flow<List<ArqueoCaja>> =
         arqueoCajaDao.getArqueosByOptica(opticaId)
+
+    // ─── Gastos Operativos ────────────────────────────────────────────────────
+
+    fun getGastosOperativos(opticaId: String): Flow<List<GastoOperativoEntity>> =
+        gastoOperativoDao.getByOpticaId(opticaId)
+
+    suspend fun getGastosOperativosList(opticaId: String): List<GastoOperativoEntity> =
+        gastoOperativoDao.getByOpticaIdList(opticaId)
+
+    suspend fun insertGastoOperativo(gasto: GastoOperativoEntity) {
+        val stamped = gasto.copy(createdAt = Instant.now().toString())
+        gastoOperativoDao.insert(stamped)
+        postSaveSyncScheduler.get().scheduleFinanzasSync(stamped.opticaId)
+    }
+
+    suspend fun upsertGastoOperativo(gasto: GastoOperativoEntity) {
+        val stamped = gasto.copy(createdAt = Instant.now().toString())
+        gastoOperativoDao.upsert(stamped)
+        postSaveSyncScheduler.get().scheduleFinanzasSync(stamped.opticaId)
+    }
+
+    suspend fun deleteGastoOperativo(gasto: GastoOperativoEntity) {
+        gastoOperativoDao.delete(gasto.id)
+        postSaveSyncScheduler.get().scheduleFinanzasSync(gasto.opticaId)
+    }
+
+    suspend fun upsertGastoOperativoFromRemote(gasto: GastoOperativoEntity) =
+        gastoOperativoDao.upsert(gasto)
+
+    // ─── Resumen Diario ───────────────────────────────────────────────────────
+
+    fun getResumenDiario(opticaId: String): Flow<List<ResumenDiarioEntity>> =
+        resumenDiarioDao.getByOpticaId(opticaId)
+
+    suspend fun upsertResumenDiarioFromRemote(resumen: ResumenDiarioEntity) =
+        resumenDiarioDao.upsert(resumen)
+
+    // ─── Configuración Financiera ──────────────────────────────────────────────
+
+    fun getConfiguracionFinanciera(opticaId: String): Flow<ConfiguracionFinancieraEntity?> =
+        configuracionFinancieraDao.getByOpticaId(opticaId)
+
+    suspend fun upsertConfiguracionFinancieraFromRemote(config: ConfiguracionFinancieraEntity) =
+        configuracionFinancieraDao.upsert(config)
+
+    // ─── Categorías de Producto ───────────────────────────────────────────────
+
+    fun getCategoriasProducto(): Flow<List<CategoriaProductoEntity>> =
+        categoriaProductoDao.getAll()
 }
 
 data class DuplicateHoResolutionResult(

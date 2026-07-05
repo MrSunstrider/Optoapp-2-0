@@ -89,7 +89,11 @@ class OptoRepositoryTest {
             backupCoordinator = backupCoordinator,
             monturaCoordinator = monturaCoordinator,
             arqueoCajaDao = db.arqueoCajaDao(),
-            ventaDao = db.ventaDao()
+            ventaDao = db.ventaDao(),
+            gastoOperativoDao = db.gastoOperativoDao(),
+            resumenDiarioDao = db.resumenDiarioDao(),
+            configuracionFinancieraDao = db.configuracionFinancieraDao(),
+            categoriaProductoDao = db.categoriaProductoDao()
         )
     }
 

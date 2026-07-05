@@ -23,7 +23,6 @@ object DateUtils {
         // 2. Si no, usamos ZoneId.systemDefault() que es el estándar moderno de Java/Android.
         val zoneId = userPreferredZone ?: java.time.ZoneId.systemDefault()
         val now = LocalDate.now(zoneId)
-        android.util.Log.d("DATE_DEBUG", "today() -> Fecha: $now | Zona: ${zoneId.id} | Es Manual: ${userPreferredZone != null}")
         return now
     }
 

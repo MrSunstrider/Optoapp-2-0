@@ -26,5 +26,6 @@ data class Venta(
     val estado: String,
     val createdAt: String? = null,
     val updatedAt: String? = null,
-    val updatedBy: String? = null
+    val updatedBy: String? = null,
+    val categoriaProductoId: String? = null
 )

@@ -79,12 +79,16 @@ class SyncFinanzasUseCaseKtTest {
         coEvery { uploadCoordinator.uploadDispensacionItems(any()) } returns 0
         coEvery { uploadCoordinator.uploadServicios(any()) } returns 0
         coEvery { uploadCoordinator.uploadPagos(any()) } returns 0
+        coEvery { uploadCoordinator.uploadGastosOperativos(any()) } returns 0
         coEvery { uploadCoordinator.uploadArqueos(any()) } returns 0
         coEvery { downloadCoordinator.downloadArqueos(any()) } returns 0
         coEvery { downloadCoordinator.downloadDispensaciones(any()) } returns 0
         coEvery { downloadCoordinator.downloadDispensacionItems(any()) } returns 0
         coEvery { downloadCoordinator.downloadServicios(any()) } returns 0
+        coEvery { downloadCoordinator.downloadVentas(any()) } returns 0
         coEvery { downloadCoordinator.downloadPagos(any()) } returns 0
+        coEvery { downloadCoordinator.downloadResumenDiario(any()) } returns 0
+        coEvery { downloadCoordinator.downloadConfiguracionFinanciera(any()) } returns 0
 
         val useCase = SyncFinanzasUseCase(
             deletionSyncHelper = deletionSyncHelper,
@@ -97,6 +101,7 @@ class SyncFinanzasUseCaseKtTest {
 
         coVerifyOrder {
             uploadCoordinator.uploadPagos("optica-test")
+            uploadCoordinator.uploadGastosOperativos("optica-test")
             uploadCoordinator.uploadArqueos("optica-test")
         }
     }
@@ -281,6 +286,7 @@ class SyncFinanzasUseCaseKtTest {
         coEvery { uploadCoordinator.uploadDispensacionItems(any()) } returns 0
         coEvery { uploadCoordinator.uploadServicios(any()) } returns 0
         coEvery { uploadCoordinator.uploadPagos(any()) } returns 0
+        coEvery { uploadCoordinator.uploadGastosOperativos(any()) } returns 0
         coEvery { uploadCoordinator.uploadArqueos(any()) } returns 0
         coEvery { downloadCoordinator.downloadArqueos(any()) } returns 0
         coEvery { downloadCoordinator.downloadDispensaciones(any()) } returns 0
@@ -288,6 +294,8 @@ class SyncFinanzasUseCaseKtTest {
         coEvery { downloadCoordinator.downloadServicios(any()) } returns 0
         coEvery { downloadCoordinator.downloadVentas(any()) } returns 5
         coEvery { downloadCoordinator.downloadPagos(any()) } returns 0
+        coEvery { downloadCoordinator.downloadResumenDiario(any()) } returns 0
+        coEvery { downloadCoordinator.downloadConfiguracionFinanciera(any()) } returns 0
 
         val useCase = SyncFinanzasUseCase(
             deletionSyncHelper = deletionSyncHelper,
@@ -317,6 +325,7 @@ class SyncFinanzasUseCaseKtTest {
         coEvery { uploadCoordinator.uploadDispensacionItems(any()) } returns 0
         coEvery { uploadCoordinator.uploadServicios(any()) } returns 0
         coEvery { uploadCoordinator.uploadPagos(any()) } returns 0
+        coEvery { uploadCoordinator.uploadGastosOperativos(any()) } returns 0
         coEvery { uploadCoordinator.uploadArqueos(any()) } returns 0
         coEvery { downloadCoordinator.downloadArqueos(any()) } returns 0
         coEvery { downloadCoordinator.downloadDispensaciones(any()) } returns 0
@@ -324,6 +333,8 @@ class SyncFinanzasUseCaseKtTest {
         coEvery { downloadCoordinator.downloadServicios(any()) } returns 0
         coEvery { downloadCoordinator.downloadVentas(any()) } returns 3
         coEvery { downloadCoordinator.downloadPagos(any()) } returns 0
+        coEvery { downloadCoordinator.downloadResumenDiario(any()) } returns 0
+        coEvery { downloadCoordinator.downloadConfiguracionFinanciera(any()) } returns 0
 
         val useCase = SyncFinanzasUseCase(
             deletionSyncHelper = deletionSyncHelper,
@@ -365,5 +376,162 @@ class SyncFinanzasUseCaseKtTest {
         useCase("optica-test", downloadAfterUpload = false)
 
         coVerify(exactly = 0) { downloadCoordinator.downloadVentas(any()) }
+    }
+
+    // ── GastoOperativo sync ordering ─────────────────────────────────────────
+    // RED phase: uploadGastosOperativos does NOT exist yet on UploadSyncCoordinator
+
+    @Test
+    fun syncFinanzas_includes_gastosOperativos_in_upload_sequence() = runBlocking {
+        val uploadCoordinator = mockk<UploadSyncCoordinator>()
+        val downloadCoordinator = mockk<DownloadSyncCoordinator>()
+        val deletionSyncHelper = mockk<DeletionSyncHelper>()
+        val networkRetryHelper = mockk<NetworkRetryHelper>()
+
+        coEvery { deletionSyncHelper.pushPendingDeletions(any()) } just Runs
+        coEvery { uploadCoordinator.uploadDispensaciones(any()) } returns 0
+        coEvery { uploadCoordinator.uploadDispensacionItems(any()) } returns 0
+        coEvery { uploadCoordinator.uploadServicios(any()) } returns 0
+        coEvery { uploadCoordinator.uploadPagos(any()) } returns 0
+        coEvery { uploadCoordinator.uploadGastosOperativos(any()) } returns 3
+        coEvery { uploadCoordinator.uploadArqueos(any()) } returns 0
+        coEvery { downloadCoordinator.downloadArqueos(any()) } returns 0
+        coEvery { downloadCoordinator.downloadDispensaciones(any()) } returns 0
+        coEvery { downloadCoordinator.downloadDispensacionItems(any()) } returns 0
+        coEvery { downloadCoordinator.downloadServicios(any()) } returns 0
+        coEvery { downloadCoordinator.downloadVentas(any()) } returns 0
+        coEvery { downloadCoordinator.downloadPagos(any()) } returns 0
+        coEvery { downloadCoordinator.downloadResumenDiario(any()) } returns 0
+        coEvery { downloadCoordinator.downloadConfiguracionFinanciera(any()) } returns 0
+
+        val useCase = SyncFinanzasUseCase(
+            deletionSyncHelper = deletionSyncHelper,
+            uploadSyncCoordinator = uploadCoordinator,
+            downloadSyncCoordinator = downloadCoordinator,
+            networkRetryHelper = networkRetryHelper
+        )
+
+        useCase("optica-test")
+
+        coVerifyOrder {
+            uploadCoordinator.uploadPagos("optica-test")
+            uploadCoordinator.uploadGastosOperativos("optica-test")
+            uploadCoordinator.uploadArqueos("optica-test")
+        }
+    }
+
+    // ── ResumenDiario download ordering ──────────────────────────────────────
+    // RED phase: downloadResumenDiario does NOT exist yet on DownloadSyncCoordinator
+
+    @Test
+    fun syncFinanzas_includes_resumenDiario_in_download_sequence() = runBlocking {
+        val uploadCoordinator = mockk<UploadSyncCoordinator>()
+        val downloadCoordinator = mockk<DownloadSyncCoordinator>()
+        val deletionSyncHelper = mockk<DeletionSyncHelper>()
+        val networkRetryHelper = mockk<NetworkRetryHelper>()
+
+        coEvery { deletionSyncHelper.pushPendingDeletions(any()) } just Runs
+        coEvery { uploadCoordinator.uploadDispensaciones(any()) } returns 0
+        coEvery { uploadCoordinator.uploadDispensacionItems(any()) } returns 0
+        coEvery { uploadCoordinator.uploadServicios(any()) } returns 0
+        coEvery { uploadCoordinator.uploadPagos(any()) } returns 0
+        coEvery { uploadCoordinator.uploadGastosOperativos(any()) } returns 0
+        coEvery { uploadCoordinator.uploadArqueos(any()) } returns 0
+        coEvery { downloadCoordinator.downloadArqueos(any()) } returns 0
+        coEvery { downloadCoordinator.downloadDispensaciones(any()) } returns 0
+        coEvery { downloadCoordinator.downloadDispensacionItems(any()) } returns 0
+        coEvery { downloadCoordinator.downloadServicios(any()) } returns 0
+        coEvery { downloadCoordinator.downloadVentas(any()) } returns 0
+        coEvery { downloadCoordinator.downloadPagos(any()) } returns 0
+        coEvery { downloadCoordinator.downloadResumenDiario(any()) } returns 2
+        coEvery { downloadCoordinator.downloadConfiguracionFinanciera(any()) } returns 1
+
+        val useCase = SyncFinanzasUseCase(
+            deletionSyncHelper = deletionSyncHelper,
+            uploadSyncCoordinator = uploadCoordinator,
+            downloadSyncCoordinator = downloadCoordinator,
+            networkRetryHelper = networkRetryHelper
+        )
+
+        useCase("optica-test")
+
+        coVerify(exactly = 1) { downloadCoordinator.downloadResumenDiario("optica-test") }
+    }
+
+    // ── ConfiguracionFinanciera download ordering ────────────────────────────
+    // RED phase: downloadConfiguracionFinanciera does NOT exist yet on DownloadSyncCoordinator
+
+    @Test
+    fun syncFinanzas_includes_configuracionFinanciera_in_download_sequence() = runBlocking {
+        val uploadCoordinator = mockk<UploadSyncCoordinator>()
+        val downloadCoordinator = mockk<DownloadSyncCoordinator>()
+        val deletionSyncHelper = mockk<DeletionSyncHelper>()
+        val networkRetryHelper = mockk<NetworkRetryHelper>()
+
+        coEvery { deletionSyncHelper.pushPendingDeletions(any()) } just Runs
+        coEvery { uploadCoordinator.uploadDispensaciones(any()) } returns 0
+        coEvery { uploadCoordinator.uploadDispensacionItems(any()) } returns 0
+        coEvery { uploadCoordinator.uploadServicios(any()) } returns 0
+        coEvery { uploadCoordinator.uploadPagos(any()) } returns 0
+        coEvery { uploadCoordinator.uploadGastosOperativos(any()) } returns 0
+        coEvery { uploadCoordinator.uploadArqueos(any()) } returns 0
+        coEvery { downloadCoordinator.downloadArqueos(any()) } returns 0
+        coEvery { downloadCoordinator.downloadDispensaciones(any()) } returns 0
+        coEvery { downloadCoordinator.downloadDispensacionItems(any()) } returns 0
+        coEvery { downloadCoordinator.downloadServicios(any()) } returns 0
+        coEvery { downloadCoordinator.downloadVentas(any()) } returns 0
+        coEvery { downloadCoordinator.downloadPagos(any()) } returns 0
+        coEvery { downloadCoordinator.downloadResumenDiario(any()) } returns 0
+        coEvery { downloadCoordinator.downloadConfiguracionFinanciera(any()) } returns 1
+
+        val useCase = SyncFinanzasUseCase(
+            deletionSyncHelper = deletionSyncHelper,
+            uploadSyncCoordinator = uploadCoordinator,
+            downloadSyncCoordinator = downloadCoordinator,
+            networkRetryHelper = networkRetryHelper
+        )
+
+        useCase("optica-test")
+
+        coVerify(exactly = 1) { downloadCoordinator.downloadConfiguracionFinanciera("optica-test") }
+    }
+
+    @Test
+    fun syncFinanzas_download_sequence_includes_finanzas_entities() = runBlocking {
+        val uploadCoordinator = mockk<UploadSyncCoordinator>()
+        val downloadCoordinator = mockk<DownloadSyncCoordinator>()
+        val deletionSyncHelper = mockk<DeletionSyncHelper>()
+        val networkRetryHelper = mockk<NetworkRetryHelper>()
+
+        coEvery { deletionSyncHelper.pushPendingDeletions(any()) } just Runs
+        coEvery { uploadCoordinator.uploadDispensaciones(any()) } returns 0
+        coEvery { uploadCoordinator.uploadDispensacionItems(any()) } returns 0
+        coEvery { uploadCoordinator.uploadServicios(any()) } returns 0
+        coEvery { uploadCoordinator.uploadPagos(any()) } returns 0
+        coEvery { uploadCoordinator.uploadGastosOperativos(any()) } returns 0
+        coEvery { uploadCoordinator.uploadArqueos(any()) } returns 0
+        coEvery { downloadCoordinator.downloadArqueos(any()) } returns 0
+        coEvery { downloadCoordinator.downloadDispensaciones(any()) } returns 0
+        coEvery { downloadCoordinator.downloadDispensacionItems(any()) } returns 0
+        coEvery { downloadCoordinator.downloadServicios(any()) } returns 0
+        coEvery { downloadCoordinator.downloadVentas(any()) } returns 1
+        coEvery { downloadCoordinator.downloadPagos(any()) } returns 0
+        coEvery { downloadCoordinator.downloadResumenDiario(any()) } returns 2
+        coEvery { downloadCoordinator.downloadConfiguracionFinanciera(any()) } returns 1
+
+        val useCase = SyncFinanzasUseCase(
+            deletionSyncHelper = deletionSyncHelper,
+            uploadSyncCoordinator = uploadCoordinator,
+            downloadSyncCoordinator = downloadCoordinator,
+            networkRetryHelper = networkRetryHelper
+        )
+
+        useCase("optica-test")
+
+        coVerifyOrder {
+            downloadCoordinator.downloadResumenDiario("optica-test")
+            downloadCoordinator.downloadConfiguracionFinanciera("optica-test")
+            downloadCoordinator.downloadPagos("optica-test")
+        }
     }
 }

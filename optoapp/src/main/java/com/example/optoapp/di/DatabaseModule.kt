@@ -5,6 +5,9 @@ import com.example.optoapp.data.*
 import com.example.optoapp.data.arqueo.ArqueoCajaDao
 import com.example.optoapp.data.arqueo.IArqueoCajaRepo
 import com.example.optoapp.data.backup.BackupRestoreCoordinator
+import com.example.optoapp.data.configuracionfinanciera.ConfiguracionFinancieraDao
+import com.example.optoapp.data.categoriaproducto.CategoriaProductoDao
+import com.example.optoapp.data.gastooperativo.GastoOperativoDao
 import com.example.optoapp.data.inventariofisico.InventarioFisicoDao
 import com.example.optoapp.data.montura.MonturaDao
 import com.example.optoapp.data.montura.MonturaDashboardKpiRepository
@@ -16,6 +19,7 @@ import com.example.optoapp.data.pago.PagoDao
 import com.example.optoapp.data.proveedor.CategoriaMonturaDao
 import com.example.optoapp.data.proveedor.MonturaProveedorDao
 import com.example.optoapp.data.proveedor.ProveedorDao
+import com.example.optoapp.data.resumendiario.ResumenDiarioDao
 import com.example.optoapp.data.servicio.ServicioExtraDao
 import com.example.optoapp.data.sync.SyncSnapshotCoordinator
 import com.example.optoapp.data.venta.VentaDao
@@ -108,6 +112,18 @@ object DatabaseModule {
     fun provideVentaDao(database: OptoDatabase): VentaDao = database.ventaDao()
 
     @Provides
+    fun provideGastoOperativoDao(database: OptoDatabase): GastoOperativoDao = database.gastoOperativoDao()
+
+    @Provides
+    fun provideResumenDiarioDao(database: OptoDatabase): ResumenDiarioDao = database.resumenDiarioDao()
+
+    @Provides
+    fun provideConfiguracionFinancieraDao(database: OptoDatabase): ConfiguracionFinancieraDao = database.configuracionFinancieraDao()
+
+    @Provides
+    fun provideCategoriaProductoDao(database: OptoDatabase): CategoriaProductoDao = database.categoriaProductoDao()
+
+    @Provides
     @Singleton
     fun provideSecurityManager(@ApplicationContext context: Context): SecurityManager {
         return SecurityManager(context)
@@ -190,7 +206,11 @@ object DatabaseModule {
         snapshotCoordinator: SyncSnapshotCoordinator,
         backupCoordinator: BackupRestoreCoordinator,
         monturaCoordinator: MonturaInventoryCoordinator,
-        arqueoCajaDao: ArqueoCajaDao
+        arqueoCajaDao: ArqueoCajaDao,
+        gastoOperativoDao: GastoOperativoDao,
+        resumenDiarioDao: ResumenDiarioDao,
+        configuracionFinancieraDao: ConfiguracionFinancieraDao,
+        categoriaProductoDao: CategoriaProductoDao
     ): OptoRepository {
         return OptoRepository(
             database,
@@ -203,7 +223,11 @@ object DatabaseModule {
             backupCoordinator,
             monturaCoordinator,
             arqueoCajaDao,
-            database.ventaDao()
+            database.ventaDao(),
+            gastoOperativoDao,
+            resumenDiarioDao,
+            configuracionFinancieraDao,
+            categoriaProductoDao
         )
     }
 

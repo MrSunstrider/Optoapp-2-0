@@ -29,6 +29,8 @@ class DownloadSyncCoordinator @Inject constructor(
         private const val TABLE_VENTAS = "ventas"
         private const val TABLE_PAGOS = "pagos"
         private const val TABLE_ARQUEO_CAJA = "arqueo_caja"
+        private const val TABLE_RESUMEN_DIARIO = "resumen_diario"
+        private const val TABLE_CONFIGURACION_FINANCIERA = "configuracion_financiera"
     }
 
     suspend fun downloadDispensacionItems(opticaId: String): Int {
@@ -173,6 +175,54 @@ class DownloadSyncCoordinator @Inject constructor(
             throw e
         } catch (e: Exception) {
             Log.w(TAG, "arqueo download failed", e)
+            0
+        }
+    }
+
+    suspend fun downloadResumenDiario(opticaId: String): Int {
+        return try {
+            val remotos = supabase.postgrest[TABLE_RESUMEN_DIARIO]
+                .select { filter { eq("optica_id", opticaId) } }
+                .decodeList<ResumenDiarioRemoto>()
+            remotos.forEach { r ->
+                try {
+                    repository.upsertResumenDiarioFromRemote(r.toEntity())
+                    syncStateTracker.markSynced(opticaId, "resumen_diario", r.id)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Log.w(TAG, "resumen_diario upsert failed for ${r.id}", e)
+                }
+            }
+            remotos.size
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.w(TAG, "resumen_diario download failed", e)
+            0
+        }
+    }
+
+    suspend fun downloadConfiguracionFinanciera(opticaId: String): Int {
+        return try {
+            val remotos = supabase.postgrest[TABLE_CONFIGURACION_FINANCIERA]
+                .select { filter { eq("optica_id", opticaId) } }
+                .decodeList<ConfiguracionFinancieraRemoto>()
+            remotos.forEach { r ->
+                try {
+                    repository.upsertConfiguracionFinancieraFromRemote(r.toEntity())
+                    syncStateTracker.markSynced(opticaId, "configuracion_financiera", r.opticaId)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Log.w(TAG, "configuracion_financiera upsert failed for ${r.opticaId}", e)
+                }
+            }
+            remotos.size
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.w(TAG, "configuracion_financiera download failed", e)
             0
         }
     }

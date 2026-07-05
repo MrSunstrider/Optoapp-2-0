@@ -6,6 +6,9 @@ import com.example.optoapp.data.FinanzasRemoteDefaults
 import com.example.optoapp.data.Pago
 import com.example.optoapp.data.ServicioExtra
 import com.example.optoapp.data.arqueo.ArqueoCaja
+import com.example.optoapp.data.configuracionfinanciera.ConfiguracionFinancieraEntity
+import com.example.optoapp.data.gastooperativo.GastoOperativoEntity
+import com.example.optoapp.data.resumendiario.ResumenDiarioEntity
 import com.example.optoapp.data.venta.Venta
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -137,6 +140,7 @@ data class VentaRemota(
     @SerialName("monto_total") val montoTotal: Double,
     @SerialName("costo_unitario_snapshot") val costoUnitarioSnapshot: Double? = null,
     val estado: String,
+    @SerialName("categoria_producto_id") val categoriaProductoId: String? = null,
     @SerialName("created_at") val createdAt: String? = null,
     @SerialName("updated_at") val updatedAt: String? = null,
     @SerialName("updated_by") val updatedBy: String? = null
@@ -152,6 +156,7 @@ data class VentaRemota(
         montoTotal = montoTotal,
         costoUnitarioSnapshot = costoUnitarioSnapshot,
         estado = estado,
+        categoriaProductoId = categoriaProductoId,
         createdAt = createdAt,
         updatedAt = updatedAt,
         updatedBy = updatedBy
@@ -192,16 +197,112 @@ data class DispensacionItemRemota(
     )
 }
 
+// ── GastoOperativo remote DTO ──────────────────────────────────────────
+
+@Serializable
+data class GastoOperativoRemoto(
+    val id: String,
+    @SerialName("optica_id") val opticaId: String,
+    val categoria: String,
+    val descripcion: String? = null,
+    val monto: Double,
+    val fecha: String,
+    @SerialName("fecha_programada") val fechaProgramada: String? = null,
+    val nota: String? = null,
+    @SerialName("created_at") val createdAt: String? = null
+)
+
+fun GastoOperativoEntity.toRemoto(): GastoOperativoRemoto = GastoOperativoRemoto(
+    id = id,
+    opticaId = opticaId,
+    categoria = categoria,
+    descripcion = descripcion,
+    monto = monto,
+    fecha = fecha.toString(),
+    fechaProgramada = fechaProgramada?.toString(),
+    nota = nota,
+    createdAt = createdAt
+)
+
+// ── ResumenDiario remote DTO ───────────────────────────────────────────
+
+@Serializable
+data class ResumenDiarioRemoto(
+    val id: String,
+    @SerialName("optica_id") val opticaId: String,
+    val fecha: String,
+    @SerialName("ventas_cantidad") val ventasCantidad: Int = 0,
+    @SerialName("ventas_monto_total") val ventasMontoTotal: Double = 0.0,
+    @SerialName("ventas_costo_total") val ventasCostoTotal: Double = 0.0,
+    @SerialName("cobros_cantidad") val cobrosCantidad: Int = 0,
+    @SerialName("cobros_monto_total") val cobrosMontoTotal: Double = 0.0,
+    @SerialName("saldo_pendiente_total") val saldoPendienteTotal: Double = 0.0,
+    @SerialName("saldo_pendiente_cantidad") val saldoPendienteCantidad: Int = 0,
+    @SerialName("inventario_valor") val inventarioValor: Double? = null,
+    @SerialName("inventario_unidades") val inventarioUnidades: Int? = null,
+    @SerialName("calculado_en") val calculadoEn: String? = null
+) {
+    fun toEntity() = ResumenDiarioEntity(
+        id = id,
+        opticaId = opticaId,
+        fecha = fecha,
+        ventasCantidad = ventasCantidad,
+        ventasMontoTotal = ventasMontoTotal,
+        ventasCostoTotal = ventasCostoTotal,
+        cobrosCantidad = cobrosCantidad,
+        cobrosMontoTotal = cobrosMontoTotal,
+        saldoPendienteTotal = saldoPendienteTotal,
+        saldoPendienteCantidad = saldoPendienteCantidad,
+        inventarioValor = inventarioValor,
+        inventarioUnidades = inventarioUnidades,
+        calculadoEn = calculadoEn
+    )
+}
+
+// ── ConfiguracionFinanciera remote DTO ─────────────────────────────────
+
+@Serializable
+data class ConfiguracionFinancieraRemoto(
+    @SerialName("optica_id") val opticaId: String,
+    @SerialName("margen_neto_objetivo") val margenNetoObjetivo: Double = 15.0,
+    @SerialName("ticket_promedio_objetivo") val ticketPromedioObjetivo: Double? = null,
+    @SerialName("caida_ventas_alerta_pct") val caidaVentasAlertaPct: Double = 10.0,
+    @SerialName("deuda_vieja_alerta_dias") val deudaViejaAlertaDias: Int = 30,
+    @SerialName("deuda_total_alerta_monto") val deudaTotalAlertaMonto: Double = 3000.0,
+    @SerialName("stock_estancado_alerta_dias") val stockEstancadoAlertaDias: Int = 180,
+    @SerialName("stock_bajo_alerta_unidades") val stockBajoAlertaUnidades: Int = 2,
+    @SerialName("min_ventas_para_recomendar") val minVentasParaRecomendar: Int = 5,
+    @SerialName("frecuencia_recalculo_dias") val frecuenciaRecalculoDias: Int = 1
+) {
+    fun toEntity() = ConfiguracionFinancieraEntity(
+        opticaId = opticaId,
+        margenNetoObjetivo = margenNetoObjetivo,
+        ticketPromedioObjetivo = ticketPromedioObjetivo,
+        caidaVentasAlertaPct = caidaVentasAlertaPct,
+        deudaViejaAlertaDias = deudaViejaAlertaDias,
+        deudaTotalAlertaMonto = deudaTotalAlertaMonto,
+        stockEstancadoAlertaDias = stockEstancadoAlertaDias,
+        stockBajoAlertaUnidades = stockBajoAlertaUnidades,
+        minVentasParaRecomendar = minVentasParaRecomendar,
+        frecuenciaRecalculoDias = frecuenciaRecalculoDias
+    )
+}
+
+// ── Sync result ────────────────────────────────────────────────────────
+
 data class FinanzasSyncResult(
     val uploadedDispensaciones: Int,
     val uploadedDispensacionItems: Int = 0,
     val uploadedServicios: Int,
     val uploadedPagos: Int,
+    val uploadedGastosOperativos: Int = 0,
     val downloadedDispensaciones: Int,
     val downloadedDispensacionItems: Int = 0,
     val downloadedServicios: Int,
     val downloadedPagos: Int,
-    val downloadedVentas: Int = 0
+    val downloadedVentas: Int = 0,
+    val downloadedResumenesDiarios: Int = 0,
+    val downloadedConfiguracionesFinancieras: Int = 0
 )
 
 @Serializable

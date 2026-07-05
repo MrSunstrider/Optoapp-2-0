@@ -31,6 +31,7 @@ class UploadSyncCoordinator @Inject constructor(
         private const val TABLE_PAGOS = "pagos"
         private const val TABLE_SERVICIOS = "servicios_extra"
         private const val TABLE_ARQUEO_CAJA = "arqueo_caja"
+        private const val TABLE_GASTOS_OPERATIVOS = "gastos_operativos"
         private const val UPSERT_BATCH_SIZE = 80
     }
 
@@ -289,5 +290,37 @@ class UploadSyncCoordinator @Inject constructor(
             }
         }
         return uploaded
+    }
+
+    suspend fun uploadGastosOperativos(opticaId: String): Int {
+        val localGastos = repository.getGastosOperativosList(opticaId)
+        if (localGastos.isEmpty()) {
+            syncStateTracker.markSynced(opticaId, "upload_gastos_operativos", "batch")
+            return 0
+        }
+        val opticaRemota = opticaId.trim().ifBlank { FinanzasRemoteDefaults.OPTICA_ID_FALLBACK }
+        val rows = localGastos.map { it.toRemoto().copy(opticaId = opticaRemota) }.distinctBy { it.id }
+        try {
+            rows.chunked(UPSERT_BATCH_SIZE).forEachIndexed { index, chunk ->
+                networkRetryHelper.retryNetwork("upsert:$TABLE_GASTOS_OPERATIVOS:chunk${index + 1}") {
+                    supabase.postgrest[TABLE_GASTOS_OPERATIVOS].upsert(chunk)
+                }
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: IOException) {
+            Log.e(TAG, "Error en red subiendo gastos operativos: ${e.message}", e)
+            syncStateTracker.markError(opticaId, "upload_gastos_operativos", "batch", e.message)
+            throw e
+        } catch (e: Exception) {
+            Log.e(TAG, "Error inesperado subiendo gastos operativos: ${e.message}", e)
+            syncStateTracker.markError(opticaId, "upload_gastos_operativos", "batch", e.message)
+            throw e
+        }
+        syncStateTracker.markSynced(opticaId, "upload_gastos_operativos", "batch")
+        localGastos.forEach { g ->
+            syncStateTracker.markSynced(opticaId, "gasto_operativo", g.id)
+        }
+        return rows.size
     }
 }
