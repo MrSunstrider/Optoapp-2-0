@@ -13,6 +13,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -147,28 +148,31 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("Información Financiera", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
 
-                    val monto = uiState.montoTotal.toDoubleOrNull() ?: 0.0
-                    val pagado = uiState.pagos.sumOf { it.monto }
-                    val saldo = monto - pagado
-
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text("Monto Total:", fontWeight = FontWeight.Medium)
-                        Text("s/. ${"%.2f".format(monto)}", fontWeight = FontWeight.Bold)
-                    }
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text("Saldo:", fontWeight = FontWeight.Medium)
-                        Text(
-                            "s/. ${"%.2f".format(saldo)}",
-                            fontWeight = FontWeight.Bold,
-                            color = if (saldo > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary
+                    if (dispensacionId == null) {
+                        OptoTextField(
+                            value = uiState.montoTotal,
+                            onValueChange = { value -> viewModel.updateUiState { it.copy(montoTotal = value) } },
+                            label = "Monto Total",
+                            keyboardType = KeyboardType.Decimal
                         )
-                    }
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text("Estado:", fontWeight = FontWeight.Medium)
-                        Text(uiState.estadoEntrega, fontWeight = FontWeight.Bold)
-                    }
-
-                    if (dispensacionId != null) {
+                        Text("Estado: ${uiState.estadoEntrega}", fontWeight = FontWeight.Bold)
+                    } else {
+                        val monto = uiState.montoTotal.toDoubleOrNull() ?: 0.0
+                        val pagado = uiState.pagos.sumOf { it.monto }
+                        val saldo = monto - pagado
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text("Monto Total:", fontWeight = FontWeight.Medium)
+                            Text("s/. ${"%.2f".format(monto)}", fontWeight = FontWeight.Bold)
+                        }
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text("Saldo:", fontWeight = FontWeight.Medium)
+                            Text("s/. ${"%.2f".format(saldo)}", fontWeight = FontWeight.Bold,
+                                color = if (saldo > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary)
+                        }
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text("Estado:", fontWeight = FontWeight.Medium)
+                            Text(uiState.estadoEntrega, fontWeight = FontWeight.Bold)
+                        }
                         OutlinedButton(
                             onClick = { navController.navigate("informacion_financiera/$dispensacionId") },
                             modifier = Modifier.fillMaxWidth()
