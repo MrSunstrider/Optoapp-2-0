@@ -192,6 +192,19 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
             Button(onClick = { saveAction() }, modifier = Modifier.fillMaxWidth().testTag(TestTags.DISPENSACION_GUARDAR_BTN)) {
                 Text(if (dispensacionId == null) "Confirmar Orden" else "Actualizar Orden")
             }
+            if (dispensacionId != null) {
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedButton(
+                    onClick = {
+                        viewModel.deleteDispensacion(dispensacionId)
+                        navController.popBackStack()
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text("Eliminar Orden")
+                }
+            }
             if (!uiState.error.isNullOrBlank()) {
                 Text(
                     text = uiState.error ?: "",

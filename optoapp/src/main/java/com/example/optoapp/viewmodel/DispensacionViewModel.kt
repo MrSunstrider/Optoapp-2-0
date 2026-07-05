@@ -412,6 +412,17 @@ class DispensacionViewModel @Inject constructor(
         }
     }
 
+    fun deleteDispensacion(dispensacionId: String) {
+        viewModelScope.launch {
+            val opticaId = sessionManager.opticaId.first()
+            val result = repository.getDispensacionById(dispensacionId)
+            if (result is Resource.Success && result.data != null) {
+                repository.deleteDispensacion(result.data)
+                repository.deleteVentaById("v_disp_$dispensacionId")
+            }
+        }
+    }
+
     private fun normalizeOrigenMontura(value: String): String = when (value.trim()) {
         ORIGEN_TIENDA_LEGACY -> ORIGEN_TIENDA
         ORIGEN_PACIENTE_LEGACY -> ORIGEN_PACIENTE
