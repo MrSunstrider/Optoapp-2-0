@@ -13,7 +13,7 @@ import java.util.Locale
 
 internal fun transactionLabel(pago: Pago): String = when {
     pago.dispensacionId != null -> "Dispensación"
-    pago.servicioExtraId != null -> "Servicio Varios"
+    pago.servicioExtraId != null -> "Servicio Extra"
     else -> "Pago"
 }
 

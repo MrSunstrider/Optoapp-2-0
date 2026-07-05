@@ -106,7 +106,7 @@ fun ServiciosExtraScreen(navController: NavController, drawerState: DrawerState,
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             OptoTopAppBar(
-                title = "Servicios Varios",
+                title = "Servicios Extra",
                 navigationIcon = {
                     IconButton(onClick = { scope.launch { drawerState.open() } }) {
                         Icon(Icons.Default.Menu, contentDescription = "Menu")

@@ -127,10 +127,16 @@ class CierreCajaViewModel @Inject constructor(
                         }
                     }
                     val ventasDelDia = ventas.filter { it.fecha == fecha }
-                    val totalVentasHoy = ventasDelDia.filter { it.origen == "dispensacion" }.sumOf { it.montoTotal }
-                    val serviciosExtraHoy = ventasDelDia.filter { it.origen == "servicio_extra" }
+                    val resolvedVentas = ventasDelDia.map { v ->
+                        if (v.ot.isBlank() && v.origen == "dispensacion") {
+                            val resolvedOt = dispMap[v.origenId]?.ot ?: ""
+                            v.copy(ot = resolvedOt)
+                        } else v
+                    }
+                    val totalVentasHoy = resolvedVentas.filter { it.origen == "dispensacion" }.sumOf { it.montoTotal }
+                    val serviciosExtraHoy = resolvedVentas.filter { it.origen == "servicio_extra" }
                     val totalServiciosExtra = serviciosExtraHoy.sumOf { it.montoTotal }
-                    val dispensacionesHoy = ventasDelDia.filter { it.origen == "dispensacion" }
+                    val dispensacionesHoy = resolvedVentas.filter { it.origen == "dispensacion" }
                     val totalGeneral = totalVentasHoy + totalServiciosExtra
                     val saldoPendiente = totalGeneral - ventasHoy
                     val dispOtMap = dispMap.mapValues { it.value.ot }

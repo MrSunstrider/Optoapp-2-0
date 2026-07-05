@@ -879,3 +879,9 @@ val MIGRATION_29_30 = object : Migration(29, 30) {
         db.execSQL("CREATE INDEX IF NOT EXISTS index_ventas_origen_origenId ON ventas(origen, origenId)")
     }
 }
+
+val MIGRATION_30_31 = object : Migration(30, 31) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE ventas ADD COLUMN ot TEXT NOT NULL DEFAULT ''")
+    }
+}

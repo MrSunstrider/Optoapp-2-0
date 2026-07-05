@@ -397,6 +397,7 @@ class DispensacionViewModel @Inject constructor(
                 origen = "dispensacion",
                 origenId = finalId,
                 pacienteId = pacienteId,
+                ot = s.ot.trim(),
                 fecha = s.fecha,
                 fechaEntrega = s.fechaEntrega,
                 montoTotal = montoTotal,

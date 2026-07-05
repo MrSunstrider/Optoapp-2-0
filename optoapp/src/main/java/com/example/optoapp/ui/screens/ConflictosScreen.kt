@@ -27,7 +27,7 @@ private val TYPE_LABELS = mapOf(
     "paciente" to "Paciente",
     "evaluacion" to "Evaluación",
     "dispensacion" to "Dispensación",
-    "servicio_extra" to "Servicio Varios",
+    "servicio_extra" to "Servicio Extra",
     "pago" to "Pago",
     "montura" to "Montura",
     "montura_movimiento" to "Movimiento de montura",

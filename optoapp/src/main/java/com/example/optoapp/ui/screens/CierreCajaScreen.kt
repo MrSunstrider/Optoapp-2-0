@@ -228,8 +228,8 @@ fun CierreCajaScreen(
                     Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Text("Ventas del día (detalle)", fontWeight = FontWeight.Bold, fontSize = 13.sp)
                         uiState.dispensacionesHoy.forEach { venta ->
-                            val ot = uiState.dispOtMap[venta.origenId] ?: venta.origenId.take(8)
-                            val pacienteId = venta.pacienteId.takeIf { it.isNotBlank() } ?: ""
+                            val pacienteId = venta.pacienteId
+                            val otLabel = if (venta.ot.isNotBlank()) "OT ${venta.ot}" else venta.origenId.take(8)
                             Row(
                                 modifier = Modifier.fillMaxWidth()
                                     .clickable {
@@ -239,7 +239,7 @@ fun CierreCajaScreen(
                                     },
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                Text("OT $ot", fontSize = 12.sp, modifier = Modifier.weight(1f))
+                                Text(otLabel, fontSize = 12.sp, modifier = Modifier.weight(1f))
                                 Text("s/. ${String.format(Locale.getDefault(), "%.2f", venta.montoTotal)}",
                                     fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                             }

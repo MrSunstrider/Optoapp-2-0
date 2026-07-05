@@ -213,6 +213,7 @@ class ServiciosViewModel @Inject constructor(
                     origen = "servicio_extra",
                     origenId = finalId,
                     pacienteId = state.pacienteId ?: "",
+                    ot = state.ot.trim(),
                     fecha = state.fecha,
                     fechaEntrega = null,
                     montoTotal = montoParsed,

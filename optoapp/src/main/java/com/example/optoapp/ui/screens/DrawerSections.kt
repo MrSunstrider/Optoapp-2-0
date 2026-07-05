@@ -149,7 +149,7 @@ fun DrawerContent(
             modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
         )
         NavigationDrawerItem(
-            label = { Text("Servicios Varios", fontWeight = FontWeight.SemiBold) },
+            label = { Text("Servicios Extra", fontWeight = FontWeight.SemiBold) },
             selected = currentRoute == "servicios_extra",
             onClick = {
                 scope.launch { drawerState.close() }

@@ -18,6 +18,7 @@ data class Venta(
     val origen: String,
     val origenId: String,
     val pacienteId: String = "",
+    val ot: String = "",
     val fecha: LocalDate,
     val fechaEntrega: LocalDate? = null,
     val montoTotal: Double,
