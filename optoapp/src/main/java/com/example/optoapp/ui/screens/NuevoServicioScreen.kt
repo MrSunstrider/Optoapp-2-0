@@ -89,8 +89,7 @@ fun NuevoServicioScreen(navController: NavController, pacienteId: String? = null
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp)
-                .navigationBarsPadding()
+                .padding(horizontal = 16.dp)
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {

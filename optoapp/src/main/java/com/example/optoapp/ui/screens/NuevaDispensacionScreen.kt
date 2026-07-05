@@ -90,8 +90,7 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp)
-                .navigationBarsPadding()
+                .padding(horizontal = 16.dp)
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
@@ -114,7 +113,6 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
                 }
             }
 
-            // ─── Items (lente + montura) ────────────────────────────────────
             Text(
                 "Productos",
                 fontWeight = FontWeight.Bold,
@@ -142,7 +140,6 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
                 Text("Agregar otro producto (lente + montura)")
             }
 
-            // ─── Financiera ──────────────────────────────────────────────────
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
