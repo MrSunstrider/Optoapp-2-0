@@ -1,6 +1,7 @@
 package com.example.optoapp.ui.screens
 
 import android.content.Intent
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -227,14 +228,28 @@ fun CierreCajaScreen(
                     Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Text("Ventas del día (detalle)", fontWeight = FontWeight.Bold, fontSize = 13.sp)
                         uiState.dispensacionesHoy.forEach { venta ->
-                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                Text("OT ${venta.origenId.take(8)}", fontSize = 12.sp, modifier = Modifier.weight(1f))
+                            val ot = uiState.dispOtMap[venta.origenId] ?: venta.origenId.take(8)
+                            val pacienteId = venta.pacienteId.takeIf { it.isNotBlank() } ?: ""
+                            Row(
+                                modifier = Modifier.fillMaxWidth()
+                                    .clickable {
+                                        if (pacienteId.isNotBlank()) {
+                                            navController.navigate("editarDispensacion/$pacienteId/${venta.origenId}")
+                                        }
+                                    },
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text("OT $ot", fontSize = 12.sp, modifier = Modifier.weight(1f))
                                 Text("s/. ${String.format(Locale.getDefault(), "%.2f", venta.montoTotal)}",
                                     fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                             }
                         }
                         uiState.serviciosExtraHoy.forEach { venta ->
-                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth()
+                                    .clickable { navController.navigate("editar_servicio/${venta.origenId}") },
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
                                 Text("Servicio ${venta.origenId.take(8)}", fontSize = 12.sp, modifier = Modifier.weight(1f))
                                 Text("s/. ${String.format(Locale.getDefault(), "%.2f", venta.montoTotal)}",
                                     fontSize = 12.sp, fontWeight = FontWeight.SemiBold)

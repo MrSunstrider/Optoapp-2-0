@@ -41,7 +41,8 @@ data class CierreCajaUiState(
     val cobrosAtrasados: Double = 0.0,
     val saldoPendiente: Double = 0.0,
     val isLoading: Boolean = false,
-    val arqueoForFecha: ArqueoCaja? = null
+    val arqueoForFecha: ArqueoCaja? = null,
+    val dispOtMap: Map<String, String> = emptyMap()
 )
 
 private data class CierreCajaResult(
@@ -53,7 +54,8 @@ private data class CierreCajaResult(
     val totalGeneral: Double,
     val ventasHoy: Double,
     val cobrosAtrasados: Double,
-    val saldoPendiente: Double
+    val saldoPendiente: Double,
+    val dispOtMap: Map<String, String>
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -131,10 +133,11 @@ class CierreCajaViewModel @Inject constructor(
                     val dispensacionesHoy = ventasDelDia.filter { it.origen == "dispensacion" }
                     val totalGeneral = totalVentasHoy + totalServiciosExtra
                     val saldoPendiente = totalGeneral - ventasHoy
-                    CierreCajaResult(pagos, totalVentasHoy, serviciosExtraHoy, dispensacionesHoy, totalServiciosExtra, totalGeneral, ventasHoy, cobrosAtrasados, saldoPendiente)
+                    val dispOtMap = dispMap.mapValues { it.value.ot }
+                    CierreCajaResult(pagos, totalVentasHoy, serviciosExtraHoy, dispensacionesHoy, totalServiciosExtra, totalGeneral, ventasHoy, cobrosAtrasados, saldoPendiente, dispOtMap)
                 }
             }
-            .onEach { (pagos, totalVentasHoy, serviciosExtraHoy, dispensacionesHoy, totalServiciosExtra, totalGeneral, ventasHoy, cobrosAtrasados, saldoPendiente) ->
+            .onEach { (pagos, totalVentasHoy, serviciosExtraHoy, dispensacionesHoy, totalServiciosExtra, totalGeneral, ventasHoy, cobrosAtrasados, saldoPendiente, dispOtMap) ->
                 _uiState.update {
                     it.copy(
                         pagos = pagos,
@@ -146,6 +149,7 @@ class CierreCajaViewModel @Inject constructor(
                         ventasHoy = ventasHoy,
                         cobrosAtrasados = cobrosAtrasados,
                         saldoPendiente = saldoPendiente,
+                        dispOtMap = dispOtMap,
                         isLoading = false
                     )
                 }
