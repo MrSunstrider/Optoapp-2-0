@@ -680,6 +680,166 @@ GIVEN a sync cycle runs via SyncFinanzasUseCase
 
 ---
 
+### R23: Supabase RPC `rpc_analisis_mensual`
+
+The system SHALL create `public.rpc_analisis_mensual(p_optica_id TEXT, p_mes DATE) RETURNS jsonb LANGUAGE plpgsql SECURITY INVOKER STABLE`.
+
+The function SHALL compute CORE financial indicators for the given month by reading from `resumen_diario` and `gastos_operativos`.
+
+| Indicator | Key | Source |
+|-----------|-----|--------|
+| Monthly sales | `ventas_mes` | `resumen_diario.ventas_monto_total` SUM |
+| Monthly collections | `cobros_mes` | `resumen_diario.cobros_monto_total` SUM |
+| Monthly cost | `costo_mes` | `resumen_diario.ventas_costo_total` SUM |
+| Monthly expenses | `gastos_mes` | `gastos_operativos.monto` SUM |
+| Pending balance | `saldo_pendiente` | Latest `resumen_diario.saldo_pendiente_total` |
+| Net margin % | `margen_neto_pct` | `(ventas - costos - gastos) / ventas * 100` |
+| Average ticket | `ticket_promedio` | `ventas_mes / cantidad_ventas` |
+| Sales count | `cantidad_ventas` | `resumen_diario.ventas_cantidad` SUM |
+| Previous month sales | `ventas_mes_anterior` | `resumen_diario.ventas_monto_total` SUM for previous month |
+| Sales variation % | `variacion_ventas_pct` | `(ventas - anterior) / anterior * 100` |
+
+> **NOTE**: `margen_por_categoria`, `stock_estancado`, and `valor_inventario` are NOT computed by this RPC. They are queried directly from their respective tables (server-side) — `margen_por_categoria` from `ventas` + `costos_productos` per `categoria_producto_id`, `stock_estancado` from `monturas` with `montura_movimientos`, and `valor_inventario` from `SUM(monturas.costo * stock_actual)`.
+
+#### R23.1: RPC Security
+
+`REVOKE EXECUTE ON FUNCTION public.rpc_analisis_mensual(TEXT, DATE) FROM public, anon; GRANT EXECUTE ON FUNCTION public.rpc_analisis_mensual(TEXT, DATE) TO authenticated, service_role;`
+
+---
+
+### R24: Supabase RPC `rpc_deudores`
+
+The system SHALL create `public.rpc_deudores(p_optica_id TEXT) RETURNS TABLE(paciente_nombre TEXT, paciente_telefono TEXT, venta_id TEXT, venta_fecha DATE, monto_total NUMERIC, total_pagado NUMERIC, saldo NUMERIC, dias_deuda INTEGER) LANGUAGE sql SECURITY INVOKER STABLE`.
+
+JOIN `ventas` LEFT JOIN `pagos` LEFT JOIN `pacientes`, HAVING `saldo > 0.005`, ORDER BY `dias_deuda DESC`.
+
+#### R24.1: RPC Security
+
+`REVOKE EXECUTE ON FUNCTION public.rpc_deudores(TEXT) FROM public, anon; GRANT EXECUTE ON FUNCTION public.rpc_deudores(TEXT) TO authenticated, service_role;`
+
+---
+
+### R25: Update `rpc_count_pendientes` to Query `ventas`
+
+The system SHALL rewrite `rpc_count_pendientes` to query `public.ventas` instead of old `dispensaciones` + `servicios_extra`. The function signature and return type SHALL remain unchanged (RETURNS jsonb).
+
+- Overdue deliveries: `ventas` WHERE `estado = 'Pendiente' AND fecha < CURRENT_DATE`
+- Unpaid balance: `ventas` LEFT JOIN aggregated `pagos` WHERE `monto_total - COALESCE(total_pagado, 0) > 0.005` AND `estado IS DISTINCT FROM 'Anulado'`
+
+---
+
+### R26: Deprecate `rpc_resumen_financiero` and `rpc_saldo_pendiente`
+
+The system SHALL add deprecation comments to both functions using `COMMENT ON FUNCTION ... IS 'DEPRECATED: Use rpc_analisis_mensual instead. This function remains for backward compatibility.'`.
+
+The functions SHALL NOT be dropped — they remain callable for backward compatibility.
+
+---
+
+### R27: GRANT EXECUTE on `recalcular_resumen_diario` (Fix from Fase 6)
+
+The system SHALL execute `GRANT EXECUTE ON FUNCTION public.recalcular_resumen_diario(TEXT, DATE) TO authenticated, service_role` and `REVOKE EXECUTE FROM public, anon`. This grant was missing from the Fase 6 migration, causing permission errors on client-side calls.
+
+---
+
+### R28: Room `ResumenDiarioDao` — Monthly Aggregation Query
+
+Add to R13.1 the following method:
+
+| Method | Return | Description |
+|--------|--------|-------------|
+| `getByOpticaAndMonth(opticaId, yearMonth)` | `suspend fun`: `List<ResumenDiarioEntity>` | Filter by `strftime('%Y-%m', fecha) = yearMonth`, ordered by `fecha ASC` |
+
+This enables offline calculation of monthly aggregates from local Room data when Supabase RPC is unreachable.
+
+---
+
+### R29: Room Migration v32→v33 — Add `ventaId` to `Pago`
+
+A migration `MIGRATION_32_33` SHALL exist in `OptoDatabaseMigrations.kt`:
+
+1. `ALTER TABLE pagos ADD COLUMN ventaId TEXT`
+2. `CREATE INDEX IF NOT EXISTS index_pagos_ventaId ON pagos(ventaId)`
+
+The `Pago` entity SHALL add `val ventaId: String? = null` with `@SerialName("ventaId")`. The field SHALL be nullable with default null — existing constructors continue to compile.
+
+Database version SHALL be bumped from 32 to 33. The migration SHALL be registered in `.addMigrations()` and re-exported in the `OptoDatabase` companion object.
+
+---
+
+## Delta Scenarios (Fase 7)
+
+### Scenario: rpc_analisis_mensual returns CORE indicators
+```
+GIVEN an optica has resumen_diario data and gastos for July 2026
+ WHEN rpc_analisis_mensual('o1', '2026-07-01') is called
+ THEN a JSONB object is returned with all 10 CORE keys as non-null values
+  AND ventas_mes matches monthly SUM from resumen_diario
+```
+
+### Scenario: rpc_analisis_mensual handles empty month
+```
+GIVEN an optica has no data for a month
+ WHEN rpc_analisis_mensual('o1', '2026-08-01') is called
+ THEN all numeric values return 0
+  AND margen_neto_pct returns 0 (not error)
+```
+
+### Scenario: rpc_deudores returns debtors by aging
+```
+GIVEN 3 ventas with partial payments, oldest 60 days ago
+ WHEN rpc_deudores('o1') is called
+ THEN 3 rows returned ordered by dias_deuda DESC
+  AND each has saldo > 0
+```
+
+### Scenario: rpc_deudores returns empty for no debtors
+```
+GIVEN all ventas fully paid
+ WHEN rpc_deudores('o1') is called
+ THEN empty result set returned
+```
+
+### Scenario: rpc_count_pendientes counts from ventas
+```
+GIVEN 5 ventas with pending balance
+ WHEN rpc_count_pendientes('o1') is called
+ THEN count matches pending from ventas table
+```
+
+### Scenario: Deprecated RPCs still execute
+```
+GIVEN deprecation migration applied
+ WHEN old RPC is called
+ THEN it executes normally (no error)
+  AND function body has deprecation comment
+```
+
+### Scenario: recalcular_resumen_diario GRANT fix
+```
+GIVEN recalcular_resumen_diario exists
+ WHEN an authenticated user calls it
+ THEN the function executes without permission error
+```
+
+### Scenario: ResumenDiarioDao monthly filter
+```
+GIVEN 30 daily rows for July 2026 in Room
+ WHEN getByOpticaAndMonth('o1', '2026-07') is called
+ THEN 30 rows returned for client-side aggregation
+```
+
+### Scenario: MIGRATION_32_33 preserves existing Pago data
+```
+GIVEN a device has OptoDatabase at version 32 with 50 Pago rows
+ WHEN MIGRATION_32_33 runs
+ THEN all 50 rows preserved
+  AND ventaId column exists with NULL for existing rows
+  AND index_pagos_ventaId exists
+```
+
+---
+
 ## Out of Scope
 
 - Fase 7: Business indicator calculations and UI screens
