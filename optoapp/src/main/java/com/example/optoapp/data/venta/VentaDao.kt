@@ -25,4 +25,7 @@ interface VentaDao {
 
     @Query("DELETE FROM ventas WHERE id = :id")
     suspend fun deleteById(id: String)
+
+    @Query("DELETE FROM ventas WHERE origenId = :origenId")
+    suspend fun deleteByOrigenId(origenId: String)
 }

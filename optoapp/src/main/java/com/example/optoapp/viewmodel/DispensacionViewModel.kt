@@ -412,7 +412,7 @@ class DispensacionViewModel @Inject constructor(
         }
     }
 
-    fun deleteDispensacion(dispensacionId: String) {
+    fun deleteDispensacion(dispensacionId: String, onComplete: () -> Unit) {
         viewModelScope.launch {
             val opticaId = sessionManager.opticaId.first()
             val result = repository.getDispensacionById(dispensacionId)
@@ -420,6 +420,7 @@ class DispensacionViewModel @Inject constructor(
                 repository.deleteDispensacion(result.data)
                 repository.deleteVentaById("v_disp_$dispensacionId")
             }
+            onComplete()
         }
     }
 

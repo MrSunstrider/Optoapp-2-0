@@ -196,8 +196,9 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
                 Spacer(modifier = Modifier.height(8.dp))
                 OutlinedButton(
                     onClick = {
-                        viewModel.deleteDispensacion(dispensacionId)
-                        navController.popBackStack()
+                        viewModel.deleteDispensacion(dispensacionId) {
+                            navController.popBackStack()
+                        }
                     },
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)

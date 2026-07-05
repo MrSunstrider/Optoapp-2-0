@@ -108,7 +108,7 @@ open class OptoRepository(
 
     suspend fun upsertVenta(venta: Venta) { val stamped = venta.copy(updatedAt = Instant.now().toString()); ventaDao.upsertVenta(stamped); postSaveSyncScheduler.get().scheduleFinanzasSync(stamped.opticaId) }
 
-    suspend fun deleteVentaById(id: String) { ventaDao.deleteById(id) }
+    suspend fun deleteVentaById(id: String) { ventaDao.deleteById(id); ventaDao.deleteByOrigenId(id.removePrefix("v_disp_").removePrefix("v_serv_")) }
 
     fun getMonturasByOptica(opticaId: String) = monturaCoordinator.getMonturasByOptica(opticaId)
     suspend fun getMonturaById(id: String) = monturaCoordinator.getMonturaById(id)
