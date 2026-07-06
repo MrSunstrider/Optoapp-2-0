@@ -21,6 +21,7 @@ interface DispensacionFinancieraRepository {
     suspend fun agregarPago(pago: Pago)
     suspend fun editarPago(pago: Pago)
     suspend fun eliminarPago(pago: Pago, opticaId: String)
+    suspend fun actualizarMontoPagado(dispensacionId: String, montoPagado: Double, opticaId: String)
     suspend fun upsertVenta(venta: Venta)
 }
 
@@ -88,6 +89,14 @@ class DispensacionFinancieraRepositoryImpl(
 
     override suspend fun eliminarPago(pago: Pago, opticaId: String) {
         optoRepository.deletePagoRegistrandoAnulacionEnCaja(pago, opticaId)
+    }
+
+    override suspend fun actualizarMontoPagado(dispensacionId: String, montoPagado: Double, opticaId: String) {
+        val result = optoRepository.getDispensacionById(dispensacionId)
+        if (result is Resource.Success && result.data != null) {
+            val updated = result.data.copy(montoPagado = montoPagado)
+            optoRepository.updateDispensacion(updated)
+        }
     }
 
     override suspend fun upsertVenta(venta: Venta) {

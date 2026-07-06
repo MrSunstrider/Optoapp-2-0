@@ -139,6 +139,9 @@ class InformacionFinancieraViewModel @Inject constructor(
                 repository.eliminarPago(pago, opticaId)
             }
 
+            val montoPagado = s.pagos.sumOf { it.monto }
+            repository.actualizarMontoPagado(dispId, montoPagado, opticaId)
+
             val venta = Venta(
                 id = "v_disp_$dispId",
                 opticaId = opticaId,
