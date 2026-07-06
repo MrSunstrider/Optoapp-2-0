@@ -55,8 +55,6 @@ val PositiveGreen = Color(0xFF27AE60)
 val AlertRed = Color(0xFFE74C3C)
 val TextDark = Color(0xFF2C3E50)
 val WarningAmber = Color(0xFFF39C12)
-
-// --- Alias de compatibilidad ---
 val TextPrimaryDark = OnBackgroundDark
 val TextSecondaryDark = OnSurfaceVariantDark
 val SurfaceDarkMuted = SurfaceVariantDark

@@ -15,8 +15,6 @@ import org.junit.Test
  */
 class MainDrawerContentTest {
 
-    // ─── Section labels ───────────────────────────────────────────────
-
     @Test
     fun sections_containsAllExpectedLabels() {
         val sections = listOf("GESTIÓN", "PROGRAMACIÓN", "FINANZAS", "SISTEMA")
@@ -26,8 +24,6 @@ class MainDrawerContentTest {
         assertTrue(sections.contains("FINANZAS"))
         assertTrue(sections.contains("SISTEMA"))
     }
-
-    // ─── Default navigation items ─────────────────────────────────────
 
     @Test
     fun defaultNavItems_containsExpected() {
@@ -50,8 +46,6 @@ class MainDrawerContentTest {
         assertTrue(items.contains("Cerrar Sesión"))
     }
 
-    // ─── Conditional nav items ────────────────────────────────────────
-
     @Test
     fun conditionalItems_operacionHoy_whenShowOperacionHoyIsTrue() {
         val conditionalItems = listOf("Operación de Hoy")
@@ -63,8 +57,6 @@ class MainDrawerContentTest {
         val conditionalItems = listOf("Cierre de Caja", "Mi Negocio", "Reportes")
         assertEquals(3, conditionalItems.size)
     }
-
-    // ─── SyncState sealed class ───────────────────────────────────────
 
     @Test
     fun syncState_idle_isDeclared() {
@@ -105,8 +97,6 @@ class MainDrawerContentTest {
         assertEquals(e1, e2)
     }
 
-    // ─── SyncViewModel contracts ──────────────────────────────────────
-
     @Test
     fun syncViewModel_syncState_isDeclared() {
         val fields = SyncViewModel::class.java.declaredFields.map { it.name }
@@ -145,8 +135,6 @@ class MainDrawerContentTest {
         )
     }
 
-    // ─── AuthViewModel contracts ──────────────────────────────────────
-
     @Test
     fun authViewModel_logout_isDeclared() {
         val methods = AuthViewModel::class.java.declaredMethods.map { it.name }
@@ -156,8 +144,6 @@ class MainDrawerContentTest {
             "logout" in methods || "logout" in allMethods
         )
     }
-
-    // ─── OpticaHeaderUi data class ────────────────────────────────────
 
     @Test
     fun opticaHeaderUi_nombreOpticaExists() {
@@ -192,8 +178,6 @@ class MainDrawerContentTest {
         assertEquals(h1, h2)
         assertEquals(h1.hashCode(), h2.hashCode())
     }
-
-    // ─── Navigation routes ────────────────────────────────────────────
 
     @Test
     fun navigationRoutes_pacientesExists() {

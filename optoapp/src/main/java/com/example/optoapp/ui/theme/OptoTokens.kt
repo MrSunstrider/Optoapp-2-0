@@ -6,7 +6,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 object OptoTokens {
-    // --- Spacing tokens ---
     object spacing {
         val xs: Dp = 4.dp
         val sm: Dp = 8.dp
@@ -16,14 +15,12 @@ object OptoTokens {
         val xxl: Dp = 32.dp
     }
 
-    // --- Shape tokens ---
     object shapes {
         val small: RoundedCornerShape = RoundedCornerShape(12.dp)
         val medium: RoundedCornerShape = RoundedCornerShape(16.dp)
         val large: RoundedCornerShape = RoundedCornerShape(24.dp)
     }
 
-    // --- Semantic colors for Analisis de Negocio ---
     object analisis {
         val positiveGreen: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF27AE60)
         val alertRed: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFE74C3C)
@@ -31,7 +28,6 @@ object OptoTokens {
         val warningAmber: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFF39C12)
     }
 
-    // --- Elevation tokens ---
     object elevation {
         val level0: Dp = 0.dp
         val level1: Dp = 2.dp
@@ -39,7 +35,6 @@ object OptoTokens {
         val level3: Dp = 8.dp
     }
 
-    // --- Color tokens (light theme) ---
     object colors {
         // Primary — deep teal (premium medical)
         val primary: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF006D6F)
@@ -73,7 +68,6 @@ object OptoTokens {
         val inversePrimary: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF4EDBDB)
     }
 
-    // --- Color tokens (dark theme) ---
     object colorsDark {
         val primary: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF4EDBDB)
         val onPrimary: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF003738)

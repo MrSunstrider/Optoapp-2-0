@@ -69,7 +69,6 @@ class AnalisisNegocioViewModelTest {
         unmockkAll()
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────
 
     private fun createAnalisis(
         ventasMes: Double = 10000.0,
@@ -123,9 +122,7 @@ class AnalisisNegocioViewModelTest {
         coEvery { generarRecomendaciones(opticaId, any()) } returns recomendaciones
     }
 
-    private val saldoEsperado = 10000.0 - 8000.0 // ventasMes - cobrosMes
-
-    // ── Tests ─────────────────────────────────────────────────────────
+    private val saldoEsperado = 10000.0 - 8000.0
 
     @Test
     fun `init loads data from all 3 use cases and populates state`() = runTest(testDispatcher) {
@@ -254,7 +251,6 @@ class AnalisisNegocioViewModelTest {
         )
         advanceUntilIdle()
 
-        // Change to error state
         coEvery { obtenerAnalisisMensual(opticaId, any()) } returns Resource.Error("Refresh error")
 
         viewModel.refresh()

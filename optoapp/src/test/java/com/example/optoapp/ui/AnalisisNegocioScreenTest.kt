@@ -13,8 +13,6 @@ import java.time.LocalDate
 
 class AnalisisNegocioScreenTest {
 
-    // ─── AnalisisNegocioUiState data class ──────────────────────────────────
-
     @Test
     fun uiState_defaults_mesSeleccionadoIsFirstOfMonth() {
         val state = AnalisisNegocioUiState()
@@ -72,8 +70,6 @@ class AnalisisNegocioScreenTest {
         assertEquals("Error de conexion", state.error)
     }
 
-    // ─── Screen labels ──────────────────────────────────────────────────────
-
     @Test
     fun screen_title_isMiNegocio() {
         val title = "Mi Negocio"
@@ -98,8 +94,6 @@ class AnalisisNegocioScreenTest {
         assertEquals("Ver análisis completo", button)
     }
 
-    // ─── Month selector labels ──────────────────────────────────────────────
-
     @Test
     fun monthSelector_hasPreviousButton() {
         val label = "Mes anterior"
@@ -111,8 +105,6 @@ class AnalisisNegocioScreenTest {
         val label = "Mes siguiente"
         assertTrue(label.contains("siguiente"))
     }
-
-    // ─── Summary card labels ────────────────────────────────────────────────
 
     @Test
     fun summaryCard_containsVendiste() {
@@ -138,8 +130,6 @@ class AnalisisNegocioScreenTest {
         assertTrue(label.isNotBlank())
     }
 
-    // ─── Recommendation priority labels ─────────────────────────────────────
-
     @Test
     fun recomendacion_prioridadAlta_isALTA() {
         val prioridad = Prioridad.ALTA
@@ -158,8 +148,6 @@ class AnalisisNegocioScreenTest {
         assertEquals(Prioridad.BAJA, prioridad)
     }
 
-    // ─── Error / Empty states ────────────────────────────────────────────────
-
     @Test
     fun errorState_showsRetryButton() {
         val buttonText = "Reintentar"
@@ -177,8 +165,6 @@ class AnalisisNegocioScreenTest {
         val placeholder = "Sin datos para este mes"
         assertTrue(placeholder.contains("Sin datos"))
     }
-
-    // ─── ViewModel contracts ────────────────────────────────────────────────
 
     @Test
     fun analisisNegocioViewModel_uiState_isDeclared() {
@@ -207,8 +193,6 @@ class AnalisisNegocioScreenTest {
         )
     }
 
-    // ─── Role-based access ──────────────────────────────────────────────────
-
     @Test
     fun appRoles_canViewBiAndReports_isDeclared() {
         val methods = AppRoles::class.java.declaredMethods.map { it.name }
@@ -225,8 +209,6 @@ class AnalisisNegocioScreenTest {
         assertTrue(title.isNotBlank())
         assertTrue(message.isNotBlank())
     }
-
-    // ─── Recomendacion model ───────────────────────────────────────────────
 
     @Test
     fun recomendacion_hasPrioridadField() {

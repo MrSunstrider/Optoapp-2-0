@@ -12,8 +12,6 @@ import java.time.LocalDate
 
 class AnalisisDetalleScreenTest {
 
-    // ─── Screen labels ──────────────────────────────────────────────────────
-
     @Test
     fun screen_title_isAnalisisCompleto() {
         val title = "Análisis Completo"
@@ -31,8 +29,6 @@ class AnalisisDetalleScreenTest {
         val backLabel = "Atrás"
         assertEquals("Atrás", backLabel)
     }
-
-    // ─── Expandable section titles ──────────────────────────────────────────
 
     @Test
     fun section1_title_isPlataQueEntroYSalio() {
@@ -64,15 +60,11 @@ class AnalisisDetalleScreenTest {
         assertEquals("Plata que vas a tener", title)
     }
 
-    // ─── Sections expandable by default ─────────────────────────────────────
-
     @Test
     fun firstSection_isExpandedByDefault() {
         val expandedIndex = 0
         assertEquals(0, expandedIndex)
     }
-
-    // ─── Deudor model ───────────────────────────────────────────────────────
 
     @Test
     fun deudor_hasPacienteNombreField() {
@@ -98,8 +90,6 @@ class AnalisisDetalleScreenTest {
         assertTrue("Deudor debe tener diasDeuda", "diasDeuda" in fields)
     }
 
-    // ─── StockEstancadoItem model ───────────────────────────────────────────
-
     @Test
     fun stockEstancado_hasModeloField() {
         val fields = StockEstancadoItem::class.java.declaredFields.map { it.name }
@@ -111,8 +101,6 @@ class AnalisisDetalleScreenTest {
         val fields = StockEstancadoItem::class.java.declaredFields.map { it.name }
         assertTrue("StockEstancadoItem debe tener diasSinVenta", "diasSinVenta" in fields)
     }
-
-    // ─── ProyeccionCaja model ───────────────────────────────────────────────
 
     @Test
     fun proyeccionCaja_hasIngresosEsperadosField() {
@@ -131,8 +119,6 @@ class AnalisisDetalleScreenTest {
         val fields = ProyeccionCaja::class.java.declaredFields.map { it.name }
         assertTrue("ProyeccionCaja debe tener saldoNeto", "saldoNeto" in fields)
     }
-
-    // ─── Bar data verification ──────────────────────────────────────────────
 
     @Test
     fun barSection_containsVentas() {
@@ -163,8 +149,6 @@ class AnalisisDetalleScreenTest {
         val label = "Ganancia"
         assertTrue(label.isNotBlank())
     }
-
-    // ─── Empty states ───────────────────────────────────────────────────────
 
     @Test
     fun emptyDeudores_showsNoDebtors() {
