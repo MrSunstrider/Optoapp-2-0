@@ -7,6 +7,7 @@ import com.example.optoapp.data.arqueo.IArqueoCajaRepo
 import com.example.optoapp.data.backup.BackupRestoreCoordinator
 import com.example.optoapp.data.configuracionfinanciera.ConfiguracionFinancieraDao
 import com.example.optoapp.data.categoriaproducto.CategoriaProductoDao
+import com.example.optoapp.data.feedbackrecomendacion.FeedbackRecomendacionDao
 import com.example.optoapp.data.gastooperativo.GastoOperativoDao
 import com.example.optoapp.data.inventariofisico.InventarioFisicoDao
 import com.example.optoapp.data.montura.MonturaDao
@@ -122,6 +123,9 @@ object DatabaseModule {
 
     @Provides
     fun provideCategoriaProductoDao(database: OptoDatabase): CategoriaProductoDao = database.categoriaProductoDao()
+
+    @Provides
+    fun provideFeedbackRecomendacionDao(database: OptoDatabase): FeedbackRecomendacionDao = database.feedbackRecomendacionDao()
 
     @Provides
     @Singleton

@@ -7,6 +7,7 @@ import com.example.optoapp.data.Resource
 import com.example.optoapp.data.SessionManager
 import com.example.optoapp.domain.AnalisisMensual
 import com.example.optoapp.domain.Deudor
+import com.example.optoapp.domain.FeedbackRecomendacionUseCase
 import com.example.optoapp.domain.GenerarRecomendacionesUseCase
 import com.example.optoapp.domain.ObtenerAnalisisMensualUseCase
 import com.example.optoapp.domain.ObtenerDeudoresUseCase
@@ -29,7 +30,8 @@ data class AnalisisNegocioUiState(
     val deudores: List<Deudor> = emptyList(),
     val recomendaciones: List<Recomendacion> = emptyList(),
     val isLoading: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val mostrarAdvertenciaEstacionalidad: Boolean = false
 )
 
 @HiltViewModel
@@ -37,6 +39,7 @@ class AnalisisNegocioViewModel @Inject constructor(
     private val obtenerAnalisisMensual: ObtenerAnalisisMensualUseCase,
     private val obtenerDeudores: ObtenerDeudoresUseCase,
     private val generarRecomendaciones: GenerarRecomendacionesUseCase,
+    private val feedbackRecomendacion: FeedbackRecomendacionUseCase,
     private val sessionManager: SessionManager
 ) : ViewModel() {
 
@@ -59,6 +62,17 @@ class AnalisisNegocioViewModel @Inject constructor(
 
     fun refresh() {
         loadData(_uiState.value.mesSeleccionado)
+    }
+
+    fun onFeedback(recomendacionId: String, fueUtil: Boolean) {
+        viewModelScope.launch {
+            val opticaId = sessionManager.opticaId.first()
+            if (fueUtil) {
+                feedbackRecomendacion.marcarUtil(recomendacionId, opticaId)
+            } else {
+                feedbackRecomendacion.marcarNoUtil(recomendacionId, opticaId)
+            }
+        }
     }
 
     private fun loadData(mes: LocalDate) {
@@ -125,7 +139,8 @@ class AnalisisNegocioViewModel @Inject constructor(
                     deudores = deudores,
                     recomendaciones = recomendaciones,
                     isLoading = false,
-                    error = errors.takeIf { it.isNotEmpty() }?.joinToString("; ")
+                    error = errors.takeIf { it.isNotEmpty() }?.joinToString("; "),
+                    mostrarAdvertenciaEstacionalidad = analisis?.esOffline == true
                 )
             }.onFailure { e ->
                 Log.e(TAG, "Unexpected error loading data", e)

@@ -125,6 +125,26 @@ fun AnalisisNegocioScreen(
                 ResumenCard(analisis = analisis)
             }
 
+            if (uiState.mostrarAdvertenciaEstacionalidad) {
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = WarningAmber.copy(alpha = 0.15f)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Default.Warning, contentDescription = null, tint = WarningAmber, modifier = Modifier.size(20.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            "Este cálculo se basa en pocos meses. Podría no ser preciso.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = WarningAmber
+                        )
+                    }
+                }
+            }
+
             if (uiState.recomendaciones.isNotEmpty()) {
                 Text(
                     "Recomendaciones",
@@ -133,7 +153,10 @@ fun AnalisisNegocioScreen(
                     color = TextDark
                 )
                 uiState.recomendaciones.take(3).forEach { rec ->
-                    RecomendacionCard(rec)
+                    RecomendacionCard(
+                        rec = rec,
+                        onFeedback = { fueUtil -> viewModel.onFeedback(rec.id, fueUtil) }
+                    )
                 }
             }
 
@@ -217,19 +240,27 @@ private fun ResumenCard(analisis: AnalisisMensual) {
                     color = MaterialTheme.colorScheme.primary
                 )
             }
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                MetricItem(
-                    modifier = Modifier.weight(1f),
-                    label = "Saldo pendiente",
-                    value = "S/ ${formatNumber(saldo)}",
-                    color = if (saldo > 0) AlertRed else PositiveGreen
-                )
-                MetricItem(
-                    modifier = Modifier.weight(1f),
-                    label = "Margen",
-                    value = "${formatNumber(analisis.margenNetoPct)}%",
-                    color = if (analisis.margenNetoPct >= 25) PositiveGreen else WarningAmber
-                )
+            MetricItem(
+                modifier = Modifier.fillMaxWidth(),
+                label = "Saldo pendiente",
+                value = "S/ ${formatNumber(saldo)}",
+                color = if (saldo > 0) AlertRed else PositiveGreen
+            )
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Column(modifier = Modifier.padding(12.dp)) {
+                    Text("Margen", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        "De cada S/ 100 que vendés, te quedan S/ ${analisis.margenNetoPct.toInt()}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = if (analisis.margenNetoPct >= 25) PositiveGreen else WarningAmber
+                    )
+                }
             }
         }
     }
@@ -256,7 +287,7 @@ private fun MetricItem(
 }
 
 @Composable
-private fun RecomendacionCard(rec: Recomendacion) {
+private fun RecomendacionCard(rec: Recomendacion, onFeedback: (Boolean) -> Unit) {
     val bgColor = when (rec.prioridad) {
         Prioridad.ALTA -> AlertRed.copy(alpha = 0.08f)
         Prioridad.MEDIA -> WarningAmber.copy(alpha = 0.08f)
@@ -272,48 +303,72 @@ private fun RecomendacionCard(rec: Recomendacion) {
         colors = CardDefaults.cardColors(containerColor = bgColor),
         shape = RoundedCornerShape(12.dp)
     ) {
-        Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.Top) {
-            Icon(
-                Icons.Default.Info,
-                contentDescription = null,
-                tint = accentColor,
-                modifier = Modifier.size(20.dp)
-            )
-            Spacer(Modifier.width(8.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    rec.titulo,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = TextDark
+        Column(modifier = Modifier.padding(12.dp)) {
+            Row(verticalAlignment = Alignment.Top) {
+                Icon(
+                    Icons.Default.Info,
+                    contentDescription = null,
+                    tint = accentColor,
+                    modifier = Modifier.size(20.dp)
                 )
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    rec.detalle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                rec.accion?.let { accion ->
+                Spacer(Modifier.width(8.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        rec.titulo,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = TextDark
+                    )
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        "→ $accion",
+                        rec.detalle,
                         style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    rec.accion?.let { accion ->
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            "→ $accion",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = accentColor,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = accentColor.copy(alpha = 0.15f)
+                ) {
+                    Text(
+                        rec.prioridad.name,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                        style = MaterialTheme.typography.labelSmall,
                         color = accentColor,
-                        fontWeight = FontWeight.Medium
+                        fontWeight = FontWeight.Bold
                     )
                 }
             }
-            Surface(
-                shape = RoundedCornerShape(8.dp),
-                color = accentColor.copy(alpha = 0.15f)
+            Spacer(Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text(
-                    rec.prioridad.name,
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = accentColor,
-                    fontWeight = FontWeight.Bold
-                )
+                FilledTonalButton(
+                    onClick = { onFeedback(true) },
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(Icons.Default.ThumbUp, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(4.dp))
+                    Text("Útil")
+                }
+                FilledTonalButton(
+                    onClick = { onFeedback(false) },
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(Icons.Default.ThumbDown, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(4.dp))
+                    Text("No me sirve")
+                }
             }
         }
     }

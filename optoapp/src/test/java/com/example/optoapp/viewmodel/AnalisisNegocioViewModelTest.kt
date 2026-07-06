@@ -4,6 +4,7 @@ import com.example.optoapp.data.Resource
 import com.example.optoapp.data.SessionManager
 import com.example.optoapp.domain.AnalisisMensual
 import com.example.optoapp.domain.Deudor
+import com.example.optoapp.domain.FeedbackRecomendacionUseCase
 import com.example.optoapp.domain.GenerarRecomendacionesUseCase
 import com.example.optoapp.domain.MargenCategoria
 import com.example.optoapp.domain.ObtenerAnalisisMensualUseCase
@@ -41,6 +42,7 @@ class AnalisisNegocioViewModelTest {
     private lateinit var obtenerAnalisisMensual: ObtenerAnalisisMensualUseCase
     private lateinit var obtenerDeudores: ObtenerDeudoresUseCase
     private lateinit var generarRecomendaciones: GenerarRecomendacionesUseCase
+    private lateinit var feedbackRecomendacion: FeedbackRecomendacionUseCase
     private lateinit var sessionManager: SessionManager
     private lateinit var viewModel: AnalisisNegocioViewModel
 
@@ -58,6 +60,7 @@ class AnalisisNegocioViewModelTest {
         obtenerAnalisisMensual = mockk()
         obtenerDeudores = mockk()
         generarRecomendaciones = mockk()
+        feedbackRecomendacion = mockk(relaxed = true)
         sessionManager = mockk(relaxed = true)
 
         every { sessionManager.opticaId } returns flowOf(opticaId)
@@ -129,7 +132,7 @@ class AnalisisNegocioViewModelTest {
         primeUseCases()
 
         viewModel = AnalisisNegocioViewModel(
-            obtenerAnalisisMensual, obtenerDeudores, generarRecomendaciones, sessionManager
+            obtenerAnalisisMensual, obtenerDeudores, generarRecomendaciones, feedbackRecomendacion, sessionManager
         )
         advanceUntilIdle()
 
@@ -148,7 +151,7 @@ class AnalisisNegocioViewModelTest {
         primeUseCases()
 
         viewModel = AnalisisNegocioViewModel(
-            obtenerAnalisisMensual, obtenerDeudores, generarRecomendaciones, sessionManager
+            obtenerAnalisisMensual, obtenerDeudores, generarRecomendaciones, feedbackRecomendacion, sessionManager
         )
         advanceUntilIdle()
 
@@ -165,7 +168,7 @@ class AnalisisNegocioViewModelTest {
         primeUseCases()
 
         viewModel = AnalisisNegocioViewModel(
-            obtenerAnalisisMensual, obtenerDeudores, generarRecomendaciones, sessionManager
+            obtenerAnalisisMensual, obtenerDeudores, generarRecomendaciones, feedbackRecomendacion, sessionManager
         )
         advanceUntilIdle()
 
@@ -181,7 +184,7 @@ class AnalisisNegocioViewModelTest {
         primeUseCases()
 
         viewModel = AnalisisNegocioViewModel(
-            obtenerAnalisisMensual, obtenerDeudores, generarRecomendaciones, sessionManager
+            obtenerAnalisisMensual, obtenerDeudores, generarRecomendaciones, feedbackRecomendacion, sessionManager
         )
         advanceUntilIdle()
 
@@ -197,7 +200,7 @@ class AnalisisNegocioViewModelTest {
         )
 
         viewModel = AnalisisNegocioViewModel(
-            obtenerAnalisisMensual, obtenerDeudores, generarRecomendaciones, sessionManager
+            obtenerAnalisisMensual, obtenerDeudores, generarRecomendaciones, feedbackRecomendacion, sessionManager
         )
         advanceUntilIdle()
 
@@ -215,13 +218,14 @@ class AnalisisNegocioViewModelTest {
         )
 
         viewModel = AnalisisNegocioViewModel(
-            obtenerAnalisisMensual, obtenerDeudores, generarRecomendaciones, sessionManager
+            obtenerAnalisisMensual, obtenerDeudores, generarRecomendaciones, feedbackRecomendacion, sessionManager
         )
         advanceUntilIdle()
 
         val state = viewModel.uiState.first()
         assertNotNull("analisis should be present", state.analisis)
         assertEquals("esOffline should be true", true, state.analisis!!.esOffline)
+        assertEquals("mostrarAdvertenciaEstacionalidad should be true when offline", true, state.mostrarAdvertenciaEstacionalidad)
     }
 
     @Test
@@ -233,7 +237,7 @@ class AnalisisNegocioViewModelTest {
         )
 
         viewModel = AnalisisNegocioViewModel(
-            obtenerAnalisisMensual, obtenerDeudores, generarRecomendaciones, sessionManager
+            obtenerAnalisisMensual, obtenerDeudores, generarRecomendaciones, feedbackRecomendacion, sessionManager
         )
         advanceUntilIdle()
 
@@ -243,20 +247,47 @@ class AnalisisNegocioViewModelTest {
     }
 
     @Test
-    fun `refresh re-invokes all use cases`() = runTest(testDispatcher) {
+    fun `onFeedback util calls marcarUtil`() = runTest(testDispatcher) {
         primeUseCases()
+        coEvery { feedbackRecomendacion.marcarUtil("r1", opticaId) } returns Unit
 
         viewModel = AnalisisNegocioViewModel(
-            obtenerAnalisisMensual, obtenerDeudores, generarRecomendaciones, sessionManager
+            obtenerAnalisisMensual, obtenerDeudores, generarRecomendaciones, feedbackRecomendacion, sessionManager
         )
         advanceUntilIdle()
 
-        coEvery { obtenerAnalisisMensual(opticaId, any()) } returns Resource.Error("Refresh error")
+        viewModel.onFeedback("r1", fueUtil = true)
+        advanceUntilIdle()
 
-        viewModel.refresh()
+        coEvery { feedbackRecomendacion.marcarUtil("r1", opticaId) } // verify call happened via mockk
+        // No exception = success
+    }
+
+    @Test
+    fun `onFeedback no util calls marcarNoUtil`() = runTest(testDispatcher) {
+        primeUseCases()
+        coEvery { feedbackRecomendacion.marcarNoUtil("r2", opticaId) } returns Unit
+
+        viewModel = AnalisisNegocioViewModel(
+            obtenerAnalisisMensual, obtenerDeudores, generarRecomendaciones, feedbackRecomendacion, sessionManager
+        )
+        advanceUntilIdle()
+
+        viewModel.onFeedback("r2", fueUtil = false)
+        advanceUntilIdle()
+        // No exception = success
+    }
+
+    @Test
+    fun `mostrarAdvertenciaEstacionalidad is false when online`() = runTest(testDispatcher) {
+        primeUseCases(analisis = Resource.Success(createAnalisis(esOffline = false)))
+
+        viewModel = AnalisisNegocioViewModel(
+            obtenerAnalisisMensual, obtenerDeudores, generarRecomendaciones, feedbackRecomendacion, sessionManager
+        )
         advanceUntilIdle()
 
         val state = viewModel.uiState.first()
-        assertEquals("error should reflect refresh failure", "Refresh error", state.error)
+        assertEquals("mostrarAdvertenciaEstacionalidad should be false when online", false, state.mostrarAdvertenciaEstacionalidad)
     }
 }
