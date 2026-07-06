@@ -208,13 +208,13 @@ fun MainDrawerContent(
                 }
                 if (showBiYReportes) {
                     NavigationDrawerItem(
-                        label = { Text("Estadísticas (BI)", fontWeight = FontWeight.SemiBold) },
+                        label = { Text("Mi Negocio", fontWeight = FontWeight.SemiBold) },
                         selected = currentRoute == "estadisticas_bi",
                         onClick = {
                             scope.launch { drawerState.close() }
                             navController.navigate("estadisticas_bi")
                         },
-                        icon = { Icon(Icons.Default.BarChart, contentDescription = null) },
+                        icon = { Icon(Icons.Default.TrendingUp, contentDescription = null) },
                         modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                     )
                     NavigationDrawerItem(

@@ -6,6 +6,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -228,13 +229,13 @@ fun DrawerContent(
             }
             if (showBiYReportes) {
                 NavigationDrawerItem(
-                    label = { Text("Estadísticas (BI)", fontWeight = FontWeight.SemiBold) },
+                    label = { Text("Mi Negocio", fontWeight = FontWeight.SemiBold) },
                     selected = currentRoute == "estadisticas_bi",
                     onClick = {
                         scope.launch { drawerState.close() }
                         navController.navigateDrawer("estadisticas_bi")
                     },
-                    icon = { Icon(Icons.Default.BarChart, contentDescription = null) },
+                    icon = { Icon(Icons.AutoMirrored.Filled.TrendingUp, contentDescription = null) },
                     modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                 )
                 NavigationDrawerItem(

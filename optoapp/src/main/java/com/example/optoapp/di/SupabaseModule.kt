@@ -10,6 +10,7 @@ import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.auth.ExternalAuthAction
 import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.postgrest.Postgrest
+import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.realtime.Realtime
 import javax.inject.Singleton
 
@@ -41,4 +42,8 @@ object SupabaseModule {
             }
         }
     }
+
+    @Provides
+    @Singleton
+    fun providePostgrest(client: SupabaseClient): Postgrest = client.postgrest
 }

@@ -60,7 +60,7 @@ class MainDrawerContentTest {
 
     @Test
     fun conditionalItems_finanzas_whenShowCierreCajaOrShowBiYReportes() {
-        val conditionalItems = listOf("Cierre de Caja", "Estadísticas (BI)", "Reportes")
+        val conditionalItems = listOf("Cierre de Caja", "Mi Negocio", "Reportes")
         assertEquals(3, conditionalItems.size)
     }
 
@@ -235,6 +235,12 @@ class MainDrawerContentTest {
     fun navigationRoutes_estadisticasBiExists() {
         val route = "estadisticas_bi"
         assertEquals("estadisticas_bi", route)
+    }
+
+    @Test
+    fun navigationRoutes_analisisDetalleExists() {
+        val route = "analisis_detalle"
+        assertEquals("analisis_detalle", route)
     }
 
     @Test

@@ -23,6 +23,14 @@ object OptoTokens {
         val large: RoundedCornerShape = RoundedCornerShape(24.dp)
     }
 
+    // --- Semantic colors for Analisis de Negocio ---
+    object analisis {
+        val positiveGreen: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF27AE60)
+        val alertRed: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFE74C3C)
+        val textDark: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF2C3E50)
+        val warningAmber: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFF39C12)
+    }
+
     // --- Elevation tokens ---
     object elevation {
         val level0: Dp = 0.dp

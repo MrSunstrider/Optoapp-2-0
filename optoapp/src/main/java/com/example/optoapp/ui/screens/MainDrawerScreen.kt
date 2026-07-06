@@ -204,7 +204,8 @@ fun MainDrawerScreen(
                 }
                 composable("reportes") { ReportesScreen(drawerState) }
                 composable("cierre_caja") { CierreCajaScreen(navController) }
-                composable("estadisticas_bi") { BIScreen(navController) }
+                composable("estadisticas_bi") { AnalisisNegocioScreen(navController) }
+                composable("analisis_detalle") { AnalisisDetalleScreen(navController) }
                 composable("configuracion") { ConfiguracionScreen(navController, drawerState, syncViewModel) }
                 composable("conflictos") { ConflictosScreen(navController, syncViewModel) }
                 composable("informacion_financiera/{dispensacionId}") { backStackEntry ->
