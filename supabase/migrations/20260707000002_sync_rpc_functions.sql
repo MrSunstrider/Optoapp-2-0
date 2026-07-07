@@ -59,7 +59,9 @@ BEGIN
 END;
 $$;
 
--- rpc_deudores: venta_id fallback + Anulación filter
+-- rpc_deudores: venta_id fallback + Anulación filter + paciente_id.
+-- DROP before CREATE OR REPLACE required because RETURNS TABLE changed (added paciente_id TEXT).
+-- PostgreSQL rejects CREATE OR REPLACE when the return type of an existing function changes.
 DROP FUNCTION IF EXISTS public.rpc_deudores(TEXT);
 CREATE OR REPLACE FUNCTION public.rpc_deudores(
     p_optica_id TEXT
@@ -68,8 +70,11 @@ CREATE OR REPLACE FUNCTION public.rpc_deudores(
     venta_fecha DATE, monto_total NUMERIC, total_pagado NUMERIC,
     saldo NUMERIC, dias_deuda INTEGER, paciente_id TEXT
 )
-LANGUAGE sql SECURITY INVOKER STABLE
+LANGUAGE plpgsql STABLE
+SET search_path = public
 AS $$
+BEGIN
+    RETURN QUERY
     WITH pagos_dedup AS (
         SELECT
             CASE
@@ -95,6 +100,7 @@ AS $$
     GROUP BY v.id, v.fecha, v.monto_total, p.nombre_completo, p.telefono, v.paciente_id
     HAVING v.monto_total - COALESCE(SUM(pd.monto), 0) > 0.005
     ORDER BY dias_deuda DESC;
+END;
 $$;
 
 -- rpc_analisis_mensual: Anulación filter in proyeccion_caja
