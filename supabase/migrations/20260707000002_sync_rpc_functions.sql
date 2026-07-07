@@ -60,6 +60,7 @@ END;
 $$;
 
 -- rpc_deudores: venta_id fallback + Anulación filter
+DROP FUNCTION IF EXISTS public.rpc_deudores(TEXT);
 CREATE OR REPLACE FUNCTION public.rpc_deudores(
     p_optica_id TEXT
 ) RETURNS TABLE(
