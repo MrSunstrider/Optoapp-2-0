@@ -106,9 +106,9 @@ class OptoRepositoryErrorTest {
 
     @Test
     fun `getMonturaById dao throws IOException returns Error`() = runTest {
-        coEvery { monturaDao.getMonturaById("m1") } throws IOException("Network error")
+        coEvery { monturaDao.getMonturaByIdForOptica("m1", any()) } throws IOException("Network error")
 
-        val result = repo.getMonturaById("m1")
+        val result = repo.getMonturaById("m1", "o1")
 
         assertTrue("Expected Resource.Error but got $result", result is Resource.Error)
         assertNotNull((result as Resource.Error).message)
@@ -116,11 +116,11 @@ class OptoRepositoryErrorTest {
 
     @Test
     fun `getMonturaById dao throws CancellationException rethrows`() = runTest {
-        coEvery { monturaDao.getMonturaById("m1") } throws CancellationException("Cancelled")
+        coEvery { monturaDao.getMonturaByIdForOptica("m1", any()) } throws CancellationException("Cancelled")
 
         var caught = false
         try {
-            repo.getMonturaById("m1")
+            repo.getMonturaById("m1", "o1")
         } catch (e: CancellationException) {
             caught = true
         }
@@ -129,9 +129,9 @@ class OptoRepositoryErrorTest {
 
     @Test
     fun `getMonturaById dao throws generic Exception returns Error`() = runTest {
-        coEvery { monturaDao.getMonturaById("m1") } throws RuntimeException("DB corrupt")
+        coEvery { monturaDao.getMonturaByIdForOptica("m1", any()) } throws RuntimeException("DB corrupt")
 
-        val result = repo.getMonturaById("m1")
+        val result = repo.getMonturaById("m1", "o1")
 
         assertTrue("Expected Resource.Error but got $result", result is Resource.Error)
         assertEquals("DB corrupt", (result as Resource.Error).message)

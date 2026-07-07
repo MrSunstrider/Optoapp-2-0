@@ -28,7 +28,7 @@ class DispensacionStockHelperTest {
     @Test
     fun adjustStock_reduceStock_returnsAffectedRows() = runTest {
         val montura = Montura(id = "m1", opticaId = "o1", stockActual = 5)
-        coEvery { coordinator.getMonturaById("m1") } returns Resource.Success(montura)
+        coEvery { coordinator.getMonturaById("m1", any()) } returns Resource.Success(montura)
         coEvery { coordinator.adjustMonturaStock("m1", "o1", -1) } returns 1
 
         val result = helper.adjustStock("m1", "o1", -1)
@@ -41,7 +41,7 @@ class DispensacionStockHelperTest {
     @Test
     fun adjustStock_insufficientStock_returnsFailure() = runTest {
         val montura = Montura(id = "m1", opticaId = "o1", stockActual = 0)
-        coEvery { coordinator.getMonturaById("m1") } returns Resource.Success(montura)
+        coEvery { coordinator.getMonturaById("m1", any()) } returns Resource.Success(montura)
 
         val result = helper.adjustStock("m1", "o1", -1)
 
@@ -51,7 +51,7 @@ class DispensacionStockHelperTest {
     @Test
     fun adjustStock_increaseStock_returnsAffectedRows() = runTest {
         val montura = Montura(id = "m1", opticaId = "o1", stockActual = 3)
-        coEvery { coordinator.getMonturaById("m1") } returns Resource.Success(montura)
+        coEvery { coordinator.getMonturaById("m1", any()) } returns Resource.Success(montura)
         coEvery { coordinator.adjustMonturaStock("m1", "o1", 5) } returns 1
 
         val result = helper.adjustStock("m1", "o1", 5)
@@ -63,7 +63,7 @@ class DispensacionStockHelperTest {
 
     @Test
     fun adjustStock_nonExistentMontura_returnsFailure() = runTest {
-        coEvery { coordinator.getMonturaById("nonexistent") } returns Resource.Error("No encontrada")
+        coEvery { coordinator.getMonturaById("nonexistent", any()) } returns Resource.Error("No encontrada")
 
         val result = helper.adjustStock("nonexistent", "o1", -1)
 
@@ -73,7 +73,7 @@ class DispensacionStockHelperTest {
     @Test
     fun adjustStock_wrongOpticaId_returnsFailure() = runTest {
         val montura = Montura(id = "m1", opticaId = "o1", stockActual = 5)
-        coEvery { coordinator.getMonturaById("m1") } returns Resource.Success(montura)
+        coEvery { coordinator.getMonturaById("m1", any()) } returns Resource.Success(montura)
 
         val result = helper.adjustStock("m1", "o2", -1)
 
@@ -102,7 +102,7 @@ class DispensacionStockHelperTest {
     @Test
     fun adjustStockAndRegistrarMovimiento_combinesBoth() = runTest {
         val montura = Montura(id = "m1", opticaId = "o1", stockActual = 10)
-        coEvery { coordinator.getMonturaById("m1") } returns Resource.Success(montura)
+        coEvery { coordinator.getMonturaById("m1", any()) } returns Resource.Success(montura)
         coEvery { coordinator.adjustMonturaStock("m1", "o1", -1) } returns 1
 
         val result = helper.adjustStockAndRegistrarMovimiento(
@@ -124,7 +124,7 @@ class DispensacionStockHelperTest {
     @Test
     fun adjustStockAndRegistrarMovimiento_insufficientStock_noMovimiento() = runTest {
         val montura = Montura(id = "m1", opticaId = "o1", stockActual = 0)
-        coEvery { coordinator.getMonturaById("m1") } returns Resource.Success(montura)
+        coEvery { coordinator.getMonturaById("m1", any()) } returns Resource.Success(montura)
 
         val result = helper.adjustStockAndRegistrarMovimiento(
             monturaId = "m1",
@@ -142,7 +142,7 @@ class DispensacionStockHelperTest {
     @Test
     fun adjustStockAndRegistrarMovimiento_positiveDelta_succeeds() = runTest {
         val montura = Montura(id = "m1", opticaId = "o1", stockActual = 5)
-        coEvery { coordinator.getMonturaById("m1") } returns Resource.Success(montura)
+        coEvery { coordinator.getMonturaById("m1", any()) } returns Resource.Success(montura)
         coEvery { coordinator.adjustMonturaStock("m1", "o1", 3) } returns 1
 
         val result = helper.adjustStockAndRegistrarMovimiento(
@@ -161,7 +161,7 @@ class DispensacionStockHelperTest {
 
     @Test
     fun adjustStock_loadingState_returnsFailure() = runTest {
-        coEvery { coordinator.getMonturaById("m1") } returns Resource.Loading()
+        coEvery { coordinator.getMonturaById("m1", any()) } returns Resource.Loading()
 
         val result = helper.adjustStock("m1", "o1", -1)
 
@@ -170,7 +170,7 @@ class DispensacionStockHelperTest {
 
     @Test
     fun adjustStockAndRegistrarMovimiento_loadingState_returnsFailure() = runTest {
-        coEvery { coordinator.getMonturaById("m1") } returns Resource.Loading()
+        coEvery { coordinator.getMonturaById("m1", any()) } returns Resource.Loading()
 
         val result = helper.adjustStockAndRegistrarMovimiento(
             monturaId = "m1",

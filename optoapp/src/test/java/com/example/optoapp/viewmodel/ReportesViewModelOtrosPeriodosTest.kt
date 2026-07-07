@@ -29,8 +29,8 @@ import org.junit.Test
 import java.time.LocalDate
 
 /**
- * Tests for ReportesViewModel — non-daily periods ("Semanal", "Este mes",
- * "Este año", "Anual", "Todo").
+ * Tests for ReportesViewModel — non-daily periods ("Semanal", "Mensual",
+ * "Anual", "Total").
  *
  * All tests use LocalDate.now() as reference so they pass regardless of
  * the actual current date. Semanal week boundaries are computed dynamically.
@@ -178,7 +178,7 @@ class ReportesViewModelOtrosPeriodosTest {
     }
 
     @Test
-    fun `Este mes includes only dates in the current month`() = runTest(testDispatcher) {
+    fun `Mensual includes only dates in the current month`() = runTest(testDispatcher) {
         val now = LocalDate.now()
         val firstOfMonth = now.withDayOfMonth(1)
         val lastOfMonth = now.withDayOfMonth(now.lengthOfMonth())
@@ -196,7 +196,7 @@ class ReportesViewModelOtrosPeriodosTest {
 
         viewModel = ReportesViewModel(repository, sessionManager, ventaDao)
         activateFlows()
-        viewModel.setPeriodo("Este mes")
+        viewModel.setPeriodo("Mensual")
         advanceUntilIdle()
 
         assertEquals("Este mes should include only current month dates",
@@ -204,7 +204,7 @@ class ReportesViewModelOtrosPeriodosTest {
     }
 
     @Test
-    fun `Este mes totalVendido sums only current month`() = runTest(testDispatcher) {
+    fun `Mensual totalVendido sums only current month`() = runTest(testDispatcher) {
         val now = LocalDate.now()
         val lastMonth = now.minusMonths(1)
         val dispensaciones = listOf(
@@ -215,7 +215,7 @@ class ReportesViewModelOtrosPeriodosTest {
 
         viewModel = ReportesViewModel(repository, sessionManager, ventaDao)
         activateFlows()
-        viewModel.setPeriodo("Este mes")
+        viewModel.setPeriodo("Mensual")
         advanceUntilIdle()
 
         assertEquals("totalVendido should only reflect current month", 100.0, viewModel.totalVendido.value, 0.001)
@@ -240,10 +240,11 @@ class ReportesViewModelOtrosPeriodosTest {
 
         viewModel = ReportesViewModel(repository, sessionManager, ventaDao)
         activateFlows()
-        viewModel.setPeriodo("Este año")
+        viewModel.setPeriodo("Anual")
+        viewModel.setAnio(now.year.toString())
         advanceUntilIdle()
 
-        assertEquals("Este año should include only current year dates",
+        assertEquals("Anual should include only current year dates",
             3, viewModel.allDispensaciones.value.size)
     }
 
@@ -307,7 +308,7 @@ class ReportesViewModelOtrosPeriodosTest {
     }
 
     @Test
-    fun `Todo includes all dispensaciones regardless of date`() = runTest(testDispatcher) {
+    fun `Total includes all dispensaciones regardless of date`() = runTest(testDispatcher) {
         val dispensaciones = listOf(
             DispensacionOptica(id = "d1", pacienteId = "p", fecha = LocalDate.of(2020, 1, 1),  montoTotal = 10.0, opticaId = opticaId),
             DispensacionOptica(id = "d2", pacienteId = "p", fecha = LocalDate.now(),            montoTotal = 20.0, opticaId = opticaId),
@@ -317,14 +318,14 @@ class ReportesViewModelOtrosPeriodosTest {
 
         viewModel = ReportesViewModel(repository, sessionManager, ventaDao)
         activateFlows()
-        viewModel.setPeriodo("Todo")
+        viewModel.setPeriodo("Total")
         advanceUntilIdle()
 
         assertEquals("Todo should include 3 dispensaciones", 3, viewModel.allDispensaciones.value.size)
     }
 
     @Test
-    fun `Todo totalVendido includes everything`() = runTest(testDispatcher) {
+    fun `Total totalVendido includes everything`() = runTest(testDispatcher) {
         val dispensaciones = listOf(
             DispensacionOptica(id = "d1", pacienteId = "p", fecha = LocalDate.of(2020, 1, 1),  montoTotal = 100.0, opticaId = opticaId),
             DispensacionOptica(id = "d2", pacienteId = "p", fecha = LocalDate.now(),            montoTotal = 200.0, opticaId = opticaId)
@@ -333,7 +334,7 @@ class ReportesViewModelOtrosPeriodosTest {
 
         viewModel = ReportesViewModel(repository, sessionManager, ventaDao)
         activateFlows()
-        viewModel.setPeriodo("Todo")
+        viewModel.setPeriodo("Total")
         advanceUntilIdle()
 
         assertEquals("Todo totalVendido should include all", 300.0, viewModel.totalVendido.value, 0.001)
@@ -351,8 +352,13 @@ class ReportesViewModelOtrosPeriodosTest {
         val servicios = listOf(
             ServicioExtra(id = "s1", descripcion = "Servicio", montoTotal = 50.0, aCuenta = 25.0, estado = "Entregado", fecha = currentMonday, opticaId = opticaId)
         )
+        val pagos = listOf(
+            Pago(id = "pg1", fecha = currentMonday, tipo = "Efectivo", monto = 60.0, opticaId = opticaId, dispensacionId = "d1"),
+            Pago(id = "pg2", fecha = currentMonday, tipo = "Efectivo", monto = 25.0, opticaId = opticaId, servicioExtraId = "s1")
+        )
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
         every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(servicios)
+        every { repository.getPagosByDateRangeForOptica(any(), any(), opticaId) } returns flowOf(pagos)
 
         viewModel = ReportesViewModel(repository, sessionManager, ventaDao)
         activateFlows()
@@ -360,11 +366,11 @@ class ReportesViewModelOtrosPeriodosTest {
         advanceUntilIdle()
 
         assertEquals("Semanal totalVendido should include servicios extra", 150.0, viewModel.totalVendido.value, 0.001)
-        assertEquals("Semanal totalPagado should include servicios extra aCuenta", 85.0, viewModel.totalPagado.value, 0.001)
+        assertEquals("Semanal totalPagado should sum pagos monto in period", 85.0, viewModel.totalPagado.value, 0.001)
     }
 
     @Test
-    fun `Este mes totalVendido and totalPagado include servicios extra`() = runTest(testDispatcher) {
+    fun `Mensual totalVendido and totalPagado include servicios extra`() = runTest(testDispatcher) {
         val now = LocalDate.now()
         val dispensaciones = listOf(
             DispensacionOptica(id = "d1", pacienteId = "p", fecha = now, montoTotal = 100.0, montoPagado = 60.0, opticaId = opticaId)
@@ -372,16 +378,21 @@ class ReportesViewModelOtrosPeriodosTest {
         val servicios = listOf(
             ServicioExtra(id = "s1", descripcion = "Servicio", montoTotal = 50.0, aCuenta = 25.0, estado = "Entregado", fecha = now, opticaId = opticaId)
         )
+        val pagos = listOf(
+            Pago(id = "pg1", fecha = now, tipo = "Efectivo", monto = 60.0, opticaId = opticaId, dispensacionId = "d1"),
+            Pago(id = "pg2", fecha = now, tipo = "Efectivo", monto = 25.0, opticaId = opticaId, servicioExtraId = "s1")
+        )
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
         every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(servicios)
+        every { repository.getPagosByDateRangeForOptica(any(), any(), opticaId) } returns flowOf(pagos)
 
         viewModel = ReportesViewModel(repository, sessionManager, ventaDao)
         activateFlows()
-        viewModel.setPeriodo("Este mes")
+        viewModel.setPeriodo("Mensual")
         advanceUntilIdle()
 
         assertEquals("Este mes totalVendido should include servicios extra", 150.0, viewModel.totalVendido.value, 0.001)
-        assertEquals("Este mes totalPagado should include servicios extra aCuenta", 85.0, viewModel.totalPagado.value, 0.001)
+        assertEquals("Este mes totalPagado should sum pagos monto in period", 85.0, viewModel.totalPagado.value, 0.001)
     }
 
     @Test
@@ -393,16 +404,22 @@ class ReportesViewModelOtrosPeriodosTest {
         val servicios = listOf(
             ServicioExtra(id = "s1", descripcion = "Servicio", montoTotal = 50.0, aCuenta = 25.0, estado = "Entregado", fecha = now, opticaId = opticaId)
         )
+        val pagos = listOf(
+            Pago(id = "pg1", fecha = now, tipo = "Efectivo", monto = 60.0, opticaId = opticaId, dispensacionId = "d1"),
+            Pago(id = "pg2", fecha = now, tipo = "Efectivo", monto = 25.0, opticaId = opticaId, servicioExtraId = "s1")
+        )
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
         every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(servicios)
+        every { repository.getPagosByDateRangeForOptica(any(), any(), opticaId) } returns flowOf(pagos)
 
         viewModel = ReportesViewModel(repository, sessionManager, ventaDao)
         activateFlows()
-        viewModel.setPeriodo("Este año")
+        viewModel.setPeriodo("Anual")
+        viewModel.setAnio(now.year.toString())
         advanceUntilIdle()
 
-        assertEquals("Este año totalVendido should include servicios extra", 150.0, viewModel.totalVendido.value, 0.001)
-        assertEquals("Este año totalPagado should include servicios extra aCuenta", 85.0, viewModel.totalPagado.value, 0.001)
+        assertEquals("Anual totalVendido should include servicios extra", 150.0, viewModel.totalVendido.value, 0.001)
+        assertEquals("Anual totalPagado should sum pagos monto in period", 85.0, viewModel.totalPagado.value, 0.001)
     }
 
     @Test
@@ -414,8 +431,13 @@ class ReportesViewModelOtrosPeriodosTest {
         val servicios = listOf(
             ServicioExtra(id = "s1", descripcion = "Servicio", montoTotal = 50.0, aCuenta = 25.0, estado = "Entregado", fecha = yearDate, opticaId = opticaId)
         )
+        val pagos = listOf(
+            Pago(id = "pg1", fecha = yearDate, tipo = "Efectivo", monto = 60.0, opticaId = opticaId, dispensacionId = "d1"),
+            Pago(id = "pg2", fecha = yearDate, tipo = "Efectivo", monto = 25.0, opticaId = opticaId, servicioExtraId = "s1")
+        )
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
         every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(servicios)
+        every { repository.getPagosByDateRangeForOptica(any(), any(), opticaId) } returns flowOf(pagos)
 
         viewModel = ReportesViewModel(repository, sessionManager, ventaDao)
         activateFlows()
@@ -424,31 +446,36 @@ class ReportesViewModelOtrosPeriodosTest {
         advanceUntilIdle()
 
         assertEquals("Anual totalVendido should include servicios extra", 150.0, viewModel.totalVendido.value, 0.001)
-        assertEquals("Anual totalPagado should include servicios extra aCuenta", 85.0, viewModel.totalPagado.value, 0.001)
+        assertEquals("Anual totalPagado should sum pagos monto in period", 85.0, viewModel.totalPagado.value, 0.001)
     }
 
     @Test
-    fun `Todo totalVendido and totalPagado include servicios extra`() = runTest(testDispatcher) {
+    fun `Total totalVendido and totalPagado include servicios extra`() = runTest(testDispatcher) {
         val dispensaciones = listOf(
             DispensacionOptica(id = "d1", pacienteId = "p", fecha = LocalDate.of(2020, 1, 1), montoTotal = 100.0, montoPagado = 60.0, opticaId = opticaId)
         )
         val servicios = listOf(
             ServicioExtra(id = "s1", descripcion = "Servicio", montoTotal = 50.0, aCuenta = 25.0, estado = "Entregado", fecha = LocalDate.of(2020, 1, 1), opticaId = opticaId)
         )
+        val pagos = listOf(
+            Pago(id = "pg1", fecha = LocalDate.of(2020, 1, 1), tipo = "Efectivo", monto = 60.0, opticaId = opticaId, dispensacionId = "d1"),
+            Pago(id = "pg2", fecha = LocalDate.of(2020, 1, 1), tipo = "Efectivo", monto = 25.0, opticaId = opticaId, servicioExtraId = "s1")
+        )
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
         every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(servicios)
+        every { repository.getPagosByDateRangeForOptica(any(), any(), opticaId) } returns flowOf(pagos)
 
         viewModel = ReportesViewModel(repository, sessionManager, ventaDao)
         activateFlows()
-        viewModel.setPeriodo("Todo")
+        viewModel.setPeriodo("Total")
         advanceUntilIdle()
 
         assertEquals("Todo totalVendido should include servicios extra", 150.0, viewModel.totalVendido.value, 0.001)
-        assertEquals("Todo totalPagado should include servicios extra aCuenta", 85.0, viewModel.totalPagado.value, 0.001)
+        assertEquals("Todo totalPagado should sum pagos monto in period", 85.0, viewModel.totalPagado.value, 0.001)
     }
 
     @Test
-    fun `Todo cobrosPeriodo is always 0`() = runTest(testDispatcher) {
+    fun `Total cobrosPeriodo is always 0`() = runTest(testDispatcher) {
         val todasLasDispensaciones = listOf(
             DispensacionOptica(id = "d1", pacienteId = "p", fecha = LocalDate.of(2020, 1, 1), montoTotal = 100.0, opticaId = opticaId),
             DispensacionOptica(id = "d2", pacienteId = "p", fecha = LocalDate.now(),           montoTotal = 200.0, opticaId = opticaId)
@@ -462,10 +489,10 @@ class ReportesViewModelOtrosPeriodosTest {
 
         viewModel = ReportesViewModel(repository, sessionManager, ventaDao)
         activateFlows()
-        viewModel.setPeriodo("Todo")
+        viewModel.setPeriodo("Total")
         advanceUntilIdle()
 
-        // In Todo, all dispensaciones are in-period → all payments are "ventas del período"
+        // In Total, all dispensaciones are in-period → all payments are "ventas del período"
         assertEquals("cobrosPeriodo should be 0", 0.0, viewModel.cobrosPeriodo.value, 0.001)
         assertEquals("totalCobrado", 150.0, viewModel.totalCobrado.value, 0.001)
     }
@@ -502,7 +529,7 @@ class ReportesViewModelOtrosPeriodosTest {
         viewModel = ReportesViewModel(repository, sessionManager, ventaDao)
         activateFlows()
 
-        for (periodo in listOf("Semanal", "Este mes", "Este año", "Anual", "Todo")) {
+        for (periodo in listOf("Semanal", "Mensual", "Anual", "Total")) {
             viewModel.setPeriodo(periodo)
             viewModel.setAnio(LocalDate.now().year.toString())
             advanceUntilIdle()
@@ -540,7 +567,7 @@ class ReportesViewModelOtrosPeriodosTest {
     }
 
     @Test
-    fun `Este mes period passes month range to DAO`() = runTest(testDispatcher) {
+    fun `Mensual period passes month range to DAO`() = runTest(testDispatcher) {
         val now = LocalDate.now()
         val firstOfMonth = now.withDayOfMonth(1)
         val lastOfMonth = now.withDayOfMonth(now.lengthOfMonth())
@@ -554,7 +581,7 @@ class ReportesViewModelOtrosPeriodosTest {
 
         viewModel = ReportesViewModel(repository, sessionManager, ventaDao)
         activateFlows()
-        viewModel.setPeriodo("Este mes")
+        viewModel.setPeriodo("Mensual")
         advanceUntilIdle()
 
         assertEquals("Este mes start must be first day of month", firstOfMonth, startSlot.captured)
@@ -576,11 +603,12 @@ class ReportesViewModelOtrosPeriodosTest {
 
         viewModel = ReportesViewModel(repository, sessionManager, ventaDao)
         activateFlows()
-        viewModel.setPeriodo("Este año")
+        viewModel.setPeriodo("Anual")
+        viewModel.setAnio(now.year.toString())
         advanceUntilIdle()
 
-        assertEquals("Este año start must be Jan 1", firstOfYear, startSlot.captured)
-        assertEquals("Este año end must be Dec 31", lastOfYear, endSlot.captured)
+        assertEquals("Anual start must be Jan 1", firstOfYear, startSlot.captured)
+        assertEquals("Anual end must be Dec 31", lastOfYear, endSlot.captured)
     }
 
     @Test
@@ -603,7 +631,7 @@ class ReportesViewModelOtrosPeriodosTest {
     }
 
     @Test
-    fun `Todo period passes MIN MAX to DAO`() = runTest(testDispatcher) {
+    fun `Total period passes MIN MAX to DAO`() = runTest(testDispatcher) {
         val startSlot = slot<LocalDate>()
         val endSlot = slot<LocalDate>()
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(emptyList())
@@ -613,7 +641,7 @@ class ReportesViewModelOtrosPeriodosTest {
 
         viewModel = ReportesViewModel(repository, sessionManager, ventaDao)
         activateFlows()
-        viewModel.setPeriodo("Todo")
+        viewModel.setPeriodo("Total")
         advanceUntilIdle()
 
         assertEquals("Todo start must be MIN", LocalDate.MIN, startSlot.captured)

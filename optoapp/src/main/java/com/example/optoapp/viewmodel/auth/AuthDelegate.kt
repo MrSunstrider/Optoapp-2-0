@@ -172,14 +172,14 @@ open class AuthDelegate @Inject constructor(
             throw e
         } catch (e: IOException) {
             Log.e(TAG, "Registro: error de red", e)
-            "No se pudo crear la cuenta: ${e.localizedMessage ?: "error desconocido"}"
+            "Error inesperado. Reintente más tarde."
         } catch (e: Exception) {
             Log.e(TAG, "Registro", e)
             val msg = e.localizedMessage ?: "error desconocido"
             when {
                 msg.contains("password", ignoreCase = true) ->
                     "La contraseña debe tener al menos: minúsculas, MAYÚSCULAS, números y símbolos especiales."
-                else -> "No se pudo crear la cuenta: $msg"
+                else -> "Error inesperado. Reintente más tarde."
             }
         }
     }
@@ -345,7 +345,7 @@ open class AuthDelegate @Inject constructor(
                 throw e
             } catch (e: Exception) {
                 Log.e(TAG, "Error en llamada REST updatePassword", e)
-                e.localizedMessage ?: "No se pudo actualizar la contraseña."
+                "Error inesperado. Reintente más tarde."
             }
         }
     }
@@ -530,16 +530,6 @@ open class AuthDelegate @Inject constructor(
         sessionManager.clearRememberedEmail()
     }
 
-    suspend fun saveRememberedPassword(password: String) {
-        sessionManager.saveRememberedPassword(password)
-    }
-
-    suspend fun getRememberedPassword(): String = sessionManager.getRememberedPassword()
-
-    suspend fun clearRememberedPassword() {
-        sessionManager.clearRememberedPassword()
-    }
-
     //── Resolver duplicados (admin/gerente) ────────────────────────────────
 
     suspend fun resolveDuplicateHistorias(): String {
@@ -559,7 +549,8 @@ open class AuthDelegate @Inject constructor(
                     "servicios movidos=${result.movedServicios}."
             }
         }.getOrElse { e ->
-            "No se pudieron resolver duplicados HO: ${e.localizedMessage ?: "error desconocido"}"
+            Log.e(TAG, "Error resolviendo duplicados HO", e)
+            "Error inesperado. Reintente más tarde."
         }
     }
 }

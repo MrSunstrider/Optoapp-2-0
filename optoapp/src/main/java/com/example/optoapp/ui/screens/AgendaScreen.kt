@@ -16,8 +16,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DrawerState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -28,7 +26,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import com.example.optoapp.ui.components.OptoTopAppBar
-import androidx.compose.material3.rememberDatePickerState
+import com.example.optoapp.ui.components.OptoDatePickerDialog
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -89,30 +87,15 @@ fun AgendaScreen(
 
     if (reprogramarEvalId != null && filaReprogramar != null) {
         key(reprogramarEvalId) {
-            val pickerState = rememberDatePickerState(
-                initialSelectedDateMillis = DateUtils.localDateToPickerMillis(
-                    filaReprogramar.evaluacion.proximaCita ?: LocalDate.now()
-                )
-            )
-            DatePickerDialog(
-                onDismissRequest = { reprogramarEvalId = null },
-                confirmButton = {
-                    TextButton(
-                        onClick = {
-                            val id = reprogramarEvalId ?: return@TextButton
-                            pickerState.selectedDateMillis?.let { ms ->
-                                viewModel.reprogramar(id, DateUtils.pickerMillisToLocalDate(ms))
-                            }
-                            reprogramarEvalId = null
-                        }
-                    ) { Text("OK") }
+            OptoDatePickerDialog(
+                initialDate = filaReprogramar.evaluacion.proximaCita ?: LocalDate.now(),
+                onDateSelected = { date ->
+                    val id = reprogramarEvalId ?: return@OptoDatePickerDialog
+                    viewModel.reprogramar(id, date)
                 },
-                dismissButton = {
-                    TextButton(onClick = { reprogramarEvalId = null }) { Text("Cancelar") }
-                }
-            ) {
-                DatePicker(state = pickerState)
-            }
+                onDismiss = { reprogramarEvalId = null },
+                dismissButton = { TextButton(onClick = { reprogramarEvalId = null }) { Text("Cancelar") } }
+            )
         }
     }
 

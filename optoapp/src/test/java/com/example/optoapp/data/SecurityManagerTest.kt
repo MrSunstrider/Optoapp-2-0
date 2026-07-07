@@ -58,7 +58,6 @@ class SecurityManagerTest {
     fun migratePinHasBeenSet_excludes_dev_fallback_pin() {
         // "999999" es DEV_FALLBACK_PIN — existe solo como desarrollo, no cuenta como PIN del usuario.
         assertFalse("DEV_FALLBACK_PIN debe ser inválido en isValidPin", SecurityManager.isValidPin("999999"))
-        assertEquals("DEV_FALLBACK_PIN debe ser 999999", "999999", SecurityManager.DEV_FALLBACK_PIN)
         assertTrue("PIN personalizado sigue siendo aceptado", SecurityManager.isValidPin("183729"))
     }
 }

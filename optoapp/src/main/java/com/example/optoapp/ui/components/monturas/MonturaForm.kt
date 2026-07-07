@@ -1,8 +1,18 @@
 package com.example.optoapp.ui.components.monturas
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -63,48 +73,82 @@ fun MonturaEditForm(
         OptoTextField(form.alturaMm, { v -> onUpdate(form.copy(alturaMm = v)) }, "Altura (mm)", keyboardType = KeyboardType.Decimal)
         OptoTextField(form.imagenUri, { v -> onUpdate(form.copy(imagenUri = v)) }, "Imagen (URI opcional)")
 
-        Text(
-            "Catálogo extendido",
-            style = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(top = 8.dp)
-        )
-        DropdownField(
-            label = "Categoría",
-            selected = form.categoria,
-            options = listOf("SOL", "GRADUADA", "DEPORTIVA", "INFANTIL")
-        ) { opt -> onUpdate(form.copy(categoria = opt)) }
-        OptoTextField(form.coleccion, { v -> onUpdate(form.copy(coleccion = v)) }, "Colección")
-        OptoTextField(form.temporada, { v -> onUpdate(form.copy(temporada = v)) }, "Temporada")
-        DropdownField(
-            label = "Estado Comercial",
-            selected = form.estadoComercial,
-            options = listOf("ACTIVO", "DISCONTINUADO", "PROMOCION", "PENDIENTE")
-        ) { opt -> onUpdate(form.copy(estadoComercial = opt)) }
-        DropdownField(
-            label = "Género",
-            selected = form.genero,
-            options = listOf("MASCULINO", "FEMENINO", "UNISEX", "INFANTIL")
-        ) { opt -> onUpdate(form.copy(genero = opt)) }
+        var expandedCatalogo by remember { mutableStateOf(false) }
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { expandedCatalogo = !expandedCatalogo }
+                .padding(top = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                "Catálogo extendido",
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(Modifier.weight(1f))
+            Icon(
+                imageVector = if (expandedCatalogo) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
+                contentDescription = if (expandedCatalogo) "Collapse" else "Expand"
+            )
+        }
+        AnimatedVisibility(visible = expandedCatalogo) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                DropdownField(
+                    label = "Categoría",
+                    selected = form.categoria,
+                    options = listOf("SOL", "GRADUADA", "DEPORTIVA", "INFANTIL")
+                ) { opt -> onUpdate(form.copy(categoria = opt)) }
+                OptoTextField(form.coleccion, { v -> onUpdate(form.copy(coleccion = v)) }, "Colección")
+                OptoTextField(form.temporada, { v -> onUpdate(form.copy(temporada = v)) }, "Temporada")
+                DropdownField(
+                    label = "Estado Comercial",
+                    selected = form.estadoComercial,
+                    options = listOf("ACTIVO", "DISCONTINUADO", "PROMOCION", "PENDIENTE")
+                ) { opt -> onUpdate(form.copy(estadoComercial = opt)) }
+                DropdownField(
+                    label = "Género",
+                    selected = form.genero,
+                    options = listOf("MASCULINO", "FEMENINO", "UNISEX", "INFANTIL")
+                ) { opt -> onUpdate(form.copy(genero = opt)) }
+            }
+        }
 
-        Text(
-            "Proveedor (opcional)",
-            style = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(top = 8.dp)
-        )
-        OptoTextField(
-            value = form.costoProveedor,
-            onValueChange = { v -> onUpdate(form.copy(costoProveedor = v)) },
-            label = "Costo proveedor",
-            keyboardType = KeyboardType.Decimal
-        )
-        OptoTextField(
-            value = form.precioSugerido,
-            onValueChange = { v -> onUpdate(form.copy(precioSugerido = v)) },
-            label = "Precio sugerido",
-            keyboardType = KeyboardType.Decimal
-        )
+        var expandedProveedor by remember { mutableStateOf(false) }
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { expandedProveedor = !expandedProveedor }
+                .padding(top = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                "Proveedor (opcional)",
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(Modifier.weight(1f))
+            Icon(
+                imageVector = if (expandedProveedor) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
+                contentDescription = if (expandedProveedor) "Collapse" else "Expand"
+            )
+        }
+        AnimatedVisibility(visible = expandedProveedor) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OptoTextField(
+                    value = form.costoProveedor,
+                    onValueChange = { v -> onUpdate(form.copy(costoProveedor = v)) },
+                    label = "Costo proveedor",
+                    keyboardType = KeyboardType.Decimal
+                )
+                OptoTextField(
+                    value = form.precioSugerido,
+                    onValueChange = { v -> onUpdate(form.copy(precioSugerido = v)) },
+                    label = "Precio sugerido",
+                    keyboardType = KeyboardType.Decimal
+                )
+            }
+        }
 
         Text("* Campos obligatorios", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }

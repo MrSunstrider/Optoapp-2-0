@@ -335,7 +335,7 @@ class SyncViewModelConflictResolutionTest {
     fun resolveKeepMine_forPago_callsUpdatePagoBeforeSync() = runTest(testDispatcher) {
         val conflict = makePagoConflict("pago-001")
         val entity = pago("pago-001")
-        coEvery { repository.getPagoById("pago-001") } returns entity
+        coEvery { repository.getPagoById("pago-001", testOpticaId) } returns entity
         coEvery { repository.updatePago(any()) } just Runs
 
         viewModel.resolveKeepMine(conflict)
@@ -370,7 +370,7 @@ class SyncViewModelConflictResolutionTest {
         coEvery { conflictDao.getConflicts(testOpticaId) } returns listOf(srvConflict, pagConflict)
         coEvery { repository.getServicioById("srv-bulk") } returns Resource.Success(servicio("srv-bulk"))
         coEvery { repository.updateServicio(any()) } just Runs
-        coEvery { repository.getPagoById("pago-bulk") } returns pago("pago-bulk")
+        coEvery { repository.getPagoById("pago-bulk", testOpticaId) } returns pago("pago-bulk")
         coEvery { repository.updatePago(any()) } just Runs
 
         viewModel.resolveKeepMineAll()
@@ -378,7 +378,8 @@ class SyncViewModelConflictResolutionTest {
 
         coVerify { repository.updateServicio(any()) }
         coVerify { repository.updatePago(any()) }
-        coVerify { conflictDao.clearConflicts(testOpticaId) }
+        coVerify { conflictDao.resolveConflict("srv-bulk", testOpticaId) }
+        coVerify { conflictDao.resolveConflict("pago-bulk", testOpticaId) }
         coVerify { syncEntityStateDao.deleteConflictedForOptica(testOpticaId) }
     }
 }

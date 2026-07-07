@@ -9,6 +9,7 @@ import com.example.optoapp.data.ServicioExtra
 import com.example.optoapp.data.SessionManager
 import com.example.optoapp.data.venta.Venta
 import com.example.optoapp.data.venta.VentaDao
+import com.example.optoapp.util.DateUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -29,7 +30,7 @@ class ReportesViewModel @Inject constructor(
     private val ventaDao: VentaDao
 ) : ViewModel() {
 
-    private val _periodo = MutableStateFlow("Este mes")
+    private val _periodo = MutableStateFlow("Mensual")
     val periodo: StateFlow<String> = _periodo
     
     private val _anio = MutableStateFlow(Year.now().value.toString())
@@ -42,17 +43,54 @@ class ReportesViewModel @Inject constructor(
     fun setAnio(a: String) { _anio.value = a }
     fun setFechaDiario(fecha: LocalDate) { _fechaDiario.value = fecha }
 
+    // ── Navigation ──
+    fun previous() {
+        when (_periodo.value) {
+            "Diario" -> _fechaDiario.value = _fechaDiario.value.minusDays(1)
+            "Semanal" -> _fechaDiario.value = _fechaDiario.value.minusWeeks(1)
+            "Mensual" -> _fechaDiario.value = _fechaDiario.value.minusMonths(1)
+            "Anual" -> _anio.value = (_anio.value.toInt() - 1).toString()
+        }
+    }
+
+    fun next() {
+        when (_periodo.value) {
+            "Diario" -> _fechaDiario.value = _fechaDiario.value.plusDays(1)
+            "Semanal" -> _fechaDiario.value = _fechaDiario.value.plusWeeks(1)
+            "Mensual" -> _fechaDiario.value = _fechaDiario.value.plusMonths(1)
+            "Anual" -> _anio.value = (_anio.value.toInt() + 1).toString()
+        }
+    }
+
+    // ── Period labels for display ──
+    val periodoLabel: StateFlow<String> = combine(_periodo, _fechaDiario, _anio) { p, fd, a ->
+        when (p) {
+            "Diario" -> DateUtils.formatLocalized(fd)
+            "Semanal" -> {
+                val start = fd.minusDays((fd.dayOfWeek.value - 1).toLong())
+                val end = start.plusDays(6)
+                "${DateUtils.formatLocalized(start)} - ${DateUtils.formatLocalized(end)}"
+            }
+            "Mensual" -> {
+                val months = arrayOf("Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre")
+                "${months[fd.monthValue - 1]} ${fd.year}"
+            }
+            "Anual" -> a
+            else -> "Total"
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
+
     private fun dentroDelPeriodo(date: LocalDate, p: String, a: String, fechaDiario: LocalDate, now: LocalDate): Boolean {
         return when (p) {
             "Diario" -> date.isEqual(fechaDiario)
             "Semanal" -> {
                 val dayOfWeek = fechaDiario.dayOfWeek.value
                 val startOfWeek = fechaDiario.minusDays(dayOfWeek.toLong() - 1)
-                val endOfWeek = startOfWeek.plusDays(7)
-                !date.isBefore(startOfWeek) && date.isBefore(endOfWeek)
+                val endOfWeek = startOfWeek.plusDays(6)
+                !date.isBefore(startOfWeek) && !date.isAfter(endOfWeek)
             }
-            "Este mes" -> date.year == now.year && date.month == now.month
-            "Este año" -> date.year == now.year
+            "Mensual" -> date.year == fechaDiario.year && date.month == fechaDiario.month
+            "Este año" -> date.year == fechaDiario.year
             "Anual" -> date.year.toString() == a
             else -> true
         }
@@ -64,8 +102,8 @@ class ReportesViewModel @Inject constructor(
             val startOfWeek = fd.minusDays((fd.dayOfWeek.value - 1).toLong())
             startOfWeek to startOfWeek.plusDays(6)
         }
-        "Este mes" -> now.withDayOfMonth(1) to now.withDayOfMonth(now.lengthOfMonth())
-        "Este año" -> now.withDayOfYear(1) to now.withDayOfYear(now.lengthOfYear())
+        "Mensual" -> fd.withDayOfMonth(1) to fd.withDayOfMonth(fd.lengthOfMonth())
+        "Este año" -> fd.withDayOfYear(1) to fd.withDayOfYear(fd.lengthOfYear())
         "Anual" -> LocalDate.of(a.toInt(), 1, 1) to LocalDate.of(a.toInt(), 12, 31)
         else -> LocalDate.MIN to LocalDate.MAX
     }
@@ -135,12 +173,29 @@ class ReportesViewModel @Inject constructor(
         .map { ventas -> ventas.sumOf { it.montoTotal } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
 
-    val totalPagado: StateFlow<Double> = combine(
-        allDispensaciones,
-        allServiciosDelPeriodo
-    ) { disps, servs ->
-        disps.sumOf { it.montoPagado } + servs.sumOf { it.aCuenta }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
+    val totalPagado: StateFlow<Double> = sessionManager.opticaId
+        .flatMapLatest { opticaId ->
+            combine(_periodo, _anio, _fechaDiario) { p, a, fd ->
+                val now = LocalDate.now()
+                val (start, end) = periodDateRange(p, a, fd, now)
+                Triple(opticaId, start, end)
+            }.flatMapLatest { (opticaId, start, end) ->
+                repository.getPagosByDateRangeForOptica(start, end, opticaId)
+                    .map { pagos -> pagos.filter { it.tipo != "Anulación" }.sumOf { it.monto } }
+            }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
+
+    val totalTransacciones: StateFlow<Int> = allVentasDelPeriodo
+        .map { it.size }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+
+    val dispensacionesCount: StateFlow<Int> = allDispensaciones
+        .map { it.size }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+
+    val serviciosCount: StateFlow<Int> = allServiciosDelPeriodo
+        .map { it.size }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val totalCobrado: StateFlow<Double> = sessionManager.opticaId

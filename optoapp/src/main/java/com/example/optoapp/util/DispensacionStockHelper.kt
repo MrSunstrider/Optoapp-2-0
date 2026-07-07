@@ -15,7 +15,7 @@ class DispensacionStockHelper @Inject constructor(
         opticaId: String,
         delta: Int
     ): Result<Int> {
-        val montura = when (val r = coordinator.getMonturaById(monturaId)) {
+        val montura = when (val r = coordinator.getMonturaById(monturaId, opticaId)) {
             is Resource.Success -> r.data ?: return Result.failure(IllegalStateException("Montura no encontrada"))
             is Resource.Error -> return Result.failure(IllegalStateException(r.message))
             is Resource.Loading -> return Result.failure(IllegalStateException("Cargando"))
@@ -73,7 +73,7 @@ class DispensacionStockHelper @Inject constructor(
         referenciaId: String,
         nota: String
     ): Result<Int> {
-        val montura = when (val r = coordinator.getMonturaById(monturaId)) {
+        val montura = when (val r = coordinator.getMonturaById(monturaId, opticaId)) {
             is Resource.Success -> r.data ?: return Result.failure(IllegalStateException("Montura no encontrada"))
             is Resource.Error -> return Result.failure(IllegalStateException(r.message))
             is Resource.Loading -> return Result.failure(IllegalStateException("Cargando"))

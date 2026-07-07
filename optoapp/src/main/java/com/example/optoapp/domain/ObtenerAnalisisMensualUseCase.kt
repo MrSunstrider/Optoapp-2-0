@@ -35,7 +35,7 @@ open class ObtenerAnalisisMensualUseCase @Inject constructor(
             fallbackToRoom(opticaId, mes)
         } catch (e: Exception) {
             Log.e(TAG, "Error obteniendo analisis mensual", e)
-            Resource.Error("Error obteniendo analisis mensual: ${e.localizedMessage}")
+            Resource.Error("No se pudieron cargar los datos del mes")
         }
     }
 

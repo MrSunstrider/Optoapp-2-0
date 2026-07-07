@@ -5,6 +5,7 @@ import com.example.optoapp.data.FinanzasRemoteDefaults
 import com.example.optoapp.data.Pago
 import com.example.optoapp.data.venta.Venta
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -408,6 +409,43 @@ class SyncFinanzasDtoTest {
             acompanante = chooseText(canonical.acompanante, other.acompanante),
             hobbies = chooseText(canonical.hobbies, other.hobbies),
             ultimasEtiquetas = (canonical.ultimasEtiquetas + other.ultimasEtiquetas).distinct()
+        )
+    }
+
+    // ── ArqueoCajaRemota.toLocal() createdAt must not equal updatedAt ────
+
+    @Test
+    fun arqueoCajaRemota_toLocal_does_not_conflate_createdAt_with_updatedAt() {
+        val updatedAtValue = "2026-06-17T10:00:00Z"
+        val remote = ArqueoCajaRemota(
+            id = "arq-1",
+            fecha = "2026-06-17",
+            opticaId = "optica-test",
+            fondoCaja = 1000.0,
+            efectivoContado = 500.0,
+            tarjetaContado = 200.0,
+            transferenciaContado = 100.0,
+            movilContado = 50.0,
+            efectivoCobrado = 490.0,
+            tarjetaCobrado = 198.0,
+            transferenciaCobrado = 100.0,
+            movilCobrado = 50.0,
+            diferenciaEfectivo = -10.0,
+            diferenciaTarjeta = -2.0,
+            diferenciaTransferencia = 0.0,
+            diferenciaMovil = 0.0,
+            diferenciaTotal = -12.0,
+            cerradoPor = "admin",
+            sellado = true,
+            updatedAt = updatedAtValue
+        )
+
+        val local = remote.toLocal()
+
+        assertNotEquals(
+            "createdAt must not equal updatedAt — they represent different moments in time. " +
+            "Remote doesn't carry createdAt, so toLocal() should leave it unset.",
+            updatedAtValue, local.createdAt
         )
     }
 }

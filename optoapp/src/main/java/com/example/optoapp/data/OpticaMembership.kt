@@ -22,7 +22,7 @@ data class OpticaMembership(
  * | Crear/editar dispensaciones |   ✅  |    ✅   |      ✅      |      ✅       |    ❌    |
  * | Ver inventario              |   ✅  |    ✅   |      ✅      |      ✅       |    ✅    |
  * | Editar inventario           |   ✅  |    ✅   |      ✅      |      ✅       |    ❌    |
- * | Dashboard (Operación Hoy)   |   ✅  |    ✅   |      ✅      |      ✅       |    ❌    |
+ * | Dashboard                  |   ✅  |    ✅   |      ✅      |      ✅       |    ❌    |
  * | BI / Reportes financieros   |   ✅  |    ✅   |      ❌      |      ❌       |    ❌    |
  * | Cierre de caja              |   ✅  |    ✅   |      ✅      |      ❌       |    ❌    |
  * | Gestionar usuarios          |   ✅  |    ✅   |      ❌      |      ❌       |    ❌    |

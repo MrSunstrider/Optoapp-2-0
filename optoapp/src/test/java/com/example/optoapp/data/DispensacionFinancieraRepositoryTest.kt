@@ -5,6 +5,7 @@ import com.example.optoapp.data.venta.VentaDao
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import io.mockk.slot
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -195,7 +196,7 @@ class DispensacionFinancieraRepositoryTest {
     }
 
     @Test
-    fun `upsertVenta delegates to ventaDao upsertVenta`() = runTest {
+    fun `upsertVenta delegates to ventaDao upsertVenta with updatedAt stamped`() = runTest {
         val venta = Venta(
             id = "v_disp_1",
             opticaId = "optica-test",
@@ -209,6 +210,9 @@ class DispensacionFinancieraRepositoryTest {
 
         repository.upsertVenta(venta)
 
-        coVerify { ventaDao.upsertVenta(venta) }
+        val captured = slot<Venta>()
+        coVerify { ventaDao.upsertVenta(capture(captured)) }
+        assertEquals(venta.id, captured.captured.id)
+        assertTrue(captured.captured.updatedAt != null)
     }
 }

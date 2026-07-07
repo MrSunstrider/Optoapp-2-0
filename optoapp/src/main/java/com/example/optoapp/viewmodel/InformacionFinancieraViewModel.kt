@@ -55,7 +55,7 @@ class InformacionFinancieraViewModel @Inject constructor(
             _uiState.update { it.copy(isLoading = true, dispensacionId = dispensacionId) }
 
             val contexto = repository.obtenerContexto(dispensacionId)
-            val pagos = repository.obtenerPagos(dispensacionId)
+            val pagos = repository.obtenerPagos(dispensacionId).filter { it.tipo != "Anulación" }
             initialPagoIds = pagos.map { it.id }.toSet()
 
             when (val result = repository.obtenerDispensacion(dispensacionId)) {
@@ -123,38 +123,39 @@ class InformacionFinancieraViewModel @Inject constructor(
 
             _uiState.update { it.copy(error = null, isLoading = true) }
 
-            repository.actualizarMontoTotal(dispId, montoTotal, opticaId)
-            repository.actualizarEstado(dispId, s.estadoEntrega, s.fechaEntrega, opticaId)
+            repository.runInTransaction {
+                kotlinx.coroutines.runBlocking {
+                repository.actualizarMontoTotal(dispId, montoTotal, opticaId)
+                repository.actualizarEstado(dispId, s.estadoEntrega, s.fechaEntrega, opticaId)
 
-            s.pagos.forEach { pago ->
-                val pagoToSave = pago.copy(dispensacionId = dispId, opticaId = opticaId)
-                if (pago.id in initialPagoIds) {
-                    repository.editarPago(pagoToSave)
-                } else {
-                    repository.agregarPago(pagoToSave)
+                s.pagos.forEach { pago ->
+                    val pagoToSave = pago.copy(dispensacionId = dispId, opticaId = opticaId, ventaId = "v_disp_$dispId")
+                    if (pago.id in initialPagoIds) {
+                        repository.editarPago(pagoToSave)
+                    } else {
+                        repository.agregarPago(pagoToSave)
+                    }
                 }
-            }
 
-            s.pagosToDelete.forEach { pago ->
-                repository.eliminarPago(pago, opticaId)
-            }
+                s.pagosToDelete.forEach { pago ->
+                    repository.eliminarPago(pago, opticaId)
+                }
 
-            val montoPagado = s.pagos.sumOf { it.monto }
-            repository.actualizarMontoPagado(dispId, montoPagado, opticaId)
-
-            val venta = Venta(
-                id = "v_disp_$dispId",
-                opticaId = opticaId,
-                origen = "dispensacion",
-                origenId = dispId,
-                pacienteId = "",
-                ot = s.contexto?.ot ?: "",
-                fecha = s.contexto?.fecha ?: LocalDate.now(),
-                fechaEntrega = s.fechaEntrega,
-                montoTotal = montoTotal,
-                estado = s.estadoEntrega
-            )
-            repository.upsertVenta(venta)
+                val venta = Venta(
+                    id = "v_disp_$dispId",
+                    opticaId = opticaId,
+                    origen = "dispensacion",
+                    origenId = dispId,
+                    pacienteId = s.contexto?.pacienteId ?: "",
+                    ot = s.contexto?.ot ?: "",
+                    fecha = s.contexto?.fecha ?: LocalDate.now(),
+                    fechaEntrega = s.fechaEntrega,
+                    montoTotal = montoTotal,
+                    estado = s.estadoEntrega
+                )
+                repository.upsertVenta(venta)
+                } // runBlocking
+            } // runInTransaction
 
             postSaveSyncScheduler.scheduleFinanzasSync(opticaId)
 

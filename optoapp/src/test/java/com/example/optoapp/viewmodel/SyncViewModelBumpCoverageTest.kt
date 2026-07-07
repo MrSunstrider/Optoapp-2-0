@@ -303,7 +303,7 @@ class SyncViewModelBumpCoverageTest {
     fun bumpMontura_callsUpdateMontura() = runTest(testDispatcher) {
         val conflict = makeConflict("mont-bump", "montura")
         val entity = montura("mont-bump")
-        coEvery { repository.getMonturaById("mont-bump") } returns Resource.Success(entity)
+        coEvery { repository.getMonturaById("mont-bump", any()) } returns Resource.Success(entity)
         coEvery { repository.updateMontura(any()) } just Runs
 
         viewModel.resolveKeepMine(conflict)
@@ -377,7 +377,7 @@ class SyncViewModelBumpCoverageTest {
     @Test
     fun bumpMontura_whenNotFound_logsWarningAndDoesNotCrash() = runTest(testDispatcher) {
         val conflict = makeConflict("mont-missing", "montura")
-        coEvery { repository.getMonturaById("mont-missing") } returns Resource.Error("Not found")
+        coEvery { repository.getMonturaById("mont-missing", any()) } returns Resource.Error("Not found")
 
         viewModel.resolveKeepMine(conflict)
         testDispatcher.scheduler.advanceUntilIdle()

@@ -134,9 +134,77 @@ class DeletionSyncHelperTest {
             "servicio_extra" -> "servicios_extra"
             "dispensacion" -> "dispensaciones"
             "pago" -> "pagos"
+            "gasto_operativo" -> "gastos_operativos"
+            "venta" -> "ventas"
+            "dispensacion_item" -> "dispensacion_items"
+            "arqueo_caja" -> "arqueo_caja"
             else -> null
         }
         assertNull(table)
+    }
+
+    @Test
+    fun entityTypeMapping_gastoOperativo_to_gastosOperativos() {
+        val entityType = "gasto_operativo"
+        val table = when (entityType) {
+            "servicio_extra" -> "servicios_extra"
+            "dispensacion" -> "dispensaciones"
+            "pago" -> "pagos"
+            "gasto_operativo" -> "gastos_operativos"
+            "venta" -> "ventas"
+            "dispensacion_item" -> "dispensacion_items"
+            "arqueo_caja" -> "arqueo_caja"
+            else -> null
+        }
+        assertEquals("gastos_operativos", table)
+    }
+
+    @Test
+    fun entityTypeMapping_venta_to_ventas() {
+        val entityType = "venta"
+        val table = when (entityType) {
+            "servicio_extra" -> "servicios_extra"
+            "dispensacion" -> "dispensaciones"
+            "pago" -> "pagos"
+            "gasto_operativo" -> "gastos_operativos"
+            "venta" -> "ventas"
+            "dispensacion_item" -> "dispensacion_items"
+            "arqueo_caja" -> "arqueo_caja"
+            else -> null
+        }
+        assertEquals("ventas", table)
+    }
+
+    @Test
+    fun entityTypeMapping_dispensacionItem_to_dispensacionItems() {
+        val entityType = "dispensacion_item"
+        val table = when (entityType) {
+            "servicio_extra" -> "servicios_extra"
+            "dispensacion" -> "dispensaciones"
+            "pago" -> "pagos"
+            "gasto_operativo" -> "gastos_operativos"
+            "venta" -> "ventas"
+            "dispensacion_item" -> "dispensacion_items"
+            "arqueo_caja" -> "arqueo_caja"
+            else -> null
+        }
+        assertEquals("dispensacion_items", table)
+    }
+
+    @Test
+    fun entityTypeMapping_arqueoCaja_to_arqueoCaja() {
+        val entityType = "arqueo_caja"
+        val table = when (entityType) {
+            "servicio_extra" -> "servicios_extra"
+            "dispensacion" -> "dispensaciones"
+            "pago" -> "pagos"
+            "gasto_operativo" -> "gastos_operativos"
+            "venta" -> "ventas"
+            "dispensacion_item" -> "dispensacion_items"
+            "arqueo_caja" -> "arqueo_caja"
+            else -> null
+        }
+        assertEquals("arqueo_caja", table)
     }
 
     @Test
@@ -213,10 +281,18 @@ class DeletionSyncHelperTest {
         val dispensaciones = "dispensaciones"
         val pagos = "pagos"
         val servicios = "servicios_extra"
+        val gastosOperativos = "gastos_operativos"
+        val ventas = "ventas"
+        val dispensacionItems = "dispensacion_items"
+        val arqueoCaja = "arqueo_caja"
 
         assertEquals("dispensaciones", dispensaciones)
         assertEquals("pagos", pagos)
         assertEquals("servicios_extra", servicios)
+        assertEquals("gastos_operativos", gastosOperativos)
+        assertEquals("ventas", ventas)
+        assertEquals("dispensacion_items", dispensacionItems)
+        assertEquals("arqueo_caja", arqueoCaja)
     }
 
     @Test
@@ -234,6 +310,22 @@ class DeletionSyncHelperTest {
         assertTrue(
             "Debe existir TABLE_SERVICIOS como constante",
             allFields.any { it == "TABLE_SERVICIOS" || it.contains("TABLE_SERVICIOS") }
+        )
+        assertTrue(
+            "Debe existir TABLE_GASTOS_OPERATIVOS como constante",
+            allFields.any { it == "TABLE_GASTOS_OPERATIVOS" || it.contains("TABLE_GASTOS_OPERATIVOS") }
+        )
+        assertTrue(
+            "Debe existir TABLE_VENTAS como constante",
+            allFields.any { it == "TABLE_VENTAS" || it.contains("TABLE_VENTAS") }
+        )
+        assertTrue(
+            "Debe existir TABLE_DISPENSACION_ITEMS como constante",
+            allFields.any { it == "TABLE_DISPENSACION_ITEMS" || it.contains("TABLE_DISPENSACION_ITEMS") }
+        )
+        assertTrue(
+            "Debe existir TABLE_ARQUEO_CAJA como constante",
+            allFields.any { it == "TABLE_ARQUEO_CAJA" || it.contains("TABLE_ARQUEO_CAJA") }
         )
     }
 }

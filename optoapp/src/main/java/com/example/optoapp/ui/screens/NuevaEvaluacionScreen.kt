@@ -27,6 +27,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.optoapp.testing.TestTags
 import com.example.optoapp.ui.components.OSDIDialog
+import com.example.optoapp.ui.components.OptoDatePickerDialog
 import com.example.optoapp.ui.components.evaluacion.AnamnesisSection
 import com.example.optoapp.ui.components.evaluacion.CierreSection
 import com.example.optoapp.ui.components.evaluacion.ContactologiaSection
@@ -91,71 +92,40 @@ fun NuevaEvaluacionScreen(
     var showOsdiDialog by remember { mutableStateOf(false) }
     val context = androidx.compose.ui.platform.LocalContext.current
 
-    val datePickerState = rememberDatePickerState(
-        initialSelectedDateMillis = DateUtils.localDateToPickerMillis(uiState.fecha),
-        yearRange = 1920..2080
-    )
-    val proximaDatePickerState = rememberDatePickerState(
-        initialSelectedDateMillis = DateUtils.localDateToPickerMillis(uiState.proximaCita ?: DateUtils.today()),
-        yearRange = 1920..2080
-    )
-    val lcDatePickerState = rememberDatePickerState(
-        initialSelectedDateMillis = DateUtils.localDateToPickerMillis(uiState.lcFechaAdaptacion ?: DateUtils.today()),
-        yearRange = 1920..2080
-    )
-
     if (showDatePicker) {
-        DatePickerDialog(
-            onDismissRequest = { showDatePicker = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    datePickerState.selectedDateMillis?.let { mills ->
-                        viewModel.updateUiState { it.copy(fecha = DateUtils.pickerMillisToLocalDate(mills)) }
-                    }
-                    showDatePicker = false
-                }) { Text("OK") }
-            }
-        ) {
-            DatePicker(state = datePickerState)
-        }
+        OptoDatePickerDialog(
+            initialDate = uiState.fecha,
+            onDateSelected = { date ->
+                viewModel.updateUiState { it.copy(fecha = date) }
+            },
+            onDismiss = { showDatePicker = false }
+        )
     }
 
     if (showProximaDatePicker) {
-        DatePickerDialog(
-            onDismissRequest = { showProximaDatePicker = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    proximaDatePickerState.selectedDateMillis?.let { mills ->
-                        viewModel.updateUiState { it.copy(proximaCita = DateUtils.pickerMillisToLocalDate(mills)) }
-                    }
-                    showProximaDatePicker = false
-                }) { Text("OK") }
+        OptoDatePickerDialog(
+            initialDate = uiState.proximaCita ?: DateUtils.today(),
+            onDateSelected = { date ->
+                viewModel.updateUiState { it.copy(proximaCita = date) }
             },
+            onDismiss = { showProximaDatePicker = false },
             dismissButton = {
                 TextButton(onClick = {
                     viewModel.updateUiState { it.copy(proximaCita = null, citaEstado = "programada") }
                     showProximaDatePicker = false
                 }) { Text("Limpiar") }
             }
-        ) {
-            DatePicker(state = proximaDatePickerState)
-        }
+        )
     }
 
     if (showLcDatePicker) {
-        DatePickerDialog(
-            onDismissRequest = { showLcDatePicker = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    lcDatePickerState.selectedDateMillis?.let { mills ->
-                        viewModel.updateUiState { it.copy(lcFechaAdaptacion = DateUtils.pickerMillisToLocalDate(mills)) }
-                    }
-                    showLcDatePicker = false
-                }) { Text("OK") }
-            }
-        ) {
-            DatePicker(state = lcDatePickerState)
-        }
+        OptoDatePickerDialog(
+            initialDate = uiState.lcFechaAdaptacion ?: DateUtils.today(),
+            onDateSelected = { date ->
+                viewModel.updateUiState { it.copy(lcFechaAdaptacion = date) }
+            },
+            onDismiss = { showLcDatePicker = false }
+        )
     }
 
     if (showOsdiDialog) {
@@ -237,6 +207,10 @@ fun NuevaEvaluacionScreen(
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
+                if (uiState.isLoading) {
+                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                }
+
                 when (selectedTab) {
                     0 -> AnamnesisSection(
                         uiState = uiState,

@@ -10,5 +10,6 @@ data class Deudor(
     val montoTotal: Double,
     val totalPagado: Double,
     val saldo: Double,
-    val diasDeuda: Int
+    val diasDeuda: Int,
+    val pacienteId: String = ""
 )

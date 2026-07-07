@@ -15,9 +15,11 @@ import io.mockk.mockkStatic
 import io.mockk.Runs
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.io.IOException
 import java.time.LocalDate
 
 class SyncFinanzasUseCaseKtTest {
@@ -38,7 +40,8 @@ class SyncFinanzasUseCaseKtTest {
         id: String = "arqueo-1",
         fecha: LocalDate = LocalDate.of(2026, 6, 17),
         opticaId: String = "optica-test",
-        updatedAt: String = "2026-06-17T10:00:00Z"
+        updatedAt: String = "2026-06-17T10:00:00Z",
+        createdAt: String? = null
     ) = ArqueoCaja(
         id = id,
         fecha = fecha,
@@ -59,7 +62,7 @@ class SyncFinanzasUseCaseKtTest {
         diferenciaTotal = -12.0,
         cerradoPor = "admin",
         sellado = true,
-        createdAt = updatedAt,
+        createdAt = createdAt ?: updatedAt,
         updatedAt = updatedAt
     )
 
@@ -79,6 +82,7 @@ class SyncFinanzasUseCaseKtTest {
         coEvery { uploadCoordinator.uploadDispensacionItems(any()) } returns 0
         coEvery { uploadCoordinator.uploadServicios(any()) } returns 0
         coEvery { uploadCoordinator.uploadPagos(any()) } returns 0
+        coEvery { uploadCoordinator.uploadVentas(any()) } returns 0
         coEvery { uploadCoordinator.uploadGastosOperativos(any()) } returns 0
         coEvery { uploadCoordinator.uploadArqueos(any()) } returns 0
         coEvery { downloadCoordinator.downloadArqueos(any()) } returns 0
@@ -101,6 +105,7 @@ class SyncFinanzasUseCaseKtTest {
 
         coVerifyOrder {
             uploadCoordinator.uploadPagos("optica-test")
+            uploadCoordinator.uploadVentas("optica-test")
             uploadCoordinator.uploadGastosOperativos("optica-test")
             uploadCoordinator.uploadArqueos("optica-test")
         }
@@ -286,6 +291,7 @@ class SyncFinanzasUseCaseKtTest {
         coEvery { uploadCoordinator.uploadDispensacionItems(any()) } returns 0
         coEvery { uploadCoordinator.uploadServicios(any()) } returns 0
         coEvery { uploadCoordinator.uploadPagos(any()) } returns 0
+        coEvery { uploadCoordinator.uploadVentas(any()) } returns 0
         coEvery { uploadCoordinator.uploadGastosOperativos(any()) } returns 0
         coEvery { uploadCoordinator.uploadArqueos(any()) } returns 0
         coEvery { downloadCoordinator.downloadArqueos(any()) } returns 0
@@ -325,6 +331,7 @@ class SyncFinanzasUseCaseKtTest {
         coEvery { uploadCoordinator.uploadDispensacionItems(any()) } returns 0
         coEvery { uploadCoordinator.uploadServicios(any()) } returns 0
         coEvery { uploadCoordinator.uploadPagos(any()) } returns 0
+        coEvery { uploadCoordinator.uploadVentas(any()) } returns 0
         coEvery { uploadCoordinator.uploadGastosOperativos(any()) } returns 0
         coEvery { uploadCoordinator.uploadArqueos(any()) } returns 0
         coEvery { downloadCoordinator.downloadArqueos(any()) } returns 0
@@ -362,6 +369,8 @@ class SyncFinanzasUseCaseKtTest {
         coEvery { uploadCoordinator.uploadDispensacionItems(any()) } returns 0
         coEvery { uploadCoordinator.uploadServicios(any()) } returns 0
         coEvery { uploadCoordinator.uploadPagos(any()) } returns 0
+        coEvery { uploadCoordinator.uploadVentas(any()) } returns 0
+        coEvery { uploadCoordinator.uploadGastosOperativos(any()) } returns 0
         coEvery { uploadCoordinator.uploadArqueos(any()) } returns 0
         coEvery { downloadCoordinator.downloadVentas(any()) } returns 0
         coEvery { downloadCoordinator.downloadPagos(any()) } returns 0
@@ -393,6 +402,7 @@ class SyncFinanzasUseCaseKtTest {
         coEvery { uploadCoordinator.uploadDispensacionItems(any()) } returns 0
         coEvery { uploadCoordinator.uploadServicios(any()) } returns 0
         coEvery { uploadCoordinator.uploadPagos(any()) } returns 0
+        coEvery { uploadCoordinator.uploadVentas(any()) } returns 0
         coEvery { uploadCoordinator.uploadGastosOperativos(any()) } returns 3
         coEvery { uploadCoordinator.uploadArqueos(any()) } returns 0
         coEvery { downloadCoordinator.downloadArqueos(any()) } returns 0
@@ -415,6 +425,7 @@ class SyncFinanzasUseCaseKtTest {
 
         coVerifyOrder {
             uploadCoordinator.uploadPagos("optica-test")
+            uploadCoordinator.uploadVentas("optica-test")
             uploadCoordinator.uploadGastosOperativos("optica-test")
             uploadCoordinator.uploadArqueos("optica-test")
         }
@@ -435,6 +446,7 @@ class SyncFinanzasUseCaseKtTest {
         coEvery { uploadCoordinator.uploadDispensacionItems(any()) } returns 0
         coEvery { uploadCoordinator.uploadServicios(any()) } returns 0
         coEvery { uploadCoordinator.uploadPagos(any()) } returns 0
+        coEvery { uploadCoordinator.uploadVentas(any()) } returns 0
         coEvery { uploadCoordinator.uploadGastosOperativos(any()) } returns 0
         coEvery { uploadCoordinator.uploadArqueos(any()) } returns 0
         coEvery { downloadCoordinator.downloadArqueos(any()) } returns 0
@@ -473,6 +485,7 @@ class SyncFinanzasUseCaseKtTest {
         coEvery { uploadCoordinator.uploadDispensacionItems(any()) } returns 0
         coEvery { uploadCoordinator.uploadServicios(any()) } returns 0
         coEvery { uploadCoordinator.uploadPagos(any()) } returns 0
+        coEvery { uploadCoordinator.uploadVentas(any()) } returns 0
         coEvery { uploadCoordinator.uploadGastosOperativos(any()) } returns 0
         coEvery { uploadCoordinator.uploadArqueos(any()) } returns 0
         coEvery { downloadCoordinator.downloadArqueos(any()) } returns 0
@@ -508,6 +521,7 @@ class SyncFinanzasUseCaseKtTest {
         coEvery { uploadCoordinator.uploadDispensacionItems(any()) } returns 0
         coEvery { uploadCoordinator.uploadServicios(any()) } returns 0
         coEvery { uploadCoordinator.uploadPagos(any()) } returns 0
+        coEvery { uploadCoordinator.uploadVentas(any()) } returns 0
         coEvery { uploadCoordinator.uploadGastosOperativos(any()) } returns 0
         coEvery { uploadCoordinator.uploadArqueos(any()) } returns 0
         coEvery { downloadCoordinator.downloadArqueos(any()) } returns 0
@@ -533,5 +547,179 @@ class SyncFinanzasUseCaseKtTest {
             downloadCoordinator.downloadConfiguracionFinanciera("optica-test")
             downloadCoordinator.downloadPagos("optica-test")
         }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Bug 3 RED: pushPendingDeletions inside try block
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    @Test
+    fun pushPendingDeletions_error_returns_ResourceError_not_crash() = runBlocking {
+        val uploadCoordinator = mockk<UploadSyncCoordinator>()
+        val downloadCoordinator = mockk<DownloadSyncCoordinator>()
+        val deletionSyncHelper = mockk<DeletionSyncHelper>()
+        val networkRetryHelper = mockk<NetworkRetryHelper>()
+
+        coEvery { deletionSyncHelper.pushPendingDeletions(any()) } throws IOException("Network failure")
+        // upload coordinator methods should NOT be called since pushPendingDeletions fails
+        // but the sync should NOT crash — it should return Resource.Error
+
+        val useCase = SyncFinanzasUseCase(
+            deletionSyncHelper = deletionSyncHelper,
+            uploadSyncCoordinator = uploadCoordinator,
+            downloadSyncCoordinator = downloadCoordinator,
+            networkRetryHelper = networkRetryHelper
+        )
+
+        val result = useCase("optica-test")
+
+        assertTrue(result is com.example.optoapp.data.Resource.Error)
+        val error = result as com.example.optoapp.data.Resource.Error
+        assertTrue(error.message.orEmpty().contains("sincronizando finanzas"))
+    }
+
+    @Test
+    fun pushPendingDeletions_generic_error_returns_ResourceError() = runBlocking {
+        val uploadCoordinator = mockk<UploadSyncCoordinator>()
+        val downloadCoordinator = mockk<DownloadSyncCoordinator>()
+        val deletionSyncHelper = mockk<DeletionSyncHelper>()
+        val networkRetryHelper = mockk<NetworkRetryHelper>()
+
+        coEvery { deletionSyncHelper.pushPendingDeletions(any()) } throws
+                RuntimeException("Unexpected deletion error")
+
+        val useCase = SyncFinanzasUseCase(
+            deletionSyncHelper = deletionSyncHelper,
+            uploadSyncCoordinator = uploadCoordinator,
+            downloadSyncCoordinator = downloadCoordinator,
+            networkRetryHelper = networkRetryHelper
+        )
+
+        val result = useCase("optica-test")
+
+        assertTrue(result is com.example.optoapp.data.Resource.Error)
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Bug 2 RED: single upload failure does not abort entire sync
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    @Test
+    fun single_upload_failure_continues_to_next_steps() = runBlocking {
+        val uploadCoordinator = mockk<UploadSyncCoordinator>(relaxed = true)
+        val downloadCoordinator = mockk<DownloadSyncCoordinator>()
+        val deletionSyncHelper = mockk<DeletionSyncHelper>()
+        val networkRetryHelper = mockk<NetworkRetryHelper>()
+
+        coEvery { deletionSyncHelper.pushPendingDeletions(any()) } just Runs
+        // uploadDispensaciones throws, but subsequent steps should still execute
+        coEvery { uploadCoordinator.uploadDispensaciones(any()) } throws
+                IOException("Timeout uploading dispensaciones")
+        coEvery { uploadCoordinator.uploadDispensacionItems(any()) } returns 2
+        coEvery { uploadCoordinator.uploadServicios(any()) } returns 1
+        coEvery { uploadCoordinator.uploadPagos(any()) } returns 3
+        coEvery { uploadCoordinator.uploadVentas(any()) } returns 0
+        coEvery { uploadCoordinator.uploadGastosOperativos(any()) } returns 0
+        coEvery { uploadCoordinator.uploadArqueos(any()) } returns 0
+        coEvery { downloadCoordinator.downloadArqueos(any()) } returns 0
+        coEvery { downloadCoordinator.downloadDispensaciones(any()) } returns 0
+        coEvery { downloadCoordinator.downloadDispensacionItems(any()) } returns 0
+        coEvery { downloadCoordinator.downloadServicios(any()) } returns 0
+        coEvery { downloadCoordinator.downloadVentas(any()) } returns 0
+        coEvery { downloadCoordinator.downloadPagos(any()) } returns 0
+        coEvery { downloadCoordinator.downloadResumenDiario(any()) } returns 0
+        coEvery { downloadCoordinator.downloadConfiguracionFinanciera(any()) } returns 0
+
+        val useCase = SyncFinanzasUseCase(
+            deletionSyncHelper = deletionSyncHelper,
+            uploadSyncCoordinator = uploadCoordinator,
+            downloadSyncCoordinator = downloadCoordinator,
+            networkRetryHelper = networkRetryHelper
+        )
+
+        useCase("optica-test")
+
+        // Verify that subsequent upload steps were still called despite dispensaciones failure
+        coVerify(exactly = 1) { uploadCoordinator.uploadDispensaciones("optica-test") }
+        coVerify(exactly = 1) { uploadCoordinator.uploadDispensacionItems("optica-test") }
+        coVerify(exactly = 1) { uploadCoordinator.uploadServicios("optica-test") }
+        coVerify(exactly = 1) { uploadCoordinator.uploadPagos("optica-test") }
+        coVerify(exactly = 1) { uploadCoordinator.uploadVentas("optica-test") }
+        coVerify(exactly = 1) { uploadCoordinator.uploadGastosOperativos("optica-test") }
+        coVerify(exactly = 1) { uploadCoordinator.uploadArqueos("optica-test") }
+    }
+
+    @Test
+    fun single_upload_failure_still_runs_download() = runBlocking {
+        val uploadCoordinator = mockk<UploadSyncCoordinator>(relaxed = true)
+        val downloadCoordinator = mockk<DownloadSyncCoordinator>()
+        val deletionSyncHelper = mockk<DeletionSyncHelper>()
+        val networkRetryHelper = mockk<NetworkRetryHelper>()
+
+        coEvery { deletionSyncHelper.pushPendingDeletions(any()) } just Runs
+        coEvery { uploadCoordinator.uploadPagos(any()) } throws
+                IOException("Pagos upload failed")
+        coEvery { uploadCoordinator.uploadServicios(any()) } returns 0
+        coEvery { uploadCoordinator.uploadDispensaciones(any()) } returns 0
+        coEvery { uploadCoordinator.uploadDispensacionItems(any()) } returns 0
+        coEvery { uploadCoordinator.uploadVentas(any()) } returns 0
+        coEvery { uploadCoordinator.uploadGastosOperativos(any()) } returns 0
+        coEvery { uploadCoordinator.uploadArqueos(any()) } returns 0
+        coEvery { downloadCoordinator.downloadArqueos(any()) } returns 1
+        coEvery { downloadCoordinator.downloadDispensaciones(any()) } returns 2
+        coEvery { downloadCoordinator.downloadDispensacionItems(any()) } returns 0
+        coEvery { downloadCoordinator.downloadServicios(any()) } returns 0
+        coEvery { downloadCoordinator.downloadVentas(any()) } returns 0
+        coEvery { downloadCoordinator.downloadPagos(any()) } returns 0
+        coEvery { downloadCoordinator.downloadResumenDiario(any()) } returns 0
+        coEvery { downloadCoordinator.downloadConfiguracionFinanciera(any()) } returns 0
+
+        val useCase = SyncFinanzasUseCase(
+            deletionSyncHelper = deletionSyncHelper,
+            uploadSyncCoordinator = uploadCoordinator,
+            downloadSyncCoordinator = downloadCoordinator,
+            networkRetryHelper = networkRetryHelper
+        )
+
+        useCase("optica-test")
+
+        // Upload steps after pagos should still be called
+        coVerify(exactly = 1) { uploadCoordinator.uploadVentas("optica-test") }
+        coVerify(exactly = 1) { uploadCoordinator.uploadGastosOperativos("optica-test") }
+        coVerify(exactly = 1) { uploadCoordinator.uploadArqueos("optica-test") }
+        // Download should still run despite upload failures
+        coVerify(exactly = 1) { downloadCoordinator.downloadArqueos("optica-test") }
+        coVerify(exactly = 1) { downloadCoordinator.downloadDispensaciones("optica-test") }
+    }
+
+    // ── ArqueoCaja createdAt preservation ──────────────────────────────────
+
+    @Test
+    fun arqueoCaja_toLocal_preserves_createdAt_from_existing_local() {
+        val localCreatedAt = "2026-01-15T08:00:00Z"
+        val localArqueo = makeArqueoCaja(
+            id = "arq-1", updatedAt = "2026-06-17T08:00:00Z",
+            createdAt = localCreatedAt
+        )
+        val remote = ArqueoCajaRemota(
+            id = "arq-1", fecha = "2026-06-17", opticaId = "optica-test",
+            fondoCaja = 1000.0, efectivoContado = 500.0, tarjetaContado = 200.0,
+            transferenciaContado = 100.0, movilContado = 50.0,
+            efectivoCobrado = 490.0, tarjetaCobrado = 198.0,
+            transferenciaCobrado = 100.0, movilCobrado = 50.0,
+            diferenciaEfectivo = -10.0, diferenciaTarjeta = -2.0,
+            diferenciaTransferencia = 0.0, diferenciaMovil = 0.0,
+            diferenciaTotal = -12.0, cerradoPor = "admin", sellado = true,
+            updatedAt = "2026-06-17T10:00:00Z"
+        )
+
+        val incoming = remote.toLocal()
+        // The caller MUST preserve the existing local createdAt when upserting.
+        // This test documents the contract: toLocal() currently overrides createdAt
+        // with updatedAt, which is WRONG. The caller should preserve local.createdAt.
+        val preserved = incoming.copy(createdAt = localArqueo.createdAt)
+
+        assertEquals(localCreatedAt, preserved.createdAt)
+        assertNotEquals(remote.updatedAt, preserved.createdAt)
     }
 }

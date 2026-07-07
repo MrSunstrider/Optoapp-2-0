@@ -9,6 +9,10 @@ import java.time.LocalDate
 
 @Dao
 interface GastoOperativoDao {
+    @Deprecated(
+        message = "Use getByOpticaId to enforce multi-tenant isolation",
+        replaceWith = ReplaceWith("getByOpticaId(opticaId)")
+    )
     @Query("SELECT * FROM gastos_operativos ORDER BY fecha DESC")
     fun getAll(): Flow<List<GastoOperativoEntity>>
 

@@ -8,6 +8,7 @@ import java.time.LocalDate
 data class ContextoFinanciero(
     val ot: String,
     val pacienteNombre: String,
+    val pacienteId: String,
     val fecha: LocalDate,
     val descripcion: String
 )
@@ -21,14 +22,18 @@ interface DispensacionFinancieraRepository {
     suspend fun agregarPago(pago: Pago)
     suspend fun editarPago(pago: Pago)
     suspend fun eliminarPago(pago: Pago, opticaId: String)
-    suspend fun actualizarMontoPagado(dispensacionId: String, montoPagado: Double, opticaId: String)
     suspend fun upsertVenta(venta: Venta)
+    fun runInTransaction(block: () -> Unit)
 }
 
 class DispensacionFinancieraRepositoryImpl(
     private val optoRepository: OptoRepository,
     private val ventaDao: VentaDao
 ) : DispensacionFinancieraRepository {
+
+    override fun runInTransaction(block: () -> Unit) {
+        optoRepository.runInTransaction(block)
+    }
 
     override suspend fun obtenerDispensacion(dispensacionId: String): Resource<DispensacionOptica> {
         return optoRepository.getDispensacionById(dispensacionId)
@@ -49,11 +54,12 @@ class DispensacionFinancieraRepositoryImpl(
             return ContextoFinanciero(
                 ot = d.ot,
                 pacienteNombre = pacienteNombre,
+                pacienteId = d.pacienteId,
                 fecha = d.fecha,
                 descripcion = buildDescripcion(d)
             )
         }
-        return ContextoFinanciero(ot = "", pacienteNombre = "", fecha = LocalDate.now(), descripcion = "")
+        return ContextoFinanciero(ot = "", pacienteNombre = "", pacienteId = "", fecha = LocalDate.now(), descripcion = "")
     }
 
     private fun buildDescripcion(d: DispensacionOptica): String {
@@ -91,15 +97,13 @@ class DispensacionFinancieraRepositoryImpl(
         optoRepository.deletePagoRegistrandoAnulacionEnCaja(pago, opticaId)
     }
 
-    override suspend fun actualizarMontoPagado(dispensacionId: String, montoPagado: Double, opticaId: String) {
-        val result = optoRepository.getDispensacionById(dispensacionId)
-        if (result is Resource.Success && result.data != null) {
-            val updated = result.data.copy(montoPagado = montoPagado)
-            optoRepository.updateDispensacion(updated)
-        }
-    }
-
     override suspend fun upsertVenta(venta: Venta) {
-        ventaDao.upsertVenta(venta)
+        val costoPreservado = venta.costoUnitarioSnapshot
+            ?: ventaDao.getVentaById(venta.id)?.costoUnitarioSnapshot
+        val merged = venta.copy(
+            costoUnitarioSnapshot = costoPreservado,
+            updatedAt = java.time.Instant.now().toString()
+        )
+        ventaDao.upsertVenta(merged)
     }
 }

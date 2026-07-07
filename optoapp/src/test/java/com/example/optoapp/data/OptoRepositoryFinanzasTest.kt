@@ -8,6 +8,7 @@ import com.example.optoapp.data.gastooperativo.GastoOperativoDao
 import com.example.optoapp.data.gastooperativo.GastoOperativoEntity
 import com.example.optoapp.data.resumendiario.ResumenDiarioDao
 import com.example.optoapp.data.resumendiario.ResumenDiarioEntity
+import com.example.optoapp.data.venta.Venta
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import dagger.Lazy
 import io.mockk.coEvery
@@ -48,6 +49,7 @@ class OptoRepositoryFinanzasTest {
     private lateinit var gastoOperativoDao: GastoOperativoDao
     private lateinit var resumenDiarioDao: ResumenDiarioDao
     private lateinit var configuracionFinancieraDao: ConfiguracionFinancieraDao
+    private lateinit var syncStateTracker: SyncStateTracker
     private lateinit var scheduler: PostSaveSyncScheduler
     private lateinit var schedulerLazy: Lazy<PostSaveSyncScheduler>
     private lateinit var repo: OptoRepository
@@ -70,7 +72,7 @@ class OptoRepositoryFinanzasTest {
         schedulerLazy = mockk()
         every { schedulerLazy.get() } returns scheduler
 
-        val syncStateTracker = mockk<SyncStateTracker>(relaxed = true)
+        syncStateTracker = mockk(relaxed = true)
         val pacienteDao = db.pacienteDao()
         val evaluacionDao = db.evaluacionDao()
         val dispensacionDao = db.dispensacionDao()
@@ -122,9 +124,9 @@ class OptoRepositoryFinanzasTest {
     // ── GastoOperativo local writes ──────────────────────────────────────────
 
     @Test
-    fun insertGastoOperativo_stamps_timestamp_and_schedules_sync() = runBlocking {
+    fun insertGastoOperativo_stamps_timestamp_when_null() = runBlocking {
         val entity = GastoOperativoEntity(
-            id = "g1", opticaId = opticaId, categoria = "Alquiler",
+            id = "g1", opticaId = opticaId, categoria = "alquiler",
             descripcion = "Local junio", monto = 500.0, fecha = testDate,
             createdAt = null
         )
@@ -134,8 +136,23 @@ class OptoRepositoryFinanzasTest {
         val inserted = gastoOperativoDao.getAll().first().first()
         assertNotNull(inserted.createdAt) { "Expected createdAt to be stamped but was null" }
         assertEquals("g1", inserted.id)
-        assertEquals("Alquiler", inserted.categoria)
+        assertEquals("alquiler", inserted.categoria)
         assertEquals(500.0, inserted.monto, 0.001)
+    }
+
+    @Test
+    fun insertGastoOperativo_preserves_createdAt_when_already_set() = runBlocking {
+        val originalTimestamp = "2026-01-15T12:30:00Z"
+        val entity = GastoOperativoEntity(
+            id = "g1b", opticaId = opticaId, categoria = "alquiler",
+            descripcion = "Local julio", monto = 500.0, fecha = testDate,
+            createdAt = originalTimestamp
+        )
+
+        repo.insertGastoOperativo(entity)
+
+        val inserted = gastoOperativoDao.getAll().first().first()
+        assertEquals(originalTimestamp, inserted.createdAt)
     }
 
     @Test
@@ -143,7 +160,7 @@ class OptoRepositoryFinanzasTest {
         coEvery { scheduler.scheduleFinanzasSync(any()) } just Runs
 
         val entity = GastoOperativoEntity(
-            id = "g2", opticaId = opticaId, categoria = "Servicios",
+            id = "g2", opticaId = opticaId, categoria = "servicios",
             descripcion = "Electricidad", monto = 200.0, fecha = testDate
         )
 
@@ -153,19 +170,18 @@ class OptoRepositoryFinanzasTest {
     }
 
     @Test
-    fun upsertGastoOperativo_stamps_timestamp_and_schedules_sync() = runBlocking {
+    fun upsertGastoOperativo_preserves_createdAt_on_existing_record() = runBlocking {
+        val originalTimestamp = "2026-01-01T00:00:00Z"
         val entity = GastoOperativoEntity(
-            id = "g3", opticaId = opticaId, categoria = "Sueldos",
+            id = "g3", opticaId = opticaId, categoria = "personal",
             descripcion = "Asistente", monto = 1500.0, fecha = testDate,
-            createdAt = "2026-01-01T00:00:00Z"
+            createdAt = originalTimestamp
         )
 
         repo.upsertGastoOperativo(entity)
 
         val upserted = gastoOperativoDao.getAll().first().first()
-        assertNotNull(upserted.createdAt) { "Expected createdAt to be refreshed but was old value" }
-        // Debe ser mas reciente que el valor original
-        assertTrue("Expected createdAt to be refreshed", upserted.createdAt != "2026-01-01T00:00:00Z")
+        assertEquals(originalTimestamp, upserted.createdAt)
     }
 
     @Test
@@ -173,7 +189,7 @@ class OptoRepositoryFinanzasTest {
         coEvery { scheduler.scheduleFinanzasSync(any()) } just Runs
 
         val entity = GastoOperativoEntity(
-            id = "g4", opticaId = opticaId, categoria = "Marketing",
+            id = "g4", opticaId = opticaId, categoria = "marketing",
             descripcion = "Facebook Ads", monto = 300.0, fecha = testDate
         )
 
@@ -186,7 +202,7 @@ class OptoRepositoryFinanzasTest {
     fun deleteGastoOperativo_schedules_finanzas_sync() = runBlocking {
         coEvery { scheduler.scheduleFinanzasSync(any()) } just Runs
         val entity = GastoOperativoEntity(
-            id = "g_del", opticaId = opticaId, categoria = "Temporal",
+            id = "g_del", opticaId = opticaId, categoria = "otro",
             descripcion = "A borrar", monto = 50.0, fecha = testDate
         )
         gastoOperativoDao.upsert(entity)
@@ -196,16 +212,30 @@ class OptoRepositoryFinanzasTest {
         coVerify(exactly = 1) { scheduler.scheduleFinanzasSync(opticaId) }
     }
 
+    @Test
+    fun deleteGastoOperativo_calls_markDeleted() = runBlocking {
+        coEvery { scheduler.scheduleFinanzasSync(any()) } just Runs
+        val entity = GastoOperativoEntity(
+            id = "g_md", opticaId = opticaId, categoria = "otro",
+            descripcion = "A marcar como eliminado", monto = 60.0, fecha = testDate
+        )
+        gastoOperativoDao.upsert(entity)
+
+        repo.deleteGastoOperativo(entity)
+
+        coVerify(exactly = 1) { syncStateTracker.markDeleted(opticaId, "gasto_operativo", entity.id) }
+    }
+
     // ── GastoOperativo reads ─────────────────────────────────────────────────
 
     @Test
     fun getGastosOperativos_delegates_to_dao() = runBlocking {
         val g1 = GastoOperativoEntity(
-            id = "g_r1", opticaId = opticaId, categoria = "Alquiler",
+            id = "g_r1", opticaId = opticaId, categoria = "alquiler",
             descripcion = "Local", monto = 500.0, fecha = testDate.plusDays(1)
         )
         val g2 = GastoOperativoEntity(
-            id = "g_r2", opticaId = opticaId, categoria = "Internet",
+            id = "g_r2", opticaId = opticaId, categoria = "servicios",
             descripcion = "Fibra", monto = 80.0, fecha = testDate
         )
         gastoOperativoDao.upsert(g1)
@@ -265,5 +295,21 @@ class OptoRepositoryFinanzasTest {
         assertEquals(25.0, result!!.margenNetoObjetivo, 0.001)
         assertEquals(180.0, result.ticketPromedioObjetivo!!, 0.001)
         assertEquals(60, result.deudaViejaAlertaDias)
+    }
+
+    // ── Venta local writes ────────────────────────────────────────────────────
+
+    @Test
+    fun deleteVentaById_calls_markDeleted() = runBlocking {
+        val venta = Venta(
+            id = "v_md", opticaId = opticaId, origen = "dispensacion",
+            origenId = "disp_1", fecha = testDate,
+            montoTotal = 100.0, estado = "pendiente"
+        )
+        db.ventaDao().upsertVenta(venta)
+
+        repo.deleteVentaById("v_md", "disp_1", opticaId)
+
+        coVerify(exactly = 1) { syncStateTracker.markDeleted(opticaId, "venta", "v_md") }
     }
 }

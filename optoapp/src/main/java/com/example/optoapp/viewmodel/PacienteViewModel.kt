@@ -1,5 +1,6 @@
 package com.example.optoapp.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.optoapp.data.OptoRepository
@@ -31,6 +32,7 @@ class PacienteViewModel @Inject constructor(
     private val supabase: SupabaseClient
 ) : ViewModel() {
     companion object {
+        private const val TAG = "PacienteViewModel"
         private const val DAILY_DELETE_LIMIT = 10
     }
 
@@ -40,14 +42,23 @@ class PacienteViewModel @Inject constructor(
     private val _activeFilter = MutableStateFlow<String?>(null)
     val activeFilter: StateFlow<String?> = _activeFilter
 
+    private val _sortOrder = MutableStateFlow("nombre")
+    val sortOrder: StateFlow<String> = _sortOrder
+
+    private val _refreshTrigger = MutableStateFlow(0L)
+
+    fun refresh() { _refreshTrigger.value = System.currentTimeMillis() }
+
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     val pacientes: StateFlow<List<Paciente>> = combine(
         _searchQuery,
         _activeFilter,
+        _sortOrder,
+        _refreshTrigger,
         sessionManager.opticaId
-    ) { query, filter, opticaId ->
-        Triple(query, filter, opticaId)
-    }.flatMapLatest { (query, filter, opticaId) ->
+    ) { query, filter, sort, _, opticaId ->
+        arrayOf(query, filter ?: "", sort, opticaId)
+    }.flatMapLatest { (query, filter, sort, opticaId) ->
         val baseFlow = when (filter) {
             "Saldo Pendiente" -> repository.getPacientesWithPendingBalanceForOptica(opticaId)
             "Estado de entrega" -> repository.getPacientesWithPendingDeliveryForOptica(opticaId)
@@ -70,11 +81,18 @@ class PacienteViewModel @Inject constructor(
             } else {
                 list
             }
+        }.map { list ->
+            when (sort) {
+                "reciente" -> list.sortedByDescending { it.fechaCreacion }
+                "antiguo" -> list.sortedBy { it.fechaCreacion }
+                else -> list.sortedBy { it.nombreCompleto.lowercase() }
+            }
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun onSearchQueryChange(query: String) { _searchQuery.value = query }
     fun setFilter(filter: String?) { _activeFilter.value = if (_activeFilter.value == filter) null else filter }
+    fun setSort(sort: String) { _sortOrder.value = sort }
 
     private val _lastEvaluacion = MutableStateFlow<Resource<EvaluacionClinica>?>(null)
     val lastEvaluacion: StateFlow<Resource<EvaluacionClinica>?> = _lastEvaluacion
@@ -154,26 +172,33 @@ class PacienteViewModel @Inject constructor(
         }
 
         return try {
-            // Eliminar primero en remoto para mantener consistencia entre dispositivos.
-            supabase.postgrest["pacientes"].delete {
-                filter {
-                    eq("id", paciente.id)
-                    eq("optica_id", oid)
-                }
-            }
+            // Delete from Room first. If local delete fails, we never touch Supabase.
             repository.deletePaciente(paciente)
+            try {
+                supabase.postgrest["pacientes"].delete {
+                    filter {
+                        eq("id", paciente.id)
+                        eq("optica_id", oid)
+                    }
+                }
+            } catch (e: IOException) {
+                // Remote delete failed but local succeeded; the sync pipeline will propagate
+                // the deletion on next cycle.
+            }
             val used = sessionManager.incrementPacienteDeleteCountToday(oid)
             postSaveSyncScheduler.schedulePacientesSync(oid)
             DeletePacienteResult.Success((DAILY_DELETE_LIMIT - used).coerceAtLeast(0))
         } catch (e: CancellationException) {
             throw e
         } catch (e: IOException) {
+            Log.e(TAG, "deletePaciente failed: IO error", e)
             DeletePacienteResult.Error(
-                "No se pudo eliminar el paciente: ${e.localizedMessage ?: "error desconocido"}"
+                "Error inesperado. Reintente más tarde."
             )
         } catch (e: Exception) {
+            Log.e(TAG, "deletePaciente failed", e)
             DeletePacienteResult.Error(
-                "No se pudo eliminar el paciente: ${e.localizedMessage ?: "error desconocido"}"
+                "Error inesperado. Reintente más tarde."
             )
         }
     }

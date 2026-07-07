@@ -4,6 +4,7 @@ import android.util.Log
 import com.example.optoapp.data.Resource
 import com.example.optoapp.data.pago.PagoDao
 import com.example.optoapp.data.venta.VentaDao
+import com.example.optoapp.data.PacienteDao
 import io.github.jan.supabase.postgrest.Postgrest
 import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.json.JsonArray
@@ -14,15 +15,16 @@ import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
-import kotlinx.serialization.json.put
 import java.io.IOException
 import java.time.LocalDate
+import java.time.temporal.ChronoUnit
 import javax.inject.Inject
 
 open class ObtenerDeudoresUseCase @Inject constructor(
     private val postgrest: Postgrest,
     private val ventaDao: VentaDao,
-    private val pagoDao: PagoDao
+    private val pagoDao: PagoDao,
+    private val pacienteDao: PacienteDao
 ) {
     companion object {
         private const val TAG = "ObtenerDeudores"
@@ -36,11 +38,17 @@ open class ObtenerDeudoresUseCase @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: IOException) {
-            Log.w(TAG, "Offline — no data available for deudores", e)
-            Resource.Error("Sin conexion para obtener deudores: ${e.localizedMessage}")
+            Log.w(TAG, "Offline — trying local Room data for deudores", e)
+            try {
+                val deudores = fallbackToRoomDeudores(opticaId)
+                Resource.Success(deudores)
+            } catch (ee: Exception) {
+                Log.w(TAG, "Offline — no data available for deudores", ee)
+                Resource.Error("No se pudieron cargar los datos de deudores")
+            }
         } catch (e: Exception) {
             Log.e(TAG, "Error obteniendo deudores", e)
-            Resource.Error("Error obteniendo deudores: ${e.localizedMessage}")
+            Resource.Error("No se pudieron cargar los datos de deudores")
         }
     }
 
@@ -61,12 +69,53 @@ open class ObtenerDeudoresUseCase @Inject constructor(
                 pacienteNombre = string("paciente_nombre"),
                 pacienteTelefono = string("paciente_telefono"),
                 ventaId = string("venta_id"),
-                ventaFecha = LocalDate.parse(string("venta_fecha")),
+                ventaFecha = try {
+                    val raw = string("venta_fecha")
+                    if (raw.isBlank()) java.time.LocalDate.MIN else LocalDate.parse(raw)
+                } catch (e: java.time.format.DateTimeParseException) {
+                    Log.w(TAG, "Invalid venta_fecha for deudor row, using LocalDate.MIN", e)
+                    java.time.LocalDate.MIN
+                },
                 montoTotal = double("monto_total"),
                 totalPagado = double("total_pagado"),
                 saldo = double("saldo"),
-                diasDeuda = int("dias_deuda")
+                diasDeuda = int("dias_deuda"),
+                pacienteId = string("paciente_id")
             )
         }
+    }
+
+    private suspend fun fallbackToRoomDeudores(opticaId: String): List<Deudor> {
+        val ventas = ventaDao.getAllVentasByOptica(opticaId)
+        val pagos = pagoDao.getPagosListByOptica(opticaId)
+        val pacientes = pacienteDao.getPacientesListByOptica(opticaId)
+
+        val pagosPorVenta = pagos
+            .filter { it.ventaId != null }
+            .groupBy { it.ventaId!! }
+            .mapValues { (_, pg) -> pg.sumOf { it.monto } }
+
+        val hoy = LocalDate.now()
+
+        return ventas
+            .filter { v ->
+                val totalPagado = pagosPorVenta[v.id] ?: 0.0
+                v.montoTotal > totalPagado
+            }
+            .map { v ->
+                val totalPagado = pagosPorVenta[v.id] ?: 0.0
+                val paciente = pacientes.find { it.id == v.pacienteId }
+                Deudor(
+                    pacienteNombre = paciente?.nombreCompleto ?: "Paciente #${v.pacienteId}",
+                    pacienteTelefono = paciente?.telefono ?: "",
+                    ventaId = v.id,
+                    ventaFecha = v.fecha,
+                    montoTotal = v.montoTotal,
+                    totalPagado = totalPagado,
+                    saldo = v.montoTotal - totalPagado,
+                    diasDeuda = ChronoUnit.DAYS.between(v.fecha, hoy).toInt(),
+                    pacienteId = v.pacienteId
+                )
+            }
     }
 }

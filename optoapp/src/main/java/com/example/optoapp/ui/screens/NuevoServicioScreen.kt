@@ -14,6 +14,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.optoapp.ui.components.servicio.ServicioForm
 import com.example.optoapp.util.DateUtils
+import com.example.optoapp.ui.components.OptoDatePickerDialog
 import com.example.optoapp.ui.components.OptoTopAppBar
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -37,26 +38,16 @@ fun NuevoServicioScreen(navController: NavController, pacienteId: String? = null
         }
     }
 
-    val datePickerState = rememberDatePickerState(
-        initialSelectedDateMillis = DateUtils.localDateToPickerMillis(uiState.fecha),
-        yearRange = 1920..2080
-    )
     var showDatePicker by remember { mutableStateOf(false) }
 
     if (showDatePicker) {
-        DatePickerDialog(
-            onDismissRequest = { showDatePicker = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    datePickerState.selectedDateMillis?.let { mills ->
-                        viewModel.updateUiState { it.copy(fecha = DateUtils.pickerMillisToLocalDate(mills)) }
-                    }
-                    showDatePicker = false
-                }) { Text("OK") }
-            }
-        ) {
-            DatePicker(state = datePickerState)
-        }
+        OptoDatePickerDialog(
+            initialDate = uiState.fecha,
+            onDateSelected = { date ->
+                viewModel.updateUiState { it.copy(fecha = date) }
+            },
+            onDismiss = { showDatePicker = false }
+        )
     }
 
     val monturas by viewModel.monturas.collectAsState()
@@ -97,6 +88,7 @@ fun NuevoServicioScreen(navController: NavController, pacienteId: String? = null
             ServicioForm(
                 uiState = uiState,
                 onUpdate = { s -> viewModel.updateUiState { s } },
+                onUpdateEstado = { viewModel.updateEstado(it) },
                 monturas = monturas,
                 pacientes = pacientes,
                 onAddPago = { viewModel.addPago(it) },

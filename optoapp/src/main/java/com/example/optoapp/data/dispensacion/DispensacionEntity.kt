@@ -1,5 +1,6 @@
 package com.example.optoapp.data
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
@@ -57,6 +58,7 @@ data class DispensacionOptica(
     val distanciaLente: String = "",
     val altura: String = "",
     val subTipoBifocal: String = "",
+    @ColumnInfo(name = "filtro_discromatopsia_tipo") val filtroDiscromatopsiaTipo: String = "",
     @SerialName("updatedAt")
     val updatedAt: String? = null,
     @SerialName("updatedBy")

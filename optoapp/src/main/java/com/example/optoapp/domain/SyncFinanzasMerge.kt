@@ -52,7 +52,7 @@ class DispensacionMergeHandler @Inject constructor(
             subTipoBifocal = canonical.subTipoBifocal.ifBlank { duplicate.subTipoBifocal }
         )
         repository.updateDispensacion(merged)
-        val moved = repository.reassignPagosDispensacion(duplicate.id, canonical.id)
+        val moved = repository.reassignPagosDispensacion(duplicate.id, canonical.id, opticaId)
         repository.deleteDispensacionById(duplicate.id)
         syncStateTracker.markSynced(opticaId, "dispensacion", duplicate.id)
         syncStateTracker.markError(
@@ -85,7 +85,7 @@ class DispensacionMergeHandler @Inject constructor(
             val canonical = rows.maxByOrNull { it.fecha } ?: return@forEach
             rows.forEach { duplicate ->
                 if (duplicate.id == canonical.id) return@forEach
-                val moved = repository.reassignPagosDispensacion(duplicate.id, canonical.id)
+                val moved = repository.reassignPagosDispensacion(duplicate.id, canonical.id, opticaId)
                 repository.deleteDispensacionById(duplicate.id)
                 syncStateTracker.markError(
                     opticaId,

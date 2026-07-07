@@ -34,6 +34,7 @@ import com.example.optoapp.domain.SyncOrdenesCompraUseCase
 import com.example.optoapp.domain.SyncInventarioFisicoUseCase
 import com.example.optoapp.domain.MonturaRemota
 import com.example.optoapp.domain.ProveedorRemoto
+import com.example.optoapp.domain.sync.ConflictHelper
 import com.example.optoapp.domain.sync.EntitySnapshotSerializer
 import com.example.optoapp.domain.sync.MergeInput
 import com.example.optoapp.domain.sync.ThreeWayMerge
@@ -57,6 +58,7 @@ import javax.inject.Inject
 sealed class SyncState {
     object Idle : SyncState()
     object Loading : SyncState()
+    object Offline : SyncState()
     data class Success(val message: String) : SyncState()
     data class Error(val message: String) : SyncState()
 }
@@ -103,6 +105,30 @@ class SyncViewModel @Inject constructor(
 
     private val _conflictCount = MutableStateFlow(0)
     val conflictCount: StateFlow<Int> = _conflictCount.asStateFlow()
+
+    private var wasOffline = false
+    private val networkCallback = object : ConnectivityManager.NetworkCallback() {
+        override fun onAvailable(network: android.net.Network) {
+            if (wasOffline) {
+                wasOffline = false
+                performSilentSync()
+            }
+        }
+        override fun onLost(network: android.net.Network) {
+            wasOffline = true
+        }
+    }
+
+    init {
+        val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        cm.registerDefaultNetworkCallback(networkCallback)
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        cm.unregisterNetworkCallback(networkCallback)
+    }
 
     fun refreshConflicts() {
         viewModelScope.launch {
@@ -234,18 +260,21 @@ class SyncViewModel @Inject constructor(
             val opticaId = sessionManager.opticaId.first()
             try {
                 val allConflicts = conflictDao.getConflicts(opticaId)
+                val resolvedIds = mutableListOf<String>()
                 allConflicts.forEach { entity ->
                     runCatching { bumpEntityUpdatedAt(entity.entityId, entity.entityType) }
+                        .onSuccess { resolvedIds.add(entity.entityId) }
                         .onFailure { e ->
                             Log.w(TAG, "Keep mine all: no se pudo bump ${entity.entityType}/${entity.entityId}: ${e.message}")
                         }
                 }
-                conflictDao.clearConflicts(opticaId)
+                // Only clear conflict records for entities that were actually resolved.
+                resolvedIds.forEach { entityId -> conflictDao.resolveConflict(entityId, opticaId) }
                 syncEntityStateDao.deleteConflictedForOptica(opticaId)
-                _conflicts.value = emptyList()
-                _conflictCount.value = 0
+                _conflicts.value = _conflicts.value.filter { it.entityId !in resolvedIds }
+                _conflictCount.value = _conflicts.value.size
                 performFullSync()
-                Log.d(TAG, "Todos los conflictos resueltos (keep mine all): ${allConflicts.size} entidades")
+                Log.d(TAG, "Keep mine all: ${resolvedIds.size}/${allConflicts.size} conflictos resueltos")
             } catch (e: Exception) {
                 Log.e(TAG, "Error en resolveKeepMineAll: ${e.message}", e)
             }
@@ -257,6 +286,7 @@ class SyncViewModel @Inject constructor(
      * appropriate repository update method which auto-stamps updatedAt = Instant.now().
      */
     private suspend fun bumpEntityUpdatedAt(entityId: String, entityType: String) {
+        val opticaId = sessionManager.opticaId.first()
         when (entityType) {
             "servicio_extra" -> {
                 val result = repository.getServicioById(entityId)
@@ -276,7 +306,7 @@ class SyncViewModel @Inject constructor(
                 }
             }
             "pago" -> {
-                val pago = repository.getPagoById(entityId)
+                val pago = repository.getPagoById(entityId, opticaId)
                 if (pago != null) {
                     repository.updatePago(pago)
                 } else {
@@ -300,7 +330,7 @@ class SyncViewModel @Inject constructor(
                 }
             }
             "montura" -> {
-                val result = repository.getMonturaById(entityId)
+                val result = repository.getMonturaById(entityId, opticaId)
                 if (result is Resource.Success && result.data != null) {
                     repository.updateMontura(result.data)
                 } else {
@@ -334,7 +364,7 @@ class SyncViewModel @Inject constructor(
             "montura_movimiento" -> {
                 val mov = repository.getMovimientoMonturaById(entityId)
                 if (mov != null) {
-                    val monturaResult = repository.getMonturaById(mov.monturaId)
+                    val monturaResult = repository.getMonturaById(mov.monturaId, opticaId)
                     if (monturaResult is Resource.Success && monturaResult.data != null) {
                         repository.updateMontura(monturaResult.data)
                     } else {
@@ -360,12 +390,15 @@ class SyncViewModel @Inject constructor(
             "dispensacion_item" -> {
                 val item = repository.getDispensacionItemById(entityId)
                 if (item != null) {
+                    // Bump the parent dispensacion so the sync pipeline includes this item.
                     val result = repository.getDispensacionById(item.dispensacionId)
                     if (result is Resource.Success && result.data != null) {
                         repository.updateDispensacion(result.data)
                     } else {
                         Log.w(TAG, "bumpEntityUpdatedAt: parent dispensacion no encontrada id=${item.dispensacionId} for item=$entityId")
                     }
+                    // Also upsert the item directly so the upload coordinator picks it up.
+                    repository.insertDispensacionItem(item)
                 } else {
                     Log.w(TAG, "bumpEntityUpdatedAt: dispensacion_item no encontrado id=$entityId")
                 }
@@ -536,7 +569,7 @@ class SyncViewModel @Inject constructor(
     private suspend fun performFullDownload() {
         _syncState.value = SyncState.Loading
         if (!isNetworkAvailable()) {
-            _syncState.value = SyncState.Error("Sin conexión a internet.")
+            _syncState.value = SyncState.Offline
             return
         }
 
@@ -587,7 +620,7 @@ class SyncViewModel @Inject constructor(
                 bgErrorCollector.record("sync", "Full download completada con errores")
                 syncTelemetry.recordFullSyncError("Algunos módulos reportaron errores")
                 recordRemoteSyncTelemetry(opticaId, "error", "finalizado", "Algunos módulos con error")
-                _syncState.value = SyncState.Error("Descarga completada con errores. Revisa el estado de sync para más detalles.")
+                _syncState.value = SyncState.Error("Algunos datos no se pudieron sincronizar. Se reintentará automáticamente.")
             } else {
                 syncTelemetry.recordFullSyncSuccess()
                 recordRemoteSyncTelemetry(opticaId, "ok", "finalizado", null)
@@ -655,7 +688,7 @@ class SyncViewModel @Inject constructor(
             bgErrorCollector.record("sync", "Full sync completada con errores")
             syncTelemetry.recordFullSyncError("Algunos módulos reportaron errores")
             recordRemoteSyncTelemetry(opticaId, "error", "finalizado", "Algunos módulos con error")
-            _syncState.value = SyncState.Error("Sincronización completada con errores. Revisa el estado de sync para más detalles.")
+                _syncState.value = SyncState.Error("Sincronización parcial. Se reintentará automáticamente.")
         } else {
             syncTelemetry.recordFullSyncSuccess()
             recordRemoteSyncTelemetry(opticaId, "ok", "finalizado", null)

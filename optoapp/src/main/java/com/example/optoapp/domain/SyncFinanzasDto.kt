@@ -42,6 +42,7 @@ data class DispensacionRemota(
     @SerialName("distancia_lente") val distanciaLente: String? = null,
     val altura: String? = null,
     @SerialName("sub_tipo_bifocal") val subTipoBifocal: String? = null,
+    @SerialName("filtro_discromatopsia_tipo") val filtroDiscromatopsiaTipo: String = "",
     @SerialName("updated_at") val updatedAt: String? = null,
     @SerialName("updated_by") val updatedBy: String? = null
 ) {
@@ -61,6 +62,7 @@ data class DispensacionRemota(
         distanciaLente = distanciaLente ?: "",
         altura = altura ?: "",
         subTipoBifocal = subTipoBifocal ?: "",
+        filtroDiscromatopsiaTipo = filtroDiscromatopsiaTipo,
         updatedAt = updatedAt,
         updatedBy = updatedBy
     )
@@ -79,6 +81,7 @@ data class ServicioRemoto(
     val fecha: String,
     @SerialName("paciente_id") val pacienteId: String? = null,
     @SerialName("metodo_pago") val metodoPago: String = "",
+    @SerialName("fecha_entrega") val fechaEntrega: String? = null,
     @SerialName("optica_id") val opticaId: String,
     @SerialName("updated_at") val updatedAt: String? = null,
     @SerialName("updated_by") val updatedBy: String? = null
@@ -95,7 +98,8 @@ data class ServicioRemoto(
         metodoPago = metodoPago.remotoServicioExtraMetodoToLocal(),
         opticaId = opticaId.trim().ifBlank { FinanzasRemoteDefaults.OPTICA_ID_FALLBACK },
         updatedAt = updatedAt,
-        updatedBy = updatedBy
+        updatedBy = updatedBy,
+        fechaEntrega = fechaEntrega?.let(LocalDate::parse)
     )
 }
 
@@ -165,6 +169,23 @@ data class VentaRemota(
     )
 }
 
+fun Venta.toRemoto() = VentaRemota(
+    id = id,
+    opticaId = opticaId,
+    origen = origen,
+    origenId = origenId,
+    pacienteId = pacienteId.ifBlank { "" },
+    fecha = fecha.toString(),
+    fechaEntrega = fechaEntrega?.toString(),
+    montoTotal = montoTotal,
+    costoUnitarioSnapshot = costoUnitarioSnapshot,
+    estado = estado.ifBlank { "Pendiente" },
+    categoriaProductoId = categoriaProductoId,
+    createdAt = createdAt ?: java.time.Instant.now().toString(),
+    updatedAt = updatedAt ?: java.time.Instant.now().toString(),
+    updatedBy = null
+)
+
 @Serializable
 data class DispensacionItemRemota(
     val id: String,
@@ -176,6 +197,7 @@ data class DispensacionItemRemota(
     @SerialName("distancia_lente") val distanciaLente: String? = null,
     val altura: String? = null,
     @SerialName("sub_tipo_bifocal") val subTipoBifocal: String? = null,
+    @SerialName("filtro_discromatopsia_tipo") val filtroDiscromatopsiaTipo: String = "",
     @SerialName("notas_diseno") val notasDiseno: String? = null,
     @SerialName("montura_id") val monturaId: String? = null,
     @SerialName("origen_montura") val origenMontura: String? = null,
@@ -191,6 +213,7 @@ data class DispensacionItemRemota(
         tratamientos = tratamientos?.split(",")?.filter { it.isNotBlank() } ?: emptyList(),
         colorLente = colorLente ?: "", distanciaLente = distanciaLente ?: "",
         altura = altura ?: "", subTipoBifocal = subTipoBifocal ?: "",
+        filtroDiscromatopsiaTipo = filtroDiscromatopsiaTipo,
         notasDiseno = notasDiseno ?: "",
         monturaId = monturaId ?: "", origenMontura = origenMontura ?: "",
         tipoAro = tipoAro ?: "", materialMontura = materialMontura ?: "",
@@ -211,7 +234,9 @@ data class GastoOperativoRemoto(
     val fecha: String,
     @SerialName("fecha_programada") val fechaProgramada: String? = null,
     val nota: String? = null,
-    @SerialName("created_at") val createdAt: String? = null
+    @SerialName("created_at") val createdAt: String? = null,
+    @SerialName("es_recurrente") val esRecurrente: Boolean = false,
+    val frecuencia: String = "mensual"
 )
 
 fun GastoOperativoEntity.toRemoto(): GastoOperativoRemoto = GastoOperativoRemoto(
@@ -223,7 +248,9 @@ fun GastoOperativoEntity.toRemoto(): GastoOperativoRemoto = GastoOperativoRemoto
     fecha = fecha.toString(),
     fechaProgramada = fechaProgramada?.toString(),
     nota = nota,
-    createdAt = createdAt
+    createdAt = createdAt,
+    esRecurrente = esRecurrente,
+    frecuencia = frecuencia
 )
 
 // ── ResumenDiario remote DTO ───────────────────────────────────────────
@@ -298,6 +325,7 @@ data class FinanzasSyncResult(
     val uploadedServicios: Int,
     val uploadedPagos: Int,
     val uploadedGastosOperativos: Int = 0,
+    val uploadedArqueos: Int = 0,
     val downloadedDispensaciones: Int,
     val downloadedDispensacionItems: Int = 0,
     val downloadedServicios: Int,
@@ -332,6 +360,7 @@ fun DispensacionOptica.toRemoto(): DispensacionRemota = DispensacionRemota(
     fechaEntrega = fechaEntrega?.toString(),
     fechaVencimientoGarantia = fechaVencimientoGarantia?.toString(),
     distanciaLente = distanciaLente, altura = altura, subTipoBifocal = subTipoBifocal,
+    filtroDiscromatopsiaTipo = filtroDiscromatopsiaTipo,
     updatedAt = updatedAt, updatedBy = updatedBy
 )
 
@@ -346,7 +375,8 @@ fun Pago.toRemoto(): PagoRemoto = PagoRemoto(
     nota = nota.trim(),
     opticaId = opticaId.trim().ifBlank { FinanzasRemoteDefaults.OPTICA_ID_FALLBACK },
     updatedAt = updatedAt,
-    updatedBy = updatedBy
+    updatedBy = updatedBy,
+    ventaId = ventaId
 )
 
 fun DispensacionItem.toRemoto(): DispensacionItemRemota = DispensacionItemRemota(
@@ -355,6 +385,7 @@ fun DispensacionItem.toRemoto(): DispensacionItemRemota = DispensacionItemRemota
     tratamientos = tratamientos.joinToString(","), colorLente = colorLente,
     distanciaLente = distanciaLente, altura = altura,
     subTipoBifocal = subTipoBifocal, notasDiseno = notasDiseno,
+    filtroDiscromatopsiaTipo = filtroDiscromatopsiaTipo,
     monturaId = monturaId, origenMontura = origenMontura,
     tipoAro = tipoAro, materialMontura = materialMontura,
     descripcionMontura = descripcionMontura, tipoMontura = tipoMontura,
@@ -373,7 +404,8 @@ fun ServicioExtra.toRemoto(): ServicioRemoto = ServicioRemoto(
     metodoPago = metodoPago.trim().ifBlank { FinanzasRemoteDefaults.ServicioExtra.METODO_PAGO_ROW },
     opticaId = opticaId.trim().ifBlank { FinanzasRemoteDefaults.OPTICA_ID_FALLBACK },
     updatedAt = updatedAt,
-    updatedBy = updatedBy
+    updatedBy = updatedBy,
+    fechaEntrega = fechaEntrega?.toString()
 )
 
 
@@ -458,7 +490,7 @@ fun ArqueoCajaRemota.toLocal(): ArqueoCaja = ArqueoCaja(
     diferenciaTotal = diferenciaTotal,
     cerradoPor = cerradoPor,
     sellado = sellado,
-    createdAt = updatedAt,  // remote doesn't carry createdAt; use updatedAt as fallback
+    createdAt = "",  // remote doesn't carry createdAt; leave empty, caller preserves local
     updatedAt = updatedAt,
     updatedBy = updatedBy
 )

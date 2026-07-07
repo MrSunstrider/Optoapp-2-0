@@ -9,8 +9,15 @@ interface MonturaDao {
     @Query("SELECT * FROM monturas WHERE opticaId = :opticaId ORDER BY activo DESC, marca ASC, modelo ASC")
     fun getMonturasByOptica(opticaId: String): Flow<List<Montura>>
 
+    @Deprecated(
+        message = "Use getMonturaByIdForOptica to enforce multi-tenant isolation",
+        replaceWith = ReplaceWith("getMonturaByIdForOptica(id, opticaId)")
+    )
     @Query("SELECT * FROM monturas WHERE id = :id")
     suspend fun getMonturaById(id: String): Montura?
+
+    @Query("SELECT * FROM monturas WHERE id = :id AND opticaId = :opticaId")
+    suspend fun getMonturaByIdForOptica(id: String, opticaId: String): Montura?
 
     @Query("UPDATE monturas SET stockActual = stockActual + :delta WHERE id = :monturaId AND opticaId = :opticaId AND (stockActual + :delta) >= 0")
     suspend fun adjustStock(monturaId: String, opticaId: String, delta: Int): Int

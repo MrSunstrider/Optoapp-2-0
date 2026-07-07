@@ -158,10 +158,10 @@ class DispensacionRepository(
         pagoDao.updatePago(pago)
     }
 
-    suspend fun getPagoById(id: String): Pago? = pagoDao.getPagoById(id)
+    suspend fun getPagoById(id: String, opticaId: String): Pago? = pagoDao.getPagoByIdForOptica(id, opticaId)
 
-    suspend fun reassignPagosDispensacion(oldDispensacionId: String, newDispensacionId: String): Int =
-        pagoDao.reassignDispensacionId(oldDispensacionId, newDispensacionId)
+    suspend fun reassignPagosDispensacion(oldDispensacionId: String, newDispensacionId: String, opticaId: String): Int =
+        pagoDao.reassignDispensacionIdForOptica(oldDispensacionId, newDispensacionId, opticaId)
 
     /**
      * Borra un abono. Si ya existía en BD, registra un movimiento de anulación
@@ -172,12 +172,13 @@ class DispensacionRepository(
         pago: Pago,
         opticaId: String
     ) {
-        val existing = pagoDao.getPagoById(pago.id)
+        val existing = pagoDao.getPagoByIdForOptica(pago.id, opticaId)
         if (existing != null && existing.monto != 0.0) {
             val reversal = Pago(
                 id = UUID.randomUUID().toString(),
                 dispensacionId = existing.dispensacionId,
                 servicioExtraId = existing.servicioExtraId,
+                ventaId = existing.ventaId,
                 fecha = existing.fecha,
                 tipo = "Anulación",
                 monto = -existing.monto,
@@ -195,6 +196,10 @@ class DispensacionRepository(
     fun getPagosByServicioExtra(servicioExtraId: String): Flow<List<Pago>> =
         pagoDao.getPagosByServicioExtra(servicioExtraId)
 
+    @Deprecated(
+        message = "Use getPagosByDateRangeForOptica to enforce multi-tenant isolation",
+        replaceWith = ReplaceWith("getPagosByDateRangeForOptica(start, end, opticaId)")
+    )
     fun getPagosByDateRange(start: LocalDate, end: LocalDate): Flow<List<Pago>> =
         pagoDao.getPagosByDateRange(start, end)
 

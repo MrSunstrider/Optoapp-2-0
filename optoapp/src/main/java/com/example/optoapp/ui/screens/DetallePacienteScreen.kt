@@ -185,7 +185,9 @@ fun DetallePacienteScreen(
                     .fillMaxSize()
                     .padding(padding)
             ) {
-                PacienteInfoHeader(paciente = p)
+                val deudaDisp = dispensaciones.sumOf { it.montoTotal - it.montoPagado }
+                val deudaServ = servicios.sumOf { it.montoTotal - it.aCuenta }
+                PacienteInfoHeader(paciente = p, deudaTotal = deudaDisp + deudaServ)
 
                 ScrollableTabRow(
                     selectedTabIndex = selectedTab,
@@ -200,10 +202,17 @@ fun DetallePacienteScreen(
                     }
                 ) {
                     tabs.forEachIndexed { index, title ->
+                        val count = when (index) {
+                            0 -> evaluaciones.size
+                            1 -> dispensaciones.size
+                            2 -> servicios.size
+                            else -> 0
+                        }
+                        val label = if (count > 0) "$title ($count)" else title
                         Tab(
                             selected = selectedTab == index,
                             onClick = { selectedTab = index },
-                            text = { Text(title, fontWeight = if (selectedTab == index) FontWeight.Bold else FontWeight.Normal) }
+                            text = { Text(label, fontWeight = if (selectedTab == index) FontWeight.Bold else FontWeight.Normal, maxLines = 1) }
                         )
                     }
                 }

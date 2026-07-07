@@ -40,7 +40,7 @@ class DownloadSyncCoordinator @Inject constructor(
         remotos.forEach { r ->
             try {
                 val local = r.toEntity()
-                repository.insertDispensacionItem(local)
+                repository.upsertDispensacionItemFromRemote(local)
                 syncStateTracker.markSynced(opticaId, "dispensacion_item", local.id)
             } catch (e: CancellationException) {
                 throw e

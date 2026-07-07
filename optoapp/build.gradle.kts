@@ -210,7 +210,7 @@ val jacocoCoverageVerification by tasks.registering(JacocoCoverageVerification::
     violationRules {
         rule {
             limit {
-                minimum = "0.05".toBigDecimal()
+                minimum = "0.30".toBigDecimal()
                 counter = "INSTRUCTION"
             }
         }
@@ -220,5 +220,9 @@ val jacocoCoverageVerification by tasks.registering(JacocoCoverageVerification::
         fileTree(jacocoJavaClasses) { exclude(jacocoFileFilter) }
     )
     executionData.setFrom(jacocoExecData)
+}
+
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
 }
 

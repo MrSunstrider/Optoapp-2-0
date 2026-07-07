@@ -9,6 +9,7 @@ import com.example.optoapp.data.SyncEntityState
 import com.example.optoapp.data.SyncEntityStateDao
 import com.example.optoapp.data.SessionManager
 import com.example.optoapp.util.BackgroundErrorCollector
+import android.util.Log
 import com.example.optoapp.util.SyncErrorSanitizer
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
@@ -46,6 +47,7 @@ class SyncDiagnosticsViewModel @Inject constructor(
     private val membershipRepository: MembershipRepository
 ) : ViewModel() {
     companion object {
+        private const val TAG = "SyncDiagnosticsVM"
         private const val REMOTE_TELEMETRY_RETRY_ATTEMPTS = 3
 
         internal fun isValidUuid(value: String): Boolean {
@@ -135,8 +137,8 @@ class SyncDiagnosticsViewModel @Inject constructor(
         }.onSuccess { row ->
             _remoteTelemetry.value = row
         }.onFailure { e ->
-            _remoteTelemetryError.value =
-                SyncErrorSanitizer.forUserMessage(e.localizedMessage ?: e.message)
+            Log.e(TAG, "Error fetching remote telemetry", e)
+            _remoteTelemetryError.value = "Error inesperado. Reintente más tarde."
         }
         _remoteTelemetryLoading.value = false
     }
@@ -225,8 +227,9 @@ class SyncDiagnosticsViewModel @Inject constructor(
                 }
             }
         } catch (e: Exception) {
+            Log.e(TAG, "Error reparando sesión", e)
             _sessionRepairState.value = SessionRepairState.Error(
-                "Error al reparar sesión: ${e.localizedMessage ?: e.message}"
+                "Error inesperado. Reintente más tarde."
             )
         }
     }

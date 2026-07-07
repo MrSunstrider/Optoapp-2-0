@@ -114,7 +114,7 @@ class OptoRepositoryTest {
         )
         monturaDao.insertMontura(montura)
 
-        val result = repo.getMonturaById("m1")
+        val result = repo.getMonturaById("m1", "o1")
 
         assertTrue(result is Resource.Success)
         val data = (result as Resource.Success).data
@@ -127,7 +127,7 @@ class OptoRepositoryTest {
 
     @Test
     fun getMonturaById_withUnknownId_returnsError() = runBlocking {
-        val result = repo.getMonturaById("nonexistent")
+        val result = repo.getMonturaById("nonexistent", "o1")
 
         assertTrue(result is Resource.Error)
     }
@@ -145,7 +145,7 @@ class OptoRepositoryTest {
             stockActual = 3, stockMinimo = 1, activo = true, opticaId = "o1"
         ))
 
-        val result = repo.getMonturaById("m2")
+        val result = repo.getMonturaById("m2", "o1")
 
         assertTrue(result is Resource.Success)
         val data = (result as Resource.Success).data!!

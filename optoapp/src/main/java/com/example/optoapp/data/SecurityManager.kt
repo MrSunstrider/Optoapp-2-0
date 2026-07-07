@@ -39,12 +39,6 @@ class SecurityManager(
 ) : ISecurityManager {
 
     companion object {
-        /**
-         * PIN de desarrollo usado SOLO cuando no hay PIN almacenado.
-         * NUNCA se asigna automáticamente — el usuario crea su PIN en CreatePinScreen.
-         * Este valor existe únicamente para evitar nulls en flujos de desarrollo/test.
-         */
-        const val DEV_FALLBACK_PIN = "999999"
         const val PIN_LENGTH = 6
 
         fun isValidPin(pin: String): Boolean {

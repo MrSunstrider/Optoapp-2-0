@@ -71,10 +71,6 @@ fun LoginScreen(
         if (savedEmail.isNotBlank()) {
             email = savedEmail
             rememberAccount = true
-            val savedPassword = viewModel.getRememberedPassword()
-            if (savedPassword.isNotBlank()) {
-                password = savedPassword
-            }
         }
     }
 
@@ -83,10 +79,8 @@ fun LoginScreen(
 
         if (rememberAccount) {
             viewModel.saveRememberedEmail(email)
-            viewModel.saveRememberedPassword(password)
         } else {
             viewModel.clearRememberedEmail()
-            viewModel.clearRememberedPassword()
         }
 
         if (needsOnboarding) {

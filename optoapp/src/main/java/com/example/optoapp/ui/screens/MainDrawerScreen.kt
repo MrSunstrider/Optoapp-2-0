@@ -125,7 +125,7 @@ fun MainDrawerScreen(
                 }
             }
             Box(modifier = Modifier.weight(1f)) {
-                NavHost(navController = navController, startDestination = "pacientes", modifier = Modifier.fillMaxSize()) {
+                NavHost(navController = navController, startDestination = "operacion_hoy", modifier = Modifier.fillMaxSize()) {
                 composable("pacientes") { PacientesListScreen(navController, drawerState) }
                 composable("agenda") { AgendaScreen(navController, drawerState) }
                 composable("nuevoPaciente") { NuevoPacienteScreen(navController) }
@@ -192,7 +192,8 @@ fun MainDrawerScreen(
                 composable("proveedores") { ProveedoresScreen(navController) }
                 composable("ordenes_compra") { OrdenesCompraScreen(navController) }
                 composable("inventario_fisico") { com.example.optoapp.ui.screens.inventariofisico.InventarioFisicoScreen(navController) }
-                composable("operacion_hoy") { OperacionHoyScreen(navController) }
+                composable("gastos") { GastosScreen(navController, drawerState) }
+                composable("operacion_hoy") { OperacionHoyScreen(navController, drawerState) }
                 composable("nuevo_servicio") {
                     NuevoServicioScreen(navController, pacienteId = null)
                 }

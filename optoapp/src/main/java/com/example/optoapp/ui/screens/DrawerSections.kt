@@ -161,7 +161,7 @@ fun DrawerContent(
         )
         if (showOperacionHoy) {
             NavigationDrawerItem(
-                label = { Text("Operación de Hoy", fontWeight = FontWeight.SemiBold) },
+                label = { Text("Dashboard", fontWeight = FontWeight.SemiBold) },
                 selected = currentRoute == "operacion_hoy",
                 onClick = {
                     scope.launch { drawerState.close() }

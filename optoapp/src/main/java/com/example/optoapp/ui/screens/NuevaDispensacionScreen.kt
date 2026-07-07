@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.optoapp.testing.TestTags
+import com.example.optoapp.ui.components.OptoDatePickerDialog
 import com.example.optoapp.ui.components.OptoTextField
 import com.example.optoapp.ui.components.dispensacion.LenteForm
 import com.example.optoapp.viewmodel.DispensacionViewModel
@@ -41,25 +42,15 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
     }
 
     var showDatePicker by remember { mutableStateOf(false) }
-    val datePickerState = rememberDatePickerState(
-        initialSelectedDateMillis = DateUtils.localDateToPickerMillis(uiState.fecha),
-        yearRange = 1920..2080
-    )
 
     if (showDatePicker) {
-        DatePickerDialog(
-            onDismissRequest = { showDatePicker = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    datePickerState.selectedDateMillis?.let { mills ->
-                        viewModel.updateUiState { it.copy(fecha = DateUtils.pickerMillisToLocalDate(mills)) }
-                    }
-                    showDatePicker = false
-                }) { Text("OK") }
-            }
-        ) {
-            DatePicker(state = datePickerState)
-        }
+        OptoDatePickerDialog(
+            initialDate = uiState.fecha,
+            onDateSelected = { date ->
+                viewModel.updateUiState { it.copy(fecha = date) }
+            },
+            onDismiss = { showDatePicker = false }
+        )
     }
 
     val saveAction = {
@@ -102,6 +93,10 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
                 .navigationBarsPadding(),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
+            if (uiState.isLoading) {
+                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+            }
+
             OutlinedButton(onClick = { showDatePicker = true }, modifier = Modifier.fillMaxWidth()) {
                 Text("Fecha: ${DateUtils.formatLocalized(uiState.fecha)}")
             }

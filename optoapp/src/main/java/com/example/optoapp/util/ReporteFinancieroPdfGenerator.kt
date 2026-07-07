@@ -55,10 +55,9 @@ object ReporteFinancieroPdfGenerator {
             val labelFecha = when (periodo) {
                 "Diario" -> "Día de hoy"
                 "Semanal" -> "Esta semana"
-                "Este mes" -> "Este mes"
-                "Este año" -> "Este año"
-                "Anual" -> "Año seleccionado"
-                else -> "Todo el historial"
+                "Mensual" -> "Mensual"
+                "Anual" -> "Anual"
+                else -> "Total"
             }
             canvas.drawText("Período: $labelFecha", MARGIN, y, subtitlePaint)
             y += 14f

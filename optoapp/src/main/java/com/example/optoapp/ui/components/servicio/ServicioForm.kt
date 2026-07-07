@@ -30,6 +30,7 @@ import java.util.*
 fun ServicioForm(
     uiState: ServiciosUiState,
     onUpdate: (ServiciosUiState) -> Unit,
+    onUpdateEstado: (String) -> Unit,
     monturas: List<Montura>,
     pacientes: List<Paciente>,
     onAddPago: (Pago) -> Unit,
@@ -197,8 +198,16 @@ fun ServicioForm(
         label = "Estado",
         selected = uiState.estado,
         options = listOf("Pendiente", "Entregado"),
-        onSelected = { onUpdate(uiState.copy(estado = it)) }
+        onSelected = { onUpdateEstado(it) }
     )
+
+    if (uiState.fechaEntrega != null) {
+        Text(
+            "Entregado el ${DateUtils.formatLocalized(uiState.fechaEntrega)}",
+            fontSize = 12.sp,
+            color = MaterialTheme.colorScheme.tertiary
+        )
+    }
 
     Text("Asociar a Paciente (Opcional)", fontWeight = FontWeight.Bold)
     var pExpanded by remember { mutableStateOf(false) }

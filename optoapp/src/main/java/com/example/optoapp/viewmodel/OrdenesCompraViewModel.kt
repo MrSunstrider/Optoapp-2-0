@@ -1,5 +1,6 @@
 package com.example.optoapp.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.optoapp.data.OrdenCompra
@@ -53,6 +54,10 @@ class OrdenesCompraViewModel @Inject constructor(
     private val repository: OrdenCompraRepository,
     private val sessionManager: SessionManager
 ) : ViewModel() {
+    companion object {
+        private const val TAG = "OrdenesCompraVM"
+    }
+
     private val _uiState = MutableStateFlow(OrdenesCompraUiState())
     val uiState: StateFlow<OrdenesCompraUiState> = _uiState
 
@@ -191,7 +196,8 @@ class OrdenesCompraViewModel @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                _uiState.update { it.copy(error = "Error al guardar: ${e.message}") }
+                Log.e(TAG, "save failed", e)
+                _uiState.update { it.copy(error = "Error inesperado. Reintente más tarde.") }
             }
         }
     }
@@ -202,7 +208,8 @@ class OrdenesCompraViewModel @Inject constructor(
                 repository.updateEstado(ocId, newEstado)
                 _uiState.update { it.copy(success = "Estado actualizado a $newEstado") }
             } catch (e: Exception) {
-                _uiState.update { it.copy(error = "Error al cambiar estado: ${e.message}") }
+                Log.e(TAG, "updateEstado failed", e)
+                _uiState.update { it.copy(error = "Error inesperado. Reintente más tarde.") }
             }
         }
     }
@@ -213,7 +220,8 @@ class OrdenesCompraViewModel @Inject constructor(
                 repository.delete(ocId)
                 _uiState.update { it.copy(success = "Orden cancelada") }
             } catch (e: Exception) {
-                _uiState.update { it.copy(error = "Error al cancelar: ${e.message}") }
+                Log.e(TAG, "delete failed", e)
+                _uiState.update { it.copy(error = "Error inesperado. Reintente más tarde.") }
             }
         }
     }

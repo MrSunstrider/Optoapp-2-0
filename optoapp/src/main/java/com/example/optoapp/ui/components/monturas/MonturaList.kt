@@ -7,6 +7,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -21,7 +22,8 @@ fun MonturaListSection(
     restantes: List<Montura>,
     onEdit: (Montura) -> Unit,
     onDelete: (Montura) -> Unit,
-    onEntrada: (Montura) -> Unit
+    onEntrada: (Montura) -> Unit,
+    onSalida: (Montura) -> Unit
 ) {
     LazyColumn(verticalArrangement = Arrangement.spacedBy(OptoTokens.spacing.sm)) {
         if (porReponer.isNotEmpty()) {
@@ -38,7 +40,8 @@ fun MonturaListSection(
                     montura = m,
                     onEdit = { onEdit(m) },
                     onDelete = { onDelete(m) },
-                    onEntrada = { onEntrada(m) }
+                    onEntrada = { onEntrada(m) },
+                    onSalida = { onSalida(m) }
                 )
             }
             item {
@@ -56,7 +59,8 @@ fun MonturaListSection(
                 montura = m,
                 onEdit = { onEdit(m) },
                 onDelete = { onDelete(m) },
-                onEntrada = { onEntrada(m) }
+                onEntrada = { onEntrada(m) },
+                onSalida = { onSalida(m) }
             )
         }
     }
@@ -67,7 +71,8 @@ fun MonturaItem(
     montura: Montura,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
-    onEntrada: () -> Unit
+    onEntrada: () -> Unit,
+    onSalida: () -> Unit
 ) {
     var showDelete by remember { mutableStateOf(false) }
     ElevatedCard(
@@ -85,6 +90,7 @@ fun MonturaItem(
                     Text("SKU: ${montura.sku}")
                 }
                 Row {
+                    IconButton(onClick = onSalida) { Icon(Icons.Default.Remove, contentDescription = "Salida -1") }
                     IconButton(onClick = onEntrada) { Icon(Icons.Default.Add, contentDescription = "Entrada +1") }
                     IconButton(onClick = onEdit) { Icon(Icons.Default.Edit, contentDescription = "Editar") }
                     IconButton(onClick = { showDelete = true }) { Icon(Icons.Default.Delete, contentDescription = "Eliminar") }

@@ -26,9 +26,9 @@ class MonturaInventoryCoordinator @Inject constructor(
     fun getMonturasByOptica(opticaId: String): Flow<List<Montura>> =
         monturaDao.getMonturasByOptica(opticaId)
 
-    suspend fun getMonturaById(id: String): Resource<Montura> {
+    suspend fun getMonturaById(id: String, opticaId: String): Resource<Montura> {
         return try {
-            val montura = monturaDao.getMonturaById(id)
+            val montura = monturaDao.getMonturaByIdForOptica(id, opticaId)
             if (montura != null) Resource.Success(montura)
             else Resource.Error("Montura no encontrada")
         } catch (e: CancellationException) {
@@ -90,7 +90,7 @@ class MonturaInventoryCoordinator @Inject constructor(
         nota: String
     ): Resource<Unit> {
         try {
-            val montura = monturaDao.getMonturaById(monturaId)
+            val montura = monturaDao.getMonturaByIdForOptica(monturaId, opticaId)
                 ?: return Resource.Error("Montura no encontrada: $monturaId")
             if (montura.stockActual < cantidad) {
                 return Resource.Error("Stock insuficiente: actual=${montura.stockActual}, salida=$cantidad")

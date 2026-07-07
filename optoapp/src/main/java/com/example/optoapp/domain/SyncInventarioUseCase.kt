@@ -219,6 +219,11 @@ internal data class MonturaRemota(
     val activo: Boolean = true,
     @SerialName("tipo_aro") val tipoAro: String = "",
     @SerialName("material_montura") val materialMontura: String = "",
+    @SerialName("categoria") val categoria: String = "",
+    @SerialName("coleccion") val coleccion: String = "",
+    @SerialName("temporada") val temporada: String = "",
+    @SerialName("estado_comercial") val estadoComercial: String = "",
+    @SerialName("genero") val genero: String = "",
     @SerialName("optica_id") val opticaId: String,
     @SerialName("updated_at") val updatedAt: String? = null
 ) {
@@ -236,6 +241,11 @@ internal data class MonturaRemota(
         activo = activo,
         tipoAro = tipoAro,
         materialMontura = materialMontura,
+        categoria = categoria,
+        coleccion = coleccion,
+        temporada = temporada,
+        estadoComercial = estadoComercial,
+        genero = genero,
         opticaId = opticaId,
         updatedAt = updatedAt
     )
@@ -255,7 +265,8 @@ data class MonturaMovimientoRemoto(
     @SerialName("optica_id") val opticaId: String,
     @SerialName("user_id") val userId: String = "",
     @SerialName("costo_unitario") val costoUnitario: Double = 0.0,
-    @SerialName("tipo_documento") val tipoDocumento: String = ""
+    @SerialName("tipo_documento") val tipoDocumento: String = "",
+    @SerialName("updated_by") val updatedBy: String? = null
 ) {
     fun toEntity() = MonturaMovimiento(
         id = id,
@@ -270,7 +281,8 @@ data class MonturaMovimientoRemoto(
         opticaId = opticaId,
         userId = userId,
         costoUnitario = costoUnitario,
-        tipoDocumento = tipoDocumento
+        tipoDocumento = tipoDocumento,
+        updatedBy = updatedBy
     )
 }
 
@@ -288,6 +300,11 @@ private fun Montura.toRemoto(): MonturaRemota = MonturaRemota(
     activo = activo,
     tipoAro = tipoAro.trim(),
     materialMontura = materialMontura.trim(),
+    categoria = categoria.trim(),
+    coleccion = coleccion.trim(),
+    temporada = temporada.trim(),
+    estadoComercial = estadoComercial.trim(),
+    genero = genero.trim(),
     opticaId = opticaId,
     updatedAt = updatedAt
 )
@@ -305,6 +322,7 @@ fun MonturaMovimiento.toRemoto(): MonturaMovimientoRemoto = MonturaMovimientoRem
     opticaId = opticaId,
     userId = userId,
     costoUnitario = costoUnitario,
-    tipoDocumento = tipoDocumento
+    tipoDocumento = tipoDocumento,
+    updatedBy = updatedBy
 )
 

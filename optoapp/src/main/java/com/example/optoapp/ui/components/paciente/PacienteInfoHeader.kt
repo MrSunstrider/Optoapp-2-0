@@ -1,20 +1,25 @@
 package com.example.optoapp.ui.components.paciente
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.optoapp.data.Paciente
+import java.util.Locale
 
 @Composable
-fun PacienteInfoHeader(paciente: Paciente) {
+fun PacienteInfoHeader(paciente: Paciente, deudaTotal: Double = 0.0) {
+    val deudaColor = if (deudaTotal > 0) Color(0xFFD32F2F) else Color(0xFF388E3C)
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -44,6 +49,24 @@ fun PacienteInfoHeader(paciente: Paciente) {
             }
 
             Spacer(modifier = Modifier.height(12.dp))
+            // Deuda total
+            if (deudaTotal > 0) {
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = deudaColor.copy(alpha = 0.1f),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Default.AccountBalanceWallet, contentDescription = null, tint = deudaColor, modifier = Modifier.size(20.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text("Deuda total: s/. ${String.format(Locale.getDefault(), "%,.2f", deudaTotal)}", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = deudaColor)
+                    }
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+            }
             HorizontalDivider()
             Spacer(modifier = Modifier.height(12.dp))
 

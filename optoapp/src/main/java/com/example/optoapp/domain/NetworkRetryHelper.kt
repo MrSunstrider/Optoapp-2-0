@@ -34,13 +34,6 @@ class NetworkRetryHelper @Inject constructor() {
                 if (!shouldRetry || attempt == NETWORK_RETRY_ATTEMPTS - 1) throw e
                 val backoffMs = 400L * (attempt + 1)
                 Log.w(TAG, "$opName fallo de red (intento ${attempt + 1}/$NETWORK_RETRY_ATTEMPTS). Reintentando en ${backoffMs}ms")
-            } catch (e: Exception) {
-                Log.e(TAG, "Error inesperado en $opName: ${e.message}", e)
-                lastError = e
-                val shouldRetry = isTransientNetworkError(e)
-                if (!shouldRetry || attempt == NETWORK_RETRY_ATTEMPTS - 1) throw e
-                val backoffMs = 400L * (attempt + 1)
-                Log.w(TAG, "$opName fallo de red (intento ${attempt + 1}/$NETWORK_RETRY_ATTEMPTS). Reintentando en ${backoffMs}ms")
                 delay(backoffMs)
             }
         }
@@ -51,6 +44,8 @@ class NetworkRetryHelper @Inject constructor() {
         val msg = e.message?.lowercase().orEmpty()
         return msg.contains("timeout") ||
             msg.contains("timed out") ||
+            msg.contains("429") ||
+            msg.contains("too many requests") ||
             msg.contains("connect") && msg.contains("failed") ||
             msg.contains("unable to resolve host") ||
             msg.contains("network is unreachable") ||

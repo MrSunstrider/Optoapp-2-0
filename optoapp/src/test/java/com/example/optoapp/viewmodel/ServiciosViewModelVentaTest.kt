@@ -12,6 +12,8 @@ import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.slot
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -29,6 +31,7 @@ import java.time.LocalDate
  * Tests that saveServicio() upserts a Venta locally
  * BEFORE scheduleFinanzasSync, following offline-first design.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 class ServiciosViewModelVentaTest {
 
     private lateinit var repository: OptoRepository
@@ -50,6 +53,9 @@ class ServiciosViewModelVentaTest {
 
         Dispatchers.setMain(testDispatcher)
         repository = mockk(relaxed = true)
+        every { repository.runInTransaction(any()) } answers {
+            (firstArg() as () -> Unit).invoke()
+        }
         sessionManager = mockk()
         postSaveSyncScheduler = mockk(relaxed = true)
 

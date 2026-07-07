@@ -18,5 +18,7 @@ data class GastoOperativoEntity(
     val fecha: LocalDate,
     val fechaProgramada: LocalDate? = null,
     val nota: String? = null,
+    val esRecurrente: Boolean = false,
+    val frecuencia: String = "mensual",
     val createdAt: String? = null
 )

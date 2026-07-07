@@ -998,3 +998,9 @@ val MIGRATION_33_34 = object : Migration(33, 34) {
         """.trimIndent())
     }
 }
+
+val MIGRATION_34_35 = object : Migration(34, 35) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE dispensaciones ADD COLUMN filtro_discromatopsia_tipo TEXT NOT NULL DEFAULT ''")
+    }
+}

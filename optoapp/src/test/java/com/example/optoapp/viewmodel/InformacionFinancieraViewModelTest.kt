@@ -16,6 +16,8 @@ import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.slot
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -31,6 +33,7 @@ import org.junit.Before
 import org.junit.Test
 import java.time.LocalDate
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class InformacionFinancieraViewModelTest {
 
     private lateinit var repository: DispensacionFinancieraRepository
@@ -46,6 +49,7 @@ class InformacionFinancieraViewModelTest {
     private val testContexto = ContextoFinanciero(
         ot = "OT-2026-0001",
         pacienteNombre = "Juan Perez",
+        pacienteId = "pac-1",
         fecha = testDate,
         descripcion = "Monofocal"
     )
@@ -71,6 +75,9 @@ class InformacionFinancieraViewModelTest {
 
         Dispatchers.setMain(testDispatcher)
         repository = mockk(relaxed = true)
+        every { repository.runInTransaction(any()) } answers {
+            (firstArg() as () -> Unit).invoke()
+        }
         sessionManager = mockk()
         postSaveSyncScheduler = mockk(relaxed = true)
 

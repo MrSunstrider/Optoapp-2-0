@@ -133,5 +133,6 @@ class ObtenerAnalisisMensualUseCaseTest {
 
         val result = useCase("optica1", LocalDate.of(2026, 7, 1))
         assertTrue(result is Resource.Error)
+        assertEquals("No se pudieron cargar los datos del mes", (result as Resource.Error).message)
     }
 }

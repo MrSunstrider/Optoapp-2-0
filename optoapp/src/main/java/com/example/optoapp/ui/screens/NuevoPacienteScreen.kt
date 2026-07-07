@@ -20,6 +20,7 @@ import com.example.optoapp.viewmodel.PacienteViewModel
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.example.optoapp.ui.components.paciente.PacienteFormSections
 import com.example.optoapp.util.DateUtils
+import com.example.optoapp.ui.components.OptoDatePickerDialog
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.UUID
@@ -74,25 +75,13 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
     }
 
     var showDatePicker by remember { mutableStateOf(false) }
-    val datePickerState = rememberDatePickerState(
-        initialSelectedDateMillis = DateUtils.localDateToPickerMillis(fechaCreacion),
-        yearRange = 1920..2080
-    )
 
     if (showDatePicker) {
-        DatePickerDialog(
-            onDismissRequest = { showDatePicker = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    datePickerState.selectedDateMillis?.let {
-                        fechaCreacion = DateUtils.pickerMillisToLocalDate(it)
-                    }
-                    showDatePicker = false
-                }) { Text("OK") }
-            }
-        ) {
-            DatePicker(state = datePickerState)
-        }
+        OptoDatePickerDialog(
+            initialDate = fechaCreacion,
+            onDateSelected = { fechaCreacion = it },
+            onDismiss = { showDatePicker = false }
+        )
     }
 
     if (showDuplicateHoWarning) {

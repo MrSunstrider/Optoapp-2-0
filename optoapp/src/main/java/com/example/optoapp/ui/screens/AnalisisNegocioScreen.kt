@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.optoapp.data.AppRoles
@@ -27,6 +28,7 @@ import com.example.optoapp.ui.theme.TextDark
 import com.example.optoapp.ui.theme.WarningAmber
 import com.example.optoapp.viewmodel.AnalisisNegocioViewModel
 import com.example.optoapp.viewmodel.AuthViewModel
+import com.example.optoapp.viewmodel.GastosViewModel
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
@@ -35,9 +37,12 @@ import java.util.Locale
 fun AnalisisNegocioScreen(
     navController: NavController,
     viewModel: AnalisisNegocioViewModel = hiltViewModel(),
-    authViewModel: AuthViewModel = hiltViewModel()
+    authViewModel: AuthViewModel = hiltViewModel(),
+    gastosViewModel: GastosViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val gastos by gastosViewModel.allGastos.collectAsState()
+    val gastosUiState by gastosViewModel.uiState.collectAsState()
     val opticaRol by authViewModel.opticaRol.collectAsState(initial = "admin")
     val canView = AppRoles.canViewBiAndReports(opticaRol)
 
@@ -168,17 +173,107 @@ fun AnalisisNegocioScreen(
                 }
             }
 
+            // ── Gastos del mes ──
+            val now = java.time.LocalDate.now()
+            val gastosMes = gastos.filter { it.fecha.month == now.month && it.fecha.year == now.year }
+            val totalGastos = gastosMes.sumOf { it.monto }
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Column(modifier = Modifier.padding(14.dp)) {
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.MoneyOff, contentDescription = null, tint = AlertRed, modifier = Modifier.size(20.dp))
+                            Spacer(Modifier.width(8.dp))
+                            Text("Gastos del mes", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        }
+                        Text("s/. ${formatNumber(totalGastos)}", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = AlertRed)
+                    }
+                    if (gastosMes.isNotEmpty()) {
+                        Spacer(Modifier.height(6.dp))
+                        gastosMes.sortedByDescending { it.fecha }.take(3).forEach { g ->
+                            Row(Modifier.fillMaxWidth().padding(vertical = 1.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text("${g.categoria}${if (!g.descripcion.isNullOrBlank()) " · ${g.descripcion}" else ""}", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
+                                Text("s/. ${formatNumber(g.monto)}", fontSize = 11.sp, color = AlertRed)
+                            }
+                        }
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedButton(onClick = { gastosViewModel.showNewGasto() }, modifier = Modifier.fillMaxWidth()) {
+                        Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(4.dp))
+                        Text("Agregar gasto")
+                    }
+                }
+            }
+
             if (uiState.analisis != null) {
                 Button(
                     onClick = { navController.navigate("analisis_detalle") },
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                 ) {
-                    Icon(Icons.Default.TrendingUp, contentDescription = null)
+                    @Suppress("DEPRECATION") Icon(Icons.Default.TrendingUp, contentDescription = null)
                     Spacer(Modifier.width(8.dp))
                     Text("Ver análisis completo")
                 }
             }
+        }
+
+        // ── Gastos dialog ──
+        if (gastosUiState.showDialog) {
+            var showDatePicker by remember { mutableStateOf(false) }
+            if (showDatePicker) {
+                com.example.optoapp.ui.components.OptoDatePickerDialog(
+                    initialDate = gastosUiState.fecha,
+                    onDateSelected = { gastosViewModel.updateFecha(it) },
+                    onDismiss = { showDatePicker = false }
+                )
+            }
+            AlertDialog(
+                onDismissRequest = { gastosViewModel.dismissDialog() },
+                title = { Text("Nuevo Gasto", fontWeight = FontWeight.Bold) },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        var expanded by remember { mutableStateOf(false) }
+                        ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = !expanded }) {
+                            OutlinedTextField(
+                                value = gastosUiState.categoria, onValueChange = {}, readOnly = true,
+                                label = { Text("Categoría") },
+                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                                modifier = Modifier.fillMaxWidth().menuAnchor()
+                            )
+                            ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                                gastosViewModel.categorias.forEach { cat ->
+                                    DropdownMenuItem(text = { Text(cat) }, onClick = { gastosViewModel.updateCategoria(cat); expanded = false })
+                                }
+                            }
+                        }
+                        OutlinedTextField(
+                            value = gastosUiState.monto, onValueChange = { gastosViewModel.updateMonto(it) },
+                            label = { Text("Monto") },
+                            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        OutlinedTextField(value = gastosUiState.descripcion, onValueChange = { gastosViewModel.updateDescripcion(it) }, label = { Text("Descripción") }, modifier = Modifier.fillMaxWidth())
+                        OutlinedButton(onClick = { showDatePicker = true }, modifier = Modifier.fillMaxWidth()) {
+                            Icon(Icons.Default.DateRange, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text(com.example.optoapp.util.DateUtils.formatLocalized(gastosUiState.fecha))
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Switch(checked = gastosUiState.esRecurrente, onCheckedChange = { gastosViewModel.toggleRecurrente() })
+                            Spacer(Modifier.width(8.dp))
+                            Text("Gasto recurrente mensual", fontSize = 13.sp)
+                        }
+                    }
+                },
+                confirmButton = { Button(onClick = { gastosViewModel.save() }) { Text("Guardar") } },
+                dismissButton = { TextButton(onClick = { gastosViewModel.dismissDialog() }) { Text("Cancelar") } }
+            )
         }
     }
 }
@@ -189,7 +284,7 @@ private fun MonthSwitcher(
     onPrevious: () -> Unit,
     onNext: () -> Unit
 ) {
-    val formatter = DateTimeFormatter.ofPattern("MMMM yyyy", Locale("es", "PE"))
+    val formatter = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.forLanguageTag("es-PE"))
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
@@ -200,7 +295,7 @@ private fun MonthSwitcher(
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = onPrevious) {
-                Icon(Icons.Default.KeyboardArrowLeft, contentDescription = "Mes anterior")
+                @Suppress("DEPRECATION") Icon(Icons.Default.KeyboardArrowLeft, contentDescription = "Mes anterior")
             }
             Text(
                 text = currentMonth.format(formatter).replaceFirstChar { it.uppercase() },
@@ -208,7 +303,7 @@ private fun MonthSwitcher(
                 fontWeight = FontWeight.SemiBold
             )
             IconButton(onClick = onNext) {
-                Icon(Icons.Default.KeyboardArrowRight, contentDescription = "Mes siguiente")
+                @Suppress("DEPRECATION") Icon(Icons.Default.KeyboardArrowRight, contentDescription = "Mes siguiente")
             }
         }
     }
@@ -216,7 +311,7 @@ private fun MonthSwitcher(
 
 @Composable
 private fun ResumenCard(analisis: AnalisisMensual) {
-    val saldo = analisis.ventasMes - analisis.cobrosMes
+    val saldo = analisis.saldoPendiente
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -252,15 +347,29 @@ private fun ResumenCard(analisis: AnalisisMensual) {
                 shape = RoundedCornerShape(12.dp)
             ) {
                 Column(modifier = Modifier.padding(12.dp)) {
-                    Text("Margen", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("Margen neto", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        "De cada S/ 100 que vendés, te quedan S/ ${analisis.margenNetoPct.toInt()}",
+                        "De cada S/ 100 que vendés, te quedan S/ ${Math.round(analisis.margenNetoPct)} (margen neto)",
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = if (analisis.margenNetoPct >= 25) PositiveGreen else WarningAmber
                     )
                 }
+            }
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                MetricItem(
+                    modifier = Modifier.weight(1f),
+                    label = "Ticket prom.",
+                    value = "S/ ${formatNumber(analisis.ticketPromedio)}",
+                    color = MaterialTheme.colorScheme.primary
+                )
+                MetricItem(
+                    modifier = Modifier.weight(1f),
+                    label = "Ventas",
+                    value = "${analisis.cantidadVentas}",
+                    color = MaterialTheme.colorScheme.primary
+                )
             }
         }
     }

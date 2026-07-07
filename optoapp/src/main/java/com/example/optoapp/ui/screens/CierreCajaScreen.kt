@@ -28,6 +28,7 @@ import com.example.optoapp.viewmodel.CierreCajaViewModel
 import com.example.optoapp.util.ArqueoCajaPdfGenerator
 import com.example.optoapp.util.DateUtils
 import com.example.optoapp.ui.components.OptoTopAppBar
+import com.example.optoapp.ui.components.OptoDatePickerDialog
 import com.example.optoapp.ui.components.OptoCard
 import com.example.optoapp.ui.components.cierre_caja.ArqueoSection
 import com.example.optoapp.ui.components.cierre_caja.ResumenCard
@@ -52,10 +53,6 @@ fun CierreCajaScreen(
     val context = LocalContext.current
     val scrollState = rememberScrollState()
 
-    val datePickerState = rememberDatePickerState(
-        initialSelectedDateMillis = DateUtils.localDateToPickerMillis(uiState.fecha)
-    )
-
     LaunchedEffect(uiState.fecha, opticaId) {
         if (opticaId.isNotBlank()) {
             viewModel.observeArqueoForDate(uiState.fecha, opticaId)
@@ -64,17 +61,11 @@ fun CierreCajaScreen(
     }
 
     if (showDatePicker) {
-        DatePickerDialog(
-            onDismissRequest = { showDatePicker = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    datePickerState.selectedDateMillis?.let { viewModel.setFecha(DateUtils.pickerMillisToLocalDate(it)) }
-                    showDatePicker = false
-                }) { Text("OK") }
-            }
-        ) {
-            DatePicker(state = datePickerState)
-        }
+        OptoDatePickerDialog(
+            initialDate = uiState.fecha,
+            onDateSelected = { viewModel.setFecha(it) },
+            onDismiss = { showDatePicker = false }
+        )
     }
 
     fun exportPdf(arqueo: ArqueoCaja) {

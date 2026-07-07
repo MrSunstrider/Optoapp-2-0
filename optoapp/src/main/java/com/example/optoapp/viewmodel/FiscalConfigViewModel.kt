@@ -1,5 +1,6 @@
 package com.example.optoapp.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.optoapp.data.MembershipRepository
@@ -69,6 +70,10 @@ class FiscalConfigViewModel @Inject constructor(
     private val membershipRepository: MembershipRepository,
     private val store: OpticaFiscalSettingsStore
 ) : ViewModel() {
+
+    companion object {
+        private const val TAG = "FiscalConfigVM"
+    }
 
     private val _status = MutableStateFlow(FiscalConfigUi())
     private val _draft = MutableStateFlow(FiscalDraft())
@@ -206,16 +211,18 @@ class FiscalConfigViewModel @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: IOException) {
+                Log.e(TAG, "save failed: IO error", e)
                 _status.value = _status.value.copy(
                     loading = false,
                     message = null,
-                    error = e.localizedMessage ?: "Ocurrió un error inesperado al guardar datos fiscales."
+                    error = "Error inesperado. Reintente más tarde."
                 )
             } catch (e: Exception) {
+                Log.e(TAG, "save failed", e)
                 _status.value = _status.value.copy(
                     loading = false,
                     message = null,
-                    error = e.localizedMessage ?: "Ocurrió un error inesperado al guardar datos fiscales."
+                    error = "Error inesperado. Reintente más tarde."
                 )
             }
         }

@@ -20,8 +20,6 @@ import java.time.LocalDate
 @RunWith(RobolectricTestRunner::class)
 class GenerarRecomendacionesUseCaseTest {
 
-    private val analisisUseCase: ObtenerAnalisisMensualUseCase = mockk(relaxed = true)
-    private val deudoresUseCase: ObtenerDeudoresUseCase = mockk(relaxed = true)
     private val configDao: ConfiguracionFinancieraDao = mockk(relaxed = true)
 
     private lateinit var useCase: GenerarRecomendacionesUseCase
@@ -39,7 +37,7 @@ class GenerarRecomendacionesUseCaseTest {
 
     @Before
     fun setUp() {
-        useCase = GenerarRecomendacionesUseCase(analisisUseCase, deudoresUseCase, configDao)
+        useCase = GenerarRecomendacionesUseCase(configDao)
     }
 
     // ── Helpers ────────────────────────────────────────────────────────────
@@ -93,12 +91,8 @@ class GenerarRecomendacionesUseCaseTest {
     )
 
     private fun mockDeps(
-        analisis: AnalisisMensual = cleanAnalisis(),
-        deudores: List<Deudor> = emptyList(),
         config: ConfiguracionFinancieraEntity = defaultConfig
     ) {
-        coEvery { analisisUseCase.invoke("optica1", testMes) } returns Resource.Success(analisis)
-        coEvery { deudoresUseCase.invoke("optica1") } returns Resource.Success(deudores)
         coEvery { configDao.getByOpticaIdOnce("optica1") } returns config
     }
 
@@ -113,9 +107,9 @@ class GenerarRecomendacionesUseCaseTest {
             deudor("Juan", saldo = 2000.0, dias = 15),
             deudor("Maria", saldo = 2200.0, dias = 10)
         )
-        mockDeps(deudores = deudores)
+        mockDeps()
 
-        val lista = listaDe(useCase.invoke("optica1", testMes))
+        val lista = listaDe(useCase.invoke(cleanAnalisis(), deudores, "optica1"))
         val cobrar = lista.find { it.tipo == RecomendacionTipo.COBRAR }
         assertNotNull("COBRAR recommendation should exist", cobrar)
         assertEquals(Prioridad.ALTA, cobrar!!.prioridad)
@@ -129,9 +123,9 @@ class GenerarRecomendacionesUseCaseTest {
             deudor("Juan", saldo = 500.0, dias = 45),
             deudor("Maria", saldo = 1000.0, dias = 10)
         )
-        mockDeps(deudores = deudores)
+        mockDeps()
 
-        val lista = listaDe(useCase.invoke("optica1", testMes))
+        val lista = listaDe(useCase.invoke(cleanAnalisis(), deudores, "optica1"))
         val cobrar = lista.find { it.tipo == RecomendacionTipo.COBRAR }
         assertNotNull("COBRAR should fire on old debtor", cobrar)
         assertEquals(Prioridad.ALTA, cobrar!!.prioridad)
@@ -139,8 +133,8 @@ class GenerarRecomendacionesUseCaseTest {
 
     @Test
     fun cobrar_whenNoDebtors_returnsNull() = runBlocking {
-        mockDeps(deudores = emptyList())
-        val lista = listaDe(useCase.invoke("optica1", testMes))
+        mockDeps()
+        val lista = listaDe(useCase.invoke(cleanAnalisis(), emptyList(), "optica1"))
         assertNull("COBRAR should not fire with empty deudores", lista.find { it.tipo == RecomendacionTipo.COBRAR })
     }
 
@@ -151,9 +145,9 @@ class GenerarRecomendacionesUseCaseTest {
         val categorias = listOf(
             categoria("Monturas Economicas", ventas = 960.0, costos = 880.0, margenPct = 8.3)
         )
-        mockDeps(analisis = cleanAnalisis(categorias = categorias))
+        mockDeps()
 
-        val lista = listaDe(useCase.invoke("optica1", testMes))
+        val lista = listaDe(useCase.invoke(cleanAnalisis(categorias = categorias), emptyList(), "optica1"))
         val mejorar = lista.find { it.tipo == RecomendacionTipo.MEJORAR_PRECIO }
         assertNotNull("MEJORAR_PRECIO should fire", mejorar)
         assertEquals(Prioridad.ALTA, mejorar!!.prioridad)
@@ -165,9 +159,9 @@ class GenerarRecomendacionesUseCaseTest {
         val categorias = listOf(
             categoria("Accesorios", ventas = 2.0, costos = 1.9, margenPct = 5.0)
         )
-        mockDeps(analisis = cleanAnalisis(categorias = categorias))
+        mockDeps()
 
-        val lista = listaDe(useCase.invoke("optica1", testMes))
+        val lista = listaDe(useCase.invoke(cleanAnalisis(categorias = categorias), emptyList(), "optica1"))
         assertNull(lista.find { it.tipo == RecomendacionTipo.MEJORAR_PRECIO })
     }
 
@@ -176,9 +170,9 @@ class GenerarRecomendacionesUseCaseTest {
         val categorias = listOf(
             categoria("Lentes", ventas = 1000.0, costos = 700.0, margenPct = 30.0)
         )
-        mockDeps(analisis = cleanAnalisis(categorias = categorias))
+        mockDeps()
 
-        val lista = listaDe(useCase.invoke("optica1", testMes))
+        val lista = listaDe(useCase.invoke(cleanAnalisis(categorias = categorias), emptyList(), "optica1"))
         assertNull(lista.find { it.tipo == RecomendacionTipo.MEJORAR_PRECIO })
     }
 
@@ -191,9 +185,9 @@ class GenerarRecomendacionesUseCaseTest {
             stockItem("Modelo B", dias = 210, costo = 80.0),
             stockItem("Modelo C", dias = 45, costo = 100.0)
         )
-        mockDeps(analisis = cleanAnalisis(stockEstancado = stock))
+        mockDeps()
 
-        val lista = listaDe(useCase.invoke("optica1", testMes))
+        val lista = listaDe(useCase.invoke(cleanAnalisis(stockEstancado = stock), emptyList(), "optica1"))
         val liquidar = lista.find { it.tipo == RecomendacionTipo.LIQUIDAR_STOCK }
         assertNotNull("LIQUIDAR_STOCK should fire", liquidar)
         assertEquals(Prioridad.MEDIA, liquidar!!.prioridad)
@@ -205,16 +199,16 @@ class GenerarRecomendacionesUseCaseTest {
     @Test
     fun liquidarStock_whenAllItemsBelowThreshold_returnsNull() = runBlocking {
         val stock = listOf(stockItem("Modelo A", dias = 30), stockItem("Modelo B", dias = 90))
-        mockDeps(analisis = cleanAnalisis(stockEstancado = stock))
+        mockDeps()
 
-        val lista = listaDe(useCase.invoke("optica1", testMes))
+        val lista = listaDe(useCase.invoke(cleanAnalisis(stockEstancado = stock), emptyList(), "optica1"))
         assertNull(lista.find { it.tipo == RecomendacionTipo.LIQUIDAR_STOCK })
     }
 
     @Test
     fun liquidarStock_whenEmptyList_returnsNull() = runBlocking {
-        mockDeps(analisis = cleanAnalisis(stockEstancado = emptyList()))
-        val lista = listaDe(useCase.invoke("optica1", testMes))
+        mockDeps()
+        val lista = listaDe(useCase.invoke(cleanAnalisis(stockEstancado = emptyList()), emptyList(), "optica1"))
         assertNull(lista.find { it.tipo == RecomendacionTipo.LIQUIDAR_STOCK })
     }
 
@@ -226,9 +220,9 @@ class GenerarRecomendacionesUseCaseTest {
             categoria("Lentes Progresivos", ventas = 4800.0, costos = 2640.0, margenPct = 45.0),
             categoria("Monturas Estandar", ventas = 1000.0, costos = 600.0, margenPct = 40.0)
         )
-        mockDeps(analisis = cleanAnalisis(categorias = categorias))
+        mockDeps()
 
-        val lista = listaDe(useCase.invoke("optica1", testMes))
+        val lista = listaDe(useCase.invoke(cleanAnalisis(categorias = categorias), emptyList(), "optica1"))
         val vender = lista.find { it.tipo == RecomendacionTipo.VENDER_MAS_DE }
         assertNotNull("VENDER_MAS_DE should fire", vender)
         assertEquals(Prioridad.MEDIA, vender!!.prioridad)
@@ -242,9 +236,9 @@ class GenerarRecomendacionesUseCaseTest {
             categoria("Nicho", ventas = 100.0, costos = 50.0, margenPct = 50.0),
             categoria("Volumen", ventas = 10000.0, costos = 7000.0, margenPct = 30.0)
         )
-        mockDeps(analisis = cleanAnalisis(categorias = categorias))
+        mockDeps()
 
-        val lista = listaDe(useCase.invoke("optica1", testMes))
+        val lista = listaDe(useCase.invoke(cleanAnalisis(categorias = categorias), emptyList(), "optica1"))
         assertNull(lista.find { it.tipo == RecomendacionTipo.VENDER_MAS_DE })
     }
 
@@ -253,9 +247,9 @@ class GenerarRecomendacionesUseCaseTest {
         val categorias = listOf(
             categoria("Baratija", ventas = 3.0, costos = 1.65, margenPct = 45.0)
         )
-        mockDeps(analisis = cleanAnalisis(categorias = categorias))
+        mockDeps()
 
-        val lista = listaDe(useCase.invoke("optica1", testMes))
+        val lista = listaDe(useCase.invoke(cleanAnalisis(categorias = categorias), emptyList(), "optica1"))
         assertNull(lista.find { it.tipo == RecomendacionTipo.VENDER_MAS_DE })
     }
 
@@ -263,9 +257,9 @@ class GenerarRecomendacionesUseCaseTest {
 
     @Test
     fun alertaCaida_whenDropExceedsThreshold_returnsRecomendacion() = runBlocking {
-        mockDeps(analisis = cleanAnalisis(variacionVentasPct = -15.0))
+        mockDeps()
 
-        val lista = listaDe(useCase.invoke("optica1", testMes))
+        val lista = listaDe(useCase.invoke(cleanAnalisis(variacionVentasPct = -15.0), emptyList(), "optica1"))
         val alerta = lista.find { it.tipo == RecomendacionTipo.ALERTA_CAIDA }
         assertNotNull("ALERTA_CAIDA should fire", alerta)
         assertEquals(Prioridad.ALTA, alerta!!.prioridad)
@@ -274,15 +268,15 @@ class GenerarRecomendacionesUseCaseTest {
 
     @Test
     fun alertaCaida_whenDropBelowThreshold_returnsNull() = runBlocking {
-        mockDeps(analisis = cleanAnalisis(variacionVentasPct = -3.0))
-        val lista = listaDe(useCase.invoke("optica1", testMes))
+        mockDeps()
+        val lista = listaDe(useCase.invoke(cleanAnalisis(variacionVentasPct = -3.0), emptyList(), "optica1"))
         assertNull(lista.find { it.tipo == RecomendacionTipo.ALERTA_CAIDA })
     }
 
     @Test
     fun alertaCaida_whenNullVariation_returnsNull() = runBlocking {
-        mockDeps(analisis = cleanAnalisis(variacionVentasPct = null))
-        val lista = listaDe(useCase.invoke("optica1", testMes))
+        mockDeps()
+        val lista = listaDe(useCase.invoke(cleanAnalisis(variacionVentasPct = null), emptyList(), "optica1"))
         assertNull(lista.find { it.tipo == RecomendacionTipo.ALERTA_CAIDA })
     }
 
@@ -290,9 +284,9 @@ class GenerarRecomendacionesUseCaseTest {
 
     @Test
     fun reducirGasto_whenRatioExceeds40Percent_returnsRecomendacion() = runBlocking {
-        mockDeps(analisis = cleanAnalisis(ventasMes = 9400.0, gastosMes = 3900.0))
+        mockDeps()
 
-        val lista = listaDe(useCase.invoke("optica1", testMes))
+        val lista = listaDe(useCase.invoke(cleanAnalisis(ventasMes = 9400.0, gastosMes = 3900.0), emptyList(), "optica1"))
         val reducir = lista.find { it.tipo == RecomendacionTipo.REDUCIR_GASTO }
         assertNotNull("REDUCIR_GASTO should fire", reducir)
         assertEquals(Prioridad.MEDIA, reducir!!.prioridad)
@@ -301,15 +295,15 @@ class GenerarRecomendacionesUseCaseTest {
 
     @Test
     fun reducirGasto_whenRatioBelow40Percent_returnsNull() = runBlocking {
-        mockDeps(analisis = cleanAnalisis(ventasMes = 10000.0, gastosMes = 1000.0))
-        val lista = listaDe(useCase.invoke("optica1", testMes))
+        mockDeps()
+        val lista = listaDe(useCase.invoke(cleanAnalisis(ventasMes = 10000.0, gastosMes = 1000.0), emptyList(), "optica1"))
         assertNull(lista.find { it.tipo == RecomendacionTipo.REDUCIR_GASTO })
     }
 
     @Test
     fun reducirGasto_whenVentasMesIsZero_returnsNull() = runBlocking {
-        mockDeps(analisis = cleanAnalisis(ventasMes = 0.0, gastosMes = 5000.0))
-        val lista = listaDe(useCase.invoke("optica1", testMes))
+        mockDeps()
+        val lista = listaDe(useCase.invoke(cleanAnalisis(ventasMes = 0.0, gastosMes = 5000.0), emptyList(), "optica1"))
         assertNull(lista.find { it.tipo == RecomendacionTipo.REDUCIR_GASTO })
     }
 
@@ -328,9 +322,9 @@ class GenerarRecomendacionesUseCaseTest {
             ventasMes = 12000.0, gastosMes = 6000.0, variacionVentasPct = -15.0,
             categorias = categorias, stockEstancado = stock
         )
-        mockDeps(analisis = analisis, deudores = deudores)
+        mockDeps()
 
-        val lista = listaDe(useCase.invoke("optica1", testMes))
+        val lista = listaDe(useCase.invoke(analisis, deudores, "optica1"))
         assertEquals(5, lista.size)
         assertNull(lista.find { it.tipo == RecomendacionTipo.REDUCIR_GASTO })
     }
@@ -338,16 +332,38 @@ class GenerarRecomendacionesUseCaseTest {
     @Test
     fun invoke_whenNoRulesFire_returnsEmptyList() = runBlocking {
         mockDeps()
-        val lista = listaDe(useCase.invoke("optica1", testMes))
+        val lista = listaDe(useCase.invoke(cleanAnalisis(), emptyList(), "optica1"))
         assertTrue(lista.isEmpty())
     }
 
     @Test
-    fun invoke_whenAnalisisError_returnsError() = runBlocking {
-        coEvery { analisisUseCase.invoke("optica1", testMes) } returns Resource.Error("sin conexion")
-        val result = useCase.invoke("optica1", testMes)
+    fun invoke_whenAnalisisIsNullWithDeudores_returnsCobrarOnly() = runBlocking {
+        mockDeps()
+        val deudores = listOf(deudor("Juan", saldo = 3500.0, dias = 45))
+        val result = useCase.invoke(null, deudores, "optica1")
+        assertTrue(result is Resource.Success)
+        val lista = (result as Resource.Success).data!!
+        assertEquals(1, lista.size)
+        assertEquals(RecomendacionTipo.COBRAR, lista[0].tipo)
+    }
+
+    @Test
+    fun invoke_whenAnalisisIsNullWithoutDeudores_returnsEmptyList() = runBlocking {
+        mockDeps()
+        val deudores = listOf(deudor("Juan", saldo = 100.0, dias = 5))
+        // deudaTotal (100) < deudaTotalAlertaMonto (3000) and !tieneVieja → cobrar returns null
+        val result = useCase.invoke(null, deudores, "optica1")
+        assertTrue(result is Resource.Success)
+        val lista = (result as Resource.Success).data!!
+        assertTrue(lista.isEmpty())
+    }
+
+    @Test
+    fun invoke_whenBothNull_returnsError() = runBlocking {
+        mockDeps()
+        val result = useCase.invoke(null, emptyList(), "optica1")
         assertTrue(result is Resource.Error)
-        assertEquals("sin conexion", (result as Resource.Error).message)
+        assertEquals("Datos insuficientes para generar recomendaciones", (result as Resource.Error).message)
     }
 
     @Test
@@ -361,9 +377,9 @@ class GenerarRecomendacionesUseCaseTest {
             ventasMes = 10000.0, variacionVentasPct = -15.0,
             categorias = categorias, stockEstancado = stock
         )
-        mockDeps(analisis = analisis, deudores = deudores)
+        mockDeps()
 
-        val lista = listaDe(useCase.invoke("optica1", testMes))
+        val lista = listaDe(useCase.invoke(analisis, deudores, "optica1"))
         assertEquals(4, lista.size)
         assertEquals(Prioridad.ALTA, lista[0].prioridad)
         assertEquals(Prioridad.ALTA, lista[1].prioridad)
@@ -384,9 +400,9 @@ class GenerarRecomendacionesUseCaseTest {
             ventasMes = 12000.0, gastosMes = 6000.0, variacionVentasPct = -15.0,
             categorias = categorias, stockEstancado = stock
         )
-        mockDeps(analisis = analisis, deudores = deudores)
+        mockDeps()
 
-        val lista = listaDe(useCase.invoke("optica1", testMes))
+        val lista = listaDe(useCase.invoke(analisis, deudores, "optica1"))
         assertEquals(5, lista.size)
         val tiposPresentes = lista.map { it.tipo }.toSet()
         assertEquals(5, tiposPresentes.size)
@@ -396,7 +412,7 @@ class GenerarRecomendacionesUseCaseTest {
     @Test
     fun invoke_readsConfigFromDao() = runBlocking {
         mockDeps()
-        useCase.invoke("optica1", testMes)
+        useCase.invoke(cleanAnalisis(), emptyList(), "optica1")
         coVerify(exactly = 1) { configDao.getByOpticaIdOnce("optica1") }
     }
 }

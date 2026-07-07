@@ -55,6 +55,10 @@ open class OptoRepository(
         private const val TAG = "OptoRepository"
     }
 
+    fun runInTransaction(block: () -> Unit) {
+        database.runInTransaction(block)
+    }
+
     fun pacientesFlowForOptica(opticaId: String) = pacienteRepo.pacientesFlowForOptica(opticaId)
     fun countPacientesForOptica(opticaId: String) = pacienteRepo.countPacientesForOptica(opticaId)
     fun searchPacientesForOptica(opticaId: String, query: String) = pacienteRepo.searchPacientesForOptica(opticaId, query)
@@ -102,11 +106,15 @@ open class OptoRepository(
     fun getPagosByDispensacion(dispensacionId: String) = dispensacionRepo.getPagosByDispensacion(dispensacionId)
     suspend fun insertPago(pago: Pago) { val stamped = pago.copy(updatedAt = Instant.now().toString()); dispensacionRepo.insertPago(stamped); postSaveSyncScheduler.get().scheduleFinanzasSync(stamped.opticaId) }
     suspend fun updatePago(pago: Pago) { val stamped = pago.copy(updatedAt = Instant.now().toString()); dispensacionRepo.updatePago(stamped); postSaveSyncScheduler.get().scheduleFinanzasSync(stamped.opticaId) }
-    suspend fun getPagoById(id: String) = dispensacionRepo.getPagoById(id)
-    suspend fun reassignPagosDispensacion(oldDispensacionId: String, newDispensacionId: String) = dispensacionRepo.reassignPagosDispensacion(oldDispensacionId, newDispensacionId)
+    suspend fun getPagoById(id: String, opticaId: String) = dispensacionRepo.getPagoById(id, opticaId)
+    suspend fun reassignPagosDispensacion(oldDispensacionId: String, newDispensacionId: String, opticaId: String) = dispensacionRepo.reassignPagosDispensacion(oldDispensacionId, newDispensacionId, opticaId)
     suspend fun deletePagoRegistrandoAnulacionEnCaja(pago: Pago, opticaId: String) = dispensacionRepo.deletePagoRegistrandoAnulacionEnCaja(pago, opticaId)
     suspend fun deletePago(pago: Pago) = dispensacionRepo.deletePago(pago)
     fun getPagosByServicioExtra(servicioExtraId: String) = dispensacionRepo.getPagosByServicioExtra(servicioExtraId)
+    @Deprecated(
+        message = "Use getPagosByDateRangeForOptica to enforce multi-tenant isolation",
+        replaceWith = ReplaceWith("getPagosByDateRangeForOptica(start, end, opticaId)")
+    )
     fun getPagosByDateRange(start: LocalDate, end: LocalDate) = dispensacionRepo.getPagosByDateRange(start, end)
     fun getPagosByDateRangeForOptica(start: LocalDate, end: LocalDate, opticaId: String) = dispensacionRepo.getPagosByDateRangeForOptica(start, end, opticaId)
 
@@ -118,12 +126,23 @@ open class OptoRepository(
     suspend fun updateServicio(servicio: ServicioExtra) { val stamped = servicio.copy(updatedAt = Instant.now().toString()); dispensacionRepo.updateServicio(stamped); postSaveSyncScheduler.get().scheduleFinanzasSync(stamped.opticaId) }
     suspend fun deleteServicio(servicio: ServicioExtra) { dispensacionRepo.deleteServicio(servicio); syncStateTracker.markDeleted(servicio.opticaId, "servicio_extra", servicio.id); postSaveSyncScheduler.get().scheduleFinanzasSync(servicio.opticaId) }
 
-    suspend fun upsertVenta(venta: Venta) { val stamped = venta.copy(updatedAt = Instant.now().toString()); ventaDao.upsertVenta(stamped); postSaveSyncScheduler.get().scheduleFinanzasSync(stamped.opticaId) }
+    suspend fun upsertVenta(venta: Venta) {
+        val costoPreservado = venta.costoUnitarioSnapshot
+            ?: ventaDao.getVentaById(venta.id)?.costoUnitarioSnapshot
+        val stamped = venta.copy(
+            costoUnitarioSnapshot = costoPreservado,
+            updatedAt = Instant.now().toString()
+        )
+        ventaDao.upsertVenta(stamped)
+        postSaveSyncScheduler.get().scheduleFinanzasSync(stamped.opticaId)
+    }
 
-    suspend fun deleteVentaById(id: String) { ventaDao.deleteById(id); ventaDao.deleteByOrigenId(id.removePrefix("v_disp_").removePrefix("v_serv_")) }
+    suspend fun deleteVentaById(id: String, origenId: String, opticaId: String) { ventaDao.deleteById(id); ventaDao.deleteByOrigenId(origenId); syncStateTracker.markDeleted(opticaId, "venta", id) }
+
+    suspend fun getVentasForOptica(opticaId: String): List<Venta> = ventaDao.getAllVentasByOptica(opticaId)
 
     fun getMonturasByOptica(opticaId: String) = monturaCoordinator.getMonturasByOptica(opticaId)
-    suspend fun getMonturaById(id: String) = monturaCoordinator.getMonturaById(id)
+    suspend fun getMonturaById(id: String, opticaId: String) = monturaCoordinator.getMonturaById(id, opticaId)
     suspend fun insertMontura(montura: Montura) = monturaCoordinator.insertMontura(montura)
     suspend fun updateMontura(montura: Montura) = monturaCoordinator.updateMontura(montura)
     suspend fun deleteMontura(montura: Montura) = monturaCoordinator.deleteMontura(montura)
@@ -200,6 +219,9 @@ open class OptoRepository(
     suspend fun upsertEvaluacionFromRemote(evaluacion: EvaluacionClinica) =
         pacienteRepo.insertEvaluacion(evaluacion)
 
+    suspend fun upsertDispensacionItemFromRemote(item: DispensacionItem) =
+        dispensacionRepo.insertDispensacionItem(item)
+
     suspend fun upsertVentaFromRemote(venta: Venta) =
         ventaDao.upsertVenta(venta)
 
@@ -224,19 +246,20 @@ open class OptoRepository(
         gastoOperativoDao.getByOpticaIdList(opticaId)
 
     suspend fun insertGastoOperativo(gasto: GastoOperativoEntity) {
-        val stamped = gasto.copy(createdAt = Instant.now().toString())
+        val stamped = gasto.copy(createdAt = gasto.createdAt ?: Instant.now().toString())
         gastoOperativoDao.insert(stamped)
         postSaveSyncScheduler.get().scheduleFinanzasSync(stamped.opticaId)
     }
 
     suspend fun upsertGastoOperativo(gasto: GastoOperativoEntity) {
-        val stamped = gasto.copy(createdAt = Instant.now().toString())
+        val stamped = gasto.copy(createdAt = gasto.createdAt ?: Instant.now().toString())
         gastoOperativoDao.upsert(stamped)
         postSaveSyncScheduler.get().scheduleFinanzasSync(stamped.opticaId)
     }
 
     suspend fun deleteGastoOperativo(gasto: GastoOperativoEntity) {
         gastoOperativoDao.delete(gasto.id)
+        syncStateTracker.markDeleted(gasto.opticaId, "gasto_operativo", gasto.id)
         postSaveSyncScheduler.get().scheduleFinanzasSync(gasto.opticaId)
     }
 

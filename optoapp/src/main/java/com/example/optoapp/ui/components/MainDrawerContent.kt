@@ -129,7 +129,7 @@ fun MainDrawerContent(
             )
             if (showOperacionHoy) {
                 NavigationDrawerItem(
-                    label = { Text("Operación de Hoy", fontWeight = FontWeight.SemiBold) },
+                    label = { Text("Dashboard", fontWeight = FontWeight.SemiBold) },
                     selected = currentRoute == "operacion_hoy",
                     onClick = {
                         scope.launch { drawerState.close() }
@@ -214,7 +214,7 @@ fun MainDrawerContent(
                             scope.launch { drawerState.close() }
                             navController.navigate("estadisticas_bi")
                         },
-                        icon = { Icon(Icons.Default.TrendingUp, contentDescription = null) },
+                        icon = { @Suppress("DEPRECATION") Icon(Icons.Default.TrendingUp, contentDescription = null) },
                         modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                     )
                     NavigationDrawerItem(
@@ -257,6 +257,10 @@ fun MainDrawerContent(
                             (syncState as SyncState.Success).message,
                             android.widget.Toast.LENGTH_SHORT
                         ).show()
+                        syncViewModel.clearSyncUiState()
+                    }
+                    is SyncState.Offline -> {
+                        android.widget.Toast.makeText(context, "Sin conexión", android.widget.Toast.LENGTH_SHORT).show()
                         syncViewModel.clearSyncUiState()
                     }
                     is SyncState.Error -> {

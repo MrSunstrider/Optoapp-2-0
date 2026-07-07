@@ -16,9 +16,6 @@ import org.junit.Test
  * [EncryptedSessionManagerFake] — an in-memory fake that mirrors the correct
  * encrypted-storage behavior.
  *
- * The REAL SessionManager fix moves password from plain DataStore to encryptedPrefs.
- * These tests verify the contract that the real implementation must satisfy.
- *
  * Run on device to verify actual EncryptedSharedPreferences behavior:
  *   ./gradlew :optoapp:connectedAndroidTest
  */
@@ -28,14 +25,10 @@ class SessionManagerTest {
 
     /**
      * In-memory fake implementing ISessionManager.
-     * Passwords are stored in a separate "secure" map (simulating EncryptedSharedPreferences),
-     * NOT in the plain map (simulating DataStore).
      */
     private class EncryptedSessionManagerFake : ISessionManager {
-        // Simulates plain DataStore (NOT for passwords!)
+        // Simulates plain DataStore
         private val plainStore = mutableMapOf<String, String>()
-        // Simulates EncryptedSharedPreferences (for passwords + sensitive data)
-        private val secureStore = mutableMapOf<String, String>()
 
         private val _isLoggedIn = MutableStateFlow(false)
         private val _opticaId = MutableStateFlow(SessionManager.LEGACY_OPTICA_ID)
@@ -82,82 +75,6 @@ class SessionManagerTest {
         override suspend fun clearRememberedEmail() {
             plainStore.remove("pref_remembered_email")
         }
-
-        // ── Remembered Password (SECURE store — MUST NOT be in plain store) ──
-
-        override suspend fun saveRememberedPassword(password: String) {
-            secureStore["pref_remembered_password"] = password
-        }
-
-        override suspend fun getRememberedPassword(): String {
-            return secureStore["pref_remembered_password"] ?: ""
-        }
-
-        override suspend fun clearRememberedPassword() {
-            secureStore.remove("pref_remembered_password")
-        }
-
-        /** Expose plain store for assertions — verifies password is NOT here */
-        fun getPlainStoreSnapshot(): Map<String, String> = plainStore.toMap()
-    }
-
-    // ─── Password Storage Security Tests ────────────────────────────────────
-
-    @Test
-    fun `saveRememberedPassword stores password that can be retrieved`() = runTest {
-        val sm = EncryptedSessionManagerFake()
-        sm.saveRememberedPassword("my_secret_123")
-
-        assertEquals("my_secret_123", sm.getRememberedPassword())
-    }
-
-    @Test
-    fun `getRememberedPassword returns empty string when nothing saved`() = runTest {
-        val sm = EncryptedSessionManagerFake()
-        assertEquals("", sm.getRememberedPassword())
-    }
-
-    @Test
-    fun `clearRememberedPassword removes stored password`() = runTest {
-        val sm = EncryptedSessionManagerFake()
-        sm.saveRememberedPassword("to_be_cleared")
-        sm.clearRememberedPassword()
-
-        assertEquals("", sm.getRememberedPassword())
-    }
-
-    @Test
-    fun `password is NOT stored in plain DataStore`() = runTest {
-        val sm = EncryptedSessionManagerFake()
-        sm.saveRememberedPassword("plaintext_leak_test")
-
-        val plainSnapshot = sm.getPlainStoreSnapshot()
-        assertFalse(
-            "Password must NOT appear in plain DataStore. " +
-            "It must be stored in EncryptedSharedPreferences.",
-            plainSnapshot.containsValue("plaintext_leak_test")
-        )
-    }
-
-    @Test
-    fun `password survives instance recreation`() = runTest {
-        val sm1 = EncryptedSessionManagerFake()
-        sm1.saveRememberedPassword("persist_me")
-
-        // Simulate app restart: new instance with same backing store
-        val sm2 = EncryptedSessionManagerFake()
-        // In real code, both share the same EncryptedSharedPreferences file
-        // Here we verify the contract: get returns what was saved
-        assertEquals("persist_me", sm1.getRememberedPassword())
-    }
-
-    @Test
-    fun `overwriting remembered password replaces previous value`() = runTest {
-        val sm = EncryptedSessionManagerFake()
-        sm.saveRememberedPassword("first_password")
-        sm.saveRememberedPassword("second_password")
-
-        assertEquals("second_password", sm.getRememberedPassword())
     }
 
     // ─── Email Tests ────────────────────────────────────────────────────────

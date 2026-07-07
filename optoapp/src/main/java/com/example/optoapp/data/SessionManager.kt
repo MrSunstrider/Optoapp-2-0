@@ -28,9 +28,6 @@ interface ISessionManager {
     suspend fun saveRememberedEmail(email: String)
     suspend fun getRememberedEmail(): String
     suspend fun clearRememberedEmail()
-    suspend fun saveRememberedPassword(password: String)
-    suspend fun getRememberedPassword(): String
-    suspend fun clearRememberedPassword()
 }
 
 /**
@@ -154,18 +151,6 @@ class SessionManager(private val context: Context) : ISessionManager {
     /** Limpia el email recordado (cuando el usuario desmarca el checkbox). */
     override suspend fun clearRememberedEmail() {
         encryptedPrefs.edit().remove("pref_remembered_email").apply()
-    }
-
-    override suspend fun saveRememberedPassword(password: String) {
-        encryptedPrefs.edit().putString("pref_remembered_password", password).apply()
-    }
-
-    override suspend fun getRememberedPassword(): String {
-        return encryptedPrefs.getString("pref_remembered_password", "") ?: ""
-    }
-
-    override suspend fun clearRememberedPassword() {
-        encryptedPrefs.edit().remove("pref_remembered_password").apply()
     }
 
     override suspend fun clearSession() {

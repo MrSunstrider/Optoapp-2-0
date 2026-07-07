@@ -1,5 +1,6 @@
 package com.example.optoapp.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.optoapp.data.MonturaProveedor
@@ -48,6 +49,10 @@ class ProveedoresViewModel @Inject constructor(
     private val sessionManager: SessionManager,
     private val syncProveedoresUseCase: SyncProveedoresUseCase
 ) : ViewModel() {
+    companion object {
+        private const val TAG = "ProveedoresViewModel"
+    }
+
     private val _uiState = MutableStateFlow(ProveedoresUiState())
     val uiState: StateFlow<ProveedoresUiState> = _uiState
 
@@ -130,8 +135,9 @@ class ProveedoresViewModel @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
+                Log.e(TAG, "save failed", e)
                 val msg = if (e.message?.contains("UNIQUE") == true) "El RUC ya existe para esta óptica."
-                          else "Error al guardar: ${e.message}"
+                          else "Error inesperado. Reintente más tarde."
                 _uiState.update { it.copy(error = msg) }
             }
         }
@@ -157,7 +163,8 @@ class ProveedoresViewModel @Inject constructor(
                 repository.linkMonturaProveedor(link)
                 _uiState.update { it.copy(success = "Montura vinculada al proveedor") }
             } catch (e: Exception) {
-                _uiState.update { it.copy(error = "Error al vincular: ${e.message}") }
+                Log.e(TAG, "linkMontura failed", e)
+                _uiState.update { it.copy(error = "Error inesperado. Reintente más tarde.") }
             }
         }
     }

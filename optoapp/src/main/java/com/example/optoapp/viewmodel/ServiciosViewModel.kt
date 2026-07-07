@@ -30,6 +30,7 @@ data class ServiciosUiState(
     val montoTotal: String = "",
     val estado: String = "Pendiente",
     val fecha: LocalDate = DateUtils.today(),
+    val fechaEntrega: LocalDate? = null,
     val pacienteId: String? = null,
     val isLoading: Boolean = false,
     val error: String? = null,
@@ -91,6 +92,15 @@ class ServiciosViewModel @Inject constructor(
         _uiState.value = update(_uiState.value)
     }
 
+    fun updateEstado(estado: String) {
+        _uiState.update {
+            it.copy(
+                estado = estado,
+                fechaEntrega = if (estado == "Entregado") DateUtils.today() else it.fechaEntrega
+            )
+        }
+    }
+
     fun loadServicio(id: String) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, generatedId = id)
@@ -105,6 +115,7 @@ class ServiciosViewModel @Inject constructor(
                         montoTotal = s.montoTotal.toString(),
                         estado = s.estado,
                         fecha = s.fecha,
+                        fechaEntrega = s.fechaEntrega,
                         pacienteId = s.pacienteId,
                         pagos = loadedPagos,
                         generatedId = id,
@@ -177,50 +188,58 @@ class ServiciosViewModel @Inject constructor(
                     com.example.optoapp.data.SessionManager.LEGACY_OPTICA_ID
                 }
                 val finalId = if (state.id.isNotBlank()) state.id else state.generatedId
-                val finalACuenta = totalAbonos.coerceIn(0.0, montoParsed)
 
                 val servicio = ServicioExtra(
                     id = finalId,
                     ot = state.ot.trim(),
                     descripcion = state.descripcion.trim(),
                     montoTotal = montoParsed,
-                    aCuenta = finalACuenta,
+                    aCuenta = state.pagos.filter { it.tipo != "Anulación" }.sumOf { it.monto },
                     estado = state.estado,
                     fecha = state.fecha,
+                    fechaEntrega = state.fechaEntrega,
                     pacienteId = state.pacienteId?.takeIf { !it.isBlank() },
                     metodoPago = FinanzasRemoteDefaults.ServicioExtra.METODO_PAGO_ROW,
                     opticaId = currentOpticaId
                 )
 
-                if (state.isEdit) {
-                    repository.updateServicio(servicio)
-                } else {
-                    repository.insertServicio(servicio)
-                }
+                repository.runInTransaction {
+                    kotlinx.coroutines.runBlocking {
+                    if (state.isEdit) {
+                        repository.updateServicio(servicio)
+                    } else {
+                        repository.insertServicio(servicio)
+                    }
 
-                state.pagos.forEach { pago ->
-                    val pagoToSave = pago.copy(servicioExtraId = finalId, opticaId = currentOpticaId)
-                    repository.insertPago(pagoToSave)
-                }
+                    state.pagos.forEach { pago ->
+                        val pagoToSave = pago.copy(
+                            servicioExtraId = finalId,
+                            opticaId = currentOpticaId,
+                            ventaId = "v_serv_$finalId"
+                        )
+                        repository.insertPago(pagoToSave)
+                    }
 
-                state.pagosToDelete.forEach { pago ->
-                    repository.deletePagoRegistrandoAnulacionEnCaja(pago, currentOpticaId)
-                }
+                    state.pagosToDelete.forEach { pago ->
+                        repository.deletePagoRegistrandoAnulacionEnCaja(pago, currentOpticaId)
+                    }
 
-                val venta = Venta(
-                    id = "v_serv_$finalId",
-                    opticaId = currentOpticaId,
-                    origen = "servicio_extra",
-                    origenId = finalId,
-                    pacienteId = state.pacienteId ?: "",
-                    ot = state.ot.trim(),
-                    fecha = state.fecha,
-                    fechaEntrega = null,
-                    montoTotal = montoParsed,
-                    costoUnitarioSnapshot = null,
-                    estado = state.estado
-                )
-                repository.upsertVenta(venta)
+                    val venta = Venta(
+                        id = "v_serv_$finalId",
+                        opticaId = currentOpticaId,
+                        origen = "servicio_extra",
+                        origenId = finalId,
+                        pacienteId = state.pacienteId ?: "",
+                        ot = state.ot.trim(),
+                        fecha = state.fecha,
+                        fechaEntrega = state.fechaEntrega,
+                        montoTotal = montoParsed,
+                        costoUnitarioSnapshot = null,
+                        estado = state.estado
+                    )
+                    repository.upsertVenta(venta)
+                    } // runBlocking
+                } // runInTransaction
 
                 _uiState.update { it.copy(error = null) }
 
@@ -238,14 +257,10 @@ class ServiciosViewModel @Inject constructor(
                 throw e
             } catch (e: IOException) {
                 Log.e(TAG, "Guardar servicio: error de red/IO", e)
-                _uiState.update {
-                    it.copy(error = e.message ?: "No se pudo guardar el servicio.")
-                }
+                _uiState.update { it.copy(error = "Error inesperado. Reintente más tarde.") }
             } catch (e: Exception) {
                 Log.e(TAG, "Guardar servicio", e)
-                _uiState.update {
-                    it.copy(error = e.message ?: "No se pudo guardar el servicio.")
-                }
+                _uiState.update { it.copy(error = "Error inesperado. Reintente más tarde.") }
             }
         }
     }
@@ -273,7 +288,7 @@ class ServiciosViewModel @Inject constructor(
                 throw e
             } catch (e: Exception) {
                 Log.e(TAG, "Eliminar servicio", e)
-                _deleteError.value = e.message ?: "No se pudo eliminar el servicio."
+                _deleteError.value = "Error inesperado. Reintente más tarde."
             }
         }
     }

@@ -10,20 +10,15 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Male
-import androidx.compose.material.icons.filled.Female
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.graphics.Color
+import android.content.Intent
+import android.net.Uri
 import android.widget.Toast
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -45,6 +40,9 @@ import com.example.optoapp.ui.components.OptoCard
 import com.example.optoapp.ui.components.paciente.ResumenDispensacionDialog
 import com.example.optoapp.ui.components.paciente.ResumenEvaluacionDialog
 import com.example.optoapp.data.Resource
+import com.example.optoapp.ui.theme.PositiveGreen
+import com.example.optoapp.ui.theme.AlertRed
+import com.example.optoapp.ui.theme.WarningAmber
 import com.example.optoapp.ui.theme.OptoTokens
 
 private enum class QuickSummaryDialog { NONE, EVAL, DISP }
@@ -68,14 +66,8 @@ fun PacientesListScreen(
     var activeDialog by remember { mutableStateOf(QuickSummaryDialog.NONE) }
     val lastEvalState by viewModel.lastEvaluacion.collectAsState()
     val lastDispState by viewModel.lastDispensacion.collectAsState()
-    val closeAndResetEval: () -> Unit = {
-        activeDialog = QuickSummaryDialog.NONE
-        viewModel.resetLastEvaluacion()
-    }
-    val closeAndResetDisp: () -> Unit = {
-        activeDialog = QuickSummaryDialog.NONE
-        viewModel.resetLastDispensacion()
-    }
+    val closeAndResetEval: () -> Unit = { activeDialog = QuickSummaryDialog.NONE; viewModel.resetLastEvaluacion() }
+    val closeAndResetDisp: () -> Unit = { activeDialog = QuickSummaryDialog.NONE; viewModel.resetLastDispensacion() }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.surface,
@@ -87,27 +79,35 @@ fun PacientesListScreen(
                     IconButton(onClick = { scope.launch { drawerState.open() } }) {
                         Icon(Icons.Default.Menu, contentDescription = "Menu")
                     }
+                },
+                actions = {
+                    IconButton(onClick = { viewModel.refresh() }) {
+                        Icon(Icons.Default.Refresh, contentDescription = "Actualizar")
+                    }
+                    var showSortMenu by remember { mutableStateOf(false) }
+                    IconButton(onClick = { showSortMenu = true }) {
+                        Icon(Icons.Default.Sort, contentDescription = "Ordenar")
+                    }
+                    DropdownMenu(expanded = showSortMenu, onDismissRequest = { showSortMenu = false }) {
+                        DropdownMenuItem(text = { Text("Nombre A-Z") }, onClick = { viewModel.setSort("nombre"); showSortMenu = false })
+                        DropdownMenuItem(text = { Text("Más recientes") }, onClick = { viewModel.setSort("reciente"); showSortMenu = false })
+                        DropdownMenuItem(text = { Text("Más antiguos") }, onClick = { viewModel.setSort("antiguo"); showSortMenu = false })
+                    }
                 }
             )
         },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = {
-                    if (!canCreateEdit) {
-                        Toast.makeText(context, "Tu rol no permite crear pacientes.", Toast.LENGTH_SHORT).show()
-                    } else navController.navigate("nuevoPaciente")
+                    if (!canCreateEdit) Toast.makeText(context, "Tu rol no permite crear pacientes.", Toast.LENGTH_SHORT).show()
+                    else navController.navigate("nuevoPaciente")
                 },
                 modifier = Modifier.navigationBarsPadding()
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Añadir Paciente")
-            }
+            ) { Icon(Icons.Default.Add, contentDescription = "Añadir Paciente") }
         }
     ) { padding ->
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 16.dp)
+            modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp)
         ) {
             OutlinedTextField(
                 value = searchQuery,
@@ -117,65 +117,52 @@ fun PacientesListScreen(
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                 shape = MaterialTheme.shapes.medium
             )
-
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
             val filters = listOf("Todos", "Saldo Pendiente", "Entrega")
-            FlowRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
+            FlowRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 filters.forEach { filter ->
                     val isSelected = when (filter) {
-                        "Todos" -> activeFilter == "" || activeFilter == "Todos"
+                        "Todos" -> activeFilter.isNullOrBlank() || activeFilter == "Todos"
                         "Saldo Pendiente" -> activeFilter == "Saldo Pendiente"
                         "Entrega" -> activeFilter == "Estado de entrega" || activeFilter == "Entrega"
                         else -> false
                     }
-                    FilterChip(
-                        selected = isSelected,
-                        onClick = {
-                            viewModel.setFilter(
-                                when (filter) {
-                                    "Todos" -> ""
-                                    "Saldo Pendiente" -> "Saldo Pendiente"
-                                    "Entrega" -> "Estado de entrega"
-                                    else -> ""
-                                }
-                            )
-                        },
-                        label = {
-                            Text(
-                                filter,
-                                fontSize = 12.sp,
-                                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
-                            )
-                        }
-                    )
+                    FilterChip(selected = isSelected, onClick = {
+                        viewModel.setFilter(when (filter) {
+                            "Todos" -> ""; "Saldo Pendiente" -> "Saldo Pendiente"; "Entrega" -> "Estado de entrega"; else -> ""
+                        })
+                    }, label = { Text(filter, fontSize = 13.sp, fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal) })
                 }
             }
+            Spacer(modifier = Modifier.height(14.dp))
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            LazyColumn(
-                modifier = Modifier.fillMaxSize().testTag(TestTags.PACIENTE_LISTA),
-                contentPadding = PaddingValues(bottom = 88.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                items(pacientes, key = { it.id }) { paciente ->
-                    PacienteCard(
-                        paciente = paciente,
-                        onClick = { navController.navigate("detallePaciente/${paciente.id}") },
-                        onShowLastEvaluacion = { id ->
-                            activeDialog = QuickSummaryDialog.EVAL
-                            viewModel.loadLastEvaluacion(id)
-                        },
-                        onShowLastDispensacion = { id ->
-                            activeDialog = QuickSummaryDialog.DISP
-                            viewModel.loadLastDispensacion(id)
-                        }
-                    )
+            if (pacientes.isEmpty()) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(Icons.Default.PersonOff, contentDescription = null, modifier = Modifier.size(48.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f))
+                        Spacer(Modifier.height(8.dp))
+                        Text("No se encontraron pacientes", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize().testTag(TestTags.PACIENTE_LISTA),
+                    contentPadding = PaddingValues(bottom = 88.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(pacientes, key = { it.id }) { paciente ->
+                        PacienteCard(
+                            paciente = paciente,
+                            onClick = { navController.navigate("detallePaciente/${paciente.id}") },
+                            onShowLastEvaluacion = { id -> activeDialog = QuickSummaryDialog.EVAL; viewModel.loadLastEvaluacion(id) },
+                            onShowLastDispensacion = { id -> activeDialog = QuickSummaryDialog.DISP; viewModel.loadLastDispensacion(id) },
+                            onCall = {
+                                val intent = android.content.Intent(android.content.Intent.ACTION_DIAL).apply { data = android.net.Uri.parse("tel:${paciente.telefono}") }
+                                context.startActivity(intent)
+                            }
+                        )
+                    }
                 }
             }
         }
@@ -186,31 +173,13 @@ fun PacientesListScreen(
                     when (resource) {
                         is Resource.Loading -> Unit
                         is Resource.Success -> {
-                            val eval = resource.data
-                            if (eval != null) {
+                            resource.data?.let { eval ->
                                 val paciente = pacientes.find { it.id == eval.pacienteId } ?: pacientes.firstOrNull()
-                                if (paciente != null) {
-                                    ResumenEvaluacionDialog(
-                                        eval = eval,
-                                        paciente = paciente,
-                                        onDismiss = closeAndResetEval,
-                                        onEdit = { }
-                                    )
-                                } else {
-                                    closeAndResetEval()
-                                }
+                                if (paciente != null) ResumenEvaluacionDialog(eval = eval, paciente = paciente, onDismiss = closeAndResetEval, onEdit = {})
+                                else closeAndResetEval()
                             }
                         }
-                        is Resource.Error<*> -> {
-                            AlertDialog(
-                                onDismissRequest = closeAndResetEval,
-                                title = { Text("Sin Evaluaciones") },
-                                text = { Text(resource.message ?: "No hay evaluaciones") },
-                                confirmButton = {
-                                    TextButton(onClick = closeAndResetEval) { Text("Cerrar") }
-                                }
-                            )
-                        }
+                        is Resource.Error<*> -> AlertDialog(onDismissRequest = closeAndResetEval, title = { Text("Sin Evaluaciones") }, text = { Text(resource.message ?: "No hay evaluaciones") }, confirmButton = { TextButton(onClick = closeAndResetEval) { Text("Cerrar") } })
                     }
                 }
             }
@@ -219,35 +188,13 @@ fun PacientesListScreen(
                     when (resource) {
                         is Resource.Loading -> Unit
                         is Resource.Success -> {
-                            val disp = resource.data
-                            if (disp != null) {
+                            resource.data?.let { disp ->
                                 val paciente = pacientes.find { it.id == disp.pacienteId } ?: pacientes.firstOrNull()
-                                if (paciente != null) {
-                                    ResumenDispensacionDialog(
-                                        disp = disp,
-                                        paciente = paciente,
-                                        onDismiss = closeAndResetDisp,
-                                        onEdit = { },
-                                        onGoToFinanciero = { target ->
-                                            closeAndResetDisp()
-                                            navController.navigate("informacion_financiera/${target.id}")
-                                        }
-                                    )
-                                } else {
-                                    closeAndResetDisp()
-                                }
+                                if (paciente != null) ResumenDispensacionDialog(disp = disp, paciente = paciente, onDismiss = closeAndResetDisp, onEdit = {}, onGoToFinanciero = { target -> closeAndResetDisp(); navController.navigate("informacion_financiera/${target.id}") })
+                                else closeAndResetDisp()
                             }
                         }
-                        is Resource.Error<*> -> {
-                            AlertDialog(
-                                onDismissRequest = closeAndResetDisp,
-                                title = { Text("Sin Dispensaciones") },
-                                text = { Text(resource.message ?: "No hay dispensaciones") },
-                                confirmButton = {
-                                    TextButton(onClick = closeAndResetDisp) { Text("Cerrar") }
-                                }
-                            )
-                        }
+                        is Resource.Error<*> -> AlertDialog(onDismissRequest = closeAndResetDisp, title = { Text("Sin Dispensaciones") }, text = { Text(resource.message ?: "No hay dispensaciones") }, confirmButton = { TextButton(onClick = closeAndResetDisp) { Text("Cerrar") } })
                     }
                 }
             }
@@ -263,106 +210,55 @@ private fun PacienteCard(
     onClick: () -> Unit,
     onShowLastEvaluacion: (String) -> Unit,
     onShowLastDispensacion: (String) -> Unit,
+    onCall: () -> Unit,
 ) {
+    val avatarColor = MaterialTheme.colorScheme.primary
+
     OptoCard(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
         shape = OptoTokens.shapes.large,
         elevation = 1.dp
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
+            modifier = Modifier.fillMaxWidth().padding(12.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(14.dp)
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             // Avatar
-            val avatarColor = when {
-                paciente.esMasculino() -> Color(0xFF2196F3)
-                paciente.esFemenino() -> Color(0xFFE91E63)
-                else -> MaterialTheme.colorScheme.primary
+            Surface(modifier = Modifier.size(44.dp), shape = RoundedCornerShape(12.dp), color = avatarColor.copy(alpha = 0.12f)) {
+                Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(24.dp), tint = avatarColor) }
             }
-            val avatarIcon = when {
-                paciente.esMasculino() -> Icons.Default.Male
-                paciente.esFemenino() -> Icons.Default.Female
-                else -> Icons.Default.Person
-            }
-            Surface(
-                modifier = Modifier.size(48.dp),
-                shape = RoundedCornerShape(14.dp),
-                color = avatarColor.copy(alpha = 0.12f)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = avatarIcon,
-                        contentDescription = null,
-                        modifier = Modifier.size(26.dp),
-                        tint = avatarColor
-                    )
+
+            // Info
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(paciente.nombreCompleto, fontWeight = FontWeight.Bold, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text("Edad: ${paciente.edad}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    if (paciente.telefono.isNotBlank()) {
+                        Text("Tel: ${paciente.telefono}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+                // Debt badge
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    // We don't have debt in the entity, but we show date as reference
+                    Text(DateUtils.formatLocalized(paciente.fechaCreacion), fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f))
                 }
             }
 
-            // Text info
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                Text(
-                    text = paciente.nombreCompleto,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp,
-                    color = when {
-                        paciente.esMasculino() -> Color(0xFF1976D2)
-                        paciente.esFemenino() -> Color(0xFFC2185B)
-                        else -> MaterialTheme.colorScheme.onSurface
-                    },
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Edad: ${paciente.edad}",
-                        fontSize = 13.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = "Tel: ${paciente.telefono}",
-                        fontSize = 13.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+            // Action buttons
+            Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                IconButton(onClick = { onShowLastEvaluacion(paciente.id) }, modifier = Modifier.size(36.dp).testTag(TestTags.PACIENTE_CARD_LAST_EVAL_BTN)) {
+                    Icon(Icons.Default.Visibility, contentDescription = "Ver evaluación", modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
                 }
-                Text(
-                    text = DateUtils.formatLocalized(paciente.fechaCreacion),
-                    fontSize = 11.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-
-            // E/D buttons — vertical, centered with card
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                IconButton(
-                    onClick = { onShowLastEvaluacion(paciente.id) },
-                    modifier = Modifier
-                        .size(28.dp)
-                        .testTag(TestTags.PACIENTE_CARD_LAST_EVAL_BTN)
-                ) {
-                    Text("E", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                IconButton(onClick = { onShowLastDispensacion(paciente.id) }, modifier = Modifier.size(36.dp).testTag(TestTags.PACIENTE_CARD_LAST_DISP_BTN)) {
+                    Icon(Icons.Default.Inventory2, contentDescription = "Ver dispensación", modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.tertiary)
                 }
-                IconButton(
-                    onClick = { onShowLastDispensacion(paciente.id) },
-                    modifier = Modifier
-                        .size(28.dp)
-                        .testTag(TestTags.PACIENTE_CARD_LAST_DISP_BTN)
-                ) {
-                    Text("D", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                if (paciente.telefono.isNotBlank()) {
+                    IconButton(onClick = onCall, modifier = Modifier.size(36.dp)) {
+                        Icon(Icons.Default.Call, contentDescription = "Llamar", modifier = Modifier.size(18.dp), tint = PositiveGreen)
+                    }
                 }
             }
         }

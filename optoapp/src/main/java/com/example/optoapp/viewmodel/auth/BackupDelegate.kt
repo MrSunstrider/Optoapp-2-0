@@ -1,5 +1,6 @@
 package com.example.optoapp.viewmodel.auth
 
+import android.util.Log
 import com.example.optoapp.data.ISessionManager
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.util.BackupImportValidator
@@ -76,7 +77,8 @@ class BackupDelegate @Inject constructor(
         val rol = sessionManager.opticaRol.first().trim().lowercase()
         checkRestoreAdmin(rol)?.let { return it }
         val data = BackupImportValidator.parse(json).getOrElse { e ->
-            return e.message ?: "No se pudo validar el respaldo."
+            Log.e(TAG, "restoreBackup: parse failed", e)
+            return "Error inesperado. Reintente más tarde."
         }
         return try {
             val currentOpticaId = sessionManager.opticaId.first()
@@ -89,9 +91,11 @@ class BackupDelegate @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: IOException) {
-            "Error al restaurar: ${e.message ?: "desconocido"}"
+            Log.e(TAG, "restoreBackup failed: IO error", e)
+            "Error inesperado. Reintente más tarde."
         } catch (e: Exception) {
-            "Error al restaurar: ${e.message ?: "desconocido"}"
+            Log.e(TAG, "restoreBackup failed", e)
+            "Error inesperado. Reintente más tarde."
         }
     }
 

@@ -40,18 +40,28 @@ open class SyncFinanzasUseCase @Inject constructor(
 
             deletionSyncHelper.pushPendingDeletions(opticaId)
 
-            val dispUp = if (skipUpload) 0 else uploadSyncCoordinator.uploadDispensaciones(opticaId)
-            Log.d(TAG, "Finanzas: upload dispensaciones=$dispUp")
-            val itemsUp = if (skipUpload) 0 else uploadSyncCoordinator.uploadDispensacionItems(opticaId)
-            Log.d(TAG, "Finanzas: upload dispensacion_items=$itemsUp")
-            val servUp = if (skipUpload) 0 else uploadSyncCoordinator.uploadServicios(opticaId)
-            Log.d(TAG, "Finanzas: upload servicios_extra=$servUp")
-            val pagosUp = if (skipUpload) 0 else uploadSyncCoordinator.uploadPagos(opticaId)
-            Log.d(TAG, "Finanzas: upload pagos=$pagosUp")
-            val gastosUp = if (skipUpload) 0 else uploadSyncCoordinator.uploadGastosOperativos(opticaId)
-            Log.d(TAG, "Finanzas: upload gastos_operativos=$gastosUp")
+            var dispUp = 0
+            var itemsUp = 0
+            var servUp = 0
+            var pagosUp = 0
+            var ventasUp = 0
+            var gastosUp = 0
+            var arqueosUp = 0
+
             if (!skipUpload) {
-                val arqueosUp = uploadSyncCoordinator.uploadArqueos(opticaId)
+                dispUp = safeUpload("dispensaciones") { uploadSyncCoordinator.uploadDispensaciones(opticaId) }
+                Log.d(TAG, "Finanzas: upload dispensaciones=$dispUp")
+                itemsUp = safeUpload("dispensacion_items") { uploadSyncCoordinator.uploadDispensacionItems(opticaId) }
+                Log.d(TAG, "Finanzas: upload dispensacion_items=$itemsUp")
+                servUp = safeUpload("servicios_extra") { uploadSyncCoordinator.uploadServicios(opticaId) }
+                Log.d(TAG, "Finanzas: upload servicios_extra=$servUp")
+                pagosUp = safeUpload("pagos") { uploadSyncCoordinator.uploadPagos(opticaId) }
+                Log.d(TAG, "Finanzas: upload pagos=$pagosUp")
+                ventasUp = safeUpload("ventas") { uploadSyncCoordinator.uploadVentas(opticaId) }
+                Log.d(TAG, "Finanzas: upload ventas=$ventasUp")
+                gastosUp = safeUpload("gastos_operativos") { uploadSyncCoordinator.uploadGastosOperativos(opticaId) }
+                Log.d(TAG, "Finanzas: upload gastos_operativos=$gastosUp")
+                arqueosUp = safeUpload("arqueo_caja") { uploadSyncCoordinator.uploadArqueos(opticaId) }
                 Log.d(TAG, "Finanzas: upload arqueo_caja=$arqueosUp")
             }
 
@@ -97,6 +107,7 @@ open class SyncFinanzasUseCase @Inject constructor(
                     uploadedServicios = servUp,
                     uploadedPagos = pagosUp,
                     uploadedGastosOperativos = gastosUp,
+                    uploadedArqueos = arqueosUp,
                     downloadedDispensaciones = dispDown,
                     downloadedDispensacionItems = itemsDown,
                     downloadedServicios = servDown,
@@ -114,6 +125,27 @@ open class SyncFinanzasUseCase @Inject constructor(
         } catch (e: Exception) {
             Log.e(TAG, "Error inesperado sincronizando finanzas: ${e.message}", e)
             Resource.Error("Error sincronizando finanzas: ${e.localizedMessage}")
+        }
+    }
+
+    /**
+     * Ejecuta un paso de upload individual; si falla, registra el error y retorna 0
+     * para que los pasos restantes puedan continuar.
+     */
+    private suspend fun safeUpload(
+        entityName: String,
+        block: suspend () -> Int
+    ): Int {
+        return try {
+            block()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: IOException) {
+            Log.e(TAG, "Error en red subiendo $entityName: ${e.message}", e)
+            0
+        } catch (e: Exception) {
+            Log.e(TAG, "Error inesperado subiendo $entityName: ${e.message}", e)
+            0
         }
     }
 }

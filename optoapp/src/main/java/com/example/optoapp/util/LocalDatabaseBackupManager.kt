@@ -1,6 +1,7 @@
 package com.example.optoapp.util
 
 import android.content.Context
+import android.util.Log
 import java.io.File
 import java.io.IOException
 
@@ -8,6 +9,7 @@ import java.io.IOException
  * Respaldo local liviano de la base SQLite para recuperación ante incidentes de migración.
  */
 object LocalDatabaseBackupManager {
+    private const val TAG = "LocalDBBackup"
     private const val BACKUP_DIR = "db_backups"
     private const val MAX_BACKUPS = 7
     private const val MIN_INTERVAL_MS = 6 * 60 * 60 * 1000L // 6 horas
@@ -37,8 +39,8 @@ object LocalDatabaseBackupManager {
         if (!source.exists()) return
         try {
             source.copyTo(target, overwrite = true)
-        } catch (_: IOException) {
-            // Evita romper el flujo principal si falla el respaldo.
+        } catch (e: IOException) {
+            Log.w(TAG, "Database backup failed", e)
         }
     }
 

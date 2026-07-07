@@ -7,8 +7,6 @@ import java.time.LocalDate
 import javax.inject.Inject
 
 open class GenerarRecomendacionesUseCase @Inject constructor(
-    private val obtenerAnalisisMensual: ObtenerAnalisisMensualUseCase,
-    private val obtenerDeudores: ObtenerDeudoresUseCase,
     private val configuracionFinancieraDao: ConfiguracionFinancieraDao
 ) {
     companion object {
@@ -18,27 +16,32 @@ open class GenerarRecomendacionesUseCase @Inject constructor(
         private const val GASTOS_VENTAS_RATIO_ALERTA = 0.4
     }
 
-    suspend operator fun invoke(opticaId: String, mes: LocalDate): Resource<List<Recomendacion>> {
-        val analisisResult = obtenerAnalisisMensual(opticaId, mes)
-        if (analisisResult is Resource.Error) return Resource.Error(analisisResult.message!!)
-
-        val deudoresResult = obtenerDeudores(opticaId)
-        if (deudoresResult is Resource.Error) return Resource.Error(deudoresResult.message!!)
+    suspend operator fun invoke(
+        analisis: AnalisisMensual?,
+        deudores: List<Deudor>,
+        opticaId: String
+    ): Resource<List<Recomendacion>> {
+        if (analisis == null && deudores.isEmpty()) {
+            return Resource.Error("Datos insuficientes para generar recomendaciones")
+        }
 
         val config = configuracionFinancieraDao.getByOpticaIdOnce(opticaId)
             ?: return Resource.Error("Configuracion financiera no encontrada")
 
-        val analisis = (analisisResult as Resource.Success).data!!
-        val deudores = (deudoresResult as Resource.Success).data!!
+        val cobrar = evaluarCobrar(deudores, config)
 
-        val recommendations = listOfNotNull(
-            evaluarCobrar(deudores, config),
-            evaluarMejorarPrecio(analisis.margenPorCategoria, config),
-            evaluarLiquidarStock(analisis.stockEstancado, config),
-            evaluarVenderMasDe(analisis.margenPorCategoria, config),
-            evaluarAlertaCaida(analisis, config),
-            evaluarReducirGasto(analisis)
-        )
+        val recommendations = if (analisis == null) {
+            listOfNotNull(cobrar)
+        } else {
+            listOfNotNull(
+                cobrar,
+                evaluarMejorarPrecio(analisis.margenPorCategoria, config),
+                evaluarLiquidarStock(analisis.stockEstancado, config),
+                evaluarVenderMasDe(analisis.margenPorCategoria, config),
+                evaluarAlertaCaida(analisis, config),
+                evaluarReducirGasto(analisis)
+            )
+        }
 
         val sorted = recommendations.sortedWith(
             compareBy<Recomendacion> { it.prioridad.ordinal }
@@ -77,8 +80,8 @@ open class GenerarRecomendacionesUseCase @Inject constructor(
             prioridad = Prioridad.ALTA,
             accion = "Contactar a los deudores para coordinar pagos pendientes",
             datosAccion = DatosAccion(
-                pacienteIds = top3.map { it.ventaId },
-                montoTotal = deudaTotal
+                pacienteIds = top3.map { it.pacienteId },
+                montoTotal = top3.sumOf { it.saldo }
             )
         )
     }
@@ -186,13 +189,17 @@ open class GenerarRecomendacionesUseCase @Inject constructor(
         val variacion = analisis.variacionVentasPct ?: return null
         if (variacion >= -config.caidaVentasAlertaPct) return null
 
+        val currentMonth = LocalDate.now().monthValue
+        if (currentMonth in listOf(1, 2)) return null
+
         val pctStr = String.format("%.0f", kotlin.math.abs(variacion))
         val titulo = "Caida en ventas detectada"
         return Recomendacion(
             id = "${RecomendacionTipo.ALERTA_CAIDA.name}::$titulo",
             tipo = RecomendacionTipo.ALERTA_CAIDA,
             titulo = titulo,
-            detalle = "Las ventas cayeron un ${pctStr}% respecto al mes anterior. " +
+            detalle = "Las ventas cayeron un ${pctStr}% respecto al mes pasado. " +
+                "¿Estacionalidad o tendencia? " +
                 "Ventas actuales: S/ ${String.format("%.0f", analisis.ventasMes)} vs. " +
                 "S/ ${String.format("%.0f", analisis.ventasMesAnterior)} del mes anterior.",
             impactoEstimado = null,

@@ -17,6 +17,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
@@ -102,8 +103,8 @@ class AnalisisNegocioViewModelTest {
     )
 
     private fun createDeudores(): List<Deudor> = listOf(
-        Deudor("Juan Pérez", "999888777", "v1", LocalDate.of(2026, 6, 15), 500.0, 200.0, 300.0, 15),
-        Deudor("María López", "999888776", "v2", LocalDate.of(2026, 5, 1), 1200.0, 0.0, 1200.0, 60)
+        Deudor("Juan P\u00e9rez", "999888777", "v1", LocalDate.of(2026, 6, 15), 500.0, 200.0, 300.0, 15),
+        Deudor("Mar\u00eda L\u00f3pez", "999888776", "v2", LocalDate.of(2026, 5, 1), 1200.0, 0.0, 1200.0, 60)
     )
 
     private fun createRecomendaciones(): List<Recomendacion> = listOf(
@@ -122,7 +123,7 @@ class AnalisisNegocioViewModelTest {
     ) {
         coEvery { obtenerAnalisisMensual(opticaId, any()) } returns analisis
         coEvery { obtenerDeudores(opticaId) } returns deudores
-        coEvery { generarRecomendaciones(opticaId, any()) } returns recomendaciones
+        coEvery { generarRecomendaciones(any(), any<List<Deudor>>(), any()) } returns recomendaciones
     }
 
     private val saldoEsperado = 10000.0 - 8000.0
@@ -196,7 +197,8 @@ class AnalisisNegocioViewModelTest {
     @Test
     fun `error state when analisis use case fails`() = runTest(testDispatcher) {
         primeUseCases(
-            analisis = Resource.Error("Error en analisis mensual")
+            analisis = Resource.Error("Error en analisis mensual"),
+            recomendaciones = Resource.Error("No hay datos de analisis para generar recomendaciones")
         )
 
         viewModel = AnalisisNegocioViewModel(
@@ -205,10 +207,11 @@ class AnalisisNegocioViewModelTest {
         advanceUntilIdle()
 
         val state = viewModel.uiState.first()
-        assertEquals("error should be set", "Error en analisis mensual", state.error)
+        assertNotNull("error should be set", state.error)
+        assertTrue("error should contain analisis error", state.error!!.contains("Error en analisis mensual"))
         assertNull("analisis should be null on error", state.analisis)
         assertEquals("deudores should still load", 2, state.deudores.size)
-        assertEquals("recomendaciones should still load", 3, state.recomendaciones.size)
+        assertEquals("recomendaciones should be empty when analisis fails", 0, state.recomendaciones.size)
     }
 
     @Test
@@ -229,11 +232,11 @@ class AnalisisNegocioViewModelTest {
     }
 
     @Test
-    fun `all use cases failing produces combined error`() = runTest(testDispatcher) {
+    fun `all use cases failing produces combined error with distinct messages`() = runTest(testDispatcher) {
         primeUseCases(
             analisis = Resource.Error("Error A"),
             deudores = Resource.Error("Error B"),
-            recomendaciones = Resource.Error("Error C")
+            recomendaciones = Resource.Error("Datos insuficientes para generar recomendaciones")
         )
 
         viewModel = AnalisisNegocioViewModel(
@@ -244,6 +247,7 @@ class AnalisisNegocioViewModelTest {
         val state = viewModel.uiState.first()
         assertNotNull("error should be set", state.error)
         assertTrue("error should contain analisis error", state.error!!.contains("Error A"))
+        assertTrue("error should contain deudores error", state.error!!.contains("Error B"))
     }
 
     @Test
@@ -259,7 +263,7 @@ class AnalisisNegocioViewModelTest {
         viewModel.onFeedback("r1", fueUtil = true)
         advanceUntilIdle()
 
-        coEvery { feedbackRecomendacion.marcarUtil("r1", opticaId) } // verify call happened via mockk
+        coEvery { feedbackRecomendacion.marcarUtil("r1", opticaId) }
         // No exception = success
     }
 
@@ -289,5 +293,24 @@ class AnalisisNegocioViewModelTest {
 
         val state = viewModel.uiState.first()
         assertEquals("mostrarAdvertenciaEstacionalidad should be false when online", false, state.mostrarAdvertenciaEstacionalidad)
+    }
+
+    @Test
+    fun `cancellation does not produce error state`() = runTest(testDispatcher) {
+        coEvery { obtenerAnalisisMensual(opticaId, any()) } throws CancellationException("Test cancel")
+        coEvery { obtenerDeudores(opticaId) } returns Resource.Success(createDeudores())
+        coEvery { generarRecomendaciones(any(), any<List<Deudor>>(), any()) } returns Resource.Success(createRecomendaciones())
+
+        try {
+            viewModel = AnalisisNegocioViewModel(
+                obtenerAnalisisMensual, obtenerDeudores, generarRecomendaciones, feedbackRecomendacion, sessionManager
+            )
+        } catch (_: CancellationException) {
+            // Expected — cancellation should propagate, not be swallowed
+        }
+
+        val state = viewModel.uiState.first()
+        assertNull("error should be null after cancellation", state.error)
+        assertEquals("isLoading should be true (cancelled before completion)", true, state.isLoading)
     }
 }

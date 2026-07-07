@@ -166,7 +166,7 @@ class AuthViewModel @Inject constructor(
                         "Email o contraseña incorrectos"
                     e is IOException ->
                         "Sin conexión a internet"
-                    else -> "Error inesperado: ${e.localizedMessage ?: e.javaClass.simpleName}"
+                    else -> "Error inesperado. Reintente más tarde."
                 }
             )
         }
@@ -181,10 +181,10 @@ class AuthViewModel @Inject constructor(
             throw e
         } catch (e: IOException) {
             Log.e(TAG, "Error en red iniciando login con Google: ${e.message}", e)
-            _authState.value = AuthState.Error("No se pudo iniciar Google: ${e.localizedMessage}")
+            _authState.value = AuthState.Error("Error inesperado. Reintente más tarde.")
         } catch (e: Exception) {
             Log.e(TAG, "Error inesperado iniciando login con Google: ${e.message}", e)
-            _authState.value = AuthState.Error("No se pudo iniciar Google: ${e.localizedMessage}")
+            _authState.value = AuthState.Error("Error inesperado. Reintente más tarde.")
         }
     }
 
@@ -203,7 +203,7 @@ class AuthViewModel @Inject constructor(
             _authState.value = AuthState.Success
         }.onFailure { e ->
             Log.e(TAG, "Error cerrando OAuth Google", e)
-            _authState.value = AuthState.Error("No se pudo completar Google: ${e.localizedMessage}")
+            _authState.value = AuthState.Error("Error inesperado. Reintente más tarde.")
         }
     }
 
@@ -271,17 +271,6 @@ class AuthViewModel @Inject constructor(
     fun clearRememberedEmail() = viewModelScope.launch {
         authDelegate.clearRememberedEmail()
     }
-
-    fun saveRememberedPassword(password: String) = viewModelScope.launch {
-        authDelegate.saveRememberedPassword(password)
-    }
-
-    suspend fun getRememberedPassword(): String = authDelegate.getRememberedPassword()
-
-    fun clearRememberedPassword() = viewModelScope.launch {
-        authDelegate.clearRememberedPassword()
-    }
-
 
     suspend fun logout() {
         authDelegate.logout()

@@ -14,12 +14,14 @@ import com.example.optoapp.domain.ObtenerDeudoresUseCase
 import com.example.optoapp.domain.Recomendacion
 import com.example.optoapp.util.DateUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import javax.inject.Inject
@@ -31,7 +33,8 @@ data class AnalisisNegocioUiState(
     val recomendaciones: List<Recomendacion> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null,
-    val mostrarAdvertenciaEstacionalidad: Boolean = false
+    val mostrarAdvertenciaEstacionalidad: Boolean = false,
+    val feedbacksEnviados: Map<String, Boolean> = emptyMap()
 )
 
 @HiltViewModel
@@ -50,6 +53,8 @@ class AnalisisNegocioViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(AnalisisNegocioUiState())
     val uiState: StateFlow<AnalisisNegocioUiState> = _uiState.asStateFlow()
 
+    private var loadJob: Job? = null
+
     init {
         loadData(_uiState.value.mesSeleccionado)
     }
@@ -66,88 +71,80 @@ class AnalisisNegocioViewModel @Inject constructor(
 
     fun onFeedback(recomendacionId: String, fueUtil: Boolean) {
         viewModelScope.launch {
-            val opticaId = sessionManager.opticaId.first()
-            if (fueUtil) {
-                feedbackRecomendacion.marcarUtil(recomendacionId, opticaId)
-            } else {
-                feedbackRecomendacion.marcarNoUtil(recomendacionId, opticaId)
+            try {
+                val opticaId = sessionManager.opticaId.first()
+                if (fueUtil) {
+                    feedbackRecomendacion.marcarUtil(recomendacionId, opticaId)
+                } else {
+                    feedbackRecomendacion.marcarNoUtil(recomendacionId, opticaId)
+                }
+                _uiState.value = _uiState.value.copy(
+                    feedbacksEnviados = _uiState.value.feedbacksEnviados + (recomendacionId to fueUtil)
+                )
+            } catch (e: Exception) {
+                Log.e(TAG, "Error sending recommendation feedback", e)
+                _uiState.value = _uiState.value.copy(error = "No se pudo enviar tu valoracion")
             }
         }
     }
 
     private fun loadData(mes: LocalDate) {
-        viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
+            val thisJob = coroutineContext[Job]
+            try {
+                _uiState.value = _uiState.value.copy(isLoading = true, error = null)
 
-            val opticaId = sessionManager.opticaId.first()
+                val opticaId = sessionManager.opticaId.first()
 
-            val result = runCatching {
-                coroutineScope {
+                try {
                     val analisisDeferred = async {
-                        runCatching {
-                            obtenerAnalisisMensual(opticaId, mes)
-                        }.onFailure { e ->
-                            Log.e(TAG, "Error fetching analisis mensual", e)
-                        }.getOrNull()
+                        obtenerAnalisisMensual(opticaId, mes)
                     }
                     val deudoresDeferred = async {
-                        runCatching {
-                            obtenerDeudores(opticaId)
-                        }.onFailure { e ->
-                            Log.e(TAG, "Error fetching deudores", e)
-                        }.getOrNull()
-                    }
-                    val recomendacionesDeferred = async {
-                        runCatching {
-                            generarRecomendaciones(opticaId, mes)
-                        }.onFailure { e ->
-                            Log.e(TAG, "Error fetching recomendaciones", e)
-                        }.getOrNull()
+                        obtenerDeudores(opticaId)
                     }
 
-                    Triple(
-                        analisisDeferred.await(),
-                        deudoresDeferred.await(),
-                        recomendacionesDeferred.await()
+                    val analisisResult = analisisDeferred.await()
+                    val deudoresResult = deudoresDeferred.await()
+
+                    val analisis = (analisisResult as? Resource.Success)?.data
+                    val deudores = (deudoresResult as? Resource.Success)?.data ?: emptyList()
+
+                    val recomendacionesResult = if (analisis != null || deudores.isNotEmpty()) {
+                        generarRecomendaciones(analisis, deudores, opticaId)
+                    } else {
+                        Resource.Error("Datos insuficientes")
+                    }
+
+                    val rpcErrors = listOfNotNull(
+                        (analisisResult as? Resource.Error)?.message,
+                        (deudoresResult as? Resource.Error)?.message
+                    )
+                    val recError = if (rpcErrors.isEmpty()) {
+                        (recomendacionesResult as? Resource.Error)?.message
+                    } else null
+                    val errors = (rpcErrors + listOfNotNull(recError)).toSet()
+
+                    _uiState.value = _uiState.value.copy(
+                        analisis = analisis,
+                        deudores = deudores,
+                        recomendaciones = (recomendacionesResult as? Resource.Success)?.data ?: emptyList(),
+                        isLoading = false,
+                        error = errors.joinToString("; ").ifEmpty { null },
+                        mostrarAdvertenciaEstacionalidad = analisis?.esOffline == true || (analisis != null && analisis.ventasMesAnterior == 0.0)
+                    )
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Log.e(TAG, "Unexpected error loading data", e)
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        error = "Error inesperado al cargar datos"
                     )
                 }
-            }
-
-            result.onSuccess { (analisisResult, deudoresResult, recomendacionesResult) ->
-                val errors = mutableListOf<String>()
-                val analisis = if (analisisResult is Resource.Success) {
-                    analisisResult.data
-                } else {
-                    if (analisisResult is Resource.Error) errors.add(analisisResult.message!!)
-                    null
-                }
-                val deudores = if (deudoresResult is Resource.Success) {
-                    deudoresResult.data!!
-                } else {
-                    if (deudoresResult is Resource.Error) errors.add(deudoresResult.message!!)
-                    emptyList()
-                }
-                val recomendaciones = if (recomendacionesResult is Resource.Success) {
-                    recomendacionesResult.data!!
-                } else {
-                    if (recomendacionesResult is Resource.Error) errors.add(recomendacionesResult.message!!)
-                    emptyList()
-                }
-
-                _uiState.value = _uiState.value.copy(
-                    analisis = analisis,
-                    deudores = deudores,
-                    recomendaciones = recomendaciones,
-                    isLoading = false,
-                    error = errors.takeIf { it.isNotEmpty() }?.joinToString("; "),
-                    mostrarAdvertenciaEstacionalidad = analisis?.esOffline == true
-                )
-            }.onFailure { e ->
-                Log.e(TAG, "Unexpected error loading data", e)
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    error = "Error inesperado: ${e.localizedMessage}"
-                )
+            } finally {
+                if (loadJob == thisJob) loadJob = null
             }
         }
     }

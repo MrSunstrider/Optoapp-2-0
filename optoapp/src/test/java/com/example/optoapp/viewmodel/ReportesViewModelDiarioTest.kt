@@ -125,7 +125,7 @@ class ReportesViewModelDiarioTest {
     }
 
     @Test
-    fun `totalVendido sums montoTotal and totalPagado sums montoPagado of daily filtered`() = runTest(testDispatcher) {
+    fun `totalVendido sums montoTotal and totalPagado sums pagos monto of daily filtered`() = runTest(testDispatcher) {
         val dispensaciones = listOf(
             DispensacionOptica(id = "d1", pacienteId = "p1", fecha = today, montoTotal = 150.0, montoPagado = 100.0, opticaId = opticaId),
             DispensacionOptica(id = "d2", pacienteId = "p2", fecha = today, montoTotal = 75.0,  montoPagado = 75.0,  opticaId = opticaId),
@@ -137,7 +137,12 @@ class ReportesViewModelDiarioTest {
             Venta(id = "v2", opticaId = opticaId, origen = "dispensacion", origenId = "d2",
                 pacienteId = "p2", fecha = today, montoTotal = 75.0, estado = "Completado")
         )
+        val pagos = listOf(
+            Pago(id = "pg1", fecha = today, tipo = "Efectivo", monto = 100.0, opticaId = opticaId, dispensacionId = "d1"),
+            Pago(id = "pg2", fecha = today, tipo = "Efectivo", monto = 75.0, opticaId = opticaId, dispensacionId = "d2")
+        )
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
+        every { repository.getPagosByDateRangeForOptica(any(), any(), opticaId) } returns flowOf(pagos)
         every { ventaDao.getVentasByOpticaAndDateRange(opticaId, today, today) } returns flowOf(ventas)
 
         viewModel = ReportesViewModel(repository, sessionManager, ventaDao)
@@ -147,7 +152,7 @@ class ReportesViewModelDiarioTest {
         advanceUntilIdle()
 
         assertEquals("totalVendido should be sum of today's montoTotal", 225.0, viewModel.totalVendido.value, 0.001)
-        assertEquals("totalPagado should be sum of today's montoPagado", 175.0, viewModel.totalPagado.value, 0.001)
+        assertEquals("totalPagado should be sum of today's pagos monto", 175.0, viewModel.totalPagado.value, 0.001)
     }
 
     @Test
@@ -157,6 +162,7 @@ class ReportesViewModelDiarioTest {
                 DispensacionOptica(id = "d1", pacienteId = "p1", fecha = yesterday, montoTotal = 100.0, opticaId = opticaId)
             )
         )
+        every { repository.getPagosByDateRangeForOptica(any(), any(), opticaId) } returns flowOf(emptyList())
 
         viewModel = ReportesViewModel(repository, sessionManager, ventaDao)
         activateFlows()
@@ -360,15 +366,20 @@ class ReportesViewModelDiarioTest {
     }
 
     @Test
-    fun `totalPagado includes ServicioExtra aCuenta when on the selected date`() = runTest(testDispatcher) {
+    fun `totalPagado sums pagos monto for disp and servicio extra in period`() = runTest(testDispatcher) {
         val dispensaciones = listOf(
             DispensacionOptica(id = "d1", pacienteId = "p1", fecha = today, montoTotal = 100.0, montoPagado = 60.0, opticaId = opticaId)
         )
         val servicios = listOf(
             ServicioExtra(id = "s1", descripcion = "Lente de contacto", montoTotal = 40.0, aCuenta = 20.0, estado = "Entregado", fecha = today, opticaId = opticaId)
         )
+        val pagos = listOf(
+            Pago(id = "pg1", fecha = today, tipo = "Efectivo", monto = 60.0, opticaId = opticaId, dispensacionId = "d1"),
+            Pago(id = "pg2", fecha = today, tipo = "Efectivo", monto = 20.0, opticaId = opticaId, servicioExtraId = "s1")
+        )
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
         every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(servicios)
+        every { repository.getPagosByDateRangeForOptica(any(), any(), opticaId) } returns flowOf(pagos)
 
         viewModel = ReportesViewModel(repository, sessionManager, ventaDao)
         activateFlows()
@@ -376,7 +387,7 @@ class ReportesViewModelDiarioTest {
         viewModel.setFechaDiario(today)
         advanceUntilIdle()
 
-        assertEquals("totalPagado should include disp montoPagado + servicio aCuenta", 80.0, viewModel.totalPagado.value, 0.001)
+        assertEquals("totalPagado should sum pagos monto in the period", 80.0, viewModel.totalPagado.value, 0.001)
     }
 
     @Test

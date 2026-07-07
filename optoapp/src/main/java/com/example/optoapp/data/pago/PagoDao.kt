@@ -7,8 +7,15 @@ import java.time.LocalDate
 
 @Dao
 interface PagoDao {
+    @Deprecated(
+        message = "Use getPagoByIdForOptica to enforce multi-tenant isolation",
+        replaceWith = ReplaceWith("getPagoByIdForOptica(id, opticaId)")
+    )
     @Query("SELECT * FROM pagos WHERE id = :id")
     suspend fun getPagoById(id: String): Pago?
+
+    @Query("SELECT * FROM pagos WHERE id = :id AND opticaId = :opticaId")
+    suspend fun getPagoByIdForOptica(id: String, opticaId: String): Pago?
 
     @Query("SELECT * FROM pagos WHERE dispensacionId = :dispensacionId ORDER BY fecha DESC")
     fun getPagosByDispensacion(dispensacionId: String): Flow<List<Pago>>
@@ -16,6 +23,10 @@ interface PagoDao {
     @Query("SELECT * FROM pagos WHERE servicioExtraId = :servicioExtraId ORDER BY fecha DESC")
     fun getPagosByServicioExtra(servicioExtraId: String): Flow<List<Pago>>
 
+    @Deprecated(
+        message = "Use getPagosByDateRangeForOptica to enforce multi-tenant isolation",
+        replaceWith = ReplaceWith("getPagosByDateRangeForOptica(start, end, opticaId)")
+    )
     @Query("SELECT * FROM pagos WHERE fecha >= :start AND fecha <= :end ORDER BY fecha DESC")
     fun getPagosByDateRange(start: LocalDate, end: LocalDate): Flow<List<Pago>>
 
@@ -43,6 +54,13 @@ interface PagoDao {
     @Query("SELECT * FROM pagos WHERE opticaId = :opticaId")
     suspend fun getPagosListByOptica(opticaId: String): List<Pago>
 
+    @Deprecated(
+        message = "Use reassignDispensacionIdForOptica to enforce multi-tenant isolation",
+        replaceWith = ReplaceWith("reassignDispensacionIdForOptica(oldDispensacionId, newDispensacionId, opticaId)")
+    )
     @Query("UPDATE pagos SET dispensacionId = :newDispensacionId WHERE dispensacionId = :oldDispensacionId")
     suspend fun reassignDispensacionId(oldDispensacionId: String, newDispensacionId: String): Int
+
+    @Query("UPDATE pagos SET dispensacionId = :newDispensacionId WHERE dispensacionId = :oldDispensacionId AND opticaId = :opticaId")
+    suspend fun reassignDispensacionIdForOptica(oldDispensacionId: String, newDispensacionId: String, opticaId: String): Int
 }

@@ -4,6 +4,7 @@ import android.util.Log
 import com.example.optoapp.data.Resource
 import com.example.optoapp.data.pago.PagoDao
 import com.example.optoapp.data.venta.VentaDao
+import com.example.optoapp.data.PacienteDao
 import io.github.jan.supabase.postgrest.Postgrest
 import io.mockk.coEvery
 import io.mockk.every
@@ -68,7 +69,7 @@ class ObtenerDeudoresUseCaseTest {
 
     @Test
     fun online_rpcSuccess_returnsDeudoresList() = runBlocking {
-        val useCase = object : ObtenerDeudoresUseCase(mockk<Postgrest>(), mockk(), mockk()) {
+        val useCase = object : ObtenerDeudoresUseCase(mockk<Postgrest>(), mockk(), mockk(), mockk()) {
             override suspend fun callRpcDeudores(opticaId: String): JsonArray = rpcDeudoresJson()
         }
 
@@ -90,7 +91,7 @@ class ObtenerDeudoresUseCaseTest {
 
     @Test
     fun online_emptyResult_returnsEmptyList() = runBlocking {
-        val useCase = object : ObtenerDeudoresUseCase(mockk<Postgrest>(), mockk(), mockk()) {
+        val useCase = object : ObtenerDeudoresUseCase(mockk<Postgrest>(), mockk(), mockk(), mockk()) {
             override suspend fun callRpcDeudores(opticaId: String): JsonArray = buildJsonArray {}
         }
 
@@ -108,7 +109,7 @@ class ObtenerDeudoresUseCaseTest {
 
         coEvery { ventaDao.getAllVentasByOptica("optica1") } throws IOException("DB error")
 
-        val useCase = object : ObtenerDeudoresUseCase(mockk<Postgrest>(), ventaDao, pagoDao) {
+        val useCase = object : ObtenerDeudoresUseCase(mockk<Postgrest>(), ventaDao, pagoDao, mockk()) {
             override suspend fun callRpcDeudores(opticaId: String): JsonArray {
                 throw IOException("No network")
             }
@@ -116,11 +117,12 @@ class ObtenerDeudoresUseCaseTest {
 
         val result = useCase("optica1")
         assertTrue(result is Resource.Error)
+        assertEquals("No se pudieron cargar los datos de deudores", (result as Resource.Error).message)
     }
 
     @Test
     fun unexpectedError_returnsResourceError() = runBlocking {
-        val useCase = object : ObtenerDeudoresUseCase(mockk<Postgrest>(), mockk(), mockk()) {
+        val useCase = object : ObtenerDeudoresUseCase(mockk<Postgrest>(), mockk(), mockk(), mockk()) {
             override suspend fun callRpcDeudores(opticaId: String): JsonArray {
                 throw RuntimeException("Unexpected")
             }
@@ -128,5 +130,32 @@ class ObtenerDeudoresUseCaseTest {
 
         val result = useCase("optica1")
         assertTrue(result is Resource.Error)
+        assertEquals("No se pudieron cargar los datos de deudores", (result as Resource.Error).message)
+    }
+
+    @Test
+    fun null_ventaFecha_usesLocalDateMin() = runBlocking {
+        val jsonWithNullFecha = buildJsonArray {
+            add(buildJsonObject {
+                put("paciente_nombre", "Cliente Sin Fecha")
+                put("paciente_telefono", "555-9999")
+                put("venta_id", "v-null")
+                // venta_fecha omitted entirely → string() returns ""
+                put("monto_total", 500.0)
+                put("total_pagado", 100.0)
+                put("saldo", 400.0)
+                put("dias_deuda", 10)
+            })
+        }
+
+        val useCase = object : ObtenerDeudoresUseCase(mockk<Postgrest>(), mockk(), mockk(), mockk()) {
+            override suspend fun callRpcDeudores(opticaId: String): JsonArray = jsonWithNullFecha
+        }
+
+        val result = useCase("optica1")
+        assertTrue(result is Resource.Success)
+        val deudores = (result as Resource.Success).data!!
+        assertEquals(1, deudores.size)
+        assertEquals(java.time.LocalDate.MIN, deudores[0].ventaFecha)
     }
 }

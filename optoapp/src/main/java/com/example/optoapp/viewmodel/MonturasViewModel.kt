@@ -1,5 +1,6 @@
 package com.example.optoapp.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.optoapp.data.Montura
@@ -62,7 +63,8 @@ data class MonturasUiState(
     val filterCategoria: String? = null,
     val filterPrecioMin: String? = null,
     val filterPrecioMax: String? = null,
-    val filterStockBajo: Boolean = false
+    val filterStockBajo: Boolean = false,
+    val sortBy: String? = null
 )
 
 @HiltViewModel
@@ -71,6 +73,10 @@ class MonturasViewModel @Inject constructor(
     private val repository: OptoRepository,
     private val sessionManager: SessionManager
 ) : ViewModel() {
+    companion object {
+        private const val TAG = "MonturasViewModel"
+    }
+
     private val _uiState = MutableStateFlow(MonturasUiState())
     val uiState: StateFlow<MonturasUiState> = _uiState
 
@@ -189,7 +195,7 @@ class MonturasViewModel @Inject constructor(
                     genero = form.genero.trim(),
                     opticaId = opticaId
                 )
-                when (repository.getMonturaById(montura.id)) {
+                when (repository.getMonturaById(montura.id, opticaId)) {
                     is Resource.Success -> repository.updateMontura(montura)
                     else -> repository.insertMontura(montura)
                 }
@@ -204,10 +210,12 @@ class MonturasViewModel @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: IOException) {
-                _uiState.update { it.copy(error = "Error al guardar: ${e.message}") }
+                Log.e(TAG, "save failed: IO error", e)
+                _uiState.update { it.copy(error = "Error inesperado. Reintente más tarde.") }
             } catch (e: Exception) {
                 val msg = if (e.message?.contains("UNIQUE") == true) "El SKU ya existe para otro producto." 
-                          else "Error al guardar: ${e.message}"
+                          else "Error inesperado. Reintente más tarde."
+                Log.e(TAG, "save failed", e)
                 _uiState.update { it.copy(error = msg) }
             }
         }
@@ -250,6 +258,34 @@ class MonturasViewModel @Inject constructor(
                 filterPrecioMax = null,
                 filterStockBajo = false
             )
+        }
+    }
+
+    fun setSortBy(sortBy: String?) {
+        _uiState.update { it.copy(sortBy = sortBy) }
+    }
+
+    fun registrarSalida(montura: Montura, cantidad: Int = 1) {
+        if (cantidad <= 0) return
+        viewModelScope.launch {
+            val opticaId = sessionManager.opticaId.first()
+            val updated = repository.adjustMonturaStock(montura.id, opticaId, -cantidad)
+            if (updated > 0) {
+                repository.insertMonturaMovimiento(
+                    MonturaMovimiento(
+                        id = UUID.randomUUID().toString(),
+                        monturaId = montura.id,
+                        tipo = "SALIDA",
+                        cantidad = cantidad,
+                        stockPrevio = montura.stockActual,
+                        stockNuevo = montura.stockActual - cantidad,
+                        referenciaId = "",
+                        nota = "Salida manual desde inventario",
+                        opticaId = opticaId
+                    )
+                )
+                _uiState.update { it.copy(success = "Stock actualizado (-$cantidad)", error = null) }
+            }
         }
     }
 

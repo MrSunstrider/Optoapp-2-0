@@ -99,7 +99,7 @@ class OptoRepositoryFinanzasFromRemoteTest {
     @Test
     fun `upsertGastoOperativoFromRemote passes entity with original timestamp to dao`() = runTest {
         val entity = GastoOperativoEntity(
-            id = "g1", opticaId = opticaId, categoria = "Alquiler",
+            id = "g1", opticaId = opticaId, categoria = "alquiler",
             descripcion = "Local junio", monto = 500.0, fecha = testDate,
             createdAt = T_REMOTE
         )
@@ -112,7 +112,7 @@ class OptoRepositoryFinanzasFromRemoteTest {
     @Test
     fun `upsertGastoOperativoFromRemote does NOT call PostSaveSyncScheduler`() = runTest {
         val entity = GastoOperativoEntity(
-            id = "g1", opticaId = opticaId, categoria = "Alquiler",
+            id = "g1", opticaId = opticaId, categoria = "alquiler",
             descripcion = "Local junio", monto = 500.0, fecha = testDate,
             createdAt = T_REMOTE
         )
