@@ -4,7 +4,6 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import androidx.room.ColumnInfo
 import com.example.optoapp.data.LocalDateSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -30,21 +29,21 @@ data class EvaluacionClinica(
     @Serializable(with = LocalDateSerializer::class)
     val fecha: LocalDate,
     val opticaId: String = "mi_optica_base",
-    @ColumnInfo(defaultValue = "")
+    
     val motivoConsulta: String = "",
-    @ColumnInfo(defaultValue = "")
+    
     val sintomas: String = "",
-    @ColumnInfo(defaultValue = "")
+    
     val antecedentesPersonalesOculares: String = "",
-    @ColumnInfo(defaultValue = "")
+    
     val antecedentesPersonalesSistemicos: String = "",
-    @ColumnInfo(defaultValue = "")
+    
     val antecedentesFamiliaresOculares: String = "",
-    @ColumnInfo(defaultValue = "")
+    
     val antecedentesFamiliaresSistemicos: String = "",
-    @ColumnInfo(defaultValue = "")
+    
     val medicacion: String = "",
-    @ColumnInfo(defaultValue = "")
+    
     val alergias: String = "",
     val necesidadVisual: List<String> = emptyList(),
 
@@ -61,47 +60,47 @@ data class EvaluacionClinica(
     // Otros exámenes
     val phOd: String = "", val phOi: String = "",
     val kappaOd: String = "", val kappaOi: String = "",
-    @ColumnInfo(defaultValue = "")
+    
     val hirshberg: String = "",
     val duccionesOd: String = "", val duccionesOi: String = "",
-    @ColumnInfo(defaultValue = "")
+    
     val versionesAo: String = "",
 
     // Visión binocular y Percepción
-    @ColumnInfo(defaultValue = "")
+    
     val estereopsisValor: String = "",
-    @ColumnInfo(defaultValue = "")
+    
     val estereopsisSegundos: String = "",
-    @ColumnInfo(defaultValue = "")
+    
     val lang: String = "",
-    @ColumnInfo(defaultValue = "")
+    
     val worth: String = "",
 
     // Percepción color
-    @ColumnInfo(defaultValue = "")
+    
     val ishihara: String = "",
-    @ColumnInfo(defaultValue = "")
+    
     val farnsworth: String = "",
 
     // Salud Ocular y Función Visual
-    @ColumnInfo(defaultValue = "")
+    
     val schirmerOd: String = "",
-    @ColumnInfo(defaultValue = "")
+    
     val schirmerOi: String = "",
     val osdiPuntuacion: Int? = null,
-    @ColumnInfo(defaultValue = "")
+    
     val osdiClasificacion: String = "",
-    @ColumnInfo(defaultValue = "")
+    
     val sensibilidadContraste: String = "",
-    @ColumnInfo(defaultValue = "")
+    
     val sensibilidadFrecuencia: String = "",
 
     // Otras Pruebas
-    @ColumnInfo(defaultValue = "")
+    
     val amsler: String = "",
-    @ColumnInfo(defaultValue = "")
+    
     val campoVisual: String = "",
-    @ColumnInfo(defaultValue = "")
+    
     val campoVisualDescripcion: String = "",
 
     // Cover test
@@ -132,7 +131,7 @@ data class EvaluacionClinica(
     // Adición (ADD)
     val addCercaOd: String = "", val addCercaOi: String = "",
     val addIntermediaOd: String = "", val addIntermediaOi: String = "",
-    @ColumnInfo(defaultValue = "")
+    
     val addAv: String = "",
 
     // DIP o DNP
@@ -148,21 +147,21 @@ data class EvaluacionClinica(
     val prismaOdValor: String = "", val prismaOdBase: String = "",
     val prismaOiValor: String = "", val prismaOiBase: String = "",
 
-    @ColumnInfo(defaultValue = "")
+    
     val diagnostico: String = "",
     val diagnosticoOd: List<String> = emptyList(),
     val diagnosticoOi: List<String> = emptyList(),
     val diagnosticoOtros: List<String> = emptyList(),
-    @ColumnInfo(defaultValue = "")
+    
     val planTratamiento: String = "",
-    @ColumnInfo(defaultValue = "")
+    
     val observaciones: String = "",
-    @ColumnInfo(defaultValue = "")
+    
     val proximaFechaControl: String = "",
     @Serializable(with = LocalDateSerializer::class)
     val proximaCita: LocalDate? = null,
     /** programada | confirmada | asistio | no_asistio | reprogramada */
-    @ColumnInfo(defaultValue = "")
+    
     val citaEstado: String = "programada",
     val balanceOd: Boolean = false,
     val balanceOi: Boolean = false,
@@ -180,7 +179,7 @@ data class EvaluacionClinica(
     val lcRadioBaseOi: String = "", val lcDiametroOi: String = "",
     val lcLaboratorio: String = "", val lcTipoLente: String = "",
     val lcMaterial: String = "", @Serializable(with = LocalDateSerializer::class) val lcFechaAdaptacion: LocalDate? = null,
-    @ColumnInfo(defaultValue = "")
+    
     val lcObservaciones: String = "",
     @SerialName("updatedAt")
     val updatedAt: String? = null,

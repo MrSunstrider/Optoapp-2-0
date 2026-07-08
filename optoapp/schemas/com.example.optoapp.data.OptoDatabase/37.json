@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 37,
-    "identityHash": "366805fcba0b531d6d87077fbe7a1bcc",
+    "identityHash": "59733f1ba4b51b691cff36e550d281e7",
     "entities": [
       {
         "tableName": "pacientes",
@@ -140,7 +140,7 @@
       },
       {
         "tableName": "evaluaciones",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `pacienteId` TEXT NOT NULL, `fecha` TEXT NOT NULL, `opticaId` TEXT NOT NULL, `motivoConsulta` TEXT NOT NULL DEFAULT '', `sintomas` TEXT NOT NULL DEFAULT '', `antecedentesPersonalesOculares` TEXT NOT NULL DEFAULT '', `antecedentesPersonalesSistemicos` TEXT NOT NULL DEFAULT '', `antecedentesFamiliaresOculares` TEXT NOT NULL DEFAULT '', `antecedentesFamiliaresSistemicos` TEXT NOT NULL DEFAULT '', `medicacion` TEXT NOT NULL DEFAULT '', `alergias` TEXT NOT NULL DEFAULT '', `necesidadVisual` TEXT NOT NULL, `avScOdLejos` TEXT NOT NULL, `avScOiLejos` TEXT NOT NULL, `avScOdCerca` TEXT NOT NULL, `avScOiCerca` TEXT NOT NULL, `avScAo` TEXT NOT NULL, `avScAoCerca` TEXT NOT NULL, `avCcOdLejos` TEXT NOT NULL, `avCcOiLejos` TEXT NOT NULL, `avCcOdCerca` TEXT NOT NULL, `avCcOiCerca` TEXT NOT NULL, `avCcAoPx` TEXT NOT NULL, `avCcAoCerca` TEXT NOT NULL, `phOd` TEXT NOT NULL, `phOi` TEXT NOT NULL, `kappaOd` TEXT NOT NULL, `kappaOi` TEXT NOT NULL, `hirshberg` TEXT NOT NULL DEFAULT '', `duccionesOd` TEXT NOT NULL, `duccionesOi` TEXT NOT NULL, `versionesAo` TEXT NOT NULL DEFAULT '', `estereopsisValor` TEXT NOT NULL DEFAULT '', `estereopsisSegundos` TEXT NOT NULL DEFAULT '', `lang` TEXT NOT NULL DEFAULT '', `worth` TEXT NOT NULL DEFAULT '', `ishihara` TEXT NOT NULL DEFAULT '', `farnsworth` TEXT NOT NULL DEFAULT '', `schirmerOd` TEXT NOT NULL DEFAULT '', `schirmerOi` TEXT NOT NULL DEFAULT '', `osdiPuntuacion` INTEGER, `osdiClasificacion` TEXT NOT NULL DEFAULT '', `sensibilidadContraste` TEXT NOT NULL DEFAULT '', `sensibilidadFrecuencia` TEXT NOT NULL DEFAULT '', `amsler` TEXT NOT NULL DEFAULT '', `campoVisual` TEXT NOT NULL DEFAULT '', `campoVisualDescripcion` TEXT NOT NULL DEFAULT '', `coverTest6m` TEXT NOT NULL, `coverTest40cm` TEXT NOT NULL, `coverTest10cm` TEXT NOT NULL, `ppcOr` TEXT NOT NULL, `ppcLuz` TEXT NOT NULL, `ppcFrl` TEXT NOT NULL, `reflejoFotomotor` TEXT NOT NULL, `reflejoConsensual` TEXT NOT NULL, `reflejoAcomodativo` TEXT NOT NULL, `k1Od` TEXT NOT NULL, `k2Od` TEXT NOT NULL, `k1Oi` TEXT NOT NULL, `k2Oi` TEXT NOT NULL, `objOdEsf` TEXT NOT NULL, `objOdCil` TEXT NOT NULL, `objOdEje` TEXT NOT NULL, `objOiEsf` TEXT NOT NULL, `objOiCil` TEXT NOT NULL, `objOiEje` TEXT NOT NULL, `subjOdEsf` TEXT NOT NULL, `subjOdCil` TEXT NOT NULL, `subjOdEje` TEXT NOT NULL, `subjOiEsf` TEXT NOT NULL, `subjOiCil` TEXT NOT NULL, `subjOiEje` TEXT NOT NULL, `recetaOdEsf` TEXT NOT NULL, `recetaOdCil` TEXT NOT NULL, `recetaOdEje` TEXT NOT NULL, `recetaOdAv` TEXT NOT NULL, `recetaOiEsf` TEXT NOT NULL, `recetaOiCil` TEXT NOT NULL, `recetaOiEje` TEXT NOT NULL, `recetaOiAv` TEXT NOT NULL, `addCercaOd` TEXT NOT NULL, `addCercaOi` TEXT NOT NULL, `addIntermediaOd` TEXT NOT NULL, `addIntermediaOi` TEXT NOT NULL, `addAv` TEXT NOT NULL DEFAULT '', `dipLejos` TEXT NOT NULL, `dipCerca` TEXT NOT NULL, `dipIntermedio` TEXT NOT NULL, `dipTotalMm` REAL, `dnpOdMm` REAL, `dnpOiMm` REAL, `prismaOdValor` TEXT NOT NULL, `prismaOdBase` TEXT NOT NULL, `prismaOiValor` TEXT NOT NULL, `prismaOiBase` TEXT NOT NULL, `diagnostico` TEXT NOT NULL DEFAULT '', `diagnosticoOd` TEXT NOT NULL, `diagnosticoOi` TEXT NOT NULL, `diagnosticoOtros` TEXT NOT NULL, `planTratamiento` TEXT NOT NULL DEFAULT '', `observaciones` TEXT NOT NULL DEFAULT '', `proximaFechaControl` TEXT NOT NULL DEFAULT '', `proximaCita` TEXT, `citaEstado` TEXT NOT NULL DEFAULT '', `balanceOd` INTEGER NOT NULL, `balanceOi` INTEGER NOT NULL, `otrosPresbicia` INTEGER NOT NULL, `otrosAnisometropia` INTEGER NOT NULL, `otrosAmbliopia` INTEGER NOT NULL, `autoPresbicia` INTEGER NOT NULL, `autoAnisometropia` INTEGER NOT NULL, `autoAmbliopia` INTEGER NOT NULL, `lcOdEsf` TEXT NOT NULL, `lcOdCil` TEXT NOT NULL, `lcOdEje` TEXT NOT NULL, `lcOiEsf` TEXT NOT NULL, `lcOiCil` TEXT NOT NULL, `lcOiEje` TEXT NOT NULL, `lcRadioBaseOd` TEXT NOT NULL, `lcDiametroOd` TEXT NOT NULL, `lcRadioBaseOi` TEXT NOT NULL, `lcDiametroOi` TEXT NOT NULL, `lcLaboratorio` TEXT NOT NULL, `lcTipoLente` TEXT NOT NULL, `lcMaterial` TEXT NOT NULL, `lcFechaAdaptacion` TEXT, `lcObservaciones` TEXT NOT NULL DEFAULT '', `updatedAt` TEXT, `updatedBy` TEXT, PRIMARY KEY(`id`), FOREIGN KEY(`pacienteId`) REFERENCES `pacientes`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `pacienteId` TEXT NOT NULL, `fecha` TEXT NOT NULL, `opticaId` TEXT NOT NULL, `motivoConsulta` TEXT NOT NULL, `sintomas` TEXT NOT NULL, `antecedentesPersonalesOculares` TEXT NOT NULL, `antecedentesPersonalesSistemicos` TEXT NOT NULL, `antecedentesFamiliaresOculares` TEXT NOT NULL, `antecedentesFamiliaresSistemicos` TEXT NOT NULL, `medicacion` TEXT NOT NULL, `alergias` TEXT NOT NULL, `necesidadVisual` TEXT NOT NULL, `avScOdLejos` TEXT NOT NULL, `avScOiLejos` TEXT NOT NULL, `avScOdCerca` TEXT NOT NULL, `avScOiCerca` TEXT NOT NULL, `avScAo` TEXT NOT NULL, `avScAoCerca` TEXT NOT NULL, `avCcOdLejos` TEXT NOT NULL, `avCcOiLejos` TEXT NOT NULL, `avCcOdCerca` TEXT NOT NULL, `avCcOiCerca` TEXT NOT NULL, `avCcAoPx` TEXT NOT NULL, `avCcAoCerca` TEXT NOT NULL, `phOd` TEXT NOT NULL, `phOi` TEXT NOT NULL, `kappaOd` TEXT NOT NULL, `kappaOi` TEXT NOT NULL, `hirshberg` TEXT NOT NULL, `duccionesOd` TEXT NOT NULL, `duccionesOi` TEXT NOT NULL, `versionesAo` TEXT NOT NULL, `estereopsisValor` TEXT NOT NULL, `estereopsisSegundos` TEXT NOT NULL, `lang` TEXT NOT NULL, `worth` TEXT NOT NULL, `ishihara` TEXT NOT NULL, `farnsworth` TEXT NOT NULL, `schirmerOd` TEXT NOT NULL, `schirmerOi` TEXT NOT NULL, `osdiPuntuacion` INTEGER, `osdiClasificacion` TEXT NOT NULL, `sensibilidadContraste` TEXT NOT NULL, `sensibilidadFrecuencia` TEXT NOT NULL, `amsler` TEXT NOT NULL, `campoVisual` TEXT NOT NULL, `campoVisualDescripcion` TEXT NOT NULL, `coverTest6m` TEXT NOT NULL, `coverTest40cm` TEXT NOT NULL, `coverTest10cm` TEXT NOT NULL, `ppcOr` TEXT NOT NULL, `ppcLuz` TEXT NOT NULL, `ppcFrl` TEXT NOT NULL, `reflejoFotomotor` TEXT NOT NULL, `reflejoConsensual` TEXT NOT NULL, `reflejoAcomodativo` TEXT NOT NULL, `k1Od` TEXT NOT NULL, `k2Od` TEXT NOT NULL, `k1Oi` TEXT NOT NULL, `k2Oi` TEXT NOT NULL, `objOdEsf` TEXT NOT NULL, `objOdCil` TEXT NOT NULL, `objOdEje` TEXT NOT NULL, `objOiEsf` TEXT NOT NULL, `objOiCil` TEXT NOT NULL, `objOiEje` TEXT NOT NULL, `subjOdEsf` TEXT NOT NULL, `subjOdCil` TEXT NOT NULL, `subjOdEje` TEXT NOT NULL, `subjOiEsf` TEXT NOT NULL, `subjOiCil` TEXT NOT NULL, `subjOiEje` TEXT NOT NULL, `recetaOdEsf` TEXT NOT NULL, `recetaOdCil` TEXT NOT NULL, `recetaOdEje` TEXT NOT NULL, `recetaOdAv` TEXT NOT NULL, `recetaOiEsf` TEXT NOT NULL, `recetaOiCil` TEXT NOT NULL, `recetaOiEje` TEXT NOT NULL, `recetaOiAv` TEXT NOT NULL, `addCercaOd` TEXT NOT NULL, `addCercaOi` TEXT NOT NULL, `addIntermediaOd` TEXT NOT NULL, `addIntermediaOi` TEXT NOT NULL, `addAv` TEXT NOT NULL, `dipLejos` TEXT NOT NULL, `dipCerca` TEXT NOT NULL, `dipIntermedio` TEXT NOT NULL, `dipTotalMm` REAL, `dnpOdMm` REAL, `dnpOiMm` REAL, `prismaOdValor` TEXT NOT NULL, `prismaOdBase` TEXT NOT NULL, `prismaOiValor` TEXT NOT NULL, `prismaOiBase` TEXT NOT NULL, `diagnostico` TEXT NOT NULL, `diagnosticoOd` TEXT NOT NULL, `diagnosticoOi` TEXT NOT NULL, `diagnosticoOtros` TEXT NOT NULL, `planTratamiento` TEXT NOT NULL, `observaciones` TEXT NOT NULL, `proximaFechaControl` TEXT NOT NULL, `proximaCita` TEXT, `citaEstado` TEXT NOT NULL, `balanceOd` INTEGER NOT NULL, `balanceOi` INTEGER NOT NULL, `otrosPresbicia` INTEGER NOT NULL, `otrosAnisometropia` INTEGER NOT NULL, `otrosAmbliopia` INTEGER NOT NULL, `autoPresbicia` INTEGER NOT NULL, `autoAnisometropia` INTEGER NOT NULL, `autoAmbliopia` INTEGER NOT NULL, `lcOdEsf` TEXT NOT NULL, `lcOdCil` TEXT NOT NULL, `lcOdEje` TEXT NOT NULL, `lcOiEsf` TEXT NOT NULL, `lcOiCil` TEXT NOT NULL, `lcOiEje` TEXT NOT NULL, `lcRadioBaseOd` TEXT NOT NULL, `lcDiametroOd` TEXT NOT NULL, `lcRadioBaseOi` TEXT NOT NULL, `lcDiametroOi` TEXT NOT NULL, `lcLaboratorio` TEXT NOT NULL, `lcTipoLente` TEXT NOT NULL, `lcMaterial` TEXT NOT NULL, `lcFechaAdaptacion` TEXT, `lcObservaciones` TEXT NOT NULL, `updatedAt` TEXT, `updatedBy` TEXT, PRIMARY KEY(`id`), FOREIGN KEY(`pacienteId`) REFERENCES `pacientes`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
         "fields": [
           {
             "fieldPath": "id",
@@ -170,57 +170,49 @@
             "fieldPath": "motivoConsulta",
             "columnName": "motivoConsulta",
             "affinity": "TEXT",
-            "notNull": true,
-            "defaultValue": "''"
+            "notNull": true
           },
           {
             "fieldPath": "sintomas",
             "columnName": "sintomas",
             "affinity": "TEXT",
-            "notNull": true,
-            "defaultValue": "''"
+            "notNull": true
           },
           {
             "fieldPath": "antecedentesPersonalesOculares",
             "columnName": "antecedentesPersonalesOculares",
             "affinity": "TEXT",
-            "notNull": true,
-            "defaultValue": "''"
+            "notNull": true
           },
           {
             "fieldPath": "antecedentesPersonalesSistemicos",
             "columnName": "antecedentesPersonalesSistemicos",
             "affinity": "TEXT",
-            "notNull": true,
-            "defaultValue": "''"
+            "notNull": true
           },
           {
             "fieldPath": "antecedentesFamiliaresOculares",
             "columnName": "antecedentesFamiliaresOculares",
             "affinity": "TEXT",
-            "notNull": true,
-            "defaultValue": "''"
+            "notNull": true
           },
           {
             "fieldPath": "antecedentesFamiliaresSistemicos",
             "columnName": "antecedentesFamiliaresSistemicos",
             "affinity": "TEXT",
-            "notNull": true,
-            "defaultValue": "''"
+            "notNull": true
           },
           {
             "fieldPath": "medicacion",
             "columnName": "medicacion",
             "affinity": "TEXT",
-            "notNull": true,
-            "defaultValue": "''"
+            "notNull": true
           },
           {
             "fieldPath": "alergias",
             "columnName": "alergias",
             "affinity": "TEXT",
-            "notNull": true,
-            "defaultValue": "''"
+            "notNull": true
           },
           {
             "fieldPath": "necesidadVisual",
@@ -328,8 +320,7 @@
             "fieldPath": "hirshberg",
             "columnName": "hirshberg",
             "affinity": "TEXT",
-            "notNull": true,
-            "defaultValue": "''"
+            "notNull": true
           },
           {
             "fieldPath": "duccionesOd",
@@ -347,64 +338,55 @@
             "fieldPath": "versionesAo",
             "columnName": "versionesAo",
             "affinity": "TEXT",
-            "notNull": true,
-            "defaultValue": "''"
+            "notNull": true
           },
           {
             "fieldPath": "estereopsisValor",
             "columnName": "estereopsisValor",
             "affinity": "TEXT",
-            "notNull": true,
-            "defaultValue": "''"
+            "notNull": true
           },
           {
             "fieldPath": "estereopsisSegundos",
             "columnName": "estereopsisSegundos",
             "affinity": "TEXT",
-            "notNull": true,
-            "defaultValue": "''"
+            "notNull": true
           },
           {
             "fieldPath": "lang",
             "columnName": "lang",
             "affinity": "TEXT",
-            "notNull": true,
-            "defaultValue": "''"
+            "notNull": true
           },
           {
             "fieldPath": "worth",
             "columnName": "worth",
             "affinity": "TEXT",
-            "notNull": true,
-            "defaultValue": "''"
+            "notNull": true
           },
           {
             "fieldPath": "ishihara",
             "columnName": "ishihara",
             "affinity": "TEXT",
-            "notNull": true,
-            "defaultValue": "''"
+            "notNull": true
           },
           {
             "fieldPath": "farnsworth",
             "columnName": "farnsworth",
             "affinity": "TEXT",
-            "notNull": true,
-            "defaultValue": "''"
+            "notNull": true
           },
           {
             "fieldPath": "schirmerOd",
             "columnName": "schirmerOd",
             "affinity": "TEXT",
-            "notNull": true,
-            "defaultValue": "''"
+            "notNull": true
           },
           {
             "fieldPath": "schirmerOi",
             "columnName": "schirmerOi",
             "affinity": "TEXT",
-            "notNull": true,
-            "defaultValue": "''"
+            "notNull": true
           },
           {
             "fieldPath": "osdiPuntuacion",
@@ -415,43 +397,37 @@
             "fieldPath": "osdiClasificacion",
             "columnName": "osdiClasificacion",
             "affinity": "TEXT",
-            "notNull": true,
-            "defaultValue": "''"
+            "notNull": true
           },
           {
             "fieldPath": "sensibilidadContraste",
             "columnName": "sensibilidadContraste",
             "affinity": "TEXT",
-            "notNull": true,
-            "defaultValue": "''"
+            "notNull": true
           },
           {
             "fieldPath": "sensibilidadFrecuencia",
             "columnName": "sensibilidadFrecuencia",
             "affinity": "TEXT",
-            "notNull": true,
-            "defaultValue": "''"
+            "notNull": true
           },
           {
             "fieldPath": "amsler",
             "columnName": "amsler",
             "affinity": "TEXT",
-            "notNull": true,
-            "defaultValue": "''"
+            "notNull": true
           },
           {
             "fieldPath": "campoVisual",
             "columnName": "campoVisual",
             "affinity": "TEXT",
-            "notNull": true,
-            "defaultValue": "''"
+            "notNull": true
           },
           {
             "fieldPath": "campoVisualDescripcion",
             "columnName": "campoVisualDescripcion",
             "affinity": "TEXT",
-            "notNull": true,
-            "defaultValue": "''"
+            "notNull": true
           },
           {
             "fieldPath": "coverTest6m",
@@ -679,8 +655,7 @@
             "fieldPath": "addAv",
             "columnName": "addAv",
             "affinity": "TEXT",
-            "notNull": true,
-            "defaultValue": "''"
+            "notNull": true
           },
           {
             "fieldPath": "dipLejos",
@@ -743,8 +718,7 @@
             "fieldPath": "diagnostico",
             "columnName": "diagnostico",
             "affinity": "TEXT",
-            "notNull": true,
-            "defaultValue": "''"
+            "notNull": true
           },
           {
             "fieldPath": "diagnosticoOd",
@@ -768,22 +742,19 @@
             "fieldPath": "planTratamiento",
             "columnName": "planTratamiento",
             "affinity": "TEXT",
-            "notNull": true,
-            "defaultValue": "''"
+            "notNull": true
           },
           {
             "fieldPath": "observaciones",
             "columnName": "observaciones",
             "affinity": "TEXT",
-            "notNull": true,
-            "defaultValue": "''"
+            "notNull": true
           },
           {
             "fieldPath": "proximaFechaControl",
             "columnName": "proximaFechaControl",
             "affinity": "TEXT",
-            "notNull": true,
-            "defaultValue": "''"
+            "notNull": true
           },
           {
             "fieldPath": "proximaCita",
@@ -794,8 +765,7 @@
             "fieldPath": "citaEstado",
             "columnName": "citaEstado",
             "affinity": "TEXT",
-            "notNull": true,
-            "defaultValue": "''"
+            "notNull": true
           },
           {
             "fieldPath": "balanceOd",
@@ -932,8 +902,7 @@
             "fieldPath": "lcObservaciones",
             "columnName": "lcObservaciones",
             "affinity": "TEXT",
-            "notNull": true,
-            "defaultValue": "''"
+            "notNull": true
           },
           {
             "fieldPath": "updatedAt",
@@ -3135,7 +3104,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '366805fcba0b531d6d87077fbe7a1bcc')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '59733f1ba4b51b691cff36e550d281e7')"
     ]
   }
 }

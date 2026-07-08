@@ -251,7 +251,7 @@ class DispensacionViewModel @Inject constructor(
     }
 
     fun saveDispensacion(pacienteId: String, dispensacionId: String?, onComplete: () -> Unit) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch {
             val s = _uiState.value
 
             if (s.items.isEmpty()) {
