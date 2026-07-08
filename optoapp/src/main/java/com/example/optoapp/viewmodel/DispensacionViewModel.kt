@@ -1,4 +1,4 @@
-package com.example.optoapp.viewmodel
+﻿package com.example.optoapp.viewmodel
 
 import android.util.Log
 import androidx.lifecycle.ViewModel
