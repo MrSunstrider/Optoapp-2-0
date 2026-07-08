@@ -35,13 +35,20 @@ class UploadSyncCoordinator @Inject constructor(
         private const val UPSERT_BATCH_SIZE = 80
     }
 
+    /**
+     * Shared upload pipeline: chunk → retry → markSynced → track count.
+     * Serialization must happen inside [upsertBlock] at the call site where
+     * the concrete DTO type is known — kotlinx.serialization cannot resolve
+     * erased generic type parameters.
+     */
     private suspend fun <R> executeSimpleUpsert(
         opticaId: String,
         tableName: String,
         entityType: String,
         batchTrackingType: String,
         rows: List<R>,
-        idSelector: (R) -> String
+        idSelector: (R) -> String,
+        upsertBlock: suspend (List<R>) -> Unit
     ): Int {
         if (rows.isEmpty()) {
             syncStateTracker.markSynced(opticaId, batchTrackingType, "batch")
@@ -51,7 +58,7 @@ class UploadSyncCoordinator @Inject constructor(
         try {
             rows.chunked(UPSERT_BATCH_SIZE).forEachIndexed { index, chunk ->
                 networkRetryHelper.retryNetwork("upsert:$tableName:chunk${index + 1}") {
-                    supabase.postgrest[tableName].upsert(chunk)
+                    upsertBlock(chunk)
                 }
                 uploadedCount += chunk.size
             }
@@ -258,8 +265,8 @@ class UploadSyncCoordinator @Inject constructor(
         val rows = items.map { it.toRemoto().copy(opticaId = opticaRemota) }.distinctBy { it.id }
         return executeSimpleUpsert(
             opticaId, TABLE_DISPENSACION_ITEMS, "dispensacion_item",
-            "upload_dispensacion_items", rows
-        ) { it.id }
+            "upload_dispensacion_items", rows, { it.id }
+        ) { supabase.postgrest[TABLE_DISPENSACION_ITEMS].upsert(it) }
     }
 
     suspend fun uploadPagos(opticaId: String): Int {
@@ -272,8 +279,8 @@ class UploadSyncCoordinator @Inject constructor(
         val rows = pagos.map { it.toRemoto().copy(opticaId = opticaRemota) }.distinctBy { it.id }
         return executeSimpleUpsert(
             opticaId, TABLE_PAGOS, "pago",
-            "upload_pagos", rows
-        ) { it.id }
+            "upload_pagos", rows, { it.id }
+        ) { supabase.postgrest[TABLE_PAGOS].upsert(it) }
     }
 
     suspend fun uploadGastosOperativos(opticaId: String): Int {
@@ -286,8 +293,8 @@ class UploadSyncCoordinator @Inject constructor(
         val rows = localGastos.map { it.toRemoto().copy(opticaId = opticaRemota) }.distinctBy { it.id }
         return executeSimpleUpsert(
             opticaId, TABLE_GASTOS_OPERATIVOS, "gasto_operativo",
-            "upload_gastos_operativos", rows
-        ) { it.id }
+            "upload_gastos_operativos", rows, { it.id }
+        ) { supabase.postgrest[TABLE_GASTOS_OPERATIVOS].upsert(it) }
     }
 
     suspend fun uploadVentas(opticaId: String): Int {
@@ -300,7 +307,7 @@ class UploadSyncCoordinator @Inject constructor(
         val rows = ventas.map { it.toRemoto().copy(opticaId = opticaRemota) }.distinctBy { it.id }
         return executeSimpleUpsert(
             opticaId, TABLE_VENTAS, "venta",
-            "upload_ventas", rows
-        ) { it.id }
+            "upload_ventas", rows, { it.id }
+        ) { supabase.postgrest[TABLE_VENTAS].upsert(it) }
     }
 }
