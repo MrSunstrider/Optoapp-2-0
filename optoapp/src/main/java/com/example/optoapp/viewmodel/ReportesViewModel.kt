@@ -8,13 +8,16 @@ import com.example.optoapp.data.Pago
 import com.example.optoapp.data.ServicioExtra
 import com.example.optoapp.data.SessionManager
 import com.example.optoapp.data.venta.Venta
-import com.example.optoapp.data.venta.VentaDao
 import com.example.optoapp.util.DateUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
@@ -26,9 +29,19 @@ import javax.inject.Inject
 @HiltViewModel
 class ReportesViewModel @Inject constructor(
     private val repository: OptoRepository,
-    private val sessionManager: SessionManager,
-    private val ventaDao: VentaDao
+    private val sessionManager: SessionManager
 ) : ViewModel() {
+
+    private val _isLoading = MutableStateFlow(true)
+    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            sessionManager.opticaId.first { it.isNotBlank() }
+            delay(200)
+            _isLoading.value = false
+        }
+    }
 
     private val _periodo = MutableStateFlow("Mensual")
     val periodo: StateFlow<String> = _periodo
@@ -145,7 +158,7 @@ class ReportesViewModel @Inject constructor(
                 Triple(opticaId, start, end)
             }.flatMapLatest { (opticaId, start, end) ->
                 combine(
-                    ventaDao.getVentasByOpticaAndDateRange(opticaId, start, end),
+                    repository.getVentasByOpticaAndDateRange(opticaId, start, end),
                     allDispensaciones,
                     allServiciosDelPeriodo
                 ) { ventas, disps, servs ->

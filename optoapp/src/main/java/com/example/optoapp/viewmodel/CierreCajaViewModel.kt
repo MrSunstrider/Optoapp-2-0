@@ -39,7 +39,7 @@ data class CierreCajaUiState(
     val ventasHoy: Double = 0.0,
     val cobrosAtrasados: Double = 0.0,
     val saldoPendiente: Double = 0.0,
-    val isLoading: Boolean = false,
+    val isLoading: Boolean = true,
     val dispOtMap: Map<String, String> = emptyMap()
 )
 

@@ -58,6 +58,8 @@ fun PacientesListScreen(
     val pacientes by viewModel.pacientes.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
     val activeFilter by viewModel.activeFilter.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val error by viewModel.error.collectAsState()
     val opticaRol by authViewModel.opticaRol.collectAsState(initial = "admin")
     val canCreateEdit = AppRoles.canCreateEditPacientes(opticaRol)
     val context = LocalContext.current
@@ -137,7 +139,35 @@ fun PacientesListScreen(
             }
             Spacer(modifier = Modifier.height(14.dp))
 
-            if (pacientes.isEmpty()) {
+            // Loading indicator
+            if (isLoading) {
+                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+
+            // Error card with retry
+            error?.let { errMsg ->
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = AlertRed.copy(alpha = 0.1f)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Icon(Icons.Default.Error, contentDescription = null, tint = AlertRed, modifier = Modifier.size(32.dp))
+                        Spacer(Modifier.height(8.dp))
+                        Text(errMsg, color = AlertRed, style = MaterialTheme.typography.bodyMedium)
+                        Spacer(Modifier.height(8.dp))
+                        OutlinedButton(onClick = { viewModel.refresh() }) {
+                            Text("Reintentar")
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+
+            if (pacientes.isEmpty() && !isLoading) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(Icons.Default.PersonOff, contentDescription = null, modifier = Modifier.size(48.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f))
@@ -145,7 +175,7 @@ fun PacientesListScreen(
                         Text("No se encontraron pacientes", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
-            } else {
+            } else if (pacientes.isNotEmpty()) {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize().testTag(TestTags.PACIENTE_LISTA),
                     contentPadding = PaddingValues(bottom = 88.dp),
@@ -249,14 +279,14 @@ private fun PacienteCard(
 
             // Action buttons
             Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                IconButton(onClick = { onShowLastEvaluacion(paciente.id) }, modifier = Modifier.size(36.dp).testTag(TestTags.PACIENTE_CARD_LAST_EVAL_BTN)) {
+                IconButton(onClick = { onShowLastEvaluacion(paciente.id) }, modifier = Modifier.testTag(TestTags.PACIENTE_CARD_LAST_EVAL_BTN)) {
                     Icon(Icons.Default.Visibility, contentDescription = "Ver evaluación", modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
                 }
-                IconButton(onClick = { onShowLastDispensacion(paciente.id) }, modifier = Modifier.size(36.dp).testTag(TestTags.PACIENTE_CARD_LAST_DISP_BTN)) {
+                IconButton(onClick = { onShowLastDispensacion(paciente.id) }, modifier = Modifier.testTag(TestTags.PACIENTE_CARD_LAST_DISP_BTN)) {
                     Icon(Icons.Default.Inventory2, contentDescription = "Ver dispensación", modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.tertiary)
                 }
                 if (paciente.telefono.isNotBlank()) {
-                    IconButton(onClick = onCall, modifier = Modifier.size(36.dp)) {
+                    IconButton(onClick = onCall) {
                         Icon(Icons.Default.Call, contentDescription = "Llamar", modifier = Modifier.size(18.dp), tint = PositiveGreen)
                     }
                 }

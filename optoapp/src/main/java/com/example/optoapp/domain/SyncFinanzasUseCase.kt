@@ -18,6 +18,16 @@ import javax.inject.Inject
  *
  * Delega la ejecución a helpers extraídos para mantener la clase por debajo de 250 líneas.
  */
+
+/**
+ * Thrown by upload methods to carry the partial uploaded count when an IOException
+ * interrupts a chunked batch. [safeUpload] catches this and returns the partial count
+ * instead of 0, so FinanzasSyncResult reflects actual progress.
+ */
+class UploadPartialException(
+    val uploadedCount: Int,
+    cause: IOException
+) : IOException("Partial upload: $uploadedCount succeeded before error", cause)
 open class SyncFinanzasUseCase @Inject constructor(
     private val deletionSyncHelper: DeletionSyncHelper,
     private val uploadSyncCoordinator: UploadSyncCoordinator,
@@ -127,6 +137,18 @@ open class SyncFinanzasUseCase @Inject constructor(
     /**
      * Ejecuta un paso de upload individual; si falla, registra el error y retorna 0
      * para que los pasos restantes puedan continuar.
+     *
+     * NOTE: counts may be 0 even when partial data was uploaded before the error.
+     * The per-chunk count is propagated via [UploadPartialException] for methods
+     * that use [UploadSyncCoordinator.executeSimpleUpsert].
+     *
+     * H7: Partial upload count limitation is accepted because:
+     * 1. Partial uploads are idempotent — unconfirmed rows are re-uploaded on the next sync cycle.
+     * 2. Marking partial state per chunk would require API changes to upload coordinator
+     *    return types (currently returns Int, not a per-chunk summary).
+     * When [executeSimpleUpsert] throws IOException, the exception propagates through the
+     * upload method and is caught here, so the chunk-level count is lost. This is acceptable
+     * as long as idempotency holds.
      */
     private suspend fun safeUpload(
         entityName: String,
@@ -136,6 +158,9 @@ open class SyncFinanzasUseCase @Inject constructor(
             block()
         } catch (e: CancellationException) {
             throw e
+        } catch (e: UploadPartialException) {
+            Log.w(TAG, "Upload parcial de $entityName: ${e.uploadedCount} subidos antes del error", e)
+            e.uploadedCount
         } catch (e: IOException) {
             Log.e(TAG, "Error en red subiendo $entityName: ${e.message}", e)
             0

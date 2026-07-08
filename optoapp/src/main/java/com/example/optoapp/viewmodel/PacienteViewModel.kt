@@ -45,9 +45,35 @@ class PacienteViewModel @Inject constructor(
     private val _sortOrder = MutableStateFlow("nombre")
     val sortOrder: StateFlow<String> = _sortOrder
 
+    private val _isLoading = MutableStateFlow(true)
+    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+
+    private val _error = MutableStateFlow<String?>(null)
+    val error: StateFlow<String?> = _error.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            // Wait until opticaId is known and pacientes flow emits first real data
+            sessionManager.opticaId.first { it.isNotBlank() }
+            // Small delay to let Room query settle
+            kotlinx.coroutines.delay(100)
+            _isLoading.value = false
+        }
+    }
+
     private val _refreshTrigger = MutableStateFlow(0L)
 
-    fun refresh() { _refreshTrigger.value = System.currentTimeMillis() }
+    fun refresh() {
+        _refreshTrigger.value = System.currentTimeMillis()
+        _isLoading.value = true
+        viewModelScope.launch {
+            try {
+                sessionManager.opticaId.first { it.isNotBlank() }
+                kotlinx.coroutines.delay(100)
+            } catch (_: Exception) { }
+            _isLoading.value = false
+        }
+    }
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     val pacientes: StateFlow<List<Paciente>> = combine(

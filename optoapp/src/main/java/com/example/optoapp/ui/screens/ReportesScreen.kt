@@ -28,13 +28,14 @@ import com.example.optoapp.viewmodel.ReportesViewModel
 import com.example.optoapp.ui.components.DropdownField
 import com.example.optoapp.util.DateUtils
 import com.example.optoapp.util.FileShareUtils
+import com.example.optoapp.util.fmt
 import com.example.optoapp.util.ReporteFinancieroPdfGenerator
 import com.example.optoapp.ui.components.OptoDatePickerDialog
 import java.time.Year
-import java.util.*
 import kotlinx.coroutines.launch
 import com.example.optoapp.ui.components.OptoTopAppBar
 import com.example.optoapp.ui.components.OptoCard
+import com.example.optoapp.ui.components.OptoKpiCard
 import com.example.optoapp.ui.theme.PositiveGreen
 import com.example.optoapp.ui.theme.AlertRed
 import com.example.optoapp.ui.theme.WarningAmber
@@ -69,7 +70,8 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
     val totalTransacciones by viewModel.totalTransacciones.collectAsState()
     val dispensacionesCount by viewModel.dispensacionesCount.collectAsState()
     val serviciosCount by viewModel.serviciosCount.collectAsState()
-    var isLoading by remember { mutableStateOf(false) }
+    val isDataLoading by viewModel.isLoading.collectAsState()
+    var isPdfLoading by remember { mutableStateOf(false) }
 
     val ventasPeriodo = totalCobrado - cobrosPeriodo
     val porCobrar = totalVendido - totalPagado
@@ -89,7 +91,7 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                 actions = {
                     IconButton(onClick = {
                         scope.launch {
-                            isLoading = true
+                            isPdfLoading = true
                             try {
                                 val pdf = ReporteFinancieroPdfGenerator.generate(
                                     context = context,
@@ -104,11 +106,11 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                             } catch (e: Exception) {
                                 android.widget.Toast.makeText(context, "Error al generar PDF", android.widget.Toast.LENGTH_SHORT).show()
                             } finally {
-                                isLoading = false
+                                isPdfLoading = false
                             }
                         }
                     }) {
-                        if (isLoading) {
+                        if (isPdfLoading) {
                             CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
                         } else {
                             Icon(Icons.Default.PictureAsPdf, contentDescription = "Generar PDF")
@@ -117,7 +119,7 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                 }
             )
         }
-    ) { padding ->
+        ) { padding ->
         LazyColumn(
             modifier = Modifier
                 .padding(padding)
@@ -125,6 +127,11 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                 .fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
+            // ── Loading indicator ──
+            if (isDataLoading) {
+                item { LinearProgressIndicator(modifier = Modifier.fillMaxWidth()) }
+            }
+
             // ── Period selector with navigation ──
             item {
                 Card(
@@ -175,20 +182,20 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
             // ── KPI Cards ──
             item {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    KpiCard("Vendido", "s/. ${fmt(totalVendido)}", MaterialTheme.colorScheme.primary, Icons.Default.TrendingUp, Modifier.weight(1f))
-                    KpiCard("Cobrado", "s/. ${fmt(totalCobrado)}", PositiveGreen, Icons.Default.Payments, Modifier.weight(1f))
+                    OptoKpiCard("Vendido", "s/. ${totalVendido.fmt()}", MaterialTheme.colorScheme.primary, Icons.Default.TrendingUp, Modifier.weight(1f))
+                    OptoKpiCard("Cobrado", "s/. ${totalCobrado.fmt()}", PositiveGreen, Icons.Default.Payments, Modifier.weight(1f))
                 }
             }
             item {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    KpiCard("Por Cobrar", "s/. ${fmt(porCobrar)}", if (porCobrar > 0) AlertRed else PositiveGreen, Icons.Default.AccountBalanceWallet, Modifier.weight(1f))
-                    KpiCard("Ticket Prom.", "s/. ${fmt(ticketPromedio)}", MaterialTheme.colorScheme.secondary, Icons.Default.Receipt, Modifier.weight(1f))
+                    OptoKpiCard("Por Cobrar", "s/. ${porCobrar.fmt()}", if (porCobrar > 0) AlertRed else PositiveGreen, Icons.Default.AccountBalanceWallet, Modifier.weight(1f))
+                    OptoKpiCard("Ticket Prom.", "s/. ${ticketPromedio.fmt()}", MaterialTheme.colorScheme.secondary, Icons.Default.Receipt, Modifier.weight(1f))
                 }
             }
             item {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    KpiCard("Transacciones", "$totalTransacciones", MaterialTheme.colorScheme.tertiary, Icons.Default.ShoppingCart, Modifier.weight(1f))
-                    KpiCard("Pendiente", "s/. ${fmt(porCobrar)}", WarningAmber, Icons.Default.Schedule, Modifier.weight(1f))
+                    OptoKpiCard("Transacciones", "$totalTransacciones", MaterialTheme.colorScheme.tertiary, Icons.Default.ShoppingCart, Modifier.weight(1f))
+                    OptoKpiCard("Pendiente", "s/. ${porCobrar.fmt()}", WarningAmber, Icons.Default.Schedule, Modifier.weight(1f))
                 }
             }
 
@@ -253,9 +260,9 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                             Text("Dispensación · OT ${disp.ot.ifBlank { "-" }}", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         Column(horizontalAlignment = Alignment.End) {
-                            Text("s/. ${fmt(disp.montoTotal)}", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            Text("s/. ${disp.montoTotal.fmt()}", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                             Text(
-                                if (saldo > 0) "Saldo: s/. ${fmt(saldo)}" else "Pagado",
+                                if (saldo > 0) "Saldo: s/. ${saldo.fmt()}" else "Pagado",
                                 fontSize = 11.sp,
                                 color = if (saldo > 0) AlertRed else PositiveGreen
                             )
@@ -274,9 +281,9 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                             Text("Servicio · ${serv.descripcion.ifBlank { "Sin descripción" }}", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         Column(horizontalAlignment = Alignment.End) {
-                            Text("s/. ${fmt(serv.montoTotal)}", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            Text("s/. ${serv.montoTotal.fmt()}", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                             Text(
-                                if (saldo > 0) "Saldo: s/. ${fmt(saldo)}" else "Pagado",
+                                if (saldo > 0) "Saldo: s/. ${saldo.fmt()}" else "Pagado",
                                 fontSize = 11.sp,
                                 color = if (saldo > 0) AlertRed else PositiveGreen
                             )
@@ -291,29 +298,10 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
 }
 
 @Composable
-private fun KpiCard(title: String, value: String, color: Color, icon: androidx.compose.ui.graphics.vector.ImageVector, modifier: Modifier = Modifier) {
-    Card(
-        modifier = modifier,
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.08f))
-    ) {
-        Column(modifier = Modifier.padding(14.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(18.dp))
-                Spacer(Modifier.width(6.dp))
-                Text(title, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            Spacer(Modifier.height(4.dp))
-            Text(value, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = color)
-        }
-    }
-}
-
-@Composable
 private fun CobroRow(label: String, amount: Double, color: Color, bold: Boolean = false) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
         Text(label, fontSize = 13.sp, fontWeight = if (bold) FontWeight.Bold else FontWeight.Normal)
-        Text("s/. ${fmt(amount)}", fontWeight = if (bold) FontWeight.Bold else FontWeight.Medium, color = color, fontSize = 13.sp)
+        Text("s/. ${amount.fmt()}", fontWeight = if (bold) FontWeight.Bold else FontWeight.Medium, color = color, fontSize = 13.sp)
     }
 }
 
@@ -338,10 +326,4 @@ private fun BarRow(label: String, count: Int, maxVal: Float, color: Color) {
     }
 }
 
-private fun fmt(value: Double): String {
-    return if (value == value.toLong().toDouble()) {
-        String.format(Locale.getDefault(), "%,.0f", value)
-    } else {
-        String.format(Locale.getDefault(), "%,.2f", value)
-    }
-}
+

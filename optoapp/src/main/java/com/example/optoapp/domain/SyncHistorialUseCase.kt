@@ -195,8 +195,10 @@ open class SyncHistorialUseCase @Inject constructor(
             if (remoto.id in conflictedIds) return@forEach
             try {
                 val local = remoto.toEntity()
-                repository.upsertEvaluacionFromRemote(local)
-                syncStateTracker.markSynced(opticaId, "evaluacion", local.id)
+                repository.withTransaction {
+                    repository.upsertEvaluacionFromRemote(local)
+                    syncStateTracker.markSynced(opticaId, "evaluacion", local.id)
+                }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: IOException) {

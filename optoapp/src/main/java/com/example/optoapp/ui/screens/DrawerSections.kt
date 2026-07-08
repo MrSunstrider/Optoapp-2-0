@@ -4,6 +4,16 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
@@ -89,7 +99,7 @@ fun DrawerContent(
             },
             title = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Error, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+                    Icon(Icons.Default.Error, contentDescription = "Error", tint = MaterialTheme.colorScheme.error)
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Error de Sincronización")
                 }
@@ -146,7 +156,7 @@ fun DrawerContent(
                 scope.launch { drawerState.close() }
                 navController.navigateDrawer("pacientes")
             },
-            icon = { Icon(Icons.Default.Person, contentDescription = null) },
+            icon = { Icon(Icons.Default.Person, contentDescription = "Pacientes") },
             modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
         )
         NavigationDrawerItem(
@@ -156,7 +166,7 @@ fun DrawerContent(
                 scope.launch { drawerState.close() }
                 navController.navigateDrawer("servicios_extra")
             },
-            icon = { Icon(Icons.Default.AddShoppingCart, contentDescription = null) },
+            icon = { Icon(Icons.Default.AddShoppingCart, contentDescription = "Servicios Extra") },
             modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
         )
         if (showOperacionHoy) {
@@ -167,7 +177,7 @@ fun DrawerContent(
                     scope.launch { drawerState.close() }
                     navController.navigateDrawer("operacion_hoy")
                 },
-                icon = { Icon(Icons.Default.Today, contentDescription = null) },
+                icon = { Icon(Icons.Default.Today, contentDescription = "Dashboard") },
                 modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
             )
         }
@@ -185,7 +195,7 @@ fun DrawerContent(
                 scope.launch { drawerState.close() }
                 navController.navigateDrawer("agenda")
             },
-            icon = { Icon(Icons.Default.CalendarMonth, contentDescription = null) },
+            icon = { Icon(Icons.Default.CalendarMonth, contentDescription = "Agenda") },
             modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
         )
         NavigationDrawerItem(
@@ -195,7 +205,7 @@ fun DrawerContent(
                 scope.launch { drawerState.close() }
                 navController.navigateDrawer("monturas")
             },
-            icon = { Icon(Icons.Default.Inventory2, contentDescription = null) },
+            icon = { Icon(Icons.Default.Inventory2, contentDescription = "Inventario") },
             modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
         )
         NavigationDrawerItem(
@@ -205,7 +215,7 @@ fun DrawerContent(
                 scope.launch { drawerState.close() }
                 navController.navigateDrawer("proveedores")
             },
-            icon = { Icon(Icons.Default.Business, contentDescription = null) },
+            icon = { Icon(Icons.Default.Business, contentDescription = "Proveedores") },
             modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
         )
         if (showCierreCaja || showBiYReportes) {
@@ -223,7 +233,7 @@ fun DrawerContent(
                         scope.launch { drawerState.close() }
                         navController.navigateDrawer("cierre_caja")
                     },
-                    icon = { Icon(Icons.Default.AccountBalanceWallet, contentDescription = null) },
+                    icon = { Icon(Icons.Default.AccountBalanceWallet, contentDescription = "Cierre de Caja") },
                     modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                 )
             }
@@ -235,7 +245,7 @@ fun DrawerContent(
                         scope.launch { drawerState.close() }
                         navController.navigateDrawer("estadisticas_bi")
                     },
-                    icon = { Icon(Icons.AutoMirrored.Filled.TrendingUp, contentDescription = null) },
+                    icon = { Icon(Icons.AutoMirrored.Filled.TrendingUp, contentDescription = "Mi Negocio") },
                     modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                 )
                 NavigationDrawerItem(
@@ -245,7 +255,7 @@ fun DrawerContent(
                         scope.launch { drawerState.close() }
                         navController.navigateDrawer("reportes")
                     },
-                    icon = { Icon(Icons.Default.DateRange, contentDescription = null) },
+                    icon = { Icon(Icons.Default.DateRange, contentDescription = "Reportes") },
                     modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                 )
             }
@@ -268,7 +278,7 @@ fun DrawerContent(
                     scope.launch { drawerState.close() }
                     navController.navigateDrawer("configuracion")
                 },
-                icon = { Icon(Icons.Default.Settings, contentDescription = null) },
+                icon = { Icon(Icons.Default.Settings, contentDescription = "Configuración") },
                 modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
             )
         }
@@ -296,7 +306,7 @@ fun DrawerContent(
                 icon = {
                     Icon(
                         Icons.Default.Warning,
-                        contentDescription = null,
+                        contentDescription = "Conflictos",
                         tint = MaterialTheme.colorScheme.error
                     )
                 },
@@ -321,7 +331,7 @@ fun DrawerContent(
                 if (syncState is SyncState.Loading) {
                     CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
                 } else {
-                    Icon(Icons.Default.CloudSync, contentDescription = null)
+                    Icon(Icons.Default.CloudSync, contentDescription = "Sincronizar")
                 }
             },
             modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)

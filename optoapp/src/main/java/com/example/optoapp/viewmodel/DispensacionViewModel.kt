@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.first
 import java.util.UUID
@@ -250,7 +251,7 @@ class DispensacionViewModel @Inject constructor(
     }
 
     fun saveDispensacion(pacienteId: String, dispensacionId: String?, onComplete: () -> Unit) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             val s = _uiState.value
 
             if (s.items.isEmpty()) {

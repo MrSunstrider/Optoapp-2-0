@@ -93,32 +93,45 @@
 ### M1 — Supabase SECURITY DEFINER functions callable by `authenticated` role
 **Audit**: Supabase Advisors | **Functions**: `check_rate_limit`, `create_optica_for_current_user`, `paciente_eliminaciones_restantes_hoy`
 **Risk**: These run with owner privileges. If logic doesn't validate caller's optica membership, privilege escalation possible.
-**Fix**: Verify each function checks `auth.uid()` membership against `usuario_optica`. Document which functions are intentionally SECURITY DEFINER.
+**Status**: Audited 2026-07-08. Findings:
+
+| Function | Checks `auth.uid()` | Validates `usuario_optica`? | Verdict |
+|----------|---------------------|----------------------------|---------|
+| `check_rate_limit` | No — operates on `pin_attempts` metadata | N/A — no optica scope | ✅ SAFE. Only tracks rate-limit counters by key. No tenant data accessed. |
+| `create_optica_for_current_user` | Yes (line 20) | N/A — creates optica + registers caller as admin | ✅ SAFE. Caller IS the owner of the new optica. No cross-tenant risk. |
+| `paciente_eliminaciones_restantes_hoy` | Yes (line 16) | ❌ Does NOT verify caller is member of `p_optica_id` | ⚠️ HIGH risk. Leaks deletion count across opticas. Accepts arbitrary `p_optica_id`. Fix: add `WHERE EXISTS (SELECT 1 FROM usuario_optica WHERE user_id = v_uid AND optica_id = p_optica_id)` before counting. |
+
+**Fix**: Add optica membership guard to `paciente_eliminaciones_restantes_hoy` via a server-side Edge Function or by adding the membership check directly in the function body. The other two are intentionally SECURITY DEFINER and safe.
 
 ### M2 — Supabase leaked password protection disabled
-**Audit**: Supabase Advisors | **Fix**: Enable in Supabase Auth settings.
+**Audit**: Supabase Advisors | **Status**: Confirmed disabled (advisor `auth_leaked_password_protection`).
+**Fix**: Go to Supabase Dashboard → Authentication → Providers → Email → Password Protection → toggle "Prevent use of leaked passwords". Requires Pro Plan or above.
 
 ### M3 — Supabase insufficient MFA options
 **Audit**: Supabase Advisors | **Fix**: Enable TOTP or passkey MFA.
 
 ### M4 — `enableLifecycleCallbacks = false` — JWT may silently expire
-**Audit**: R1 Security #8 | **Files**: `SupabaseModule.kt:41`
-**Risk**: Auth plugin can't refresh token in background. PostSaveSyncScheduler might use expired JWT.
-**Fix**: Ensure `PostSaveSyncScheduler` refreshes session before initiating sync.
+**Audit**: R1 Security #8 | **Files**: `SupabaseModule.kt:41`, `PostSaveSyncScheduler.kt:296-315`
+**Status**: ✅ Already resolved. `PostSaveSyncScheduler.ensureSessionForPostSaveSync()` calls `SyncSessionHelper.refreshSessionBeforeSync(supabase)` before every sync operation.
+**Risk**: Auth plugin can't refresh token in background.
+**Original Fix**: Ensure `PostSaveSyncScheduler` refreshes session before initiating sync.
 
 ### M5 — PIN validated with cleartext comparison, no rate limiting
 **Audit**: R1 Security #9 | **Files**: `PinDelegate.kt:43-44`
 **Risk**: Brute force possible. 6-digit PIN = 900,000 combinations, no exponential backoff after failures.
+**Status**: ✅ Fixed 2026-07-08. Added in-memory counter + cooldown: 5 attempts → 30s, 10 attempts → 5min.
 **Fix**: Add lockout: 5 attempts → 30s delay, 10 attempts → 5min. Use timing-safe comparison.
 
 ### M6 — Three-way merge is dead code (`baseSnapshot` always `"{}"`)
 **Audit**: R4 Resilience #7 | **Files**: `ConflictHelper.kt:160`, `SyncViewModel.kt:194,418`
 **Risk**: 300+ lines of dead code. Conflict always falls back to timestamp bump.
+**Status**: ✅ Fixed 2026-07-08. Removed `resolveKeepMineWithMerge`, `resolveAcceptTheirsWithMerge`, `applyMergedEntity`. Three-way merge deferred until `baseSnapshot` is populated at conflict detection time.
 **Fix**: Capture real base snapshot at conflict detection time, or remove dead code.
 
 ### M7 — `runInTransaction` with `runBlocking` on main thread — ANR risk
 **Audit**: R4 Resilience #8 | **Files**: `DispensacionViewModel.kt:350-435`
 **Risk**: `viewModelScope.launch` uses `Dispatchers.Main` by default. `runBlocking` inside `runInTransaction` blocks UI thread.
+**Status**: ✅ Fixed 2026-07-08. Changed `viewModelScope.launch` to `viewModelScope.launch(Dispatchers.IO)`.
 **Fix**: Launch with `Dispatchers.IO`: `viewModelScope.launch(Dispatchers.IO) { ... }`
 
 ### M8 — `deletePaciente` doesn't mark sync state

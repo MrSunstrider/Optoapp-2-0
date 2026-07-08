@@ -8,18 +8,17 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.optoapp.data.ConflictDao
 import com.example.optoapp.data.ConflictRecord
-import com.example.optoapp.data.ConflictSnapshot
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.ProveedorRepository
 import com.example.optoapp.data.OrdenCompraRepository
 import com.example.optoapp.data.SyncEntityStateDao
 import com.example.optoapp.data.Resource
+import com.example.optoapp.data.OpticaMembership
 import com.example.optoapp.data.SessionManager
 import com.example.optoapp.data.SyncTelemetry
 import com.example.optoapp.data.SyncTelemetryRemoteRow
 import com.example.optoapp.data.MembershipRepository
 import com.example.optoapp.subscription.SubscriptionManager
-import com.example.optoapp.sync.errorLabelForException
 import kotlinx.coroutines.CancellationException
 import java.io.IOException
 import com.example.optoapp.util.BackgroundErrorCollector
@@ -32,12 +31,6 @@ import com.example.optoapp.domain.SyncPacientesUseCase
 import com.example.optoapp.domain.SyncProveedoresUseCase
 import com.example.optoapp.domain.SyncOrdenesCompraUseCase
 import com.example.optoapp.domain.SyncInventarioFisicoUseCase
-import com.example.optoapp.domain.MonturaRemota
-import com.example.optoapp.domain.ProveedorRemoto
-import com.example.optoapp.domain.sync.ConflictHelper
-import com.example.optoapp.domain.sync.EntitySnapshotSerializer
-import com.example.optoapp.domain.sync.MergeInput
-import com.example.optoapp.domain.sync.ThreeWayMerge
 import com.example.optoapp.domain.SyncSessionHelper
 import com.example.optoapp.sync.SyncGate
 import com.example.optoapp.sync.PostSaveSyncScheduler
@@ -52,7 +45,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.withLock
-import kotlinx.serialization.json.Json
 import javax.inject.Inject
 
 sealed class SyncState {
@@ -107,6 +99,10 @@ class SyncViewModel @Inject constructor(
     val conflictCount: StateFlow<Int> = _conflictCount.asStateFlow()
 
     private var wasOffline = false
+
+    /** Cached membership list from the last successful [ensureSyncContext] call.
+     *  Used as fallback for download-only operations when the network is unavailable. */
+    private var cachedMemberships: List<OpticaMembership>? = null
     private val networkCallback = object : ConnectivityManager.NetworkCallback() {
         override fun onAvailable(network: android.net.Network) {
             if (wasOffline) {
@@ -183,69 +179,30 @@ class SyncViewModel @Inject constructor(
      * Bumps the local entity's updatedAt to now so that filterConflicts passes
      * (local > remote), then uploads, and only clears the conflict record on success.
      *
-     * FR-10: If snapshot data (baseSnapshot != "{}") is available, performs a
-     * three-way merge first (local wins for conflicted fields) before uploading.
+     * NOTE: Three-way merge (FR-10) is deferred until baseSnapshot is populated
+     * at conflict detection time. Currently baseSnapshot is always "{}", so the
+     * merge is never reached. When that infrastructure is ready, uncomment the
+     * merge logic and remove this fallback.
      */
     fun resolveKeepMine(entity: ConflictRecord) {
         viewModelScope.launch {
             val opticaId = sessionManager.opticaId.first()
             try {
-                val snapshot = conflictDao.getConflictSnapshot(entity.entityId, opticaId)
-                if (snapshot != null && EntitySnapshotSerializer.hasSnapshotData(snapshot.baseSnapshot)) {
-                    resolveKeepMineWithMerge(entity, snapshot, opticaId)
+                bumpEntityUpdatedAt(entity.entityId, entity.entityType)
+                val syncResult = syncGate.mutex.withLock {
+                    syncForEntityTypeWithResult(opticaId, entity.entityType, skipUpload = false)
+                }
+                if (syncResult !is Resource.Error) {
+                    conflictDao.resolveConflict(entity.entityId, opticaId)
+                    _conflicts.value = _conflicts.value.filter { it.entityId != entity.entityId }
+                    _conflictCount.value = _conflicts.value.size
+                    Log.d(TAG, "Conflicto resuelto (keep mine): ${entity.entityType}/${entity.entityId}")
                 } else {
-                    // Fallback: existing bump + upload behavior
-                    bumpEntityUpdatedAt(entity.entityId, entity.entityType)
-                    val syncResult = syncGate.mutex.withLock {
-                        syncForEntityTypeWithResult(opticaId, entity.entityType, skipUpload = false)
-                    }
-                    if (syncResult !is Resource.Error) {
-                        conflictDao.resolveConflict(entity.entityId, opticaId)
-                        _conflicts.value = _conflicts.value.filter { it.entityId != entity.entityId }
-                        _conflictCount.value = _conflicts.value.size
-                        Log.d(TAG, "Conflicto resuelto (keep mine): ${entity.entityType}/${entity.entityId}")
-                    } else {
-                        Log.w(TAG, "Keep mine: sync falló, conflicto retenido: ${entity.entityType}/${entity.entityId}")
-                    }
+                    Log.w(TAG, "Keep mine: sync falló, conflicto retenido: ${entity.entityType}/${entity.entityId}")
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Error resolviendo conflicto: ${e.message}", e)
             }
-        }
-    }
-
-    /**
-     * FR-10: Resolve "keep mine" using three-way merge when snapshot data is available.
-     *
-     * Merges base/local/remote, applies local-wins for conflicted fields,
-     * bumps + uploads the merged entity, then clears the conflict record.
-     */
-    private suspend fun resolveKeepMineWithMerge(
-        entity: ConflictRecord,
-        snapshot: ConflictSnapshot,
-        opticaId: String
-    ) {
-        val input = MergeInput(
-            baseJson = EntitySnapshotSerializer.parseSnapshot(snapshot.baseSnapshot),
-            localJson = EntitySnapshotSerializer.parseSnapshot(snapshot.localData),
-            remoteJson = EntitySnapshotSerializer.parseSnapshot(snapshot.remoteData)
-        )
-        val mergeResult = ThreeWayMerge.merge(input)
-        // ThreeWayMerge defaults to local values for conflicted fields (keep mine)
-        // Write merged entity data to Room before uploading
-        applyMergedEntity(entity.entityId, entity.entityType, mergeResult.mergedEntity)
-        // Bump + upload via the existing sync pipeline
-        bumpEntityUpdatedAt(entity.entityId, entity.entityType)
-        val syncResult = syncGate.mutex.withLock {
-            syncForEntityTypeWithResult(opticaId, entity.entityType, skipUpload = false)
-        }
-        if (syncResult !is Resource.Error) {
-            conflictDao.resolveConflict(entity.entityId, opticaId)
-            _conflicts.value = _conflicts.value.filter { it.entityId != entity.entityId }
-            _conflictCount.value = _conflicts.value.size
-            Log.d(TAG, "Conflicto resuelto (keep mine + merge): ${entity.entityType}/${entity.entityId}")
-        } else {
-            Log.w(TAG, "Keep mine + merge: sync falló, conflicto retenido: ${entity.entityType}/${entity.entityId}")
         }
     }
 
@@ -281,189 +238,138 @@ class SyncViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Fetches the entity from Room by [entityId] and [entityType], then calls the
-     * appropriate repository update method which auto-stamps updatedAt = Instant.now().
-     */
-    private suspend fun bumpEntityUpdatedAt(entityId: String, entityType: String) {
-        val opticaId = sessionManager.opticaId.first()
-        when (entityType) {
-            "servicio_extra" -> {
-                val result = repository.getServicioById(entityId)
-                val servicio = result.data
-                if (result is Resource.Success && servicio != null) {
-                    repository.updateServicio(servicio)
-                } else {
-                    Log.w(TAG, "bumpEntityUpdatedAt: servicio no encontrado id=$entityId")
-                }
+    // ── Helpers for bumpEntityUpdatedAt strategy map ──────────────────────
+
+    private suspend fun <T> bumpWithResource(
+        entityId: String, entityType: String,
+        fetcher: suspend () -> Resource<T>,
+        updater: suspend (T) -> Unit
+    ) {
+        val result = fetcher()
+        if (result is Resource.Success && result.data != null) {
+            updater(result.data)
+        } else {
+            Log.w(TAG, "bumpEntityUpdatedAt: $entityType no encontrado id=$entityId")
+        }
+    }
+
+    private suspend fun <T> bumpWithNullable(
+        entityId: String, entityType: String,
+        fetcher: suspend () -> T?,
+        updater: suspend (T) -> Unit
+    ) {
+        val entity = fetcher()
+        if (entity != null) {
+            updater(entity)
+        } else {
+            Log.w(TAG, "bumpEntityUpdatedAt: $entityType no encontrado id=$entityId")
+        }
+    }
+
+    private val bumpHandlers: Map<String, suspend (entityId: String, opticaId: String) -> Unit> = mapOf(
+        "servicio_extra" to { id, _ ->
+            bumpWithResource(id, "servicio", { repository.getServicioById(id) }, { repository.updateServicio(it) })
+        },
+        "dispensacion" to { id, _ ->
+            bumpWithResource(id, "dispensacion", { repository.getDispensacionById(id) }, { repository.updateDispensacion(it) })
+        },
+        "pago" to { id, opticaId ->
+            bumpWithNullable(id, "pago", { repository.getPagoById(id, opticaId) }, { repository.updatePago(it) })
+        },
+        "paciente" to { id, _ ->
+            bumpWithResource(id, "paciente", { repository.getPacienteById(id) }, { repository.updatePaciente(it) })
+        },
+        "evaluacion" to { id, _ ->
+            bumpWithResource(id, "evaluacion", { repository.getEvaluacionById(id) }, { repository.updateEvaluacion(it) })
+        },
+        "montura" to { id, opticaId ->
+            bumpWithResource(id, "montura", { repository.getMonturaById(id, opticaId) }, { repository.updateMontura(it) })
+        },
+        "proveedor" to { id, _ ->
+            bumpWithNullable(id, "proveedor", { proveedorRepository.getById(id) }, { proveedorRepository.update(it) })
+        },
+        "orden_compra" to { id, _ ->
+            bumpWithNullable(id, "orden_compra", { ordenCompraRepository.getById(id) }, { ordenCompraRepository.update(it) })
+        },
+        "montura_movimiento" to { id, opticaId ->
+            val mov = repository.getMovimientoMonturaById(id)
+            if (mov != null) {
+                bumpWithResource(
+                    mov.monturaId, "parent montura",
+                    { repository.getMonturaById(mov.monturaId, opticaId) },
+                    { repository.updateMontura(it) }
+                )
+            } else {
+                Log.w(TAG, "bumpEntityUpdatedAt: montura_movimiento no encontrado id=$id")
             }
-            "dispensacion" -> {
-                val result = repository.getDispensacionById(entityId)
-                if (result is Resource.Success && result.data != null) {
-                    repository.updateDispensacion(result.data)
-                } else {
-                    Log.w(TAG, "bumpEntityUpdatedAt: dispensacion no encontrada id=$entityId")
-                }
-            }
-            "pago" -> {
-                val pago = repository.getPagoById(entityId, opticaId)
-                if (pago != null) {
-                    repository.updatePago(pago)
-                } else {
-                    Log.w(TAG, "bumpEntityUpdatedAt: pago no encontrado id=$entityId")
-                }
-            }
-            "paciente" -> {
-                val result = repository.getPacienteById(entityId)
-                if (result is Resource.Success && result.data != null) {
-                    repository.updatePaciente(result.data)
-                } else {
-                    Log.w(TAG, "bumpEntityUpdatedAt: paciente no encontrado id=$entityId")
-                }
-            }
-            "evaluacion" -> {
-                val result = repository.getEvaluacionById(entityId)
-                if (result is Resource.Success && result.data != null) {
-                    repository.updateEvaluacion(result.data)
-                } else {
-                    Log.w(TAG, "bumpEntityUpdatedAt: evaluacion no encontrada id=$entityId")
-                }
-            }
-            "montura" -> {
-                val result = repository.getMonturaById(entityId, opticaId)
-                if (result is Resource.Success && result.data != null) {
-                    repository.updateMontura(result.data)
-                } else {
-                    Log.w(TAG, "bumpEntityUpdatedAt: montura no encontrada id=$entityId")
-                }
-            }
-            "proveedor" -> {
-                val proveedor = proveedorRepository.getById(entityId)
-                if (proveedor != null) {
-                    proveedorRepository.update(proveedor)
-                } else {
-                    Log.w(TAG, "bumpEntityUpdatedAt: proveedor no encontrado id=$entityId")
-                }
-            }
-            "orden_compra" -> {
-                val oc = ordenCompraRepository.getById(entityId)
+        },
+        "orden_compra_item" to { id, _ ->
+            val item = ordenCompraRepository.getOrdenItemById(id)
+            if (item != null) {
+                val oc = ordenCompraRepository.getById(item.ordenId)
                 if (oc != null) {
                     ordenCompraRepository.update(oc)
                 } else {
-                    Log.w(TAG, "bumpEntityUpdatedAt: orden_compra no encontrada id=$entityId")
+                    Log.w(TAG, "bumpEntityUpdatedAt: parent orden_compra no encontrada id=${item.ordenId} for item=$id")
                 }
+            } else {
+                Log.w(TAG, "bumpEntityUpdatedAt: orden_compra_item no encontrado id=$id")
             }
-            "montura_movimiento" -> {
-                val mov = repository.getMovimientoMonturaById(entityId)
-                if (mov != null) {
-                    val monturaResult = repository.getMonturaById(mov.monturaId, opticaId)
-                    if (monturaResult is Resource.Success && monturaResult.data != null) {
-                        repository.updateMontura(monturaResult.data)
-                    } else {
-                        Log.w(TAG, "bumpEntityUpdatedAt: parent montura no encontrada id=${mov.monturaId} for movimiento=$entityId")
-                    }
-                } else {
-                    Log.w(TAG, "bumpEntityUpdatedAt: montura_movimiento no encontrado id=$entityId")
-                }
+        },
+        "dispensacion_item" to { id, _ ->
+            val item = repository.getDispensacionItemById(id)
+            if (item != null) {
+                bumpWithResource(
+                    item.dispensacionId, "parent dispensacion",
+                    { repository.getDispensacionById(item.dispensacionId) },
+                    { repository.updateDispensacion(it) }
+                )
+                repository.insertDispensacionItem(item)
+            } else {
+                Log.w(TAG, "bumpEntityUpdatedAt: dispensacion_item no encontrado id=$id")
             }
-            "orden_compra_item" -> {
-                val item = ordenCompraRepository.getOrdenItemById(entityId)
-                if (item != null) {
-                    val oc = ordenCompraRepository.getById(item.ordenId)
-                    if (oc != null) {
-                        ordenCompraRepository.update(oc)
-                    } else {
-                        Log.w(TAG, "bumpEntityUpdatedAt: parent orden_compra no encontrada id=${item.ordenId} for item=$entityId")
-                    }
-                } else {
-                    Log.w(TAG, "bumpEntityUpdatedAt: orden_compra_item no encontrado id=$entityId")
-                }
-            }
-            "dispensacion_item" -> {
-                val item = repository.getDispensacionItemById(entityId)
-                if (item != null) {
-                    // Bump the parent dispensacion so the sync pipeline includes this item.
-                    val result = repository.getDispensacionById(item.dispensacionId)
-                    if (result is Resource.Success && result.data != null) {
-                        repository.updateDispensacion(result.data)
-                    } else {
-                        Log.w(TAG, "bumpEntityUpdatedAt: parent dispensacion no encontrada id=${item.dispensacionId} for item=$entityId")
-                    }
-                    // Also upsert the item directly so the upload coordinator picks it up.
-                    repository.insertDispensacionItem(item)
-                } else {
-                    Log.w(TAG, "bumpEntityUpdatedAt: dispensacion_item no encontrado id=$entityId")
-                }
-            }
-            "categoria_montura" -> {
-                Log.w(TAG, "categoria_montura has no parent, skipping bump")
-            }
-            else -> {
-                Log.d(TAG, "bumpEntityUpdatedAt: tipo no aplica bump: $entityType")
-            }
+        },
+        "categoria_montura" to { _, _ -> Log.w(TAG, "categoria_montura has no parent, skipping bump") }
+    )
+
+    /**
+     * Fetches the entity from Room by [entityId] and [entityType], then calls the
+     * appropriate repository update method which auto-stamps updatedAt = Instant.now().
+     *
+     * Delegates to [bumpHandlers] strategy map instead of a long when-block.
+     */
+    private suspend fun bumpEntityUpdatedAt(entityId: String, entityType: String) {
+        val opticaId = sessionManager.opticaId.first()
+        val handler = bumpHandlers[entityType]
+        if (handler != null) {
+            handler(entityId, opticaId)
+        } else {
+            Log.d(TAG, "bumpEntityUpdatedAt: tipo no aplica bump: $entityType")
         }
     }
 
     /**
-     * FR-11: Resolve "accept theirs". When snapshot data (baseSnapshot != "{}") is
-     * available, performs a three-way merge (remote wins for conflicted fields) and
-     * writes the merged entity to Room without uploading. Falls back to clearing the
-     * conflict and forcing a download when no snapshot data exists.
+     * FR-11: Resolve "accept theirs" by clearing the conflict and forcing a download.
+     *
+     * NOTE: Three-way merge (FR-11) is deferred until baseSnapshot is populated
+     * at conflict detection time. Currently baseSnapshot is always "{}", so the
+     * merge is never reached. When that infrastructure is ready, uncomment the
+     * merge logic and remove this fallback.
      */
     fun resolveAcceptTheirs(entity: ConflictRecord) {
         viewModelScope.launch {
             val opticaId = sessionManager.opticaId.first()
             try {
-                val snapshot = conflictDao.getConflictSnapshot(entity.entityId, opticaId)
-                if (snapshot != null && EntitySnapshotSerializer.hasSnapshotData(snapshot.baseSnapshot)) {
-                    resolveAcceptTheirsWithMerge(entity, snapshot, opticaId)
-                } else {
-                    // Fallback: clear conflict + force download
-                    conflictDao.resolveConflict(entity.entityId, opticaId)
-                    _conflicts.value = _conflicts.value.filter { it.entityId != entity.entityId }
-                    _conflictCount.value = _conflicts.value.size
-                    if (!SyncSessionHelper.refreshSessionBeforeSync(supabase)) return@launch
-                    syncForEntityType(opticaId, entity.entityType, skipUpload = true)
-                    Log.d(TAG, "Conflicto resuelto (accept theirs): ${entity.entityType}/${entity.entityId}")
-                }
+                conflictDao.resolveConflict(entity.entityId, opticaId)
+                _conflicts.value = _conflicts.value.filter { it.entityId != entity.entityId }
+                _conflictCount.value = _conflicts.value.size
+                if (!SyncSessionHelper.refreshSessionBeforeSync(supabase)) return@launch
+                syncForEntityType(opticaId, entity.entityType, skipUpload = true)
+                Log.d(TAG, "Conflicto resuelto (accept theirs): ${entity.entityType}/${entity.entityId}")
             } catch (e: Exception) {
                 Log.e(TAG, "Error resolviendo conflicto: ${e.message}", e)
             }
         }
-    }
-
-    /**
-     * FR-11: Resolve "accept theirs" using three-way merge when snapshot data exists.
-     *
-     * Merges base/local/remote, applies remote-wins for conflicted fields,
-     * writes merged entity to Room (NO upload — merged entity matches server state),
-     * then clears the conflict record.
-     */
-    private suspend fun resolveAcceptTheirsWithMerge(
-        entity: ConflictRecord,
-        snapshot: ConflictSnapshot,
-        opticaId: String
-    ) {
-        val input = MergeInput(
-            baseJson = EntitySnapshotSerializer.parseSnapshot(snapshot.baseSnapshot),
-            localJson = EntitySnapshotSerializer.parseSnapshot(snapshot.localData),
-            remoteJson = EntitySnapshotSerializer.parseSnapshot(snapshot.remoteData)
-        )
-        val mergeResult = ThreeWayMerge.merge(input)
-        // Apply remote-wins for conflicted fields: rebuild merged with remote values
-        var mergedObject = mergeResult.mergedEntity
-        for (field in mergeResult.conflictedFields) {
-            val remoteVal = input.remoteJson[field]
-            if (remoteVal != null) {
-                mergedObject = mergedObject.toMutableMap().apply { put(field, remoteVal) }.let { kotlinx.serialization.json.JsonObject(it) }
-            }
-        }
-        // Write merged entity to Room (no upload per FR-11 design decision)
-        applyMergedEntity(entity.entityId, entity.entityType, mergedObject)
-        conflictDao.resolveConflict(entity.entityId, opticaId)
-        _conflicts.value = _conflicts.value.filter { it.entityId != entity.entityId }
-        _conflictCount.value = _conflicts.value.size
-        Log.d(TAG, "Conflicto resuelto (accept theirs + merge): ${entity.entityType}/${entity.entityId}")
     }
 
     fun dismissConflict(entity: ConflictRecord) {
@@ -490,71 +396,10 @@ class SyncViewModel @Inject constructor(
     }
 
     /**
-     * Applies the merged JSON data from a three-way merge to the Room entity.
-     *
-     * Uses the same entity-specific repository methods as [bumpEntityUpdatedAt],
-     * but instead of just bumping the timestamp, it deserializes the merged entity
-     * JSON and updates the full entity in Room.
+     * NOTE: applyMergedEntity was removed when the three-way merge code was
+     * cleaned up (M6). Three-way merge is deferred until baseSnapshot is
+     * populated at conflict detection time.
      */
-    /**
-     * Applies the merged JSON data from a three-way merge to the Room entity.
-     *
-     * For each entity type, reads the current entity from Room, deserializes the
-     * merged JSON into the entity type using kotlinx.serialization, and writes
-     * the merged state back to Room with updatedAt bumped to now.
-     *
-     * Falls back to [bumpEntityUpdatedAt] (timestamp-only) when deserialization
-     * fails or the entity type isn't supported.
-     */
-    private suspend fun applyMergedEntity(
-        entityId: String,
-        entityType: String,
-        mergedJson: kotlinx.serialization.json.JsonObject
-    ) {
-        val jsonString = EntitySnapshotSerializer.serialize(mergedJson)
-        if (jsonString == "{}" || jsonString == "null") {
-            bumpEntityUpdatedAt(entityId, entityType)
-            return
-        }
-
-        try {
-            // Write merged JSON as a snapshot that OverlaySnapshotDao can serve.
-            // The bumpEntityUpdatedAt pipeline will then read the entity from Room
-            // and upload the version that includes the merged fields.
-            // Apply merged data by re-serializing and updating the entity.
-            val json = Json { ignoreUnknownKeys = true; isLenient = true; coerceInputValues = true }
-
-            when (entityType) {
-                "servicio_extra", "dispensacion", "pago" -> {
-                    // These types are processed by UploadSyncCoordinator — just bump timestamp
-                    bumpEntityUpdatedAt(entityId, entityType)
-                }
-                "paciente" -> {
-                    val merged = json.decodeFromString<com.example.optoapp.domain.PacienteRemoto>(jsonString)
-                    repository.updatePaciente(merged.toEntity().copy(updatedAt = java.time.Instant.now().toString()))
-                }
-                "evaluacion" -> {
-                    val merged = json.decodeFromString<com.example.optoapp.domain.EvaluacionRemota>(jsonString)
-                    repository.updateEvaluacion(merged.toEntity().copy(updatedAt = java.time.Instant.now().toString()))
-                }
-                "montura" -> {
-                    val merged = json.decodeFromString<MonturaRemota>(jsonString)
-                    repository.upsertMontura(merged.toEntity().copy(updatedAt = java.time.Instant.now().toString()))
-                }
-                "proveedor" -> {
-                    val merged = json.decodeFromString<ProveedorRemoto>(jsonString)
-                    proveedorRepository.update(merged.toEntity().copy(updatedAt = java.time.Instant.now().toString()))
-                }
-                else -> {
-                    // Unsupported entity type — fall back to timestamp-only bump
-                    bumpEntityUpdatedAt(entityId, entityType)
-                }
-            }
-        } catch (e: Exception) {
-            Log.w(TAG, "applyMergedEntity fallback: $entityType/$entityId — ${e.message}")
-            bumpEntityUpdatedAt(entityId, entityType)
-        }
-    }
 
     // Silencia el PostSaveSyncScheduler para que las inserciones durante
     // la descarga no disparen syncs post-guardado que regeneren conflictos.
@@ -570,7 +415,7 @@ class SyncViewModel @Inject constructor(
             _syncState.value = SyncState.Error("Tu sesión expiró. Vuelve a iniciar sesión.")
             return
         }
-        val contextCheck = ensureSyncContext()
+        val contextCheck = ensureSyncContext(allowCached = true)
         if (contextCheck != null) {
             _syncState.value = SyncState.Error(contextCheck)
             return
@@ -690,7 +535,7 @@ class SyncViewModel @Inject constructor(
     }
 
     fun performSilentSync() = viewModelScope.launch {
-        val contextCheck = ensureSyncContext()
+        val contextCheck = ensureSyncContext(allowCached = true)
         if (contextCheck != null) {
             Log.w(TAG, "Sync silenciosa cancelada: $contextCheck")
             return@launch
@@ -829,7 +674,7 @@ class SyncViewModel @Inject constructor(
         }
     }
 
-    private suspend fun ensureSyncContext(): String? {
+    private suspend fun ensureSyncContext(allowCached: Boolean = false): String? {
         val session = runCatching { supabase.auth.currentSessionOrNull() }.getOrNull()
         if (session == null || session.accessToken.isNullOrBlank()) {
             return "Tu sesión de Supabase no está activa. Vuelve a iniciar sesión."
@@ -840,7 +685,30 @@ class SyncViewModel @Inject constructor(
         if (opticaId.isBlank() || opticaId == SessionManager.LEGACY_OPTICA_ID) {
             return "Debes seleccionar o crear una óptica antes de sincronizar."
         }
-        val memberships = membershipRepository.fetchMembershipsForCurrentUser()
+        val memberships = try {
+            membershipRepository.fetchMembershipsForCurrentUser()
+        } catch (e: Exception) {
+            Log.w(TAG, "ensureSyncContext: error fetching memberships, allowCached=$allowCached", e)
+            if (allowCached) {
+                val cached = cachedMemberships
+                if (cached != null) {
+                    Log.d(TAG, "ensureSyncContext: falling back to cached memberships (${cached.size})")
+                    cached
+                } else if (e is IOException) {
+                    // H10: Network error in download-only context — proceed with the
+                    // already-validated opticaId. The user belongs to this optica since
+                    // they navigated to it; without this fallback, a brief network blip
+                    // blocks offline-capable download-only syncs even when cached data exists locally.
+                    Log.w(TAG, "ensureSyncContext: IOException with no cached memberships — allowing download-only fallback")
+                    return null
+                } else {
+                    return "Error verificando membresía: ${e.localizedMessage}"
+                }
+            } else {
+                return "Error verificando membresía: ${e.localizedMessage}"
+            }
+        }
+        cachedMemberships = memberships
         val belongsToOptica = memberships.any { it.opticaId == opticaId }
         if (!belongsToOptica) {
             return "Tu cuenta (${currentUser.email ?: "usuario"}) no tiene acceso a la óptica actual. Reingresa y selecciona una óptica válida."

@@ -4,11 +4,9 @@ import android.content.Context
 import android.net.ConnectivityManager
 import com.example.optoapp.data.ConflictDao
 import com.example.optoapp.data.ConflictRecord
-import com.example.optoapp.data.ConflictSnapshot
 import com.example.optoapp.data.MembershipRepository
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.OrdenCompraRepository
-import com.example.optoapp.data.Paciente
 import com.example.optoapp.data.ProveedorRepository
 import com.example.optoapp.data.Resource
 import com.example.optoapp.data.SessionManager
@@ -54,10 +52,10 @@ import org.junit.Before
 import org.junit.Test
 
 /**
- * Phase 12 — Tests for three-way merge resolution in SyncViewModel.
+ * Phase 12 — Tests for sync conflict resolution fallback in SyncViewModel.
  *
- * Tests that resolveKeepMine and resolveAcceptTheirs correctly branch
- * between ThreeWayMerge path and fallback bump path based on snapshot data.
+ * After M6 cleanup, three-way merge was deferred (baseSnapshot is always "{}").
+ * These tests verify the fallback bump/download path.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class SyncViewModelThreeWayMergeTest {
@@ -87,17 +85,6 @@ class SyncViewModelThreeWayMergeTest {
     private lateinit var postSaveSyncScheduler: PostSaveSyncScheduler
 
     private lateinit var viewModel: SyncViewModel
-
-    private val conflictWithSnapshots = ConflictRecord(
-        entityId = "paciente-3wm-001",
-        opticaId = testOpticaId,
-        entityType = "paciente",
-        localSnapshot = """{"id":"paciente-3wm-001","nombre":"Juan Local"}""",
-        remoteSnapshot = """{"id":"paciente-3wm-001","nombre":"Juan Remoto"}""",
-        baseSnapshot = """{"id":"paciente-3wm-001","nombre":"Juan Base"}""",
-        localData = """{"id":"paciente-3wm-001","nombre":"Juan Local","telefono":"555-0100"}""",
-        remoteData = """{"id":"paciente-3wm-001","nombre":"Juan Remoto","telefono":"555-0999"}"""
-    )
 
     private val conflictWithoutSnapshots = ConflictRecord(
         entityId = "paciente-fallback-001",
@@ -203,26 +190,7 @@ class SyncViewModelThreeWayMergeTest {
         Dispatchers.resetMain()
     }
 
-    // ─── FR-10: resolveKeepMine with snapshot data ──────────────────────
-
-    @Test
-    fun resolveKeepMine_withSnapshots_resolvesConflict() = runTest(testDispatcher) {
-        coEvery { conflictDao.getConflictSnapshot(any(), any()) } returns ConflictSnapshot(
-            baseSnapshot = """{"id":"paciente-3wm-001","nombre":"Juan Base"}""",
-            localData = """{"id":"paciente-3wm-001","nombre":"Juan Local","telefono":"555-0100"}""",
-            remoteData = """{"id":"paciente-3wm-001","nombre":"Juan Remoto","telefono":"555-0999"}"""
-        )
-        coEvery { repository.getPacienteById(conflictWithSnapshots.entityId) } returns Resource.Error("test")
-
-        viewModel.resolveKeepMine(conflictWithSnapshots)
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        coVerify(atLeast = 1) {
-            conflictDao.resolveConflict(conflictWithSnapshots.entityId, testOpticaId)
-        }
-    }
-
-    // ─── FR-10: resolveKeepMine without snapshots → fallback to bump ────
+    // ─── FR-10: resolveKeepMine → fallback bump path ────────────────────
 
     @Test
     fun resolveKeepMine_withoutSnapshots_callsResolve() = runTest(testDispatcher) {
@@ -236,21 +204,6 @@ class SyncViewModelThreeWayMergeTest {
         }
     }
 
-    // ─── FR-11: resolveAcceptTheirs with snapshots ─────────────────────
-
-    @Test
-    fun resolveAcceptTheirs_withSnapshots_clearsConflict() = runTest(testDispatcher) {
-        coEvery { conflictDao.getConflictSnapshot(any(), any()) } returns ConflictSnapshot(
-            baseSnapshot = """{"id":"paciente-3wm-001","nombre":"Juan Base"}""",
-            localData = """{"id":"paciente-3wm-001","nombre":"Juan Local"}""",
-            remoteData = """{"id":"paciente-3wm-001","nombre":"Juan Remoto"}"""
-        )
-
-        viewModel.resolveAcceptTheirs(conflictWithSnapshots)
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        coVerify(atLeast = 1) {
-            conflictDao.resolveConflict(conflictWithSnapshots.entityId, testOpticaId)
-        }
-    }
+    // ─── FR-11: resolveAcceptTheirs tests removed with three-way merge ──
+    // See M6: merge path was dead code, deferred until baseSnapshot is populated.
 }

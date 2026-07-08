@@ -28,6 +28,22 @@ class PinDelegate @Inject constructor(
     val pinHasBeenSet: Flow<Boolean> = securityManager.pinHasBeenSet
     val isPinRequired: Flow<Boolean> = sessionManager.isPinRequired
 
+    //── Brute-force protection ────────────────────────────────────────────────
+
+    private var failedAttempts = 0
+    private var cooldownUntil: Long = 0L
+
+    /**
+     * Retorna los segundos restantes de cooldown, o 0 si no hay bloqueo activo.
+     * M5: El ViewModel puede exponer esto para feedback visual.
+     */
+    fun remainingCooldownSeconds(): Int {
+        val remaining = cooldownUntil - System.currentTimeMillis()
+        return if (remaining > 0) (remaining / 1000).toInt() else 0
+    }
+
+    //── Digit input ───────────────────────────────────────────────────────────
+
     fun onPinDigit(digit: String) {
         if (_pinInput.value.length < SecurityManager.PIN_LENGTH) {
             _pinInput.value += digit
@@ -41,7 +57,21 @@ class PinDelegate @Inject constructor(
     //── Validación ────────────────────────────────────────────────────────────
 
     suspend fun validatePin(): Boolean {
-        return _pinInput.value == securityManager.userPin.first()
+        val now = System.currentTimeMillis()
+        if (now < cooldownUntil) return false
+
+        val isValid = _pinInput.value == securityManager.userPin.first()
+        if (isValid) {
+            failedAttempts = 0
+        } else {
+            failedAttempts++
+            cooldownUntil = when {
+                failedAttempts >= 10 -> now + 300_000L  // 5 min
+                failedAttempts >= 5  -> now + 30_000L   // 30 s
+                else                -> now               // no cooldown
+            }
+        }
+        return isValid
     }
 
     //── Creación / Actualización ──────────────────────────────────────────────

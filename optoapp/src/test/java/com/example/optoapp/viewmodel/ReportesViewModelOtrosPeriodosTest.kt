@@ -5,7 +5,6 @@ import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Pago
 import com.example.optoapp.data.ServicioExtra
 import com.example.optoapp.data.SessionManager
-import com.example.optoapp.data.venta.VentaDao
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
@@ -41,7 +40,6 @@ class ReportesViewModelOtrosPeriodosTest {
     private val testDispatcher = UnconfinedTestDispatcher()
     private lateinit var repository: OptoRepository
     private lateinit var sessionManager: SessionManager
-    private lateinit var ventaDao: VentaDao
     private lateinit var viewModel: ReportesViewModel
 
     private val opticaId = "optica-test-1"
@@ -73,10 +71,9 @@ class ReportesViewModelOtrosPeriodosTest {
         every { android.util.Log.e(any(), any<String>(), any()) } returns 0
         repository = mockk(relaxed = true)
         sessionManager = mockk(relaxed = true)
-        ventaDao = mockk(relaxed = true)
         every { sessionManager.opticaId } returns flowOf(opticaId)
         every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(emptyList())
-        every { ventaDao.getVentasByOpticaAndDateRange(opticaId, any(), any()) } returns flowOf(emptyList())
+        every { repository.getVentasByOpticaAndDateRange(opticaId, any(), any()) } returns flowOf(emptyList())
     }
 
     @After
@@ -108,7 +105,7 @@ class ReportesViewModelOtrosPeriodosTest {
         )
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(inWeek + outOfWeek)
 
-        viewModel = ReportesViewModel(repository, sessionManager, ventaDao)
+        viewModel = ReportesViewModel(repository, sessionManager)
         activateFlows()
         viewModel.setPeriodo("Semanal")
         advanceUntilIdle()
@@ -129,7 +126,7 @@ class ReportesViewModelOtrosPeriodosTest {
         )
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
 
-        viewModel = ReportesViewModel(repository, sessionManager, ventaDao)
+        viewModel = ReportesViewModel(repository, sessionManager)
         activateFlows()
         viewModel.setPeriodo("Semanal")
         advanceUntilIdle()
@@ -145,7 +142,7 @@ class ReportesViewModelOtrosPeriodosTest {
         )
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
 
-        viewModel = ReportesViewModel(repository, sessionManager, ventaDao)
+        viewModel = ReportesViewModel(repository, sessionManager)
         activateFlows()
         viewModel.setPeriodo("Semanal")
         advanceUntilIdle()
@@ -168,7 +165,7 @@ class ReportesViewModelOtrosPeriodosTest {
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(todasLasDispensaciones)
         every { repository.getPagosByDateRangeForOptica(any(), any(), opticaId) } returns flowOf(pagos)
 
-        viewModel = ReportesViewModel(repository, sessionManager, ventaDao)
+        viewModel = ReportesViewModel(repository, sessionManager)
         activateFlows()
         viewModel.setPeriodo("Semanal")
         advanceUntilIdle()
@@ -194,7 +191,7 @@ class ReportesViewModelOtrosPeriodosTest {
         )
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(inMonth + outOfMonth)
 
-        viewModel = ReportesViewModel(repository, sessionManager, ventaDao)
+        viewModel = ReportesViewModel(repository, sessionManager)
         activateFlows()
         viewModel.setPeriodo("Mensual")
         advanceUntilIdle()
@@ -213,7 +210,7 @@ class ReportesViewModelOtrosPeriodosTest {
         )
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
 
-        viewModel = ReportesViewModel(repository, sessionManager, ventaDao)
+        viewModel = ReportesViewModel(repository, sessionManager)
         activateFlows()
         viewModel.setPeriodo("Mensual")
         advanceUntilIdle()
@@ -238,7 +235,7 @@ class ReportesViewModelOtrosPeriodosTest {
         )
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(inYear + outOfYear)
 
-        viewModel = ReportesViewModel(repository, sessionManager, ventaDao)
+        viewModel = ReportesViewModel(repository, sessionManager)
         activateFlows()
         viewModel.setPeriodo("Anual")
         viewModel.setAnio(now.year.toString())
@@ -256,7 +253,7 @@ class ReportesViewModelOtrosPeriodosTest {
         )
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
 
-        viewModel = ReportesViewModel(repository, sessionManager, ventaDao)
+        viewModel = ReportesViewModel(repository, sessionManager)
         activateFlows()
         viewModel.setPeriodo("Anual")
         viewModel.setAnio("2025")
@@ -278,7 +275,7 @@ class ReportesViewModelOtrosPeriodosTest {
         )
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
 
-        viewModel = ReportesViewModel(repository, sessionManager, ventaDao)
+        viewModel = ReportesViewModel(repository, sessionManager)
         activateFlows()
         viewModel.setPeriodo("Anual")
         viewModel.setAnio("2030")
@@ -295,7 +292,7 @@ class ReportesViewModelOtrosPeriodosTest {
         )
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
 
-        viewModel = ReportesViewModel(repository, sessionManager, ventaDao)
+        viewModel = ReportesViewModel(repository, sessionManager)
         activateFlows()
         viewModel.setPeriodo("Anual")
         viewModel.setAnio("2025")
@@ -316,7 +313,7 @@ class ReportesViewModelOtrosPeriodosTest {
         )
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
 
-        viewModel = ReportesViewModel(repository, sessionManager, ventaDao)
+        viewModel = ReportesViewModel(repository, sessionManager)
         activateFlows()
         viewModel.setPeriodo("Total")
         advanceUntilIdle()
@@ -332,7 +329,7 @@ class ReportesViewModelOtrosPeriodosTest {
         )
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
 
-        viewModel = ReportesViewModel(repository, sessionManager, ventaDao)
+        viewModel = ReportesViewModel(repository, sessionManager)
         activateFlows()
         viewModel.setPeriodo("Total")
         advanceUntilIdle()
@@ -360,7 +357,7 @@ class ReportesViewModelOtrosPeriodosTest {
         every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(servicios)
         every { repository.getPagosByDateRangeForOptica(any(), any(), opticaId) } returns flowOf(pagos)
 
-        viewModel = ReportesViewModel(repository, sessionManager, ventaDao)
+        viewModel = ReportesViewModel(repository, sessionManager)
         activateFlows()
         viewModel.setPeriodo("Semanal")
         advanceUntilIdle()
@@ -386,7 +383,7 @@ class ReportesViewModelOtrosPeriodosTest {
         every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(servicios)
         every { repository.getPagosByDateRangeForOptica(any(), any(), opticaId) } returns flowOf(pagos)
 
-        viewModel = ReportesViewModel(repository, sessionManager, ventaDao)
+        viewModel = ReportesViewModel(repository, sessionManager)
         activateFlows()
         viewModel.setPeriodo("Mensual")
         advanceUntilIdle()
@@ -412,7 +409,7 @@ class ReportesViewModelOtrosPeriodosTest {
         every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(servicios)
         every { repository.getPagosByDateRangeForOptica(any(), any(), opticaId) } returns flowOf(pagos)
 
-        viewModel = ReportesViewModel(repository, sessionManager, ventaDao)
+        viewModel = ReportesViewModel(repository, sessionManager)
         activateFlows()
         viewModel.setPeriodo("Anual")
         viewModel.setAnio(now.year.toString())
@@ -439,7 +436,7 @@ class ReportesViewModelOtrosPeriodosTest {
         every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(servicios)
         every { repository.getPagosByDateRangeForOptica(any(), any(), opticaId) } returns flowOf(pagos)
 
-        viewModel = ReportesViewModel(repository, sessionManager, ventaDao)
+        viewModel = ReportesViewModel(repository, sessionManager)
         activateFlows()
         viewModel.setPeriodo("Anual")
         viewModel.setAnio("2025")
@@ -465,7 +462,7 @@ class ReportesViewModelOtrosPeriodosTest {
         every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(servicios)
         every { repository.getPagosByDateRangeForOptica(any(), any(), opticaId) } returns flowOf(pagos)
 
-        viewModel = ReportesViewModel(repository, sessionManager, ventaDao)
+        viewModel = ReportesViewModel(repository, sessionManager)
         activateFlows()
         viewModel.setPeriodo("Total")
         advanceUntilIdle()
@@ -487,7 +484,7 @@ class ReportesViewModelOtrosPeriodosTest {
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(todasLasDispensaciones)
         every { repository.getPagosByDateRangeForOptica(any(), any(), opticaId) } returns flowOf(pagos)
 
-        viewModel = ReportesViewModel(repository, sessionManager, ventaDao)
+        viewModel = ReportesViewModel(repository, sessionManager)
         activateFlows()
         viewModel.setPeriodo("Total")
         advanceUntilIdle()
@@ -506,7 +503,7 @@ class ReportesViewModelOtrosPeriodosTest {
         )
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
 
-        viewModel = ReportesViewModel(repository, sessionManager, ventaDao)
+        viewModel = ReportesViewModel(repository, sessionManager)
         activateFlows()
 
         // Anual 2026 should include both (both in 2026, since now is 2026)
@@ -526,7 +523,7 @@ class ReportesViewModelOtrosPeriodosTest {
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(emptyList())
         every { repository.getPagosByDateRangeForOptica(any(), any(), opticaId) } returns flowOf(emptyList())
 
-        viewModel = ReportesViewModel(repository, sessionManager, ventaDao)
+        viewModel = ReportesViewModel(repository, sessionManager)
         activateFlows()
 
         for (periodo in listOf("Semanal", "Mensual", "Anual", "Total")) {
@@ -557,7 +554,7 @@ class ReportesViewModelOtrosPeriodosTest {
             repository.getPagosByDateRangeForOptica(capture(startSlot), capture(endSlot), any())
         } returns flowOf(emptyList())
 
-        viewModel = ReportesViewModel(repository, sessionManager, ventaDao)
+        viewModel = ReportesViewModel(repository, sessionManager)
         activateFlows()
         viewModel.setPeriodo("Semanal")
         advanceUntilIdle()
@@ -579,7 +576,7 @@ class ReportesViewModelOtrosPeriodosTest {
             repository.getPagosByDateRangeForOptica(capture(startSlot), capture(endSlot), any())
         } returns flowOf(emptyList())
 
-        viewModel = ReportesViewModel(repository, sessionManager, ventaDao)
+        viewModel = ReportesViewModel(repository, sessionManager)
         activateFlows()
         viewModel.setPeriodo("Mensual")
         advanceUntilIdle()
@@ -601,7 +598,7 @@ class ReportesViewModelOtrosPeriodosTest {
             repository.getPagosByDateRangeForOptica(capture(startSlot), capture(endSlot), any())
         } returns flowOf(emptyList())
 
-        viewModel = ReportesViewModel(repository, sessionManager, ventaDao)
+        viewModel = ReportesViewModel(repository, sessionManager)
         activateFlows()
         viewModel.setPeriodo("Anual")
         viewModel.setAnio(now.year.toString())
@@ -620,7 +617,7 @@ class ReportesViewModelOtrosPeriodosTest {
             repository.getPagosByDateRangeForOptica(capture(startSlot), capture(endSlot), any())
         } returns flowOf(emptyList())
 
-        viewModel = ReportesViewModel(repository, sessionManager, ventaDao)
+        viewModel = ReportesViewModel(repository, sessionManager)
         activateFlows()
         viewModel.setPeriodo("Anual")
         viewModel.setAnio("2025")
@@ -639,7 +636,7 @@ class ReportesViewModelOtrosPeriodosTest {
             repository.getPagosByDateRangeForOptica(capture(startSlot), capture(endSlot), any())
         } returns flowOf(emptyList())
 
-        viewModel = ReportesViewModel(repository, sessionManager, ventaDao)
+        viewModel = ReportesViewModel(repository, sessionManager)
         activateFlows()
         viewModel.setPeriodo("Total")
         advanceUntilIdle()

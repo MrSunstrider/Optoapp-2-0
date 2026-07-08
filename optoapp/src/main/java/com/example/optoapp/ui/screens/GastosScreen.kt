@@ -176,10 +176,10 @@ private fun GastoCard(gasto: GastoOperativoEntity, onEdit: () -> Unit, onDelete:
             }
             Text("s/. ${fmt(gasto.monto)}", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = AlertRed)
             Spacer(Modifier.width(8.dp))
-            IconButton(onClick = onEdit, modifier = Modifier.size(32.dp)) {
+            IconButton(onClick = onEdit) {
                 Icon(Icons.Default.Edit, contentDescription = "Editar", modifier = Modifier.size(18.dp))
             }
-            IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
+            IconButton(onClick = onDelete) {
                 Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = AlertRed, modifier = Modifier.size(18.dp))
             }
         }

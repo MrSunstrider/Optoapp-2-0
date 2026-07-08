@@ -65,8 +65,10 @@ class DownloadSyncCoordinator @Inject constructor(
         remotos.forEach { r ->
             if (skipDeletions && getId(r) in skipIds) return@forEach
             try {
-                upsert(r)
-                syncStateTracker.markSynced(opticaId, entityType, getId(r))
+                repository.withTransaction {
+                    upsert(r)
+                    syncStateTracker.markSynced(opticaId, entityType, getId(r))
+                }
             } catch (e: CancellationException) { throw e }
             catch (e: IOException) {
                 Log.e(TAG, "Error de red descargando item $entityType ${getId(r)}: ${e.message}", e)
@@ -121,8 +123,10 @@ class DownloadSyncCoordinator @Inject constructor(
                 .decodeList<ResumenDiarioRemoto>()
             remotos.forEach { r ->
                 try {
-                    repository.upsertResumenDiarioFromRemote(r.toEntity())
-                    syncStateTracker.markSynced(opticaId, "resumen_diario", r.id)
+                    repository.withTransaction {
+                        repository.upsertResumenDiarioFromRemote(r.toEntity())
+                        syncStateTracker.markSynced(opticaId, "resumen_diario", r.id)
+                    }
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
@@ -145,8 +149,10 @@ class DownloadSyncCoordinator @Inject constructor(
                 .decodeList<ConfiguracionFinancieraRemoto>()
             remotos.forEach { r ->
                 try {
-                    repository.upsertConfiguracionFinancieraFromRemote(r.toEntity())
-                    syncStateTracker.markSynced(opticaId, "configuracion_financiera", r.opticaId)
+                    repository.withTransaction {
+                        repository.upsertConfiguracionFinancieraFromRemote(r.toEntity())
+                        syncStateTracker.markSynced(opticaId, "configuracion_financiera", r.opticaId)
+                    }
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {

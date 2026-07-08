@@ -1,6 +1,5 @@
 package com.example.optoapp.domain
 
-import android.util.Log
 import io.github.jan.supabase.exceptions.RestException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
@@ -11,8 +10,12 @@ import javax.inject.Inject
 /**
  * Supabase sync must survive transient network blips without failing the entire batch.
  * Extracted from [SyncFinanzasUseCase] to share retry logic across upload and download.
+ *
+ * Uses [SyncLogger] instead of android.util.Log directly (A4 POC).
  */
-class NetworkRetryHelper @Inject constructor() {
+class NetworkRetryHelper @Inject constructor(
+    private val logger: SyncLogger
+) {
     companion object {
         private const val TAG = "SyncFinanzas"
         private const val NETWORK_RETRY_ATTEMPTS = 3
@@ -30,20 +33,20 @@ class NetworkRetryHelper @Inject constructor() {
             } catch (e: CancellationException) {
                 throw e
             } catch (e: IOException) {
-                Log.e(TAG, "Error en red en $opName: ${e.message}", e)
+                logger.e(TAG, "Error en red en $opName: ${e.message}", e)
                 lastError = e
                 val shouldRetry = isTransientNetworkError(e)
                 if (!shouldRetry || attempt == NETWORK_RETRY_ATTEMPTS - 1) throw e
                 val backoffMs = (400L * (attempt + 1)) + Random.nextLong(0, 200)
-                Log.w(TAG, "$opName fallo de red (intento ${attempt + 1}/$NETWORK_RETRY_ATTEMPTS). Reintentando en ${backoffMs}ms")
+                logger.w(TAG, "$opName fallo de red (intento ${attempt + 1}/$NETWORK_RETRY_ATTEMPTS). Reintentando en ${backoffMs}ms")
                 delay(backoffMs)
             } catch (e: RestException) {
-                Log.e(TAG, "Error REST en $opName (${e.statusCode}): ${e.message}", e)
+                logger.e(TAG, "Error REST en $opName (${e.statusCode}): ${e.message}", e)
                 lastError = e
                 val shouldRetry = isTransientNetworkError(e) || e.statusCode == 429
                 if (!shouldRetry || attempt == NETWORK_RETRY_ATTEMPTS - 1) throw e
                 val backoffMs = (400L * (attempt + 1)) + Random.nextLong(0, 200)
-                Log.w(TAG, "$opName fallo REST (intento ${attempt + 1}/$NETWORK_RETRY_ATTEMPTS). Reintentando en ${backoffMs}ms")
+                logger.w(TAG, "$opName fallo REST (intento ${attempt + 1}/$NETWORK_RETRY_ATTEMPTS). Reintentando en ${backoffMs}ms")
                 delay(backoffMs)
             }
         }

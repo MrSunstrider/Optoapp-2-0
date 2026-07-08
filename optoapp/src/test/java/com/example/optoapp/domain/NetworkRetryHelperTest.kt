@@ -1,5 +1,6 @@
 package com.example.optoapp.domain
 
+import android.util.Log
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -7,6 +8,17 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import java.io.IOException
+
+/** Minimal [SyncLogger] stub that delegates to android.util.Log for test assertions. */
+private val testLogger = object : SyncLogger {
+    override fun d(tag: String, msg: String) { Log.d(tag, msg) }
+    override fun w(tag: String, msg: String, e: Throwable?) {
+        if (e != null) Log.w(tag, msg, e) else Log.w(tag, msg)
+    }
+    override fun e(tag: String, msg: String, e: Throwable?) {
+        if (e != null) Log.e(tag, msg, e) else Log.e(tag, msg)
+    }
+}
 
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
@@ -16,21 +28,21 @@ class NetworkRetryHelperTest {
 
     @Test
     fun `isTransientNetworkError returns true for HTTP 429 status code`() {
-        val helper = NetworkRetryHelper()
+        val helper = NetworkRetryHelper(testLogger)
         val ex = IOException("HTTP 429 Too Many Requests")
         assertTrue(helper.isTransientNetworkError(ex))
     }
 
     @Test
     fun `isTransientNetworkError returns true for too many requests message`() {
-        val helper = NetworkRetryHelper()
+        val helper = NetworkRetryHelper(testLogger)
         val ex = IOException("too many requests")
         assertTrue(helper.isTransientNetworkError(ex))
     }
 
     @Test
     fun `isTransientNetworkError returns true for 429 in message`() {
-        val helper = NetworkRetryHelper()
+        val helper = NetworkRetryHelper(testLogger)
         val ex = IOException("Request failed with status 429")
         assertTrue(helper.isTransientNetworkError(ex))
     }
@@ -40,7 +52,7 @@ class NetworkRetryHelperTest {
     @Test
     fun `retryNetwork delays before retrying transient IOException`() = runTest {
         var attempts = 0
-        val helper = NetworkRetryHelper()
+        val helper = NetworkRetryHelper(testLogger)
         try {
             helper.retryNetwork("test") {
                 attempts++
@@ -62,7 +74,7 @@ class NetworkRetryHelperTest {
     @Test
     fun `retryNetwork does not retry non-IOException with transient-like message`() = runTest {
         var attempts = 0
-        val helper = NetworkRetryHelper()
+        val helper = NetworkRetryHelper(testLogger)
         try {
             helper.retryNetwork("test") {
                 attempts++
@@ -82,7 +94,7 @@ class NetworkRetryHelperTest {
     @Test
     fun `retryNetwork does not retry non-IOException exception at all`() = runTest {
         var attempts = 0
-        val helper = NetworkRetryHelper()
+        val helper = NetworkRetryHelper(testLogger)
         try {
             helper.retryNetwork("test") {
                 attempts++

@@ -31,6 +31,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import java.time.LocalDate
 import javax.inject.Inject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 
 /**
  * Encapsula toda la lógica de autenticación (login, register, logout, sesión).
@@ -329,7 +331,7 @@ open class AuthDelegate @Inject constructor(
                 conn.setRequestProperty("apikey", BuildConfig.SUPABASE_ANON_KEY)
                 conn.setRequestProperty("Content-Type", "application/json")
                 conn.doOutput = true
-                val json = "{\"password\":\"$newPassword\"}"
+                val json = buildJsonObject { put("password", newPassword) }.toString()
                 conn.outputStream.write(json.toByteArray(Charsets.UTF_8))
                 val code = conn.responseCode
                 conn.disconnect()

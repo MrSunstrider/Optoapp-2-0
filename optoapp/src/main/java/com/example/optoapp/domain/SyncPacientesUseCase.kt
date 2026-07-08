@@ -162,8 +162,10 @@ open class SyncPacientesUseCase @Inject constructor(
             if (remoto.id in conflictedIds) return@forEach
             try {
                 val local = remoto.toEntity()
-                repository.upsertPaciente(local)
-                syncStateTracker.markSynced(opticaId, "paciente", local.id)
+                repository.withTransaction {
+                    repository.upsertPaciente(local)
+                    syncStateTracker.markSynced(opticaId, "paciente", local.id)
+                }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: IOException) {

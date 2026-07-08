@@ -91,6 +91,11 @@ fun CierreCajaScreen(
                 return@Column
             }
 
+            if (uiState.isLoading) {
+                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+
             Text(
                 text = "Reporte del ${DateUtils.formatLocalized(uiState.fecha)}",
                 style = MaterialTheme.typography.titleMedium,

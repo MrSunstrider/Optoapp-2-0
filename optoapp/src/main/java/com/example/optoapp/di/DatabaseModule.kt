@@ -2,6 +2,7 @@ package com.example.optoapp.di
 
 import android.content.Context
 import com.example.optoapp.data.*
+import com.example.optoapp.domain.SyncLogger
 import com.example.optoapp.data.backup.BackupRestoreCoordinator
 import com.example.optoapp.data.configuracionfinanciera.ConfiguracionFinancieraDao
 import com.example.optoapp.data.categoriaproducto.CategoriaProductoDao
@@ -227,6 +228,10 @@ object DatabaseModule {
             categoriaProductoDao
         )
     }
+
+    @Provides
+    @Singleton
+    fun provideSyncLogger(): SyncLogger = AndroidSyncLogger()
 
     @Provides
     @Singleton

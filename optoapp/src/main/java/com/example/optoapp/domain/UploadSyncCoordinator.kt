@@ -67,7 +67,7 @@ class UploadSyncCoordinator @Inject constructor(
         } catch (e: IOException) {
             Log.e(TAG, "Error en red subiendo $entityType: ${e.message}", e)
             syncStateTracker.markError(opticaId, batchTrackingType, "batch", e.message)
-            throw e
+            throw UploadPartialException(uploadedCount, e)
         } catch (e: Exception) {
             Log.e(TAG, "Error inesperado subiendo $entityType: ${e.message}", e)
             syncStateTracker.markError(opticaId, batchTrackingType, "batch", e.message)
@@ -161,18 +161,20 @@ class UploadSyncCoordinator @Inject constructor(
             uniqueById[row.id] = localId to row
         }
         val rows = uniqueById.values.map { it.second }
+        var uploadedCount = 0
         try {
             rows.chunked(UPSERT_BATCH_SIZE).forEachIndexed { index, chunk ->
                 networkRetryHelper.retryNetwork("upsert:$TABLE_DISPENSACIONES:chunk${index + 1}") {
                     supabase.postgrest[TABLE_DISPENSACIONES].upsert(chunk)
                 }
+                uploadedCount += chunk.size
             }
         } catch (e: CancellationException) {
             throw e
         } catch (e: IOException) {
             Log.e(TAG, "Error en red subiendo dispensaciones: ${e.message}", e)
             syncStateTracker.markError(opticaId, "upload_dispensaciones", "batch", e.message)
-            throw e
+            throw UploadPartialException(uploadedCount, e)
         } catch (e: Exception) {
             Log.e(TAG, "Error inesperado subiendo dispensaciones: ${e.message}", e)
             syncStateTracker.markError(opticaId, "upload_dispensaciones", "batch", e.message)
@@ -231,18 +233,20 @@ class UploadSyncCoordinator @Inject constructor(
             uniqueRows[dedupeKey] = reconciled
         }
         val rows = uniqueRows.values.toList().distinctBy { it.id }
+        var uploadedCount = 0
         try {
             rows.chunked(UPSERT_BATCH_SIZE).forEachIndexed { index, chunk ->
                 networkRetryHelper.retryNetwork("upsert:$TABLE_SERVICIOS:chunk${index + 1}") {
                     supabase.postgrest[TABLE_SERVICIOS].upsert(chunk)
                 }
+                uploadedCount += chunk.size
             }
         } catch (e: CancellationException) {
             throw e
         } catch (e: IOException) {
             Log.e(TAG, "Error en red subiendo servicios extra: ${e.message}", e)
             syncStateTracker.markError(opticaId, "upload_servicios_extra", "batch", e.message)
-            throw e
+            throw UploadPartialException(uploadedCount, e)
         } catch (e: Exception) {
             Log.e(TAG, "Error inesperado subiendo servicios extra: ${e.message}", e)
             syncStateTracker.markError(opticaId, "upload_servicios_extra", "batch", e.message)
