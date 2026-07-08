@@ -170,7 +170,7 @@ class ServicioExtraDaoTest {
         )
         dao.insertServicio(s1)
         dao.insertServicio(s2)
-        dao.deleteAll()
+        dao.deleteAll("o1")
 
         val all = dao.getAllServicios().first()
         assertEquals(0, all.size)

@@ -155,10 +155,10 @@ class OptoRepositoryTest {
 
     @Test
     fun restoreBackup_clearsDataAndInsertsPacientes() = runBlocking {
-        // Insert some initial data that should be cleared
+        // Insert some initial data that should be cleared (same optica as restore target)
         pacienteDao.insertPaciente(Paciente(
             id = "old_p", nombreCompleto = "Old", edad = 50, telefono = "999",
-            fechaCreacion = LocalDate.parse("2025-01-01"), opticaId = "old_o"
+            fechaCreacion = LocalDate.parse("2025-01-01"), opticaId = "current_o"
         ))
 
         val backup = BackupData(

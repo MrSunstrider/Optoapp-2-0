@@ -6,6 +6,10 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface ServicioExtraDao {
+    @Deprecated(
+        message = "Use getAllServiciosForOptica to enforce multi-tenant isolation",
+        replaceWith = ReplaceWith("getAllServiciosForOptica(opticaId)")
+    )
     @Query("SELECT * FROM servicios_extra ORDER BY fecha DESC")
     fun getAllServicios(): Flow<List<ServicioExtra>>
 
@@ -27,8 +31,8 @@ interface ServicioExtraDao {
     @Delete
     suspend fun deleteServicio(servicio: ServicioExtra)
 
-    @Query("DELETE FROM servicios_extra")
-    suspend fun deleteAll()
+    @Query("DELETE FROM servicios_extra WHERE opticaId = :opticaId")
+    suspend fun deleteAll(opticaId: String)
 
     @Query("UPDATE servicios_extra SET opticaId = :newOpticaId WHERE opticaId = 'mi_optica_base'")
     suspend fun reassignFromLegacyMiOpticaBase(newOpticaId: String): Int

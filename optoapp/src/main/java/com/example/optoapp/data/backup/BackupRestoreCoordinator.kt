@@ -27,10 +27,10 @@ class BackupRestoreCoordinator @Inject constructor(
         private const val TAG = "BackupRestoreCoordinator"
     }
 
-    suspend fun clearAllData() {
-        dispensacionRepo.deleteAll()
-        evaluacionDao.deleteAll()
-        pacienteDao.deleteAll()
+    suspend fun clearAllData(opticaId: String) {
+        dispensacionRepo.deleteAll(opticaId)
+        evaluacionDao.deleteAll(opticaId)
+        pacienteDao.deleteAll(opticaId)
     }
 
     suspend fun getBackupDataForOptica(opticaId: String): BackupData {
@@ -45,7 +45,7 @@ class BackupRestoreCoordinator @Inject constructor(
     }
 
     suspend fun restoreBackup(backupData: BackupData, currentOpticaId: String) {
-        clearAllData()
+        clearAllData(currentOpticaId)
 
         backupData.pacientes?.forEach {
             try {

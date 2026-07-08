@@ -28,10 +28,10 @@ class MembershipDataSource @Inject internal constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: IOException) {
-            Log.e(TAG, "fetchMembershipsForCurrentUser: uid=$uid", e)
+            Log.e(TAG, "fetchMembershipsForCurrentUser failed", e)
             emptyList()
         } catch (e: Exception) {
-            Log.e(TAG, "fetchMembershipsForCurrentUser: uid=$uid", e)
+            Log.e(TAG, "fetchMembershipsForCurrentUser failed", e)
             emptyList()
         }
         if (rows.isEmpty()) return emptyList()
@@ -88,10 +88,10 @@ class MembershipDataSource @Inject internal constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: IOException) {
-            Log.e(TAG, "assignRoleByEmail: opticaId=$opticaId, email=$normalizedEmail", e)
+            Log.e(TAG, "assignRoleByEmail failed for opticaId=$opticaId", e)
             Result.failure(e)
         } catch (e: Exception) {
-            Log.e(TAG, "assignRoleByEmail: opticaId=$opticaId, email=$normalizedEmail", e)
+            Log.e(TAG, "assignRoleByEmail failed for opticaId=$opticaId", e)
             Result.failure(e)
         }
     }

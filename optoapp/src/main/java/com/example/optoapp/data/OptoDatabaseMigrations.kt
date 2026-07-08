@@ -1004,3 +1004,20 @@ val MIGRATION_35_36 = object : Migration(35, 36) {
         db.execSQL("DROP TABLE IF EXISTS arqueo_caja")
     }
 }
+
+val MIGRATION_36_37 = object : Migration(36, 37) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        // feedback_recomendaciones: composite PK (recomendacionId, opticaId) → single id PK
+        // for Supabase sync compatibility. Cache-only table, safe to drop and recreate.
+        db.execSQL("DROP TABLE IF EXISTS feedback_recomendaciones")
+        db.execSQL("""
+            CREATE TABLE IF NOT EXISTS feedback_recomendaciones (
+                id TEXT NOT NULL PRIMARY KEY,
+                recomendacionId TEXT NOT NULL,
+                opticaId TEXT NOT NULL,
+                fueUtil INTEGER NOT NULL,
+                fecha INTEGER NOT NULL
+            )
+        """.trimIndent())
+    }
+}

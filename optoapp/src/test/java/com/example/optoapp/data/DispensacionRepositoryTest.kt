@@ -127,7 +127,7 @@ class DispensacionRepositoryTest {
             opticaId = "o1"
         ))
 
-        val rows = repo.deleteDispensacionById("d_del")
+        val rows = repo.deleteDispensacionById("d_del", "o1")
 
         assertEquals(1, rows)
         assertNull(dispensacionDao.getDispensacionById("d_del"))

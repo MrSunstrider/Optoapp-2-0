@@ -42,12 +42,16 @@ interface PagoDao {
     @Delete
     suspend fun deletePago(pago: Pago)
 
-    @Query("DELETE FROM pagos")
-    suspend fun deleteAll()
+    @Query("DELETE FROM pagos WHERE opticaId = :opticaId")
+    suspend fun deleteAll(opticaId: String)
 
     @Query("UPDATE pagos SET opticaId = :newOpticaId WHERE opticaId = 'mi_optica_base'")
     suspend fun reassignFromLegacyMiOpticaBase(newOpticaId: String): Int
 
+    @Deprecated(
+        message = "Use getPagosListByOptica to enforce multi-tenant isolation",
+        replaceWith = ReplaceWith("getPagosListByOptica(opticaId)")
+    )
     @Query("SELECT * FROM pagos")
     suspend fun getAllPagos(): List<Pago>
 

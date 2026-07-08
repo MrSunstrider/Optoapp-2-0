@@ -23,4 +23,10 @@ class Converters {
     @TypeConverter
     fun toLocalDate(value: String?): LocalDate? =
         value?.takeIf { it.isNotBlank() }?.let { LocalDate.parse(it, isoFormatter) }
+
+    @TypeConverter
+    fun fromBoolean(value: Boolean?): Int? = value?.let { if (it) 1 else 0 }
+
+    @TypeConverter
+    fun toBoolean(value: Int?): Boolean? = value?.let { it != 0 }
 }

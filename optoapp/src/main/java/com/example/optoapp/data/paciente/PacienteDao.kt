@@ -5,6 +5,10 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface PacienteDao {
+    @Deprecated(
+        message = "Use getPacientesByOptica to enforce multi-tenant isolation",
+        replaceWith = ReplaceWith("getPacientesByOptica(opticaId)")
+    )
     @Query("SELECT * FROM pacientes ORDER BY nombreCompleto ASC")
     fun getAllPacientes(): Flow<List<Paciente>>
 
@@ -33,6 +37,10 @@ interface PacienteDao {
     @Query("SELECT * FROM pacientes WHERE id = :id")
     suspend fun getPacienteById(id: String): Paciente?
 
+    @Deprecated(
+        message = "Use searchPacientesForOptica to enforce multi-tenant isolation",
+        replaceWith = ReplaceWith("searchPacientesForOptica(opticaId, query)")
+    )
     @Query("SELECT * FROM pacientes WHERE nombreCompleto LIKE '%' || :query || '%' OR id LIKE '%' || :query || '%' OR telefono LIKE '%' || :query || '%' OR ifnull(historiaOptometrica, '') LIKE '%' || :query || '%'")
     fun searchPacientes(query: String): Flow<List<Paciente>>
 
@@ -49,11 +57,11 @@ interface PacienteDao {
     @Update
     suspend fun updatePaciente(paciente: Paciente)
 
-    @Delete
-    suspend fun deletePaciente(paciente: Paciente)
+    @Query("DELETE FROM pacientes WHERE id = :id AND opticaId = :opticaId")
+    suspend fun deletePaciente(id: String, opticaId: String)
 
-    @Query("DELETE FROM pacientes")
-    suspend fun deleteAll()
+    @Query("DELETE FROM pacientes WHERE opticaId = :opticaId")
+    suspend fun deleteAll(opticaId: String)
 
     @Query("UPDATE pacientes SET opticaId = :newOpticaId WHERE opticaId = 'mi_optica_base'")
     suspend fun reassignFromLegacyMiOpticaBase(newOpticaId: String): Int
@@ -67,9 +75,13 @@ interface PacienteDao {
     @Query("UPDATE servicios_extra SET pacienteId = :targetPacienteId WHERE pacienteId = :sourcePacienteId")
     suspend fun reassignServiciosPaciente(sourcePacienteId: String, targetPacienteId: String): Int
 
-    @Query("DELETE FROM pacientes WHERE id = :id")
-    suspend fun deletePacienteById(id: String): Int
+    @Query("DELETE FROM pacientes WHERE id = :id AND opticaId = :opticaId")
+    suspend fun deletePacienteById(id: String, opticaId: String): Int
 
+    @Deprecated(
+        message = "Use getPacientesWithPendingBalanceForOptica to enforce multi-tenant isolation",
+        replaceWith = ReplaceWith("getPacientesWithPendingBalanceForOptica(opticaId)")
+    )
     @Query("""
         SELECT * FROM pacientes 
         WHERE id IN (SELECT pacienteId FROM dispensaciones WHERE (montoTotal - montoPagado) > 0)
@@ -86,6 +98,10 @@ interface PacienteDao {
     """)
     fun getPacientesWithPendingBalanceForOptica(opticaId: String): Flow<List<Paciente>>
 
+    @Deprecated(
+        message = "Use getPacientesWithPendingDeliveryForOptica to enforce multi-tenant isolation",
+        replaceWith = ReplaceWith("getPacientesWithPendingDeliveryForOptica(opticaId)")
+    )
     @Query("""
         SELECT * FROM pacientes 
         WHERE id IN (SELECT pacienteId FROM dispensaciones WHERE estadoEntrega = 'Pendiente')

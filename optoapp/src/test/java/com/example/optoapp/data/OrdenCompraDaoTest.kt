@@ -170,7 +170,7 @@ class OrdenCompraDaoTest {
         itemDao.insert(OrdenCompraItem(id = "i2", ordenId = "oc1", monturaId = "m2",
             cantidad = 5, costoUnitario = 80.0))
 
-        itemDao.deleteByOrden("oc1")
+        itemDao.deleteByOrden("oc1", "o1")
         assertTrue(itemDao.getByOrden("oc1").isEmpty())
     }
 }

@@ -61,7 +61,7 @@ class GastoOperativoDaoTest {
             fecha = LocalDate.parse("2026-07-01")
         )
         dao.insert(gasto)
-        dao.delete("g1")
+        dao.delete("g1", "optica1")
 
         val gastos = dao.getByOpticaId("optica1").first()
         assertTrue(gastos.isEmpty())

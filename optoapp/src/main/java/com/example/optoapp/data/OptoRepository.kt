@@ -67,6 +67,10 @@ open class OptoRepository(
 
     fun getEvaluacionesByPaciente(pacienteId: String) = pacienteRepo.getEvaluacionesByPaciente(pacienteId)
     fun getEvaluacionesProximaCitaEnRango(opticaId: String, start: LocalDate, end: LocalDate) = pacienteRepo.getEvaluacionesProximaCitaEnRango(opticaId, start, end)
+    @Deprecated(
+        message = "Use countEvaluacionesInRangeForOptica to enforce multi-tenant isolation",
+        replaceWith = ReplaceWith("countEvaluacionesInRangeForOptica(start, end, opticaId)")
+    )
     fun countEvaluacionesInRange(start: LocalDate, end: LocalDate) = pacienteRepo.countEvaluacionesInRange(start, end)
     fun countEvaluacionesInRangeForOptica(start: LocalDate, end: LocalDate, opticaId: String) = pacienteRepo.countEvaluacionesInRangeForOptica(start, end, opticaId)
     suspend fun getEvaluacionById(id: String) = pacienteRepo.getEvaluacionById(id)
@@ -76,23 +80,39 @@ open class OptoRepository(
     suspend fun updateEvaluacion(evaluacion: EvaluacionClinica) { val stamped = evaluacion.copy(updatedAt = Instant.now().toString()); pacienteRepo.updateEvaluacion(stamped); postSaveSyncScheduler.get().scheduleHistorialSync(stamped.opticaId) }
 
     fun getDispensacionesByPaciente(pacienteId: String) = dispensacionRepo.getDispensacionesByPaciente(pacienteId)
+    @Deprecated(
+        message = "Use getAllDispensacionesForOptica to enforce multi-tenant isolation",
+        replaceWith = ReplaceWith("getAllDispensacionesForOptica(opticaId)")
+    )
     fun getAllDispensaciones() = dispensacionRepo.getAllDispensaciones()
     fun getAllDispensacionesForOptica(opticaId: String) = dispensacionRepo.getAllDispensacionesForOptica(opticaId)
+    @Deprecated(
+        message = "Use getTotalVendidoForOptica to enforce multi-tenant isolation",
+        replaceWith = ReplaceWith("getTotalVendidoForOptica(opticaId)")
+    )
     fun getTotalVendido() = dispensacionRepo.getTotalVendido()
+    @Deprecated(
+        message = "Use getTotalPagadoForOptica to enforce multi-tenant isolation",
+        replaceWith = ReplaceWith("getTotalPagadoForOptica(opticaId)")
+    )
     fun getTotalPagado() = dispensacionRepo.getTotalPagado()
     fun getTotalVendidoForOptica(opticaId: String) = dispensacionRepo.getTotalVendidoForOptica(opticaId)
     fun getTotalPagadoForOptica(opticaId: String) = dispensacionRepo.getTotalPagadoForOptica(opticaId)
+    @Deprecated(
+        message = "Use getDispensacionesByDateRangeForOptica to enforce multi-tenant isolation",
+        replaceWith = ReplaceWith("getDispensacionesByDateRangeForOptica(start, end, opticaId)")
+    )
     fun getDispensacionesByDateRange(start: LocalDate, end: LocalDate) = dispensacionRepo.getDispensacionesByDateRange(start, end)
     fun getDispensacionesByDateRangeForOptica(start: LocalDate, end: LocalDate, opticaId: String) = dispensacionRepo.getDispensacionesByDateRangeForOptica(start, end, opticaId)
     suspend fun getDispensacionById(id: String) = dispensacionRepo.getDispensacionById(id)
     suspend fun getLastDispensacionByPacienteId(pacienteId: String) = dispensacionRepo.getLastDispensacionByPacienteId(pacienteId)
     suspend fun insertDispensacion(dispensacion: DispensacionOptica) { val stamped = dispensacion.copy(updatedAt = Instant.now().toString()); dispensacionRepo.insertDispensacion(stamped); postSaveSyncScheduler.get().scheduleFinanzasSync(stamped.opticaId) }
     suspend fun updateDispensacion(dispensacion: DispensacionOptica) { val stamped = dispensacion.copy(updatedAt = Instant.now().toString()); dispensacionRepo.updateDispensacion(stamped); postSaveSyncScheduler.get().scheduleFinanzasSync(stamped.opticaId) }
-    suspend fun deleteDispensacionById(id: String) = dispensacionRepo.deleteDispensacionById(id)
-    suspend fun deleteDispensacion(dispensacion: DispensacionOptica) { dispensacionRepo.deleteDispensacionById(dispensacion.id); syncStateTracker.markDeleted(dispensacion.opticaId, "dispensacion", dispensacion.id); postSaveSyncScheduler.get().scheduleFinanzasSync(dispensacion.opticaId) }
+    suspend fun deleteDispensacionById(id: String, opticaId: String) = dispensacionRepo.deleteDispensacionById(id, opticaId)
+    suspend fun deleteDispensacion(dispensacion: DispensacionOptica) { dispensacionRepo.deleteDispensacionById(dispensacion.id, dispensacion.opticaId); syncStateTracker.markDeleted(dispensacion.opticaId, "dispensacion", dispensacion.id); postSaveSyncScheduler.get().scheduleFinanzasSync(dispensacion.opticaId) }
     suspend fun insertDispensacionItem(item: DispensacionItem) { dispensacionRepo.insertDispensacionItem(item); postSaveSyncScheduler.get().scheduleFinanzasSync(item.opticaId) }
-    suspend fun deleteDispensacionItemById(id: String, opticaId: String) { dispensacionRepo.deleteDispensacionItemById(id); syncStateTracker.markDeleted(opticaId, "dispensacion_item", id) }
-    suspend fun deleteItemsByDispensacionId(dispensacionId: String) = dispensacionRepo.deleteItemsByDispensacionId(dispensacionId)
+    suspend fun deleteDispensacionItemById(id: String, opticaId: String) { dispensacionRepo.deleteDispensacionItemById(id, opticaId); syncStateTracker.markDeleted(opticaId, "dispensacion_item", id) }
+    suspend fun deleteItemsByDispensacionId(dispensacionId: String, opticaId: String) = dispensacionRepo.deleteItemsByDispensacionId(dispensacionId, opticaId)
     suspend fun getDispensacionItemById(id: String) = dispensacionRepo.getDispensacionItemById(id)
     suspend fun getDispensacionItemsByDispensacion(dispensacionId: String) = dispensacionRepo.getItemsListByDispensacion(dispensacionId)
     suspend fun suggestNextOt(opticaId: String, fecha: LocalDate) = dispensacionRepo.suggestNextOt(opticaId, fecha)
@@ -114,6 +134,10 @@ open class OptoRepository(
     fun getPagosByDateRange(start: LocalDate, end: LocalDate) = dispensacionRepo.getPagosByDateRange(start, end)
     fun getPagosByDateRangeForOptica(start: LocalDate, end: LocalDate, opticaId: String) = dispensacionRepo.getPagosByDateRangeForOptica(start, end, opticaId)
 
+    @Deprecated(
+        message = "Use getAllServiciosForOptica to enforce multi-tenant isolation",
+        replaceWith = ReplaceWith("getAllServiciosForOptica(opticaId)")
+    )
     fun getAllServicios() = dispensacionRepo.getAllServicios()
     fun getAllServiciosForOptica(opticaId: String) = dispensacionRepo.getAllServiciosForOptica(opticaId)
     fun getServiciosByPaciente(pacienteId: String) = dispensacionRepo.getServiciosByPaciente(pacienteId)
@@ -220,7 +244,7 @@ open class OptoRepository(
     }
 
     suspend fun deleteGastoOperativo(gasto: GastoOperativoEntity) {
-        gastoOperativoDao.delete(gasto.id)
+        gastoOperativoDao.delete(gasto.id, gasto.opticaId)
         syncStateTracker.markDeleted(gasto.opticaId, "gasto_operativo", gasto.id)
         postSaveSyncScheduler.get().scheduleFinanzasSync(gasto.opticaId)
     }

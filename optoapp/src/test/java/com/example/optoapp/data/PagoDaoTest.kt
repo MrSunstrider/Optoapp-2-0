@@ -238,7 +238,7 @@ class PagoDaoTest {
         )
         dao.insertPago(p1)
         dao.insertPago(p2)
-        dao.deleteAll()
+        dao.deleteAll("o1")
 
         val all = dao.getAllPagos()
         assertEquals(0, all.size)

@@ -123,8 +123,8 @@ open class OrdenCompraRepository @Inject constructor(
     }
 
     open suspend fun delete(ocId: String) {
-        itemDao.deleteByOrden(ocId)
         val oc = ocDao.getById(ocId) ?: return
+        itemDao.deleteByOrden(ocId, oc.opticaId)
         ocDao.update(oc.copy(estado = "CANCELADA", updatedAt = Instant.now().toString()))
         postSaveSyncScheduler.get().scheduleOrdenCompraSync(oc.opticaId)
     }

@@ -1,8 +1,8 @@
 {
   "formatVersion": 1,
   "database": {
-    "version": 36,
-    "identityHash": "833c9183ffa18d371aed64dacf6e2977",
+    "version": 37,
+    "identityHash": "366805fcba0b531d6d87077fbe7a1bcc",
     "entities": [
       {
         "tableName": "pacientes",
@@ -3092,8 +3092,14 @@
       },
       {
         "tableName": "feedback_recomendaciones",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`recomendacionId` TEXT NOT NULL, `opticaId` TEXT NOT NULL, `fueUtil` INTEGER NOT NULL, `fecha` INTEGER NOT NULL, PRIMARY KEY(`recomendacionId`, `opticaId`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `recomendacionId` TEXT NOT NULL, `opticaId` TEXT NOT NULL, `fueUtil` INTEGER NOT NULL, `fecha` INTEGER NOT NULL, PRIMARY KEY(`id`))",
         "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
           {
             "fieldPath": "recomendacionId",
             "columnName": "recomendacionId",
@@ -3122,15 +3128,14 @@
         "primaryKey": {
           "autoGenerate": false,
           "columnNames": [
-            "recomendacionId",
-            "opticaId"
+            "id"
           ]
         }
       }
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '833c9183ffa18d371aed64dacf6e2977')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '366805fcba0b531d6d87077fbe7a1bcc')"
     ]
   }
 }

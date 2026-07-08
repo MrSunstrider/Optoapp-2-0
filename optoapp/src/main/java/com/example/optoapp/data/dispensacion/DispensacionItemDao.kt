@@ -18,18 +18,22 @@ interface DispensacionItemDao {
     @Query("SELECT * FROM dispensacion_items WHERE optica_id = :opticaId")
     suspend fun getItemsListByOptica(opticaId: String): List<DispensacionItem>
 
+    @Deprecated(
+        message = "Use getItemsListByOptica to enforce multi-tenant isolation",
+        replaceWith = ReplaceWith("getItemsListByOptica(opticaId)")
+    )
     @Query("SELECT * FROM dispensacion_items")
     suspend fun getAllItems(): List<DispensacionItem>
 
     @Upsert
     suspend fun insertItem(item: DispensacionItem)
 
-    @Query("DELETE FROM dispensacion_items WHERE id = :id")
-    suspend fun deleteById(id: String): Int
+    @Query("DELETE FROM dispensacion_items WHERE id = :id AND optica_id = :opticaId")
+    suspend fun deleteById(id: String, opticaId: String): Int
 
-    @Query("DELETE FROM dispensacion_items WHERE dispensacion_id = :dispensacionId")
-    suspend fun deleteByDispensacionId(dispensacionId: String): Int
+    @Query("DELETE FROM dispensacion_items WHERE dispensacion_id = :dispensacionId AND optica_id = :opticaId")
+    suspend fun deleteByDispensacionId(dispensacionId: String, opticaId: String): Int
 
-    @Query("DELETE FROM dispensacion_items")
-    suspend fun deleteAll()
+    @Query("DELETE FROM dispensacion_items WHERE optica_id = :opticaId")
+    suspend fun deleteAll(opticaId: String)
 }

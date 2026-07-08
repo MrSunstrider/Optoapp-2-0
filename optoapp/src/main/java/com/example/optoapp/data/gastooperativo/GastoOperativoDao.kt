@@ -35,9 +35,9 @@ interface GastoOperativoDao {
     @Query("SELECT * FROM gastos_operativos WHERE opticaId = :opticaId ORDER BY fecha DESC")
     suspend fun getByOpticaIdList(opticaId: String): List<GastoOperativoEntity>
 
-    @Query("DELETE FROM gastos_operativos WHERE id = :id")
-    suspend fun delete(id: String)
+    @Query("DELETE FROM gastos_operativos WHERE id = :id AND opticaId = :opticaId")
+    suspend fun delete(id: String, opticaId: String)
 
-    @Query("DELETE FROM gastos_operativos")
-    suspend fun deleteAll()
+    @Query("DELETE FROM gastos_operativos WHERE opticaId = :opticaId")
+    suspend fun deleteAll(opticaId: String)
 }

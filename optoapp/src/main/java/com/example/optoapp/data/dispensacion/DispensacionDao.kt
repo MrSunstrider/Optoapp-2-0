@@ -9,15 +9,27 @@ interface DispensacionDao {
     @Query("SELECT * FROM dispensaciones WHERE pacienteId = :pacienteId ORDER BY fecha DESC")
     fun getDispensacionesByPaciente(pacienteId: String): Flow<List<DispensacionOptica>>
 
+    @Deprecated(
+        message = "Use getAllDispensacionesForOptica to enforce multi-tenant isolation",
+        replaceWith = ReplaceWith("getAllDispensacionesForOptica(opticaId)")
+    )
     @Query("SELECT * FROM dispensaciones")
     fun getAllDispensaciones(): Flow<List<DispensacionOptica>>
 
     @Query("SELECT * FROM dispensaciones WHERE opticaId = :opticaId")
     fun getAllDispensacionesForOptica(opticaId: String): Flow<List<DispensacionOptica>>
 
+    @Deprecated(
+        message = "Use getTotalVendidoForOptica to enforce multi-tenant isolation",
+        replaceWith = ReplaceWith("getTotalVendidoForOptica(opticaId)")
+    )
     @Query("SELECT SUM(montoTotal) FROM dispensaciones")
     fun getTotalVendido(): Flow<Double?>
 
+    @Deprecated(
+        message = "Use getTotalPagadoForOptica to enforce multi-tenant isolation",
+        replaceWith = ReplaceWith("getTotalPagadoForOptica(opticaId)")
+    )
     @Query("SELECT SUM(montoPagado) FROM dispensaciones")
     fun getTotalPagado(): Flow<Double?>
 
@@ -30,18 +42,26 @@ interface DispensacionDao {
     @Update
     suspend fun updateDispensacion(dispensacion: DispensacionOptica)
 
-    @Query("DELETE FROM dispensaciones")
-    suspend fun deleteAll()
+    @Query("DELETE FROM dispensaciones WHERE opticaId = :opticaId")
+    suspend fun deleteAll(opticaId: String)
 
     @Query("UPDATE dispensaciones SET opticaId = :newOpticaId WHERE opticaId = 'mi_optica_base'")
     suspend fun reassignFromLegacyMiOpticaBase(newOpticaId: String): Int
 
+    @Deprecated(
+        message = "Use getDispensacionesListByOptica to enforce multi-tenant isolation",
+        replaceWith = ReplaceWith("getDispensacionesListByOptica(opticaId)")
+    )
     @Query("SELECT * FROM dispensaciones")
     suspend fun getAllDispensacionesList(): List<DispensacionOptica>
 
     @Query("SELECT * FROM dispensaciones WHERE opticaId = :opticaId")
     suspend fun getDispensacionesListByOptica(opticaId: String): List<DispensacionOptica>
 
+    @Deprecated(
+        message = "Use getDispensacionesByDateRangeForOptica to enforce multi-tenant isolation",
+        replaceWith = ReplaceWith("getDispensacionesByDateRangeForOptica(start, end, opticaId)")
+    )
     @Query("SELECT * FROM dispensaciones WHERE fecha >= :start AND fecha <= :end")
     fun getDispensacionesByDateRange(start: LocalDate, end: LocalDate): Flow<List<DispensacionOptica>>
 
@@ -57,8 +77,8 @@ interface DispensacionDao {
     @Query("SELECT ot FROM dispensaciones WHERE opticaId = :opticaId AND ot LIKE ('OT-' || :year || '-%')")
     suspend fun getOtsWithYearPrefix(opticaId: String, year: String): List<String>
 
-    @Query("DELETE FROM dispensaciones WHERE id = :id")
-    suspend fun deleteById(id: String): Int
+    @Query("DELETE FROM dispensaciones WHERE id = :id AND opticaId = :opticaId")
+    suspend fun deleteById(id: String, opticaId: String): Int
 
     @Query("SELECT * FROM dispensaciones WHERE pacienteId = :pacienteId ORDER BY fecha DESC LIMIT 1")
     suspend fun getLastDispensacionByPacienteId(pacienteId: String): DispensacionOptica?

@@ -53,7 +53,7 @@ class DispensacionMergeHandler @Inject constructor(
         )
         repository.updateDispensacion(merged)
         val moved = repository.reassignPagosDispensacion(duplicate.id, canonical.id, opticaId)
-        repository.deleteDispensacionById(duplicate.id)
+        repository.deleteDispensacionById(duplicate.id, opticaId)
         syncStateTracker.markSynced(opticaId, "dispensacion", duplicate.id)
         syncStateTracker.markError(
             opticaId,
@@ -86,7 +86,7 @@ class DispensacionMergeHandler @Inject constructor(
             rows.forEach { duplicate ->
                 if (duplicate.id == canonical.id) return@forEach
                 val moved = repository.reassignPagosDispensacion(duplicate.id, canonical.id, opticaId)
-                repository.deleteDispensacionById(duplicate.id)
+                repository.deleteDispensacionById(duplicate.id, opticaId)
                 syncStateTracker.markError(
                     opticaId,
                     "dispensacion",

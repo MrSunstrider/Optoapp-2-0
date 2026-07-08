@@ -55,7 +55,7 @@ class PacienteRepository(
         pacienteDao.updatePaciente(paciente)
     }
 
-    suspend fun deletePaciente(paciente: Paciente) = pacienteDao.deletePaciente(paciente)
+    suspend fun deletePaciente(paciente: Paciente) = pacienteDao.deletePaciente(paciente.id, paciente.opticaId)
 
     suspend fun getPacientesSnapshotForOptica(opticaId: String): List<Paciente> =
         pacienteDao.getPacientesListByOptica(opticaId)
@@ -87,6 +87,10 @@ class PacienteRepository(
     fun getEvaluacionesProximaCitaEnRango(opticaId: String, start: LocalDate, end: LocalDate): Flow<List<EvaluacionClinica>> =
         evaluacionDao.getEvaluacionesConProximaCitaEnRango(opticaId, start, end)
 
+    @Deprecated(
+        message = "Use countEvaluacionesInRangeForOptica to enforce multi-tenant isolation",
+        replaceWith = ReplaceWith("countEvaluacionesInRangeForOptica(start, end, opticaId)")
+    )
     fun countEvaluacionesInRange(start: LocalDate, end: LocalDate): Flow<Int> =
         evaluacionDao.countEvaluacionesInRange(start, end)
 
@@ -171,7 +175,7 @@ class PacienteRepository(
                     movedEvaluaciones += pacienteDao.reassignEvaluacionesPaciente(duplicate.id, canonical.id)
                     movedDispensaciones += pacienteDao.reassignDispensacionesPaciente(duplicate.id, canonical.id)
                     movedServicios += pacienteDao.reassignServiciosPaciente(duplicate.id, canonical.id)
-                    pacienteDao.deletePacienteById(duplicate.id)
+                    pacienteDao.deletePacienteById(duplicate.id, opticaId)
                     mergedPacientes++
                 }
             }

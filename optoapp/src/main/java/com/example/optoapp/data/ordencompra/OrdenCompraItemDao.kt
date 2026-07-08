@@ -23,6 +23,6 @@ interface OrdenCompraItemDao {
     @Update
     suspend fun update(item: OrdenCompraItem)
 
-    @Query("DELETE FROM orden_compra_items WHERE ordenId = :ordenId")
-    suspend fun deleteByOrden(ordenId: String)
+    @Query("DELETE FROM orden_compra_items WHERE ordenId = :ordenId AND ordenId IN (SELECT id FROM ordenes_compra WHERE opticaId = :opticaId)")
+    suspend fun deleteByOrden(ordenId: String, opticaId: String)
 }

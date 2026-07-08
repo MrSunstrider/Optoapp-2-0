@@ -92,7 +92,7 @@ class DaoTest {
             opticaId = "optica1"
         )
         pacienteDao.insertPaciente(paciente)
-        pacienteDao.deletePaciente(paciente)
+        pacienteDao.deletePaciente(paciente.id, paciente.opticaId)
 
         val retrieved = pacienteDao.getPacienteById("p1")
         assertNull(retrieved)
@@ -234,7 +234,7 @@ class DaoTest {
         )
         evaluacionDao.insertEvaluacion(ev)
 
-        pacienteDao.deletePaciente(paciente)
+        pacienteDao.deletePaciente(paciente.id, paciente.opticaId)
 
         assertNull(pacienteDao.getPacienteById("p1"))
         assertNull(evaluacionDao.getEvaluacionById("e1"))

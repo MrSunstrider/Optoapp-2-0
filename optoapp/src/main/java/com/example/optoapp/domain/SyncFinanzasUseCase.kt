@@ -141,7 +141,7 @@ open class SyncFinanzasUseCase @Inject constructor(
             0
         } catch (e: RestException) {
             // Auth/permission errors should NOT be silenced
-            if (e.statusCode == 401 || e.statusCode == 403) {
+            if (e.statusCode == 401 || e.statusCode == 403 || e.statusCode == 409) {
                 throw e
             }
             Log.e(TAG, "Error REST subiendo $entityName (${e.statusCode}): ${e.message}", e)

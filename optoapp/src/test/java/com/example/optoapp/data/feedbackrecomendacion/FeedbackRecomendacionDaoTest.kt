@@ -38,6 +38,7 @@ class FeedbackRecomendacionDaoTest {
     @Test
     fun upsert_insertsNewFeedback() = runBlocking {
         val feedback = FeedbackRecomendacionEntity(
+            id = "fb-1",
             recomendacionId = "rec-abc",
             opticaId = "optica1",
             fueUtil = true,
@@ -50,44 +51,49 @@ class FeedbackRecomendacionDaoTest {
         assertEquals("rec-abc", result[0].recomendacionId)
         assertEquals("optica1", result[0].opticaId)
         assertTrue(result[0].fueUtil)
+        assertEquals("fb-1", result[0].id)
     }
 
     @Test
     fun upsert_updatesExistingFeedback() = runBlocking {
         val fb1 = FeedbackRecomendacionEntity(
+            id = "fb-1",
             recomendacionId = "rec-abc",
             opticaId = "optica1",
             fueUtil = false,
-            fecha = System.currentTimeMillis()
+            fecha = 1000L
         )
         dao.upsert(fb1)
 
         val fb2 = FeedbackRecomendacionEntity(
+            id = "fb-1",
             recomendacionId = "rec-abc",
             opticaId = "optica1",
             fueUtil = true,
-            fecha = System.currentTimeMillis()
+            fecha = 2000L
         )
         dao.upsert(fb2)
 
         val result = dao.getByOpticaId("optica1")
         assertEquals(1, result.size)
         assertTrue(result[0].fueUtil)
+        // Same id → upsert replaced the row
+        assertEquals("fb-1", result[0].id)
     }
 
     @Test
     fun getByOpticaId_returnsAllForOptica() = runBlocking {
         // Insert 2 for optica1 and 1 for optica2
         dao.upsert(FeedbackRecomendacionEntity(
-            recomendacionId = "rec-1", opticaId = "optica1",
+            id = "fb-1", recomendacionId = "rec-1", opticaId = "optica1",
             fueUtil = true, fecha = 1000L
         ))
         dao.upsert(FeedbackRecomendacionEntity(
-            recomendacionId = "rec-2", opticaId = "optica1",
+            id = "fb-2", recomendacionId = "rec-2", opticaId = "optica1",
             fueUtil = false, fecha = 2000L
         ))
         dao.upsert(FeedbackRecomendacionEntity(
-            recomendacionId = "rec-3", opticaId = "optica2",
+            id = "fb-3", recomendacionId = "rec-3", opticaId = "optica2",
             fueUtil = true, fecha = 1500L
         ))
 

@@ -56,7 +56,7 @@ class FakeDispensacionRepository {
         }
     }
 
-    suspend fun deleteDispensacionById(id: String) {
+    suspend fun deleteDispensacionById(id: String, opticaId: String) {
         dispensaciones.removeAll { it.id == id }
         items.removeAll { it.dispensacionId == id }
         pagos.removeAll { it.dispensacionId == id }

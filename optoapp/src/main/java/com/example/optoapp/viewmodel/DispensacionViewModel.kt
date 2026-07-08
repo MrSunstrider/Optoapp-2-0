@@ -367,7 +367,7 @@ class DispensacionViewModel @Inject constructor(
                         repository.insertDispensacion(disp)
                     }
 
-                    repository.deleteItemsByDispensacionId(finalId)
+                    repository.deleteItemsByDispensacionId(finalId, currentOpticaId)
                     s.items.forEachIndexed { _, itemUi ->
                         val requiereAlturaItem = itemUi.tipoLente in setOf("Bifocal", "Progresivo", "Ocupacional")
                         val item = DispensacionItem(
