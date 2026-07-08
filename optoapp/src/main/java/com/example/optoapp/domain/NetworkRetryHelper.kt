@@ -1,14 +1,16 @@
 package com.example.optoapp.domain
 
 import android.util.Log
+import io.github.jan.supabase.exceptions.RestException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
+import kotlin.random.Random
 import java.io.IOException
 import javax.inject.Inject
 
 /**
- * Retry logic for transient network failures during sync.
- * Extracted from [SyncFinanzasUseCase].
+ * Supabase sync must survive transient network blips without failing the entire batch.
+ * Extracted from [SyncFinanzasUseCase] to share retry logic across upload and download.
  */
 class NetworkRetryHelper @Inject constructor() {
     companion object {
@@ -32,8 +34,16 @@ class NetworkRetryHelper @Inject constructor() {
                 lastError = e
                 val shouldRetry = isTransientNetworkError(e)
                 if (!shouldRetry || attempt == NETWORK_RETRY_ATTEMPTS - 1) throw e
-                val backoffMs = 400L * (attempt + 1)
+                val backoffMs = (400L * (attempt + 1)) + Random.nextLong(0, 200)
                 Log.w(TAG, "$opName fallo de red (intento ${attempt + 1}/$NETWORK_RETRY_ATTEMPTS). Reintentando en ${backoffMs}ms")
+                delay(backoffMs)
+            } catch (e: RestException) {
+                Log.e(TAG, "Error REST en $opName (${e.statusCode}): ${e.message}", e)
+                lastError = e
+                val shouldRetry = isTransientNetworkError(e) || e.statusCode == 429
+                if (!shouldRetry || attempt == NETWORK_RETRY_ATTEMPTS - 1) throw e
+                val backoffMs = (400L * (attempt + 1)) + Random.nextLong(0, 200)
+                Log.w(TAG, "$opName fallo REST (intento ${attempt + 1}/$NETWORK_RETRY_ATTEMPTS). Reintentando en ${backoffMs}ms")
                 delay(backoffMs)
             }
         }

@@ -7,7 +7,6 @@ import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Pago
 import com.example.optoapp.data.ServicioExtra
 import com.example.optoapp.data.SessionManager
-import com.example.optoapp.data.arqueo.ArqueoCaja
 import com.example.optoapp.data.venta.Venta
 import com.example.optoapp.data.venta.VentaDao
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -41,7 +40,6 @@ data class CierreCajaUiState(
     val cobrosAtrasados: Double = 0.0,
     val saldoPendiente: Double = 0.0,
     val isLoading: Boolean = false,
-    val arqueoForFecha: ArqueoCaja? = null,
     val dispOtMap: Map<String, String> = emptyMap()
 )
 
@@ -70,7 +68,6 @@ class CierreCajaViewModel @Inject constructor(
     val uiState: StateFlow<CierreCajaUiState> = _uiState.asStateFlow()
 
 
-    private val _arqueoKey = MutableStateFlow<Pair<LocalDate, String>?>(null)
     private val _refreshTrigger = MutableStateFlow(0)
 
     init {
@@ -80,19 +77,6 @@ class CierreCajaViewModel @Inject constructor(
             }
         }
         observePagos()
-        observeArqueo()
-    }
-
-    private fun observeArqueo() {
-        _arqueoKey
-            .filterNotNull()
-            .flatMapLatest { (fecha, opticaId) ->
-                repository.getArqueoByFecha(fecha, opticaId)
-            }
-            .onEach { arqueo ->
-                _uiState.update { it.copy(arqueoForFecha = arqueo) }
-            }
-            .launchIn(viewModelScope)
     }
 
     fun setFecha(fecha: LocalDate) {
@@ -175,10 +159,4 @@ class CierreCajaViewModel @Inject constructor(
         }.mapValues { entry -> entry.value.sumOf { it.monto } }
     }
 
-    fun loadArqueoForDate(fecha: LocalDate, opticaId: String): Flow<ArqueoCaja?> =
-        repository.getArqueoByFecha(fecha, opticaId)
-
-    fun observeArqueoForDate(fecha: LocalDate, opticaId: String) {
-        _arqueoKey.value = fecha to opticaId
-    }
 }

@@ -1,6 +1,5 @@
 package com.example.optoapp.data
 
-import com.example.optoapp.data.arqueo.ArqueoCajaDao
 import com.example.optoapp.data.backup.BackupRestoreCoordinator
 import com.example.optoapp.data.montura.MonturaDao
 import com.example.optoapp.data.montura.MonturaInventoryCoordinator
@@ -88,7 +87,6 @@ class OptoRepositoryTest {
             snapshotCoordinator = snapshotCoordinator,
             backupCoordinator = backupCoordinator,
             monturaCoordinator = monturaCoordinator,
-            arqueoCajaDao = db.arqueoCajaDao(),
             ventaDao = db.ventaDao(),
             gastoOperativoDao = db.gastoOperativoDao(),
             resumenDiarioDao = db.resumenDiarioDao(),

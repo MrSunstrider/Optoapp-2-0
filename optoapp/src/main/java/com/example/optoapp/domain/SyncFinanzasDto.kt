@@ -5,13 +5,13 @@ import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.FinanzasRemoteDefaults
 import com.example.optoapp.data.Pago
 import com.example.optoapp.data.ServicioExtra
-import com.example.optoapp.data.arqueo.ArqueoCaja
 import com.example.optoapp.data.configuracionfinanciera.ConfiguracionFinancieraEntity
 import com.example.optoapp.data.gastooperativo.GastoOperativoEntity
 import com.example.optoapp.data.resumendiario.ResumenDiarioEntity
 import com.example.optoapp.data.venta.Venta
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import java.time.Instant
 import java.time.LocalDate
 
 
@@ -181,8 +181,8 @@ fun Venta.toRemoto() = VentaRemota(
     costoUnitarioSnapshot = costoUnitarioSnapshot,
     estado = estado.ifBlank { "Pendiente" },
     categoriaProductoId = categoriaProductoId,
-    createdAt = createdAt ?: java.time.Instant.now().toString(),
-    updatedAt = updatedAt ?: java.time.Instant.now().toString(),
+    createdAt = createdAt,
+    updatedAt = updatedAt ?: Instant.now().toString(),
     updatedBy = null
 )
 
@@ -324,8 +324,8 @@ data class FinanzasSyncResult(
     val uploadedDispensacionItems: Int = 0,
     val uploadedServicios: Int,
     val uploadedPagos: Int,
+    val uploadedVentas: Int = 0,
     val uploadedGastosOperativos: Int = 0,
-    val uploadedArqueos: Int = 0,
     val downloadedDispensaciones: Int,
     val downloadedDispensacionItems: Int = 0,
     val downloadedServicios: Int,
@@ -421,76 +421,4 @@ internal fun String.remotoOtServicioExtraToLocal(): String =
 internal fun normalizedOtForUnique(ot: String?): String? =
     ot?.trim()?.takeIf { it.isNotBlank() }?.uppercase()
 
-@Serializable
-data class ArqueoCajaRemota(
-    val id: String,
-    val fecha: String,                                          // ISO date "2026-06-17"
-    @SerialName("optica_id") val opticaId: String,
-    @SerialName("fondo_caja") val fondoCaja: Double,
-    @SerialName("efectivo_contado") val efectivoContado: Double,
-    @SerialName("tarjeta_contado") val tarjetaContado: Double,
-    @SerialName("transferencia_contado") val transferenciaContado: Double,
-    @SerialName("movil_contado") val movilContado: Double,
-    @SerialName("efectivo_cobrado") val efectivoCobrado: Double,
-    @SerialName("tarjeta_cobrado") val tarjetaCobrado: Double,
-    @SerialName("transferencia_cobrada") val transferenciaCobrado: Double,
-    @SerialName("movil_cobrado") val movilCobrado: Double,
-    @SerialName("diferencia_efectivo") val diferenciaEfectivo: Double,
-    @SerialName("diferencia_tarjeta") val diferenciaTarjeta: Double,
-    @SerialName("diferencia_transferencia") val diferenciaTransferencia: Double,
-    @SerialName("diferencia_movil") val diferenciaMovil: Double,
-    @SerialName("diferencia_total") val diferenciaTotal: Double,
-    @SerialName("cerrado_por") val cerradoPor: String,
-    val sellado: Boolean,
-    @SerialName("updated_at") val updatedAt: String,
-    @SerialName("updated_by") val updatedBy: String = ""
-)
 
-fun ArqueoCaja.toRemota(): ArqueoCajaRemota = ArqueoCajaRemota(
-    id = id,
-    fecha = fecha.toString(),   // LocalDate.toString() = ISO "2026-06-17"
-    opticaId = opticaId,
-    fondoCaja = fondoCaja,
-    efectivoContado = efectivoContado,
-    tarjetaContado = tarjetaContado,
-    transferenciaContado = transferenciaContado,
-    movilContado = movilContado,
-    efectivoCobrado = efectivoCobrado,
-    tarjetaCobrado = tarjetaCobrado,
-    transferenciaCobrado = transferenciaCobrado,
-    movilCobrado = movilCobrado,
-    diferenciaEfectivo = diferenciaEfectivo,
-    diferenciaTarjeta = diferenciaTarjeta,
-    diferenciaTransferencia = diferenciaTransferencia,
-    diferenciaMovil = diferenciaMovil,
-    diferenciaTotal = diferenciaTotal,
-    cerradoPor = cerradoPor,
-    sellado = sellado,
-    updatedAt = updatedAt,
-    updatedBy = updatedBy
-)
-
-fun ArqueoCajaRemota.toLocal(): ArqueoCaja = ArqueoCaja(
-    id = id,
-    fecha = LocalDate.parse(fecha),
-    opticaId = opticaId,
-    fondoCaja = fondoCaja,
-    efectivoContado = efectivoContado,
-    tarjetaContado = tarjetaContado,
-    transferenciaContado = transferenciaContado,
-    movilContado = movilContado,
-    efectivoCobrado = efectivoCobrado,
-    tarjetaCobrado = tarjetaCobrado,
-    transferenciaCobrado = transferenciaCobrado,
-    movilCobrado = movilCobrado,
-    diferenciaEfectivo = diferenciaEfectivo,
-    diferenciaTarjeta = diferenciaTarjeta,
-    diferenciaTransferencia = diferenciaTransferencia,
-    diferenciaMovil = diferenciaMovil,
-    diferenciaTotal = diferenciaTotal,
-    cerradoPor = cerradoPor,
-    sellado = sellado,
-    createdAt = "",  // remote doesn't carry createdAt; leave empty, caller preserves local
-    updatedAt = updatedAt,
-    updatedBy = updatedBy
-)

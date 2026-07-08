@@ -1,9 +1,6 @@
 package com.example.optoapp.data
 
 import android.util.Log
-import com.example.optoapp.data.arqueo.ArqueoCaja
-import com.example.optoapp.data.arqueo.ArqueoCajaDao
-import com.example.optoapp.data.arqueo.IArqueoCajaRepo
 import com.example.optoapp.data.backup.BackupRestoreCoordinator
 import com.example.optoapp.data.categoriaproducto.CategoriaProductoDao
 import com.example.optoapp.data.categoriaproducto.CategoriaProductoEntity
@@ -44,13 +41,12 @@ open class OptoRepository(
     val snapshotCoordinator: SyncSnapshotCoordinator,
     val backupCoordinator: BackupRestoreCoordinator,
     val monturaCoordinator: MonturaInventoryCoordinator,
-    private val arqueoCajaDao: ArqueoCajaDao,
     private val ventaDao: VentaDao,
     private val gastoOperativoDao: GastoOperativoDao,
     private val resumenDiarioDao: ResumenDiarioDao,
     private val configuracionFinancieraDao: ConfiguracionFinancieraDao,
     private val categoriaProductoDao: CategoriaProductoDao
-) : IArqueoCajaRepo {
+) {
     companion object {
         private const val TAG = "OptoRepository"
     }
@@ -137,7 +133,7 @@ open class OptoRepository(
         postSaveSyncScheduler.get().scheduleFinanzasSync(stamped.opticaId)
     }
 
-    suspend fun deleteVentaById(id: String, origenId: String, opticaId: String) { ventaDao.deleteById(id); ventaDao.deleteByOrigenId(origenId); syncStateTracker.markDeleted(opticaId, "venta", id) }
+    suspend fun deleteVentaById(id: String, origenId: String, opticaId: String) { ventaDao.deleteById(id, opticaId); ventaDao.deleteByOrigenId(origenId, opticaId); syncStateTracker.markDeleted(opticaId, "venta", id) }
 
     suspend fun getVentasForOptica(opticaId: String): List<Venta> = ventaDao.getAllVentasByOptica(opticaId)
 
@@ -181,32 +177,10 @@ open class OptoRepository(
 
     suspend fun resolveDuplicatePacientesByHistoria(opticaId: String) = pacienteRepo.resolveDuplicatePacientesByHistoria(opticaId, database)
 
-    // ─── Arqueo de caja ────────────────────────────────────────────────────
-
-    override suspend fun insertArqueo(arqueo: ArqueoCaja) {
-        arqueoCajaDao.insertArqueo(arqueo)
-        postSaveSyncScheduler.get().scheduleFinanzasSync(arqueo.opticaId)
-    }
-
-    suspend fun updateArqueo(arqueo: ArqueoCaja) {
-        val stamped = arqueo.copy(updatedAt = Instant.now().toString())
-        arqueoCajaDao.updateArqueo(stamped)
-        postSaveSyncScheduler.get().scheduleFinanzasSync(stamped.opticaId)
-    }
-
-    suspend fun getArqueoById(id: String): ArqueoCaja? =
-        arqueoCajaDao.getArqueoById(id)
-
-    suspend fun upsertArqueoFromRemote(arqueo: ArqueoCaja) {
-        arqueoCajaDao.upsertArqueo(arqueo)
-    }
-
     // ─── Remote-bypass write path ──────────────────────────────────────────
     // These methods write a record received from the server as-is:
     //  - NO copy(updatedAt = Instant.now()) — server timestamp is preserved verbatim.
     //  - NO postSaveSyncScheduler call — download is the terminal step of a sync cycle.
-    // Mirror pattern: upsertArqueoFromRemote above.
-
     suspend fun upsertServicioFromRemote(servicio: ServicioExtra) =
         dispensacionRepo.insertServicio(servicio)
 
@@ -224,18 +198,6 @@ open class OptoRepository(
 
     suspend fun upsertVentaFromRemote(venta: Venta) =
         ventaDao.upsertVenta(venta)
-
-    fun getArqueoByFecha(fecha: LocalDate, opticaId: String): Flow<ArqueoCaja?> =
-        arqueoCajaDao.getArqueoByFechaAndOptica(fecha, opticaId)
-
-    suspend fun getArqueoByFechaSync(fecha: LocalDate, opticaId: String): ArqueoCaja? =
-        arqueoCajaDao.getArqueoByFechaSync(fecha, opticaId)
-
-    suspend fun getArqueosByOpticaList(opticaId: String): List<ArqueoCaja> =
-        arqueoCajaDao.getArqueosByOpticaList(opticaId)
-
-    fun getArqueosByOptica(opticaId: String): Flow<List<ArqueoCaja>> =
-        arqueoCajaDao.getArqueosByOptica(opticaId)
 
     // ─── Gastos Operativos ────────────────────────────────────────────────────
 

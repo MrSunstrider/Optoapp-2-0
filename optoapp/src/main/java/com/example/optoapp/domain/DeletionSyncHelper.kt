@@ -9,8 +9,8 @@ import java.io.IOException
 import javax.inject.Inject
 
 /**
- * Handles propagation of local pending deletions to Supabase.
- * Extracted from [SyncFinanzasUseCase].
+ * Extracted from [SyncFinanzasUseCase] so the upload coordinator can share deletion
+ * propagation without duplicating Supabase filter logic per entity type.
  */
 class DeletionSyncHelper @Inject constructor(
     private val repository: OptoRepository,
@@ -24,7 +24,6 @@ class DeletionSyncHelper @Inject constructor(
         private const val TABLE_GASTOS_OPERATIVOS = "gastos_operativos"
         private const val TABLE_VENTAS = "ventas"
         private const val TABLE_DISPENSACION_ITEMS = "dispensacion_items"
-        private const val TABLE_ARQUEO_CAJA = "arqueo_caja"
     }
 
     suspend fun pushPendingDeletions(opticaId: String) {
@@ -39,7 +38,6 @@ class DeletionSyncHelper @Inject constructor(
                 "gasto_operativo" -> TABLE_GASTOS_OPERATIVOS
                 "venta" -> TABLE_VENTAS
                 "dispensacion_item" -> TABLE_DISPENSACION_ITEMS
-                "arqueo_caja" -> TABLE_ARQUEO_CAJA
                 else -> null
             }
             if (table == null) {

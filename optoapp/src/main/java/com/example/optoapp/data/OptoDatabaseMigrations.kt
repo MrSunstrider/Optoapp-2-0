@@ -8,18 +8,9 @@ import java.util.concurrent.TimeUnit
 // v6→v8   : Multióptica (opticaId), campos de evaluación clínica
 // v8→v14  : Expansión modelo evaluaciones (estereopsis, colores, schirmer, etc.)
 // v14→v20 : Inventario (monturas, proveedores, órdenes de compra), dispensaciones
-// v20→v27 : Arqueo de caja, sync_entity_state, sesión multi-dispositivo
+// v20→v27 : sync_entity_state, sesión multi-dispositivo
 // ─────────────────────────────────────────────────────────────────────────────
 
-val MIGRATION_7_8 = object : Migration(7, 8) {
-    override fun migrate(db: SupportSQLiteDatabase) {
-        db.execSQL("ALTER TABLE pacientes ADD COLUMN opticaId TEXT NOT NULL DEFAULT 'mi_optica_base'")
-        db.execSQL("ALTER TABLE evaluaciones ADD COLUMN opticaId TEXT NOT NULL DEFAULT 'mi_optica_base'")
-        db.execSQL("ALTER TABLE dispensaciones ADD COLUMN opticaId TEXT NOT NULL DEFAULT 'mi_optica_base'")
-        db.execSQL("ALTER TABLE servicios_extra ADD COLUMN opticaId TEXT NOT NULL DEFAULT 'mi_optica_base'")
-        db.execSQL("ALTER TABLE pagos ADD COLUMN opticaId TEXT NOT NULL DEFAULT 'mi_optica_base'")
-    }
-}
 val MIGRATION_6_7 = object : Migration(6, 7) {
     override fun migrate(db: SupportSQLiteDatabase) {
         db.execSQL("ALTER TABLE evaluaciones ADD COLUMN avScAoCerca TEXT NOT NULL DEFAULT ''")
@@ -39,6 +30,15 @@ val MIGRATION_6_7 = object : Migration(6, 7) {
         db.execSQL("ALTER TABLE evaluaciones ADD COLUMN amsler TEXT NOT NULL DEFAULT ''")
         db.execSQL("ALTER TABLE evaluaciones ADD COLUMN campoVisual TEXT NOT NULL DEFAULT ''")
         db.execSQL("ALTER TABLE evaluaciones ADD COLUMN campoVisualDescripcion TEXT NOT NULL DEFAULT ''")
+    }
+}
+val MIGRATION_7_8 = object : Migration(7, 8) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE pacientes ADD COLUMN opticaId TEXT NOT NULL DEFAULT 'mi_optica_base'")
+        db.execSQL("ALTER TABLE evaluaciones ADD COLUMN opticaId TEXT NOT NULL DEFAULT 'mi_optica_base'")
+        db.execSQL("ALTER TABLE dispensaciones ADD COLUMN opticaId TEXT NOT NULL DEFAULT 'mi_optica_base'")
+        db.execSQL("ALTER TABLE servicios_extra ADD COLUMN opticaId TEXT NOT NULL DEFAULT 'mi_optica_base'")
+        db.execSQL("ALTER TABLE pagos ADD COLUMN opticaId TEXT NOT NULL DEFAULT 'mi_optica_base'")
     }
 }
 
@@ -886,16 +886,8 @@ val MIGRATION_30_31 = object : Migration(30, 31) {
     }
 }
 
-val MIGRATION_32_33 = object : Migration(32, 33) {
-    override fun migrate(db: SupportSQLiteDatabase) {
-        db.execSQL("ALTER TABLE pagos ADD COLUMN ventaId TEXT")
-        db.execSQL("CREATE INDEX IF NOT EXISTS index_pagos_ventaId ON pagos(ventaId)")
-    }
-}
-
 val MIGRATION_31_32 = object : Migration(31, 32) {
     override fun migrate(db: SupportSQLiteDatabase) {
-        // 1. CREATE categorias_producto (seed table, read-only)
         db.execSQL("""
             CREATE TABLE IF NOT EXISTS categorias_producto (
                 id TEXT PRIMARY KEY NOT NULL,
@@ -905,7 +897,6 @@ val MIGRATION_31_32 = object : Migration(31, 32) {
             )
         """.trimIndent())
 
-        // 2. Seed categorias_producto — 9 rows, idempotent via INSERT OR IGNORE
         val seed = listOf(
             listOf("lente_progresivo", "Lentes Progresivos", "lente", 1),
             listOf("lente_monofocal", "Lentes Monofocales", "lente", 2),
@@ -924,10 +915,8 @@ val MIGRATION_31_32 = object : Migration(31, 32) {
             )
         }
 
-        // 3. ALTER ventas ADD COLUMN categoriaProductoId
         db.execSQL("ALTER TABLE ventas ADD COLUMN categoriaProductoId TEXT")
 
-        // 4. CREATE gastos_operativos
         db.execSQL("""
             CREATE TABLE IF NOT EXISTS gastos_operativos (
                 id TEXT PRIMARY KEY NOT NULL,
@@ -943,7 +932,6 @@ val MIGRATION_31_32 = object : Migration(31, 32) {
         """.trimIndent())
         db.execSQL("CREATE INDEX IF NOT EXISTS index_gastos_operativos_opticaId ON gastos_operativos(opticaId)")
 
-        // 5. CREATE resumen_diario
         db.execSQL("""
             CREATE TABLE IF NOT EXISTS resumen_diario (
                 id TEXT PRIMARY KEY NOT NULL,
@@ -963,7 +951,6 @@ val MIGRATION_31_32 = object : Migration(31, 32) {
         """.trimIndent())
         db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_resumen_diario_opticaId_fecha ON resumen_diario(opticaId, fecha)")
 
-        // 6. CREATE configuracion_financiera
         db.execSQL("""
             CREATE TABLE IF NOT EXISTS configuracion_financiera (
                 opticaId TEXT PRIMARY KEY NOT NULL,
@@ -978,6 +965,13 @@ val MIGRATION_31_32 = object : Migration(31, 32) {
                 frecuenciaRecalculoDias INTEGER NOT NULL DEFAULT 1
             )
         """.trimIndent())
+    }
+}
+
+val MIGRATION_32_33 = object : Migration(32, 33) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE pagos ADD COLUMN ventaId TEXT")
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_pagos_ventaId ON pagos(ventaId)")
     }
 }
 
@@ -1002,5 +996,11 @@ val MIGRATION_33_34 = object : Migration(33, 34) {
 val MIGRATION_34_35 = object : Migration(34, 35) {
     override fun migrate(db: SupportSQLiteDatabase) {
         db.execSQL("ALTER TABLE dispensaciones ADD COLUMN filtro_discromatopsia_tipo TEXT NOT NULL DEFAULT ''")
+    }
+}
+
+val MIGRATION_35_36 = object : Migration(35, 36) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("DROP TABLE IF EXISTS arqueo_caja")
     }
 }

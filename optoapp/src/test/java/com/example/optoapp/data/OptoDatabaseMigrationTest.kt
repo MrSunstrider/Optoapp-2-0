@@ -119,7 +119,6 @@ class OptoDatabaseMigrationTest {
             "ordenCompraDao" to "OrdenCompraDao",
             "ordenCompraItemDao" to "OrdenCompraItemDao",
             "inventarioFisicoDao" to "InventarioFisicoDao",
-            "arqueoCajaDao" to "ArqueoCajaDao",
             "ventaDao" to "VentaDao"
         )
 

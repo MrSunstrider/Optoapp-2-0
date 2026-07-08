@@ -37,8 +37,7 @@ private val TYPE_LABELS = mapOf(
     "orden_compra_item" to "Ítem de orden de compra",
     "inventario_fisico" to "Inventario físico",
     "inventario_fisico_detalle" to "Detalle de inventario físico",
-    "dispensacion_item" to "Ítem de dispensación",
-    "arqueo_caja" to "Arqueo de caja"
+    "dispensacion_item" to "Ítem de dispensación"
 )
 
 private fun entityTypeLabel(type: String): String = TYPE_LABELS[type] ?: type
@@ -87,7 +86,6 @@ fun ConflictosScreen(
         }
     ) { padding ->
         if (conflicts.isEmpty()) {
-            // Sin conflictos
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -166,7 +164,6 @@ private fun ConflictCard(
         Column(
             modifier = Modifier.padding(16.dp)
         ) {
-            // Header
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -197,7 +194,6 @@ private fun ConflictCard(
             // FR-12: Field-level conflict details when snapshot data is available
             val hasSnapshotData = EntitySnapshotSerializer.hasSnapshotData(conflict.baseSnapshot)
             if (hasSnapshotData) {
-                // Compute merge result for field-level diff display
                 val mergeResult = remember(conflict.baseSnapshot, conflict.localData, conflict.remoteData) {
                     runCatching {
                         ThreeWayMerge.merge(
@@ -211,7 +207,6 @@ private fun ConflictCard(
                 }
 
                 if (mergeResult != null) {
-                    // Show conflicted fields
                     if (mergeResult.conflictedFields.isNotEmpty()) {
                         Text(
                             "Campos en conflicto:",
@@ -232,7 +227,6 @@ private fun ConflictCard(
                             )
                         }
                     }
-                    // Show auto-merged count
                     if (mergeResult.autoMergedFields.isNotEmpty()) {
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
@@ -242,7 +236,6 @@ private fun ConflictCard(
                         )
                     }
                 } else {
-                    // Fallback if merge computation fails
                     Text(
                         "Datos de conflicto disponibles",
                         style = MaterialTheme.typography.bodySmall,
@@ -282,7 +275,6 @@ private fun ConflictCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Acciones
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)

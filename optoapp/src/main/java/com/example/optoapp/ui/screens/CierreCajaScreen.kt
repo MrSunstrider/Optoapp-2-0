@@ -1,6 +1,5 @@
 package com.example.optoapp.ui.screens
 
-import android.content.Intent
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -8,32 +7,24 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.content.FileProvider
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.optoapp.data.AppRoles
-import com.example.optoapp.data.arqueo.ArqueoCaja
-import com.example.optoapp.viewmodel.ArqueoCajaViewModel
 import com.example.optoapp.viewmodel.AuthViewModel
 import com.example.optoapp.viewmodel.CierreCajaViewModel
-import com.example.optoapp.util.ArqueoCajaPdfGenerator
 import com.example.optoapp.util.DateUtils
 import com.example.optoapp.ui.components.OptoTopAppBar
 import com.example.optoapp.ui.components.OptoDatePickerDialog
 import com.example.optoapp.ui.components.OptoCard
-import com.example.optoapp.ui.components.cierre_caja.ArqueoSection
 import com.example.optoapp.ui.components.cierre_caja.ResumenCard
 import com.example.optoapp.ui.components.cierre_caja.TransactionItem
-import java.io.File
 import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -41,22 +32,16 @@ import java.util.*
 fun CierreCajaScreen(
     navController: NavController,
     viewModel: CierreCajaViewModel = hiltViewModel(),
-    authViewModel: AuthViewModel = hiltViewModel(),
-    arqueoVM: ArqueoCajaViewModel = hiltViewModel()
+    authViewModel: AuthViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val arqueoUiState by arqueoVM.uiState.collectAsState()
     val opticaRol by authViewModel.opticaRol.collectAsState(initial = "admin")
     val opticaId by authViewModel.opticaId.collectAsState(initial = "")
     val canView = AppRoles.canViewCierreCaja(opticaRol)
     var showDatePicker by remember { mutableStateOf(false) }
-    val context = LocalContext.current
     val scrollState = rememberScrollState()
 
     LaunchedEffect(uiState.fecha, opticaId) {
-        if (opticaId.isNotBlank()) {
-            viewModel.observeArqueoForDate(uiState.fecha, opticaId)
-        }
         viewModel.refresh()
     }
 
@@ -66,19 +51,6 @@ fun CierreCajaScreen(
             onDateSelected = { viewModel.setFecha(it) },
             onDismiss = { showDatePicker = false }
         )
-    }
-
-    fun exportPdf(arqueo: ArqueoCaja) {
-        val pdfBytes = ArqueoCajaPdfGenerator.generate(arqueo, opticaId)
-        val file = File(context.cacheDir, "arqueo_${arqueo.fecha}_${arqueo.opticaId}.pdf")
-        file.writeBytes(pdfBytes)
-        val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
-        val shareIntent = Intent(Intent.ACTION_SEND).apply {
-            type = "application/pdf"
-            putExtra(Intent.EXTRA_STREAM, uri)
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        }
-        context.startActivity(Intent.createChooser(shareIntent, "Exportar Arqueo PDF"))
     }
 
     Scaffold(
@@ -93,11 +65,6 @@ fun CierreCajaScreen(
                 },
                 actions = {
                     if (canView) {
-                        uiState.arqueoForFecha?.let { arqueo ->
-                            IconButton(onClick = { exportPdf(arqueo) }) {
-                                Icon(Icons.Default.PictureAsPdf, contentDescription = "Exportar PDF")
-                            }
-                        }
                         IconButton(onClick = { showDatePicker = true }) {
                             Icon(Icons.Default.DateRange, contentDescription = "Cambiar Fecha")
                         }
@@ -239,21 +206,6 @@ fun CierreCajaScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            ArqueoSection(
-                arqueoFromCierre = uiState.arqueoForFecha,
-                arqueoUiState = arqueoUiState,
-                systemTotals = totales,
-                fecha = uiState.fecha,
-                opticaId = opticaId,
-                onFondoCajaChange = arqueoVM::setFondoCaja,
-                onEfectivoContadoChange = arqueoVM::setEfectivoContado,
-                onTarjetaContadoChange = arqueoVM::setTarjetaContado,
-                onTransferenciaContadoChange = arqueoVM::setTransferenciaContado,
-                onMovilContadoChange = arqueoVM::setMovilContado,
-                onCerrarDia = { arqueoVM.cerrarDia(uiState.fecha, opticaId, totales) }
-            )
         }
     }
 }

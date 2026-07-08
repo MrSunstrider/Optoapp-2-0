@@ -1,6 +1,5 @@
 package com.example.optoapp.data
 
-import com.example.optoapp.data.arqueo.ArqueoCajaDao
 import com.example.optoapp.data.backup.BackupRestoreCoordinator
 import com.example.optoapp.data.configuracionfinanciera.ConfiguracionFinancieraDao
 import com.example.optoapp.data.configuracionfinanciera.ConfiguracionFinancieraEntity
@@ -67,7 +66,6 @@ class OptoRepositoryFinanzasFromRemoteTest {
         val snapshotCoordinator = mockk<SyncSnapshotCoordinator>(relaxed = true)
         val backupCoordinator = mockk<BackupRestoreCoordinator>(relaxed = true)
         val monturaCoordinator = mockk<MonturaInventoryCoordinator>(relaxed = true)
-        val arqueoCajaDao = mockk<ArqueoCajaDao>(relaxed = true)
         val database = mockk<OptoDatabase>(relaxed = true)
 
         repo = OptoRepository(
@@ -80,7 +78,6 @@ class OptoRepositoryFinanzasFromRemoteTest {
             snapshotCoordinator = snapshotCoordinator,
             backupCoordinator = backupCoordinator,
             monturaCoordinator = monturaCoordinator,
-            arqueoCajaDao = arqueoCajaDao,
             ventaDao = ventaDao,
             gastoOperativoDao = gastoOperativoDao,
             resumenDiarioDao = resumenDiarioDao,

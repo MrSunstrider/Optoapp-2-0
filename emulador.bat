@@ -3,7 +3,7 @@ echo ============================================
 echo   OptoApp - Emulador + Instalar
 echo ============================================
 
-set SDK=C:\Users\usuario\AppData\Local\Android\Sdk
+set SDK=%LOCALAPPDATA%\Android\Sdk
 set PATH=%SDK%\emulator;%SDK%\platform-tools;%PATH%
 
 echo.

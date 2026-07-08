@@ -2,6 +2,7 @@ package com.example.optoapp.domain
 
 import android.util.Log
 import com.example.optoapp.data.Resource
+import io.github.jan.supabase.exceptions.RestException
 import kotlinx.coroutines.CancellationException
 import java.io.IOException
 import javax.inject.Inject
@@ -46,7 +47,6 @@ open class SyncFinanzasUseCase @Inject constructor(
             var pagosUp = 0
             var ventasUp = 0
             var gastosUp = 0
-            var arqueosUp = 0
 
             if (!skipUpload) {
                 dispUp = safeUpload("dispensaciones") { uploadSyncCoordinator.uploadDispensaciones(opticaId) }
@@ -61,8 +61,6 @@ open class SyncFinanzasUseCase @Inject constructor(
                 Log.d(TAG, "Finanzas: upload ventas=$ventasUp")
                 gastosUp = safeUpload("gastos_operativos") { uploadSyncCoordinator.uploadGastosOperativos(opticaId) }
                 Log.d(TAG, "Finanzas: upload gastos_operativos=$gastosUp")
-                arqueosUp = safeUpload("arqueo_caja") { uploadSyncCoordinator.uploadArqueos(opticaId) }
-                Log.d(TAG, "Finanzas: upload arqueo_caja=$arqueosUp")
             }
 
             val dispDown: Int
@@ -73,8 +71,6 @@ open class SyncFinanzasUseCase @Inject constructor(
             val resumenDown: Int
             val configDown: Int
             if (downloadAfterUpload) {
-                val arqueosDown = downloadSyncCoordinator.downloadArqueos(opticaId)
-                Log.d(TAG, "Finanzas: download arqueo_caja=$arqueosDown")
                 dispDown = downloadSyncCoordinator.downloadDispensaciones(opticaId)
                 Log.d(TAG, "Finanzas: download dispensaciones=$dispDown")
                 itemsDown = downloadSyncCoordinator.downloadDispensacionItems(opticaId)
@@ -106,8 +102,8 @@ open class SyncFinanzasUseCase @Inject constructor(
                     uploadedDispensacionItems = itemsUp,
                     uploadedServicios = servUp,
                     uploadedPagos = pagosUp,
+                    uploadedVentas = ventasUp,
                     uploadedGastosOperativos = gastosUp,
-                    uploadedArqueos = arqueosUp,
                     downloadedDispensaciones = dispDown,
                     downloadedDispensacionItems = itemsDown,
                     downloadedServicios = servDown,
@@ -142,6 +138,13 @@ open class SyncFinanzasUseCase @Inject constructor(
             throw e
         } catch (e: IOException) {
             Log.e(TAG, "Error en red subiendo $entityName: ${e.message}", e)
+            0
+        } catch (e: RestException) {
+            // Auth/permission errors should NOT be silenced
+            if (e.statusCode == 401 || e.statusCode == 403) {
+                throw e
+            }
+            Log.e(TAG, "Error REST subiendo $entityName (${e.statusCode}): ${e.message}", e)
             0
         } catch (e: Exception) {
             Log.e(TAG, "Error inesperado subiendo $entityName: ${e.message}", e)

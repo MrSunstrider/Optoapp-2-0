@@ -2,8 +2,6 @@ package com.example.optoapp.di
 
 import android.content.Context
 import com.example.optoapp.data.*
-import com.example.optoapp.data.arqueo.ArqueoCajaDao
-import com.example.optoapp.data.arqueo.IArqueoCajaRepo
 import com.example.optoapp.data.backup.BackupRestoreCoordinator
 import com.example.optoapp.data.configuracionfinanciera.ConfiguracionFinancieraDao
 import com.example.optoapp.data.categoriaproducto.CategoriaProductoDao
@@ -107,9 +105,6 @@ object DatabaseModule {
     fun provideInventarioFisicoDao(database: OptoDatabase): InventarioFisicoDao = database.inventarioFisicoDao()
 
     @Provides
-    fun provideArqueoCajaDao(database: OptoDatabase): ArqueoCajaDao = database.arqueoCajaDao()
-
-    @Provides
     fun provideVentaDao(database: OptoDatabase): VentaDao = database.ventaDao()
 
     @Provides
@@ -210,7 +205,6 @@ object DatabaseModule {
         snapshotCoordinator: SyncSnapshotCoordinator,
         backupCoordinator: BackupRestoreCoordinator,
         monturaCoordinator: MonturaInventoryCoordinator,
-        arqueoCajaDao: ArqueoCajaDao,
         gastoOperativoDao: GastoOperativoDao,
         resumenDiarioDao: ResumenDiarioDao,
         configuracionFinancieraDao: ConfiguracionFinancieraDao,
@@ -226,7 +220,6 @@ object DatabaseModule {
             snapshotCoordinator,
             backupCoordinator,
             monturaCoordinator,
-            arqueoCajaDao,
             database.ventaDao(),
             gastoOperativoDao,
             resumenDiarioDao,
@@ -269,9 +262,6 @@ object DatabaseModule {
         supabase: SupabaseClient,
         backupJson: Json
     ): BackupDelegate = BackupDelegate(repository, sessionManager, supabase, backupJson)
-
-    @Provides
-    fun provideIArqueoCajaRepo(repository: OptoRepository): IArqueoCajaRepo = repository
 
     @Provides
     @Singleton

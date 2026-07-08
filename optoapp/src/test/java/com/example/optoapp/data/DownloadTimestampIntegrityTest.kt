@@ -2,7 +2,6 @@ package com.example.optoapp.data
 
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
-import com.example.optoapp.data.arqueo.ArqueoCajaDao
 import com.example.optoapp.data.backup.BackupRestoreCoordinator
 import com.example.optoapp.data.montura.MonturaInventoryCoordinator
 import com.example.optoapp.data.pago.PagoDao
@@ -89,7 +88,6 @@ class DownloadTimestampIntegrityTest {
             snapshotCoordinator = snapshotCoordinator,
             backupCoordinator = backupCoordinator,
             monturaCoordinator = monturaCoordinator,
-            arqueoCajaDao = db.arqueoCajaDao(),
             ventaDao = db.ventaDao(),
             gastoOperativoDao = db.gastoOperativoDao(),
             resumenDiarioDao = db.resumenDiarioDao(),

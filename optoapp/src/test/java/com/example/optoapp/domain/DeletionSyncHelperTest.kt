@@ -1,7 +1,22 @@
 package com.example.optoapp.domain
 
+import com.example.optoapp.data.OptoRepository
+import com.example.optoapp.data.SyncEntityState
+import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.postgrest.Postgrest
+import io.github.jan.supabase.postgrest.postgrest
+import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.mockkStatic
+import io.mockk.unmockkStatic
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.*
+import org.junit.Before
 import org.junit.Test
+import java.io.IOException
 
 /**
  * Characterization tests for DeletionSyncHelper.
@@ -10,6 +25,17 @@ import org.junit.Test
  * flow, deletedIds contract, edge cases.
  */
 class DeletionSyncHelperTest {
+
+    @Before
+    fun setUpLog() {
+        mockkStatic("android.util.Log")
+        every { android.util.Log.d(any(), any()) } returns 0
+        every { android.util.Log.d(any(), any(), any()) } returns 0
+        every { android.util.Log.e(any(), any<String>()) } returns 0
+        every { android.util.Log.e(any(), any<String>(), any()) } returns 0
+        every { android.util.Log.w(any(), any<String>()) } returns 0
+        every { android.util.Log.w(any(), any<String>(), any()) } returns 0
+    }
 
     // ─── Class structure ──────────────────────────────────────────────────
 
@@ -137,7 +163,6 @@ class DeletionSyncHelperTest {
             "gasto_operativo" -> "gastos_operativos"
             "venta" -> "ventas"
             "dispensacion_item" -> "dispensacion_items"
-            "arqueo_caja" -> "arqueo_caja"
             else -> null
         }
         assertNull(table)
@@ -153,7 +178,6 @@ class DeletionSyncHelperTest {
             "gasto_operativo" -> "gastos_operativos"
             "venta" -> "ventas"
             "dispensacion_item" -> "dispensacion_items"
-            "arqueo_caja" -> "arqueo_caja"
             else -> null
         }
         assertEquals("gastos_operativos", table)
@@ -169,7 +193,6 @@ class DeletionSyncHelperTest {
             "gasto_operativo" -> "gastos_operativos"
             "venta" -> "ventas"
             "dispensacion_item" -> "dispensacion_items"
-            "arqueo_caja" -> "arqueo_caja"
             else -> null
         }
         assertEquals("ventas", table)
@@ -185,26 +208,9 @@ class DeletionSyncHelperTest {
             "gasto_operativo" -> "gastos_operativos"
             "venta" -> "ventas"
             "dispensacion_item" -> "dispensacion_items"
-            "arqueo_caja" -> "arqueo_caja"
             else -> null
         }
         assertEquals("dispensacion_items", table)
-    }
-
-    @Test
-    fun entityTypeMapping_arqueoCaja_to_arqueoCaja() {
-        val entityType = "arqueo_caja"
-        val table = when (entityType) {
-            "servicio_extra" -> "servicios_extra"
-            "dispensacion" -> "dispensaciones"
-            "pago" -> "pagos"
-            "gasto_operativo" -> "gastos_operativos"
-            "venta" -> "ventas"
-            "dispensacion_item" -> "dispensacion_items"
-            "arqueo_caja" -> "arqueo_caja"
-            else -> null
-        }
-        assertEquals("arqueo_caja", table)
     }
 
     @Test
@@ -253,25 +259,123 @@ class DeletionSyncHelperTest {
         assertTrue(ids.isEmpty())
     }
 
-    // ─── Error handling pattern ───────────────────────────────────────────
+    // ─── Error handling ───────────────────────────────────────────────────
 
     @Test
-    fun errorHandling_cancellationException_isRethrown() {
-        // Pattern: catch (e: CancellationException) { throw e }
-        assertTrue(true) // structural assertion
+    fun pushPendingDeletions_withPending_queriesPendingDeletions() = runBlocking {
+        val opticaId = "optica-test"
+        val tombstone = SyncEntityState(
+            entityType = "dispensacion", entityId = "id-1", status = "pending", opticaId = opticaId
+        )
+        val repository = mockk<OptoRepository>()
+        val supabase = mockk<SupabaseClient>()
+        val helper = DeletionSyncHelper(repository, supabase)
+
+        coEvery { repository.getPendingDeletions(opticaId) } returns listOf(tombstone)
+        coEvery { repository.clearDeletionState(opticaId, "dispensacion", "id-1") } returns Unit
+
+        // postgrest is an extension property — must use mockkStatic
+        // Note: supabase-kt's postgrest["table"] is inlined with reified type,
+        // so we cannot mock the table builder. The call will throw because the
+        // real PostgrestQueryBuilder cannot execute with a mock Postgrest.
+        // We verify that getPendingDeletions was queried (proving the helper
+        // processes the pending list) and that clearDeletionState is NOT called
+        // (because the supabase call fails, verifying the error handling path).
+        mockkStatic("io.github.jan.supabase.postgrest.PostgrestKt")
+        val postgrest = mockk<Postgrest>(relaxed = true)
+        every { supabase.postgrest } returns postgrest
+
+        helper.pushPendingDeletions(opticaId)
+
+        coVerify { repository.getPendingDeletions(opticaId) }
+        coVerify(exactly = 0) { repository.clearDeletionState(any(), any(), any()) }
+        unmockkStatic("io.github.jan.supabase.postgrest.PostgrestKt")
     }
 
     @Test
-    fun errorHandling_ioException_isLoggedAndSkipped() {
-        // Pattern: catch (e: IOException) { Log.e(...) }
-        // Deletion is NOT cleared on error — stays pending for retry
-        assertTrue(true) // structural assertion
+    fun pushPendingDeletions_emptyPending_doesNothing() = runBlocking {
+        val opticaId = "optica-test"
+        val repository = mockk<OptoRepository>()
+        val supabase = mockk<SupabaseClient>(relaxed = true)
+        val helper = DeletionSyncHelper(repository, supabase)
+
+        coEvery { repository.getPendingDeletions(opticaId) } returns emptyList()
+
+        helper.pushPendingDeletions(opticaId)
+
+        coVerify(exactly = 0) { repository.clearDeletionState(any(), any(), any()) }
     }
 
     @Test
-    fun errorHandling_genericException_isLoggedAndSkipped() {
-        // Pattern: catch (e: Exception) { Log.e(...) }
-        assertTrue(true) // structural assertion
+    fun pushPendingDeletions_cancellationException_isRethrown() = runBlocking {
+        val opticaId = "optica-test"
+        val tombstone = SyncEntityState(
+            entityType = "dispensacion", entityId = "id-1", status = "pending", opticaId = opticaId
+        )
+        val repository = mockk<OptoRepository>()
+        val supabase = mockk<SupabaseClient>()
+        val helper = DeletionSyncHelper(repository, supabase)
+
+        coEvery { repository.getPendingDeletions(opticaId) } returns listOf(tombstone)
+        coEvery { repository.clearDeletionState(any(), any(), any()) } returns Unit
+
+        // Throw from postgrest extension property (inside try-catch)
+        mockkStatic("io.github.jan.supabase.postgrest.PostgrestKt")
+        every { supabase.postgrest } throws CancellationException("Cancelled")
+
+        try {
+            helper.pushPendingDeletions(opticaId)
+            fail("Should have thrown CancellationException")
+        } catch (e: CancellationException) {
+            // expected
+        }
+
+        coVerify(exactly = 0) { repository.clearDeletionState(any(), any(), any()) }
+        unmockkStatic("io.github.jan.supabase.postgrest.PostgrestKt")
+    }
+
+    @Test
+    fun pushPendingDeletions_ioException_isLoggedAndSkipped() = runBlocking {
+        val opticaId = "optica-test"
+        val tombstone = SyncEntityState(
+            entityType = "dispensacion", entityId = "id-1", status = "pending", opticaId = opticaId
+        )
+        val repository = mockk<OptoRepository>()
+        val supabase = mockk<SupabaseClient>()
+        val helper = DeletionSyncHelper(repository, supabase)
+
+        coEvery { repository.getPendingDeletions(opticaId) } returns listOf(tombstone)
+        coEvery { repository.clearDeletionState(any(), any(), any()) } returns Unit
+
+        mockkStatic("io.github.jan.supabase.postgrest.PostgrestKt")
+        every { supabase.postgrest } throws IOException("Network error")
+
+        helper.pushPendingDeletions(opticaId)
+
+        coVerify(exactly = 0) { repository.clearDeletionState(any(), any(), any()) }
+        unmockkStatic("io.github.jan.supabase.postgrest.PostgrestKt")
+    }
+
+    @Test
+    fun pushPendingDeletions_genericException_isLoggedAndSkipped() = runBlocking {
+        val opticaId = "optica-test"
+        val tombstone = SyncEntityState(
+            entityType = "dispensacion", entityId = "id-1", status = "pending", opticaId = opticaId
+        )
+        val repository = mockk<OptoRepository>()
+        val supabase = mockk<SupabaseClient>()
+        val helper = DeletionSyncHelper(repository, supabase)
+
+        coEvery { repository.getPendingDeletions(opticaId) } returns listOf(tombstone)
+        coEvery { repository.clearDeletionState(any(), any(), any()) } returns Unit
+
+        mockkStatic("io.github.jan.supabase.postgrest.PostgrestKt")
+        every { supabase.postgrest } throws RuntimeException("Unexpected")
+
+        helper.pushPendingDeletions(opticaId)
+
+        coVerify(exactly = 0) { repository.clearDeletionState(any(), any(), any()) }
+        unmockkStatic("io.github.jan.supabase.postgrest.PostgrestKt")
     }
 
     // ─── Edge cases ──────────────────────────────────────────────────────
@@ -284,7 +388,6 @@ class DeletionSyncHelperTest {
         val gastosOperativos = "gastos_operativos"
         val ventas = "ventas"
         val dispensacionItems = "dispensacion_items"
-        val arqueoCaja = "arqueo_caja"
 
         assertEquals("dispensaciones", dispensaciones)
         assertEquals("pagos", pagos)
@@ -292,7 +395,6 @@ class DeletionSyncHelperTest {
         assertEquals("gastos_operativos", gastosOperativos)
         assertEquals("ventas", ventas)
         assertEquals("dispensacion_items", dispensacionItems)
-        assertEquals("arqueo_caja", arqueoCaja)
     }
 
     @Test
@@ -322,10 +424,6 @@ class DeletionSyncHelperTest {
         assertTrue(
             "Debe existir TABLE_DISPENSACION_ITEMS como constante",
             allFields.any { it == "TABLE_DISPENSACION_ITEMS" || it.contains("TABLE_DISPENSACION_ITEMS") }
-        )
-        assertTrue(
-            "Debe existir TABLE_ARQUEO_CAJA como constante",
-            allFields.any { it == "TABLE_ARQUEO_CAJA" || it.contains("TABLE_ARQUEO_CAJA") }
         )
     }
 }

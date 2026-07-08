@@ -21,11 +21,11 @@ class DownloadSyncCoordinatorTest {
     }
 
     @Test
-    fun constructor_takesFourDependencies() {
+    fun constructor_takesFiveDependencies() {
         val constructors = DownloadSyncCoordinator::class.java.declaredConstructors
         assertEquals(1, constructors.size)
         val params = constructors[0].parameterTypes
-        assertEquals(4, params.size)
+        assertEquals(5, params.size)
     }
 
     @Test
@@ -79,15 +79,6 @@ class DownloadSyncCoordinatorTest {
         )
     }
 
-    @Test
-    fun handlesArqueos() {
-        val methods = DownloadSyncCoordinator::class.java.declaredMethods.map { it.name }
-        assertTrue(
-            "Debe tener método downloadArqueos",
-            "downloadArqueos" in methods
-        )
-    }
-
     // ─── Method signatures ────────────────────────────────────────────────
 
     @Test
@@ -110,7 +101,6 @@ class DownloadSyncCoordinatorTest {
         assertTrue("Debe tener downloadDispensaciones", "downloadDispensaciones" in methodNames)
         assertTrue("Debe tener downloadServicios", "downloadServicios" in methodNames)
         assertTrue("Debe tener downloadPagos", "downloadPagos" in methodNames)
-        assertTrue("Debe tener downloadArqueos", "downloadArqueos" in methodNames)
         // All methods are suspend — compiled to accept a Continuation parameter
     }
 
@@ -120,7 +110,7 @@ class DownloadSyncCoordinatorTest {
     fun companion_hasTableConstants() {
         // Companion object fields become static final fields on the enclosing class
         val allFields = DownloadSyncCoordinator::class.java.declaredFields.map { it.name }
-        val expected = listOf("TABLE_DISPENSACIONES", "TABLE_DISPENSACION_ITEMS", "TABLE_SERVICIOS", "TABLE_PAGOS", "TABLE_ARQUEO_CAJA")
+        val expected = listOf("TABLE_DISPENSACIONES", "TABLE_DISPENSACION_ITEMS", "TABLE_SERVICIOS", "TABLE_PAGOS")
         for (expectedName in expected) {
             assertTrue(
                 "Debe existir $expectedName (found: $allFields)",
@@ -136,13 +126,11 @@ class DownloadSyncCoordinatorTest {
         val dispensacionItems = "dispensacion_items"
         val servicios = "servicios_extra"
         val pagos = "pagos"
-        val arqueoCaja = "arqueo_caja"
 
         assertEquals("dispensaciones", dispensaciones)
         assertEquals("dispensacion_items", dispensacionItems)
         assertEquals("servicios_extra", servicios)
         assertEquals("pagos", pagos)
-        assertEquals("arqueo_caja", arqueoCaja)
     }
 
     // ─── Deletion skip logic ──────────────────────────────────────────────
@@ -183,17 +171,4 @@ class DownloadSyncCoordinatorTest {
         assertTrue(true) // structural assertion
     }
 
-    // ─── Arqueo download special logic ────────────────────────────────────
-
-    @Test
-    fun arqueoDownload_usesTimestampComparison() {
-        // downloadArqueos compares updatedAt to decide upsert vs skip
-        assertTrue(true) // structural assertion
-    }
-
-    @Test
-    fun arqueoDownload_returnsZeroOnFailure() {
-        // downloadArqueos catches Exception and returns 0
-        assertTrue(true) // structural assertion
-    }
 }

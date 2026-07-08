@@ -165,7 +165,7 @@ class SyncViewModel @Inject constructor(
     ): Resource<*> = when (entityType) {
         "paciente" -> syncPacientesUseCase(opticaId, skipUpload = skipUpload, downloadAfterUpload = true)
         "evaluacion" -> syncHistorialUseCase(opticaId, skipUpload = skipUpload, downloadAfterUpload = true)
-        "dispensacion", "servicio_extra", "pago", "arqueo_caja", "dispensacion_item" ->
+        "dispensacion", "servicio_extra", "pago", "dispensacion_item" ->
             syncFinanzasUseCase(opticaId, skipUpload = skipUpload, downloadAfterUpload = true)
         "proveedor", "categoria_montura" ->
             syncProveedoresUseCase(opticaId, skipUpload = skipUpload, downloadAfterUpload = true)
@@ -351,14 +351,6 @@ class SyncViewModel @Inject constructor(
                     ordenCompraRepository.update(oc)
                 } else {
                     Log.w(TAG, "bumpEntityUpdatedAt: orden_compra no encontrada id=$entityId")
-                }
-            }
-            "arqueo_caja" -> {
-                val arqueo = repository.getArqueoById(entityId)
-                if (arqueo != null) {
-                    repository.updateArqueo(arqueo)
-                } else {
-                    Log.w(TAG, "bumpEntityUpdatedAt: arqueo_caja no encontrado id=$entityId")
                 }
             }
             "montura_movimiento" -> {

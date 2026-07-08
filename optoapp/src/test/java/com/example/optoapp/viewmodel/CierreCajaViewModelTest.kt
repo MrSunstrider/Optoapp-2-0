@@ -5,7 +5,6 @@ import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Pago
 import com.example.optoapp.data.ServicioExtra
 import com.example.optoapp.data.SessionManager
-import com.example.optoapp.data.arqueo.ArqueoCaja
 import com.example.optoapp.data.venta.Venta
 import com.example.optoapp.data.venta.VentaDao
 import io.mockk.every
@@ -15,19 +14,16 @@ import io.mockk.unmockkAll
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
-import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -309,140 +305,6 @@ class CierreCajaViewModelTest {
 
         assertEquals("Orphan payment must stay in ventasHoy", 80.0, viewModel.uiState.value.ventasHoy, 0.001)
         assertEquals("Orphan payment must not be a cobro atrasado", 0.0, viewModel.uiState.value.cobrosAtrasados, 0.001)
-    }
-
-    // -----------------------------------------------------------------------
-    // Test 4: loadArqueoForDate returns sealed arqueo
-    // NOTE: This test references CierreCajaViewModel.loadArqueoForDate() which
-    // does NOT exist yet — RED state until T-08 is implemented.
-    // -----------------------------------------------------------------------
-    @Test
-    fun loadArqueoForDate_returns_sealed_arqueo() = runTest(testDispatcher) {
-        val sealedArqueo = ArqueoCaja(
-            id = "arq-1",
-            fecha = pastDate,
-            opticaId = opticaId,
-            fondoCaja = 500.0,
-            efectivoContado = 200.0,
-            tarjetaContado = 150.0,
-            transferenciaContado = 0.0,
-            movilContado = 50.0,
-            efectivoCobrado = 200.0,
-            tarjetaCobrado = 150.0,
-            transferenciaCobrado = 0.0,
-            movilCobrado = 50.0,
-            diferenciaEfectivo = 0.0,
-            diferenciaTarjeta = 0.0,
-            diferenciaTransferencia = 0.0,
-            diferenciaMovil = 0.0,
-            diferenciaTotal = 0.0,
-            cerradoPor = "user@test.com",
-            sellado = true,
-            createdAt = "2026-06-15T10:00:00Z",
-            updatedAt = "2026-06-15T10:00:00Z"
-        )
-        every { repository.getArqueoByFecha(pastDate, opticaId) } returns flowOf(sealedArqueo)
-        every { repository.getPagosByDateRangeForOptica(any(), any(), any()) } returns flowOf(emptyList())
-        every { repository.getAllDispensacionesForOptica(any()) } returns flowOf(emptyList())
-
-        viewModel = CierreCajaViewModel(repository, sessionManager, ventaDao)
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        val result = viewModel.loadArqueoForDate(pastDate, opticaId).first()
-        assertNotNull("loadArqueoForDate should return the sealed arqueo", result)
-        assertEquals("arq-1", result!!.id)
-        assertEquals(true, result.sellado)
-    }
-
-    // -----------------------------------------------------------------------
-    // Test 5: loadArqueoForDate returns null when no arqueo exists
-    // NOTE: RED state until T-08 is implemented.
-    // -----------------------------------------------------------------------
-    @Test
-    fun loadArqueoForDate_returns_null_when_no_arqueo() = runTest(testDispatcher) {
-        every { repository.getArqueoByFecha(today, opticaId) } returns flowOf(null)
-        every { repository.getPagosByDateRangeForOptica(any(), any(), any()) } returns flowOf(emptyList())
-        every { repository.getAllDispensacionesForOptica(any()) } returns flowOf(emptyList())
-
-        viewModel = CierreCajaViewModel(repository, sessionManager, ventaDao)
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        val result = viewModel.loadArqueoForDate(today, opticaId).first()
-        assertNull("loadArqueoForDate should return null when no arqueo exists for the date", result)
-    }
-
-    // -----------------------------------------------------------------------
-    // Test 7: observeArqueoForDate second call supersedes the first collector
-    // REQ-5: at most one active collector must exist at any time.
-    // -----------------------------------------------------------------------
-    @Test
-    fun observeArqueoForDateCancelsPreviousCollector() = runTest {
-        val date1 = LocalDate.of(2026, 6, 17)
-        val date2 = LocalDate.of(2026, 6, 18)
-        val optica = "optica-1"
-
-        // Two independent shared flows for the two dates
-        val flow1 = MutableSharedFlow<ArqueoCaja?>(replay = 1)
-        val flow2 = MutableSharedFlow<ArqueoCaja?>(replay = 1)
-
-        val arqueoForDate2 = ArqueoCaja(
-            id = "arq-2", fecha = date2, opticaId = optica,
-            fondoCaja = 0.0, efectivoContado = 0.0, tarjetaContado = 0.0,
-            transferenciaContado = 0.0, movilContado = 0.0,
-            efectivoCobrado = 0.0, tarjetaCobrado = 0.0,
-            transferenciaCobrado = 0.0, movilCobrado = 0.0,
-            diferenciaEfectivo = 0.0, diferenciaTarjeta = 0.0,
-            diferenciaTransferencia = 0.0, diferenciaMovil = 0.0,
-            diferenciaTotal = 0.0, cerradoPor = "u", sellado = true,
-            createdAt = "2026-06-18T00:00:00Z", updatedAt = "2026-06-18T00:00:00Z"
-        )
-
-        every { repository.getPagosByDateRangeForOptica(any(), any(), any()) } returns flowOf(emptyList())
-        every { repository.getAllDispensacionesForOptica(any()) } returns flowOf(emptyList())
-        every { repository.getArqueoByFecha(date1, optica) } returns flow1
-        every { repository.getArqueoByFecha(date2, optica) } returns flow2
-
-        viewModel = CierreCajaViewModel(repository, sessionManager, ventaDao)
-        advanceUntilIdle()
-
-        // First call — observe date1
-        viewModel.observeArqueoForDate(date1, optica)
-        advanceUntilIdle()
-
-        // Second call — observe date2 (should cancel date1 collector)
-        viewModel.observeArqueoForDate(date2, optica)
-        advanceUntilIdle()
-
-        // Emit from flow2 → should update arqueoForFecha
-        flow2.emit(arqueoForDate2)
-        advanceUntilIdle()
-
-        assertEquals(
-            "arqueoForFecha must reflect the date2 arqueo after switching",
-            "arq-2",
-            viewModel.uiState.value.arqueoForFecha?.id
-        )
-
-        // Now emit from flow1 → must NOT override the date2 result (collector was cancelled)
-        val staleArqueo = ArqueoCaja(
-            id = "arq-1-stale", fecha = date1, opticaId = optica,
-            fondoCaja = 0.0, efectivoContado = 0.0, tarjetaContado = 0.0,
-            transferenciaContado = 0.0, movilContado = 0.0,
-            efectivoCobrado = 0.0, tarjetaCobrado = 0.0,
-            transferenciaCobrado = 0.0, movilCobrado = 0.0,
-            diferenciaEfectivo = 0.0, diferenciaTarjeta = 0.0,
-            diferenciaTransferencia = 0.0, diferenciaMovil = 0.0,
-            diferenciaTotal = 0.0, cerradoPor = "u", sellado = false,
-            createdAt = "2026-06-17T00:00:00Z", updatedAt = "2026-06-17T00:00:00Z"
-        )
-        flow1.emit(staleArqueo)
-        advanceUntilIdle()
-
-        assertEquals(
-            "arqueoForFecha must NOT be overridden by stale date1 emission after switching to date2",
-            "arq-2",
-            viewModel.uiState.value.arqueoForFecha?.id
-        )
     }
 
     // -----------------------------------------------------------------------

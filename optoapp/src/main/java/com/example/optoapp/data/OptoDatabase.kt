@@ -6,8 +6,6 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import androidx.sqlite.db.SupportSQLiteDatabase
-import com.example.optoapp.data.arqueo.ArqueoCaja
-import com.example.optoapp.data.arqueo.ArqueoCajaDao
 import com.example.optoapp.data.inventariofisico.InventarioFisicoDao
 import com.example.optoapp.data.montura.MonturaDao
 import com.example.optoapp.data.montura.MonturaMovimientoDao
@@ -40,7 +38,6 @@ import com.example.optoapp.util.LocalDatabaseBackupManager
         Proveedor::class, MonturaProveedor::class, CategoriaMontura::class,
         OrdenCompra::class, OrdenCompraItem::class,
         InventarioFisico::class, InventarioFisicoDetalle::class,
-        ArqueoCaja::class,
         Venta::class,
         CategoriaProductoEntity::class,
         GastoOperativoEntity::class,
@@ -48,7 +45,7 @@ import com.example.optoapp.util.LocalDatabaseBackupManager
         ConfiguracionFinancieraEntity::class,
         FeedbackRecomendacionEntity::class
     ],
-    version = 35,
+    version = 36,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -69,7 +66,6 @@ abstract class OptoDatabase : RoomDatabase() {
     abstract fun ordenCompraDao(): OrdenCompraDao
     abstract fun ordenCompraItemDao(): OrdenCompraItemDao
     abstract fun inventarioFisicoDao(): InventarioFisicoDao
-    abstract fun arqueoCajaDao(): ArqueoCajaDao
     abstract fun ventaDao(): VentaDao
     abstract fun categoriaProductoDao(): CategoriaProductoDao
     abstract fun gastoOperativoDao(): GastoOperativoDao
@@ -111,6 +107,7 @@ abstract class OptoDatabase : RoomDatabase() {
         val MIGRATION_32_33 get() = com.example.optoapp.data.MIGRATION_32_33
         val MIGRATION_33_34 get() = com.example.optoapp.data.MIGRATION_33_34
         val MIGRATION_34_35 get() = com.example.optoapp.data.MIGRATION_34_35
+        val MIGRATION_35_36 get() = com.example.optoapp.data.MIGRATION_35_36
 
         fun getDatabase(context: Context): OptoDatabase {
             return INSTANCE ?: synchronized(this) {
@@ -119,7 +116,7 @@ abstract class OptoDatabase : RoomDatabase() {
                     OptoDatabase::class.java,
                     "opto_database"
                 )
-                .addMigrations(MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17, MIGRATION_17_18, MIGRATION_18_19, MIGRATION_19_20, MIGRATION_20_21, MIGRATION_21_22, MIGRATION_22_23, MIGRATION_23_24, MIGRATION_24_25, MIGRATION_25_26, MIGRATION_26_27, MIGRATION_27_28, MIGRATION_28_29, MIGRATION_29_30, MIGRATION_30_31, MIGRATION_31_32, MIGRATION_32_33, MIGRATION_33_34, MIGRATION_34_35)
+                .addMigrations(MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17, MIGRATION_17_18, MIGRATION_18_19, MIGRATION_19_20, MIGRATION_20_21, MIGRATION_21_22, MIGRATION_22_23, MIGRATION_23_24, MIGRATION_24_25, MIGRATION_25_26, MIGRATION_26_27, MIGRATION_27_28, MIGRATION_28_29, MIGRATION_29_30, MIGRATION_30_31, MIGRATION_31_32, MIGRATION_32_33, MIGRATION_33_34, MIGRATION_34_35, MIGRATION_35_36)
                 .addCallback(object : RoomDatabase.Callback() {
                     override fun onOpen(db: SupportSQLiteDatabase) {
                         super.onOpen(db)

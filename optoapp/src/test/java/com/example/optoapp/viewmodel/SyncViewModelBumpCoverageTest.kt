@@ -2,7 +2,6 @@ package com.example.optoapp.viewmodel
 
 import android.content.Context
 import android.net.ConnectivityManager
-import com.example.optoapp.data.arqueo.ArqueoCaja
 import com.example.optoapp.data.ConflictDao
 import com.example.optoapp.data.ConflictRecord
 import com.example.optoapp.data.EvaluacionClinica
@@ -242,29 +241,6 @@ class SyncViewModelBumpCoverageTest {
         opticaId = testOpticaId
     )
 
-    private fun arqueoCaja(id: String) = ArqueoCaja(
-        id = id,
-        fecha = LocalDate.now(),
-        opticaId = testOpticaId,
-        fondoCaja = 0.0,
-        efectivoContado = 0.0,
-        tarjetaContado = 0.0,
-        transferenciaContado = 0.0,
-        movilContado = 0.0,
-        efectivoCobrado = 0.0,
-        tarjetaCobrado = 0.0,
-        transferenciaCobrado = 0.0,
-        movilCobrado = 0.0,
-        diferenciaEfectivo = 0.0,
-        diferenciaTarjeta = 0.0,
-        diferenciaTransferencia = 0.0,
-        diferenciaMovil = 0.0,
-        diferenciaTotal = 0.0,
-        cerradoPor = "user-001",
-        createdAt = "2026-01-01T00:00:00Z",
-        updatedAt = "2026-01-01T00:00:00Z"
-    )
-
     // ─── 4.1 RED: Bump coverage tests ──────────────────────────────────────
 
     @Test
@@ -344,22 +320,6 @@ class SyncViewModelBumpCoverageTest {
         coVerifyOrder {
             ordenCompraRepository.update(any())
             syncOrdenesCompraUseCase.invoke(testOpticaId, skipUpload = false, downloadAfterUpload = true)
-        }
-    }
-
-    @Test
-    fun bumpArqueoCaja_callsUpdateArqueo() = runTest(testDispatcher) {
-        val conflict = makeConflict("arq-bump", "arqueo_caja")
-        val entity = arqueoCaja("arq-bump")
-        coEvery { repository.getArqueoById("arq-bump") } returns entity as ArqueoCaja?
-        coEvery { repository.updateArqueo(any()) } just Runs
-
-        viewModel.resolveKeepMine(conflict)
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        coVerifyOrder {
-            repository.updateArqueo(any())
-            syncFinanzasUseCase(testOpticaId, skipUpload = false, downloadAfterUpload = true)
         }
     }
 

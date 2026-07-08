@@ -106,7 +106,6 @@ class OptoRepositoryFinanzasTest {
             snapshotCoordinator = snapshotCoordinator,
             backupCoordinator = backupCoordinator,
             monturaCoordinator = monturaCoordinator,
-            arqueoCajaDao = db.arqueoCajaDao(),
             ventaDao = db.ventaDao(),
             gastoOperativoDao = gastoOperativoDao,
             resumenDiarioDao = resumenDiarioDao,

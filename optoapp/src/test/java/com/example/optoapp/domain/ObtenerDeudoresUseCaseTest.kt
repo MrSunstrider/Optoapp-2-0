@@ -1,8 +1,11 @@
 package com.example.optoapp.domain
 
 import android.util.Log
+import com.example.optoapp.data.Paciente
+import com.example.optoapp.data.Pago
 import com.example.optoapp.data.Resource
 import com.example.optoapp.data.pago.PagoDao
+import com.example.optoapp.data.venta.Venta
 import com.example.optoapp.data.venta.VentaDao
 import com.example.optoapp.data.PacienteDao
 import io.github.jan.supabase.postgrest.Postgrest
@@ -18,6 +21,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Test
 import java.io.IOException
@@ -157,5 +161,159 @@ class ObtenerDeudoresUseCaseTest {
         val deudores = (result as Resource.Success).data!!
         assertEquals(1, deudores.size)
         assertEquals(java.time.LocalDate.MIN, deudores[0].ventaFecha)
+    }
+
+    // ─── Offline Room fallback ────────────────────────────────────────
+
+    @Test
+    fun `offline room fallback returns success with deudores`() = runBlocking {
+        val opticaId = "optica1"
+        val today = java.time.LocalDate.now()
+        val ventaDao = mockk<VentaDao>()
+        val pagoDao = mockk<PagoDao>()
+        val pacienteDao = mockk<PacienteDao>()
+
+        coEvery { ventaDao.getAllVentasByOptica(opticaId) } returns listOf(
+            Venta(
+                id = "v1", opticaId = opticaId, pacienteId = "p1",
+                fecha = today.minusDays(10), montoTotal = 500.0,
+                origen = "dispensacion", origenId = "d1", estado = "Pendiente"
+            )
+        )
+        coEvery { pagoDao.getPagosListByOptica(opticaId) } returns listOf(
+            Pago(
+                id = "pg1", opticaId = opticaId, ventaId = "v1",
+                monto = 200.0, fecha = today, tipo = "Efectivo", dispensacionId = "d1"
+            )
+        )
+        coEvery { pacienteDao.getPacientesListByOptica(opticaId) } returns listOf(
+            Paciente(
+                id = "p1", nombreCompleto = "Juan", edad = 30, telefono = "123",
+                fechaCreacion = today, opticaId = opticaId
+            )
+        )
+
+        val useCase = object : ObtenerDeudoresUseCase(mockk<Postgrest>(), ventaDao, pagoDao, pacienteDao) {
+            override suspend fun callRpcDeudores(opticaId: String): JsonArray {
+                throw IOException("No network")
+            }
+        }
+
+        val result = useCase(opticaId)
+        assertTrue(result is Resource.Success)
+        val deudores = (result as Resource.Success).data!!
+        assertEquals(1, deudores.size)
+        assertEquals("Juan", deudores[0].pacienteNombre)
+        assertEquals(300.0, deudores[0].saldo, 0.01)
+    }
+
+    @Test
+    fun `offline room fallback empty deudores returns empty list`() = runBlocking {
+        val opticaId = "optica1"
+        val ventaDao = mockk<VentaDao>()
+        val pagoDao = mockk<PagoDao>()
+        val pacienteDao = mockk<PacienteDao>()
+
+        coEvery { ventaDao.getAllVentasByOptica(opticaId) } returns emptyList()
+        coEvery { pagoDao.getPagosListByOptica(opticaId) } returns emptyList()
+        coEvery { pacienteDao.getPacientesListByOptica(opticaId) } returns emptyList()
+
+        val useCase = object : ObtenerDeudoresUseCase(mockk<Postgrest>(), ventaDao, pagoDao, pacienteDao) {
+            override suspend fun callRpcDeudores(opticaId: String): JsonArray {
+                throw IOException("No network")
+            }
+        }
+
+        val result = useCase(opticaId)
+        assertTrue(result is Resource.Success)
+        val deudores = (result as Resource.Success).data!!
+        assertTrue(deudores.isEmpty())
+    }
+
+    @Test
+    fun `offline room fallback fully paid venta excluded from deudores`() = runBlocking {
+        val opticaId = "optica1"
+        val today = java.time.LocalDate.now()
+        val ventaDao = mockk<VentaDao>()
+        val pagoDao = mockk<PagoDao>()
+        val pacienteDao = mockk<PacienteDao>()
+
+        coEvery { ventaDao.getAllVentasByOptica(opticaId) } returns listOf(
+            Venta(
+                id = "v1", opticaId = opticaId, pacienteId = "p1",
+                fecha = today.minusDays(10), montoTotal = 500.0,
+                origen = "dispensacion", origenId = "d1", estado = "Pendiente"
+            )
+        )
+        coEvery { pagoDao.getPagosListByOptica(opticaId) } returns listOf(
+            Pago(
+                id = "pg1", opticaId = opticaId, ventaId = "v1",
+                monto = 500.0, fecha = today, tipo = "Efectivo", dispensacionId = "d1"
+            )
+        )
+        coEvery { pacienteDao.getPacientesListByOptica(opticaId) } returns listOf(
+            Paciente(
+                id = "p1", nombreCompleto = "Juan", edad = 30, telefono = "123",
+                fechaCreacion = today, opticaId = opticaId
+            )
+        )
+
+        val useCase = object : ObtenerDeudoresUseCase(mockk<Postgrest>(), ventaDao, pagoDao, pacienteDao) {
+            override suspend fun callRpcDeudores(opticaId: String): JsonArray {
+                throw IOException("No network")
+            }
+        }
+
+        val result = useCase(opticaId)
+        assertTrue(result is Resource.Success)
+        val deudores = (result as Resource.Success).data!!
+        assertTrue(deudores.isEmpty())
+    }
+
+    @Test
+    fun `offline room fallback missing paciente defaults to placeholder name`() = runBlocking {
+        val opticaId = "optica1"
+        val today = java.time.LocalDate.now()
+        val ventaDao = mockk<VentaDao>()
+        val pagoDao = mockk<PagoDao>()
+        val pacienteDao = mockk<PacienteDao>()
+
+        coEvery { ventaDao.getAllVentasByOptica(opticaId) } returns listOf(
+            Venta(
+                id = "v1", opticaId = opticaId, pacienteId = "p-missing",
+                fecha = today.minusDays(10), montoTotal = 300.0,
+                origen = "dispensacion", origenId = "d1", estado = "Pendiente"
+            )
+        )
+        coEvery { pagoDao.getPagosListByOptica(opticaId) } returns emptyList()
+        coEvery { pacienteDao.getPacientesListByOptica(opticaId) } returns emptyList()
+
+        val useCase = object : ObtenerDeudoresUseCase(mockk<Postgrest>(), ventaDao, pagoDao, pacienteDao) {
+            override suspend fun callRpcDeudores(opticaId: String): JsonArray {
+                throw IOException("No network")
+            }
+        }
+
+        val result = useCase(opticaId)
+        assertTrue(result is Resource.Success)
+        val deudores = (result as Resource.Success).data!!
+        assertEquals(1, deudores.size)
+        assertEquals("Paciente #p-missing", deudores[0].pacienteNombre)
+    }
+
+    @Test
+    fun `offline room fallback cancellationException rethrown`() = runBlocking {
+        val useCase = object : ObtenerDeudoresUseCase(mockk<Postgrest>(), mockk(), mockk(), mockk()) {
+            override suspend fun callRpcDeudores(opticaId: String): JsonArray {
+                throw kotlinx.coroutines.CancellationException("Cancelled")
+            }
+        }
+
+        try {
+            useCase("optica1")
+            fail("Should have thrown CancellationException")
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            // expected
+        }
     }
 }

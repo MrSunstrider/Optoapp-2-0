@@ -20,12 +20,12 @@ interface VentaDao {
     @Query("SELECT * FROM ventas WHERE opticaId = :opticaId")
     suspend fun getAllVentasByOptica(opticaId: String): List<Venta>
 
-    @Query("DELETE FROM ventas")
-    suspend fun deleteAll()
+    @Query("DELETE FROM ventas WHERE opticaId = :opticaId")
+    suspend fun deleteAll(opticaId: String)
 
-    @Query("DELETE FROM ventas WHERE id = :id")
-    suspend fun deleteById(id: String)
+    @Query("DELETE FROM ventas WHERE id = :id AND opticaId = :opticaId")
+    suspend fun deleteById(id: String, opticaId: String)
 
-    @Query("DELETE FROM ventas WHERE origenId = :origenId")
-    suspend fun deleteByOrigenId(origenId: String)
+    @Query("DELETE FROM ventas WHERE origenId = :origenId AND opticaId = :opticaId")
+    suspend fun deleteByOrigenId(origenId: String, opticaId: String)
 }

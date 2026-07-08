@@ -154,7 +154,7 @@ class VentaDaoTest {
             montoTotal = 50.0, estado = "Pendiente")
         dao.upsertVenta(v1)
         dao.upsertVenta(v2)
-        dao.deleteAll()
+        dao.deleteAll("o1")
 
         val all = dao.getAllVentasByOptica("o1")
         assertEquals(0, all.size)

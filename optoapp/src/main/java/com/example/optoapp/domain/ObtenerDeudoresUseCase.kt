@@ -41,7 +41,7 @@ open class ObtenerDeudoresUseCase @Inject constructor(
             Log.w(TAG, "Offline — trying local Room data for deudores", e)
             try {
                 val deudores = fallbackToRoomDeudores(opticaId)
-                Resource.Success(deudores)
+                Resource.Success(deudores, stale = true)
             } catch (ee: Exception) {
                 Log.w(TAG, "Offline — no data available for deudores", ee)
                 Resource.Error("No se pudieron cargar los datos de deudores")
