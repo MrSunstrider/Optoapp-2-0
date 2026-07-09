@@ -123,6 +123,7 @@ class InformacionFinancieraViewModel @Inject constructor(
 
             _uiState.update { it.copy(error = null, isLoading = true) }
 
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
             repository.runInTransaction {
                 kotlinx.coroutines.runBlocking {
                 repository.actualizarMontoTotal(dispId, montoTotal, opticaId)
@@ -154,8 +155,9 @@ class InformacionFinancieraViewModel @Inject constructor(
                     estado = s.estadoEntrega
                 )
                 repository.upsertVenta(venta)
-                } // runBlocking
-            } // runInTransaction
+                }
+            }
+            }
 
             postSaveSyncScheduler.scheduleFinanzasSync(opticaId)
 

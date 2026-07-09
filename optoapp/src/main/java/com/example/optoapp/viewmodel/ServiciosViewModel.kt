@@ -203,6 +203,7 @@ class ServiciosViewModel @Inject constructor(
                     opticaId = currentOpticaId
                 )
 
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                 repository.runInTransaction {
                     kotlinx.coroutines.runBlocking {
                     if (state.isEdit) {
@@ -238,8 +239,9 @@ class ServiciosViewModel @Inject constructor(
                         estado = state.estado
                     )
                     repository.upsertVenta(venta)
-                    } // runBlocking
-                } // runInTransaction
+                    }
+                }
+                }
 
                 _uiState.update { it.copy(error = null) }
 

@@ -345,6 +345,7 @@ class DispensacionViewModel @Inject constructor(
             val toRemoveStock = newTiendaMonturas.filter { id -> id !in oldTiendaMonturas }
 
             try {
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                 repository.runInTransaction {
                     kotlinx.coroutines.runBlocking {
                     // Stock adjustments MUST run inside the transaction for atomicity.
@@ -355,7 +356,11 @@ class DispensacionViewModel @Inject constructor(
                     toRemoveStock.forEach { mid ->
                         val result = stockHelper.adjustStockAndRegistrarMovimiento(mid, currentOpticaId, -1, "SALIDA_VENTA", finalId, "Salida por venta")
                         if (result.isFailure) {
-                            throw RuntimeException(result.exceptionOrNull()?.message ?: "Stock insuficiente para una de las monturas seleccionadas.")
+                            val monturaInfo = repository.getMonturaById(mid, currentOpticaId).let { r ->
+                                if (r is Resource.Success && r.data != null) "${r.data.sku} ${r.data.marca} ${r.data.modelo} (stock: ${r.data.stockActual})"
+                                else mid.take(8)
+                            }
+                            throw RuntimeException("Stock insuficiente: $monturaInfo")
                         }
                     }
 
@@ -429,14 +434,14 @@ class DispensacionViewModel @Inject constructor(
                         estado = s.estadoEntrega
                     )
                     repository.upsertVenta(venta)
-                    } // runBlocking
-                } // runInTransaction
-                // Stock sync scheduling only after successful transaction commit.
+                    }
+                }
+                }
                 toAddStock.forEach { mid -> postSaveSyncScheduler.scheduleInventarioSync(currentOpticaId) }
                 toRemoveStock.forEach { mid -> postSaveSyncScheduler.scheduleInventarioSync(currentOpticaId) }
             } catch (e: RuntimeException) {
-                Log.e(TAG, "save failed: stock error", e)
-                _uiState.update { it.copy(error = "Stock insuficiente para una de las monturas seleccionadas.") }
+                Log.e(TAG, "save failed", e)
+                _uiState.update { it.copy(error = e.message ?: "Error al guardar la dispensación.") }
                 return@launch
             }
 
