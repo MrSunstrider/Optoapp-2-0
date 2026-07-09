@@ -25,7 +25,7 @@ fun DropdownField(
         readOnly = true,
         label = { Text(label) },
         trailingIcon = {
-            IconButton(onClick = { showDialog = true }) {
+            IconButton(onClick = { showDialog = true }, modifier = Modifier.size(36.dp)) {
                 Icon(Icons.Default.ArrowDropDown, contentDescription = null)
             }
         },

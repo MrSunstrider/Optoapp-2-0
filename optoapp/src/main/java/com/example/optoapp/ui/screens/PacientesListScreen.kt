@@ -260,10 +260,10 @@ private fun PacienteCard(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(paciente.nombreCompleto, fontWeight = FontWeight.Bold, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
                 }
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text("Edad: ${paciente.edad}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text("Edad: ${paciente.edad}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f, fill = false))
                     if (paciente.telefono.isNotBlank()) {
-                        Text("Tel: ${paciente.telefono}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("Tel: ${paciente.telefono}", fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f, fill = false))
                     }
                 }
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -272,15 +272,15 @@ private fun PacienteCard(
                 }
             }
 
-            Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                IconButton(onClick = { onShowLastEvaluacion(paciente.id) }, modifier = Modifier.testTag(TestTags.PACIENTE_CARD_LAST_EVAL_BTN)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(0.dp)) {
+                IconButton(onClick = { onShowLastEvaluacion(paciente.id) }, modifier = Modifier.size(36.dp).testTag(TestTags.PACIENTE_CARD_LAST_EVAL_BTN)) {
                     Icon(Icons.Default.Visibility, contentDescription = "Ver evaluación", modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
                 }
-                IconButton(onClick = { onShowLastDispensacion(paciente.id) }, modifier = Modifier.testTag(TestTags.PACIENTE_CARD_LAST_DISP_BTN)) {
+                IconButton(onClick = { onShowLastDispensacion(paciente.id) }, modifier = Modifier.size(36.dp).testTag(TestTags.PACIENTE_CARD_LAST_DISP_BTN)) {
                     Icon(Icons.Default.Inventory2, contentDescription = "Ver dispensación", modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.tertiary)
                 }
                 if (paciente.telefono.isNotBlank()) {
-                    IconButton(onClick = onCall) {
+                    IconButton(onClick = onCall, modifier = Modifier.size(36.dp)) {
                         Icon(Icons.Default.Call, contentDescription = "Llamar", modifier = Modifier.size(18.dp), tint = PositiveGreen)
                     }
                 }

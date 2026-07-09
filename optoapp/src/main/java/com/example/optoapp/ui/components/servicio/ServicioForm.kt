@@ -141,10 +141,10 @@ fun ServicioForm(
                             }
                         )
                     }
-                    IconButton(onClick = { showEditDialog = true }) {
+                    IconButton(onClick = { showEditDialog = true }, modifier = Modifier.size(36.dp)) {
                         Icon(Icons.Default.Edit, contentDescription = "Editar", tint = MaterialTheme.colorScheme.primary)
                     }
-                    IconButton(onClick = { onRemovePago(pago) }) {
+                    IconButton(onClick = { onRemovePago(pago) }, modifier = Modifier.size(36.dp)) {
                         Icon(Icons.Default.Delete, contentDescription = "Borrar", tint = MaterialTheme.colorScheme.error)
                     }
                 }

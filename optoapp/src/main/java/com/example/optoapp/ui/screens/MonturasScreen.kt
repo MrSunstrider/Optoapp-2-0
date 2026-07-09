@@ -419,7 +419,7 @@ private fun SortFilterRow(
 
         val hasFilters = currentFilterMarca != null || currentFilterMaterial != null || currentFilterStockBajo
         if (hasFilters) {
-            IconButton(onClick = onClearFilters) {
+            IconButton(onClick = onClearFilters, modifier = Modifier.size(36.dp)) {
                 Icon(
                     Icons.Default.Close,
                     contentDescription = "Limpiar filtros",

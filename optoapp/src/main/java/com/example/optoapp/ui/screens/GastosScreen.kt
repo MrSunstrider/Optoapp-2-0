@@ -13,6 +13,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -171,12 +172,12 @@ private fun GastoCard(gasto: GastoOperativoEntity, onEdit: () -> Unit, onDelete:
                 }
                 Text(DateUtils.formatLocalized(gasto.fecha), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f))
             }
-            Text("s/. ${fmt(gasto.monto)}", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = AlertRed)
+            Text("s/. ${fmt(gasto.monto)}", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = AlertRed, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Spacer(Modifier.width(8.dp))
-            IconButton(onClick = onEdit) {
+            IconButton(modifier = Modifier.size(36.dp), onClick = onEdit) {
                 Icon(Icons.Default.Edit, contentDescription = "Editar", modifier = Modifier.size(18.dp))
             }
-            IconButton(onClick = onDelete) {
+            IconButton(modifier = Modifier.size(36.dp), onClick = onDelete) {
                 Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = AlertRed, modifier = Modifier.size(18.dp))
             }
         }

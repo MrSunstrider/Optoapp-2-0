@@ -12,6 +12,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import com.example.optoapp.data.Montura
 import com.example.optoapp.ui.theme.OptoTokens
 import java.util.Locale
@@ -85,15 +87,15 @@ fun MonturaItem(
             verticalArrangement = Arrangement.spacedBy(OptoTokens.spacing.xs)
         ) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Column {
-                    Text("${montura.marca} ${montura.modelo}", fontWeight = FontWeight.Bold)
-                    Text("SKU: ${montura.sku}")
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("${montura.marca} ${montura.modelo}", fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text("SKU: ${montura.sku}", maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
                 Row {
-                    IconButton(onClick = onSalida) { Icon(Icons.Default.Remove, contentDescription = "Salida -1") }
-                    IconButton(onClick = onEntrada) { Icon(Icons.Default.Add, contentDescription = "Entrada +1") }
-                    IconButton(onClick = onEdit) { Icon(Icons.Default.Edit, contentDescription = "Editar") }
-                    IconButton(onClick = { showDelete = true }) { Icon(Icons.Default.Delete, contentDescription = "Eliminar") }
+                    IconButton(modifier = Modifier.size(36.dp), onClick = onSalida) { Icon(Icons.Default.Remove, contentDescription = "Salida -1") }
+                    IconButton(modifier = Modifier.size(36.dp), onClick = onEntrada) { Icon(Icons.Default.Add, contentDescription = "Entrada +1") }
+                    IconButton(modifier = Modifier.size(36.dp), onClick = onEdit) { Icon(Icons.Default.Edit, contentDescription = "Editar") }
+                    IconButton(modifier = Modifier.size(36.dp), onClick = { showDelete = true }) { Icon(Icons.Default.Delete, contentDescription = "Eliminar") }
                 }
             }
             Text("Color/Talla: ${montura.color.ifBlank { "-" }} / ${montura.talla.ifBlank { "-" }}")

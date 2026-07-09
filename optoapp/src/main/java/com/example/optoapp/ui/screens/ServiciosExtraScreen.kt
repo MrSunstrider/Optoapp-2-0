@@ -267,10 +267,10 @@ private fun ServicioCard(servicio: ServicioExtra, onEdit: () -> Unit, onDelete: 
                         Text("Entregado: ${DateUtils.formatLocalized(servicio.fechaEntrega)}", fontSize = 10.sp, color = PositiveGreen)
                     }
                     Row {
-                        IconButton(onClick = onEdit) {
+                        IconButton(onClick = onEdit, modifier = Modifier.size(36.dp)) {
                             Icon(Icons.Default.Edit, contentDescription = "Editar", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
                         }
-                        IconButton(onClick = onDelete) {
+                        IconButton(onClick = onDelete, modifier = Modifier.size(36.dp)) {
                             Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = AlertRed, modifier = Modifier.size(18.dp))
                         }
                     }

@@ -187,7 +187,7 @@ fun OperacionHoyScreen(
                             Row(verticalAlignment = Alignment.Top) {
                                 Text("•", color = AlertRed, fontSize = 12.sp)
                                 Spacer(Modifier.width(6.dp))
-                                Text(alerta, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface)
+                                Text(alerta, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
                             }
                         }
                     }

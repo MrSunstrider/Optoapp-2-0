@@ -328,6 +328,22 @@ class EvaluacionDiagnosticoHelperTest {
 
     // ─── ANISOMETROPIA_UMBRAL_DIOPTRIAS ─────────────────────────────
 
+    /**
+     * BUG: positive cyl with missing axis must NOT transpose.
+     * Axis is mandatory — transposing without it produces a wrong axis (0 + 90 = 90°).
+     */
+    @Test
+    fun normalizeAndTranspose_missingAxis_noTranspose() {
+        val state = EvaluacionUiState(
+            fecha = LocalDate.of(2024, 1, 1),
+            recetaOdEsf = "-1.00",
+            recetaOdCil = "+0.50",
+            recetaOdEje = ""  // axis not yet entered
+        )
+        val result = normalizeAndTranspose(state, "OD")
+        assertSame("transposition must NOT happen when axis is missing", state, result)
+    }
+
     @Test
     fun anisometropiaUmbral_isTwoDioptrias() {
         assertEquals(2.0, ANISOMETROPIA_UMBRAL_DIOPTRIAS, 0.001)

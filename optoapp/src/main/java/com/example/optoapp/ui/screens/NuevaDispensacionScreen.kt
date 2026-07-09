@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -167,16 +168,16 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
                         val pagado = uiState.pagos.sumOf { it.monto }
                         val saldo = monto - pagado
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text("Monto Total:", fontWeight = FontWeight.Medium)
+                            Text("Monto Total:", fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                             Text("s/. ${"%.2f".format(monto)}", fontWeight = FontWeight.Bold)
                         }
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text("Saldo:", fontWeight = FontWeight.Medium)
+                            Text("Saldo:", fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                             Text("s/. ${"%.2f".format(saldo)}", fontWeight = FontWeight.Bold,
                                 color = if (saldo > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary)
                         }
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text("Estado:", fontWeight = FontWeight.Medium)
+                            Text("Estado:", fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                             Text(uiState.estadoEntrega, fontWeight = FontWeight.Bold)
                         }
                         OutlinedButton(

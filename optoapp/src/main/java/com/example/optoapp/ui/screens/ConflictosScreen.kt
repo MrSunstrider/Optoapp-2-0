@@ -177,7 +177,10 @@ private fun ConflictCard(
                 Text(
                     text = entityTypeLabel(conflict.entityType),
                     style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
@@ -295,7 +298,7 @@ private fun ConflictCard(
                     Spacer(modifier = Modifier.width(4.dp))
                     Text("Usar nube", maxLines = 1)
                 }
-                IconButton(onClick = onDismiss) {
+                IconButton(modifier = Modifier.size(36.dp), onClick = onDismiss) {
                     Icon(Icons.Default.Close, contentDescription = "Descartar")
                 }
             }

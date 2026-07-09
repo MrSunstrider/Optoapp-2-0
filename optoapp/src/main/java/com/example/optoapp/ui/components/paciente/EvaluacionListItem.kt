@@ -45,13 +45,13 @@ fun EvaluacionListItem(
                     Text(text = date, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                 }
                 Row {
-                    IconButton(onClick = onResumen) {
+                    IconButton(onClick = onResumen, modifier = Modifier.size(36.dp)) {
                         Icon(Icons.Default.Visibility, contentDescription = "Ver Resumen", tint = MaterialTheme.colorScheme.secondary)
                     }
-                    IconButton(onClick = onEdit) {
+                    IconButton(onClick = onEdit, modifier = Modifier.size(36.dp)) {
                         Icon(Icons.Default.Edit, contentDescription = "Editar", tint = MaterialTheme.colorScheme.primary)
                     }
-                    IconButton(onClick = { showDeleteDialog = true }) {
+                    IconButton(onClick = { showDeleteDialog = true }, modifier = Modifier.size(36.dp)) {
                         Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = MaterialTheme.colorScheme.error)
                     }
                 }

@@ -82,7 +82,7 @@ fun normalizeAndTranspose(state: EvaluacionUiState, ojo: String): EvaluacionUiSt
 
     val eVal = DiagnosticoCalculator.parseRefraction(esfStr) ?: return state
     val cVal = DiagnosticoCalculator.parseRefraction(cilStr) ?: return state
-    val ejeVal = ejeStr.toIntOrNull() ?: 0
+    val ejeVal = ejeStr.toIntOrNull() ?: return state
 
     if (cVal > 0) {
         val newEsfNum = eVal + cVal
