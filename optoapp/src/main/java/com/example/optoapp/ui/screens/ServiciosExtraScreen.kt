@@ -91,7 +91,7 @@ fun ServiciosExtraScreen(navController: NavController, drawerState: DrawerState,
     Scaffold(
         containerColor = MaterialTheme.colorScheme.surface,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { SnackbarHost(snackbarHostState, modifier = Modifier.navigationBarsPadding()) },
         topBar = {
             OptoTopAppBar(
                 title = "Servicios Extra",
@@ -121,11 +121,10 @@ fun ServiciosExtraScreen(navController: NavController, drawerState: DrawerState,
         }
     ) { padding ->
         LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(padding),
+            modifier = Modifier.fillMaxSize().padding(padding).navigationBarsPadding(),
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            // ── Summary KPIs ──
             item {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     KpiCard("Facturado", "s/. ${fmt(totalFacturado)}", MaterialTheme.colorScheme.primary, Icons.Default.Receipt, Modifier.weight(1f))
@@ -134,7 +133,6 @@ fun ServiciosExtraScreen(navController: NavController, drawerState: DrawerState,
                 }
             }
 
-            // ── Search + Estado filter ──
             item {
                 OutlinedTextField(
                     value = searchQuery,
@@ -147,7 +145,6 @@ fun ServiciosExtraScreen(navController: NavController, drawerState: DrawerState,
                 )
             }
 
-            // ── Estado filter chips ──
             item {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     listOf("Todos", "Pendiente", "Entregado").forEach { estado ->
@@ -175,7 +172,6 @@ fun ServiciosExtraScreen(navController: NavController, drawerState: DrawerState,
                 }
             }
 
-            // ── List ──
             if (filteredServicios.isEmpty()) {
                 item {
                     Card(
@@ -220,7 +216,6 @@ private fun ServicioCard(servicio: ServicioExtra, onEdit: () -> Unit, onDelete: 
         colors = CardDefaults.cardColors(containerColor = estadoColor.copy(alpha = 0.04f))
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
-            // Row 1: OT + estado + actions
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
@@ -253,7 +248,6 @@ private fun ServicioCard(servicio: ServicioExtra, onEdit: () -> Unit, onDelete: 
 
             Spacer(Modifier.height(8.dp))
 
-            // Row 2: montos
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,

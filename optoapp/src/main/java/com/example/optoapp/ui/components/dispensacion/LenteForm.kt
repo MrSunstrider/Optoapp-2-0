@@ -19,8 +19,9 @@ import com.example.optoapp.ui.components.OptoTextField
 import com.example.optoapp.viewmodel.DispensacionItemUi
 
 /**
- * Formulario para UN item (lente + montura) dentro de una dispensación.
- * Se repite por cada lente/montura que necesite el paciente.
+ * Una dispensación puede incluir múltiples lentes en la misma OT
+ * (ej. bifocal + monofocal para cerca). Este composable se repite
+ * por cada lente/montura que necesite el paciente.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -39,7 +40,6 @@ fun LenteForm(
         )
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            // ─── Header: número de item + botón eliminar ────────────────
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -64,7 +64,6 @@ fun LenteForm(
             HorizontalDivider()
             Text("Lente", fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
-            //── Info del lente ───────────────────────────────────────────
             DropdownField(label = "Tipo de Lente", selected = item.tipoLente, options = listOf("Monofocal", "Bifocal", "Progresivo", "Ocupacional")) {
                 val cleaned = when (it) {
                     "Bifocal" -> item.copy(tipoLente = it, distanciaLente = "", altura = "")
@@ -138,7 +137,6 @@ fun LenteForm(
                 }
             }
 
-            //── Info de la montura ───────────────────────────────────────
             HorizontalDivider()
             Text("Montura", fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
@@ -158,17 +156,12 @@ fun LenteForm(
                     }
                 }
 
-                val isSelected = monturaSeleccionada != null &&
-                    monturaQuery == "${monturaSeleccionada.marca} ${monturaSeleccionada.modelo}"
-
-                val filteredMonturas = if (isSelected) emptyList()
-                else if (monturaQuery.isBlank()) monturasActivas.filter { it.stockActual > 0 }
-                else monturasActivas.filter { it.stockActual > 0 }
-                    .filter {
-                        it.marca.contains(monturaQuery, ignoreCase = true) ||
-                        it.modelo.contains(monturaQuery, ignoreCase = true) ||
-                        it.sku.contains(monturaQuery, ignoreCase = true)
-                    }
+                val filteredMonturas = if (monturaQuery.isBlank()) monturasActivas
+                else monturasActivas.filter {
+                    it.marca.contains(monturaQuery, ignoreCase = true) ||
+                    it.modelo.contains(monturaQuery, ignoreCase = true) ||
+                    it.sku.contains(monturaQuery, ignoreCase = true)
+                }
 
                 ExposedDropdownMenuBox(
                     expanded = expanded && filteredMonturas.isNotEmpty(),

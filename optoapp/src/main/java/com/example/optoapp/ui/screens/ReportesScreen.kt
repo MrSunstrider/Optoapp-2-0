@@ -124,15 +124,14 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
             modifier = Modifier
                 .padding(padding)
                 .padding(horizontal = 16.dp)
-                .fillMaxSize(),
+                .fillMaxSize()
+                .navigationBarsPadding(),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            // ── Loading indicator ──
             if (isDataLoading) {
                 item { LinearProgressIndicator(modifier = Modifier.fillMaxWidth()) }
             }
 
-            // ── Period selector with navigation ──
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -140,7 +139,6 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
                 ) {
                     Column(modifier = Modifier.padding(12.dp)) {
-                        // Row 1: Period dropdown
                         DropdownField(
                             label = "Período",
                             selected = periodo,
@@ -148,7 +146,6 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                             onSelected = { viewModel.setPeriodo(it) }
                         )
                         Spacer(Modifier.height(8.dp))
-                        // Row 2: Navigation arrows + period label + calendar
                         if (periodo != "Todo") {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -179,7 +176,6 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                 }
             }
 
-            // ── KPI Cards ──
             item {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OptoKpiCard("Vendido", "s/. ${totalVendido.fmt()}", MaterialTheme.colorScheme.primary, Icons.Default.TrendingUp, Modifier.weight(1f))
@@ -199,7 +195,6 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                 }
             }
 
-            // ── Cobros breakdown ──
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -216,7 +211,6 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                 }
             }
 
-            // ── Simple bar chart: Dispensaciones vs Servicios ──
             if (dispensacionesCount + serviciosCount > 0) {
                 item {
                     Card(
@@ -235,7 +229,6 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                 }
             }
 
-            // ── Detalle ──
             item {
                 Text("Detalle", fontWeight = FontWeight.Bold, fontSize = 16.sp)
             }

@@ -248,10 +248,10 @@ class NuevaDispensacionScreenTest {
     // ─── DispensacionUiState data class ───────────────────────────────
 
     @Test
-    fun uiState_generatedId_isNotEmpty() {
-        val state = DispensacionUiState(fecha = LocalDate.of(2024, 1, 1))
-        assertNotNull(state.generatedId)
-        assertTrue(state.generatedId.isNotEmpty())
+    fun uiState_generatedId_isSetByViewModel() {
+        val state = DispensacionUiState()
+        // generatedId starts empty — the ViewModel injects a UUID at init
+        assertTrue("generatedId default is empty; ViewModel must set it", state.generatedId.isEmpty())
     }
 
     @Test

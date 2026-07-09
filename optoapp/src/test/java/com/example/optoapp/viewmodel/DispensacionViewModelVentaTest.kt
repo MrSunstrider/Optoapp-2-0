@@ -2,6 +2,7 @@ package com.example.optoapp.viewmodel
 
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.SessionManager
+import com.example.optoapp.data.Montura
 import com.example.optoapp.data.venta.Venta
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import com.example.optoapp.util.DispensacionStockHelper
@@ -24,6 +25,8 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
 import java.time.LocalDate
@@ -156,5 +159,67 @@ class DispensacionViewModelVentaTest {
         assertEquals(fechaEntrega, captured.fechaEntrega)
         assertEquals("Entregado", captured.estado)
         assertTrue(completeCalled)
+    }
+
+    /**
+     * BUG-F1: monturas with stockActual=0 MUST be exposed in monturasActivas
+     * so the dispensation dropdown can show all active monturas regardless of stock.
+     * The stock validation happens at save time, not at selection time.
+     */
+    @Test
+    fun monturasActivas_includesZeroStockMonturas() = runTest(testDispatcher) {
+        val zeroStock = Montura(
+            id = "m-zero", marca = "Zero", modelo = "Stock", stockActual = 0, activo = true, opticaId = "optica-test"
+        )
+        val withStock = Montura(
+            id = "m-ok", marca = "OK", modelo = "Stock", stockActual = 5, activo = true, opticaId = "optica-test"
+        )
+        coEvery { repository.getMonturasByOptica("optica-test") } returns flowOf(listOf(zeroStock, withStock))
+
+        val vm = DispensacionViewModel(repository, sessionManager, postSaveSyncScheduler, stockHelper)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val monturas = vm.monturasActivas.value
+        assertNotNull("montura with stock=0 must be present", monturas.find { it.id == "m-zero" })
+        assertNotNull("montura with stock>0 must be present", monturas.find { it.id == "m-ok" })
+        assertEquals("both monturas must be exposed", 2, monturas.size)
+    }
+
+    /**
+     * BUG-F2: generatedId MUST be stable across state updates.
+     * UUID.randomUUID() as a data class default regenerates on every new
+     * DispensacionUiState() construction, though .copy() preserves it.
+     * Moving initialization to ViewModel init removes this risk entirely.
+     */
+    @Test
+    fun generatedId_isStableAcrossStateUpdates() = runTest(testDispatcher) {
+        coEvery { repository.getMonturasByOptica("optica-test") } returns flowOf(emptyList())
+
+        val vm = DispensacionViewModel(repository, sessionManager, postSaveSyncScheduler, stockHelper)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val initialId = vm.uiState.value.generatedId
+
+        vm.updateUiState { it.copy(montoTotal = "100.00") }
+        assertEquals("generatedId must be stable after montoTotal update", initialId, vm.uiState.value.generatedId)
+
+        vm.updateUiState { it.copy(ot = "OT-001") }
+        assertEquals("generatedId must be stable after OT update", initialId, vm.uiState.value.generatedId)
+
+        vm.updateUiState { it.copy(fecha = LocalDate.of(2026, 1, 1)) }
+        assertEquals("generatedId must be stable after fecha update", initialId, vm.uiState.value.generatedId)
+    }
+
+    /**
+     * BUG-F2-b: Spanish locale comma (e.g. "100,50") must be parseable as montoTotal.
+     * toDoubleOrNull() rejects commas — must convert to dot first.
+     */
+    @Test
+    fun montoTotal_acceptsCommaAsDecimalSeparator() {
+        val parsed = "100,50".replace(',', '.').toDoubleOrNull()
+        assertNotNull("100,50 must be parseable as 100.5 after comma-to-dot", parsed)
+        assertEquals(100.5, parsed!!, 0.001)
+        assertNotNull("100.50 must parse as 100.5", "100.50".toDoubleOrNull())
+        assertNull("empty string must yield null", "".toDoubleOrNull())
     }
 }

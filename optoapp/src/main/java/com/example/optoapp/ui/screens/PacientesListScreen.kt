@@ -109,7 +109,7 @@ fun PacientesListScreen(
         }
     ) { padding ->
         Column(
-            modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp)
+            modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp).navigationBarsPadding()
         ) {
             OutlinedTextField(
                 value = searchQuery,
@@ -139,13 +139,11 @@ fun PacientesListScreen(
             }
             Spacer(modifier = Modifier.height(14.dp))
 
-            // Loading indicator
             if (isLoading) {
                 LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
                 Spacer(modifier = Modifier.height(8.dp))
             }
 
-            // Error card with retry
             error?.let { errMsg ->
                 Card(
                     colors = CardDefaults.cardColors(containerColor = AlertRed.copy(alpha = 0.1f)),
@@ -254,12 +252,10 @@ private fun PacienteCard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Avatar
             Surface(modifier = Modifier.size(44.dp), shape = RoundedCornerShape(12.dp), color = avatarColor.copy(alpha = 0.12f)) {
                 Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(24.dp), tint = avatarColor) }
             }
 
-            // Info
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(paciente.nombreCompleto, fontWeight = FontWeight.Bold, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
@@ -270,14 +266,12 @@ private fun PacienteCard(
                         Text("Tel: ${paciente.telefono}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
-                // Debt badge
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     // We don't have debt in the entity, but we show date as reference
                     Text(DateUtils.formatLocalized(paciente.fechaCreacion), fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f))
                 }
             }
 
-            // Action buttons
             Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
                 IconButton(onClick = { onShowLastEvaluacion(paciente.id) }, modifier = Modifier.testTag(TestTags.PACIENTE_CARD_LAST_EVAL_BTN)) {
                     Icon(Icons.Default.Visibility, contentDescription = "Ver evaluación", modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)

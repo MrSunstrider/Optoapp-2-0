@@ -1,6 +1,7 @@
 package com.example.optoapp.domain.sync
 
 import com.example.optoapp.data.ConflictDao
+import com.example.optoapp.data.MonturaMovimiento
 import com.example.optoapp.data.SyncStateTracker
 import io.github.jan.supabase.SupabaseClient
 import io.mockk.coEvery
@@ -325,5 +326,64 @@ class ConflictHelperTest {
 
         assertTrue("Expected no exception but got: $exceptionThrown", exceptionThrown == null)
         coVerify(exactly = 1) { mockConflictDao.resolveConflict(ID3, OPTICA_ID) }
+    }
+
+    // ── Bug F3: Composite key dedup ────────────────────────────────────────
+
+    /**
+     * BUG-F3: distinctBy { it.id } allows duplicate uploads when two movements
+     * share the same composite key (referenciaId, tipo, monturaId) but have
+     * different UUID ids. Supabase unique index idx_movimientos_conflict on
+     * (referencia_id, tipo, montura_id) rejects the duplicate → error 23505.
+     */
+    @Test
+    fun `detectConflictMovimientos with different IDs but same composite key`() {
+        val mov1 = MonturaMovimiento(
+            id = "uuid-aaa", monturaId = "m1", tipo = "SALIDA_VENTA",
+            cantidad = 1, stockPrevio = 5, stockNuevo = 4,
+            referenciaId = "disp-1", opticaId = "o1"
+        )
+        val mov2 = MonturaMovimiento(
+            id = "uuid-bbb", monturaId = "m1", tipo = "SALIDA_VENTA",
+            cantidad = 1, stockPrevio = 5, stockNuevo = 4,
+            referenciaId = "disp-1", opticaId = "o1"
+        )
+
+        // Current bug: distinctBy { it.id } keeps BOTH → duplicate FK violation
+        val pkDedup = listOf(mov1, mov2).distinctBy { it.id }
+        assertEquals("PK-based dedup keeps both (WRONG — causes error 23505)", 2, pkDedup.size)
+
+        // Correct fix: dedup by composite key keeps only one
+        val compositeDedup = listOf(mov1, mov2).distinctBy { Triple(it.referenciaId, it.tipo, it.monturaId) }
+        assertEquals("Composite-key dedup keeps only one (CORRECT)", 1, compositeDedup.size)
+
+        // detectConflictMovimientos: both movements same stock → both safe
+        val (safeIds, conflictedIds) = ConflictHelper.detectConflictMovimientos(
+            local = listOf(mov1),
+            remote = listOf(mov2)
+        )
+        assertTrue("mov1 should be safe (same stock as remote)", mov1.id in safeIds)
+        assertTrue("no conflicts when stock matches", conflictedIds.isEmpty())
+    }
+
+    @Test
+    fun `detectConflictMovimientos flags conflict when stock differs`() {
+        val local = MonturaMovimiento(
+            id = "uuid-local", monturaId = "m1", tipo = "SALIDA_VENTA",
+            cantidad = 1, stockPrevio = 10, stockNuevo = 9,
+            referenciaId = "disp-1", opticaId = "o1"
+        )
+        val remote = MonturaMovimiento(
+            id = "uuid-remote", monturaId = "m1", tipo = "SALIDA_VENTA",
+            cantidad = 1, stockPrevio = 5, stockNuevo = 4,
+            referenciaId = "disp-1", opticaId = "o1"
+        )
+
+        val (safeIds, conflictedIds) = ConflictHelper.detectConflictMovimientos(
+            local = listOf(local),
+            remote = listOf(remote)
+        )
+        assertTrue("local should be conflicted when stockNuevo differs", local.id in conflictedIds)
+        assertTrue("no safe IDs when stock differs", safeIds.isEmpty())
     }
 }

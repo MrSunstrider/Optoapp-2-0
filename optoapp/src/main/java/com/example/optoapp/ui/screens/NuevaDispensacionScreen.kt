@@ -54,14 +54,18 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
     }
 
     val saveAction = {
-        viewModel.saveDispensacion(pacienteId, dispensacionId) {
-            if (dispensacionId == null) {
-                navController.navigate("informacion_financiera/${viewModel.uiState.value.generatedId}") {
-                    popUpTo("nuevaDispensacion/$pacienteId") { inclusive = true }
+        try {
+            viewModel.saveDispensacion(pacienteId, dispensacionId) {
+                if (dispensacionId == null) {
+                    navController.navigate("informacion_financiera/${viewModel.uiState.value.generatedId}") {
+                        popUpTo("nuevaDispensacion/$pacienteId") { inclusive = true }
+                    }
+                } else {
+                    navController.popBackStack()
                 }
-            } else {
-                navController.popBackStack()
             }
+        } catch (e: Exception) {
+            android.util.Log.e("NuevaDispensacion", "Error al guardar dispensacion", e)
         }
     }
     Scaffold(
@@ -153,7 +157,7 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
                     if (dispensacionId == null) {
                         OptoTextField(
                             value = uiState.montoTotal,
-                            onValueChange = { value -> viewModel.updateUiState { it.copy(montoTotal = value) } },
+                            onValueChange = { value -> viewModel.updateUiState { it.copy(montoTotal = value.replace(',', '.')) } },
                             label = "Monto Total",
                             keyboardType = KeyboardType.Decimal
                         )

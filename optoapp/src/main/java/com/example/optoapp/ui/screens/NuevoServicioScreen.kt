@@ -55,7 +55,7 @@ fun NuevoServicioScreen(navController: NavController, pacienteId: String? = null
     Scaffold(
         containerColor = MaterialTheme.colorScheme.surface,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { SnackbarHost(snackbarHostState, modifier = Modifier.navigationBarsPadding()) },
         topBar = {
             OptoTopAppBar(
                 title = if (servicioId == null || servicioId == "null") "Nuevo Servicio" else "Editar Servicio",

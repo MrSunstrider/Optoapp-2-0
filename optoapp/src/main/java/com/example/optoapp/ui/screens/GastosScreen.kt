@@ -62,11 +62,10 @@ fun GastosScreen(navController: NavController, drawerState: DrawerState, viewMod
         }
     ) { padding ->
         LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(padding),
+            modifier = Modifier.fillMaxSize().padding(padding).navigationBarsPadding(),
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // Total del mes
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -108,14 +107,12 @@ fun GastosScreen(navController: NavController, drawerState: DrawerState, viewMod
         }
     }
 
-    // Dialog for new/edit
     if (uiState.showDialog) {
         AlertDialog(
             onDismissRequest = { viewModel.dismissDialog() },
             title = { Text(if (uiState.editingGasto != null) "Editar Gasto" else "Nuevo Gasto", fontWeight = FontWeight.Bold) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    // Categoria dropdown
                     var expanded by remember { mutableStateOf(false) }
                     ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = !expanded }) {
                         OutlinedTextField(

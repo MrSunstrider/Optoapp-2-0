@@ -29,9 +29,9 @@ import com.example.optoapp.util.DispensacionStockHelper
 data class DispensacionUiState(
     val pacienteNombre: String = "",
     val ot: String = "",
-    /** Items de lente (1..N). El primer item es el lente principal de la dispensación. */
+    /** El primer item es el lente principal; la lista permite adjuntar lentes adicionales a la misma OT (ej. bifocal + monofocal para cerca). */
     val items: List<DispensacionItemUi> = listOf(DispensacionItemUi()),
-    /** Items eliminados (pendientes de persistir la baja). */
+    /** Retenidos hasta que la transacción de guardado confirme la baja, evitando orphan rows en ediciones. */
     val itemsToDelete: List<String> = emptyList(),
 
     val origenMontura: String = "",
@@ -52,7 +52,7 @@ data class DispensacionUiState(
 
     val pagos: List<Pago> = emptyList(),
     val pagosToDelete: List<Pago> = emptyList(),
-    val generatedId: String = UUID.randomUUID().toString()
+    val generatedId: String = ""
 )
 
 data class DispensacionItemUi(
@@ -89,12 +89,12 @@ class DispensacionViewModel @Inject constructor(
         private const val ORIGEN_PACIENTE_LEGACY = "Traída por paciente"
     }
 
-    private val _uiState = MutableStateFlow(DispensacionUiState())
+    private val _uiState = MutableStateFlow(DispensacionUiState(generatedId = UUID.randomUUID().toString()))
     val uiState: StateFlow<DispensacionUiState> = _uiState.asStateFlow()
     private val _monturasActivas = MutableStateFlow<List<com.example.optoapp.data.Montura>>(emptyList())
     val monturasActivas: StateFlow<List<com.example.optoapp.data.Montura>> = _monturasActivas.asStateFlow()
 
-    /** Última evaluación del paciente (por fecha) para refracción/DIP en ticket de laboratorio. */
+    /** Precargada para el ticket de laboratorio: evita que el óptico cambie de pantalla consultando la última refracción y DIP del paciente. */
     private val _ultimaEvaluacionTicket = MutableStateFlow<EvaluacionClinica?>(null)
     val ultimaEvaluacionTicket: StateFlow<EvaluacionClinica?> = _ultimaEvaluacionTicket.asStateFlow()
 
@@ -210,14 +210,12 @@ class DispensacionViewModel @Inject constructor(
         _uiState.update(update)
     }
 
-    /** Agrega un item de lente vacío a la lista. */
     fun addItem() {
         _uiState.update { s ->
             s.copy(items = s.items + DispensacionItemUi())
         }
     }
 
-    /** Actualiza un item específico por índice. */
     fun updateItem(index: Int, item: DispensacionItemUi) {
         _uiState.update { s ->
             val updated = s.items.toMutableList()
@@ -228,7 +226,7 @@ class DispensacionViewModel @Inject constructor(
         }
     }
 
-    /** Elimina un item por índice. Siempre mantener al menos un item vacío. */
+    /** Siempre mantener al menos un item vacío para que el usuario pueda seguir agregando lentes. */
     fun removeItem(index: Int) {
         _uiState.update { s ->
             val removed = s.items[index]
@@ -240,7 +238,6 @@ class DispensacionViewModel @Inject constructor(
         }
     }
 
-    /** Rellena OT con el siguiente correlativo OT-AAAA-#### según fecha y óptica activa. */
     fun suggestOt() {
         viewModelScope.launch {
             val oid = sessionManager.opticaId.first()

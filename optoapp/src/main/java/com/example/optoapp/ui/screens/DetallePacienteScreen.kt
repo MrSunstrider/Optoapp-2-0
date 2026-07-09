@@ -184,6 +184,7 @@ fun DetallePacienteScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding)
+                    .navigationBarsPadding()
             ) {
                 val deudaDisp = dispensaciones.sumOf { it.montoTotal - it.montoPagado }
                 val deudaServ = servicios.sumOf { it.montoTotal - it.aCuenta }

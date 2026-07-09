@@ -18,9 +18,9 @@ import java.time.LocalDate
 import javax.inject.Inject
 
 /**
- * Sincronización de inventario: monturas + movimientos de stock.
- *
- * Upload -> Download para paridad entre dispositivos.
+ * Evita divergencia de stock entre dispositivos de la misma óptica.
+ * Sube cambios locales antes de descargar remotos para reducir la ventana de conflicto
+ * cuando dos sucursales actualizan el mismo SKU simultáneamente.
  */
 open class SyncInventarioUseCase @Inject constructor(
     private val repository: OptoRepository,
@@ -68,10 +68,10 @@ open class SyncInventarioUseCase @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: IOException) {
-            Log.e(TAG, "Error en red sincronizando inventario: ${e.message}", e)
+            System.err.println("[$TAG] ERROR: Error en red sincronizando inventario: ${e.message}")
             Resource.Error("Error sincronizando inventario: ${e.localizedMessage}")
         } catch (e: Exception) {
-            Log.e(TAG, "Error inesperado sincronizando inventario: ${e.message}", e)
+            System.err.println("[$TAG] ERROR: Error inesperado sincronizando inventario: ${e.message}")
             Resource.Error("Error sincronizando inventario: ${e.localizedMessage}")
         }
     }
@@ -80,7 +80,6 @@ open class SyncInventarioUseCase @Inject constructor(
         val rows = repository.getMonturasSnapshotForOptica(opticaId)
             .map { it.toRemoto().copy(opticaId = opticaId) }
             .distinctBy { it.id }
-        // Detección de conflictos antes de upsert
         val safeIds = conflictHelper.filterConflicts(
             tableName = TABLE_MONTURAS,
             opticaId = opticaId,
@@ -99,23 +98,38 @@ open class SyncInventarioUseCase @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: IOException) {
-            Log.e(TAG, "Error en red subiendo monturas: ${e.message}", e)
+            System.err.println("[$TAG] ERROR: Error en red subiendo monturas: ${e.message}")
             syncStateTracker.markError(opticaId, "upload_monturas", "batch", e.message)
             throw e
         } catch (e: Exception) {
-            Log.e(TAG, "Error inesperado subiendo monturas: ${e.message}", e)
+            System.err.println("[$TAG] ERROR: Error inesperado subiendo monturas: ${e.message}")
             syncStateTracker.markError(opticaId, "upload_monturas", "batch", e.message)
             throw e
         }
         syncStateTracker.markSynced(opticaId, "upload_monturas", "batch")
         rows2.forEach { m -> syncStateTracker.markSynced(opticaId, "montura", m.id) }
-        return rows.size
+        return rows2.size
     }
 
     private suspend fun uploadMovimientos(opticaId: String): Int {
-        val rows = repository.getMovimientosMonturaSnapshotForOptica(opticaId)
+        val localMovimientos = repository.getMovimientosMonturaSnapshotForOptica(opticaId)
+        if (localMovimientos.isEmpty()) {
+            syncStateTracker.markSynced(opticaId, "upload_montura_movimientos", "batch")
+            return 0
+        }
+
+        // Supabase unique index idx_movimientos_conflict is on (referencia_id, tipo, montura_id),
+        // not on PK — distinctBy PK would let edited movements slip through as duplicates.
+        val deduped = localMovimientos
+            .distinctBy { Triple(it.referenciaId, it.tipo, it.monturaId) }
+
+        // Edited dispensations regenerate movimiento UUIDs while keeping the same composite key.
+        // Detect stockNuevo mismatch against remote to flag real conflicts before upsert.
+        val safeIds = conflictHelper.filterConflictMovimientos(opticaId, deduped).toSet()
+
+        val rows = deduped
+            .filter { it.id in safeIds }
             .map { it.toRemoto().copy(opticaId = opticaId) }
-            .distinctBy { it.id }
         if (rows.isEmpty()) {
             syncStateTracker.markSynced(opticaId, "upload_montura_movimientos", "batch")
             return 0
@@ -127,11 +141,11 @@ open class SyncInventarioUseCase @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: IOException) {
-            Log.e(TAG, "Error en red subiendo movimientos: ${e.message}", e)
+            System.err.println("[$TAG] ERROR: Error en red subiendo movimientos: ${e.message}")
             syncStateTracker.markError(opticaId, "upload_montura_movimientos", "batch", e.message)
             throw e
         } catch (e: Exception) {
-            Log.e(TAG, "Error inesperado subiendo movimientos: ${e.message}", e)
+            System.err.println("[$TAG] ERROR: Error inesperado subiendo movimientos: ${e.message}")
             syncStateTracker.markError(opticaId, "upload_montura_movimientos", "batch", e.message)
             throw e
         }
@@ -144,7 +158,7 @@ open class SyncInventarioUseCase @Inject constructor(
         val conflictedIds = try {
             conflictDao.getConflictEntityIds(opticaId, "montura").toSet()
         } catch (e: Exception) {
-            Log.e(TAG, "Error querying conflict IDs, proceeding without guard: ${e.message}", e)
+            System.err.println("[$TAG] ERROR: Error querying conflict IDs, proceeding without guard: ${e.message}")
             emptySet()
         }
 
@@ -158,10 +172,10 @@ open class SyncInventarioUseCase @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: IOException) {
-                Log.e(TAG, "Error en red descargando monturas: ${e.message}", e)
+                Log.e(TAG, "Error en red descargando monturas: ${e.message}")
                 syncStateTracker.markError(opticaId, "montura", r.id, e.message)
             } catch (e: Exception) {
-                Log.e(TAG, "Error inesperado descargando monturas: ${e.message}", e)
+                Log.e(TAG, "Error inesperado descargando monturas: ${e.message}")
                 syncStateTracker.markError(opticaId, "montura", r.id, e.message)
             }
         }
@@ -172,7 +186,7 @@ open class SyncInventarioUseCase @Inject constructor(
         val conflictedIds = try {
             conflictDao.getConflictEntityIds(opticaId, "montura_movimiento").toSet()
         } catch (e: Exception) {
-            Log.e(TAG, "Error querying conflict IDs, proceeding without guard: ${e.message}", e)
+            System.err.println("[$TAG] ERROR: Error querying conflict IDs, proceeding without guard: ${e.message}")
             emptySet()
         }
 
@@ -186,10 +200,10 @@ open class SyncInventarioUseCase @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: IOException) {
-                Log.e(TAG, "Error en red descargando movimientos: ${e.message}", e)
+                Log.e(TAG, "Error en red descargando movimientos: ${e.message}")
                 syncStateTracker.markError(opticaId, "montura_movimiento", r.id, e.message)
             } catch (e: Exception) {
-                Log.e(TAG, "Error inesperado descargando movimientos: ${e.message}", e)
+                Log.e(TAG, "Error inesperado descargando movimientos: ${e.message}")
                 syncStateTracker.markError(opticaId, "montura_movimiento", r.id, e.message)
             }
         }
@@ -252,7 +266,7 @@ internal data class MonturaRemota(
 }
 
 @Serializable
-data class MonturaMovimientoRemoto(
+internal data class MonturaMovimientoRemoto(
     val id: String,
     @SerialName("montura_id") val monturaId: String,
     val fecha: String,
@@ -309,7 +323,7 @@ private fun Montura.toRemoto(): MonturaRemota = MonturaRemota(
     updatedAt = updatedAt
 )
 
-fun MonturaMovimiento.toRemoto(): MonturaMovimientoRemoto = MonturaMovimientoRemoto(
+internal fun MonturaMovimiento.toRemoto(): MonturaMovimientoRemoto = MonturaMovimientoRemoto(
     id = id,
     monturaId = monturaId,
     fecha = fecha.toString(),

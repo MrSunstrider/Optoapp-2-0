@@ -50,21 +50,14 @@ fun MonturaInfoSection(
                     }
                 }
 
-                val isSelected = monturaSeleccionada != null &&
-                    monturaQuery == "${monturaSeleccionada.marca} ${monturaSeleccionada.modelo}"
-
-                val filteredMonturas = if (isSelected) {
-                    emptyList()
-                } else if (monturaQuery.isBlank()) {
-                    monturasActivas.filter { it.stockActual > 0 }
-                } else {
+                val filteredMonturas = if (monturaQuery.isBlank()) {
                     monturasActivas
-                        .filter { it.stockActual > 0 }
-                        .filter {
-                            it.marca.contains(monturaQuery, ignoreCase = true) ||
-                            it.modelo.contains(monturaQuery, ignoreCase = true) ||
-                            it.sku.contains(monturaQuery, ignoreCase = true)
-                        }
+                } else {
+                    monturasActivas.filter {
+                        it.marca.contains(monturaQuery, ignoreCase = true) ||
+                        it.modelo.contains(monturaQuery, ignoreCase = true) ||
+                        it.sku.contains(monturaQuery, ignoreCase = true)
+                    }
                 }
 
                 ExposedDropdownMenuBox(
