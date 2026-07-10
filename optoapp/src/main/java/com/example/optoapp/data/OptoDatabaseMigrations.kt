@@ -1021,3 +1021,26 @@ val MIGRATION_36_37 = object : Migration(36, 37) {
         """.trimIndent())
     }
 }
+
+val MIGRATION_37_38 = object : Migration(37, 38) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        // Create regalos_dispensacion table for gift tracking on dispensaciones
+        db.execSQL("""
+            CREATE TABLE IF NOT EXISTS regalos_dispensacion (
+                id TEXT NOT NULL PRIMARY KEY,
+                dispensacion_id TEXT NOT NULL,
+                producto_id TEXT NOT NULL,
+                cantidad INTEGER NOT NULL,
+                costo_unitario REAL NOT NULL,
+                descripcion TEXT NOT NULL,
+                motivo TEXT DEFAULT '',
+                optica_id TEXT NOT NULL,
+                FOREIGN KEY (dispensacion_id) REFERENCES dispensaciones(id) ON DELETE CASCADE
+            )
+        """.trimIndent())
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_regalos_dispensacion_dispensacion_id ON regalos_dispensacion(dispensacion_id)")
+
+        // Add reclamoOrigenId to dispensaciones — nullable, no default
+        db.execSQL("ALTER TABLE dispensaciones ADD COLUMN reclamo_origen_id TEXT")
+    }
+}

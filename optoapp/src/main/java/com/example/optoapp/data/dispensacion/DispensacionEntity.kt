@@ -59,6 +59,7 @@ data class DispensacionOptica(
     val altura: String = "",
     val subTipoBifocal: String = "",
     @ColumnInfo(name = "filtro_discromatopsia_tipo") val filtroDiscromatopsiaTipo: String = "",
+    @ColumnInfo(name = "reclamo_origen_id") val reclamoOrigenId: String? = null,
     @SerialName("updatedAt")
     val updatedAt: String? = null,
     @SerialName("updatedBy")
