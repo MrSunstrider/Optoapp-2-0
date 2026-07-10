@@ -264,6 +264,12 @@ fun FinancieraInfoSection(
                         onUpdate(uiState.copy(fechaEntrega = nuevaFecha))
                     }
                 )
+            } else {
+                TextButton(onClick = {
+                    onUpdate(uiState.copy(fechaEntrega = LocalDate.now()))
+                }) {
+                    Text("Asignar fecha de entrega", fontSize = 12.sp)
+                }
             }
         }
     }
@@ -343,29 +349,44 @@ fun RegalosSection(
             title = { Text("Agregar Regalo") },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    // Producto dropdown
+                    // Producto search (like MonturaInfoSection)
+                    var query by remember { mutableStateOf("") }
                     var expanded by remember { mutableStateOf(false) }
+
+                    val filtered = if (query.isBlank()) monturas
+                    else monturas.filter {
+                        it.marca.contains(query, ignoreCase = true) ||
+                        it.modelo.contains(query, ignoreCase = true) ||
+                        it.sku.contains(query, ignoreCase = true)
+                    }
+
                     ExposedDropdownMenuBox(
-                        expanded = expanded,
+                        expanded = expanded && filtered.isNotEmpty(),
                         onExpandedChange = { expanded = it }
                     ) {
                         OutlinedTextField(
-                            value = selectedMontura?.let { "${it.marca} ${it.modelo} ${it.color}".trim() } ?: "",
-                            onValueChange = {},
-                            readOnly = true,
-                            label = { Text("Producto") },
+                            value = query,
+                            onValueChange = {
+                                query = it
+                                if (it.isEmpty()) selectedMonturaId = ""
+                                expanded = true
+                            },
+                            label = { Text("Buscar producto por marca, modelo o SKU") },
+                            placeholder = { Text("Ej: Ray-Ban, Estuche...") },
+                            leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Buscar") },
                             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                            modifier = Modifier.fillMaxWidth().menuAnchor()
+                            modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryEditable).fillMaxWidth()
                         )
                         ExposedDropdownMenu(
-                            expanded = expanded,
+                            expanded = expanded && filtered.isNotEmpty(),
                             onDismissRequest = { expanded = false }
                         ) {
-                            monturas.forEach { m ->
+                            filtered.forEach { m ->
                                 DropdownMenuItem(
                                     text = { Text("${m.marca} ${m.modelo} ${m.color} (Stock: ${m.stockActual})".trim()) },
                                     onClick = {
                                         selectedMonturaId = m.id
+                                        query = "${m.marca} ${m.modelo} ${m.color}".trim()
                                         expanded = false
                                     }
                                 )
