@@ -67,4 +67,10 @@ interface PagoDao {
 
     @Query("UPDATE pagos SET dispensacionId = :newDispensacionId WHERE dispensacionId = :oldDispensacionId AND opticaId = :opticaId")
     suspend fun reassignDispensacionIdForOptica(oldDispensacionId: String, newDispensacionId: String, opticaId: String): Int
+
+    @Query("SELECT COALESCE(SUM(monto), 0) FROM pagos WHERE dispensacionId = :dispensacionId AND tipo != :excludeTipoAnulacion")
+    suspend fun sumMontoByDispensacion(dispensacionId: String, excludeTipoAnulacion: String): Double
+
+    @Query("SELECT COALESCE(SUM(monto), 0) FROM pagos WHERE servicioExtraId = :servicioExtraId")
+    suspend fun sumMontoByServicioExtra(servicioExtraId: String): Double
 }
