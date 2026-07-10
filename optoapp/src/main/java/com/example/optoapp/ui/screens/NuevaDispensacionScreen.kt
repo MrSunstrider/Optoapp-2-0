@@ -190,6 +190,12 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
                 }
             }
 
+            RegalosSection(
+                uiState = uiState,
+                onAddRegalo = viewModel::addRegalo,
+                onRemoveRegalo = viewModel::removeRegalo
+            )
+
             Button(onClick = { saveAction() }, modifier = Modifier.fillMaxWidth().testTag(TestTags.DISPENSACION_GUARDAR_BTN)) {
                 Text(if (dispensacionId == null) "Confirmar Orden" else "Actualizar Orden")
             }

@@ -133,7 +133,7 @@ class ReportesViewModel @Inject constructor(
                 _fechaDiario
             ) { list, p, a, fd ->
                 val now = LocalDate.now()
-                list.filter { disp -> dentroDelPeriodo(disp.fecha, p, a, fd, now) }
+                list.filter { disp -> disp.estadoEntrega != "Anulado" && dentroDelPeriodo(disp.fecha, p, a, fd, now) }
             }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
@@ -147,7 +147,7 @@ class ReportesViewModel @Inject constructor(
                 _fechaDiario
             ) { list, p, a, fd ->
                 val now = LocalDate.now()
-                list.filter { servicio -> dentroDelPeriodo(servicio.fecha, p, a, fd, now) }
+                list.filter { servicio -> servicio.estado != "Anulado" && dentroDelPeriodo(servicio.fecha, p, a, fd, now) }
             }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
@@ -301,15 +301,14 @@ class ReportesViewModel @Inject constructor(
                 ) { pagos, todasDisp, todasServ ->
                     val dispMap = todasDisp.associateBy { it.id }
                     val servMap = todasServ.associateBy { it.id }
-                    pagos.filter { pago -> dentroDelPeriodo(pago.fecha, p, a, fd, now) }
+                    pagos.filter { it.tipo != "Anulación" }
+                        .filter { pago -> dentroDelPeriodo(pago.fecha, p, a, fd, now) }
                         .sumOf { pago ->
                             val dispFecha = pago.dispensacionId?.let { dispMap[it]?.fecha }
-                            when {
-                                dispFecha != null && dentroDelPeriodo(dispFecha, p, a, fd, now) -> 0.0
-                                pago.dispensacionId == null && pago.servicioExtraId?.let { servMap[it]?.fecha }
-                                    ?.let { dentroDelPeriodo(it, p, a, fd, now) } == true -> 0.0
-                                else -> pago.monto
-                            }
+                            val servFecha = pago.servicioExtraId?.let { servMap[it]?.fecha }
+                            val dispInPeriod = dispFecha != null && dentroDelPeriodo(dispFecha, p, a, fd, now)
+                            val servInPeriod = servFecha != null && dentroDelPeriodo(servFecha, p, a, fd, now)
+                            if (dispInPeriod || servInPeriod) 0.0 else pago.monto
                         }
                 }
             }

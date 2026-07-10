@@ -56,6 +56,7 @@ open class SyncFinanzasUseCase @Inject constructor(
             var servUp = 0
             var pagosUp = 0
             var gastosUp = 0
+            var regalosUp = 0
 
             if (!skipUpload) {
                 dispUp = safeUpload("dispensaciones") { uploadSyncCoordinator.uploadDispensaciones(opticaId) }
@@ -68,12 +69,15 @@ open class SyncFinanzasUseCase @Inject constructor(
                 Log.d(TAG, "Finanzas: upload pagos=$pagosUp")
                 gastosUp = safeUpload("gastos_operativos") { uploadSyncCoordinator.uploadGastosOperativos(opticaId) }
                 Log.d(TAG, "Finanzas: upload gastos_operativos=$gastosUp")
+                regalosUp = safeUpload("regalos") { uploadSyncCoordinator.uploadRegalos(opticaId) }
+                Log.d(TAG, "Finanzas: upload regalos=$regalosUp")
             }
 
             val dispDown: Int
             val itemsDown: Int
             val servDown: Int
             val pagosDown: Int
+            val regalosDown: Int
             val resumenDown: Int
             val configDown: Int
             if (downloadAfterUpload) {
@@ -89,11 +93,14 @@ open class SyncFinanzasUseCase @Inject constructor(
                 Log.d(TAG, "Finanzas: download configuracion_financiera=$configDown")
                 pagosDown = downloadSyncCoordinator.downloadPagos(opticaId)
                 Log.d(TAG, "Finanzas: download pagos=$pagosDown")
+                regalosDown = downloadSyncCoordinator.downloadRegalos(opticaId)
+                Log.d(TAG, "Finanzas: download regalos=$regalosDown")
             } else {
                 dispDown = 0
                 itemsDown = 0
                 servDown = 0
                 pagosDown = 0
+                regalosDown = 0
                 resumenDown = 0
                 configDown = 0
                 Log.d(TAG, "Finanzas: fin upload-only OK")
@@ -106,10 +113,12 @@ open class SyncFinanzasUseCase @Inject constructor(
                     uploadedServicios = servUp,
                     uploadedPagos = pagosUp,
                     uploadedGastosOperativos = gastosUp,
+                    uploadedRegalos = regalosUp,
                     downloadedDispensaciones = dispDown,
                     downloadedDispensacionItems = itemsDown,
                     downloadedServicios = servDown,
                     downloadedPagos = pagosDown,
+                    downloadedRegalos = regalosDown,
                     downloadedResumenesDiarios = resumenDown,
                     downloadedConfiguracionesFinancieras = configDown
                 )

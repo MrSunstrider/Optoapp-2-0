@@ -375,6 +375,30 @@ class CierreCajaViewModelTest {
     // -----------------------------------------------------------------------
     // Test 12: getTotalesPorMetodo normalizes "Sin especificar" into ""
     // -----------------------------------------------------------------------
+    // -----------------------------------------------------------------------
+    // Fix 1: Anulación pagos must be included (not skipped) so negative monto
+    // offsets the original payment. ventasHoy should be 0 for same-day refund.
+    // spec: dispensacion with pago 100 + Anulación -100 on same day → ventasHoy = 0.0
+    // -----------------------------------------------------------------------
+    @Test
+    fun anulacion_pago_offsets_ventasHoy_same_day() = runTest(testDispatcher) {
+        val pagos = listOf(
+            Pago(id = "p1", fecha = today, tipo = "Efectivo", monto = 100.0, opticaId = opticaId, dispensacionId = "d1"),
+            Pago(id = "p2", fecha = today, tipo = "Anulación", monto = -100.0, opticaId = opticaId, dispensacionId = "d1")
+        )
+        val dispensaciones = listOf(
+            DispensacionOptica(id = "d1", pacienteId = "pac1", fecha = today, montoTotal = 100.0, opticaId = opticaId)
+        )
+        every { repository.getPagosByDateRangeForOptica(today, today, opticaId) } returns flowOf(pagos)
+        every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
+
+        viewModel = CierreCajaViewModel(repository, sessionManager)
+        viewModel.setFecha(today)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals("ventasHoy must be 0 (100 + -100)", 0.0, viewModel.uiState.value.ventasHoy, 0.001)
+    }
+
     @Test
     fun getTotalesPorMetodo_groupsSinEspecificarWithEmptyString() = runTest(testDispatcher) {
         val pagosHoy = listOf(

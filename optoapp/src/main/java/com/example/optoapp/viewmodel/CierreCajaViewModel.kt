@@ -52,11 +52,8 @@ class CierreCajaViewModel @Inject constructor(
     private val _refreshTrigger = MutableStateFlow(0)
 
     init {
-        viewModelScope.launch {
-            sessionManager.userTimeZone.collect { _ ->
-                _uiState.update { it.copy(fecha = DateUtils.today()) }
-            }
-        }
+        // userTimeZone collector removed: updating _uiState.fecha mid-flow races with
+        // observePagos() cancelling the inner flatMapLatest on every zone change.
         observePagos()
     }
 
@@ -64,18 +61,14 @@ class CierreCajaViewModel @Inject constructor(
         _uiState.update { it.copy(fecha = fecha) }
     }
 
-    fun refresh() {
-        _refreshTrigger.value++
-    }
-
     private fun observePagos() {
         combine(
             _uiState.map { it.fecha }.distinctUntilChanged(),
             sessionManager.opticaId,
             _refreshTrigger
-        ) { fecha, opticaId, _ -> fecha to opticaId }
+        ) { fecha, opticaId, trigger -> Triple(fecha, opticaId, trigger) }
             .distinctUntilChanged()
-            .flatMapLatest { (fecha, opticaId) ->
+            .flatMapLatest { (fecha, opticaId, _) ->
                 combine(
                     repository.getPagosByDateRangeForOptica(fecha, fecha, opticaId),
                     repository.getAllDispensacionesForOptica(opticaId),
@@ -86,7 +79,6 @@ class CierreCajaViewModel @Inject constructor(
                     var ventasHoy = 0.0
                     var cobrosAtrasados = 0.0
                     pagos.forEach { pago ->
-                        if (pago.tipo == "Anulación") return@forEach
                         val dispFecha = pago.dispensacionId?.let { id -> dispMap[id]?.fecha }
                         val servFecha = pago.servicioExtraId?.let { id -> servMap[id]?.fecha }
                         when {

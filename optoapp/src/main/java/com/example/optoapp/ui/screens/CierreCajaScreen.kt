@@ -42,10 +42,6 @@ fun CierreCajaScreen(
     var showDatePicker by remember { mutableStateOf(false) }
     val scrollState = rememberScrollState()
 
-    LaunchedEffect(uiState.fecha, opticaId) {
-        viewModel.refresh()
-    }
-
     if (showDatePicker) {
         OptoDatePickerDialog(
             initialDate = uiState.fecha,

@@ -115,6 +115,68 @@ class ReportesViewModelTest {
             viewModel.totalVendido.first(), 0.001)
     }
 
+    // -----------------------------------------------------------------------
+    // Fix 2: cobrosPeriodo must exclude Anulación pagos
+    // Cross-period refund: disp from yesterday with pago 100, Anulación today -100
+    // cobrosPeriodo must exclude the -100, porCobrar = 0
+    // -----------------------------------------------------------------------
+    @Test
+    fun `cobrosPeriodo excludes anulacion pagos cross period`() = runTest(testDispatcher) {
+        val yesterday = today.minusDays(1)
+        val dispensaciones = listOf(
+            DispensacionOptica(id = "d1", pacienteId = "p1", fecha = yesterday, montoTotal = 100.0, opticaId = opticaId)
+        )
+        // Pago today for yesterday's disp (cobro atrasado)
+        val pagosEnPeriodo = listOf(
+            Pago(id = "p1", fecha = today, tipo = "Efectivo", monto = 100.0, opticaId = opticaId, dispensacionId = "d1"),
+            // Anulación today for the same disp (negative)
+            Pago(id = "p2", fecha = today, tipo = "Anulación", monto = -100.0, opticaId = opticaId, dispensacionId = "d1")
+        )
+        every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
+        every { repository.getPagosByDateRangeForOptica(any(), any(), opticaId) } returns flowOf(pagosEnPeriodo)
+
+        viewModel = ReportesViewModel(repository, sessionManager)
+        viewModel.setPeriodo("Diario")
+        viewModel.setFechaDiario(today)
+        advanceUntilIdle()
+
+        // cobrosPeriodo should only count the Efectivo (100), not the Anulación (-100)
+        assertEquals("cobrosPeriodo must exclude anulacion pagos", 100.0,
+            viewModel.cobrosPeriodo.first(), 0.001)
+    }
+
+    // -----------------------------------------------------------------------
+    // Fix 8: cobrosPeriodo with dual-reference pago (disp old, servicio current)
+    // Should NOT count as cobrosPeriodo because the servicio is in-period
+    // -----------------------------------------------------------------------
+    @Test
+    fun `cobrosPeriodo excludes dual-reference pago with servicio in period`() = runTest(testDispatcher) {
+        val yesterday = today.minusDays(1)
+        val dispensaciones = listOf(
+            DispensacionOptica(id = "d1", pacienteId = "p1", fecha = yesterday, montoTotal = 100.0, opticaId = opticaId)
+        )
+        val servicios = listOf(
+            ServicioExtra(id = "s1", descripcion = "Srv", montoTotal = 50.0, aCuenta = 50.0, estado = "Entregado", fecha = today, opticaId = opticaId)
+        )
+        // Pago with BOTH disp AND serv refs: disp is old, servicio is current
+        val pagosEnPeriodo = listOf(
+            Pago(id = "p1", fecha = today, tipo = "Efectivo", monto = 75.0, opticaId = opticaId,
+                dispensacionId = "d1", servicioExtraId = "s1")
+        )
+        every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
+        every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(servicios)
+        every { repository.getPagosByDateRangeForOptica(any(), any(), opticaId) } returns flowOf(pagosEnPeriodo)
+
+        viewModel = ReportesViewModel(repository, sessionManager)
+        viewModel.setPeriodo("Diario")
+        viewModel.setFechaDiario(today)
+        advanceUntilIdle()
+
+        // The servicio (s1) is in period, so this pago should NOT count as cobrosPeriodo
+        assertEquals("cobrosPeriodo must be 0 because servicio ref is in period", 0.0,
+            viewModel.cobrosPeriodo.first(), 0.001)
+    }
+
     @Test
     fun `totalTransacciones counts movimientos in period`() = runTest(testDispatcher) {
         val dispensaciones = listOf(

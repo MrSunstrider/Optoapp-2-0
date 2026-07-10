@@ -7,6 +7,7 @@ import com.example.optoapp.data.Pago
 import com.example.optoapp.data.ServicioExtra
 import com.example.optoapp.data.configuracionfinanciera.ConfiguracionFinancieraEntity
 import com.example.optoapp.data.gastooperativo.GastoOperativoEntity
+import com.example.optoapp.data.regalodispensacion.RegaloDispensacionEntity
 import com.example.optoapp.data.resumendiario.ResumenDiarioEntity
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -200,6 +201,34 @@ fun GastoOperativoEntity.toRemoto(): GastoOperativoRemoto = GastoOperativoRemoto
     frecuencia = frecuencia
 )
 
+// ── RegaloDispensacion remote DTO ──────────────────────────────────────
+
+@Serializable
+data class RegaloDispensacionRemota(
+    val id: String,
+    @SerialName("dispensacion_id") val dispensacionId: String,
+    @SerialName("producto_id") val productoId: String,
+    val cantidad: Int,
+    @SerialName("costo_unitario") val costoUnitario: Double,
+    val descripcion: String = "",
+    val motivo: String = "",
+    @SerialName("optica_id") val opticaId: String
+) {
+    fun toEntity() = RegaloDispensacionEntity(
+        id = id, dispensacionId = dispensacionId,
+        productoId = productoId, cantidad = cantidad,
+        costoUnitario = costoUnitario, descripcion = descripcion,
+        motivo = motivo, opticaId = opticaId
+    )
+}
+
+fun RegaloDispensacionEntity.toRemoto(): RegaloDispensacionRemota = RegaloDispensacionRemota(
+    id = id, dispensacionId = dispensacionId,
+    productoId = productoId, cantidad = cantidad,
+    costoUnitario = costoUnitario, descripcion = descripcion,
+    motivo = motivo, opticaId = opticaId
+)
+
 // ── ResumenDiario remote DTO ───────────────────────────────────────────
 
 @Serializable
@@ -272,10 +301,12 @@ data class FinanzasSyncResult(
     val uploadedServicios: Int,
     val uploadedPagos: Int,
     val uploadedGastosOperativos: Int = 0,
+    val uploadedRegalos: Int = 0,
     val downloadedDispensaciones: Int,
     val downloadedDispensacionItems: Int = 0,
     val downloadedServicios: Int,
     val downloadedPagos: Int,
+    val downloadedRegalos: Int = 0,
     val downloadedResumenesDiarios: Int = 0,
     val downloadedConfiguracionesFinancieras: Int = 0
 )

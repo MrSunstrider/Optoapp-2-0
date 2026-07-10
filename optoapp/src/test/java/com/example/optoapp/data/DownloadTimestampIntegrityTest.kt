@@ -5,6 +5,7 @@ import androidx.test.core.app.ApplicationProvider
 import com.example.optoapp.data.backup.BackupRestoreCoordinator
 import com.example.optoapp.data.montura.MonturaInventoryCoordinator
 import com.example.optoapp.data.pago.PagoDao
+import com.example.optoapp.data.regalodispensacion.RegaloDispensacionDao
 import com.example.optoapp.data.servicio.ServicioExtraDao
 import com.example.optoapp.data.sync.SyncSnapshotCoordinator
 import com.example.optoapp.sync.PostSaveSyncScheduler
@@ -61,6 +62,8 @@ class DownloadTimestampIntegrityTest {
         val monturaDao = db.monturaDao()
         val monturaMovimientoDao = db.monturaMovimientoDao()
 
+        val regaloDispensacionDao = db.regaloDispensacionDao()
+
         val syncStateTracker = mockk<SyncStateTracker>(relaxed = true)
         val postSaveSyncScheduler = mockk<Lazy<PostSaveSyncScheduler>>(relaxed = true)
 
@@ -69,7 +72,7 @@ class DownloadTimestampIntegrityTest {
         val syncRepo = SyncRepository(syncStateTracker, monturaDao, monturaMovimientoDao)
 
         val snapshotCoordinator = SyncSnapshotCoordinator(
-            pacienteDao, monturaDao, monturaMovimientoDao, pacienteRepo, dispensacionRepo, syncRepo
+            pacienteDao, monturaDao, monturaMovimientoDao, pacienteRepo, dispensacionRepo, syncRepo, regaloDispensacionDao
         )
         val backupCoordinator = BackupRestoreCoordinator(
             pacienteRepo, dispensacionRepo, evaluacionDao, pacienteDao, postSaveSyncScheduler

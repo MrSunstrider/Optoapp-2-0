@@ -121,7 +121,7 @@ fun PacientesListScreen(
             )
             Spacer(modifier = Modifier.height(10.dp))
 
-            val filters = listOf("Todos", "Saldo Pendiente", "Entrega")
+            val filters = listOf("Todos", "Saldo Pendiente", "Estado de entrega")
             FlowRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 filters.forEach { filter ->
                     val isSelected = when (filter) {

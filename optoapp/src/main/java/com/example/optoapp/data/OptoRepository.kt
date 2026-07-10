@@ -174,6 +174,7 @@ open class OptoRepository(
     suspend fun getServiciosSnapshotForOptica(opticaId: String) = snapshotCoordinator.getServiciosSnapshotForOptica(opticaId)
     suspend fun getMonturasSnapshotForOptica(opticaId: String) = snapshotCoordinator.getMonturasSnapshotForOptica(opticaId)
     suspend fun getMovimientosMonturaSnapshotForOptica(opticaId: String) = snapshotCoordinator.getMovimientosMonturaSnapshotForOptica(opticaId)
+    suspend fun getRegalosSnapshotForOptica(opticaId: String) = snapshotCoordinator.getRegalosSnapshotForOptica(opticaId)
 
     suspend fun getPendingDeletions(opticaId: String) = syncRepo.getPendingDeletions(opticaId)
     suspend fun clearDeletionState(opticaId: String, type: String, id: String) = syncRepo.clearDeletionState(opticaId, type, id)
@@ -257,6 +258,9 @@ open class OptoRepository(
 
     suspend fun upsertConfiguracionFinancieraFromRemote(config: ConfiguracionFinancieraEntity) =
         configuracionFinancieraDao.upsert(config)
+
+    suspend fun upsertRegaloFromRemote(regalo: RegaloDispensacionEntity) =
+        database.regaloDispensacionDao().upsert(regalo)
 
     // ─── Regalos Dispensación ─────────────────────────────────────────────────
 

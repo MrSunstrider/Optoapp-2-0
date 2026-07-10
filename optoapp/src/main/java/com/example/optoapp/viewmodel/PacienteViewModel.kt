@@ -42,7 +42,7 @@ class PacienteViewModel @Inject constructor(
     private val _activeFilter = MutableStateFlow<String?>(null)
     val activeFilter: StateFlow<String?> = _activeFilter
 
-    private val _sortOrder = MutableStateFlow("nombre")
+    private val _sortOrder = MutableStateFlow("reciente")
     val sortOrder: StateFlow<String> = _sortOrder
 
     private val _isLoading = MutableStateFlow(true)

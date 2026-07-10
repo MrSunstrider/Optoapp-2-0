@@ -97,13 +97,6 @@ class OperacionHoyViewModel @Inject constructor(
                     val servicios = serviciosDeferred.await()
                     val monturas = monturasDeferred.await()
 
-                    // Detectar si alguna fuente falló (todos los runCatching devuelven lista vacía en error)
-                    val errorMsg = when {
-                        citas.isEmpty() && dispensaciones.isEmpty() && pagosHoy.isEmpty()
-                            && servicios.isEmpty() && monturas.isEmpty() -> "No se pudieron cargar los datos. Verifica tu conexión."
-                        else -> null
-                    }
-
                     val dispPendientes = dispensaciones.filter { it.estadoEntrega.equals("Pendiente", ignoreCase = true) }
                     val servPendientes = servicios.filter { it.estado.equals("Pendiente", ignoreCase = true) }
                     val monturasCriticas = monturas.filter { it.activo && it.stockActual <= it.stockMinimo }
@@ -136,7 +129,7 @@ class OperacionHoyViewModel @Inject constructor(
                         dispensacionesPendientes = dispPendientes,
                         serviciosPendientes = servPendientes,
                         monturas = monturas,
-                        error = errorMsg
+                        error = null
                     )
                 }
         }

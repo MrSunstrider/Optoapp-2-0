@@ -85,8 +85,9 @@ class OptoRepositoryFinanzasTest {
         val dispensacionRepo = DispensacionRepository(dispensacionDao, dispensacionItemDao, pagoDao, servicioExtraDao)
         val syncRepo = SyncRepository(syncStateTracker, monturaDao, monturaMovimientoDao)
 
+        val regaloDispensacionDao = db.regaloDispensacionDao()
         val snapshotCoordinator = com.example.optoapp.data.sync.SyncSnapshotCoordinator(
-            pacienteDao, monturaDao, monturaMovimientoDao, pacienteRepo, dispensacionRepo, syncRepo
+            pacienteDao, monturaDao, monturaMovimientoDao, pacienteRepo, dispensacionRepo, syncRepo, regaloDispensacionDao
         )
         val backupCoordinator = com.example.optoapp.data.backup.BackupRestoreCoordinator(
             pacienteRepo, dispensacionRepo, evaluacionDao, pacienteDao, schedulerLazy

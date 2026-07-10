@@ -5,6 +5,7 @@ import com.example.optoapp.data.montura.MonturaDao
 import com.example.optoapp.data.montura.MonturaInventoryCoordinator
 import com.example.optoapp.data.montura.MonturaMovimientoDao
 import com.example.optoapp.data.pago.PagoDao
+import com.example.optoapp.data.regalodispensacion.RegaloDispensacionDao
 import com.example.optoapp.data.servicio.ServicioExtraDao
 import com.example.optoapp.data.sync.SyncSnapshotCoordinator
 import dagger.Lazy
@@ -66,9 +67,10 @@ class OptoRepositoryErrorTest {
         pacienteRepo = mockk(relaxed = true)
         dispensacionRepo = mockk(relaxed = true)
         syncRepo = mockk(relaxed = true)
+        val regaloDispensacionDao = mockk<RegaloDispensacionDao>(relaxed = true)
 
         val snapshotCoordinator = SyncSnapshotCoordinator(
-            pacienteDao, monturaDao, monturaMovimientoDao, pacienteRepo, dispensacionRepo, syncRepo
+            pacienteDao, monturaDao, monturaMovimientoDao, pacienteRepo, dispensacionRepo, syncRepo, regaloDispensacionDao
         )
         val backupCoordinator = BackupRestoreCoordinator(
             pacienteRepo, dispensacionRepo, evaluacionDao, pacienteDao, scheduler

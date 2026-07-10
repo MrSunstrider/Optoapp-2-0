@@ -77,7 +77,7 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
     var isPdfLoading by remember { mutableStateOf(false) }
 
     val ventasPeriodo = totalCobrado - cobrosPeriodo
-    val porCobrar = totalVendido - totalPagado
+    val porCobrar = totalVendido - ventasPeriodo
     val ticketPromedio = if (totalTransacciones > 0) totalVendido / totalTransacciones else 0.0
 
     Scaffold(

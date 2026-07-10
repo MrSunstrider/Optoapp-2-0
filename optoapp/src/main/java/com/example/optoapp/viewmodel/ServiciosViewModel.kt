@@ -280,7 +280,22 @@ class ServiciosViewModel @Inject constructor(
         val servicio = _servicioToDelete.value ?: return
         viewModelScope.launch {
             try {
-                repository.deleteServicio(servicio)
+                // Anular: crear pagos inversos para cada abono existente
+                val existingPagos = repository.getPagosByServicioExtra(servicio.id).first()
+                    .filter { it.tipo != "Anulación" }
+                existingPagos.forEach { pago ->
+                    val anulacionPago = pago.copy(
+                        id = UUID.randomUUID().toString(),
+                        tipo = "Anulación",
+                        monto = -pago.monto,
+                        nota = "Anulación de servicio ${servicio.descripcion.take(24)}",
+                        ventaId = "v_serv_${servicio.id}"
+                    )
+                    repository.insertPago(anulacionPago)
+                }
+                // Marcar como Anulado en vez de hard-delete
+                repository.updateServicio(servicio.copy(estado = "Anulado"))
+
                 _showDeleteDialog.value = false
                 _servicioToDelete.value = null
             } catch (e: CancellationException) {

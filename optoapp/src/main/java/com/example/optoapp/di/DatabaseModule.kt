@@ -19,6 +19,7 @@ import com.example.optoapp.data.pago.PagoDao
 import com.example.optoapp.data.proveedor.CategoriaMonturaDao
 import com.example.optoapp.data.proveedor.MonturaProveedorDao
 import com.example.optoapp.data.proveedor.ProveedorDao
+import com.example.optoapp.data.regalodispensacion.RegaloDispensacionDao
 import com.example.optoapp.data.resumendiario.ResumenDiarioDao
 import com.example.optoapp.data.servicio.ServicioExtraDao
 import com.example.optoapp.data.sync.SyncSnapshotCoordinator
@@ -120,6 +121,9 @@ object DatabaseModule {
     fun provideFeedbackRecomendacionDao(database: OptoDatabase): FeedbackRecomendacionDao = database.feedbackRecomendacionDao()
 
     @Provides
+    fun provideRegaloDispensacionDao(database: OptoDatabase): RegaloDispensacionDao = database.regaloDispensacionDao()
+
+    @Provides
     @Singleton
     fun provideSecurityManager(@ApplicationContext context: Context): SecurityManager {
         return SecurityManager(context)
@@ -159,9 +163,10 @@ object DatabaseModule {
         monturaMovimientoDao: MonturaMovimientoDao,
         pacienteRepo: PacienteRepository,
         dispensacionRepo: DispensacionRepository,
-        syncRepo: SyncRepository
+        syncRepo: SyncRepository,
+        regaloDispensacionDao: RegaloDispensacionDao
     ): SyncSnapshotCoordinator = SyncSnapshotCoordinator(
-        pacienteDao, monturaDao, monturaMovimientoDao, pacienteRepo, dispensacionRepo, syncRepo
+        pacienteDao, monturaDao, monturaMovimientoDao, pacienteRepo, dispensacionRepo, syncRepo, regaloDispensacionDao
     )
 
     @Provides

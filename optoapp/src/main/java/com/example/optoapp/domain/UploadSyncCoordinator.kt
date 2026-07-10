@@ -314,4 +314,18 @@ class UploadSyncCoordinator @Inject constructor(
         ) { supabase.postgrest[TABLE_GASTOS_OPERATIVOS].upsert(it) }
     }
 
+    suspend fun uploadRegalos(opticaId: String): Int {
+        val regalos = repository.getRegalosSnapshotForOptica(opticaId)
+        if (regalos.isEmpty()) {
+            syncStateTracker.markSynced(opticaId, "upload_regalos", "batch")
+            return 0
+        }
+        val opticaRemota = opticaId.trim().ifBlank { FinanzasRemoteDefaults.OPTICA_ID_FALLBACK }
+        val rows = regalos.map { it.toRemoto().copy(opticaId = opticaRemota) }.distinctBy { it.id }
+        return executeSimpleUpsert(
+            opticaId, TABLE_REGALOS, "regalo_dispensacion",
+            "upload_regalos", rows, { it.id }
+        ) { supabase.postgrest[TABLE_REGALOS].upsert(it) }
+    }
+
 }

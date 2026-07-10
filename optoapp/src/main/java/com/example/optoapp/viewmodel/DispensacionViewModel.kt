@@ -191,6 +191,17 @@ class DispensacionViewModel @Inject constructor(
                             notasDiseno = d.notasDiseno, subTipoBifocal = d.subTipoBifocal
                         ))
                     }
+                    val loadedRegalos = repository.getRegalosByDispensacionId(dispensacionId)
+                    val regalosUi = loadedRegalos.map { entity ->
+                        RegaloDispensacionUi(
+                            id = entity.id,
+                            productoId = entity.productoId,
+                            descripcion = entity.descripcion,
+                            cantidad = entity.cantidad,
+                            costoUnitario = entity.costoUnitario,
+                            motivo = entity.motivo
+                        )
+                    }
                     _uiState.update {
                         it.copy(
                             isLoading = false,
@@ -208,7 +219,8 @@ class DispensacionViewModel @Inject constructor(
                             fecha = d.fecha,
                             fechaVencimientoGarantia = d.fechaVencimientoGarantia,
                             pagos = loadedPagos,
-                            montoPagado = computedMontoPagado
+                            montoPagado = computedMontoPagado,
+                            regalos = regalosUi
                         )
                     }
                 }
@@ -535,14 +547,8 @@ class DispensacionViewModel @Inject constructor(
     }
 
     fun deleteDispensacion(dispensacionId: String, onComplete: () -> Unit) {
-        viewModelScope.launch {
-            val opticaId = sessionManager.opticaId.first()
-            val result = repository.getDispensacionById(dispensacionId)
-            if (result is Resource.Success && result.data != null) {
-                repository.deleteDispensacion(result.data)
-            }
-            onComplete()
-        }
+        // Redirect to anulación flow: creates inverse Pago, reverts stock, marks as "Anulado"
+        anularDispensacion(dispensacionId, onComplete)
     }
 
     fun crearReclamo(
