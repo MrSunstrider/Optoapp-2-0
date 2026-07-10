@@ -164,51 +164,87 @@ fun CierreCajaScreen(
             Text("Movimientos del día", fontWeight = FontWeight.Bold, fontSize = 18.sp)
             Spacer(modifier = Modifier.height(8.dp))
 
-            val todasVentas = uiState.dispensacionesHoy + uiState.serviciosExtraHoy
-            if (todasVentas.isEmpty() && uiState.pagos.isEmpty()) {
+            val hasDispensaciones = uiState.dispensacionesHoy.isNotEmpty()
+            val hasServicios = uiState.serviciosExtraHoy.isNotEmpty()
+            if (!hasDispensaciones && !hasServicios && uiState.pagos.isEmpty()) {
                 OptoCard(modifier = Modifier.fillMaxWidth()) {
                     Text("Sin movimientos este día", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             } else {
-                todasVentas.forEach { venta ->
-                    val label = if (venta.origen == "dispensacion") {
-                        if (venta.ot.isNotBlank()) "OT ${venta.ot}" else "Dispensación ${venta.origenId.take(8)}"
-                    } else "Servicio Extra"
-                    val pagosVenta = uiState.pagos.filter {
-                        it.dispensacionId == venta.origenId || it.servicioExtraId == venta.origenId
-                    }
-                    val totalPagado = pagosVenta.sumOf { it.monto }
-                    val saldo = venta.montoTotal - totalPagado
+                if (hasDispensaciones) {
+                    Text("Dispensaciones", fontWeight = FontWeight.SemiBold, fontSize = 14.sp, modifier = Modifier.padding(bottom = 4.dp))
+                    uiState.dispensacionesHoy.forEach { disp ->
+                        val label = if (disp.ot.isNotBlank()) "OT ${disp.ot}" else "Dispensación ${disp.id.take(8)}"
+                        val pagosVenta = uiState.pagos.filter { it.dispensacionId == disp.id }
+                        val totalPagado = pagosVenta.sumOf { it.monto }
+                        val saldo = disp.montoTotal - totalPagado
 
-                    Card(
-                        modifier = Modifier.fillMaxWidth()
-                            .clickable {
-                                if (venta.origen == "dispensacion" && venta.pacienteId.isNotBlank())
-                                    navController.navigate("editarDispensacion/${venta.pacienteId}/${venta.origenId}")
-                                else navController.navigate("editar_servicio/${venta.origenId}")
-                            },
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
-                    ) {
-                        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                Text(label, fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
-                                Text("s/. ${String.format(Locale.getDefault(), "%.2f", venta.montoTotal)}",
-                                    fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                            }
-                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                Text("Pagado: s/. ${String.format(Locale.getDefault(), "%.2f", totalPagado)}", fontSize = 12.sp)
-                                Text("Saldo: s/. ${String.format(Locale.getDefault(), "%.2f", saldo)}",
-                                    fontSize = 12.sp, color = if (saldo > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary)
-                            }
-                            pagosVenta.forEach { pago ->
+                        Card(
+                            modifier = Modifier.fillMaxWidth()
+                                .clickable {
+                                    if (disp.pacienteId.isNotBlank())
+                                        navController.navigate("editarDispensacion/${disp.pacienteId}/${disp.id}")
+                                },
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+                        ) {
+                            Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                    Text("  ${pago.metodoPago}", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                    Text("s/. ${String.format(Locale.getDefault(), "%.2f", pago.monto)}", fontSize = 11.sp)
+                                    Text(label, fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
+                                    Text("s/. ${String.format(Locale.getDefault(), "%.2f", disp.montoTotal)}",
+                                        fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                                }
+                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                    Text("Pagado: s/. ${String.format(Locale.getDefault(), "%.2f", totalPagado)}", fontSize = 12.sp)
+                                    Text("Saldo: s/. ${String.format(Locale.getDefault(), "%.2f", saldo)}",
+                                        fontSize = 12.sp, color = if (saldo > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary)
+                                }
+                                pagosVenta.forEach { pago ->
+                                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                        Text("  ${pago.metodoPago}", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                        Text("s/. ${String.format(Locale.getDefault(), "%.2f", pago.monto)}", fontSize = 11.sp)
+                                    }
                                 }
                             }
                         }
+                        Spacer(modifier = Modifier.height(8.dp))
                     }
-                    Spacer(modifier = Modifier.height(8.dp))
+                }
+                if (hasServicios) {
+                    Text("Servicios Extra", fontWeight = FontWeight.SemiBold, fontSize = 14.sp, modifier = Modifier.padding(bottom = 4.dp))
+                    uiState.serviciosExtraHoy.forEach { serv ->
+                        val label = "Servicio: ${serv.descripcion.take(32)}"
+                        val pagosVenta = uiState.pagos.filter { it.servicioExtraId == serv.id }
+                        val totalPagado = pagosVenta.sumOf { it.monto }
+                        val saldo = serv.montoTotal - totalPagado
+
+                        Card(
+                            modifier = Modifier.fillMaxWidth()
+                                .clickable {
+                                    navController.navigate("editar_servicio/${serv.id}")
+                                },
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+                        ) {
+                            Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                    Text(label, fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
+                                    Text("s/. ${String.format(Locale.getDefault(), "%.2f", serv.montoTotal)}",
+                                        fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                                }
+                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                    Text("Pagado: s/. ${String.format(Locale.getDefault(), "%.2f", totalPagado)}", fontSize = 12.sp)
+                                    Text("Saldo: s/. ${String.format(Locale.getDefault(), "%.2f", saldo)}",
+                                        fontSize = 12.sp, color = if (saldo > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary)
+                                }
+                                pagosVenta.forEach { pago ->
+                                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                        Text("  ${pago.metodoPago}", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                        Text("s/. ${String.format(Locale.getDefault(), "%.2f", pago.monto)}", fontSize = 11.sp)
+                                    }
+                                }
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
                 }
             }
 

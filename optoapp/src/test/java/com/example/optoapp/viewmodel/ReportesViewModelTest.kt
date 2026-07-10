@@ -5,7 +5,9 @@ import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Pago
 import com.example.optoapp.data.ServicioExtra
 import com.example.optoapp.data.SessionManager
-import com.example.optoapp.data.venta.Venta
+import com.example.optoapp.domain.MovimientoFinanciero
+import com.example.optoapp.domain.Origen
+import com.example.optoapp.domain.TipoMovimiento
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
@@ -35,8 +37,8 @@ class ReportesViewModelTest {
 
     private val opticaId = "optica-rf-1"
     private val today = LocalDate.of(2026, 7, 1)
-    private val periodStart = LocalDate.of(2026, 7, 1)
-    private val periodEnd = LocalDate.of(2026, 7, 31)
+    private val tomorrow = today.plusDays(1)
+    private val dayAfter = today.plusDays(2)
 
     @Before
     fun setUp() {
@@ -51,7 +53,6 @@ class ReportesViewModelTest {
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(emptyList())
         every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(emptyList())
         every { repository.getPagosByDateRangeForOptica(any(), any(), opticaId) } returns flowOf(emptyList())
-        every { repository.getVentasByOpticaAndDateRange(opticaId, any(), any()) } returns flowOf(emptyList())
     }
 
     @After
@@ -61,54 +62,49 @@ class ReportesViewModelTest {
     }
 
     @Test
-    fun `RF-1-a totalVendido from ventas sums all ventas in period`() = runTest(testDispatcher) {
-        val ventas = listOf(
-            Venta(id = "v1", opticaId = opticaId, origen = "dispensacion", origenId = "d1",
-                pacienteId = "p1", fecha = today, montoTotal = 100.0, estado = "Completado"),
-            Venta(id = "v2", opticaId = opticaId, origen = "dispensacion", origenId = "d2",
-                pacienteId = "p2", fecha = today.plusDays(1), montoTotal = 200.0, estado = "Completado"),
-            Venta(id = "v3", opticaId = opticaId, origen = "servicio_extra", origenId = "s1",
-                pacienteId = "p3", fecha = today.plusDays(2), montoTotal = 50.0, estado = "Completado")
+    fun `totalVendido from dispensaciones and servicios sums all in period`() = runTest(testDispatcher) {
+        val dispensaciones = listOf(
+            DispensacionOptica(id = "d1", pacienteId = "p1", fecha = today, montoTotal = 100.0, opticaId = opticaId),
+            DispensacionOptica(id = "d2", pacienteId = "p2", fecha = today, montoTotal = 200.0, opticaId = opticaId)
         )
-        every { repository.getVentasByOpticaAndDateRange(opticaId, any(), any()) } returns flowOf(ventas)
-        every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(emptyList())
-        every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(emptyList())
+        val servicios = listOf(
+            ServicioExtra(id = "s1", descripcion = "Srv", montoTotal = 50.0, aCuenta = 50.0, estado = "Entregado", fecha = today, opticaId = opticaId)
+        )
+        every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
+        every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(servicios)
 
         viewModel = ReportesViewModel(repository, sessionManager)
         viewModel.setPeriodo("Diario")
         viewModel.setFechaDiario(today)
         advanceUntilIdle()
 
-        // totalVendido should be 350.0 from ventas, overriding the 0 from empty dispensaciones+servicios
-        assertEquals("totalVendido must sum ventas.montoTotal in period", 350.0,
+        // totalVendido from movimientos created from dispensaciones+servicios, filtered by period
+        assertEquals("totalVendido must sum all movimientos in period", 350.0,
             viewModel.totalVendido.first(), 0.001)
     }
 
     @Test
-    fun `RF-1-a totalVendido includes both origins`() = runTest(testDispatcher) {
-        val ventas = listOf(
-            Venta(id = "v1", opticaId = opticaId, origen = "dispensacion", origenId = "d1",
-                pacienteId = "p1", fecha = today, montoTotal = 100.0, estado = "Completado"),
-            Venta(id = "v2", opticaId = opticaId, origen = "servicio_extra", origenId = "s1",
-                pacienteId = "p2", fecha = today, montoTotal = 80.0, estado = "Completado")
+    fun `totalVendido includes both dispensaciones and servicios`() = runTest(testDispatcher) {
+        val dispensaciones = listOf(
+            DispensacionOptica(id = "d1", pacienteId = "p1", fecha = today, montoTotal = 100.0, opticaId = opticaId)
         )
-        every { repository.getVentasByOpticaAndDateRange(opticaId, any(), any()) } returns flowOf(ventas)
-        every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(emptyList())
-        every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(emptyList())
+        val servicios = listOf(
+            ServicioExtra(id = "s1", descripcion = "Srv", montoTotal = 80.0, aCuenta = 50.0, estado = "Entregado", fecha = today, opticaId = opticaId)
+        )
+        every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
+        every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(servicios)
 
         viewModel = ReportesViewModel(repository, sessionManager)
         viewModel.setPeriodo("Diario")
         viewModel.setFechaDiario(today)
         advanceUntilIdle()
 
-        assertEquals("totalVendido must sum ventas from both origins", 180.0,
+        assertEquals("totalVendido must sum from both origins", 180.0,
             viewModel.totalVendido.first(), 0.001)
     }
 
     @Test
-    fun `RF-1-b empty period returns zero totalVendido`() = runTest(testDispatcher) {
-        every { repository.getVentasByOpticaAndDateRange(opticaId, any(), any()) } returns flowOf(emptyList())
-
+    fun `empty period returns zero totalVendido`() = runTest(testDispatcher) {
         viewModel = ReportesViewModel(repository, sessionManager)
         viewModel.setPeriodo("Diario")
         viewModel.setFechaDiario(today)
@@ -119,21 +115,23 @@ class ReportesViewModelTest {
     }
 
     @Test
-    fun `allVentasDelPeriodo emits ventas from VentaDao`() = runTest(testDispatcher) {
-        val ventas = listOf(
-            Venta(id = "v1", opticaId = opticaId, origen = "dispensacion", origenId = "d1",
-                pacienteId = "p1", fecha = today, montoTotal = 100.0, estado = "Completado"),
-            Venta(id = "v2", opticaId = opticaId, origen = "servicio_extra", origenId = "s1",
-                pacienteId = "p2", fecha = today, montoTotal = 80.0, estado = "Completado")
+    fun `totalTransacciones counts movimientos in period`() = runTest(testDispatcher) {
+        val dispensaciones = listOf(
+            DispensacionOptica(id = "d1", pacienteId = "p1", fecha = today, montoTotal = 100.0, opticaId = opticaId),
+            DispensacionOptica(id = "d2", pacienteId = "p2", fecha = today, montoTotal = 200.0, opticaId = opticaId)
         )
-        every { repository.getVentasByOpticaAndDateRange(opticaId, any(), any()) } returns flowOf(ventas)
+        val servicios = listOf(
+            ServicioExtra(id = "s1", descripcion = "Srv", montoTotal = 50.0, aCuenta = 50.0, estado = "Entregado", fecha = today, opticaId = opticaId)
+        )
+        every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
+        every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(servicios)
 
         viewModel = ReportesViewModel(repository, sessionManager)
         viewModel.setPeriodo("Diario")
         viewModel.setFechaDiario(today)
         advanceUntilIdle()
 
-        val result = viewModel.allVentasDelPeriodo.first()
-        assertEquals("allVentasDelPeriodo must emit 2 ventas", 2, result.size)
+        assertEquals("totalTransacciones must count all movimientos in period", 3,
+            viewModel.totalTransacciones.first())
     }
 }

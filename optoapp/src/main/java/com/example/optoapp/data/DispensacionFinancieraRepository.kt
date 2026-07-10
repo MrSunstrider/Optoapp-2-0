@@ -1,7 +1,5 @@
 package com.example.optoapp.data
 
-import com.example.optoapp.data.venta.Venta
-import com.example.optoapp.data.venta.VentaDao
 import kotlinx.coroutines.flow.first
 import java.time.LocalDate
 
@@ -22,13 +20,11 @@ interface DispensacionFinancieraRepository {
     suspend fun agregarPago(pago: Pago)
     suspend fun editarPago(pago: Pago)
     suspend fun eliminarPago(pago: Pago, opticaId: String)
-    suspend fun upsertVenta(venta: Venta)
     fun runInTransaction(block: () -> Unit)
 }
 
 class DispensacionFinancieraRepositoryImpl(
-    private val optoRepository: OptoRepository,
-    private val ventaDao: VentaDao
+    private val optoRepository: OptoRepository
 ) : DispensacionFinancieraRepository {
 
     override fun runInTransaction(block: () -> Unit) {
@@ -97,13 +93,4 @@ class DispensacionFinancieraRepositoryImpl(
         optoRepository.deletePagoRegistrandoAnulacionEnCaja(pago, opticaId)
     }
 
-    override suspend fun upsertVenta(venta: Venta) {
-        val costoPreservado = venta.costoUnitarioSnapshot
-            ?: ventaDao.getVentaById(venta.id)?.costoUnitarioSnapshot
-        val merged = venta.copy(
-            costoUnitarioSnapshot = costoPreservado,
-            updatedAt = java.time.Instant.now().toString()
-        )
-        ventaDao.upsertVenta(merged)
-    }
 }

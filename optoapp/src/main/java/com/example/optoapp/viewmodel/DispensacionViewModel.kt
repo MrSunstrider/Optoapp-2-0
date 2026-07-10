@@ -20,7 +20,6 @@ import kotlinx.coroutines.flow.first
 import java.util.UUID
 import javax.inject.Inject
 import com.example.optoapp.data.Pago
-import com.example.optoapp.data.venta.Venta
 import java.time.LocalDate
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import com.example.optoapp.util.DateUtils
@@ -414,26 +413,6 @@ class DispensacionViewModel @Inject constructor(
                         repository.deletePagoRegistrandoAnulacionEnCaja(pago, currentOpticaId)
                     }
 
-                    val costoMonturas = s.items
-                        .filter { it.origenMontura in setOf(ORIGEN_TIENDA, ORIGEN_TIENDA_LEGACY) && it.monturaId.isNotBlank() }
-                        .sumOf { item ->
-                            _monturasActivas.value.find { m -> m.id == item.monturaId }?.costo ?: 0.0
-                        }
-
-                    val venta = Venta(
-                        id = "v_disp_$finalId",
-                        opticaId = currentOpticaId,
-                        origen = "dispensacion",
-                        origenId = finalId,
-                        pacienteId = pacienteId,
-                        ot = s.ot.trim(),
-                        fecha = s.fecha,
-                        fechaEntrega = s.fechaEntrega,
-                        montoTotal = montoTotal,
-                        costoUnitarioSnapshot = costoMonturas.takeIf { it > 0.0 },
-                        estado = s.estadoEntrega
-                    )
-                    repository.upsertVenta(venta)
                     }
                 }
                 }
@@ -457,7 +436,6 @@ class DispensacionViewModel @Inject constructor(
             val result = repository.getDispensacionById(dispensacionId)
             if (result is Resource.Success && result.data != null) {
                 repository.deleteDispensacion(result.data)
-                repository.deleteVentaById("v_disp_$dispensacionId", dispensacionId, opticaId)
             }
             onComplete()
         }

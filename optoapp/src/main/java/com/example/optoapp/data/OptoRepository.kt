@@ -12,8 +12,6 @@ import com.example.optoapp.data.montura.MonturaInventoryCoordinator
 import com.example.optoapp.data.resumendiario.ResumenDiarioDao
 import com.example.optoapp.data.resumendiario.ResumenDiarioEntity
 import com.example.optoapp.data.sync.SyncSnapshotCoordinator
-import com.example.optoapp.data.venta.Venta
-import com.example.optoapp.data.venta.VentaDao
 import com.example.optoapp.util.DateUtils
 import dagger.Lazy
 import kotlinx.coroutines.flow.Flow
@@ -42,7 +40,6 @@ open class OptoRepository(
     val snapshotCoordinator: SyncSnapshotCoordinator,
     val backupCoordinator: BackupRestoreCoordinator,
     val monturaCoordinator: MonturaInventoryCoordinator,
-    private val ventaDao: VentaDao,
     private val gastoOperativoDao: GastoOperativoDao,
     private val resumenDiarioDao: ResumenDiarioDao,
     private val configuracionFinancieraDao: ConfiguracionFinancieraDao,
@@ -152,24 +149,6 @@ open class OptoRepository(
     suspend fun updateServicio(servicio: ServicioExtra) { val stamped = servicio.copy(updatedAt = Instant.now().toString()); dispensacionRepo.updateServicio(stamped); postSaveSyncScheduler.get().scheduleFinanzasSync(stamped.opticaId) }
     suspend fun deleteServicio(servicio: ServicioExtra) { database.withTransaction { dispensacionRepo.deleteServicio(servicio); syncStateTracker.markDeleted(servicio.opticaId, "servicio_extra", servicio.id) }; postSaveSyncScheduler.get().scheduleFinanzasSync(servicio.opticaId) }
 
-    suspend fun upsertVenta(venta: Venta) {
-        val costoPreservado = venta.costoUnitarioSnapshot
-            ?: ventaDao.getVentaById(venta.id)?.costoUnitarioSnapshot
-        val stamped = venta.copy(
-            costoUnitarioSnapshot = costoPreservado,
-            updatedAt = Instant.now().toString()
-        )
-        ventaDao.upsertVenta(stamped)
-        postSaveSyncScheduler.get().scheduleFinanzasSync(stamped.opticaId)
-    }
-
-    suspend fun deleteVentaById(id: String, origenId: String, opticaId: String) { database.withTransaction { ventaDao.deleteById(id, opticaId); ventaDao.deleteByOrigenId(origenId, opticaId); syncStateTracker.markDeleted(opticaId, "venta", id) } }
-
-    suspend fun getVentasForOptica(opticaId: String): List<Venta> = ventaDao.getAllVentasByOptica(opticaId)
-
-    fun getVentasByOpticaAndDateRange(opticaId: String, start: LocalDate, end: LocalDate): Flow<List<Venta>> =
-        ventaDao.getVentasByOpticaAndDateRange(opticaId, start, end)
-
     fun getMonturasByOptica(opticaId: String) = monturaCoordinator.getMonturasByOptica(opticaId)
     suspend fun getMonturaById(id: String, opticaId: String) = monturaCoordinator.getMonturaById(id, opticaId)
     suspend fun insertMontura(montura: Montura) = monturaCoordinator.insertMontura(montura)
@@ -228,9 +207,6 @@ open class OptoRepository(
 
     suspend fun upsertDispensacionItemFromRemote(item: DispensacionItem) =
         dispensacionRepo.insertDispensacionItem(item)
-
-    suspend fun upsertVentaFromRemote(venta: Venta) =
-        ventaDao.upsertVenta(venta)
 
     // ─── Gastos Operativos ────────────────────────────────────────────────────
 

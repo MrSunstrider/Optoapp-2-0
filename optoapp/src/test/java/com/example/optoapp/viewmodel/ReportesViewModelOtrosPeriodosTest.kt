@@ -73,7 +73,7 @@ class ReportesViewModelOtrosPeriodosTest {
         sessionManager = mockk(relaxed = true)
         every { sessionManager.opticaId } returns flowOf(opticaId)
         every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(emptyList())
-        every { repository.getVentasByOpticaAndDateRange(opticaId, any(), any()) } returns flowOf(emptyList())
+        every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(emptyList())
     }
 
     @After
@@ -85,7 +85,7 @@ class ReportesViewModelOtrosPeriodosTest {
     /** Launches persistent background collectors for all StateFlows. */
     private fun TestScope.activateFlows() {
         backgroundScope.launch(testDispatcher) { viewModel.allDispensaciones.collect { } }
-        backgroundScope.launch(testDispatcher) { viewModel.allVentasDelPeriodo.collect { } }
+        backgroundScope.launch(testDispatcher) { viewModel.allMovimientosDelPeriodo.collect { } }
         backgroundScope.launch(testDispatcher) { viewModel.totalVendido.collect { } }
         backgroundScope.launch(testDispatcher) { viewModel.totalPagado.collect { } }
         backgroundScope.launch(testDispatcher) { viewModel.totalCobrado.collect { } }

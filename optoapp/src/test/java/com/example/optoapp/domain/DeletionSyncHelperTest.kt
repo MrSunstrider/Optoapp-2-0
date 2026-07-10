@@ -418,10 +418,6 @@ class DeletionSyncHelperTest {
             allFields.any { it == "TABLE_GASTOS_OPERATIVOS" || it.contains("TABLE_GASTOS_OPERATIVOS") }
         )
         assertTrue(
-            "Debe existir TABLE_VENTAS como constante",
-            allFields.any { it == "TABLE_VENTAS" || it.contains("TABLE_VENTAS") }
-        )
-        assertTrue(
             "Debe existir TABLE_DISPENSACION_ITEMS como constante",
             allFields.any { it == "TABLE_DISPENSACION_ITEMS" || it.contains("TABLE_DISPENSACION_ITEMS") }
         )

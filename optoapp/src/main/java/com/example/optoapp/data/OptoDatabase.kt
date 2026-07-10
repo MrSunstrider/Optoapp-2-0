@@ -24,8 +24,6 @@ import com.example.optoapp.data.resumendiario.ResumenDiarioEntity
 import com.example.optoapp.data.pago.PagoDao
 import com.example.optoapp.data.regalodispensacion.RegaloDispensacionDao
 import com.example.optoapp.data.regalodispensacion.RegaloDispensacionEntity
-import com.example.optoapp.data.venta.Venta
-import com.example.optoapp.data.venta.VentaDao
 import com.example.optoapp.data.proveedor.CategoriaMonturaDao
 import com.example.optoapp.data.proveedor.MonturaProveedorDao
 import com.example.optoapp.data.proveedor.ProveedorDao
@@ -40,7 +38,6 @@ import com.example.optoapp.util.LocalDatabaseBackupManager
         Proveedor::class, MonturaProveedor::class, CategoriaMontura::class,
         OrdenCompra::class, OrdenCompraItem::class,
         InventarioFisico::class, InventarioFisicoDetalle::class,
-        Venta::class,
         CategoriaProductoEntity::class,
         GastoOperativoEntity::class,
         ResumenDiarioEntity::class,
@@ -69,7 +66,6 @@ abstract class OptoDatabase : RoomDatabase() {
     abstract fun ordenCompraDao(): OrdenCompraDao
     abstract fun ordenCompraItemDao(): OrdenCompraItemDao
     abstract fun inventarioFisicoDao(): InventarioFisicoDao
-    abstract fun ventaDao(): VentaDao
     abstract fun regaloDispensacionDao(): RegaloDispensacionDao
     abstract fun categoriaProductoDao(): CategoriaProductoDao
     abstract fun gastoOperativoDao(): GastoOperativoDao

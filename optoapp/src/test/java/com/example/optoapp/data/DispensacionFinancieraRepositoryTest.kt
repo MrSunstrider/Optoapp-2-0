@@ -1,7 +1,5 @@
 package com.example.optoapp.data
 
-import com.example.optoapp.data.venta.Venta
-import com.example.optoapp.data.venta.VentaDao
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -18,7 +16,6 @@ import java.time.LocalDate
 class DispensacionFinancieraRepositoryTest {
 
     private lateinit var optoRepository: OptoRepository
-    private lateinit var ventaDao: VentaDao
     private lateinit var repository: DispensacionFinancieraRepository
 
     private val testDate = LocalDate.of(2026, 7, 4)
@@ -36,8 +33,7 @@ class DispensacionFinancieraRepositoryTest {
     @Before
     fun setUp() {
         optoRepository = mockk(relaxed = true)
-        ventaDao = mockk(relaxed = true)
-        repository = DispensacionFinancieraRepositoryImpl(optoRepository, ventaDao)
+        repository = DispensacionFinancieraRepositoryImpl(optoRepository)
     }
 
     @Test
@@ -195,24 +191,4 @@ class DispensacionFinancieraRepositoryTest {
         coVerify { optoRepository.deletePagoRegistrandoAnulacionEnCaja(pago, "optica-test") }
     }
 
-    @Test
-    fun `upsertVenta delegates to ventaDao upsertVenta with updatedAt stamped`() = runTest {
-        val venta = Venta(
-            id = "v_disp_1",
-            opticaId = "optica-test",
-            origen = "dispensacion",
-            origenId = "disp-1",
-            pacienteId = "pac-1",
-            fecha = testDate,
-            montoTotal = 150.0,
-            estado = "Pendiente"
-        )
-
-        repository.upsertVenta(venta)
-
-        val captured = slot<Venta>()
-        coVerify { ventaDao.upsertVenta(capture(captured)) }
-        assertEquals(venta.id, captured.captured.id)
-        assertTrue(captured.captured.updatedAt != null)
-    }
 }

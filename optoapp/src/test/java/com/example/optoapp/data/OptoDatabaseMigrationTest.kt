@@ -118,8 +118,7 @@ class OptoDatabaseMigrationTest {
             "categoriaMonturaDao" to "CategoriaMonturaDao",
             "ordenCompraDao" to "OrdenCompraDao",
             "ordenCompraItemDao" to "OrdenCompraItemDao",
-            "inventarioFisicoDao" to "InventarioFisicoDao",
-            "ventaDao" to "VentaDao"
+            "inventarioFisicoDao" to "InventarioFisicoDao"
         )
 
         val abstractMethods = OptoDatabase::class.java.declaredMethods

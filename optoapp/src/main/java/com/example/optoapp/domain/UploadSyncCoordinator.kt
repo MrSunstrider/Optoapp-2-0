@@ -6,7 +6,6 @@ import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.FinanzasRemoteDefaults
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.SyncStateTracker
-import com.example.optoapp.data.venta.Venta
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.CancellationException
@@ -31,7 +30,6 @@ class UploadSyncCoordinator @Inject constructor(
         private const val TABLE_PAGOS = "pagos"
         private const val TABLE_SERVICIOS = "servicios_extra"
         private const val TABLE_GASTOS_OPERATIVOS = "gastos_operativos"
-        private const val TABLE_VENTAS = "ventas"
         private const val UPSERT_BATCH_SIZE = 80
     }
 
@@ -301,17 +299,4 @@ class UploadSyncCoordinator @Inject constructor(
         ) { supabase.postgrest[TABLE_GASTOS_OPERATIVOS].upsert(it) }
     }
 
-    suspend fun uploadVentas(opticaId: String): Int {
-        val ventas = repository.getVentasForOptica(opticaId)
-        if (ventas.isEmpty()) {
-            syncStateTracker.markSynced(opticaId, "upload_ventas", "batch")
-            return 0
-        }
-        val opticaRemota = opticaId.trim().ifBlank { FinanzasRemoteDefaults.OPTICA_ID_FALLBACK }
-        val rows = ventas.map { it.toRemoto().copy(opticaId = opticaRemota) }.distinctBy { it.id }
-        return executeSimpleUpsert(
-            opticaId, TABLE_VENTAS, "venta",
-            "upload_ventas", rows, { it.id }
-        ) { supabase.postgrest[TABLE_VENTAS].upsert(it) }
-    }
 }

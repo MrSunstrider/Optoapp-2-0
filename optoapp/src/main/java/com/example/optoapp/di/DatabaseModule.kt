@@ -22,7 +22,6 @@ import com.example.optoapp.data.proveedor.ProveedorDao
 import com.example.optoapp.data.resumendiario.ResumenDiarioDao
 import com.example.optoapp.data.servicio.ServicioExtraDao
 import com.example.optoapp.data.sync.SyncSnapshotCoordinator
-import com.example.optoapp.data.venta.VentaDao
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import com.example.optoapp.viewmodel.auth.AuthDelegate
 import com.example.optoapp.viewmodel.auth.BackupDelegate
@@ -104,9 +103,6 @@ object DatabaseModule {
 
     @Provides
     fun provideInventarioFisicoDao(database: OptoDatabase): InventarioFisicoDao = database.inventarioFisicoDao()
-
-    @Provides
-    fun provideVentaDao(database: OptoDatabase): VentaDao = database.ventaDao()
 
     @Provides
     fun provideGastoOperativoDao(database: OptoDatabase): GastoOperativoDao = database.gastoOperativoDao()
@@ -221,7 +217,6 @@ object DatabaseModule {
             snapshotCoordinator,
             backupCoordinator,
             monturaCoordinator,
-            database.ventaDao(),
             gastoOperativoDao,
             resumenDiarioDao,
             configuracionFinancieraDao,
@@ -271,7 +266,6 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun provideDispensacionFinancieraRepository(
-        repository: OptoRepository,
-        ventaDao: VentaDao
-    ): DispensacionFinancieraRepository = DispensacionFinancieraRepositoryImpl(repository, ventaDao)
+        repository: OptoRepository
+    ): DispensacionFinancieraRepository = DispensacionFinancieraRepositoryImpl(repository)
 }

@@ -9,7 +9,6 @@ import com.example.optoapp.data.montura.MonturaInventoryCoordinator
 import com.example.optoapp.data.resumendiario.ResumenDiarioDao
 import com.example.optoapp.data.resumendiario.ResumenDiarioEntity
 import com.example.optoapp.data.sync.SyncSnapshotCoordinator
-import com.example.optoapp.data.venta.VentaDao
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import dagger.Lazy
 import io.mockk.coVerify
@@ -60,7 +59,6 @@ class OptoRepositoryFinanzasFromRemoteTest {
 
         val dispensacionRepo = mockk<DispensacionRepository>(relaxed = true)
         val pacienteRepo = mockk<PacienteRepository>(relaxed = true)
-        val ventaDao = mockk<VentaDao>(relaxed = true)
         val syncStateTracker = mockk<SyncStateTracker>(relaxed = true)
         val syncRepo = mockk<SyncRepository>(relaxed = true)
         val snapshotCoordinator = mockk<SyncSnapshotCoordinator>(relaxed = true)
@@ -78,7 +76,6 @@ class OptoRepositoryFinanzasFromRemoteTest {
             snapshotCoordinator = snapshotCoordinator,
             backupCoordinator = backupCoordinator,
             monturaCoordinator = monturaCoordinator,
-            ventaDao = ventaDao,
             gastoOperativoDao = gastoOperativoDao,
             resumenDiarioDao = resumenDiarioDao,
             configuracionFinancieraDao = configuracionFinancieraDao,

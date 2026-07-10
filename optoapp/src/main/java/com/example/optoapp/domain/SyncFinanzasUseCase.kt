@@ -55,7 +55,6 @@ open class SyncFinanzasUseCase @Inject constructor(
             var itemsUp = 0
             var servUp = 0
             var pagosUp = 0
-            var ventasUp = 0
             var gastosUp = 0
 
             if (!skipUpload) {
@@ -67,8 +66,6 @@ open class SyncFinanzasUseCase @Inject constructor(
                 Log.d(TAG, "Finanzas: upload servicios_extra=$servUp")
                 pagosUp = safeUpload("pagos") { uploadSyncCoordinator.uploadPagos(opticaId) }
                 Log.d(TAG, "Finanzas: upload pagos=$pagosUp")
-                ventasUp = safeUpload("ventas") { uploadSyncCoordinator.uploadVentas(opticaId) }
-                Log.d(TAG, "Finanzas: upload ventas=$ventasUp")
                 gastosUp = safeUpload("gastos_operativos") { uploadSyncCoordinator.uploadGastosOperativos(opticaId) }
                 Log.d(TAG, "Finanzas: upload gastos_operativos=$gastosUp")
             }
@@ -76,7 +73,6 @@ open class SyncFinanzasUseCase @Inject constructor(
             val dispDown: Int
             val itemsDown: Int
             val servDown: Int
-            val ventasDown: Int
             val pagosDown: Int
             val resumenDown: Int
             val configDown: Int
@@ -87,8 +83,6 @@ open class SyncFinanzasUseCase @Inject constructor(
                 Log.d(TAG, "Finanzas: download dispensacion_items=$itemsDown")
                 servDown = downloadSyncCoordinator.downloadServicios(opticaId)
                 Log.d(TAG, "Finanzas: download servicios_extra=$servDown")
-                ventasDown = downloadSyncCoordinator.downloadVentas(opticaId)
-                Log.d(TAG, "Finanzas: download ventas=$ventasDown")
                 resumenDown = downloadSyncCoordinator.downloadResumenDiario(opticaId)
                 Log.d(TAG, "Finanzas: download resumen_diario=$resumenDown")
                 configDown = downloadSyncCoordinator.downloadConfiguracionFinanciera(opticaId)
@@ -99,7 +93,6 @@ open class SyncFinanzasUseCase @Inject constructor(
                 dispDown = 0
                 itemsDown = 0
                 servDown = 0
-                ventasDown = 0
                 pagosDown = 0
                 resumenDown = 0
                 configDown = 0
@@ -112,13 +105,11 @@ open class SyncFinanzasUseCase @Inject constructor(
                     uploadedDispensacionItems = itemsUp,
                     uploadedServicios = servUp,
                     uploadedPagos = pagosUp,
-                    uploadedVentas = ventasUp,
                     uploadedGastosOperativos = gastosUp,
                     downloadedDispensaciones = dispDown,
                     downloadedDispensacionItems = itemsDown,
                     downloadedServicios = servDown,
                     downloadedPagos = pagosDown,
-                    downloadedVentas = ventasDown,
                     downloadedResumenesDiarios = resumenDown,
                     downloadedConfiguracionesFinancieras = configDown
                 )

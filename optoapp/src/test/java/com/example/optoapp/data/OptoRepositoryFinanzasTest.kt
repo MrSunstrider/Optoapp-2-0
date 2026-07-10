@@ -8,7 +8,6 @@ import com.example.optoapp.data.gastooperativo.GastoOperativoDao
 import com.example.optoapp.data.gastooperativo.GastoOperativoEntity
 import com.example.optoapp.data.resumendiario.ResumenDiarioDao
 import com.example.optoapp.data.resumendiario.ResumenDiarioEntity
-import com.example.optoapp.data.venta.Venta
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import dagger.Lazy
 import io.mockk.coEvery
@@ -106,7 +105,6 @@ class OptoRepositoryFinanzasTest {
             snapshotCoordinator = snapshotCoordinator,
             backupCoordinator = backupCoordinator,
             monturaCoordinator = monturaCoordinator,
-            ventaDao = db.ventaDao(),
             gastoOperativoDao = gastoOperativoDao,
             resumenDiarioDao = resumenDiarioDao,
             configuracionFinancieraDao = configuracionFinancieraDao,
@@ -296,19 +294,4 @@ class OptoRepositoryFinanzasTest {
         assertEquals(60, result.deudaViejaAlertaDias)
     }
 
-    // ── Venta local writes ────────────────────────────────────────────────────
-
-    @Test
-    fun deleteVentaById_calls_markDeleted() = runBlocking {
-        val venta = Venta(
-            id = "v_md", opticaId = opticaId, origen = "dispensacion",
-            origenId = "disp_1", fecha = testDate,
-            montoTotal = 100.0, estado = "pendiente"
-        )
-        db.ventaDao().upsertVenta(venta)
-
-        repo.deleteVentaById("v_md", "disp_1", opticaId)
-
-        coVerify(exactly = 1) { syncStateTracker.markDeleted(opticaId, "venta", "v_md") }
-    }
 }

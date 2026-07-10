@@ -87,7 +87,6 @@ class OptoRepositoryErrorTest {
             snapshotCoordinator = snapshotCoordinator,
             backupCoordinator = backupCoordinator,
             monturaCoordinator = monturaCoordinator,
-            ventaDao = mockk(relaxed = true),
             gastoOperativoDao = mockk(relaxed = true),
             resumenDiarioDao = mockk(relaxed = true),
             configuracionFinancieraDao = mockk(relaxed = true),

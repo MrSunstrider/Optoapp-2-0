@@ -27,7 +27,6 @@ class DownloadSyncCoordinator @Inject constructor(
         private const val TABLE_DISPENSACIONES = "dispensaciones"
         private const val TABLE_DISPENSACION_ITEMS = "dispensacion_items"
         private const val TABLE_SERVICIOS = "servicios_extra"
-        private const val TABLE_VENTAS = "ventas"
         private const val TABLE_PAGOS = "pagos"
         private const val TABLE_RESUMEN_DIARIO = "resumen_diario"
         private const val TABLE_CONFIGURACION_FINANCIERA = "configuracion_financiera"
@@ -100,13 +99,6 @@ class DownloadSyncCoordinator @Inject constructor(
         getId = { it.id }
     ) { r ->
         repository.upsertServicioFromRemote(r.toEntity())
-    }
-
-    suspend fun downloadVentas(opticaId: String): Int = downloadTable<VentaRemota>(
-        opticaId, TABLE_VENTAS, "venta", skipDeletions = true,
-        getId = { it.id }
-    ) { r ->
-        repository.upsertVentaFromRemote(r.toEntity())
     }
 
     suspend fun downloadPagos(opticaId: String): Int = downloadTable<PagoRemoto>(

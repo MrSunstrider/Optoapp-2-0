@@ -8,7 +8,6 @@ import com.example.optoapp.data.ServicioExtra
 import com.example.optoapp.data.configuracionfinanciera.ConfiguracionFinancieraEntity
 import com.example.optoapp.data.gastooperativo.GastoOperativoEntity
 import com.example.optoapp.data.resumendiario.ResumenDiarioEntity
-import com.example.optoapp.data.venta.Venta
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import java.time.Instant
@@ -133,58 +132,6 @@ data class PagoRemoto(
         ventaId = ventaId
     )
 }
-
-@Serializable
-data class VentaRemota(
-    val id: String,
-    @SerialName("optica_id") val opticaId: String,
-    val origen: String,
-    @SerialName("origen_id") val origenId: String,
-    @SerialName("paciente_id") val pacienteId: String = "",
-    val fecha: String,
-    @SerialName("fecha_entrega") val fechaEntrega: String? = null,
-    @SerialName("monto_total") val montoTotal: Double,
-    @SerialName("costo_unitario_snapshot") val costoUnitarioSnapshot: Double? = null,
-    val estado: String,
-    @SerialName("categoria_producto_id") val categoriaProductoId: String? = null,
-    @SerialName("created_at") val createdAt: String? = null,
-    @SerialName("updated_at") val updatedAt: String? = null,
-    @SerialName("updated_by") val updatedBy: String? = null
-) {
-    fun toEntity() = Venta(
-        id = id,
-        opticaId = opticaId.trim().ifBlank { "mi_optica_base" },
-        origen = origen,
-        origenId = origenId,
-        pacienteId = pacienteId,
-        fecha = LocalDate.parse(fecha),
-        fechaEntrega = fechaEntrega?.let(LocalDate::parse),
-        montoTotal = montoTotal,
-        costoUnitarioSnapshot = costoUnitarioSnapshot,
-        estado = estado,
-        categoriaProductoId = categoriaProductoId,
-        createdAt = createdAt,
-        updatedAt = updatedAt,
-        updatedBy = updatedBy
-    )
-}
-
-fun Venta.toRemoto() = VentaRemota(
-    id = id,
-    opticaId = opticaId,
-    origen = origen,
-    origenId = origenId,
-    pacienteId = pacienteId.ifBlank { "" },
-    fecha = fecha.toString(),
-    fechaEntrega = fechaEntrega?.toString(),
-    montoTotal = montoTotal,
-    costoUnitarioSnapshot = costoUnitarioSnapshot,
-    estado = estado.ifBlank { "Pendiente" },
-    categoriaProductoId = categoriaProductoId,
-    createdAt = createdAt,
-    updatedAt = updatedAt ?: Instant.now().toString(),
-    updatedBy = null
-)
 
 @Serializable
 data class DispensacionItemRemota(
@@ -324,13 +271,11 @@ data class FinanzasSyncResult(
     val uploadedDispensacionItems: Int = 0,
     val uploadedServicios: Int,
     val uploadedPagos: Int,
-    val uploadedVentas: Int = 0,
     val uploadedGastosOperativos: Int = 0,
     val downloadedDispensaciones: Int,
     val downloadedDispensacionItems: Int = 0,
     val downloadedServicios: Int,
     val downloadedPagos: Int,
-    val downloadedVentas: Int = 0,
     val downloadedResumenesDiarios: Int = 0,
     val downloadedConfiguracionesFinancieras: Int = 0
 )

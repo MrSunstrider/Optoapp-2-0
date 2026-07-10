@@ -7,17 +7,13 @@ import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Pago
 import com.example.optoapp.data.ServicioExtra
 import com.example.optoapp.data.SessionManager
-import com.example.optoapp.data.venta.Venta
-import com.example.optoapp.data.venta.VentaDao
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
@@ -32,8 +28,8 @@ data class CierreCajaUiState(
     val fecha: LocalDate = DateUtils.today(),
     val pagos: List<Pago> = emptyList(),
     val totalVentasHoy: Double = 0.0,
-    val serviciosExtraHoy: List<Venta> = emptyList(),
-    val dispensacionesHoy: List<Venta> = emptyList(),
+    val dispensacionesHoy: List<DispensacionOptica> = emptyList(),
+    val serviciosExtraHoy: List<ServicioExtra> = emptyList(),
     val totalServiciosExtra: Double = 0.0,
     val totalGeneral: Double = 0.0,
     val ventasHoy: Double = 0.0,
@@ -43,30 +39,15 @@ data class CierreCajaUiState(
     val dispOtMap: Map<String, String> = emptyMap()
 )
 
-private data class CierreCajaResult(
-    val pagos: List<Pago>,
-    val totalVentasHoy: Double,
-    val serviciosExtraHoy: List<Venta>,
-    val dispensacionesHoy: List<Venta>,
-    val totalServiciosExtra: Double,
-    val totalGeneral: Double,
-    val ventasHoy: Double,
-    val cobrosAtrasados: Double,
-    val saldoPendiente: Double,
-    val dispOtMap: Map<String, String>
-)
-
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class CierreCajaViewModel @Inject constructor(
     private val repository: OptoRepository,
-    private val sessionManager: SessionManager,
-    private val ventaDao: VentaDao
+    private val sessionManager: SessionManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CierreCajaUiState())
     val uiState: StateFlow<CierreCajaUiState> = _uiState.asStateFlow()
-
 
     private val _refreshTrigger = MutableStateFlow(0)
 
@@ -98,9 +79,8 @@ class CierreCajaViewModel @Inject constructor(
                 combine(
                     repository.getPagosByDateRangeForOptica(fecha, fecha, opticaId),
                     repository.getAllDispensacionesForOptica(opticaId),
-                    repository.getAllServiciosForOptica(opticaId),
-                    ventaDao.getVentasByOpticaAndDateRange(opticaId, fecha, fecha)
-                ) { pagos: List<Pago>, dispensaciones: List<DispensacionOptica>, servicios: List<ServicioExtra>, ventas: List<Venta> ->
+                    repository.getAllServiciosForOptica(opticaId)
+                ) { pagos, dispensaciones, servicios ->
                     val dispMap = dispensaciones.associateBy { it.id }
                     val servMap = servicios.associateBy { it.id }
                     var ventasHoy = 0.0
@@ -116,42 +96,33 @@ class CierreCajaViewModel @Inject constructor(
                             else -> ventasHoy += pago.monto
                         }
                     }
-                    val ventasDelDia = ventas.filter { it.fecha == fecha }
-                    val resolvedVentas = ventasDelDia.map { v ->
-                        if (v.ot.isBlank() && v.origen == "dispensacion") {
-                            val resolvedOt = dispMap[v.origenId]?.ot ?: ""
-                            v.copy(ot = resolvedOt)
-                        } else v
-                    }
-                    val totalVentasHoy = resolvedVentas.filter { it.origen == "dispensacion" }.sumOf { it.montoTotal }
-                    val serviciosExtraHoy = resolvedVentas.filter { it.origen == "servicio_extra" }
+                    val dispensacionesHoy = dispensaciones.filter { it.fecha == fecha }
+                    val serviciosExtraHoy = servicios.filter { it.fecha == fecha }
+                    val totalDispensacionesHoy = dispensacionesHoy.sumOf { it.montoTotal }
                     val totalServiciosExtra = serviciosExtraHoy.sumOf { it.montoTotal }
-                    val dispensacionesHoy = resolvedVentas.filter { it.origen == "dispensacion" }
-                    val totalGeneral = totalVentasHoy + totalServiciosExtra
+                    val totalGeneral = totalDispensacionesHoy + totalServiciosExtra
                     val saldoPendiente = totalGeneral - ventasHoy
                     val dispOtMap = dispMap.mapValues { it.value.ot }
-                    CierreCajaResult(pagos, totalVentasHoy, serviciosExtraHoy, dispensacionesHoy, totalServiciosExtra, totalGeneral, ventasHoy, cobrosAtrasados, saldoPendiente, dispOtMap)
-                }
-            }
-            .onEach { (pagos, totalVentasHoy, serviciosExtraHoy, dispensacionesHoy, totalServiciosExtra, totalGeneral, ventasHoy, cobrosAtrasados, saldoPendiente, dispOtMap) ->
-                _uiState.update {
-                    it.copy(
+                    CierreCajaUiState(
+                        fecha = fecha,
                         pagos = pagos,
-                        totalVentasHoy = totalVentasHoy,
-                        serviciosExtraHoy = serviciosExtraHoy,
+                        totalVentasHoy = totalDispensacionesHoy,
                         dispensacionesHoy = dispensacionesHoy,
+                        serviciosExtraHoy = serviciosExtraHoy,
                         totalServiciosExtra = totalServiciosExtra,
                         totalGeneral = totalGeneral,
                         ventasHoy = ventasHoy,
                         cobrosAtrasados = cobrosAtrasados,
                         saldoPendiente = saldoPendiente,
-                        dispOtMap = dispOtMap,
-                        isLoading = false
+                        isLoading = false,
+                        dispOtMap = dispOtMap
                     )
                 }
+            }
+            .onEach { state ->
+                _uiState.value = state
             }.launchIn(viewModelScope)
     }
-
 
     fun getTotalesPorMetodo(): Map<String, Double> {
         return _uiState.value.pagos.groupBy {

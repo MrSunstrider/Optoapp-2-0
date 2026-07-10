@@ -1,12 +1,13 @@
 package com.example.optoapp.domain
 
 import android.util.Log
+import com.example.optoapp.data.OptoRepository
+import com.example.optoapp.data.PacienteDao
 import com.example.optoapp.data.Resource
 import com.example.optoapp.data.pago.PagoDao
-import com.example.optoapp.data.venta.VentaDao
-import com.example.optoapp.data.PacienteDao
 import io.github.jan.supabase.postgrest.Postgrest
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.first
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
@@ -22,7 +23,7 @@ import javax.inject.Inject
 
 open class ObtenerDeudoresUseCase @Inject constructor(
     private val postgrest: Postgrest,
-    private val ventaDao: VentaDao,
+    private val repository: OptoRepository,
     private val pagoDao: PagoDao,
     private val pacienteDao: PacienteDao
 ) {
@@ -86,36 +87,66 @@ open class ObtenerDeudoresUseCase @Inject constructor(
     }
 
     private suspend fun fallbackToRoomDeudores(opticaId: String): List<Deudor> {
-        val ventas = ventaDao.getAllVentasByOptica(opticaId)
         val pagos = pagoDao.getPagosListByOptica(opticaId)
         val pacientes = pacienteDao.getPacientesListByOptica(opticaId)
 
-        val pagosPorVenta = pagos
-            .filter { it.ventaId != null }
-            .groupBy { it.ventaId!! }
+        val pagosPorDispensacion = pagos
+            .filter { it.dispensacionId != null }
+            .groupBy { it.dispensacionId!! }
+            .mapValues { (_, pg) -> pg.sumOf { it.monto } }
+
+        val pagosPorServicio = pagos
+            .filter { it.servicioExtraId != null }
+            .groupBy { it.servicioExtraId!! }
             .mapValues { (_, pg) -> pg.sumOf { it.monto } }
 
         val hoy = LocalDate.now()
+        val deudores = mutableListOf<Deudor>()
 
-        return ventas
-            .filter { v ->
-                val totalPagado = pagosPorVenta[v.id] ?: 0.0
-                v.montoTotal > totalPagado
-            }
-            .map { v ->
-                val totalPagado = pagosPorVenta[v.id] ?: 0.0
-                val paciente = pacientes.find { it.id == v.pacienteId }
-                Deudor(
-                    pacienteNombre = paciente?.nombreCompleto ?: "Paciente #${v.pacienteId}",
-                    pacienteTelefono = paciente?.telefono ?: "",
-                    ventaId = v.id,
-                    ventaFecha = v.fecha,
-                    montoTotal = v.montoTotal,
-                    totalPagado = totalPagado,
-                    saldo = v.montoTotal - totalPagado,
-                    diasDeuda = ChronoUnit.DAYS.between(v.fecha, hoy).toInt(),
-                    pacienteId = v.pacienteId
+        // Use repository to get dispensaciones and servicios directly — replaces Venta fallback
+        val dispensaciones = repository.getAllDispensacionesForOptica(opticaId).first()
+        for (disp in dispensaciones) {
+            val totalPagado = pagosPorDispensacion[disp.id] ?: 0.0
+            if (disp.montoTotal > totalPagado) {
+                val paciente = pacientes.find { it.id == disp.pacienteId }
+                deudores.add(
+                    Deudor(
+                        pacienteNombre = paciente?.nombreCompleto ?: "Paciente #${disp.pacienteId}",
+                        pacienteTelefono = paciente?.telefono ?: "",
+                        ventaId = disp.id,
+                        ventaFecha = disp.fecha,
+                        montoTotal = disp.montoTotal,
+                        totalPagado = totalPagado,
+                        saldo = disp.montoTotal - totalPagado,
+                        diasDeuda = ChronoUnit.DAYS.between(disp.fecha, hoy).toInt(),
+                        pacienteId = disp.pacienteId
+                    )
                 )
             }
+        }
+
+        val servicios = repository.getAllServiciosForOptica(opticaId).first()
+        for (serv in servicios) {
+            val totalPagado = pagosPorServicio[serv.id] ?: 0.0
+            val montoTotal = serv.montoTotal
+            if (montoTotal > totalPagado) {
+                val paciente = serv.pacienteId?.let { pid -> pacientes.find { it.id == pid } }
+                deudores.add(
+                    Deudor(
+                        pacienteNombre = paciente?.nombreCompleto ?: "Paciente #${serv.pacienteId ?: "?"}",
+                        pacienteTelefono = paciente?.telefono ?: "",
+                        ventaId = serv.id,
+                        ventaFecha = serv.fecha,
+                        montoTotal = montoTotal,
+                        totalPagado = totalPagado,
+                        saldo = montoTotal - totalPagado,
+                        diasDeuda = ChronoUnit.DAYS.between(serv.fecha, hoy).toInt(),
+                        pacienteId = serv.pacienteId ?: ""
+                    )
+                )
+            }
+        }
+
+        return deudores.sortedByDescending { it.diasDeuda }
     }
 }

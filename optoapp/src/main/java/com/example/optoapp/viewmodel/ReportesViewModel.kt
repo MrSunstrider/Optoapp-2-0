@@ -7,7 +7,9 @@ import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Pago
 import com.example.optoapp.data.ServicioExtra
 import com.example.optoapp.data.SessionManager
-import com.example.optoapp.data.venta.Venta
+import com.example.optoapp.domain.MovimientoFinanciero
+import com.example.optoapp.domain.Origen
+import com.example.optoapp.domain.TipoMovimiento
 import com.example.optoapp.util.DateUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
@@ -150,7 +152,7 @@ class ReportesViewModel @Inject constructor(
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    val allVentasDelPeriodo: StateFlow<List<Venta>> = sessionManager.opticaId
+    val allMovimientosDelPeriodo: StateFlow<List<MovimientoFinanciero>> = sessionManager.opticaId
         .flatMapLatest { opticaId ->
             combine(_periodo, _anio, _fechaDiario) { p, a, fd ->
                 val now = LocalDate.now()
@@ -158,32 +160,52 @@ class ReportesViewModel @Inject constructor(
                 Triple(opticaId, start, end)
             }.flatMapLatest { (opticaId, start, end) ->
                 combine(
-                    repository.getVentasByOpticaAndDateRange(opticaId, start, end),
-                    allDispensaciones,
-                    allServiciosDelPeriodo
-                ) { ventas, disps, servs ->
-                    if (ventas.isNotEmpty()) ventas
-                    else {
-                        // Fallback: derive from legacy entities when ventas table is not yet populated.
-                        // This ensures backward compatibility during the transition.
-                        val dispVentas = disps.map { d ->
-                            Venta(id = "venta-${d.id}", opticaId = d.opticaId, origen = "dispensacion",
-                                origenId = d.id, pacienteId = d.pacienteId, fecha = d.fecha,
-                                montoTotal = d.montoTotal, estado = "Completado")
+                    repository.getAllDispensacionesForOptica(opticaId),
+                    repository.getAllServiciosForOptica(opticaId)
+                ) { disps, servs ->
+                    val dispMovs = disps
+                        .filter { it.fecha >= start && it.fecha <= end }
+                        .map { d ->
+                            MovimientoFinanciero(
+                                id = d.id,
+                                fecha = d.fecha,
+                                tipo = TipoMovimiento.VENTA,
+                                origen = Origen.DISPENSACION,
+                                origenId = d.id,
+                                montoTotal = d.montoTotal,
+                                montoPagado = d.montoPagado,
+                                costo = 0.0,
+                                pacienteId = d.pacienteId,
+                                opticaId = d.opticaId,
+                                descripcion = "OT ${d.ot}",
+                                vinculadoA = d.ot.takeIf { it.isNotBlank() }
+                            )
                         }
-                        val servVentas = servs.map { s ->
-                            Venta(id = "venta-${s.id}", opticaId = s.opticaId, origen = "servicio_extra",
-                                origenId = s.id, pacienteId = "", fecha = s.fecha,
-                                montoTotal = s.montoTotal, estado = "Completado")
+                    val servMovs = servs
+                        .filter { it.fecha >= start && it.fecha <= end }
+                        .map { s ->
+                            MovimientoFinanciero(
+                                id = s.id,
+                                fecha = s.fecha,
+                                tipo = TipoMovimiento.VENTA,
+                                origen = Origen.SERVICIO,
+                                origenId = s.id,
+                                montoTotal = s.montoTotal,
+                                montoPagado = s.aCuenta,
+                                costo = 0.0,
+                                pacienteId = s.pacienteId ?: "",
+                                opticaId = s.opticaId,
+                                descripcion = s.descripcion.takeIf { it.isNotBlank() } ?: "Servicio OT ${s.ot}",
+                                vinculadoA = s.ot.takeIf { it.isNotBlank() }
+                            )
                         }
-                        dispVentas + servVentas
-                    }
+                    dispMovs + servMovs
                 }
             }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val totalVendido: StateFlow<Double> = allVentasDelPeriodo
-        .map { ventas -> ventas.sumOf { it.montoTotal } }
+    val totalVendido: StateFlow<Double> = allMovimientosDelPeriodo
+        .map { movs -> movs.sumOf { it.montoTotal } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
 
     val totalPagado: StateFlow<Double> = sessionManager.opticaId
@@ -198,7 +220,7 @@ class ReportesViewModel @Inject constructor(
             }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
 
-    val totalTransacciones: StateFlow<Int> = allVentasDelPeriodo
+    val totalTransacciones: StateFlow<Int> = allMovimientosDelPeriodo
         .map { it.size }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 

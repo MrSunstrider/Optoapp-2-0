@@ -22,7 +22,6 @@ class DeletionSyncHelper @Inject constructor(
         private const val TABLE_PAGOS = "pagos"
         private const val TABLE_SERVICIOS = "servicios_extra"
         private const val TABLE_GASTOS_OPERATIVOS = "gastos_operativos"
-        private const val TABLE_VENTAS = "ventas"
         private const val TABLE_DISPENSACION_ITEMS = "dispensacion_items"
     }
 
@@ -36,7 +35,6 @@ class DeletionSyncHelper @Inject constructor(
                 "dispensacion" -> TABLE_DISPENSACIONES
                 "pago" -> TABLE_PAGOS
                 "gasto_operativo" -> TABLE_GASTOS_OPERATIVOS
-                "venta" -> TABLE_VENTAS
                 "dispensacion_item" -> TABLE_DISPENSACION_ITEMS
                 else -> null
             }

@@ -7,7 +7,6 @@ import com.example.optoapp.data.DispensacionFinancieraRepository
 import com.example.optoapp.data.Pago
 import com.example.optoapp.data.Resource
 import com.example.optoapp.data.SessionManager
-import com.example.optoapp.data.venta.Venta
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -142,19 +141,6 @@ class InformacionFinancieraViewModel @Inject constructor(
                     repository.eliminarPago(pago, opticaId)
                 }
 
-                val venta = Venta(
-                    id = "v_disp_$dispId",
-                    opticaId = opticaId,
-                    origen = "dispensacion",
-                    origenId = dispId,
-                    pacienteId = s.contexto?.pacienteId ?: "",
-                    ot = s.contexto?.ot ?: "",
-                    fecha = s.contexto?.fecha ?: LocalDate.now(),
-                    fechaEntrega = s.fechaEntrega,
-                    montoTotal = montoTotal,
-                    estado = s.estadoEntrega
-                )
-                repository.upsertVenta(venta)
                 }
             }
             }
