@@ -549,8 +549,24 @@ class DispensacionViewModel @Inject constructor(
     }
 
     fun deleteDispensacion(dispensacionId: String, onComplete: () -> Unit) {
-        // Redirect to anulación flow: creates inverse Pago, reverts stock, marks as "Anulado"
-        anularDispensacion(dispensacionId, onComplete)
+        // Hard delete for mistakes: remove completely + revert stock
+        // No inverse Pago, no financial trace — this never happened.
+        viewModelScope.launch(Dispatchers.IO) {
+            val opticaId = sessionManager.opticaId.first()
+            val regalos = repository.getRegalosByDispensacionId(dispensacionId)
+            regalos.forEach { regalo ->
+                stockHelper.adjustStockAndRegistrarMovimiento(
+                    regalo.productoId, opticaId, regalo.cantidad,
+                    "AJUSTE", dispensacionId,
+                    "Devolución por borrado de dispensación"
+                )
+            }
+            val result = repository.getDispensacionById(dispensacionId)
+            if (result is Resource.Success && result.data != null) {
+                repository.deleteDispensacion(result.data)
+            }
+            onComplete()
+        }
     }
 
     fun crearReclamo(
