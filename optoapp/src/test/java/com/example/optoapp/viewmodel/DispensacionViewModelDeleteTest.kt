@@ -14,7 +14,6 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
-import io.mockk.slot
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,7 +23,6 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
-import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import java.time.LocalDate
@@ -53,7 +51,7 @@ class DispensacionViewModelDeleteTest {
     private val testRegalos = listOf(
         RegaloDispensacionEntity(
             id = "reg-del-1", dispensacionId = dispId, productoId = "prod-1",
-            cantidad = 2, costoUnitario = 10.0, descripcion = "Estuche", motivo = "Cortesía", opticaId = "optica-test"
+            cantidad = 2, costoUnitario = 10.0, descripcion = "Estuche", motivo = "Cortesia", opticaId = "optica-test"
         )
     )
 
@@ -86,7 +84,7 @@ class DispensacionViewModelDeleteTest {
     }
 
     @Test
-    fun `deleteDispensacion anula en vez de hard-delete`() = runTest {
+    fun `deleteDispensacion hard-deletes without anulacion`() = runTest {
         viewModel = DispensacionViewModel(
             repository, sessionManager, postSaveSyncScheduler, stockHelper, calcularMontoPagadoUseCase
         )
@@ -96,28 +94,9 @@ class DispensacionViewModelDeleteTest {
         viewModel.deleteDispensacion(dispId) { completed = true }
         testDispatcher.scheduler.advanceUntilIdle()
 
-        // Verify estado flipped to Anulado, not hard deleted
-        coVerify { repository.updateDispensacion(match { it.estadoEntrega == "Anulado" }) }
-        coVerify(inverse = true) { repository.deleteDispensacion(any()) }
-    }
-
-    @Test
-    fun `deleteDispensacion creates inverse Pago`() = runTest {
-        viewModel = DispensacionViewModel(
-            repository, sessionManager, postSaveSyncScheduler, stockHelper, calcularMontoPagadoUseCase
-        )
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        val pagoSlot = slot<Pago>()
-        coEvery { repository.insertPago(capture(pagoSlot)) } returns Unit
-
-        var completed = false
-        viewModel.deleteDispensacion(dispId) { completed = true }
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        assertEquals("Anulación", pagoSlot.captured.tipo)
-        assertEquals(-150.0, pagoSlot.captured.monto, 0.001)
-        assertEquals(dispId, pagoSlot.captured.dispensacionId)
+        coVerify { repository.deleteDispensacion(testDispensacion) }
+        coVerify(inverse = true) { repository.updateDispensacion(any()) }
+        coVerify(inverse = true) { repository.insertPago(any<Pago>()) }
     }
 
     @Test
@@ -134,7 +113,7 @@ class DispensacionViewModelDeleteTest {
         coVerify {
             stockHelper.adjustStockAndRegistrarMovimiento(
                 "prod-1", "optica-test", 2,
-                "AJUSTE", dispId, "Reversión por anulación de dispensación"
+                "AJUSTE", dispId, "Devolución por borrado de dispensación"
             )
         }
     }

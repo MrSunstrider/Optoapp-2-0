@@ -551,7 +551,7 @@ class DispensacionViewModel @Inject constructor(
     fun deleteDispensacion(dispensacionId: String, onComplete: () -> Unit) {
         // Hard delete for mistakes: remove completely + revert stock
         // No inverse Pago, no financial trace — this never happened.
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch {
             val opticaId = sessionManager.opticaId.first()
             val regalos = repository.getRegalosByDispensacionId(dispensacionId)
             regalos.forEach { regalo ->
