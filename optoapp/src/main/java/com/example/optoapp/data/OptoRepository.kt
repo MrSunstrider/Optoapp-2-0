@@ -10,6 +10,7 @@ import com.example.optoapp.data.gastooperativo.GastoOperativoDao
 import com.example.optoapp.data.gastooperativo.GastoOperativoEntity
 import com.example.optoapp.data.pago.PagoDao
 import com.example.optoapp.data.montura.MonturaInventoryCoordinator
+import com.example.optoapp.data.regalodispensacion.RegaloDispensacionEntity
 import com.example.optoapp.data.resumendiario.ResumenDiarioDao
 import com.example.optoapp.data.resumendiario.ResumenDiarioEntity
 import com.example.optoapp.data.sync.SyncSnapshotCoordinator
@@ -261,6 +262,12 @@ open class OptoRepository(
 
     suspend fun getRegalosByDispensacionId(dispId: String) =
         database.regaloDispensacionDao().getByDispensacionId(dispId)
+
+    suspend fun insertRegalo(regalo: RegaloDispensacionEntity) =
+        database.regaloDispensacionDao().insert(regalo)
+
+    suspend fun deleteRegalosByDispensacionId(dispId: String) =
+        database.regaloDispensacionDao().deleteByDispensacionId(dispId)
 
     // ─── Categorías de Producto ───────────────────────────────────────────────
 

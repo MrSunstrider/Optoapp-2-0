@@ -15,14 +15,15 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.optoapp.data.FinanzasRemoteDefaults
-import com.example.optoapp.data.Montura
 import com.example.optoapp.data.Pago
 import com.example.optoapp.ui.components.AbonoDialog
 import com.example.optoapp.ui.components.DropdownField
 import com.example.optoapp.ui.components.FechaEntregaEditButton
 import com.example.optoapp.ui.components.OptoTextField
 import com.example.optoapp.util.DateUtils
+import com.example.optoapp.data.Montura
 import com.example.optoapp.viewmodel.DispensacionUiState
+import com.example.optoapp.viewmodel.RegaloDispensacionUi
 import java.time.LocalDate
 import java.util.*
 
@@ -262,6 +263,69 @@ fun FinancieraInfoSection(
                         onUpdate(uiState.copy(fechaEntrega = nuevaFecha))
                     }
                 )
+            }
+        }
+    }
+}
+
+@Composable
+fun RegalosSection(
+    uiState: DispensacionUiState,
+    onAddRegalo: (RegaloDispensacionUi) -> Unit,
+    onRemoveRegalo: (Int) -> Unit
+) {
+    Card {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Regalos", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+
+            uiState.regalos.forEachIndexed { index, regalo ->
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                    )
+                ) {
+                    Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(regalo.descripcion.ifBlank { "Producto #${index + 1}" },
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.weight(1f))
+                            IconButton(onClick = { onRemoveRegalo(index) }, modifier = Modifier.size(36.dp)) {
+                                Icon(Icons.Default.Delete, contentDescription = "Eliminar regalo",
+                                    tint = MaterialTheme.colorScheme.error)
+                            }
+                        }
+
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text("Cantidad: ${regalo.cantidad}",
+                                style = MaterialTheme.typography.bodyMedium)
+                            Text("Costo: S/. ${String.format(Locale.getDefault(), "%.2f", regalo.costoUnitario)}",
+                                style = MaterialTheme.typography.bodyMedium)
+                        }
+
+                        if (regalo.motivo.isNotBlank()) {
+                            Text("Motivo: ${regalo.motivo}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                }
+            }
+
+            OutlinedButton(
+                onClick = {
+                    onAddRegalo(RegaloDispensacionUi())
+                },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary)
+            ) {
+                Icon(Icons.Default.Add, contentDescription = null)
+                Spacer(Modifier.width(8.dp))
+                Text("Agregar Regalo")
             }
         }
     }

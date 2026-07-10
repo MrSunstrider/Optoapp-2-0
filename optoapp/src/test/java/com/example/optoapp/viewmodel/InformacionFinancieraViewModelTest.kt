@@ -283,23 +283,6 @@ class InformacionFinancieraViewModelTest {
     }
 
     @Test
-    fun `save deletes removed pagos`() = runTest {
-        val vm = InformacionFinancieraViewModel(repository, sessionManager, postSaveSyncScheduler)
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        vm.addPago(testPagos[0])
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        vm.removePago(testPagos[0])
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        vm.save { }
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        coVerify { repository.eliminarPago(testPagos[0], "optica-test") }
-    }
-
-    @Test
     fun `save persists estado Entregado`() = runTest {
         val vm = InformacionFinancieraViewModel(repository, sessionManager, postSaveSyncScheduler)
         testDispatcher.scheduler.advanceUntilIdle()

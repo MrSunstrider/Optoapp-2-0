@@ -26,6 +26,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import com.example.optoapp.data.Pago
+import com.example.optoapp.data.regalodispensacion.RegaloDispensacionEntity
 import com.example.optoapp.domain.CalcularMontoPagadoUseCase
 import java.time.LocalDate
 import com.example.optoapp.sync.PostSaveSyncScheduler
@@ -59,7 +60,17 @@ data class DispensacionUiState(
     val pagos: List<Pago> = emptyList(),
     val pagosToDelete: List<Pago> = emptyList(),
     val generatedId: String = "",
-    val montoPagado: Double = 0.0
+    val montoPagado: Double = 0.0,
+    val regalos: List<RegaloDispensacionUi> = emptyList()
+)
+
+data class RegaloDispensacionUi(
+    val id: String = UUID.randomUUID().toString(),
+    val productoId: String = "",
+    val descripcion: String = "",
+    val cantidad: Int = 1,
+    val costoUnitario: Double = 0.0,
+    val motivo: String = ""
 )
 
 data class DispensacionItemUi(
@@ -271,6 +282,28 @@ class DispensacionViewModel @Inject constructor(
         }
     }
 
+    // ─── Regalo management ─────────────────────────────────────────────────────
+
+    fun addRegalo(regalo: RegaloDispensacionUi) {
+        _uiState.update { it.copy(regalos = it.regalos + regalo) }
+    }
+
+    fun removeRegalo(index: Int) {
+        _uiState.update { s ->
+            val updated = s.regalos.toMutableList()
+            if (index in updated.indices) updated.removeAt(index)
+            s.copy(regalos = updated)
+        }
+    }
+
+    fun updateRegalo(index: Int, regalo: RegaloDispensacionUi) {
+        _uiState.update { s ->
+            val updated = s.regalos.toMutableList()
+            if (index in updated.indices) updated[index] = regalo
+            s.copy(regalos = updated)
+        }
+    }
+
     fun suggestOt() {
         viewModelScope.launch {
             val oid = sessionManager.opticaId.first()
@@ -445,6 +478,43 @@ class DispensacionViewModel @Inject constructor(
 
                     s.pagosToDelete.forEach { pago ->
                         repository.deletePagoRegistrandoAnulacionEnCaja(pago, currentOpticaId)
+                    }
+
+                    // Save regalos
+                    val existingRegalos = if (dispensacionId != null && dispensacionId != "null") {
+                        repository.getRegalosByDispensacionId(finalId)
+                    } else emptyList()
+                    // Restore stock for removed regalos
+                    existingRegalos.forEach { regalo ->
+                        stockHelper.adjustStockAndRegistrarMovimiento(
+                            regalo.productoId, currentOpticaId, regalo.cantidad,
+                            "AJUSTE", finalId,
+                            "Reversión por edición de regalos"
+                        )
+                    }
+                    repository.deleteRegalosByDispensacionId(finalId)
+                    s.regalos.forEach { regaloUi ->
+                        val entity = RegaloDispensacionEntity(
+                            id = regaloUi.id,
+                            dispensacionId = finalId,
+                            productoId = regaloUi.productoId,
+                            cantidad = regaloUi.cantidad,
+                            costoUnitario = regaloUi.costoUnitario,
+                            descripcion = regaloUi.descripcion,
+                            motivo = regaloUi.motivo,
+                            opticaId = currentOpticaId
+                        )
+                        repository.insertRegalo(entity)
+                        if (regaloUi.productoId.isNotBlank()) {
+                            val stockResult = stockHelper.adjustStockAndRegistrarMovimiento(
+                                regaloUi.productoId, currentOpticaId, -regaloUi.cantidad,
+                                "SALIDA_VENTA", finalId,
+                                "Salida por regalo de dispensación"
+                            )
+                            if (stockResult.isFailure) {
+                                throw RuntimeException("Stock insuficiente para regalo: ${regaloUi.descripcion}")
+                            }
+                        }
                     }
 
                     }
