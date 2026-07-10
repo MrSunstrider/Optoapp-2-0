@@ -173,7 +173,7 @@ fun CierreCajaScreen(
                         val label = if (disp.ot.isNotBlank()) "OT ${disp.ot}" else "Dispensación ${disp.id.take(8)}"
                         val pagosVenta = uiState.pagos.filter { it.dispensacionId == disp.id }
                         val totalPagado = pagosVenta.sumOf { it.monto }
-                        val saldo = disp.montoTotal - totalPagado
+                        val saldo = if (disp.estadoEntrega == "Anulado") 0.0 else disp.montoTotal - totalPagado
 
                         Card(
                             modifier = Modifier.fillMaxWidth()
@@ -211,7 +211,7 @@ fun CierreCajaScreen(
                         val label = "Servicio: ${serv.descripcion.take(32)}"
                         val pagosVenta = uiState.pagos.filter { it.servicioExtraId == serv.id }
                         val totalPagado = pagosVenta.sumOf { it.monto }
-                        val saldo = serv.montoTotal - totalPagado
+                        val saldo = if (serv.estado == "Anulado") 0.0 else serv.montoTotal - totalPagado
 
                         Card(
                             modifier = Modifier.fillMaxWidth()
