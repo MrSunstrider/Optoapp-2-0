@@ -89,8 +89,14 @@ class CierreCajaViewModel @Inject constructor(
                             else -> ventasHoy += pago.monto
                         }
                     }
-                    val dispensacionesHoy = dispensaciones.filter { it.fecha == fecha }
-                    val serviciosExtraHoy = servicios.filter { it.fecha == fecha }
+                    val pagosPorDispId = pagos.mapNotNull { it.dispensacionId }.toSet()
+                    val pagosPorServId = pagos.mapNotNull { it.servicioExtraId }.toSet()
+                    val dispensacionesHoy = dispensaciones.filter {
+                        it.fecha == fecha || it.fechaEntrega == fecha || it.id in pagosPorDispId
+                    }
+                    val serviciosExtraHoy = servicios.filter {
+                        it.fecha == fecha || it.fechaEntrega == fecha || it.id in pagosPorServId
+                    }
                     val totalDispensacionesHoy = dispensacionesHoy.sumOf { it.montoTotal }
                     val totalServiciosExtra = serviciosExtraHoy.sumOf { it.montoTotal }
                     val totalGeneral = totalDispensacionesHoy + totalServiciosExtra
