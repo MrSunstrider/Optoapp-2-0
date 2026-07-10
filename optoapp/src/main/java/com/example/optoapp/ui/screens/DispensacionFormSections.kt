@@ -1,6 +1,7 @@
 package com.example.optoapp.ui.screens
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
@@ -256,7 +257,7 @@ fun FinancieraInfoSection(
                 }
                 onUpdate(uiState.copy(estadoEntrega = newEstado, fechaEntrega = newFechaEntrega))
             }
-            if (uiState.estadoEntrega == "Entregado" && uiState.fechaEntrega != null) {
+            if (uiState.fechaEntrega != null) {
                 FechaEntregaEditButton(
                     fechaEntrega = uiState.fechaEntrega,
                     onFechaChanged = { nuevaFecha ->
@@ -268,12 +269,20 @@ fun FinancieraInfoSection(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegalosSection(
     uiState: DispensacionUiState,
+    monturas: List<Montura>,
     onAddRegalo: (RegaloDispensacionUi) -> Unit,
     onRemoveRegalo: (Int) -> Unit
 ) {
+    var showDialog by remember { mutableStateOf(false) }
+    var selectedMonturaId by remember { mutableStateOf("") }
+    var cantidad by remember { mutableStateOf("1") }
+    var motivo by remember { mutableStateOf("") }
+    val selectedMontura = monturas.find { it.id == selectedMonturaId }
+
     Card {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("Regalos", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
@@ -291,7 +300,7 @@ fun RegalosSection(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(regalo.descripcion.ifBlank { "Producto #${index + 1}" },
+                            Text(regalo.descripcion.ifBlank { "Producto sin nombre" },
                                 fontWeight = FontWeight.Bold,
                                 modifier = Modifier.weight(1f))
                             IconButton(onClick = { onRemoveRegalo(index) }, modifier = Modifier.size(36.dp)) {
@@ -317,9 +326,7 @@ fun RegalosSection(
             }
 
             OutlinedButton(
-                onClick = {
-                    onAddRegalo(RegaloDispensacionUi())
-                },
+                onClick = { showDialog = true },
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary)
             ) {
@@ -328,5 +335,94 @@ fun RegalosSection(
                 Text("Agregar Regalo")
             }
         }
+    }
+
+    if (showDialog) {
+        AlertDialog(
+            onDismissRequest = { showDialog = false },
+            title = { Text("Agregar Regalo") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    // Producto dropdown
+                    var expanded by remember { mutableStateOf(false) }
+                    ExposedDropdownMenuBox(
+                        expanded = expanded,
+                        onExpandedChange = { expanded = it }
+                    ) {
+                        OutlinedTextField(
+                            value = selectedMontura?.let { "${it.marca} ${it.modelo} ${it.color}".trim() } ?: "",
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text("Producto") },
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                            modifier = Modifier.fillMaxWidth().menuAnchor()
+                        )
+                        ExposedDropdownMenu(
+                            expanded = expanded,
+                            onDismissRequest = { expanded = false }
+                        ) {
+                            monturas.forEach { m ->
+                                DropdownMenuItem(
+                                    text = { Text("${m.marca} ${m.modelo} ${m.color} (Stock: ${m.stockActual})".trim()) },
+                                    onClick = {
+                                        selectedMonturaId = m.id
+                                        expanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+
+                    // Cantidad
+                    OutlinedTextField(
+                        value = cantidad,
+                        onValueChange = { cantidad = it.filter { c -> c.isDigit() } },
+                        label = { Text("Cantidad") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    // Motivo
+                    OutlinedTextField(
+                        value = motivo,
+                        onValueChange = { motivo = it },
+                        label = { Text("Motivo") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    // Costo (auto-filled, no editable)
+                    if (selectedMontura != null) {
+                        Text(
+                            "Costo unitario: S/. ${String.format(Locale.getDefault(), "%.2f", selectedMontura.costo)}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        if (selectedMontura != null && cantidad.toIntOrNull() != null && cantidad.toInt() > 0) {
+                            onAddRegalo(RegaloDispensacionUi(
+                                productoId = selectedMontura!!.id,
+                                descripcion = "${selectedMontura!!.marca} ${selectedMontura!!.modelo} ${selectedMontura!!.color}".trim(),
+                                cantidad = cantidad.toInt(),
+                                costoUnitario = selectedMontura!!.costo,
+                                motivo = motivo
+                            ))
+                            showDialog = false
+                            selectedMonturaId = ""
+                            cantidad = "1"
+                            motivo = ""
+                        }
+                    },
+                    enabled = selectedMontura != null && cantidad.toIntOrNull() != null && cantidad.toInt() > 0
+                ) { Text("Agregar") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDialog = false }) { Text("Cancelar") }
+            }
+        )
     }
 }

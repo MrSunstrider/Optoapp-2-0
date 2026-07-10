@@ -7,6 +7,7 @@ import com.example.optoapp.data.DispensacionItem
 import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.EvaluacionClinica
 import com.example.optoapp.data.FinanzasRemoteDefaults
+import com.example.optoapp.data.Montura
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Resource
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -61,7 +62,8 @@ data class DispensacionUiState(
     val pagosToDelete: List<Pago> = emptyList(),
     val generatedId: String = "",
     val montoPagado: Double = 0.0,
-    val regalos: List<RegaloDispensacionUi> = emptyList()
+    val regalos: List<RegaloDispensacionUi> = emptyList(),
+    val monturasDisponibles: List<Montura> = emptyList()
 )
 
 data class RegaloDispensacionUi(

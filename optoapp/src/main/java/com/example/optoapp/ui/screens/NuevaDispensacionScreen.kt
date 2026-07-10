@@ -192,6 +192,7 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
 
             RegalosSection(
                 uiState = uiState,
+                monturas = viewModel.monturasActivas.collectAsState().value,
                 onAddRegalo = viewModel::addRegalo,
                 onRemoveRegalo = viewModel::removeRegalo
             )
