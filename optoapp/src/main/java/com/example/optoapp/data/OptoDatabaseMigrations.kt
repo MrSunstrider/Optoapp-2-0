@@ -1033,7 +1033,7 @@ val MIGRATION_37_38 = object : Migration(37, 38) {
                 cantidad INTEGER NOT NULL,
                 costo_unitario REAL NOT NULL,
                 descripcion TEXT NOT NULL,
-                motivo TEXT DEFAULT '',
+                motivo TEXT NOT NULL DEFAULT '',
                 optica_id TEXT NOT NULL,
                 FOREIGN KEY (dispensacion_id) REFERENCES dispensaciones(id) ON DELETE CASCADE
             )
