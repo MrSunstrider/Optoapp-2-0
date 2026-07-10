@@ -93,6 +93,10 @@ class InformacionFinancieraViewModel @Inject constructor(
         }
     }
 
+    fun updateFechaEntrega(fecha: LocalDate?) {
+        _uiState.update { it.copy(fechaEntrega = fecha) }
+    }
+
     fun addPago(pago: Pago) {
         _uiState.update { it.copy(pagos = it.pagos + pago, error = null) }
     }

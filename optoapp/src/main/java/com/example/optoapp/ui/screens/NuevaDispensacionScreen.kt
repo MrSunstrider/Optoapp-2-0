@@ -22,10 +22,13 @@ import androidx.navigation.NavController
 import com.example.optoapp.testing.TestTags
 import com.example.optoapp.ui.components.OptoDatePickerDialog
 import com.example.optoapp.ui.components.OptoTextField
+import com.example.optoapp.ui.components.DropdownField
+import com.example.optoapp.ui.components.FechaEntregaEditButton
 import com.example.optoapp.ui.components.dispensacion.LenteForm
 import com.example.optoapp.viewmodel.DispensacionViewModel
 import com.example.optoapp.util.DateUtils
 import com.example.optoapp.ui.components.OptoTopAppBar
+import java.time.LocalDate
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -162,7 +165,13 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
                             label = "Monto Total",
                             keyboardType = KeyboardType.Decimal
                         )
-                        Text("Estado: ${uiState.estadoEntrega}", fontWeight = FontWeight.Bold)
+                        DropdownField(label = "Estado de Entrega", selected = uiState.estadoEntrega, options = listOf("Pendiente", "Entregado")) { newEstado ->
+                            val newFecha = when (newEstado) { "Entregado" -> LocalDate.now(); else -> null }
+                            viewModel.updateUiState { it.copy(estadoEntrega = newEstado, fechaEntrega = newFecha) }
+                        }
+                        if (uiState.fechaEntrega != null) {
+                            FechaEntregaEditButton(fechaEntrega = uiState.fechaEntrega, onFechaChanged = { nueva -> viewModel.updateUiState { it.copy(fechaEntrega = nueva) } })
+                        }
                     } else {
                         val monto = uiState.montoTotal.toDoubleOrNull() ?: 0.0
                         val pagado = uiState.pagos.sumOf { it.monto }
@@ -185,6 +194,13 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Text("Gestionar Pagos")
+                        }
+                        if (uiState.fechaEntrega != null) {
+                            FechaEntregaEditButton(fechaEntrega = uiState.fechaEntrega, onFechaChanged = { nueva -> viewModel.updateUiState { it.copy(fechaEntrega = nueva) } })
+                        } else {
+                            TextButton(onClick = { viewModel.updateUiState { it.copy(fechaEntrega = LocalDate.now()) } }) {
+                                Text("Asignar fecha de entrega", fontSize = 12.sp)
+                            }
                         }
                     }
                 }

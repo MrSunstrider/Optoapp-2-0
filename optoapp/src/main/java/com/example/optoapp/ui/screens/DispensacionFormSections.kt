@@ -1,6 +1,9 @@
 package com.example.optoapp.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -349,49 +352,54 @@ fun RegalosSection(
             title = { Text("Agregar Regalo") },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    // Producto search (like MonturaInfoSection)
+                    // Producto search
                     var query by remember { mutableStateOf("") }
-                    var expanded by remember { mutableStateOf(false) }
+                    var showResults by remember { mutableStateOf(false) }
 
-                    val filtered = if (query.isBlank()) monturas
+                    val filtered = if (query.isBlank()) emptyList()
                     else monturas.filter {
                         it.marca.contains(query, ignoreCase = true) ||
                         it.modelo.contains(query, ignoreCase = true) ||
                         it.sku.contains(query, ignoreCase = true)
                     }
 
-                    ExposedDropdownMenuBox(
-                        expanded = expanded && filtered.isNotEmpty(),
-                        onExpandedChange = { expanded = it }
-                    ) {
-                        OutlinedTextField(
-                            value = query,
-                            onValueChange = {
-                                query = it
-                                if (it.isEmpty()) selectedMonturaId = ""
-                                expanded = true
-                            },
-                            label = { Text("Buscar producto por marca, modelo o SKU") },
-                            placeholder = { Text("Ej: Ray-Ban, Estuche...") },
-                            leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Buscar") },
-                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                            modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryEditable).fillMaxWidth()
-                        )
-                        ExposedDropdownMenu(
-                            expanded = expanded && filtered.isNotEmpty(),
-                            onDismissRequest = { expanded = false }
-                        ) {
-                            filtered.forEach { m ->
-                                DropdownMenuItem(
-                                    text = { Text("${m.marca} ${m.modelo} ${m.color} (Stock: ${m.stockActual})".trim()) },
-                                    onClick = {
-                                        selectedMonturaId = m.id
-                                        query = "${m.marca} ${m.modelo} ${m.color}".trim()
-                                        expanded = false
-                                    }
-                                )
+                    OutlinedTextField(
+                        value = query,
+                        onValueChange = {
+                            query = it
+                            showResults = it.isNotBlank()
+                            if (it.isEmpty()) selectedMonturaId = ""
+                        },
+                        label = { Text("Buscar producto") },
+                        placeholder = { Text("Marca, modelo o SKU...") },
+                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Buscar") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    if (showResults && filtered.isNotEmpty()) {
+                        Card(modifier = Modifier.fillMaxWidth().heightIn(max = 200.dp)) {
+                            LazyColumn {
+                                items(filtered) { m ->
+                                    Text(
+                                        text = "${m.marca} ${m.modelo} ${m.color} (Stock: ${m.stockActual})".trim(),
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clickable {
+                                                selectedMonturaId = m.id
+                                                query = "${m.marca} ${m.modelo} ${m.color}".trim()
+                                                showResults = false
+                                            }
+                                            .padding(12.dp),
+                                        fontSize = 14.sp
+                                    )
+                                }
                             }
                         }
+                    }
+
+                    if (query.isNotBlank() && filtered.isEmpty() && showResults) {
+                        Text("Sin resultados", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
                     }
 
                     // Cantidad

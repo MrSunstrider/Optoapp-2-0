@@ -22,6 +22,7 @@ import androidx.navigation.NavController
 import com.example.optoapp.data.Pago
 import com.example.optoapp.ui.components.AbonoDialog
 import com.example.optoapp.ui.components.DropdownField
+import com.example.optoapp.ui.components.FechaEntregaEditButton
 import com.example.optoapp.ui.components.OptoTextField
 import com.example.optoapp.ui.components.OptoTopAppBar
 import com.example.optoapp.util.DateUtils
@@ -214,16 +215,13 @@ fun InformacionFinancieraScreen(
                 viewModel.updateEstado(newEstado)
             }
 
-            if (uiState.estadoEntrega == "Entregado" && uiState.fechaEntrega != null) {
-                val fecha = uiState.fechaEntrega
-                if (fecha != null) {
-                    Text(
-                        text = "Entregado el día ${DateUtils.formatLocalized(fecha)}",
-                        fontSize = 13.sp,
-                        color = MaterialTheme.colorScheme.tertiary,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
+            if (uiState.fechaEntrega != null) {
+                FechaEntregaEditButton(
+                    fechaEntrega = uiState.fechaEntrega,
+                    onFechaChanged = { nuevaFecha ->
+                        viewModel.updateFechaEntrega(nuevaFecha)
+                    }
+                )
             }
 
             Button(
