@@ -18,7 +18,7 @@ import com.example.optoapp.data.ServicioExtra
 import java.util.Locale
 
 @Composable
-fun ServiciosExtraList(servicios: List<ServicioExtra>, onEdit: (String) -> Unit) {
+fun ServiciosExtraList(servicios: List<ServicioExtra>, onEdit: (String) -> Unit, aCuentaSumMap: Map<String, Double> = emptyMap()) {
     if (servicios.isEmpty()) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -30,7 +30,8 @@ fun ServiciosExtraList(servicios: List<ServicioExtra>, onEdit: (String) -> Unit)
         LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             items(servicios) { serv ->
                 val date = com.example.optoapp.util.DateUtils.formatLocalized(serv.fecha)
-                val saldo = serv.montoTotal - serv.aCuenta
+                val aCuenta = aCuentaSumMap[serv.id] ?: 0.0
+                val saldo = serv.montoTotal - aCuenta
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),

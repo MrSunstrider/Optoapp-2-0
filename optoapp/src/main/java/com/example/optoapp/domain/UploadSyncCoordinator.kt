@@ -30,6 +30,7 @@ class UploadSyncCoordinator @Inject constructor(
         private const val TABLE_PAGOS = "pagos"
         private const val TABLE_SERVICIOS = "servicios_extra"
         private const val TABLE_GASTOS_OPERATIVOS = "gastos_operativos"
+        private const val TABLE_REGALOS = "regalos_dispensacion"
         private const val UPSERT_BATCH_SIZE = 80
     }
 
@@ -85,6 +86,12 @@ class UploadSyncCoordinator @Inject constructor(
             syncStateTracker.markSynced(opticaId, "upload_dispensaciones", "batch")
             return 0
         }
+        // Compute montoPagado dynamically from pagos (montoPagado is @Ignore in entity)
+        val allPagos = repository.getPagosSnapshotForOptica(opticaId)
+        val pagosSumByDisp = allPagos
+            .filter { it.tipo != "Anulación" && it.dispensacionId != null }
+            .groupBy { it.dispensacionId!! }
+            .mapValues { (_, pags) -> pags.sumOf { it.monto } }
         val localById = dispensaciones.associateBy { it.id }
         val opticaRemota = opticaId.trim().ifBlank { FinanzasRemoteDefaults.OPTICA_ID_FALLBACK }
         val remotosExistentes = try {
@@ -109,7 +116,8 @@ class UploadSyncCoordinator @Inject constructor(
             .toMap()
         val uniqueRows = LinkedHashMap<String, Pair<String, DispensacionRemota>>()
         dispensaciones.forEach { dispensacion ->
-            val base = dispensacion.toRemoto().copy(opticaId = opticaRemota)
+            val pagosSum = pagosSumByDisp[dispensacion.id] ?: 0.0
+            val base = dispensacion.toRemoto(pagosSum = pagosSum).copy(opticaId = opticaRemota)
             val normalizedOt = normalizedOtForUnique(base.ot)
             val reconciled = if (normalizedOt != null) {
                 val existingRemoteId = remoteIdByOt[normalizedOt]
@@ -191,6 +199,12 @@ class UploadSyncCoordinator @Inject constructor(
             syncStateTracker.markSynced(opticaId, "upload_servicios_extra", "batch")
             return 0
         }
+        // Compute aCuenta dynamically from pagos (aCuenta is @Ignore in entity)
+        val allPagosServ = repository.getPagosSnapshotForOptica(opticaId)
+        val aCuentaSumByServ = allPagosServ
+            .filter { it.tipo != "Anulación" && it.servicioExtraId != null }
+            .groupBy { it.servicioExtraId!! }
+            .mapValues { (_, pags) -> pags.sumOf { it.monto } }
         val opticaRemota = opticaId.trim().ifBlank { FinanzasRemoteDefaults.OPTICA_ID_FALLBACK }
         val remotosExistentes = try {
             supabase.postgrest[TABLE_SERVICIOS]
@@ -215,7 +229,8 @@ class UploadSyncCoordinator @Inject constructor(
 
         val uniqueRows = LinkedHashMap<String, ServicioRemoto>()
         servicios.forEach { servicio ->
-            val base = servicio.toRemoto().copy(opticaId = opticaRemota)
+            val aCuentaSum = aCuentaSumByServ[servicio.id] ?: 0.0
+            val base = servicio.toRemoto(aCuentaSum = aCuentaSum).copy(opticaId = opticaRemota)
             val normalizedOt = normalizedOtForUnique(base.ot)
             val reconciled = if (normalizedOt != null) {
                 val existingRemoteId = remoteIdByOt[normalizedOt]

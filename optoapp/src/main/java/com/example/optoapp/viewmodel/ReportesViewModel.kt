@@ -161,8 +161,17 @@ class ReportesViewModel @Inject constructor(
             }.flatMapLatest { (opticaId, start, end) ->
                 combine(
                     repository.getAllDispensacionesForOptica(opticaId),
-                    repository.getAllServiciosForOptica(opticaId)
-                ) { disps, servs ->
+                    repository.getAllServiciosForOptica(opticaId),
+                    repository.getAllPagosFlowForOptica(opticaId)
+                ) { disps, servs, pagos ->
+                    val pagosSumByDisp = pagos
+                        .filter { it.tipo != "Anulación" && it.dispensacionId != null }
+                        .groupBy { it.dispensacionId!! }
+                        .mapValues { (_, pags) -> pags.sumOf { it.monto } }
+                    val aCuentaSumByServ = pagos
+                        .filter { it.tipo != "Anulación" && it.servicioExtraId != null }
+                        .groupBy { it.servicioExtraId!! }
+                        .mapValues { (_, pags) -> pags.sumOf { it.monto } }
                     val dispMovs = disps
                         .filter { it.fecha >= start && it.fecha <= end }
                         .map { d ->
@@ -173,7 +182,7 @@ class ReportesViewModel @Inject constructor(
                                 origen = Origen.DISPENSACION,
                                 origenId = d.id,
                                 montoTotal = d.montoTotal,
-                                montoPagado = d.montoPagado,
+                                montoPagado = pagosSumByDisp[d.id] ?: 0.0,
                                 costo = 0.0,
                                 pacienteId = d.pacienteId,
                                 opticaId = d.opticaId,
@@ -191,7 +200,7 @@ class ReportesViewModel @Inject constructor(
                                 origen = Origen.SERVICIO,
                                 origenId = s.id,
                                 montoTotal = s.montoTotal,
-                                montoPagado = s.aCuenta,
+                                montoPagado = aCuentaSumByServ[s.id] ?: 0.0,
                                 costo = 0.0,
                                 pacienteId = s.pacienteId ?: "",
                                 opticaId = s.opticaId,
@@ -232,7 +241,30 @@ class ReportesViewModel @Inject constructor(
         .map { it.size }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
+    // ── Pagos sum maps for per-row saldo computation (montoPagado/aCuenta are @Ignore) ──
+
     @OptIn(ExperimentalCoroutinesApi::class)
+    val pagosSumByDispensacion: StateFlow<Map<String, Double>> = sessionManager.opticaId
+        .flatMapLatest { opticaId ->
+            repository.getAllPagosFlowForOptica(opticaId)
+                .map { pagos ->
+                    pagos.filter { it.tipo != "Anulación" && it.dispensacionId != null }
+                        .groupBy { it.dispensacionId!! }
+                        .mapValues { (_, pags) -> pags.sumOf { it.monto } }
+                }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val aCuentaSumByServicio: StateFlow<Map<String, Double>> = sessionManager.opticaId
+        .flatMapLatest { opticaId ->
+            repository.getAllPagosFlowForOptica(opticaId)
+                .map { pagos ->
+                    pagos.filter { it.tipo != "Anulación" && it.servicioExtraId != null }
+                        .groupBy { it.servicioExtraId!! }
+                        .mapValues { (_, pags) -> pags.sumOf { it.monto } }
+                }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
+
     val totalCobrado: StateFlow<Double> = sessionManager.opticaId
         .flatMapLatest { opticaId ->
             combine(
@@ -248,7 +280,7 @@ class ReportesViewModel @Inject constructor(
                 val now = LocalDate.now()
                 repository.getPagosByDateRangeForOptica(range.first, range.second, opticaId)
                     .map { pagos ->
-                        pagos.filter { pago -> dentroDelPeriodo(pago.fecha, p, a, fd, now) }
+                        pagos.filter { pago -> pago.tipo != "Anulación" && dentroDelPeriodo(pago.fecha, p, a, fd, now) }
                             .sumOf { it.monto }
                     }
             }

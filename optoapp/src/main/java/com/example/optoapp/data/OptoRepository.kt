@@ -8,6 +8,7 @@ import com.example.optoapp.data.configuracionfinanciera.ConfiguracionFinancieraD
 import com.example.optoapp.data.configuracionfinanciera.ConfiguracionFinancieraEntity
 import com.example.optoapp.data.gastooperativo.GastoOperativoDao
 import com.example.optoapp.data.gastooperativo.GastoOperativoEntity
+import com.example.optoapp.data.pago.PagoDao
 import com.example.optoapp.data.montura.MonturaInventoryCoordinator
 import com.example.optoapp.data.resumendiario.ResumenDiarioDao
 import com.example.optoapp.data.resumendiario.ResumenDiarioEntity
@@ -136,6 +137,7 @@ open class OptoRepository(
     )
     fun getPagosByDateRange(start: LocalDate, end: LocalDate) = dispensacionRepo.getPagosByDateRange(start, end)
     fun getPagosByDateRangeForOptica(start: LocalDate, end: LocalDate, opticaId: String) = dispensacionRepo.getPagosByDateRangeForOptica(start, end, opticaId)
+    fun getAllPagosFlowForOptica(opticaId: String) = dispensacionRepo.getPagosFlowForOptica(opticaId)
 
     @Deprecated(
         message = "Use getAllServiciosForOptica to enforce multi-tenant isolation",
@@ -254,6 +256,11 @@ open class OptoRepository(
 
     suspend fun upsertConfiguracionFinancieraFromRemote(config: ConfiguracionFinancieraEntity) =
         configuracionFinancieraDao.upsert(config)
+
+    // ─── Regalos Dispensación ─────────────────────────────────────────────────
+
+    suspend fun getRegalosByDispensacionId(dispId: String) =
+        database.regaloDispensacionDao().getByDispensacionId(dispId)
 
     // ─── Categorías de Producto ───────────────────────────────────────────────
 

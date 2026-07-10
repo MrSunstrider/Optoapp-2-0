@@ -17,9 +17,16 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import java.util.UUID
 import javax.inject.Inject
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.stateIn
 import com.example.optoapp.data.Pago
+import com.example.optoapp.domain.CalcularMontoPagadoUseCase
 import java.time.LocalDate
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import com.example.optoapp.util.DateUtils
@@ -51,7 +58,8 @@ data class DispensacionUiState(
 
     val pagos: List<Pago> = emptyList(),
     val pagosToDelete: List<Pago> = emptyList(),
-    val generatedId: String = ""
+    val generatedId: String = "",
+    val montoPagado: Double = 0.0
 )
 
 data class DispensacionItemUi(
@@ -78,7 +86,8 @@ class DispensacionViewModel @Inject constructor(
     private val repository: com.example.optoapp.data.OptoRepository,
     private val sessionManager: com.example.optoapp.data.SessionManager,
     private val postSaveSyncScheduler: PostSaveSyncScheduler,
-    private val stockHelper: DispensacionStockHelper
+    private val stockHelper: DispensacionStockHelper,
+    private val calcularMontoPagadoUseCase: CalcularMontoPagadoUseCase
 ) : ViewModel() {
     companion object {
         private const val TAG = "DispensacionVM"
@@ -109,6 +118,29 @@ class DispensacionViewModel @Inject constructor(
 
     fun getDispensacionesByPaciente(pacienteId: String) = repository.getDispensacionesByPaciente(pacienteId)
 
+    // Reactive pagos sum maps for dynamic saldo computation (montoPagado/aCuenta are @Ignore)
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val pagosSumByDispensacion: StateFlow<Map<String, Double>> = sessionManager.opticaId
+        .flatMapLatest { opticaId ->
+            repository.getAllPagosFlowForOptica(opticaId)
+                .map { pagos ->
+                    pagos.filter { it.tipo != "Anulación" && it.dispensacionId != null }
+                        .groupBy { it.dispensacionId!! }
+                        .mapValues { (_, pags) -> pags.sumOf { it.monto } }
+                }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val aCuentaSumByServicio: StateFlow<Map<String, Double>> = sessionManager.opticaId
+        .flatMapLatest { opticaId ->
+            repository.getAllPagosFlowForOptica(opticaId)
+                .map { pagos ->
+                    pagos.filter { it.tipo != "Anulación" && it.servicioExtraId != null }
+                        .groupBy { it.servicioExtraId!! }
+                        .mapValues { (_, pags) -> pags.sumOf { it.monto } }
+                }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
+
     fun loadPacienteNombre(pacienteId: String) {
         viewModelScope.launch {
             when (val result = repository.getPacienteById(pacienteId)) {
@@ -136,6 +168,7 @@ class DispensacionViewModel @Inject constructor(
                     val d = result.data ?: return@launch
                     val loadedPagos = repository.getPagosByDispensacion(dispensacionId).first()
                         .filter { it.tipo != "Anulación" }
+                    val computedMontoPagado = calcularMontoPagadoUseCase(dispensacionId)
                     val loadedItems = repository.getDispensacionItemsByDispensacion(dispensacionId)
                     val itemsUi = if (loadedItems.isNotEmpty()) {
                         loadedItems.map { it.toUi() }
@@ -163,7 +196,8 @@ class DispensacionViewModel @Inject constructor(
                             fechaEntrega = d.fechaEntrega,
                             fecha = d.fecha,
                             fechaVencimientoGarantia = d.fechaVencimientoGarantia,
-                            pagos = loadedPagos
+                            pagos = loadedPagos,
+                            montoPagado = computedMontoPagado
                         )
                     }
                 }
@@ -436,6 +470,108 @@ class DispensacionViewModel @Inject constructor(
             val result = repository.getDispensacionById(dispensacionId)
             if (result is Resource.Success && result.data != null) {
                 repository.deleteDispensacion(result.data)
+            }
+            onComplete()
+        }
+    }
+
+    fun crearReclamo(
+        originalDispensacionId: String,
+        nuevoMontoTotal: Double,
+        onComplete: () -> Unit
+    ) {
+        viewModelScope.launch {
+            val opticaId = sessionManager.opticaId.first()
+            val result = repository.getDispensacionById(originalDispensacionId)
+            if (result is Resource.Success && result.data != null) {
+                val original = result.data
+                val totalPagadoOriginal = calcularMontoPagadoUseCase(originalDispensacionId)
+
+                // Mark original as reclamada
+                repository.updateDispensacion(
+                    original.copy(
+                        estadoEntrega = "Reclamada",
+                        updatedAt = java.time.Instant.now().toString()
+                    )
+                )
+
+                // Create new dispensacion with reclamoOrigenId
+                val newId = UUID.randomUUID().toString()
+                val nuevaDisp = original.copy(
+                    id = newId,
+                    estadoEntrega = "Pendiente",
+                    fecha = DateUtils.today(),
+                    reclamoOrigenId = originalDispensacionId,
+                    montoTotal = nuevoMontoTotal,
+                    montoPagado = 0.0,
+                    updatedAt = java.time.Instant.now().toString()
+                )
+                repository.insertDispensacion(nuevaDisp)
+
+                // Calculate financial difference
+                val diff = nuevoMontoTotal - totalPagadoOriginal
+                when {
+                    diff > 0 -> {
+                        // Patient owes more — no refund, charge will happen on new disp
+                    }
+                    diff < 0 -> {
+                        // Create refund Pago for the difference
+                        val refundPago = Pago(
+                            id = UUID.randomUUID().toString(),
+                            dispensacionId = originalDispensacionId,
+                            fecha = DateUtils.today(),
+                            tipo = "Anulación",
+                            monto = diff, // negative amount = refund
+                            metodoPago = original.metodoPago,
+                            nota = "Reembolso por reclamo de OT ${original.ot}",
+                            opticaId = opticaId
+                        )
+                        repository.insertPago(refundPago)
+                    }
+                    // diff == 0 → no additional pago needed
+                }
+            }
+            onComplete()
+        }
+    }
+
+    fun anularDispensacion(dispensacionId: String, onComplete: () -> Unit) {
+        viewModelScope.launch {
+            val opticaId = sessionManager.opticaId.first()
+            val result = repository.getDispensacionById(dispensacionId)
+            if (result is Resource.Success && result.data != null) {
+                val disp = result.data
+                val totalPagado = calcularMontoPagadoUseCase(dispensacionId)
+
+                val updatedDisp = disp.copy(
+                    estadoEntrega = "Anulado",
+                    updatedAt = java.time.Instant.now().toString()
+                )
+
+                // Create inverse Pago for the total montoPagado
+                val anulacionPago = Pago(
+                    id = UUID.randomUUID().toString(),
+                    dispensacionId = dispensacionId,
+                    fecha = DateUtils.today(),
+                    tipo = "Anulación",
+                    monto = -totalPagado,
+                    metodoPago = disp.metodoPago,
+                    nota = "Anulación de dispensación OT ${disp.ot}",
+                    opticaId = opticaId
+                )
+
+                repository.updateDispensacion(updatedDisp)
+                repository.insertPago(anulacionPago)
+
+                // Revert stock for regalos
+                val regalos = repository.getRegalosByDispensacionId(dispensacionId)
+                regalos.forEach { regalo ->
+                    stockHelper.adjustStockAndRegistrarMovimiento(
+                        regalo.productoId, opticaId, regalo.cantidad,
+                        "AJUSTE", dispensacionId,
+                        "Reversión por anulación de dispensación"
+                    )
+                }
             }
             onComplete()
         }

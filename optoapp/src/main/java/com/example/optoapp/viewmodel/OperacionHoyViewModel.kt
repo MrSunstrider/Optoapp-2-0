@@ -128,7 +128,7 @@ class OperacionHoyViewModel @Inject constructor(
                         fecha = today,
                         citasHoy = citas.size,
                         entregasPendientes = dispPendientes.size + servPendientes.size,
-                        cobrosHoy = pagosHoy.sumOf { it.monto },
+                        cobrosHoy = pagosHoy.filter { it.tipo != "Anulación" }.sumOf { it.monto },
                         stockCritico = stockCritico,
                         monturasStockCritico = monturasCriticas,
                         alertas = alertas,

@@ -69,6 +69,13 @@ fun DetallePacienteScreen(
         paciente = pacienteViewModel.getPaciente(id)
     }
 
+    // Dynamic deuda computed from pagos (montoPagado/aCuenta are @Ignore in entities)
+    val pagosSumByDisp by dispensacionViewModel.pagosSumByDispensacion.collectAsState()
+    val aCuentaSumByServ by dispensacionViewModel.aCuentaSumByServicio.collectAsState()
+    val deudaDisp = dispensaciones.sumOf { it.montoTotal - (pagosSumByDisp[it.id] ?: 0.0) }
+    val deudaServ = servicios.sumOf { it.montoTotal - (aCuentaSumByServ[it.id] ?: 0.0) }
+    val deudaTotal = deudaDisp + deudaServ
+
     Scaffold(
         containerColor = MaterialTheme.colorScheme.surface,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
@@ -186,9 +193,7 @@ fun DetallePacienteScreen(
                     .padding(padding)
                     .navigationBarsPadding()
             ) {
-                val deudaDisp = dispensaciones.sumOf { it.montoTotal - it.montoPagado }
-                val deudaServ = servicios.sumOf { it.montoTotal - it.aCuenta }
-                PacienteInfoHeader(paciente = p, deudaTotal = deudaDisp + deudaServ)
+                PacienteInfoHeader(paciente = p, deudaTotal = deudaTotal)
 
                 ScrollableTabRow(
                     selectedTabIndex = selectedTab,
@@ -229,11 +234,14 @@ fun DetallePacienteScreen(
                             evaluaciones = evaluaciones,
                             onEdit = { dispId ->
                                 navController.navigate("editarDispensacion/${id}/${dispId}")
-                            }
+                            },
+                            pagosSumMap = pagosSumByDisp
                         )
-                        2 -> ServiciosExtraList(servicios) { servId ->
-                            navController.navigate("editar_servicio/${servId}")
-                        }
+                        2 -> ServiciosExtraList(
+                            servicios = servicios,
+                            onEdit = { servId -> navController.navigate("editar_servicio/${servId}") },
+                            aCuentaSumMap = aCuentaSumByServ
+                        )
                     }
                 }
             }

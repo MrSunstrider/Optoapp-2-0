@@ -53,6 +53,7 @@ class ReportesViewModelTest {
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(emptyList())
         every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(emptyList())
         every { repository.getPagosByDateRangeForOptica(any(), any(), opticaId) } returns flowOf(emptyList())
+        every { repository.getAllPagosFlowForOptica(any()) } returns flowOf(emptyList())
     }
 
     @After

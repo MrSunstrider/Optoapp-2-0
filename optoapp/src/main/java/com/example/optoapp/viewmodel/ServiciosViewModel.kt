@@ -85,7 +85,19 @@ class ServiciosViewModel @Inject constructor(
     @OptIn(ExperimentalCoroutinesApi::class)
     val monturas: StateFlow<List<com.example.optoapp.data.Montura>> = sessionManager.opticaId
         .flatMapLatest { repository.getMonturasByOptica(it) }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    // Reactive aCuenta sum map for dynamic saldo computation (aCuenta is @Ignore in entity)
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val aCuentaSumByServicio: StateFlow<Map<String, Double>> = sessionManager.opticaId
+        .flatMapLatest { opticaId ->
+            repository.getAllPagosFlowForOptica(opticaId)
+                .map { pagos ->
+                    pagos.filter { it.tipo != "Anulación" && it.servicioExtraId != null }
+                        .groupBy { it.servicioExtraId!! }
+                        .mapValues { (_, pags) -> pags.sumOf { it.monto } }
+                }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
 
     fun updateUiState(update: (ServiciosUiState) -> ServiciosUiState) {
         _uiState.value = update(_uiState.value)

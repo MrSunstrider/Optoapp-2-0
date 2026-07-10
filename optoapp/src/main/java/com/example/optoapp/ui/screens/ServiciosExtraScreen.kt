@@ -54,8 +54,11 @@ fun ServiciosExtraScreen(navController: NavController, drawerState: DrawerState,
         matchesSearch && matchesDate && matchesEstado
     }
 
+    val aCuentaSumByServicio by viewModel.aCuentaSumByServicio.collectAsState()
     val totalFacturado = servicios.sumOf { it.montoTotal }
-    val totalPendiente = servicios.filter { it.estado == "Pendiente" }.sumOf { it.montoTotal - it.aCuenta }
+    val totalPendiente = servicios.filter { it.estado == "Pendiente" }.sumOf {
+        it.montoTotal - (aCuentaSumByServicio[it.id] ?: 0.0)
+    }
     val pendientesCount = servicios.count { it.estado == "Pendiente" }
 
     if (showDatePicker) {
@@ -189,7 +192,9 @@ fun ServiciosExtraScreen(navController: NavController, drawerState: DrawerState,
                 }
             } else {
                 items(filteredServicios) { servicio ->
-                    ServicioCard(servicio,
+                    ServicioCard(
+                        servicio = servicio,
+                        aCuenta = aCuentaSumByServicio[servicio.id] ?: 0.0,
                         onEdit = { navController.navigate("editar_servicio/${servicio.id}") },
                         onDelete = { viewModel.showDeleteConfirmation(servicio) }
                     )
@@ -202,8 +207,8 @@ fun ServiciosExtraScreen(navController: NavController, drawerState: DrawerState,
 }
 
 @Composable
-private fun ServicioCard(servicio: ServicioExtra, onEdit: () -> Unit, onDelete: () -> Unit) {
-    val saldo = servicio.montoTotal - servicio.aCuenta
+private fun ServicioCard(servicio: ServicioExtra, aCuenta: Double = 0.0, onEdit: () -> Unit, onDelete: () -> Unit) {
+    val saldo = servicio.montoTotal - aCuenta
     val estadoColor = when (servicio.estado) {
         "Entregado" -> PositiveGreen
         "Pendiente" -> if (saldo > 0) AlertRed else WarningAmber

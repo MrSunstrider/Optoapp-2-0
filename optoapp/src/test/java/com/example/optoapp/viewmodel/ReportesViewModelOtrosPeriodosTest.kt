@@ -74,6 +74,7 @@ class ReportesViewModelOtrosPeriodosTest {
         every { sessionManager.opticaId } returns flowOf(opticaId)
         every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(emptyList())
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(emptyList())
+        every { repository.getAllPagosFlowForOptica(any()) } returns flowOf(emptyList())
     }
 
     @After

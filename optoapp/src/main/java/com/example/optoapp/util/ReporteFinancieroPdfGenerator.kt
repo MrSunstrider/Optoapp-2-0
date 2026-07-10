@@ -23,7 +23,9 @@ object ReporteFinancieroPdfGenerator {
         periodo: String,
         totalVendido: Double,
         porCobrar: Double,
-        ticketPromedio: Double
+        ticketPromedio: Double,
+        pagosSumByDispensacion: Map<String, Double> = emptyMap(),
+        aCuentaSumByServicio: Map<String, Double> = emptyMap()
     ): File {
         val dir = File(context.cacheDir, "reportes").apply { mkdirs() }
         val file = File(dir, "reporte-financiero-${System.currentTimeMillis()}.pdf")
@@ -97,7 +99,8 @@ object ReporteFinancieroPdfGenerator {
         dispensaciones.forEach { disp ->
             if (y + ROW_H > PAGE_H - MARGIN) newPage()
             val date = DateUtils.formatLocalized(disp.fecha)
-            val saldo = disp.montoTotal - disp.montoPagado
+            val montoPagado = pagosSumByDispensacion[disp.id] ?: 0.0
+            val saldo = disp.montoTotal - montoPagado
             canvas.drawText(date.take(12), MARGIN, y, textPaint)
             canvas.drawText(disp.metodoPago.take(20), MARGIN + 120f, y, textPaint)
             canvas.drawText("S/ ${disp.montoTotal.toMoney()}", MARGIN + 340f, y, textPaint)
@@ -121,9 +124,10 @@ object ReporteFinancieroPdfGenerator {
 
             serviciosExtra.forEach { serv ->
                 if (y + ROW_H > PAGE_H - MARGIN) newPage()
+                val aCuenta = aCuentaSumByServicio[serv.id] ?: 0.0
                 canvas.drawText(serv.descripcion.take(28), MARGIN, y, textPaint)
                 canvas.drawText("S/ ${serv.montoTotal.toMoney()}", MARGIN + 340f, y, textPaint)
-                canvas.drawText("S/ ${serv.aCuenta.toMoney()}", MARGIN + 450f, y, textPaint)
+                canvas.drawText("S/ ${aCuenta.toMoney()}", MARGIN + 450f, y, textPaint)
                 y += ROW_H
             }
         }

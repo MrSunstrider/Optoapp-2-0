@@ -19,6 +19,7 @@ import com.example.optoapp.data.Montura
 import com.example.optoapp.data.Pago
 import com.example.optoapp.ui.components.AbonoDialog
 import com.example.optoapp.ui.components.DropdownField
+import com.example.optoapp.ui.components.FechaEntregaEditButton
 import com.example.optoapp.ui.components.OptoTextField
 import com.example.optoapp.util.DateUtils
 import com.example.optoapp.viewmodel.DispensacionUiState
@@ -255,11 +256,11 @@ fun FinancieraInfoSection(
                 onUpdate(uiState.copy(estadoEntrega = newEstado, fechaEntrega = newFechaEntrega))
             }
             if (uiState.estadoEntrega == "Entregado" && uiState.fechaEntrega != null) {
-                Text(
-                    text = "Entregado el día ${DateUtils.formatLocalized(uiState.fechaEntrega)}",
-                    fontSize = 13.sp,
-                    color = MaterialTheme.colorScheme.tertiary,
-                    fontWeight = FontWeight.Medium
+                FechaEntregaEditButton(
+                    fechaEntrega = uiState.fechaEntrega,
+                    onFechaChanged = { nuevaFecha ->
+                        onUpdate(uiState.copy(fechaEntrega = nuevaFecha))
+                    }
                 )
             }
         }

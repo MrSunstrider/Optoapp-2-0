@@ -229,6 +229,9 @@ class DispensacionRepository(
     suspend fun getPagosSnapshotForOptica(opticaId: String): List<Pago> =
         pagoDao.getPagosListByOptica(opticaId)
 
+    fun getPagosFlowForOptica(opticaId: String): Flow<List<Pago>> =
+        pagoDao.getPagosFlowByOptica(opticaId)
+
     // ── Servicios Extra ──────────────────────────────────────────────────────
 
     @Deprecated(

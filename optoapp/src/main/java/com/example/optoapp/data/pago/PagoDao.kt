@@ -58,6 +58,9 @@ interface PagoDao {
     @Query("SELECT * FROM pagos WHERE opticaId = :opticaId")
     suspend fun getPagosListByOptica(opticaId: String): List<Pago>
 
+    @Query("SELECT * FROM pagos WHERE opticaId = :opticaId")
+    fun getPagosFlowByOptica(opticaId: String): Flow<List<Pago>>
+
     @Deprecated(
         message = "Use reassignDispensacionIdForOptica to enforce multi-tenant isolation",
         replaceWith = ReplaceWith("reassignDispensacionIdForOptica(oldDispensacionId, newDispensacionId, opticaId)")

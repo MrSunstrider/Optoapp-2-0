@@ -86,6 +86,7 @@ class CierreCajaViewModel @Inject constructor(
                     var ventasHoy = 0.0
                     var cobrosAtrasados = 0.0
                     pagos.forEach { pago ->
+                        if (pago.tipo == "Anulación") return@forEach
                         val dispFecha = pago.dispensacionId?.let { id -> dispMap[id]?.fecha }
                         val servFecha = pago.servicioExtraId?.let { id -> servMap[id]?.fecha }
                         when {

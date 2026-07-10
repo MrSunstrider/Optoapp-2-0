@@ -293,7 +293,7 @@ internal data class DispensacionRemotaLookup(
 )
 
 
-fun DispensacionOptica.toRemoto(): DispensacionRemota = DispensacionRemota(
+fun DispensacionOptica.toRemoto(pagosSum: Double = montoPagado): DispensacionRemota = DispensacionRemota(
     id = id, ot = ot, monturaId = monturaId, pacienteId = pacienteId, fecha = fecha.toString(), opticaId = opticaId,
     tipoMontura = tipoMontura, materialMontura = materialMontura,
     tipoLente = tipoLente, materialLente = materialLente,
@@ -301,7 +301,7 @@ fun DispensacionOptica.toRemoto(): DispensacionRemota = DispensacionRemota(
     notasDiseno = notasDiseno, origenMontura = origenMontura,
     tipoAro = tipoAro, descripcionMontura = descripcionMontura,
     montoTotal = montoTotal, metodoPago = metodoPago,
-    montoPagado = montoPagado, estadoEntrega = estadoEntrega,
+    montoPagado = pagosSum, estadoEntrega = estadoEntrega,
     fechaEntrega = fechaEntrega?.toString(),
     fechaVencimientoGarantia = fechaVencimientoGarantia?.toString(),
     distanciaLente = distanciaLente, altura = altura, subTipoBifocal = subTipoBifocal,
@@ -337,12 +337,12 @@ fun DispensacionItem.toRemoto(): DispensacionItemRemota = DispensacionItemRemota
     opticaId = opticaId.ifBlank { "mi_optica_base" }
 )
 
-fun ServicioExtra.toRemoto(): ServicioRemoto = ServicioRemoto(
+fun ServicioExtra.toRemoto(aCuentaSum: Double = aCuenta): ServicioRemoto = ServicioRemoto(
     id = id,
     ot = ot.trim(),
     descripcion = descripcion.trim().ifBlank { FinanzasRemoteDefaults.ServicioExtra.DESCRIPCION_VACIA },
     montoTotal = montoTotal.coerceAtLeast(0.0),
-    aCuenta = aCuenta.coerceAtLeast(0.0).coerceAtMost(montoTotal.coerceAtLeast(0.0)),
+    aCuenta = aCuentaSum.coerceAtLeast(0.0).coerceAtMost(montoTotal.coerceAtLeast(0.0)),
     estado = estado.trim().ifBlank { FinanzasRemoteDefaults.ServicioExtra.ESTADO_VACIO },
     fecha = fecha.toString(),
     pacienteId = pacienteId?.trim()?.takeIf { it.isNotBlank() },

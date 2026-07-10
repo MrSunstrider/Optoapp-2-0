@@ -20,6 +20,7 @@ import com.example.optoapp.data.Paciente
 import com.example.optoapp.data.Pago
 import com.example.optoapp.ui.components.AbonoDialog
 import com.example.optoapp.ui.components.DropdownField
+import com.example.optoapp.ui.components.FechaEntregaEditButton
 import com.example.optoapp.ui.components.OptoTextField
 import com.example.optoapp.util.DateUtils
 import com.example.optoapp.viewmodel.ServiciosUiState
@@ -202,10 +203,11 @@ fun ServicioForm(
     )
 
     if (uiState.fechaEntrega != null) {
-        Text(
-            "Entregado el ${DateUtils.formatLocalized(uiState.fechaEntrega)}",
-            fontSize = 12.sp,
-            color = MaterialTheme.colorScheme.tertiary
+        FechaEntregaEditButton(
+            fechaEntrega = uiState.fechaEntrega,
+            onFechaChanged = { nuevaFecha ->
+                onUpdate(uiState.copy(fechaEntrega = nuevaFecha))
+            }
         )
     }
 

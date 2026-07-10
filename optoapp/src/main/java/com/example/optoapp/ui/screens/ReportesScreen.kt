@@ -47,6 +47,8 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
     val context = LocalContext.current
     val dispensaciones by viewModel.allDispensaciones.collectAsState()
     val serviciosExtra by viewModel.allServiciosDelPeriodo.collectAsState()
+    val pagosSumByDispensacion by viewModel.pagosSumByDispensacion.collectAsState()
+    val aCuentaSumByServicio by viewModel.aCuentaSumByServicio.collectAsState()
     val scope = rememberCoroutineScope()
 
     val periodo by viewModel.periodo.collectAsState()
@@ -101,7 +103,9 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                                     periodo = periodo,
                                     totalVendido = totalVendido,
                                     porCobrar = porCobrar,
-                                    ticketPromedio = ticketPromedio
+                                    ticketPromedio = ticketPromedio,
+                                    pagosSumByDispensacion = pagosSumByDispensacion,
+                                    aCuentaSumByServicio = aCuentaSumByServicio
                                 )
                                 FileShareUtils.openPdf(context, pdf, "Abrir reporte financiero")
                             } catch (e: Exception) {
@@ -246,7 +250,8 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
 
             items(dispensaciones) { disp ->
                 val date = DateUtils.formatLocalized(disp.fecha)
-                val saldo = disp.montoTotal - disp.montoPagado
+                val montoPagado = pagosSumByDispensacion[disp.id] ?: 0.0
+                val saldo = disp.montoTotal - montoPagado
                 Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(10.dp)) {
                     Row(modifier = Modifier.padding(14.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                         Column(modifier = Modifier.weight(1f)) {
@@ -267,7 +272,8 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
 
             items(serviciosExtra) { serv ->
                 val date = DateUtils.formatLocalized(serv.fecha)
-                val saldo = serv.montoTotal - serv.aCuenta
+                val aCuenta = aCuentaSumByServicio[serv.id] ?: 0.0
+                val saldo = serv.montoTotal - aCuenta
                 Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(10.dp)) {
                     Row(modifier = Modifier.padding(14.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                         Column(modifier = Modifier.weight(1f)) {

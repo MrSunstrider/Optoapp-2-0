@@ -31,6 +31,7 @@ fun DispensacionesList(
     evaluaciones: List<EvaluacionClinica>,
     onEdit: (String) -> Unit,
     laboratorioVm: LaboratorioConfigViewModel = hiltViewModel(),
+    pagosSumMap: Map<String, Double> = emptyMap(),
 ) {
     val selectedDispForResumen = remember { mutableStateOf<DispensacionOptica?>(null) }
     val selectedDispForTicket = remember { mutableStateOf<DispensacionOptica?>(null) }
@@ -47,7 +48,8 @@ fun DispensacionesList(
         LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             items(dispensaciones) { disp ->
                 val date = com.example.optoapp.util.DateUtils.formatLocalized(disp.fecha)
-                val saldo = disp.montoTotal - disp.montoPagado
+                val montoPagado = pagosSumMap[disp.id] ?: 0.0
+                val saldo = disp.montoTotal - montoPagado
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
@@ -123,7 +125,8 @@ fun DispensacionesList(
             disp = currentDisp,
             paciente = paciente,
             onDismiss = { selectedDispForResumen.value = null },
-            onEdit = { onEdit(currentDisp.id) }
+            onEdit = { onEdit(currentDisp.id) },
+            pagosSum = pagosSumMap[currentDisp.id] ?: 0.0
         )
     }
 }
@@ -135,6 +138,7 @@ fun ResumenDispensacionDialog(
     onDismiss: () -> Unit,
     onEdit: () -> Unit,
     onGoToFinanciero: ((DispensacionOptica) -> Unit)? = null,
+    pagosSum: Double = 0.0,
 ) {
     val date = com.example.optoapp.util.DateUtils.formatLocalized(disp.fecha)
 
@@ -186,9 +190,10 @@ fun ResumenDispensacionDialog(
                 }
 
                 InfoSection("Resumen Financiero") {
-                    val saldo = disp.montoTotal - disp.montoPagado
+                    val computedMontoPagado = pagosSum
+                    val saldo = disp.montoTotal - computedMontoPagado
                     val formattedTotal = String.format(Locale.getDefault(), "%.2f", disp.montoTotal)
-                    val formattedPagado = String.format(Locale.getDefault(), "%.2f", disp.montoPagado)
+                    val formattedPagado = String.format(Locale.getDefault(), "%.2f", computedMontoPagado)
                     val formattedSaldo = String.format(Locale.getDefault(), "%.2f", saldo)
 
                     Text("Monto Total: s/. $formattedTotal", fontSize = 14.sp)

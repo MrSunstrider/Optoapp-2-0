@@ -133,7 +133,7 @@ data class ServicioExtra(
     @SerialName("montoTotal")
     val montoTotal: Double,
     @SerialName("aCuenta")
-    val aCuenta: Double,
+    val aCuenta: Double = 0.0,
     val estado: String, // Delivery status lifecycle: Pendiente → Entregado
     @Serializable(with = LocalDateSerializer::class)
     val fecha: LocalDate,
