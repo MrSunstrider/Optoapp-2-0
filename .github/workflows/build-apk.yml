@@ -96,11 +96,12 @@ jobs:
       - name: Track release in Supabase
         if: github.event_name != 'pull_request' && steps.check_release.outputs.exists == 'false'
         run: |
-          curl -s -X POST "https://sflhtihqdhrlryeyrzdo.supabase.co/functions/v1/track-release" \
+          RESPONSE=$(curl -sf --retry 3 --retry-delay 5 -X POST "https://sflhtihqdhrlryeyrzdo.supabase.co/functions/v1/track-release" \
             -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
             -H "Content-Type: application/json" \
             -d '{
               "version": "${{ steps.version.outputs.version }}",
               "apk_download_url": "https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.tag }}/optoapp-release.apk",
               "release_notes": "Build automático del branch main."
-            }'
+            }')
+          echo "track-release response: $RESPONSE"
