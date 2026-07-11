@@ -80,6 +80,7 @@ open class SyncFinanzasUseCase @Inject constructor(
             val regalosDown: Int
             val resumenDown: Int
             val configDown: Int
+            val gastosDown: Int
             if (downloadAfterUpload) {
                 dispDown = downloadSyncCoordinator.downloadDispensaciones(opticaId)
                 Log.d(TAG, "Finanzas: download dispensaciones=$dispDown")
@@ -95,6 +96,8 @@ open class SyncFinanzasUseCase @Inject constructor(
                 Log.d(TAG, "Finanzas: download pagos=$pagosDown")
                 regalosDown = downloadSyncCoordinator.downloadRegalos(opticaId)
                 Log.d(TAG, "Finanzas: download regalos=$regalosDown")
+                gastosDown = downloadSyncCoordinator.downloadGastosOperativos(opticaId)
+                Log.d(TAG, "Finanzas: download gastos_operativos=$gastosDown")
             } else {
                 dispDown = 0
                 itemsDown = 0
@@ -103,6 +106,7 @@ open class SyncFinanzasUseCase @Inject constructor(
                 regalosDown = 0
                 resumenDown = 0
                 configDown = 0
+                gastosDown = 0
                 Log.d(TAG, "Finanzas: fin upload-only OK")
             }
 
@@ -120,7 +124,8 @@ open class SyncFinanzasUseCase @Inject constructor(
                     downloadedPagos = pagosDown,
                     downloadedRegalos = regalosDown,
                     downloadedResumenesDiarios = resumenDown,
-                    downloadedConfiguracionesFinancieras = configDown
+                    downloadedConfiguracionesFinancieras = configDown,
+                    downloadedGastosOperativos = gastosDown
                 )
             )
         } catch (e: CancellationException) {

@@ -186,22 +186,47 @@ open class GenerarRecomendacionesUseCase @Inject constructor(
         analisis: AnalisisMensual,
         config: ConfiguracionFinancieraEntity
     ): Recomendacion? {
-        val variacion = analisis.variacionVentasPct ?: return null
+        val hoy = LocalDate.now()
+        val diasTranscurridos = hoy.dayOfMonth
+        val diasMesAnterior = hoy.minusMonths(1).lengthOfMonth()
+
+        val variacion: Double
+        val ventasReferencia: Double
+        val esProporcional: Boolean
+
+        if (diasTranscurridos > 0 && diasMesAnterior > 0 && analisis.ventasMesAnterior > 0.0) {
+            val proporcion = diasTranscurridos.toDouble() / diasMesAnterior.toDouble()
+            ventasReferencia = analisis.ventasMesAnterior * proporcion
+            variacion = ((analisis.ventasMes - ventasReferencia) / ventasReferencia) * 100.0
+            esProporcional = true
+        } else {
+            val rpcVariacion = analisis.variacionVentasPct ?: return null
+            variacion = rpcVariacion
+            ventasReferencia = analisis.ventasMesAnterior
+            esProporcional = false
+        }
+
         if (variacion >= -config.caidaVentasAlertaPct) return null
 
-        val currentMonth = LocalDate.now().monthValue
+        val currentMonth = hoy.monthValue
         if (currentMonth in listOf(1, 2)) return null
 
         val pctStr = String.format("%.0f", kotlin.math.abs(variacion))
         val titulo = "Caida en ventas detectada"
+        val detalleBase = if (esProporcional) {
+            "Las ventas cayeron un ${pctStr}% respecto al mismo periodo del mes pasado " +
+                "(proporcional a $diasTranscurridos dias). "
+        } else {
+            "Las ventas cayeron un ${pctStr}% respecto al mes pasado. "
+        }
         return Recomendacion(
             id = "${RecomendacionTipo.ALERTA_CAIDA.name}::$titulo",
             tipo = RecomendacionTipo.ALERTA_CAIDA,
             titulo = titulo,
-            detalle = "Las ventas cayeron un ${pctStr}% respecto al mes pasado. " +
+            detalle = detalleBase +
                 "¿Estacionalidad o tendencia? " +
                 "Ventas actuales: S/ ${String.format("%.0f", analisis.ventasMes)} vs. " +
-                "S/ ${String.format("%.0f", analisis.ventasMesAnterior)} del mes anterior.",
+                "S/ ${String.format("%.0f", ventasReferencia)} esperado.",
             impactoEstimado = null,
             prioridad = Prioridad.ALTA,
             accion = "Revisar causas de la caida y evaluar acciones correctivas",

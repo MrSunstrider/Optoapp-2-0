@@ -1,10 +1,12 @@
 package com.example.optoapp.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.SessionManager
 import com.example.optoapp.data.gastooperativo.GastoOperativoEntity
+import com.example.optoapp.domain.SyncFinanzasUseCase
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import com.example.optoapp.util.DateUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -30,11 +32,13 @@ data class GastosUiState(
     val error: String? = null
 )
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class GastosViewModel @Inject constructor(
     private val repository: OptoRepository,
     private val sessionManager: SessionManager,
-    private val postSaveSyncScheduler: PostSaveSyncScheduler
+    private val postSaveSyncScheduler: PostSaveSyncScheduler,
+    private val syncFinanzasUseCase: SyncFinanzasUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(GastosUiState())
@@ -43,11 +47,30 @@ class GastosViewModel @Inject constructor(
     private val _allGastos = MutableStateFlow<List<GastoOperativoEntity>>(emptyList())
     val allGastos: StateFlow<List<GastoOperativoEntity>> = _allGastos.asStateFlow()
 
+    private var syncTriggered = false
+
     init {
         viewModelScope.launch {
             sessionManager.opticaId.flatMapLatest { repository.getGastosOperativos(it) }
+                .catch { e ->
+                    Log.e(TAG, "GastosViewModel Flow crashed, restarting", e)
+                    emit(emptyList())
+                }
                 .collect { gastos ->
-                    _allGastos.value = autoGenerarSiFalta(gastos)
+                    try {
+                        _allGastos.value = autoGenerarSiFalta(gastos)
+                    } catch (e: Exception) {
+                        Log.e(TAG, "autoGenerarSiFalta failed, showing raw gastos", e)
+                        _allGastos.value = gastos
+                    }
+                    if (!syncTriggered && gastos.isEmpty()) {
+                        syncTriggered = true
+                        val opticaId = sessionManager.opticaId.first()
+                        Log.d(TAG, "Triggering finanzas download for gastos (opticaId=$opticaId)")
+                        viewModelScope.launch {
+                            syncFinanzasUseCase(opticaId, downloadAfterUpload = true, skipUpload = true)
+                        }
+                    }
                 }
         }
     }
@@ -68,6 +91,7 @@ class GastosViewModel @Inject constructor(
     }
 
     companion object {
+        private const val TAG = "GastosVM"
         val CATEGORIAS = listOf("alquiler", "servicios", "personal", "proveedores", "insumos", "marketing", "impuestos", "otro")
 
         fun autoGenerarRecurrentes(
@@ -101,6 +125,17 @@ class GastosViewModel @Inject constructor(
 
     fun showNewGasto() {
         _uiState.value = GastosUiState(showDialog = true)
+    }
+
+    fun refreshGastos() {
+        viewModelScope.launch {
+            try {
+                val opticaId = sessionManager.opticaId.first()
+                syncFinanzasUseCase(opticaId, downloadAfterUpload = true, skipUpload = true)
+            } catch (e: Exception) {
+                Log.e(TAG, "refreshGastos failed", e)
+            }
+        }
     }
 
     fun editGasto(gasto: GastoOperativoEntity) {

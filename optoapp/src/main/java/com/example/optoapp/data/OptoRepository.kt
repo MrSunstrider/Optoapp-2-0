@@ -72,6 +72,7 @@ open class OptoRepository(
 
     fun getEvaluacionesByPaciente(pacienteId: String) = pacienteRepo.getEvaluacionesByPaciente(pacienteId)
     fun getEvaluacionesProximaCitaEnRango(opticaId: String, start: LocalDate, end: LocalDate) = pacienteRepo.getEvaluacionesProximaCitaEnRango(opticaId, start, end)
+    @Suppress("DEPRECATION")
     @Deprecated(
         message = "Use countEvaluacionesInRangeForOptica to enforce multi-tenant isolation",
         replaceWith = ReplaceWith("countEvaluacionesInRangeForOptica(start, end, opticaId)")
@@ -85,17 +86,20 @@ open class OptoRepository(
     suspend fun updateEvaluacion(evaluacion: EvaluacionClinica) { val stamped = evaluacion.copy(updatedAt = Instant.now().toString()); pacienteRepo.updateEvaluacion(stamped); postSaveSyncScheduler.get().scheduleHistorialSync(stamped.opticaId) }
 
     fun getDispensacionesByPaciente(pacienteId: String) = dispensacionRepo.getDispensacionesByPaciente(pacienteId)
+    @Suppress("DEPRECATION")
     @Deprecated(
         message = "Use getAllDispensacionesForOptica to enforce multi-tenant isolation",
         replaceWith = ReplaceWith("getAllDispensacionesForOptica(opticaId)")
     )
     fun getAllDispensaciones() = dispensacionRepo.getAllDispensaciones()
     fun getAllDispensacionesForOptica(opticaId: String) = dispensacionRepo.getAllDispensacionesForOptica(opticaId)
+    @Suppress("DEPRECATION")
     @Deprecated(
         message = "Use getTotalVendidoForOptica to enforce multi-tenant isolation",
         replaceWith = ReplaceWith("getTotalVendidoForOptica(opticaId)")
     )
     fun getTotalVendido() = dispensacionRepo.getTotalVendido()
+    @Suppress("DEPRECATION")
     @Deprecated(
         message = "Use getTotalPagadoForOptica to enforce multi-tenant isolation",
         replaceWith = ReplaceWith("getTotalPagadoForOptica(opticaId)")
@@ -103,6 +107,7 @@ open class OptoRepository(
     fun getTotalPagado() = dispensacionRepo.getTotalPagado()
     fun getTotalVendidoForOptica(opticaId: String) = dispensacionRepo.getTotalVendidoForOptica(opticaId)
     fun getTotalPagadoForOptica(opticaId: String) = dispensacionRepo.getTotalPagadoForOptica(opticaId)
+    @Suppress("DEPRECATION")
     @Deprecated(
         message = "Use getDispensacionesByDateRangeForOptica to enforce multi-tenant isolation",
         replaceWith = ReplaceWith("getDispensacionesByDateRangeForOptica(start, end, opticaId)")
@@ -132,6 +137,7 @@ open class OptoRepository(
     suspend fun deletePagoRegistrandoAnulacionEnCaja(pago: Pago, opticaId: String) = dispensacionRepo.deletePagoRegistrandoAnulacionEnCaja(pago, opticaId)
     suspend fun deletePago(pago: Pago) = dispensacionRepo.deletePago(pago)
     fun getPagosByServicioExtra(servicioExtraId: String) = dispensacionRepo.getPagosByServicioExtra(servicioExtraId)
+    @Suppress("DEPRECATION")
     @Deprecated(
         message = "Use getPagosByDateRangeForOptica to enforce multi-tenant isolation",
         replaceWith = ReplaceWith("getPagosByDateRangeForOptica(start, end, opticaId)")
@@ -140,6 +146,7 @@ open class OptoRepository(
     fun getPagosByDateRangeForOptica(start: LocalDate, end: LocalDate, opticaId: String) = dispensacionRepo.getPagosByDateRangeForOptica(start, end, opticaId)
     fun getAllPagosFlowForOptica(opticaId: String) = dispensacionRepo.getPagosFlowForOptica(opticaId)
 
+    @Suppress("DEPRECATION")
     @Deprecated(
         message = "Use getAllServiciosForOptica to enforce multi-tenant isolation",
         replaceWith = ReplaceWith("getAllServiciosForOptica(opticaId)")

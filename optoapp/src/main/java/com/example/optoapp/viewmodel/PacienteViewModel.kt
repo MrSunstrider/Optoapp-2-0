@@ -96,7 +96,7 @@ class PacienteViewModel @Inject constructor(
         }
         
         baseFlow.map { list ->
-            if (query.isNotEmpty() && (filter != null)) {
+            if (query.isNotEmpty() && filter.isNotEmpty()) {
                 // Si hay filtro Y búsqueda, aplicamos la búsqueda sobre el resultado del filtro
                 list.filter { 
                     it.nombreCompleto.contains(query, ignoreCase = true) || 

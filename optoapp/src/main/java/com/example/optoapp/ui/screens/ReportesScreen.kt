@@ -8,6 +8,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -158,7 +161,7 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
                                 IconButton(onClick = { viewModel.previous() }) {
-                                    Icon(Icons.Default.KeyboardArrowLeft, contentDescription = "Anterior")
+                                    Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = "Anterior")
                                 }
                                 Text(
                                     periodoLabel,
@@ -172,7 +175,7 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                                         Icon(Icons.Default.DateRange, contentDescription = "Seleccionar fecha", modifier = Modifier.size(20.dp))
                                     }
                                     IconButton(onClick = { viewModel.next() }) {
-                                        Icon(Icons.Default.KeyboardArrowRight, contentDescription = "Siguiente")
+                                        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = "Siguiente")
                                     }
                                 }
                             }
@@ -183,7 +186,7 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
 
             item {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OptoKpiCard("Vendido", "s/. ${totalVendido.fmt()}", MaterialTheme.colorScheme.primary, Icons.Default.TrendingUp, Modifier.weight(1f))
+                    OptoKpiCard("Vendido", "s/. ${totalVendido.fmt()}", MaterialTheme.colorScheme.primary, Icons.AutoMirrored.Filled.TrendingUp, Modifier.weight(1f))
                     OptoKpiCard("Cobrado", "s/. ${totalCobrado.fmt()}", PositiveGreen, Icons.Default.Payments, Modifier.weight(1f))
                 }
             }

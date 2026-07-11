@@ -201,6 +201,20 @@ fun GastoOperativoEntity.toRemoto(): GastoOperativoRemoto = GastoOperativoRemoto
     frecuencia = frecuencia
 )
 
+fun GastoOperativoRemoto.toEntity(): GastoOperativoEntity = GastoOperativoEntity(
+    id = id,
+    opticaId = opticaId,
+    categoria = categoria,
+    descripcion = descripcion,
+    monto = monto,
+    fecha = java.time.LocalDate.parse(fecha),
+    fechaProgramada = fechaProgramada?.let { java.time.LocalDate.parse(it) },
+    nota = nota,
+    createdAt = createdAt,
+    esRecurrente = esRecurrente,
+    frecuencia = frecuencia
+)
+
 // ── RegaloDispensacion remote DTO ──────────────────────────────────────
 
 @Serializable
@@ -308,7 +322,8 @@ data class FinanzasSyncResult(
     val downloadedPagos: Int,
     val downloadedRegalos: Int = 0,
     val downloadedResumenesDiarios: Int = 0,
-    val downloadedConfiguracionesFinancieras: Int = 0
+    val downloadedConfiguracionesFinancieras: Int = 0,
+    val downloadedGastosOperativos: Int = 0
 )
 
 @Serializable

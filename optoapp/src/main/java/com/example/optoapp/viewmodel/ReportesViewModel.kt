@@ -28,6 +28,7 @@ import java.time.LocalDate
 import java.time.Year
 import javax.inject.Inject
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class ReportesViewModel @Inject constructor(
     private val repository: OptoRepository,

@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -88,7 +89,7 @@ fun PacientesListScreen(
                     }
                     var showSortMenu by remember { mutableStateOf(false) }
                     IconButton(onClick = { showSortMenu = true }) {
-                        Icon(Icons.Default.Sort, contentDescription = "Ordenar")
+                        Icon(Icons.AutoMirrored.Filled.Sort, contentDescription = "Ordenar")
                     }
                     DropdownMenu(expanded = showSortMenu, onDismissRequest = { showSortMenu = false }) {
                         DropdownMenuItem(text = { Text("Nombre A-Z") }, onClick = { viewModel.setSort("nombre"); showSortMenu = false })

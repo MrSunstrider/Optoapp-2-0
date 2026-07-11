@@ -3,6 +3,7 @@ package com.example.optoapp.viewmodel
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.SessionManager
 import com.example.optoapp.data.gastooperativo.GastoOperativoEntity
+import com.example.optoapp.domain.SyncFinanzasUseCase
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import io.mockk.coEvery
 import io.mockk.every
@@ -34,6 +35,7 @@ class GastosViewModelTest {
     private lateinit var repository: OptoRepository
     private lateinit var sessionManager: SessionManager
     private lateinit var scheduler: PostSaveSyncScheduler
+    private lateinit var syncFinanzas: SyncFinanzasUseCase
     private lateinit var viewModel: GastosViewModel
 
     private val opticaId = "optica-test"
@@ -50,6 +52,7 @@ class GastosViewModelTest {
         repository = mockk(relaxed = true)
         sessionManager = mockk(relaxed = true)
         scheduler = mockk(relaxed = true)
+        syncFinanzas = mockk(relaxed = true)
 
         every { sessionManager.opticaId } returns flowOf(opticaId)
         every { repository.getGastosOperativos(opticaId) } returns emptyFlow()
@@ -73,7 +76,7 @@ class GastosViewModelTest {
         coEvery { repository.deleteGastoOperativo(gasto) } throws
                 IOException("Database write failed")
 
-        viewModel = GastosViewModel(repository, sessionManager, scheduler)
+        viewModel = GastosViewModel(repository, sessionManager, scheduler, syncFinanzas)
         viewModel.delete(gasto)
 
         // After the coroutine runs, error should be set
@@ -92,7 +95,7 @@ class GastosViewModelTest {
 
         coEvery { repository.deleteGastoOperativo(gasto) } returns Unit
 
-        viewModel = GastosViewModel(repository, sessionManager, scheduler)
+        viewModel = GastosViewModel(repository, sessionManager, scheduler, syncFinanzas)
         viewModel.delete(gasto)
 
         advanceUntilIdle()

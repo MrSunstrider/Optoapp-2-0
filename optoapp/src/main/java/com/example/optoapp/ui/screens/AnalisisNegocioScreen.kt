@@ -8,6 +8,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -161,6 +162,8 @@ fun AnalisisNegocioScreen(
                 uiState.recomendaciones.take(3).forEach { rec ->
                     RecomendacionCard(
                         rec = rec,
+                        feedbacksEnviados = uiState.feedbacksEnviados,
+                        feedbackErrorRecId = uiState.feedbackErrorRecId,
                         onFeedback = { fueUtil -> viewModel.onFeedback(rec.id, fueUtil) }
                     )
                 }
@@ -210,12 +213,18 @@ fun AnalisisNegocioScreen(
                             Icon(Icons.Default.MoneyOff, contentDescription = null, tint = AlertRed, modifier = Modifier.size(20.dp))
                             Spacer(Modifier.width(8.dp))
                             Text("Gastos del mes", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            IconButton(
+                                modifier = Modifier.size(28.dp),
+                                onClick = { gastosViewModel.refreshGastos() }
+                            ) {
+                                Icon(Icons.Default.Refresh, contentDescription = "Actualizar gastos", modifier = Modifier.size(16.dp))
+                            }
                         }
                         Text("S/ ${formatNumber(totalGastos)}", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = AlertRed)
                     }
-                    if (gastosMes.isNotEmpty()) {
+                    if (gastos.isNotEmpty()) {
                         Spacer(Modifier.height(6.dp))
-                        gastosMes.sortedByDescending { it.fecha }.forEach { g ->
+                        gastos.sortedByDescending { it.fecha }.forEach { g ->
                             Row(
                                 Modifier
                                     .fillMaxWidth()
@@ -228,7 +237,15 @@ fun AnalisisNegocioScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Column(Modifier.weight(1f)) {
-                                    Text("${g.categoria}${if (!g.descripcion.isNullOrBlank()) " · ${g.descripcion}" else ""}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text("${g.categoria}${if (!g.descripcion.isNullOrBlank()) " · ${g.descripcion}" else ""}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        if (g.esRecurrente) {
+                                            Spacer(Modifier.width(6.dp))
+                                            Surface(shape = RoundedCornerShape(4.dp), color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)) {
+                                                Text("Recurrente", modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp), fontSize = 9.sp, color = MaterialTheme.colorScheme.primary)
+                                            }
+                                        }
+                                    }
                                     Text(
                                         com.example.optoapp.util.DateUtils.formatLocalized(g.fecha),
                                         fontSize = 10.sp,
@@ -236,8 +253,27 @@ fun AnalisisNegocioScreen(
                                     )
                                 }
                                 Text("S/ ${formatNumber(g.monto)}", fontSize = 12.sp, color = AlertRed, fontWeight = FontWeight.Medium)
+                                IconButton(
+                                    modifier = Modifier.size(28.dp),
+                                    onClick = { gastosViewModel.editGasto(g) }
+                                ) {
+                                    Icon(Icons.Default.Edit, contentDescription = "Editar", modifier = Modifier.size(14.dp))
+                                }
+                                IconButton(
+                                    modifier = Modifier.size(28.dp),
+                                    onClick = { deleteTarget = g.id }
+                                ) {
+                                    Icon(Icons.Default.Delete, contentDescription = "Eliminar", modifier = Modifier.size(14.dp), tint = AlertRed)
+                                }
                             }
                         }
+                    } else {
+                        Spacer(Modifier.height(6.dp))
+                        Text(
+                            "No hay gastos registrados",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                        )
                     }
                     Spacer(Modifier.height(8.dp))
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -248,7 +284,7 @@ fun AnalisisNegocioScreen(
                         }
                         if (gastosMes.isNotEmpty()) {
                             OutlinedButton(onClick = { navController.navigate("gastos") }, modifier = Modifier.weight(1f)) {
-                                Icon(Icons.Default.List, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Icon(Icons.AutoMirrored.Filled.List, contentDescription = null, modifier = Modifier.size(16.dp))
                                 Spacer(Modifier.width(4.dp))
                                 Text("Ver todos", fontSize = 12.sp)
                             }
@@ -256,7 +292,7 @@ fun AnalisisNegocioScreen(
                     }
 
                     if (deleteTarget != null) {
-                        val target = gastosMes.find { it.id == deleteTarget } ?: return@Column
+                        val target = gastos.find { it.id == deleteTarget } ?: return@Column
                         AlertDialog(
                             onDismissRequest = { deleteTarget = null },
                             title = { Text("Eliminar gasto") },
@@ -298,7 +334,7 @@ fun AnalisisNegocioScreen(
             }
             AlertDialog(
                 onDismissRequest = { gastosViewModel.dismissDialog() },
-                title = { Text("Nuevo Gasto", fontWeight = FontWeight.Bold) },
+                title = { Text(if (gastosUiState.editingGasto != null) "Editar Gasto" else "Nuevo Gasto", fontWeight = FontWeight.Bold) },
                 text = {
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         var expanded by remember { mutableStateOf(false) }
@@ -458,8 +494,17 @@ private fun MetricItem(
     }
 }
 
+@androidx.annotation.VisibleForTesting
 @Composable
-private fun RecomendacionCard(rec: Recomendacion, onFeedback: (Boolean) -> Unit) {
+internal fun RecomendacionCard(
+    rec: Recomendacion,
+    feedbacksEnviados: Map<String, Boolean>,
+    feedbackErrorRecId: String?,
+    onFeedback: (Boolean) -> Unit
+) {
+    val feedbackSent = feedbacksEnviados.containsKey(rec.id)
+    val hasError = feedbackErrorRecId == rec.id
+
     val bgColor = when (rec.prioridad) {
         Prioridad.ALTA -> AlertRed.copy(alpha = 0.08f)
         Prioridad.MEDIA -> WarningAmber.copy(alpha = 0.08f)
@@ -478,9 +523,9 @@ private fun RecomendacionCard(rec: Recomendacion, onFeedback: (Boolean) -> Unit)
         Column(modifier = Modifier.padding(12.dp)) {
             Row(verticalAlignment = Alignment.Top) {
                 Icon(
-                    Icons.Default.Info,
+                    if (feedbackSent) Icons.Default.CheckCircle else Icons.Default.Info,
                     contentDescription = null,
-                    tint = accentColor,
+                    tint = if (feedbackSent) PositiveGreen else accentColor,
                     modifier = Modifier.size(20.dp)
                 )
                 Spacer(Modifier.width(8.dp))
@@ -520,27 +565,58 @@ private fun RecomendacionCard(rec: Recomendacion, onFeedback: (Boolean) -> Unit)
                     )
                 }
             }
-            Spacer(Modifier.height(8.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                FilledTonalButton(
-                    onClick = { onFeedback(true) },
-                    modifier = Modifier.weight(1f)
+            if (feedbackSent) {
+                Spacer(Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(Icons.Default.ThumbUp, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.width(4.dp))
-                    Text("Útil")
+                    Icon(
+                        Icons.Default.CheckCircle,
+                        contentDescription = null,
+                        tint = PositiveGreen,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        "Gracias por tu valoración",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = PositiveGreen,
+                        fontWeight = FontWeight.Medium
+                    )
                 }
-                FilledTonalButton(
-                    onClick = { onFeedback(false) },
-                    modifier = Modifier.weight(1f)
+            } else {
+                Spacer(Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Icon(Icons.Default.ThumbDown, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.width(4.dp))
-                    Text("No me sirve")
+                    FilledTonalButton(
+                        onClick = { onFeedback(true) },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Icon(Icons.Default.ThumbUp, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(4.dp))
+                        Text("Útil")
+                    }
+                    FilledTonalButton(
+                        onClick = { onFeedback(false) },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Icon(Icons.Default.ThumbDown, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(4.dp))
+                        Text("No me sirve")
+                    }
                 }
+            }
+            if (hasError) {
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    "No se pudo enviar tu valoración. Intentalo de nuevo.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = AlertRed
+                )
             }
         }
     }

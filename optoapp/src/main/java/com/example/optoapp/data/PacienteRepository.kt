@@ -87,6 +87,7 @@ class PacienteRepository(
     fun getEvaluacionesProximaCitaEnRango(opticaId: String, start: LocalDate, end: LocalDate): Flow<List<EvaluacionClinica>> =
         evaluacionDao.getEvaluacionesConProximaCitaEnRango(opticaId, start, end)
 
+    @Suppress("DEPRECATION")
     @Deprecated(
         message = "Use countEvaluacionesInRangeForOptica to enforce multi-tenant isolation",
         replaceWith = ReplaceWith("countEvaluacionesInRangeForOptica(start, end, opticaId)")

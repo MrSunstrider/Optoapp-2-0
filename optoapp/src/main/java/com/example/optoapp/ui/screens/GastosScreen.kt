@@ -122,7 +122,7 @@ fun GastosScreen(navController: NavController, drawerState: DrawerState, viewMod
                             readOnly = true,
                             label = { Text("Categoría") },
                             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                            modifier = Modifier.fillMaxWidth().menuAnchor()
+                            modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true)
                         )
                         ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                             viewModel.categorias.forEach { cat ->

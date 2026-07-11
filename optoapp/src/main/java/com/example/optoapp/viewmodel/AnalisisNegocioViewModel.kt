@@ -16,7 +16,6 @@ import com.example.optoapp.util.DateUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -35,7 +34,8 @@ data class AnalisisNegocioUiState(
     val error: String? = null,
     val mostrarAdvertenciaEstacionalidad: Boolean = false,
     val deudoresStale: Boolean = false,
-    val feedbacksEnviados: Map<String, Boolean> = emptyMap()
+    val feedbacksEnviados: Map<String, Boolean> = emptyMap(),
+    val feedbackErrorRecId: String? = null
 )
 
 @HiltViewModel
@@ -80,11 +80,12 @@ class AnalisisNegocioViewModel @Inject constructor(
                     feedbackRecomendacion.marcarNoUtil(recomendacionId, opticaId)
                 }
                 _uiState.value = _uiState.value.copy(
-                    feedbacksEnviados = _uiState.value.feedbacksEnviados + (recomendacionId to fueUtil)
+                    feedbacksEnviados = _uiState.value.feedbacksEnviados + (recomendacionId to fueUtil),
+                    feedbackErrorRecId = null
                 )
             } catch (e: Exception) {
                 Log.e(TAG, "Error sending recommendation feedback", e)
-                _uiState.value = _uiState.value.copy(error = "No se pudo enviar tu valoracion")
+                _uiState.value = _uiState.value.copy(feedbackErrorRecId = recomendacionId)
             }
         }
     }

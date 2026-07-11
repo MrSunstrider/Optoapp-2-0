@@ -23,6 +23,7 @@ class DispensacionRepository(
 
     // ── Dispensaciones ───────────────────────────────────────────────────────
 
+    @Suppress("DEPRECATION")
     @Deprecated(
         message = "Use getDispensacionesByDateRangeForOptica to enforce multi-tenant isolation",
         replaceWith = ReplaceWith("getDispensacionesByDateRangeForOptica(start, end, opticaId)")
@@ -36,6 +37,7 @@ class DispensacionRepository(
     fun getDispensacionesByPaciente(pacienteId: String): Flow<List<DispensacionOptica>> =
         dispensacionDao.getDispensacionesByPaciente(pacienteId)
 
+    @Suppress("DEPRECATION")
     @Deprecated(
         message = "Use getAllDispensacionesForOptica to enforce multi-tenant isolation",
         replaceWith = ReplaceWith("getAllDispensacionesForOptica(opticaId)")
@@ -45,12 +47,14 @@ class DispensacionRepository(
     fun getAllDispensacionesForOptica(opticaId: String): Flow<List<DispensacionOptica>> =
         dispensacionDao.getAllDispensacionesForOptica(opticaId)
 
+    @Suppress("DEPRECATION")
     @Deprecated(
         message = "Use getTotalVendidoForOptica to enforce multi-tenant isolation",
         replaceWith = ReplaceWith("getTotalVendidoForOptica(opticaId)")
     )
     fun getTotalVendido(): Flow<Double?> = dispensacionDao.getTotalVendido()
 
+    @Suppress("DEPRECATION")
     @Deprecated(
         message = "Use getTotalPagadoForOptica to enforce multi-tenant isolation",
         replaceWith = ReplaceWith("getTotalPagadoForOptica(opticaId)")
@@ -159,6 +163,7 @@ class DispensacionRepository(
     suspend fun deleteItemsByDispensacionId(dispensacionId: String, opticaId: String): Int =
         dispensacionItemDao.deleteByDispensacionId(dispensacionId, opticaId)
 
+    @Suppress("DEPRECATION")
     @Deprecated(
         message = "Use getItemsListByOptica to enforce multi-tenant isolation",
         replaceWith = ReplaceWith("getItemsListByOptica(opticaId)")
@@ -216,6 +221,7 @@ class DispensacionRepository(
     fun getPagosByServicioExtra(servicioExtraId: String): Flow<List<Pago>> =
         pagoDao.getPagosByServicioExtra(servicioExtraId)
 
+    @Suppress("DEPRECATION")
     @Deprecated(
         message = "Use getPagosByDateRangeForOptica to enforce multi-tenant isolation",
         replaceWith = ReplaceWith("getPagosByDateRangeForOptica(start, end, opticaId)")
@@ -234,6 +240,7 @@ class DispensacionRepository(
 
     // ── Servicios Extra ──────────────────────────────────────────────────────
 
+    @Suppress("DEPRECATION")
     @Deprecated(
         message = "Use getAllServiciosForOptica to enforce multi-tenant isolation",
         replaceWith = ReplaceWith("getAllServiciosForOptica(opticaId)")
