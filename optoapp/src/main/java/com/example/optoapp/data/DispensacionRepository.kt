@@ -112,7 +112,6 @@ class DispensacionRepository(
     suspend fun getDispensacionesSnapshotForOptica(opticaId: String): List<DispensacionOptica> =
         dispensacionDao.getDispensacionesListByOptica(opticaId)
 
-    /** Siguiente correlativo `OT-<año>-####` según OT existentes de la óptica para ese año. */
     suspend fun suggestNextOt(opticaId: String, fecha: LocalDate): String {
         val year = fecha.year.toString()
         val ots = dispensacionDao.getOtsWithYearPrefix(opticaId, year)

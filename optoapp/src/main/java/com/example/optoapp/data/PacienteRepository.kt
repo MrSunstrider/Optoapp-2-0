@@ -60,7 +60,6 @@ class PacienteRepository(
     suspend fun getPacientesSnapshotForOptica(opticaId: String): List<Paciente> =
         pacienteDao.getPacientesListByOptica(opticaId)
 
-    /** Siguiente correlativo `HO-<año>-####` para historia optométrica en la óptica activa. */
     suspend fun suggestNextHistoriaOptometrica(opticaId: String): String {
         val historias = pacienteDao.getHistoriasOptometricasByOptica(opticaId)
         val year = LocalDate.now().year.toString()
@@ -73,7 +72,6 @@ class PacienteRepository(
         return "HO-$year-" + next.toString().padStart(4, '0')
     }
 
-    /** True si ya existe esa historia optométrica en la misma óptica (ignorando mayúsculas/espacios). */
     suspend fun existsDuplicateHistoriaOptometrica(opticaId: String, historia: String, excludePacienteId: String?): Boolean {
         val n = historia.trim()
         if (n.isEmpty()) return false

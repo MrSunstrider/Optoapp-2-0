@@ -97,7 +97,6 @@ class PacienteViewModel @Inject constructor(
         
         baseFlow.map { list ->
             if (query.isNotEmpty() && filter.isNotEmpty()) {
-                // Si hay filtro Y búsqueda, aplicamos la búsqueda sobre el resultado del filtro
                 list.filter { 
                     it.nombreCompleto.contains(query, ignoreCase = true) || 
                     it.id.contains(query, ignoreCase = true) || 
@@ -143,9 +142,6 @@ class PacienteViewModel @Inject constructor(
     fun resetLastEvaluacion() { _lastEvaluacion.value = null }
     fun resetLastDispensacion() { _lastDispensacion.value = null }
 
-    /**
-     * Persiste el paciente con el [SessionManager.opticaId] activo y encola sync de pacientes (scope de aplicación).
-     */
     suspend fun savePaciente(paciente: Paciente) {
         val oid = sessionManager.opticaId.first()
         val toSave = paciente.copy(opticaId = oid)
@@ -171,13 +167,11 @@ class PacienteViewModel @Inject constructor(
         return if (result is Resource.Success) result.data else null
     }
 
-    /** Sugerencia correlativa para historia optométrica en la óptica activa. */
     suspend fun suggestHistoriaOptometrica(): String {
         val oid = sessionManager.opticaId.first()
         return repository.suggestNextHistoriaOptometrica(oid)
     }
 
-    /** Valida duplicados de historia optométrica en la óptica activa. */
     suspend fun existsDuplicateHistoriaOptometrica(historia: String, excludePacienteId: String?): Boolean {
         val oid = sessionManager.opticaId.first()
         return repository.existsDuplicateHistoriaOptometrica(oid, historia, excludePacienteId)
