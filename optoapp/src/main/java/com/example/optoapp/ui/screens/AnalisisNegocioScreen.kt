@@ -51,7 +51,7 @@ fun AnalisisNegocioScreen(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             OptoTopAppBar(
-                title = "Mi Negocio",
+                title = "Análisis Financiero",
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
@@ -173,10 +173,10 @@ fun AnalisisNegocioScreen(
                 }
             }
 
-            // ── Gastos del mes ──
-            val now = java.time.LocalDate.now()
-            val gastosMes = gastos.filter { it.fecha.month == now.month && it.fecha.year == now.year }
-            val totalGastos = gastosMes.sumOf { it.monto }
+
+            val mesActual = uiState.mesSeleccionado
+            val gastosMes = gastos.filter { it.fecha.month == mesActual.month && it.fecha.year == mesActual.year }
+            val totalGastos = uiState.analisis?.gastosMes ?: gastosMes.sumOf { it.monto }
 
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -223,7 +223,8 @@ fun AnalisisNegocioScreen(
             }
         }
 
-        // ── Gastos dialog ──
+
+        // Gastos dialog — auto-genera recurrentes al entrar
         if (gastosUiState.showDialog) {
             var showDatePicker by remember { mutableStateOf(false) }
             if (showDatePicker) {

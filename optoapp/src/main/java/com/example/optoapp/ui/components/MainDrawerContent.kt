@@ -208,7 +208,7 @@ fun MainDrawerContent(
                 }
                 if (showBiYReportes) {
                     NavigationDrawerItem(
-                        label = { Text("Mi Negocio", fontWeight = FontWeight.SemiBold) },
+                        label = { Text("Análisis Financiero", fontWeight = FontWeight.SemiBold) },
                         selected = currentRoute == "estadisticas_bi",
                         onClick = {
                             scope.launch { drawerState.close() }

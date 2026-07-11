@@ -1,4 +1,4 @@
-package com.example.optoapp.ui
+package com.example.optoapp.ui.screens
 
 import com.example.optoapp.data.Paciente
 import com.example.optoapp.subscription.SubscriptionTier

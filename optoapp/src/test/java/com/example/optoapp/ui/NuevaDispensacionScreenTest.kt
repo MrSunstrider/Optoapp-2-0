@@ -1,4 +1,4 @@
-package com.example.optoapp.ui
+package com.example.optoapp.ui.screens
 
 import com.example.optoapp.viewmodel.DispensacionUiState
 import com.example.optoapp.viewmodel.DispensacionViewModel

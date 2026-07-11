@@ -12,8 +12,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
@@ -239,13 +237,13 @@ fun DrawerContent(
             }
             if (showBiYReportes) {
                 NavigationDrawerItem(
-                    label = { Text("Mi Negocio", fontWeight = FontWeight.SemiBold) },
+                    label = { Text("Análisis Financiero", fontWeight = FontWeight.SemiBold) },
                     selected = currentRoute == "estadisticas_bi",
                     onClick = {
                         scope.launch { drawerState.close() }
                         navController.navigateDrawer("estadisticas_bi")
                     },
-                    icon = { Icon(Icons.AutoMirrored.Filled.TrendingUp, contentDescription = "Mi Negocio") },
+                    icon = { Icon(Icons.AutoMirrored.Filled.TrendingUp, contentDescription = "Análisis Financiero") },
                     modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                 )
                 NavigationDrawerItem(
@@ -261,7 +259,6 @@ fun DrawerContent(
             }
         }
 
-        // Sync + Conflictos — refrescar al abrir
         LaunchedEffect(Unit) { syncViewModel.refreshConflicts() }
 
         Text(

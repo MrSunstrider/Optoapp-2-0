@@ -1,4 +1,4 @@
-package com.example.optoapp.ui
+package com.example.optoapp.ui.components
 
 import com.example.optoapp.viewmodel.OpticaHeaderUi
 import com.example.optoapp.viewmodel.SyncState
@@ -54,7 +54,7 @@ class MainDrawerContentTest {
 
     @Test
     fun conditionalItems_finanzas_whenShowCierreCajaOrShowBiYReportes() {
-        val conditionalItems = listOf("Cierre de Caja", "Mi Negocio", "Reportes")
+        val conditionalItems = listOf("Cierre de Caja", "Análisis Financiero", "Reportes")
         assertEquals(3, conditionalItems.size)
     }
 

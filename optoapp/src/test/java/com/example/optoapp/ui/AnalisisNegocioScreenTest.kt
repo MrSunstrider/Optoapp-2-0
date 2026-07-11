@@ -1,4 +1,4 @@
-package com.example.optoapp.ui
+package com.example.optoapp.ui.screens
 
 import com.example.optoapp.data.AppRoles
 import com.example.optoapp.domain.AnalisisMensual
@@ -71,9 +71,9 @@ class AnalisisNegocioScreenTest {
     }
 
     @Test
-    fun screen_title_isMiNegocio() {
-        val title = "Mi Negocio"
-        assertEquals("Mi Negocio", title)
+    fun screen_title_isAnalisisFinanciero() {
+        val title = "Análisis Financiero"
+        assertEquals("Análisis Financiero", title)
     }
 
     @Test
