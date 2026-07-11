@@ -123,9 +123,7 @@ class AnalisisNegocioViewModel @Inject constructor(
                         (analisisResult as? Resource.Error)?.message,
                         (deudoresResult as? Resource.Error)?.message
                     )
-                    val recError = if (rpcErrors.isEmpty()) {
-                        (recomendacionesResult as? Resource.Error)?.message
-                    } else null
+                    val recError = (recomendacionesResult as? Resource.Error)?.message
                     val errors = (rpcErrors + listOfNotNull(recError)).toSet()
 
                     _uiState.value = _uiState.value.copy(

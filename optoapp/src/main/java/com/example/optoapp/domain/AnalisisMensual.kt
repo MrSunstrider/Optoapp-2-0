@@ -9,7 +9,6 @@ import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.contentOrNull
 
-// File-level extension helpers for JSON parsing
 private fun JsonObject.optDouble(key: String): Double =
     this[key]?.jsonPrimitive?.doubleOrNull ?: 0.0
 
@@ -107,6 +106,8 @@ data class AnalisisMensual(
             }
         }
     }
+
+    fun costoDeVentas(): Double = margenPorCategoria.sumOf { it.costos }
 }
 
 data class MargenCategoria(

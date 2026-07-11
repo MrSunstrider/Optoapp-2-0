@@ -29,7 +29,6 @@ import com.example.optoapp.domain.AnalisisMensual
 import com.example.optoapp.ui.components.OptoTopAppBar
 import com.example.optoapp.ui.theme.AlertRed
 import com.example.optoapp.ui.theme.PositiveGreen
-import com.example.optoapp.ui.theme.TextDark
 import com.example.optoapp.ui.theme.WarningAmber
 import com.example.optoapp.viewmodel.AnalisisNegocioViewModel
 import java.util.Locale
@@ -212,7 +211,7 @@ private fun ExpandableSection(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
                     Spacer(Modifier.width(8.dp))
-                    Text(title, fontWeight = FontWeight.SemiBold, color = TextDark)
+                    Text(title, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)
                 }
                 Icon(
                     if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
@@ -339,13 +338,5 @@ private fun EmptyPlaceholder(text: String) {
     }
 }
 
-private fun formatNumber(value: Double): String {
-    return if (value == value.toLong().toDouble()) {
-        String.format(Locale.getDefault(), "%,.0f", value)
-    } else {
-        String.format(Locale.getDefault(), "%,.1f", value)
-    }
-}
 
-private fun AnalisisMensual.costoDeVentas(): Double =
-    margenPorCategoria.sumOf { it.costos }
+private fun formatNumber(value: Double): String = com.example.optoapp.util.NumberFormatter.formatCurrency(value)
