@@ -59,7 +59,10 @@ class SyncViewModelSilentSyncTest {
         val useCase = mockk<SyncFinanzasUseCase>()
         coEvery { useCase(any(), capture(downloadSlot), any()) } answers {
             recorded += downloadSlot.captured
-            Resource.Success(FinanzasSyncResult(0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
+            Resource.Success(FinanzasSyncResult(
+                uploadedDispensaciones = 0, uploadedServicios = 0, uploadedPagos = 0,
+                downloadedDispensaciones = 0, downloadedServicios = 0, downloadedPagos = 0
+            ))
         }
         return useCase to recorded
     }

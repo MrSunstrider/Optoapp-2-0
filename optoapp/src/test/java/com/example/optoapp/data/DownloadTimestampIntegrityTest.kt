@@ -94,7 +94,9 @@ class DownloadTimestampIntegrityTest {
             gastoOperativoDao = db.gastoOperativoDao(),
             resumenDiarioDao = db.resumenDiarioDao(),
             configuracionFinancieraDao = db.configuracionFinancieraDao(),
-            categoriaProductoDao = db.categoriaProductoDao()
+            categoriaProductoDao = db.categoriaProductoDao(),
+            costoProductoDao = db.costoProductoDao(),
+            costoBiseladoDao = db.costoBiseladoDao()
         )
     }
 

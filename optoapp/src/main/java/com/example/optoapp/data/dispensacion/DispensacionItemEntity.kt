@@ -73,5 +73,34 @@ data class DispensacionItem(
 
     @SerialName("optica_id")
     @ColumnInfo(name = "optica_id")
-    val opticaId: String = "mi_optica_base"
+    val opticaId: String = "mi_optica_base",
+
+    // ── Spec & Cost fields (Phase 2: Costos y Gastos) ──
+    @SerialName("alto_indice")
+    @ColumnInfo(name = "alto_indice")
+    val altoIndice: String? = null,
+    @SerialName("reduccion_diametro")
+    @ColumnInfo(name = "reduccion_diametro")
+    val reduccionDiametro: String? = null,
+    @SerialName("lenticular")
+    @ColumnInfo(name = "lenticular")
+    val lenticular: String? = null,
+    @SerialName("curva_base")
+    @ColumnInfo(name = "curva_base")
+    val curvaBase: String? = null,
+    @SerialName("costo_real_od")
+    @ColumnInfo(name = "costo_real_od")
+    val costoRealOd: Double? = null,
+    @SerialName("costo_real_oi")
+    @ColumnInfo(name = "costo_real_oi")
+    val costoRealOi: Double? = null,
+    @SerialName("costo_real_montura")
+    @ColumnInfo(name = "costo_real_montura")
+    val costoRealMontura: Double? = null,
+    @SerialName("costo_real_biselado")
+    @ColumnInfo(name = "costo_real_biselado")
+    val costoRealBiselado: Double? = null,
+    @SerialName("costo_real_lc")
+    @ColumnInfo(name = "costo_real_lc")
+    val costoRealLc: Double? = null
 )

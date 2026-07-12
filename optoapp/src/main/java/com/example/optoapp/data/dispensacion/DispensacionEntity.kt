@@ -60,6 +60,7 @@ data class DispensacionOptica(
     val subTipoBifocal: String = "",
     @ColumnInfo(name = "filtro_discromatopsia_tipo") val filtroDiscromatopsiaTipo: String = "",
     @ColumnInfo(name = "reclamo_origen_id") val reclamoOrigenId: String? = null,
+    @ColumnInfo(name = "evaluacion_id") val evaluacionId: String? = null,
     @SerialName("updatedAt")
     val updatedAt: String? = null,
     @SerialName("updatedBy")
@@ -144,6 +145,7 @@ data class ServicioExtra(
     @SerialName("opticaId")
     val opticaId: String = "mi_optica_base",
     @SerialName("fechaEntrega")
+    @ColumnInfo(name = "fecha_entrega")
     @Serializable(with = LocalDateSerializer::class)
     val fechaEntrega: LocalDate? = null,
     @SerialName("updatedAt")

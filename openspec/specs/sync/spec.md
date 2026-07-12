@@ -27,3 +27,23 @@ Sync boundary normalization: ensuring remote payment data is normalized before p
 - GIVEN a `PagoRemoto` and a `ServicioRemoto` both with `metodoPago = "tarjeta_credito"`
 - WHEN both `toEntity()` methods are called
 - THEN both resulting entities MUST have identical `metodoPago` values
+
+---
+
+## costos_productos Sync
+
+System SHALL include `costos_productos` in download AND upload sync. Remote DTO SHALL map matrix columns via `@SerialName`. Sync order: ← ventas → **costos_productos** → pagos.
+
+- GIVEN sync cycle with downloadAfterUpload = true
+- WHEN SyncFinanzasUseCase runs
+- THEN costos_productos downloads after ventas
+- AND local updates upload
+
+## costos_biselado Sync (Read-Only)
+
+System SHALL include `costos_biselado` in download only. Upload SHALL NOT be supported.
+
+- GIVEN sync cycle with downloadAfterUpload = true
+- WHEN SyncFinanzasUseCase runs
+- THEN costos_biselado downloads
+- AND no upload occurs

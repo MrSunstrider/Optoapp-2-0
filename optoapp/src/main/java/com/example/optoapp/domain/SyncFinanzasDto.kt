@@ -6,6 +6,8 @@ import com.example.optoapp.data.FinanzasRemoteDefaults
 import com.example.optoapp.data.Pago
 import com.example.optoapp.data.ServicioExtra
 import com.example.optoapp.data.configuracionfinanciera.ConfiguracionFinancieraEntity
+import com.example.optoapp.data.costobiselado.CostoBiseladoEntity
+import com.example.optoapp.data.costoproducto.CostoProductoEntity
 import com.example.optoapp.data.gastooperativo.GastoOperativoEntity
 import com.example.optoapp.data.regalodispensacion.RegaloDispensacionEntity
 import com.example.optoapp.data.resumendiario.ResumenDiarioEntity
@@ -43,6 +45,7 @@ data class DispensacionRemota(
     val altura: String? = null,
     @SerialName("sub_tipo_bifocal") val subTipoBifocal: String? = null,
     @SerialName("filtro_discromatopsia_tipo") val filtroDiscromatopsiaTipo: String = "",
+    @SerialName("evaluacion_id") val evaluacionId: String? = null,
     @SerialName("updated_at") val updatedAt: String? = null,
     @SerialName("updated_by") val updatedBy: String? = null
 ) {
@@ -63,6 +66,7 @@ data class DispensacionRemota(
         altura = altura ?: "",
         subTipoBifocal = subTipoBifocal ?: "",
         filtroDiscromatopsiaTipo = filtroDiscromatopsiaTipo,
+        evaluacionId = evaluacionId,
         updatedAt = updatedAt,
         updatedBy = updatedBy
     )
@@ -153,7 +157,16 @@ data class DispensacionItemRemota(
     @SerialName("material_montura") val materialMontura: String? = null,
     @SerialName("descripcion_montura") val descripcionMontura: String? = null,
     @SerialName("tipo_montura") val tipoMontura: String? = null,
-    @SerialName("optica_id") val opticaId: String = "mi_optica_base"
+    @SerialName("optica_id") val opticaId: String = "mi_optica_base",
+    @SerialName("alto_indice") val altoIndice: String? = null,
+    @SerialName("reduccion_diametro") val reduccionDiametro: String? = null,
+    @SerialName("lenticular") val lenticular: String? = null,
+    @SerialName("curva_base") val curvaBase: String? = null,
+    @SerialName("costo_real_od") val costoRealOd: Double? = null,
+    @SerialName("costo_real_oi") val costoRealOi: Double? = null,
+    @SerialName("costo_real_montura") val costoRealMontura: Double? = null,
+    @SerialName("costo_real_biselado") val costoRealBiselado: Double? = null,
+    @SerialName("costo_real_lc") val costoRealLc: Double? = null
 ) {
     fun toEntity() = DispensacionItem(
         id = id, dispensacionId = dispensacionId,
@@ -166,11 +179,14 @@ data class DispensacionItemRemota(
         monturaId = monturaId ?: "", origenMontura = origenMontura ?: "",
         tipoAro = tipoAro ?: "", materialMontura = materialMontura ?: "",
         descripcionMontura = descripcionMontura ?: "", tipoMontura = tipoMontura ?: "",
-        opticaId = opticaId.ifBlank { "mi_optica_base" }
+        opticaId = opticaId.ifBlank { "mi_optica_base" },
+        altoIndice = altoIndice, reduccionDiametro = reduccionDiametro,
+        lenticular = lenticular, curvaBase = curvaBase,
+        costoRealOd = costoRealOd, costoRealOi = costoRealOi,
+        costoRealMontura = costoRealMontura, costoRealBiselado = costoRealBiselado,
+        costoRealLc = costoRealLc
     )
 }
-
-// ── GastoOperativo remote DTO ──────────────────────────────────────────
 
 @Serializable
 data class GastoOperativoRemoto(
@@ -215,7 +231,6 @@ fun GastoOperativoRemoto.toEntity(): GastoOperativoEntity = GastoOperativoEntity
     frecuencia = frecuencia
 )
 
-// ── RegaloDispensacion remote DTO ──────────────────────────────────────
 
 @Serializable
 data class RegaloDispensacionRemota(
@@ -243,7 +258,6 @@ fun RegaloDispensacionEntity.toRemoto(): RegaloDispensacionRemota = RegaloDispen
     motivo = motivo, opticaId = opticaId
 )
 
-// ── ResumenDiario remote DTO ───────────────────────────────────────────
 
 @Serializable
 data class ResumenDiarioRemoto(
@@ -278,7 +292,6 @@ data class ResumenDiarioRemoto(
     )
 }
 
-// ── ConfiguracionFinanciera remote DTO ─────────────────────────────────
 
 @Serializable
 data class ConfiguracionFinancieraRemoto(
@@ -307,7 +320,69 @@ data class ConfiguracionFinancieraRemoto(
     )
 }
 
-// ── Sync result ────────────────────────────────────────────────────────
+
+@Serializable
+data class CostoProductoRemoto(
+    val id: String,
+    @SerialName("optica_id") val opticaId: String,
+    val material: String,
+    @SerialName("tipo_lente") val tipoLente: String,
+    @SerialName("stock_o_fabricacion") val stockOFabricacion: String,
+    val tratamiento: String? = null,
+    val serie: Int? = null,
+    @SerialName("costo_unitario") val costoUnitario: Double,
+    @SerialName("laboratorio_id") val laboratorioId: String? = null,
+    @SerialName("vigente_desde") val vigenteDesde: String,
+    @SerialName("vigente_hasta") val vigenteHasta: String? = null
+) {
+    fun toEntity() = CostoProductoEntity(
+        id = id, opticaId = opticaId, material = material,
+        tipoLente = tipoLente, stockOFabricacion = stockOFabricacion,
+        tratamiento = tratamiento, serie = serie,
+        costoUnitario = costoUnitario, laboratorioId = laboratorioId,
+        vigenteDesde = vigenteDesde, vigenteHasta = vigenteHasta
+    )
+}
+
+@Serializable
+data class CostoBiseladoRemoto(
+    val id: String,
+    @SerialName("optica_id") val opticaId: String,
+    val material: String,
+    @SerialName("tipo_aro") val tipoAro: String,
+    @SerialName("stock_o_fabricacion") val stockOFabricacion: String,
+    val serie: Int? = null,
+    @SerialName("alto_indice") val altoIndice: String? = null,
+    @SerialName("costo_por_par") val costoPorPar: Double,
+    val proveedor: String? = null,
+    @SerialName("vigente_desde") val vigenteDesde: String,
+    @SerialName("vigente_hasta") val vigenteHasta: String? = null
+) {
+    fun toEntity() = CostoBiseladoEntity(
+        id = id, opticaId = opticaId, material = material,
+        tipoAro = tipoAro, stockOFabricacion = stockOFabricacion,
+        serie = serie, altoIndice = altoIndice,
+        costoPorPar = costoPorPar, proveedor = proveedor,
+        vigenteDesde = vigenteDesde, vigenteHasta = vigenteHasta
+    )
+}
+
+fun CostoProductoEntity.toRemoto(): CostoProductoRemoto = CostoProductoRemoto(
+    id = id, opticaId = opticaId, material = material,
+    tipoLente = tipoLente, stockOFabricacion = stockOFabricacion,
+    tratamiento = tratamiento, serie = serie,
+    costoUnitario = costoUnitario, laboratorioId = laboratorioId,
+    vigenteDesde = vigenteDesde, vigenteHasta = vigenteHasta
+)
+
+fun CostoBiseladoEntity.toRemoto(): CostoBiseladoRemoto = CostoBiseladoRemoto(
+    id = id, opticaId = opticaId, material = material,
+    tipoAro = tipoAro, stockOFabricacion = stockOFabricacion,
+    serie = serie, altoIndice = altoIndice,
+    costoPorPar = costoPorPar, proveedor = proveedor,
+    vigenteDesde = vigenteDesde, vigenteHasta = vigenteHasta
+)
+
 
 data class FinanzasSyncResult(
     val uploadedDispensaciones: Int,
@@ -316,6 +391,7 @@ data class FinanzasSyncResult(
     val uploadedPagos: Int,
     val uploadedGastosOperativos: Int = 0,
     val uploadedRegalos: Int = 0,
+    val uploadedCostosProductos: Int = 0,
     val downloadedDispensaciones: Int,
     val downloadedDispensacionItems: Int = 0,
     val downloadedServicios: Int,
@@ -323,7 +399,9 @@ data class FinanzasSyncResult(
     val downloadedRegalos: Int = 0,
     val downloadedResumenesDiarios: Int = 0,
     val downloadedConfiguracionesFinancieras: Int = 0,
-    val downloadedGastosOperativos: Int = 0
+    val downloadedGastosOperativos: Int = 0,
+    val downloadedCostosProductos: Int = 0,
+    val downloadedCostosBiselado: Int = 0
 )
 
 @Serializable
@@ -352,6 +430,7 @@ fun DispensacionOptica.toRemoto(pagosSum: Double = montoPagado): DispensacionRem
     fechaVencimientoGarantia = fechaVencimientoGarantia?.toString(),
     distanciaLente = distanciaLente, altura = altura, subTipoBifocal = subTipoBifocal,
     filtroDiscromatopsiaTipo = filtroDiscromatopsiaTipo,
+    evaluacionId = evaluacionId,
     updatedAt = updatedAt, updatedBy = updatedBy
 )
 
@@ -380,7 +459,12 @@ fun DispensacionItem.toRemoto(): DispensacionItemRemota = DispensacionItemRemota
     monturaId = monturaId, origenMontura = origenMontura,
     tipoAro = tipoAro, materialMontura = materialMontura,
     descripcionMontura = descripcionMontura, tipoMontura = tipoMontura,
-    opticaId = opticaId.ifBlank { "mi_optica_base" }
+    opticaId = opticaId.ifBlank { "mi_optica_base" },
+    altoIndice = altoIndice, reduccionDiametro = reduccionDiametro,
+    lenticular = lenticular, curvaBase = curvaBase,
+    costoRealOd = costoRealOd, costoRealOi = costoRealOi,
+    costoRealMontura = costoRealMontura, costoRealBiselado = costoRealBiselado,
+    costoRealLc = costoRealLc
 )
 
 fun ServicioExtra.toRemoto(aCuentaSum: Double = aCuenta): ServicioRemoto = ServicioRemoto(

@@ -31,6 +31,7 @@ class UploadSyncCoordinator @Inject constructor(
         private const val TABLE_SERVICIOS = "servicios_extra"
         private const val TABLE_GASTOS_OPERATIVOS = "gastos_operativos"
         private const val TABLE_REGALOS = "regalos_dispensacion"
+        private const val TABLE_COSTOS_PRODUCTOS = "costos_productos"
         private const val UPSERT_BATCH_SIZE = 80
     }
 
@@ -328,4 +329,17 @@ class UploadSyncCoordinator @Inject constructor(
         ) { supabase.postgrest[TABLE_REGALOS].upsert(it) }
     }
 
+    suspend fun uploadCostosProductos(opticaId: String): Int {
+        val localCostos = repository.getCostosProductosList(opticaId)
+        if (localCostos.isEmpty()) {
+            syncStateTracker.markSynced(opticaId, "upload_costos_productos", "batch")
+            return 0
+        }
+        val opticaRemota = opticaId.trim().ifBlank { FinanzasRemoteDefaults.OPTICA_ID_FALLBACK }
+        val rows = localCostos.map { it.toRemoto().copy(opticaId = opticaRemota) }.distinctBy { it.id }
+        return executeSimpleUpsert(
+            opticaId, TABLE_COSTOS_PRODUCTOS, "costo_producto",
+            "upload_costos_productos", rows, { it.id }
+        ) { supabase.postgrest[TABLE_COSTOS_PRODUCTOS].upsert(it) }
+    }
 }

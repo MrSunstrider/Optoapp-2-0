@@ -69,7 +69,9 @@ class OptoRepositoryFromRemoteTest {
             gastoOperativoDao = mockk(relaxed = true),
             resumenDiarioDao = mockk(relaxed = true),
             configuracionFinancieraDao = mockk(relaxed = true),
-            categoriaProductoDao = mockk(relaxed = true)
+            categoriaProductoDao = mockk(relaxed = true),
+            costoProductoDao = mockk(relaxed = true),
+            costoBiseladoDao = mockk(relaxed = true)
         )
     }
 

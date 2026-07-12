@@ -6,6 +6,8 @@ import com.example.optoapp.domain.SyncLogger
 import com.example.optoapp.data.backup.BackupRestoreCoordinator
 import com.example.optoapp.data.configuracionfinanciera.ConfiguracionFinancieraDao
 import com.example.optoapp.data.categoriaproducto.CategoriaProductoDao
+import com.example.optoapp.data.costobiselado.CostoBiseladoDao
+import com.example.optoapp.data.costoproducto.CostoProductoDao
 import com.example.optoapp.data.feedbackrecomendacion.FeedbackRecomendacionDao
 import com.example.optoapp.data.gastooperativo.GastoOperativoDao
 import com.example.optoapp.data.inventariofisico.InventarioFisicoDao
@@ -118,6 +120,12 @@ object DatabaseModule {
     fun provideCategoriaProductoDao(database: OptoDatabase): CategoriaProductoDao = database.categoriaProductoDao()
 
     @Provides
+    fun provideCostoProductoDao(database: OptoDatabase): CostoProductoDao = database.costoProductoDao()
+
+    @Provides
+    fun provideCostoBiseladoDao(database: OptoDatabase): CostoBiseladoDao = database.costoBiseladoDao()
+
+    @Provides
     fun provideFeedbackRecomendacionDao(database: OptoDatabase): FeedbackRecomendacionDao = database.feedbackRecomendacionDao()
 
     @Provides
@@ -210,22 +218,26 @@ object DatabaseModule {
         gastoOperativoDao: GastoOperativoDao,
         resumenDiarioDao: ResumenDiarioDao,
         configuracionFinancieraDao: ConfiguracionFinancieraDao,
-        categoriaProductoDao: CategoriaProductoDao
+        categoriaProductoDao: CategoriaProductoDao,
+        costoProductoDao: CostoProductoDao,
+        costoBiseladoDao: CostoBiseladoDao
     ): OptoRepository {
         return OptoRepository(
-            database,
-            syncStateTracker,
-            postSaveSyncScheduler,
-            pacienteRepo,
-            dispensacionRepo,
-            syncRepo,
-            snapshotCoordinator,
-            backupCoordinator,
-            monturaCoordinator,
-            gastoOperativoDao,
-            resumenDiarioDao,
-            configuracionFinancieraDao,
-            categoriaProductoDao
+            database = database,
+            syncStateTracker = syncStateTracker,
+            postSaveSyncScheduler = postSaveSyncScheduler,
+            pacienteRepo = pacienteRepo,
+            dispensacionRepo = dispensacionRepo,
+            syncRepo = syncRepo,
+            snapshotCoordinator = snapshotCoordinator,
+            backupCoordinator = backupCoordinator,
+            monturaCoordinator = monturaCoordinator,
+            gastoOperativoDao = gastoOperativoDao,
+            resumenDiarioDao = resumenDiarioDao,
+            configuracionFinancieraDao = configuracionFinancieraDao,
+            categoriaProductoDao = categoriaProductoDao,
+            costoProductoDao = costoProductoDao,
+            costoBiseladoDao = costoBiseladoDao
         )
     }
 

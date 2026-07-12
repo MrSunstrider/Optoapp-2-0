@@ -172,14 +172,20 @@ class SyncFinanzasUseCaseKtTest {
         coEvery { uploadCoordinator.uploadDispensaciones(any()) } returns 0
         coEvery { uploadCoordinator.uploadDispensacionItems(any()) } returns 0
         coEvery { uploadCoordinator.uploadServicios(any()) } returns 0
+        coEvery { uploadCoordinator.uploadCostosProductos(any()) } returns 0
         coEvery { uploadCoordinator.uploadPagos(any()) } returns 0
         coEvery { uploadCoordinator.uploadGastosOperativos(any()) } returns 0
+        coEvery { uploadCoordinator.uploadRegalos(any()) } returns 0
         coEvery { downloadCoordinator.downloadDispensaciones(any()) } returns 0
         coEvery { downloadCoordinator.downloadDispensacionItems(any()) } returns 0
         coEvery { downloadCoordinator.downloadServicios(any()) } returns 0
-        coEvery { downloadCoordinator.downloadPagos(any()) } returns 0
-        coEvery { downloadCoordinator.downloadResumenDiario(any()) } returns 0
+        coEvery { downloadCoordinator.downloadResumenDiario(any()) } returns 2
         coEvery { downloadCoordinator.downloadConfiguracionFinanciera(any()) } returns 1
+        coEvery { downloadCoordinator.downloadCostosProductos(any()) } returns 0
+        coEvery { downloadCoordinator.downloadCostosBiselado(any()) } returns 0
+        coEvery { downloadCoordinator.downloadPagos(any()) } returns 0
+        coEvery { downloadCoordinator.downloadRegalos(any()) } returns 0
+        coEvery { downloadCoordinator.downloadGastosOperativos(any()) } returns 0
 
         val useCase = SyncFinanzasUseCase(
             deletionSyncHelper = deletionSyncHelper,
@@ -209,9 +215,15 @@ class SyncFinanzasUseCaseKtTest {
         coEvery { downloadCoordinator.downloadDispensaciones(any()) } returns 0
         coEvery { downloadCoordinator.downloadDispensacionItems(any()) } returns 0
         coEvery { downloadCoordinator.downloadServicios(any()) } returns 0
-        coEvery { downloadCoordinator.downloadPagos(any()) } returns 0
         coEvery { downloadCoordinator.downloadResumenDiario(any()) } returns 2
         coEvery { downloadCoordinator.downloadConfiguracionFinanciera(any()) } returns 1
+        coEvery { downloadCoordinator.downloadCostosProductos(any()) } returns 0
+        coEvery { downloadCoordinator.downloadCostosBiselado(any()) } returns 0
+        coEvery { downloadCoordinator.downloadPagos(any()) } returns 0
+        coEvery { downloadCoordinator.downloadRegalos(any()) } returns 0
+        coEvery { downloadCoordinator.downloadGastosOperativos(any()) } returns 0
+        coEvery { uploadCoordinator.uploadCostosProductos(any()) } returns 0
+        coEvery { uploadCoordinator.uploadRegalos(any()) } returns 0
 
         val useCase = SyncFinanzasUseCase(
             deletionSyncHelper = deletionSyncHelper,
@@ -225,10 +237,14 @@ class SyncFinanzasUseCaseKtTest {
         coVerifyOrder {
             downloadCoordinator.downloadResumenDiario("optica-test")
             downloadCoordinator.downloadConfiguracionFinanciera("optica-test")
+            downloadCoordinator.downloadCostosProductos("optica-test")
+            downloadCoordinator.downloadCostosBiselado("optica-test")
             downloadCoordinator.downloadPagos("optica-test")
         }
     }
 
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Bug 1 (Part 2): partial upload skips download — smoke test
     // ═══════════════════════════════════════════════════════════════════════════
     // Bug 3 RED: pushPendingDeletions inside try block
     // ═══════════════════════════════════════════════════════════════════════════

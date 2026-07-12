@@ -256,6 +256,16 @@ fun DrawerContent(
                     icon = { Icon(Icons.Default.DateRange, contentDescription = "Reportes") },
                     modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                 )
+                NavigationDrawerItem(
+                    label = { Text("Costos y Gastos", fontWeight = FontWeight.SemiBold) },
+                    selected = currentRoute == "costos_y_gastos" || (currentRoute?.startsWith("costos_y_gastos/") == true),
+                    onClick = {
+                        scope.launch { drawerState.close() }
+                        navController.navigateDrawer("costos_y_gastos")
+                    },
+                    icon = { Icon(Icons.Default.AccountBalance, contentDescription = "Costos y Gastos") },
+                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                )
             }
         }
 

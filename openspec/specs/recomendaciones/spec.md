@@ -86,12 +86,26 @@ Fires per category where `margenPct < 10` AND `ventas >= minVentasParaRecomendar
 
 Fires when any item `diasSinVenta > stockEstancadoAlertaDias` (default 180). Priority: MEDIA.
 
-#### Scenario: Items exceed threshold
-- GIVEN 2 items at 210 days, threshold 180
-- THEN `Recomendacion(tipo=LIQUIDAR_STOCK, prioridad=MEDIA)` listing only those 2 items
+**Input data change**: `diasSinVenta` values now come from correct inline computation in `rpc_analisis_mensual` (see analisis-negocio spec). Previously, low-stock items received hardcoded 999 days, causing false positives. Now only genuinely unsold products (real `diasSinVenta > threshold`) trigger this rule.
 
-#### Scenario: No stagnant items
-- GIVEN empty stockEstancado
+(Previously: `diasSinVenta` was hardcoded to 999 for all low-stock items, causing LIQUIDAR_STOCK to fire misleadingly for recently sold products.)
+
+#### Scenario: Items exceed threshold (unchanged logic)
+
+- GIVEN 2 monturas with real `diasSinVenta` of 210 and 200 days, threshold 180
+- WHEN `evaluarLiquidarStock` evaluates `stockEstancado`
+- THEN `Recomendacion(tipo=LIQUIDAR_STOCK, prioridad=MEDIA)` is returned listing those 2 items only
+
+#### Scenario: Recently sold items no longer trigger
+
+- GIVEN a montura with real `diasSinVenta` = 15 days (sold last month)
+- WHEN `evaluarLiquidarStock` evaluates `stockEstancado`
+- THEN no LIQUIDAR_STOCK recommendation is produced for that item
+
+#### Scenario: No stagnant items (unchanged)
+
+- GIVEN empty `stockEstancado`
+- WHEN `evaluarLiquidarStock` evaluates `stockEstancado`
 - THEN null
 
 ### R6: Rule 4 — Vender Más de (MEDIA)

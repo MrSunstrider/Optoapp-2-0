@@ -29,6 +29,11 @@ import com.example.optoapp.viewmodel.GastosViewModel
 import kotlinx.coroutines.launch
 import java.util.*
 
+/**
+ * @deprecated Replaced by [CostosYGastosScreen] Tab 2 "Gastos Operativos".
+ *             Mantenida para retrocompatibilidad de rutas. No migrar nuevas funcionalidades aquí.
+ */
+@Deprecated("Reemplazada por CostosYGastosScreen Tab 2 (Gastos Operativos)")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GastosScreen(navController: NavController, drawerState: DrawerState, viewModel: GastosViewModel = hiltViewModel()) {

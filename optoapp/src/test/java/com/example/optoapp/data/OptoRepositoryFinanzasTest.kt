@@ -109,7 +109,9 @@ class OptoRepositoryFinanzasTest {
             gastoOperativoDao = gastoOperativoDao,
             resumenDiarioDao = resumenDiarioDao,
             configuracionFinancieraDao = configuracionFinancieraDao,
-            categoriaProductoDao = db.categoriaProductoDao()
+            categoriaProductoDao = db.categoriaProductoDao(),
+            costoProductoDao = db.costoProductoDao(),
+            costoBiseladoDao = db.costoBiseladoDao()
         )
     }
 

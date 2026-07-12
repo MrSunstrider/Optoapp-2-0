@@ -136,7 +136,10 @@ class SyncViewModelThreeWayMergeTest {
         coEvery { syncPacientesUseCase(any(), any(), any()) } returns Resource.Success(PacientesSyncResult(0, 0))
         coEvery { syncHistorialUseCase(any(), any(), any()) } returns Resource.Success(HistorialSyncResult(0, 0))
         coEvery { syncFinanzasUseCase(any(), any(), any()) } returns Resource.Success(
-            FinanzasSyncResult(0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+            FinanzasSyncResult(
+                uploadedDispensaciones = 0, uploadedServicios = 0, uploadedPagos = 0,
+                downloadedDispensaciones = 0, downloadedServicios = 0, downloadedPagos = 0
+            )
         )
         coEvery { syncInventarioUseCase(any(), any(), any()) } returns Resource.Success(
             InventarioSyncResult(0, 0, 0, 0)

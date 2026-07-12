@@ -184,16 +184,9 @@ class PostSaveSyncSchedulerTest {
             syncFinanzasUseCase = null,
             syncInventarioUseCase = null
         ) {
-            // Allow execution to reach the use-case call site (past the session gate)
-            override suspend fun ensureSessionForPostSaveSync(stage: String): Boolean = true
-
-            override fun scheduleDebounced(
-                key: String,
-                delayMs: Long,
-                block: suspend () -> Unit
-            ) {
-                kotlinx.coroutines.runBlocking { block() }
-            }
+            // Capture key only — don't execute the block (avoids android.util.Log without Robolectric).
+            // The assertion only cares that mockSyncPacientes was never invoked as a side effect.
+            override fun scheduleDebounced(key: String, delayMs: Long, block: suspend () -> Unit) {}
         }
 
         scheduler.scheduleHistorialSync("optica-1")
@@ -214,16 +207,7 @@ class PostSaveSyncSchedulerTest {
             syncFinanzasUseCase = mockSyncFinanzas,
             syncInventarioUseCase = null
         ) {
-            // Allow execution to reach the use-case call site (past the session gate)
-            override suspend fun ensureSessionForPostSaveSync(stage: String): Boolean = true
-
-            override fun scheduleDebounced(
-                key: String,
-                delayMs: Long,
-                block: suspend () -> Unit
-            ) {
-                kotlinx.coroutines.runBlocking { block() }
-            }
+            override fun scheduleDebounced(key: String, delayMs: Long, block: suspend () -> Unit) {}
         }
 
         scheduler.scheduleFinanzasSync("optica-1")

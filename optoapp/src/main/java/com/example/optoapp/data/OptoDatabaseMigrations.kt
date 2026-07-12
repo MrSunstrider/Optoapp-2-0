@@ -655,7 +655,6 @@ val MIGRATION_23_24 = object : Migration(23, 24) {
 
 val MIGRATION_24_25 = object : Migration(24, 25) {
     override fun migrate(db: SupportSQLiteDatabase) {
-        // Catalog/commercial fields for categorised frame search and filtering
         db.execSQL("ALTER TABLE monturas ADD COLUMN categoria TEXT NOT NULL DEFAULT ''")
         db.execSQL("ALTER TABLE monturas ADD COLUMN coleccion TEXT NOT NULL DEFAULT ''")
         db.execSQL("ALTER TABLE monturas ADD COLUMN temporada TEXT NOT NULL DEFAULT ''")
@@ -678,7 +677,6 @@ val MIGRATION_24_25 = object : Migration(24, 25) {
         """.trimIndent())
         db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_movimientos_conflict ON montura_movimientos(referenciaId, tipo, monturaId)")
 
-        // Supplier catalog — no DEFAULT values: must match Room entity annotations exactly
         db.execSQL("CREATE TABLE IF NOT EXISTS proveedores (id TEXT NOT NULL PRIMARY KEY, nombre TEXT NOT NULL, ruc TEXT NOT NULL, telefono TEXT NOT NULL, email TEXT NOT NULL, direccion TEXT NOT NULL, contacto TEXT NOT NULL, activo INTEGER NOT NULL, opticaId TEXT NOT NULL, updatedAt TEXT, updatedBy TEXT)")
         db.execSQL("CREATE INDEX IF NOT EXISTS index_proveedores_opticaId ON proveedores(opticaId)")
         db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_proveedores_ruc_opticaId ON proveedores(ruc, opticaId)")
@@ -689,7 +687,6 @@ val MIGRATION_24_25 = object : Migration(24, 25) {
         db.execSQL("CREATE INDEX IF NOT EXISTS index_montura_proveedor_monturaId ON montura_proveedor(monturaId)")
         db.execSQL("CREATE INDEX IF NOT EXISTS index_montura_proveedor_proveedorId ON montura_proveedor(proveedorId)")
 
-        // User-defined frame categories — no DEFAULT values
         db.execSQL("CREATE TABLE IF NOT EXISTS categorias_montura (id TEXT NOT NULL PRIMARY KEY, nombre TEXT NOT NULL, descripcion TEXT NOT NULL, opticaId TEXT NOT NULL)")
         db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_categorias_montura_nombre_opticaId ON categorias_montura(nombre, opticaId)")
 
@@ -705,12 +702,10 @@ val MIGRATION_24_25 = object : Migration(24, 25) {
         db.execSQL("CREATE INDEX IF NOT EXISTS index_orden_compra_items_ordenId ON orden_compra_items(ordenId)")
         db.execSQL("CREATE INDEX IF NOT EXISTS index_orden_compra_items_monturaId ON orden_compra_items(monturaId)")
 
-        // Physical inventory sessions — no DEFAULT values, all entity-defined indexes
         db.execSQL("CREATE TABLE IF NOT EXISTS inventario_fisico (id TEXT NOT NULL PRIMARY KEY, fecha TEXT NOT NULL, estado TEXT NOT NULL, opticaId TEXT NOT NULL, userId TEXT NOT NULL, notas TEXT NOT NULL, updatedAt TEXT)")
         db.execSQL("CREATE INDEX IF NOT EXISTS index_inventario_fisico_opticaId ON inventario_fisico(opticaId)")
         db.execSQL("CREATE INDEX IF NOT EXISTS index_inventario_fisico_estado ON inventario_fisico(estado)")
 
-        // Per-frame inventory detail — all entity-defined indexes
         db.execSQL("CREATE TABLE IF NOT EXISTS inventario_fisico_detalle (id TEXT NOT NULL PRIMARY KEY, inventarioId TEXT NOT NULL, monturaId TEXT NOT NULL, stockSistema INTEGER NOT NULL, stockContado INTEGER, diferencia INTEGER, FOREIGN KEY(inventarioId) REFERENCES inventario_fisico(id) ON DELETE CASCADE, FOREIGN KEY(monturaId) REFERENCES monturas(id))")
         db.execSQL("CREATE INDEX IF NOT EXISTS index_inventario_fisico_detalle_inventarioId ON inventario_fisico_detalle(inventarioId)")
         db.execSQL("CREATE INDEX IF NOT EXISTS index_inventario_fisico_detalle_monturaId ON inventario_fisico_detalle(monturaId)")
@@ -1042,5 +1037,54 @@ val MIGRATION_37_38 = object : Migration(37, 38) {
 
         // Add reclamoOrigenId to dispensaciones — nullable, no default
         db.execSQL("ALTER TABLE dispensaciones ADD COLUMN reclamo_origen_id TEXT")
+    }
+}
+
+val MIGRATION_38_39 = object : Migration(38, 39) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("""
+            CREATE TABLE IF NOT EXISTS costos_productos (
+                id TEXT NOT NULL PRIMARY KEY,
+                optica_id TEXT NOT NULL,
+                material TEXT NOT NULL,
+                tipo_lente TEXT NOT NULL,
+                stock_o_fabricacion TEXT NOT NULL,
+                tratamiento TEXT,
+                serie INTEGER,
+                costo_unitario REAL NOT NULL,
+                laboratorio_id TEXT,
+                vigente_desde TEXT NOT NULL,
+                vigente_hasta TEXT
+            )
+        """.trimIndent())
+
+        db.execSQL("""
+            CREATE TABLE IF NOT EXISTS costos_biselado (
+                id TEXT NOT NULL PRIMARY KEY,
+                optica_id TEXT NOT NULL,
+                material TEXT NOT NULL,
+                tipo_aro TEXT NOT NULL,
+                stock_o_fabricacion TEXT NOT NULL,
+                serie INTEGER,
+                alto_indice TEXT,
+                costo_por_par REAL NOT NULL,
+                proveedor TEXT,
+                vigente_desde TEXT NOT NULL,
+                vigente_hasta TEXT
+            )
+        """.trimIndent())
+
+        db.execSQL("ALTER TABLE dispensaciones ADD COLUMN evaluacion_id TEXT")
+
+        // Column names below are snake_case to match @ColumnInfo — Supabase/Room compatibility
+        db.execSQL("ALTER TABLE dispensacion_items ADD COLUMN alto_indice TEXT")
+        db.execSQL("ALTER TABLE dispensacion_items ADD COLUMN reduccion_diametro TEXT")
+        db.execSQL("ALTER TABLE dispensacion_items ADD COLUMN lenticular TEXT")
+        db.execSQL("ALTER TABLE dispensacion_items ADD COLUMN curva_base TEXT")
+        db.execSQL("ALTER TABLE dispensacion_items ADD COLUMN costo_real_od REAL")
+        db.execSQL("ALTER TABLE dispensacion_items ADD COLUMN costo_real_oi REAL")
+        db.execSQL("ALTER TABLE dispensacion_items ADD COLUMN costo_real_montura REAL")
+        db.execSQL("ALTER TABLE dispensacion_items ADD COLUMN costo_real_biselado REAL")
+        db.execSQL("ALTER TABLE dispensacion_items ADD COLUMN costo_real_lc REAL")
     }
 }

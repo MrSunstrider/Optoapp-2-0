@@ -4,6 +4,10 @@ import android.util.Log
 import com.example.optoapp.data.backup.BackupRestoreCoordinator
 import com.example.optoapp.data.categoriaproducto.CategoriaProductoDao
 import com.example.optoapp.data.categoriaproducto.CategoriaProductoEntity
+import com.example.optoapp.data.costobiselado.CostoBiseladoDao
+import com.example.optoapp.data.costobiselado.CostoBiseladoEntity
+import com.example.optoapp.data.costoproducto.CostoProductoDao
+import com.example.optoapp.data.costoproducto.CostoProductoEntity
 import com.example.optoapp.data.configuracionfinanciera.ConfiguracionFinancieraDao
 import com.example.optoapp.data.configuracionfinanciera.ConfiguracionFinancieraEntity
 import com.example.optoapp.data.gastooperativo.GastoOperativoDao
@@ -45,7 +49,9 @@ open class OptoRepository(
     private val gastoOperativoDao: GastoOperativoDao,
     private val resumenDiarioDao: ResumenDiarioDao,
     private val configuracionFinancieraDao: ConfiguracionFinancieraDao,
-    private val categoriaProductoDao: CategoriaProductoDao
+    private val categoriaProductoDao: CategoriaProductoDao,
+    private val costoProductoDao: CostoProductoDao,
+    private val costoBiseladoDao: CostoBiseladoDao
 ) {
     companion object {
         private const val TAG = "OptoRepository"
@@ -284,6 +290,46 @@ open class OptoRepository(
 
     fun getCategoriasProducto(): Flow<List<CategoriaProductoEntity>> =
         categoriaProductoDao.getAll()
+
+    // ─── Costos Producto ──────────────────────────────────────────────────────
+
+    suspend fun getCostosProductosList(opticaId: String): List<CostoProductoEntity> =
+        costoProductoDao.getByOpticaIdList(opticaId)
+
+    fun getCostosProductosByBloque(opticaId: String, bloque: String): kotlinx.coroutines.flow.Flow<List<CostoProductoEntity>> =
+        costoProductoDao.getByBloque(opticaId, bloque)
+
+    suspend fun lookupCostoProducto(
+        material: String,
+        tipoLente: String,
+        stockOFabricacion: String,
+        tratamiento: String?,
+        serie: Int?
+    ): CostoProductoEntity? = costoProductoDao.lookup(material, tipoLente, stockOFabricacion, tratamiento, serie)
+
+    /** LC-specific cost lookup: adds laboratorio_id filter for per-lab pricing. */
+    suspend fun lookupCostoProductoLc(
+        material: String,
+        tipoLente: String,
+        stockOFabricacion: String,
+        laboratorioId: String?
+    ): CostoProductoEntity? = costoProductoDao.lookupLc(material, tipoLente, stockOFabricacion, laboratorioId)
+
+    suspend fun upsertCostoProductoFromRemote(entity: CostoProductoEntity) =
+        costoProductoDao.upsertAll(listOf(entity))
+
+    // ─── Costos Biselado ──────────────────────────────────────────────────────
+
+    suspend fun lookupCostoBiselado(
+        material: String,
+        tipoAro: String,
+        stockOFabricacion: String,
+        serie: Int?,
+        altoIndice: String?
+    ): CostoBiseladoEntity? = costoBiseladoDao.lookup(material, tipoAro, stockOFabricacion, serie, altoIndice)
+
+    suspend fun upsertCostoBiseladoFromRemote(entity: CostoBiseladoEntity) =
+        costoBiseladoDao.upsertAll(listOf(entity))
 }
 
 data class DuplicateHoResolutionResult(

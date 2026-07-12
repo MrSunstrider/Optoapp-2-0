@@ -91,7 +91,9 @@ class OptoRepositoryTest {
             gastoOperativoDao = db.gastoOperativoDao(),
             resumenDiarioDao = db.resumenDiarioDao(),
             configuracionFinancieraDao = db.configuracionFinancieraDao(),
-            categoriaProductoDao = db.categoriaProductoDao()
+            categoriaProductoDao = db.categoriaProductoDao(),
+            costoProductoDao = db.costoProductoDao(),
+            costoBiseladoDao = db.costoBiseladoDao()
         )
     }
 
@@ -212,7 +214,7 @@ class OptoRepositoryTest {
         assertEquals("target_o", pacienteDao.getPacienteById("p1")!!.opticaId)
         assertEquals("target_o", evaluacionDao.getEvaluacionById("e1")!!.opticaId)
         assertEquals("target_o", dispensacionDao.getDispensacionById("d1")!!.opticaId)
-        assertEquals("target_o", pagoDao.getPagoById("pg1")!!.opticaId)
+        assertEquals("target_o", pagoDao.getPagoByIdForOptica("pg1", "target_o")!!.opticaId)
         assertEquals("target_o", servicioExtraDao.getServicioById("s1")!!.opticaId)
     }
 
@@ -229,7 +231,7 @@ class OptoRepositoryTest {
         // Should not throw despite all null lists
         repo.restoreBackup(backup, "current_o")
         // Verify nothing was inserted
-        assertTrue(pacienteDao.getAllPacientes().first().isEmpty())
+        assertTrue(pacienteDao.getPacientesByOptica("current_o").first().isEmpty())
     }
 
     @Test
@@ -260,6 +262,6 @@ class OptoRepositoryTest {
         // Good data still inserted despite bad dispensacion
         assertNotNull(pacienteDao.getPacienteById("p_good"))
         assertNotNull(evaluacionDao.getEvaluacionById("e_good"))
-        assertNotNull(pagoDao.getPagoById("pg_good"))
+        assertNotNull(pagoDao.getPagoByIdForOptica("pg_good", "target_o"))
     }
 }

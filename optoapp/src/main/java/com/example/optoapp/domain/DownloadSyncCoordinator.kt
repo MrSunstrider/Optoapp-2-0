@@ -32,6 +32,8 @@ class DownloadSyncCoordinator @Inject constructor(
         private const val TABLE_CONFIGURACION_FINANCIERA = "configuracion_financiera"
         private const val TABLE_REGALOS = "regalos_dispensacion"
         private const val TABLE_GASTOS_OPERATIVOS = "gastos_operativos"
+        private const val TABLE_COSTOS_PRODUCTOS = "costos_productos"
+        private const val TABLE_COSTOS_BISELADO = "costos_biselado"
     }
 
     private suspend inline fun <reified T : Any> downloadTable(
@@ -174,5 +176,19 @@ class DownloadSyncCoordinator @Inject constructor(
             Log.w(TAG, "configuracion_financiera download failed", e)
             0
         }
+    }
+
+    suspend fun downloadCostosProductos(opticaId: String): Int = downloadTable<CostoProductoRemoto>(
+        opticaId, TABLE_COSTOS_PRODUCTOS, "costo_producto", skipDeletions = true,
+        getId = { it.id }
+    ) { r ->
+        repository.upsertCostoProductoFromRemote(r.toEntity())
+    }
+
+    suspend fun downloadCostosBiselado(opticaId: String): Int = downloadTable<CostoBiseladoRemoto>(
+        opticaId, TABLE_COSTOS_BISELADO, "costo_biselado", skipDeletions = true,
+        getId = { it.id }
+    ) { r ->
+        repository.upsertCostoBiseladoFromRemote(r.toEntity())
     }
 }

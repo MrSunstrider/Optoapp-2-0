@@ -167,24 +167,25 @@ Server-calculated table; no INSERT/UPDATE/DELETE policies needed.
 
 ### R6: Supabase `costos_productos` Table
 
-The system SHALL CREATE TABLE `public.costos_productos`:
+System SHALL REPLACE `costos_productos` with matrix schema:
 
 | Column | Type | Constraints |
 |--------|------|-------------|
-| `id` | `UUID` | `PRIMARY KEY DEFAULT gen_random_uuid()` |
+| `id` | `UUID` | `PRIMARY KEY` |
 | `optica_id` | `TEXT` | `NOT NULL` |
-| `categoria_producto_id` | `TEXT` | `NOT NULL`, FK to `categorias_producto(id)` |
-| `producto_descripcion` | `TEXT` | nullable — free-text description |
+| `material` | `TEXT` | `NOT NULL` |
+| `tipo_lente` | `TEXT` | `NOT NULL` |
+| `stock_o_fabricacion` | `TEXT` | `NOT NULL`, `CHECK IN ('stock','fabricacion','montura')` |
+| `tratamiento` | `TEXT` | nullable |
+| `serie` | `INTEGER` | nullable — 1/2/3 or null for fixed-price |
 | `costo_unitario` | `NUMERIC` | `NOT NULL` |
-| `vigente_desde` | `DATE` | `NOT NULL DEFAULT CURRENT_DATE` |
-| `vigente_hasta` | `DATE` | nullable — NULL means currently active |
-| `fecha_actualizacion` | `TIMESTAMPTZ` | `DEFAULT NOW()` |
+| `laboratorio_id` | `TEXT` | nullable |
+| `vigente_desde` | `DATE` | `NOT NULL` |
+| `vigente_hasta` | `DATE` | nullable |
 
-**Partial index** (currently active costs only):
-```sql
-CREATE INDEX idx_costos_vigentes ON public.costos_productos (optica_id, categoria_producto_id)
-    WHERE vigente_hasta IS NULL;
-```
+Index: `CREATE INDEX idx_costos_productos_lookup ON costos_productos(optica_id, material, tipo_lente, stock_o_fabricacion, serie) WHERE vigente_hasta IS NULL`.
+
+(Previously: flat schema with categoria_producto_id, producto_descripcion, costo_unitario)
 
 #### R6.1: RLS on `costos_productos`
 
@@ -195,9 +196,15 @@ CREATE INDEX idx_costos_vigentes ON public.costos_productos (optica_id, categori
 | `costos_productos_update` | UPDATE | Same as insert |
 | `costos_productos_delete` | DELETE | `app_private.has_optica_role(auth.uid(), optica_id, ARRAY['admin'])` |
 
-#### R6.2: No Room entity for `costos_productos`
+#### R6.2: Room Entity for `costos_productos`
 
-This table is server-side master data managed via web companion. No Room entity, DAO, or sync wiring SHALL be created for it.
+`CostoProductoEntity` SHALL exist for offline access. DAO SHALL provide lookup queries by block and series. Entity SHALL participate in download AND upload sync. (Previously: no Room entity — server-side only.)
+
+- GIVEN migration applied
+- WHEN table inspected
+- THEN `costos_productos` has matrix columns
+- AND SELECT policy allows optica members
+- AND INSERT/UPDATE allow admin/gerente
 
 ---
 
@@ -699,11 +706,42 @@ The function SHALL compute CORE financial indicators for the given month by read
 | Previous month sales | `ventas_mes_anterior` | `resumen_diario.ventas_monto_total` SUM for previous month |
 | Sales variation % | `variacion_ventas_pct` | `(ventas - anterior) / anterior * 100` |
 
-> **NOTE**: `margen_por_categoria`, `stock_estancado`, and `valor_inventario` are NOT computed by this RPC. They are queried directly from their respective tables (server-side) — `margen_por_categoria` from `ventas` + `costos_productos` per `categoria_producto_id`, `stock_estancado` from `monturas` with `montura_movimientos`, and `valor_inventario` from `SUM(monturas.costo * stock_actual)`.
+The function SHALL ALSO compute inline:
+
+- **`margen_por_categoria`** (JSONB array): revenue per category from `dispensaciones` + `servicios_extra`, mapping `tipo_lente + material_lente` to `categoria_producto_id` via CASE. Each row SHALL include `categoria`, `ventas`, `costos=0`, `margen_pct=null` (cost entry deferred to Slice 2).
+
+- **`stock_estancado`** (JSONB array): unsold products from `monturas` LEFT JOIN `montura_movimientos (tipo='SALIDA_VENTA')` and `dispensaciones.montura_id`. `dias_sin_venta` SHALL be `CURRENT_DATE - MAX(fecha)` for sold, 999 for never-sold. `ultima_venta` SHALL be the real date or null. The low-stock filter (`stock_actual <= stock_minimo`) SHALL be removed.
+
+(Previously: not computed by this RPC; `stock_estancado` used low-stock filter with hardcoded 999.)
 
 #### R23.1: RPC Security
 
 `REVOKE EXECUTE ON FUNCTION public.rpc_analisis_mensual(TEXT, DATE) FROM public, anon; GRANT EXECUTE ON FUNCTION public.rpc_analisis_mensual(TEXT, DATE) TO authenticated, service_role;`
+
+#### Scenario: margen_por_categoria returns real revenue from inline computation
+
+- GIVEN dispensaciones with `tipo_lente='monofocal', material_lente='resina_stock'` for July 2026
+- WHEN `rpc_analisis_mensual('o1', '2026-07-01')` is called
+- THEN `margen_por_categoria` contains a row with non-zero `ventas` for the mapped `categoria_producto_id`
+- AND the mapping from `(tipo_lente, material_lente)` to `categoria` follows the CASE expression
+
+#### Scenario: stock_estancado shows computed dias_sin_venta for sold monturas
+
+- GIVEN a montura with a SALIDA_VENTA movimiento on 2026-03-15
+- WHEN `rpc_analisis_mensual('o1', '2026-07-01')` is called
+- THEN that montura appears in `stock_estancado` with real `diasSinVenta` and `ultimaVenta = "2026-03-15"`
+
+#### Scenario: never-sold montura shows 999 days and null date
+
+- GIVEN a montura with no SALIDA_VENTA and no `dispensaciones.montura_id` reference
+- WHEN `rpc_analisis_mensual('o1', '2026-07-01')` is called
+- THEN that montura has `diasSinVenta = 999` and `ultimaVenta = null`
+
+#### Scenario: no sales data returns zero rows in margen_por_categoria
+
+- GIVEN an optica has zero dispensaciones and zero servicios_extra for July 2026
+- WHEN `rpc_analisis_mensual('o1', '2026-07-01')` is called
+- THEN `margen_por_categoria` contains 9 rows (one per `categorias_producto`) with `ventas = 0, costos = 0, margen_pct = null`
 
 ---
 
@@ -1096,7 +1134,7 @@ GIVEN a device has OptoDatabase at version 32 with 50 Pago rows
 - Fase 8: Recommendation engine
 - Fase 9: Financial configuration screens
 - `MargenPorCategoria` Room entity (server-side only)
-- `CostoProducto` Room entity (server-side only)
+- `FeedbackRecomendaciones` Room entity (web-only)
 - `FeedbackRecomendaciones` Room entity (web-only)
 - Upload sync for `resumen_diario` and `configuracion_financiera`
 - Snapshot coordinator changes (`SyncSnapshotCoordinator`)

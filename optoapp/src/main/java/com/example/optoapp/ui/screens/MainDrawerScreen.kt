@@ -204,6 +204,11 @@ fun MainDrawerScreen(
                     NuevoServicioScreen(navController, servicioId = backStackEntry.arguments?.getString("id"))
                 }
                 composable("reportes") { ReportesScreen(drawerState) }
+                composable("costos_y_gastos") { CostosYGastosScreen(navController, drawerState) }
+                composable("costos_y_gastos/{dispensacionId}") { backStackEntry ->
+                    val dispId = backStackEntry.arguments?.getString("dispensacionId")
+                    CostosYGastosScreen(navController, drawerState, dispensacionId = dispId)
+                }
                 composable("cierre_caja") { CierreCajaScreen(navController) }
                 composable("estadisticas_bi") { AnalisisNegocioScreen(navController) }
                 composable("analisis_detalle") { AnalisisDetalleScreen(navController) }

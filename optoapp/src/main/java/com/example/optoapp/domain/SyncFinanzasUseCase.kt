@@ -54,6 +54,7 @@ open class SyncFinanzasUseCase @Inject constructor(
             var dispUp = 0
             var itemsUp = 0
             var servUp = 0
+            var costosUp = 0
             var pagosUp = 0
             var gastosUp = 0
             var regalosUp = 0
@@ -65,6 +66,8 @@ open class SyncFinanzasUseCase @Inject constructor(
                 Log.d(TAG, "Finanzas: upload dispensacion_items=$itemsUp")
                 servUp = safeUpload("servicios_extra") { uploadSyncCoordinator.uploadServicios(opticaId) }
                 Log.d(TAG, "Finanzas: upload servicios_extra=$servUp")
+                costosUp = safeUpload("costos_productos") { uploadSyncCoordinator.uploadCostosProductos(opticaId) }
+                Log.d(TAG, "Finanzas: upload costos_productos=$costosUp")
                 pagosUp = safeUpload("pagos") { uploadSyncCoordinator.uploadPagos(opticaId) }
                 Log.d(TAG, "Finanzas: upload pagos=$pagosUp")
                 gastosUp = safeUpload("gastos_operativos") { uploadSyncCoordinator.uploadGastosOperativos(opticaId) }
@@ -78,6 +81,8 @@ open class SyncFinanzasUseCase @Inject constructor(
             val servDown: Int
             val pagosDown: Int
             val regalosDown: Int
+            val costosDown: Int
+            val biseladoDown: Int
             val resumenDown: Int
             val configDown: Int
             val gastosDown: Int
@@ -92,6 +97,10 @@ open class SyncFinanzasUseCase @Inject constructor(
                 Log.d(TAG, "Finanzas: download resumen_diario=$resumenDown")
                 configDown = downloadSyncCoordinator.downloadConfiguracionFinanciera(opticaId)
                 Log.d(TAG, "Finanzas: download configuracion_financiera=$configDown")
+                costosDown = downloadSyncCoordinator.downloadCostosProductos(opticaId)
+                Log.d(TAG, "Finanzas: download costos_productos=$costosDown")
+                biseladoDown = downloadSyncCoordinator.downloadCostosBiselado(opticaId)
+                Log.d(TAG, "Finanzas: download costos_biselado=$biseladoDown")
                 pagosDown = downloadSyncCoordinator.downloadPagos(opticaId)
                 Log.d(TAG, "Finanzas: download pagos=$pagosDown")
                 regalosDown = downloadSyncCoordinator.downloadRegalos(opticaId)
@@ -102,6 +111,8 @@ open class SyncFinanzasUseCase @Inject constructor(
                 dispDown = 0
                 itemsDown = 0
                 servDown = 0
+                costosDown = 0
+                biseladoDown = 0
                 pagosDown = 0
                 regalosDown = 0
                 resumenDown = 0
@@ -115,6 +126,7 @@ open class SyncFinanzasUseCase @Inject constructor(
                     uploadedDispensaciones = dispUp,
                     uploadedDispensacionItems = itemsUp,
                     uploadedServicios = servUp,
+                    uploadedCostosProductos = costosUp,
                     uploadedPagos = pagosUp,
                     uploadedGastosOperativos = gastosUp,
                     uploadedRegalos = regalosUp,
@@ -123,6 +135,8 @@ open class SyncFinanzasUseCase @Inject constructor(
                     downloadedServicios = servDown,
                     downloadedPagos = pagosDown,
                     downloadedRegalos = regalosDown,
+                    downloadedCostosProductos = costosDown,
+                    downloadedCostosBiselado = biseladoDown,
                     downloadedResumenesDiarios = resumenDown,
                     downloadedConfiguracionesFinancieras = configDown,
                     downloadedGastosOperativos = gastosDown
