@@ -1,5 +1,5 @@
 -- =============================================================================
--- Seed Data — Development Only (NOT for production)
+-- Seed Data â€” Development Only (NOT for production)
 --
 -- Populates the database with representative synthetic data after
 -- supabase db reset, making local development environments functional.
@@ -21,18 +21,18 @@ SET session_replication_role = 'replica';
 INSERT INTO public.opticas (id, nombre, created_at, laboratorio_nombre, laboratorio_contacto, plan, plan_code, plan_source, plan_status, fiscal_doc_tipo, fiscal_doc_numero, razon_social, direccion_fiscal)
 VALUES (
     'dev-optica-001',
-    'Óptica Demo S.A.S.',
+    'Ã“ptica Demo S.A.S.',
     '2026-01-01 00:00:00+00',
     'Laboratorio Demo',
     'lab@test.com',
-    'internal_owner',
-    'internal_owner',
-    'system',
+    'dev_owner',
+    'dev_owner',
+    'internal',
     'active',
     'RUC',
     '20123456789',
     'OPTICA DEMO S.A.S.',
-    'Av. Demostración 123, Lima'
+    'Av. DemostraciÃ³n 123, Lima'
 )
 ON CONFLICT (id) DO NOTHING;
 
@@ -43,7 +43,7 @@ INSERT INTO public.pacientes (id, nombre_completo, edad, telefono, fecha_creacio
 VALUES
     (
         'dev-paciente-001',
-        'Juan Pérez García',
+        'Juan PÃ©rez GarcÃ­a',
         35,
         '999000001',
         '2026-06-01',
@@ -57,7 +57,7 @@ VALUES
     ),
     (
         'dev-paciente-002',
-        'María López Medina',
+        'MarÃ­a LÃ³pez Medina',
         42,
         '999000002',
         '2026-06-15',
@@ -71,7 +71,7 @@ VALUES
     ),
     (
         'dev-paciente-003',
-        'Carlos Ramírez Torres',
+        'Carlos RamÃ­rez Torres',
         28,
         '999000003',
         '2026-07-01',
@@ -81,7 +81,7 @@ VALUES
         '34567890',
         'carlos.ramirez@test.com',
         'M',
-        'Calle Sintética 789'
+        'Calle SintÃ©tica 789'
     )
 ON CONFLICT (id) DO NOTHING;
 
@@ -94,7 +94,7 @@ VALUES
         'dev-montura-001',
         'DEMO-MT-001',
         'Marca Demo',
-        'Modelo Clásico',
+        'Modelo ClÃ¡sico',
         'Negro',
         'M',
         45.00,
@@ -137,7 +137,7 @@ VALUES
 ON CONFLICT (id) DO NOTHING;
 
 -- #############################################################################
--- 4. Dispensación (linked to paciente-001, montura-001)
+-- 4. DispensaciÃ³n (linked to paciente-001, montura-001)
 -- #############################################################################
 INSERT INTO public.dispensaciones (
     id, paciente_id, fecha, optica_id, tipo_montura, material_montura,
@@ -163,8 +163,8 @@ VALUES (
     'Montura completa metal',
     600.00,
     'efectivo',
-    600.00,
-    'pendiente',
+     600.00,
+     'Pendiente',
     'larga',
     'ninguno',
     '2026-07-01 12:00:00+00',
@@ -175,7 +175,7 @@ VALUES (
 ON CONFLICT (id) DO NOTHING;
 
 -- #############################################################################
--- 5. Dispensación item (linked to disp-001, montura-001)
+-- 5. DispensaciÃ³n item (linked to disp-001, montura-001)
 -- #############################################################################
 INSERT INTO public.dispensacion_items (
     id, dispensacion_id, tipo_lente, material_lente, tratamientos,
@@ -212,10 +212,10 @@ INSERT INTO public.servicios_extra (
 VALUES (
     'dev-serv-001',
     'DEMO-OT-S001',
-    'Reparación de montura — cambio de varilla',
+    'ReparaciÃ³n de montura â€” cambio de varilla',
     50.00,
     0.00,
-    'pendiente',
+    'Pendiente',
     '2026-07-05',
     'dev-paciente-002',
     'efectivo',
@@ -245,27 +245,27 @@ VALUES (
 ON CONFLICT (id) DO NOTHING;
 
 -- #############################################################################
--- 8. Categorías producto reference data (if not already present in migrations)
+-- 8. CategorÃ­as producto reference data (if not already present in migrations)
 -- #############################################################################
 INSERT INTO public.categorias_producto (id, nombre, familia, orden)
 VALUES
-    ('lente_progresivo',    'Lentes Progresivos',   'lentes',  1),
-    ('lente_monofocal',     'Lentes Monofocales',   'lentes',  2),
-    ('lente_bifocal',       'Lentes Bifocales',     'lentes',  3),
-    ('montura_premium',     'Monturas Premium',     'monturas', 4),
-    ('montura_estandar',    'Monturas Estandar',    'monturas', 5),
-    ('montura_economica',   'Monturas Economicas',  'monturas', 6),
-    ('servicio_extra',      'Servicios Extra',      'servicios', 7),
-    ('garantia_extendida',  'Garantias Extendidas', 'garantias', 8),
-    ('otro_lente',          'Otros Lentes',         'lentes',  9)
+    ('lente_progresivo',    'Lentes Progresivos',   'lente',     1),
+    ('lente_monofocal',     'Lentes Monofocales',   'lente',     2),
+    ('lente_bifocal',       'Lentes Bifocales',     'lente',     3),
+    ('montura_premium',     'Monturas Premium',     'montura',   4),
+    ('montura_estandar',    'Monturas Estandar',    'montura',   5),
+    ('montura_economica',   'Monturas Economicas',  'montura',   6),
+    ('servicio_extra',      'Servicios Extra',      'servicio',  7),
+    ('garantia_extendida',  'Garantias Extendidas', 'servicio',  8),
+    ('otro_lente',          'Otros Lentes',         'lente',     9)
 ON CONFLICT (id) DO NOTHING;
 
 -- #############################################################################
--- 9. Configuración financiera (required by app)
+-- 9. ConfiguraciÃ³n financiera (required by app)
 -- #############################################################################
-INSERT INTO public.configuracion_financiera (id, optica_id, moneda, tasa_igv)
-VALUES ('dev-config-fin-001', 'dev-optica-001', 'PEN', 0.18)
-ON CONFLICT (id) DO NOTHING;
+INSERT INTO public.configuracion_financiera (optica_id, margen_neto_objetivo)
+VALUES ('dev-optica-001', 35.0)
+ON CONFLICT (optica_id) DO NOTHING;
 
 -- Restore normal trigger behavior
 SET session_replication_role = 'origin';

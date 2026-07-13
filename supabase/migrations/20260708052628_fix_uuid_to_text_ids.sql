@@ -1,38 +1,28 @@
--- Drop RLS policies on affected tables
-DROP POLICY IF EXISTS proveedores_select ON proveedores;
-DROP POLICY IF EXISTS proveedores_insert ON proveedores;
-DROP POLICY IF EXISTS proveedores_update ON proveedores;
-DROP POLICY IF EXISTS proveedores_delete ON proveedores;
+-- Drop ALL policies on affected tables (safe drop before ALTER COLUMN TYPE)
+DO $$
+DECLARE
+    pol record;
+BEGIN
+    FOR pol IN
+        SELECT policyname, tablename FROM pg_policies
+        WHERE schemaname = 'public'
+          AND tablename IN ('proveedores','ordenes_compra','orden_compra_items',
+                            'inventario_fisico','inventario_fisico_detalle',
+                            'montura_proveedor','categorias_montura')
+    LOOP
+        EXECUTE format('DROP POLICY IF EXISTS %I ON %I', pol.policyname, pol.tablename);
+    END LOOP;
+END;
+$$;
 
-DROP POLICY IF EXISTS ordenes_compra_select ON ordenes_compra;
-DROP POLICY IF EXISTS ordenes_compra_insert ON ordenes_compra;
-DROP POLICY IF EXISTS ordenes_compra_update ON ordenes_compra;
-DROP POLICY IF EXISTS ordenes_compra_delete ON ordenes_compra;
-
-DROP POLICY IF EXISTS oci_select ON orden_compra_items;
-DROP POLICY IF EXISTS oci_insert ON orden_compra_items;
-DROP POLICY IF EXISTS oci_update ON orden_compra_items;
-DROP POLICY IF EXISTS oci_delete ON orden_compra_items;
-
-DROP POLICY IF EXISTS if_select ON inventario_fisico;
-DROP POLICY IF EXISTS if_insert ON inventario_fisico;
-DROP POLICY IF EXISTS if_update ON inventario_fisico;
-DROP POLICY IF EXISTS if_delete ON inventario_fisico;
-
-DROP POLICY IF EXISTS ifd_select ON inventario_fisico_detalle;
-DROP POLICY IF EXISTS ifd_insert ON inventario_fisico_detalle;
-DROP POLICY IF EXISTS ifd_update ON inventario_fisico_detalle;
-DROP POLICY IF EXISTS ifd_delete ON inventario_fisico_detalle;
-
-DROP POLICY IF EXISTS montura_proveedor_select ON montura_proveedor;
-DROP POLICY IF EXISTS montura_proveedor_insert ON montura_proveedor;
-DROP POLICY IF EXISTS montura_proveedor_update ON montura_proveedor;
-DROP POLICY IF EXISTS montura_proveedor_delete ON montura_proveedor;
-
-DROP POLICY IF EXISTS categorias_montura_select ON categorias_montura;
-DROP POLICY IF EXISTS categorias_montura_insert ON categorias_montura;
-DROP POLICY IF EXISTS categorias_montura_update ON categorias_montura;
-DROP POLICY IF EXISTS categorias_montura_delete ON categorias_montura;
+-- Disable RLS before altering column types
+ALTER TABLE proveedores DISABLE ROW LEVEL SECURITY;
+ALTER TABLE ordenes_compra DISABLE ROW LEVEL SECURITY;
+ALTER TABLE orden_compra_items DISABLE ROW LEVEL SECURITY;
+ALTER TABLE inventario_fisico DISABLE ROW LEVEL SECURITY;
+ALTER TABLE inventario_fisico_detalle DISABLE ROW LEVEL SECURITY;
+ALTER TABLE montura_proveedor DISABLE ROW LEVEL SECURITY;
+ALTER TABLE categorias_montura DISABLE ROW LEVEL SECURITY;
 
 -- Alter column types and drop defaults
 ALTER TABLE proveedores ALTER COLUMN id SET DATA TYPE TEXT;
