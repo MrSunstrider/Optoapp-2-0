@@ -90,8 +90,12 @@ fun normalizeAndTranspose(state: EvaluacionUiState, ojo: String): EvaluacionUiSt
         var newEjeNum = ejeVal + 90
         if (newEjeNum > 180) newEjeNum -= 180
 
-        val newEsf = if (newEsfNum == 0.0) "plano" else "%.2f".format(Locale.US, newEsfNum)
-        val newCil = "%.2f".format(Locale.US, newCilNum)
+        val newEsf = when {
+            newEsfNum == 0.0 -> "plano"
+            newEsfNum > 0.0 -> "+%.2f".format(Locale.US, newEsfNum)
+            else -> "%.2f".format(Locale.US, newEsfNum)
+        }
+        val newCil = if (newCilNum > 0.0) "+%.2f".format(Locale.US, newCilNum) else "%.2f".format(Locale.US, newCilNum)
         val newEje = newEjeNum.toString()
 
         if (ojo == "OD") {
