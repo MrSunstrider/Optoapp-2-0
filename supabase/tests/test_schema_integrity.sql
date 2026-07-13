@@ -24,7 +24,6 @@ BEGIN
             ('dispensacion_items'),
             ('servicios_extra'),
             ('pagos'),
-            ('ventas'),
             ('opticas'),
             ('usuario_optica'),
             ('monturas'),
@@ -169,10 +168,12 @@ BEGIN
         ])
     LOOP
         IF NOT EXISTS (
-            SELECT 1 FROM pg_policies
-            WHERE schemaname = 'public'
-              AND tablename = v_tbl
-              AND pg_get_expr(qual, relid)::text ILIKE '%optica_id%'
+            SELECT 1 FROM pg_policy pol
+            JOIN pg_class c ON c.oid = pol.polrelid
+            JOIN pg_namespace n ON n.oid = c.relnamespace
+            WHERE n.nspname = 'public'
+              AND c.relname = v_tbl
+              AND pg_get_expr(pol.polqual, pol.polrelid)::text ILIKE '%optica_id%'
         ) THEN
             v_unprotected := array_append(v_unprotected, v_tbl);
         END IF;
@@ -221,13 +222,13 @@ BEGIN
             'enforce_optica_limit_for_creator',
             'guard_pacientes_delete',
             'sync_user_profiles_from_auth',
-            'rpc_resumen_financiero',
             'rpc_cierre_caja_resumen',
-            'rpc_suggest_next_ho',
-            'rpc_adjust_stock_and_save_dispensacion',
-            'rpc_sync_snapshot',
+            'suggest_next_ho',
+            'rpc_adjust_montura_stock',
+            'sync_snapshot',
             'is_internal_owner',
-            'enforce_dev_owner_guard'
+            'enforce_dev_owner_guard',
+            'recalcular_resumen_diario'
         ])
     LOOP
         IF NOT EXISTS (
