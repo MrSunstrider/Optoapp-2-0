@@ -119,5 +119,6 @@ private fun parseRefraction(v: String): Float {
 }
 
 private fun formatDiopter(value: Float): String {
-    return String.format(Locale.getDefault(), "%.2f", value)
+    if (value == 0f) return "0.00"
+    return if (value > 0f) "+%.2f".format(Locale.US, value) else "%.2f".format(Locale.US, value)
 }
