@@ -20,6 +20,15 @@ on:
       - "supabase/seed.sql"
       - "supabase/tests/**"
 
+# Trigger Scope
+# -------------
+# Runs only on main/version-saas, not on feature branches. Rationale:
+#   - Each branch would need its own `supabase link --project-ref`, adding
+#     per-branch infra cost without proportional benefit.
+#   - Migration correctness is enforced at PR review time via the pre-commit
+#     hook and code review of migration files.
+#   - CI validates the definitive integration on push to main/version-saas.
+#
 # Required Secrets
 # ----------------
 # SUPABASE_ACCESS_TOKEN  — Supabase personal access token (PAT) for `supabase link --project-ref`

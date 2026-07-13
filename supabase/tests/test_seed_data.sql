@@ -117,12 +117,41 @@ $$;
 -- #############################################################################
 -- Test: Seed idempotency (ON CONFLICT DO NOTHING)
 -- #############################################################################
+-- Captures row counts, re-executes seed.sql via \i, then asserts counts
+-- are unchanged — proving every INSERT uses ON CONFLICT DO NOTHING.
+--
+-- NOTE: The \i meta-command MUST be outside any DO block (psql, not PL/pgSQL).
+
+CREATE TEMP TABLE IF NOT EXISTS _seed_counts_before AS
+SELECT 'opticas'            AS tbl, count(*) AS cnt FROM public.opticas
+UNION ALL
+SELECT 'pacientes',               count(*) FROM public.pacientes
+UNION ALL
+SELECT 'monturas',                count(*) FROM public.monturas
+UNION ALL
+SELECT 'dispensaciones',          count(*) FROM public.dispensaciones
+UNION ALL
+SELECT 'servicios_extra',         count(*) FROM public.servicios_extra;
+
+\i supabase/seed.sql
+
 DO $$
+DECLARE
+    v_after  INTEGER;
+    v_before INTEGER;
+    r        RECORD;
 BEGIN
-    -- Running the seed insert statements again should not raise errors.
-    -- This is a structural test — if ON CONFLICT is not used, re-running
-    -- would fail with duplicate key violations.
-    RAISE NOTICE 'TEST 4: Idempotency verified via ON CONFLICT DO NOTHING pattern';
+    FOR r IN SELECT * FROM _seed_counts_before LOOP
+        EXECUTE format('SELECT count(*) FROM public.%I', r.tbl) INTO v_after;
+        v_before := r.cnt;
+        ASSERT v_after = v_before,
+            'Idempotency FAILED: ' || r.tbl || ' went from ' || v_before
+            || ' to ' || v_after || ' after re-seed. '
+            || 'Missing ON CONFLICT DO NOTHING?';
+    END LOOP;
+
+    DROP TABLE IF EXISTS _seed_counts_before;
+    RAISE NOTICE 'TEST 4 PASS: Seed is idempotent — no row count change on re-run';
 END;
 $$;
 
