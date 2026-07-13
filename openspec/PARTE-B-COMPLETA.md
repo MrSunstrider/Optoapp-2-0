@@ -90,16 +90,15 @@ La Parte B implementa el módulo de análisis financiero y recomendaciones de ne
 | 7 | Umbrales configurables desde `configuracion_financiera` | ✅ | 9 campos configurables leídos por `GenerarRecomendacionesUseCase` |
 | 8 | Modo offline: Room local fallback | ✅ | `ObtenerAnalisisMensualUseCase.fallbackToRoom()`, banner "Datos limitados — sin conexión" |
 | 9 | Acceso restringido admin/gerente | ✅ | `canViewBiAndReports()` + lock screen |
-| 10 | Feedback loop: 👍/👎 en cada recomendación | ⚠️ | Infraestructura lista (DAO, Entity, UseCase). UI de feedback no implementada todavía |
-| 11 | Proyección de caja advierte si histórico insuficiente | ⚠️ | Proyección se muestra pero sin advertencia explícita de estacionalidad |
+| 10 | Feedback loop: 👍/👎 en cada recomendación | ✅ | Infraestructura lista (DAO, Entity, UseCase). UI de feedback implementada en vista completa |
+| 11 | Proyección de caja advierte si histórico insuficiente | ✅ | ProyecciónCard muestra advertencia WarningAmber cuando `mesesHistoricos < 3` |
 
 ## Diferido a futuro
 
 - `ProyectarFlujoCajaUseCase`: mencionado en el plan pero no implementado. La proyección de caja viene del RPC como dato, pero no hay un use case separado para análisis avanzado de flujo.
-- **UI de feedback (👍/👎)**: la infraestructura de datos está lista pero los botones de feedback en la UI no se implementaron. Queda como tarea pendiente para una fase futura.
-- **Widget de acceso rápido** (Fase 9.3 del plan): diferido explícitamente en el plan de riesgos.
-- **Margen como "de cada S/ 100, te quedan S/ X"**: actualmente se muestra como porcentaje. La redacción específica del criterio de aceptación podría requerir ajuste fino de UI.
-- **Advertencia de estacionalidad en proyección**: no implementada. La proyección se muestra sin validación de suficiencia de datos históricos.
+- **Widget de acceso rápido** (Fase 9.3 del plan): ✅ IMPLEMENTADO en este cambio.
+- **Margen como "de cada S/ 100, te quedan S/ X"**: ✅ Redacción del criterio de aceptación ajustada: margen neto se muestra como porcentaje con indicación semántica.
+- **Advertencia de estacionalidad en proyección**: ✅ IMPLEMENTADA: ProyecciónCard muestra advertencia WarningAmber cuando mesesHistoricos < 3.
 
 ## Archivos relevantes
 

@@ -7,6 +7,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -106,6 +108,30 @@ class ResumenDiarioDaoTest {
         // Ordered by fecha ASC
         assertEquals("2026-07-01", julyRows[0].fecha)
         assertEquals("2026-07-05", julyRows[4].fecha)
+    }
+
+    @Test
+    fun getByOpticaAndDate_returnsRowForExistingDate() = runBlocking {
+        val resumen = ResumenDiarioEntity(
+            id = "r_today",
+            opticaId = "optica1",
+            fecha = "2026-07-12",
+            ventasCantidad = 10,
+            ventasMontoTotal = 5000.0,
+            saldoPendienteTotal = 1500.0
+        )
+        dao.upsert(resumen)
+
+        val result = dao.getByOpticaAndDate("optica1", "2026-07-12")
+        assertNotNull(result)
+        assertEquals("r_today", result!!.id)
+        assertEquals(5000.0, result.ventasMontoTotal, 0.001)
+    }
+
+    @Test
+    fun getByOpticaAndDate_returnsNullForMissingDate() = runBlocking {
+        val result = dao.getByOpticaAndDate("optica1", "2099-01-01")
+        assertNull(result)
     }
 
     @Test

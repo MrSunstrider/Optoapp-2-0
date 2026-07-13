@@ -18,6 +18,13 @@ interface ResumenDiarioDao {
     """)
     suspend fun getByOpticaAndMonth(opticaId: String, yearMonth: String): List<ResumenDiarioEntity>
 
+    @Query("""
+        SELECT * FROM resumen_diario
+        WHERE opticaId = :opticaId AND fecha = :fecha
+        LIMIT 1
+    """)
+    suspend fun getByOpticaAndDate(opticaId: String, fecha: String): ResumenDiarioEntity?
+
     @Upsert
     suspend fun upsert(resumen: ResumenDiarioEntity)
 

@@ -1,0 +1,68 @@
+package com.example.optoapp.widget
+
+import android.app.PendingIntent
+import android.appwidget.AppWidgetManager
+import android.appwidget.AppWidgetProvider
+import android.content.Context
+import android.content.Intent
+import android.widget.RemoteViews
+import dagger.hilt.android.AndroidEntryPoint
+import com.example.optoapp.MainActivity
+import com.example.optoapp.R
+import com.example.optoapp.data.SessionManager
+import com.example.optoapp.data.resumendiario.ResumenDiarioDao
+import com.example.optoapp.widget.MiNegocioWidgetWorker.Companion.readOpticaId
+import java.time.LocalDate
+import javax.inject.Inject
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+
+@AndroidEntryPoint(AppWidgetProvider::class)
+class MiNegocioWidgetProvider : AppWidgetProvider() {
+
+    @Inject
+    lateinit var dao: ResumenDiarioDao
+
+    @Inject
+    lateinit var sessionManager: SessionManager
+
+    override fun onUpdate(
+        context: Context,
+        appWidgetManager: AppWidgetManager,
+        appWidgetIds: IntArray
+    ) {
+        CoroutineScope(Dispatchers.IO).launch {
+            val today = LocalDate.now().toString()
+            val opticaId = readOpticaId(context)
+
+            val entity = if (opticaId.isNotBlank()) {
+                try {
+                    dao.getByOpticaAndDate(opticaId, today)
+                } catch (e: Exception) {
+                    null
+                }
+            } else null
+
+            val ventas = entity?.ventasMontoTotal ?: 0.0
+            val porCobrar = entity?.saldoPendienteTotal ?: 0.0
+
+            for (appWidgetId in appWidgetIds) {
+                val views = RemoteViews(context.packageName, R.layout.widget_mi_negocio)
+                views.setTextViewText(R.id.widget_hoy, "Hoy: S/ %.2f".format(ventas))
+                views.setTextViewText(R.id.widget_por_cobrar, "Por cobrar: S/ %.2f".format(porCobrar))
+
+                val intent = Intent(context, MainActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                }
+                val pendingIntent = PendingIntent.getActivity(
+                    context, 0, intent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
+                views.setOnClickPendingIntent(R.id.widget_container, pendingIntent)
+
+                appWidgetManager.updateAppWidget(appWidgetId, views)
+            }
+        }
+    }
+}

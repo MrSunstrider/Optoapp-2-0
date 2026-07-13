@@ -278,7 +278,9 @@ The function SHALL:
 1. **Sales aggregation**: Query `public.ventas` WHERE `optica_id = p_optica_id AND fecha = p_fecha` to compute:
    - `ventas_cantidad` = `COALESCE(COUNT(*), 0)`
    - `ventas_monto_total` = `COALESCE(SUM(monto_total), 0)`
-   - `ventas_costo_total` = `COALESCE(SUM(costo_unitario_snapshot), 0)`
+   - `ventas_costo_total` = For each venta, JOIN `dispensaciones ON dispensaciones.venta_id = ventas.id` then JOIN `dispensacion_items ON dispensacion_items.dispensacion_id = dispensaciones.id`. Sum `COALESCE(dispensacion_items.costo_real_od, 0) + COALESCE(dispensacion_items.costo_real_oi, 0) + COALESCE(dispensacion_items.costo_real_montura, 0) + COALESCE(dispensacion_items.costo_real_biselado, 0) + COALESCE(dispensacion_items.costo_real_lc, 0)`. For ventas with no matching `dispensacion_items` (e.g., `servicio_extra`), fall back to `COALESCE(ventas.costo_unitario_snapshot, 0)`.
+
+(Previously: `ventas_costo_total` summed `costo_unitario_snapshot` directly from `ventas` without JOIN to `dispensacion_items`.)
 
 2. **Payments aggregation**: Query `public.pagos` WHERE `optica_id = p_optica_id AND fecha = p_fecha` to compute:
    - `cobros_cantidad` = `COALESCE(COUNT(*), 0)`
@@ -301,6 +303,25 @@ The function SHALL be defined as `SECURITY INVOKER` so it respects RLS policies 
 #### R9.3: Null-safe Inventory
 
 If `monturas.costo` is NULL for any row, `COALESCE(SUM(costo * stock_actual), 0)` would return 0 for that row's contribution — this is acceptable. The function SHALL NOT fail on NULL cost values.
+
+#### Scenario: costo_real_* from dispensacion_items is used when items exist
+
+- GIVEN a venta on 2026-07-05 with linked dispensacion_items having `costo_real_od = 25.00` and `costo_real_montura = 80.00`
+- WHEN `recalcular_resumen_diario('o1', '2026-07-05')` is called
+- THEN `ventas_costo_total` includes `105.00` (25 + 80) for that venta, NOT `costo_unitario_snapshot`
+
+#### Scenario: costo_unitario_snapshot fallback for servicio_extra venta
+
+- GIVEN a venta on 2026-07-05 with `categoria_producto_id = 'servicio_extra'` and no linked dispensacion_items, with `costo_unitario_snapshot = 15.00`
+- WHEN `recalcular_resumen_diario('o1', '2026-07-05')` is called
+- THEN `ventas_costo_total` includes `15.00` from the fallback column
+
+#### Scenario: Mixed ventas — some with items, some without
+
+- GIVEN a mix of dispensacion-linked ventas and servicio_extra ventas on the same fecha
+- WHEN `recalcular_resumen_diario('o1', '2026-07-05')` is called
+- THEN each venta's cost is summed using its correct source (items or fallback)
+- AND the total `ventas_costo_total` is the correct aggregate
 
 ---
 
@@ -705,6 +726,9 @@ The function SHALL compute CORE financial indicators for the given month by read
 | Sales count | `cantidad_ventas` | `resumen_diario.ventas_cantidad` SUM |
 | Previous month sales | `ventas_mes_anterior` | `resumen_diario.ventas_monto_total` SUM for previous month |
 | Sales variation % | `variacion_ventas_pct` | `(ventas - anterior) / anterior * 100` |
+| Historical months | `meses_historicos` | `COUNT(DISTINCT DATE_TRUNC('month', fecha))` from `resumen_diario` for `p_optica_id` |
+
+(Previously: 10 indicators, no `meses_historicos`.)
 
 The function SHALL ALSO compute inline:
 
@@ -742,6 +766,18 @@ The function SHALL ALSO compute inline:
 - GIVEN an optica has zero dispensaciones and zero servicios_extra for July 2026
 - WHEN `rpc_analisis_mensual('o1', '2026-07-01')` is called
 - THEN `margen_por_categoria` contains 9 rows (one per `categorias_producto`) with `ventas = 0, costos = 0, margen_pct = null`
+
+#### Scenario: meses_historicos returns correct count
+
+- GIVEN `resumen_diario` has rows for 5 distinct months (2026-03 through 2026-07) for optica 'o1'
+- WHEN `rpc_analisis_mensual('o1', '2026-07-01')` is called
+- THEN the returned JSON includes `meses_historicos = 5`
+
+#### Scenario: meses_historicos counts only months with data
+
+- GIVEN `resumen_diario` has zero rows for optica 'o1' (never synced or calculated)
+- WHEN `rpc_analisis_mensual('o1', '2026-07-01')` is called
+- THEN `meses_historicos = 0`
 
 ---
 
@@ -848,6 +884,58 @@ GIVEN a GastoOperativoEntity saved with the old categoria value "Local" is pendi
  THEN the Supabase INSERT fails with a CHECK constraint violation
   AND the failure mode is identical to the current (pre-fix) behavior
 ```
+
+---
+
+### R32: ProyeccionCaja — mesesHistoricos Field
+
+The Android domain model `ProyeccionCaja` (in `domain/`) SHALL gain a field `mesesHistoricos: Int` with default value `0`.
+
+The field SHALL be populated from the `meses_historicos` value returned by `rpc_analisis_mensual`. The RPC response JSONB deserializer SHALL map `"meses_historicos"` to `ProyeccionCaja.mesesHistoricos`.
+
+#### Scenario: RPC response with meses_historicos
+
+- GIVEN `rpc_analisis_mensual` returns `{"meses_historicos": 5, ...}`
+- WHEN the response is deserialized to `ProyeccionCaja`
+- THEN `proyeccionCaja.mesesHistoricos == 5`
+
+#### Scenario: Default when missing from response
+
+- GIVEN `rpc_analisis_mensual` returns a JSON without the `meses_historicos` key (backward compatibility)
+- WHEN the response is deserialized to `ProyeccionCaja`
+- THEN `proyeccionCaja.mesesHistoricos == 0`
+
+---
+
+### R33: ProyeccionCard — Data-Depth Warning
+
+The `ProyeccionCard` composable SHALL display a warning banner when `mesesHistoricos < 3`.
+
+The warning SHALL contain user-facing text indicating that projections are based on limited data (fewer than 3 months). When `mesesHistoricos >= 3`, no warning SHALL be displayed. The decision SHALL be driven by the `ProyeccionCaja.mesesHistoricos` value — no separate RPC or query is needed.
+
+#### Scenario: Warning shown for insufficient data
+
+- GIVEN `ProyeccionCaja.mesesHistoricos == 1` (only 1 month of data)
+- WHEN `ProyeccionCard` renders
+- THEN a warning banner is visible with text referencing limited data depth
+
+#### Scenario: No warning when data is sufficient
+
+- GIVEN `ProyeccionCaja.mesesHistoricos == 5` (5 months of data)
+- WHEN `ProyeccionCard` renders
+- THEN no warning banner is shown
+
+#### Scenario: Edge case — exactly 2 months
+
+- GIVEN `ProyeccionCaja.mesesHistoricos == 2`
+- WHEN `ProyeccionCard` renders
+- THEN a warning banner is visible (2 < 3)
+
+#### Scenario: Edge case — exactly 3 months
+
+- GIVEN `ProyeccionCaja.mesesHistoricos == 3`
+- WHEN `ProyeccionCard` renders
+- THEN no warning banner is shown (3 >= 3)
 
 ---
 

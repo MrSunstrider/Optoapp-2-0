@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 39,
-    "identityHash": "723b7941f3b453ac86d2c502fb68720b",
+    "identityHash": "7a6cb5e77d996fcd8503cf8cb8de0726",
     "entities": [
       {
         "tableName": "pacientes",
@@ -1308,7 +1308,7 @@
       },
       {
         "tableName": "servicios_extra",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `ot` TEXT NOT NULL, `descripcion` TEXT NOT NULL, `montoTotal` REAL NOT NULL, `aCuenta` REAL NOT NULL, `estado` TEXT NOT NULL, `fecha` TEXT NOT NULL, `pacienteId` TEXT, `metodoPago` TEXT NOT NULL, `opticaId` TEXT NOT NULL, `fechaEntrega` TEXT, `updatedAt` TEXT, `updatedBy` TEXT, PRIMARY KEY(`id`), FOREIGN KEY(`pacienteId`) REFERENCES `pacientes`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `ot` TEXT NOT NULL, `descripcion` TEXT NOT NULL, `montoTotal` REAL NOT NULL, `aCuenta` REAL NOT NULL, `estado` TEXT NOT NULL, `fecha` TEXT NOT NULL, `pacienteId` TEXT, `metodoPago` TEXT NOT NULL, `opticaId` TEXT NOT NULL, `fecha_entrega` TEXT, `updatedAt` TEXT, `updatedBy` TEXT, PRIMARY KEY(`id`), FOREIGN KEY(`pacienteId`) REFERENCES `pacientes`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL )",
         "fields": [
           {
             "fieldPath": "id",
@@ -1371,7 +1371,7 @@
           },
           {
             "fieldPath": "fechaEntrega",
-            "columnName": "fechaEntrega",
+            "columnName": "fecha_entrega",
             "affinity": "TEXT"
           },
           {
@@ -3274,7 +3274,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '723b7941f3b453ac86d2c502fb68720b')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '7a6cb5e77d996fcd8503cf8cb8de0726')"
     ]
   }
 }

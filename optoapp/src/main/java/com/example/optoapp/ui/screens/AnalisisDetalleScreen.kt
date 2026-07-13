@@ -328,6 +328,37 @@ private fun ProyeccionCard(proyeccion: com.example.optoapp.domain.ProyeccionCaja
             Text("Saldo neto proyectado", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
             Text("S/ ${formatNumber(proyeccion.saldoNeto)}", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = if (proyeccion.saldoNeto >= 0) PositiveGreen else AlertRed)
         }
+
+        // Data-depth warning when fewer than 3 months of historical data
+        if (proyeccion.mesesHistoricos < 3) {
+            Spacer(Modifier.height(4.dp))
+            Surface(
+                color = WarningAmber.copy(alpha = 0.12f),
+                shape = RoundedCornerShape(8.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier.padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.Default.Warning,
+                        contentDescription = null,
+                        tint = WarningAmber,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = if (proyeccion.mesesHistoricos == 0)
+                            "Proyección basada en datos limitados. Se recomienda al menos 3 meses de historial."
+                        else
+                            "Proyección basada en ${proyeccion.mesesHistoricos} mes${if (proyeccion.mesesHistoricos == 1) "" else "es"} de datos. Se recomienda al menos 3 meses.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = WarningAmber
+                    )
+                }
+            }
+        }
     }
 }
 

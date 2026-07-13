@@ -12,6 +12,72 @@ import java.time.LocalDate
 
 class AnalisisDetalleScreenTest {
 
+    // --- meses_historicos warning tests ---
+
+    @Test
+    fun proyeccionCaja_hasMesesHistoricosField() {
+        val fields = ProyeccionCaja::class.java.declaredFields.map { it.name }
+        assertTrue("ProyeccionCaja debe tener mesesHistoricos", "mesesHistoricos" in fields)
+    }
+
+    @Test
+    fun proyeccionCaja_mesesHistoricos_defaultsToZero() {
+        val proyeccion = ProyeccionCaja(
+            ingresosEsperados = 5000.0,
+            egresosProgramados = 2000.0,
+            saldoNeto = 3000.0
+        )
+        assertEquals(0, proyeccion.mesesHistoricos)
+    }
+
+    @Test
+    fun warningShown_whenMesesHistoricosIsOne() {
+        val proyeccion = ProyeccionCaja(
+            ingresosEsperados = 5000.0,
+            egresosProgramados = 2000.0,
+            saldoNeto = 3000.0,
+            mesesHistoricos = 1
+        )
+        val showWarning = proyeccion.mesesHistoricos < 3
+        assertTrue("Warning should show when mesesHistoricos < 3", showWarning)
+    }
+
+    @Test
+    fun warningHidden_whenMesesHistoricosIsFive() {
+        val proyeccion = ProyeccionCaja(
+            ingresosEsperados = 5000.0,
+            egresosProgramados = 2000.0,
+            saldoNeto = 3000.0,
+            mesesHistoricos = 5
+        )
+        val showWarning = proyeccion.mesesHistoricos < 3
+        assertFalse("Warning should NOT show when mesesHistoricos >= 3", showWarning)
+    }
+
+    @Test
+    fun warningShown_whenMesesHistoricosIsTwo_edgeCase() {
+        val proyeccion = ProyeccionCaja(
+            ingresosEsperados = 5000.0,
+            egresosProgramados = 2000.0,
+            saldoNeto = 3000.0,
+            mesesHistoricos = 2
+        )
+        val showWarning = proyeccion.mesesHistoricos < 3
+        assertTrue("Warning should show when mesesHistoricos == 2 (edge)", showWarning)
+    }
+
+    @Test
+    fun warningHidden_whenMesesHistoricosIsThree_edgeCase() {
+        val proyeccion = ProyeccionCaja(
+            ingresosEsperados = 5000.0,
+            egresosProgramados = 2000.0,
+            saldoNeto = 3000.0,
+            mesesHistoricos = 3
+        )
+        val showWarning = proyeccion.mesesHistoricos < 3
+        assertFalse("Warning should NOT show when mesesHistoricos == 3 (edge)", showWarning)
+    }
+
     @Test
     fun screen_title_isAnalisisCompleto() {
         val title = "Análisis Completo"

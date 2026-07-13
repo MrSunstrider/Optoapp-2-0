@@ -82,11 +82,18 @@ data class AnalisisMensual(
         }
 
         private fun JsonObject.parseProyeccionCaja(): ProyeccionCaja? {
-            val obj = this["proyeccion_caja"]?.jsonObject ?: return null
+            val obj = this["proyeccion_caja"]?.jsonObject
+            val meses = optInt("meses_historicos")
+
+            // meses_historicos is top-level in RPC response, not nested inside proyeccion_caja
+            // Create minimal ProyeccionCaja even without the nested object if meses present
+            if (obj == null && meses == 0) return null
+
             return ProyeccionCaja(
-                ingresosEsperados = obj.optDouble("ingresos_esperados"),
-                egresosProgramados = obj.optDouble("egresos_programados"),
-                saldoNeto = obj.optDouble("saldo_neto")
+                ingresosEsperados = obj?.optDouble("ingresos_esperados") ?: 0.0,
+                egresosProgramados = obj?.optDouble("egresos_programados") ?: 0.0,
+                saldoNeto = obj?.optDouble("saldo_neto") ?: 0.0,
+                mesesHistoricos = meses
             )
         }
 
@@ -125,7 +132,8 @@ data class DeudoresResumen(
 data class ProyeccionCaja(
     val ingresosEsperados: Double,
     val egresosProgramados: Double,
-    val saldoNeto: Double
+    val saldoNeto: Double,
+    val mesesHistoricos: Int = 0
 )
 
 data class StockEstancadoItem(

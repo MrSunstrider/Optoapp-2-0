@@ -15,6 +15,60 @@ import org.junit.Test
 
 class AnalisisMensualMapperTest {
 
+    // --- meses_historicos tests ---
+
+    @Test
+    fun fromJson_withMesesHistoricos_parsesCorrectly() {
+        val json = buildJsonObject {
+            put("ventas_mes", 15000.0)
+            put("cobros_mes", 12000.0)
+            put("margen_neto_pct", 25.5)
+            putJsonArray("margen_por_categoria") {}
+            putJsonObject("deudores") {
+                put("cantidad", 0)
+                put("saldo_total", 0.0)
+            }
+            putJsonArray("stock_estancado") {}
+            put("valor_inventario", 45000.0)
+            put("ventas_mes_anterior", 12000.0)
+            put("variacion_ventas_pct", null)
+            put("meses_historicos", 5)
+        }
+
+        val result = AnalisisMensual.fromJson(json)
+
+        assertEquals(5, result.proyeccionCaja!!.mesesHistoricos)
+    }
+
+    @Test
+    fun fromJson_withoutMesesHistoricos_defaultsToZero() {
+        val json = buildJsonObject {
+            put("ventas_mes", 15000.0)
+            put("cobros_mes", 12000.0)
+            put("margen_neto_pct", 25.5)
+            putJsonArray("margen_por_categoria") {}
+            putJsonObject("deudores") {
+                put("cantidad", 0)
+                put("saldo_total", 0.0)
+            }
+            putJsonArray("stock_estancado") {}
+            put("valor_inventario", 45000.0)
+            put("ventas_mes_anterior", 12000.0)
+            put("variacion_ventas_pct", null)
+            // meses_historicos omitted → defaults to 0 in ProyeccionCaja
+            putJsonObject("proyeccion_caja") {
+                put("ingresos_esperados", 1000.0)
+                put("egresos_programados", 500.0)
+                put("saldo_neto", 500.0)
+            }
+        }
+
+        val result = AnalisisMensual.fromJson(json)
+
+        val proyeccion = result.proyeccionCaja
+        assertEquals(0, proyeccion!!.mesesHistoricos)
+    }
+
     @Test
     fun fromJson_fullResponse_mapsAllFields() {
         val json = buildJsonObject {
