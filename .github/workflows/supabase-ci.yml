@@ -66,9 +66,7 @@ jobs:
         timeout-minutes: 5
 
       - name: Run schema integrity tests
-        run: psql -h localhost -p 54322 -U postgres -d postgres -f supabase/tests/test_schema_integrity.sql
-        env:
-          PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: PGPASSWORD="${SUPABASE_DB_PASSWORD:-postgres}" psql -h localhost -p 54322 -U postgres -d postgres -f supabase/tests/test_schema_integrity.sql
         timeout-minutes: 2
 
       - name: Check migrations are consistent with remote
