@@ -275,26 +275,21 @@ The system SHALL create a PostgreSQL function `public.recalcular_resumen_diario(
 
 The function SHALL:
 
-1. **Sales aggregation**: Query `public.ventas` WHERE `optica_id = p_optica_id AND fecha = p_fecha` to compute:
-   - `ventas_cantidad` = `COALESCE(COUNT(*), 0)`
-   - `ventas_monto_total` = `COALESCE(SUM(monto_total), 0)`
-   - `ventas_costo_total` = For each venta, JOIN `dispensaciones ON dispensaciones.venta_id = ventas.id` then JOIN `dispensacion_items ON dispensacion_items.dispensacion_id = dispensaciones.id`. Sum `COALESCE(dispensacion_items.costo_real_od, 0) + COALESCE(dispensacion_items.costo_real_oi, 0) + COALESCE(dispensacion_items.costo_real_montura, 0) + COALESCE(dispensacion_items.costo_real_biselado, 0) + COALESCE(dispensacion_items.costo_real_lc, 0)`. For ventas with no matching `dispensacion_items` (e.g., `servicio_extra`), fall back to `COALESCE(ventas.costo_unitario_snapshot, 0)`.
-
-(Previously: `ventas_costo_total` summed `costo_unitario_snapshot` directly from `ventas` without JOIN to `dispensacion_items`.)
+1. **Sales aggregation**: Compute via CTE `daily_ventas` using `SELECT ... FROM public.dispensaciones WHERE optica_id = p_optica_id AND fecha = p_fecha UNION ALL SELECT ... FROM public.servicios_extra WHERE optica_id = p_optica_id AND fecha = p_fecha`. For each dispensacion row, cost SHALL be `SUM(COALESCE(costo_real_od,0) + COALESCE(costo_real_oi,0) + COALESCE(costo_real_montura,0) + COALESCE(costo_real_biselado,0) + COALESCE(costo_real_lc,0))` from `dispensacion_items WHERE dispensacion_id = d.id`. If no items exist, SHALL fall back to `COALESCE(d.costo_unitario_snapshot, 0)`. For servicio_extra rows, cost SHALL be `0::numeric`.
 
 2. **Payments aggregation**: Query `public.pagos` WHERE `optica_id = p_optica_id AND fecha = p_fecha` to compute:
    - `cobros_cantidad` = `COALESCE(COUNT(*), 0)`
    - `cobros_monto_total` = `COALESCE(SUM(monto), 0)`
 
-3. **Pending balance**: Query `public.ventas` LEFT JOIN aggregated `public.pagos` by `venta_id`:
-   - `saldo_pendiente_cantidad` = COUNT of ventas where `monto_total - COALESCE(total_pagado, 0) > 0.005`
-   - `saldo_pendiente_total` = SUM of the same difference
+3. **Pending balance**: Query via UNION ALL of `dispensaciones` + `servicios_extra`, LEFT JOIN aggregated `pagos` by `venta_id` namespace key. For dispensaciones the join key is `'v_disp_' || d.id`; for servicios_extra it is `'v_serv_' || se.id`.
 
 4. **Inventory snapshot**: Query `public.monturas` WHERE `optica_id = p_optica_id`:
    - `inventario_valor` = `COALESCE(SUM(costo * stock_actual), 0)`
    - `inventario_unidades` = `COALESCE(SUM(stock_actual), 0)`
 
 5. **Idempotent upsert**: `INSERT INTO resumen_diario (...) VALUES (...) ON CONFLICT (optica_id, fecha) DO UPDATE SET ...` updating all computed fields plus `calculado_en = now()`.
+
+(Previously: R9 read from `public.ventas` table for sales aggregation, cost via JOIN through `ventas → dispensaciones → dispensacion_items`, and pending balance via `public.ventas`.)
 
 #### R9.2: RPC Security
 
@@ -306,22 +301,28 @@ If `monturas.costo` is NULL for any row, `COALESCE(SUM(costo * stock_actual), 0)
 
 #### Scenario: costo_real_* from dispensacion_items is used when items exist
 
-- GIVEN a venta on 2026-07-05 with linked dispensacion_items having `costo_real_od = 25.00` and `costo_real_montura = 80.00`
+- GIVEN a dispensacion on 2026-07-05 with linked items having `costo_real_od = 25.00` and `costo_real_montura = 80.00`
 - WHEN `recalcular_resumen_diario('o1', '2026-07-05')` is called
-- THEN `ventas_costo_total` includes `105.00` (25 + 80) for that venta, NOT `costo_unitario_snapshot`
+- THEN `ventas_costo_total` includes `105.00` for that row, NOT `costo_unitario_snapshot`
 
-#### Scenario: costo_unitario_snapshot fallback for servicio_extra venta
+#### Scenario: costo_unitario_snapshot fallback when no items exist
 
-- GIVEN a venta on 2026-07-05 with `categoria_producto_id = 'servicio_extra'` and no linked dispensacion_items, with `costo_unitario_snapshot = 15.00`
+- GIVEN a dispensacion on 2026-07-05 with no linked items, having `costo_unitario_snapshot = 15.00`
 - WHEN `recalcular_resumen_diario('o1', '2026-07-05')` is called
 - THEN `ventas_costo_total` includes `15.00` from the fallback column
 
-#### Scenario: Mixed ventas — some with items, some without
+#### Scenario: UNION ALL output matches transactional SUM
 
-- GIVEN a mix of dispensacion-linked ventas and servicio_extra ventas on the same fecha
-- WHEN `recalcular_resumen_diario('o1', '2026-07-05')` is called
-- THEN each venta's cost is summed using its correct source (items or fallback)
-- AND the total `ventas_costo_total` is the correct aggregate
+- GIVEN test data with 3 dispensaciones (total S/ 500) and 2 servicios_extra (total S/ 200) on the same fecha
+- WHEN `recalcular_resumen_diario('test_o', '2026-07-01')` is called
+- THEN `resumen_diario.ventas_monto_total` = `700.00` (the exact SUM of both source tables)
+
+#### Scenario: Idempotent upsert does not duplicate rows
+
+- GIVEN `recalcular_resumen_diario('o1', '2026-07-05')` has been called once
+- WHEN it is called a second time with no data changes
+- THEN `resumen_diario` has exactly 1 row for `('o1', '2026-07-05')`
+- AND `calculado_en` is updated to the newer timestamp
 
 ---
 
@@ -714,21 +715,26 @@ The system SHALL create `public.rpc_analisis_mensual(p_optica_id TEXT, p_mes DAT
 
 The function SHALL compute CORE financial indicators for the given month by reading from `resumen_diario` and `gastos_operativos`.
 
-| Indicator | Key | Source |
-|-----------|-----|--------|
-| Monthly sales | `ventas_mes` | `resumen_diario.ventas_monto_total` SUM |
-| Monthly collections | `cobros_mes` | `resumen_diario.cobros_monto_total` SUM |
-| Monthly cost | `costo_mes` | `resumen_diario.ventas_costo_total` SUM |
-| Monthly expenses | `gastos_mes` | `gastos_operativos.monto` SUM |
-| Pending balance | `saldo_pendiente` | Latest `resumen_diario.saldo_pendiente_total` |
-| Net margin % | `margen_neto_pct` | `(ventas - costos - gastos) / ventas * 100` |
-| Average ticket | `ticket_promedio` | `ventas_mes / cantidad_ventas` |
-| Sales count | `cantidad_ventas` | `resumen_diario.ventas_cantidad` SUM |
-| Previous month sales | `ventas_mes_anterior` | `resumen_diario.ventas_monto_total` SUM for previous month |
-| Sales variation % | `variacion_ventas_pct` | `(ventas - anterior) / anterior * 100` |
-| Historical months | `meses_historicos` | `COUNT(DISTINCT DATE_TRUNC('month', fecha))` from `resumen_diario` for `p_optica_id` |
+| # | Key | Source | Status |
+|---|-----|--------|--------|
+| 1 | `ventas_mes` | `resumen_diario.ventas_monto_total` SUM | UNCHANGED |
+| 2 | `cobros_mes` | `resumen_diario.cobros_monto_total` SUM | UNCHANGED |
+| 3 | `costo_mes` | `resumen_diario.ventas_costo_total` SUM | UNCHANGED |
+| 4 | `gastos_mes` | `gastos_operativos.monto` SUM | UNCHANGED |
+| 5 | `saldo_pendiente` | Latest `resumen_diario.saldo_pendiente_total` | UNCHANGED |
+| 6 | `margen_neto_pct` | `(ventas - costos - gastos) / ventas * 100` | UNCHANGED |
+| 7 | `ticket_promedio` | `ventas_mes / cantidad_ventas` | UNCHANGED |
+| 8 | `cantidad_ventas` | `resumen_diario.ventas_cantidad` SUM | UNCHANGED |
+| 9 | `ventas_mes_anterior` | `resumen_diario.ventas_monto_total` SUM for previous month | UNCHANGED |
+| 10 | `variacion_ventas_pct` | `(ventas - anterior) / anterior * 100` | UNCHANGED |
+| 11 | `meses_historicos` | `COUNT(DISTINCT DATE_TRUNC('month', fecha))` from `resumen_diario` for `p_optica_id` | UNCHANGED |
+| 12 | `margen_por_categoria` | `categorias_producto` LEFT JOIN `margen_por_categoria` | RESTORED |
+| 13 | `deudores` | `rpc_deudores(optica_id)` sub-call | RESTORED |
+| 14 | `proyeccion_caja` | UNION ALL `dispensaciones` + `servicios_extra` (no `ventas`) | RESTORED |
+| 15 | `stock_estancado` | `monturas` with ventilation data | RESTORED |
+| 16 | `valor_inventario` | `monturas` SUM(costo * stock_actual) | RESTORED |
 
-(Previously: 10 indicators, no `meses_historicos`.)
+(Previously: 11 fields — fields 12–16 were absent due to July 13 regression.)
 
 The function SHALL ALSO compute inline:
 
@@ -779,6 +785,23 @@ The function SHALL ALSO compute inline:
 - WHEN `rpc_analisis_mensual('o1', '2026-07-01')` is called
 - THEN `meses_historicos = 0`
 
+#### Scenario: Full 16-field response
+
+- GIVEN an optica with dispensaciones, servicios_extra, resumen_diario, and gastos for July 2026
+- WHEN `rpc_analisis_mensual('o1', '2026-07-01')` is called
+- THEN the JSONB response contains all 16 keys listed above
+- AND each key has a non-null value (numeric zero or empty array where no data)
+- AND `meses_historicos` equals `COUNT(DISTINCT DATE_TRUNC('month', resumen_diario.fecha))` for the optica
+
+#### Scenario: Empty month returns zeros for restored fields
+
+- GIVEN an optica with zero data for July 2026
+- WHEN `rpc_analisis_mensual('o1', '2026-07-01')` is called
+- THEN `margen_por_categoria` is an empty JSON array
+- AND `deudores` is an empty JSON array
+- AND `proyeccion_caja` returns zero cash flow projection values
+- AND `stock_estancado` returns all monturas with `dias_sin_venta = 999`
+
 ---
 
 ### R24: Supabase RPC `rpc_deudores`
@@ -802,11 +825,23 @@ The system SHALL rewrite `rpc_count_pendientes` to query `public.ventas` instead
 
 ---
 
-### R26: Deprecate `rpc_resumen_financiero` and `rpc_saldo_pendiente`
+### R26: Drop `rpc_saldo_pendiente` and Deprecate `rpc_resumen_financiero`
 
-The system SHALL add deprecation comments to both functions using `COMMENT ON FUNCTION ... IS 'DEPRECATED: Use rpc_analisis_mensual instead. This function remains for backward compatibility.'`.
+`rpc_saldo_pendiente` SHALL be dropped entirely (`DROP FUNCTION IF EXISTS public.rpc_saldo_pendiente(TEXT)`). `rpc_resumen_financiero` SHALL remain deprecated with `COMMENT ON FUNCTION` as before — it SHALL NOT be dropped and remains callable for backward compatibility.
 
-The functions SHALL NOT be dropped — they remain callable for backward compatibility.
+(Previously: Both functions received deprecation comments but both were kept callable.)
+
+#### Scenario: rpc_saldo_pendiente no longer exists
+
+- GIVEN the fix migration has been applied
+- WHEN querying `information_schema.routines` for `rpc_saldo_pendiente`
+- THEN zero rows are returned
+
+#### Scenario: rpc_resumen_financiero still callable
+
+- GIVEN the fix migration has been applied
+- WHEN `rpc_resumen_financiero(...)` is called by existing callers
+- THEN the function executes normally (backward compatibility preserved)
 
 ---
 
