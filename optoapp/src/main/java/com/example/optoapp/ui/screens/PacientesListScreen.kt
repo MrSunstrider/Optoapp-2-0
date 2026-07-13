@@ -128,12 +128,12 @@ fun PacientesListScreen(
                     val isSelected = when (filter) {
                         "Todos" -> activeFilter.isNullOrBlank() || activeFilter == "Todos"
                         "Saldo Pendiente" -> activeFilter == "Saldo Pendiente"
-                        "Entrega" -> activeFilter == "Estado de entrega" || activeFilter == "Entrega"
+                        "Estado de entrega" -> activeFilter == "Estado de entrega"
                         else -> false
                     }
                     FilterChip(selected = isSelected, onClick = {
                         viewModel.setFilter(when (filter) {
-                            "Todos" -> ""; "Saldo Pendiente" -> "Saldo Pendiente"; "Entrega" -> "Estado de entrega"; else -> ""
+                            "Todos" -> ""; "Saldo Pendiente" -> "Saldo Pendiente"; "Estado de entrega" -> "Estado de entrega"; else -> ""
                         })
                     }, label = { Text(filter, fontSize = 13.sp, fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal) })
                 }
