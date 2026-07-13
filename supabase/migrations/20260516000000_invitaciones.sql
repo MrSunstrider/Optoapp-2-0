@@ -9,11 +9,8 @@ CREATE TABLE IF NOT EXISTS public.invitaciones (
     expira_en timestamptz NOT NULL DEFAULT (now() + interval '7 days'),
     created_at timestamptz NOT NULL DEFAULT now()
 );
-
 CREATE INDEX IF NOT EXISTS idx_invitaciones_codigo ON public.invitaciones (codigo);
 CREATE INDEX IF NOT EXISTS idx_invitaciones_optica ON public.invitaciones (optica_id);
-
 ALTER TABLE public.invitaciones ENABLE ROW LEVEL SECURITY;
-
 CREATE POLICY "invitaciones_service_role_all" ON public.invitaciones
     FOR ALL TO service_role USING (true) WITH CHECK (true);

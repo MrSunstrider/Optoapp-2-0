@@ -5,7 +5,6 @@ ALTER TABLE monturas ADD COLUMN ancho_mm REAL;
 ALTER TABLE monturas ADD COLUMN puente_mm REAL;
 ALTER TABLE monturas ADD COLUMN altura_mm REAL;
 ALTER TABLE monturas ADD COLUMN imagen_uri TEXT;
-
 COMMENT ON COLUMN monturas.ancho_mm IS 'Frame total width in mm (for try-on scale)';
 COMMENT ON COLUMN monturas.puente_mm IS 'Bridge width in mm (for DIP alignment)';
 COMMENT ON COLUMN monturas.altura_mm IS 'Lens height in mm (for segment height reference)';

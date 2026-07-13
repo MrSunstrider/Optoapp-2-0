@@ -28,6 +28,5 @@ begin
   return greatest(0, v_daily_limit - v_count);
 end;
 $$;
-
 revoke all on function public.paciente_eliminaciones_restantes_hoy(text) from public;
 grant execute on function public.paciente_eliminaciones_restantes_hoy(text) to authenticated;

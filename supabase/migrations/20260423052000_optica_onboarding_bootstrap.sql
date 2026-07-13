@@ -4,17 +4,14 @@
 -- Asegurar columna plan para controlar Free/Pro por óptica
 alter table public.opticas
 add column if not exists plan text not null default 'free';
-
 update public.opticas
 set plan = 'free'
 where plan is null or btrim(plan) = '';
-
 -- Políticas de inserción para onboarding
 drop policy if exists opticas_insert_authenticated on public.opticas;
 create policy opticas_insert_authenticated on public.opticas
 for insert to authenticated
 with check (true);
-
 drop policy if exists usuario_optica_insert_admin_optica on public.usuario_optica;
 create policy usuario_optica_insert_admin_optica on public.usuario_optica
 for insert to authenticated
@@ -36,7 +33,6 @@ with check (
     )
   )
 );
-
 -- Ajustar guard anti-escalación: permitir bootstrap
 create or replace function public.enforce_admin_role_assignment_guard()
 returns trigger

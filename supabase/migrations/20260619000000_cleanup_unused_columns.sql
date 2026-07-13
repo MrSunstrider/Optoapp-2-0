@@ -9,7 +9,6 @@ ALTER TABLE opticas DROP COLUMN IF EXISTS moneda CASCADE;
 ALTER TABLE opticas DROP COLUMN IF EXISTS pais CASCADE;
 ALTER TABLE opticas DROP COLUMN IF EXISTS distrito_ciudad_departamento CASCADE;
 ALTER TABLE opticas DROP COLUMN IF EXISTS contacto_whatsapp_telefono CASCADE;
-
 -- 2. Plan management columns no longer edited from Android
 -- Note: plan_code and plan columns are kept (read by SubscriptionManager from server)
 -- Only remove editable fields that were in PlanManagementSection

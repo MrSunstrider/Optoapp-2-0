@@ -12,16 +12,13 @@ create table if not exists public.user_profiles (
   email text not null unique,
   created_at timestamptz not null default timezone('utc', now())
 );
-
 comment on table public.user_profiles is
 'Perfil público mínimo para asignación de roles por email (sin exponer auth.users)';
-
 insert into public.user_profiles (user_id, email)
 select u.id, lower(trim(u.email))
 from auth.users u
 where u.email is not null and trim(u.email) <> ''
 on conflict (user_id) do update set email = excluded.email;
-
 create or replace function public.sync_user_profiles_from_auth()
 returns trigger
 language plpgsql
@@ -37,18 +34,14 @@ begin
   return new;
 end;
 $$;
-
 drop trigger if exists trg_auth_users_sync_profile on auth.users;
 create trigger trg_auth_users_sync_profile
 after insert or update of email on auth.users
 for each row execute function public.sync_user_profiles_from_auth();
-
 alter table public.user_profiles enable row level security;
-
 drop policy if exists user_profiles_select_own on public.user_profiles;
 create policy user_profiles_select_own on public.user_profiles
 for select using (user_id = auth.uid());
-
 drop policy if exists user_profiles_select_admin on public.user_profiles;
 create policy user_profiles_select_admin on public.user_profiles
 for select using (
@@ -59,7 +52,6 @@ for select using (
       and lower(trim(self.rol)) in ('admin', 'gerente')
   )
 );
-
 -- ---------------------------------------------------------------------------
 -- 2) Vista operativa de miembros por óptica
 -- ---------------------------------------------------------------------------
@@ -72,12 +64,9 @@ select
   uo.created_at
 from public.usuario_optica uo
 left join public.user_profiles up on up.user_id = uo.user_id;
-
 comment on view public.optica_members is
 'Miembros por óptica con email visible para administración interna';
-
 grant select on public.optica_members to authenticated;
-
 -- ---------------------------------------------------------------------------
 -- 3) Políticas para gestionar membresías por admin/gerente
 -- ---------------------------------------------------------------------------
@@ -93,7 +82,6 @@ for select using (
       and lower(trim(self.rol)) in ('admin', 'gerente')
   )
 );
-
 drop policy if exists usuario_optica_insert_admin_optica on public.usuario_optica;
 create policy usuario_optica_insert_admin_optica on public.usuario_optica
 for insert with check (
@@ -105,7 +93,6 @@ for insert with check (
       and lower(trim(self.rol)) in ('admin', 'gerente')
   )
 );
-
 drop policy if exists usuario_optica_update_admin_optica on public.usuario_optica;
 create policy usuario_optica_update_admin_optica on public.usuario_optica
 for update using (
@@ -126,7 +113,6 @@ with check (
       and lower(trim(self.rol)) in ('admin', 'gerente')
   )
 );
-
 -- ---------------------------------------------------------------------------
 -- 4) Función RPC para asignar rol por email
 -- ---------------------------------------------------------------------------
@@ -183,8 +169,6 @@ begin
   do update set rol = excluded.rol;
 end;
 $$;
-
 grant execute on function public.assign_optica_role_by_email(text, text, text) to authenticated;
-
 comment on function public.assign_optica_role_by_email is
 'Permite a admin/gerente asignar membresía/rol en su óptica usando email de cuenta existente.';

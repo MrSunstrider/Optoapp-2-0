@@ -34,10 +34,8 @@ BEGIN
     );
 END;
 $$;
-
 REVOKE EXECUTE ON FUNCTION public.rpc_saldo_pendiente(text) FROM public, anon;
 GRANT EXECUTE ON FUNCTION public.rpc_saldo_pendiente(text) TO authenticated, service_role;
-
 CREATE OR REPLACE FUNCTION public.rpc_count_pendientes(p_optica_id text)
 RETURNS jsonb
 LANGUAGE plpgsql
@@ -70,10 +68,8 @@ BEGIN
     );
 END;
 $$;
-
 REVOKE EXECUTE ON FUNCTION public.rpc_count_pendientes(text) FROM public, anon;
 GRANT EXECUTE ON FUNCTION public.rpc_count_pendientes(text) TO authenticated, service_role;
-
 CREATE OR REPLACE FUNCTION public.rpc_pacientes_con_saldo(p_optica_id text)
 RETURNS text[]
 LANGUAGE plpgsql
@@ -102,10 +98,8 @@ BEGIN
     RETURN COALESCE(v_ids, ARRAY[]::text[]);
 END;
 $$;
-
 REVOKE EXECUTE ON FUNCTION public.rpc_pacientes_con_saldo(text) FROM public, anon;
 GRANT EXECUTE ON FUNCTION public.rpc_pacientes_con_saldo(text) TO authenticated, service_role;
-
 CREATE OR REPLACE FUNCTION public.rpc_pacientes_con_entrega_pendiente(p_optica_id text)
 RETURNS text[]
 LANGUAGE plpgsql
@@ -134,6 +128,5 @@ BEGIN
     RETURN COALESCE(v_ids, ARRAY[]::text[]);
 END;
 $$;
-
 REVOKE EXECUTE ON FUNCTION public.rpc_pacientes_con_entrega_pendiente(text) FROM public, anon;
 GRANT EXECUTE ON FUNCTION public.rpc_pacientes_con_entrega_pendiente(text) TO authenticated, service_role;

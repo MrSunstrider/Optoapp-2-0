@@ -11,6 +11,5 @@ begin
   return new;
 end;
 $$;
-
 comment on function public.update_updated_at is
 'Actualiza updated_at en tablas sin columna updated_by (cierres_caja, optica_settings).';

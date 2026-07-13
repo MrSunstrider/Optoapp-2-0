@@ -1,8 +1,5 @@
 -- Persist rate-limit attempts across serverless cold starts.
 
--- Necesario para preview branches de Supabase que no tienen pg_cron por defecto
-CREATE EXTENSION IF NOT EXISTS pg_cron WITH SCHEMA cron;
-
 CREATE TABLE IF NOT EXISTS public.pin_attempts (
     id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
     limit_key text NOT NULL,
@@ -10,16 +7,12 @@ CREATE TABLE IF NOT EXISTS public.pin_attempts (
     window_start timestamptz NOT NULL DEFAULT now(),
     created_at timestamptz NOT NULL DEFAULT now()
 );
-
 CREATE INDEX IF NOT EXISTS idx_pin_attempts_key_window
     ON public.pin_attempts (limit_key, window_start);
-
 ALTER TABLE public.pin_attempts ENABLE ROW LEVEL SECURITY;
-
 DROP POLICY IF EXISTS "service_role_full_access" ON public.pin_attempts;
 CREATE POLICY "service_role_full_access" ON public.pin_attempts
     FOR ALL TO service_role USING (true) WITH CHECK (true);
-
 -- RPC: single round-trip, atomic rate-limit check
 CREATE OR REPLACE FUNCTION public.check_rate_limit(
     p_limit_key text,
@@ -56,10 +49,8 @@ BEGIN
     RETURN jsonb_build_object('allowed', true, 'remaining', p_max_attempts - v_row.attempts - 1);
 END;
 $$;
-
 REVOKE EXECUTE ON FUNCTION public.check_rate_limit(text, integer, integer) FROM public, anon;
 GRANT EXECUTE ON FUNCTION public.check_rate_limit(text, integer, integer) TO authenticated, service_role;
-
 -- pg_cron cleanup (hourly, removes rows older than 24h)
 DO $cron$
 BEGIN

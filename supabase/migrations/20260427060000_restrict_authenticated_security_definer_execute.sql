@@ -15,8 +15,5 @@ revoke execute on function public.guard_opticas_business_profile_optional_update
 revoke execute on function public.guard_opticas_fiscal_update() from authenticated;
 revoke execute on function public.guard_pacientes_delete() from authenticated;
 revoke execute on function public.opticas_lock_plan_from_clients() from authenticated;
--- rls_auto_enable revoke removed — Supabase-managed function, not available in preview/CI/Docker.
--- Already executed in production.
--- revoke execute on function public.rls_auto_enable() from authenticated;
+revoke execute on function public.rls_auto_enable() from authenticated;
 revoke execute on function public.sync_user_profiles_from_auth() from authenticated;
-

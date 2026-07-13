@@ -31,12 +31,10 @@ begin
   return new;
 end;
 $$;
-
 drop trigger if exists trg_usuario_optica_admin_role_guard on public.usuario_optica;
 create trigger trg_usuario_optica_admin_role_guard
 before insert or update on public.usuario_optica
 for each row
 execute function public.enforce_admin_role_assignment_guard();
-
 comment on function public.enforce_admin_role_assignment_guard is
 'Bloquea asignación de rol admin cuando el actor no es admin vigente de la óptica.';

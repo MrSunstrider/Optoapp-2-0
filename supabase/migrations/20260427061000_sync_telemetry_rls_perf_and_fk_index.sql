@@ -4,7 +4,6 @@
 
 create index if not exists idx_sync_telemetry_optica_last_actor
 on public.sync_telemetry_optica (last_actor);
-
 drop policy if exists sync_telemetry_optica_select_member on public.sync_telemetry_optica;
 create policy sync_telemetry_optica_select_member
 on public.sync_telemetry_optica
@@ -17,7 +16,6 @@ using (
     where uo.user_id = (select auth.uid())
   )
 );
-
 drop policy if exists sync_telemetry_optica_insert_member on public.sync_telemetry_optica;
 create policy sync_telemetry_optica_insert_member
 on public.sync_telemetry_optica
@@ -30,7 +28,6 @@ with check (
     where uo.user_id = (select auth.uid())
   )
 );
-
 drop policy if exists sync_telemetry_optica_update_member on public.sync_telemetry_optica;
 create policy sync_telemetry_optica_update_member
 on public.sync_telemetry_optica

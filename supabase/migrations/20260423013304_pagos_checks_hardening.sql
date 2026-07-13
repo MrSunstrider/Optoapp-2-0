@@ -5,7 +5,6 @@
 --   3) Garantizar campos críticos no vacíos.
 
 begin;
-
 -- 1) Normalización de datos existentes (idempotente)
 update public.pagos
 set
@@ -13,7 +12,6 @@ set
   tipo = case when btrim(coalesce(tipo, '')) = '' then 'Abono' else btrim(tipo) end,
   optica_id = case when btrim(coalesce(optica_id, '')) = '' then 'mi_optica_base' else btrim(optica_id) end,
   nota = btrim(coalesce(nota, ''));
-
 -- FK opcionales: limpiar blancos -> NULL respetando tipo real de columna (uuid o text)
 do $$
 declare
@@ -52,7 +50,6 @@ begin
     $sql$;
   end if;
 end $$;
-
 -- 2) Constraints explícitos de no-vacío
 do $$
 begin
@@ -89,12 +86,10 @@ begin
       check (btrim(optica_id) <> '');
   end if;
 end $$;
-
 comment on constraint pagos_metodo_pago_not_blank_chk on public.pagos
   is 'Evita método de pago vacío en pagos (P3-T3).';
 comment on constraint pagos_tipo_not_blank_chk on public.pagos
   is 'Evita tipo vacío en pagos (P3-T3).';
 comment on constraint pagos_optica_id_not_blank_chk on public.pagos
   is 'Evita tenant vacío en pagos (P3-T3).';
-
 commit;

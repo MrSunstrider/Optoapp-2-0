@@ -61,6 +61,5 @@ BEGIN
     );
 END;
 $$;
-
 REVOKE EXECUTE ON FUNCTION public.sync_snapshot(uuid) FROM public, anon;
 GRANT EXECUTE ON FUNCTION public.sync_snapshot(uuid) TO authenticated, service_role;

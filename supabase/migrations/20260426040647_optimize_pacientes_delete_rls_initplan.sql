@@ -2,7 +2,6 @@
 -- avoid per-row re-evaluation of auth.uid() in pacientes_delete policy.
 
 drop policy if exists pacientes_delete on public.pacientes;
-
 create policy pacientes_delete on public.pacientes
 for delete
 using (

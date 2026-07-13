@@ -9,5 +9,4 @@
 
 DROP INDEX IF EXISTS public.idx_dispensaciones_optica_ot_unique;
 DROP INDEX IF EXISTS public.dispensaciones_optica_ot_uq_v2;
-
 COMMENT ON TABLE public.dispensaciones IS 'Dispensaciones / Órdenes de trabajo. OT ya no es única por óptica.';

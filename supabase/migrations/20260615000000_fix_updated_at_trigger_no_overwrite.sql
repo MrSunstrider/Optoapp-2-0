@@ -28,7 +28,6 @@ begin
   return new;
 end;
 $$;
-
 comment on function public.set_updated_audit_fields is
 'Audits updated_by server-side. updated_at is preserved from the client; '
 'server-side fallback only applies when the value is null (should not occur '

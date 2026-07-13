@@ -9,12 +9,9 @@ create table if not exists public.pacientes_delete_audit (
   deleted_by uuid not null references auth.users(id) on delete cascade,
   deleted_at timestamptz not null default timezone('utc', now())
 );
-
 create index if not exists idx_pacientes_delete_audit_optica_day
   on public.pacientes_delete_audit (optica_id, deleted_by, deleted_at);
-
 revoke all on table public.pacientes_delete_audit from anon, authenticated;
-
 create or replace function public.guard_pacientes_delete()
 returns trigger
 language plpgsql
@@ -62,13 +59,11 @@ begin
   return old;
 end;
 $$;
-
 drop trigger if exists trg_guard_pacientes_delete on public.pacientes;
 create trigger trg_guard_pacientes_delete
 before delete on public.pacientes
 for each row
 execute function public.guard_pacientes_delete();
-
 drop policy if exists pacientes_delete on public.pacientes;
 create policy pacientes_delete on public.pacientes
 for delete

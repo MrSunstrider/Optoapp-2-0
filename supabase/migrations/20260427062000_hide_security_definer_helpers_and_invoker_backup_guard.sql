@@ -3,10 +3,8 @@
 -- - Keep backup guard callable by app RPC but as SECURITY INVOKER.
 
 create schema if not exists app_private;
-
 revoke all on schema app_private from public;
 grant usage on schema app_private to authenticated, service_role;
-
 create or replace function app_private.has_optica_role(
   p_user_id uuid,
   p_optica_id text,
@@ -26,7 +24,6 @@ as $$
       and lower(trim(uo.rol)) = any (p_roles)
   );
 $$;
-
 create or replace function app_private.is_internal_owner()
 returns boolean
 language sql
@@ -41,12 +38,10 @@ as $$
       and lower(trim(up.email)) = 'jaermadera@gmail.com'
   );
 $$;
-
 revoke all on function app_private.has_optica_role(uuid, text, text[]) from public;
 revoke all on function app_private.is_internal_owner() from public;
 grant execute on function app_private.has_optica_role(uuid, text, text[]) to authenticated, service_role;
 grant execute on function app_private.is_internal_owner() to authenticated, service_role;
-
 -- Keep public wrappers for backward compatibility in SQL references while delegating.
 create or replace function public.has_optica_role(
   p_user_id uuid,
@@ -61,7 +56,6 @@ set search_path = public
 as $$
   select app_private.has_optica_role(p_user_id, p_optica_id, p_roles);
 $$;
-
 create or replace function public.is_internal_owner()
 returns boolean
 language sql
@@ -71,14 +65,11 @@ set search_path = public
 as $$
   select app_private.is_internal_owner();
 $$;
-
--- Keep public wrapper executable for authenticated users when RLS policies still resolve public.has_optica_role.
--- The underlying logic is delegated to app_private.has_optica_role.
-revoke execute on function public.has_optica_role(uuid, text, text[]) from public;
-grant execute on function public.has_optica_role(uuid, text, text[]) to authenticated, service_role;
+-- Remove direct RPC exposure of public SECURITY DEFINER helpers.
+revoke execute on function public.has_optica_role(uuid, text, text[]) from authenticated;
 revoke execute on function public.is_internal_owner() from authenticated;
+grant execute on function public.has_optica_role(uuid, text, text[]) to service_role;
 grant execute on function public.is_internal_owner() to service_role;
-
 -- Recreate policies to use private-schema helpers explicitly.
 drop policy if exists usuario_optica_select_member_scope on public.usuario_optica;
 create policy usuario_optica_select_member_scope on public.usuario_optica
@@ -87,7 +78,6 @@ using (
   user_id = auth.uid()
   or app_private.has_optica_role(auth.uid(), optica_id, array['admin', 'gerente'])
 );
-
 drop policy if exists usuario_optica_insert_admin_optica on public.usuario_optica;
 create policy usuario_optica_insert_admin_optica on public.usuario_optica
 for insert to authenticated
@@ -103,7 +93,6 @@ with check (
     )
   )
 );
-
 drop policy if exists usuario_optica_update_admin_optica on public.usuario_optica;
 create policy usuario_optica_update_admin_optica on public.usuario_optica
 for update
@@ -113,7 +102,6 @@ using (
 with check (
   app_private.has_optica_role(auth.uid(), optica_id, array['admin', 'gerente'])
 );
-
 drop policy if exists "opticas_select_member" on public.opticas;
 create policy "opticas_select_member" on public.opticas
 for select
@@ -124,7 +112,6 @@ using (
     or app_private.is_internal_owner()
   )
 );
-
 drop policy if exists "opticas_update_member" on public.opticas;
 create policy "opticas_update_member" on public.opticas
 for update
@@ -142,7 +129,6 @@ with check (
     or app_private.is_internal_owner()
   )
 );
-
 drop policy if exists opticas_insert_authenticated on public.opticas;
 create policy opticas_insert_authenticated on public.opticas
 for insert to authenticated
@@ -162,7 +148,6 @@ with check (
     )
   )
 );
-
 create or replace function public.enforce_dev_owner_guard()
 returns trigger
 language plpgsql
@@ -181,7 +166,6 @@ begin
   return new;
 end;
 $$;
-
 create or replace function public.enforce_dev_owner_membership_guard()
 returns trigger
 language plpgsql
@@ -209,7 +193,6 @@ begin
   return new;
 end;
 $$;
-
 -- Backup guard can remain exposed as RPC but no longer SECURITY DEFINER.
 create or replace function public.assert_backup_operation_allowed(
   p_action text,

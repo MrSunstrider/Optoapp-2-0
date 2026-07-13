@@ -27,12 +27,10 @@ BEGIN
     RETURN NEW;
 END;
 $$;
-
 DROP TRIGGER IF EXISTS trg_opticas_lock_plan ON public.opticas;
 CREATE TRIGGER trg_opticas_lock_plan
     BEFORE UPDATE ON public.opticas
     FOR EACH ROW
     EXECUTE FUNCTION public.opticas_lock_plan_from_clients();
-
 COMMENT ON FUNCTION public.opticas_lock_plan_from_clients() IS
     'Evita que la app (roles anon/authenticated) modifique plan; usar service_role o SQL para billing.';

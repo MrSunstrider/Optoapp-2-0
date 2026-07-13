@@ -1,13 +1,10 @@
 -- Performance hardening para cierres_caja y optica_settings.
 create index if not exists idx_cierres_caja_closed_by
   on public.cierres_caja (closed_by);
-
 create index if not exists idx_cierres_caja_reopened_by
   on public.cierres_caja (reopened_by);
-
 drop policy if exists cierres_caja_select_member on public.cierres_caja;
 drop policy if exists cierres_caja_upsert_admin_manager on public.cierres_caja;
-
 create policy cierres_caja_select_member
 on public.cierres_caja
 for select
@@ -20,7 +17,6 @@ using (
       and uo.user_id = (select auth.uid())
   )
 );
-
 create policy cierres_caja_insert_admin_manager
 on public.cierres_caja
 for insert
@@ -34,7 +30,6 @@ with check (
       and lower(uo.rol) in ('admin', 'gerente')
   )
 );
-
 create policy cierres_caja_update_admin_manager
 on public.cierres_caja
 for update
@@ -57,7 +52,6 @@ with check (
       and lower(uo.rol) in ('admin', 'gerente')
   )
 );
-
 create policy cierres_caja_delete_admin_manager
 on public.cierres_caja
 for delete
@@ -71,10 +65,8 @@ using (
       and lower(uo.rol) in ('admin', 'gerente')
   )
 );
-
 drop policy if exists optica_settings_select_member on public.optica_settings;
 drop policy if exists optica_settings_upsert_admin_manager on public.optica_settings;
-
 create policy optica_settings_select_member
 on public.optica_settings
 for select
@@ -87,7 +79,6 @@ using (
       and uo.user_id = (select auth.uid())
   )
 );
-
 create policy optica_settings_insert_admin_manager
 on public.optica_settings
 for insert
@@ -101,7 +92,6 @@ with check (
       and lower(uo.rol) in ('admin', 'gerente')
   )
 );
-
 create policy optica_settings_update_admin_manager
 on public.optica_settings
 for update
@@ -124,7 +114,6 @@ with check (
       and lower(uo.rol) in ('admin', 'gerente')
   )
 );
-
 create policy optica_settings_delete_admin_manager
 on public.optica_settings
 for delete

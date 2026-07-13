@@ -11,7 +11,6 @@ begin
   return new;
 end;
 $$;
-
 create or replace function public.set_sync_telemetry_audit_fields()
 returns trigger
 language plpgsql
@@ -28,4 +27,3 @@ begin
   return new;
 end;
 $$;
-

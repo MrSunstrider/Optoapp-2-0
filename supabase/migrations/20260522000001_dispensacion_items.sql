@@ -24,11 +24,8 @@ CREATE TABLE IF NOT EXISTS public.dispensacion_items (
     tipo_montura TEXT DEFAULT '',
     optica_id TEXT NOT NULL DEFAULT 'mi_optica_base'
 );
-
 COMMENT ON TABLE public.dispensacion_items IS 'Items de lente + montura dentro de una dispensación (F2-T2). Cada item puede tener su propia montura.';
-
 CREATE INDEX IF NOT EXISTS idx_dispensacion_items_dispensacion_id
     ON public.dispensacion_items (dispensacion_id);
-
 CREATE INDEX IF NOT EXISTS idx_dispensacion_items_optica_id
     ON public.dispensacion_items (optica_id);

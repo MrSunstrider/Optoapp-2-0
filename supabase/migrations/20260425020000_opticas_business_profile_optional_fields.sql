@@ -6,12 +6,10 @@ alter table public.opticas
   add column if not exists moneda text not null default '',
   add column if not exists pais text not null default '',
   add column if not exists contacto_whatsapp_telefono text not null default '';
-
 comment on column public.opticas.distrito_ciudad_departamento is 'Ubicación operativa resumida';
 comment on column public.opticas.moneda is 'Moneda principal de operación';
 comment on column public.opticas.pais is 'País principal de operación';
 comment on column public.opticas.contacto_whatsapp_telefono is 'WhatsApp o teléfono comercial de contacto';
-
 create or replace function public.guard_opticas_business_profile_optional_update()
 returns trigger
 language plpgsql
@@ -48,7 +46,6 @@ begin
   return new;
 end;
 $$;
-
 drop trigger if exists trg_guard_opticas_business_profile_optional_update on public.opticas;
 create trigger trg_guard_opticas_business_profile_optional_update
 before update of distrito_ciudad_departamento, moneda, pais, contacto_whatsapp_telefono

@@ -14,7 +14,6 @@ begin
   return new;
 end;
 $$;
-
 -- 2) Marca la columna legacy opticas.plan como deprecada.
 --    plan_code (creada en 20260423054500) es el reemplazo oficial.
 

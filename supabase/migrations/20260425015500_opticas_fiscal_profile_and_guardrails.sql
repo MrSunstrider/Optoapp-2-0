@@ -6,12 +6,10 @@ alter table public.opticas
   add column if not exists fiscal_doc_numero text not null default '',
   add column if not exists razon_social text not null default '',
   add column if not exists direccion_fiscal text not null default '';
-
 comment on column public.opticas.fiscal_doc_tipo is 'Tipo de documento fiscal: RUC o RUS';
 comment on column public.opticas.fiscal_doc_numero is 'Número del documento fiscal';
 comment on column public.opticas.razon_social is 'Razón social para emisión de comprobantes';
 comment on column public.opticas.direccion_fiscal is 'Dirección fiscal de la óptica';
-
 create or replace function public.guard_opticas_fiscal_update()
 returns trigger
 language plpgsql
@@ -56,7 +54,6 @@ begin
   return new;
 end;
 $$;
-
 drop trigger if exists trg_guard_opticas_fiscal_update on public.opticas;
 create trigger trg_guard_opticas_fiscal_update
 before update of fiscal_doc_tipo, fiscal_doc_numero, razon_social, direccion_fiscal

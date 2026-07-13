@@ -2,7 +2,6 @@
 -- Two concurrent requests can no longer both read stock=2 and both write stock=1.
 ALTER TABLE public.monturas
     ADD CONSTRAINT monturas_stock_actual_non_negative CHECK (stock_actual >= 0);
-
 CREATE OR REPLACE FUNCTION public.rpc_adjust_montura_stock(
     p_montura_id text,
     p_optica_id text,
@@ -60,6 +59,5 @@ BEGIN
     RETURN jsonb_build_object('ok', true, 'new_stock', v_new_stock);
 END;
 $$;
-
 REVOKE EXECUTE ON FUNCTION public.rpc_adjust_montura_stock(text, text, integer, text, text, text, text) FROM public, anon;
 GRANT EXECUTE ON FUNCTION public.rpc_adjust_montura_stock(text, text, integer, text, text, text, text) TO authenticated, service_role;

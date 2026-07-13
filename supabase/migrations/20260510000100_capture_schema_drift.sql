@@ -18,10 +18,8 @@ create table if not exists public.monturas (
   optica_id text not null default 'mi_optica_base',
   updated_at timestamptz not null default now()
 );
-
 create index if not exists idx_monturas_optica_id
   on public.monturas (optica_id);
-
 -- Tabla montura_movimientos (existe en remoto)
 create table if not exists public.montura_movimientos (
   id text primary key,
@@ -35,17 +33,13 @@ create table if not exists public.montura_movimientos (
   nota text,
   optica_id text not null
 );
-
 create index if not exists idx_montura_movimientos_optica_id
   on public.montura_movimientos (optica_id);
-
 create index if not exists idx_montura_movimientos_montura_id
   on public.montura_movimientos (montura_id);
-
 -- Columnas cerrado_at/cerrado_por en cierres_caja (existen en remoto,
 -- no estaban en 20260429214000)
 alter table public.cierres_caja
   add column if not exists cerrado_at timestamptz;
-
 alter table public.cierres_caja
   add column if not exists cerrado_por uuid references auth.users(id) on delete set null;

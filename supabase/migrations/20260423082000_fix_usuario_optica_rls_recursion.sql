@@ -22,10 +22,8 @@ as $$
       and lower(trim(uo.rol)) = any (p_roles)
   );
 $$;
-
 revoke all on function public.has_optica_role(uuid, text, text[]) from public;
 grant execute on function public.has_optica_role(uuid, text, text[]) to authenticated;
-
 drop policy if exists usuario_optica_select_member_scope on public.usuario_optica;
 create policy usuario_optica_select_member_scope on public.usuario_optica
 for select
@@ -33,7 +31,6 @@ using (
   user_id = auth.uid()
   or public.has_optica_role(auth.uid(), optica_id, array['admin', 'gerente'])
 );
-
 drop policy if exists usuario_optica_insert_admin_optica on public.usuario_optica;
 create policy usuario_optica_insert_admin_optica on public.usuario_optica
 for insert to authenticated
@@ -49,7 +46,6 @@ with check (
     )
   )
 );
-
 drop policy if exists usuario_optica_update_admin_optica on public.usuario_optica;
 create policy usuario_optica_update_admin_optica on public.usuario_optica
 for update

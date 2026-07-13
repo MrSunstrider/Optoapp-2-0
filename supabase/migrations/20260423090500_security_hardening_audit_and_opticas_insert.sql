@@ -18,7 +18,6 @@ begin
   return new;
 end;
 $$;
-
 drop policy if exists opticas_insert_authenticated on public.opticas;
 create policy opticas_insert_authenticated on public.opticas
 for insert to authenticated

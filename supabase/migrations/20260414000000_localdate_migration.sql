@@ -2,12 +2,10 @@
 -- Objetivo: almacenar fechas clinicas como DATE y evitar desfases por zona horaria.
 
 begin;
-
 create table if not exists public.schema_migrations_flags (
   key text primary key,
   applied_at timestamptz not null default now()
 );
-
 do $$
 begin
   -- pacientes.fecha_creacion
@@ -138,7 +136,6 @@ begin
     end if;
   end if;
 end $$;
-
 -- Reparacion historica (+1 dia) DESACTIVADA.
 -- Motivo: el incidente ya fue corregido y no queremos riesgo de sobrecorreccion masiva.
 -- Se conserva este bloque como NO-OP para mantener trazabilidad historica.
@@ -154,5 +151,4 @@ begin
     insert into public.schema_migrations_flags(key) values ('fix_localdate_shift_plus_1_v1_deprecated_noop');
   end if;
 end $$;
-
 commit;

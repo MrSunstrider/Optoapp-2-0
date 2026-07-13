@@ -15,7 +15,6 @@ as $$
       and lower(trim(up.email)) = 'jaermadera@gmail.com'
   );
 $$;
-
 drop policy if exists "opticas_select_member" on public.opticas;
 create policy "opticas_select_member" on public.opticas
     for select using (
@@ -25,7 +24,6 @@ create policy "opticas_select_member" on public.opticas
             or public.is_internal_owner()
         )
     );
-
 drop policy if exists "opticas_update_member" on public.opticas;
 create policy "opticas_update_member" on public.opticas
     for update using (
@@ -42,7 +40,6 @@ create policy "opticas_update_member" on public.opticas
             or public.is_internal_owner()
         )
     );
-
 create or replace function public.enforce_dev_owner_guard()
 returns trigger
 language plpgsql
@@ -61,13 +58,11 @@ begin
   return new;
 end;
 $$;
-
 drop trigger if exists trg_opticas_dev_owner_guard on public.opticas;
 create trigger trg_opticas_dev_owner_guard
 before insert or update of plan_code, plan_source on public.opticas
 for each row
 execute function public.enforce_dev_owner_guard();
-
 create or replace function public.enforce_dev_owner_membership_guard()
 returns trigger
 language plpgsql
@@ -95,13 +90,11 @@ begin
   return new;
 end;
 $$;
-
 drop trigger if exists trg_usuario_optica_dev_owner_guard on public.usuario_optica;
 create trigger trg_usuario_optica_dev_owner_guard
 before insert or update on public.usuario_optica
 for each row
 execute function public.enforce_dev_owner_membership_guard();
-
 with owner_user as (
   select up.user_id
   from public.user_profiles up
@@ -117,6 +110,5 @@ delete from public.usuario_optica uo
 where uo.optica_id in (select id from dev_opticas)
   and exists (select 1 from owner_user)
   and uo.user_id <> (select user_id from owner_user);
-
 comment on function public.is_internal_owner is
 'Retorna true solo para la cuenta interna autorizada para plan dev_owner.';

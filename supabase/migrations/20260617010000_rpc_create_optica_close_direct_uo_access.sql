@@ -51,12 +51,9 @@ begin
   on conflict (user_id, optica_id) do update set rol = 'admin';
 end;
 $$;
-
 grant execute on function public.create_optica_for_current_user(text, text, text, text, text, text) to authenticated;
-
 comment on function public.create_optica_for_current_user is
 'Crea una óptica y registra al usuario actual como admin en una sola transacción.';
-
 -- All role writes now go through assign_optica_role_by_email (security definer).
 -- Direct INSERT/UPDATE on usuario_optica bypassed the role-validation logic in that RPC.
 drop policy if exists usuario_optica_insert_admin_optica on public.usuario_optica;

@@ -4,7 +4,6 @@
 -- no hay datos sensibles que proteger.
 
 drop policy if exists "Authenticated users can read releases" on app_releases;
-
 create policy "Anyone can read releases"
   on app_releases for select
   to anon, authenticated

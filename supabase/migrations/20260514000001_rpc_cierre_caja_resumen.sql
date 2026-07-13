@@ -55,6 +55,5 @@ BEGIN
     );
 END;
 $$;
-
 REVOKE EXECUTE ON FUNCTION public.rpc_cierre_caja_resumen(text, date, date) FROM public, anon;
 GRANT EXECUTE ON FUNCTION public.rpc_cierre_caja_resumen(text, date, date) TO authenticated, service_role;

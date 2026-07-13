@@ -7,7 +7,6 @@ using (
   user_id = (select auth.uid())
   or app_private.has_optica_role((select auth.uid()), optica_id, array['admin', 'gerente'])
 );
-
 drop policy if exists usuario_optica_insert_admin_optica on public.usuario_optica;
 create policy usuario_optica_insert_admin_optica on public.usuario_optica
 for insert to authenticated
@@ -23,7 +22,6 @@ with check (
     )
   )
 );
-
 drop policy if exists usuario_optica_update_admin_optica on public.usuario_optica;
 create policy usuario_optica_update_admin_optica on public.usuario_optica
 for update
@@ -33,7 +31,6 @@ using (
 with check (
   app_private.has_optica_role((select auth.uid()), optica_id, array['admin', 'gerente'])
 );
-
 drop policy if exists "opticas_select_member" on public.opticas;
 create policy "opticas_select_member" on public.opticas
 for select
@@ -44,7 +41,6 @@ using (
     or app_private.is_internal_owner()
   )
 );
-
 drop policy if exists "opticas_update_member" on public.opticas;
 create policy "opticas_update_member" on public.opticas
 for update
@@ -62,7 +58,6 @@ with check (
     or app_private.is_internal_owner()
   )
 );
-
 drop policy if exists opticas_insert_authenticated on public.opticas;
 create policy opticas_insert_authenticated on public.opticas
 for insert to authenticated

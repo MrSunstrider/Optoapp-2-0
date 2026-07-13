@@ -5,7 +5,6 @@
 --   3) Mantener migración idempotente para múltiples entornos.
 
 begin;
-
 -- 1) Normalización de datos existentes (idempotente)
 update public.servicios_extra
 set
@@ -14,7 +13,6 @@ set
   metodo_pago = case when btrim(coalesce(metodo_pago, '')) = '' then 'Sin especificar' else btrim(metodo_pago) end,
   optica_id = case when btrim(coalesce(optica_id, '')) = '' then 'mi_optica_base' else btrim(optica_id) end,
   ot = case when btrim(coalesce(ot, '')) = '' then '-' else btrim(ot) end;
-
 -- 2) Constraints explícitos de no-vacío (en bloque dinámico para evitar fallos si ya existen)
 do $$
 begin
@@ -62,7 +60,6 @@ begin
       check (btrim(optica_id) <> '');
   end if;
 end $$;
-
 comment on constraint servicios_extra_descripcion_not_blank_chk on public.servicios_extra
   is 'Evita descripciones vacías o con solo espacios (P3-T2).';
 comment on constraint servicios_extra_estado_not_blank_chk on public.servicios_extra
@@ -71,5 +68,4 @@ comment on constraint servicios_extra_metodo_pago_not_blank_chk on public.servic
   is 'Evita método de pago vacío en fila agregada de servicio extra (P3-T2).';
 comment on constraint servicios_extra_optica_id_not_blank_chk on public.servicios_extra
   is 'Evita tenant vacío para servicios_extra (P3-T2).';
-
 commit;

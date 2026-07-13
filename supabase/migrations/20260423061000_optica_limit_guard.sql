@@ -68,12 +68,10 @@ begin
   return new;
 end;
 $$;
-
 drop trigger if exists trg_opticas_limit_guard on public.opticas;
 create trigger trg_opticas_limit_guard
 before insert on public.opticas
 for each row
 execute function public.enforce_optica_limit_for_creator();
-
 comment on function public.enforce_optica_limit_for_creator is
 'Bloquea creación de nuevas ópticas cuando usuario admin/gerente alcanzó max_opticas del plan.';

@@ -14,9 +14,7 @@ WHERE d.id IN (
     ) t
     WHERE t.rn > 1
 );
-
 CREATE UNIQUE INDEX IF NOT EXISTS idx_dispensaciones_optica_ot_unique
 ON public.dispensaciones (optica_id, lower(trim(ot)))
 WHERE trim(ot) <> '';
-
 COMMENT ON INDEX public.idx_dispensaciones_optica_ot_unique IS 'Una OT no puede repetirse en la misma óptica (P3-T1)';

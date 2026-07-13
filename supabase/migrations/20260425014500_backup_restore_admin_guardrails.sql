@@ -62,5 +62,4 @@ begin
   end if;
 end;
 $$;
-
 grant execute on function public.assert_backup_operation_allowed(text, text, text) to authenticated;
