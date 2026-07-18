@@ -117,7 +117,7 @@ fun PacientesListScreen(
                 onValueChange = { viewModel.onSearchQueryChange(it) },
                 modifier = Modifier.fillMaxWidth(),
                 placeholder = { Text("Buscar por nombre, ID o teléfono...") },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Buscar") },
                 shape = MaterialTheme.shapes.medium
             )
             Spacer(modifier = Modifier.height(10.dp))
@@ -154,7 +154,7 @@ fun PacientesListScreen(
                         modifier = Modifier.padding(16.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Icon(Icons.Default.Error, contentDescription = null, tint = AlertRed, modifier = Modifier.size(32.dp))
+                        Icon(Icons.Default.Error, contentDescription = "Error", tint = AlertRed, modifier = Modifier.size(32.dp))
                         Spacer(Modifier.height(8.dp))
                         Text(errMsg, color = AlertRed, style = MaterialTheme.typography.bodyMedium)
                         Spacer(Modifier.height(8.dp))
@@ -169,7 +169,7 @@ fun PacientesListScreen(
             if (pacientes.isEmpty() && !isLoading) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(Icons.Default.PersonOff, contentDescription = null, modifier = Modifier.size(48.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f))
+                        Icon(Icons.Default.PersonOff, contentDescription = "Sin pacientes", modifier = Modifier.size(48.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f))
                         Spacer(Modifier.height(8.dp))
                         Text("No se encontraron pacientes", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
@@ -254,7 +254,7 @@ private fun PacienteCard(
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Surface(modifier = Modifier.size(44.dp), shape = RoundedCornerShape(12.dp), color = avatarColor.copy(alpha = 0.12f)) {
-                Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(24.dp), tint = avatarColor) }
+                Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.Person, contentDescription = "Foto de perfil", modifier = Modifier.size(24.dp), tint = avatarColor) }
             }
 
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -274,14 +274,14 @@ private fun PacienteCard(
             }
 
             Row(horizontalArrangement = Arrangement.spacedBy(0.dp)) {
-                IconButton(onClick = { onShowLastEvaluacion(paciente.id) }, modifier = Modifier.size(36.dp).testTag(TestTags.PACIENTE_CARD_LAST_EVAL_BTN)) {
+                IconButton(onClick = { onShowLastEvaluacion(paciente.id) }, modifier = Modifier.size(48.dp).testTag(TestTags.PACIENTE_CARD_LAST_EVAL_BTN)) {
                     Icon(Icons.Default.Visibility, contentDescription = "Ver evaluación", modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
                 }
-                IconButton(onClick = { onShowLastDispensacion(paciente.id) }, modifier = Modifier.size(36.dp).testTag(TestTags.PACIENTE_CARD_LAST_DISP_BTN)) {
+                IconButton(onClick = { onShowLastDispensacion(paciente.id) }, modifier = Modifier.size(48.dp).testTag(TestTags.PACIENTE_CARD_LAST_DISP_BTN)) {
                     Icon(Icons.Default.Inventory2, contentDescription = "Ver dispensación", modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.tertiary)
                 }
                 if (paciente.telefono.isNotBlank()) {
-                    IconButton(onClick = onCall, modifier = Modifier.size(36.dp)) {
+                    IconButton(onClick = onCall, modifier = Modifier.size(48.dp)) {
                         Icon(Icons.Default.Call, contentDescription = "Llamar", modifier = Modifier.size(18.dp), tint = PositiveGreen)
                     }
                 }

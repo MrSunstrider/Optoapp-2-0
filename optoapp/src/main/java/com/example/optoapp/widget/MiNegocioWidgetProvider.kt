@@ -10,12 +10,15 @@ import dagger.hilt.android.AndroidEntryPoint
 import com.example.optoapp.MainActivity
 import com.example.optoapp.R
 import com.example.optoapp.data.SessionManager
+import com.example.optoapp.util.formatAsCurrency
 import com.example.optoapp.data.resumendiario.ResumenDiarioDao
 import com.example.optoapp.widget.MiNegocioWidgetWorker.Companion.readOpticaId
 import java.time.LocalDate
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 
 @AndroidEntryPoint(AppWidgetProvider::class)
@@ -27,12 +30,14 @@ class MiNegocioWidgetProvider : AppWidgetProvider() {
     @Inject
     lateinit var sessionManager: SessionManager
 
+    private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+
     override fun onUpdate(
         context: Context,
         appWidgetManager: AppWidgetManager,
         appWidgetIds: IntArray
     ) {
-        CoroutineScope(Dispatchers.IO).launch {
+        scope.launch {
             val today = LocalDate.now().toString()
             val opticaId = readOpticaId(context)
 
@@ -49,8 +54,8 @@ class MiNegocioWidgetProvider : AppWidgetProvider() {
 
             for (appWidgetId in appWidgetIds) {
                 val views = RemoteViews(context.packageName, R.layout.widget_mi_negocio)
-                views.setTextViewText(R.id.widget_hoy, "Hoy: S/ %.2f".format(ventas))
-                views.setTextViewText(R.id.widget_por_cobrar, "Por cobrar: S/ %.2f".format(porCobrar))
+                views.setTextViewText(R.id.widget_hoy, "Hoy: ${ventas.formatAsCurrency()}")
+                views.setTextViewText(R.id.widget_por_cobrar, "Por cobrar: ${porCobrar.formatAsCurrency()}")
 
                 val intent = Intent(context, MainActivity::class.java).apply {
                     flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
@@ -64,5 +69,10 @@ class MiNegocioWidgetProvider : AppWidgetProvider() {
                 appWidgetManager.updateAppWidget(appWidgetId, views)
             }
         }
+    }
+
+    override fun onDisabled(context: Context) {
+        super.onDisabled(context)
+        scope.cancel()
     }
 }

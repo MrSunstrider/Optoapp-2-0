@@ -39,7 +39,7 @@ fun TransactionItem(pago: Pago) {
                 }
             }
             Text(
-                "s/. ${String.format(Locale.getDefault(), "%.2f", pago.monto)}",
+                "s/. ${String.format(Locale.getDefault(), "%,.2f", pago.monto)}",
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
                 color = when {

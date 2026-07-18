@@ -34,7 +34,8 @@ fun OptoKpiCard(
     value: String,
     color: Color,
     icon: ImageVector,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    iconContentDescription: String? = title
 ) {
     Card(
         modifier = modifier,
@@ -43,7 +44,7 @@ fun OptoKpiCard(
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(18.dp))
+                Icon(icon, contentDescription = iconContentDescription, tint = color, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(6.dp))
                 Text(title, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }

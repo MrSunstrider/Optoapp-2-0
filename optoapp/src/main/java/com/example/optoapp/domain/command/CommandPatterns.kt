@@ -1,6 +1,6 @@
 package com.example.optoapp.domain.command
 
-import android.util.Log
+import com.example.optoapp.util.AppLogger
 import kotlinx.coroutines.CancellationException
 import java.io.IOException
 
@@ -21,10 +21,10 @@ class BackupCommand(
         } catch (e: CancellationException) {
             throw e
         } catch (e: IOException) {
-            Log.e("BackupCommand", "Error en red generando backup: ${e.message}", e)
+            AppLogger.e("BackupCommand", "Error en red generando backup: ${e.message}", e)
             Result.failure(e)
         } catch (e: Exception) {
-            Log.e("BackupCommand", "Error inesperado generando backup: ${e.message}", e)
+            AppLogger.e("BackupCommand", "Error inesperado generando backup: ${e.message}", e)
             Result.failure(e)
         }
     }

@@ -24,7 +24,7 @@ fun PacienteInfoHeader(paciente: Paciente, deudaTotal: Double = 0.0) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(16.dp),
-        shape = RoundedCornerShape(16.dp),
+        shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
@@ -36,7 +36,7 @@ fun PacienteInfoHeader(paciente: Paciente, deudaTotal: Double = 0.0) {
                     color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        Icon(Icons.Default.Person, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(32.dp))
+                        Icon(Icons.Default.Person, contentDescription = "Persona", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(32.dp))
                     }
                 }
                 Spacer(modifier = Modifier.width(16.dp))
@@ -60,7 +60,7 @@ fun PacienteInfoHeader(paciente: Paciente, deudaTotal: Double = 0.0) {
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(Icons.Default.AccountBalanceWallet, contentDescription = null, tint = deudaColor, modifier = Modifier.size(20.dp))
+                        Icon(Icons.Default.AccountBalanceWallet, contentDescription = "Billetera", tint = deudaColor, modifier = Modifier.size(20.dp))
                         Spacer(Modifier.width(8.dp))
                         Text("Deuda total: s/. ${String.format(Locale.getDefault(), "%,.2f", deudaTotal)}", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = deudaColor)
                     }

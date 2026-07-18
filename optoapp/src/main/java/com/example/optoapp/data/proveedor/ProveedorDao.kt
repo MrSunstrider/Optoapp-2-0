@@ -22,6 +22,15 @@ interface ProveedorDao {
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insert(proveedor: Proveedor)
 
-    @Update
-    suspend fun update(proveedor: Proveedor)
+    @Query("""
+        UPDATE proveedores SET nombre=:nombre, ruc=:ruc, telefono=:telefono,
+        email=:email, direccion=:direccion, contacto=:contacto, activo=:activo,
+        opticaId=:opticaId, updatedAt=:updatedAt, updatedBy=:updatedBy
+        WHERE id=:id AND opticaId=:opticaId
+    """)
+    suspend fun update(
+        id: String, opticaId: String, nombre: String, ruc: String,
+        telefono: String, email: String, direccion: String, contacto: String,
+        activo: Boolean, updatedAt: String?, updatedBy: String?
+    ): Int
 }

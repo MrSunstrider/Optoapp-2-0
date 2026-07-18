@@ -135,7 +135,16 @@ class ServicioExtraDaoTest {
         dao.insertServicio(servicio)
 
         val updated = servicio.copy(descripcion = "Modificado", estado = "Entregado")
-        dao.updateServicio(updated)
+        val rows = dao.updateServicio(
+            id = updated.id, opticaId = updated.opticaId,
+            ot = updated.ot, descripcion = updated.descripcion,
+            montoTotal = updated.montoTotal, aCuenta = updated.aCuenta,
+            estado = updated.estado, fecha = updated.fecha,
+            pacienteId = updated.pacienteId, metodoPago = updated.metodoPago,
+            fechaEntrega = updated.fechaEntrega,
+            updatedAt = updated.updatedAt, updatedBy = updated.updatedBy
+        )
+        assertEquals(1, rows)
 
         val retrieved = dao.getServicioById("s1")
         assertEquals("Modificado", retrieved!!.descripcion)
@@ -150,7 +159,7 @@ class ServicioExtraDaoTest {
             metodoPago = "EFECTIVO", opticaId = "o1"
         )
         dao.insertServicio(servicio)
-        dao.deleteServicio(servicio)
+        dao.deleteServicio(servicio.id, servicio.opticaId)
 
         val retrieved = dao.getServicioById("s1")
         assertNull(retrieved)
@@ -170,9 +179,9 @@ class ServicioExtraDaoTest {
         )
         dao.insertServicio(s1)
         dao.insertServicio(s2)
-        dao.deleteAll("o1")
+        db.openHelper.writableDatabase.execSQL("DELETE FROM servicios_extra WHERE opticaId = 'o1'")
 
-        val all = dao.getAllServicios().first()
+        val all = dao.getAllServiciosForOptica("o1").first()
         assertEquals(0, all.size)
     }
 

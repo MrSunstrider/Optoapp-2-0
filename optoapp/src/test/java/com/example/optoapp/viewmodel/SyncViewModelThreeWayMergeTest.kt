@@ -28,6 +28,7 @@ import com.example.optoapp.domain.SyncOrdenesCompraUseCase
 import com.example.optoapp.domain.SyncPacientesUseCase
 import com.example.optoapp.domain.SyncProveedoresUseCase
 import com.example.optoapp.domain.observer.TableObserver
+import com.example.optoapp.domain.sync.SyncOrchestrator
 import com.example.optoapp.subscription.SubscriptionManager
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import com.example.optoapp.sync.SyncGate
@@ -184,7 +185,8 @@ class SyncViewModelThreeWayMergeTest {
             syncEntityStateDao = syncEntityStateDao,
             supabaseObserver = supabaseObserver,
             bgErrorCollector = bgErrorCollector,
-            postSaveSyncScheduler = postSaveSyncScheduler
+            postSaveSyncScheduler = postSaveSyncScheduler,
+            syncOrchestrator = mockk(relaxed = true)
         )
     }
 

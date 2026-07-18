@@ -97,7 +97,7 @@ private fun EditItemRow(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text("Ítem ${index + 1}", style = MaterialTheme.typography.labelSmall)
-                IconButton(onClick = onRemove, modifier = Modifier.size(24.dp)) {
+                IconButton(onClick = onRemove, modifier = Modifier.size(48.dp)) {
                     Icon(Icons.Default.Delete, "Quitar", modifier = Modifier.size(16.dp))
                 }
             }

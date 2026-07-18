@@ -88,9 +88,9 @@ class PhysicalInventoryLifecycleTest {
 
         assertEquals("COMPLETADO", dao.getById(session.id)!!.estado)
 
-        assertEquals(8, db.monturaDao().getMonturaById("m1")!!.stockActual)
-        assertEquals(7, db.monturaDao().getMonturaById("m2")!!.stockActual)
-        assertEquals(0, db.monturaDao().getMonturaById("m3")!!.stockActual)
+        assertEquals(8, db.monturaDao().getMonturaByIdForOptica("m1", "o1")!!.stockActual)
+        assertEquals(7, db.monturaDao().getMonturaByIdForOptica("m2", "o1")!!.stockActual)
+        assertEquals(0, db.monturaDao().getMonturaByIdForOptica("m3", "o1")!!.stockActual)
 
         val movimientos = db.monturaMovimientoDao().getMovimientosListByOptica("o1")
         assertEquals(2, movimientos.size)

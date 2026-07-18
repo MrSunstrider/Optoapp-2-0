@@ -1,11 +1,13 @@
 package com.example.optoapp.data.backup
 
 import android.util.Log
+import androidx.room.withTransaction
 import com.example.optoapp.data.BackupData
 import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.DispensacionRepository
 import com.example.optoapp.data.EvaluacionClinica
 import com.example.optoapp.data.EvaluacionDao
+import com.example.optoapp.data.OptoDatabase
 import com.example.optoapp.data.Paciente
 import com.example.optoapp.data.PacienteDao
 import com.example.optoapp.data.PacienteRepository
@@ -21,16 +23,24 @@ class BackupRestoreCoordinator @Inject constructor(
     private val dispensacionRepo: DispensacionRepository,
     private val evaluacionDao: EvaluacionDao,
     private val pacienteDao: PacienteDao,
-    private val postSaveSyncScheduler: Lazy<PostSaveSyncScheduler>
+    private val postSaveSyncScheduler: Lazy<PostSaveSyncScheduler>,
+    private val database: OptoDatabase
 ) {
     companion object {
         private const val TAG = "BackupRestoreCoordinator"
     }
 
     suspend fun clearAllData(opticaId: String) {
-        dispensacionRepo.deleteAll(opticaId)
-        evaluacionDao.deleteAll(opticaId)
-        pacienteDao.deleteAll(opticaId)
+        database.withTransaction {
+            database.openHelper.writableDatabase.apply {
+                execSQL("DELETE FROM dispensacion_items WHERE optica_id = ?", arrayOf(opticaId))
+                execSQL("DELETE FROM pagos WHERE opticaId = ?", arrayOf(opticaId))
+                execSQL("DELETE FROM servicios_extra WHERE opticaId = ?", arrayOf(opticaId))
+                execSQL("DELETE FROM dispensaciones WHERE opticaId = ?", arrayOf(opticaId))
+                execSQL("DELETE FROM evaluaciones WHERE opticaId = ?", arrayOf(opticaId))
+                execSQL("DELETE FROM pacientes WHERE opticaId = ?", arrayOf(opticaId))
+            }
+        }
     }
 
     suspend fun getBackupDataForOptica(opticaId: String): BackupData {

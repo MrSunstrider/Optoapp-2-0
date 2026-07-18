@@ -97,6 +97,14 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+            if (project.hasProperty("forbidOnly")) {
+                all { test -> test.systemProperty("junit.jupiter.execution.only.enabled", "false") }
+            }
+        }
+    }
     buildFeatures {
         compose = true
         buildConfig = true
@@ -141,6 +149,7 @@ dependencies {
     implementation(libs.supabase.auth)
     implementation(libs.supabase.postgrest)
     implementation(libs.supabase.realtime)
+    implementation(libs.supabase.functions)
     implementation(libs.ktor.client.cio)
 
     testImplementation(libs.junit)

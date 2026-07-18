@@ -2,7 +2,6 @@ package com.example.optoapp.data
 
 import androidx.room.Dao
 import androidx.room.Entity
-import androidx.room.PrimaryKey
 import androidx.room.Query
 
 /**
@@ -12,9 +11,12 @@ import androidx.room.Query
  * más viejo que su contraparte remota (o viceversa), se guarda un [ConflictRecord]
  * con los snapshots de ambas versiones para que el usuario resuelva manualmente.
  */
-@Entity(tableName = "conflict_records")
+@Entity(
+    tableName = "conflict_records",
+    primaryKeys = ["entityId", "opticaId"]
+)
 data class ConflictRecord(
-    @PrimaryKey val entityId: String,
+    val entityId: String,
     val opticaId: String,
     val entityType: String,
     val localSnapshot: String,

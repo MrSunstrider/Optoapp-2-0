@@ -80,7 +80,7 @@ fun OperacionHoyScreen(
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Icon(Icons.Default.Lock, contentDescription = null, modifier = Modifier.size(48.dp), tint = MaterialTheme.colorScheme.error)
+                Icon(Icons.Default.Lock, contentDescription = "Bloqueado", modifier = Modifier.size(48.dp), tint = MaterialTheme.colorScheme.error)
                 Spacer(Modifier.height(16.dp))
                 Text("Acceso restringido", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error)
             }
@@ -179,7 +179,7 @@ fun OperacionHoyScreen(
                 ) {
                     Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Notifications, contentDescription = null, tint = WarningAmber, modifier = Modifier.size(18.dp))
+                            Icon(Icons.Default.Notifications, contentDescription = "Notificaciones", tint = WarningAmber, modifier = Modifier.size(18.dp))
                             Spacer(Modifier.width(8.dp))
                             Text("Alertas", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = WarningAmber)
                         }
@@ -202,7 +202,7 @@ fun OperacionHoyScreen(
                         modifier = Modifier.padding(14.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(Icons.Default.CheckCircle, contentDescription = null, tint = PositiveGreen, modifier = Modifier.size(18.dp))
+                        Icon(Icons.Default.CheckCircle, contentDescription = "Completado", tint = PositiveGreen, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(8.dp))
                         Text("Todo al día — sin alertas", fontSize = 13.sp, color = PositiveGreen)
                     }
@@ -224,13 +224,13 @@ fun OperacionHoyScreen(
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).clickable {
                             navController.navigate("informacion_financiera/${disp.id}")
                         },
-                        shape = RoundedCornerShape(10.dp)
+                        shape = MaterialTheme.shapes.small
                     ) {
                         Row(
                             modifier = Modifier.padding(12.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Icon(Icons.Default.Inventory2, contentDescription = null, tint = AlertRed, modifier = Modifier.size(18.dp))
+                            Icon(Icons.Default.Inventory2, contentDescription = "Inventario", tint = AlertRed, modifier = Modifier.size(18.dp))
                             Spacer(Modifier.width(10.dp))
                             Column(modifier = Modifier.weight(1f)) {
                                 Text("OT ${disp.ot.ifBlank { "-" }}", fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
@@ -250,13 +250,13 @@ fun OperacionHoyScreen(
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).clickable {
                             navController.navigate("editar_servicio/${serv.id}")
                         },
-                        shape = RoundedCornerShape(10.dp)
+                        shape = MaterialTheme.shapes.small
                     ) {
                         Row(
                             modifier = Modifier.padding(12.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Icon(Icons.Default.Handyman, contentDescription = null, tint = AlertRed, modifier = Modifier.size(18.dp))
+                            Icon(Icons.Default.Handyman, contentDescription = "Servicios", tint = AlertRed, modifier = Modifier.size(18.dp))
                             Spacer(Modifier.width(10.dp))
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(serv.descripcion.ifBlank { "Servicio Extra" }, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
@@ -287,7 +287,7 @@ fun OperacionHoyScreen(
                     },
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
                 ) {
-                    Icon(Icons.Default.PictureAsPdf, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Icon(Icons.Default.PictureAsPdf, contentDescription = "PDF", modifier = Modifier.size(16.dp))
                     Spacer(Modifier.width(6.dp))
                     Text("Exportar inventario PDF")
                 }
@@ -312,7 +312,7 @@ private fun QuickAction(label: String, icon: ImageVector, color: Color, modifier
         ) {
             Icon(icon, contentDescription = label, tint = color, modifier = Modifier.size(24.dp))
             Spacer(Modifier.height(6.dp))
-            Text(label, fontSize = 11.sp, fontWeight = FontWeight.Medium, color = color, textAlign = TextAlign.Center, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(label, style = MaterialTheme.typography.labelSmall, color = color, textAlign = TextAlign.Center, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
     }
 }
@@ -335,9 +335,9 @@ private fun DashboardKpi(
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
+                Icon(icon, contentDescription = "Indicador", tint = color, modifier = Modifier.size(20.dp))
                 Spacer(Modifier.width(6.dp))
-                Text(label, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 if (highlight) {
                     Box(modifier = Modifier.weight(1f))
                     Surface(shape = RoundedCornerShape(4.dp), color = AlertRed.copy(alpha = 0.2f)) {

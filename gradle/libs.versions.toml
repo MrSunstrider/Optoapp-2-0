@@ -60,6 +60,7 @@ supabase-bom = { group = "io.github.jan-tennert.supabase", name = "bom", version
 supabase-auth = { group = "io.github.jan-tennert.supabase", name = "auth-kt", version = "3.6.0" }
 supabase-postgrest = { group = "io.github.jan-tennert.supabase", name = "postgrest-kt", version = "3.6.0" }
 supabase-realtime = { group = "io.github.jan-tennert.supabase", name = "realtime-kt", version = "3.6.0" }
+supabase-functions = { group = "io.github.jan-tennert.supabase", name = "functions-kt", version = "3.6.0" }
 ktor-client-cio = { group = "io.ktor", name = "ktor-client-cio", version = "3.4.3" }
 androidx-security-crypto = { group = "androidx.security", name = "security-crypto", version.ref = "securityCrypto" }
 billing-ktx = { group = "com.android.billingclient", name = "billing-ktx", version.ref = "billing" }

@@ -74,9 +74,10 @@ object DiagnosticoCalculator {
             val clean = snellen.trim()
             val regex = Regex("""(\d+)\s*/\s*(\d+)""")
             val m = regex.find(clean) ?: return null
+            val numerator = m.groupValues[1].toDoubleOrNull() ?: return null
             val denominator = m.groupValues[2].toDoubleOrNull() ?: return null
             if (denominator <= 0) return null
-            val decimalAV = 20.0 / denominator
+            val decimalAV = numerator / denominator
             return -log10(decimalAV)
         } catch (e: Exception) { return null }
     }

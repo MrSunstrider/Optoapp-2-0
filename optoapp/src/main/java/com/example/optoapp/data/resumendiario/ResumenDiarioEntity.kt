@@ -1,9 +1,13 @@
 package com.example.optoapp.data.resumendiario
 
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
-@Entity(tableName = "resumen_diario")
+@Entity(
+    tableName = "resumen_diario",
+    indices = [Index(value = ["opticaId", "fecha"], unique = true)]
+)
 data class ResumenDiarioEntity(
     @PrimaryKey val id: String,
     val opticaId: String,

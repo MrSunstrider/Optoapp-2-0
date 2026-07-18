@@ -8,6 +8,7 @@ import com.example.optoapp.data.configuracionfinanciera.ConfiguracionFinancieraD
 import com.example.optoapp.data.categoriaproducto.CategoriaProductoDao
 import com.example.optoapp.data.costobiselado.CostoBiseladoDao
 import com.example.optoapp.data.costoproducto.CostoProductoDao
+import com.example.optoapp.data.costolc.CostoLcDao
 import com.example.optoapp.data.feedbackrecomendacion.FeedbackRecomendacionDao
 import com.example.optoapp.data.gastooperativo.GastoOperativoDao
 import com.example.optoapp.data.inventariofisico.InventarioFisicoDao
@@ -126,6 +127,10 @@ object DatabaseModule {
     fun provideCostoBiseladoDao(database: OptoDatabase): CostoBiseladoDao = database.costoBiseladoDao()
 
     @Provides
+    @Singleton
+    fun provideCostoLcDao(database: OptoDatabase): CostoLcDao = database.costoLcDao()
+
+    @Provides
     fun provideFeedbackRecomendacionDao(database: OptoDatabase): FeedbackRecomendacionDao = database.feedbackRecomendacionDao()
 
     @Provides
@@ -183,9 +188,10 @@ object DatabaseModule {
         dispensacionRepo: DispensacionRepository,
         evaluacionDao: EvaluacionDao,
         pacienteDao: PacienteDao,
-        postSaveSyncScheduler: Lazy<PostSaveSyncScheduler>
+        postSaveSyncScheduler: Lazy<PostSaveSyncScheduler>,
+        database: OptoDatabase
     ): BackupRestoreCoordinator = BackupRestoreCoordinator(
-        pacienteRepo, dispensacionRepo, evaluacionDao, pacienteDao, postSaveSyncScheduler
+        pacienteRepo, dispensacionRepo, evaluacionDao, pacienteDao, postSaveSyncScheduler, database
     )
 
     @Provides
@@ -215,12 +221,7 @@ object DatabaseModule {
         snapshotCoordinator: SyncSnapshotCoordinator,
         backupCoordinator: BackupRestoreCoordinator,
         monturaCoordinator: MonturaInventoryCoordinator,
-        gastoOperativoDao: GastoOperativoDao,
-        resumenDiarioDao: ResumenDiarioDao,
-        configuracionFinancieraDao: ConfiguracionFinancieraDao,
-        categoriaProductoDao: CategoriaProductoDao,
-        costoProductoDao: CostoProductoDao,
-        costoBiseladoDao: CostoBiseladoDao
+        gastoOperativoDao: GastoOperativoDao
     ): OptoRepository {
         return OptoRepository(
             database = database,
@@ -232,12 +233,7 @@ object DatabaseModule {
             snapshotCoordinator = snapshotCoordinator,
             backupCoordinator = backupCoordinator,
             monturaCoordinator = monturaCoordinator,
-            gastoOperativoDao = gastoOperativoDao,
-            resumenDiarioDao = resumenDiarioDao,
-            configuracionFinancieraDao = configuracionFinancieraDao,
-            categoriaProductoDao = categoriaProductoDao,
-            costoProductoDao = costoProductoDao,
-            costoBiseladoDao = costoBiseladoDao
+            gastoOperativoDao = gastoOperativoDao
         )
     }
 

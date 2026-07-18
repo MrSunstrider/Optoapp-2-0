@@ -1,6 +1,6 @@
 package com.example.optoapp.domain
 
-import android.util.Log
+import com.example.optoapp.util.AppLogger
 import com.example.optoapp.data.InventarioFisico
 import com.example.optoapp.data.InventarioFisicoDetalle
 import com.example.optoapp.data.InventarioFisicoRepository
@@ -36,7 +36,7 @@ open class SyncInventarioFisicoUseCase @Inject constructor(
         skipUpload: Boolean = false
     ): Resource<InventarioFisicoSyncResult> {
         return try {
-            Log.d(TAG, "InventarioFisico: inicio (opticaId=$opticaId, download=$downloadAfterUpload, skipUpload=$skipUpload)")
+            AppLogger.d(TAG, "InventarioFisico: inicio (opticaId=$opticaId, download=$downloadAfterUpload, skipUpload=$skipUpload)")
             val sessUp = if (skipUpload) 0 else uploadSessions(opticaId)
             val detUp = if (skipUpload) 0 else uploadDetalles(opticaId)
             val sessDown: Int
@@ -44,11 +44,11 @@ open class SyncInventarioFisicoUseCase @Inject constructor(
             if (downloadAfterUpload) {
                 sessDown = downloadSessions(opticaId)
                 detDown = downloadDetalles(opticaId)
-                Log.d(TAG, "InventarioFisico: fin OK (sessions=$sessDown detalles=$detDown)")
+                AppLogger.d(TAG, "InventarioFisico: fin OK (sessions=$sessDown detalles=$detDown)")
             } else {
                 sessDown = 0
                 detDown = 0
-                Log.d(TAG, "InventarioFisico: fin upload-only OK")
+                AppLogger.d(TAG, "InventarioFisico: fin upload-only OK")
             }
             Resource.Success(
                 InventarioFisicoSyncResult(
@@ -61,10 +61,10 @@ open class SyncInventarioFisicoUseCase @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: IOException) {
-            Log.e(TAG, "Error en red sincronizando inventario fisico: ${e.message}", e)
+            AppLogger.e(TAG, "Error en red sincronizando inventario fisico: ${e.message}", e)
             Resource.Error("Error sincronizando inventario fisico: ${e.localizedMessage}")
         } catch (e: Exception) {
-            Log.e(TAG, "Error inesperado sincronizando inventario fisico: ${e.message}", e)
+            AppLogger.e(TAG, "Error inesperado sincronizando inventario fisico: ${e.message}", e)
             Resource.Error("Error sincronizando inventario fisico: ${e.localizedMessage}")
         }
     }
@@ -92,7 +92,7 @@ open class SyncInventarioFisicoUseCase @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            Log.e(TAG, "Error subiendo sesiones de inventario fisico", e)
+            AppLogger.e(TAG, "Error subiendo sesiones de inventario fisico", e)
             0
         }
     }
@@ -113,7 +113,7 @@ open class SyncInventarioFisicoUseCase @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            Log.e(TAG, "Error subiendo detalles de inventario fisico", e)
+            AppLogger.e(TAG, "Error subiendo detalles de inventario fisico", e)
             0
         }
     }
@@ -128,7 +128,7 @@ open class SyncInventarioFisicoUseCase @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                Log.e(TAG, "Error descargando sesion ${r.id}: ${e.message}", e)
+                AppLogger.e(TAG, "Error descargando sesion ${r.id}: ${e.message}", e)
             }
         }
         return remotos.size
@@ -150,7 +150,7 @@ open class SyncInventarioFisicoUseCase @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                Log.e(TAG, "Error descargando detalle ${r.id}: ${e.message}", e)
+                AppLogger.e(TAG, "Error descargando detalle ${r.id}: ${e.message}", e)
             }
         }
         return remotos.size

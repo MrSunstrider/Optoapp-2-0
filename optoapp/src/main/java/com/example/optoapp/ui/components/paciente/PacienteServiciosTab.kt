@@ -5,8 +5,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Inbox
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -20,12 +18,7 @@ import java.util.Locale
 @Composable
 fun ServiciosExtraList(servicios: List<ServicioExtra>, onEdit: (String) -> Unit, aCuentaSumMap: Map<String, Double> = emptyMap()) {
     if (servicios.isEmpty()) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Icon(Icons.Default.Inbox, contentDescription = null, modifier = Modifier.size(48.dp), tint = MaterialTheme.colorScheme.outlineVariant)
-                Text("No hay servicios varios.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
-            }
-        }
+        EmptyListMessage("No hay servicios varios.")
     } else {
         LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             items(servicios) { serv ->

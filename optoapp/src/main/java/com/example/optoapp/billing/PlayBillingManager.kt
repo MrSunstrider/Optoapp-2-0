@@ -10,26 +10,42 @@ import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.ProductDetails
 import com.android.billingclient.api.PendingPurchasesParams
 import com.android.billingclient.api.Purchase
+import android.util.Log
 import com.android.billingclient.api.QueryProductDetailsParams
+import com.example.optoapp.data.SessionManager
 import com.example.optoapp.subscription.SubscriptionManager
 import dagger.hilt.android.qualifiers.ApplicationContext
+import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.functions.functions
+import io.ktor.client.statement.bodyAsText
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.resume
 
+private const val TAG = "PlayBillingManager"
+
 /**
  * P2-T2: cliente Google Play Billing (suscripción). Crea el producto `SUBSCRIPTION_PRODUCT_ID` en Play Console.
+ * Tras acknowledge exitoso, verifica la compra contra el backend (Edge Function verify-purchase).
  */
-@Deprecated("Sin uso en alpha. Mantener por posible reactivación.")
 @Singleton
 class PlayBillingManager @Inject constructor(
     @ApplicationContext private val app: Context,
-    private val subscriptionManager: SubscriptionManager
+    private val subscriptionManager: SubscriptionManager,
+    private val supabase: SupabaseClient,
+    private val sessionManager: SessionManager
 ) {
     private val ioScope = CoroutineScope(Dispatchers.IO)
     private var client: BillingClient? = null
@@ -65,9 +81,37 @@ class PlayBillingManager @Inject constructor(
                 val params = AcknowledgePurchaseParams.newBuilder()
                     .setPurchaseToken(purchase.purchaseToken)
                     .build()
-                c.acknowledgePurchase(params) { }
+                c.acknowledgePurchase(params) { billingResult ->
+                    if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
+                        ioScope.launch { verifyPurchaseOnBackend(purchase.purchaseToken) }
+                    }
+                }
+            } else {
+                verifyPurchaseOnBackend(purchase.purchaseToken)
             }
-            subscriptionManager.setProFromLocalCache()
+        }
+    }
+
+    private suspend fun verifyPurchaseOnBackend(purchaseToken: String) {
+        try {
+            val opticaId = sessionManager.opticaId.first()
+            val response = supabase.functions.invoke(
+                function = "verify-purchase",
+                body = buildJsonObject {
+                    put("purchaseToken", purchaseToken)
+                    put("opticaId", opticaId)
+                }
+            )
+            val bodyText = response.bodyAsText()
+            val json = Json.parseToJsonElement(bodyText).jsonObject
+            val valid = json["valid"]?.jsonPrimitive?.booleanOrNull ?: false
+            if (valid) {
+                subscriptionManager.setProFromLocalCache()
+            } else {
+                Log.w(TAG, "Backend rechazó la compra: $purchaseToken")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error verificando compra con backend", e)
         }
     }
 

@@ -206,7 +206,16 @@ class PagoDaoTest {
         dao.insertPago(pago)
 
         val updated = pago.copy(monto = 150.0, metodoPago = "TARJETA")
-        dao.updatePago(updated)
+        val rows = dao.updatePago(
+            id = updated.id, opticaId = updated.opticaId,
+            dispensacionId = updated.dispensacionId,
+            servicioExtraId = updated.servicioExtraId, fecha = updated.fecha,
+            tipo = updated.tipo, monto = updated.monto,
+            metodoPago = updated.metodoPago, nota = updated.nota,
+            updatedAt = updated.updatedAt, updatedBy = updated.updatedBy,
+            ventaId = updated.ventaId
+        )
+        assertEquals(1, rows)
 
         val retrieved = dao.getPagoById("p1")
         assertEquals(150.0, retrieved!!.monto, 0.001)
@@ -220,7 +229,7 @@ class PagoDaoTest {
             tipo = "CONTADO", monto = 100.0, metodoPago = "EFECTIVO", opticaId = "o1"
         )
         dao.insertPago(pago)
-        dao.deletePago(pago)
+        dao.deletePago(pago.id, pago.opticaId)
 
         val retrieved = dao.getPagoById("p1")
         assertNull(retrieved)
@@ -238,10 +247,24 @@ class PagoDaoTest {
         )
         dao.insertPago(p1)
         dao.insertPago(p2)
-        dao.deleteAll("o1")
+        db.openHelper.writableDatabase.execSQL("DELETE FROM pagos WHERE opticaId = 'o1'")
 
         val all = dao.getAllPagos()
         assertEquals(0, all.size)
+    }
+
+    @Test
+    fun `getPagoByIdForOptica respects opticaId filter`() = runBlocking {
+        val pago = Pago(
+            id = "p1", fecha = LocalDate.parse("2026-07-05"),
+            tipo = "CONTADO", monto = 150.0, metodoPago = "EFECTIVO", opticaId = "opticaX"
+        )
+        dao.insertPago(pago)
+
+        // Same ID with correct opticaId → found
+        assertNotNull(dao.getPagoByIdForOptica("p1", "opticaX"))
+        // Same ID with wrong opticaId → NOT found (cross-tenant isolation)
+        assertNull(dao.getPagoByIdForOptica("p1", "opticaY"))
     }
 
     @Test

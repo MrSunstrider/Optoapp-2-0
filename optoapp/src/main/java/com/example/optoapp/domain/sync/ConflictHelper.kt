@@ -1,6 +1,6 @@
 package com.example.optoapp.domain.sync
 
-import android.util.Log
+import com.example.optoapp.util.AppLogger
 import androidx.annotation.VisibleForTesting
 import com.example.optoapp.data.ConflictDao
 import com.example.optoapp.data.MonturaMovimiento
@@ -43,7 +43,7 @@ open class ConflictHelper @Inject constructor(
             val local = parseInstant(localTs)
             val remote = parseInstant(remoteTs)
             if (local == null || remote == null) {
-                Log.w(TAG, "No se pudieron parsear timestamps, fallback a string comparison: local=$localTs, remote=$remoteTs")
+                AppLogger.w(TAG, "No se pudieron parsear timestamps, fallback a string comparison: local=$localTs, remote=$remoteTs")
                 return localTs >= remoteTs
             }
             return local >= remote
@@ -142,13 +142,13 @@ open class ConflictHelper @Inject constructor(
                 safe.add(entity)
                 conflictDao.resolveConflict(entity.id, opticaId)
             } else {
-                Log.w(TAG, "Conflicto en $entityType/${entity.id}: local=${entity.updatedAt} < remoto=$remoteUpdatedAt")
+                AppLogger.w(TAG, "Conflicto en $entityType/${entity.id}: local=${entity.updatedAt} < remoto=$remoteUpdatedAt")
                 // FR-08: Capture full-entity snapshots at conflict detection time
                 val localDataJson = entity.localData.ifBlank { entity.updatedAt ?: "" }
                 val remoteDataJson = try {
                     fetchRemoteRowJson(tableName, opticaId, entity.id)
                 } catch (e: Exception) {
-                    Log.e(TAG, "Error capturing remote snapshot for ${entity.id}: ${e.message}")
+                    AppLogger.e(TAG, "Error capturing remote snapshot for ${entity.id}: ${e.message}")
                     "{}"
                 }
                 conflictDao.upsertConflict(
@@ -167,7 +167,7 @@ open class ConflictHelper @Inject constructor(
 
         val conflictedCount = localEntities.size - safe.size
         if (conflictedCount > 0) {
-            Log.w(TAG, "$conflictedCount entidades $entityType en conflicto, se omiten del upload")
+            AppLogger.w(TAG, "$conflictedCount entidades $entityType en conflicto, se omiten del upload")
         }
         return safe
     }
@@ -189,7 +189,7 @@ open class ConflictHelper @Inject constructor(
             val rows = selectRemoteRows(tableName, opticaId, ids)
             rows.mapNotNull { row -> row.updatedAt?.let { ts -> row.id to ts } }.toMap()
         } catch (e: Exception) {
-            Log.e(TAG, "Error fetching remote timestamps from $tableName: ${e.message}")
+            AppLogger.e(TAG, "Error fetching remote timestamps from $tableName: ${e.message}")
             emptyMap()
         }
     }
@@ -240,7 +240,7 @@ open class ConflictHelper @Inject constructor(
             val rawData = result.data
             if (rawData.isBlank() || rawData == "[]") "{}" else rawData
         } catch (e: Exception) {
-            Log.e(TAG, "Error fetching remote row from $tableName/$entityId: ${e.message}")
+            AppLogger.e(TAG, "Error fetching remote row from $tableName/$entityId: ${e.message}")
             "{}"
         }
     }
@@ -260,14 +260,14 @@ open class ConflictHelper @Inject constructor(
         val remoteMovimientos = try {
             fetchRemoteMovimientos(opticaId)
         } catch (e: Exception) {
-            Log.e(TAG, "Error fetching remote movimientos for conflict detection: ${e.message}")
+            AppLogger.e(TAG, "Error fetching remote movimientos for conflict detection: ${e.message}")
             emptyList()
         }
 
         val (safeIds, conflictedIds) = detectConflictMovimientos(localMovimientos, remoteMovimientos)
 
         for (id in conflictedIds) {
-            Log.w(TAG, "Conflicto en movimiento $id: stockNuevo difiere del remoto")
+            AppLogger.w(TAG, "Conflicto en movimiento $id: stockNuevo difiere del remoto")
             conflictDao.upsertConflict(
                 entityId = id,
                 opticaId = opticaId,
@@ -280,7 +280,7 @@ open class ConflictHelper @Inject constructor(
 
         val conflictedCount = conflictedIds.size
         if (conflictedCount > 0) {
-            Log.w(TAG, "$conflictedCount movimientos en conflicto, se omiten del upload")
+            AppLogger.w(TAG, "$conflictedCount movimientos en conflicto, se omiten del upload")
         }
 
         return safeIds

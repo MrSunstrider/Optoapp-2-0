@@ -28,6 +28,4 @@ interface ResumenDiarioDao {
     @Upsert
     suspend fun upsert(resumen: ResumenDiarioEntity)
 
-    @Query("DELETE FROM resumen_diario WHERE opticaId = :opticaId")
-    suspend fun deleteAll(opticaId: String)
 }

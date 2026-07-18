@@ -154,7 +154,7 @@ fun RecoveryScreen(
                             value = email,
                             onValueChange = { email = it.trim() },
                             label = { Text("Correo electrónico") },
-                            leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
+                            leadingIcon = { Icon(Icons.Default.Email, contentDescription = "Correo") },
                             keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
                                 keyboardType = KeyboardType.Email,
                                 imeAction = androidx.compose.ui.text.input.ImeAction.Done

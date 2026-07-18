@@ -3,6 +3,7 @@ package com.example.optoapp.util
 import com.example.optoapp.data.MonturaMovimiento
 import com.example.optoapp.data.Resource
 import com.example.optoapp.data.montura.MonturaInventoryCoordinator
+import kotlin.math.abs
 import java.time.LocalDate
 import java.util.UUID
 import javax.inject.Inject
@@ -101,7 +102,7 @@ class DispensacionStockHelper @Inject constructor(
                 monturaId = monturaId,
                 fecha = LocalDate.now(),
                 tipo = tipo,
-                cantidad = delta.coerceAtLeast(0),
+                cantidad = abs(delta),  // Always positive, representing units moved
                 stockPrevio = montura.stockActual,
                 stockNuevo = montura.stockActual + delta,
                 referenciaId = referenciaId,

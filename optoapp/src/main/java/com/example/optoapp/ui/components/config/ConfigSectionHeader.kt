@@ -26,7 +26,7 @@ fun SectionHeader(text: String, icon: ImageVector? = null) {
         if (icon != null) {
             Icon(
                 icon,
-                contentDescription = null,
+                contentDescription = "Seccion",
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(16.dp)
             )

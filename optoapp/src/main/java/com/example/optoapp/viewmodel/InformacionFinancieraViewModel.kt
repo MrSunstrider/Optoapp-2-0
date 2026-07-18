@@ -117,42 +117,45 @@ class InformacionFinancieraViewModel @Inject constructor(
     }
 
     fun save(onComplete: () -> Unit) {
+        if (_uiState.value.isLoading) return
         viewModelScope.launch {
-            val s = _uiState.value
-            val opticaId = sessionManager.opticaId.first()
-            val dispId = s.dispensacionId
+            _uiState.update { it.copy(isLoading = true, error = null) }
+            try {
+                val s = _uiState.value
+                val opticaId = sessionManager.opticaId.first()
+                val dispId = s.dispensacionId
 
-            val montoTotal = s.montoTotal.toDoubleOrNull() ?: 0.0
+                val montoTotal = s.montoTotal.toDoubleOrNull() ?: 0.0
 
-            _uiState.update { it.copy(error = null, isLoading = true) }
+                repository.withTransaction {
+                    repository.actualizarMontoTotal(dispId, montoTotal, opticaId)
+                    repository.actualizarEstado(dispId, s.estadoEntrega, s.fechaEntrega, opticaId)
 
-            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-            repository.runInTransaction {
-                kotlinx.coroutines.runBlocking {
-                repository.actualizarMontoTotal(dispId, montoTotal, opticaId)
-                repository.actualizarEstado(dispId, s.estadoEntrega, s.fechaEntrega, opticaId)
+                    s.pagos.forEach { pago ->
+                        val pagoToSave = pago.copy(dispensacionId = dispId, opticaId = opticaId, ventaId = "v_disp_$dispId")
+                        if (pago.id in initialPagoIds) {
+                            repository.editarPago(pagoToSave)
+                        } else {
+                            repository.agregarPago(pagoToSave)
+                        }
+                    }
 
-                s.pagos.forEach { pago ->
-                    val pagoToSave = pago.copy(dispensacionId = dispId, opticaId = opticaId, ventaId = "v_disp_$dispId")
-                    if (pago.id in initialPagoIds) {
-                        repository.editarPago(pagoToSave)
-                    } else {
-                        repository.agregarPago(pagoToSave)
+                    s.pagosToDelete.forEach { pago ->
+                        repository.eliminarPago(pago, opticaId)
                     }
                 }
 
-                s.pagosToDelete.forEach { pago ->
-                    repository.eliminarPago(pago, opticaId)
-                }
+                postSaveSyncScheduler.scheduleFinanzasSync(opticaId)
 
+                _uiState.update { it.copy(isLoading = false, pagosToDelete = emptyList(), error = null) }
+                onComplete()
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(isLoading = false, error = "Error al guardar: ${e.localizedMessage ?: "Error desconocido"}")
                 }
             }
-            }
-
-            postSaveSyncScheduler.scheduleFinanzasSync(opticaId)
-
-            _uiState.update { it.copy(isLoading = false, pagosToDelete = emptyList(), error = null) }
-            onComplete()
         }
     }
 }

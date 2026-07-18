@@ -28,10 +28,15 @@ class SubscriptionViewModelTest {
     }
 
     @Test
-    fun `canAddPaciente returns true when FREE has no limit`() {
+    fun `canAddPaciente returns true when count within FREE limit`() {
         assertTrue(canAddPaciente(SubscriptionTier.FREE, 20) { maxPacientes(it) })
-        assertTrue(canAddPaciente(SubscriptionTier.FREE, 100) { maxPacientes(it) })
-        assertTrue(canAddPaciente(SubscriptionTier.FREE, 9999) { maxPacientes(it) })
+        assertTrue(canAddPaciente(SubscriptionTier.FREE, 49) { maxPacientes(it) })
+    }
+
+    @Test
+    fun `canAddPaciente returns false when count reaches FREE limit`() {
+        assertFalse(canAddPaciente(SubscriptionTier.FREE, 50) { maxPacientes(it) })
+        assertFalse(canAddPaciente(SubscriptionTier.FREE, 100) { maxPacientes(it) })
     }
 
     @Test

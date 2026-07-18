@@ -94,11 +94,11 @@ class RegaloDispensacionViewModelTest {
     }
 
     @Test
-    fun `removeRegaloAndRestoreStock deletes regalo by dispensacion ID`() = runTest {
+    fun `removeRegaloAndRestoreStock deletes regalo by ID`() = runTest {
         viewModel.removeRegaloAndRestoreStock(testRegalo, opticaId)
         testDispatcher.scheduler.advanceUntilIdle()
 
-        coVerify { repository.deleteRegalosByDispensacionId(dispId) }
+        coVerify { repository.deleteRegaloById(testRegalo.id) }
     }
 
     @Test

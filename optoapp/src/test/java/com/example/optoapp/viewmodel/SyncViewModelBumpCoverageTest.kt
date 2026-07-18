@@ -34,6 +34,7 @@ import com.example.optoapp.domain.SyncOrdenesCompraUseCase
 import com.example.optoapp.domain.SyncInventoryKpisUseCase
 import com.example.optoapp.domain.SyncInventarioFisicoUseCase
 import com.example.optoapp.domain.observer.TableObserver
+import com.example.optoapp.domain.sync.SyncOrchestrator
 import com.example.optoapp.subscription.SubscriptionManager
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import com.example.optoapp.sync.SyncGate
@@ -182,7 +183,8 @@ class SyncViewModelBumpCoverageTest {
             syncEntityStateDao = syncEntityStateDao,
             supabaseObserver = supabaseObserver,
             bgErrorCollector = bgErrorCollector,
-            postSaveSyncScheduler = postSaveSyncScheduler
+            postSaveSyncScheduler = postSaveSyncScheduler,
+            syncOrchestrator = mockk(relaxed = true)
         )
     }
 

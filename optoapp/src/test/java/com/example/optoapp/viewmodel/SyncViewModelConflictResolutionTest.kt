@@ -31,6 +31,7 @@ import com.example.optoapp.domain.ProveedoresSyncResult
 import com.example.optoapp.domain.OrdenesCompraSyncResult
 import com.example.optoapp.domain.InventarioFisicoSyncResult
 import com.example.optoapp.domain.observer.TableObserver
+import com.example.optoapp.domain.sync.SyncOrchestrator
 import com.example.optoapp.subscription.SubscriptionManager
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import com.example.optoapp.sync.SyncGate
@@ -179,7 +180,8 @@ class SyncViewModelConflictResolutionTest {
             syncEntityStateDao = syncEntityStateDao,
             supabaseObserver = supabaseObserver,
             bgErrorCollector = bgErrorCollector,
-            postSaveSyncScheduler = postSaveSyncScheduler
+            postSaveSyncScheduler = postSaveSyncScheduler,
+            syncOrchestrator = mockk(relaxed = true)
         )
     }
 

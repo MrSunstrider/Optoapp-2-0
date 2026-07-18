@@ -87,7 +87,7 @@ fun SinOpticaScreen(
                         .fillMaxWidth()
                         .height(72.dp)
                 ) {
-                    Icon(Icons.Default.Business, contentDescription = null)
+                    Icon(Icons.Default.Business, contentDescription = "Empresa")
                     Spacer(Modifier.width(12.dp))
                     Column(horizontalAlignment = Alignment.Start) {
                         Text("Soy dueño / administrador", fontWeight = FontWeight.SemiBold)
@@ -101,7 +101,7 @@ fun SinOpticaScreen(
                         .fillMaxWidth()
                         .height(72.dp)
                 ) {
-                    Icon(Icons.Default.Person, contentDescription = null)
+                    Icon(Icons.Default.Person, contentDescription = "Persona")
                     Spacer(Modifier.width(12.dp))
                     Column(horizontalAlignment = Alignment.Start) {
                         Text("Soy empleado", fontWeight = FontWeight.SemiBold)

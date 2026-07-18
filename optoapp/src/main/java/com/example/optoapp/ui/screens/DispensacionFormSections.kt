@@ -199,10 +199,10 @@ fun FinancieraInfoSection(
                                     }
                                 )
                             }
-                            IconButton(onClick = { showEditDialog = true }, modifier = Modifier.size(36.dp)) {
+                            IconButton(onClick = { showEditDialog = true }, modifier = Modifier.size(48.dp)) {
                                 Icon(Icons.Default.Edit, contentDescription = "Editar", tint = MaterialTheme.colorScheme.primary)
                             }
-                            IconButton(onClick = { onRemovePago(pago) }, modifier = Modifier.size(36.dp)) {
+                            IconButton(onClick = { onRemovePago(pago) }, modifier = Modifier.size(48.dp)) {
                                 Icon(Icons.Default.Delete, contentDescription = "Borrar", tint = MaterialTheme.colorScheme.error)
                             }
                         }
@@ -231,7 +231,7 @@ fun FinancieraInfoSection(
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary)
             ) {
-                Icon(Icons.Default.Add, contentDescription = null)
+                Icon(Icons.Default.Add, contentDescription = "Agregar")
                 Spacer(Modifier.width(8.dp))
                 Text("Agregar Abono")
             }
@@ -312,7 +312,7 @@ fun RegalosSection(
                             Text(regalo.descripcion.ifBlank { "Producto sin nombre" },
                                 fontWeight = FontWeight.Bold,
                                 modifier = Modifier.weight(1f))
-                            IconButton(onClick = { onRemoveRegalo(index) }, modifier = Modifier.size(36.dp)) {
+                            IconButton(onClick = { onRemoveRegalo(index) }, modifier = Modifier.size(48.dp)) {
                                 Icon(Icons.Default.Delete, contentDescription = "Eliminar regalo",
                                     tint = MaterialTheme.colorScheme.error)
                             }
@@ -339,7 +339,7 @@ fun RegalosSection(
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary)
             ) {
-                Icon(Icons.Default.Add, contentDescription = null)
+                Icon(Icons.Default.Add, contentDescription = "Agregar")
                 Spacer(Modifier.width(8.dp))
                 Text("Agregar Regalo")
             }

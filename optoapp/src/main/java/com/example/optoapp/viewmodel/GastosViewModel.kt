@@ -14,20 +14,21 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import java.math.BigDecimal
 import java.time.LocalDate
 import java.util.UUID
 import javax.inject.Inject
 
 data class GastosUiState(
     val gastos: List<GastoOperativoEntity> = emptyList(),
-    val showDialog: Boolean = false,
+    val isDialogVisible: Boolean = false,
     val editingGasto: GastoOperativoEntity? = null,
     val categoria: String = "alquiler",
     val descripcion: String = "",
     val monto: String = "",
     val fecha: LocalDate = DateUtils.today(),
     val nota: String = "",
-    val esRecurrente: Boolean = false,
+    val isRecurring: Boolean = false,
     val isLoading: Boolean = false,
     val error: String? = null
 )
@@ -79,7 +80,7 @@ class GastosViewModel @Inject constructor(
         val hoy = DateUtils.today()
         val mesInicio = hoy.withDayOfMonth(1)
         val nuevos = autoGenerarRecurrentes(
-            templates = gastos.filter { it.esRecurrente },
+            templates = gastos.filter { it.isRecurring },
             existentes = gastos,
             mesActual = hoy
         )
@@ -102,7 +103,7 @@ class GastosViewModel @Inject constructor(
             val mesInicio = mesActual.withDayOfMonth(1)
             val mesFin = mesActual.withDayOfMonth(mesActual.lengthOfMonth())
             return templates
-                .filter { it.esRecurrente }
+                .filter { it.isRecurring }
                 .filter { template ->
                     existentes.none { existente ->
                         existente.categoria == template.categoria &&
@@ -114,7 +115,7 @@ class GastosViewModel @Inject constructor(
                     template.copy(
                         id = UUID.randomUUID().toString(),
                         fecha = mesInicio,
-                        esRecurrente = false,
+                        isRecurring = false,
                         nota = "Auto-generado de ${template.categoria}"
                     )
                 }
@@ -124,7 +125,7 @@ class GastosViewModel @Inject constructor(
     val categorias = CATEGORIAS
 
     fun showNewGasto() {
-        _uiState.value = GastosUiState(showDialog = true)
+            _uiState.value = GastosUiState(isDialogVisible = true)
     }
 
     fun refreshGastos() {
@@ -140,7 +141,7 @@ class GastosViewModel @Inject constructor(
 
     fun editGasto(gasto: GastoOperativoEntity) {
         _uiState.value = GastosUiState(
-            showDialog = true,
+            isDialogVisible = true,
             editingGasto = gasto,
             categoria = gasto.categoria,
             descripcion = gasto.descripcion ?: "",
@@ -159,16 +160,18 @@ class GastosViewModel @Inject constructor(
     fun updateMonto(m: String) { _uiState.update { it.copy(monto = m) } }
     fun updateFecha(f: LocalDate) { _uiState.update { it.copy(fecha = f) } }
     fun updateNota(n: String) { _uiState.update { it.copy(nota = n) } }
-    fun toggleRecurrente() { _uiState.update { it.copy(esRecurrente = !it.esRecurrente) } }
+    fun toggleRecurrente() { _uiState.update { it.copy(isRecurring = !it.isRecurring) } }
 
     fun save() {
+        if (_uiState.value.isLoading) return
         val s = _uiState.value
-        val monto = s.monto.toDoubleOrNull()
-        if (monto == null || monto <= 0) {
+        val monto = s.monto.toBigDecimalOrNull()
+        if (monto == null || monto <= BigDecimal.ZERO) {
             _uiState.update { it.copy(error = "Ingresa un monto válido") }
             return
         }
         viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, error = null) }
             try {
                 val opticaId = sessionManager.opticaId.first()
                 val gasto = GastoOperativoEntity(
@@ -180,26 +183,30 @@ class GastosViewModel @Inject constructor(
                     fecha = s.fecha,
                     fechaProgramada = null,
                     nota = s.nota.ifBlank { null },
-                    esRecurrente = s.esRecurrente
+                    isRecurring = s.isRecurring
                 )
                 repository.upsertGastoOperativo(gasto)
                 postSaveSyncScheduler.scheduleFinanzasSync(opticaId)
-                _uiState.value = GastosUiState()
+                _uiState.value = GastosUiState(isLoading = false)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                _uiState.update { it.copy(error = "Error al guardar") }
+                _uiState.update { it.copy(error = "Error al guardar", isLoading = false) }
             }
         }
     }
 
     fun delete(gasto: GastoOperativoEntity) {
+        if (_uiState.value.isLoading) return
         viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, error = null) }
             try {
                 repository.deleteGastoOperativo(gasto)
                 postSaveSyncScheduler.scheduleFinanzasSync(gasto.opticaId)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                _uiState.update { it.copy(error = "Error al eliminar el gasto") }
+                _uiState.update { it.copy(error = "Error al eliminar el gasto", isLoading = false) }
             }
         }
     }

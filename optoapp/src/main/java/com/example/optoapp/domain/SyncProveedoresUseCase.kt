@@ -1,6 +1,6 @@
 package com.example.optoapp.domain
 
-import android.util.Log
+import com.example.optoapp.util.AppLogger
 import com.example.optoapp.data.CategoriaMontura
 import com.example.optoapp.data.ConflictDao
 import com.example.optoapp.data.Proveedor
@@ -41,7 +41,7 @@ open class SyncProveedoresUseCase @Inject constructor(
         skipUpload: Boolean = false
     ): Resource<ProveedoresSyncResult> {
         return try {
-            Log.d(TAG, "Proveedores: inicio (opticaId=$opticaId, download=$downloadAfterUpload, skipUpload=$skipUpload)")
+            AppLogger.d(TAG, "Proveedores: inicio (opticaId=$opticaId, download=$downloadAfterUpload, skipUpload=$skipUpload)")
             val provUp = if (skipUpload) 0 else uploadProveedores(opticaId)
             val catUp = if (skipUpload) 0 else uploadCategorias(opticaId)
             val provDown: Int
@@ -49,11 +49,11 @@ open class SyncProveedoresUseCase @Inject constructor(
             if (downloadAfterUpload) {
                 provDown = downloadProveedores(opticaId)
                 catDown = downloadCategorias(opticaId)
-                Log.d(TAG, "Proveedores: fin OK (proveedores=$provDown categorias=$catDown)")
+                AppLogger.d(TAG, "Proveedores: fin OK (proveedores=$provDown categorias=$catDown)")
             } else {
                 provDown = 0
                 catDown = 0
-                Log.d(TAG, "Proveedores: fin upload-only OK")
+                AppLogger.d(TAG, "Proveedores: fin upload-only OK")
             }
             Resource.Success(
                 ProveedoresSyncResult(
@@ -66,10 +66,10 @@ open class SyncProveedoresUseCase @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: IOException) {
-            Log.e(TAG, "Error en red sincronizando proveedores: ${e.message}", e)
+            AppLogger.e(TAG, "Error en red sincronizando proveedores: ${e.message}", e)
             Resource.Error("Error sincronizando proveedores: ${e.localizedMessage}")
         } catch (e: Exception) {
-            Log.e(TAG, "Error inesperado sincronizando proveedores: ${e.message}", e)
+            AppLogger.e(TAG, "Error inesperado sincronizando proveedores: ${e.message}", e)
             Resource.Error("Error sincronizando proveedores: ${e.localizedMessage}")
         }
     }
@@ -113,7 +113,7 @@ open class SyncProveedoresUseCase @Inject constructor(
         val conflictedIds = try {
             conflictDao.getConflictEntityIds(opticaId, "proveedor").toSet()
         } catch (e: Exception) {
-            Log.e(TAG, "Error querying conflict IDs, proceeding without guard: ${e.message}", e)
+            AppLogger.e(TAG, "Error querying conflict IDs, proceeding without guard: ${e.message}", e)
             emptySet()
         }
 
@@ -127,7 +127,7 @@ open class SyncProveedoresUseCase @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                Log.e(TAG, "Error descargando proveedor ${r.id}: ${e.message}", e)
+                AppLogger.e(TAG, "Error descargando proveedor ${r.id}: ${e.message}", e)
             }
         }
         return remotos.size
@@ -137,7 +137,7 @@ open class SyncProveedoresUseCase @Inject constructor(
         val conflictedIds = try {
             conflictDao.getConflictEntityIds(opticaId, "categoria_montura").toSet()
         } catch (e: Exception) {
-            Log.e(TAG, "Error querying conflict IDs, proceeding without guard: ${e.message}", e)
+            AppLogger.e(TAG, "Error querying conflict IDs, proceeding without guard: ${e.message}", e)
             emptySet()
         }
 
@@ -151,7 +151,7 @@ open class SyncProveedoresUseCase @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                Log.e(TAG, "Error descargando categoria ${r.id}: ${e.message}", e)
+                AppLogger.e(TAG, "Error descargando categoria ${r.id}: ${e.message}", e)
             }
         }
         return remotos.size

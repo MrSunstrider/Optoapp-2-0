@@ -32,8 +32,8 @@ data class AnalisisNegocioUiState(
     val recomendaciones: List<Recomendacion> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null,
-    val mostrarAdvertenciaEstacionalidad: Boolean = false,
-    val deudoresStale: Boolean = false,
+    val isSeasonalityWarning: Boolean = false,
+    val debtorsStale: Boolean = false,
     val feedbacksEnviados: Map<String, Boolean> = emptyMap(),
     val feedbackErrorRecId: String? = null
 )
@@ -112,7 +112,7 @@ class AnalisisNegocioViewModel @Inject constructor(
 
                     val analisis = (analisisResult as? Resource.Success)?.data
                     val deudores = (deudoresResult as? Resource.Success)?.data ?: emptyList()
-                    val deudoresStale = (deudoresResult as? Resource.Success)?.stale ?: false
+                    val debtorsStale = (deudoresResult as? Resource.Success)?.stale ?: false
 
                     val recomendacionesResult = if (analisis != null || deudores.isNotEmpty()) {
                         generarRecomendaciones(analisis, deudores, opticaId)
@@ -133,8 +133,8 @@ class AnalisisNegocioViewModel @Inject constructor(
                         recomendaciones = (recomendacionesResult as? Resource.Success)?.data ?: emptyList(),
                         isLoading = false,
                         error = errors.joinToString("; ").ifEmpty { null },
-                        mostrarAdvertenciaEstacionalidad = analisis?.esOffline == true || (analisis != null && analisis.ventasMesAnterior == 0.0),
-                        deudoresStale = deudoresStale
+                        isSeasonalityWarning = analisis?.esOffline == true || (analisis != null && analisis.ventasMesAnterior == 0.0),
+                        debtorsStale = debtorsStale
                     )
                 } catch (e: CancellationException) {
                     throw e

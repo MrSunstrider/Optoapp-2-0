@@ -78,7 +78,7 @@ fun SyncDiagnosticsCard(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Icon(sessionIcon, contentDescription = null, tint = sessionColor, modifier = Modifier.size(20.dp))
+                Icon(sessionIcon, contentDescription = "Estado sesion", tint = sessionColor, modifier = Modifier.size(20.dp))
                 Text(
                     sessionLabel,
                     fontSize = 13.sp,
@@ -112,7 +112,7 @@ fun SyncDiagnosticsCard(
                     ) {
                         Icon(
                             Icons.Filled.ErrorOutline,
-                            contentDescription = null,
+                            contentDescription = "Error",
                             tint = MaterialTheme.colorScheme.error,
                             modifier = Modifier.size(16.dp)
                         )
@@ -168,7 +168,7 @@ fun SyncDiagnosticsCard(
                         onClick = { syncDiagVm.repairSessionOpticaId() },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Icon(Icons.Filled.SyncProblem, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Filled.SyncProblem, contentDescription = "Problema sync", modifier = Modifier.size(16.dp))
                         Spacer(Modifier.width(4.dp))
                         Text(stringResource(R.string.config_sync_repair_session), fontSize = 12.sp)
                     }
@@ -181,7 +181,7 @@ fun SyncDiagnosticsCard(
                 }
                 is SessionRepairState.Success -> {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Icon(Icons.Filled.CheckCircle, contentDescription = null, tint = MaterialTheme.colorScheme.tertiary, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Filled.CheckCircle, contentDescription = "Completado", tint = MaterialTheme.colorScheme.tertiary, modifier = Modifier.size(16.dp))
                         Text(
                             s.message, fontSize = 12.sp, color = MaterialTheme.colorScheme.tertiary,
                             maxLines = 2, overflow = TextOverflow.Ellipsis
@@ -190,7 +190,7 @@ fun SyncDiagnosticsCard(
                 }
                 is SessionRepairState.Error -> {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Icon(Icons.Filled.ErrorOutline, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Filled.ErrorOutline, contentDescription = "Error", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(16.dp))
                         Text(
                             s.message, fontSize = 12.sp, color = MaterialTheme.colorScheme.error,
                             maxLines = 2, overflow = TextOverflow.Ellipsis
@@ -250,7 +250,7 @@ fun SyncDiagnosticsCard(
                     ) {
                         Icon(
                             Icons.Filled.DeleteSweep,
-                            contentDescription = null,
+                            contentDescription = "Limpiar",
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(Modifier.width(4.dp))
@@ -269,7 +269,7 @@ fun SyncDiagnosticsCard(
                     ) {
                         Icon(
                             Icons.Filled.ContentCopy,
-                            contentDescription = null,
+                            contentDescription = "Copiar",
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(Modifier.width(4.dp))
@@ -320,7 +320,7 @@ fun SyncDiagnosticsCard(
                 ) {
                     Icon(
                         Icons.Filled.DeleteSweep,
-                        contentDescription = null,
+                        contentDescription = "Limpiar",
                         modifier = Modifier.size(16.dp)
                     )
                     Spacer(Modifier.width(4.dp))
@@ -339,7 +339,7 @@ private fun SyncErrorRow(row: SyncEntityState) {
     ) {
         Icon(
             Icons.Filled.ErrorOutline,
-            contentDescription = null,
+            contentDescription = "Error",
             tint = MaterialTheme.colorScheme.error,
             modifier = Modifier.size(14.dp)
         )
@@ -370,7 +370,7 @@ private fun BackgroundErrorRow(err: BackgroundError) {
     ) {
         Icon(
             Icons.Filled.Warning,
-            contentDescription = null,
+            contentDescription = "Advertencia",
             tint = MaterialTheme.colorScheme.error,
             modifier = Modifier.size(14.dp)
         )

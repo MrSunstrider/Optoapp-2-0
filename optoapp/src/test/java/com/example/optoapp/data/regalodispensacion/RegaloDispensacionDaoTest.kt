@@ -94,7 +94,7 @@ class RegaloDispensacionDaoTest {
         dao.insert(createTestRegalo("r2", "d1"))
         dao.insert(createTestRegalo("r3", "d2"))
 
-        dao.deleteByDispensacionId("d1")
+        dao.deleteByDispensacionId("d1", "optica1")
 
         val result = dao.getByDispensacionId("d1")
         assertTrue(result.isEmpty())

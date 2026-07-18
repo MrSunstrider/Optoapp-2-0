@@ -20,6 +20,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.example.optoapp.viewmodel.AuthViewModel
 import com.example.optoapp.viewmodel.OpticaHeaderViewModel
 import com.example.optoapp.ui.screens.ordenescompra.OrdenesCompraScreen
+import com.example.optoapp.ui.components.OfflineBanner
 import kotlinx.coroutines.launch
 
 /** CompositionLocal para que cualquier pantalla pueda mostrar Snackbar sin acoplamiento. */
@@ -54,6 +55,7 @@ fun MainDrawerScreen(
 
     val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
     val snackbarHostState = remember { SnackbarHostState() }
+    val isOnline by syncViewModel.isOnline.collectAsState()
     val snackbarScope = rememberCoroutineScope()
 
     CompositionLocalProvider(LocalSnackbarHostState provides snackbarHostState) {
@@ -124,6 +126,8 @@ fun MainDrawerScreen(
                     )
                 }
             }
+            OfflineBanner(isOnline = isOnline)
+
             Box(modifier = Modifier.weight(1f)) {
                 NavHost(navController = navController, startDestination = "operacion_hoy", modifier = Modifier.fillMaxSize()) {
                 composable("pacientes") { PacientesListScreen(navController, drawerState) }

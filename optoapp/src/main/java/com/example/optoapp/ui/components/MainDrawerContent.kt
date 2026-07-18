@@ -114,7 +114,7 @@ fun MainDrawerContent(
                         popUpTo("pacientes") { inclusive = true }
                     }
                 },
-                icon = { Icon(Icons.Default.Person, contentDescription = null) },
+                icon = { Icon(Icons.Default.Person, contentDescription = "Pacientes") },
                 modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding).testTag(TestTags.NAV_DRAWER_MENU)
             )
             NavigationDrawerItem(
@@ -124,7 +124,7 @@ fun MainDrawerContent(
                     scope.launch { drawerState.close() }
                     navController.navigate("servicios_extra")
                 },
-                icon = { Icon(Icons.Default.AddShoppingCart, contentDescription = null) },
+                icon = { Icon(Icons.Default.AddShoppingCart, contentDescription = "Servicios Varios") },
                 modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
             )
             if (showOperacionHoy) {
@@ -135,7 +135,7 @@ fun MainDrawerContent(
                         scope.launch { drawerState.close() }
                         navController.navigate("operacion_hoy")
                     },
-                    icon = { Icon(Icons.Default.Today, contentDescription = null) },
+                    icon = { Icon(Icons.Default.Today, contentDescription = "Dashboard") },
                     modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                 )
             }
@@ -153,7 +153,7 @@ fun MainDrawerContent(
                     scope.launch { drawerState.close() }
                     navController.navigate("agenda")
                 },
-                icon = { Icon(Icons.Default.CalendarMonth, contentDescription = null) },
+                icon = { Icon(Icons.Default.CalendarMonth, contentDescription = "Agenda") },
                 modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding).testTag(TestTags.NAV_BOTTOM_AGENDA)
             )
             NavigationDrawerItem(
@@ -163,7 +163,7 @@ fun MainDrawerContent(
                     scope.launch { drawerState.close() }
                     navController.navigate("monturas")
                 },
-                icon = { Icon(Icons.Default.Inventory2, contentDescription = null) },
+                icon = { Icon(Icons.Default.Inventory2, contentDescription = "Inventario") },
                 modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
             )
             NavigationDrawerItem(
@@ -173,7 +173,7 @@ fun MainDrawerContent(
                     scope.launch { drawerState.close() }
                     navController.navigate("ordenes_compra")
                 },
-                icon = { Icon(Icons.Default.Receipt, contentDescription = null) },
+                icon = { Icon(Icons.Default.Receipt, contentDescription = "Órdenes de Compra") },
                 modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
             )
             NavigationDrawerItem(
@@ -183,7 +183,7 @@ fun MainDrawerContent(
                     scope.launch { drawerState.close() }
                     navController.navigate("inventario_fisico")
                 },
-                icon = { Icon(Icons.Default.Inventory, contentDescription = null) },
+                icon = { Icon(Icons.Default.Inventory, contentDescription = "Inventario Físico") },
                 modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
             )
 
@@ -202,7 +202,7 @@ fun MainDrawerContent(
                             scope.launch { drawerState.close() }
                             navController.navigate("cierre_caja")
                         },
-                        icon = { Icon(Icons.Default.AccountBalanceWallet, contentDescription = null) },
+                        icon = { Icon(Icons.Default.AccountBalanceWallet, contentDescription = "Cierre de Caja") },
                         modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                     )
                 }
@@ -214,7 +214,7 @@ fun MainDrawerContent(
                             scope.launch { drawerState.close() }
                             navController.navigate("estadisticas_bi")
                         },
-                        icon = { @Suppress("DEPRECATION") Icon(Icons.Default.TrendingUp, contentDescription = null) },
+                        icon = { @Suppress("DEPRECATION") Icon(Icons.Default.TrendingUp, contentDescription = "Análisis Financiero") },
                         modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                     )
                     NavigationDrawerItem(
@@ -224,7 +224,7 @@ fun MainDrawerContent(
                             scope.launch { drawerState.close() }
                             navController.navigate("reportes")
                         },
-                        icon = { Icon(Icons.Default.DateRange, contentDescription = null) },
+                        icon = { Icon(Icons.Default.DateRange, contentDescription = "Reportes") },
                         modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                     )
                 }
@@ -243,7 +243,7 @@ fun MainDrawerContent(
                     scope.launch { drawerState.close() }
                     navController.navigate("configuracion")
                 },
-                icon = { Icon(Icons.Default.Settings, contentDescription = null) },
+                icon = { Icon(Icons.Default.Settings, contentDescription = "Configuración") },
                 modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding).testTag(TestTags.NAV_DRAWER_CONFIGURACION)
             )
 
@@ -287,7 +287,7 @@ fun MainDrawerContent(
                     },
                     title = {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Error, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+                            Icon(Icons.Default.Error, contentDescription = "Error", tint = MaterialTheme.colorScheme.error)
                             Spacer(modifier = Modifier.width(8.dp))
                             Text("Error de Sincronización")
                         }
@@ -317,7 +317,7 @@ fun MainDrawerContent(
                     if (syncState is SyncState.Loading) {
                         CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
                     } else {
-                        Icon(Icons.Default.CloudSync, contentDescription = null)
+                        Icon(Icons.Default.CloudSync, contentDescription = "Sincronizar")
                     }
                 },
                 modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)

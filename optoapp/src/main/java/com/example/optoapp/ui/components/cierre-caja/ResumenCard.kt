@@ -12,7 +12,7 @@ import androidx.compose.ui.unit.sp
 import java.util.Locale
 
 @Composable
-fun ResumenCard(label: String, monto: Double, modifier: Modifier, color: Color) {
+fun ResumenCard(label: String, monto: Double, modifier: Modifier = Modifier, color: Color) {
     Card(
         modifier = modifier,
         colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.1f))
@@ -20,7 +20,7 @@ fun ResumenCard(label: String, monto: Double, modifier: Modifier, color: Color) 
         Column(modifier = Modifier.padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Text(label, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = color)
             Text(
-                "s/. ${String.format(Locale.getDefault(), "%.0f", monto)}",
+                "s/. ${String.format(Locale.getDefault(), "%,.2f", monto)}",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.ExtraBold,
                 color = color

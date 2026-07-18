@@ -15,3 +15,9 @@ fun Double.fmt(): String {
         String.format(Locale.getDefault(), "%,.2f", this)
     }
 }
+
+/** Formats a [Double] as currency with "S/ " prefix and two decimals. */
+fun Double.formatAsCurrency(): String = "S/ %.2f".format(this)
+
+/** Formats an [Int] with locale-aware thousand separators (e.g. "1,234"). */
+fun Int.formatAsInteger(): String = "%,d".format(this)

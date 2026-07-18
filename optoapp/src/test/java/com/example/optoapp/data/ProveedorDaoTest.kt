@@ -96,8 +96,12 @@ class ProveedorDaoTest {
     fun update_modifiesExistingProveedor() = runBlocking {
         val dao = db.proveedorDao()
         dao.insert(Proveedor(id = "p1", nombre = "Old", ruc = "111", opticaId = "o1"))
-        dao.update(Proveedor(id = "p1", nombre = "Updated", ruc = "111",
-            telefono = "123", opticaId = "o1", activo = false))
+        val rows = dao.update(
+            id = "p1", opticaId = "o1", nombre = "Updated", ruc = "111",
+            telefono = "123", email = "", direccion = "",
+            contacto = "", activo = false, updatedAt = null, updatedBy = null
+        )
+        assertEquals(1, rows)
 
         val retrieved = dao.getById("p1")
         assertEquals("Updated", retrieved!!.nombre)
@@ -120,6 +124,30 @@ class ProveedorDaoTest {
     }
 
     @Test
+    fun getActivosByOptica_respectsCrossTenantIsolation() = runBlocking {
+        val dao = db.proveedorDao()
+        dao.insert(Proveedor(id = "p1", nombre = "Optica A", ruc = "111", opticaId = "o1"))
+        dao.insert(Proveedor(id = "p2", nombre = "Optica B", ruc = "222", opticaId = "o2"))
+
+        val o1List = dao.getActivosByOptica("o1").first()
+        assertEquals(1, o1List.size)
+        assertEquals("Optica A", o1List[0].nombre)
+
+        val o2List = dao.getActivosByOptica("o2").first()
+        assertEquals(1, o2List.size)
+        assertEquals("Optica B", o2List[0].nombre)
+    }
+
+    @Test
+    fun getListByOptica_returnsEmpty_forUnrelatedOptica() = runBlocking {
+        val dao = db.proveedorDao()
+        dao.insert(Proveedor(id = "p1", nombre = "Only One", ruc = "111", opticaId = "o1"))
+
+        val result = dao.getListByOptica("o_does_not_exist")
+        assertTrue("Expected empty list for unrelated optica", result.isEmpty())
+    }
+
+    @Test
     fun softDelete_setsActivoFalseAndExcludesFromActivos() = runBlocking {
         val dao = db.proveedorDao()
         dao.insert(Proveedor(id = "p1", nombre = "Active Corp", ruc = "111", opticaId = "o1"))
@@ -129,7 +157,12 @@ class ProveedorDaoTest {
         assertEquals(2, before.size)
 
         val p2 = dao.getById("p2")!!
-        dao.update(p2.copy(activo = false))
+        dao.update(
+            id = p2.id, opticaId = p2.opticaId, nombre = p2.nombre,
+            ruc = p2.ruc, telefono = p2.telefono, email = p2.email,
+            direccion = p2.direccion, contacto = p2.contacto,
+            activo = false, updatedAt = p2.updatedAt, updatedBy = p2.updatedBy
+        )
 
         val after = dao.getActivosByOptica("o1").first()
         assertEquals(1, after.size)

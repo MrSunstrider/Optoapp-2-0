@@ -46,7 +46,7 @@ class RegaloDispensacionViewModel @Inject constructor(
         opticaId: String
     ) {
         viewModelScope.launch {
-            repository.deleteRegalosByDispensacionId(regalo.dispensacionId)
+            repository.deleteRegaloById(regalo.id)
             if (regalo.productoId.isNotBlank()) {
                 stockHelper.adjustStockAndRegistrarMovimiento(
                     regalo.productoId, opticaId, regalo.cantidad,

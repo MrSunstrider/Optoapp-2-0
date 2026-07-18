@@ -1,6 +1,6 @@
 package com.example.optoapp.domain
 
-import android.util.Log
+import com.example.optoapp.util.AppLogger
 import com.example.optoapp.data.ConflictDao
 import com.example.optoapp.data.EvaluacionClinica
 import com.example.optoapp.data.OptoRepository
@@ -42,18 +42,18 @@ open class SyncHistorialUseCase @Inject constructor(
         skipUpload: Boolean = false
     ): Resource<HistorialSyncResult> {
         return try {
-            Log.d(TAG, "Evaluaciones: inicio sync (opticaId=$opticaId, download=$downloadAfterUpload, skipUpload=$skipUpload)")
+            AppLogger.d(TAG, "Evaluaciones: inicio sync (opticaId=$opticaId, download=$downloadAfterUpload, skipUpload=$skipUpload)")
             val uploaded = if (skipUpload) 0 else uploadEvaluaciones(opticaId)
             val downloaded = if (downloadAfterUpload) downloadEvaluaciones(opticaId) else 0
-            Log.d(TAG, "Evaluaciones: fin OK (subidas=$uploaded, bajadas=$downloaded)")
+            AppLogger.d(TAG, "Evaluaciones: fin OK (subidas=$uploaded, bajadas=$downloaded)")
             Resource.Success(HistorialSyncResult(uploaded, downloaded))
         } catch (e: CancellationException) {
             throw e
         } catch (e: IOException) {
-            Log.e(TAG, "Error en red sincronizando evaluaciones: ${e.message}", e)
+            AppLogger.e(TAG, "Error en red sincronizando evaluaciones: ${e.message}", e)
             Resource.Error("Error sincronizando historial clínico: ${e.localizedMessage}")
         } catch (e: Exception) {
-            Log.e(TAG, "Error inesperado sincronizando evaluaciones: ${e.message}", e)
+            AppLogger.e(TAG, "Error inesperado sincronizando evaluaciones: ${e.message}", e)
             Resource.Error("Error sincronizando historial clínico: ${e.localizedMessage}")
         }
     }
@@ -74,7 +74,7 @@ open class SyncHistorialUseCase @Inject constructor(
                 }
                 .decodeList<PacienteRemoto>()
         }.onFailure { e ->
-            Log.w(TAG, "Error al consultar pacientes remotos para FK check: ${e.localizedMessage}")
+            AppLogger.w(TAG, "Error al consultar pacientes remotos para FK check: ${e.localizedMessage}")
         }.getOrDefault(emptyList())
 
         // Self-healing: FK constraint on evaluaciones.paciente_id requires the parent row to exist
@@ -87,7 +87,7 @@ open class SyncHistorialUseCase @Inject constructor(
             .filter { pid -> pid !in remotePacienteIds && pid in localPacienteIds }
 
         if (orphanPacienteIds.isNotEmpty()) {
-            Log.w(TAG, "Self-heal: ${orphanPacienteIds.size} pacientes locales no existen en remoto. Subiendo antes de evaluaciones.")
+            AppLogger.w(TAG, "Self-heal: ${orphanPacienteIds.size} pacientes locales no existen en remoto. Subiendo antes de evaluaciones.")
             val orphanPacientes = localPacientes.filter { it.id in orphanPacienteIds }
             val pacienteRows = orphanPacientes.map { p ->
                 PacienteRemoto(
@@ -114,7 +114,7 @@ open class SyncHistorialUseCase @Inject constructor(
             runCatching {
                 supabase.postgrest["pacientes"].upsert(pacienteRows)
             }.onFailure { e ->
-                Log.e(TAG, "Self-heal: error al subir pacientes huérfanos: ${e.localizedMessage}")
+                AppLogger.e(TAG, "Self-heal: error al subir pacientes huérfanos: ${e.localizedMessage}")
             }
 
             // Re-fetch to include the just-uploaded orphan patients in subsequent FK lookups
@@ -125,7 +125,7 @@ open class SyncHistorialUseCase @Inject constructor(
                     }
                     .decodeList<PacienteRemoto>()
             }.onFailure { e ->
-                Log.e(TAG, "Self-heal: error al re-consultar pacientes remotos: ${e.localizedMessage}")
+                AppLogger.e(TAG, "Self-heal: error al re-consultar pacientes remotos: ${e.localizedMessage}")
             }.getOrDefault(remotePacientes)
         }
 
@@ -158,11 +158,11 @@ open class SyncHistorialUseCase @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: IOException) {
-            Log.e(TAG, "Error en red subiendo evaluaciones: ${e.message}", e)
+            AppLogger.e(TAG, "Error en red subiendo evaluaciones: ${e.message}", e)
             syncStateTracker.markError(opticaId, "upload_evaluaciones", "batch", e.message)
             throw e
         } catch (e: Exception) {
-            Log.e(TAG, "Error inesperado subiendo evaluaciones: ${e.message}", e)
+            AppLogger.e(TAG, "Error inesperado subiendo evaluaciones: ${e.message}", e)
             syncStateTracker.markError(opticaId, "upload_evaluaciones", "batch", e.message)
             throw e
         }
@@ -171,7 +171,7 @@ open class SyncHistorialUseCase @Inject constructor(
             syncStateTracker.markSynced(opticaId, "evaluacion", ev.id)
         }
 
-        Log.d(TAG, "Subidas ${evaluaciones.size} evaluaciones a Supabase (forzando ID: $opticaId).")
+        AppLogger.d(TAG, "Subidas ${evaluaciones.size} evaluaciones a Supabase (forzando ID: $opticaId).")
         return finalRows.size
     }
 
@@ -179,7 +179,7 @@ open class SyncHistorialUseCase @Inject constructor(
         val conflictedIds = try {
             conflictDao.getConflictEntityIds(opticaId, "evaluacion").toSet()
         } catch (e: Exception) {
-            Log.e(TAG, "Error querying conflict IDs, proceeding without guard: ${e.message}", e)
+            AppLogger.e(TAG, "Error querying conflict IDs, proceeding without guard: ${e.message}", e)
             emptySet()
         }
 
@@ -202,15 +202,15 @@ open class SyncHistorialUseCase @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: IOException) {
-                Log.e(TAG, "Error en red descargando evaluación: ${e.message}", e)
+                AppLogger.e(TAG, "Error en red descargando evaluación: ${e.message}", e)
                 syncStateTracker.markError(opticaId, "evaluacion", remoto.id, e.message)
             } catch (e: Exception) {
-                Log.e(TAG, "Error inesperado descargando evaluación: ${e.message}", e)
+                AppLogger.e(TAG, "Error inesperado descargando evaluación: ${e.message}", e)
                 syncStateTracker.markError(opticaId, "evaluacion", remoto.id, e.message)
             }
         }
 
-        Log.d(TAG, "Descargadas ${remotos.size} evaluaciones desde Supabase.")
+        AppLogger.d(TAG, "Descargadas ${remotos.size} evaluaciones desde Supabase.")
         return remotos.size
     }
 }

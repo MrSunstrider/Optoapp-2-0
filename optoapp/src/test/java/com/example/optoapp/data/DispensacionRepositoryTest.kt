@@ -245,7 +245,7 @@ class DispensacionRepositoryTest {
 
         repo.insertServicio(servicio)
 
-        val all = repo.getAllServicios().first()
+        val all = repo.getAllServiciosForOptica("o1").first()
         assertEquals(1, all.size)
         assertEquals("Lentes de contacto", all[0].descripcion)
     }

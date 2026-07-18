@@ -25,8 +25,8 @@ fun DropdownField(
         readOnly = true,
         label = { Text(label) },
         trailingIcon = {
-            IconButton(onClick = { showDialog = true }, modifier = Modifier.size(36.dp)) {
-                Icon(Icons.Default.ArrowDropDown, contentDescription = null)
+            IconButton(onClick = { showDialog = true }, modifier = Modifier.size(48.dp)) {
+                Icon(Icons.Default.ArrowDropDown, contentDescription = "Desplegar")
             }
         },
         modifier = Modifier.fillMaxWidth()

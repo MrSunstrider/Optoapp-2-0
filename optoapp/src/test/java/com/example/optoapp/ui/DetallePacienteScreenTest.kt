@@ -7,6 +7,7 @@ import com.example.optoapp.viewmodel.EvaluacionViewModel
 import com.example.optoapp.viewmodel.PacienteViewModel
 import com.example.optoapp.viewmodel.ServiciosViewModel
 import org.junit.Assert.*
+import org.junit.Ignore
 import org.junit.Test
 
 /**
@@ -32,21 +33,21 @@ class DetallePacienteScreenTest {
     }
 
     @Test
+    @Ignore("Not yet implemented — requires Compose UI test infrastructure")
     fun tabs_expectedTabContent_evaluaciones() {
         // The Screen shows EvaluacionesList at selectedTab == 0
-        assertTrue(true) // structural marker — tab 0 renders list
     }
 
     @Test
+    @Ignore("Not yet implemented — requires Compose UI test infrastructure")
     fun tabs_expectedTabContent_dispensaciones() {
         // The Screen shows DispensacionesList at selectedTab == 1
-        assertTrue(true) // structural marker — tab 1 renders list
     }
 
     @Test
+    @Ignore("Not yet implemented — requires Compose UI test infrastructure")
     fun tabs_expectedTabContent_servicios() {
         // The Screen shows ServiciosExtraList at selectedTab == 2
-        assertTrue(true) // structural marker — tab 2 renders list
     }
 
     // ─── ViewModel contracts used by Screen ─────────────────────────────

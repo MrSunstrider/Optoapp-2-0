@@ -1,6 +1,6 @@
 package com.example.optoapp.domain
 
-import android.util.Log
+import com.example.optoapp.util.AppLogger
 import com.example.optoapp.data.ConflictDao
 import com.example.optoapp.data.Montura
 import com.example.optoapp.domain.sync.EntitySnapshotSerializer
@@ -42,7 +42,7 @@ open class SyncInventarioUseCase @Inject constructor(
         skipUpload: Boolean = false
     ): Resource<InventarioSyncResult> {
         return try {
-            Log.d(TAG, "Inventario: inicio (opticaId=$opticaId, download=$downloadAfterUpload, skipUpload=$skipUpload)")
+            AppLogger.d(TAG, "Inventario: inicio (opticaId=$opticaId, download=$downloadAfterUpload, skipUpload=$skipUpload)")
             val montUp = if (skipUpload) 0 else uploadMonturas(opticaId)
             val movUp = if (skipUpload) 0 else uploadMovimientos(opticaId)
             val montDown: Int
@@ -50,11 +50,11 @@ open class SyncInventarioUseCase @Inject constructor(
             if (downloadAfterUpload) {
                 montDown = downloadMonturas(opticaId)
                 movDown = downloadMovimientos(opticaId)
-                Log.d(TAG, "Inventario: fin OK (monturas=$montDown movimientos=$movDown)")
+                AppLogger.d(TAG, "Inventario: fin OK (monturas=$montDown movimientos=$movDown)")
             } else {
                 montDown = 0
                 movDown = 0
-                Log.d(TAG, "Inventario: fin upload-only OK")
+                AppLogger.d(TAG, "Inventario: fin upload-only OK")
             }
 
             Resource.Success(
@@ -172,10 +172,10 @@ open class SyncInventarioUseCase @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: IOException) {
-                Log.e(TAG, "Error en red descargando monturas: ${e.message}")
+                AppLogger.e(TAG, "Error en red descargando monturas: ${e.message}")
                 syncStateTracker.markError(opticaId, "montura", r.id, e.message)
             } catch (e: Exception) {
-                Log.e(TAG, "Error inesperado descargando monturas: ${e.message}")
+                AppLogger.e(TAG, "Error inesperado descargando monturas: ${e.message}")
                 syncStateTracker.markError(opticaId, "montura", r.id, e.message)
             }
         }
@@ -200,10 +200,10 @@ open class SyncInventarioUseCase @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: IOException) {
-                Log.e(TAG, "Error en red descargando movimientos: ${e.message}")
+                AppLogger.e(TAG, "Error en red descargando movimientos: ${e.message}")
                 syncStateTracker.markError(opticaId, "montura_movimiento", r.id, e.message)
             } catch (e: Exception) {
-                Log.e(TAG, "Error inesperado descargando movimientos: ${e.message}")
+                AppLogger.e(TAG, "Error inesperado descargando movimientos: ${e.message}")
                 syncStateTracker.markError(opticaId, "montura_movimiento", r.id, e.message)
             }
         }

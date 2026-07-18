@@ -72,7 +72,7 @@ class OptoRepositoryTest {
             pacienteDao, monturaDao, monturaMovimientoDao, pacienteRepo, dispensacionRepo, syncRepo, regaloDispensacionDao
         )
         val backupCoordinator = BackupRestoreCoordinator(
-            pacienteRepo, dispensacionRepo, evaluacionDao, pacienteDao, postSaveSyncScheduler
+            pacienteRepo, dispensacionRepo, evaluacionDao, pacienteDao, postSaveSyncScheduler, db
         )
         val monturaCoordinator = MonturaInventoryCoordinator(
             monturaDao, monturaMovimientoDao, postSaveSyncScheduler
@@ -88,12 +88,7 @@ class OptoRepositoryTest {
             snapshotCoordinator = snapshotCoordinator,
             backupCoordinator = backupCoordinator,
             monturaCoordinator = monturaCoordinator,
-            gastoOperativoDao = db.gastoOperativoDao(),
-            resumenDiarioDao = db.resumenDiarioDao(),
-            configuracionFinancieraDao = db.configuracionFinancieraDao(),
-            categoriaProductoDao = db.categoriaProductoDao(),
-            costoProductoDao = db.costoProductoDao(),
-            costoBiseladoDao = db.costoBiseladoDao()
+            gastoOperativoDao = db.gastoOperativoDao()
         )
     }
 

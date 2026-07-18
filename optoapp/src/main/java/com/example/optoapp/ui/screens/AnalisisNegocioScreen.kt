@@ -68,7 +68,7 @@ fun AnalisisNegocioScreen(
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Icon(Icons.Default.Lock, contentDescription = null, modifier = Modifier.size(48.dp), tint = MaterialTheme.colorScheme.error)
+                Icon(Icons.Default.Lock, contentDescription = "Bloqueado", modifier = Modifier.size(48.dp), tint = MaterialTheme.colorScheme.error)
                 Spacer(Modifier.height(16.dp))
                 Text("Acceso restringido", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error)
                 Text("Tu rol no tiene permiso para ver esta sección.", color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -98,7 +98,7 @@ fun AnalisisNegocioScreen(
                         modifier = Modifier.padding(12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(Icons.Default.Warning, contentDescription = null, tint = WarningAmber, modifier = Modifier.size(20.dp))
+                        Icon(Icons.Default.Warning, contentDescription = "Advertencia", tint = WarningAmber, modifier = Modifier.size(20.dp))
                         Spacer(Modifier.width(8.dp))
                         Text("Datos limitados — sin conexión", style = MaterialTheme.typography.bodySmall, color = WarningAmber)
                     }
@@ -111,7 +111,7 @@ fun AnalisisNegocioScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(modifier = Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(Icons.Default.Error, contentDescription = null, tint = AlertRed, modifier = Modifier.size(32.dp))
+                        Icon(Icons.Default.Error, contentDescription = "Error", tint = AlertRed, modifier = Modifier.size(32.dp))
                         Spacer(Modifier.height(8.dp))
                         Text(error, color = AlertRed, style = MaterialTheme.typography.bodyMedium)
                         Spacer(Modifier.height(8.dp))
@@ -132,7 +132,7 @@ fun AnalisisNegocioScreen(
                 ResumenCard(analisis = analisis)
             }
 
-            if (uiState.mostrarAdvertenciaEstacionalidad) {
+            if (uiState.isSeasonalityWarning) {
                 Card(
                     colors = CardDefaults.cardColors(containerColor = WarningAmber.copy(alpha = 0.15f)),
                     modifier = Modifier.fillMaxWidth()
@@ -141,7 +141,7 @@ fun AnalisisNegocioScreen(
                         modifier = Modifier.padding(12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(Icons.Default.Warning, contentDescription = null, tint = WarningAmber, modifier = Modifier.size(20.dp))
+                        Icon(Icons.Default.Warning, contentDescription = "Advertencia", tint = WarningAmber, modifier = Modifier.size(20.dp))
                         Spacer(Modifier.width(8.dp))
                         Text(
                             "Este cálculo se basa en pocos meses. Podría no ser preciso.",
@@ -177,9 +177,9 @@ fun AnalisisNegocioScreen(
                         modifier = Modifier.padding(12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(Icons.Default.Lightbulb, contentDescription = null, tint = WarningAmber, modifier = Modifier.size(18.dp))
+                        Icon(Icons.Default.Lightbulb, contentDescription = "Recomendacion", tint = WarningAmber, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(8.dp))
-                        Text("Sin recomendaciones por ahora — tus métricas están dentro de lo esperado.", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("Sin recomendaciones por ahora — tus métricas están dentro de lo esperado.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
@@ -198,7 +198,7 @@ fun AnalisisNegocioScreen(
                 gastos.filter { it.fecha.month == mesActual.month && it.fecha.year == mesActual.year }
             }
             val totalGastos = remember(uiState.analisis, gastosMes) {
-                uiState.analisis?.gastosMes ?: gastosMes.sumOf { it.monto }
+                uiState.analisis?.gastosMes ?: gastosMes.sumOf { it.monto }.toDouble()
             }
 
             Card(
@@ -210,7 +210,7 @@ fun AnalisisNegocioScreen(
                 Column(modifier = Modifier.padding(14.dp)) {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.MoneyOff, contentDescription = null, tint = AlertRed, modifier = Modifier.size(20.dp))
+                            Icon(Icons.Default.MoneyOff, contentDescription = "Sin costo", tint = AlertRed, modifier = Modifier.size(20.dp))
                             Spacer(Modifier.width(8.dp))
                             Text("Gastos del mes", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                             IconButton(
@@ -239,7 +239,7 @@ fun AnalisisNegocioScreen(
                                 Column(Modifier.weight(1f)) {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Text("${g.categoria}${if (!g.descripcion.isNullOrBlank()) " · ${g.descripcion}" else ""}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                        if (g.esRecurrente) {
+                                        if (g.isRecurring) {
                                             Spacer(Modifier.width(6.dp))
                                             Surface(shape = RoundedCornerShape(4.dp), color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)) {
                                                 Text("Recurrente", modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp), fontSize = 9.sp, color = MaterialTheme.colorScheme.primary)
@@ -252,7 +252,7 @@ fun AnalisisNegocioScreen(
                                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                                     )
                                 }
-                                Text("S/ ${formatNumber(g.monto)}", fontSize = 12.sp, color = AlertRed, fontWeight = FontWeight.Medium)
+                                Text("S/ ${formatNumber(g.monto.toDouble())}", fontSize = 12.sp, color = AlertRed, fontWeight = FontWeight.Medium)
                                 IconButton(
                                     modifier = Modifier.size(28.dp),
                                     onClick = { gastosViewModel.editGasto(g) }
@@ -278,13 +278,13 @@ fun AnalisisNegocioScreen(
                     Spacer(Modifier.height(8.dp))
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedButton(onClick = { gastosViewModel.showNewGasto() }, modifier = Modifier.weight(1f)) {
-                            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Icon(Icons.Default.Add, contentDescription = "Agregar", modifier = Modifier.size(16.dp))
                             Spacer(Modifier.width(4.dp))
                             Text("Agregar", fontSize = 12.sp)
                         }
                         if (gastosMes.isNotEmpty()) {
                             OutlinedButton(onClick = { navController.navigate("gastos") }, modifier = Modifier.weight(1f)) {
-                                Icon(Icons.AutoMirrored.Filled.List, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Lista", modifier = Modifier.size(16.dp))
                                 Spacer(Modifier.width(4.dp))
                                 Text("Ver todos", fontSize = 12.sp)
                             }
@@ -296,7 +296,7 @@ fun AnalisisNegocioScreen(
                         AlertDialog(
                             onDismissRequest = { deleteTarget = null },
                             title = { Text("Eliminar gasto") },
-                            text = { Text("¿Eliminar \"${target.categoria}${if (!target.descripcion.isNullOrBlank()) " · ${target.descripcion}" else ""}\" por S/ ${formatNumber(target.monto)}?") },
+                            text = { Text("¿Eliminar \"${target.categoria}${if (!target.descripcion.isNullOrBlank()) " · ${target.descripcion}" else ""}\" por S/ ${formatNumber(target.monto.toDouble())}?") },
                             confirmButton = {
                                 Button(onClick = { gastosViewModel.delete(target); deleteTarget = null }, colors = ButtonDefaults.buttonColors(containerColor = AlertRed)) {
                                     Text("Eliminar")
@@ -314,7 +314,7 @@ fun AnalisisNegocioScreen(
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                 ) {
-                    @Suppress("DEPRECATION") Icon(Icons.Default.TrendingUp, contentDescription = null)
+                    @Suppress("DEPRECATION") Icon(Icons.Default.TrendingUp, contentDescription = "Tendencia")
                     Spacer(Modifier.width(8.dp))
                     Text("Ver análisis completo")
                 }
@@ -323,7 +323,7 @@ fun AnalisisNegocioScreen(
 
 
 
-        if (gastosUiState.showDialog) {
+        if (gastosUiState.isDialogVisible) {
             var showDatePicker by remember { mutableStateOf(false) }
             if (showDatePicker) {
                 com.example.optoapp.ui.components.OptoDatePickerDialog(
@@ -359,12 +359,12 @@ fun AnalisisNegocioScreen(
                         )
                         OutlinedTextField(value = gastosUiState.descripcion, onValueChange = { gastosViewModel.updateDescripcion(it) }, label = { Text("Descripción") }, modifier = Modifier.fillMaxWidth())
                         OutlinedButton(onClick = { showDatePicker = true }, modifier = Modifier.fillMaxWidth()) {
-                            Icon(Icons.Default.DateRange, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Icon(Icons.Default.DateRange, contentDescription = "Fecha", modifier = Modifier.size(16.dp))
                             Spacer(Modifier.width(6.dp))
                             Text(com.example.optoapp.util.DateUtils.formatLocalized(gastosUiState.fecha))
                         }
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Switch(checked = gastosUiState.esRecurrente, onCheckedChange = { gastosViewModel.toggleRecurrente() })
+                            Switch(checked = gastosUiState.isRecurring, onCheckedChange = { gastosViewModel.toggleRecurrente() })
                             Spacer(Modifier.width(8.dp))
                             Text("Gasto recurrente mensual", fontSize = 13.sp)
                         }
@@ -524,7 +524,7 @@ internal fun RecomendacionCard(
             Row(verticalAlignment = Alignment.Top) {
                 Icon(
                     if (feedbackSent) Icons.Default.CheckCircle else Icons.Default.Info,
-                    contentDescription = null,
+                    contentDescription = "Retroalimentacion",
                     tint = if (feedbackSent) PositiveGreen else accentColor,
                     modifier = Modifier.size(20.dp)
                 )
@@ -574,7 +574,7 @@ internal fun RecomendacionCard(
                 ) {
                     Icon(
                         Icons.Default.CheckCircle,
-                        contentDescription = null,
+                        contentDescription = "Completado",
                         tint = PositiveGreen,
                         modifier = Modifier.size(16.dp)
                     )
@@ -596,7 +596,7 @@ internal fun RecomendacionCard(
                         onClick = { onFeedback(true) },
                         modifier = Modifier.weight(1f)
                     ) {
-                        Icon(Icons.Default.ThumbUp, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Icon(Icons.Default.ThumbUp, contentDescription = "Positivo", modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(4.dp))
                         Text("Útil")
                     }
@@ -604,7 +604,7 @@ internal fun RecomendacionCard(
                         onClick = { onFeedback(false) },
                         modifier = Modifier.weight(1f)
                     ) {
-                        Icon(Icons.Default.ThumbDown, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Icon(Icons.Default.ThumbDown, contentDescription = "Negativo", modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(4.dp))
                         Text("No me sirve")
                     }

@@ -5,6 +5,8 @@ import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Pago
 import com.example.optoapp.data.Resource
 import com.example.optoapp.data.SessionManager
+import com.example.optoapp.data.costobiselado.CostoBiseladoDao
+import com.example.optoapp.data.costoproducto.CostoProductoDao
 import com.example.optoapp.data.regalodispensacion.RegaloDispensacionEntity
 import com.example.optoapp.domain.CalcularMontoPagadoUseCase
 import com.example.optoapp.sync.PostSaveSyncScheduler
@@ -38,6 +40,8 @@ class DispensacionViewModelAnulacionTest {
     private lateinit var postSaveSyncScheduler: PostSaveSyncScheduler
     private lateinit var stockHelper: DispensacionStockHelper
     private lateinit var calcularMontoPagadoUseCase: CalcularMontoPagadoUseCase
+    private lateinit var costoProductoDao: CostoProductoDao
+    private lateinit var costoBiseladoDao: CostoBiseladoDao
     private lateinit var viewModel: DispensacionViewModel
 
     private val opticaIdFlow = MutableStateFlow("optica-test")
@@ -77,6 +81,8 @@ class DispensacionViewModelAnulacionTest {
         postSaveSyncScheduler = mockk(relaxed = true)
         stockHelper = mockk(relaxed = true)
         calcularMontoPagadoUseCase = mockk()
+        costoProductoDao = mockk(relaxed = true)
+        costoBiseladoDao = mockk(relaxed = true)
 
         every { sessionManager.opticaId } returns opticaIdFlow
 
@@ -93,7 +99,8 @@ class DispensacionViewModelAnulacionTest {
     @Test
     fun `anularDispensacion flips estado to Anulado`() = runTest {
         viewModel = DispensacionViewModel(
-            repository, sessionManager, postSaveSyncScheduler, stockHelper, calcularMontoPagadoUseCase
+            repository, sessionManager, postSaveSyncScheduler, stockHelper, calcularMontoPagadoUseCase,
+            costoProductoDao, costoBiseladoDao
         )
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -107,7 +114,8 @@ class DispensacionViewModelAnulacionTest {
     @Test
     fun `anularDispensacion creates inverse Pago with negative monto`() = runTest {
         viewModel = DispensacionViewModel(
-            repository, sessionManager, postSaveSyncScheduler, stockHelper, calcularMontoPagadoUseCase
+            repository, sessionManager, postSaveSyncScheduler, stockHelper, calcularMontoPagadoUseCase,
+            costoProductoDao, costoBiseladoDao
         )
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -126,7 +134,8 @@ class DispensacionViewModelAnulacionTest {
     @Test
     fun `anularDispensacion restores stock for associated regalos`() = runTest {
         viewModel = DispensacionViewModel(
-            repository, sessionManager, postSaveSyncScheduler, stockHelper, calcularMontoPagadoUseCase
+            repository, sessionManager, postSaveSyncScheduler, stockHelper, calcularMontoPagadoUseCase,
+            costoProductoDao, costoBiseladoDao
         )
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -150,7 +159,8 @@ class DispensacionViewModelAnulacionTest {
     @Test
     fun `anularDispensacion calls onComplete`() = runTest {
         viewModel = DispensacionViewModel(
-            repository, sessionManager, postSaveSyncScheduler, stockHelper, calcularMontoPagadoUseCase
+            repository, sessionManager, postSaveSyncScheduler, stockHelper, calcularMontoPagadoUseCase,
+            costoProductoDao, costoBiseladoDao
         )
         testDispatcher.scheduler.advanceUntilIdle()
 

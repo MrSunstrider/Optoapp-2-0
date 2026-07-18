@@ -67,7 +67,7 @@ object DispensacionLaboratorioTicket {
         val addLinea = addOdOi(ev)
         val tratamientosLinea = tratamientosStr(ctx.tratamientos)
         val requiereAltura =
-            ctx.tipoLente == "Bifocal" || ctx.tipoLente == "Progresivo" || ctx.tipoLente == "Ocupacional"
+            ctx.tipoLente == "Bifocal" || ctx.tipoLente == "Multifocal" || ctx.tipoLente == "Ocupacional" || ctx.tipoLente == "Progresivo"
         val alturaLinea = if (requiereAltura && ctx.altura.isNotBlank()) "h: ${ctx.altura.trim()} mm" else ""
 
         val od = formatOjo(ev?.recetaOdEsf, ev?.recetaOdCil, ev?.recetaOdEje, "OD")

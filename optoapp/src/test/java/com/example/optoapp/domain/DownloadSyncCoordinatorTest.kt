@@ -1,6 +1,7 @@
 package com.example.optoapp.domain
 
 import org.junit.Assert.*
+import org.junit.Ignore
 import org.junit.Test
 
 /**
@@ -25,7 +26,7 @@ class DownloadSyncCoordinatorTest {
         val constructors = DownloadSyncCoordinator::class.java.declaredConstructors
         assertEquals(1, constructors.size)
         val params = constructors[0].parameterTypes
-        assertEquals(5, params.size)
+        assertEquals(9, params.size)
     }
 
     @Test
@@ -153,22 +154,22 @@ class DownloadSyncCoordinatorTest {
     // ─── Error handling pattern ───────────────────────────────────────────
 
     @Test
+    @Ignore("Not yet implemented — requires code review of try-catch patterns")
     fun errorHandling_usesTryCatchWithLogging() {
         // All download methods follow pattern: CancellationException rethrow,
         // IOException log + markError, Exception log + markError
-        assertTrue(true) // structural assertion — verified via code review
     }
 
     @Test
+    @Ignore("Not yet implemented — requires code review of error patterns")
     fun errorHandling_cancellationException_isRethrown() {
         // Pattern: catch (e: CancellationException) { throw e }
-        assertTrue(true) // structural assertion
     }
 
     @Test
+    @Ignore("Not yet implemented — requires code review of error patterns")
     fun errorHandling_ioException_isLoggedAndMarked() {
         // Pattern: catch (e: IOException) { Log.e(TAG, ..., e); markError(...) }
-        assertTrue(true) // structural assertion
     }
 
 }

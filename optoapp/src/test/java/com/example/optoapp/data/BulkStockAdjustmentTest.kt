@@ -101,8 +101,8 @@ class BulkStockAdjustmentTest {
 
         repo.closeSession(s.id)
 
-        assertEquals(7, db.monturaDao().getMonturaById("m1")!!.stockActual)
-        assertEquals(22, db.monturaDao().getMonturaById("m2")!!.stockActual)
+        assertEquals(7, db.monturaDao().getMonturaByIdForOptica("m1", "o1")!!.stockActual)
+        assertEquals(22, db.monturaDao().getMonturaByIdForOptica("m2", "o1")!!.stockActual)
     }
 
     @Test
@@ -128,6 +128,6 @@ class BulkStockAdjustmentTest {
 
         val movimientos = db.monturaMovimientoDao().getMovimientosListByOptica("o1")
         assertEquals(0, movimientos.size)
-        assertEquals(10, db.monturaDao().getMonturaById("m1")!!.stockActual)
+        assertEquals(10, db.monturaDao().getMonturaByIdForOptica("m1", "o1")!!.stockActual)
     }
 }

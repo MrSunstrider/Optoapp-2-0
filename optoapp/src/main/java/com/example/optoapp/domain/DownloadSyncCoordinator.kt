@@ -1,9 +1,13 @@
 package com.example.optoapp.domain
 
-import android.util.Log
+import com.example.optoapp.util.AppLogger
 import com.example.optoapp.data.DispensacionItem
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.SyncStateTracker
+import com.example.optoapp.data.configuracionfinanciera.ConfiguracionFinancieraDao
+import com.example.optoapp.data.costobiselado.CostoBiseladoDao
+import com.example.optoapp.data.costoproducto.CostoProductoDao
+import com.example.optoapp.data.resumendiario.ResumenDiarioDao
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.CancellationException
@@ -20,7 +24,11 @@ class DownloadSyncCoordinator @Inject constructor(
     private val supabase: SupabaseClient,
     private val syncStateTracker: SyncStateTracker,
     private val deletionSyncHelper: DeletionSyncHelper,
-    private val networkRetryHelper: NetworkRetryHelper
+    private val networkRetryHelper: NetworkRetryHelper,
+    private val resumenDiarioDao: ResumenDiarioDao,
+    private val configuracionFinancieraDao: ConfiguracionFinancieraDao,
+    private val costoProductoDao: CostoProductoDao,
+    private val costoBiseladoDao: CostoBiseladoDao
 ) {
     companion object {
         private const val TAG = "SyncFinanzas"
@@ -57,11 +65,11 @@ class DownloadSyncCoordinator @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: IOException) {
-            Log.e(TAG, "Error de red descargando $entityType: ${e.message}", e)
+            AppLogger.e(TAG, "Error de red descargando $entityType: ${e.message}", e)
             syncStateTracker.markError(opticaId, "download_$entityType", "batch", e.message)
             return 0
         } catch (e: Exception) {
-            Log.e(TAG, "Error inesperado descargando $entityType: ${e.message}", e)
+            AppLogger.e(TAG, "Error inesperado descargando $entityType: ${e.message}", e)
             syncStateTracker.markError(opticaId, "download_$entityType", "batch", e.message)
             return 0
         }
@@ -74,10 +82,10 @@ class DownloadSyncCoordinator @Inject constructor(
                 }
             } catch (e: CancellationException) { throw e }
             catch (e: IOException) {
-                Log.e(TAG, "Error de red descargando item $entityType ${getId(r)}: ${e.message}", e)
+                AppLogger.e(TAG, "Error de red descargando item $entityType ${getId(r)}: ${e.message}", e)
                 syncStateTracker.markError(opticaId, entityType, getId(r), e.message)
             } catch (e: Exception) {
-                Log.e(TAG, "Error inesperado descargando item $entityType ${getId(r)}: ${e.message}", e)
+                AppLogger.e(TAG, "Error inesperado descargando item $entityType ${getId(r)}: ${e.message}", e)
                 syncStateTracker.markError(opticaId, entityType, getId(r), e.message)
             }
         }
@@ -127,20 +135,20 @@ class DownloadSyncCoordinator @Inject constructor(
             remotos.forEach { r ->
                 try {
                     repository.withTransaction {
-                        repository.upsertResumenDiarioFromRemote(r.toEntity())
+                        resumenDiarioDao.upsert(r.toEntity())
                         syncStateTracker.markSynced(opticaId, "resumen_diario", r.id)
                     }
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
-                    Log.w(TAG, "resumen_diario upsert failed for ${r.id}", e)
+                    AppLogger.w(TAG, "resumen_diario upsert failed for ${r.id}", e)
                 }
             }
             remotos.size
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            Log.w(TAG, "resumen_diario download failed", e)
+            AppLogger.w(TAG, "resumen_diario download failed", e)
             0
         }
     }
@@ -160,20 +168,20 @@ class DownloadSyncCoordinator @Inject constructor(
             remotos.forEach { r ->
                 try {
                     repository.withTransaction {
-                        repository.upsertConfiguracionFinancieraFromRemote(r.toEntity())
+                        configuracionFinancieraDao.upsert(r.toEntity())
                         syncStateTracker.markSynced(opticaId, "configuracion_financiera", r.opticaId)
                     }
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
-                    Log.w(TAG, "configuracion_financiera upsert failed for ${r.opticaId}", e)
+                    AppLogger.w(TAG, "configuracion_financiera upsert failed for ${r.opticaId}", e)
                 }
             }
             remotos.size
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            Log.w(TAG, "configuracion_financiera download failed", e)
+            AppLogger.w(TAG, "configuracion_financiera download failed", e)
             0
         }
     }
@@ -182,13 +190,13 @@ class DownloadSyncCoordinator @Inject constructor(
         opticaId, TABLE_COSTOS_PRODUCTOS, "costo_producto", skipDeletions = true,
         getId = { it.id }
     ) { r ->
-        repository.upsertCostoProductoFromRemote(r.toEntity())
+        costoProductoDao.upsertAll(listOf(r.toEntity()))
     }
 
     suspend fun downloadCostosBiselado(opticaId: String): Int = downloadTable<CostoBiseladoRemoto>(
         opticaId, TABLE_COSTOS_BISELADO, "costo_biselado", skipDeletions = true,
         getId = { it.id }
     ) { r ->
-        repository.upsertCostoBiseladoFromRemote(r.toEntity())
+        costoBiseladoDao.upsertAll(listOf(r.toEntity()))
     }
 }

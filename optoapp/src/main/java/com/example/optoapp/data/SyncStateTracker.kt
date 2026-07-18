@@ -1,5 +1,6 @@
 package com.example.optoapp.data
 
+import androidx.room.withTransaction
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -10,7 +11,8 @@ import javax.inject.Singleton
  */
 @Singleton
 class SyncStateTracker @Inject constructor(
-    internal val dao: SyncEntityStateDao
+    internal val dao: SyncEntityStateDao,
+    private val database: OptoDatabase
 ) {
     suspend fun markSynced(opticaId: String, entityType: String, entityId: String) {
         dao.upsert(
@@ -71,4 +73,16 @@ class SyncStateTracker @Inject constructor(
 
     suspend fun getErrorsCount(opticaId: String): Int =
         dao.countByStatus(opticaId, "error")
+
+    /**
+     * Runs [block] inside a database transaction and marks [entityType]/[entityId]
+     * as synced atomically. If [block] throws, the transaction (including the mark)
+     * is rolled back.
+     */
+    suspend fun markSyncedAtomic(opticaId: String, entityType: String, entityId: String, block: suspend () -> Unit) {
+        database.withTransaction {
+            block()
+            markSynced(opticaId, entityType, entityId)
+        }
+    }
 }

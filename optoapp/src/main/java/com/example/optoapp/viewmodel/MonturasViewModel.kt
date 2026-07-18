@@ -10,6 +10,7 @@ import com.example.optoapp.data.MonturaMovimiento
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Resource
 import com.example.optoapp.data.SessionManager
+import com.example.optoapp.domain.auth.AuthorizationGuard
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -170,6 +171,10 @@ class MonturasViewModel @Inject constructor(
             }
             try {
                 val opticaId = sessionManager.opticaId.first()
+                val role = sessionManager.opticaRol.first()
+                if (form.id != null) {
+                    AuthorizationGuard.requireRole(role, setOf("admin", "gerente"), "editar montura")
+                }
                 val montura = Montura(
                     id = form.id ?: UUID.randomUUID().toString(),
                     sku = form.sku.trim(),
@@ -223,6 +228,8 @@ class MonturasViewModel @Inject constructor(
 
     fun delete(montura: Montura) {
         viewModelScope.launch {
+            val role = sessionManager.opticaRol.first()
+            AuthorizationGuard.requireRole(role, setOf("admin", "gerente"), "eliminar montura")
             repository.deleteMontura(montura)
             _uiState.update { it.copy(success = "Producto eliminado", error = null) }
         }

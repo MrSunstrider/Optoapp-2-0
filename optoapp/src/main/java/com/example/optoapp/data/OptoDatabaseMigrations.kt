@@ -1088,3 +1088,91 @@ val MIGRATION_38_39 = object : Migration(38, 39) {
         db.execSQL("ALTER TABLE dispensacion_items ADD COLUMN costo_real_lc REAL")
     }
 }
+
+// ─── MIGRATION 39→40 ─────────────────────────────────────────────────────────
+// Fix 2.5: ConflictRecord — composite PK (entityId, opticaId) replaces single PK (entityId)
+// Fix 2.6: ResumenDiarioEntity — declare unique index (opticaId, fecha), clean duplicates
+val MIGRATION_39_40 = object : Migration(39, 40) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        // ── Fix 2.5: Recreate conflict_records with composite PK ──────────
+        db.execSQL("""
+            CREATE TABLE IF NOT EXISTS conflict_records_new (
+                entityId TEXT NOT NULL,
+                opticaId TEXT NOT NULL,
+                entityType TEXT NOT NULL,
+                localSnapshot TEXT NOT NULL,
+                remoteSnapshot TEXT NOT NULL,
+                detectedAt INTEGER NOT NULL DEFAULT 0,
+                baseSnapshot TEXT NOT NULL DEFAULT '{}',
+                localData TEXT NOT NULL DEFAULT '{}',
+                remoteData TEXT NOT NULL DEFAULT '{}',
+                PRIMARY KEY (entityId, opticaId)
+            )
+        """.trimIndent())
+        db.execSQL("""
+            INSERT OR IGNORE INTO conflict_records_new
+            SELECT entityId, opticaId, entityType, localSnapshot, remoteSnapshot,
+                   detectedAt, baseSnapshot, localData, remoteData
+            FROM conflict_records
+        """.trimIndent())
+        db.execSQL("DROP TABLE conflict_records")
+        db.execSQL("ALTER TABLE conflict_records_new RENAME TO conflict_records")
+
+        // ── Fix 2.6: Clean duplicates in resumen_diario, ensure unique index ──
+        db.execSQL("""
+            DELETE FROM resumen_diario
+            WHERE id NOT IN (
+                SELECT MIN(id) FROM resumen_diario GROUP BY opticaId, fecha
+            )
+        """.trimIndent())
+        db.execSQL("""
+            CREATE UNIQUE INDEX IF NOT EXISTS index_resumen_diario_opticaId_fecha
+            ON resumen_diario(opticaId, fecha)
+        """.trimIndent())
+
+        // ── gastos_operativos: rename esRecurrente → isRecurring ──
+        db.execSQL("""
+            CREATE TABLE gastos_operativos_new (
+                id TEXT PRIMARY KEY NOT NULL,
+                opticaId TEXT NOT NULL,
+                categoria TEXT NOT NULL,
+                descripcion TEXT,
+                monto REAL NOT NULL,
+                fecha TEXT NOT NULL,
+                fechaProgramada TEXT,
+                nota TEXT,
+                isRecurring INTEGER NOT NULL DEFAULT 0,
+                frecuencia TEXT NOT NULL DEFAULT 'mensual',
+                createdAt TEXT
+            )
+        """.trimIndent())
+
+        db.execSQL("""
+            INSERT INTO gastos_operativos_new
+                (id, opticaId, categoria, descripcion, monto, fecha,
+                 fechaProgramada, nota, isRecurring, frecuencia, createdAt)
+            SELECT id, opticaId, categoria, descripcion, monto, fecha,
+                   fechaProgramada, nota,
+                   COALESCE(esRecurrente, 0),
+                   COALESCE(frecuencia, 'mensual'),
+                   createdAt
+            FROM gastos_operativos
+        """.trimIndent())
+
+        db.execSQL("DROP TABLE gastos_operativos")
+        db.execSQL("ALTER TABLE gastos_operativos_new RENAME TO gastos_operativos")
+
+        db.execSQL("""
+            CREATE INDEX IF NOT EXISTS index_gastos_operativos_opticaId
+            ON gastos_operativos(opticaId)
+        """.trimIndent())
+    }
+}
+
+// ─── MIGRATION 40→41 ─────────────────────────────────────────────────────────
+// Add CostoLcEntity — Room auto-creates new table, no DDL needed.
+val MIGRATION_40_41 = object : Migration(40, 41) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        // costos_lc is a new table — Room creates it automatically after migration
+    }
+}

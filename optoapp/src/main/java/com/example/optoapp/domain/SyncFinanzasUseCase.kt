@@ -1,6 +1,6 @@
 package com.example.optoapp.domain
 
-import android.util.Log
+import com.example.optoapp.util.AppLogger
 import com.example.optoapp.data.Resource
 import io.github.jan.supabase.exceptions.RestException
 import kotlinx.coroutines.CancellationException
@@ -47,7 +47,7 @@ open class SyncFinanzasUseCase @Inject constructor(
         skipUpload: Boolean = false
     ): Resource<FinanzasSyncResult> {
         return try {
-            Log.d(TAG, "Finanzas: inicio (opticaId=$opticaId, download=$downloadAfterUpload, skipUpload=$skipUpload)")
+            AppLogger.d(TAG, "Finanzas: inicio (opticaId=$opticaId, download=$downloadAfterUpload, skipUpload=$skipUpload)")
 
             deletionSyncHelper.pushPendingDeletions(opticaId)
 
@@ -55,25 +55,28 @@ open class SyncFinanzasUseCase @Inject constructor(
             var itemsUp = 0
             var servUp = 0
             var costosUp = 0
+            var biseladoUp = 0
             var pagosUp = 0
             var gastosUp = 0
             var regalosUp = 0
 
             if (!skipUpload) {
                 dispUp = safeUpload("dispensaciones") { uploadSyncCoordinator.uploadDispensaciones(opticaId) }
-                Log.d(TAG, "Finanzas: upload dispensaciones=$dispUp")
+                AppLogger.d(TAG, "Finanzas: upload dispensaciones=$dispUp")
                 itemsUp = safeUpload("dispensacion_items") { uploadSyncCoordinator.uploadDispensacionItems(opticaId) }
-                Log.d(TAG, "Finanzas: upload dispensacion_items=$itemsUp")
+                AppLogger.d(TAG, "Finanzas: upload dispensacion_items=$itemsUp")
                 servUp = safeUpload("servicios_extra") { uploadSyncCoordinator.uploadServicios(opticaId) }
-                Log.d(TAG, "Finanzas: upload servicios_extra=$servUp")
+                AppLogger.d(TAG, "Finanzas: upload servicios_extra=$servUp")
                 costosUp = safeUpload("costos_productos") { uploadSyncCoordinator.uploadCostosProductos(opticaId) }
-                Log.d(TAG, "Finanzas: upload costos_productos=$costosUp")
+                AppLogger.d(TAG, "Finanzas: upload costos_productos=$costosUp")
+                biseladoUp = safeUpload("costos_biselado") { uploadSyncCoordinator.uploadCostosBiselado(opticaId) }
+                AppLogger.d(TAG, "Finanzas: upload costos_biselado=$biseladoUp")
                 pagosUp = safeUpload("pagos") { uploadSyncCoordinator.uploadPagos(opticaId) }
-                Log.d(TAG, "Finanzas: upload pagos=$pagosUp")
+                AppLogger.d(TAG, "Finanzas: upload pagos=$pagosUp")
                 gastosUp = safeUpload("gastos_operativos") { uploadSyncCoordinator.uploadGastosOperativos(opticaId) }
-                Log.d(TAG, "Finanzas: upload gastos_operativos=$gastosUp")
+                AppLogger.d(TAG, "Finanzas: upload gastos_operativos=$gastosUp")
                 regalosUp = safeUpload("regalos") { uploadSyncCoordinator.uploadRegalos(opticaId) }
-                Log.d(TAG, "Finanzas: upload regalos=$regalosUp")
+                AppLogger.d(TAG, "Finanzas: upload regalos=$regalosUp")
             }
 
             val dispDown: Int
@@ -87,26 +90,26 @@ open class SyncFinanzasUseCase @Inject constructor(
             val configDown: Int
             val gastosDown: Int
             if (downloadAfterUpload) {
-                dispDown = downloadSyncCoordinator.downloadDispensaciones(opticaId)
-                Log.d(TAG, "Finanzas: download dispensaciones=$dispDown")
-                itemsDown = downloadSyncCoordinator.downloadDispensacionItems(opticaId)
-                Log.d(TAG, "Finanzas: download dispensacion_items=$itemsDown")
-                servDown = downloadSyncCoordinator.downloadServicios(opticaId)
-                Log.d(TAG, "Finanzas: download servicios_extra=$servDown")
-                resumenDown = downloadSyncCoordinator.downloadResumenDiario(opticaId)
-                Log.d(TAG, "Finanzas: download resumen_diario=$resumenDown")
-                configDown = downloadSyncCoordinator.downloadConfiguracionFinanciera(opticaId)
-                Log.d(TAG, "Finanzas: download configuracion_financiera=$configDown")
-                costosDown = downloadSyncCoordinator.downloadCostosProductos(opticaId)
-                Log.d(TAG, "Finanzas: download costos_productos=$costosDown")
-                biseladoDown = downloadSyncCoordinator.downloadCostosBiselado(opticaId)
-                Log.d(TAG, "Finanzas: download costos_biselado=$biseladoDown")
-                pagosDown = downloadSyncCoordinator.downloadPagos(opticaId)
-                Log.d(TAG, "Finanzas: download pagos=$pagosDown")
-                regalosDown = downloadSyncCoordinator.downloadRegalos(opticaId)
-                Log.d(TAG, "Finanzas: download regalos=$regalosDown")
-                gastosDown = downloadSyncCoordinator.downloadGastosOperativos(opticaId)
-                Log.d(TAG, "Finanzas: download gastos_operativos=$gastosDown")
+                dispDown = safeDownload("dispensaciones") { downloadSyncCoordinator.downloadDispensaciones(opticaId) }
+                AppLogger.d(TAG, "Finanzas: download dispensaciones=$dispDown")
+                itemsDown = safeDownload("dispensacion_items") { downloadSyncCoordinator.downloadDispensacionItems(opticaId) }
+                AppLogger.d(TAG, "Finanzas: download dispensacion_items=$itemsDown")
+                servDown = safeDownload("servicios_extra") { downloadSyncCoordinator.downloadServicios(opticaId) }
+                AppLogger.d(TAG, "Finanzas: download servicios_extra=$servDown")
+                resumenDown = safeDownload("resumen_diario") { downloadSyncCoordinator.downloadResumenDiario(opticaId) }
+                AppLogger.d(TAG, "Finanzas: download resumen_diario=$resumenDown")
+                configDown = safeDownload("configuracion_financiera") { downloadSyncCoordinator.downloadConfiguracionFinanciera(opticaId) }
+                AppLogger.d(TAG, "Finanzas: download configuracion_financiera=$configDown")
+                costosDown = safeDownload("costos_productos") { downloadSyncCoordinator.downloadCostosProductos(opticaId) }
+                AppLogger.d(TAG, "Finanzas: download costos_productos=$costosDown")
+                biseladoDown = safeDownload("costos_biselado") { downloadSyncCoordinator.downloadCostosBiselado(opticaId) }
+                AppLogger.d(TAG, "Finanzas: download costos_biselado=$biseladoDown")
+                pagosDown = safeDownload("pagos") { downloadSyncCoordinator.downloadPagos(opticaId) }
+                AppLogger.d(TAG, "Finanzas: download pagos=$pagosDown")
+                regalosDown = safeDownload("regalos") { downloadSyncCoordinator.downloadRegalos(opticaId) }
+                AppLogger.d(TAG, "Finanzas: download regalos=$regalosDown")
+                gastosDown = safeDownload("gastos_operativos") { downloadSyncCoordinator.downloadGastosOperativos(opticaId) }
+                AppLogger.d(TAG, "Finanzas: download gastos_operativos=$gastosDown")
             } else {
                 dispDown = 0
                 itemsDown = 0
@@ -118,7 +121,7 @@ open class SyncFinanzasUseCase @Inject constructor(
                 resumenDown = 0
                 configDown = 0
                 gastosDown = 0
-                Log.d(TAG, "Finanzas: fin upload-only OK")
+                AppLogger.d(TAG, "Finanzas: fin upload-only OK")
             }
 
             Resource.Success(
@@ -127,6 +130,7 @@ open class SyncFinanzasUseCase @Inject constructor(
                     uploadedDispensacionItems = itemsUp,
                     uploadedServicios = servUp,
                     uploadedCostosProductos = costosUp,
+                    uploadedCostosBiselado = biseladoUp,
                     uploadedPagos = pagosUp,
                     uploadedGastosOperativos = gastosUp,
                     uploadedRegalos = regalosUp,
@@ -145,12 +149,25 @@ open class SyncFinanzasUseCase @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: IOException) {
-            Log.e(TAG, "Error en red sincronizando finanzas: ${e.message}", e)
+            AppLogger.e(TAG, "Error en red sincronizando finanzas: ${e.message}", e)
             Resource.Error("Error sincronizando finanzas: ${e.localizedMessage}")
         } catch (e: Exception) {
-            Log.e(TAG, "Error inesperado sincronizando finanzas: ${e.message}", e)
+            AppLogger.e(TAG, "Error inesperado sincronizando finanzas: ${e.message}", e)
             Resource.Error("Error sincronizando finanzas: ${e.localizedMessage}")
         }
+    }
+
+    /**
+     * Ejecuta un paso de download individual con try-catch aislado para que
+     * un fallo no bloquee las descargas de otras entidades.
+     */
+    private suspend fun safeDownload(name: String, block: suspend () -> Int): Int = try {
+        block()
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        AppLogger.e(TAG, "Download $name failed", e)
+        0
     }
 
     /**
@@ -178,20 +195,20 @@ open class SyncFinanzasUseCase @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: UploadPartialException) {
-            Log.w(TAG, "Upload parcial de $entityName: ${e.uploadedCount} subidos antes del error", e)
+            AppLogger.w(TAG, "Upload parcial de $entityName: ${e.uploadedCount} subidos antes del error", e)
             e.uploadedCount
         } catch (e: IOException) {
-            Log.e(TAG, "Error en red subiendo $entityName: ${e.message}", e)
+            AppLogger.e(TAG, "Error en red subiendo $entityName: ${e.message}", e)
             0
         } catch (e: RestException) {
             // Auth/permission errors should NOT be silenced
             if (e.statusCode == 401 || e.statusCode == 403 || e.statusCode == 409) {
                 throw e
             }
-            Log.e(TAG, "Error REST subiendo $entityName (${e.statusCode}): ${e.message}", e)
+            AppLogger.e(TAG, "Error REST subiendo $entityName (${e.statusCode}): ${e.message}", e)
             0
         } catch (e: Exception) {
-            Log.e(TAG, "Error inesperado subiendo $entityName: ${e.message}", e)
+            AppLogger.e(TAG, "Error inesperado subiendo $entityName: ${e.message}", e)
             0
         }
     }

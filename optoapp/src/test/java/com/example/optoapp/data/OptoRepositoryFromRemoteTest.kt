@@ -66,12 +66,7 @@ class OptoRepositoryFromRemoteTest {
             snapshotCoordinator = snapshotCoordinator,
             backupCoordinator = backupCoordinator,
             monturaCoordinator = monturaCoordinator,
-            gastoOperativoDao = mockk(relaxed = true),
-            resumenDiarioDao = mockk(relaxed = true),
-            configuracionFinancieraDao = mockk(relaxed = true),
-            categoriaProductoDao = mockk(relaxed = true),
-            costoProductoDao = mockk(relaxed = true),
-            costoBiseladoDao = mockk(relaxed = true)
+            gastoOperativoDao = mockk(relaxed = true)
         )
     }
 

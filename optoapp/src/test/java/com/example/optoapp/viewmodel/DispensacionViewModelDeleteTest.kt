@@ -5,6 +5,8 @@ import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Pago
 import com.example.optoapp.data.Resource
 import com.example.optoapp.data.SessionManager
+import com.example.optoapp.data.costobiselado.CostoBiseladoDao
+import com.example.optoapp.data.costoproducto.CostoProductoDao
 import com.example.optoapp.data.regalodispensacion.RegaloDispensacionEntity
 import com.example.optoapp.domain.CalcularMontoPagadoUseCase
 import com.example.optoapp.sync.PostSaveSyncScheduler
@@ -35,9 +37,12 @@ class DispensacionViewModelDeleteTest {
     private lateinit var postSaveSyncScheduler: PostSaveSyncScheduler
     private lateinit var stockHelper: DispensacionStockHelper
     private lateinit var calcularMontoPagadoUseCase: CalcularMontoPagadoUseCase
+    private lateinit var costoProductoDao: CostoProductoDao
+    private lateinit var costoBiseladoDao: CostoBiseladoDao
     private lateinit var viewModel: DispensacionViewModel
 
     private val opticaIdFlow = MutableStateFlow("optica-test")
+    private val opticaRolFlow = MutableStateFlow("admin")
     private val testDispatcher = StandardTestDispatcher()
     private val dispId = "disp-delete-1"
     private val testDate = LocalDate.of(2026, 7, 10)
@@ -70,8 +75,11 @@ class DispensacionViewModelDeleteTest {
         postSaveSyncScheduler = mockk(relaxed = true)
         stockHelper = mockk(relaxed = true)
         calcularMontoPagadoUseCase = mockk()
+        costoProductoDao = mockk(relaxed = true)
+        costoBiseladoDao = mockk(relaxed = true)
 
         every { sessionManager.opticaId } returns opticaIdFlow
+        every { sessionManager.opticaRol } returns opticaRolFlow
 
         coEvery { repository.getDispensacionById(dispId) } returns Resource.Success(testDispensacion)
         coEvery { calcularMontoPagadoUseCase(dispId) } returns 150.0
@@ -86,7 +94,8 @@ class DispensacionViewModelDeleteTest {
     @Test
     fun `deleteDispensacion hard-deletes without anulacion`() = runTest {
         viewModel = DispensacionViewModel(
-            repository, sessionManager, postSaveSyncScheduler, stockHelper, calcularMontoPagadoUseCase
+            repository, sessionManager, postSaveSyncScheduler, stockHelper, calcularMontoPagadoUseCase,
+            costoProductoDao, costoBiseladoDao
         )
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -102,7 +111,8 @@ class DispensacionViewModelDeleteTest {
     @Test
     fun `deleteDispensacion reverts regalo stock`() = runTest {
         viewModel = DispensacionViewModel(
-            repository, sessionManager, postSaveSyncScheduler, stockHelper, calcularMontoPagadoUseCase
+            repository, sessionManager, postSaveSyncScheduler, stockHelper, calcularMontoPagadoUseCase,
+            costoProductoDao, costoBiseladoDao
         )
         testDispatcher.scheduler.advanceUntilIdle()
 

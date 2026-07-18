@@ -19,8 +19,11 @@ interface CategoriaMonturaDao {
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insert(categoria: CategoriaMontura)
 
-    @Update
-    suspend fun update(categoria: CategoriaMontura)
+    @Query("""
+        UPDATE categorias_montura SET nombre=:nombre, descripcion=:descripcion,
+        opticaId=:opticaId WHERE id=:id AND opticaId=:opticaId
+    """)
+    suspend fun update(id: String, opticaId: String, nombre: String, descripcion: String): Int
 
     @Query("DELETE FROM categorias_montura WHERE id = :id AND opticaId = :opticaId")
     suspend fun delete(id: String, opticaId: String)

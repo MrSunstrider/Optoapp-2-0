@@ -5,6 +5,8 @@ import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Pago
 import com.example.optoapp.data.Resource
 import com.example.optoapp.data.SessionManager
+import com.example.optoapp.data.costobiselado.CostoBiseladoDao
+import com.example.optoapp.data.costoproducto.CostoProductoDao
 import com.example.optoapp.domain.CalcularMontoPagadoUseCase
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import com.example.optoapp.util.DispensacionStockHelper
@@ -38,6 +40,8 @@ class DispensacionViewModelReclamoTest {
     private lateinit var postSaveSyncScheduler: PostSaveSyncScheduler
     private lateinit var stockHelper: DispensacionStockHelper
     private lateinit var calcularMontoPagadoUseCase: CalcularMontoPagadoUseCase
+    private lateinit var costoProductoDao: CostoProductoDao
+    private lateinit var costoBiseladoDao: CostoBiseladoDao
     private lateinit var viewModel: DispensacionViewModel
 
     private val opticaIdFlow = MutableStateFlow("optica-test")
@@ -66,6 +70,8 @@ class DispensacionViewModelReclamoTest {
         postSaveSyncScheduler = mockk(relaxed = true)
         stockHelper = mockk(relaxed = true)
         calcularMontoPagadoUseCase = mockk()
+        costoProductoDao = mockk(relaxed = true)
+        costoBiseladoDao = mockk(relaxed = true)
 
         every { sessionManager.opticaId } returns opticaIdFlow
         coEvery { repository.getDispensacionById(originalId) } returns Resource.Success(originalDispensacion)
@@ -80,7 +86,8 @@ class DispensacionViewModelReclamoTest {
     fun `crearReclamo marks original as Reclamada`() = runTest {
         coEvery { calcularMontoPagadoUseCase(originalId) } returns 200.0
         viewModel = DispensacionViewModel(
-            repository, sessionManager, postSaveSyncScheduler, stockHelper, calcularMontoPagadoUseCase
+            repository, sessionManager, postSaveSyncScheduler, stockHelper, calcularMontoPagadoUseCase,
+            costoProductoDao, costoBiseladoDao
         )
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -96,7 +103,8 @@ class DispensacionViewModelReclamoTest {
     fun `crearReclamo creates new dispensacion with reclamoOrigenId`() = runTest {
         coEvery { calcularMontoPagadoUseCase(originalId) } returns 200.0
         viewModel = DispensacionViewModel(
-            repository, sessionManager, postSaveSyncScheduler, stockHelper, calcularMontoPagadoUseCase
+            repository, sessionManager, postSaveSyncScheduler, stockHelper, calcularMontoPagadoUseCase,
+            costoProductoDao, costoBiseladoDao
         )
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -116,7 +124,8 @@ class DispensacionViewModelReclamoTest {
     fun `crearReclamo diff greater than zero does not create refund Pago`() = runTest {
         coEvery { calcularMontoPagadoUseCase(originalId) } returns 200.0
         viewModel = DispensacionViewModel(
-            repository, sessionManager, postSaveSyncScheduler, stockHelper, calcularMontoPagadoUseCase
+            repository, sessionManager, postSaveSyncScheduler, stockHelper, calcularMontoPagadoUseCase,
+            costoProductoDao, costoBiseladoDao
         )
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -134,7 +143,8 @@ class DispensacionViewModelReclamoTest {
     fun `crearReclamo diff less than zero creates refund Pago with negative monto`() = runTest {
         coEvery { calcularMontoPagadoUseCase(originalId) } returns 200.0
         viewModel = DispensacionViewModel(
-            repository, sessionManager, postSaveSyncScheduler, stockHelper, calcularMontoPagadoUseCase
+            repository, sessionManager, postSaveSyncScheduler, stockHelper, calcularMontoPagadoUseCase,
+            costoProductoDao, costoBiseladoDao
         )
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -157,7 +167,8 @@ class DispensacionViewModelReclamoTest {
     fun `crearReclamo diff equals zero does not create any Pago`() = runTest {
         coEvery { calcularMontoPagadoUseCase(originalId) } returns 200.0
         viewModel = DispensacionViewModel(
-            repository, sessionManager, postSaveSyncScheduler, stockHelper, calcularMontoPagadoUseCase
+            repository, sessionManager, postSaveSyncScheduler, stockHelper, calcularMontoPagadoUseCase,
+            costoProductoDao, costoBiseladoDao
         )
         testDispatcher.scheduler.advanceUntilIdle()
 

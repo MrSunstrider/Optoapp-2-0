@@ -48,7 +48,7 @@ fun CostosYGastosScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val scope = rememberCoroutineScope()
-    val tabs = listOf("Matriz de Costos", "Gastos Operativos")
+    val tabs = listOf("Lentes", "Biselado", "Lentes Contacto", "Gastos Operativos")
     var showDatePicker by remember { mutableStateOf(false) }
 
     if (showDatePicker) {
@@ -96,12 +96,10 @@ fun CostosYGastosScreen(
             }
 
             when (uiState.selectedTab) {
-                0 -> MatrizDeCostosTab(
-                    uiState = uiState,
-                    viewModel = viewModel,
-                    dispensacionId = dispensacionId
-                )
-                1 -> GastosOperativosTab(
+                0 -> MatrizDeCostosTab(uiState = uiState, viewModel = viewModel, dispensacionId = dispensacionId)
+                1 -> Text("Biselado — próximamente", modifier = Modifier.padding(16.dp))
+                2 -> Text("Lentes de Contacto — próximamente", modifier = Modifier.padding(16.dp))
+                3 -> GastosOperativosTab(
                     uiState = uiState,
                     viewModel = viewModel,
                     showDatePicker = { showDatePicker = true }
@@ -122,124 +120,262 @@ private fun MatrizDeCostosTab(
 ) {
     var expanded by remember { mutableStateOf(false) }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-            .verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        if (uiState.isLoading) {
-            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-        }
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            if (uiState.isLoading) {
+                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+            }
 
-
-        ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = !expanded }) {
-            OutlinedTextField(
-                value = uiState.selectedBlock ?: "Seleccionar bloque",
-                onValueChange = {},
-                readOnly = true,
-                label = { Text("Bloque de Costos") },
-                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true)
-            )
-            ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                COST_BLOCKS.forEach { block ->
-                    DropdownMenuItem(
-                        text = { Text(block) },
-                        onClick = {
-                            viewModel.loadBlock(block)
-                            expanded = false
-                        }
-                    )
+            ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = !expanded }) {
+                OutlinedTextField(
+                    value = uiState.selectedBlock ?: "Seleccionar bloque",
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Bloque de Costos") },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                    modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true)
+                )
+                ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                    COST_BLOCKS.forEach { block ->
+                        DropdownMenuItem(
+                            text = { Text(block) },
+                            onClick = {
+                                viewModel.loadBlock(block)
+                                expanded = false
+                            }
+                        )
+                    }
                 }
             }
-        }
 
-        uiState.selectedBlock?.let { block ->
-            val costos = uiState.costosDelBloque
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text("Bloque: $block", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        "${costos.size} registros",
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    if (costos.isNotEmpty()) {
-                        Spacer(Modifier.height(8.dp))
-                        HorizontalDivider()
-                        costos.forEach { costo ->
-                            CostoProductoRow(costo, onClick = { viewModel.showEditCosto(costo) })
+            uiState.selectedBlock?.let { block ->
+                val costos = uiState.costosDelBloque
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text("Bloque: $block", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            "${costos.size} registros",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        if (costos.isNotEmpty()) {
+                            Spacer(Modifier.height(8.dp))
+                            HorizontalDivider()
+                            costos.forEach { costo ->
+                                CostoProductoRow(
+                                    costo,
+                                    onClick = { viewModel.showEditCosto(costo) },
+                                    onDelete = { viewModel.confirmDeleteCosto(costo) }
+                                )
+                            }
+                        } else if (!uiState.isLoading) {
+                            Spacer(Modifier.height(8.dp))
+                            Text(
+                                "No hay costos registrados en este bloque.",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
-                    } else if (!uiState.isLoading) {
+                    }
+                }
+            }
+
+            if (!dispensacionId.isNullOrBlank()) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f))
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Receipt, contentDescription = "Recibo", modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(8.dp))
+                            Text("Costos de la Orden", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        }
                         Spacer(Modifier.height(8.dp))
                         Text(
-                            "No hay costos registrados en este bloque.",
+                            "Dispensación #${dispensacionId.take(8)}",
                             fontSize = 12.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
             }
-        }
 
-        if (!dispensacionId.isNullOrBlank()) {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f))
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Receipt, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(Modifier.width(8.dp))
-                        Text("Costos de la Orden", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                    }
-                    Spacer(Modifier.height(8.dp))
-                    Text(
-                        "Dispensación #${dispensacionId.take(8)}",
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+            uiState.error?.let { error ->
+                Text(error, color = MaterialTheme.colorScheme.error, fontSize = 13.sp)
+            }
+
+            // Spacer so FAB doesn't cover last items
+            Spacer(Modifier.height(80.dp))
+
+            // ── Edit Cost Dialog (R6: manual override) ──
+            uiState.editingCosto?.let { costo ->
+                var editValue by remember { mutableStateOf(uiState.nuevoCostoUnitario) }
+                AlertDialog(
+                    onDismissRequest = { viewModel.dismissEditCosto() },
+                    title = { Text("Editar Costo", fontWeight = FontWeight.Bold) },
+                    text = {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(
+                                "${costo.material} · ${costo.tipoLente}",
+                                fontSize = 13.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            OutlinedTextField(
+                                value = editValue,
+                                onValueChange = { editValue = it; viewModel.updateNuevoCostoUnitario(it) },
+                                label = { Text("Costo unitario") },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            uiState.error?.let { e ->
+                                Text(e, color = MaterialTheme.colorScheme.error, fontSize = 12.sp)
+                            }
+                        }
+                    },
+                    confirmButton = { Button(onClick = { viewModel.saveCostoEdit() }) { Text("Guardar") } },
+                    dismissButton = { TextButton(onClick = { viewModel.dismissEditCosto() }) { Text("Cancelar") } }
+                )
             }
         }
 
-        uiState.error?.let { error ->
-            Text(error, color = MaterialTheme.colorScheme.error, fontSize = 13.sp)
+        // FAB for creating new cost entry (same position as Tab 1 FAB)
+        if (uiState.selectedBlock != null) {
+            FloatingActionButton(
+                onClick = { viewModel.showNewCosto() },
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(16.dp)
+                    .navigationBarsPadding()
+            ) {
+                Icon(Icons.Default.Add, contentDescription = "Añadir Costo")
+            }
         }
 
-        // ── Edit Cost Dialog (R6: manual override) ──
-        uiState.editingCosto?.let { costo ->
-            var editValue by remember { mutableStateOf(uiState.nuevoCostoUnitario) }
+        // ── Create Cost Dialog ──
+        if (uiState.isCostoDialogVisible) {
             AlertDialog(
-                onDismissRequest = { viewModel.dismissEditCosto() },
-                title = { Text("Editar Costo", fontWeight = FontWeight.Bold) },
+                onDismissRequest = { viewModel.dismissCostoDialog() },
+                title = { Text("Nuevo Costo", fontWeight = FontWeight.Bold) },
                 text = {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(
-                            "${costo.material} · ${costo.tipoLente}",
-                            fontSize = 13.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        // Material dropdown
+                        var materialExpanded by remember { mutableStateOf(false) }
+                        ExposedDropdownMenuBox(expanded = materialExpanded, onExpandedChange = { materialExpanded = !materialExpanded }) {
+                            OutlinedTextField(
+                                value = uiState.costoMaterial,
+                                onValueChange = {},
+                                readOnly = true,
+                                label = { Text("Material *") },
+                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = materialExpanded) },
+                                modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true)
+                            )
+                            ExposedDropdownMenu(expanded = materialExpanded, onDismissRequest = { materialExpanded = false }) {
+                                viewModel.materialesOpticos.forEach { mat ->
+                                    DropdownMenuItem(text = { Text(mat) }, onClick = { viewModel.updateCostoMaterial(mat); materialExpanded = false })
+                                }
+                            }
+                        }
+
+                        // Tipo lente dropdown
+                        var tipoExpanded by remember { mutableStateOf(false) }
+                        ExposedDropdownMenuBox(expanded = tipoExpanded, onExpandedChange = { tipoExpanded = !tipoExpanded }) {
+                            OutlinedTextField(
+                                value = uiState.costoTipoLente,
+                                onValueChange = {},
+                                readOnly = true,
+                                label = { Text("Tipo de lente *") },
+                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = tipoExpanded) },
+                                modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true)
+                            )
+                            ExposedDropdownMenu(expanded = tipoExpanded, onDismissRequest = { tipoExpanded = false }) {
+                                viewModel.tiposLente.forEach { tl ->
+                                    DropdownMenuItem(text = { Text(tl) }, onClick = { viewModel.updateCostoTipoLente(tl); tipoExpanded = false })
+                                }
+                            }
+                        }
+
+                        // Stock/Fabricacion — auto-filled from selected block, read-only
                         OutlinedTextField(
-                            value = editValue,
-                            onValueChange = { editValue = it; viewModel.updateNuevoCostoUnitario(it) },
-                            label = { Text("Costo unitario") },
+                            value = uiState.selectedBlock ?: "",
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text("Stock o fabricación") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        // Tratamiento dropdown
+                        var tratExpanded by remember { mutableStateOf(false) }
+                        ExposedDropdownMenuBox(expanded = tratExpanded, onExpandedChange = { tratExpanded = !tratExpanded }) {
+                            OutlinedTextField(
+                                value = uiState.costoTratamiento,
+                                onValueChange = {},
+                                readOnly = true,
+                                label = { Text("Tratamiento (opcional)") },
+                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = tratExpanded) },
+                                modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true)
+                            )
+                            ExposedDropdownMenu(expanded = tratExpanded, onDismissRequest = { tratExpanded = false }) {
+                                viewModel.tratamientos.forEach { tr ->
+                                    val display = tr.ifBlank { "Ninguno" }
+                                    DropdownMenuItem(text = { Text(display) }, onClick = { viewModel.updateCostoTratamiento(tr); tratExpanded = false })
+                                }
+                            }
+                        }
+
+                        // Serie
+                        OutlinedTextField(
+                            value = uiState.costoSerie,
+                            onValueChange = { viewModel.updateCostoSerie(it) },
+                            label = { Text("Serie (opcional)") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        // Costo unitario
+                        OutlinedTextField(
+                            value = uiState.costoCostoUnitario,
+                            onValueChange = { viewModel.updateCostoCostoUnitario(it) },
+                            label = { Text("Costo unitario *") },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                             modifier = Modifier.fillMaxWidth()
                         )
-                        uiState.error?.let { e ->
-                            Text(e, color = MaterialTheme.colorScheme.error, fontSize = 12.sp)
+
+                        uiState.costoSaveError?.let { e ->
+                            Text(e, color = MaterialTheme.colorScheme.error, fontSize = 13.sp)
                         }
                     }
                 },
-                confirmButton = { Button(onClick = { viewModel.saveCostoEdit() }) { Text("Guardar") } },
-                dismissButton = { TextButton(onClick = { viewModel.dismissEditCosto() }) { Text("Cancelar") } }
+                confirmButton = { Button(onClick = { viewModel.saveCosto() }) { Text("Guardar") } },
+                dismissButton = { TextButton(onClick = { viewModel.dismissCostoDialog() }) { Text("Cancelar") } }
+            )
+        }
+
+        // ── Delete Cost Confirmation Dialog ──
+        uiState.deletingCosto?.let { costo ->
+            AlertDialog(
+                onDismissRequest = { viewModel.dismissDeleteDialog() },
+                title = { Text("Eliminar costo", fontWeight = FontWeight.Bold) },
+                text = {
+                    Text("¿Eliminar este costo de ${costo.material} · ${costo.tipoLente}?")
+                },
+                confirmButton = {
+                    Button(
+                        onClick = { viewModel.deleteCosto() },
+                        colors = ButtonDefaults.buttonColors(containerColor = AlertRed)
+                    ) { Text("Eliminar") }
+                },
+                dismissButton = { TextButton(onClick = { viewModel.dismissDeleteDialog() }) { Text("Cancelar") } }
             )
         }
     }
@@ -293,7 +429,7 @@ private fun GastosOperativosTab(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text("Total del mes", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                        Text("s/. ${fmt(totalMes)}", fontWeight = FontWeight.Bold, fontSize = 22.sp, color = MaterialTheme.colorScheme.primary)
+                        Text("s/. ${fmt(totalMes.toDouble())}", fontWeight = FontWeight.Bold, fontSize = 22.sp, color = MaterialTheme.colorScheme.primary)
                     }
                 }
             }
@@ -302,7 +438,7 @@ private fun GastosOperativosTab(
                 item {
                     Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(Icons.Default.MoneyOff, contentDescription = null, modifier = Modifier.size(40.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f))
+                            Icon(Icons.Default.MoneyOff, contentDescription = "Sin costo", modifier = Modifier.size(40.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f))
                             Spacer(Modifier.height(8.dp))
                             Text("Sin gastos registrados", color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
@@ -332,7 +468,7 @@ private fun GastosOperativosTab(
         }
     }
 
-    if (uiState.showDialog) {
+    if (uiState.isDialogVisible) {
         AlertDialog(
             onDismissRequest = { viewModel.dismissDialog() },
             title = { Text(if (uiState.editingGasto != null) "Editar Gasto" else "Nuevo Gasto", fontWeight = FontWeight.Bold) },
@@ -358,14 +494,14 @@ private fun GastosOperativosTab(
                     OutlinedTextField(value = uiState.monto, onValueChange = { viewModel.updateMonto(it) }, label = { Text("Monto") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.fillMaxWidth())
                     OutlinedTextField(value = uiState.descripcion, onValueChange = { viewModel.updateDescripcion(it) }, label = { Text("Descripción (opcional)") }, modifier = Modifier.fillMaxWidth())
                     OutlinedButton(onClick = { showDatePicker() }, modifier = Modifier.fillMaxWidth()) {
-                        Icon(Icons.Default.DateRange, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Default.DateRange, contentDescription = "Fecha", modifier = Modifier.size(16.dp))
                         Spacer(Modifier.width(6.dp))
                         Text(DateUtils.formatLocalized(uiState.fecha))
                     }
                     OutlinedTextField(value = uiState.nota, onValueChange = { viewModel.updateNota(it) }, label = { Text("Nota (opcional)") }, modifier = Modifier.fillMaxWidth())
 
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Switch(checked = uiState.esRecurrente, onCheckedChange = { viewModel.toggleRecurrente() })
+                        Switch(checked = uiState.isRecurring, onCheckedChange = { viewModel.toggleRecurrente() })
                         Spacer(Modifier.width(8.dp))
                         Text("Gasto recurrente mensual", fontSize = 13.sp)
                     }
@@ -389,18 +525,18 @@ private fun GastoOperativoCard(gasto: GastoOperativoEntity, onEdit: () -> Unit, 
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(gasto.categoria, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                Text(gasto.categoria, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                 if (!gasto.descripcion.isNullOrBlank()) {
                     Text(gasto.descripcion, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Text(DateUtils.formatLocalized(gasto.fecha), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f))
             }
-            Text("s/. ${fmt(gasto.monto)}", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = AlertRed, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text("s/. ${fmt(gasto.monto.toDouble())}", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = AlertRed, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Spacer(Modifier.width(8.dp))
-            IconButton(modifier = Modifier.size(36.dp), onClick = onEdit) {
+            IconButton(modifier = Modifier.size(48.dp), onClick = onEdit) {
                 Icon(Icons.Default.Edit, contentDescription = "Editar", modifier = Modifier.size(18.dp))
             }
-            IconButton(modifier = Modifier.size(36.dp), onClick = onDelete) {
+            IconButton(modifier = Modifier.size(48.dp), onClick = onDelete) {
                 Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = AlertRed, modifier = Modifier.size(18.dp))
             }
         }
@@ -415,13 +551,15 @@ private fun fmt(value: Double): String {
 // ─── Costo Producto Row (matrix grid) ──────────────────────────────────────
 
 @Composable
-private fun CostoProductoRow(costo: CostoProductoEntity, onClick: () -> Unit = {}) {
+private fun CostoProductoRow(costo: CostoProductoEntity, onClick: () -> Unit = {}, onDelete: () -> Unit = {}) {
     Row(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 6.dp),
+        modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(modifier = Modifier.weight(1f)) {
+        Column(
+            modifier = Modifier.weight(1f).clickable(onClick = onClick)
+        ) {
             Text(
                 "${costo.material} · ${costo.tipoLente}",
                 fontWeight = FontWeight.Medium,
@@ -437,12 +575,18 @@ private fun CostoProductoRow(costo: CostoProductoEntity, onClick: () -> Unit = {
                 Text(specs, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
-        Text(
-            "s/. ${fmt(costo.costoUnitario)}",
-            fontWeight = FontWeight.Bold,
-            fontSize = 14.sp,
-            color = PositiveGreen
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                "s/. ${fmt(costo.costoUnitario)}",
+                fontWeight = FontWeight.Bold,
+                fontSize = 14.sp,
+                color = PositiveGreen
+            )
+            Spacer(Modifier.width(4.dp))
+            IconButton(modifier = Modifier.size(40.dp), onClick = onDelete) {
+                Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = AlertRed, modifier = Modifier.size(18.dp))
+            }
+        }
     }
     HorizontalDivider()
 }

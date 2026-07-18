@@ -214,9 +214,7 @@ class ServiciosViewModel @Inject constructor(
                     opticaId = currentOpticaId
                 )
 
-                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                repository.runInTransaction {
-                    kotlinx.coroutines.runBlocking {
+                repository.withTransaction {
                     if (state.isEdit) {
                         repository.updateServicio(servicio)
                     } else {
@@ -235,9 +233,6 @@ class ServiciosViewModel @Inject constructor(
                     state.pagosToDelete.forEach { pago ->
                         repository.deletePagoRegistrandoAnulacionEnCaja(pago, currentOpticaId)
                     }
-
-                    }
-                }
                 }
 
                 _uiState.update { it.copy(error = null) }

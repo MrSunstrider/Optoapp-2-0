@@ -67,6 +67,16 @@ fun GastosScreen(navController: NavController, drawerState: DrawerState, viewMod
             }
         }
     ) { padding ->
+        if (uiState.isLoading) {
+            Box(
+                modifier = Modifier.fillMaxSize().padding(padding),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
+            }
+            return@Scaffold
+        }
+
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(padding).navigationBarsPadding(),
             contentPadding = PaddingValues(16.dp),
@@ -84,7 +94,7 @@ fun GastosScreen(navController: NavController, drawerState: DrawerState, viewMod
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text("Total del mes", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                        Text("s/. ${fmt(totalMes)}", fontWeight = FontWeight.Bold, fontSize = 22.sp, color = MaterialTheme.colorScheme.primary)
+                        Text("s/. ${fmt(totalMes.toDouble())}", fontWeight = FontWeight.Bold, fontSize = 22.sp, color = MaterialTheme.colorScheme.primary)
                     }
                 }
             }
@@ -93,7 +103,7 @@ fun GastosScreen(navController: NavController, drawerState: DrawerState, viewMod
                 item {
                     Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(Icons.Default.MoneyOff, contentDescription = null, modifier = Modifier.size(40.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f))
+                            Icon(Icons.Default.MoneyOff, contentDescription = "Sin gastos", modifier = Modifier.size(40.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f))
                             Spacer(Modifier.height(8.dp))
                             Text("Sin gastos registrados", color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
@@ -113,7 +123,7 @@ fun GastosScreen(navController: NavController, drawerState: DrawerState, viewMod
         }
     }
 
-    if (uiState.showDialog) {
+    if (uiState.isDialogVisible) {
         AlertDialog(
             onDismissRequest = { viewModel.dismissDialog() },
             title = { Text(if (uiState.editingGasto != null) "Editar Gasto" else "Nuevo Gasto", fontWeight = FontWeight.Bold) },
@@ -141,7 +151,7 @@ fun GastosScreen(navController: NavController, drawerState: DrawerState, viewMod
                     OutlinedTextField(value = uiState.descripcion, onValueChange = { viewModel.updateDescripcion(it) }, label = { Text("Descripción (opcional)") }, modifier = Modifier.fillMaxWidth())
 
                     OutlinedButton(onClick = { showDatePicker = true }, modifier = Modifier.fillMaxWidth()) {
-                        Icon(Icons.Default.DateRange, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Default.DateRange, contentDescription = "Seleccionar fecha", modifier = Modifier.size(16.dp))
                         Spacer(Modifier.width(6.dp))
                         Text(DateUtils.formatLocalized(uiState.fecha))
                     }
@@ -177,12 +187,12 @@ private fun GastoCard(gasto: GastoOperativoEntity, onEdit: () -> Unit, onDelete:
                 }
                 Text(DateUtils.formatLocalized(gasto.fecha), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f))
             }
-            Text("s/. ${fmt(gasto.monto)}", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = AlertRed, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text("s/. ${fmt(gasto.monto.toDouble())}", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = AlertRed, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Spacer(Modifier.width(8.dp))
-            IconButton(modifier = Modifier.size(36.dp), onClick = onEdit) {
+            IconButton(modifier = Modifier.size(48.dp), onClick = onEdit) {
                 Icon(Icons.Default.Edit, contentDescription = "Editar", modifier = Modifier.size(18.dp))
             }
-            IconButton(modifier = Modifier.size(36.dp), onClick = onDelete) {
+            IconButton(modifier = Modifier.size(48.dp), onClick = onDelete) {
                 Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = AlertRed, modifier = Modifier.size(18.dp))
             }
         }

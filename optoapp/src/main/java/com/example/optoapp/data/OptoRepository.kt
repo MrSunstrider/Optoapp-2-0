@@ -2,21 +2,10 @@ package com.example.optoapp.data
 
 import android.util.Log
 import com.example.optoapp.data.backup.BackupRestoreCoordinator
-import com.example.optoapp.data.categoriaproducto.CategoriaProductoDao
-import com.example.optoapp.data.categoriaproducto.CategoriaProductoEntity
-import com.example.optoapp.data.costobiselado.CostoBiseladoDao
-import com.example.optoapp.data.costobiselado.CostoBiseladoEntity
-import com.example.optoapp.data.costoproducto.CostoProductoDao
-import com.example.optoapp.data.costoproducto.CostoProductoEntity
-import com.example.optoapp.data.configuracionfinanciera.ConfiguracionFinancieraDao
-import com.example.optoapp.data.configuracionfinanciera.ConfiguracionFinancieraEntity
 import com.example.optoapp.data.gastooperativo.GastoOperativoDao
 import com.example.optoapp.data.gastooperativo.GastoOperativoEntity
-import com.example.optoapp.data.pago.PagoDao
 import com.example.optoapp.data.montura.MonturaInventoryCoordinator
 import com.example.optoapp.data.regalodispensacion.RegaloDispensacionEntity
-import com.example.optoapp.data.resumendiario.ResumenDiarioDao
-import com.example.optoapp.data.resumendiario.ResumenDiarioEntity
 import com.example.optoapp.data.sync.SyncSnapshotCoordinator
 import com.example.optoapp.util.DateUtils
 import dagger.Lazy
@@ -46,12 +35,7 @@ open class OptoRepository(
     val snapshotCoordinator: SyncSnapshotCoordinator,
     val backupCoordinator: BackupRestoreCoordinator,
     val monturaCoordinator: MonturaInventoryCoordinator,
-    private val gastoOperativoDao: GastoOperativoDao,
-    private val resumenDiarioDao: ResumenDiarioDao,
-    private val configuracionFinancieraDao: ConfiguracionFinancieraDao,
-    private val categoriaProductoDao: CategoriaProductoDao,
-    private val costoProductoDao: CostoProductoDao,
-    private val costoBiseladoDao: CostoBiseladoDao
+    private val gastoOperativoDao: GastoOperativoDao
 ) {
     companion object {
         private const val TAG = "OptoRepository"
@@ -92,33 +76,9 @@ open class OptoRepository(
     suspend fun updateEvaluacion(evaluacion: EvaluacionClinica) { val stamped = evaluacion.copy(updatedAt = Instant.now().toString()); pacienteRepo.updateEvaluacion(stamped); postSaveSyncScheduler.get().scheduleHistorialSync(stamped.opticaId) }
 
     fun getDispensacionesByPaciente(pacienteId: String) = dispensacionRepo.getDispensacionesByPaciente(pacienteId)
-    @Suppress("DEPRECATION")
-    @Deprecated(
-        message = "Use getAllDispensacionesForOptica to enforce multi-tenant isolation",
-        replaceWith = ReplaceWith("getAllDispensacionesForOptica(opticaId)")
-    )
-    fun getAllDispensaciones() = dispensacionRepo.getAllDispensaciones()
     fun getAllDispensacionesForOptica(opticaId: String) = dispensacionRepo.getAllDispensacionesForOptica(opticaId)
-    @Suppress("DEPRECATION")
-    @Deprecated(
-        message = "Use getTotalVendidoForOptica to enforce multi-tenant isolation",
-        replaceWith = ReplaceWith("getTotalVendidoForOptica(opticaId)")
-    )
-    fun getTotalVendido() = dispensacionRepo.getTotalVendido()
-    @Suppress("DEPRECATION")
-    @Deprecated(
-        message = "Use getTotalPagadoForOptica to enforce multi-tenant isolation",
-        replaceWith = ReplaceWith("getTotalPagadoForOptica(opticaId)")
-    )
-    fun getTotalPagado() = dispensacionRepo.getTotalPagado()
     fun getTotalVendidoForOptica(opticaId: String) = dispensacionRepo.getTotalVendidoForOptica(opticaId)
     fun getTotalPagadoForOptica(opticaId: String) = dispensacionRepo.getTotalPagadoForOptica(opticaId)
-    @Suppress("DEPRECATION")
-    @Deprecated(
-        message = "Use getDispensacionesByDateRangeForOptica to enforce multi-tenant isolation",
-        replaceWith = ReplaceWith("getDispensacionesByDateRangeForOptica(start, end, opticaId)")
-    )
-    fun getDispensacionesByDateRange(start: LocalDate, end: LocalDate) = dispensacionRepo.getDispensacionesByDateRange(start, end)
     fun getDispensacionesByDateRangeForOptica(start: LocalDate, end: LocalDate, opticaId: String) = dispensacionRepo.getDispensacionesByDateRangeForOptica(start, end, opticaId)
     suspend fun getDispensacionById(id: String) = dispensacionRepo.getDispensacionById(id)
     suspend fun getLastDispensacionByPacienteId(pacienteId: String) = dispensacionRepo.getLastDispensacionByPacienteId(pacienteId)
@@ -140,6 +100,8 @@ open class OptoRepository(
     suspend fun updatePago(pago: Pago) { val stamped = pago.copy(updatedAt = Instant.now().toString()); dispensacionRepo.updatePago(stamped); postSaveSyncScheduler.get().scheduleFinanzasSync(stamped.opticaId) }
     suspend fun getPagoById(id: String, opticaId: String) = dispensacionRepo.getPagoById(id, opticaId)
     suspend fun reassignPagosDispensacion(oldDispensacionId: String, newDispensacionId: String, opticaId: String) = dispensacionRepo.reassignPagosDispensacion(oldDispensacionId, newDispensacionId, opticaId)
+    suspend fun reassignItemsDispensacion(sourceId: String, targetId: String) = dispensacionRepo.reassignItemsDispensacion(sourceId, targetId)
+    suspend fun reassignRegalosDispensacion(sourceId: String, targetId: String) = database.regaloDispensacionDao().reassignRegalosDispensacion(sourceId, targetId)
     suspend fun deletePagoRegistrandoAnulacionEnCaja(pago: Pago, opticaId: String) = dispensacionRepo.deletePagoRegistrandoAnulacionEnCaja(pago, opticaId)
     suspend fun deletePago(pago: Pago) = dispensacionRepo.deletePago(pago)
     fun getPagosByServicioExtra(servicioExtraId: String) = dispensacionRepo.getPagosByServicioExtra(servicioExtraId)
@@ -152,13 +114,10 @@ open class OptoRepository(
     fun getPagosByDateRangeForOptica(start: LocalDate, end: LocalDate, opticaId: String) = dispensacionRepo.getPagosByDateRangeForOptica(start, end, opticaId)
     fun getAllPagosFlowForOptica(opticaId: String) = dispensacionRepo.getPagosFlowForOptica(opticaId)
 
-    @Suppress("DEPRECATION")
-    @Deprecated(
-        message = "Use getAllServiciosForOptica to enforce multi-tenant isolation",
-        replaceWith = ReplaceWith("getAllServiciosForOptica(opticaId)")
-    )
-    fun getAllServicios() = dispensacionRepo.getAllServicios()
     fun getAllServiciosForOptica(opticaId: String) = dispensacionRepo.getAllServiciosForOptica(opticaId)
+    fun getServiciosByDateRangeForOptica(start: LocalDate, end: LocalDate, opticaId: String) = dispensacionRepo.getServiciosByDateRangeForOptica(start, end, opticaId)
+    suspend fun getServiciosByIds(ids: List<String>, opticaId: String) = dispensacionRepo.getServiciosByIds(ids, opticaId)
+    suspend fun getDispensacionesByIds(ids: List<String>, opticaId: String) = dispensacionRepo.getDispensacionesByIds(ids, opticaId)
     fun getServiciosByPaciente(pacienteId: String) = dispensacionRepo.getServiciosByPaciente(pacienteId)
     suspend fun getServicioById(id: String) = dispensacionRepo.getServicioById(id)
     suspend fun insertServicio(servicio: ServicioExtra) { val stamped = servicio.copy(updatedAt = Instant.now().toString()); dispensacionRepo.insertServicio(stamped); postSaveSyncScheduler.get().scheduleFinanzasSync(stamped.opticaId) }
@@ -256,22 +215,6 @@ open class OptoRepository(
     suspend fun upsertGastoOperativoFromRemote(gasto: GastoOperativoEntity) =
         gastoOperativoDao.upsert(gasto)
 
-    // ─── Resumen Diario ───────────────────────────────────────────────────────
-
-    fun getResumenDiario(opticaId: String): Flow<List<ResumenDiarioEntity>> =
-        resumenDiarioDao.getByOpticaId(opticaId)
-
-    suspend fun upsertResumenDiarioFromRemote(resumen: ResumenDiarioEntity) =
-        resumenDiarioDao.upsert(resumen)
-
-    // ─── Configuración Financiera ──────────────────────────────────────────────
-
-    fun getConfiguracionFinanciera(opticaId: String): Flow<ConfiguracionFinancieraEntity?> =
-        configuracionFinancieraDao.getByOpticaId(opticaId)
-
-    suspend fun upsertConfiguracionFinancieraFromRemote(config: ConfiguracionFinancieraEntity) =
-        configuracionFinancieraDao.upsert(config)
-
     suspend fun upsertRegaloFromRemote(regalo: RegaloDispensacionEntity) =
         database.regaloDispensacionDao().upsert(regalo)
 
@@ -283,53 +226,11 @@ open class OptoRepository(
     suspend fun insertRegalo(regalo: RegaloDispensacionEntity) =
         database.regaloDispensacionDao().insert(regalo)
 
-    suspend fun deleteRegalosByDispensacionId(dispId: String) =
-        database.regaloDispensacionDao().deleteByDispensacionId(dispId)
+    suspend fun deleteRegaloById(id: String) =
+        database.regaloDispensacionDao().deleteById(id)
 
-    // ─── Categorías de Producto ───────────────────────────────────────────────
-
-    fun getCategoriasProducto(): Flow<List<CategoriaProductoEntity>> =
-        categoriaProductoDao.getAll()
-
-    // ─── Costos Producto ──────────────────────────────────────────────────────
-
-    suspend fun getCostosProductosList(opticaId: String): List<CostoProductoEntity> =
-        costoProductoDao.getByOpticaIdList(opticaId)
-
-    fun getCostosProductosByBloque(opticaId: String, bloque: String): kotlinx.coroutines.flow.Flow<List<CostoProductoEntity>> =
-        costoProductoDao.getByBloque(opticaId, bloque)
-
-    suspend fun lookupCostoProducto(
-        material: String,
-        tipoLente: String,
-        stockOFabricacion: String,
-        tratamiento: String?,
-        serie: Int?
-    ): CostoProductoEntity? = costoProductoDao.lookup(material, tipoLente, stockOFabricacion, tratamiento, serie)
-
-    /** LC-specific cost lookup: adds laboratorio_id filter for per-lab pricing. */
-    suspend fun lookupCostoProductoLc(
-        material: String,
-        tipoLente: String,
-        stockOFabricacion: String,
-        laboratorioId: String?
-    ): CostoProductoEntity? = costoProductoDao.lookupLc(material, tipoLente, stockOFabricacion, laboratorioId)
-
-    suspend fun upsertCostoProductoFromRemote(entity: CostoProductoEntity) =
-        costoProductoDao.upsertAll(listOf(entity))
-
-    // ─── Costos Biselado ──────────────────────────────────────────────────────
-
-    suspend fun lookupCostoBiselado(
-        material: String,
-        tipoAro: String,
-        stockOFabricacion: String,
-        serie: Int?,
-        altoIndice: String?
-    ): CostoBiseladoEntity? = costoBiseladoDao.lookup(material, tipoAro, stockOFabricacion, serie, altoIndice)
-
-    suspend fun upsertCostoBiseladoFromRemote(entity: CostoBiseladoEntity) =
-        costoBiseladoDao.upsertAll(listOf(entity))
+    suspend fun deleteRegalosByDispensacionId(dispId: String, opticaId: String) =
+        database.regaloDispensacionDao().deleteByDispensacionId(dispId, opticaId)
 }
 
 data class DuplicateHoResolutionResult(

@@ -38,12 +38,7 @@ fun DispensacionesList(
     val labCfg by laboratorioVm.uiState.collectAsState()
 
     if (dispensaciones.isEmpty()) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Icon(Icons.Default.Inbox, contentDescription = null, modifier = Modifier.size(48.dp), tint = MaterialTheme.colorScheme.outlineVariant)
-                Text("No hay dispensaciones.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
-            }
-        }
+        EmptyListMessage("No hay dispensaciones.")
     } else {
         LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             items(dispensaciones) { disp ->
@@ -61,7 +56,7 @@ fun DispensacionesList(
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                             Text(text = date, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                IconButton(modifier = Modifier.size(24.dp), onClick = { selectedDispForTicket.value = disp }) {
+                                IconButton(modifier = Modifier.size(48.dp), onClick = { selectedDispForTicket.value = disp }) {
                                     Icon(
                                         Icons.Filled.Science,
                                         contentDescription = "Ticket de laboratorio",
@@ -69,7 +64,7 @@ fun DispensacionesList(
                                         modifier = Modifier.size(20.dp)
                                     )
                                 }
-                                IconButton(modifier = Modifier.size(24.dp), onClick = { selectedDispForResumen.value = disp }) {
+                                IconButton(modifier = Modifier.size(48.dp), onClick = { selectedDispForResumen.value = disp }) {
                                     Icon(Icons.Default.Visibility, contentDescription = "Ver Resumen", tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(20.dp))
                                 }
                                 Surface(
@@ -146,7 +141,7 @@ fun ResumenDispensacionDialog(
         onDismissRequest = onDismiss,
         title = {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Visibility, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                Icon(Icons.Default.Visibility, contentDescription = "Ver", tint = MaterialTheme.colorScheme.primary)
                 Spacer(modifier = Modifier.width(8.dp))
                 Text("Resumen de Dispensación")
             }
@@ -177,7 +172,7 @@ fun ResumenDispensacionDialog(
                             val distancia = if (disp.tipoLente == "Monofocal" && disp.distanciaLente.isNotBlank()) " - ${disp.distanciaLente}" else ""
                             Text("Tipo: ${disp.tipoLente}$subtipo$distancia", fontSize = 14.sp)
                         }
-                        if ((disp.tipoLente == "Bifocal" || disp.tipoLente == "Progresivo" || disp.tipoLente == "Ocupacional") && disp.altura.isNotBlank()) {
+                        if ((disp.tipoLente == "Bifocal" || disp.tipoLente == "Multifocal" || disp.tipoLente == "Ocupacional") && disp.altura.isNotBlank()) {
                             Text("Altura: ${disp.altura} mm", fontSize = 14.sp)
                         }
                         if (disp.materialLente.isNotBlank()) Text("Material: ${disp.materialLente}", fontSize = 14.sp)

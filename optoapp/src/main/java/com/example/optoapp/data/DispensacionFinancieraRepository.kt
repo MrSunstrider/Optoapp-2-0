@@ -21,6 +21,7 @@ interface DispensacionFinancieraRepository {
     suspend fun editarPago(pago: Pago)
     suspend fun eliminarPago(pago: Pago, opticaId: String)
     fun runInTransaction(block: () -> Unit)
+    suspend fun <T> withTransaction(block: suspend () -> T): T
 }
 
 class DispensacionFinancieraRepositoryImpl(
@@ -29,6 +30,10 @@ class DispensacionFinancieraRepositoryImpl(
 
     override fun runInTransaction(block: () -> Unit) {
         optoRepository.runInTransaction(block)
+    }
+
+    override suspend fun <T> withTransaction(block: suspend () -> T): T {
+        return optoRepository.withTransaction(block)
     }
 
     override suspend fun obtenerDispensacion(dispensacionId: String): Resource<DispensacionOptica> {

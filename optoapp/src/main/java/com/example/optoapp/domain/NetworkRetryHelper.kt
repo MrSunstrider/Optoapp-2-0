@@ -35,17 +35,17 @@ class NetworkRetryHelper @Inject constructor(
             } catch (e: IOException) {
                 logger.e(TAG, "Error en red en $opName: ${e.message}", e)
                 lastError = e
-                val shouldRetry = isTransientNetworkError(e)
+                val shouldRetry = isRetryable(e)
                 if (!shouldRetry || attempt == NETWORK_RETRY_ATTEMPTS - 1) throw e
-                val backoffMs = (400L * (attempt + 1)) + Random.nextLong(0, 200)
+                val backoffMs = (400L * (1 shl attempt)) + Random.nextLong(0, 200)
                 logger.w(TAG, "$opName fallo de red (intento ${attempt + 1}/$NETWORK_RETRY_ATTEMPTS). Reintentando en ${backoffMs}ms")
                 delay(backoffMs)
             } catch (e: RestException) {
                 logger.e(TAG, "Error REST en $opName (${e.statusCode}): ${e.message}", e)
                 lastError = e
-                val shouldRetry = isTransientNetworkError(e) || e.statusCode == 429
+                val shouldRetry = isRetryable(e)
                 if (!shouldRetry || attempt == NETWORK_RETRY_ATTEMPTS - 1) throw e
-                val backoffMs = (400L * (attempt + 1)) + Random.nextLong(0, 200)
+                val backoffMs = (400L * (1 shl attempt)) + Random.nextLong(0, 200)
                 logger.w(TAG, "$opName fallo REST (intento ${attempt + 1}/$NETWORK_RETRY_ATTEMPTS). Reintentando en ${backoffMs}ms")
                 delay(backoffMs)
             }
@@ -53,15 +53,10 @@ class NetworkRetryHelper @Inject constructor(
         lastError?.let { throw it }
     }
 
-    fun isTransientNetworkError(e: Exception): Boolean {
-        val msg = e.message?.lowercase().orEmpty()
-        return msg.contains("timeout") ||
-            msg.contains("timed out") ||
-            msg.contains("429") ||
-            msg.contains("too many requests") ||
-            msg.contains("connect") && msg.contains("failed") ||
-            msg.contains("unable to resolve host") ||
-            msg.contains("network is unreachable") ||
-            msg.contains("connection reset")
+    internal fun isRetryable(e: Exception): Boolean {
+        if (e is RestException) return e.statusCode in 429..599
+        if (e is IOException) return true
+        val msg = e.message?.lowercase() ?: ""
+        return msg.contains("timeout") || msg.contains("timed out") || msg.contains("connection")
     }
 }

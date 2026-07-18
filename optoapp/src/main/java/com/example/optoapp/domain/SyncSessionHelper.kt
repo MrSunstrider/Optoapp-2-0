@@ -1,6 +1,6 @@
 package com.example.optoapp.domain
 
-import android.util.Log
+import com.example.optoapp.util.AppLogger
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import kotlinx.coroutines.CancellationException
@@ -25,18 +25,18 @@ object SyncSessionHelper {
     suspend fun refreshSessionBeforeSync(supabase: SupabaseClient): Boolean {
         val session = runCatching { supabase.auth.currentSessionOrNull() }.getOrNull()
         if (session == null) {
-            Log.w(TAG, "Sin sesión Supabase; la sync debe abortarse")
+            AppLogger.w(TAG, "Sin sesión Supabase; la sync debe abortarse")
             return false
         }
 
         return try {
             supabase.auth.refreshCurrentSession()
-            Log.d(TAG, "Sesión refrescada explícitamente antes de sincronizar")
+            AppLogger.d(TAG, "Sesión refrescada explícitamente antes de sincronizar")
 
             // Verificación post-refresh: confirmar que el JWT realmente se actualizó
             val refreshedSession = runCatching { supabase.auth.currentSessionOrNull() }.getOrNull()
             if (refreshedSession?.accessToken.isNullOrBlank()) {
-                Log.w(TAG, "Sesión sin accessToken tras refresh; abortando sync")
+                AppLogger.w(TAG, "Sesión sin accessToken tras refresh; abortando sync")
                 return false
             }
 
@@ -44,7 +44,7 @@ object SyncSessionHelper {
             // el server devuelve una sesión con role: "anon" en vez de lanzar error.
             val currentUser = runCatching { supabase.auth.currentUserOrNull() }.getOrNull()
             if (currentUser == null) {
-                Log.w(TAG, "Refresh devolvió sesión anónima (refresh token inválido/expirado); abortando sync")
+                AppLogger.w(TAG, "Refresh devolvió sesión anónima (refresh token inválido/expirado); abortando sync")
                 return false
             }
 
@@ -52,11 +52,11 @@ object SyncSessionHelper {
         } catch (e: CancellationException) {
             throw e
         } catch (e: IOException) {
-            Log.w(TAG, "Error en red refrescando sesión: ${e.message}")
+            AppLogger.w(TAG, "Error en red refrescando sesión: ${e.message}")
             // No podemos confirmar que el token es válido — abortar para evitar 401s masivos
             false
         } catch (e: Exception) {
-            Log.w(TAG, "Error inesperado refrescando sesión: ${e.message}")
+            AppLogger.w(TAG, "Error inesperado refrescando sesión: ${e.message}")
             false
         }
     }

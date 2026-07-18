@@ -1,6 +1,6 @@
 package com.example.optoapp.domain
 
-import android.util.Log
+import com.example.optoapp.util.AppLogger
 import com.example.optoapp.data.Resource
 import com.example.optoapp.data.montura.CategoriaCount
 import com.example.optoapp.data.montura.MonturaDashboardKpiRepository
@@ -36,15 +36,15 @@ class SyncInventoryKpisUseCase @Inject constructor(
                 stockByCategory = categories,
                 lastMovementDate = lastDate?.toString()
             )
-            Log.d(TAG, "KPI sync completado para óptica $opticaId: $total modelos, $lowStock stock bajo")
+            AppLogger.d(TAG, "KPI sync completado para óptica $opticaId: $total modelos, $lowStock stock bajo")
             Resource.Success(summary)
         } catch (e: CancellationException) {
             throw e
         } catch (e: IOException) {
-            Log.e(TAG, "Error de red al sincronizar KPIs", e)
+            AppLogger.e(TAG, "Error de red al sincronizar KPIs", e)
             Resource.Error(e.message ?: "Error al sincronizar KPIs")
         } catch (e: Exception) {
-            Log.e(TAG, "Error inesperado al sincronizar KPIs", e)
+            AppLogger.e(TAG, "Error inesperado al sincronizar KPIs", e)
             Resource.Error(e.message ?: "Error al sincronizar KPIs")
         }
     }

@@ -36,14 +36,23 @@ interface PagoDao {
     @Upsert
     suspend fun insertPago(pago: Pago)
 
-    @Update
-    suspend fun updatePago(pago: Pago)
+    @Query("""
+        UPDATE pagos SET dispensacionId=:dispensacionId,
+        servicioExtraId=:servicioExtraId, fecha=:fecha, tipo=:tipo,
+        monto=:monto, metodoPago=:metodoPago, nota=:nota,
+        opticaId=:opticaId, updatedAt=:updatedAt, updatedBy=:updatedBy,
+        ventaId=:ventaId
+        WHERE id=:id AND opticaId=:opticaId
+    """)
+    suspend fun updatePago(
+        id: String, opticaId: String, dispensacionId: String?,
+        servicioExtraId: String?, fecha: java.time.LocalDate, tipo: String,
+        monto: Double, metodoPago: String, nota: String,
+        updatedAt: String?, updatedBy: String?, ventaId: String?
+    ): Int
 
-    @Delete
-    suspend fun deletePago(pago: Pago)
-
-    @Query("DELETE FROM pagos WHERE opticaId = :opticaId")
-    suspend fun deleteAll(opticaId: String)
+    @Query("DELETE FROM pagos WHERE id = :id AND opticaId = :opticaId")
+    suspend fun deletePago(id: String, opticaId: String): Int
 
     @Query("UPDATE pagos SET opticaId = :newOpticaId WHERE opticaId = 'mi_optica_base'")
     suspend fun reassignFromLegacyMiOpticaBase(newOpticaId: String): Int

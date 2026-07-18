@@ -23,6 +23,8 @@ import kotlinx.coroutines.CancellationException
 import java.io.IOException
 import com.example.optoapp.util.BackgroundErrorCollector
 import com.example.optoapp.util.SyncErrorSanitizer
+import com.example.optoapp.domain.sync.BumpEntityStrategy
+import com.example.optoapp.domain.sync.SyncOrchestrator
 import com.example.optoapp.domain.SyncFinanzasUseCase
 import com.example.optoapp.domain.SyncHistorialUseCase
 import com.example.optoapp.domain.SyncInventarioUseCase
@@ -79,7 +81,8 @@ class SyncViewModel @Inject constructor(
     private val syncEntityStateDao: SyncEntityStateDao,
     private val supabaseObserver: com.example.optoapp.domain.observer.TableObserver,
     private val bgErrorCollector: BackgroundErrorCollector,
-    private val postSaveSyncScheduler: PostSaveSyncScheduler
+    private val postSaveSyncScheduler: PostSaveSyncScheduler,
+    private val syncOrchestrator: SyncOrchestrator
 ) : ViewModel() {
 
     companion object {
@@ -92,11 +95,18 @@ class SyncViewModel @Inject constructor(
     private val _isSilentSyncing = MutableStateFlow(false)
     val isSilentSyncing: StateFlow<Boolean> = _isSilentSyncing.asStateFlow()
 
+    private val _isOnline = MutableStateFlow(true)
+    val isOnline: StateFlow<Boolean> = _isOnline.asStateFlow()
+
     private val _conflicts = MutableStateFlow<List<ConflictRecord>>(emptyList())
     val conflicts: StateFlow<List<ConflictRecord>> = _conflicts.asStateFlow()
 
     private val _conflictCount = MutableStateFlow(0)
     val conflictCount: StateFlow<Int> = _conflictCount.asStateFlow()
+
+    private val bumpStrategy = BumpEntityStrategy(
+        repository, proveedorRepository, ordenCompraRepository, sessionManager
+    )
 
     private var wasOffline = false
 
@@ -105,18 +115,29 @@ class SyncViewModel @Inject constructor(
     private var cachedMemberships: List<OpticaMembership>? = null
     private val networkCallback = object : ConnectivityManager.NetworkCallback() {
         override fun onAvailable(network: android.net.Network) {
+            _isOnline.value = true
             if (wasOffline) {
                 wasOffline = false
                 performSilentSync()
             }
         }
         override fun onLost(network: android.net.Network) {
+            _isOnline.value = false
             wasOffline = true
+        }
+        override fun onCapabilitiesChanged(
+            network: android.net.Network,
+            capabilities: NetworkCapabilities
+        ) {
+            _isOnline.value = capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
         }
     }
 
     init {
         val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val activeNetwork = cm.activeNetwork
+        val capabilities = activeNetwork?.let { cm.getNetworkCapabilities(it) }
+        _isOnline.value = capabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
         cm.registerDefaultNetworkCallback(networkCallback)
     }
 
@@ -188,8 +209,8 @@ class SyncViewModel @Inject constructor(
         viewModelScope.launch {
             val opticaId = sessionManager.opticaId.first()
             try {
-                bumpEntityUpdatedAt(entity.entityId, entity.entityType)
                 val syncResult = syncGate.mutex.withLock {
+                    bumpStrategy.bump(entity.entityId, entity.entityType)
                     syncForEntityTypeWithResult(opticaId, entity.entityType, skipUpload = false)
                 }
                 if (syncResult !is Resource.Error) {
@@ -219,7 +240,7 @@ class SyncViewModel @Inject constructor(
                 val allConflicts = conflictDao.getConflicts(opticaId)
                 val resolvedIds = mutableListOf<String>()
                 allConflicts.forEach { entity ->
-                    runCatching { bumpEntityUpdatedAt(entity.entityId, entity.entityType) }
+                    runCatching { bumpStrategy.bump(entity.entityId, entity.entityType) }
                         .onSuccess { resolvedIds.add(entity.entityId) }
                         .onFailure { e ->
                             Log.w(TAG, "Keep mine all: no se pudo bump ${entity.entityType}/${entity.entityId}: ${e.message}")
@@ -235,116 +256,6 @@ class SyncViewModel @Inject constructor(
             } catch (e: Exception) {
                 Log.e(TAG, "Error en resolveKeepMineAll: ${e.message}", e)
             }
-        }
-    }
-
-    // ── Helpers for bumpEntityUpdatedAt strategy map ──────────────────────
-
-    private suspend fun <T> bumpWithResource(
-        entityId: String, entityType: String,
-        fetcher: suspend () -> Resource<T>,
-        updater: suspend (T) -> Unit
-    ) {
-        val result = fetcher()
-        if (result is Resource.Success && result.data != null) {
-            updater(result.data)
-        } else {
-            Log.w(TAG, "bumpEntityUpdatedAt: $entityType no encontrado id=$entityId")
-        }
-    }
-
-    private suspend fun <T> bumpWithNullable(
-        entityId: String, entityType: String,
-        fetcher: suspend () -> T?,
-        updater: suspend (T) -> Unit
-    ) {
-        val entity = fetcher()
-        if (entity != null) {
-            updater(entity)
-        } else {
-            Log.w(TAG, "bumpEntityUpdatedAt: $entityType no encontrado id=$entityId")
-        }
-    }
-
-    private val bumpHandlers: Map<String, suspend (entityId: String, opticaId: String) -> Unit> = mapOf(
-        "servicio_extra" to { id, _ ->
-            bumpWithResource(id, "servicio", { repository.getServicioById(id) }, { repository.updateServicio(it) })
-        },
-        "dispensacion" to { id, _ ->
-            bumpWithResource(id, "dispensacion", { repository.getDispensacionById(id) }, { repository.updateDispensacion(it) })
-        },
-        "pago" to { id, opticaId ->
-            bumpWithNullable(id, "pago", { repository.getPagoById(id, opticaId) }, { repository.updatePago(it) })
-        },
-        "paciente" to { id, _ ->
-            bumpWithResource(id, "paciente", { repository.getPacienteById(id) }, { repository.updatePaciente(it) })
-        },
-        "evaluacion" to { id, _ ->
-            bumpWithResource(id, "evaluacion", { repository.getEvaluacionById(id) }, { repository.updateEvaluacion(it) })
-        },
-        "montura" to { id, opticaId ->
-            bumpWithResource(id, "montura", { repository.getMonturaById(id, opticaId) }, { repository.updateMontura(it) })
-        },
-        "proveedor" to { id, _ ->
-            bumpWithNullable(id, "proveedor", { proveedorRepository.getById(id) }, { proveedorRepository.update(it) })
-        },
-        "orden_compra" to { id, _ ->
-            bumpWithNullable(id, "orden_compra", { ordenCompraRepository.getById(id) }, { ordenCompraRepository.update(it) })
-        },
-        "montura_movimiento" to { id, opticaId ->
-            val mov = repository.getMovimientoMonturaById(id)
-            if (mov != null) {
-                bumpWithResource(
-                    mov.monturaId, "parent montura",
-                    { repository.getMonturaById(mov.monturaId, opticaId) },
-                    { repository.updateMontura(it) }
-                )
-            } else {
-                Log.w(TAG, "bumpEntityUpdatedAt: montura_movimiento no encontrado id=$id")
-            }
-        },
-        "orden_compra_item" to { id, _ ->
-            val item = ordenCompraRepository.getOrdenItemById(id)
-            if (item != null) {
-                val oc = ordenCompraRepository.getById(item.ordenId)
-                if (oc != null) {
-                    ordenCompraRepository.update(oc)
-                } else {
-                    Log.w(TAG, "bumpEntityUpdatedAt: parent orden_compra no encontrada id=${item.ordenId} for item=$id")
-                }
-            } else {
-                Log.w(TAG, "bumpEntityUpdatedAt: orden_compra_item no encontrado id=$id")
-            }
-        },
-        "dispensacion_item" to { id, _ ->
-            val item = repository.getDispensacionItemById(id)
-            if (item != null) {
-                bumpWithResource(
-                    item.dispensacionId, "parent dispensacion",
-                    { repository.getDispensacionById(item.dispensacionId) },
-                    { repository.updateDispensacion(it) }
-                )
-                repository.insertDispensacionItem(item)
-            } else {
-                Log.w(TAG, "bumpEntityUpdatedAt: dispensacion_item no encontrado id=$id")
-            }
-        },
-        "categoria_montura" to { _, _ -> Log.w(TAG, "categoria_montura has no parent, skipping bump") }
-    )
-
-    /**
-     * Fetches the entity from Room by [entityId] and [entityType], then calls the
-     * appropriate repository update method which auto-stamps updatedAt = Instant.now().
-     *
-     * Delegates to [bumpHandlers] strategy map instead of a long when-block.
-     */
-    private suspend fun bumpEntityUpdatedAt(entityId: String, entityType: String) {
-        val opticaId = sessionManager.opticaId.first()
-        val handler = bumpHandlers[entityType]
-        if (handler != null) {
-            handler(entityId, opticaId)
-        } else {
-            Log.d(TAG, "bumpEntityUpdatedAt: tipo no aplica bump: $entityType")
         }
     }
 
@@ -386,11 +297,11 @@ class SyncViewModel @Inject constructor(
     fun acceptAllCloud() {
         viewModelScope.launch {
             val opticaId = sessionManager.opticaId.first()
+            performFullDownload()
             conflictDao.clearConflicts(opticaId)
             syncEntityStateDao.deleteConflictedForOptica(opticaId)
             _conflicts.value = emptyList()
             _conflictCount.value = 0
-            performFullDownload()
             refreshConflicts()
         }
     }
@@ -426,32 +337,7 @@ class SyncViewModel @Inject constructor(
         postSaveSyncScheduler.cancelPending()
         postSaveSyncScheduler.suppressSync = true
         try {
-            var hasErrors = false
-            syncGate.mutex.withLock {
-                val p = syncPacientesUseCase(opticaId, downloadAfterUpload = true, skipUpload = true)
-                if (p is Resource.Error) { hasErrors = true; Log.w(TAG, "Full download (pacientes): ${p.message}") }
-
-                val h = syncHistorialUseCase(opticaId, downloadAfterUpload = true, skipUpload = true)
-                if (h is Resource.Error) { hasErrors = true; Log.w(TAG, "Full download (historial): ${h.message}") }
-
-                val f = syncFinanzasUseCase(opticaId, downloadAfterUpload = true, skipUpload = true)
-                if (f is Resource.Error) { hasErrors = true; Log.w(TAG, "Full download (finanzas): ${f.message}") }
-
-                val pv = syncProveedoresUseCase(opticaId, downloadAfterUpload = true, skipUpload = true)
-                if (pv is Resource.Error) { hasErrors = true; Log.w(TAG, "Full download (proveedores): ${pv.message}") }
-
-                val oc = syncOrdenesCompraUseCase(opticaId, downloadAfterUpload = true, skipUpload = true)
-                if (oc is Resource.Error) { hasErrors = true; Log.w(TAG, "Full download (ordenes_compra): ${oc.message}") }
-
-                val kpi = syncInventoryKpisUseCase(opticaId)
-                if (kpi is Resource.Error) { hasErrors = true; Log.w(TAG, "Full download (inventory_kpis): ${kpi.message}") }
-
-                val i = syncInventarioUseCase(opticaId, downloadAfterUpload = true, skipUpload = true)
-                if (i is Resource.Error) { hasErrors = true; Log.w(TAG, "Full download (inventario): ${i.message}") }
-
-                val ifx = syncInventarioFisicoUseCase(opticaId, downloadAfterUpload = true, skipUpload = true)
-                if (ifx is Resource.Error) { hasErrors = true; Log.w(TAG, "Full download (inventario_fisico): ${ifx.message}") }
-            }
+            val hasErrors = syncOrchestrator.executeModules(opticaId, skipUpload = true)
 
             if (hasErrors) {
                 bgErrorCollector.record("sync", "Full download completada con errores")
@@ -494,38 +380,13 @@ class SyncViewModel @Inject constructor(
         val opticaId = sessionManager.opticaId.first()
         repository.reassignLegacyMiOpticaBaseTo(opticaId)
 
-        var hasErrors = false
-        syncGate.mutex.withLock {
-            val p = syncPacientesUseCase(opticaId, downloadAfterUpload = true)
-            if (p is Resource.Error) { hasErrors = true; Log.w(TAG, "Full sync (pacientes): ${p.message}") }
-
-            val h = syncHistorialUseCase(opticaId, downloadAfterUpload = true)
-            if (h is Resource.Error) { hasErrors = true; Log.w(TAG, "Full sync (historial): ${h.message}") }
-
-            val f = syncFinanzasUseCase(opticaId, downloadAfterUpload = true)
-            if (f is Resource.Error) { hasErrors = true; Log.w(TAG, "Full sync (finanzas): ${f.message}") }
-
-            val pv = syncProveedoresUseCase(opticaId, downloadAfterUpload = true)
-            if (pv is Resource.Error) { hasErrors = true; Log.w(TAG, "Full sync (proveedores): ${pv.message}") }
-
-            val oc = syncOrdenesCompraUseCase(opticaId, downloadAfterUpload = true)
-            if (oc is Resource.Error) { hasErrors = true; Log.w(TAG, "Full sync (ordenes_compra): ${oc.message}") }
-
-            val kpi = syncInventoryKpisUseCase(opticaId)
-            if (kpi is Resource.Error) { hasErrors = true; Log.w(TAG, "Full sync (inventory_kpis): ${kpi.message}") }
-
-            val i = syncInventarioUseCase(opticaId, downloadAfterUpload = true)
-            if (i is Resource.Error) { hasErrors = true; Log.w(TAG, "Full sync (inventario): ${i.message}") }
-
-            val ifx = syncInventarioFisicoUseCase(opticaId, downloadAfterUpload = true)
-            if (ifx is Resource.Error) { hasErrors = true; Log.w(TAG, "Full sync (inventario_fisico): ${ifx.message}") }
-        }
+        val hasErrors = syncOrchestrator.executeModules(opticaId, skipUpload = false)
 
         if (hasErrors) {
             bgErrorCollector.record("sync", "Full sync completada con errores")
             syncTelemetry.recordFullSyncError("Algunos módulos reportaron errores")
             recordRemoteSyncTelemetry(opticaId, "error", "finalizado", "Algunos módulos con error")
-                _syncState.value = SyncState.Error("Sincronización parcial. Se reintentará automáticamente.")
+            _syncState.value = SyncState.Error("Sincronización parcial. Se reintentará automáticamente.")
         } else {
             syncTelemetry.recordFullSyncSuccess()
             recordRemoteSyncTelemetry(opticaId, "ok", "finalizado", null)
@@ -546,80 +407,21 @@ class SyncViewModel @Inject constructor(
         if (_isSilentSyncing.value || !isNetworkAvailable()) return@launch
         _isSilentSyncing.value = true
         try {
-            syncGate.mutex.withLock {
-                if (!SyncSessionHelper.refreshSessionBeforeSync(supabase)) {
-                    Log.w(TAG, "Sync silenciosa cancelada: sesión expirada")
-                    bgErrorCollector.record("auth", "Silent sync cancelada: JWT expirado")
-                    return@withLock
+            if (!SyncSessionHelper.refreshSessionBeforeSync(supabase)) {
+                Log.w(TAG, "Sync silenciosa cancelada: sesión expirada")
+                bgErrorCollector.record("auth", "Silent sync cancelada: JWT expirado")
+                return@launch
+            }
+            var hasErrors = false
+            syncOrchestrator.executeSilentModules(opticaId) { module, result ->
+                if (result is Resource.Error) {
+                    hasErrors = true
+                    Log.w(TAG, "Sync silenciosa ($module): ${result.message}")
+                    recordRemoteSyncTelemetry(opticaId, "error", module, result.message)
                 }
-                var hasErrors = false
-                when (val p = syncPacientesUseCase(opticaId, downloadAfterUpload = true)) {
-                    is Resource.Error -> {
-                        hasErrors = true
-                        Log.w(TAG, "Sync silenciosa (pacientes): ${p.message}")
-                        recordRemoteSyncTelemetry(opticaId, "error", "pacientes", p.message)
-                    }
-                    else -> {}
-                }
-                when (val h = syncHistorialUseCase(opticaId, downloadAfterUpload = true)) {
-                    is Resource.Error -> {
-                        hasErrors = true
-                        Log.w(TAG, "Sync silenciosa (historial): ${h.message}")
-                        recordRemoteSyncTelemetry(opticaId, "error", "historial", h.message)
-                    }
-                    else -> {}
-                }
-                when (val f = syncFinanzasUseCase(opticaId, downloadAfterUpload = true)) {
-                    is Resource.Error -> {
-                        hasErrors = true
-                        Log.w(TAG, "Sync silenciosa (finanzas): ${f.message}")
-                        recordRemoteSyncTelemetry(opticaId, "error", "finanzas", f.message)
-                    }
-                    else -> {}
-                }
-                when (val pv = syncProveedoresUseCase(opticaId, downloadAfterUpload = true)) {
-                    is Resource.Error -> {
-                        hasErrors = true
-                        Log.w(TAG, "Sync silenciosa (proveedores): ${pv.message}")
-                        recordRemoteSyncTelemetry(opticaId, "error", "proveedores", pv.message)
-                    }
-                    else -> {}
-                }
-                when (val oc = syncOrdenesCompraUseCase(opticaId, downloadAfterUpload = true)) {
-                    is Resource.Error -> {
-                        hasErrors = true
-                        Log.w(TAG, "Sync silenciosa (ordenes_compra): ${oc.message}")
-                        recordRemoteSyncTelemetry(opticaId, "error", "ordenes_compra", oc.message)
-                    }
-                    else -> {}
-                }
-                when (val kpi = syncInventoryKpisUseCase(opticaId)) {
-                    is Resource.Error -> {
-                        hasErrors = true
-                        Log.w(TAG, "Sync silenciosa (inventory_kpis): ${kpi.message}")
-                        recordRemoteSyncTelemetry(opticaId, "error", "inventory_kpis", kpi.message)
-                    }
-                    else -> {}
-                }
-                when (val i = syncInventarioUseCase(opticaId, downloadAfterUpload = true)) {
-                    is Resource.Error -> {
-                        hasErrors = true
-                        Log.w(TAG, "Sync silenciosa (inventario): ${i.message}")
-                        recordRemoteSyncTelemetry(opticaId, "error", "inventario", i.message)
-                    }
-                    else -> {}
-                }
-                when (val ifx = syncInventarioFisicoUseCase(opticaId, downloadAfterUpload = true)) {
-                    is Resource.Error -> {
-                        hasErrors = true
-                        Log.w(TAG, "Sync silenciosa (inventario_fisico): ${ifx.message}")
-                        recordRemoteSyncTelemetry(opticaId, "error", "inventario_fisico", ifx.message)
-                    }
-                    else -> {}
-                }
-                if (!hasErrors) {
-                    recordRemoteSyncTelemetry(opticaId, "ok", "inventario", null)
-                }
+            }
+            if (!hasErrors) {
+                recordRemoteSyncTelemetry(opticaId, "ok", "inventario", null)
             }
         } catch (e: CancellationException) {
             throw e

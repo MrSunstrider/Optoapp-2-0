@@ -220,7 +220,7 @@ class OrdenCompraRepositoryTest {
         val oc = db.ordenCompraDao().getById("oc1")!!
         assertEquals("COMPLETADA", oc.estado)
         // Stock should have increased by 10
-        val montura = db.monturaDao().getMonturaById("m1")
+        val montura = db.monturaDao().getMonturaByIdForOptica("m1", "o1")
         assertNotNull(montura)
         assertEquals(30, montura!!.stockActual)
     }
@@ -239,7 +239,7 @@ class OrdenCompraRepositoryTest {
         val oc = db.ordenCompraDao().getById("oc1")!!
         assertEquals("CANCELADA", oc.estado)
         // Stock should not change on cancel
-        val montura = db.monturaDao().getMonturaById("m1")
+        val montura = db.monturaDao().getMonturaByIdForOptica("m1", "o1")
         assertNotNull(montura)
         assertEquals(20, montura!!.stockActual)
     }

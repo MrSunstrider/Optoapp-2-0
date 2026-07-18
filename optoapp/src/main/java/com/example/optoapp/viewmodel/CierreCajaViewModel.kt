@@ -1,8 +1,11 @@
 package com.example.optoapp.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.optoapp.data.AppRoles
 import com.example.optoapp.data.DispensacionOptica
+import com.example.optoapp.data.FinanzasRemoteDefaults
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Pago
 import com.example.optoapp.data.ServicioExtra
@@ -12,14 +15,15 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
 import java.time.LocalDate
 import com.example.optoapp.util.DateUtils
 import javax.inject.Inject
@@ -27,7 +31,7 @@ import javax.inject.Inject
 data class CierreCajaUiState(
     val fecha: LocalDate = DateUtils.today(),
     val pagos: List<Pago> = emptyList(),
-    val totalVentasHoy: Double = 0.0,
+    val totalDispensacionesHoy: Double = 0.0,
     val dispensacionesHoy: List<DispensacionOptica> = emptyList(),
     val serviciosExtraHoy: List<ServicioExtra> = emptyList(),
     val totalServiciosExtra: Double = 0.0,
@@ -36,7 +40,8 @@ data class CierreCajaUiState(
     val cobrosAtrasados: Double = 0.0,
     val saldoPendiente: Double = 0.0,
     val isLoading: Boolean = true,
-    val dispOtMap: Map<String, String> = emptyMap()
+    val errorMessage: String? = null,
+    val pagosFuturos: Double = 0.0
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -49,67 +54,85 @@ class CierreCajaViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(CierreCajaUiState())
     val uiState: StateFlow<CierreCajaUiState> = _uiState.asStateFlow()
 
-    private val _refreshTrigger = MutableStateFlow(0)
-
     init {
-        // userTimeZone collector removed: updating _uiState.fecha mid-flow races with
-        // observePagos() cancelling the inner flatMapLatest on every zone change.
         observePagos()
     }
 
     fun setFecha(fecha: LocalDate) {
-        _uiState.update { it.copy(fecha = fecha) }
+        _uiState.update {
+            CierreCajaUiState(fecha = fecha, isLoading = true)
+        }
     }
 
     private fun observePagos() {
         combine(
             _uiState.map { it.fecha }.distinctUntilChanged(),
             sessionManager.opticaId,
-            _refreshTrigger
-        ) { fecha, opticaId, trigger -> Triple(fecha, opticaId, trigger) }
+            sessionManager.opticaRol
+        ) { fecha, opticaId, rol -> Triple(fecha, opticaId, rol) }
             .distinctUntilChanged()
-            .flatMapLatest { (fecha, opticaId, _) ->
+            .flatMapLatest { (fecha, opticaId, rol) ->
+                if (!AppRoles.canViewCierreCaja(rol)) {
+                    _uiState.update {
+                        CierreCajaUiState(fecha = fecha, isLoading = false)
+                    }
+                    return@flatMapLatest flowOf()
+                }
                 combine(
                     repository.getPagosByDateRangeForOptica(fecha, fecha, opticaId),
-                    repository.getAllDispensacionesForOptica(opticaId),
-                    repository.getAllServiciosForOptica(opticaId)
+                    repository.getDispensacionesByDateRangeForOptica(fecha, fecha, opticaId),
+                    repository.getServiciosByDateRangeForOptica(fecha, fecha, opticaId)
                 ) { pagos, dispensaciones, servicios ->
-                    val dispMap = dispensaciones.associateBy { it.id }
-                    val servMap = servicios.associateBy { it.id }
+                    val dispMap = dispensaciones.associateBy { it.id }.toMutableMap()
+                    val servMap = servicios.associateBy { it.id }.toMutableMap()
+                    val missingDispIds = pagos.mapNotNull { it.dispensacionId }
+                        .filter { it !in dispMap }.distinct()
+                    val missingServIds = pagos.mapNotNull { it.servicioExtraId }
+                        .filter { it !in servMap }.distinct()
+                    if (missingDispIds.isNotEmpty()) {
+                        repository.getDispensacionesByIds(missingDispIds, opticaId)
+                            .forEach { dispMap[it.id] = it }
+                    }
+                    if (missingServIds.isNotEmpty()) {
+                        repository.getServiciosByIds(missingServIds, opticaId)
+                            .forEach { servMap[it.id] = it }
+                    }
                     var ventasHoy = 0.0
                     var cobrosAtrasados = 0.0
+                    var pagosFuturos = 0.0
                     pagos.forEach { pago ->
                         val dispFecha = pago.dispensacionId?.let { id -> dispMap[id]?.fecha }
                         val servFecha = pago.servicioExtraId?.let { id -> servMap[id]?.fecha }
                         when {
                             dispFecha != null && dispFecha == fecha -> ventasHoy += pago.monto
                             dispFecha != null && dispFecha < fecha -> cobrosAtrasados += pago.monto
+                            dispFecha != null && dispFecha > fecha -> {
+                                Log.w(TAG, "Future-dated disp ${pago.dispensacionId} for pago ${pago.id}")
+                                pagosFuturos += pago.monto
+                            }
                             servFecha != null && servFecha == fecha -> ventasHoy += pago.monto
                             servFecha != null && servFecha < fecha -> cobrosAtrasados += pago.monto
-                            else -> ventasHoy += pago.monto
+                            servFecha != null && servFecha > fecha -> {
+                                Log.w(TAG, "Future-dated serv ${pago.servicioExtraId} for pago ${pago.id}")
+                                pagosFuturos += pago.monto
+                            }
+                            else -> {
+                                Log.w(TAG, "Orphan pago ${pago.id}: disp=${pago.dispensacionId} serv=${pago.servicioExtraId} not resolvable")
+                                ventasHoy += pago.monto
+                            }
                         }
                     }
-                    val pagosPorDispId = pagos.mapNotNull { it.dispensacionId }.toSet()
-                    val pagosPorServId = pagos.mapNotNull { it.servicioExtraId }.toSet()
-                    val dispensacionesHoy = dispensaciones.filter {
-                        (it.fecha == fecha && it.estadoEntrega != "Anulado") ||
-                        (it.fechaEntrega == fecha && it.estadoEntrega == "Entregado") ||
-                        it.id in pagosPorDispId
-                    }
-                    val serviciosExtraHoy = servicios.filter {
-                        (it.fecha == fecha && it.estado != "Anulado") ||
-                        (it.fechaEntrega == fecha && it.estado == "Entregado") ||
-                        it.id in pagosPorServId
-                    }
+                    val dispensacionesHoy = dispensaciones.filter { it.estadoEntrega != ESTADO_ANULADO }
+                    val serviciosExtraHoy = servicios.filter { it.estado != ESTADO_ANULADO }
                     val totalDispensacionesHoy = dispensacionesHoy.sumOf { it.montoTotal }
                     val totalServiciosExtra = serviciosExtraHoy.sumOf { it.montoTotal }
                     val totalGeneral = totalDispensacionesHoy + totalServiciosExtra
-                    val saldoPendiente = totalGeneral - ventasHoy
-                    val dispOtMap = dispMap.mapValues { it.value.ot }
+                    val saldoPendiente = dispensacionesHoy.sumOf { it.montoTotal - it.montoPagado } +
+                        serviciosExtraHoy.sumOf { it.montoTotal - it.aCuenta }
                     CierreCajaUiState(
                         fecha = fecha,
                         pagos = pagos,
-                        totalVentasHoy = totalDispensacionesHoy,
+                        totalDispensacionesHoy = totalDispensacionesHoy,
                         dispensacionesHoy = dispensacionesHoy,
                         serviciosExtraHoy = serviciosExtraHoy,
                         totalServiciosExtra = totalServiciosExtra,
@@ -118,19 +141,34 @@ class CierreCajaViewModel @Inject constructor(
                         cobrosAtrasados = cobrosAtrasados,
                         saldoPendiente = saldoPendiente,
                         isLoading = false,
-                        dispOtMap = dispOtMap
+                        pagosFuturos = pagosFuturos
+                    )
+                }.catch { e ->
+                    Log.e(TAG, "observePagos inner flow failed", e)
+                    emit(
+                        CierreCajaUiState(
+                            fecha = fecha,
+                            isLoading = false,
+                            errorMessage = "Error al cargar datos: ${e.message}"
+                        )
                     )
                 }
             }
             .onEach { state ->
                 _uiState.value = state
-            }.launchIn(viewModelScope)
+            }
+            .launchIn(viewModelScope)
     }
 
     fun getTotalesPorMetodo(): Map<String, Double> {
+        val defaultLabel = FinanzasRemoteDefaults.ServicioExtra.METODO_PAGO_ROW
         return _uiState.value.pagos.groupBy {
-            if (it.metodoPago == "Sin especificar") "" else it.metodoPago
+            if (it.metodoPago == defaultLabel) "" else it.metodoPago
         }.mapValues { entry -> entry.value.sumOf { it.monto } }
     }
 
+    companion object {
+        private const val TAG = "CierreCajaVM"
+        private const val ESTADO_ANULADO = "Anulado"
+    }
 }

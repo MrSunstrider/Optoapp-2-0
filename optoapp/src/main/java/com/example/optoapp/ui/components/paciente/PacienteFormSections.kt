@@ -225,7 +225,7 @@ fun PacienteFormSections(
         label = { Text("Sexo") },
         trailingIcon = {
             IconButton(onClick = { showSexoDialog = true }) {
-                Icon(Icons.Default.ArrowDropDown, contentDescription = null)
+                Icon(Icons.Default.ArrowDropDown, contentDescription = "Desplegar")
             }
         },
         modifier = Modifier.fillMaxWidth()

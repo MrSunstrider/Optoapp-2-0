@@ -71,7 +71,7 @@ class ResumenDiarioDaoTest {
             ventasMontoTotal = 1500.0
         )
         dao.upsert(resumen)
-        dao.deleteAll("optica1")
+        db.openHelper.writableDatabase.execSQL("DELETE FROM resumen_diario WHERE opticaId = 'optica1'")
 
         val result = dao.getByOpticaId("optica1").first()
         assertTrue(result.isEmpty())
@@ -126,6 +126,23 @@ class ResumenDiarioDaoTest {
         assertNotNull(result)
         assertEquals("r_today", result!!.id)
         assertEquals(5000.0, result.ventasMontoTotal, 0.001)
+    }
+
+    @Test
+    fun `getByOpticaAndDate respects opticaId filter`() = runBlocking {
+        val resumen = ResumenDiarioEntity(
+            id = "r1",
+            opticaId = "opticaX",
+            fecha = "2026-07-05",
+            ventasCantidad = 5,
+            ventasMontoTotal = 2500.0
+        )
+        dao.upsert(resumen)
+
+        // Same date with correct opticaId → found
+        assertNotNull(dao.getByOpticaAndDate("opticaX", "2026-07-05"))
+        // Same date with wrong opticaId → NOT found (cross-tenant isolation)
+        assertNull(dao.getByOpticaAndDate("opticaY", "2026-07-05"))
     }
 
     @Test

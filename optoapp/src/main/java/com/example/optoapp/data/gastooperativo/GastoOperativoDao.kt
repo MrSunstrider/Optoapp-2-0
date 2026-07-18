@@ -9,13 +9,6 @@ import java.time.LocalDate
 
 @Dao
 interface GastoOperativoDao {
-    @Deprecated(
-        message = "Use getByOpticaId to enforce multi-tenant isolation",
-        replaceWith = ReplaceWith("getByOpticaId(opticaId)")
-    )
-    @Query("SELECT * FROM gastos_operativos ORDER BY fecha DESC")
-    fun getAll(): Flow<List<GastoOperativoEntity>>
-
     @Query("SELECT * FROM gastos_operativos WHERE opticaId = :opticaId ORDER BY fecha DESC")
     fun getByOpticaId(opticaId: String): Flow<List<GastoOperativoEntity>>
 
@@ -38,6 +31,4 @@ interface GastoOperativoDao {
     @Query("DELETE FROM gastos_operativos WHERE id = :id AND opticaId = :opticaId")
     suspend fun delete(id: String, opticaId: String)
 
-    @Query("DELETE FROM gastos_operativos WHERE opticaId = :opticaId")
-    suspend fun deleteAll(opticaId: String)
 }

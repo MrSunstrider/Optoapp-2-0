@@ -10,7 +10,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -19,6 +18,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.optoapp.data.ServicioExtra
+import com.example.optoapp.ui.components.OptoKpiCard
 import com.example.optoapp.ui.components.OptoTopAppBar
 import com.example.optoapp.ui.components.OptoDatePickerDialog
 import com.example.optoapp.ui.theme.PositiveGreen
@@ -130,9 +130,9 @@ fun ServiciosExtraScreen(navController: NavController, drawerState: DrawerState,
         ) {
             item {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    KpiCard("Facturado", "s/. ${fmt(totalFacturado)}", MaterialTheme.colorScheme.primary, Icons.Default.Receipt, Modifier.weight(1f))
-                    KpiCard("Pendiente", "s/. ${fmt(totalPendiente)}", if (totalPendiente > 0) AlertRed else PositiveGreen, Icons.Default.Schedule, Modifier.weight(1f))
-                    KpiCard("Cantidad", "$pendientesCount", WarningAmber, Icons.Default.Handyman, Modifier.weight(1f))
+                    OptoKpiCard("Facturado", "s/. ${fmt(totalFacturado)}", MaterialTheme.colorScheme.primary, Icons.Default.Receipt, Modifier.weight(1f))
+                    OptoKpiCard("Pendiente", "s/. ${fmt(totalPendiente)}", if (totalPendiente > 0) AlertRed else PositiveGreen, Icons.Default.Schedule, Modifier.weight(1f))
+                    OptoKpiCard("Cantidad", "$pendientesCount", WarningAmber, Icons.Default.Handyman, Modifier.weight(1f))
                 }
             }
 
@@ -142,7 +142,7 @@ fun ServiciosExtraScreen(navController: NavController, drawerState: DrawerState,
                     onValueChange = { searchQuery = it },
                     modifier = Modifier.fillMaxWidth(),
                     placeholder = { Text("Buscar por OT o descripción...") },
-                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Buscar") },
                     shape = MaterialTheme.shapes.medium,
                     singleLine = true
                 )
@@ -183,7 +183,7 @@ fun ServiciosExtraScreen(navController: NavController, drawerState: DrawerState,
                     ) {
                         Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Icon(Icons.Default.Handyman, contentDescription = null, modifier = Modifier.size(40.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f))
+                                Icon(Icons.Default.Handyman, contentDescription = "Sin servicios", modifier = Modifier.size(40.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f))
                                 Spacer(Modifier.height(8.dp))
                                 Text("Sin servicios", color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
@@ -272,34 +272,15 @@ private fun ServicioCard(servicio: ServicioExtra, aCuenta: Double = 0.0, onEdit:
                         Text("Entregado: ${DateUtils.formatLocalized(servicio.fechaEntrega)}", fontSize = 10.sp, color = PositiveGreen)
                     }
                     Row {
-                        IconButton(onClick = onEdit, modifier = Modifier.size(36.dp)) {
+                        IconButton(onClick = onEdit, modifier = Modifier.size(48.dp)) {
                             Icon(Icons.Default.Edit, contentDescription = "Editar", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
                         }
-                        IconButton(onClick = onDelete, modifier = Modifier.size(36.dp)) {
+                        IconButton(onClick = onDelete, modifier = Modifier.size(48.dp)) {
                             Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = AlertRed, modifier = Modifier.size(18.dp))
                         }
                     }
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun KpiCard(title: String, value: String, color: Color, icon: androidx.compose.ui.graphics.vector.ImageVector, modifier: Modifier = Modifier) {
-    Card(
-        modifier = modifier,
-        shape = RoundedCornerShape(10.dp),
-        colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.08f))
-    ) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(16.dp))
-                Spacer(Modifier.width(4.dp))
-                Text(title, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            Spacer(Modifier.height(4.dp))
-            Text(value, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = color)
         }
     }
 }

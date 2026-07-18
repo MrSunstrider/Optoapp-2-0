@@ -1,6 +1,6 @@
 package com.example.optoapp.domain
 
-import android.util.Log
+import com.example.optoapp.util.AppLogger
 import com.example.optoapp.data.ConflictDao
 import com.example.optoapp.data.OrdenCompra
 import com.example.optoapp.domain.sync.EntitySnapshotSerializer
@@ -42,7 +42,7 @@ open class SyncOrdenesCompraUseCase @Inject constructor(
         skipUpload: Boolean = false
     ): Resource<OrdenesCompraSyncResult> {
         return try {
-            Log.d(TAG, "OrdenesCompra: inicio (opticaId=$opticaId, download=$downloadAfterUpload, skipUpload=$skipUpload)")
+            AppLogger.d(TAG, "OrdenesCompra: inicio (opticaId=$opticaId, download=$downloadAfterUpload, skipUpload=$skipUpload)")
             val ocUp = if (skipUpload) 0 else uploadOrdenesCompra(opticaId)
             val itemsUp = if (skipUpload) 0 else uploadItems(opticaId)
             val ocDown: Int
@@ -50,11 +50,11 @@ open class SyncOrdenesCompraUseCase @Inject constructor(
             if (downloadAfterUpload) {
                 ocDown = downloadOrdenesCompra(opticaId)
                 itemsDown = downloadItems(opticaId)
-                Log.d(TAG, "OrdenesCompra: fin OK (oc=$ocDown items=$itemsDown)")
+                AppLogger.d(TAG, "OrdenesCompra: fin OK (oc=$ocDown items=$itemsDown)")
             } else {
                 ocDown = 0
                 itemsDown = 0
-                Log.d(TAG, "OrdenesCompra: fin upload-only OK")
+                AppLogger.d(TAG, "OrdenesCompra: fin upload-only OK")
             }
             Resource.Success(
                 OrdenesCompraSyncResult(
@@ -67,10 +67,10 @@ open class SyncOrdenesCompraUseCase @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: IOException) {
-            Log.e(TAG, "Error en red sincronizando OC: ${e.message}", e)
+            AppLogger.e(TAG, "Error en red sincronizando OC: ${e.message}", e)
             Resource.Error("Error sincronizando órdenes de compra: ${e.localizedMessage}")
         } catch (e: Exception) {
-            Log.e(TAG, "Error inesperado sincronizando OC: ${e.message}", e)
+            AppLogger.e(TAG, "Error inesperado sincronizando OC: ${e.message}", e)
             Resource.Error("Error sincronizando órdenes de compra: ${e.localizedMessage}")
         }
     }
@@ -115,7 +115,7 @@ open class SyncOrdenesCompraUseCase @Inject constructor(
         val conflictedIds = try {
             conflictDao.getConflictEntityIds(opticaId, "orden_compra").toSet()
         } catch (e: Exception) {
-            Log.e(TAG, "Error querying conflict IDs, proceeding without guard: ${e.message}", e)
+            AppLogger.e(TAG, "Error querying conflict IDs, proceeding without guard: ${e.message}", e)
             emptySet()
         }
 
@@ -129,7 +129,7 @@ open class SyncOrdenesCompraUseCase @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                Log.e(TAG, "Error descargando OC ${r.id}: ${e.message}", e)
+                AppLogger.e(TAG, "Error descargando OC ${r.id}: ${e.message}", e)
             }
         }
         return remotos.size
@@ -139,7 +139,7 @@ open class SyncOrdenesCompraUseCase @Inject constructor(
         val conflictedIds = try {
             conflictDao.getConflictEntityIds(opticaId, "orden_compra_item").toSet()
         } catch (e: Exception) {
-            Log.e(TAG, "Error querying conflict IDs, proceeding without guard: ${e.message}", e)
+            AppLogger.e(TAG, "Error querying conflict IDs, proceeding without guard: ${e.message}", e)
             emptySet()
         }
 
@@ -153,7 +153,7 @@ open class SyncOrdenesCompraUseCase @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                Log.e(TAG, "Error descargando item ${r.id}: ${e.message}", e)
+                AppLogger.e(TAG, "Error descargando item ${r.id}: ${e.message}", e)
             }
         }
         return remotos.size

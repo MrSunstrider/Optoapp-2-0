@@ -3,6 +3,7 @@ package com.example.optoapp.viewmodel
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.SessionManager
 import com.example.optoapp.data.gastooperativo.GastoOperativoEntity
+import java.math.BigDecimal
 import com.example.optoapp.domain.SyncFinanzasUseCase
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import io.mockk.coEvery
@@ -70,7 +71,7 @@ class GastosViewModelTest {
     fun delete_when_repository_fails_sets_error_state() = runTest(testDispatcher) {
         val gasto = GastoOperativoEntity(
             id = "g1", opticaId = opticaId, categoria = "alquiler",
-            descripcion = "Local", monto = 500.0, fecha = testDate
+            descripcion = "Local",             monto = BigDecimal.valueOf(500.0), fecha = testDate
         )
 
         coEvery { repository.deleteGastoOperativo(gasto) } throws
@@ -90,7 +91,7 @@ class GastosViewModelTest {
     fun delete_success_does_not_set_error_state() = runTest(testDispatcher) {
         val gasto = GastoOperativoEntity(
             id = "g2", opticaId = opticaId, categoria = "servicios",
-            descripcion = "Internet", monto = 80.0, fecha = testDate
+            descripcion = "Internet",             monto = BigDecimal.valueOf(80.0), fecha = testDate
         )
 
         coEvery { repository.deleteGastoOperativo(gasto) } returns Unit

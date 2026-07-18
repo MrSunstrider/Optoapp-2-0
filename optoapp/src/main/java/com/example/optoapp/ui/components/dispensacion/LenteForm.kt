@@ -3,6 +3,8 @@ package com.example.optoapp.ui.components.dispensacion
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
@@ -14,15 +16,11 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.optoapp.data.Montura
+import com.example.optoapp.domain.OpticalCatalog
 import com.example.optoapp.ui.components.DropdownField
 import com.example.optoapp.ui.components.OptoTextField
 import com.example.optoapp.viewmodel.DispensacionItemUi
 
-/**
- * Una dispensación puede incluir múltiples lentes en la misma OT
- * (ej. bifocal + monofocal para cerca). Este composable se repite
- * por cada lente/montura que necesite el paciente.
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LenteForm(
@@ -33,47 +31,36 @@ fun LenteForm(
     onUpdate: (DispensacionItemUi) -> Unit,
     onRemove: () -> Unit
 ) {
-    Card(
-        colors = CardDefaults.cardColors(
-            containerColor = if (index % 2 == 0) MaterialTheme.colorScheme.surface
-            else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-        )
-    ) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    "Lente ${index + 1}",
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                if (!isOnlyItem) {
+    Column(modifier = Modifier.padding(0.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            if (!isOnlyItem) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                     IconButton(onClick = onRemove) {
-                        Icon(
-                            Icons.Default.Delete,
-                            contentDescription = "Eliminar",
-                            tint = MaterialTheme.colorScheme.error
-                        )
+                        Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = MaterialTheme.colorScheme.error)
                     }
                 }
             }
 
-            HorizontalDivider()
-            Text("Lente", fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-
-            DropdownField(label = "Tipo de Lente", selected = item.tipoLente, options = listOf("Monofocal", "Bifocal", "Progresivo", "Ocupacional")) {
+            DropdownField(label = "Tipo de Lente", selected = item.tipoLente, options = OpticalCatalog.TIPO_LENTE) {
                 val cleaned = when (it) {
                     "Bifocal" -> item.copy(tipoLente = it, distanciaLente = "", altura = "")
                     "Monofocal" -> item.copy(tipoLente = it, subTipoBifocal = "", altura = "")
-                    "Progresivo", "Ocupacional" -> item.copy(tipoLente = it, subTipoBifocal = "", distanciaLente = "")
+                    "Multifocal", "Ocupacional" -> item.copy(tipoLente = it, subTipoBifocal = "", distanciaLente = "")
                     else -> item.copy(tipoLente = it, subTipoBifocal = "", distanciaLente = "", altura = "")
                 }
                 onUpdate(cleaned)
             }
 
+            if (item.tipoLente == "Lentes de Contacto") {
+                DropdownField(label = "Tipo de LC", selected = item.materialLente, options = listOf("Cosmético", "Graduado", "Terapéutico")) {
+                    onUpdate(item.copy(materialLente = it))
+                }
+                DropdownField(label = "Material", selected = item.colorLente, options = listOf("HEMA", "Silicon Hydrogel", "Híbrido", "RGP")) {
+                    onUpdate(item.copy(colorLente = it))
+                }
+                DropdownField(label = "Modalidad", selected = item.notasDiseno, options = listOf("Diario", "Quincenal", "Mensual", "Anual")) {
+                    onUpdate(item.copy(notasDiseno = it))
+                }
+            } else {
             if (item.tipoLente == "Bifocal") {
                 DropdownField(label = "Sub-tipo Bifocal", selected = item.subTipoBifocal, options = listOf("Flaptop", "Invisible")) {
                     onUpdate(item.copy(subTipoBifocal = it))
@@ -86,37 +73,44 @@ fun LenteForm(
                 }
             }
 
-            if (item.tipoLente == "Bifocal" || item.tipoLente == "Progresivo" || item.tipoLente == "Ocupacional") {
-                OptoTextField(
-                    value = item.altura,
-                    onValueChange = { onUpdate(item.copy(altura = it)) },
-                    label = "Altura (mm)",
-                    keyboardType = KeyboardType.Decimal
-                )
+            if (item.tipoLente in setOf("Bifocal", "Multifocal", "Ocupacional")) {
+                OptoTextField(value = item.altura, onValueChange = { onUpdate(item.copy(altura = it)) }, label = "Altura (mm)", keyboardType = KeyboardType.Decimal)
             }
 
-            DropdownField(label = "Material del Lente", selected = item.materialLente, options = listOf("Resina", "Policarbonato", "Cristal", "Trivex")) {
+            DropdownField(label = "Material del Lente", selected = item.materialLente, options = OpticalCatalog.MATERIALES) {
                 onUpdate(item.copy(materialLente = it))
             }
 
             Text("Tratamientos", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-            val opts = listOf("Ninguno", "Antireflejo", "Antirayas", "Filtro UV 400", "Fotocromático", "Polarizado", "AR Blue Defense", "Circadian NK55", "Filtro Discromatopsia")
-            val currentTrats = if (item.tratamientos.isEmpty()) listOf("Ninguno") else item.tratamientos + "Ninguno"
-            currentTrats.distinct().forEachIndexed { idx, selectedValue ->
-                if (idx == 0 || currentTrats[idx - 1] != "Ninguno") {
-                    DropdownField(
-                        label = if (idx == 0) "Tratamiento Principal" else "Tratamiento Adicional",
-                        selected = selectedValue,
-                        options = opts
-                    ) { selected ->
-                        val newList = item.tratamientos.toMutableList()
-                        if (idx < item.tratamientos.size) {
-                            if (selected == "Ninguno") newList.removeAt(idx)
-                            else newList[idx] = selected
-                        } else if (selected != "Ninguno") {
-                            newList.add(selected)
+
+            if (item.tratamientos.isNotEmpty()) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    item.tratamientos.forEach { trat ->
+                        AssistChip(
+                            onClick = { onUpdate(item.copy(tratamientos = item.tratamientos - trat)) },
+                            label = { Text(trat, fontSize = 12.sp) },
+                            trailingIcon = { Icon(Icons.Default.Close, contentDescription = "Quitar", modifier = Modifier.size(16.dp)) }
+                        )
+                    }
+                }
+            }
+
+            val available = OpticalCatalog.TRATAMIENTOS.filter { it !in item.tratamientos }
+            if (available.isNotEmpty()) {
+                var addExpanded by remember { mutableStateOf(false) }
+                Box {
+                    AssistChip(
+                        onClick = { addExpanded = true },
+                        label = { Text("+ Añadir", fontSize = 12.sp) },
+                        leadingIcon = { Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp)) }
+                    )
+                    DropdownMenu(expanded = addExpanded, onDismissRequest = { addExpanded = false }) {
+                        available.forEach { opt ->
+                            DropdownMenuItem(text = { Text(opt) }, onClick = {
+                                onUpdate(item.copy(tratamientos = item.tratamientos + opt))
+                                addExpanded = false
+                            })
                         }
-                        onUpdate(item.copy(tratamientos = newList.distinct().filter { t -> t != "Ninguno" }))
                     }
                 }
             }
@@ -132,12 +126,10 @@ fun LenteForm(
                     "EnChroma Indoor", "EnChroma Outdoor",
                     "Pilestone A: rojo-verde leve/moderado", "Pilestone B: rojo-verde fuerte", "Pilestone C: interior",
                     "Pilestone D: protan (deficiencia roja)", "Pilestone E: tritan (azul-amarillo)"
-                )) { selected ->
-                    onUpdate(item.copy(filtroDiscromatopsiaTipo = selected))
-                }
+                )) { selected -> onUpdate(item.copy(filtroDiscromatopsiaTipo = selected)) }
             }
 
-            HorizontalDivider()
+            HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
             Text("Montura", fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
             DropdownField(label = "Origen", selected = item.origenMontura, options = listOf("Tienda", "Paciente")) {
@@ -163,10 +155,7 @@ fun LenteForm(
                     it.sku.contains(monturaQuery, ignoreCase = true)
                 }
 
-                ExposedDropdownMenuBox(
-                    expanded = expanded && filteredMonturas.isNotEmpty(),
-                    onExpandedChange = { expanded = it }
-                ) {
+                ExposedDropdownMenuBox(expanded = expanded && filteredMonturas.isNotEmpty(), onExpandedChange = { expanded = it }) {
                     OutlinedTextField(
                         value = monturaQuery,
                         onValueChange = {
@@ -180,36 +169,21 @@ fun LenteForm(
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                         modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryEditable).fillMaxWidth()
                     )
-                    ExposedDropdownMenu(
-                        expanded = expanded && filteredMonturas.isNotEmpty(),
-                        onDismissRequest = { expanded = false }
-                    ) {
+                    ExposedDropdownMenu(expanded = expanded && filteredMonturas.isNotEmpty(), onDismissRequest = { expanded = false }) {
                         filteredMonturas.forEach { montura ->
                             DropdownMenuItem(
                                 text = {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
+                                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                         Column(modifier = Modifier.weight(1f)) {
                                             Text("${montura.marca} ${montura.modelo}", fontWeight = FontWeight.Bold)
-                                            Text("SKU: ${montura.sku} | ${montura.color}",
-                                                style = MaterialTheme.typography.bodySmall)
+                                            Text("SKU: ${montura.sku} | ${montura.color}", style = MaterialTheme.typography.bodySmall)
                                         }
-                                        Text("Stock: ${montura.stockActual}",
-                                            fontWeight = FontWeight.Bold,
-                                            color = MaterialTheme.colorScheme.primary,
-                                            style = MaterialTheme.typography.bodySmall)
+                                        Text("Stock: ${montura.stockActual}", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.bodySmall)
                                     }
                                 },
                                 onClick = {
                                     monturaQuery = "${montura.marca} ${montura.modelo}"
-                                    onUpdate(item.copy(
-                                        monturaId = montura.id,
-                                        tipoAro = montura.tipoAro,
-                                        materialMontura = montura.materialMontura
-                                    ))
+                                    onUpdate(item.copy(monturaId = montura.id, tipoAro = montura.tipoAro, materialMontura = montura.materialMontura))
                                     expanded = false
                                 }
                             )
@@ -218,13 +192,13 @@ fun LenteForm(
                 }
             }
 
-            DropdownField(label = "Tipo de Aro", selected = item.tipoAro, options = listOf("Aro Completo", "Semi al aire", "Al aire")) {
+            DropdownField(label = "Tipo de Aro", selected = item.tipoAro, options = OpticalCatalog.TIPO_ARO.keys.toList()) {
                 onUpdate(item.copy(tipoAro = it))
             }
             DropdownField(label = "Material de la Montura", selected = item.materialMontura, options = listOf("Acetato", "Metal", "Carey", "TR-90", "Econ")) {
                 onUpdate(item.copy(materialMontura = it))
             }
             OptoTextField(value = item.descripcionMontura, onValueChange = { onUpdate(item.copy(descripcionMontura = it)) }, label = "Descripción (Marca, Modelo)")
-        }
+            } // end else (!Lentes de Contacto)
     }
 }

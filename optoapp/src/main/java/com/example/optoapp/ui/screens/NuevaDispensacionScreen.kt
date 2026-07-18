@@ -198,8 +198,9 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
                         Text("No hay evaluaciones para este paciente.", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
 
-                    // Prisma read-only display from linked evaluation
-                    if (selectedEvaluacion != null) {
+                    // Prisma read-only display from linked evaluation — only if values exist
+                    if (selectedEvaluacion != null &&
+                        (selectedEvaluacion.prismaOdValor.isNotBlank() || selectedEvaluacion.prismaOiValor.isNotBlank())) {
                         HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
                         Text("Prisma (solo lectura)", fontWeight = FontWeight.SemiBold, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -247,7 +248,7 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
                 onClick = { viewModel.addItem() },
                 modifier = Modifier.fillMaxWidth().testTag(TestTags.DISPENSACION_AGREGAR_ITEM_BTN)
             ) {
-                Icon(Icons.Default.Add, contentDescription = null)
+                Icon(Icons.Default.Add, contentDescription = "Agregar")
                 Spacer(Modifier.width(8.dp))
                 Text("Agregar otro producto (lente + montura)")
             }
@@ -302,7 +303,7 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
                             onClick = { navController.navigate("costos_y_gastos/$dispensacionId") },
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Icon(Icons.Default.Receipt, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Icon(Icons.Default.Receipt, contentDescription = "Recibo", modifier = Modifier.size(16.dp))
                             Spacer(Modifier.width(6.dp))
                             Text("Gestionar costos →")
                         }
@@ -431,7 +432,7 @@ private fun CollapsibleItemCard(
                         onClick = onCalculateCosts,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Icon(Icons.Default.Receipt, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Default.Receipt, contentDescription = "Recibo", modifier = Modifier.size(16.dp))
                         Spacer(Modifier.width(6.dp))
                         Text("Calcular costos desde evaluación")
                     }

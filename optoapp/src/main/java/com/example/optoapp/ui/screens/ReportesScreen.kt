@@ -241,7 +241,7 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                 Text("Detalle", fontWeight = FontWeight.Bold, fontSize = 16.sp)
             }
 
-            if (dispensaciones.isEmpty() && serviciosExtra.isEmpty()) {
+            if (!isDataLoading && dispensaciones.isEmpty() && serviciosExtra.isEmpty()) {
                 item {
                     Card(modifier = Modifier.fillMaxWidth()) {
                         Box(modifier = Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
@@ -255,7 +255,7 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                 val date = DateUtils.formatLocalized(disp.fecha)
                 val montoPagado = pagosSumByDispensacion[disp.id] ?: 0.0
                 val saldo = disp.montoTotal - montoPagado
-                Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(10.dp)) {
+                Card(modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.small) {
                     Row(modifier = Modifier.padding(14.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(date, fontWeight = FontWeight.Bold, fontSize = 13.sp)
@@ -277,7 +277,7 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                 val date = DateUtils.formatLocalized(serv.fecha)
                 val aCuenta = aCuentaSumByServicio[serv.id] ?: 0.0
                 val saldo = serv.montoTotal - aCuenta
-                Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(10.dp)) {
+                Card(modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.small) {
                     Row(modifier = Modifier.padding(14.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(date, fontWeight = FontWeight.Bold, fontSize = 13.sp)

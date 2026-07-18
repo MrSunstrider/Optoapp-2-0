@@ -3,6 +3,7 @@ package com.example.optoapp.data.gastooperativo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import java.math.BigDecimal
 import java.time.LocalDate
 
 @Entity(
@@ -14,11 +15,11 @@ data class GastoOperativoEntity(
     val opticaId: String,
     val categoria: String,
     val descripcion: String? = null,
-    val monto: Double,
+    val monto: BigDecimal,
     val fecha: LocalDate,
     val fechaProgramada: LocalDate? = null,
     val nota: String? = null,
-    val esRecurrente: Boolean = false,
+    val isRecurring: Boolean = false,
     val frecuencia: String = "mensual",
     val createdAt: String? = null
 )

@@ -142,10 +142,10 @@ fun ServicioForm(
                             }
                         )
                     }
-                    IconButton(onClick = { showEditDialog = true }, modifier = Modifier.size(36.dp)) {
+                    IconButton(onClick = { showEditDialog = true }, modifier = Modifier.size(48.dp)) {
                         Icon(Icons.Default.Edit, contentDescription = "Editar", tint = MaterialTheme.colorScheme.primary)
                     }
-                    IconButton(onClick = { onRemovePago(pago) }, modifier = Modifier.size(36.dp)) {
+                    IconButton(onClick = { onRemovePago(pago) }, modifier = Modifier.size(48.dp)) {
                         Icon(Icons.Default.Delete, contentDescription = "Borrar", tint = MaterialTheme.colorScheme.error)
                     }
                 }
@@ -173,7 +173,7 @@ fun ServicioForm(
         modifier = Modifier.fillMaxWidth(),
         colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary)
     ) {
-        Icon(Icons.Default.Add, contentDescription = null)
+        Icon(Icons.Default.Add, contentDescription = "Agregar")
         Spacer(Modifier.width(8.dp))
         Text("Agregar Abono")
     }
@@ -223,7 +223,7 @@ fun ServicioForm(
             value = pSearchQuery.ifBlank { if (pExpanded) "" else currentPacienteName },
             onValueChange = { pSearchQuery = it },
             label = { Text("Buscar Paciente...") },
-            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Buscar") },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = pExpanded) },
             modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryEditable).fillMaxWidth(),
             colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors()

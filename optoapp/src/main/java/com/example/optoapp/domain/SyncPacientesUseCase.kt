@@ -1,6 +1,6 @@
 package com.example.optoapp.domain
 
-import android.util.Log
+import com.example.optoapp.util.AppLogger
 import com.example.optoapp.data.ConflictDao
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.domain.sync.EntitySnapshotSerializer
@@ -39,18 +39,18 @@ open class SyncPacientesUseCase @Inject constructor(
         skipUpload: Boolean = false
     ): Resource<PacientesSyncResult> {
         return try {
-            Log.d(TAG, "Pacientes: inicio sync (opticaId=$opticaId, download=$downloadAfterUpload, skipUpload=$skipUpload)")
+            AppLogger.d(TAG, "Pacientes: inicio sync (opticaId=$opticaId, download=$downloadAfterUpload, skipUpload=$skipUpload)")
             val uploaded = if (skipUpload) 0 else upload(opticaId)
             val downloaded = if (downloadAfterUpload) download(opticaId) else 0
-            Log.d(TAG, "Pacientes: fin OK (subidos=$uploaded, bajados=$downloaded)")
+            AppLogger.d(TAG, "Pacientes: fin OK (subidos=$uploaded, bajados=$downloaded)")
             Resource.Success(PacientesSyncResult(uploaded, downloaded))
         } catch (e: CancellationException) {
             throw e
         } catch (e: IOException) {
-            Log.e(TAG, "Error en red sincronizando pacientes: ${e.message}", e)
+            AppLogger.e(TAG, "Error en red sincronizando pacientes: ${e.message}", e)
             Resource.Error("Error sincronizando pacientes: ${e.localizedMessage}")
         } catch (e: Exception) {
-            Log.e(TAG, "Error inesperado sincronizando pacientes: ${e.message}", e)
+            AppLogger.e(TAG, "Error inesperado sincronizando pacientes: ${e.message}", e)
             Resource.Error("Error sincronizando pacientes: ${e.localizedMessage}")
         }
     }
@@ -59,7 +59,7 @@ open class SyncPacientesUseCase @Inject constructor(
         val pacientes = repository.getPacientesSnapshotForOptica(opticaId)
 
         if (pacientes.isEmpty()) {
-            Log.d(TAG, "Upload pacientes: 0 filas locales para optica_id=$opticaId")
+            AppLogger.d(TAG, "Upload pacientes: 0 filas locales para optica_id=$opticaId")
             syncStateTracker.markSynced(opticaId, "upload_pacientes", "batch")
             return 0
         }
@@ -116,7 +116,7 @@ open class SyncPacientesUseCase @Inject constructor(
             syncStateTracker.markSynced(opticaId, "upload_pacientes", "batch")
             return 0
         }
-        Log.d(
+        AppLogger.d(
             TAG,
             "Upload pacientes: ${finalRows.size}/${pacientes.size} filas tras prevalidación de HO, optica_id=$opticaId"
         )
@@ -125,11 +125,11 @@ open class SyncPacientesUseCase @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: IOException) {
-            Log.e(TAG, "Error en red subiendo pacientes: ${e.message}", e)
+            AppLogger.e(TAG, "Error en red subiendo pacientes: ${e.message}", e)
             syncStateTracker.markError(opticaId, "upload_pacientes", "batch", e.message)
             throw e
         } catch (e: Exception) {
-            Log.e(TAG, "Error inesperado subiendo pacientes: ${e.message}", e)
+            AppLogger.e(TAG, "Error inesperado subiendo pacientes: ${e.message}", e)
             syncStateTracker.markError(opticaId, "upload_pacientes", "batch", e.message)
             throw e
         }
@@ -138,7 +138,7 @@ open class SyncPacientesUseCase @Inject constructor(
             syncStateTracker.markSynced(opticaId, "paciente", p.id)
         }
 
-        Log.d(TAG, "Subidos ${finalRows.size} pacientes a Supabase (optica_id=$opticaId).")
+        AppLogger.d(TAG, "Subidos ${finalRows.size} pacientes a Supabase (optica_id=$opticaId).")
         return finalRows.size
     }
 
@@ -146,7 +146,7 @@ open class SyncPacientesUseCase @Inject constructor(
         val conflictedIds = try {
             conflictDao.getConflictEntityIds(opticaId, "paciente").toSet()
         } catch (e: Exception) {
-            Log.e(TAG, "Error querying conflict IDs, proceeding without guard: ${e.message}", e)
+            AppLogger.e(TAG, "Error querying conflict IDs, proceeding without guard: ${e.message}", e)
             emptySet()
         }
 
@@ -169,15 +169,15 @@ open class SyncPacientesUseCase @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: IOException) {
-                Log.e(TAG, "Error en red descargando paciente: ${e.message}", e)
+                AppLogger.e(TAG, "Error en red descargando paciente: ${e.message}", e)
                 syncStateTracker.markError(opticaId, "paciente", remoto.id, e.message)
             } catch (e: Exception) {
-                Log.e(TAG, "Error inesperado descargando paciente: ${e.message}", e)
+                AppLogger.e(TAG, "Error inesperado descargando paciente: ${e.message}", e)
                 syncStateTracker.markError(opticaId, "paciente", remoto.id, e.message)
             }
         }
 
-        Log.d(TAG, "Descargados ${remotos.size} pacientes desde Supabase.")
+        AppLogger.d(TAG, "Descargados ${remotos.size} pacientes desde Supabase.")
         return remotos.size
     }
 

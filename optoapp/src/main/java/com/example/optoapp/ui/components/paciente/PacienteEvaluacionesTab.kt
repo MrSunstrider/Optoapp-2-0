@@ -65,7 +65,7 @@ fun ResumenEvaluacionDialog(eval: EvaluacionClinica, paciente: Paciente, onDismi
         onDismissRequest = onDismiss,
         title = {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.AutoMirrored.Filled.Assignment, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                Icon(Icons.AutoMirrored.Filled.Assignment, contentDescription = "Evaluaciones", tint = MaterialTheme.colorScheme.primary)
                 Spacer(modifier = Modifier.width(8.dp))
                 Text("Resumen Clínico")
             }
@@ -206,7 +206,7 @@ fun InfoSection(title: String, content: @Composable () -> Unit) {
 fun EmptyListMessage(text: String) {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(Icons.Default.Inbox, contentDescription = null, modifier = Modifier.size(48.dp), tint = MaterialTheme.colorScheme.outlineVariant)
+            Icon(Icons.Default.Inbox, contentDescription = "Vacio", modifier = Modifier.size(48.dp), tint = MaterialTheme.colorScheme.outlineVariant)
             Text(text, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
         }
     }

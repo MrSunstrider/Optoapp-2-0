@@ -11,6 +11,7 @@ import com.example.optoapp.data.EvaluacionClinica
 import com.example.optoapp.data.Paciente
 import com.example.optoapp.data.SessionManager
 import com.example.optoapp.data.Resource
+import com.example.optoapp.domain.auth.AuthorizationGuard
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.jan.supabase.SupabaseClient
@@ -179,9 +180,11 @@ class PacienteViewModel @Inject constructor(
 
     suspend fun deletePacienteGuarded(paciente: Paciente): DeletePacienteResult {
         val oid = sessionManager.opticaId.first()
-        val role = sessionManager.opticaRol.first().trim().lowercase()
-        if (role !in setOf("admin", "gerente")) {
-            return DeletePacienteResult.Error("Solo admin o gerente pueden eliminar pacientes.")
+        val role = sessionManager.opticaRol.first()
+        try {
+            AuthorizationGuard.requireRole(role, setOf("admin", "gerente"), "eliminar paciente")
+        } catch (e: IllegalArgumentException) {
+            return DeletePacienteResult.Error(e.message ?: "No autorizado")
         }
 
         val deletesToday = sessionManager.getPacienteDeleteCountToday(oid)

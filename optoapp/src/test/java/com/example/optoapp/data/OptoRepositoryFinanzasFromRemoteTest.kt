@@ -1,13 +1,10 @@
 package com.example.optoapp.data
 
 import com.example.optoapp.data.backup.BackupRestoreCoordinator
-import com.example.optoapp.data.configuracionfinanciera.ConfiguracionFinancieraDao
-import com.example.optoapp.data.configuracionfinanciera.ConfiguracionFinancieraEntity
 import com.example.optoapp.data.gastooperativo.GastoOperativoDao
 import com.example.optoapp.data.gastooperativo.GastoOperativoEntity
+import java.math.BigDecimal
 import com.example.optoapp.data.montura.MonturaInventoryCoordinator
-import com.example.optoapp.data.resumendiario.ResumenDiarioDao
-import com.example.optoapp.data.resumendiario.ResumenDiarioEntity
 import com.example.optoapp.data.sync.SyncSnapshotCoordinator
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import dagger.Lazy
@@ -42,8 +39,6 @@ class OptoRepositoryFinanzasFromRemoteTest {
     private val opticaId = "optica-test"
 
     private lateinit var gastoOperativoDao: GastoOperativoDao
-    private lateinit var resumenDiarioDao: ResumenDiarioDao
-    private lateinit var configuracionFinancieraDao: ConfiguracionFinancieraDao
     private lateinit var scheduler: PostSaveSyncScheduler
     private lateinit var schedulerLazy: Lazy<PostSaveSyncScheduler>
     private lateinit var repo: OptoRepository
@@ -51,8 +46,6 @@ class OptoRepositoryFinanzasFromRemoteTest {
     @Before
     fun setUp() {
         gastoOperativoDao = mockk(relaxed = true)
-        resumenDiarioDao = mockk(relaxed = true)
-        configuracionFinancieraDao = mockk(relaxed = true)
         scheduler = mockk(relaxed = true)
         schedulerLazy = mockk()
         every { schedulerLazy.get() } returns scheduler
@@ -76,12 +69,7 @@ class OptoRepositoryFinanzasFromRemoteTest {
             snapshotCoordinator = snapshotCoordinator,
             backupCoordinator = backupCoordinator,
             monturaCoordinator = monturaCoordinator,
-            gastoOperativoDao = gastoOperativoDao,
-            resumenDiarioDao = resumenDiarioDao,
-            configuracionFinancieraDao = configuracionFinancieraDao,
-            categoriaProductoDao = mockk(relaxed = true),
-            costoProductoDao = mockk(relaxed = true),
-            costoBiseladoDao = mockk(relaxed = true)
+            gastoOperativoDao = gastoOperativoDao
         )
     }
 
@@ -96,7 +84,7 @@ class OptoRepositoryFinanzasFromRemoteTest {
     fun `upsertGastoOperativoFromRemote passes entity with original timestamp to dao`() = runTest {
         val entity = GastoOperativoEntity(
             id = "g1", opticaId = opticaId, categoria = "alquiler",
-            descripcion = "Local junio", monto = 500.0, fecha = testDate,
+            descripcion = "Local junio", monto = BigDecimal.valueOf(500.0), fecha = testDate,
             createdAt = T_REMOTE
         )
 
@@ -109,7 +97,7 @@ class OptoRepositoryFinanzasFromRemoteTest {
     fun `upsertGastoOperativoFromRemote does NOT call PostSaveSyncScheduler`() = runTest {
         val entity = GastoOperativoEntity(
             id = "g1", opticaId = opticaId, categoria = "alquiler",
-            descripcion = "Local junio", monto = 500.0, fecha = testDate,
+            descripcion = "Local junio", monto = BigDecimal.valueOf(500.0), fecha = testDate,
             createdAt = T_REMOTE
         )
 
@@ -120,70 +108,7 @@ class OptoRepositoryFinanzasFromRemoteTest {
         coVerify(exactly = 0) { scheduler.schedulePacientesSync(any()) }
     }
 
-    // ── ResumenDiario remote bypass: download-only, no sync scheduling ──────
-
-    @Test
-    fun `upsertResumenDiarioFromRemote passes entity without scheduling sync`() = runTest {
-        val entity = ResumenDiarioEntity(
-            id = "rd1", opticaId = opticaId, fecha = "2026-06-15",
-            ventasCantidad = 12, ventasMontoTotal = 3500.0,
-            ventasCostoTotal = 1400.0, cobrosCantidad = 8,
-            cobrosMontoTotal = 2800.0, saldoPendienteTotal = 700.0,
-            saldoPendienteCantidad = 4, calculadoEn = T_REMOTE
-        )
-
-        repo.upsertResumenDiarioFromRemote(entity)
-
-        coVerify(exactly = 1) { resumenDiarioDao.upsert(entity) }
-    }
-
-    @Test
-    fun `upsertResumenDiarioFromRemote does NOT call PostSaveSyncScheduler`() = runTest {
-        val entity = ResumenDiarioEntity(
-            id = "rd1", opticaId = opticaId, fecha = "2026-06-15",
-            ventasCantidad = 5, ventasMontoTotal = 1200.0, ventasCostoTotal = 500.0,
-            cobrosCantidad = 3, cobrosMontoTotal = 900.0, saldoPendienteTotal = 300.0,
-            saldoPendienteCantidad = 2, calculadoEn = T_REMOTE
-        )
-
-        repo.upsertResumenDiarioFromRemote(entity)
-
-        coVerify(exactly = 0) { scheduler.scheduleFinanzasSync(any()) }
-        coVerify(exactly = 0) { scheduler.scheduleHistorialSync(any()) }
-        coVerify(exactly = 0) { scheduler.schedulePacientesSync(any()) }
-    }
-
-    // ── ConfiguracionFinanciera remote bypass: download-only, no sync scheduling
-
-    @Test
-    fun `upsertConfiguracionFinancieraFromRemote passes entity without scheduling sync`() = runTest {
-        val entity = ConfiguracionFinancieraEntity(
-            opticaId = opticaId, margenNetoObjetivo = 20.0,
-            ticketPromedioObjetivo = 150.0, caidaVentasAlertaPct = 15.0,
-            deudaViejaAlertaDias = 45, deudaTotalAlertaMonto = 5000.0,
-            stockEstancadoAlertaDias = 90, stockBajoAlertaUnidades = 5,
-            minVentasParaRecomendar = 10, frecuenciaRecalculoDias = 3
-        )
-
-        repo.upsertConfiguracionFinancieraFromRemote(entity)
-
-        coVerify(exactly = 1) { configuracionFinancieraDao.upsert(entity) }
-    }
-
-    @Test
-    fun `upsertConfiguracionFinancieraFromRemote does NOT call PostSaveSyncScheduler`() = runTest {
-        val entity = ConfiguracionFinancieraEntity(
-            opticaId = opticaId, margenNetoObjetivo = 18.0,
-            ticketPromedioObjetivo = 200.0, caidaVentasAlertaPct = 10.0,
-            deudaViejaAlertaDias = 30, deudaTotalAlertaMonto = 3000.0,
-            stockEstancadoAlertaDias = 180, stockBajoAlertaUnidades = 2,
-            minVentasParaRecomendar = 5, frecuenciaRecalculoDias = 1
-        )
-
-        repo.upsertConfiguracionFinancieraFromRemote(entity)
-
-        coVerify(exactly = 0) { scheduler.scheduleFinanzasSync(any()) }
-        coVerify(exactly = 0) { scheduler.scheduleHistorialSync(any()) }
-        coVerify(exactly = 0) { scheduler.schedulePacientesSync(any()) }
-    }
+    // ── ConfiguracionFinanciera + ResumenDiario remote bypass tests were removed
+    //     because those passthrough methods were eliminated from OptoRepository.
+    //     Direct DAO behavior is covered by CostoProductoDaoTest, etc.
 }

@@ -1,6 +1,6 @@
 package com.example.optoapp.domain
 
-import android.util.Log
+import com.example.optoapp.util.AppLogger
 import com.example.optoapp.data.Resource
 import com.example.optoapp.data.resumendiario.ResumenDiarioDao
 import io.github.jan.supabase.postgrest.Postgrest
@@ -31,10 +31,10 @@ open class ObtenerAnalisisMensualUseCase @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: IOException) {
-            Log.w(TAG, "Offline — falling back to Room", e)
+            AppLogger.w(TAG, "Offline — falling back to Room", e)
             fallbackToRoom(opticaId, mes)
         } catch (e: Exception) {
-            Log.e(TAG, "Error obteniendo analisis mensual", e)
+            AppLogger.e(TAG, "Error obteniendo analisis mensual", e)
             Resource.Error("No se pudieron cargar los datos del mes")
         }
     }

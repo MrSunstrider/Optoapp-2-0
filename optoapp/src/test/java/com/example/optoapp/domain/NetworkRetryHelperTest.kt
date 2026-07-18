@@ -27,24 +27,24 @@ class NetworkRetryHelperTest {
     // ---- Bug 2: 429 rate-limit detection tests ----
 
     @Test
-    fun `isTransientNetworkError returns true for HTTP 429 status code`() {
+    fun `isRetryable returns true for HTTP 429 IOException`() {
         val helper = NetworkRetryHelper(testLogger)
         val ex = IOException("HTTP 429 Too Many Requests")
-        assertTrue(helper.isTransientNetworkError(ex))
+        assertTrue(helper.isRetryable(ex))
     }
 
     @Test
-    fun `isTransientNetworkError returns true for too many requests message`() {
+    fun `isRetryable returns true for transient message`() {
         val helper = NetworkRetryHelper(testLogger)
         val ex = IOException("too many requests")
-        assertTrue(helper.isTransientNetworkError(ex))
+        assertTrue(helper.isRetryable(ex))
     }
 
     @Test
-    fun `isTransientNetworkError returns true for 429 in message`() {
+    fun `isRetryable returns true for 429 in message`() {
         val helper = NetworkRetryHelper(testLogger)
         val ex = IOException("Request failed with status 429")
-        assertTrue(helper.isTransientNetworkError(ex))
+        assertTrue(helper.isRetryable(ex))
     }
 
     // ---- Bug 1: Missing delay in IOException branch ----

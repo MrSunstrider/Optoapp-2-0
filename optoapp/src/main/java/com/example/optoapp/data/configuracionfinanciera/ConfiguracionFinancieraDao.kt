@@ -16,6 +16,4 @@ interface ConfiguracionFinancieraDao {
     @Upsert
     suspend fun upsert(config: ConfiguracionFinancieraEntity)
 
-    @Query("DELETE FROM configuracion_financiera WHERE opticaId = :opticaId")
-    suspend fun deleteAll(opticaId: String)
 }

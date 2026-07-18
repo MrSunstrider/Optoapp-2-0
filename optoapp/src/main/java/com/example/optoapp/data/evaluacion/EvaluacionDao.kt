@@ -18,11 +18,8 @@ interface EvaluacionDao {
     @Update
     suspend fun updateEvaluacion(evaluacion: EvaluacionClinica)
 
-    @Delete
-    suspend fun deleteEvaluacion(evaluacion: EvaluacionClinica)
-
-    @Query("DELETE FROM evaluaciones WHERE opticaId = :opticaId")
-    suspend fun deleteAll(opticaId: String)
+    @Query("DELETE FROM evaluaciones WHERE id = :id AND opticaId = :opticaId")
+    suspend fun deleteEvaluacion(id: String, opticaId: String): Int
 
     @Query("UPDATE evaluaciones SET opticaId = :newOpticaId WHERE opticaId = 'mi_optica_base'")
     suspend fun reassignFromLegacyMiOpticaBase(newOpticaId: String): Int

@@ -54,9 +54,8 @@ class SubscriptionManagerTest {
     // ─── maxPacientes (pure function) ──────────────────────────────────────
 
     @Test
-    fun `maxPacientes FREE returns unlimited`() {
-        assertEquals(SubscriptionManager.FREE_MAX_PACIENTES, subscriptionManager.maxPacientes(SubscriptionTier.FREE))
-        assertEquals(Int.MAX_VALUE, subscriptionManager.maxPacientes(SubscriptionTier.FREE))
+    fun `maxPacientes FREE returns 50`() {
+        assertEquals(50, subscriptionManager.maxPacientes(SubscriptionTier.FREE))
     }
 
     @Test

@@ -11,7 +11,6 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.verify
-import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -101,7 +100,7 @@ class RecetaEvaluacionPdfGeneratorTest {
         testFile.createNewFile()
         RecetaEvaluacionPdfGenerator.openPdf(context, testFile)
         // FileProvider.getUriForFile is called via the mocked static
+        verify { FileProvider.getUriForFile(any(), any(), any()) }
         testFile.delete()
-        assertTrue(true) // Method completed without throwing
     }
 }

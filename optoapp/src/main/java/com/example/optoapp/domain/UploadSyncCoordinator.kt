@@ -1,11 +1,13 @@
 package com.example.optoapp.domain
 
-import android.util.Log
+import com.example.optoapp.util.AppLogger
 import com.example.optoapp.data.DispensacionItem
 import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.FinanzasRemoteDefaults
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.SyncStateTracker
+import com.example.optoapp.data.costobiselado.CostoBiseladoDao
+import com.example.optoapp.data.costoproducto.CostoProductoDao
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.CancellationException
@@ -21,7 +23,9 @@ class UploadSyncCoordinator @Inject constructor(
     private val supabase: SupabaseClient,
     private val syncStateTracker: SyncStateTracker,
     private val mergeHandler: DispensacionMergeHandler,
-    private val networkRetryHelper: NetworkRetryHelper
+    private val networkRetryHelper: NetworkRetryHelper,
+    private val costoProductoDao: CostoProductoDao,
+    private val costoBiseladoDao: CostoBiseladoDao
 ) {
     companion object {
         private const val TAG = "SyncFinanzas"
@@ -32,8 +36,14 @@ class UploadSyncCoordinator @Inject constructor(
         private const val TABLE_GASTOS_OPERATIVOS = "gastos_operativos"
         private const val TABLE_REGALOS = "regalos_dispensacion"
         private const val TABLE_COSTOS_PRODUCTOS = "costos_productos"
+        private const val TABLE_COSTOS_BISELADO = "costos_biselado"
         private const val UPSERT_BATCH_SIZE = 80
     }
+
+class UploadPreCheckFailedException(
+    message: String,
+    cause: Throwable
+) : Exception(message, cause)
 
     /**
      * Shared upload pipeline: chunk → retry → markSynced → track count.
@@ -65,11 +75,11 @@ class UploadSyncCoordinator @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: IOException) {
-            Log.e(TAG, "Error en red subiendo $entityType: ${e.message}", e)
+            AppLogger.e(TAG, "Error en red subiendo $entityType: ${e.message}", e)
             syncStateTracker.markError(opticaId, batchTrackingType, "batch", e.message)
             throw UploadPartialException(uploadedCount, e)
         } catch (e: Exception) {
-            Log.e(TAG, "Error inesperado subiendo $entityType: ${e.message}", e)
+            AppLogger.e(TAG, "Error inesperado subiendo $entityType: ${e.message}", e)
             syncStateTracker.markError(opticaId, batchTrackingType, "batch", e.message)
             throw e
         }
@@ -103,12 +113,9 @@ class UploadSyncCoordinator @Inject constructor(
                 .decodeList<DispensacionRemotaLookup>()
         } catch (e: CancellationException) {
             throw e
-        } catch (e: IOException) {
-            Log.w(TAG, "Error en red consultando dispensaciones remotas: ${e.message}")
-            emptyList()
         } catch (e: Exception) {
-            Log.w(TAG, "Error inesperado consultando dispensaciones remotas: ${e.message}")
-            emptyList()
+            AppLogger.e(TAG, "FATAL: Cannot reconcile with remote. Aborting to prevent duplicates.", e)
+            throw UploadPreCheckFailedException("Reconciliation fetch failed for $TABLE_DISPENSACIONES", e)
         }
         val remoteIdByOt = remotosExistentes
             .mapNotNull { r ->
@@ -142,7 +149,7 @@ class UploadSyncCoordinator @Inject constructor(
                         duplicate = duplicateLocal
                     )
                 } else {
-                    Log.w(TAG, "OT duplicada en lote sin datos locales para fusión (dedupeKey=$dedupeKey, localId=${dispensacion.id})")
+                    AppLogger.w(TAG, "OT duplicada en lote sin datos locales para fusión (dedupeKey=$dedupeKey, localId=${dispensacion.id})")
                 }
                 return@forEach
             }
@@ -161,7 +168,7 @@ class UploadSyncCoordinator @Inject constructor(
                         duplicate = duplicateLocal
                     )
                 } else {
-                    Log.w(TAG, "Conflicto de reconciliación sin datos locales para fusión ($localId -> $firstLocalId)")
+                    AppLogger.w(TAG, "Conflicto de reconciliación sin datos locales para fusión ($localId -> $firstLocalId)")
                 }
                 return@forEach
             }
@@ -179,11 +186,11 @@ class UploadSyncCoordinator @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: IOException) {
-            Log.e(TAG, "Error en red subiendo dispensaciones: ${e.message}", e)
+            AppLogger.e(TAG, "Error en red subiendo dispensaciones: ${e.message}", e)
             syncStateTracker.markError(opticaId, "upload_dispensaciones", "batch", e.message)
             throw UploadPartialException(uploadedCount, e)
         } catch (e: Exception) {
-            Log.e(TAG, "Error inesperado subiendo dispensaciones: ${e.message}", e)
+            AppLogger.e(TAG, "Error inesperado subiendo dispensaciones: ${e.message}", e)
             syncStateTracker.markError(opticaId, "upload_dispensaciones", "batch", e.message)
             throw e
         }
@@ -215,12 +222,9 @@ class UploadSyncCoordinator @Inject constructor(
                 .decodeList<ServicioRemotoLookup>()
         } catch (e: CancellationException) {
             throw e
-        } catch (e: IOException) {
-            Log.w(TAG, "Error en red consultando servicios remotos: ${e.message}")
-            emptyList()
         } catch (e: Exception) {
-            Log.w(TAG, "Error inesperado consultando servicios remotos: ${e.message}")
-            emptyList()
+            AppLogger.e(TAG, "FATAL: Cannot reconcile with remote. Aborting to prevent duplicates.", e)
+            throw UploadPreCheckFailedException("Reconciliation fetch failed for $TABLE_SERVICIOS", e)
         }
         val remoteIdByOt = remotosExistentes
             .mapNotNull { r ->
@@ -229,7 +233,7 @@ class UploadSyncCoordinator @Inject constructor(
             .toMap()
 
         val uniqueRows = LinkedHashMap<String, ServicioRemoto>()
-        servicios.forEach { servicio ->
+        for (row in servicios.map { servicio ->
             val aCuentaSum = aCuentaSumByServ[servicio.id] ?: 0.0
             val base = servicio.toRemoto(aCuentaSum = aCuentaSum).copy(opticaId = opticaRemota)
             val normalizedOt = normalizedOtForUnique(base.ot)
@@ -243,10 +247,18 @@ class UploadSyncCoordinator @Inject constructor(
             } else {
                 base
             }
-            val dedupeKey = normalizedOt?.let { "ot:$it" } ?: "id:${reconciled.id}"
-            uniqueRows[dedupeKey] = reconciled
+            reconciled
+        }) {
+            val dedupeKey = row.ot?.trim()?.takeIf { it.isNotBlank() } ?: "id:${row.id}"
+            val existing = uniqueRows[dedupeKey]
+            if (existing != null && existing.id != row.id) {
+                val winner = if ((row.updatedAt ?: "") > (existing.updatedAt ?: "")) row else existing
+                uniqueRows[dedupeKey] = winner
+            } else {
+                uniqueRows[dedupeKey] = row
+            }
         }
-        val rows = uniqueRows.values.toList().distinctBy { it.id }
+        val rows = uniqueRows.values.toList()
         var uploadedCount = 0
         try {
             rows.chunked(UPSERT_BATCH_SIZE).forEachIndexed { index, chunk ->
@@ -258,11 +270,11 @@ class UploadSyncCoordinator @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: IOException) {
-            Log.e(TAG, "Error en red subiendo servicios extra: ${e.message}", e)
+            AppLogger.e(TAG, "Error en red subiendo servicios extra: ${e.message}", e)
             syncStateTracker.markError(opticaId, "upload_servicios_extra", "batch", e.message)
             throw UploadPartialException(uploadedCount, e)
         } catch (e: Exception) {
-            Log.e(TAG, "Error inesperado subiendo servicios extra: ${e.message}", e)
+            AppLogger.e(TAG, "Error inesperado subiendo servicios extra: ${e.message}", e)
             syncStateTracker.markError(opticaId, "upload_servicios_extra", "batch", e.message)
             throw e
         }
@@ -330,7 +342,7 @@ class UploadSyncCoordinator @Inject constructor(
     }
 
     suspend fun uploadCostosProductos(opticaId: String): Int {
-        val localCostos = repository.getCostosProductosList(opticaId)
+        val localCostos = costoProductoDao.getByOpticaIdList(opticaId)
         if (localCostos.isEmpty()) {
             syncStateTracker.markSynced(opticaId, "upload_costos_productos", "batch")
             return 0
@@ -341,5 +353,19 @@ class UploadSyncCoordinator @Inject constructor(
             opticaId, TABLE_COSTOS_PRODUCTOS, "costo_producto",
             "upload_costos_productos", rows, { it.id }
         ) { supabase.postgrest[TABLE_COSTOS_PRODUCTOS].upsert(it) }
+    }
+
+    suspend fun uploadCostosBiselado(opticaId: String): Int {
+        val localBiselado = costoBiseladoDao.getByOpticaIdList(opticaId)
+        if (localBiselado.isEmpty()) {
+            syncStateTracker.markSynced(opticaId, "upload_costos_biselado", "batch")
+            return 0
+        }
+        val opticaRemota = opticaId.trim().ifBlank { FinanzasRemoteDefaults.OPTICA_ID_FALLBACK }
+        val rows = localBiselado.map { it.toRemoto().copy(opticaId = opticaRemota) }.distinctBy { it.id }
+        return executeSimpleUpsert(
+            opticaId, TABLE_COSTOS_BISELADO, "costo_biselado",
+            "upload_costos_biselado", rows, { it.id }
+        ) { supabase.postgrest[TABLE_COSTOS_BISELADO].upsert(it) }
     }
 }

@@ -52,7 +52,18 @@ class PacienteRepository(
     }
 
     suspend fun updatePaciente(paciente: Paciente) {
-        pacienteDao.updatePaciente(paciente)
+        pacienteDao.updatePaciente(
+            id = paciente.id, opticaId = paciente.opticaId,
+            nombreCompleto = paciente.nombreCompleto, edad = paciente.edad,
+            telefono = paciente.telefono, fechaCreacion = paciente.fechaCreacion,
+            dni = paciente.dni, fechaNacimiento = paciente.fechaNacimiento,
+            sexo = paciente.sexo, email = paciente.email,
+            historiaOptometrica = paciente.historiaOptometrica,
+            direccion = paciente.direccion, distrito = paciente.distrito,
+            ocupacion = paciente.ocupacion, acompanante = paciente.acompanante,
+            hobbies = paciente.hobbies, ultimasEtiquetas = paciente.ultimasEtiquetas,
+            updatedAt = paciente.updatedAt, updatedBy = paciente.updatedBy
+        )
     }
 
     suspend fun deletePaciente(paciente: Paciente) = pacienteDao.deletePaciente(paciente.id, paciente.opticaId)
@@ -128,7 +139,7 @@ class PacienteRepository(
         }
     }
 
-    suspend fun deleteEvaluacion(evaluacion: EvaluacionClinica) = evaluacionDao.deleteEvaluacion(evaluacion)
+    suspend fun deleteEvaluacion(evaluacion: EvaluacionClinica) = evaluacionDao.deleteEvaluacion(evaluacion.id, evaluacion.opticaId)
 
     suspend fun insertEvaluacion(evaluacion: EvaluacionClinica) {
         evaluacionDao.insertEvaluacion(evaluacion)
@@ -170,7 +181,18 @@ class PacienteRepository(
                     if (duplicate.id == canonical.id) return@forEach
 
                     val mergedCanonical = mergePacienteData(canonical, duplicate)
-                    pacienteDao.updatePaciente(mergedCanonical)
+                    pacienteDao.updatePaciente(
+                        id = mergedCanonical.id, opticaId = mergedCanonical.opticaId,
+                        nombreCompleto = mergedCanonical.nombreCompleto, edad = mergedCanonical.edad,
+                        telefono = mergedCanonical.telefono, fechaCreacion = mergedCanonical.fechaCreacion,
+                        dni = mergedCanonical.dni, fechaNacimiento = mergedCanonical.fechaNacimiento,
+                        sexo = mergedCanonical.sexo, email = mergedCanonical.email,
+                        historiaOptometrica = mergedCanonical.historiaOptometrica,
+                        direccion = mergedCanonical.direccion, distrito = mergedCanonical.distrito,
+                        ocupacion = mergedCanonical.ocupacion, acompanante = mergedCanonical.acompanante,
+                        hobbies = mergedCanonical.hobbies, ultimasEtiquetas = mergedCanonical.ultimasEtiquetas,
+                        updatedAt = mergedCanonical.updatedAt, updatedBy = mergedCanonical.updatedBy
+                    )
                     movedEvaluaciones += pacienteDao.reassignEvaluacionesPaciente(duplicate.id, canonical.id)
                     movedDispensaciones += pacienteDao.reassignDispensacionesPaciente(duplicate.id, canonical.id)
                     movedServicios += pacienteDao.reassignServiciosPaciente(duplicate.id, canonical.id)

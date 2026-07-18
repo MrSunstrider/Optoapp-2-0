@@ -1,6 +1,6 @@
 package com.example.optoapp.domain
 
-import android.util.Log
+import com.example.optoapp.util.AppLogger
 import com.example.optoapp.data.OptoRepository
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
@@ -28,7 +28,7 @@ class DeletionSyncHelper @Inject constructor(
     suspend fun pushPendingDeletions(opticaId: String) {
         val pending = repository.getPendingDeletions(opticaId)
         if (pending.isEmpty()) return
-        Log.d(TAG, "Finanzas: propagando ${pending.size} eliminaciones a Supabase")
+        AppLogger.d(TAG, "Finanzas: propagando ${pending.size} eliminaciones a Supabase")
         pending.forEach { tombstone ->
             val table = when (tombstone.entityType) {
                 "servicio_extra" -> TABLE_SERVICIOS
@@ -50,13 +50,13 @@ class DeletionSyncHelper @Inject constructor(
                     }
                 }
                 repository.clearDeletionState(opticaId, tombstone.entityType, tombstone.entityId)
-                Log.d(TAG, "Eliminado remoto ${tombstone.entityType}/${tombstone.entityId}")
+                AppLogger.d(TAG, "Eliminado remoto ${tombstone.entityType}/${tombstone.entityId}")
             } catch (e: CancellationException) {
                 throw e
             } catch (e: IOException) {
-                Log.e(TAG, "Error en red eliminando remoto ${tombstone.entityType}/${tombstone.entityId}: ${e.message}", e)
+                AppLogger.e(TAG, "Error en red eliminando remoto ${tombstone.entityType}/${tombstone.entityId}: ${e.message}", e)
             } catch (e: Exception) {
-                Log.e(TAG, "Error inesperado eliminando remoto ${tombstone.entityType}/${tombstone.entityId}: ${e.message}", e)
+                AppLogger.e(TAG, "Error inesperado eliminando remoto ${tombstone.entityType}/${tombstone.entityId}: ${e.message}", e)
             }
         }
     }

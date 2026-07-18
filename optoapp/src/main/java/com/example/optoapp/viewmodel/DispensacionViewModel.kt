@@ -10,6 +10,7 @@ import com.example.optoapp.data.FinanzasRemoteDefaults
 import com.example.optoapp.data.Montura
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Resource
+import com.example.optoapp.domain.auth.AuthorizationGuard
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -110,7 +111,9 @@ class DispensacionViewModel @Inject constructor(
     private val sessionManager: com.example.optoapp.data.SessionManager,
     private val postSaveSyncScheduler: PostSaveSyncScheduler,
     private val stockHelper: DispensacionStockHelper,
-    private val calcularMontoPagadoUseCase: CalcularMontoPagadoUseCase
+    private val calcularMontoPagadoUseCase: CalcularMontoPagadoUseCase,
+    private val costoProductoDao: com.example.optoapp.data.costoproducto.CostoProductoDao,
+    private val costoBiseladoDao: com.example.optoapp.data.costobiselado.CostoBiseladoDao
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(DispensacionUiState(generatedId = UUID.randomUUID().toString()))
     val uiState: StateFlow<DispensacionUiState> = _uiState.asStateFlow()
@@ -134,12 +137,13 @@ class DispensacionViewModel @Inject constructor(
     fun getDispensacionesByPaciente(pacienteId: String) = repository.getDispensacionesByPaciente(pacienteId)
 
     // Reactive pagos sum maps for dynamic saldo computation (montoPagado/aCuenta are @Ignore)
+    // Anulaciones (negative monto) are INCLUDED so they net out correctly.
     @OptIn(ExperimentalCoroutinesApi::class)
     val pagosSumByDispensacion: StateFlow<Map<String, Double>> = sessionManager.opticaId
         .flatMapLatest { opticaId ->
             repository.getAllPagosFlowForOptica(opticaId)
                 .map { pagos ->
-                    pagos.filter { it.tipo != "Anulación" && it.dispensacionId != null }
+                    pagos.filter { it.dispensacionId != null }
                         .groupBy { it.dispensacionId!! }
                         .mapValues { (_, pags) -> pags.sumOf { it.monto } }
                 }
@@ -150,7 +154,7 @@ class DispensacionViewModel @Inject constructor(
         .flatMapLatest { opticaId ->
             repository.getAllPagosFlowForOptica(opticaId)
                 .map { pagos ->
-                    pagos.filter { it.tipo != "Anulación" && it.servicioExtraId != null }
+                    pagos.filter { it.servicioExtraId != null }
                         .groupBy { it.servicioExtraId!! }
                         .mapValues { (_, pags) -> pags.sumOf { it.monto } }
                 }
@@ -342,7 +346,7 @@ class DispensacionViewModel @Inject constructor(
                 return@launch
             }
             val primerItem = s.items.first()
-            val requiereAltura = primerItem.tipoLente == "Bifocal" || primerItem.tipoLente == "Progresivo" || primerItem.tipoLente == "Ocupacional"
+            val requiereAltura = primerItem.tipoLente == "Bifocal" || primerItem.tipoLente == "Multifocal" || primerItem.tipoLente == "Ocupacional"
             if (requiereAltura && primerItem.altura.isBlank()) {
                 _uiState.update { it.copy(error = "La altura es obligatoria para ${primerItem.tipoLente}.") }
                 return@launch
@@ -353,7 +357,7 @@ class DispensacionViewModel @Inject constructor(
                 return@launch
             }
             for (item in s.items.drop(1)) {
-                val requiereAlturaItem = item.tipoLente in setOf("Bifocal", "Progresivo", "Ocupacional")
+                val requiereAlturaItem = item.tipoLente in setOf("Bifocal", "Multifocal", "Ocupacional")
                 if (requiereAlturaItem && item.altura.isBlank()) {
                     _uiState.update { it.copy(error = "La altura es obligatoria para ${item.tipoLente}.") }
                     return@launch
@@ -381,6 +385,11 @@ class DispensacionViewModel @Inject constructor(
             if (totalAbonos > montoTotal) {
                 _uiState.update { it.copy(error = FinanzasRemoteDefaults.Messages.ABONO_MAYOR_QUE_TOTAL) }
                 return@launch
+            }
+
+            val role = sessionManager.opticaRol.first()
+            if (dispensacionId != null && dispensacionId != "null") {
+                AuthorizationGuard.requireRole(role, setOf("admin", "gerente"), "editar dispensación")
             }
 
             val currentOpticaId = sessionManager.opticaId.first()
@@ -459,7 +468,7 @@ class DispensacionViewModel @Inject constructor(
 
                     repository.deleteItemsByDispensacionId(finalId, currentOpticaId)
                     s.items.forEachIndexed { _, itemUi ->
-                        val requiereAlturaItem = itemUi.tipoLente in setOf("Bifocal", "Progresivo", "Ocupacional")
+                        val requiereAlturaItem = itemUi.tipoLente in setOf("Bifocal", "Multifocal", "Ocupacional")
                         val item = DispensacionItem(
                             id = itemUi.id,
                             dispensacionId = finalId,
@@ -506,11 +515,9 @@ class DispensacionViewModel @Inject constructor(
                         repository.deletePagoRegistrandoAnulacionEnCaja(pago, currentOpticaId)
                     }
 
-                    // Save regalos
                     val existingRegalos = if (dispensacionId != null && dispensacionId != "null") {
                         repository.getRegalosByDispensacionId(finalId)
                     } else emptyList()
-                    // Restore stock for removed regalos
                     existingRegalos.forEach { regalo ->
                         stockHelper.adjustStockAndRegistrarMovimiento(
                             regalo.productoId, currentOpticaId, regalo.cantidad,
@@ -518,7 +525,7 @@ class DispensacionViewModel @Inject constructor(
                             "Reversión por edición de regalos"
                         )
                     }
-                    repository.deleteRegalosByDispensacionId(finalId)
+                    repository.deleteRegalosByDispensacionId(finalId, currentOpticaId)
                     s.regalos.forEach { regaloUi ->
                         val entity = RegaloDispensacionEntity(
                             id = regaloUi.id,
@@ -564,6 +571,8 @@ class DispensacionViewModel @Inject constructor(
         // Hard delete for mistakes: remove completely + revert stock
         // No inverse Pago, no financial trace — this never happened.
         viewModelScope.launch {
+            val role = sessionManager.opticaRol.first()
+            AuthorizationGuard.requireRole(role, setOf("admin", "gerente"), "eliminar dispensación")
             val opticaId = sessionManager.opticaId.first()
             val regalos = repository.getRegalosByDispensacionId(dispensacionId)
             regalos.forEach { regalo ->
@@ -593,7 +602,11 @@ class DispensacionViewModel @Inject constructor(
                 val original = result.data
                 val totalPagadoOriginal = calcularMontoPagadoUseCase(originalDispensacionId)
 
-                // Mark original as reclamada
+                if (totalPagadoOriginal <= 0.0) {
+                    _uiState.update { it.copy(error = "No se puede crear un reclamo porque no hay pagos registrados para esta dispensación.") }
+                    return@launch
+                }
+
                 repository.updateDispensacion(
                     original.copy(
                         estadoEntrega = "Reclamada",
@@ -601,7 +614,6 @@ class DispensacionViewModel @Inject constructor(
                     )
                 )
 
-                // Create new dispensacion with reclamoOrigenId
                 val newId = UUID.randomUUID().toString()
                 val nuevaDisp = original.copy(
                     id = newId,
@@ -614,14 +626,12 @@ class DispensacionViewModel @Inject constructor(
                 )
                 repository.insertDispensacion(nuevaDisp)
 
-                // Calculate financial difference
                 val diff = nuevoMontoTotal - totalPagadoOriginal
                 when {
                     diff > 0 -> {
                         // Patient owes more — no refund, charge will happen on new disp
                     }
                     diff < 0 -> {
-                        // Create refund Pago for the difference
                         val refundPago = Pago(
                             id = UUID.randomUUID().toString(),
                             dispensacionId = originalDispensacionId,
@@ -654,7 +664,6 @@ class DispensacionViewModel @Inject constructor(
                     updatedAt = java.time.Instant.now().toString()
                 )
 
-                // Create inverse Pago for the total montoPagado
                 val anulacionPago = Pago(
                     id = UUID.randomUUID().toString(),
                     dispensacionId = dispensacionId,
@@ -669,7 +678,6 @@ class DispensacionViewModel @Inject constructor(
                 repository.updateDispensacion(updatedDisp)
                 repository.insertPago(anulacionPago)
 
-                // Revert stock for regalos
                 val regalos = repository.getRegalosByDispensacionId(dispensacionId)
                 regalos.forEach { regalo ->
                     stockHelper.adjustStockAndRegistrarMovimiento(
@@ -698,7 +706,6 @@ class DispensacionViewModel @Inject constructor(
         viewModelScope.launch {
             val list = repository.getEvaluacionesByPaciente(pacienteId).first()
             _uiState.update { it.copy(evaluacionesDisponibles = list) }
-            // Preselect last evaluation
             val last = list.maxByOrNull { it.fecha }
             if (last != null) {
                 _uiState.update { it.copy(evaluacionId = last.id) }
@@ -744,7 +751,7 @@ class DispensacionViewModel @Inject constructor(
                         }
                         val lcMaterial = evaluacion.lcMaterial.ifBlank { item.materialLente }
                         val lcLab = evaluacion.lcLaboratorio.ifBlank { null }
-                        val lcLookup = repository.lookupCostoProductoLc(
+                        val lcLookup = costoProductoDao.lookupLc(
                             material = lcMaterial,
                             tipoLente = lcTipo,
                             stockOFabricacion = "stock",
@@ -756,27 +763,29 @@ class DispensacionViewModel @Inject constructor(
                     val material = item.materialLente
                     val tipoLente = item.tipoLente
 
+                    val tratamientoStr = item.tratamientos.sorted().joinToString(" + ").ifBlank { null }
+
                     if (odEsf != null) {
-                        val tipo = determineTipoLente(odEsf)
-                        val serie = if (tipo == "stock" && odCil != null) determineSeriePorCilindro(odCil) else null
-                        val lookupResult = repository.lookupCostoProducto(
+                        val tipo = determineTipoLente(odEsf, odCil)
+                        val serie = determineSeriePorCilindro(odCil)
+                        val lookupResult = costoProductoDao.lookup(
                             material = material,
                             tipoLente = tipoLente,
                             stockOFabricacion = tipo,
-                            tratamiento = item.tratamientos.firstOrNull(),
+                            tratamiento = tratamientoStr,
                             serie = serie
                         )
                         costoOd = lookupResult?.costoUnitario
                     }
 
                     if (oiEsf != null) {
-                        val tipo = determineTipoLente(oiEsf)
-                        val serie = if (tipo == "stock" && oiCil != null) determineSeriePorCilindro(oiCil) else null
-                        val lookupResult = repository.lookupCostoProducto(
+                        val tipo = determineTipoLente(oiEsf, oiCil)
+                        val serie = determineSeriePorCilindro(oiCil)
+                        val lookupResult = costoProductoDao.lookup(
                             material = material,
                             tipoLente = tipoLente,
                             stockOFabricacion = tipo,
-                            tratamiento = item.tratamientos.firstOrNull(),
+                            tratamiento = tratamientoStr,
                             serie = serie
                         )
                         costoOi = lookupResult?.costoUnitario
@@ -784,7 +793,7 @@ class DispensacionViewModel @Inject constructor(
 
                     // Montura cost lookup: try costos_productos where stockOFabricacion='montura', fallback to monturas.costo
                     if (item.origenMontura == "Tienda" && item.monturaId.isNotBlank()) {
-                        val monturaLookup = repository.lookupCostoProducto(
+                        val monturaLookup = costoProductoDao.lookup(
                             material = material,
                             tipoLente = "montura",
                             stockOFabricacion = "montura",
@@ -800,10 +809,16 @@ class DispensacionViewModel @Inject constructor(
                         }
 
                         val tipoAro = normalizeTipoAro(item.tipoAro)
-                        val biseladoLookup = repository.lookupCostoBiselado(
+                        // Derive stockOFabricacion from prescription parameters (same logic as OD/OI lookup)
+                        val biseladoTipo = when {
+                            odEsf != null -> determineTipoLente(odEsf, odCil)
+                            oiEsf != null -> determineTipoLente(oiEsf, oiCil)
+                            else -> "stock"
+                        }
+                        val biseladoLookup = costoBiseladoDao.lookup(
                             material = item.materialMontura.ifBlank { "Resina" },
                             tipoAro = tipoAro,
-                            stockOFabricacion = "stock",
+                            stockOFabricacion = biseladoTipo,
                             serie = 1,
                             altoIndice = null
                         )
@@ -828,9 +843,8 @@ class DispensacionViewModel @Inject constructor(
 
     private fun normalizeTipoAro(tipoAro: String): String = when {
         tipoAro.contains("Completo", ignoreCase = true) -> "aro_completo"
-        tipoAro.contains("ranurado", ignoreCase = true) || tipoAro.contains("semi", ignoreCase = true) -> "ranurado"
-        tipoAro.contains("al aire", ignoreCase = true) || tipoAro.contains("aire", ignoreCase = true) -> "al_aire"
-        tipoAro.contains("taladro", ignoreCase = true) -> "taladro"
+        tipoAro.contains("Semi", ignoreCase = true) -> "semi_aire"
+        tipoAro.contains("aire", ignoreCase = true) -> "al_aire"
         else -> "aro_completo"
     }
 
@@ -841,24 +855,24 @@ class DispensacionViewModel @Inject constructor(
         private const val ORIGEN_TIENDA_LEGACY = "Nueva de Tienda"
         private const val ORIGEN_PACIENTE_LEGACY = "Traída por paciente"
 
-        /** |esfera| ≤ 6.00 → stock, else → fabricacion */
-        fun determineTipoLente(esfera: Double): String =
-            if (kotlin.math.abs(esfera) <= 6.00) "stock" else "fabricacion"
+        /** |esfera| ≤ 6.00 AND |cilindro| ≤ 6.00 → stock, else → fabricacion */
+        fun determineTipoLente(esfera: Double, cilindro: Double?): String {
+            val absEsf = kotlin.math.abs(esfera)
+            val absCil = cilindro?.let { kotlin.math.abs(it) } ?: 0.0
+            return if (absEsf > 6.00 || absCil > 6.00) "fabricacion" else "stock"
+        }
 
         /**
          * Cylinder series for stock lenses:
-         * 0 to -2.00 → 1ra (serie=1)
+         * null or 0 to -2.00 → 1ra (serie=1)
          * -2.25 to -4.00 → 2da (serie=2)
          * -4.25 to -6.00 → 3ra (serie=3)
          */
-        fun determineSeriePorCilindro(cilindro: Double): Int? {
-            val absCil = kotlin.math.abs(cilindro)
-            return when {
-                absCil <= 2.00 -> 1
-                absCil <= 4.00 -> 2
-                absCil <= 6.00 -> 3
-                else -> null
-            }
+        fun determineSeriePorCilindro(cilindro: Double?): Int? = when {
+            cilindro == null || kotlin.math.abs(cilindro) <= 2.00 -> 1
+            kotlin.math.abs(cilindro) <= 4.00 -> 2
+            kotlin.math.abs(cilindro) <= 6.00 -> 3
+            else -> null
         }
     }
 }

@@ -72,7 +72,7 @@ fun AbonoDialog(
                     onClick = { showDatePicker = true },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Icon(Icons.Default.DateRange, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Icon(Icons.Default.DateRange, contentDescription = "Fecha", modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(8.dp))
                     Text("Fecha del abono: ${DateUtils.formatLocalized(fechaAbono)}")
                 }

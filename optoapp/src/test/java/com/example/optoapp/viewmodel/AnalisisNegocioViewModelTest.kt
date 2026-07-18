@@ -228,7 +228,7 @@ class AnalisisNegocioViewModelTest {
         val state = viewModel.uiState.first()
         assertNotNull("analisis should be present", state.analisis)
         assertEquals("esOffline should be true", true, state.analisis!!.esOffline)
-        assertEquals("mostrarAdvertenciaEstacionalidad should be true when offline", true, state.mostrarAdvertenciaEstacionalidad)
+        assertEquals("isSeasonalityWarning should be true when offline", true, state.isSeasonalityWarning)
     }
 
     @Test
@@ -283,7 +283,7 @@ class AnalisisNegocioViewModelTest {
     }
 
     @Test
-    fun `mostrarAdvertenciaEstacionalidad is false when online`() = runTest(testDispatcher) {
+    fun `isSeasonalityWarning is false when online`() = runTest(testDispatcher) {
         primeUseCases(analisis = Resource.Success(createAnalisis(esOffline = false)))
 
         viewModel = AnalisisNegocioViewModel(
@@ -292,7 +292,7 @@ class AnalisisNegocioViewModelTest {
         advanceUntilIdle()
 
         val state = viewModel.uiState.first()
-        assertEquals("mostrarAdvertenciaEstacionalidad should be false when online", false, state.mostrarAdvertenciaEstacionalidad)
+        assertEquals("isSeasonalityWarning should be false when online", false, state.isSeasonalityWarning)
     }
 
     @Test

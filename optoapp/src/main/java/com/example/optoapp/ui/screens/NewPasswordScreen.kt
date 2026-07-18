@@ -171,7 +171,7 @@ fun NewPasswordScreen(
                             value = newPassword,
                             onValueChange = { newPassword = it; localError = null },
                             label = { Text("Nueva contraseña") },
-                            leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
+                            leadingIcon = { Icon(Icons.Default.Lock, contentDescription = "Bloqueado") },
                             trailingIcon = {
                                 IconButton(onClick = { showPassword = !showPassword }) {
                                     Icon(
@@ -196,7 +196,7 @@ fun NewPasswordScreen(
                             value = confirmPassword,
                             onValueChange = { confirmPassword = it; localError = null },
                             label = { Text("Confirmar contraseña") },
-                            leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
+                            leadingIcon = { Icon(Icons.Default.Lock, contentDescription = "Bloqueado") },
                             trailingIcon = {
                                 IconButton(onClick = { showPassword = !showPassword }) {
                                     Icon(

@@ -106,6 +106,7 @@ data class EvaluacionUiState(
     val autoAmbliopia: Boolean = true,
     val planTratamiento: String = "",
     val observaciones: String = "",
+    val proximaFechaControl: String = "",
     val proximaCita: LocalDate? = null,
     /** programada | confirmada | asistio | no_asistio | reprogramada */
     val citaEstado: String = "programada",

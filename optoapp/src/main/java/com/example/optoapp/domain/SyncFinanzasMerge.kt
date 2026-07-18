@@ -1,6 +1,6 @@
 package com.example.optoapp.domain
 
-import android.util.Log
+import com.example.optoapp.util.AppLogger
 import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.SyncStateTracker
@@ -51,18 +51,26 @@ class DispensacionMergeHandler @Inject constructor(
             altura = canonical.altura.ifBlank { duplicate.altura },
             subTipoBifocal = canonical.subTipoBifocal.ifBlank { duplicate.subTipoBifocal }
         )
-        repository.updateDispensacion(merged)
-        val moved = repository.reassignPagosDispensacion(duplicate.id, canonical.id, opticaId)
-        repository.deleteDispensacionById(duplicate.id, opticaId)
+        var movedPagos = 0
+        var movedItems = 0
+        var movedRegalos = 0
+        repository.withTransaction {
+            repository.updateDispensacion(merged)
+            movedPagos = repository.reassignPagosDispensacion(duplicate.id, canonical.id, opticaId)
+            movedItems = repository.reassignItemsDispensacion(duplicate.id, canonical.id)
+            movedRegalos = repository.reassignRegalosDispensacion(duplicate.id, canonical.id)
+            repository.deleteDispensacionById(duplicate.id, opticaId)
+        }
         syncStateTracker.markSynced(opticaId, "dispensacion", duplicate.id)
         syncStateTracker.markError(
             opticaId,
             "dispensacion",
             canonical.id,
             "Conflicto de reconciliación resuelto: fusionada ${duplicate.id} en ${canonical.id}; " +
-                "ot=${merged.ot.ifBlank { "(sin OT)" }}, paciente_id=${merged.pacienteId}, pagos_movidos=$moved."
+                "ot=${merged.ot.ifBlank { "(sin OT)" }}, paciente_id=${merged.pacienteId}, " +
+                "pagos=$movedPagos, items=$movedItems, regalos=$movedRegalos."
         )
-        Log.w(TAG, "Dispensacion fusionada por conflicto remoto ${duplicate.id} -> ${canonical.id} (pagos movidos=$moved)")
+        AppLogger.w(TAG, "Dispensacion fusionada por conflicto remoto ${duplicate.id} -> ${canonical.id} (pagos=$movedPagos, items=$movedItems, regalos=$movedRegalos)")
     }
 
     /**
@@ -85,15 +93,23 @@ class DispensacionMergeHandler @Inject constructor(
             val canonical = rows.maxByOrNull { it.fecha } ?: return@forEach
             rows.forEach { duplicate ->
                 if (duplicate.id == canonical.id) return@forEach
-                val moved = repository.reassignPagosDispensacion(duplicate.id, canonical.id, opticaId)
-                repository.deleteDispensacionById(duplicate.id, opticaId)
+                var movedPagos = 0
+                var movedItems = 0
+                var movedRegalos = 0
+                repository.withTransaction {
+                    movedPagos = repository.reassignPagosDispensacion(duplicate.id, canonical.id, opticaId)
+                    movedItems = repository.reassignItemsDispensacion(duplicate.id, canonical.id)
+                    movedRegalos = repository.reassignRegalosDispensacion(duplicate.id, canonical.id)
+                    repository.deleteDispensacionById(duplicate.id, opticaId)
+                }
                 syncStateTracker.markError(
                     opticaId,
                     "dispensacion",
                     duplicate.id,
-                    "OT duplicada local ($otKey) resuelta automáticamente. Fusionada en ${canonical.id}; pagos movidos=$moved."
+                    "OT duplicada local ($otKey) resuelta automáticamente. Fusionada en ${canonical.id}; " +
+                        "pagos=$movedPagos, items=$movedItems, regalos=$movedRegalos."
                 )
-                Log.w(TAG, "Dispensacion duplicada OT=$otKey fusionada ${duplicate.id} -> ${canonical.id} (pagos movidos=$moved)")
+                AppLogger.w(TAG, "Dispensacion duplicada OT=$otKey fusionada ${duplicate.id} -> ${canonical.id} (pagos=$movedPagos, items=$movedItems, regalos=$movedRegalos)")
             }
         }
     }

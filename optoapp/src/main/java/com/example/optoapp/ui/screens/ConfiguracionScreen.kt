@@ -111,13 +111,17 @@ fun ConfiguracionScreen(
         if (roleUi.roleInput !in allowedRoles) roleVm.updateRole(allowedRoles.first())
     }
 
+    val backupSuccessMsg = stringResource(R.string.config_backup_export_success)
+    val backupFailedMsg = stringResource(R.string.config_backup_export_failed)
+    val testNotificationSent = stringResource(R.string.config_notification_test_sent)
+
     val createBackupLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
         uri?.let { scope.launch {
             runCatching {
                 val json = viewModel.getBackupJson()
                 context.contentResolver.openOutputStream(it)?.use { stream -> stream.write(json.toByteArray()) }
-            }.onSuccess { configVm.dialogMessage = context.getString(R.string.config_backup_export_success) }
-                .onFailure { e -> configVm.dialogMessage = e.message ?: context.getString(R.string.config_backup_export_failed) }
+            }.onSuccess { configVm.dialogMessage = backupSuccessMsg }
+                .onFailure { e -> configVm.dialogMessage = e.message ?: backupFailedMsg }
         } }
     }
     val restoreBackupLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
@@ -152,7 +156,7 @@ fun ConfiguracionScreen(
                 systemNotificationsEnabled = systemNotificationsEnabled,
                 onUserTimeZoneSelected = { selected -> if (selected == "Detectar automáticamente") settingsVm.setUserTimeZone(null) else settingsVm.setUserTimeZone(selected) },
                 onRemindersEnabledChanged = settingsVm::setRemindersEnabled,
-                onSendTestNotification = { settingsVm.sendTestNotification(); Toast.makeText(context, context.getString(R.string.config_notification_test_sent), Toast.LENGTH_LONG).show() })
+                onSendTestNotification = { settingsVm.sendTestNotification(); Toast.makeText(context, testNotificationSent, Toast.LENGTH_LONG).show() })
 
             SectionHeader(stringResource(R.string.config_section_optica_data))
             LaboratorySection(labNombre = configVm.labNombre, labContacto = configVm.labContacto,

@@ -58,7 +58,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v6
 
       - name: Run unit tests
-        run: ./gradlew testDebugUnitTest --stacktrace --scan
+        run: ./gradlew testDebugUnitTest --stacktrace --scan -PforbidOnly=true
 
       - name: Assemble debug APK
         run: ./gradlew assembleDebug --stacktrace --scan

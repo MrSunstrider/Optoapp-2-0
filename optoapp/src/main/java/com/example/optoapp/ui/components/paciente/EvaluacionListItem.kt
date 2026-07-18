@@ -40,18 +40,18 @@ fun EvaluacionListItem(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Event, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
+                    Icon(Icons.Default.Event, contentDescription = "Evento", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(text = date, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                 }
                 Row {
-                    IconButton(onClick = onResumen, modifier = Modifier.size(36.dp)) {
+                    IconButton(onClick = onResumen, modifier = Modifier.size(48.dp)) {
                         Icon(Icons.Default.Visibility, contentDescription = "Ver Resumen", tint = MaterialTheme.colorScheme.secondary)
                     }
-                    IconButton(onClick = onEdit, modifier = Modifier.size(36.dp)) {
+                    IconButton(onClick = onEdit, modifier = Modifier.size(48.dp)) {
                         Icon(Icons.Default.Edit, contentDescription = "Editar", tint = MaterialTheme.colorScheme.primary)
                     }
-                    IconButton(onClick = { showDeleteDialog = true }, modifier = Modifier.size(36.dp)) {
+                    IconButton(onClick = { showDeleteDialog = true }, modifier = Modifier.size(48.dp)) {
                         Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = MaterialTheme.colorScheme.error)
                     }
                 }

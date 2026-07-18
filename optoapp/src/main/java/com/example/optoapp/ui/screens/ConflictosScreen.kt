@@ -95,7 +95,7 @@ fun ConflictosScreen(
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Icon(
                         Icons.Default.CheckCircle,
-                        contentDescription = null,
+                        contentDescription = "Completado",
                         modifier = Modifier.size(64.dp),
                         tint = MaterialTheme.colorScheme.primary
                     )
@@ -167,9 +167,9 @@ private fun ConflictCard(
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    Icons.Default.Warning,
-                    contentDescription = null,
+                    Icon(
+                        Icons.Default.Warning,
+                        contentDescription = "Advertencia",
                     tint = MaterialTheme.colorScheme.error,
                     modifier = Modifier.size(20.dp)
                 )
@@ -261,7 +261,7 @@ private fun ConflictCard(
                     }
                     Icon(
                         Icons.Default.SwapHoriz,
-                        contentDescription = null,
+                        contentDescription = "Intercambiar",
                         tint = MaterialTheme.colorScheme.error,
                         modifier = Modifier.size(24.dp)
                     )
@@ -286,7 +286,7 @@ private fun ConflictCard(
                     onClick = onKeepMine,
                     modifier = Modifier.weight(1f)
                 ) {
-                    Icon(Icons.Default.CloudUpload, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Icon(Icons.Default.CloudUpload, contentDescription = "Subir", modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(4.dp))
                     Text("Usar el mío", maxLines = 1)
                 }
@@ -294,11 +294,11 @@ private fun ConflictCard(
                     onClick = onAcceptTheirs,
                     modifier = Modifier.weight(1f)
                 ) {
-                    Icon(Icons.Default.CloudDownload, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Icon(Icons.Default.CloudDownload, contentDescription = "Descargar", modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(4.dp))
                     Text("Usar nube", maxLines = 1)
                 }
-                IconButton(modifier = Modifier.size(36.dp), onClick = onDismiss) {
+                IconButton(modifier = Modifier.size(48.dp), onClick = onDismiss) {
                     Icon(Icons.Default.Close, contentDescription = "Descartar")
                 }
             }

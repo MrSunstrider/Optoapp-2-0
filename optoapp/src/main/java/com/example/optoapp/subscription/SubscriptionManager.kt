@@ -77,6 +77,13 @@ open class SubscriptionManager @Inject constructor(
         SubscriptionTier.PRO -> Int.MAX_VALUE
     }
 
+    fun canAddPaciente(tier: SubscriptionTier, currentPacienteCount: Int): Boolean {
+        return when (tier) {
+            SubscriptionTier.FREE -> currentPacienteCount < FREE_MAX_PACIENTES
+            SubscriptionTier.PRO -> true
+        }
+    }
+
     fun maxOpticas(planCode: PlanCode): Int? = when (planCode) {
         PlanCode.FREE -> null
         PlanCode.PRO_INDIVIDUAL -> 1
@@ -112,6 +119,8 @@ open class SubscriptionManager @Inject constructor(
     }
 
     companion object {
-        const val FREE_MAX_PACIENTES = Int.MAX_VALUE
+        const val FREE_MAX_PACIENTES = 50
+        const val FREE_MAX_DISPENSACIONES_MENSUALES = 20
+        const val FREE_MAX_USUARIOS = 2
     }
 }

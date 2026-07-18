@@ -73,9 +73,9 @@ open class PostSaveSyncScheduler @Inject constructor(
         delayMs: Long = 800L,
         block: suspend () -> Unit
     ) {
-        if (suppressSync) return
         applicationScope.launch {
             scheduleMutex.withLock {
+                if (suppressSync) return@withLock
                 pendingJobs.remove(key)?.cancel()
                 pendingJobs[key] = launch {
                     delay(delayMs)

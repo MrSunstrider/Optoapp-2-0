@@ -92,10 +92,10 @@ fun MonturaItem(
                     Text("SKU: ${montura.sku}", maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
                 Row {
-                    IconButton(modifier = Modifier.size(36.dp), onClick = onSalida) { Icon(Icons.Default.Remove, contentDescription = "Salida -1") }
-                    IconButton(modifier = Modifier.size(36.dp), onClick = onEntrada) { Icon(Icons.Default.Add, contentDescription = "Entrada +1") }
-                    IconButton(modifier = Modifier.size(36.dp), onClick = onEdit) { Icon(Icons.Default.Edit, contentDescription = "Editar") }
-                    IconButton(modifier = Modifier.size(36.dp), onClick = { showDelete = true }) { Icon(Icons.Default.Delete, contentDescription = "Eliminar") }
+                    IconButton(modifier = Modifier.size(48.dp), onClick = onSalida) { Icon(Icons.Default.Remove, contentDescription = "Salida -1") }
+                    IconButton(modifier = Modifier.size(48.dp), onClick = onEntrada) { Icon(Icons.Default.Add, contentDescription = "Entrada +1") }
+                    IconButton(modifier = Modifier.size(48.dp), onClick = onEdit) { Icon(Icons.Default.Edit, contentDescription = "Editar") }
+                    IconButton(modifier = Modifier.size(48.dp), onClick = { showDelete = true }) { Icon(Icons.Default.Delete, contentDescription = "Eliminar") }
                 }
             }
             Text("Color/Talla: ${montura.color.ifBlank { "-" }} / ${montura.talla.ifBlank { "-" }}")

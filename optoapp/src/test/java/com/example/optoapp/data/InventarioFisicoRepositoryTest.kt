@@ -143,8 +143,8 @@ class InventarioFisicoRepositoryTest {
 
         repo.closeSession(s.id)
 
-        val m1 = db.monturaDao().getMonturaById("m1")
-        val m2 = db.monturaDao().getMonturaById("m2")
+        val m1 = db.monturaDao().getMonturaByIdForOptica("m1", "o1")
+        val m2 = db.monturaDao().getMonturaByIdForOptica("m2", "o1")
         assertEquals(7, m1!!.stockActual)
         assertEquals(8, m2!!.stockActual)
     }

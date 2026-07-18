@@ -74,7 +74,18 @@ class DaoTest {
         pacienteDao.insertPaciente(paciente)
 
         val updated = paciente.copy(nombreCompleto = "Juan Carlos Perez", telefono = "987654321")
-        pacienteDao.updatePaciente(updated)
+        pacienteDao.updatePaciente(
+            id = updated.id, opticaId = updated.opticaId,
+            nombreCompleto = updated.nombreCompleto, edad = updated.edad,
+            telefono = updated.telefono, fechaCreacion = updated.fechaCreacion,
+            dni = updated.dni, fechaNacimiento = updated.fechaNacimiento,
+            sexo = updated.sexo, email = updated.email,
+            historiaOptometrica = updated.historiaOptometrica,
+            direccion = updated.direccion, distrito = updated.distrito,
+            ocupacion = updated.ocupacion, acompanante = updated.acompanante,
+            hobbies = updated.hobbies, ultimasEtiquetas = updated.ultimasEtiquetas,
+            updatedAt = updated.updatedAt, updatedBy = updated.updatedBy
+        )
 
         val retrieved = pacienteDao.getPacienteById("p1")
         assertEquals("Juan Carlos Perez", retrieved?.nombreCompleto)

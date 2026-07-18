@@ -77,9 +77,9 @@ class MonturaInventoryCoordinatorSyncStockTest {
         val result = coordinator.syncStockFromMovimientos("o1")
 
         assertTrue(result is Resource.Success)
-        val m1 = monturaDao.getMonturaById("m1")
+        val m1 = monturaDao.getMonturaByIdForOptica("m1", "o1")
         assertEquals(7, m1?.stockActual)
-        val m2 = monturaDao.getMonturaById("m2")
+        val m2 = monturaDao.getMonturaByIdForOptica("m2", "o1")
         assertEquals(5, m2?.stockActual)
     }
 
@@ -94,7 +94,7 @@ class MonturaInventoryCoordinatorSyncStockTest {
         val result = coordinator.syncStockFromMovimientos("o1")
 
         assertTrue(result is Resource.Success)
-        val m1 = monturaDao.getMonturaById("m1")
+        val m1 = monturaDao.getMonturaByIdForOptica("m1", "o1")
         assertEquals(15, m1?.stockActual)
     }
 
@@ -114,7 +114,7 @@ class MonturaInventoryCoordinatorSyncStockTest {
         val result = coordinator.syncStockFromMovimientos("o1")
 
         assertTrue(result is Resource.Success)
-        val m1 = monturaDao.getMonturaById("m1")
+        val m1 = monturaDao.getMonturaByIdForOptica("m1", "o1")
         assertEquals(0, m1?.stockActual)
     }
 }

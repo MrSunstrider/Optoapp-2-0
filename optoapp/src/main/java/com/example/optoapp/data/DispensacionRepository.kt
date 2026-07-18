@@ -23,43 +23,14 @@ class DispensacionRepository(
 
     // ── Dispensaciones ───────────────────────────────────────────────────────
 
-    @Suppress("DEPRECATION")
-    @Deprecated(
-        message = "Use getDispensacionesByDateRangeForOptica to enforce multi-tenant isolation",
-        replaceWith = ReplaceWith("getDispensacionesByDateRangeForOptica(start, end, opticaId)")
-    )
-    fun getDispensacionesByDateRange(start: LocalDate, end: LocalDate): Flow<List<DispensacionOptica>> =
-        dispensacionDao.getDispensacionesByDateRange(start, end)
-
     fun getDispensacionesByDateRangeForOptica(start: LocalDate, end: LocalDate, opticaId: String): Flow<List<DispensacionOptica>> =
         dispensacionDao.getDispensacionesByDateRangeForOptica(start, end, opticaId)
 
     fun getDispensacionesByPaciente(pacienteId: String): Flow<List<DispensacionOptica>> =
         dispensacionDao.getDispensacionesByPaciente(pacienteId)
 
-    @Suppress("DEPRECATION")
-    @Deprecated(
-        message = "Use getAllDispensacionesForOptica to enforce multi-tenant isolation",
-        replaceWith = ReplaceWith("getAllDispensacionesForOptica(opticaId)")
-    )
-    fun getAllDispensaciones(): Flow<List<DispensacionOptica>> = dispensacionDao.getAllDispensaciones()
-
     fun getAllDispensacionesForOptica(opticaId: String): Flow<List<DispensacionOptica>> =
         dispensacionDao.getAllDispensacionesForOptica(opticaId)
-
-    @Suppress("DEPRECATION")
-    @Deprecated(
-        message = "Use getTotalVendidoForOptica to enforce multi-tenant isolation",
-        replaceWith = ReplaceWith("getTotalVendidoForOptica(opticaId)")
-    )
-    fun getTotalVendido(): Flow<Double?> = dispensacionDao.getTotalVendido()
-
-    @Suppress("DEPRECATION")
-    @Deprecated(
-        message = "Use getTotalPagadoForOptica to enforce multi-tenant isolation",
-        replaceWith = ReplaceWith("getTotalPagadoForOptica(opticaId)")
-    )
-    fun getTotalPagado(): Flow<Double?> = dispensacionDao.getTotalPagado()
 
     fun getTotalVendidoForOptica(opticaId: String): Flow<Double?> =
         dispensacionDao.getTotalVendidoForOptica(opticaId)
@@ -131,13 +102,6 @@ class DispensacionRepository(
         return d + s + pg
     }
 
-    suspend fun deleteAll(opticaId: String) {
-        dispensacionItemDao.deleteAll(opticaId)
-        servicioExtraDao.deleteAll(opticaId)
-        pagoDao.deleteAll(opticaId)
-        dispensacionDao.deleteAll(opticaId)
-    }
-
     // ── Items de Dispensación ─────────────────────────────────────────────────
 
     fun getItemsByDispensacion(dispensacionId: String): Flow<List<DispensacionItem>> =
@@ -179,13 +143,24 @@ class DispensacionRepository(
     }
 
     suspend fun updatePago(pago: Pago) {
-        pagoDao.updatePago(pago)
+        pagoDao.updatePago(
+            id = pago.id, opticaId = pago.opticaId,
+            dispensacionId = pago.dispensacionId,
+            servicioExtraId = pago.servicioExtraId, fecha = pago.fecha,
+            tipo = pago.tipo, monto = pago.monto,
+            metodoPago = pago.metodoPago, nota = pago.nota,
+            updatedAt = pago.updatedAt, updatedBy = pago.updatedBy,
+            ventaId = pago.ventaId
+        )
     }
 
     suspend fun getPagoById(id: String, opticaId: String): Pago? = pagoDao.getPagoByIdForOptica(id, opticaId)
 
     suspend fun reassignPagosDispensacion(oldDispensacionId: String, newDispensacionId: String, opticaId: String): Int =
         pagoDao.reassignDispensacionIdForOptica(oldDispensacionId, newDispensacionId, opticaId)
+
+    suspend fun reassignItemsDispensacion(sourceId: String, targetId: String): Int =
+        dispensacionItemDao.reassignItemsDispensacion(sourceId, targetId)
 
     /**
      * Borra un abono. Si ya existía en BD, registra un movimiento de anulación
@@ -212,10 +187,10 @@ class DispensacionRepository(
             )
             pagoDao.insertPago(reversal)
         }
-        pagoDao.deletePago(pago)
+        pagoDao.deletePago(pago.id, pago.opticaId)
     }
 
-    suspend fun deletePago(pago: Pago) = pagoDao.deletePago(pago)
+    suspend fun deletePago(pago: Pago) = pagoDao.deletePago(pago.id, pago.opticaId)
 
     fun getPagosByServicioExtra(servicioExtraId: String): Flow<List<Pago>> =
         pagoDao.getPagosByServicioExtra(servicioExtraId)
@@ -239,15 +214,17 @@ class DispensacionRepository(
 
     // ── Servicios Extra ──────────────────────────────────────────────────────
 
-    @Suppress("DEPRECATION")
-    @Deprecated(
-        message = "Use getAllServiciosForOptica to enforce multi-tenant isolation",
-        replaceWith = ReplaceWith("getAllServiciosForOptica(opticaId)")
-    )
-    fun getAllServicios(): Flow<List<ServicioExtra>> = servicioExtraDao.getAllServicios()
-
     fun getAllServiciosForOptica(opticaId: String): Flow<List<ServicioExtra>> =
         servicioExtraDao.getAllServiciosForOptica(opticaId)
+
+    fun getServiciosByDateRangeForOptica(start: LocalDate, end: LocalDate, opticaId: String): Flow<List<ServicioExtra>> =
+        servicioExtraDao.getServiciosByDateRangeForOptica(start, end, opticaId)
+
+    suspend fun getServiciosByIds(ids: List<String>, opticaId: String): List<ServicioExtra> =
+        servicioExtraDao.getServiciosByIds(ids, opticaId)
+
+    suspend fun getDispensacionesByIds(ids: List<String>, opticaId: String): List<DispensacionOptica> =
+        dispensacionDao.getDispensacionesByIds(ids, opticaId)
 
     fun getServiciosByPaciente(pacienteId: String): Flow<List<ServicioExtra>> = servicioExtraDao.getServiciosByPaciente(pacienteId)
 
@@ -272,11 +249,19 @@ class DispensacionRepository(
     }
 
     suspend fun updateServicio(servicio: ServicioExtra) {
-        servicioExtraDao.updateServicio(servicio)
+        servicioExtraDao.updateServicio(
+            id = servicio.id, opticaId = servicio.opticaId,
+            ot = servicio.ot, descripcion = servicio.descripcion,
+            montoTotal = servicio.montoTotal, aCuenta = servicio.aCuenta,
+            estado = servicio.estado, fecha = servicio.fecha,
+            pacienteId = servicio.pacienteId, metodoPago = servicio.metodoPago,
+            fechaEntrega = servicio.fechaEntrega,
+            updatedAt = servicio.updatedAt, updatedBy = servicio.updatedBy
+        )
     }
 
     suspend fun deleteServicio(servicio: ServicioExtra) {
-        servicioExtraDao.deleteServicio(servicio)
+        servicioExtraDao.deleteServicio(servicio.id, servicio.opticaId)
     }
 
     suspend fun getServiciosSnapshotForOptica(opticaId: String): List<ServicioExtra> =

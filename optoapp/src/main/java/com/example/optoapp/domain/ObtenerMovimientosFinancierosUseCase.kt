@@ -1,16 +1,19 @@
 package com.example.optoapp.domain
 
+import com.example.optoapp.data.DispensacionItem
+import com.example.optoapp.data.DispensacionItemDao
 import com.example.optoapp.data.OptoRepository
 import java.time.LocalDate
 import javax.inject.Inject
 
 /**
- * Builds a [MovimientoFinanciero] list from dispensaciones + servicios_extra + pagos.
- * 3-query approach: loads all dispensaciones, servicios, and pagos for an optica,
- * then computes montoPagado/aCuenta dynamically from pagos.
+ * Builds a [MovimientoFinanciero] list from dispensaciones + servicios_extra + regalos + pagos.
+ * 3-query approach: loads all dispensaciones, servicios, regalos and pagos for an optica,
+ * then computes montoPagado/aCuenta dynamically from pagos (including anulaciones which net out).
  */
 class ObtenerMovimientosFinancierosUseCase @Inject constructor(
-    private val repository: OptoRepository
+    private val repository: OptoRepository,
+    private val dispensacionItemDao: DispensacionItemDao
 ) {
     suspend operator fun invoke(
         opticaId: String,
@@ -23,14 +26,21 @@ class ObtenerMovimientosFinancierosUseCase @Inject constructor(
             .filter { it.fecha >= start && it.fecha <= end }
         val pagos = repository.getPagosSnapshotForOptica(opticaId)
 
+        // Include anulaciones (negative monto) so they net out correctly
         val pagosSumByDisp = pagos
-            .filter { it.tipo != "Anulación" && it.dispensacionId != null }
+            .filter { it.dispensacionId != null }
             .groupBy { it.dispensacionId!! }
             .mapValues { (_, pags) -> pags.sumOf { it.monto } }
         val aCuentaSumByServ = pagos
-            .filter { it.tipo != "Anulación" && it.servicioExtraId != null }
+            .filter { it.servicioExtraId != null }
             .groupBy { it.servicioExtraId!! }
             .mapValues { (_, pags) -> pags.sumOf { it.monto } }
+
+        // Load real cost from dispensacion_items for all relevant dispensacion IDs
+        val dispIds = dispensaciones.map { it.id }.toSet()
+        val costosByDisp = if (dispIds.isNotEmpty()) {
+            dispensacionItemDao.getCostosByDispensacionIds(dispIds)
+        } else emptyMap()
 
         val dispMovs = dispensaciones.map { d ->
             MovimientoFinanciero(
@@ -41,7 +51,7 @@ class ObtenerMovimientosFinancierosUseCase @Inject constructor(
                 origenId = d.id,
                 montoTotal = d.montoTotal,
                 montoPagado = pagosSumByDisp[d.id] ?: 0.0,
-                costo = 0.0,
+                costo = costosByDisp[d.id] ?: 0.0,
                 pacienteId = d.pacienteId,
                 opticaId = d.opticaId,
                 descripcion = "OT ${d.ot}",
@@ -66,6 +76,27 @@ class ObtenerMovimientosFinancierosUseCase @Inject constructor(
             )
         }
 
-        return dispMovs + servMovs
+        // Regalos: include gift movements with their cost
+        val regalos = repository.getRegalosSnapshotForOptica(opticaId)
+            .filter { it.dispensacionId in dispIds }
+        val regaloMovs = regalos.map { r ->
+            MovimientoFinanciero(
+                id = r.id,
+                fecha = dispensaciones.firstOrNull { it.id == r.dispensacionId }?.fecha
+                    ?: LocalDate.now(),
+                tipo = TipoMovimiento.REGALO,
+                origen = Origen.REGALO,
+                origenId = r.id,
+                montoTotal = 0.0,
+                montoPagado = 0.0,
+                costo = r.costoUnitario * r.cantidad,
+                pacienteId = dispensaciones.firstOrNull { it.id == r.dispensacionId }?.pacienteId ?: "",
+                opticaId = opticaId,
+                descripcion = "Regalo: ${r.descripcion}",
+                vinculadoA = r.dispensacionId
+            )
+        }
+
+        return dispMovs + servMovs + regaloMovs
     }
 }

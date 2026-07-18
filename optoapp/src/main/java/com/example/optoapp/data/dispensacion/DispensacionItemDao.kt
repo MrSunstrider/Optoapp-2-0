@@ -6,6 +6,16 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface DispensacionItemDao {
 
+    @MapInfo(keyColumn = "dispensacionId", valueColumn = "costoTotal")
+    @Query("""
+        SELECT dispensacion_id AS dispensacionId,
+        COALESCE(SUM(COALESCE(costo_real_od, 0) + COALESCE(costo_real_oi, 0) + COALESCE(costo_real_montura, 0) + COALESCE(costo_real_biselado, 0) + COALESCE(costo_real_lc, 0)), 0) AS costoTotal
+        FROM dispensacion_items 
+        WHERE dispensacion_id IN (:ids) 
+        GROUP BY dispensacion_id
+    """)
+    suspend fun getCostosByDispensacionIds(ids: Set<String>): Map<String, Double>
+
     @Query("SELECT * FROM dispensacion_items WHERE dispensacion_id = :dispensacionId ORDER BY rowid")
     fun getItemsByDispensacion(dispensacionId: String): Flow<List<DispensacionItem>>
 
@@ -34,6 +44,6 @@ interface DispensacionItemDao {
     @Query("DELETE FROM dispensacion_items WHERE dispensacion_id = :dispensacionId AND optica_id = :opticaId")
     suspend fun deleteByDispensacionId(dispensacionId: String, opticaId: String): Int
 
-    @Query("DELETE FROM dispensacion_items WHERE optica_id = :opticaId")
-    suspend fun deleteAll(opticaId: String)
+    @Query("UPDATE dispensacion_items SET dispensacion_id = :targetId WHERE dispensacion_id = :sourceId")
+    suspend fun reassignItemsDispensacion(sourceId: String, targetId: String): Int
 }

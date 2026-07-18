@@ -60,7 +60,7 @@ class MonturaDaoTest {
         )
         dao.insertMontura(montura)
 
-        val retrieved = dao.getMonturaById("m1")
+        val retrieved = dao.getMonturaByIdForOptica("m1", "optica1")
         assertNotNull(retrieved)
         assertEquals("m1", retrieved!!.id)
         assertEquals("Ray-Ban", retrieved.marca)
@@ -71,7 +71,7 @@ class MonturaDaoTest {
 
     @Test
     fun getMonturaById_withUnknownId_returnsNull() = runBlocking {
-        val retrieved = dao.getMonturaById("nonexistent")
+        val retrieved = dao.getMonturaByIdForOptica("nonexistent", "optica1")
 
         assertNull(retrieved)
     }
@@ -131,7 +131,7 @@ class MonturaDaoTest {
         val rowsAffected = dao.adjustStock("m1", "o1", 3)
         assertEquals(1, rowsAffected)
 
-        val retrieved = dao.getMonturaById("m1")
+        val retrieved = dao.getMonturaByIdForOptica("m1", "o1")
         assertEquals(8, retrieved!!.stockActual)
     }
 
@@ -147,7 +147,7 @@ class MonturaDaoTest {
         val rowsAffected = dao.adjustStock("m1", "o1", -4)
         assertEquals(1, rowsAffected)
 
-        val retrieved = dao.getMonturaById("m1")
+        val retrieved = dao.getMonturaByIdForOptica("m1", "o1")
         assertEquals(6, retrieved!!.stockActual)
     }
 
@@ -165,7 +165,7 @@ class MonturaDaoTest {
         assertEquals(0, rowsAffected)
 
         // Stock no cambió por la constraint en el WHERE
-        val retrieved = dao.getMonturaById("m1")
+        val retrieved = dao.getMonturaByIdForOptica("m1", "o1")
         assertEquals(3, retrieved!!.stockActual)
     }
 
@@ -179,9 +179,23 @@ class MonturaDaoTest {
         dao.insertMontura(montura)
 
         val updated = montura.copy(precio = 150.0, stockActual = 8)
-        dao.updateMontura(updated)
+        val rows = dao.updateMontura(
+            id = updated.id, opticaId = updated.opticaId,
+            sku = updated.sku, marca = updated.marca, modelo = updated.modelo,
+            color = updated.color, talla = updated.talla, costo = updated.costo,
+            precio = updated.precio, stockActual = updated.stockActual,
+            stockMinimo = updated.stockMinimo, activo = updated.activo,
+            tipoAro = updated.tipoAro, materialMontura = updated.materialMontura,
+            anchoMm = updated.anchoMm, puenteMm = updated.puenteMm,
+            alturaMm = updated.alturaMm, imagenUri = updated.imagenUri,
+            categoria = updated.categoria, coleccion = updated.coleccion,
+            temporada = updated.temporada, estadoComercial = updated.estadoComercial,
+            genero = updated.genero, updatedAt = updated.updatedAt,
+            updatedBy = updated.updatedBy
+        )
+        assertEquals(1, rows)
 
-        val retrieved = dao.getMonturaById("m1")
+        val retrieved = dao.getMonturaByIdForOptica("m1", "o1")
         assertEquals(150.0, retrieved!!.precio, 0.001)
         assertEquals(8, retrieved.stockActual)
     }
@@ -194,10 +208,25 @@ class MonturaDaoTest {
             stockActual = 5, stockMinimo = 2, activo = true, opticaId = "o1"
         )
         dao.insertMontura(montura)
-        dao.deleteMontura(montura)
+        dao.deleteMontura(montura.id, montura.opticaId)
 
-        val retrieved = dao.getMonturaById("m1")
+        val retrieved = dao.getMonturaByIdForOptica("m1", "o1")
         assertNull(retrieved)
+    }
+
+    @Test
+    fun `getMonturaByIdForOptica respects opticaId filter`() = runBlocking {
+        val montura = Montura(
+            id = "m1", sku = "SKU001", marca = "Marca", modelo = "Modelo",
+            color = "Negro", talla = "M", costo = 50.0, precio = 100.0,
+            stockActual = 5, stockMinimo = 2, activo = true, opticaId = "opticaX"
+        )
+        dao.insertMontura(montura)
+
+        // Same ID with correct opticaId → found
+        assertNotNull(dao.getMonturaByIdForOptica("m1", "opticaX"))
+        // Same ID with wrong opticaId → NOT found (cross-tenant isolation)
+        assertNull(dao.getMonturaByIdForOptica("m1", "opticaY"))
     }
 
     @Test

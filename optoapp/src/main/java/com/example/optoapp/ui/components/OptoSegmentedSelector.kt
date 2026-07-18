@@ -52,7 +52,7 @@ fun OptoSegmentedSelector(
                 Box(
                     modifier = Modifier
                         .weight(1f)
-                        .clip(RoundedCornerShape(10.dp))
+                        .clip(MaterialTheme.shapes.small)
                         .background(backgroundColor)
                         .clickable { onSelect(index) }
                         .padding(vertical = 8.dp),

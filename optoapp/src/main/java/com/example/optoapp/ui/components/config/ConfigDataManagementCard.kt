@@ -39,7 +39,7 @@ fun DataManagementCard(
             }
             HorizontalDivider()
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+                Icon(Icons.Default.Warning, contentDescription = "Advertencia", tint = MaterialTheme.colorScheme.error)
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(stringResource(R.string.config_data_restore_warning), fontSize = 12.sp, color = MaterialTheme.colorScheme.error)
             }

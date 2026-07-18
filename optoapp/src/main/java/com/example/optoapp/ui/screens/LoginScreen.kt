@@ -146,7 +146,7 @@ fun LoginScreen(
                         contentDescription = "OptoApp",
                         modifier = Modifier
                             .fillMaxWidth(0.45f)
-                            .clip(androidx.compose.foundation.shape.RoundedCornerShape(16.dp))
+                            .clip(MaterialTheme.shapes.large)
                             .blur(radiusX = blurRadius.value.dp, radiusY = blurRadius.value.dp)
                     )
                     Text(
@@ -199,7 +199,7 @@ fun LoginScreen(
                         ),
                         singleLine = true,
                         modifier   = Modifier.fillMaxWidth().testTag(TestTags.LOGIN_EMAIL_FIELD),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = MaterialTheme.shapes.medium
                     )
 
                     OutlinedTextField(
@@ -234,7 +234,7 @@ fun LoginScreen(
                         ),
                         singleLine = true,
                         modifier   = Modifier.fillMaxWidth().testTag(TestTags.LOGIN_PASSWORD_FIELD),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = MaterialTheme.shapes.medium
                     )
 
                     Row(
@@ -323,7 +323,7 @@ fun LoginScreen(
                             .fillMaxWidth()
                             .height(48.dp)
                             .testTag(TestTags.LOGIN_INGRESAR_BTN),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = MaterialTheme.shapes.medium
                     ) {
                         if (authState is AuthState.Loading) {
                             CircularProgressIndicator(
@@ -349,7 +349,7 @@ fun LoginScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(48.dp),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = MaterialTheme.shapes.medium
                     ) {
                         Icon(
                             painter = painterResource(com.example.optoapp.R.drawable.ic_google_logo),
@@ -366,11 +366,11 @@ fun LoginScreen(
                     OutlinedButton(
                         onClick = { navController.navigate("register") },
                         modifier = Modifier.fillMaxWidth().height(48.dp),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = MaterialTheme.shapes.medium
                     ) {
                         Icon(
                             imageVector = Icons.Default.Email,
-                            contentDescription = null,
+                            contentDescription = "Correo",
                             modifier = Modifier.size(20.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))

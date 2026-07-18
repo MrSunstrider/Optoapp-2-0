@@ -10,8 +10,11 @@ import com.example.optoapp.data.servicio.ServicioExtraDao
 import com.example.optoapp.data.sync.SyncSnapshotCoordinator
 import dagger.Lazy
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
+import io.mockk.just
 import io.mockk.mockk
+import io.mockk.Runs
 import io.mockk.unmockkAll
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
@@ -72,9 +75,7 @@ class OptoRepositoryErrorTest {
         val snapshotCoordinator = SyncSnapshotCoordinator(
             pacienteDao, monturaDao, monturaMovimientoDao, pacienteRepo, dispensacionRepo, syncRepo, regaloDispensacionDao
         )
-        val backupCoordinator = BackupRestoreCoordinator(
-            pacienteRepo, dispensacionRepo, evaluacionDao, pacienteDao, scheduler
-        )
+        val backupCoordinator = mockk<BackupRestoreCoordinator>(relaxed = true)
         val monturaCoordinator = MonturaInventoryCoordinator(
             monturaDao, monturaMovimientoDao, scheduler
         )
@@ -89,12 +90,7 @@ class OptoRepositoryErrorTest {
             snapshotCoordinator = snapshotCoordinator,
             backupCoordinator = backupCoordinator,
             monturaCoordinator = monturaCoordinator,
-            gastoOperativoDao = mockk(relaxed = true),
-            resumenDiarioDao = mockk(relaxed = true),
-            configuracionFinancieraDao = mockk(relaxed = true),
-            categoriaProductoDao = mockk(relaxed = true),
-            costoProductoDao = mockk(relaxed = true),
-            costoBiseladoDao = mockk(relaxed = true)
+            gastoOperativoDao = mockk(relaxed = true)
         )
     }
 

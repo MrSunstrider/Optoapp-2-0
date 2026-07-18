@@ -13,6 +13,7 @@ import androidx.work.WorkerParameters
 import com.example.optoapp.MainActivity
 import com.example.optoapp.R
 import com.example.optoapp.data.resumendiario.ResumenDiarioDao
+import com.example.optoapp.util.formatAsCurrency
 import com.example.optoapp.data.resumendiario.ResumenDiarioEntity
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
@@ -60,8 +61,8 @@ class MiNegocioWidgetWorker @AssistedInject constructor(
 
             for (appWidgetId in appWidgetIds) {
                 val views = RemoteViews(context.packageName, R.layout.widget_mi_negocio)
-                views.setTextViewText(R.id.widget_hoy, "Hoy: S/ %.2f".format(ventas))
-                views.setTextViewText(R.id.widget_por_cobrar, "Por cobrar: S/ %.2f".format(porCobrar))
+                views.setTextViewText(R.id.widget_hoy, "Hoy: ${ventas.formatAsCurrency()}")
+                views.setTextViewText(R.id.widget_por_cobrar, "Por cobrar: ${porCobrar.formatAsCurrency()}")
 
                 val intent = Intent(context, MainActivity::class.java).apply {
                     flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
@@ -83,7 +84,7 @@ class MiNegocioWidgetWorker @AssistedInject constructor(
 
         fun readOpticaId(context: Context): String = try {
             val prefs = context.getSharedPreferences("secure_session_prefs", Context.MODE_PRIVATE)
-            prefs.getString("optica_id", null) ?: ""
+            prefs.getString("saas_optica_id", null) ?: ""
         } catch (e: Exception) {
             ""
         }

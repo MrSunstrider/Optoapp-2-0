@@ -9,13 +9,6 @@ interface MonturaDao {
     @Query("SELECT * FROM monturas WHERE opticaId = :opticaId ORDER BY activo DESC, marca ASC, modelo ASC")
     fun getMonturasByOptica(opticaId: String): Flow<List<Montura>>
 
-    @Deprecated(
-        message = "Use getMonturaByIdForOptica to enforce multi-tenant isolation",
-        replaceWith = ReplaceWith("getMonturaByIdForOptica(id, opticaId)")
-    )
-    @Query("SELECT * FROM monturas WHERE id = :id")
-    suspend fun getMonturaById(id: String): Montura?
-
     @Query("SELECT * FROM monturas WHERE id = :id AND opticaId = :opticaId")
     suspend fun getMonturaByIdForOptica(id: String, opticaId: String): Montura?
 
@@ -25,11 +18,28 @@ interface MonturaDao {
     @Upsert
     suspend fun insertMontura(montura: Montura)
 
-    @Update
-    suspend fun updateMontura(montura: Montura)
+    @Query("""
+        UPDATE monturas SET sku=:sku, marca=:marca, modelo=:modelo, color=:color,
+        talla=:talla, costo=:costo, precio=:precio, stockActual=:stockActual,
+        stockMinimo=:stockMinimo, activo=:activo, tipoAro=:tipoAro,
+        materialMontura=:materialMontura, anchoMm=:anchoMm, puenteMm=:puenteMm,
+        alturaMm=:alturaMm, imagenUri=:imagenUri, categoria=:categoria,
+        coleccion=:coleccion, temporada=:temporada, estadoComercial=:estadoComercial,
+        genero=:genero, opticaId=:opticaId, updatedAt=:updatedAt, updatedBy=:updatedBy
+        WHERE id=:id AND opticaId=:opticaId
+    """)
+    suspend fun updateMontura(
+        id: String, opticaId: String, sku: String, marca: String, modelo: String,
+        color: String, talla: String, costo: Double, precio: Double,
+        stockActual: Int, stockMinimo: Int, activo: Boolean, tipoAro: String,
+        materialMontura: String, anchoMm: Double?, puenteMm: Double?,
+        alturaMm: Double?, imagenUri: String?, categoria: String,
+        coleccion: String, temporada: String, estadoComercial: String,
+        genero: String, updatedAt: String?, updatedBy: String?
+    ): Int
 
-    @Delete
-    suspend fun deleteMontura(montura: Montura)
+    @Query("DELETE FROM monturas WHERE id = :id AND opticaId = :opticaId")
+    suspend fun deleteMontura(id: String, opticaId: String): Int
 
     @Query("SELECT * FROM monturas WHERE opticaId = :opticaId")
     suspend fun getMonturasListByOptica(opticaId: String): List<Montura>

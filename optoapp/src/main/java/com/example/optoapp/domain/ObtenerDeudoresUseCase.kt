@@ -1,6 +1,6 @@
 package com.example.optoapp.domain
 
-import android.util.Log
+import com.example.optoapp.util.AppLogger
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.PacienteDao
 import com.example.optoapp.data.Resource
@@ -39,16 +39,16 @@ open class ObtenerDeudoresUseCase @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: IOException) {
-            Log.w(TAG, "Offline — trying local Room data for deudores", e)
+            AppLogger.w(TAG, "Offline — trying local Room data for deudores", e)
             try {
                 val deudores = fallbackToRoomDeudores(opticaId)
                 Resource.Success(deudores, stale = true)
             } catch (ee: Exception) {
-                Log.w(TAG, "Offline — no data available for deudores", ee)
+                AppLogger.w(TAG, "Offline — no data available for deudores", ee)
                 Resource.Error("No se pudieron cargar los datos de deudores")
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error obteniendo deudores", e)
+            AppLogger.e(TAG, "Error obteniendo deudores", e)
             Resource.Error("No se pudieron cargar los datos de deudores")
         }
     }
@@ -74,7 +74,7 @@ open class ObtenerDeudoresUseCase @Inject constructor(
                     val raw = string("venta_fecha")
                     if (raw.isBlank()) java.time.LocalDate.MIN else LocalDate.parse(raw)
                 } catch (e: java.time.format.DateTimeParseException) {
-                    Log.w(TAG, "Invalid venta_fecha for deudor row, using LocalDate.MIN", e)
+                    AppLogger.w(TAG, "Invalid venta_fecha for deudor row, using LocalDate.MIN", e)
                     java.time.LocalDate.MIN
                 },
                 montoTotal = double("monto_total"),

@@ -7,9 +7,11 @@ import androidx.activity.viewModels
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import com.example.optoapp.ui.components.OfflineBanner
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import androidx.compose.runtime.*
@@ -136,7 +138,9 @@ fun OptoAppNavigation(
         }
     }
 
-    NavHost(navController = navController, startDestination = "login") {
+    Column {
+        OfflineBanner(isOnline = true) // TODO: wire to actual connectivity state
+        NavHost(navController = navController, startDestination = "login", modifier = Modifier.weight(1f)) {
 
         composable("create_pin") { CreatePinScreen(navController, viewModel = authViewModel) }
         composable("pin") { PinScreen(navController, viewModel = authViewModel) }
@@ -144,7 +148,6 @@ fun OptoAppNavigation(
         composable("register") { RegisterScreen(navController, viewModel = authViewModel) }
         composable("sin_optica") { SinOpticaScreen(navController, supabaseObserver, authViewModel) }
         composable("onboarding_optica") {
-            // TODO: migrar OnboardingOpticaScreen a Navigation Compose type-safe routes (2.7+)
             @Suppress("DEPRECATION")
             OnboardingOpticaScreen(navController, viewModel = authViewModel)
         }
@@ -156,6 +159,7 @@ fun OptoAppNavigation(
         composable("new_password") {
             NewPasswordScreen(navController = navController, viewModel = authViewModel)
         }
+    }
     }
 
     // UpdateCheck sobrevive a la navegación — se muestra sobre la pantalla activa

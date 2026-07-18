@@ -50,12 +50,25 @@ class MonturaInventoryCoordinator @Inject constructor(
 
     suspend fun updateMontura(montura: Montura) {
         val stamped = montura.copy(updatedAt = Instant.now().toString())
-        monturaDao.updateMontura(stamped)
+        monturaDao.updateMontura(
+            id = stamped.id, opticaId = stamped.opticaId,
+            sku = stamped.sku, marca = stamped.marca, modelo = stamped.modelo,
+            color = stamped.color, talla = stamped.talla, costo = stamped.costo,
+            precio = stamped.precio, stockActual = stamped.stockActual,
+            stockMinimo = stamped.stockMinimo, activo = stamped.activo,
+            tipoAro = stamped.tipoAro, materialMontura = stamped.materialMontura,
+            anchoMm = stamped.anchoMm, puenteMm = stamped.puenteMm,
+            alturaMm = stamped.alturaMm, imagenUri = stamped.imagenUri,
+            categoria = stamped.categoria, coleccion = stamped.coleccion,
+            temporada = stamped.temporada, estadoComercial = stamped.estadoComercial,
+            genero = stamped.genero, updatedAt = stamped.updatedAt,
+            updatedBy = stamped.updatedBy
+        )
         postSaveSyncScheduler.get().scheduleInventarioSync(stamped.opticaId)
     }
 
     suspend fun deleteMontura(montura: Montura) {
-        monturaDao.deleteMontura(montura)
+        monturaDao.deleteMontura(montura.id, montura.opticaId)
         postSaveSyncScheduler.get().scheduleInventarioSync(montura.opticaId)
     }
 

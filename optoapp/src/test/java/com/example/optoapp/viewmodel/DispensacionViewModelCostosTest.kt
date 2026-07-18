@@ -24,42 +24,42 @@ class DispensacionViewModelCostosTest {
     // ─── Pure cost calculation logic ──────────────────────────────────
 
     /**
-     * Determines if a lens is stock or fabrication based on sphere power.
-     * |esfera| <= 6.00 → stock, else → fabricacion.
+     * Determines if a lens is stock or fabrication based on sphere and cylinder power.
+     * |esfera| <= 6.00 AND |cilindro| <= 6.00 → stock, else → fabricacion.
      */
-    private fun determineTipoLente(esfera: Double): String =
-        if (kotlin.math.abs(esfera) <= 6.00) "stock" else "fabricacion"
+    private fun determineTipoLente(esfera: Double, cilindro: Double?): String {
+        val absEsf = kotlin.math.abs(esfera)
+        val absCil = cilindro?.let { kotlin.math.abs(it) } ?: 0.0
+        return if (absEsf > 6.00 || absCil > 6.00) "fabricacion" else "stock"
+    }
 
     /**
      * Determines cylinder series for stock lenses:
-     * 0 to -2.00 → 1ra (serie=1)
+     * null or 0 to -2.00 → 1ra (serie=1)
      * -2.25 to -4.00 → 2da (serie=2)
      * -4.25 to -6.00 → 3ra (serie=3)
      */
-    private fun determineSeriePorCilindro(cilindro: Double): Int? {
-        val absCil = kotlin.math.abs(cilindro)
-        return when {
-            absCil <= 2.00 -> 1
-            absCil <= 4.00 -> 2
-            absCil <= 6.00 -> 3
-            else -> null
-        }
+    private fun determineSeriePorCilindro(cilindro: Double?): Int? = when {
+        cilindro == null || kotlin.math.abs(cilindro) <= 2.00 -> 1
+        kotlin.math.abs(cilindro) <= 4.00 -> 2
+        kotlin.math.abs(cilindro) <= 6.00 -> 3
+        else -> null
     }
 
     @Test
     fun costCalc_esferaMenorIgual6_stock() {
-        assertEquals("stock", determineTipoLente(0.0))
-        assertEquals("stock", determineTipoLente(6.0))
-        assertEquals("stock", determineTipoLente(-6.0))
-        assertEquals("stock", determineTipoLente(5.75))
-        assertEquals("stock", determineTipoLente(-3.50))
+        assertEquals("stock", determineTipoLente(0.0, null))
+        assertEquals("stock", determineTipoLente(6.0, null))
+        assertEquals("stock", determineTipoLente(-6.0, null))
+        assertEquals("stock", determineTipoLente(5.75, null))
+        assertEquals("stock", determineTipoLente(-3.50, null))
     }
 
     @Test
     fun costCalc_esferaMayor6_fabricacion() {
-        assertEquals("fabricacion", determineTipoLente(6.01))
-        assertEquals("fabricacion", determineTipoLente(-7.0))
-        assertEquals("fabricacion", determineTipoLente(12.0))
+        assertEquals("fabricacion", determineTipoLente(6.01, null))
+        assertEquals("fabricacion", determineTipoLente(-7.0, null))
+        assertEquals("fabricacion", determineTipoLente(12.0, null))
     }
 
     @Test
@@ -91,12 +91,23 @@ class DispensacionViewModelCostosTest {
     }
 
     @Test
+    fun costCalc_serieByCilindro_null_returns1() {
+        assertEquals(1, determineSeriePorCilindro(null))
+    }
+
+    @Test
+    fun costCalc_fabricacion_byHighCylinder() {
+        assertEquals("fabricacion", determineTipoLente(-2.0, -7.0))
+        assertEquals("fabricacion", determineTipoLente(0.0, 6.01))
+    }
+
+    @Test
     fun costCalc_stockLookup_keys_fromReceta() {
         // Given: receta OD esf=-3.00, cil=-2.50, material=Resina, tipo=Monofocal, trat=Antireflex
         val esfera = -3.00
         val cilindro = -2.50
 
-        val tipo = determineTipoLente(esfera)
+        val tipo = determineTipoLente(esfera, cilindro)
         val serie = determineSeriePorCilindro(cilindro)
 
         assertEquals("stock", tipo)
@@ -111,14 +122,44 @@ class DispensacionViewModelCostosTest {
     fun costCalc_fabricacionLookup_keys_fromReceta() {
         // Given: receta OD esf=-7.00, cil=-1.00, tipo=Bifocal FT, trat=Simple
         val esfera = -7.00
+        val cilindro = -1.00
 
-        val tipo = determineTipoLente(esfera)
+        val tipo = determineTipoLente(esfera, cilindro)
 
         assertEquals("fabricacion", tipo)
 
         // lookup keys would be: material="Resina", tipoLente="Bifocal FT",
         // stockOFabricacion="fabricacion", tratamiento="Simple", serie=null
         // → CostoProductoDao.lookup() returns S/ 20.00 per design
+    }
+
+    // ─── normalizeTipoAro ────────────────────────────────────────────
+
+    /**
+     * Normalizes tipo_aro values from the form to DB lookup keys.
+     * "Completo" → "aro_completo", "Semi" → "semi_aire",
+     * "aire" → "al_aire", unrecognized → "aro_completo".
+     */
+    private fun normalizeTipoAro(tipoAro: String): String = when {
+        tipoAro.contains("Completo", ignoreCase = true) -> "aro_completo"
+        tipoAro.contains("Semi", ignoreCase = true) -> "semi_aire"
+        tipoAro.contains("aire", ignoreCase = true) -> "al_aire"
+        else -> "aro_completo"
+    }
+
+    @Test
+    fun costCalc_normalizeTipoAro_semiAire() {
+        assertEquals("semi_aire", normalizeTipoAro("Semi al aire"))
+    }
+
+    @Test
+    fun costCalc_normalizeTipoAro_ranurado_fallback() {
+        assertEquals("aro_completo", normalizeTipoAro("ranurado"))
+    }
+
+    @Test
+    fun costCalc_normalizeTipoAro_taladro_fallback() {
+        assertEquals("aro_completo", normalizeTipoAro("taladro"))
     }
 
     // ─── UiState evaluacionId field ───────────────────────────────────
@@ -177,13 +218,13 @@ class DispensacionViewModelCostosTest {
     @Test
     fun costCalc_perEye_independent() {
         // OD: esf=-3.00, cil=-2.50 → stock, serie=2
-        val odTipo = determineTipoLente(-3.00)
+        val odTipo = determineTipoLente(-3.00, -2.50)
         val odSerie = determineSeriePorCilindro(-2.50)
         assertEquals("stock", odTipo)
         assertEquals(2, odSerie)
 
         // OI: esf=-7.00, cil=-1.00 → fabricacion (serie determined by cilindro regardless)
-        val oiTipo = determineTipoLente(-7.00)
+        val oiTipo = determineTipoLente(-7.00, -1.00)
         val oiSerie = determineSeriePorCilindro(-1.00)
         assertEquals("fabricacion", oiTipo)
         assertEquals(1, oiSerie)

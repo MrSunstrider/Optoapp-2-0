@@ -91,7 +91,7 @@ fun SeleccionOpticaScreen(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
-                        Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null)
+                        Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Siguiente")
                     }
                 }
             }

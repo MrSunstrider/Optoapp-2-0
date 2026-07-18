@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -210,46 +211,54 @@ fun MonturasScreen(
                     }
                 }
 
-                if (porReponer.isNotEmpty()) {
-                    item {
-                        Text(
-                            "Por reponer",
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.padding(horizontal = OptoTokens.spacing.xs)
-                        )
-                    }
-                    items(porReponer, key = { "low-${it.id}" }) { m ->
-                        MonturaItem(
-                            montura = m,
-                            onEdit = { viewModel.startEdit(m) },
-                            onDelete = { viewModel.delete(m) },
-                            onEntrada = { viewModel.registrarEntrada(m, 1) },
-                            onSalida = { viewModel.registrarSalida(m, 1) }
-                        )
-                    }
-                    item {
-                        Text(
-                            "Todos los productos",
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(horizontal = OptoTokens.spacing.xs)
-                        )
-                    }
-                }
-                items(restantes, key = { it.id }) { m ->
-                    MonturaItem(
-                        montura = m,
-                        onEdit = { viewModel.startEdit(m) },
-                        onDelete = { viewModel.delete(m) },
-                        onEntrada = { viewModel.registrarEntrada(m, 1) },
-                        onSalida = { viewModel.registrarSalida(m, 1) }
-                    )
-                }
+                monturaProductListing(porReponer, restantes, viewModel)
 
                 item { Spacer(modifier = Modifier.height(OptoTokens.spacing.xl)) }
             }
         }
+    }
+}
+
+private fun LazyListScope.monturaProductListing(
+    porReponer: List<com.example.optoapp.data.Montura>,
+    restantes: List<com.example.optoapp.data.Montura>,
+    viewModel: MonturasViewModel
+) {
+    if (porReponer.isNotEmpty()) {
+        item {
+            Text(
+                "Por reponer",
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(horizontal = OptoTokens.spacing.xs)
+            )
+        }
+        items(porReponer, key = { "low-${it.id}" }) { m ->
+            MonturaItem(
+                montura = m,
+                onEdit = { viewModel.startEdit(m) },
+                onDelete = { viewModel.delete(m) },
+                onEntrada = { viewModel.registrarEntrada(m, 1) },
+                onSalida = { viewModel.registrarSalida(m, 1) }
+            )
+        }
+        item {
+            Text(
+                "Todos los productos",
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(horizontal = OptoTokens.spacing.xs)
+            )
+        }
+    }
+    items(restantes, key = { it.id }) { m ->
+        MonturaItem(
+            montura = m,
+            onEdit = { viewModel.startEdit(m) },
+            onDelete = { viewModel.delete(m) },
+            onEntrada = { viewModel.registrarEntrada(m, 1) },
+            onSalida = { viewModel.registrarSalida(m, 1) }
+        )
     }
 }
 
@@ -419,7 +428,7 @@ private fun SortFilterRow(
 
         val hasFilters = currentFilterMarca != null || currentFilterMaterial != null || currentFilterStockBajo
         if (hasFilters) {
-            IconButton(onClick = onClearFilters, modifier = Modifier.size(36.dp)) {
+            IconButton(onClick = onClearFilters, modifier = Modifier.size(48.dp)) {
                 Icon(
                     Icons.Default.Close,
                     contentDescription = "Limpiar filtros",
@@ -461,7 +470,7 @@ private fun StockAlertCard(porReponer: List<com.example.optoapp.data.Montura>) {
             ) {
                 Icon(
                     imageVector = icon,
-                    contentDescription = null,
+                    contentDescription = "Estado stock",
                     tint = contentColor
                 )
                 Text(
@@ -484,7 +493,7 @@ private fun StockAlertCard(porReponer: List<com.example.optoapp.data.Montura>) {
                     ) {
                         Icon(
                             imageVector = Icons.Default.Warning,
-                            contentDescription = null,
+                            contentDescription = "Advertencia",
                             modifier = Modifier.size(16.dp),
                             tint = MaterialTheme.colorScheme.error
                         )
@@ -525,7 +534,7 @@ private fun SummaryCard(
             ) {
                 Icon(
                     imageVector = Icons.Default.Assessment,
-                    contentDescription = null,
+                    contentDescription = "Resumen",
                     tint = MaterialTheme.colorScheme.primary
                 )
                 Text(
@@ -553,12 +562,12 @@ private fun SummaryCard(
 
             Row(horizontalArrangement = Arrangement.spacedBy(OptoTokens.spacing.sm)) {
                 Button(onClick = onGeneratePdf) {
-                    Icon(Icons.Default.PictureAsPdf, contentDescription = null)
+                    Icon(Icons.Default.PictureAsPdf, contentDescription = "PDF")
                     Spacer(modifier = Modifier.width(OptoTokens.spacing.xs))
                     Text("Generar PDF")
                 }
                 OutlinedButton(onClick = onSharePdf) {
-                    Icon(Icons.Default.PictureAsPdf, contentDescription = null)
+                    Icon(Icons.Default.PictureAsPdf, contentDescription = "PDF")
                     Spacer(modifier = Modifier.width(OptoTokens.spacing.xs))
                     Text("Compartir PDF")
                 }

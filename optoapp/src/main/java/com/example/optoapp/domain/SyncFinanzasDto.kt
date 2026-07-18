@@ -10,6 +10,7 @@ import com.example.optoapp.data.costobiselado.CostoBiseladoEntity
 import com.example.optoapp.data.costoproducto.CostoProductoEntity
 import com.example.optoapp.data.gastooperativo.GastoOperativoEntity
 import com.example.optoapp.data.regalodispensacion.RegaloDispensacionEntity
+import java.math.BigDecimal
 import com.example.optoapp.data.resumendiario.ResumenDiarioEntity
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -199,7 +200,8 @@ data class GastoOperativoRemoto(
     @SerialName("fecha_programada") val fechaProgramada: String? = null,
     val nota: String? = null,
     @SerialName("created_at") val createdAt: String? = null,
-    @SerialName("es_recurrente") val esRecurrente: Boolean = false,
+    @SerialName("es_recurrente") val isRecurring: Boolean = false,
+
     val frecuencia: String = "mensual"
 )
 
@@ -208,12 +210,12 @@ fun GastoOperativoEntity.toRemoto(): GastoOperativoRemoto = GastoOperativoRemoto
     opticaId = opticaId,
     categoria = categoria,
     descripcion = descripcion,
-    monto = monto,
+    monto = monto.toDouble(),
     fecha = fecha.toString(),
     fechaProgramada = fechaProgramada?.toString(),
     nota = nota,
     createdAt = createdAt,
-    esRecurrente = esRecurrente,
+    isRecurring = isRecurring,
     frecuencia = frecuencia
 )
 
@@ -222,15 +224,14 @@ fun GastoOperativoRemoto.toEntity(): GastoOperativoEntity = GastoOperativoEntity
     opticaId = opticaId,
     categoria = categoria,
     descripcion = descripcion,
-    monto = monto,
+    monto = BigDecimal.valueOf(monto),
     fecha = java.time.LocalDate.parse(fecha),
     fechaProgramada = fechaProgramada?.let { java.time.LocalDate.parse(it) },
     nota = nota,
     createdAt = createdAt,
-    esRecurrente = esRecurrente,
+    isRecurring = isRecurring,
     frecuencia = frecuencia
 )
-
 
 @Serializable
 data class RegaloDispensacionRemota(
@@ -392,6 +393,7 @@ data class FinanzasSyncResult(
     val uploadedGastosOperativos: Int = 0,
     val uploadedRegalos: Int = 0,
     val uploadedCostosProductos: Int = 0,
+    val uploadedCostosBiselado: Int = 0,
     val downloadedDispensaciones: Int,
     val downloadedDispensacionItems: Int = 0,
     val downloadedServicios: Int,

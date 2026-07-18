@@ -24,6 +24,14 @@ interface CostoBiseladoDao {
         altoIndice: String?
     ): CostoBiseladoEntity?
 
+    @Query("""
+        SELECT * FROM costos_biselado
+        WHERE optica_id = :opticaId
+          AND vigente_hasta IS NULL
+        ORDER BY material, tipo_aro
+    """)
+    suspend fun getByOpticaIdList(opticaId: String): List<CostoBiseladoEntity>
+
     @Upsert
     suspend fun upsertAll(entities: List<CostoBiseladoEntity>)
 }
