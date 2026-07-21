@@ -111,8 +111,6 @@ class BackupRestoreCoordinator @Inject constructor(
         }
     }
 
-    // ── Defaults ─────────────────────────────────────────────────────────────
-
     private fun Paciente.withDefaults(): Paciente = copy(
         dni = dni ?: "",
         sexo = sexo ?: "",

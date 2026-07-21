@@ -10,18 +10,12 @@ import java.io.IOException
 import java.time.LocalDate
 import java.util.UUID
 
-/**
- * Repositorio especializado en operaciones de DispensacionOptica, Pago y ServicioExtra.
- * Extraído de [OptoRepository] para reducir el God class.
- */
 class DispensacionRepository(
     private val dispensacionDao: DispensacionDao,
     private val dispensacionItemDao: DispensacionItemDao,
     private val pagoDao: PagoDao,
     private val servicioExtraDao: ServicioExtraDao,
 ) {
-
-    // ── Dispensaciones ───────────────────────────────────────────────────────
 
     fun getDispensacionesByDateRangeForOptica(start: LocalDate, end: LocalDate, opticaId: String): Flow<List<DispensacionOptica>> = dispensacionDao.getDispensacionesByDateRangeForOptica(start, end, opticaId)
 
@@ -98,8 +92,6 @@ class DispensacionRepository(
         return d + s + pg
     }
 
-    // ── Items de Dispensación ─────────────────────────────────────────────────
-
     fun getItemsByDispensacion(dispensacionId: String): Flow<List<DispensacionItem>> = dispensacionItemDao.getItemsByDispensacion(dispensacionId)
 
     suspend fun getItemsListByDispensacion(dispensacionId: String): List<DispensacionItem> = dispensacionItemDao.getItemsListByDispensacion(dispensacionId)
@@ -122,8 +114,6 @@ class DispensacionRepository(
         replaceWith = ReplaceWith("getItemsListByOptica(opticaId)"),
     )
     suspend fun getAllDispensacionItems(): List<DispensacionItem> = dispensacionItemDao.getAllItems()
-
-    // ── Pagos ────────────────────────────────────────────────────────────────
 
     fun getPagosByDispensacion(dispensacionId: String): Flow<List<Pago>> = pagoDao.getPagosByDispensacion(dispensacionId)
 
@@ -149,11 +139,6 @@ class DispensacionRepository(
 
     suspend fun reassignItemsDispensacion(sourceId: String, targetId: String): Int = dispensacionItemDao.reassignItemsDispensacion(sourceId, targetId)
 
-    /**
-     * Borra un abono. Si ya existía en BD, registra un movimiento de anulación
-     * (importe negativo) en la fecha del abono original para que cierre de caja
-     * refleje la reversión en el período correcto.
-     */
     suspend fun deletePagoRegistrandoAnulacionEnCaja(
         pago: Pago,
         opticaId: String,
@@ -193,8 +178,6 @@ class DispensacionRepository(
     suspend fun getPagosSnapshotForOptica(opticaId: String): List<Pago> = pagoDao.getPagosListByOptica(opticaId)
 
     fun getPagosFlowForOptica(opticaId: String): Flow<List<Pago>> = pagoDao.getPagosFlowByOptica(opticaId)
-
-    // ── Servicios Extra ──────────────────────────────────────────────────────
 
     fun getAllServiciosForOptica(opticaId: String): Flow<List<ServicioExtra>> = servicioExtraDao.getAllServiciosForOptica(opticaId)
 

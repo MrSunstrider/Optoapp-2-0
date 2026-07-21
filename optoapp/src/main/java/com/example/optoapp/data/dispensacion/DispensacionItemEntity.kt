@@ -77,7 +77,6 @@ data class DispensacionItem(
     @ColumnInfo(name = "optica_id")
     val opticaId: String = "mi_optica_base",
 
-    // ── Spec & Cost fields (Phase 2: Costos y Gastos) ──
     @SerialName("alto_indice")
     @ColumnInfo(name = "alto_indice")
     val altoIndice: String? = null,

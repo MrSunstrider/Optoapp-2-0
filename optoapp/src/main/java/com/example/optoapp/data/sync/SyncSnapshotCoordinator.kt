@@ -27,14 +27,12 @@ class SyncSnapshotCoordinator @Inject constructor(
     private val syncRepo: SyncRepository,
     private val regaloDispensacionDao: RegaloDispensacionDao,
 ) {
-    // ── Upserts para sync entrante ──────────────────────────────────────────
     suspend fun upsertPaciente(paciente: Paciente) = pacienteDao.insertPaciente(paciente)
 
     suspend fun upsertMontura(montura: Montura) = monturaDao.insertMontura(montura)
 
     suspend fun upsertMonturaMovimiento(movimiento: MonturaMovimiento) = monturaMovimientoDao.insertMovimiento(movimiento)
 
-    // ── Snapshots para sync saliente ────────────────────────────────────────
     suspend fun getPacientesSnapshotForOptica(opticaId: String): List<Paciente> = pacienteRepo.getPacientesSnapshotForOptica(opticaId)
 
     suspend fun getEvaluacionesSnapshotForOptica(opticaId: String): List<EvaluacionClinica> = pacienteRepo.getEvaluacionesSnapshotForOptica(opticaId)

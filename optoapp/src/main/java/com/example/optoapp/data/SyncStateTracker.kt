@@ -4,11 +4,6 @@ import androidx.room.withTransaction
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/**
- * P0-T5: persiste estado por fila tras bajar/subir desde Supabase.
- *
- * Soportados: synced | error | deleted | conflicted
- */
 @Singleton
 class SyncStateTracker @Inject constructor(
     internal val dao: SyncEntityStateDao,
@@ -53,7 +48,6 @@ class SyncStateTracker @Inject constructor(
         )
     }
 
-    /** Marca una entidad como en conflicto — requiere resolución manual. */
     suspend fun markConflicted(opticaId: String, entityType: String, entityId: String) {
         dao.upsert(
             SyncEntityState(
@@ -67,16 +61,11 @@ class SyncStateTracker @Inject constructor(
         )
     }
 
-    /** Query estados por óptica */
     suspend fun getConflictedCount(opticaId: String): Int = dao.countByStatus(opticaId, "conflicted")
 
     suspend fun getErrorsCount(opticaId: String): Int = dao.countByStatus(opticaId, "error")
 
-    /**
-     * Runs [block] inside a database transaction and marks [entityType]/[entityId]
-     * as synced atomically. If [block] throws, the transaction (including the mark)
-     * is rolled back.
-     */
+    // WHY: atomic sync state + operation prevents partial updates on failure
     suspend fun markSyncedAtomic(opticaId: String, entityType: String, entityId: String, block: suspend () -> Unit) {
         database.withTransaction {
             block()

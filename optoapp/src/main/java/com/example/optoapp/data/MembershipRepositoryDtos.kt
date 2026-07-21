@@ -3,8 +3,6 @@ package com.example.optoapp.data
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
-// ── Public DTOs (used across packages) ────────────────────────────────────────
-
 @Serializable
 data class OpticaMemberRow(
     @SerialName("optica_id") val opticaId: String,
@@ -34,8 +32,6 @@ data class OpticaHeaderSummary(
     val nombreOptica: String,
     val fiscalEtiqueta: String,
 )
-
-// ── Internal DTOs (data package only) ─────────────────────────────────────────
 
 @Serializable
 internal data class UsuarioOpticaDto(
