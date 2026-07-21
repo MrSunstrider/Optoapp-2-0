@@ -9,6 +9,7 @@ import com.example.optoapp.data.servicio.ServicioExtraDao
 import com.example.optoapp.data.sync.SyncSnapshotCoordinator
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import dagger.Lazy
+import io.github.jan.supabase.SupabaseClient
 import io.mockk.mockk
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -104,6 +105,7 @@ class DownloadTimestampIntegrityTest {
             backupCoordinator = backupCoordinator,
             monturaCoordinator = monturaCoordinator,
             gastoOperativoDao = db.gastoOperativoDao(),
+            supabase = mockk<SupabaseClient>(relaxed = true),
         )
     }
 
@@ -112,8 +114,6 @@ class DownloadTimestampIntegrityTest {
     fun tearDown() {
         db.close()
     }
-
-    // ── Timestamp fidelity: stored.updatedAt == remote.updatedAt ─────────────
 
     @Test
     fun `upsertServicioFromRemote stores record with remote updatedAt`() = runBlocking {
@@ -227,8 +227,6 @@ class DownloadTimestampIntegrityTest {
             stored!!.updatedAt,
         )
     }
-
-    // ── Idempotency: re-download same record does not create duplicates ───────
 
     @Test
     fun `upsertServicioFromRemote called twice with same entity does not duplicate row`() = runBlocking {

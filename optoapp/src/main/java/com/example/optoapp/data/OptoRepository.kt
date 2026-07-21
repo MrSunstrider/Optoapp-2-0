@@ -9,6 +9,8 @@ import com.example.optoapp.data.montura.MonturaInventoryCoordinator
 import com.example.optoapp.data.regalodispensacion.RegaloDispensacionEntity
 import com.example.optoapp.data.sync.SyncSnapshotCoordinator
 import dagger.Lazy
+import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
@@ -35,6 +37,7 @@ open class OptoRepository(
     val backupCoordinator: BackupRestoreCoordinator,
     val monturaCoordinator: MonturaInventoryCoordinator,
     private val gastoOperativoDao: GastoOperativoDao,
+    private val supabase: SupabaseClient,
 ) {
     companion object {
         private const val TAG = "OptoRepository"
@@ -44,7 +47,8 @@ open class OptoRepository(
         database.runInTransaction(block)
     }
 
-    /** Suspend-friendly transaction — wraps entity write + sync state atomically. */
+    // Room's withTransaction is not a suspend function — this adapter bridges the gap
+    // so sync state writes can be atomic with entity writes inside coroutines.
     suspend fun <T> withTransaction(block: suspend () -> T): T = database.withTransaction(block)
 
     fun pacientesFlowForOptica(opticaId: String) = pacienteRepo.pacientesFlowForOptica(opticaId)
@@ -69,6 +73,16 @@ open class OptoRepository(
             syncStateTracker.markDeleted(paciente.opticaId, "paciente", paciente.id)
         }
         postSaveSyncScheduler.get().schedulePacientesSync(paciente.opticaId)
+    }
+
+    /** Attempts the remote delete for a patient. Throws on network failure so callers can handle retry. */
+    suspend fun deletePacienteRemoto(id: String, opticaId: String) {
+        supabase.postgrest["pacientes"].delete {
+            filter {
+                eq("id", id)
+                eq("optica_id", opticaId)
+            }
+        }
     }
 
     fun getEvaluacionesByPaciente(pacienteId: String) = pacienteRepo.getEvaluacionesByPaciente(pacienteId)
@@ -228,7 +242,6 @@ open class OptoRepository(
 
     suspend fun resolveDuplicatePacientesByHistoria(opticaId: String) = pacienteRepo.resolveDuplicatePacientesByHistoria(opticaId, database)
 
-    // ─── Remote-bypass write path ──────────────────────────────────────────
     // These methods write a record received from the server as-is:
     //  - NO copy(updatedAt = Instant.now()) — server timestamp is preserved verbatim.
     //  - NO postSaveSyncScheduler call — download is the terminal step of a sync cycle.
@@ -241,8 +254,6 @@ open class OptoRepository(
     suspend fun upsertEvaluacionFromRemote(evaluacion: EvaluacionClinica) = pacienteRepo.insertEvaluacion(evaluacion)
 
     suspend fun upsertDispensacionItemFromRemote(item: DispensacionItem) = dispensacionRepo.insertDispensacionItem(item)
-
-    // ─── Gastos Operativos ────────────────────────────────────────────────────
 
     fun getGastosOperativos(opticaId: String): Flow<List<GastoOperativoEntity>> = gastoOperativoDao.getByOpticaId(opticaId)
 
@@ -271,8 +282,6 @@ open class OptoRepository(
     suspend fun upsertGastoOperativoFromRemote(gasto: GastoOperativoEntity) = gastoOperativoDao.upsert(gasto)
 
     suspend fun upsertRegaloFromRemote(regalo: RegaloDispensacionEntity) = database.regaloDispensacionDao().upsert(regalo)
-
-    // ─── Regalos Dispensación ─────────────────────────────────────────────────
 
     suspend fun getRegalosByDispensacionId(dispId: String) = database.regaloDispensacionDao().getByDispensacionId(dispId)
 

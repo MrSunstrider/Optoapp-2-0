@@ -6,6 +6,7 @@ import com.example.optoapp.data.gastooperativo.GastoOperativoDao
 import com.example.optoapp.data.gastooperativo.GastoOperativoEntity
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import dagger.Lazy
+import io.github.jan.supabase.SupabaseClient
 import io.mockk.Runs
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -111,6 +112,7 @@ class OptoRepositoryFinanzasTest {
             backupCoordinator = backupCoordinator,
             monturaCoordinator = monturaCoordinator,
             gastoOperativoDao = gastoOperativoDao,
+            supabase = mockk<SupabaseClient>(relaxed = true),
         )
     }
 
@@ -119,8 +121,6 @@ class OptoRepositoryFinanzasTest {
     fun tearDown() {
         db.close()
     }
-
-    // ── GastoOperativo local writes ──────────────────────────────────────────
 
     @Test
     fun insertGastoOperativo_stamps_timestamp_when_null() = runBlocking {
@@ -252,8 +252,6 @@ class OptoRepositoryFinanzasTest {
 
         coVerify(exactly = 1) { syncStateTracker.markDeleted(opticaId, "gasto_operativo", entity.id) }
     }
-
-    // ── GastoOperativo reads ─────────────────────────────────────────────────
 
     @Test
     fun getGastosOperativos_delegates_to_dao() = runBlocking {

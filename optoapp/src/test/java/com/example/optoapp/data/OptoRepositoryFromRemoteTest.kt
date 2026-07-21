@@ -5,6 +5,7 @@ import com.example.optoapp.data.montura.MonturaInventoryCoordinator
 import com.example.optoapp.data.sync.SyncSnapshotCoordinator
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import dagger.Lazy
+import io.github.jan.supabase.SupabaseClient
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
@@ -67,6 +68,7 @@ class OptoRepositoryFromRemoteTest {
             backupCoordinator = backupCoordinator,
             monturaCoordinator = monturaCoordinator,
             gastoOperativoDao = mockk(relaxed = true),
+            supabase = mockk<SupabaseClient>(relaxed = true),
         )
     }
 
@@ -74,8 +76,6 @@ class OptoRepositoryFromRemoteTest {
     fun tearDown() {
         unmockkAll()
     }
-
-    // ── Remote bypass: timestamp preserved, scheduler NOT called ─────────────
 
     @Test
     fun `upsertServicioFromRemote passes entity with original updatedAt to sub-repo`() = runTest {
@@ -214,8 +214,6 @@ class OptoRepositoryFromRemoteTest {
         coVerify(exactly = 0) { scheduler.scheduleHistorialSync(any()) }
         coVerify(exactly = 0) { scheduler.schedulePacientesSync(any()) }
     }
-
-    // ── Regression: local-action path still stamps + schedules ───────────────
 
     @Test
     fun `insertServicio stamps updatedAt to non-null and calls scheduleFinanzasSync`() = runTest {

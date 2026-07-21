@@ -9,6 +9,7 @@ import com.example.optoapp.data.regalodispensacion.RegaloDispensacionDao
 import com.example.optoapp.data.servicio.ServicioExtraDao
 import com.example.optoapp.data.sync.SyncSnapshotCoordinator
 import dagger.Lazy
+import io.github.jan.supabase.SupabaseClient
 import io.mockk.coEvery
 import io.mockk.mockk
 import io.mockk.unmockkAll
@@ -94,6 +95,7 @@ class OptoRepositoryErrorTest {
             backupCoordinator = backupCoordinator,
             monturaCoordinator = monturaCoordinator,
             gastoOperativoDao = mockk(relaxed = true),
+            supabase = mockk<SupabaseClient>(relaxed = true),
         )
     }
 
@@ -101,8 +103,6 @@ class OptoRepositoryErrorTest {
     fun tearDown() {
         unmockkAll()
     }
-
-    // ── MonturaDao.getMonturaById ────────────────────────────────────
 
     @Test
     fun `getMonturaById dao throws IOException returns Error`() = runTest {
@@ -136,8 +136,6 @@ class OptoRepositoryErrorTest {
         assertTrue("Expected Resource.Error but got $result", result is Resource.Error)
         assertEquals("DB corrupt", (result as Resource.Error).message)
     }
-
-    // ── restoreBackup resilience ────────────────────────────────────
 
     @Test
     fun `restoreBackup with empty data completes without error`() = runTest {

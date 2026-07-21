@@ -11,6 +11,7 @@ import com.example.optoapp.data.servicio.ServicioExtraDao
 import com.example.optoapp.data.sync.SyncSnapshotCoordinator
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import dagger.Lazy
+import io.github.jan.supabase.SupabaseClient
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.first
@@ -105,6 +106,7 @@ class OptoRepositoryTest {
             backupCoordinator = backupCoordinator,
             monturaCoordinator = monturaCoordinator,
             gastoOperativoDao = db.gastoOperativoDao(),
+            supabase = mockk<SupabaseClient>(relaxed = true),
         )
     }
 
@@ -113,8 +115,6 @@ class OptoRepositoryTest {
     fun tearDown() {
         db.close()
     }
-
-    // ── getMonturaById ──────────────────────────────────────────────────────
 
     @Test
     fun getMonturaById_withExistingMontura_returnsSuccess() = runBlocking {
@@ -167,8 +167,6 @@ class OptoRepositoryTest {
         assertEquals("MarcaB", data.marca)
         assertEquals("Mod2", data.modelo)
     }
-
-    // ── restoreBackup ───────────────────────────────────────────────────────
 
     @Test
     fun restoreBackup_clearsDataAndInsertsPacientes() = runBlocking {
@@ -336,8 +334,6 @@ class OptoRepositoryTest {
         assertNotNull(evaluacionDao.getEvaluacionById("e_good"))
         assertNotNull(pagoDao.getPagoByIdForOptica("pg_good", "target_o"))
     }
-
-    // ─── F3: OptoRepository.insertPaciente stamps updatedAt ─────────────
 
     @Test
     fun insertPaciente_stampsUpdatedAt() = runBlocking {

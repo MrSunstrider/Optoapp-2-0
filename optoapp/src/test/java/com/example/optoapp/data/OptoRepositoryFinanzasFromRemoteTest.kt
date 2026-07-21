@@ -7,6 +7,7 @@ import com.example.optoapp.data.montura.MonturaInventoryCoordinator
 import com.example.optoapp.data.sync.SyncSnapshotCoordinator
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import dagger.Lazy
+import io.github.jan.supabase.SupabaseClient
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
@@ -70,6 +71,7 @@ class OptoRepositoryFinanzasFromRemoteTest {
             backupCoordinator = backupCoordinator,
             monturaCoordinator = monturaCoordinator,
             gastoOperativoDao = gastoOperativoDao,
+            supabase = mockk<SupabaseClient>(relaxed = true),
         )
     }
 
@@ -77,8 +79,6 @@ class OptoRepositoryFinanzasFromRemoteTest {
     fun tearDown() {
         unmockkAll()
     }
-
-    // ── GastoOperativo remote bypass: timestamp preserved, scheduler NOT called ──
 
     @Test
     fun `upsertGastoOperativoFromRemote passes entity with original timestamp to dao`() = runTest {
@@ -116,7 +116,7 @@ class OptoRepositoryFinanzasFromRemoteTest {
         coVerify(exactly = 0) { scheduler.schedulePacientesSync(any()) }
     }
 
-    // ── ConfiguracionFinanciera + ResumenDiario remote bypass tests were removed
-    //     because those passthrough methods were eliminated from OptoRepository.
-    //     Direct DAO behavior is covered by CostoProductoDaoTest, etc.
+    // ConfiguracionFinanciera + ResumenDiario remote bypass tests were removed
+    // because those passthrough methods were eliminated from OptoRepository.
+    // Direct DAO behavior is covered by CostoProductoDaoTest, etc.
 }

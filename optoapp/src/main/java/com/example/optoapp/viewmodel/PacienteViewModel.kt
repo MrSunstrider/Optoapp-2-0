@@ -12,11 +12,10 @@ import com.example.optoapp.data.SessionManager
 import com.example.optoapp.domain.auth.AuthorizationGuard
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import dagger.hilt.android.lifecycle.HiltViewModel
-import io.github.jan.supabase.SupabaseClient
-import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
 import java.io.IOException
 import javax.inject.Inject
 
@@ -27,10 +26,9 @@ sealed class DeletePacienteResult {
 
 @HiltViewModel
 class PacienteViewModel @Inject constructor(
-    private val repository: com.example.optoapp.data.OptoRepository,
+    private val repository: OptoRepository,
     private val sessionManager: SessionManager,
     private val postSaveSyncScheduler: PostSaveSyncScheduler,
-    private val supabase: SupabaseClient,
 ) : ViewModel() {
     companion object {
         private const val TAG = "PacienteViewModel"
@@ -54,7 +52,11 @@ class PacienteViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            pacientes.dropWhile { it.isEmpty() }.first()
+            try {
+                withTimeout(5_000) {
+                    pacientes.dropWhile { it.isEmpty() }.first()
+                }
+            } catch (_: Exception) { }
             _isLoading.value = false
         }
     }
@@ -203,15 +205,12 @@ class PacienteViewModel @Inject constructor(
         }
 
         return try {
-            // Delete from Room first. If local delete fails, we never touch Supabase.
+            // Room delete and tombstone must complete before the remote call.
+            // If the remote delete succeeds but we crash before creating the
+            // tombstone, download Phase 1 has nothing to retry against.
             repository.deletePaciente(paciente)
             try {
-                supabase.postgrest["pacientes"].delete {
-                    filter {
-                        eq("id", paciente.id)
-                        eq("optica_id", oid)
-                    }
-                }
+                repository.deletePacienteRemoto(paciente.id, oid)
             } catch (e: IOException) {
                 // Local delete succeeded but remote delete failed. The patient will be
                 // re-downloaded from Supabase on the next sync cycle. Surface the error

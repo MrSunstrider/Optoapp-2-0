@@ -36,7 +36,6 @@ class PacienteViewModelTest {
     private val repository = mockk<OptoRepository>(relaxed = true)
     private val sessionManager = mockk<SessionManager>(relaxed = true)
     private val postSaveSyncScheduler = mockk<PostSaveSyncScheduler>(relaxed = true)
-    private val supabase = mockk<SupabaseClient>(relaxed = true)
     private val opticaIdFlow = MutableStateFlow("test-optica")
     private val opticaRolFlow = MutableStateFlow("admin")
 
@@ -52,7 +51,6 @@ class PacienteViewModelTest {
             repository = repository,
             sessionManager = sessionManager,
             postSaveSyncScheduler = postSaveSyncScheduler,
-            supabase = supabase,
         )
     }
 
@@ -60,8 +58,6 @@ class PacienteViewModelTest {
     fun tearDown() {
         Dispatchers.resetMain()
     }
-
-    // ─── B2: isLoading driven by pacientes flow ─────────────────────────
 
     @Test
     fun `isLoading becomes false when pacientes flow emits non-empty list`() = runTest(testDispatcher) {
@@ -80,15 +76,12 @@ class PacienteViewModelTest {
             repository = repository,
             sessionManager = sessionManager,
             postSaveSyncScheduler = postSaveSyncScheduler,
-            supabase = supabase,
         )
 
         advanceUntilIdle()
 
         assertFalse("isLoading should become false without artificial delay", viewModel.isLoading.value)
     }
-
-    // ─── C2: HO duplicate check exists only in ViewModel ─────────────────
 
     @Test
     fun `savePaciente with duplicate HO throws IllegalArgumentException`() = runBlocking {
@@ -123,8 +116,6 @@ class PacienteViewModelTest {
         coVerify { repository.insertPaciente(any()) }
     }
 
-    // ─── F6: savePaciente role authorization ─────────────────────────────
-
     @Test
     fun `savePaciente with admin role succeeds`() = runBlocking {
         val paciente = Paciente(
@@ -156,10 +147,6 @@ class PacienteViewModelTest {
         }
     }
 
-    // ─── Existing tests (DeletePacienteResult sealed class) ──────────────
-
-    // ─── DeletePacienteResult sealed class ────────────────────────────────
-
     @Test
     fun deletePacienteResultSuccess_holdsRemainingDeletes() {
         val result = DeletePacienteResult.Success(remainingDeletesToday = 7)
@@ -189,8 +176,6 @@ class PacienteViewModelTest {
         val result = DeletePacienteResult.Success(remainingDeletesToday = 0)
         assertEquals(0, (result as DeletePacienteResult.Success).remainingDeletesToday)
     }
-
-    // ─── Data class contracts ─────────────────────────────────────────────
 
     @Test
     fun deletePacienteResultSuccess_dataClass() {

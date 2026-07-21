@@ -41,8 +41,6 @@ import io.github.jan.supabase.SupabaseClient
 import kotlinx.serialization.json.Json
 import javax.inject.Singleton
 
-// SessionManager se provee aquí porque comparte el mismo DataStore que SecurityManager
-
 @Module
 @InstallIn(SingletonComponent::class)
 object DatabaseModule {
@@ -233,6 +231,7 @@ object DatabaseModule {
         backupCoordinator: BackupRestoreCoordinator,
         monturaCoordinator: MonturaInventoryCoordinator,
         gastoOperativoDao: GastoOperativoDao,
+        supabase: SupabaseClient,
     ): OptoRepository = OptoRepository(
         database = database,
         syncStateTracker = syncStateTracker,
@@ -244,6 +243,7 @@ object DatabaseModule {
         backupCoordinator = backupCoordinator,
         monturaCoordinator = monturaCoordinator,
         gastoOperativoDao = gastoOperativoDao,
+        supabase = supabase,
     )
 
     @Provides

@@ -29,11 +29,6 @@ interface ISessionManager {
     suspend fun clearRememberedEmail()
 }
 
-/**
- * FASE 4 – Paso 4.3
- * Persiste los datos de sesión SaaS en DataStore.
- * Reutiliza el mismo dataStore que SecurityManager (mismo archivo "settings").
- */
 class SessionManager(private val context: Context) : ISessionManager {
 
     private val masterKey = MasterKey.Builder(context)
@@ -62,19 +57,17 @@ class SessionManager(private val context: Context) : ISessionManager {
         private val PIN_HAS_BEEN_SET = booleanPreferencesKey("pref_pin_has_been_set")
     }
 
-    // ─── Lectura reactiva ─────────────────────────────────────────────────────
 
     override val isLoggedIn: Flow<Boolean> = context.dataStore.data
         .map { prefs: Preferences -> prefs[IS_LOGGED_IN] ?: false }
 
     override val opticaId: Flow<String> = _opticaIdFlow
 
-    /** Rol en la óptica activa (tabla usuario_optica). */
     override val opticaRol: Flow<String> = _opticaRolFlow
 
     private fun getSecureOpticaId(): String = encryptedPrefs.getString("saas_optica_id", LEGACY_OPTICA_ID) ?: LEGACY_OPTICA_ID
 
-    private fun getSecureOpticaRol(): String = encryptedPrefs.getString("saas_optica_rol", "admin") ?: "admin"
+    private fun getSecureOpticaRol(): String = encryptedPrefs.getString("saas_optica_rol", "") ?: ""
 
     override val userEmail: Flow<String> = context.dataStore.data
         .map { _: Preferences -> encryptedPrefs.getString("saas_user_email", "") ?: "" }
@@ -94,7 +87,6 @@ class SessionManager(private val context: Context) : ISessionManager {
     override val userTimeZone: Flow<String?> = context.dataStore.data
         .map { prefs: Preferences -> prefs[USER_TIMEZONE] }
 
-    // ─── Escritura ────────────────────────────────────────────────────────────
 
     suspend fun setUserTimeZone(timeZoneId: String?) {
         context.dataStore.edit { prefs ->
@@ -131,20 +123,13 @@ class SessionManager(private val context: Context) : ISessionManager {
         context.dataStore.edit { prefs -> prefs[IS_PIN_REQUIRED] = required }
     }
 
-    // ── Recordar Cuenta ────────────────────────────────────────────────────
 
-    /**
-     * Guarda el email para pre-cargarlo en el login si el usuario marcó
-     * "Recordar Cuenta".
-     */
     override suspend fun saveRememberedEmail(email: String) {
         encryptedPrefs.edit().putString("pref_remembered_email", email).apply()
     }
 
-    /** Recupera el email guardado por "Recordar Cuenta". */
     override suspend fun getRememberedEmail(): String = encryptedPrefs.getString("pref_remembered_email", "") ?: ""
 
-    /** Limpia el email recordado (cuando el usuario desmarca el checkbox). */
     override suspend fun clearRememberedEmail() {
         encryptedPrefs.edit().remove("pref_remembered_email").apply()
     }
@@ -152,7 +137,7 @@ class SessionManager(private val context: Context) : ISessionManager {
     override suspend fun clearSession() {
         encryptedPrefs.edit { clear() }
         _opticaIdFlow.value = LEGACY_OPTICA_ID
-        _opticaRolFlow.value = "admin"
+        _opticaRolFlow.value = ""
 
         context.dataStore.edit { prefs ->
             prefs[IS_LOGGED_IN] = false
