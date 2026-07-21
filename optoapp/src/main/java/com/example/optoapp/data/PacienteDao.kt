@@ -27,7 +27,8 @@ interface PacienteDao {
     )
     suspend fun countPacientesByHistoriaOptometrica(opticaId: String, historiaNorm: String, excludeId: String): Int
 
-    @Deprecated("Use getPacienteByIdScoped to enforce multi-tenant isolation")
+    // Prefer getPacienteByIdScoped for multi-tenant safety. This method exists
+    // for backward compatibility with callers that don't have opticaId available.
     @Query("SELECT * FROM pacientes WHERE id = :id")
     suspend fun getPacienteById(id: String): Paciente?
 
@@ -43,7 +44,7 @@ interface PacienteDao {
     )
     fun searchPacientesForOptica(opticaId: String, query: String): Flow<List<Paciente>>
 
-    @Deprecated("Use upsertPaciente — @Upsert is not a plain insert", ReplaceWith("upsertPaciente(paciente)"))
+    // Historical name — this is an upsert, not a plain insert. Use upsertPaciente for clarity.
     @Upsert
     suspend fun insertPaciente(paciente: Paciente)
 
@@ -65,7 +66,7 @@ interface PacienteDao {
     @Query("UPDATE servicios_extra SET pacienteId = :targetPacienteId WHERE pacienteId = :sourcePacienteId")
     suspend fun reassignServiciosPaciente(sourcePacienteId: String, targetPacienteId: String): Int
 
-    @Deprecated("Use deletePaciente — identical query", ReplaceWith("deletePaciente(id, opticaId)"))
+    // Alias for deletePaciente — kept for callers that expect the ById suffix.
     @Query("DELETE FROM pacientes WHERE id = :id AND opticaId = :opticaId")
     suspend fun deletePacienteById(id: String, opticaId: String): Int
 
