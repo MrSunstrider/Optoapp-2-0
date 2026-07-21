@@ -43,6 +43,7 @@ interface PacienteDao {
     )
     fun searchPacientesForOptica(opticaId: String, query: String): Flow<List<Paciente>>
 
+    @Deprecated("Use upsertPaciente — @Upsert is not a plain insert", ReplaceWith("upsertPaciente(paciente)"))
     @Upsert
     suspend fun insertPaciente(paciente: Paciente)
 
@@ -64,6 +65,7 @@ interface PacienteDao {
     @Query("UPDATE servicios_extra SET pacienteId = :targetPacienteId WHERE pacienteId = :sourcePacienteId")
     suspend fun reassignServiciosPaciente(sourcePacienteId: String, targetPacienteId: String): Int
 
+    @Deprecated("Use deletePaciente — identical query", ReplaceWith("deletePaciente(id, opticaId)"))
     @Query("DELETE FROM pacientes WHERE id = :id AND opticaId = :opticaId")
     suspend fun deletePacienteById(id: String, opticaId: String): Int
 
