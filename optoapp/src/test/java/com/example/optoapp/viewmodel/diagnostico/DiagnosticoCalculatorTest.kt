@@ -134,7 +134,7 @@ class DiagnosticoCalculatorTest {
     fun `calcularDiagnostico plano esf negative cil returns miopico simple`() {
         assertEquals(
             "Astigmatismo miópico simple",
-            DiagnosticoCalculator.calcularDiagnostico("plano", "-0.75")
+            DiagnosticoCalculator.calcularDiagnostico("plano", "-0.75"),
         )
     }
 
@@ -143,7 +143,7 @@ class DiagnosticoCalculatorTest {
         // cil = 0 → c == 0 → Miopía (not astigmatism)
         assertEquals(
             "Miopía",
-            DiagnosticoCalculator.calcularDiagnostico("-0.75", "plano")
+            DiagnosticoCalculator.calcularDiagnostico("-0.75", "plano"),
         )
     }
 
@@ -151,7 +151,7 @@ class DiagnosticoCalculatorTest {
     fun `calcularDiagnostico plano esf positive cil returns hipermetropico simple`() {
         assertEquals(
             "Astigmatismo hipermetrópico simple",
-            DiagnosticoCalculator.calcularDiagnostico("plano", "+1.00")
+            DiagnosticoCalculator.calcularDiagnostico("plano", "+1.00"),
         )
     }
 
@@ -161,7 +161,7 @@ class DiagnosticoCalculatorTest {
     fun `calcularDiagnostico both negative returns miopico compuesto`() {
         assertEquals(
             "Astigmatismo miópico compuesto",
-            DiagnosticoCalculator.calcularDiagnostico("-1.00", "-0.50")
+            DiagnosticoCalculator.calcularDiagnostico("-1.00", "-0.50"),
         )
     }
 
@@ -170,7 +170,7 @@ class DiagnosticoCalculatorTest {
         // +1.00 +1.00 → transpose: e = 2.0, c = -1.0 → meridians 2.0 and 1.0 (both +)
         assertEquals(
             "Astigmatismo hipermetrópico compuesto",
-            DiagnosticoCalculator.calcularDiagnostico("+1.00", "+1.00")
+            DiagnosticoCalculator.calcularDiagnostico("+1.00", "+1.00"),
         )
     }
 
@@ -181,7 +181,7 @@ class DiagnosticoCalculatorTest {
         // esf = +1.00, cil = -2.00 → meridian1 = 1.0, meridian2 = -1.0
         assertEquals(
             "Astigmatismo mixto",
-            DiagnosticoCalculator.calcularDiagnostico("+1.00", "-2.00")
+            DiagnosticoCalculator.calcularDiagnostico("+1.00", "-2.00"),
         )
     }
 
@@ -190,7 +190,7 @@ class DiagnosticoCalculatorTest {
         // esf = null → 0, cil = -1.0 → meridian1 = 0, meridian2 = -1.0
         assertEquals(
             "Astigmatismo miópico simple",
-            DiagnosticoCalculator.calcularDiagnostico("", "-1.00")
+            DiagnosticoCalculator.calcularDiagnostico("", "-1.00"),
         )
     }
 
@@ -202,7 +202,7 @@ class DiagnosticoCalculatorTest {
         // meridian1 = -1.0, meridian2 = -2.0 → both negative → compuesto
         assertEquals(
             "Astigmatismo miópico compuesto",
-            DiagnosticoCalculator.calcularDiagnostico("-2.00", "+1.00")
+            DiagnosticoCalculator.calcularDiagnostico("-2.00", "+1.00"),
         )
     }
 

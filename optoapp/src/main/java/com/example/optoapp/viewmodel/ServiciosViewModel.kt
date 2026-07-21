@@ -3,24 +3,24 @@ package com.example.optoapp.viewmodel
 import android.database.sqlite.SQLiteConstraintException
 import android.util.Log
 import androidx.lifecycle.ViewModel
-import java.io.IOException
-import kotlinx.coroutines.CancellationException
 import androidx.lifecycle.viewModelScope
 import com.example.optoapp.data.FinanzasRemoteDefaults
 import com.example.optoapp.data.OptoRepository
-import com.example.optoapp.data.ServicioExtra
 import com.example.optoapp.data.Paciente
-import dagger.hilt.android.lifecycle.HiltViewModel
+import com.example.optoapp.data.Pago
 import com.example.optoapp.data.Resource
+import com.example.optoapp.data.ServicioExtra
+import com.example.optoapp.sync.PostSaveSyncScheduler
+import com.example.optoapp.util.DateUtils
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import java.io.IOException
+import java.time.LocalDate
 import java.util.UUID
 import javax.inject.Inject
-import com.example.optoapp.data.Pago
-import java.time.LocalDate
-import com.example.optoapp.sync.PostSaveSyncScheduler
-import com.example.optoapp.util.DateUtils
 
 data class ServiciosUiState(
     val id: String = UUID.randomUUID().toString(),
@@ -37,14 +37,14 @@ data class ServiciosUiState(
     val pagos: List<Pago> = emptyList(),
     val pagosToDelete: List<Pago> = emptyList(),
     val generatedId: String = UUID.randomUUID().toString(),
-    val isEdit: Boolean = false
+    val isEdit: Boolean = false,
 )
 
 @HiltViewModel
 class ServiciosViewModel @Inject constructor(
     private val repository: com.example.optoapp.data.OptoRepository,
     private val sessionManager: com.example.optoapp.data.SessionManager,
-    private val postSaveSyncScheduler: PostSaveSyncScheduler
+    private val postSaveSyncScheduler: PostSaveSyncScheduler,
 ) : ViewModel() {
 
     companion object {
@@ -85,7 +85,7 @@ class ServiciosViewModel @Inject constructor(
     @OptIn(ExperimentalCoroutinesApi::class)
     val monturas: StateFlow<List<com.example.optoapp.data.Montura>> = sessionManager.opticaId
         .flatMapLatest { repository.getMonturasByOptica(it) }
-                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     // Reactive aCuenta sum map for dynamic saldo computation (aCuenta is @Ignore in entity)
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -107,7 +107,7 @@ class ServiciosViewModel @Inject constructor(
         _uiState.update {
             it.copy(
                 estado = estado,
-                fechaEntrega = if (estado == "Entregado") DateUtils.today() else it.fechaEntrega
+                fechaEntrega = if (estado == "Entregado") DateUtils.today() else it.fechaEntrega,
             )
         }
     }
@@ -132,7 +132,7 @@ class ServiciosViewModel @Inject constructor(
                         generatedId = id,
                         isEdit = true,
                         isLoading = false,
-                        error = null
+                        error = null,
                     )
                 }
                 is Resource.Error -> {
@@ -211,7 +211,7 @@ class ServiciosViewModel @Inject constructor(
                     fechaEntrega = state.fechaEntrega,
                     pacienteId = state.pacienteId?.takeIf { !it.isBlank() },
                     metodoPago = FinanzasRemoteDefaults.ServicioExtra.METODO_PAGO_ROW,
-                    opticaId = currentOpticaId
+                    opticaId = currentOpticaId,
                 )
 
                 repository.withTransaction {
@@ -225,7 +225,7 @@ class ServiciosViewModel @Inject constructor(
                         val pagoToSave = pago.copy(
                             servicioExtraId = finalId,
                             opticaId = currentOpticaId,
-                            ventaId = "v_serv_$finalId"
+                            ventaId = "v_serv_$finalId",
                         )
                         repository.insertPago(pagoToSave)
                     }
@@ -244,7 +244,7 @@ class ServiciosViewModel @Inject constructor(
                 Log.e(TAG, "Guardar servicio: restricción BD", e)
                 _uiState.update {
                     it.copy(
-                        error = "No se pudo guardar: revisa el paciente asociado o deja el servicio sin paciente."
+                        error = "No se pudo guardar: revisa el paciente asociado o deja el servicio sin paciente.",
                     )
                 }
             } catch (e: CancellationException) {
@@ -284,7 +284,7 @@ class ServiciosViewModel @Inject constructor(
                         tipo = "Anulación",
                         monto = -pago.monto,
                         nota = "Anulación de servicio ${servicio.descripcion.take(24)}",
-                        ventaId = "v_serv_${servicio.id}"
+                        ventaId = "v_serv_${servicio.id}",
                     )
                     repository.insertPago(anulacionPago)
                 }

@@ -18,7 +18,7 @@ class FiscalConfigCleanupTest {
         val violations = removed.filter { it in fields }
         assertTrue(
             "FiscalConfigUi no debe contener: $violations. Campos actuales: $fields",
-            violations.isEmpty()
+            violations.isEmpty(),
         )
     }
 
@@ -29,7 +29,7 @@ class FiscalConfigCleanupTest {
         val violations = removed.filter { it in fields }
         assertTrue(
             "FiscalDraft no debe contener: $violations. Campos actuales: $fields",
-            violations.isEmpty()
+            violations.isEmpty(),
         )
     }
 
@@ -41,7 +41,7 @@ class FiscalConfigCleanupTest {
         val violations = removed.filter { it in fields }
         assertTrue(
             "FiscalDraftUpdate no debe contener: $violations",
-            violations.isEmpty()
+            violations.isEmpty(),
         )
     }
 
@@ -53,7 +53,7 @@ class FiscalConfigCleanupTest {
         val violations = removed.filter { it in fields }
         assertTrue(
             "OpticaFiscalSettings no debe contener: $violations. Campos actuales: $fields",
-            violations.isEmpty()
+            violations.isEmpty(),
         )
     }
 }

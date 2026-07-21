@@ -18,7 +18,8 @@ interface MonturaDao {
     @Upsert
     suspend fun insertMontura(montura: Montura)
 
-    @Query("""
+    @Query(
+        """
         UPDATE monturas SET sku=:sku, marca=:marca, modelo=:modelo, color=:color,
         talla=:talla, costo=:costo, precio=:precio, stockActual=:stockActual,
         stockMinimo=:stockMinimo, activo=:activo, tipoAro=:tipoAro,
@@ -27,15 +28,34 @@ interface MonturaDao {
         coleccion=:coleccion, temporada=:temporada, estadoComercial=:estadoComercial,
         genero=:genero, opticaId=:opticaId, updatedAt=:updatedAt, updatedBy=:updatedBy
         WHERE id=:id AND opticaId=:opticaId
-    """)
+    """,
+    )
     suspend fun updateMontura(
-        id: String, opticaId: String, sku: String, marca: String, modelo: String,
-        color: String, talla: String, costo: Double, precio: Double,
-        stockActual: Int, stockMinimo: Int, activo: Boolean, tipoAro: String,
-        materialMontura: String, anchoMm: Double?, puenteMm: Double?,
-        alturaMm: Double?, imagenUri: String?, categoria: String,
-        coleccion: String, temporada: String, estadoComercial: String,
-        genero: String, updatedAt: String?, updatedBy: String?
+        id: String,
+        opticaId: String,
+        sku: String,
+        marca: String,
+        modelo: String,
+        color: String,
+        talla: String,
+        costo: Double,
+        precio: Double,
+        stockActual: Int,
+        stockMinimo: Int,
+        activo: Boolean,
+        tipoAro: String,
+        materialMontura: String,
+        anchoMm: Double?,
+        puenteMm: Double?,
+        alturaMm: Double?,
+        imagenUri: String?,
+        categoria: String,
+        coleccion: String,
+        temporada: String,
+        estadoComercial: String,
+        genero: String,
+        updatedAt: String?,
+        updatedBy: String?,
     ): Int
 
     @Query("DELETE FROM monturas WHERE id = :id AND opticaId = :opticaId")
@@ -44,7 +64,8 @@ interface MonturaDao {
     @Query("SELECT * FROM monturas WHERE opticaId = :opticaId")
     suspend fun getMonturasListByOptica(opticaId: String): List<Montura>
 
-    @Query("""
+    @Query(
+        """
         SELECT * FROM monturas
         WHERE opticaId = :opticaId
           AND activo = 1
@@ -57,7 +78,8 @@ interface MonturaDao {
                     WHEN :stockBajo = 1 AND stockActual <= stockMinimo THEN 1
                     ELSE 0 END)
         ORDER BY marca ASC, modelo ASC
-    """)
+    """,
+    )
     suspend fun searchMonturas(
         opticaId: String,
         marca: String? = null,
@@ -65,7 +87,7 @@ interface MonturaDao {
         categoria: String? = null,
         precioMin: Double? = null,
         precioMax: Double? = null,
-        stockBajo: Int = 0
+        stockBajo: Int = 0,
     ): List<Montura>
 
     @Query("SELECT COUNT(*) FROM monturas WHERE opticaId = :opticaId AND activo = 1")
@@ -83,5 +105,5 @@ interface MonturaDao {
 
 data class CategoriaCount(
     val categoria: String,
-    val cnt: Int
+    val cnt: Int,
 )

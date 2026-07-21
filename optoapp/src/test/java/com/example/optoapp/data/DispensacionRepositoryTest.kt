@@ -1,9 +1,9 @@
 package com.example.optoapp.data
 
-import com.example.optoapp.data.pago.PagoDao
-import com.example.optoapp.data.servicio.ServicioExtraDao
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
+import com.example.optoapp.data.pago.PagoDao
+import com.example.optoapp.data.servicio.ServicioExtraDao
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -39,7 +39,7 @@ class DispensacionRepositoryTest {
     fun setUp() {
         db = Room.inMemoryDatabaseBuilder(
             ApplicationProvider.getApplicationContext(),
-            OptoDatabase::class.java
+            OptoDatabase::class.java,
         ).allowMainThreadQueries().build()
         dispensacionDao = db.dispensacionDao()
         dispensacionItemDao = db.dispensacionItemDao()
@@ -56,10 +56,16 @@ class DispensacionRepositoryTest {
     }
 
     private suspend fun insertDummyPaciente(id: String = "p_dummy", opticaId: String = "o1") {
-        pacienteDao.insertPaciente(Paciente(
-            id = id, nombreCompleto = "Dummy", edad = 0, telefono = "000",
-            fechaCreacion = LocalDate.parse("2026-01-15"), opticaId = opticaId
-        ))
+        pacienteDao.insertPaciente(
+            Paciente(
+                id = id,
+                nombreCompleto = "Dummy",
+                edad = 0,
+                telefono = "000",
+                fechaCreacion = LocalDate.parse("2026-01-15"),
+                opticaId = opticaId,
+            ),
+        )
     }
 
     // ── Dispensaciones ──────────────────────────────────────────────────────
@@ -67,10 +73,15 @@ class DispensacionRepositoryTest {
     @Test
     fun getDispensacionById_withExistingId_returnsSuccess() = runBlocking {
         insertDummyPaciente()
-        dispensacionDao.insertDispensacion(DispensacionOptica(
-            id = "d1", pacienteId = "p_dummy", fecha = LocalDate.parse("2026-01-15"),
-            opticaId = "o1", montoTotal = 200.0
-        ))
+        dispensacionDao.insertDispensacion(
+            DispensacionOptica(
+                id = "d1",
+                pacienteId = "p_dummy",
+                fecha = LocalDate.parse("2026-01-15"),
+                opticaId = "o1",
+                montoTotal = 200.0,
+            ),
+        )
 
         val result = repo.getDispensacionById("d1")
 
@@ -89,8 +100,11 @@ class DispensacionRepositoryTest {
     fun insertDispensacion_persistsRecord() = runBlocking {
         insertDummyPaciente()
         val disp = DispensacionOptica(
-            id = "d_new", pacienteId = "p_dummy", fecha = LocalDate.parse("2026-02-01"),
-            opticaId = "o1", montoTotal = 350.0
+            id = "d_new",
+            pacienteId = "p_dummy",
+            fecha = LocalDate.parse("2026-02-01"),
+            opticaId = "o1",
+            montoTotal = 350.0,
         )
 
         repo.insertDispensacion(disp)
@@ -103,13 +117,23 @@ class DispensacionRepositoryTest {
     @Test
     fun updateDispensacion_modifiesExistingRecord() = runBlocking {
         insertDummyPaciente()
-        dispensacionDao.insertDispensacion(DispensacionOptica(
-            id = "d1", pacienteId = "p_dummy", fecha = LocalDate.parse("2026-01-15"),
-            opticaId = "o1", montoTotal = 200.0, estadoEntrega = "Pendiente"
-        ))
+        dispensacionDao.insertDispensacion(
+            DispensacionOptica(
+                id = "d1",
+                pacienteId = "p_dummy",
+                fecha = LocalDate.parse("2026-01-15"),
+                opticaId = "o1",
+                montoTotal = 200.0,
+                estadoEntrega = "Pendiente",
+            ),
+        )
         val updated = DispensacionOptica(
-            id = "d1", pacienteId = "p_dummy", fecha = LocalDate.parse("2026-01-15"),
-            opticaId = "o1", montoTotal = 250.0, estadoEntrega = "Entregado"
+            id = "d1",
+            pacienteId = "p_dummy",
+            fecha = LocalDate.parse("2026-01-15"),
+            opticaId = "o1",
+            montoTotal = 250.0,
+            estadoEntrega = "Entregado",
         )
 
         repo.updateDispensacion(updated)
@@ -122,10 +146,14 @@ class DispensacionRepositoryTest {
     @Test
     fun deleteDispensacionById_removesRecord() = runBlocking {
         insertDummyPaciente()
-        dispensacionDao.insertDispensacion(DispensacionOptica(
-            id = "d_del", pacienteId = "p_dummy", fecha = LocalDate.parse("2026-01-15"),
-            opticaId = "o1"
-        ))
+        dispensacionDao.insertDispensacion(
+            DispensacionOptica(
+                id = "d_del",
+                pacienteId = "p_dummy",
+                fecha = LocalDate.parse("2026-01-15"),
+                opticaId = "o1",
+            ),
+        )
 
         val rows = repo.deleteDispensacionById("d_del", "o1")
 
@@ -137,14 +165,24 @@ class DispensacionRepositoryTest {
     fun suggestNextOt_returnsNextSequence() = runBlocking {
         insertDummyPaciente()
         val year = 2026
-        dispensacionDao.insertDispensacion(DispensacionOptica(
-            id = "d1", pacienteId = "p_dummy", fecha = LocalDate.parse("$year-01-15"),
-            opticaId = "o1", ot = "OT-$year-0001"
-        ))
-        dispensacionDao.insertDispensacion(DispensacionOptica(
-            id = "d2", pacienteId = "p_dummy", fecha = LocalDate.parse("$year-02-01"),
-            opticaId = "o1", ot = "OT-$year-0003"
-        ))
+        dispensacionDao.insertDispensacion(
+            DispensacionOptica(
+                id = "d1",
+                pacienteId = "p_dummy",
+                fecha = LocalDate.parse("$year-01-15"),
+                opticaId = "o1",
+                ot = "OT-$year-0001",
+            ),
+        )
+        dispensacionDao.insertDispensacion(
+            DispensacionOptica(
+                id = "d2",
+                pacienteId = "p_dummy",
+                fecha = LocalDate.parse("$year-02-01"),
+                opticaId = "o1",
+                ot = "OT-$year-0003",
+            ),
+        )
 
         val next = repo.suggestNextOt("o1", LocalDate.of(year, 6, 1))
 
@@ -156,13 +194,22 @@ class DispensacionRepositoryTest {
     @Test
     fun insertPago_and_getByDispensacion_returnsPago() = runBlocking {
         insertDummyPaciente()
-        dispensacionDao.insertDispensacion(DispensacionOptica(
-            id = "d1", pacienteId = "p_dummy", fecha = LocalDate.parse("2026-01-15"),
-            opticaId = "o1"
-        ))
+        dispensacionDao.insertDispensacion(
+            DispensacionOptica(
+                id = "d1",
+                pacienteId = "p_dummy",
+                fecha = LocalDate.parse("2026-01-15"),
+                opticaId = "o1",
+            ),
+        )
         val pago = Pago(
-            id = "p1", dispensacionId = "d1", fecha = LocalDate.parse("2026-01-15"),
-            tipo = "CONTADO", monto = 150.0, metodoPago = "EFECTIVO", opticaId = "o1"
+            id = "p1",
+            dispensacionId = "d1",
+            fecha = LocalDate.parse("2026-01-15"),
+            tipo = "CONTADO",
+            monto = 150.0,
+            metodoPago = "EFECTIVO",
+            opticaId = "o1",
         )
 
         repo.insertPago(pago)
@@ -175,13 +222,22 @@ class DispensacionRepositoryTest {
     @Test
     fun deletePagoRegistrandoAnulacionEnCaja_createsReversal() = runBlocking {
         insertDummyPaciente()
-        dispensacionDao.insertDispensacion(DispensacionOptica(
-            id = "d1", pacienteId = "p_dummy", fecha = LocalDate.parse("2026-01-15"),
-            opticaId = "o1"
-        ))
+        dispensacionDao.insertDispensacion(
+            DispensacionOptica(
+                id = "d1",
+                pacienteId = "p_dummy",
+                fecha = LocalDate.parse("2026-01-15"),
+                opticaId = "o1",
+            ),
+        )
         val pago = Pago(
-            id = "p1", dispensacionId = "d1", fecha = LocalDate.parse("2026-01-15"),
-            tipo = "CONTADO", monto = 100.0, metodoPago = "EFECTIVO", opticaId = "o1"
+            id = "p1",
+            dispensacionId = "d1",
+            fecha = LocalDate.parse("2026-01-15"),
+            tipo = "CONTADO",
+            monto = 100.0,
+            metodoPago = "EFECTIVO",
+            opticaId = "o1",
         )
         pagoDao.insertPago(pago)
 
@@ -201,13 +257,22 @@ class DispensacionRepositoryTest {
     @Test
     fun deletePagoRegistrandoAnulacionEnCaja_zeroMontoSkipsReversal() = runBlocking {
         insertDummyPaciente()
-        dispensacionDao.insertDispensacion(DispensacionOptica(
-            id = "d_zero", pacienteId = "p_dummy", fecha = LocalDate.parse("2026-01-15"),
-            opticaId = "o1"
-        ))
+        dispensacionDao.insertDispensacion(
+            DispensacionOptica(
+                id = "d_zero",
+                pacienteId = "p_dummy",
+                fecha = LocalDate.parse("2026-01-15"),
+                opticaId = "o1",
+            ),
+        )
         val pago = Pago(
-            id = "p_zero", dispensacionId = "d_zero", fecha = LocalDate.parse("2026-01-15"),
-            tipo = "CONTADO", monto = 0.0, metodoPago = "EFECTIVO", opticaId = "o1"
+            id = "p_zero",
+            dispensacionId = "d_zero",
+            fecha = LocalDate.parse("2026-01-15"),
+            tipo = "CONTADO",
+            monto = 0.0,
+            metodoPago = "EFECTIVO",
+            opticaId = "o1",
         )
         pagoDao.insertPago(pago)
 
@@ -223,8 +288,13 @@ class DispensacionRepositoryTest {
     @Test
     fun deletePagoRegistrandoAnulacionEnCaja_nonExistentPagoDoesNotCrash() = runBlocking {
         val pago = Pago(
-            id = "p_ghost", dispensacionId = "d1", fecha = LocalDate.parse("2026-01-15"),
-            tipo = "CONTADO", monto = 100.0, metodoPago = "EFECTIVO", opticaId = "o1"
+            id = "p_ghost",
+            dispensacionId = "d1",
+            fecha = LocalDate.parse("2026-01-15"),
+            tipo = "CONTADO",
+            monto = 100.0,
+            metodoPago = "EFECTIVO",
+            opticaId = "o1",
         )
         // pago not inserted — should not throw and should not insert reversal
         repo.deletePagoRegistrandoAnulacionEnCaja(pago, "o1")
@@ -238,9 +308,14 @@ class DispensacionRepositoryTest {
     @Test
     fun insertServicio_and_getAll_returnsServicio() = runBlocking {
         val servicio = ServicioExtra(
-            id = "se1", descripcion = "Lentes de contacto", montoTotal = 200.0, aCuenta = 50.0,
-            estado = "Pendiente", fecha = LocalDate.parse("2026-01-15"),
-            metodoPago = "EFECTIVO", opticaId = "o1"
+            id = "se1",
+            descripcion = "Lentes de contacto",
+            montoTotal = 200.0,
+            aCuenta = 50.0,
+            estado = "Pendiente",
+            fecha = LocalDate.parse("2026-01-15"),
+            metodoPago = "EFECTIVO",
+            opticaId = "o1",
         )
 
         repo.insertServicio(servicio)
@@ -253,14 +328,22 @@ class DispensacionRepositoryTest {
     @Test
     fun getDispensacionesSnapshotForOptica_returnsAllForOptica() = runBlocking {
         insertDummyPaciente()
-        dispensacionDao.insertDispensacion(DispensacionOptica(
-            id = "d1", pacienteId = "p_dummy", fecha = LocalDate.parse("2026-01-15"),
-            opticaId = "o1"
-        ))
-        dispensacionDao.insertDispensacion(DispensacionOptica(
-            id = "d2", pacienteId = "p_dummy", fecha = LocalDate.parse("2026-02-01"),
-            opticaId = "o1"
-        ))
+        dispensacionDao.insertDispensacion(
+            DispensacionOptica(
+                id = "d1",
+                pacienteId = "p_dummy",
+                fecha = LocalDate.parse("2026-01-15"),
+                opticaId = "o1",
+            ),
+        )
+        dispensacionDao.insertDispensacion(
+            DispensacionOptica(
+                id = "d2",
+                pacienteId = "p_dummy",
+                fecha = LocalDate.parse("2026-02-01"),
+                opticaId = "o1",
+            ),
+        )
 
         val snapshot = repo.getDispensacionesSnapshotForOptica("o1")
 

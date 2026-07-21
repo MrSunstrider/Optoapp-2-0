@@ -25,7 +25,7 @@ class SyncDiagnosticsCardContentTest {
         val paramTypes = method.parameterTypes
         assertTrue(
             "Card must accept SyncDiagnosticsViewModel (params: ${paramTypes.map { it.simpleName }})",
-            paramTypes.any { it.simpleName == "SyncDiagnosticsViewModel" }
+            paramTypes.any { it.simpleName == "SyncDiagnosticsViewModel" },
         )
     }
 
@@ -44,7 +44,7 @@ class SyncDiagnosticsCardContentTest {
             "config_sync_diag_empty",
             "config_sync_copy_all",
             "config_sync_clear_list",
-            "config_sync_cleared"
+            "config_sync_cleared",
         )
         for (name in expectedStrings) {
             val field = runCatching { stringClass!!.getField(name) }.getOrNull()

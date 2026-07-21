@@ -15,7 +15,7 @@ class SucursalesSectionRemovalTest {
         val methodNames = clazz.declaredMethods.map { it.name }
         assertFalse(
             "SucursalesSection debe haber sido eliminada del package config. Métodos: $methodNames",
-            "SucursalesSection" in methodNames
+            "SucursalesSection" in methodNames,
         )
     }
 

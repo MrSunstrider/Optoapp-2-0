@@ -27,7 +27,7 @@ data class FinancieraUiState(
     val estadoEntrega: String = "Pendiente",
     val fechaEntrega: LocalDate? = null,
     val isLoading: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
 ) {
     val saldoRestante: Double
         get() {
@@ -41,7 +41,7 @@ data class FinancieraUiState(
 class InformacionFinancieraViewModel @Inject constructor(
     private val repository: DispensacionFinancieraRepository,
     private val sessionManager: SessionManager,
-    private val postSaveSyncScheduler: PostSaveSyncScheduler
+    private val postSaveSyncScheduler: PostSaveSyncScheduler,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(FinancieraUiState())
@@ -67,7 +67,7 @@ class InformacionFinancieraViewModel @Inject constructor(
                             montoTotal = d.montoTotal.toString(),
                             pagos = pagos,
                             estadoEntrega = d.estadoEntrega,
-                            fechaEntrega = d.fechaEntrega
+                            fechaEntrega = d.fechaEntrega,
                         )
                     }
                 }
@@ -111,7 +111,7 @@ class InformacionFinancieraViewModel @Inject constructor(
         _uiState.update { s ->
             s.copy(
                 pagos = s.pagos.filter { it.id != pago.id },
-                pagosToDelete = s.pagosToDelete + pago
+                pagosToDelete = s.pagosToDelete + pago,
             )
         }
     }

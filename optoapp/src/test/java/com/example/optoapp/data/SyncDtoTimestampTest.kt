@@ -1,8 +1,8 @@
 package com.example.optoapp.data
 
 import com.example.optoapp.domain.toRemoto
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Test
 import java.time.LocalDate
 
@@ -28,7 +28,7 @@ class SyncDtoTimestampTest {
         pacienteId = "p-1",
         fecha = testDate,
         opticaId = "optica-1",
-        updatedAt = updatedAt
+        updatedAt = updatedAt,
     )
 
     @Test
@@ -37,7 +37,7 @@ class SyncDtoTimestampTest {
         assertNull(
             "EvaluacionClinica.toRemoto() must not fabricate a timestamp — " +
                 "client-generated timestamps trigger false conflicts on the server",
-            remoto.updatedAt
+            remoto.updatedAt,
         )
     }
 
@@ -49,7 +49,8 @@ class SyncDtoTimestampTest {
         assertEquals(
             "Repeated toRemoto() calls on the same entity must produce identical updatedAt — " +
                 "any difference is phantom drift",
-            first.updatedAt, second.updatedAt
+            first.updatedAt,
+            second.updatedAt,
         )
     }
 
@@ -67,7 +68,7 @@ class SyncDtoTimestampTest {
         pacienteId = "p-1",
         fecha = testDate,
         opticaId = "optica-1",
-        updatedAt = updatedAt
+        updatedAt = updatedAt,
     )
 
     @Test
@@ -75,7 +76,7 @@ class SyncDtoTimestampTest {
         val remoto = dispensacion().toRemoto()
         assertNull(
             "DispensacionOptica.toRemoto() must not fabricate a timestamp when updatedAt is null",
-            remoto.updatedAt
+            remoto.updatedAt,
         )
     }
 
@@ -99,14 +100,14 @@ class SyncDtoTimestampTest {
         tipo = "Abono",
         monto = 100.0,
         opticaId = "optica-1",
-        updatedAt = updatedAt
+        updatedAt = updatedAt,
     )
 
     @Test
     fun pagoToRemoto_doesNotCallInstantNow_whenUpdatedAtIsNull() {
         assertNull(
             "Pago.toRemoto() must not fabricate a timestamp when updatedAt is null",
-            pago().toRemoto().updatedAt
+            pago().toRemoto().updatedAt,
         )
     }
 
@@ -132,14 +133,14 @@ class SyncDtoTimestampTest {
         estado = "Pendiente",
         fecha = testDate,
         opticaId = "optica-1",
-        updatedAt = updatedAt
+        updatedAt = updatedAt,
     )
 
     @Test
     fun servicioToRemoto_doesNotCallInstantNow_whenUpdatedAtIsNull() {
         assertNull(
             "ServicioExtra.toRemoto() must not fabricate a timestamp when updatedAt is null",
-            servicio().toRemoto().updatedAt
+            servicio().toRemoto().updatedAt,
         )
     }
 

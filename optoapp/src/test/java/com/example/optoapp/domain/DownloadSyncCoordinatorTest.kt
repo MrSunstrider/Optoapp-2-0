@@ -49,7 +49,7 @@ class DownloadSyncCoordinatorTest {
         val methods = DownloadSyncCoordinator::class.java.declaredMethods.map { it.name }
         assertTrue(
             "Debe tener método downloadDispensacionItems",
-            "downloadDispensacionItems" in methods
+            "downloadDispensacionItems" in methods,
         )
     }
 
@@ -58,7 +58,7 @@ class DownloadSyncCoordinatorTest {
         val methods = DownloadSyncCoordinator::class.java.declaredMethods.map { it.name }
         assertTrue(
             "Debe tener método downloadDispensaciones",
-            "downloadDispensaciones" in methods
+            "downloadDispensaciones" in methods,
         )
     }
 
@@ -67,7 +67,7 @@ class DownloadSyncCoordinatorTest {
         val methods = DownloadSyncCoordinator::class.java.declaredMethods.map { it.name }
         assertTrue(
             "Debe tener método downloadServicios",
-            "downloadServicios" in methods
+            "downloadServicios" in methods,
         )
     }
 
@@ -76,7 +76,7 @@ class DownloadSyncCoordinatorTest {
         val methods = DownloadSyncCoordinator::class.java.declaredMethods.map { it.name }
         assertTrue(
             "Debe tener método downloadPagos",
-            "downloadPagos" in methods
+            "downloadPagos" in methods,
         )
     }
 
@@ -90,7 +90,7 @@ class DownloadSyncCoordinatorTest {
         for (m in downloadMethods) {
             assertTrue(
                 "Método ${m.name} debe aceptar String (opticaId)",
-                m.parameterTypes.any { it == String::class.java }
+                m.parameterTypes.any { it == String::class.java },
             )
         }
     }
@@ -115,7 +115,7 @@ class DownloadSyncCoordinatorTest {
         for (expectedName in expected) {
             assertTrue(
                 "Debe existir $expectedName (found: $allFields)",
-                allFields.any { it == expectedName || it.contains(expectedName) }
+                allFields.any { it == expectedName || it.contains(expectedName) },
             )
         }
     }
@@ -171,5 +171,4 @@ class DownloadSyncCoordinatorTest {
     fun errorHandling_ioException_isLoggedAndMarked() {
         // Pattern: catch (e: IOException) { Log.e(TAG, ..., e); markError(...) }
     }
-
 }

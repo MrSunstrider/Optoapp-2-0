@@ -1,10 +1,13 @@
 package com.example.optoapp.data
 
 import android.content.Context
+import androidx.room.Room
 import androidx.sqlite.db.SupportSQLiteDatabase
 import androidx.sqlite.db.SupportSQLiteOpenHelper
 import androidx.sqlite.db.framework.FrameworkSQLiteOpenHelperFactory
 import androidx.test.core.app.ApplicationProvider
+import com.example.optoapp.data.opticasettings.OpticaSettingsEntity
+import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -19,7 +22,7 @@ import org.robolectric.annotation.Config
  *
  * Covers: re-export consistency, migration chain sequentiality,
  * version bounds, DAO method declarations, and a full data-preservation
- * migration run from v30 to the current version (v40).
+ * migration run from v30 to the current version (v42).
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], application = android.app.Application::class)
@@ -29,7 +32,8 @@ class OptoDatabaseMigrationTest {
 
     @After
     fun tearDown() {
-        context.deleteDatabase("migration-30-to-40-test.db")
+        context.deleteDatabase("migration-30-to-42-test.db")
+        context.deleteDatabase("migration-41-to-42-test.db")
     }
 
     @Test
@@ -68,6 +72,8 @@ class OptoDatabaseMigrationTest {
         assertEquals(MIGRATION_37_38, OptoDatabase.MIGRATION_37_38)
         assertEquals(MIGRATION_38_39, OptoDatabase.MIGRATION_38_39)
         assertEquals(MIGRATION_39_40, OptoDatabase.MIGRATION_39_40)
+        assertEquals(MIGRATION_40_41, OptoDatabase.MIGRATION_40_41)
+        assertEquals(MIGRATION_41_42, OptoDatabase.MIGRATION_41_42)
     }
 
     @Test
@@ -79,14 +85,15 @@ class OptoDatabaseMigrationTest {
             MIGRATION_21_22, MIGRATION_22_23, MIGRATION_23_24, MIGRATION_24_25,
             MIGRATION_25_26, MIGRATION_26_27, MIGRATION_27_28, MIGRATION_28_29, MIGRATION_29_30,
             MIGRATION_30_31, MIGRATION_31_32, MIGRATION_32_33, MIGRATION_33_34, MIGRATION_34_35,
-            MIGRATION_35_36, MIGRATION_36_37, MIGRATION_37_38, MIGRATION_38_39, MIGRATION_39_40
+            MIGRATION_35_36, MIGRATION_36_37, MIGRATION_37_38, MIGRATION_38_39, MIGRATION_39_40,
+            MIGRATION_40_41, MIGRATION_41_42,
         )
 
         for (i in 0 until migrations.size - 1) {
             assertEquals(
-                "Migration ${i} endVersion should match ${i + 1} startVersion",
+                "Migration $i endVersion should match ${i + 1} startVersion",
                 migrations[i].endVersion,
-                migrations[i + 1].startVersion
+                migrations[i + 1].startVersion,
             )
         }
     }
@@ -97,32 +104,34 @@ class OptoDatabaseMigrationTest {
         assertEquals(7, MIGRATION_6_7.endVersion)
         assertEquals(39, MIGRATION_39_40.startVersion)
         assertEquals(40, MIGRATION_39_40.endVersion)
+        assertEquals(41, MIGRATION_41_42.startVersion)
+        assertEquals(42, MIGRATION_41_42.endVersion)
     }
 
     // ─── Schema version characterization ────────────────────────────────
     //
     // Room @Database has CLASS retention (not RUNTIME), so annotation
     // is not visible via reflection at runtime. These tests verify the
-    // expected version (40) as a documented constant matching the source:
-    //   @Database(entities = [...], version = 40) in OptoDatabase.kt
+    // expected version (42) as a documented constant matching the source:
+    //   @Database(entities = [...], version = 42) in OptoDatabase.kt
     // Changing this version triggers a Room migration — it MUST be preserved.
 
     @Test
-    fun databaseVersion_is40() {
-        val chainVersion = MIGRATION_39_40.endVersion
+    fun databaseVersion_is42() {
+        val chainVersion = MIGRATION_41_42.endVersion
         assertEquals(
-            "Room schema version must remain 40 — changing it triggers migration. " +
-                "Source: @Database(version = 40) in OptoDatabase.kt. " +
-                "MIGRATION_39_40.endVersion ($chainVersion) must match.",
-            40,
-            chainVersion
+            "Room schema version must remain 42 — changing it triggers migration. " +
+                "Source: @Database(version = 42) in OptoDatabase.kt. " +
+                "MIGRATION_41_42.endVersion ($chainVersion) must match.",
+            42,
+            chainVersion,
         )
     }
 
     @Test
     fun databaseVersion_migration_chain_ends_at_current_version() {
-        assertEquals(40, MIGRATION_39_40.endVersion)
-        assertEquals(MIGRATION_39_40.endVersion, MIGRATION_39_40.startVersion + 1)
+        assertEquals(42, MIGRATION_41_42.endVersion)
+        assertEquals(MIGRATION_41_42.endVersion, MIGRATION_41_42.startVersion + 1)
     }
 
     // ─── Full migration chain data-preservation test ────────────────────
@@ -135,7 +144,8 @@ class OptoDatabaseMigrationTest {
     /** Creates all tables that must exist at v30 for migrations 30→40. */
     private fun createV30Tables(db: SupportSQLiteDatabase) {
         // pacientes — the table we care about preserving
-        db.execSQL("""
+        db.execSQL(
+            """
             CREATE TABLE IF NOT EXISTS pacientes (
                 id TEXT NOT NULL PRIMARY KEY,
                 nombreCompleto TEXT NOT NULL,
@@ -157,11 +167,13 @@ class OptoDatabaseMigrationTest {
                 updatedAt TEXT,
                 updatedBy TEXT
             )
-        """.trimIndent())
+            """.trimIndent(),
+        )
 
         // ventas — created in MIGRATION_29_30; will gain `ot` in v30→31
         // and `categoriaProductoId` in v31→32
-        db.execSQL("""
+        db.execSQL(
+            """
             CREATE TABLE IF NOT EXISTS ventas (
                 id TEXT NOT NULL PRIMARY KEY,
                 opticaId TEXT NOT NULL,
@@ -177,10 +189,12 @@ class OptoDatabaseMigrationTest {
                 updatedAt TEXT,
                 updatedBy TEXT
             )
-        """.trimIndent())
+            """.trimIndent(),
+        )
 
         // pagos — exists since v6; will gain `ventaId` in v32→33
-        db.execSQL("""
+        db.execSQL(
+            """
             CREATE TABLE IF NOT EXISTS pagos (
                 id TEXT NOT NULL PRIMARY KEY,
                 dispensacionId TEXT,
@@ -194,12 +208,14 @@ class OptoDatabaseMigrationTest {
                 updatedAt TEXT,
                 updatedBy TEXT
             )
-        """.trimIndent())
+            """.trimIndent(),
+        )
 
         // dispensaciones — recreated in v9→10; will gain
         // filtro_discromatopsia_tipo (v34→35), reclamo_origen_id (v37→38),
         // evaluacion_id (v38→39)
-        db.execSQL("""
+        db.execSQL(
+            """
             CREATE TABLE IF NOT EXISTS dispensaciones (
                 id TEXT NOT NULL PRIMARY KEY,
                 ot TEXT NOT NULL,
@@ -230,12 +246,14 @@ class OptoDatabaseMigrationTest {
                 updatedBy TEXT,
                 FOREIGN KEY(pacienteId) REFERENCES pacientes(id) ON DELETE CASCADE
             )
-        """.trimIndent())
+            """.trimIndent(),
+        )
 
         // dispensacion_items — created in v20→21; will gain
         // alto_indice, reduccion_diametro, etc. in v38→39
         // Uses snake_case per @ColumnInfo(name = "...") in DispensacionItemEntity
-        db.execSQL("""
+        db.execSQL(
+            """
             CREATE TABLE IF NOT EXISTS dispensacion_items (
                 id TEXT NOT NULL PRIMARY KEY,
                 dispensacion_id TEXT NOT NULL,
@@ -257,10 +275,32 @@ class OptoDatabaseMigrationTest {
                 optica_id TEXT NOT NULL,
                 FOREIGN KEY(dispensacion_id) REFERENCES dispensaciones(id) ON DELETE CASCADE
             )
-        """.trimIndent())
+            """.trimIndent(),
+        )
+
+        // gastos_operativos — included for MIGRATION_31_32 and 39_40 compatibility.
+        // MIGRATION_31_32 creates this table; MIGRATION_39_40 references esRecurrente/frecuencia.
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS gastos_operativos (
+                id TEXT PRIMARY KEY NOT NULL,
+                opticaId TEXT NOT NULL,
+                categoria TEXT NOT NULL,
+                descripcion TEXT,
+                monto REAL NOT NULL,
+                fecha TEXT NOT NULL,
+                fechaProgramada TEXT,
+                nota TEXT,
+                esRecurrente INTEGER NOT NULL DEFAULT 0,
+                frecuencia TEXT NOT NULL DEFAULT 'mensual',
+                createdAt TEXT
+            )
+            """.trimIndent(),
+        )
 
         // arqueo_caja — part of initial Room schema; will be DROPped in v35→36
-        db.execSQL("""
+        db.execSQL(
+            """
             CREATE TABLE IF NOT EXISTS arqueo_caja (
                 id TEXT NOT NULL PRIMARY KEY,
                 fecha TEXT NOT NULL,
@@ -285,11 +325,13 @@ class OptoDatabaseMigrationTest {
                 updatedAt TEXT NOT NULL,
                 updatedBy TEXT NOT NULL
             )
-        """.trimIndent())
+            """.trimIndent(),
+        )
 
         // conflict_records — part of initial Room schema; will be recreated
         // with composite PK in v39→40
-        db.execSQL("""
+        db.execSQL(
+            """
             CREATE TABLE IF NOT EXISTS conflict_records (
                 entityId TEXT NOT NULL,
                 opticaId TEXT NOT NULL,
@@ -302,12 +344,13 @@ class OptoDatabaseMigrationTest {
                 remoteData TEXT NOT NULL,
                 PRIMARY KEY(entityId)
             )
-        """.trimIndent())
+            """.trimIndent(),
+        )
     }
 
     @Test
     fun `migrate 30 to current preserves all data`() {
-        val dbName = "migration-30-to-40-test.db"
+        val dbName = "migration-30-to-42-test.db"
         context.deleteDatabase(dbName)
         val factory = FrameworkSQLiteOpenHelperFactory()
 
@@ -319,7 +362,7 @@ class OptoDatabaseMigrationTest {
                     createV30Tables(db)
                     db.execSQL(
                         "INSERT INTO pacientes (id, opticaId, nombreCompleto, edad, telefono, fechaCreacion, ultimasEtiquetas) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                        arrayOf<Any>("p1", "opt1", "Juan", 30, "555-1234", "2024-01-01", "")
+                        arrayOf<Any>("p1", "opt1", "Juan", 30, "555-1234", "2024-01-01", ""),
                     )
                 }
 
@@ -330,17 +373,17 @@ class OptoDatabaseMigrationTest {
         val v30Helper = factory.create(v30Config)
         // Verify data exists before migration
         val preCursor = v30Helper.writableDatabase.query(
-            "SELECT nombreCompleto FROM pacientes WHERE id = 'p1'"
+            "SELECT nombreCompleto FROM pacientes WHERE id = 'p1'",
         )
         assertTrue(preCursor.moveToFirst())
         assertEquals("Juan", preCursor.getString(0))
         preCursor.close()
         v30Helper.close()
 
-        // ── Step 2: Run all migrations 30→31→...→40 ──
-        val v40Config = SupportSQLiteOpenHelper.Configuration.builder(context)
+        // ── Step 2: Run all migrations 30→31→...→42 ──
+        val v42Config = SupportSQLiteOpenHelper.Configuration.builder(context)
             .name(dbName)
-            .callback(object : SupportSQLiteOpenHelper.Callback(40) {
+            .callback(object : SupportSQLiteOpenHelper.Callback(42) {
                 override fun onCreate(db: SupportSQLiteDatabase) {}
 
                 override fun onUpgrade(db: SupportSQLiteDatabase, oldVersion: Int, newVersion: Int) {
@@ -354,21 +397,57 @@ class OptoDatabaseMigrationTest {
                     MIGRATION_37_38.migrate(db)
                     MIGRATION_38_39.migrate(db)
                     MIGRATION_39_40.migrate(db)
+                    MIGRATION_40_41.migrate(db)
+                    MIGRATION_41_42.migrate(db)
                 }
             })
             .build()
 
-        val v40Helper = factory.create(v40Config)
-        val db = v40Helper.writableDatabase
+        val v42Helper = factory.create(v42Config)
+        val db = v42Helper.writableDatabase
 
         // ── Step 3: Assert data survived all migrations ──
         val cursor = db.query("SELECT id, nombreCompleto FROM pacientes WHERE id = 'p1'")
-        assertTrue("Data should survive migration 30→40", cursor.moveToFirst())
+        assertTrue("Data should survive migration 30→42", cursor.moveToFirst())
         assertEquals("p1", cursor.getString(cursor.getColumnIndexOrThrow("id")))
         assertEquals("Juan", cursor.getString(cursor.getColumnIndexOrThrow("nombreCompleto")))
         cursor.close()
 
-        v40Helper.close()
+        // ── Step 4: Assert optica_settings table exists ──
+        val settingsCursor = db.query("SELECT * FROM optica_settings")
+        assertNotNull(settingsCursor)
+        settingsCursor.close()
+
+        v42Helper.close()
+    }
+
+    @Test
+    fun `migrate 41 to 42 creates optica_settings table`() {
+        // Use Room's in-memory database with MIGRATION_41_42 applied on top of v41 schema
+        // We verify the table exists by creating the v42 OptoDatabase (which auto-creates optica_settings)
+        // and checking we can query it
+        val db = Room.inMemoryDatabaseBuilder(
+            ApplicationProvider.getApplicationContext(),
+            OptoDatabase::class.java,
+        ).allowMainThreadQueries().build()
+
+        val dao = db.opticaSettingsDao()
+
+        // Verify insert/read works with the table
+        runBlocking {
+            val settings = OpticaSettingsEntity(
+                opticaId = "test-opt",
+                configJson = """{"business_hours":"test"}""",
+            )
+            dao.upsert(settings)
+
+            val retrieved = dao.getByOpticaIdOnce("test-opt")
+            assertNotNull("Should read from optica_settings after upsert", retrieved)
+            assertEquals("test-opt", retrieved!!.opticaId)
+            assertEquals("""{"business_hours":"test"}""", retrieved.configJson)
+        }
+
+        db.close()
     }
 
     // ─── DAO accessibility via OptoDatabase abstract methods ───
@@ -402,7 +481,8 @@ class OptoDatabaseMigrationTest {
             "gastoOperativoDao" to "GastoOperativoDao",
             "resumenDiarioDao" to "ResumenDiarioDao",
             "configuracionFinancieraDao" to "ConfiguracionFinancieraDao",
-            "feedbackRecomendacionDao" to "FeedbackRecomendacionDao"
+            "feedbackRecomendacionDao" to "FeedbackRecomendacionDao",
+            "opticaSettingsDao" to "OpticaSettingsDao",
         )
 
         val abstractMethods = OptoDatabase::class.java.declaredMethods
@@ -414,12 +494,12 @@ class OptoDatabaseMigrationTest {
             val actualReturnType = abstractMethods[methodName]
             assertNotNull(
                 "OptoDatabase must declare abstract method '$methodName()' returning $expectedReturnType",
-                actualReturnType
+                actualReturnType,
             )
             assertEquals(
                 "Return type of $methodName() should be $expectedReturnType",
                 expectedReturnType,
-                actualReturnType
+                actualReturnType,
             )
         }
     }

@@ -4,17 +4,15 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.optoapp.data.MembershipRepository
-import java.io.IOException
-import kotlinx.coroutines.CancellationException
 import com.example.optoapp.data.OpticaFiscalSettings
 import com.example.optoapp.data.OpticaFiscalSettingsStore
 import com.example.optoapp.data.SessionManager
 import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
@@ -22,6 +20,8 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.io.IOException
+import javax.inject.Inject
 
 data class FiscalConfigUi(
     val opticaId: String = "",
@@ -32,7 +32,7 @@ data class FiscalConfigUi(
     val direccionFiscal: String = "",
     val loading: Boolean = false,
     val message: String? = null,
-    val error: String? = null
+    val error: String? = null,
 )
 
 data class FiscalDraft(
@@ -40,26 +40,24 @@ data class FiscalDraft(
     val docTipo: String = "RUC",
     val docNumero: String = "",
     val razonSocial: String = "",
-    val direccionFiscal: String = ""
+    val direccionFiscal: String = "",
 ) {
-    fun toSettings(): OpticaFiscalSettings =
-        OpticaFiscalSettings(
-            nombreComercial = nombreComercial,
-            docTipo = docTipo,
-            docNumero = docNumero,
-            razonSocial = razonSocial,
-            direccionFiscal = direccionFiscal
-        )
+    fun toSettings(): OpticaFiscalSettings = OpticaFiscalSettings(
+        nombreComercial = nombreComercial,
+        docTipo = docTipo,
+        docNumero = docNumero,
+        razonSocial = razonSocial,
+        direccionFiscal = direccionFiscal,
+    )
 
     companion object {
-        fun fromSettings(settings: OpticaFiscalSettings): FiscalDraft =
-            FiscalDraft(
-                nombreComercial = settings.nombreComercial,
-                docTipo = settings.docTipo.ifBlank { "RUC" },
-                docNumero = settings.docNumero,
-                razonSocial = settings.razonSocial,
-                direccionFiscal = settings.direccionFiscal
-            )
+        fun fromSettings(settings: OpticaFiscalSettings): FiscalDraft = FiscalDraft(
+            nombreComercial = settings.nombreComercial,
+            docTipo = settings.docTipo.ifBlank { "RUC" },
+            docNumero = settings.docNumero,
+            razonSocial = settings.razonSocial,
+            direccionFiscal = settings.direccionFiscal,
+        )
     }
 }
 
@@ -68,7 +66,7 @@ data class FiscalDraft(
 class FiscalConfigViewModel @Inject constructor(
     private val sessionManager: SessionManager,
     private val membershipRepository: MembershipRepository,
-    private val store: OpticaFiscalSettingsStore
+    private val store: OpticaFiscalSettingsStore,
 ) : ViewModel() {
 
     companion object {
@@ -112,7 +110,7 @@ class FiscalConfigViewModel @Inject constructor(
                 direccionFiscal = draft.direccionFiscal,
                 loading = status.loading,
                 message = status.message,
-                error = status.error
+                error = status.error,
             )
         }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), FiscalConfigUi())
@@ -122,14 +120,14 @@ class FiscalConfigViewModel @Inject constructor(
         docTipo: String? = null,
         docNumero: String? = null,
         razonSocial: String? = null,
-        direccionFiscal: String? = null
+        direccionFiscal: String? = null,
     ) {
         _draft.value = _draft.value.copy(
             nombreComercial = nombreComercial ?: _draft.value.nombreComercial,
             docTipo = docTipo ?: _draft.value.docTipo,
             docNumero = docNumero ?: _draft.value.docNumero,
             razonSocial = razonSocial ?: _draft.value.razonSocial,
-            direccionFiscal = direccionFiscal ?: _draft.value.direccionFiscal
+            direccionFiscal = direccionFiscal ?: _draft.value.direccionFiscal,
         )
         draftDirty = true
     }
@@ -166,7 +164,7 @@ class FiscalConfigViewModel @Inject constructor(
                 if (nombre.isBlank() || numero.isBlank() || razon.isBlank() || direccion.isBlank()) {
                     _status.value = _status.value.copy(
                         error = "Completa razón comercial, RUC/RUS, razón social y dirección.",
-                        message = null
+                        message = null,
                     )
                     return@launch
                 }
@@ -178,7 +176,7 @@ class FiscalConfigViewModel @Inject constructor(
                     docTipo = tipo,
                     docNumero = numero,
                     razonSocial = razon,
-                    direccionFiscal = direccion
+                    direccionFiscal = direccion,
                 )
                 if (result.isSuccess) {
                     store.save(
@@ -188,8 +186,8 @@ class FiscalConfigViewModel @Inject constructor(
                             docTipo = tipo,
                             docNumero = numero,
                             razonSocial = razon,
-                            direccionFiscal = direccion
-                        )
+                            direccionFiscal = direccion,
+                        ),
                     )
                     draftDirty = false
                     _status.value = _status.value.copy(loading = false, message = "Datos fiscales guardados.", error = null)
@@ -215,14 +213,14 @@ class FiscalConfigViewModel @Inject constructor(
                 _status.value = _status.value.copy(
                     loading = false,
                     message = null,
-                    error = "Error inesperado. Reintente más tarde."
+                    error = "Error inesperado. Reintente más tarde.",
                 )
             } catch (e: Exception) {
                 Log.e(TAG, "save failed", e)
                 _status.value = _status.value.copy(
                     loading = false,
                     message = null,
-                    error = "Error inesperado. Reintente más tarde."
+                    error = "Error inesperado. Reintente más tarde.",
                 )
             }
         }

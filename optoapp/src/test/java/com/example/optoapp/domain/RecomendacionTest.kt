@@ -11,7 +11,7 @@ class RecomendacionTest {
         val datos = DatosAccion(
             pacienteIds = listOf("p1", "p2"),
             productoIds = listOf("prod1"),
-            montoTotal = 150.0
+            montoTotal = 150.0,
         )
         val rec = Recomendacion(
             id = "COBRAR::Hay deudas pendientes",
@@ -21,7 +21,7 @@ class RecomendacionTest {
             impactoEstimado = "S/ 4,200 si se cobra todo",
             prioridad = Prioridad.ALTA,
             accion = "Llamar a los deudores",
-            datosAccion = datos
+            datosAccion = datos,
         )
 
         assertEquals("COBRAR::Hay deudas pendientes", rec.id)
@@ -48,7 +48,7 @@ class RecomendacionTest {
                 impactoEstimado = null,
                 prioridad = Prioridad.MEDIA,
                 accion = null,
-                datosAccion = null
+                datosAccion = null,
             )
             assertEquals(tipo, rec.tipo)
         }
@@ -74,7 +74,7 @@ class RecomendacionTest {
         val datos = DatosAccion(
             pacienteIds = listOf("a", "b"),
             productoIds = listOf("x"),
-            montoTotal = 123.45
+            montoTotal = 123.45,
         )
         assertEquals(listOf("a", "b"), datos.pacienteIds)
         assertEquals(listOf("x"), datos.productoIds)

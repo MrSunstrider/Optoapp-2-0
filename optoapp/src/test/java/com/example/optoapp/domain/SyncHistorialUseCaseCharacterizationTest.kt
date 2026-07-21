@@ -56,16 +56,19 @@ class SyncHistorialUseCaseCharacterizationTest {
         id: String = "ev-1",
         pacienteId: String = "p-1",
         fecha: LocalDate = today,
-        opticaId: String = testOptica
+        opticaId: String = testOptica,
     ): EvaluacionClinica = EvaluacionClinica(
-        id = id, pacienteId = pacienteId, fecha = fecha, opticaId = opticaId
+        id = id,
+        pacienteId = pacienteId,
+        fecha = fecha,
+        opticaId = opticaId,
     )
 
     private fun makePaciente(
         id: String = "p-1",
         historiaOptometrica: String? = "H-001",
         nombreCompleto: String = "Paciente $id",
-        opticaId: String = testOptica
+        opticaId: String = testOptica,
     ): Paciente = Paciente(
         id = id,
         nombreCompleto = nombreCompleto,
@@ -73,14 +76,14 @@ class SyncHistorialUseCaseCharacterizationTest {
         telefono = "555-0100",
         fechaCreacion = LocalDate.of(2024, 1, 1),
         historiaOptometrica = historiaOptometrica,
-        opticaId = opticaId
+        opticaId = opticaId,
     )
 
     private fun makePacienteRemoto(
         id: String = "rp-1",
         historiaOptometrica: String? = "H-001",
         nombreCompleto: String = "Remote $id",
-        opticaId: String = testOptica
+        opticaId: String = testOptica,
     ): PacienteRemoto = PacienteRemoto(
         id = id,
         nombreCompleto = nombreCompleto,
@@ -88,7 +91,7 @@ class SyncHistorialUseCaseCharacterizationTest {
         telefono = "555-0100",
         fechaCreacion = "2024-01-01",
         historiaOptometrica = historiaOptometrica,
-        opticaId = opticaId
+        opticaId = opticaId,
     )
 
     // 4.2.1 — uploadEvaluaciones() con Supabase mocked → success
@@ -104,7 +107,7 @@ class SyncHistorialUseCaseCharacterizationTest {
             evaluaciones = listOf(ev),
             localPacientes = listOf(localPaciente),
             remotePacientes = listOf(remotePaciente),
-            opticaId = testOptica
+            opticaId = testOptica,
         )
 
         assertEquals(1, rows.size)
@@ -124,7 +127,7 @@ class SyncHistorialUseCaseCharacterizationTest {
             evaluaciones = listOf(ev),
             localPacientes = listOf(localPaciente),
             remotePacientes = listOf(remotePaciente),
-            opticaId = testOptica
+            opticaId = testOptica,
         )
 
         assertEquals(1, rows.size)
@@ -143,7 +146,7 @@ class SyncHistorialUseCaseCharacterizationTest {
             evaluaciones = listOf(ev),
             localPacientes = listOf(localPaciente),
             remotePacientes = listOf(remotePaciente),
-            opticaId = testOptica
+            opticaId = testOptica,
         )
 
         assertEquals(0, rows.size)
@@ -159,7 +162,7 @@ class SyncHistorialUseCaseCharacterizationTest {
             evaluaciones = listOf(ev),
             localPacientes = listOf(localPaciente),
             remotePacientes = listOf(remotePaciente),
-            opticaId = testOptica
+            opticaId = testOptica,
         )
 
         assertEquals(0, rows.size)
@@ -177,7 +180,7 @@ class SyncHistorialUseCaseCharacterizationTest {
             evaluaciones = listOf(evMatch, evSkip),
             localPacientes = listOf(localMatch, localSkip),
             remotePacientes = listOf(remotePaciente),
-            opticaId = testOptica
+            opticaId = testOptica,
         )
 
         assertEquals(1, rows.size)
@@ -190,7 +193,7 @@ class SyncHistorialUseCaseCharacterizationTest {
             evaluaciones = emptyList(),
             localPacientes = emptyList(),
             remotePacientes = emptyList(),
-            opticaId = testOptica
+            opticaId = testOptica,
         )
         assertEquals(0, rows.size)
     }
@@ -206,7 +209,7 @@ class SyncHistorialUseCaseCharacterizationTest {
             evaluaciones = listOf(ev1, ev2),
             localPacientes = listOf(localPaciente),
             remotePacientes = listOf(remotePaciente),
-            opticaId = testOptica
+            opticaId = testOptica,
         )
 
         assertEquals(1, rows.size)

@@ -8,8 +8,8 @@ import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.*
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -24,15 +24,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.example.optoapp.ui.components.OptoTopAppBar
 import com.example.optoapp.viewmodel.AuthState
 import com.example.optoapp.viewmodel.AuthViewModel
-import com.example.optoapp.ui.components.OptoTopAppBar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegisterScreen(
     navController: NavController,
-    viewModel: AuthViewModel = hiltViewModel()
+    viewModel: AuthViewModel = hiltViewModel(),
 ) {
     val authState by viewModel.authState.collectAsState()
     val pendingMemberships by viewModel.pendingMemberships.collectAsState()
@@ -76,9 +76,9 @@ fun RegisterScreen(
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
                     }
-                }
+                },
             )
-        }
+        },
     ) { padding ->
         Column(
             modifier = Modifier
@@ -86,83 +86,98 @@ fun RegisterScreen(
                 .padding(padding)
                 .padding(horizontal = 24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Spacer(Modifier.height(16.dp))
 
             Text(
                 text = "Registro con correo",
                 style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
             )
             Text(
                 text = "Crea tu cuenta para comenzar a gestionar tu óptica.",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
             Text(
                 text = "La contraseña debe tener: minúsculas, MAYÚSCULAS, números y símbolos.",
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
             )
 
             Spacer(Modifier.height(8.dp))
 
             OutlinedTextField(
                 value = email,
-                onValueChange = { email = it.trim(); localError = null },
+                onValueChange = {
+                    email = it.trim()
+                    localError = null
+                },
                 label = { Text("Correo electrónico") },
                 leadingIcon = { Icon(Icons.Default.Email, null) },
                 keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
                     keyboardType = KeyboardType.Email,
-                    imeAction = ImeAction.Next
+                    imeAction = ImeAction.Next,
                 ),
                 keyboardActions = androidx.compose.foundation.text.KeyboardActions(
-                    onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                    onNext = { focusManager.moveFocus(FocusDirection.Down) },
                 ),
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(12.dp),
             )
 
             OutlinedTextField(
                 value = password,
-                onValueChange = { password = it; localError = null },
+                onValueChange = {
+                    password = it
+                    localError = null
+                },
                 label = { Text("Contraseña") },
                 leadingIcon = { Icon(Icons.Default.Lock, null) },
                 trailingIcon = {
                     IconButton(onClick = { showPassword = !showPassword }) {
                         Icon(
                             if (showPassword) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                            null
+                            null,
                         )
                     }
                 },
-                visualTransformation = if (showPassword) VisualTransformation.None
-                    else PasswordVisualTransformation(),
+                visualTransformation = if (showPassword) {
+                    VisualTransformation.None
+                } else {
+                    PasswordVisualTransformation()
+                },
                 keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
                     keyboardType = KeyboardType.Password,
-                    imeAction = ImeAction.Next
+                    imeAction = ImeAction.Next,
                 ),
                 keyboardActions = androidx.compose.foundation.text.KeyboardActions(
-                    onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                    onNext = { focusManager.moveFocus(FocusDirection.Down) },
                 ),
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(12.dp),
             )
 
             OutlinedTextField(
                 value = confirmPassword,
-                onValueChange = { confirmPassword = it; localError = null },
+                onValueChange = {
+                    confirmPassword = it
+                    localError = null
+                },
                 label = { Text("Confirmar contraseña") },
                 leadingIcon = { Icon(Icons.Default.Lock, null) },
-                visualTransformation = if (showPassword) VisualTransformation.None
-                    else PasswordVisualTransformation(),
+                visualTransformation = if (showPassword) {
+                    VisualTransformation.None
+                } else {
+                    PasswordVisualTransformation()
+                },
                 keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
                     keyboardType = KeyboardType.Password,
-                    imeAction = ImeAction.Done
+                    imeAction = ImeAction.Done,
                 ),
                 keyboardActions = androidx.compose.foundation.text.KeyboardActions(
                     onDone = {
@@ -182,11 +197,11 @@ fun RegisterScreen(
                         if (localError == null) {
                             viewModel.register(email, password)
                         }
-                    }
+                    },
                 ),
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(12.dp),
             )
 
             val errorMsg = localError ?: (authState as? AuthState.Error)?.message
@@ -194,7 +209,7 @@ fun RegisterScreen(
                 Text(
                     text = errorMsg,
                     color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall
+                    style = MaterialTheme.typography.bodySmall,
                 )
             }
 
@@ -215,16 +230,18 @@ fun RegisterScreen(
                         viewModel.register(email, password)
                     }
                 },
-                enabled = email.isNotBlank() && password.isNotBlank()
-                    && confirmPassword.isNotBlank() && authState !is AuthState.Loading,
+                enabled = email.isNotBlank() &&
+                    password.isNotBlank() &&
+                    confirmPassword.isNotBlank() &&
+                    authState !is AuthState.Loading,
                 modifier = Modifier.fillMaxWidth().height(52.dp),
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(12.dp),
             ) {
                 if (authState is AuthState.Loading) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(22.dp),
                         strokeWidth = 2.5.dp,
-                        color = MaterialTheme.colorScheme.onPrimary
+                        color = MaterialTheme.colorScheme.onPrimary,
                     )
                 } else {
                     Text("CREAR CUENTA", fontSize = 16.sp, fontWeight = FontWeight.Bold)

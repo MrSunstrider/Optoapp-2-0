@@ -24,7 +24,7 @@ import com.example.optoapp.viewmodel.EvaluacionUiState
 fun ExamenVisualSection(
     uiState: EvaluacionUiState,
     onUpdate: (EvaluacionUiState) -> Unit,
-    onShowOsdiDialog: () -> Unit
+    onShowOsdiDialog: () -> Unit,
 ) {
     var showAvSc by remember { mutableStateOf(false) }
     var showAvCc by remember { mutableStateOf(false) }
@@ -36,12 +36,12 @@ fun ExamenVisualSection(
     CollapsibleExamenCard(
         title = "Agudeza Visual SIN corrección",
         expanded = showAvSc,
-        onToggle = { showAvSc = it }
+        onToggle = { showAvSc = it },
     ) {
         OptoTextField(
             value = uiState.avScAo,
             onValueChange = { onUpdate(uiState.copy(avScAo = it)) },
-            label = "Ambos ojos"
+            label = "Ambos ojos",
         )
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OptoTextField(value = uiState.avScOdLejos, onValueChange = { onUpdate(uiState.copy(avScOdLejos = it)) }, label = "OD", modifier = Modifier.weight(1f))
@@ -56,12 +56,12 @@ fun ExamenVisualSection(
     CollapsibleExamenCard(
         title = "Agudeza Visual CON corrección PX",
         expanded = showAvCc,
-        onToggle = { showAvCc = it }
+        onToggle = { showAvCc = it },
     ) {
         OptoTextField(
             value = uiState.avCcAoPx,
             onValueChange = { onUpdate(uiState.copy(avCcAoPx = it)) },
-            label = "Ambos ojos"
+            label = "Ambos ojos",
         )
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OptoTextField(value = uiState.avCcOdLejos, onValueChange = { onUpdate(uiState.copy(avCcOdLejos = it)) }, label = "OD", modifier = Modifier.weight(1f))
@@ -72,7 +72,7 @@ fun ExamenVisualSection(
     CollapsibleExamenCard(
         title = "Visión Binocular y Percepción",
         expanded = showVisionBinocular,
-        onToggle = { showVisionBinocular = it }
+        onToggle = { showVisionBinocular = it },
     ) {
         DropdownField(label = "Estereopsis", selected = uiState.estereopsisValor, options = estereopsisOptions, onSelected = { onUpdate(uiState.copy(estereopsisValor = it)) })
         OptoTextField(value = uiState.estereopsisSegundos, onValueChange = { onUpdate(uiState.copy(estereopsisSegundos = it)) }, label = "Segundos de arco (opcional)")
@@ -83,7 +83,7 @@ fun ExamenVisualSection(
     CollapsibleExamenCard(
         title = "Percepción del Color",
         expanded = showColor,
-        onToggle = { showColor = it }
+        onToggle = { showColor = it },
     ) {
         OptoTextField(value = uiState.ishihara, onValueChange = { onUpdate(uiState.copy(ishihara = it)) }, label = "Test de Ishihara")
         DropdownField(label = "Test de Farnsworth", selected = uiState.farnsworth, options = farnsworthOptions, onSelected = { onUpdate(uiState.copy(farnsworth = it)) })
@@ -92,7 +92,7 @@ fun ExamenVisualSection(
     CollapsibleExamenCard(
         title = "Salud de la Superficie Ocular y Función Visual",
         expanded = showSaludOcular,
-        onToggle = { showSaludOcular = it }
+        onToggle = { showSaludOcular = it },
     ) {
         Text("Test de Schirmer (mm)", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -117,7 +117,7 @@ fun ExamenVisualSection(
     CollapsibleExamenCard(
         title = "Otras Pruebas y Exámenes Previos",
         expanded = showOtrasPruebas,
-        onToggle = { showOtrasPruebas = it }
+        onToggle = { showOtrasPruebas = it },
     ) {
         OptoTextField(value = uiState.amsler, onValueChange = { onUpdate(uiState.copy(amsler = it)) }, label = "Test de Amsler")
         DropdownField(label = "Campo visual por confrontación", selected = uiState.campoVisual, options = campoVisualOptions, onSelected = { onUpdate(uiState.copy(campoVisual = it)) })
@@ -168,11 +168,11 @@ private fun CollapsibleExamenCard(
     title: String,
     expanded: Boolean,
     onToggle: (Boolean) -> Unit,
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
     val chevronRotation by animateFloatAsState(
         targetValue = if (expanded) 180f else 0f,
-        label = "chevron"
+        label = "chevron",
     )
 
     OutlinedCard(
@@ -180,8 +180,8 @@ private fun CollapsibleExamenCard(
             .fillMaxWidth()
             .padding(bottom = 8.dp),
         colors = CardDefaults.outlinedCardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-        )
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+        ),
     ) {
         Column {
             Row(
@@ -191,30 +191,30 @@ private fun CollapsibleExamenCard(
                     .clickable { onToggle(!expanded) }
                     .padding(horizontal = 16.dp, vertical = 12.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
                     text = title,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
                 )
                 Icon(
                     imageVector = Icons.Default.ExpandMore,
                     contentDescription = if (expanded) "Colapsar" else "Expandir",
                     modifier = Modifier.rotate(chevronRotation),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
 
             AnimatedVisibility(
                 visible = expanded,
                 enter = expandVertically(),
-                exit = shrinkVertically()
+                exit = shrinkVertically(),
             ) {
                 Column(
                     modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     content()
                 }

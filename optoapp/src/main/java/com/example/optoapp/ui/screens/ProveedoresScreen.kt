@@ -26,7 +26,7 @@ import com.example.optoapp.viewmodel.ProveedoresViewModel
 fun ProveedoresScreen(
     navController: NavController,
     viewModel: ProveedoresViewModel = hiltViewModel(),
-    authViewModel: AuthViewModel = hiltViewModel()
+    authViewModel: AuthViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val proveedores by viewModel.proveedores.collectAsState()
@@ -34,8 +34,9 @@ fun ProveedoresScreen(
     val canEdit = AppRoles.canEditInventory(opticaRol)
 
     val filtrados = proveedores.filter {
-        if (uiState.query.isBlank()) true
-        else {
+        if (uiState.query.isBlank()) {
+            true
+        } else {
             it.nombre.contains(uiState.query, ignoreCase = true) ||
                 it.ruc.contains(uiState.query, ignoreCase = true) ||
                 it.telefono.contains(uiState.query, ignoreCase = true)
@@ -51,32 +52,32 @@ fun ProveedoresScreen(
                     OptoTextField(
                         value = uiState.form.nombre,
                         onValueChange = { v -> viewModel.updateForm { it.copy(nombre = v) } },
-                        label = "Nombre *"
+                        label = "Nombre *",
                     )
                     OptoTextField(
                         value = uiState.form.ruc,
                         onValueChange = { v -> viewModel.updateForm { it.copy(ruc = v) } },
-                        label = "RUC *"
+                        label = "RUC *",
                     )
                     OptoTextField(
                         value = uiState.form.telefono,
                         onValueChange = { v -> viewModel.updateForm { it.copy(telefono = v) } },
-                        label = "Teléfono"
+                        label = "Teléfono",
                     )
                     OptoTextField(
                         value = uiState.form.email,
                         onValueChange = { v -> viewModel.updateForm { it.copy(email = v) } },
-                        label = "Email"
+                        label = "Email",
                     )
                     OptoTextField(
                         value = uiState.form.direccion,
                         onValueChange = { v -> viewModel.updateForm { it.copy(direccion = v) } },
-                        label = "Dirección"
+                        label = "Dirección",
                     )
                     OptoTextField(
                         value = uiState.form.contacto,
                         onValueChange = { v -> viewModel.updateForm { it.copy(contacto = v) } },
-                        label = "Persona de contacto"
+                        label = "Persona de contacto",
                     )
                     if (uiState.error != null) {
                         Text(uiState.error ?: "", color = MaterialTheme.colorScheme.error)
@@ -84,7 +85,7 @@ fun ProveedoresScreen(
                 }
             },
             confirmButton = { TextButton(onClick = { viewModel.save() }) { Text("Guardar") } },
-            dismissButton = { TextButton(onClick = { viewModel.cancelEdit() }) { Text("Cancelar") } }
+            dismissButton = { TextButton(onClick = { viewModel.cancelEdit() }) { Text("Cancelar") } },
         )
     }
 
@@ -104,21 +105,21 @@ fun ProveedoresScreen(
                             Icon(Icons.Default.Add, contentDescription = "Nuevo proveedor")
                         }
                     }
-                }
+                },
             )
-        }
+        },
     ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
                 .padding(horizontal = 14.dp, vertical = 4.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             OptoTextField(
                 value = uiState.query,
                 onValueChange = viewModel::onQueryChange,
-                label = "Buscar por nombre, RUC o teléfono"
+                label = "Buscar por nombre, RUC o teléfono",
             )
 
             if (!uiState.error.isNullOrBlank()) {
@@ -131,12 +132,12 @@ fun ProveedoresScreen(
             if (filtrados.isEmpty()) {
                 Box(
                     modifier = Modifier.fillMaxSize().padding(32.dp),
-                    contentAlignment = Alignment.Center
+                    contentAlignment = Alignment.Center,
                 ) {
                     Text(
                         "No hay proveedores registrados",
                         style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             } else {
@@ -146,7 +147,7 @@ fun ProveedoresScreen(
                             proveedor = proveedor,
                             canEdit = canEdit,
                             onEdit = { viewModel.startEdit(it) },
-                            onDelete = { viewModel.delete(it) }
+                            onDelete = { viewModel.delete(it) },
                         )
                     }
                 }
@@ -160,31 +161,32 @@ private fun ProveedorCard(
     proveedor: Proveedor,
     canEdit: Boolean,
     onEdit: (Proveedor) -> Unit,
-    onDelete: (Proveedor) -> Unit
+    onDelete: (Proveedor) -> Unit,
 ) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
                     text = proveedor.nombre,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
                 )
                 Surface(
                     shape = MaterialTheme.shapes.small,
-                    color = if (proveedor.activo)
+                    color = if (proveedor.activo) {
                         MaterialTheme.colorScheme.primaryContainer
-                    else
+                    } else {
                         MaterialTheme.colorScheme.errorContainer
+                    },
                 ) {
                     Text(
                         text = if (proveedor.activo) "Activo" else "Inactivo",
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
-                        style = MaterialTheme.typography.labelSmall
+                        style = MaterialTheme.typography.labelSmall,
                     )
                 }
             }
@@ -201,8 +203,8 @@ private fun ProveedorCard(
                     TextButton(
                         onClick = { onDelete(proveedor) },
                         colors = ButtonDefaults.textButtonColors(
-                            contentColor = MaterialTheme.colorScheme.error
-                        )
+                            contentColor = MaterialTheme.colorScheme.error,
+                        ),
                     ) { Text("Desactivar") }
                 }
             }

@@ -4,11 +4,11 @@ import com.example.optoapp.data.ConflictDao
 import com.example.optoapp.data.MonturaMovimiento
 import com.example.optoapp.data.SyncStateTracker
 import io.github.jan.supabase.SupabaseClient
+import io.mockk.Runs
 import io.mockk.coEvery
 import io.mockk.coVerify
-import io.mockk.mockk
 import io.mockk.just
-import io.mockk.Runs
+import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -39,12 +39,12 @@ class ConflictHelperMovimientoPersistenceTest {
     private fun crearMovimiento(
         id: String,
         stockNuevo: Int = 5,
-        tipo: String = "ENTRADA"
+        tipo: String = "ENTRADA",
     ) = MonturaMovimiento(
         id = id, monturaId = monturaId, tipo = tipo,
         cantidad = 1, stockPrevio = stockNuevo - 1, stockNuevo = stockNuevo,
         referenciaId = refId, nota = "", opticaId = opticaId,
-        fecha = LocalDate.now()
+        fecha = LocalDate.now(),
     )
 
     // ─── TDD RED: filterConflictMovimientos calls upsertConflict ──────────
@@ -63,7 +63,10 @@ class ConflictHelperMovimientoPersistenceTest {
         val localData = listOf(crearMovimiento(movIdConflict, stockNuevo = 5))
 
         val helper = TestableMovimientoConflictHelper(
-            mockSupabase, mockTracker, mockConflictDao, remoteData
+            mockSupabase,
+            mockTracker,
+            mockConflictDao,
+            remoteData,
         )
 
         helper.filterConflictMovimientos(opticaId, localData)
@@ -75,7 +78,7 @@ class ConflictHelperMovimientoPersistenceTest {
                 entityType = "montura_movimiento",
                 localSnapshot = "",
                 remoteSnapshot = "",
-                detectedAt = any()
+                detectedAt = any(),
             )
         }
     }
@@ -94,7 +97,10 @@ class ConflictHelperMovimientoPersistenceTest {
         val localData = listOf(crearMovimiento(movIdSafe, stockNuevo = 5))
 
         val helper = TestableMovimientoConflictHelper(
-            mockSupabase, mockTracker, mockConflictDao, remoteData
+            mockSupabase,
+            mockTracker,
+            mockConflictDao,
+            remoteData,
         )
 
         helper.filterConflictMovimientos(opticaId, localData)
@@ -113,10 +119,8 @@ internal open class TestableMovimientoConflictHelper(
     supabase: SupabaseClient,
     syncStateTracker: SyncStateTracker,
     conflictDao: ConflictDao,
-    private val cannedRemoteMovimientos: List<MonturaMovimiento>
+    private val cannedRemoteMovimientos: List<MonturaMovimiento>,
 ) : ConflictHelper(supabase, syncStateTracker, conflictDao) {
 
-    override suspend fun fetchRemoteMovimientos(opticaId: String): List<MonturaMovimiento> {
-        return cannedRemoteMovimientos
-    }
+    override suspend fun fetchRemoteMovimientos(opticaId: String): List<MonturaMovimiento> = cannedRemoteMovimientos
 }

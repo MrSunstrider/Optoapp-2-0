@@ -21,7 +21,7 @@ fun OptoTextField(
     trailingIcon: @Composable (() -> Unit)? = null,
     leadingIcon: @Composable (() -> Unit)? = null,
     maxLength: Int? = null,
-    showCharCount: Boolean = false
+    showCharCount: Boolean = false,
 ) {
     OutlinedTextField(
         value = value,
@@ -51,6 +51,6 @@ fun OptoTextField(
         },
         enabled = enabled,
         leadingIcon = leadingIcon,
-        trailingIcon = trailingIcon
+        trailingIcon = trailingIcon,
     )
 }

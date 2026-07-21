@@ -13,7 +13,6 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
-import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -33,7 +32,7 @@ class ProveedorRepositoryTest {
     fun setUp() {
         db = Room.inMemoryDatabaseBuilder(
             ApplicationProvider.getApplicationContext(),
-            OptoDatabase::class.java
+            OptoDatabase::class.java,
         ).allowMainThreadQueries().build()
         proveedorDao = db.proveedorDao()
         monturaProveedorDao = db.monturaProveedorDao()
@@ -116,8 +115,11 @@ class ProveedorRepositoryTest {
         db.monturaDao().insertMontura(Montura(id = "m1", marca = "Test", modelo = "Test", opticaId = "o1"))
         repository.insert(Proveedor(id = "p1", nombre = "Supplier", ruc = "111", opticaId = "o1"))
         val link = MonturaProveedor(
-            id = "link-1", monturaId = "m1", proveedorId = "p1",
-            costoProveedor = 120.0, precioSugerido = 250.0
+            id = "link-1",
+            monturaId = "m1",
+            proveedorId = "p1",
+            costoProveedor = 120.0,
+            precioSugerido = 250.0,
         )
         repository.linkMonturaProveedor(link)
 
@@ -132,8 +134,11 @@ class ProveedorRepositoryTest {
         db.monturaDao().insertMontura(Montura(id = "m1", marca = "Test", modelo = "Test", opticaId = "o1"))
         repository.insert(Proveedor(id = "p1", nombre = "Supplier", ruc = "111", opticaId = "o1"))
         val link = MonturaProveedor(
-            id = "link-1", monturaId = "m1", proveedorId = "p1",
-            costoProveedor = 120.0, precioSugerido = 250.0
+            id = "link-1",
+            monturaId = "m1",
+            proveedorId = "p1",
+            costoProveedor = 120.0,
+            precioSugerido = 250.0,
         )
         repository.linkMonturaProveedor(link)
         repository.unlinkMonturaProveedor("link-1")
@@ -148,10 +153,10 @@ class ProveedorRepositoryTest {
         repository.insert(Proveedor(id = "p1", nombre = "Supplier 1", ruc = "111", opticaId = "o1"))
         repository.insert(Proveedor(id = "p2", nombre = "Supplier 2", ruc = "222", opticaId = "o1"))
         repository.linkMonturaProveedor(
-            MonturaProveedor(id = "l1", monturaId = "m1", proveedorId = "p1", costoProveedor = 150.0)
+            MonturaProveedor(id = "l1", monturaId = "m1", proveedorId = "p1", costoProveedor = 150.0),
         )
         repository.linkMonturaProveedor(
-            MonturaProveedor(id = "l2", monturaId = "m1", proveedorId = "p2", costoProveedor = 100.0)
+            MonturaProveedor(id = "l2", monturaId = "m1", proveedorId = "p2", costoProveedor = 100.0),
         )
 
         val links = repository.getProveedoresByMontura("m1").first()

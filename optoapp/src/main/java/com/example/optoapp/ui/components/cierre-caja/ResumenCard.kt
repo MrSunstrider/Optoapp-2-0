@@ -15,7 +15,7 @@ import java.util.Locale
 fun ResumenCard(label: String, monto: Double, modifier: Modifier = Modifier, color: Color) {
     Card(
         modifier = modifier,
-        colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.1f))
+        colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.1f)),
     ) {
         Column(modifier = Modifier.padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Text(label, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = color)
@@ -23,7 +23,7 @@ fun ResumenCard(label: String, monto: Double, modifier: Modifier = Modifier, col
                 "s/. ${String.format(Locale.getDefault(), "%,.2f", monto)}",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.ExtraBold,
-                color = color
+                color = color,
             )
         }
     }

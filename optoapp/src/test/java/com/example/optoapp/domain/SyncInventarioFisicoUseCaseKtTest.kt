@@ -3,8 +3,6 @@ package com.example.optoapp.domain
 import com.example.optoapp.data.InventarioFisico
 import com.example.optoapp.data.InventarioFisicoDetalle
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.LocalDate
 
@@ -17,9 +15,12 @@ class SyncInventarioFisicoUseCaseKtTest {
     @Test
     fun inventarioFisicoEntity_allFieldsAreAccessible() {
         val session = InventarioFisico(
-            id = "if1", fecha = LocalDate.of(2026, 6, 17),
-            estado = "EN_PROGRESO", opticaId = "o1", userId = "u1",
-            notas = "Conteo trimestral"
+            id = "if1",
+            fecha = LocalDate.of(2026, 6, 17),
+            estado = "EN_PROGRESO",
+            opticaId = "o1",
+            userId = "u1",
+            notas = "Conteo trimestral",
         )
         assertEquals("if1", session.id)
         assertEquals(LocalDate.of(2026, 6, 17), session.fecha)
@@ -32,7 +33,10 @@ class SyncInventarioFisicoUseCaseKtTest {
     @Test
     fun inventarioFisicoEntity_defaultValues() {
         val session = InventarioFisico(
-            id = "if1", fecha = LocalDate.now(), opticaId = "o1", userId = "u1"
+            id = "if1",
+            fecha = LocalDate.now(),
+            opticaId = "o1",
+            userId = "u1",
         )
         assertEquals("EN_PROGRESO", session.estado)
         assertEquals("", session.notas)
@@ -41,8 +45,12 @@ class SyncInventarioFisicoUseCaseKtTest {
     @Test
     fun inventarioFisicoDetalleEntity_allFieldsAreAccessible() {
         val detalle = InventarioFisicoDetalle(
-            id = "d1", inventarioId = "if1", monturaId = "m1",
-            stockSistema = 10, stockContado = 8, diferencia = -2
+            id = "d1",
+            inventarioId = "if1",
+            monturaId = "m1",
+            stockSistema = 10,
+            stockContado = 8,
+            diferencia = -2,
         )
         assertEquals("d1", detalle.id)
         assertEquals("if1", detalle.inventarioId)
@@ -55,7 +63,10 @@ class SyncInventarioFisicoUseCaseKtTest {
     @Test
     fun inventarioFisicoDetalleEntity_nullableFields() {
         val detalle = InventarioFisicoDetalle(
-            id = "d1", inventarioId = "if1", monturaId = "m1", stockSistema = 5
+            id = "d1",
+            inventarioId = "if1",
+            monturaId = "m1",
+            stockSistema = 5,
         )
         assertEquals(5, detalle.stockSistema)
         assertEquals(null, detalle.stockContado)
@@ -68,7 +79,7 @@ class SyncInventarioFisicoUseCaseKtTest {
             uploadedSessions = 2,
             uploadedDetalles = 50,
             downloadedSessions = 1,
-            downloadedDetalles = 30
+            downloadedDetalles = 30,
         )
         assertEquals(2, result.uploadedSessions)
         assertEquals(50, result.uploadedDetalles)
@@ -91,7 +102,7 @@ class SyncInventarioFisicoUseCaseKtTest {
             uploadedSessions = 1,
             uploadedDetalles = 10,
             downloadedSessions = 0,
-            downloadedDetalles = 0
+            downloadedDetalles = 0,
         )
         assertEquals(1, result.uploadedSessions)
         assertEquals(10, result.uploadedDetalles)
@@ -103,8 +114,12 @@ class SyncInventarioFisicoUseCaseKtTest {
     @Test
     fun toRemoto_detalle_passesRealOpticaId() {
         val detalle = InventarioFisicoDetalle(
-            id = "d1", inventarioId = "if1", monturaId = "m1",
-            stockSistema = 10, stockContado = 8, diferencia = -2
+            id = "d1",
+            inventarioId = "if1",
+            monturaId = "m1",
+            stockSistema = 10,
+            stockContado = 8,
+            diferencia = -2,
         )
         val remoto = detalle.toRemoto("optica-real-123")
         assertEquals("optica-real-123", remoto.opticaId)
@@ -113,7 +128,10 @@ class SyncInventarioFisicoUseCaseKtTest {
     @Test
     fun toRemoto_detalle_withDifferentOpticaIds_areDistinct() {
         val detalle = InventarioFisicoDetalle(
-            id = "d2", inventarioId = "if1", monturaId = "m2", stockSistema = 5
+            id = "d2",
+            inventarioId = "if1",
+            monturaId = "m2",
+            stockSistema = 5,
         )
         val r1 = detalle.toRemoto("optica-a")
         val r2 = detalle.toRemoto("optica-b")
@@ -125,8 +143,12 @@ class SyncInventarioFisicoUseCaseKtTest {
     @Test
     fun toRemoto_detalle_allDataPreserved() {
         val detalle = InventarioFisicoDetalle(
-            id = "d3", inventarioId = "if3", monturaId = "m3",
-            stockSistema = 15, stockContado = 12, diferencia = -3
+            id = "d3",
+            inventarioId = "if3",
+            monturaId = "m3",
+            stockSistema = 15,
+            stockContado = 12,
+            diferencia = -3,
         )
         val remoto = detalle.toRemoto("o3")
         assertEquals("d3", remoto.id)

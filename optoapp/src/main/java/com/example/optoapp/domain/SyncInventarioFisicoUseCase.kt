@@ -1,6 +1,5 @@
 package com.example.optoapp.domain
 
-import com.example.optoapp.util.AppLogger
 import com.example.optoapp.data.InventarioFisico
 import com.example.optoapp.data.InventarioFisicoDetalle
 import com.example.optoapp.data.InventarioFisicoRepository
@@ -8,6 +7,7 @@ import com.example.optoapp.data.Resource
 import com.example.optoapp.data.SyncStateTracker
 import com.example.optoapp.domain.sync.ConflictHelper
 import com.example.optoapp.domain.sync.LocalEntity
+import com.example.optoapp.util.AppLogger
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.CancellationException
@@ -21,7 +21,7 @@ open class SyncInventarioFisicoUseCase @Inject constructor(
     private val repository: InventarioFisicoRepository,
     private val supabase: SupabaseClient,
     private val syncStateTracker: SyncStateTracker,
-    private val conflictHelper: ConflictHelper
+    private val conflictHelper: ConflictHelper,
 ) {
     companion object {
         private const val TAG = "SyncInventarioFisico"
@@ -33,40 +33,38 @@ open class SyncInventarioFisicoUseCase @Inject constructor(
     suspend operator fun invoke(
         opticaId: String,
         downloadAfterUpload: Boolean = true,
-        skipUpload: Boolean = false
-    ): Resource<InventarioFisicoSyncResult> {
-        return try {
-            AppLogger.d(TAG, "InventarioFisico: inicio (opticaId=$opticaId, download=$downloadAfterUpload, skipUpload=$skipUpload)")
-            val sessUp = if (skipUpload) 0 else uploadSessions(opticaId)
-            val detUp = if (skipUpload) 0 else uploadDetalles(opticaId)
-            val sessDown: Int
-            val detDown: Int
-            if (downloadAfterUpload) {
-                sessDown = downloadSessions(opticaId)
-                detDown = downloadDetalles(opticaId)
-                AppLogger.d(TAG, "InventarioFisico: fin OK (sessions=$sessDown detalles=$detDown)")
-            } else {
-                sessDown = 0
-                detDown = 0
-                AppLogger.d(TAG, "InventarioFisico: fin upload-only OK")
-            }
-            Resource.Success(
-                InventarioFisicoSyncResult(
-                    uploadedSessions = sessUp,
-                    uploadedDetalles = detUp,
-                    downloadedSessions = sessDown,
-                    downloadedDetalles = detDown
-                )
-            )
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: IOException) {
-            AppLogger.e(TAG, "Error en red sincronizando inventario fisico: ${e.message}", e)
-            Resource.Error("Error sincronizando inventario fisico: ${e.localizedMessage}")
-        } catch (e: Exception) {
-            AppLogger.e(TAG, "Error inesperado sincronizando inventario fisico: ${e.message}", e)
-            Resource.Error("Error sincronizando inventario fisico: ${e.localizedMessage}")
+        skipUpload: Boolean = false,
+    ): Resource<InventarioFisicoSyncResult> = try {
+        AppLogger.d(TAG, "InventarioFisico: inicio (opticaId=$opticaId, download=$downloadAfterUpload, skipUpload=$skipUpload)")
+        val sessUp = if (skipUpload) 0 else uploadSessions(opticaId)
+        val detUp = if (skipUpload) 0 else uploadDetalles(opticaId)
+        val sessDown: Int
+        val detDown: Int
+        if (downloadAfterUpload) {
+            sessDown = downloadSessions(opticaId)
+            detDown = downloadDetalles(opticaId)
+            AppLogger.d(TAG, "InventarioFisico: fin OK (sessions=$sessDown detalles=$detDown)")
+        } else {
+            sessDown = 0
+            detDown = 0
+            AppLogger.d(TAG, "InventarioFisico: fin upload-only OK")
         }
+        Resource.Success(
+            InventarioFisicoSyncResult(
+                uploadedSessions = sessUp,
+                uploadedDetalles = detUp,
+                downloadedSessions = sessDown,
+                downloadedDetalles = detDown,
+            ),
+        )
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: IOException) {
+        AppLogger.e(TAG, "Error en red sincronizando inventario fisico: ${e.message}", e)
+        Resource.Error("Error sincronizando inventario fisico: ${e.localizedMessage}")
+    } catch (e: Exception) {
+        AppLogger.e(TAG, "Error inesperado sincronizando inventario fisico: ${e.message}", e)
+        Resource.Error("Error sincronizando inventario fisico: ${e.localizedMessage}")
     }
 
     private suspend fun uploadSessions(opticaId: String): Int {
@@ -79,7 +77,7 @@ open class SyncInventarioFisicoUseCase @Inject constructor(
                 tableName = TABLE_SESSIONS,
                 opticaId = opticaId,
                 entityType = "inventario_fisico",
-                localEntities = remotos.map { LocalEntity(it.id) }
+                localEntities = remotos.map { LocalEntity(it.id) },
             ).map { it.id }.toSet()
             val safeRows = remotos.filter { it.id in safeIds }
             if (safeRows.isEmpty()) return 0
@@ -161,7 +159,7 @@ data class InventarioFisicoSyncResult(
     val uploadedSessions: Int,
     val uploadedDetalles: Int,
     val downloadedSessions: Int,
-    val downloadedDetalles: Int
+    val downloadedDetalles: Int,
 )
 
 @Serializable
@@ -171,13 +169,15 @@ private data class IFRemoto(
     val estado: String = "EN_PROGRESO",
     @SerialName("optica_id") val opticaId: String = "",
     @SerialName("user_id") val userId: String = "",
-    val notas: String = ""
+    val notas: String = "",
 ) {
     fun toEntity() = InventarioFisico(
         id = id,
         fecha = fecha?.let { LocalDate.parse(it.take(10)) } ?: LocalDate.now(),
-        estado = estado, opticaId = opticaId, userId = userId,
-        notas = notas
+        estado = estado,
+        opticaId = opticaId,
+        userId = userId,
+        notas = notas,
     )
 }
 
@@ -189,22 +189,33 @@ internal data class IFDetalleRemoto(
     @SerialName("stock_sistema") val stockSistema: Int,
     @SerialName("stock_contado") val stockContado: Int? = null,
     val diferencia: Int? = null,
-    @SerialName("optica_id") val opticaId: String = ""
+    @SerialName("optica_id") val opticaId: String = "",
 ) {
     fun toEntity() = InventarioFisicoDetalle(
-        id = id, inventarioId = inventarioId, monturaId = monturaId,
-        stockSistema = stockSistema, stockContado = stockContado,
-        diferencia = diferencia
+        id = id,
+        inventarioId = inventarioId,
+        monturaId = monturaId,
+        stockSistema = stockSistema,
+        stockContado = stockContado,
+        diferencia = diferencia,
     )
 }
 
 private fun InventarioFisico.toRemoto(): IFRemoto = IFRemoto(
-    id = id, fecha = fecha.toString(), estado = estado,
-    opticaId = opticaId, userId = userId, notas = notas
+    id = id,
+    fecha = fecha.toString(),
+    estado = estado,
+    opticaId = opticaId,
+    userId = userId,
+    notas = notas,
 )
 
 internal fun InventarioFisicoDetalle.toRemoto(opticaId: String): IFDetalleRemoto = IFDetalleRemoto(
-    id = id, inventarioId = inventarioId, monturaId = monturaId,
-    stockSistema = stockSistema, stockContado = stockContado, diferencia = diferencia,
-    opticaId = opticaId
+    id = id,
+    inventarioId = inventarioId,
+    monturaId = monturaId,
+    stockSistema = stockSistema,
+    stockContado = stockContado,
+    diferencia = diferencia,
+    opticaId = opticaId,
 )

@@ -19,7 +19,7 @@ fun ContactologiaSection(
     aplicarRecorteOi: Boolean,
     onRecorteOdChange: (Boolean) -> Unit,
     onRecorteOiChange: (Boolean) -> Unit,
-    onShowLcDatePicker: () -> Unit
+    onShowLcDatePicker: () -> Unit,
 ) {
     QueratometriaCard(uiState, onUpdate)
 
@@ -82,7 +82,7 @@ fun ContactologiaSection(
 private fun QueratometriaCard(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiState) -> Unit) {
     OutlinedCard(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+        colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text("Queratometría", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)

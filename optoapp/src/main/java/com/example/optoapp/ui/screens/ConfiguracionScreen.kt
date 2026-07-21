@@ -24,19 +24,18 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.optoapp.R
 import com.example.optoapp.data.AppRoles
+import com.example.optoapp.ui.components.OptoTopAppBar
 import com.example.optoapp.ui.components.config.ClinicalIntegritySection
-import com.example.optoapp.ui.components.config.ConfigAboutSection
+import com.example.optoapp.ui.components.config.ConfigProfileSection
 import com.example.optoapp.ui.components.config.DataManagementCard
 import com.example.optoapp.ui.components.config.FiscalDataSection
 import com.example.optoapp.ui.components.config.LaboratorySection
-import com.example.optoapp.ui.components.config.ConfigProfileSection
-import com.example.optoapp.ui.components.config.SecuritySection
 import com.example.optoapp.ui.components.config.SectionHeader
+import com.example.optoapp.ui.components.config.SecuritySection
 import com.example.optoapp.ui.components.config.SubscriptionCard
 import com.example.optoapp.ui.components.config.SyncDiagnosticsCard
 import com.example.optoapp.ui.components.config.SystemSection
 import com.example.optoapp.ui.components.config.UsuariosRolesSection
-import com.example.optoapp.ui.components.OptoTopAppBar
 import com.example.optoapp.ui.theme.OptoTokens
 import com.example.optoapp.viewmodel.AuthViewModel
 import com.example.optoapp.viewmodel.ConfiguracionViewModel
@@ -63,7 +62,7 @@ fun ConfiguracionScreen(
     subscriptionVm: SubscriptionViewModel = hiltViewModel(),
     syncDiagVm: SyncDiagnosticsViewModel = hiltViewModel(),
     roleVm: RoleManagementViewModel = hiltViewModel(),
-    configVm: ConfiguracionViewModel = hiltViewModel()
+    configVm: ConfiguracionViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -84,8 +83,11 @@ fun ConfiguracionScreen(
     val canManageBackups = AppRoles.canManageBackups(opticaRol)
     val canAssignAdminRole = AppRoles.canAssignAdminRole(opticaRol)
     val allowedRoles = remember(canAssignAdminRole) {
-        if (canAssignAdminRole) listOf("especialista", "asesor", "asesora", "ventas", "invitado", "gerente", "admin")
-        else listOf("especialista", "asesor", "asesora", "ventas", "invitado", "gerente")
+        if (canAssignAdminRole) {
+            listOf("especialista", "asesor", "asesora", "ventas", "invitado", "gerente", "admin")
+        } else {
+            listOf("especialista", "asesor", "asesora", "ventas", "invitado", "gerente")
+        }
     }
 
     val notificationPermissionGranted =
@@ -97,11 +99,16 @@ fun ConfiguracionScreen(
         configVm.initLabFields(labUi.laboratorioNombre, labUi.laboratorioContacto)
     }
     LaunchedEffect(Unit) {
-        fiscalVm.syncFromServer(); laboratorioVm.syncFromServer(); subscriptionVm.refreshPlanFromServer()
+        fiscalVm.syncFromServer()
+        laboratorioVm.syncFromServer()
+        subscriptionVm.refreshPlanFromServer()
     }
     LaunchedEffect(fiscalUi.message, fiscalUi.error) {
         val msg = fiscalUi.message ?: fiscalUi.error
-        if (msg != null) { configVm.dialogMessage = msg; fiscalVm.clearMessages() }
+        if (msg != null) {
+            configVm.dialogMessage = msg
+            fiscalVm.clearMessages()
+        }
     }
     LaunchedEffect(canManageUsers) { if (canManageUsers) roleVm.loadMembers() }
     LaunchedEffect(globalSyncState) {
@@ -116,63 +123,92 @@ fun ConfiguracionScreen(
     val testNotificationSent = stringResource(R.string.config_notification_test_sent)
 
     val createBackupLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
-        uri?.let { scope.launch {
-            runCatching {
-                val json = viewModel.getBackupJson()
-                context.contentResolver.openOutputStream(it)?.use { stream -> stream.write(json.toByteArray()) }
-            }.onSuccess { configVm.dialogMessage = backupSuccessMsg }
-                .onFailure { e -> configVm.dialogMessage = e.message ?: backupFailedMsg }
-        } }
+        uri?.let {
+            scope.launch {
+                runCatching {
+                    val json = viewModel.getBackupJson()
+                    context.contentResolver.openOutputStream(it)?.use { stream -> stream.write(json.toByteArray()) }
+                }.onSuccess { configVm.dialogMessage = backupSuccessMsg }
+                    .onFailure { e -> configVm.dialogMessage = e.message ?: backupFailedMsg }
+            }
+        }
     }
     val restoreBackupLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-        uri?.let { scope.launch {
-            context.contentResolver.openInputStream(it)?.bufferedReader()?.use { reader -> reader.readText() }?.let { json ->
-                viewModel.restoreBackup(json) { msg -> configVm.dialogMessage = msg }
+        uri?.let {
+            scope.launch {
+                context.contentResolver.openInputStream(it)?.bufferedReader()?.use { reader -> reader.readText() }?.let { json ->
+                    viewModel.restoreBackup(json) { msg -> configVm.dialogMessage = msg }
+                }
             }
-        } }
+        }
     }
 
     Scaffold(containerColor = MaterialTheme.colorScheme.surface, topBar = {
         OptoTopAppBar(
             title = stringResource(R.string.config_title),
-            navigationIcon = { IconButton(onClick = { scope.launch { drawerState.open() } }) { Icon(Icons.Default.Menu, contentDescription = "Menu") } }
+            navigationIcon = { IconButton(onClick = { scope.launch { drawerState.open() } }) { Icon(Icons.Default.Menu, contentDescription = "Menu") } },
         )
     }) { padding ->
-        Column(modifier = Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).navigationBarsPadding().padding(horizontal = OptoTokens.spacing.lg, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(OptoTokens.spacing.md)) {
-
+        Column(
+            modifier = Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).navigationBarsPadding().padding(horizontal = OptoTokens.spacing.lg, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(OptoTokens.spacing.md),
+        ) {
             SectionHeader(stringResource(R.string.config_section_security), icon = Icons.Default.Lock)
-            SecuritySection(pinHasBeenSet = pinHasBeenSet, isPinRequired = isPinRequired,
+            SecuritySection(
+                pinHasBeenSet = pinHasBeenSet, isPinRequired = isPinRequired,
                 pinActual = configVm.pinActual, nuevoPin = configVm.nuevoPin, confirmPin = configVm.confirmPin,
                 onPinActualChange = { configVm.pinActual = it }, onNuevoPinChange = { configVm.nuevoPin = it },
                 onConfirmPinChange = { configVm.confirmPin = it },
-                onPinRequiredChange = { settingsVm.togglePinRequired(it) }, onUpdatePin = { configVm.updatePin() })
+                onPinRequiredChange = { settingsVm.togglePinRequired(it) }, onUpdatePin = { configVm.updatePin() },
+            )
 
             ConfigProfileSection(email = userEmail, rol = opticaRol, opticaName = fiscalUi.nombreComercial)
 
             SectionHeader(stringResource(R.string.config_section_system), icon = Icons.Default.Settings)
-            SystemSection(userTimeZone = userTimeZone, availableTimeZones = configVm.availableTimeZones,
-                remindersEnabled = remindersEnabled, notificationPermissionGranted = notificationPermissionGranted,
+            SystemSection(
+                userTimeZone = userTimeZone,
+                availableTimeZones = configVm.availableTimeZones,
+                remindersEnabled = remindersEnabled,
+                notificationPermissionGranted = notificationPermissionGranted,
                 systemNotificationsEnabled = systemNotificationsEnabled,
                 onUserTimeZoneSelected = { selected -> if (selected == "Detectar automáticamente") settingsVm.setUserTimeZone(null) else settingsVm.setUserTimeZone(selected) },
                 onRemindersEnabledChanged = settingsVm::setRemindersEnabled,
-                onSendTestNotification = { settingsVm.sendTestNotification(); Toast.makeText(context, testNotificationSent, Toast.LENGTH_LONG).show() })
+                onSendTestNotification = {
+                    settingsVm.sendTestNotification()
+                    Toast.makeText(context, testNotificationSent, Toast.LENGTH_LONG).show()
+                },
+            )
 
             SectionHeader(stringResource(R.string.config_section_optica_data))
-            LaboratorySection(labNombre = configVm.labNombre, labContacto = configVm.labContacto,
-                onLabNombreChange = { configVm.labNombre = it }, onLabContactoChange = { configVm.labContacto = it },
-                onSave = { laboratorioVm.save(configVm.labNombre, configVm.labContacto) })
+            LaboratorySection(
+                labNombre = configVm.labNombre,
+                labContacto = configVm.labContacto,
+                onLabNombreChange = { configVm.labNombre = it },
+                onLabContactoChange = { configVm.labContacto = it },
+                onSave = { laboratorioVm.save(configVm.labNombre, configVm.labContacto) },
+            )
 
             if (canManageUsers) {
-                FiscalDataSection(fiscalUi = fiscalUi,
-                    onDraftChange = { update -> fiscalVm.updateDraft(nombreComercial = update.nombreComercial, docTipo = update.docTipo, docNumero = update.docNumero, razonSocial = update.razonSocial, direccionFiscal = update.direccionFiscal); fiscalVm.clearMessages() },
-                    onSave = fiscalVm::save)
+                FiscalDataSection(
+                    fiscalUi = fiscalUi,
+                    onDraftChange = { update ->
+                        fiscalVm.updateDraft(nombreComercial = update.nombreComercial, docTipo = update.docTipo, docNumero = update.docNumero, razonSocial = update.razonSocial, direccionFiscal = update.direccionFiscal)
+                        fiscalVm.clearMessages()
+                    },
+                    onSave = fiscalVm::save,
+                )
             }
             if (canManageUsers) {
                 ClinicalIntegritySection(onResolveDuplicates = { viewModel.resolveDuplicateHistorias { msg -> configVm.dialogMessage = msg } })
-                UsuariosRolesSection(roleUi = roleUi, allowedRoles = allowedRoles, canAssignAdminRole = canAssignAdminRole,
-                    onEmailChange = roleVm::updateEmail, onRoleChange = roleVm::updateRole,
-                    onAssignRole = { roleVm.assignRole() }, onRefresh = { roleVm.loadMembers() })
+                UsuariosRolesSection(
+                    roleUi = roleUi,
+                    allowedRoles = allowedRoles,
+                    canAssignAdminRole = canAssignAdminRole,
+                    onEmailChange = roleVm::updateEmail,
+                    onRoleChange = roleVm::updateRole,
+                    onAssignRole = { roleVm.assignRole() },
+                    onRefresh = { roleVm.loadMembers() },
+                )
             }
             SubscriptionCard(planCode = planCode, devProOverride = devProOverride, subscriptionVm = subscriptionVm, context = context)
             SyncDiagnosticsCard(syncDiagVm = syncDiagVm)
@@ -181,8 +217,11 @@ fun ConfiguracionScreen(
     }
 
     configVm.dialogMessage?.let { msg ->
-        AlertDialog(onDismissRequest = { configVm.dismissDialog() },
+        AlertDialog(
+            onDismissRequest = { configVm.dismissDialog() },
             confirmButton = { TextButton(onClick = { configVm.dismissDialog() }) { Text(stringResource(R.string.config_dialog_ok)) } },
-            title = { Text(stringResource(R.string.config_dialog_info_title)) }, text = { Text(msg) })
+            title = { Text(stringResource(R.string.config_dialog_info_title)) },
+            text = { Text(msg) },
+        )
     }
 }

@@ -5,14 +5,14 @@ import com.example.optoapp.data.ISessionManager
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.util.BackupImportValidator
 import io.github.jan.supabase.SupabaseClient
-import java.io.IOException
-import kotlinx.coroutines.CancellationException
 import io.github.jan.supabase.postgrest.postgrest
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import java.io.IOException
 import javax.inject.Inject
 
 /**
@@ -25,7 +25,7 @@ class BackupDelegate @Inject constructor(
     private val repository: OptoRepository,
     private val sessionManager: ISessionManager,
     private val supabase: SupabaseClient,
-    private val backupJson: Json
+    private val backupJson: Json,
 ) {
     companion object {
         private const val TAG = "BackupDelegate"
@@ -51,8 +51,9 @@ class BackupDelegate @Inject constructor(
 
         /** Pure logic: validate sourceOpticaId matches currentOpticaId. */
         fun validateOpticaIdMatch(sourceOpticaId: String, currentOpticaId: String): String? {
-            if (!sourceOpticaId.equals(currentOpticaId, ignoreCase = false))
+            if (!sourceOpticaId.equals(currentOpticaId, ignoreCase = false)) {
                 return "Este respaldo pertenece a otra óptica y no puede restaurarse aquí."
+            }
             return null
         }
     }
@@ -102,7 +103,7 @@ class BackupDelegate @Inject constructor(
     private suspend fun assertBackupOperationAllowed(
         action: String,
         sourceOpticaId: String,
-        targetOpticaId: String
+        targetOpticaId: String,
     ) {
         supabase.postgrest.rpc(
             "assert_backup_operation_allowed",
@@ -110,7 +111,7 @@ class BackupDelegate @Inject constructor(
                 put("p_action", action)
                 put("p_source_optica_id", sourceOpticaId)
                 put("p_target_optica_id", targetOpticaId)
-            }
+            },
         )
     }
 }

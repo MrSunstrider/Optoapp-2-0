@@ -7,7 +7,7 @@ import java.time.LocalDate
 import javax.inject.Inject
 
 open class GenerarRecomendacionesUseCase @Inject constructor(
-    private val configuracionFinancieraDao: ConfiguracionFinancieraDao
+    private val configuracionFinancieraDao: ConfiguracionFinancieraDao,
 ) {
     companion object {
         private const val MARGEN_BAJO_PCT = 10.0
@@ -19,7 +19,7 @@ open class GenerarRecomendacionesUseCase @Inject constructor(
     suspend operator fun invoke(
         analisis: AnalisisMensual?,
         deudores: List<Deudor>,
-        opticaId: String
+        opticaId: String,
     ): Resource<List<Recomendacion>> {
         if (analisis == null && deudores.isEmpty()) {
             return Resource.Error("Datos insuficientes para generar recomendaciones")
@@ -39,13 +39,13 @@ open class GenerarRecomendacionesUseCase @Inject constructor(
                 evaluarLiquidarStock(analisis.stockEstancado, config),
                 evaluarVenderMasDe(analisis.margenPorCategoria, config),
                 evaluarAlertaCaida(analisis, config),
-                evaluarReducirGasto(analisis)
+                evaluarReducirGasto(analisis),
             )
         }
 
         val sorted = recommendations.sortedWith(
             compareBy<Recomendacion> { it.prioridad.ordinal }
-                .thenBy { it.tipo.ordinal }
+                .thenBy { it.tipo.ordinal },
         )
 
         return Resource.Success(sorted.take(5))
@@ -55,7 +55,7 @@ open class GenerarRecomendacionesUseCase @Inject constructor(
 
     private fun evaluarCobrar(
         deudores: List<Deudor>,
-        config: ConfiguracionFinancieraEntity
+        config: ConfiguracionFinancieraEntity,
     ): Recomendacion? {
         if (deudores.isEmpty()) return null
 
@@ -81,8 +81,8 @@ open class GenerarRecomendacionesUseCase @Inject constructor(
             accion = "Contactar a los deudores para coordinar pagos pendientes",
             datosAccion = DatosAccion(
                 pacienteIds = top3.map { it.pacienteId },
-                montoTotal = top3.sumOf { it.saldo }
-            )
+                montoTotal = top3.sumOf { it.saldo },
+            ),
         )
     }
 
@@ -90,7 +90,7 @@ open class GenerarRecomendacionesUseCase @Inject constructor(
 
     private fun evaluarMejorarPrecio(
         categorias: List<MargenCategoria>,
-        config: ConfiguracionFinancieraEntity
+        config: ConfiguracionFinancieraEntity,
     ): Recomendacion? {
         val minVentas = config.minVentasParaRecomendar.toDouble()
         val target = categorias.firstOrNull { cat ->
@@ -105,12 +105,12 @@ open class GenerarRecomendacionesUseCase @Inject constructor(
             tipo = RecomendacionTipo.MEJORAR_PRECIO,
             titulo = titulo,
             detalle = "La categoria ${target.categoria} tiene un margen bajo " +
-                "del ${margenPctStr}%. Considera ajustar precios para alcanzar " +
+                "del $margenPctStr%. Considera ajustar precios para alcanzar " +
                 "al menos un 25% de margen.",
             impactoEstimado = null,
             prioridad = Prioridad.ALTA,
             accion = "Revisar precios de ${target.categoria} y ajustar al alza",
-            datosAccion = null
+            datosAccion = null,
         )
     }
 
@@ -118,7 +118,7 @@ open class GenerarRecomendacionesUseCase @Inject constructor(
 
     private fun evaluarLiquidarStock(
         stockEstancado: List<StockEstancadoItem>,
-        config: ConfiguracionFinancieraEntity
+        config: ConfiguracionFinancieraEntity,
     ): Recomendacion? {
         val estancados = stockEstancado.filter {
             it.diasSinVenta > config.stockEstancadoAlertaDias
@@ -140,8 +140,8 @@ open class GenerarRecomendacionesUseCase @Inject constructor(
             prioridad = Prioridad.MEDIA,
             accion = "Ofrecer descuentos del 20-30% para liberar capital estancado",
             datosAccion = DatosAccion(
-                productoIds = estancados.map { it.monturaId }
-            )
+                productoIds = estancados.map { it.monturaId },
+            ),
         )
     }
 
@@ -149,7 +149,7 @@ open class GenerarRecomendacionesUseCase @Inject constructor(
 
     private fun evaluarVenderMasDe(
         categorias: List<MargenCategoria>,
-        config: ConfiguracionFinancieraEntity
+        config: ConfiguracionFinancieraEntity,
     ): Recomendacion? {
         val minVentas = config.minVentasParaRecomendar.toDouble()
         val gananciaTotal = categorias.sumOf { it.ventas - it.costos }
@@ -170,13 +170,13 @@ open class GenerarRecomendacionesUseCase @Inject constructor(
             id = "${RecomendacionTipo.VENDER_MAS_DE.name}::$titulo",
             tipo = RecomendacionTipo.VENDER_MAS_DE,
             titulo = titulo,
-            detalle = "${target.categoria} tiene un margen alto del ${margenPctStr}% " +
+            detalle = "${target.categoria} tiene un margen alto del $margenPctStr% " +
                 "y contribuye significativamente a la ganancia total. " +
                 "Aumenta su promocion y visibilidad.",
             impactoEstimado = null,
             prioridad = Prioridad.MEDIA,
             accion = "Crear promocion destacada para ${target.categoria}",
-            datosAccion = null
+            datosAccion = null,
         )
     }
 
@@ -184,7 +184,7 @@ open class GenerarRecomendacionesUseCase @Inject constructor(
 
     private fun evaluarAlertaCaida(
         analisis: AnalisisMensual,
-        config: ConfiguracionFinancieraEntity
+        config: ConfiguracionFinancieraEntity,
     ): Recomendacion? {
         val hoy = LocalDate.now()
         val diasTranscurridos = hoy.dayOfMonth
@@ -214,10 +214,10 @@ open class GenerarRecomendacionesUseCase @Inject constructor(
         val pctStr = String.format("%.0f", kotlin.math.abs(variacion))
         val titulo = "Caida en ventas detectada"
         val detalleBase = if (esProporcional) {
-            "Las ventas cayeron un ${pctStr}% respecto al mismo periodo del mes pasado " +
+            "Las ventas cayeron un $pctStr% respecto al mismo periodo del mes pasado " +
                 "(proporcional a $diasTranscurridos dias). "
         } else {
-            "Las ventas cayeron un ${pctStr}% respecto al mes pasado. "
+            "Las ventas cayeron un $pctStr% respecto al mes pasado. "
         }
         return Recomendacion(
             id = "${RecomendacionTipo.ALERTA_CAIDA.name}::$titulo",
@@ -230,14 +230,14 @@ open class GenerarRecomendacionesUseCase @Inject constructor(
             impactoEstimado = null,
             prioridad = Prioridad.ALTA,
             accion = "Revisar causas de la caida y evaluar acciones correctivas",
-            datosAccion = null
+            datosAccion = null,
         )
     }
 
     // ── R6: REDUCIR_GASTO (MEDIA) ──────────────────────────────────────────
 
     private fun evaluarReducirGasto(
-        analisis: AnalisisMensual
+        analisis: AnalisisMensual,
     ): Recomendacion? {
         if (analisis.ventasMes <= 0.0) return null
         val ratio = analisis.gastosMes / analisis.ventasMes
@@ -249,7 +249,7 @@ open class GenerarRecomendacionesUseCase @Inject constructor(
             id = "${RecomendacionTipo.REDUCIR_GASTO.name}::$titulo",
             tipo = RecomendacionTipo.REDUCIR_GASTO,
             titulo = titulo,
-            detalle = "Los gastos representan el ${ratioPct}% de las ventas " +
+            detalle = "Los gastos representan el $ratioPct% de las ventas " +
                 "(S/ ${String.format("%.0f", analisis.gastosMes)} gastos vs. " +
                 "S/ ${String.format("%.0f", analisis.ventasMes)} ventas). " +
                 "Reducir un 10% los gastos liberaria aproximadamente " +
@@ -257,7 +257,7 @@ open class GenerarRecomendacionesUseCase @Inject constructor(
             impactoEstimado = null,
             prioridad = Prioridad.MEDIA,
             accion = "Analizar partidas de gasto y eliminar las no esenciales",
-            datosAccion = null
+            datosAccion = null,
         )
     }
 }

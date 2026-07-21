@@ -59,10 +59,16 @@ class SyncViewModelSilentSyncTest {
         val useCase = mockk<SyncFinanzasUseCase>()
         coEvery { useCase(any(), capture(downloadSlot), any()) } answers {
             recorded += downloadSlot.captured
-            Resource.Success(FinanzasSyncResult(
-                uploadedDispensaciones = 0, uploadedServicios = 0, uploadedPagos = 0,
-                downloadedDispensaciones = 0, downloadedServicios = 0, downloadedPagos = 0
-            ))
+            Resource.Success(
+                FinanzasSyncResult(
+                    uploadedDispensaciones = 0,
+                    uploadedServicios = 0,
+                    uploadedPagos = 0,
+                    downloadedDispensaciones = 0,
+                    downloadedServicios = 0,
+                    downloadedPagos = 0,
+                ),
+            )
         }
         return useCase to recorded
     }
@@ -92,19 +98,19 @@ class SyncViewModelSilentSyncTest {
 
         assertTrue(
             "All 3 cycles must invoke syncPacientesUseCase with downloadAfterUpload=true",
-            pacientesArgs.size == 3 && pacientesArgs.all { it }
+            pacientesArgs.size == 3 && pacientesArgs.all { it },
         )
         assertTrue(
             "All 3 cycles must invoke syncHistorialUseCase with downloadAfterUpload=true",
-            historialArgs.size == 3 && historialArgs.all { it }
+            historialArgs.size == 3 && historialArgs.all { it },
         )
         assertTrue(
             "All 3 cycles must invoke syncFinanzasUseCase with downloadAfterUpload=true",
-            finanzasArgs.size == 3 && finanzasArgs.all { it }
+            finanzasArgs.size == 3 && finanzasArgs.all { it },
         )
         assertTrue(
             "All 3 cycles must invoke syncInventarioUseCase with downloadAfterUpload=true",
-            inventarioArgs.size == 3 && inventarioArgs.all { it }
+            inventarioArgs.size == 3 && inventarioArgs.all { it },
         )
     }
 
@@ -121,19 +127,19 @@ class SyncViewModelSilentSyncTest {
         assertTrue(
             "syncPacientesUseCase must be called with downloadAfterUpload=true so the " +
                 "server-stamped updatedAt is written back to Room, preventing false conflicts",
-            pacientesArgs.single()
+            pacientesArgs.single(),
         )
         assertTrue(
             "syncHistorialUseCase must be called with downloadAfterUpload=true",
-            historialArgs.single()
+            historialArgs.single(),
         )
         assertTrue(
             "syncFinanzasUseCase must be called with downloadAfterUpload=true",
-            finanzasArgs.single()
+            finanzasArgs.single(),
         )
         assertTrue(
             "syncInventarioUseCase must be called with downloadAfterUpload=true",
-            inventarioArgs.single()
+            inventarioArgs.single(),
         )
     }
 }
@@ -148,7 +154,7 @@ private class SilentSyncDispatch(
     private val syncPacientesUseCase: SyncPacientesUseCase,
     private val syncHistorialUseCase: SyncHistorialUseCase,
     private val syncFinanzasUseCase: SyncFinanzasUseCase,
-    private val syncInventarioUseCase: SyncInventarioUseCase
+    private val syncInventarioUseCase: SyncInventarioUseCase,
 ) {
     suspend fun run(opticaId: String) {
         syncPacientesUseCase(opticaId, downloadAfterUpload = true)

@@ -18,13 +18,13 @@ class OptoApplication : Application() {
 
     private fun scheduleWidgetRefresh() {
         val request = PeriodicWorkRequestBuilder<MiNegocioWidgetWorker>(
-            6, TimeUnit.HOURS
+            6,
+            TimeUnit.HOURS,
         ).build()
         WorkManager.getInstance(this).enqueueUniquePeriodicWork(
             "mi_negocio_widget_refresh",
             ExistingPeriodicWorkPolicy.KEEP,
-            request
+            request,
         )
     }
 }
-

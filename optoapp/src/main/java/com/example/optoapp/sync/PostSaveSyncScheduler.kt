@@ -3,21 +3,20 @@ package com.example.optoapp.sync
 import android.util.Log
 import androidx.annotation.VisibleForTesting
 import com.example.optoapp.data.Resource
-import kotlinx.coroutines.CancellationException
-import java.io.IOException
 import com.example.optoapp.di.ApplicationScope
 import com.example.optoapp.domain.SyncFinanzasUseCase
-import com.example.optoapp.domain.SyncOrdenesCompraUseCase
-import com.example.optoapp.domain.SyncProveedoresUseCase
-import com.example.optoapp.domain.SyncInventarioFisicoUseCase
-import com.example.optoapp.domain.SyncInventoryKpisUseCase
-import com.example.optoapp.util.BackgroundErrorCollector
 import com.example.optoapp.domain.SyncHistorialUseCase
+import com.example.optoapp.domain.SyncInventarioFisicoUseCase
 import com.example.optoapp.domain.SyncInventarioUseCase
+import com.example.optoapp.domain.SyncInventoryKpisUseCase
+import com.example.optoapp.domain.SyncOrdenesCompraUseCase
 import com.example.optoapp.domain.SyncPacientesUseCase
+import com.example.optoapp.domain.SyncProveedoresUseCase
 import com.example.optoapp.domain.SyncSessionHelper
+import com.example.optoapp.util.BackgroundErrorCollector
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
@@ -25,6 +24,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -46,9 +46,10 @@ open class PostSaveSyncScheduler @Inject constructor(
     private val syncOrdenesCompraUseCase: SyncOrdenesCompraUseCase? = null,
     private val syncInventarioFisicoUseCase: SyncInventarioFisicoUseCase? = null,
     private val syncInventoryKpisUseCase: SyncInventoryKpisUseCase? = null,
-    private val bgErrorCollector: BackgroundErrorCollector? = null
+    private val bgErrorCollector: BackgroundErrorCollector? = null,
 ) {
     private val scheduleMutex = Mutex()
+
     @VisibleForTesting
     internal val pendingJobs = mutableMapOf<String, Job>()
 
@@ -71,7 +72,7 @@ open class PostSaveSyncScheduler @Inject constructor(
     protected open fun scheduleDebounced(
         key: String,
         delayMs: Long = 800L,
-        block: suspend () -> Unit
+        block: suspend () -> Unit,
     ) {
         applicationScope.launch {
             scheduleMutex.withLock {

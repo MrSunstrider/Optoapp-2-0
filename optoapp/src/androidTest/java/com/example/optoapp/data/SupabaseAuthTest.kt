@@ -4,8 +4,8 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.example.optoapp.BuildConfig
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.Auth
-import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.postgrest.Postgrest
 import kotlinx.coroutines.runBlocking
@@ -62,7 +62,7 @@ class SupabaseAuthTest {
 
         supabase = createSupabaseClient(
             supabaseUrl = url,
-            supabaseKey = anonKey
+            supabaseKey = anonKey,
         ) {
             install(Postgrest)
             install(Auth)
@@ -76,7 +76,9 @@ class SupabaseAuthTest {
         if (e.message?.contains("rate limit", ignoreCase = true) == true) {
             org.junit.Assume.assumeTrue("Supabase rate limit hit — skipping test", false)
             null
-        } else throw e
+        } else {
+            throw e
+        }
     }
 
     @After
@@ -89,7 +91,7 @@ class SupabaseAuthTest {
                 try {
                     val adminClient = createSupabaseClient(
                         supabaseUrl = BuildConfig.SUPABASE_TEST_URL,
-                        supabaseKey = serviceKey
+                        supabaseKey = serviceKey,
                     ) {
                         install(Auth)
                     }
@@ -169,8 +171,9 @@ class SupabaseAuthTest {
                 }
             }
         }
-        assertTrue("Error message should mention invalid credentials",
-            exception.message?.contains("Invalid login credentials", ignoreCase = true) == true
+        assertTrue(
+            "Error message should mention invalid credentials",
+            exception.message?.contains("Invalid login credentials", ignoreCase = true) == true,
         )
     }
 

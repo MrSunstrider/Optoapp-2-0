@@ -11,16 +11,18 @@ import java.time.LocalDate
 
 @Entity(
     tableName = "dispensaciones",
-    foreignKeys = [ForeignKey(
-        entity = Paciente::class,
-        parentColumns = ["id"],
-        childColumns = ["pacienteId"],
-        onDelete = ForeignKey.CASCADE
-    )],
+    foreignKeys = [
+        ForeignKey(
+            entity = Paciente::class,
+            parentColumns = ["id"],
+            childColumns = ["pacienteId"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+    ],
     indices = [
         Index(value = ["pacienteId"]),
-        Index(value = ["opticaId"])
-    ]
+        Index(value = ["opticaId"]),
+    ],
 )
 @Serializable
 data class DispensacionOptica(
@@ -64,7 +66,7 @@ data class DispensacionOptica(
     @SerialName("updatedAt")
     val updatedAt: String? = null,
     @SerialName("updatedBy")
-    val updatedBy: String? = null
+    val updatedBy: String? = null,
 )
 
 @Entity(
@@ -74,20 +76,20 @@ data class DispensacionOptica(
             entity = DispensacionOptica::class,
             parentColumns = ["id"],
             childColumns = ["dispensacionId"],
-            onDelete = ForeignKey.CASCADE
+            onDelete = ForeignKey.CASCADE,
         ),
         ForeignKey(
             entity = ServicioExtra::class,
             parentColumns = ["id"],
             childColumns = ["servicioExtraId"],
-            onDelete = ForeignKey.CASCADE
-        )
+            onDelete = ForeignKey.CASCADE,
+        ),
     ],
     indices = [
         Index(value = ["dispensacionId"]),
         Index(value = ["servicioExtraId"]),
-        Index(value = ["opticaId"])
-    ]
+        Index(value = ["opticaId"]),
+    ],
 )
 @Serializable
 data class Pago(
@@ -110,21 +112,23 @@ data class Pago(
     @SerialName("updatedBy")
     val updatedBy: String? = null,
     @SerialName("ventaId")
-    val ventaId: String? = null
+    val ventaId: String? = null,
 )
 
 @Entity(
     tableName = "servicios_extra",
-    foreignKeys = [ForeignKey(
-        entity = Paciente::class,
-        parentColumns = ["id"],
-        childColumns = ["pacienteId"],
-        onDelete = ForeignKey.SET_NULL
-    )],
+    foreignKeys = [
+        ForeignKey(
+            entity = Paciente::class,
+            parentColumns = ["id"],
+            childColumns = ["pacienteId"],
+            onDelete = ForeignKey.SET_NULL,
+        ),
+    ],
     indices = [
         Index(value = ["pacienteId"]),
-        Index(value = ["opticaId"])
-    ]
+        Index(value = ["opticaId"]),
+    ],
 )
 @Serializable
 data class ServicioExtra(
@@ -151,7 +155,7 @@ data class ServicioExtra(
     @SerialName("updatedAt")
     val updatedAt: String? = null,
     @SerialName("updatedBy")
-    val updatedBy: String? = null
+    val updatedBy: String? = null,
 )
 
 @Entity(
@@ -160,8 +164,8 @@ data class ServicioExtra(
         Index(value = ["opticaId"]),
         Index(value = ["sku", "opticaId"], unique = true),
         Index(value = ["estadoComercial"]),
-        Index(value = ["categoria"])
-    ]
+        Index(value = ["categoria"]),
+    ],
 )
 @Serializable
 data class Montura(
@@ -196,7 +200,7 @@ data class Montura(
     @SerialName("updatedAt")
     val updatedAt: String? = null,
     @SerialName("updatedBy")
-    val updatedBy: String? = null
+    val updatedBy: String? = null,
 )
 
 @Entity(
@@ -206,16 +210,16 @@ data class Montura(
         Index(value = ["opticaId"]),
         Index(value = ["fecha"]),
         Index(value = ["referenciaId"]),
-        Index(value = ["referenciaId", "tipo", "monturaId"], unique = true)
+        Index(value = ["referenciaId", "tipo", "monturaId"], unique = true),
     ],
     foreignKeys = [
         ForeignKey(
             entity = Montura::class,
             parentColumns = ["id"],
             childColumns = ["monturaId"],
-            onDelete = ForeignKey.CASCADE
-        )
-    ]
+            onDelete = ForeignKey.CASCADE,
+        ),
+    ],
 )
 @Serializable
 data class MonturaMovimiento(
@@ -237,5 +241,5 @@ data class MonturaMovimiento(
     val updatedBy: String? = null,
     val userId: String = "",
     val costoUnitario: Double = 0.0,
-    val tipoDocumento: String = ""
+    val tipoDocumento: String = "",
 )

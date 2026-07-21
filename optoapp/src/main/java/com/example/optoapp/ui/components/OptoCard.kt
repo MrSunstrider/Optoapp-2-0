@@ -19,10 +19,10 @@ fun OptoCard(
     elevation: Dp = 0.dp,
     shape: Shape = MaterialTheme.shapes.large,
     colors: CardColors = CardDefaults.cardColors(
-        containerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(tonalElevation)
+        containerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(tonalElevation),
     ),
     onClick: (() -> Unit)? = null,
-    content: @Composable ColumnScope.() -> Unit
+    content: @Composable ColumnScope.() -> Unit,
 ) {
     val cardElevation = CardDefaults.cardElevation(defaultElevation = elevation)
     if (onClick != null) {
@@ -32,7 +32,7 @@ fun OptoCard(
             shape = shape,
             colors = colors,
             elevation = cardElevation,
-            content = content
+            content = content,
         )
     } else {
         Card(
@@ -40,7 +40,7 @@ fun OptoCard(
             shape = shape,
             colors = colors,
             elevation = cardElevation,
-            content = content
+            content = content,
         )
     }
 }

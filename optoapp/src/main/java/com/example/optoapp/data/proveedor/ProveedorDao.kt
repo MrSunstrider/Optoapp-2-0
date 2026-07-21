@@ -4,7 +4,6 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
-import androidx.room.Update
 import com.example.optoapp.data.Proveedor
 import kotlinx.coroutines.flow.Flow
 
@@ -22,15 +21,25 @@ interface ProveedorDao {
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insert(proveedor: Proveedor)
 
-    @Query("""
+    @Query(
+        """
         UPDATE proveedores SET nombre=:nombre, ruc=:ruc, telefono=:telefono,
         email=:email, direccion=:direccion, contacto=:contacto, activo=:activo,
         opticaId=:opticaId, updatedAt=:updatedAt, updatedBy=:updatedBy
         WHERE id=:id AND opticaId=:opticaId
-    """)
+    """,
+    )
     suspend fun update(
-        id: String, opticaId: String, nombre: String, ruc: String,
-        telefono: String, email: String, direccion: String, contacto: String,
-        activo: Boolean, updatedAt: String?, updatedBy: String?
+        id: String,
+        opticaId: String,
+        nombre: String,
+        ruc: String,
+        telefono: String,
+        email: String,
+        direccion: String,
+        contacto: String,
+        activo: Boolean,
+        updatedAt: String?,
+        updatedBy: String?,
     ): Int
 }

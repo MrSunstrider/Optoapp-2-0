@@ -12,7 +12,7 @@ import javax.inject.Inject
 @HiltViewModel
 class RegaloDispensacionViewModel @Inject constructor(
     private val repository: OptoRepository,
-    private val stockHelper: DispensacionStockHelper
+    private val stockHelper: DispensacionStockHelper,
 ) : ViewModel() {
 
     /**
@@ -21,15 +21,18 @@ class RegaloDispensacionViewModel @Inject constructor(
      */
     fun saveRegaloAndDeductStock(
         regalo: RegaloDispensacionEntity,
-        opticaId: String
+        opticaId: String,
     ) {
         viewModelScope.launch {
             repository.insertRegalo(regalo)
             if (regalo.productoId.isNotBlank()) {
                 val result = stockHelper.adjustStockAndRegistrarMovimiento(
-                    regalo.productoId, opticaId, -regalo.cantidad,
-                    "SALIDA_VENTA", regalo.dispensacionId,
-                    "Salida por regalo"
+                    regalo.productoId,
+                    opticaId,
+                    -regalo.cantidad,
+                    "SALIDA_VENTA",
+                    regalo.dispensacionId,
+                    "Salida por regalo",
                 )
                 if (result.isFailure) {
                     throw RuntimeException("Stock insuficiente para regalo: ${regalo.descripcion}")
@@ -43,15 +46,18 @@ class RegaloDispensacionViewModel @Inject constructor(
      */
     fun removeRegaloAndRestoreStock(
         regalo: RegaloDispensacionEntity,
-        opticaId: String
+        opticaId: String,
     ) {
         viewModelScope.launch {
             repository.deleteRegaloById(regalo.id)
             if (regalo.productoId.isNotBlank()) {
                 stockHelper.adjustStockAndRegistrarMovimiento(
-                    regalo.productoId, opticaId, regalo.cantidad,
-                    "AJUSTE", regalo.dispensacionId,
-                    "Reversión por eliminación de regalo"
+                    regalo.productoId,
+                    opticaId,
+                    regalo.cantidad,
+                    "AJUSTE",
+                    regalo.dispensacionId,
+                    "Reversión por eliminación de regalo",
                 )
             }
         }

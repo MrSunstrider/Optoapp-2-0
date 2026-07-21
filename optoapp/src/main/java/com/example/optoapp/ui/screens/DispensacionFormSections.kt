@@ -18,14 +18,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.optoapp.data.FinanzasRemoteDefaults
+import com.example.optoapp.data.Montura
 import com.example.optoapp.data.Pago
 import com.example.optoapp.ui.components.AbonoDialog
 import com.example.optoapp.ui.components.DropdownField
 import com.example.optoapp.ui.components.FechaEntregaEditButton
 import com.example.optoapp.ui.components.OptoTextField
 import com.example.optoapp.util.DateUtils
-import com.example.optoapp.data.Montura
 import com.example.optoapp.viewmodel.DispensacionUiState
 import com.example.optoapp.viewmodel.RegaloDispensacionUi
 import java.time.LocalDate
@@ -36,14 +35,17 @@ import java.util.*
 fun MonturaInfoSection(
     uiState: DispensacionUiState,
     monturasActivas: List<Montura>,
-    onUpdate: (DispensacionUiState) -> Unit
+    onUpdate: (DispensacionUiState) -> Unit,
 ) {
     Card {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("Información de Montura", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
             DropdownField(label = "Origen", selected = uiState.origenMontura, options = listOf("Tienda", "Paciente")) {
-                if (it == "Tienda") onUpdate(uiState.copy(origenMontura = it))
-                else onUpdate(uiState.copy(origenMontura = it, monturaId = ""))
+                if (it == "Tienda") {
+                    onUpdate(uiState.copy(origenMontura = it))
+                } else {
+                    onUpdate(uiState.copy(origenMontura = it, monturaId = ""))
+                }
             }
             if (uiState.origenMontura == "Tienda" || uiState.origenMontura == "Nueva de Tienda") {
                 val monturaSeleccionada = monturasActivas.firstOrNull { it.id == uiState.monturaId }
@@ -61,14 +63,14 @@ fun MonturaInfoSection(
                 } else {
                     monturasActivas.filter {
                         it.marca.contains(monturaQuery, ignoreCase = true) ||
-                        it.modelo.contains(monturaQuery, ignoreCase = true) ||
-                        it.sku.contains(monturaQuery, ignoreCase = true)
+                            it.modelo.contains(monturaQuery, ignoreCase = true) ||
+                            it.sku.contains(monturaQuery, ignoreCase = true)
                     }
                 }
 
                 ExposedDropdownMenuBox(
                     expanded = expanded && filteredMonturas.isNotEmpty(),
-                    onExpandedChange = { expanded = it }
+                    onExpandedChange = { expanded = it },
                 ) {
                     OutlinedTextField(
                         value = monturaQuery,
@@ -83,11 +85,11 @@ fun MonturaInfoSection(
                         placeholder = { Text("Ej: Ray-Ban, RX-1234...") },
                         leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Buscar") },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                        modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryEditable).fillMaxWidth()
+                        modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryEditable).fillMaxWidth(),
                     )
                     ExposedDropdownMenu(
                         expanded = expanded && filteredMonturas.isNotEmpty(),
-                        onDismissRequest = { expanded = false }
+                        onDismissRequest = { expanded = false },
                     ) {
                         filteredMonturas.forEach { montura ->
                             DropdownMenuItem(
@@ -95,28 +97,34 @@ fun MonturaInfoSection(
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
                                         horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
+                                        verticalAlignment = Alignment.CenterVertically,
                                     ) {
                                         Column(modifier = Modifier.weight(1f)) {
                                             Text("${montura.marca} ${montura.modelo}", fontWeight = FontWeight.Bold)
-                                            Text("SKU: ${montura.sku} | ${montura.color}",
-                                                style = MaterialTheme.typography.bodySmall)
+                                            Text(
+                                                "SKU: ${montura.sku} | ${montura.color}",
+                                                style = MaterialTheme.typography.bodySmall,
+                                            )
                                         }
-                                        Text("Stock: ${montura.stockActual}",
+                                        Text(
+                                            "Stock: ${montura.stockActual}",
                                             fontWeight = FontWeight.Bold,
                                             color = MaterialTheme.colorScheme.primary,
-                                            style = MaterialTheme.typography.bodySmall)
+                                            style = MaterialTheme.typography.bodySmall,
+                                        )
                                     }
                                 },
                                 onClick = {
                                     monturaQuery = "${montura.marca} ${montura.modelo}"
-                                    onUpdate(uiState.copy(
-                                        monturaId = montura.id,
-                                        tipoAro = montura.tipoAro,
-                                        materialMontura = montura.materialMontura
-                                    ))
+                                    onUpdate(
+                                        uiState.copy(
+                                            monturaId = montura.id,
+                                            tipoAro = montura.tipoAro,
+                                            materialMontura = montura.materialMontura,
+                                        ),
+                                    )
                                     expanded = false
-                                }
+                                },
                             )
                         }
                     }
@@ -135,7 +143,7 @@ fun MonturaInfoSection(
 
 @Deprecated(
     message = "Use InformacionFinancieraScreen instead",
-    replaceWith = ReplaceWith("InformacionFinancieraScreen(navController, dispensacionId)")
+    replaceWith = ReplaceWith("InformacionFinancieraScreen(navController, dispensacionId)"),
 )
 @Composable
 fun FinancieraInfoSection(
@@ -143,7 +151,7 @@ fun FinancieraInfoSection(
     onUpdate: (DispensacionUiState) -> Unit,
     onAddPago: (Pago) -> Unit,
     onUpdatePago: (Pago) -> Unit,
-    onRemovePago: (Pago) -> Unit
+    onRemovePago: (Pago) -> Unit,
 ) {
     Card {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -153,7 +161,7 @@ fun FinancieraInfoSection(
                 value = uiState.montoTotal,
                 onValueChange = { onUpdate(uiState.copy(montoTotal = it)) },
                 label = "Monto Total",
-                keyboardType = KeyboardType.Decimal
+                keyboardType = KeyboardType.Decimal,
             )
 
             HorizontalDivider()
@@ -167,12 +175,12 @@ fun FinancieraInfoSection(
             uiState.pagos.forEach { pago ->
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
                 ) {
                     Row(
                         modifier = Modifier.padding(12.dp),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text("${pago.metodoPago}: s/. ${String.format(Locale.getDefault(), "%.2f", pago.monto)}", fontWeight = FontWeight.Bold)
@@ -196,7 +204,7 @@ fun FinancieraInfoSection(
                                     onConfirm = { updatedPago: Pago ->
                                         onUpdatePago(updatedPago)
                                         showEditDialog = false
-                                    }
+                                    },
                                 )
                             }
                             IconButton(onClick = { showEditDialog = true }, modifier = Modifier.size(48.dp)) {
@@ -222,14 +230,14 @@ fun FinancieraInfoSection(
                     onConfirm = { nuevoPago: Pago ->
                         onAddPago(nuevoPago)
                         showAddDialog = false
-                    }
+                    },
                 )
             }
 
             OutlinedButton(
                 onClick = { showAddDialog = true },
                 modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary)
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary),
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Agregar")
                 Spacer(Modifier.width(8.dp))
@@ -240,7 +248,7 @@ fun FinancieraInfoSection(
 
             Column(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text("SALDO RESTANTE", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
@@ -249,7 +257,7 @@ fun FinancieraInfoSection(
                     text = "s/. " + formattedSaldo,
                     color = if (saldo > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary,
                     fontSize = 32.sp,
-                    fontWeight = FontWeight.ExtraBold
+                    fontWeight = FontWeight.ExtraBold,
                 )
             }
 
@@ -265,7 +273,7 @@ fun FinancieraInfoSection(
                     fechaEntrega = uiState.fechaEntrega,
                     onFechaChanged = { nuevaFecha ->
                         onUpdate(uiState.copy(fechaEntrega = nuevaFecha))
-                    }
+                    },
                 )
             } else {
                 TextButton(onClick = {
@@ -284,7 +292,7 @@ fun RegalosSection(
     uiState: DispensacionUiState,
     monturas: List<Montura>,
     onAddRegalo: (RegaloDispensacionUi) -> Unit,
-    onRemoveRegalo: (Int) -> Unit
+    onRemoveRegalo: (Int) -> Unit,
 ) {
     var showDialog by remember { mutableStateOf(false) }
     var selectedMonturaId by remember { mutableStateOf("") }
@@ -300,35 +308,46 @@ fun RegalosSection(
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                    )
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                    ),
                 ) {
                     Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
+                            verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Text(regalo.descripcion.ifBlank { "Producto sin nombre" },
+                            Text(
+                                regalo.descripcion.ifBlank { "Producto sin nombre" },
                                 fontWeight = FontWeight.Bold,
-                                modifier = Modifier.weight(1f))
+                                modifier = Modifier.weight(1f),
+                            )
                             IconButton(onClick = { onRemoveRegalo(index) }, modifier = Modifier.size(48.dp)) {
-                                Icon(Icons.Default.Delete, contentDescription = "Eliminar regalo",
-                                    tint = MaterialTheme.colorScheme.error)
+                                Icon(
+                                    Icons.Default.Delete,
+                                    contentDescription = "Eliminar regalo",
+                                    tint = MaterialTheme.colorScheme.error,
+                                )
                             }
                         }
 
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text("Cantidad: ${regalo.cantidad}",
-                                style = MaterialTheme.typography.bodyMedium)
-                            Text("Costo: S/. ${String.format(Locale.getDefault(), "%.2f", regalo.costoUnitario)}",
-                                style = MaterialTheme.typography.bodyMedium)
+                            Text(
+                                "Cantidad: ${regalo.cantidad}",
+                                style = MaterialTheme.typography.bodyMedium,
+                            )
+                            Text(
+                                "Costo: S/. ${String.format(Locale.getDefault(), "%.2f", regalo.costoUnitario)}",
+                                style = MaterialTheme.typography.bodyMedium,
+                            )
                         }
 
                         if (regalo.motivo.isNotBlank()) {
-                            Text("Motivo: ${regalo.motivo}",
+                            Text(
+                                "Motivo: ${regalo.motivo}",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
                         }
                     }
                 }
@@ -337,7 +356,7 @@ fun RegalosSection(
             OutlinedButton(
                 onClick = { showDialog = true },
                 modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary)
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary),
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Agregar")
                 Spacer(Modifier.width(8.dp))
@@ -356,11 +375,14 @@ fun RegalosSection(
                     var query by remember { mutableStateOf("") }
                     var showResults by remember { mutableStateOf(false) }
 
-                    val filtered = if (query.isBlank()) emptyList()
-                    else monturas.filter {
-                        it.marca.contains(query, ignoreCase = true) ||
-                        it.modelo.contains(query, ignoreCase = true) ||
-                        it.sku.contains(query, ignoreCase = true)
+                    val filtered = if (query.isBlank()) {
+                        emptyList()
+                    } else {
+                        monturas.filter {
+                            it.marca.contains(query, ignoreCase = true) ||
+                                it.modelo.contains(query, ignoreCase = true) ||
+                                it.sku.contains(query, ignoreCase = true)
+                        }
                     }
 
                     OutlinedTextField(
@@ -374,7 +396,7 @@ fun RegalosSection(
                         placeholder = { Text("Marca, modelo o SKU...") },
                         leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Buscar") },
                         singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
                     )
 
                     if (showResults && filtered.isNotEmpty()) {
@@ -391,7 +413,7 @@ fun RegalosSection(
                                                 showResults = false
                                             }
                                             .padding(12.dp),
-                                        fontSize = 14.sp
+                                        fontSize = 14.sp,
                                     )
                                 }
                             }
@@ -408,7 +430,7 @@ fun RegalosSection(
                         onValueChange = { cantidad = it.filter { c -> c.isDigit() } },
                         label = { Text("Cantidad") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
                     )
 
                     // Motivo
@@ -416,7 +438,7 @@ fun RegalosSection(
                         value = motivo,
                         onValueChange = { motivo = it },
                         label = { Text("Motivo") },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
                     )
 
                     // Costo (auto-filled, no editable)
@@ -424,7 +446,7 @@ fun RegalosSection(
                         Text(
                             "Costo unitario: S/. ${String.format(Locale.getDefault(), "%.2f", selectedMontura.costo)}",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
@@ -433,25 +455,27 @@ fun RegalosSection(
                 TextButton(
                     onClick = {
                         if (selectedMontura != null && cantidad.toIntOrNull() != null && cantidad.toInt() > 0) {
-                            onAddRegalo(RegaloDispensacionUi(
-                                productoId = selectedMontura!!.id,
-                                descripcion = "${selectedMontura!!.marca} ${selectedMontura!!.modelo} ${selectedMontura!!.color}".trim(),
-                                cantidad = cantidad.toInt(),
-                                costoUnitario = selectedMontura!!.costo,
-                                motivo = motivo
-                            ))
+                            onAddRegalo(
+                                RegaloDispensacionUi(
+                                    productoId = selectedMontura!!.id,
+                                    descripcion = "${selectedMontura!!.marca} ${selectedMontura!!.modelo} ${selectedMontura!!.color}".trim(),
+                                    cantidad = cantidad.toInt(),
+                                    costoUnitario = selectedMontura!!.costo,
+                                    motivo = motivo,
+                                ),
+                            )
                             showDialog = false
                             selectedMonturaId = ""
                             cantidad = "1"
                             motivo = ""
                         }
                     },
-                    enabled = selectedMontura != null && cantidad.toIntOrNull() != null && cantidad.toInt() > 0
+                    enabled = selectedMontura != null && cantidad.toIntOrNull() != null && cantidad.toInt() > 0,
                 ) { Text("Agregar") }
             },
             dismissButton = {
                 TextButton(onClick = { showDialog = false }) { Text("Cancelar") }
-            }
+            },
         )
     }
 }

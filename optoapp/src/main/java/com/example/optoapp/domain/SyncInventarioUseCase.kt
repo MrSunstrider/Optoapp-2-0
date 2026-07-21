@@ -1,19 +1,18 @@
 package com.example.optoapp.domain
 
-import com.example.optoapp.util.AppLogger
 import com.example.optoapp.data.ConflictDao
 import com.example.optoapp.data.Montura
-import com.example.optoapp.domain.sync.EntitySnapshotSerializer
 import com.example.optoapp.data.MonturaMovimiento
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Resource
-import com.example.optoapp.sync.errorLabelForException
-import kotlinx.coroutines.CancellationException
-import java.io.IOException
+import com.example.optoapp.domain.sync.EntitySnapshotSerializer
+import com.example.optoapp.util.AppLogger
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
+import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import java.io.IOException
 import java.time.LocalDate
 import javax.inject.Inject
 
@@ -27,7 +26,7 @@ open class SyncInventarioUseCase @Inject constructor(
     private val supabase: SupabaseClient,
     private val syncStateTracker: com.example.optoapp.data.SyncStateTracker,
     private val conflictHelper: com.example.optoapp.domain.sync.ConflictHelper,
-    private val conflictDao: ConflictDao
+    private val conflictDao: ConflictDao,
 ) {
     companion object {
         private const val TAG = "SyncInventario"
@@ -39,41 +38,39 @@ open class SyncInventarioUseCase @Inject constructor(
     suspend operator fun invoke(
         opticaId: String,
         downloadAfterUpload: Boolean = true,
-        skipUpload: Boolean = false
-    ): Resource<InventarioSyncResult> {
-        return try {
-            AppLogger.d(TAG, "Inventario: inicio (opticaId=$opticaId, download=$downloadAfterUpload, skipUpload=$skipUpload)")
-            val montUp = if (skipUpload) 0 else uploadMonturas(opticaId)
-            val movUp = if (skipUpload) 0 else uploadMovimientos(opticaId)
-            val montDown: Int
-            val movDown: Int
-            if (downloadAfterUpload) {
-                montDown = downloadMonturas(opticaId)
-                movDown = downloadMovimientos(opticaId)
-                AppLogger.d(TAG, "Inventario: fin OK (monturas=$montDown movimientos=$movDown)")
-            } else {
-                montDown = 0
-                movDown = 0
-                AppLogger.d(TAG, "Inventario: fin upload-only OK")
-            }
-
-            Resource.Success(
-                InventarioSyncResult(
-                    uploadedMonturas = montUp,
-                    uploadedMovimientos = movUp,
-                    downloadedMonturas = montDown,
-                    downloadedMovimientos = movDown
-                )
-            )
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: IOException) {
-            System.err.println("[$TAG] ERROR: Error en red sincronizando inventario: ${e.message}")
-            Resource.Error("Error sincronizando inventario: ${e.localizedMessage}")
-        } catch (e: Exception) {
-            System.err.println("[$TAG] ERROR: Error inesperado sincronizando inventario: ${e.message}")
-            Resource.Error("Error sincronizando inventario: ${e.localizedMessage}")
+        skipUpload: Boolean = false,
+    ): Resource<InventarioSyncResult> = try {
+        AppLogger.d(TAG, "Inventario: inicio (opticaId=$opticaId, download=$downloadAfterUpload, skipUpload=$skipUpload)")
+        val montUp = if (skipUpload) 0 else uploadMonturas(opticaId)
+        val movUp = if (skipUpload) 0 else uploadMovimientos(opticaId)
+        val montDown: Int
+        val movDown: Int
+        if (downloadAfterUpload) {
+            montDown = downloadMonturas(opticaId)
+            movDown = downloadMovimientos(opticaId)
+            AppLogger.d(TAG, "Inventario: fin OK (monturas=$montDown movimientos=$movDown)")
+        } else {
+            montDown = 0
+            movDown = 0
+            AppLogger.d(TAG, "Inventario: fin upload-only OK")
         }
+
+        Resource.Success(
+            InventarioSyncResult(
+                uploadedMonturas = montUp,
+                uploadedMovimientos = movUp,
+                downloadedMonturas = montDown,
+                downloadedMovimientos = movDown,
+            ),
+        )
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: IOException) {
+        System.err.println("[$TAG] ERROR: Error en red sincronizando inventario: ${e.message}")
+        Resource.Error("Error sincronizando inventario: ${e.localizedMessage}")
+    } catch (e: Exception) {
+        System.err.println("[$TAG] ERROR: Error inesperado sincronizando inventario: ${e.message}")
+        Resource.Error("Error sincronizando inventario: ${e.localizedMessage}")
     }
 
     private suspend fun uploadMonturas(opticaId: String): Int {
@@ -84,7 +81,7 @@ open class SyncInventarioUseCase @Inject constructor(
             tableName = TABLE_MONTURAS,
             opticaId = opticaId,
             entityType = "montura",
-            localEntities = rows.map { com.example.optoapp.domain.sync.LocalEntity(it.id, it.updatedAt, EntitySnapshotSerializer.serialize(it)) }
+            localEntities = rows.map { com.example.optoapp.domain.sync.LocalEntity(it.id, it.updatedAt, EntitySnapshotSerializer.serialize(it)) },
         ).map { it.id }.toSet()
         val rows2 = rows.filter { it.id in safeIds }
         if (rows2.isEmpty()) {
@@ -215,7 +212,7 @@ data class InventarioSyncResult(
     val uploadedMonturas: Int,
     val uploadedMovimientos: Int,
     val downloadedMonturas: Int,
-    val downloadedMovimientos: Int
+    val downloadedMovimientos: Int,
 )
 
 @Serializable
@@ -239,7 +236,7 @@ internal data class MonturaRemota(
     @SerialName("estado_comercial") val estadoComercial: String = "",
     @SerialName("genero") val genero: String = "",
     @SerialName("optica_id") val opticaId: String,
-    @SerialName("updated_at") val updatedAt: String? = null
+    @SerialName("updated_at") val updatedAt: String? = null,
 ) {
     fun toEntity() = Montura(
         id = id,
@@ -261,7 +258,7 @@ internal data class MonturaRemota(
         estadoComercial = estadoComercial,
         genero = genero,
         opticaId = opticaId,
-        updatedAt = updatedAt
+        updatedAt = updatedAt,
     )
 }
 
@@ -280,7 +277,7 @@ internal data class MonturaMovimientoRemoto(
     @SerialName("user_id") val userId: String = "",
     @SerialName("costo_unitario") val costoUnitario: Double = 0.0,
     @SerialName("tipo_documento") val tipoDocumento: String = "",
-    @SerialName("updated_by") val updatedBy: String? = null
+    @SerialName("updated_by") val updatedBy: String? = null,
 ) {
     fun toEntity() = MonturaMovimiento(
         id = id,
@@ -296,7 +293,7 @@ internal data class MonturaMovimientoRemoto(
         userId = userId,
         costoUnitario = costoUnitario,
         tipoDocumento = tipoDocumento,
-        updatedBy = updatedBy
+        updatedBy = updatedBy,
     )
 }
 
@@ -320,7 +317,7 @@ private fun Montura.toRemoto(): MonturaRemota = MonturaRemota(
     estadoComercial = estadoComercial.trim(),
     genero = genero.trim(),
     opticaId = opticaId,
-    updatedAt = updatedAt
+    updatedAt = updatedAt,
 )
 
 internal fun MonturaMovimiento.toRemoto(): MonturaMovimientoRemoto = MonturaMovimientoRemoto(
@@ -337,6 +334,5 @@ internal fun MonturaMovimiento.toRemoto(): MonturaMovimientoRemoto = MonturaMovi
     userId = userId,
     costoUnitario = costoUnitario,
     tipoDocumento = tipoDocumento,
-    updatedBy = updatedBy
+    updatedBy = updatedBy,
 )
-

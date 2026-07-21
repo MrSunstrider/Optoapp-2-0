@@ -19,8 +19,9 @@ import javax.inject.Singleton
 
 @Singleton
 class SupabaseObserver @Inject constructor(
-    private val supabase: SupabaseClient
-) : MembershipObserver, TableObserver {
+    private val supabase: SupabaseClient,
+) : MembershipObserver,
+    TableObserver {
 
     override fun observeTable(tableName: String, opticaId: String): Flow<Unit> {
         // opticaId en el nombre del canal garantiza aislamiento por instancia

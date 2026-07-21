@@ -15,8 +15,6 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import java.io.IOException
 
-@RunWith(RobolectricTestRunner::class)
-
 /**
  * Approval + behavior tests for [DispensacionRepository] catch-block refactoring.
  *
@@ -25,6 +23,7 @@ import java.io.IOException
  * - CancellationException propagates
  * - Generic Exception returns [Resource.Error]
  */
+@RunWith(RobolectricTestRunner::class)
 class DispensacionRepositoryErrorTest {
 
     private lateinit var dispensacionDao: DispensacionDao

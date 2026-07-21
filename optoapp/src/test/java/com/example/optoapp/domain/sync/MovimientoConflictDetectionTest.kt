@@ -16,19 +16,23 @@ import java.time.LocalDate
 class MovimientoConflictDetectionTest {
 
     private fun makeMovimiento(
-        id: String, refId: String, tipo: String, monturaId: String,
-        stockNuevo: Int, cantidad: Int = 1
+        id: String,
+        refId: String,
+        tipo: String,
+        monturaId: String,
+        stockNuevo: Int,
+        cantidad: Int = 1,
     ) = MonturaMovimiento(
         id = id, monturaId = monturaId, fecha = LocalDate.now(),
         tipo = tipo, cantidad = cantidad,
         stockPrevio = stockNuevo - cantidad, stockNuevo = stockNuevo,
-        referenciaId = refId, nota = "", opticaId = "o1"
+        referenciaId = refId, nota = "", opticaId = "o1",
     )
 
     @Test
     fun noConflict_whenRemoteHasNoMatchingMovement() {
         val local = listOf(
-            makeMovimiento("m1", "ref-1", "SALIDA_VENTA", "mont-1", stockNuevo = 5)
+            makeMovimiento("m1", "ref-1", "SALIDA_VENTA", "mont-1", stockNuevo = 5),
         )
         val remote = emptyList<MonturaMovimiento>()
 
@@ -40,10 +44,10 @@ class MovimientoConflictDetectionTest {
     @Test
     fun conflict_whenRemoteHasDifferentStockNuevo() {
         val local = listOf(
-            makeMovimiento("m-local", "ref-1", "SALIDA_VENTA", "mont-1", stockNuevo = 5)
+            makeMovimiento("m-local", "ref-1", "SALIDA_VENTA", "mont-1", stockNuevo = 5),
         )
         val remote = listOf(
-            makeMovimiento("m-remote", "ref-1", "SALIDA_VENTA", "mont-1", stockNuevo = 3)
+            makeMovimiento("m-remote", "ref-1", "SALIDA_VENTA", "mont-1", stockNuevo = 3),
         )
 
         val (safe, conflicted) = ConflictHelper.detectConflictMovimientos(local, remote)
@@ -54,10 +58,10 @@ class MovimientoConflictDetectionTest {
     @Test
     fun idempotent_whenRemoteHasSameStockNuevo() {
         val local = listOf(
-            makeMovimiento("m-local", "ref-1", "ENTRADA", "mont-1", stockNuevo = 10)
+            makeMovimiento("m-local", "ref-1", "ENTRADA", "mont-1", stockNuevo = 10),
         )
         val remote = listOf(
-            makeMovimiento("m-remote", "ref-1", "ENTRADA", "mont-1", stockNuevo = 10)
+            makeMovimiento("m-remote", "ref-1", "ENTRADA", "mont-1", stockNuevo = 10),
         )
 
         val (safe, conflicted) = ConflictHelper.detectConflictMovimientos(local, remote)
@@ -68,10 +72,10 @@ class MovimientoConflictDetectionTest {
     @Test
     fun noConflict_whenDifferentReferenciaId() {
         val local = listOf(
-            makeMovimiento("m1", "ref-1", "ENTRADA", "mont-1", stockNuevo = 5)
+            makeMovimiento("m1", "ref-1", "ENTRADA", "mont-1", stockNuevo = 5),
         )
         val remote = listOf(
-            makeMovimiento("m2", "ref-2", "ENTRADA", "mont-1", stockNuevo = 3)
+            makeMovimiento("m2", "ref-2", "ENTRADA", "mont-1", stockNuevo = 3),
         )
 
         val (safe, conflicted) = ConflictHelper.detectConflictMovimientos(local, remote)
@@ -82,10 +86,10 @@ class MovimientoConflictDetectionTest {
     @Test
     fun noConflict_whenDifferentTipo() {
         val local = listOf(
-            makeMovimiento("m1", "ref-1", "ENTRADA", "mont-1", stockNuevo = 5)
+            makeMovimiento("m1", "ref-1", "ENTRADA", "mont-1", stockNuevo = 5),
         )
         val remote = listOf(
-            makeMovimiento("m2", "ref-1", "SALIDA_VENTA", "mont-1", stockNuevo = 8)
+            makeMovimiento("m2", "ref-1", "SALIDA_VENTA", "mont-1", stockNuevo = 8),
         )
 
         val (safe, conflicted) = ConflictHelper.detectConflictMovimientos(local, remote)
@@ -98,10 +102,10 @@ class MovimientoConflictDetectionTest {
         val local = listOf(
             makeMovimiento("m1", "ref-1", "ENTRADA", "mont-1", stockNuevo = 5),
             makeMovimiento("m2", "ref-1", "ENTRADA", "mont-1", stockNuevo = 8),
-            makeMovimiento("m3", "ref-2", "SALIDA_VENTA", "mont-2", stockNuevo = 3)
+            makeMovimiento("m3", "ref-2", "SALIDA_VENTA", "mont-2", stockNuevo = 3),
         )
         val remote = listOf(
-            makeMovimiento("mr1", "ref-1", "ENTRADA", "mont-1", stockNuevo = 5)
+            makeMovimiento("mr1", "ref-1", "ENTRADA", "mont-1", stockNuevo = 5),
         )
 
         val (safe, conflicted) = ConflictHelper.detectConflictMovimientos(local, remote)

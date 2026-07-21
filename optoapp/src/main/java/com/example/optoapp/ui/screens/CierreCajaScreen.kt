@@ -18,24 +18,23 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.optoapp.data.AppRoles
+import com.example.optoapp.ui.components.OptoCard
+import com.example.optoapp.ui.components.OptoDatePickerDialog
+import com.example.optoapp.ui.components.OptoTopAppBar
+import com.example.optoapp.ui.components.cierre_caja.ResumenCard
+import com.example.optoapp.util.DateUtils
 import com.example.optoapp.viewmodel.AuthViewModel
 import com.example.optoapp.viewmodel.CierreCajaViewModel
-import com.example.optoapp.util.DateUtils
-import com.example.optoapp.ui.components.OptoTopAppBar
-import com.example.optoapp.ui.components.OptoDatePickerDialog
-import com.example.optoapp.ui.components.OptoCard
-import com.example.optoapp.ui.components.cierre_caja.ResumenCard
 import java.util.Locale
 
-private fun formatSoles(monto: Double): String =
-    "s/. ${String.format(Locale.getDefault(), "%,.2f", monto)}"
+private fun formatSoles(monto: Double): String = "s/. ${String.format(Locale.getDefault(), "%,.2f", monto)}"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CierreCajaScreen(
     navController: NavController,
     viewModel: CierreCajaViewModel = hiltViewModel(),
-    authViewModel: AuthViewModel = hiltViewModel()
+    authViewModel: AuthViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val opticaRol by authViewModel.opticaRol.collectAsState(initial = null)
@@ -47,7 +46,7 @@ fun CierreCajaScreen(
         OptoDatePickerDialog(
             initialDate = uiState.fecha,
             onDateSelected = { viewModel.setFecha(it) },
-            onDismiss = { showDatePicker = false }
+            onDismiss = { showDatePicker = false },
         )
     }
 
@@ -67,9 +66,9 @@ fun CierreCajaScreen(
                             Icon(Icons.Default.DateRange, contentDescription = "Cambiar Fecha")
                         }
                     }
-                }
+                },
             )
-        }
+        },
     ) { padding ->
         Column(
             modifier = Modifier
@@ -77,7 +76,7 @@ fun CierreCajaScreen(
                 .padding(padding)
                 .padding(horizontal = 16.dp)
                 .verticalScroll(scrollState)
-                .navigationBarsPadding()
+                .navigationBarsPadding(),
         ) {
             // Wait for role resolution before rendering
             if (opticaRol == null) {
@@ -99,13 +98,13 @@ fun CierreCajaScreen(
             if (uiState.errorMessage != null) {
                 OptoCard(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
                 ) {
                     Text(
                         uiState.errorMessage!!,
                         modifier = Modifier.padding(12.dp),
                         color = MaterialTheme.colorScheme.onErrorContainer,
-                        fontSize = 13.sp
+                        fontSize = 13.sp,
                     )
                 }
                 Spacer(modifier = Modifier.height(8.dp))
@@ -119,14 +118,14 @@ fun CierreCajaScreen(
             Text(
                 text = "Reporte del ${DateUtils.formatLocalized(uiState.fecha)}",
                 style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.primary
+                color = MaterialTheme.colorScheme.primary,
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
             OptoCard(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
             ) {
                 Column(modifier = Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                     Text("TOTAL VENTAS DEL DÍA", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
@@ -134,7 +133,7 @@ fun CierreCajaScreen(
                         formatSoles(uiState.totalGeneral),
                         fontSize = 32.sp,
                         fontWeight = FontWeight.ExtraBold,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
                     )
                     if (uiState.saldoPendiente > 0) {
                         Spacer(modifier = Modifier.height(4.dp))
@@ -142,7 +141,7 @@ fun CierreCajaScreen(
                             "Saldo pendiente: ${formatSoles(uiState.saldoPendiente)}",
                             fontSize = 14.sp,
                             color = MaterialTheme.colorScheme.error,
-                            fontWeight = FontWeight.SemiBold
+                            fontWeight = FontWeight.SemiBold,
                         )
                     }
                 }
@@ -159,7 +158,7 @@ fun CierreCajaScreen(
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 ResumenCard("Efectivo", totales["Efectivo"] ?: 0.0, Modifier.weight(1f), MaterialTheme.colorScheme.tertiary)
                 ResumenCard("Móvil/Trans", (totales["Transferencia"] ?: 0.0) + (totales["Móvil"] ?: 0.0), Modifier.weight(1f), MaterialTheme.colorScheme.secondary)
@@ -171,7 +170,7 @@ fun CierreCajaScreen(
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     otros.entries.forEach { (key, monto) ->
                         val label = key.ifBlank { "Sin espec." }
@@ -184,7 +183,7 @@ fun CierreCajaScreen(
 
             OptoCard(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
             ) {
                 Column(modifier = Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                     Text("TOTAL RECAUDADO", fontSize = 12.sp, fontWeight = FontWeight.Bold)
@@ -192,7 +191,7 @@ fun CierreCajaScreen(
                         formatSoles(totalGeneral),
                         fontSize = 32.sp,
                         fontWeight = FontWeight.ExtraBold,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
                     )
                     if (uiState.pagosFuturos != 0.0) {
                         Spacer(modifier = Modifier.height(4.dp))
@@ -200,7 +199,7 @@ fun CierreCajaScreen(
                             "Incluye ${formatSoles(uiState.pagosFuturos)} de pagos con fecha futura",
                             fontSize = 12.sp,
                             color = MaterialTheme.colorScheme.tertiary,
-                            fontWeight = FontWeight.SemiBold
+                            fontWeight = FontWeight.SemiBold,
                         )
                     }
                 }
@@ -227,21 +226,28 @@ fun CierreCajaScreen(
                         Card(
                             modifier = Modifier.fillMaxWidth()
                                 .clickable {
-                                    if (disp.pacienteId.isNotBlank())
+                                    if (disp.pacienteId.isNotBlank()) {
                                         navController.navigate("editarDispensacion/${disp.pacienteId}/${disp.id}")
+                                    }
                                 },
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
                         ) {
                             Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                     Text(label, fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
-                                    Text(formatSoles(disp.montoTotal),
-                                        fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                                    Text(
+                                        formatSoles(disp.montoTotal),
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.primary,
+                                    )
                                 }
                                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                     Text("Pagado: ${formatSoles(totalPagado)}", fontSize = 12.sp)
-                                    Text("Saldo: ${formatSoles(saldo)}",
-                                        fontSize = 12.sp, color = if (saldo > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary)
+                                    Text(
+                                        "Saldo: ${formatSoles(saldo)}",
+                                        fontSize = 12.sp,
+                                        color = if (saldo > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary,
+                                    )
                                 }
                             }
                         }
@@ -260,18 +266,24 @@ fun CierreCajaScreen(
                                 .clickable {
                                     navController.navigate("editar_servicio/${serv.id}")
                                 },
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
                         ) {
                             Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                     Text(label, fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
-                                    Text(formatSoles(serv.montoTotal),
-                                        fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                                    Text(
+                                        formatSoles(serv.montoTotal),
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.primary,
+                                    )
                                 }
                                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                     Text("Pagado: ${formatSoles(totalPagado)}", fontSize = 12.sp)
-                                    Text("Saldo: ${formatSoles(saldo)}",
-                                        fontSize = 12.sp, color = if (saldo > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary)
+                                    Text(
+                                        "Saldo: ${formatSoles(saldo)}",
+                                        fontSize = 12.sp,
+                                        color = if (saldo > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary,
+                                    )
                                 }
                             }
                         }
@@ -279,7 +291,6 @@ fun CierreCajaScreen(
                     }
                 }
             }
-
         }
     }
 }

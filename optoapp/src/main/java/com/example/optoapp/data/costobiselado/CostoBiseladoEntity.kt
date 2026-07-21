@@ -16,5 +16,5 @@ data class CostoBiseladoEntity(
     @ColumnInfo(name = "costo_por_par") val costoPorPar: Double,
     val proveedor: String? = null,
     @ColumnInfo(name = "vigente_desde") val vigenteDesde: String,
-    @ColumnInfo(name = "vigente_hasta") val vigenteHasta: String? = null
+    @ColumnInfo(name = "vigente_hasta") val vigenteHasta: String? = null,
 )

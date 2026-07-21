@@ -1,24 +1,20 @@
 package com.example.optoapp.ui.screens
 
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -26,23 +22,19 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import com.example.optoapp.data.DispensacionOptica
-import com.example.optoapp.data.ServicioExtra
-import com.example.optoapp.viewmodel.ReportesViewModel
 import com.example.optoapp.ui.components.DropdownField
+import com.example.optoapp.ui.components.OptoDatePickerDialog
+import com.example.optoapp.ui.components.OptoKpiCard
+import com.example.optoapp.ui.components.OptoTopAppBar
+import com.example.optoapp.ui.theme.AlertRed
+import com.example.optoapp.ui.theme.PositiveGreen
+import com.example.optoapp.ui.theme.WarningAmber
 import com.example.optoapp.util.DateUtils
 import com.example.optoapp.util.FileShareUtils
-import com.example.optoapp.util.fmt
 import com.example.optoapp.util.ReporteFinancieroPdfGenerator
-import com.example.optoapp.ui.components.OptoDatePickerDialog
-import java.time.Year
+import com.example.optoapp.util.fmt
+import com.example.optoapp.viewmodel.ReportesViewModel
 import kotlinx.coroutines.launch
-import com.example.optoapp.ui.components.OptoTopAppBar
-import com.example.optoapp.ui.components.OptoCard
-import com.example.optoapp.ui.components.OptoKpiCard
-import com.example.optoapp.ui.theme.PositiveGreen
-import com.example.optoapp.ui.theme.AlertRed
-import com.example.optoapp.ui.theme.WarningAmber
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -63,7 +55,7 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
         OptoDatePickerDialog(
             initialDate = fechaDiario,
             onDateSelected = { viewModel.setFechaDiario(it) },
-            onDismiss = { showDatePicker = false }
+            onDismiss = { showDatePicker = false },
         )
     }
 
@@ -108,7 +100,7 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                                     porCobrar = porCobrar,
                                     ticketPromedio = ticketPromedio,
                                     pagosSumByDispensacion = pagosSumByDispensacion,
-                                    aCuentaSumByServicio = aCuentaSumByServicio
+                                    aCuentaSumByServicio = aCuentaSumByServicio,
                                 )
                                 FileShareUtils.openPdf(context, pdf, "Abrir reporte financiero")
                             } catch (e: Exception) {
@@ -124,17 +116,17 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                             Icon(Icons.Default.PictureAsPdf, contentDescription = "Generar PDF")
                         }
                     }
-                }
+                },
             )
-        }
-        ) { padding ->
+        },
+    ) { padding ->
         LazyColumn(
             modifier = Modifier
                 .padding(padding)
                 .padding(horizontal = 16.dp)
                 .fillMaxSize()
                 .navigationBarsPadding(),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             if (isDataLoading) {
                 item { LinearProgressIndicator(modifier = Modifier.fillMaxWidth()) }
@@ -144,21 +136,21 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
                 ) {
                     Column(modifier = Modifier.padding(12.dp)) {
                         DropdownField(
                             label = "Período",
                             selected = periodo,
                             options = listOf("Diario", "Semanal", "Mensual", "Anual", "Total"),
-                            onSelected = { viewModel.setPeriodo(it) }
+                            onSelected = { viewModel.setPeriodo(it) },
                         )
                         Spacer(Modifier.height(8.dp))
                         if (periodo != "Todo") {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
+                                horizontalArrangement = Arrangement.SpaceBetween,
                             ) {
                                 IconButton(onClick = { viewModel.previous() }) {
                                     Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = "Anterior")
@@ -168,7 +160,7 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                                     fontWeight = FontWeight.SemiBold,
                                     fontSize = 14.sp,
                                     textAlign = TextAlign.Center,
-                                    modifier = Modifier.weight(1f)
+                                    modifier = Modifier.weight(1f),
                                 )
                                 Row {
                                     IconButton(onClick = { showDatePicker = true }) {
@@ -207,7 +199,7 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(12.dp),
                 ) {
                     Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Text("Desglose de Cobros", fontWeight = FontWeight.Bold, fontSize = 14.sp)
@@ -223,7 +215,7 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                 item {
                     Card(
                         modifier = Modifier.fillMaxWidth().height(120.dp),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = RoundedCornerShape(12.dp),
                     ) {
                         Column(modifier = Modifier.padding(14.dp)) {
                             Text("Composición", fontWeight = FontWeight.Bold, fontSize = 14.sp)
@@ -266,7 +258,7 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                             Text(
                                 if (saldo > 0) "Saldo: s/. ${saldo.fmt()}" else "Pagado",
                                 fontSize = 11.sp,
-                                color = if (saldo > 0) AlertRed else PositiveGreen
+                                color = if (saldo > 0) AlertRed else PositiveGreen,
                             )
                         }
                     }
@@ -288,7 +280,7 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                             Text(
                                 if (saldo > 0) "Saldo: s/. ${saldo.fmt()}" else "Pagado",
                                 fontSize = 11.sp,
-                                color = if (saldo > 0) AlertRed else PositiveGreen
+                                color = if (saldo > 0) AlertRed else PositiveGreen,
                             )
                         }
                     }
@@ -316,17 +308,15 @@ private fun BarRow(label: String, count: Int, maxVal: Float, color: Color) {
             modifier = Modifier
                 .weight(1f)
                 .height(16.dp)
-                .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(4.dp))
+                .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(4.dp)),
         ) {
             Box(
                 modifier = Modifier
                     .fillMaxHeight()
                     .fillMaxWidth(fraction = (count / maxVal).coerceIn(0f, 1f))
-                    .background(color, RoundedCornerShape(4.dp))
+                    .background(color, RoundedCornerShape(4.dp)),
             )
         }
         Text(" $count", fontSize = 11.sp, fontWeight = FontWeight.Medium, modifier = Modifier.width(32.dp), textAlign = TextAlign.End)
     }
 }
-
-

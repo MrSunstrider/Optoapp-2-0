@@ -164,7 +164,7 @@ class NuevaDispensacionScreenTest {
         val methods = DispensacionViewModel::class.java.methods.map { it.name }
         assertTrue(
             "uiState debe ser miembro de DispensacionViewModel",
-            "uiState" in fields || "uiState" in methods
+            "uiState" in fields || "uiState" in methods,
         )
     }
 
@@ -174,7 +174,7 @@ class NuevaDispensacionScreenTest {
         val methods = DispensacionViewModel::class.java.methods.map { it.name }
         assertTrue(
             "monturasActivas debe ser miembro de DispensacionViewModel",
-            "monturasActivas" in fields || "monturasActivas" in methods
+            "monturasActivas" in fields || "monturasActivas" in methods,
         )
     }
 
@@ -183,7 +183,7 @@ class NuevaDispensacionScreenTest {
         val methods = DispensacionViewModel::class.java.declaredMethods.map { it.name }
         assertTrue(
             "updateUiState debe ser método de DispensacionViewModel",
-            "updateUiState" in methods
+            "updateUiState" in methods,
         )
     }
 
@@ -192,7 +192,7 @@ class NuevaDispensacionScreenTest {
         val methods = DispensacionViewModel::class.java.declaredMethods.map { it.name }
         assertTrue(
             "suggestOt debe ser método de DispensacionViewModel",
-            "suggestOt" in methods
+            "suggestOt" in methods,
         )
     }
 
@@ -201,7 +201,7 @@ class NuevaDispensacionScreenTest {
         val methods = DispensacionViewModel::class.java.declaredMethods.map { it.name }
         assertTrue(
             "saveDispensacion debe ser método de DispensacionViewModel",
-            "saveDispensacion" in methods
+            "saveDispensacion" in methods,
         )
     }
 

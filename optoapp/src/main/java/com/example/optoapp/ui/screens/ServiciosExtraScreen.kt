@@ -10,7 +10,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -18,11 +17,11 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.optoapp.data.ServicioExtra
+import com.example.optoapp.ui.components.OptoDatePickerDialog
 import com.example.optoapp.ui.components.OptoKpiCard
 import com.example.optoapp.ui.components.OptoTopAppBar
-import com.example.optoapp.ui.components.OptoDatePickerDialog
-import com.example.optoapp.ui.theme.PositiveGreen
 import com.example.optoapp.ui.theme.AlertRed
+import com.example.optoapp.ui.theme.PositiveGreen
 import com.example.optoapp.ui.theme.WarningAmber
 import com.example.optoapp.util.DateUtils
 import com.example.optoapp.viewmodel.ServiciosViewModel
@@ -66,7 +65,7 @@ fun ServiciosExtraScreen(navController: NavController, drawerState: DrawerState,
             initialDate = selectedDate ?: DateUtils.today(),
             onDateSelected = { selectedDate = it },
             onDismiss = { showDatePicker = false },
-            dismissButton = { TextButton(onClick = { showDatePicker = false }) { Text("Cancelar") } }
+            dismissButton = { TextButton(onClick = { showDatePicker = false }) { Text("Cancelar") } },
         )
     }
 
@@ -87,7 +86,7 @@ fun ServiciosExtraScreen(navController: NavController, drawerState: DrawerState,
                     Text("Eliminar", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
                 }
             },
-            dismissButton = { TextButton(onClick = { viewModel.dismissDeleteDialog() }) { Text("Cancelar") } }
+            dismissButton = { TextButton(onClick = { viewModel.dismissDeleteDialog() }) { Text("Cancelar") } },
         )
     }
 
@@ -108,25 +107,25 @@ fun ServiciosExtraScreen(navController: NavController, drawerState: DrawerState,
                         Icon(
                             Icons.Default.CalendarMonth,
                             contentDescription = "Filtrar por fecha",
-                            tint = if (selectedDate != null) MaterialTheme.colorScheme.primary else LocalContentColor.current
+                            tint = if (selectedDate != null) MaterialTheme.colorScheme.primary else LocalContentColor.current,
                         )
                     }
-                }
+                },
             )
         },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { navController.navigate("nuevo_servicio") },
-                modifier = Modifier.navigationBarsPadding()
+                modifier = Modifier.navigationBarsPadding(),
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Añadir Servicio")
             }
-        }
+        },
     ) { padding ->
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(padding).navigationBarsPadding(),
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             item {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -144,7 +143,7 @@ fun ServiciosExtraScreen(navController: NavController, drawerState: DrawerState,
                     placeholder = { Text("Buscar por OT o descripción...") },
                     leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Buscar") },
                     shape = MaterialTheme.shapes.medium,
-                    singleLine = true
+                    singleLine = true,
                 )
             }
 
@@ -160,8 +159,8 @@ fun ServiciosExtraScreen(navController: NavController, drawerState: DrawerState,
                                     "Pendiente" -> AlertRed.copy(alpha = 0.15f)
                                     "Entregado" -> PositiveGreen.copy(alpha = 0.15f)
                                     else -> MaterialTheme.colorScheme.primaryContainer
-                                }
-                            )
+                                },
+                            ),
                         )
                     }
                     if (selectedDate != null) {
@@ -169,7 +168,7 @@ fun ServiciosExtraScreen(navController: NavController, drawerState: DrawerState,
                             selected = true,
                             onClick = { selectedDate = null },
                             label = { Text(DateUtils.formatLocalized(selectedDate!!), fontSize = 12.sp) },
-                            trailingIcon = { Icon(Icons.Default.Close, contentDescription = "Quitar filtro", modifier = Modifier.size(14.dp)) }
+                            trailingIcon = { Icon(Icons.Default.Close, contentDescription = "Quitar filtro", modifier = Modifier.size(14.dp)) },
                         )
                     }
                 }
@@ -179,7 +178,7 @@ fun ServiciosExtraScreen(navController: NavController, drawerState: DrawerState,
                 item {
                     Card(
                         modifier = Modifier.fillMaxWidth().padding(top = 24.dp),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = RoundedCornerShape(12.dp),
                     ) {
                         Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -196,7 +195,7 @@ fun ServiciosExtraScreen(navController: NavController, drawerState: DrawerState,
                         servicio = servicio,
                         aCuenta = aCuentaSumByServicio[servicio.id] ?: 0.0,
                         onEdit = { navController.navigate("editar_servicio/${servicio.id}") },
-                        onDelete = { viewModel.showDeleteConfirmation(servicio) }
+                        onDelete = { viewModel.showDeleteConfirmation(servicio) },
                     )
                 }
             }
@@ -218,12 +217,12 @@ private fun ServicioCard(servicio: ServicioExtra, aCuenta: Double = 0.0, onEdit:
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = estadoColor.copy(alpha = 0.04f))
+        colors = CardDefaults.cardColors(containerColor = estadoColor.copy(alpha = 0.04f)),
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     if (servicio.ot.isNotBlank()) {
@@ -234,19 +233,19 @@ private fun ServicioCard(servicio: ServicioExtra, aCuenta: Double = 0.0, onEdit:
                         fontWeight = FontWeight.Bold,
                         fontSize = 15.sp,
                         maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
                     )
                 }
                 Surface(
                     shape = RoundedCornerShape(6.dp),
-                    color = estadoColor.copy(alpha = 0.15f)
+                    color = estadoColor.copy(alpha = 0.15f),
                 ) {
                     Text(
                         servicio.estado,
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
-                        color = estadoColor
+                        color = estadoColor,
                     )
                 }
             }
@@ -256,7 +255,7 @@ private fun ServicioCard(servicio: ServicioExtra, aCuenta: Double = 0.0, onEdit:
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Bottom
+                verticalAlignment = Alignment.Bottom,
             ) {
                 Column {
                     Text("Total: s/. ${fmt(servicio.montoTotal)}", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
@@ -285,10 +284,8 @@ private fun ServicioCard(servicio: ServicioExtra, aCuenta: Double = 0.0, onEdit:
     }
 }
 
-private fun fmt(value: Double): String {
-    return if (value == value.toLong().toDouble()) {
-        String.format(Locale.getDefault(), "%,.0f", value)
-    } else {
-        String.format(Locale.getDefault(), "%,.2f", value)
-    }
+private fun fmt(value: Double): String = if (value == value.toLong().toDouble()) {
+    String.format(Locale.getDefault(), "%,.0f", value)
+} else {
+    String.format(Locale.getDefault(), "%,.2f", value)
 }

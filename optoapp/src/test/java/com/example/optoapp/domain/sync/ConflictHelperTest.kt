@@ -26,8 +26,8 @@ class ConflictHelperTest {
         assertTrue(
             ConflictHelper.isLocalNewerOrEqual(
                 "2026-06-15T04:33:25Z",
-                "2026-06-15T04:33:25+00:00"
-            )
+                "2026-06-15T04:33:25+00:00",
+            ),
         )
     }
 
@@ -36,8 +36,8 @@ class ConflictHelperTest {
         assertTrue(
             ConflictHelper.isLocalNewerOrEqual(
                 "2026-06-15T04:33:25.000Z",
-                "2026-06-15T04:33:25Z"
-            )
+                "2026-06-15T04:33:25Z",
+            ),
         )
     }
 
@@ -46,8 +46,8 @@ class ConflictHelperTest {
         assertTrue(
             ConflictHelper.isLocalNewerOrEqual(
                 "2026-06-15T04:33:25.123456Z",
-                "2026-06-15T04:33:25.123Z"
-            )
+                "2026-06-15T04:33:25.123Z",
+            ),
         )
     }
 
@@ -56,8 +56,8 @@ class ConflictHelperTest {
         assertTrue(
             ConflictHelper.isLocalNewerOrEqual(
                 "2026-06-15T05:00:00Z",
-                "2026-06-15T04:00:00Z"
-            )
+                "2026-06-15T04:00:00Z",
+            ),
         )
     }
 
@@ -66,8 +66,8 @@ class ConflictHelperTest {
         assertFalse(
             ConflictHelper.isLocalNewerOrEqual(
                 "2026-06-15T04:00:00Z",
-                "2026-06-15T05:00:00Z"
-            )
+                "2026-06-15T05:00:00Z",
+            ),
         )
     }
 
@@ -76,8 +76,8 @@ class ConflictHelperTest {
         assertTrue(
             ConflictHelper.isLocalNewerOrEqual(
                 "2026-06-15T04:33:25Z",
-                "2026-06-15T04:33:25Z"
-            )
+                "2026-06-15T04:33:25Z",
+            ),
         )
     }
 
@@ -86,8 +86,8 @@ class ConflictHelperTest {
         assertTrue(
             ConflictHelper.isLocalNewerOrEqual(
                 "2026-06-16T00:00:00Z",
-                "2026-06-15T23:59:59Z"
-            )
+                "2026-06-15T23:59:59Z",
+            ),
         )
     }
 
@@ -97,8 +97,8 @@ class ConflictHelperTest {
         assertTrue(
             ConflictHelper.isLocalNewerOrEqual(
                 "2026-06-15T09:33:25+05:00",
-                "2026-06-15T04:33:25Z"
-            )
+                "2026-06-15T04:33:25Z",
+            ),
         )
     }
 
@@ -108,8 +108,8 @@ class ConflictHelperTest {
         assertTrue(
             ConflictHelper.isLocalNewerOrEqual(
                 "invalid",
-                "2026-06-15T04:33:25Z"
-            )
+                "2026-06-15T04:33:25Z",
+            ),
         )
     }
 
@@ -117,7 +117,7 @@ class ConflictHelperTest {
     fun `both unparseable uses string comparison`() {
         // "abc" >= "xyz" is false as strings (a < x)
         assertFalse(
-            ConflictHelper.isLocalNewerOrEqual("abc", "xyz")
+            ConflictHelper.isLocalNewerOrEqual("abc", "xyz"),
         )
     }
 
@@ -127,8 +127,8 @@ class ConflictHelperTest {
         assertTrue(
             ConflictHelper.isLocalNewerOrEqual(
                 "null",
-                "2026-06-15T04:33:25Z"
-            )
+                "2026-06-15T04:33:25Z",
+            ),
         )
     }
 
@@ -139,8 +139,8 @@ class ConflictHelperTest {
         assertFalse(
             ConflictHelper.isLocalNewerOrEqual(
                 "2026-06-15T04:33:25Z",
-                "null"
-            )
+                "null",
+            ),
         )
     }
 
@@ -152,8 +152,8 @@ class ConflictHelperTest {
         assertFalse(
             ConflictHelper.isLocalNewerOrEqual(
                 "2026-06-16T00:00:00+05:00",
-                "2026-06-15T23:30:00Z"
-            )
+                "2026-06-15T23:30:00Z",
+            ),
         )
     }
 
@@ -181,7 +181,7 @@ class ConflictHelperTest {
      * added with internal visibility this class will compile. Until then this file is RED.
      */
     private inner class FakeConflictHelper(
-        private val rowsToReturn: List<RemoteTimestamp> = emptyList()
+        private val rowsToReturn: List<RemoteTimestamp> = emptyList(),
     ) : ConflictHelper(mockSupabase, mockTracker, mockConflictDao) {
 
         var capturedIds: List<String>? = null
@@ -190,7 +190,7 @@ class ConflictHelperTest {
         internal override suspend fun selectRemoteRows(
             tableName: String,
             opticaId: String,
-            ids: List<String>
+            ids: List<String>,
         ): List<RemoteTimestamp> {
             selectRemoteRowsCalled = true
             capturedIds = ids
@@ -209,7 +209,7 @@ class ConflictHelperTest {
         assertTrue("Expected empty map but got: $result", result.isEmpty())
         assertFalse(
             "selectRemoteRows must NOT be called when ids is empty",
-            helper.selectRemoteRowsCalled
+            helper.selectRemoteRowsCalled,
         )
     }
 
@@ -218,19 +218,19 @@ class ConflictHelperTest {
         val helper = FakeConflictHelper(
             rowsToReturn = listOf(
                 RemoteTimestamp(ID1, T1),
-                RemoteTimestamp(ID2, T2)
-            )
+                RemoteTimestamp(ID2, T2),
+            ),
         )
 
         helper.fetchRemoteUpdatedAt(TABLE, OPTICA_ID, listOf(ID1, ID2))
 
         assertTrue(
             "selectRemoteRows must be called when ids is non-empty",
-            helper.selectRemoteRowsCalled
+            helper.selectRemoteRowsCalled,
         )
         assertTrue(
             "Expected capturedIds=[id1, id2] but got: ${helper.capturedIds}",
-            helper.capturedIds == listOf(ID1, ID2)
+            helper.capturedIds == listOf(ID1, ID2),
         )
     }
 
@@ -243,16 +243,16 @@ class ConflictHelperTest {
         val helper = FakeConflictHelper(
             rowsToReturn = listOf(
                 RemoteTimestamp(ID1, T1),
-                RemoteTimestamp(ID2, T2)
+                RemoteTimestamp(ID2, T2),
                 // id3 is absent — the server-side isIn filter would exclude it
-            )
+            ),
         )
 
         val result = helper.fetchRemoteUpdatedAt(TABLE, OPTICA_ID, listOf(ID1, ID2))
 
         assertTrue(
             "Expected keys={id1, id2} but got: ${result.keys}",
-            result.keys == setOf(ID1, ID2)
+            result.keys == setOf(ID1, ID2),
         )
         assertFalse("id3 must not appear in result", ID3 in result)
     }
@@ -264,7 +264,7 @@ class ConflictHelperTest {
         // e1: local T2 > remote T1 → safe
         val e1 = LocalEntity(ID1, T2)
         val helper = FakeConflictHelper(
-            rowsToReturn = listOf(RemoteTimestamp(ID1, T1))
+            rowsToReturn = listOf(RemoteTimestamp(ID1, T1)),
         )
         coEvery { mockConflictDao.resolveConflict(any(), any()) } returns Unit
 
@@ -278,7 +278,7 @@ class ConflictHelperTest {
         // e2: local T1 < remote T2 → conflict
         val e2 = LocalEntity(ID2, T1)
         val helper = FakeConflictHelper(
-            rowsToReturn = listOf(RemoteTimestamp(ID2, T2))
+            rowsToReturn = listOf(RemoteTimestamp(ID2, T2)),
         )
         coEvery { mockConflictDao.upsertConflict(any(), any(), any(), any(), any(), any()) } returns Unit
 
@@ -313,7 +313,7 @@ class ConflictHelperTest {
         // e3: local T2 > remote T1 → safe; no ConflictRecord exists in DB (relaxed mock = no-op)
         val e3 = LocalEntity(ID3, T2)
         val helper = FakeConflictHelper(
-            rowsToReturn = listOf(RemoteTimestamp(ID3, T1))
+            rowsToReturn = listOf(RemoteTimestamp(ID3, T1)),
         )
         // relaxed mock: resolveConflict is a no-op even if no row exists in the table
 
@@ -339,14 +339,24 @@ class ConflictHelperTest {
     @Test
     fun `detectConflictMovimientos with different IDs but same composite key`() {
         val mov1 = MonturaMovimiento(
-            id = "uuid-aaa", monturaId = "m1", tipo = "SALIDA_VENTA",
-            cantidad = 1, stockPrevio = 5, stockNuevo = 4,
-            referenciaId = "disp-1", opticaId = "o1"
+            id = "uuid-aaa",
+            monturaId = "m1",
+            tipo = "SALIDA_VENTA",
+            cantidad = 1,
+            stockPrevio = 5,
+            stockNuevo = 4,
+            referenciaId = "disp-1",
+            opticaId = "o1",
         )
         val mov2 = MonturaMovimiento(
-            id = "uuid-bbb", monturaId = "m1", tipo = "SALIDA_VENTA",
-            cantidad = 1, stockPrevio = 5, stockNuevo = 4,
-            referenciaId = "disp-1", opticaId = "o1"
+            id = "uuid-bbb",
+            monturaId = "m1",
+            tipo = "SALIDA_VENTA",
+            cantidad = 1,
+            stockPrevio = 5,
+            stockNuevo = 4,
+            referenciaId = "disp-1",
+            opticaId = "o1",
         )
 
         // Current bug: distinctBy { it.id } keeps BOTH → duplicate FK violation
@@ -360,7 +370,7 @@ class ConflictHelperTest {
         // detectConflictMovimientos: both movements same stock → both safe
         val (safeIds, conflictedIds) = ConflictHelper.detectConflictMovimientos(
             local = listOf(mov1),
-            remote = listOf(mov2)
+            remote = listOf(mov2),
         )
         assertTrue("mov1 should be safe (same stock as remote)", mov1.id in safeIds)
         assertTrue("no conflicts when stock matches", conflictedIds.isEmpty())
@@ -369,19 +379,29 @@ class ConflictHelperTest {
     @Test
     fun `detectConflictMovimientos flags conflict when stock differs`() {
         val local = MonturaMovimiento(
-            id = "uuid-local", monturaId = "m1", tipo = "SALIDA_VENTA",
-            cantidad = 1, stockPrevio = 10, stockNuevo = 9,
-            referenciaId = "disp-1", opticaId = "o1"
+            id = "uuid-local",
+            monturaId = "m1",
+            tipo = "SALIDA_VENTA",
+            cantidad = 1,
+            stockPrevio = 10,
+            stockNuevo = 9,
+            referenciaId = "disp-1",
+            opticaId = "o1",
         )
         val remote = MonturaMovimiento(
-            id = "uuid-remote", monturaId = "m1", tipo = "SALIDA_VENTA",
-            cantidad = 1, stockPrevio = 5, stockNuevo = 4,
-            referenciaId = "disp-1", opticaId = "o1"
+            id = "uuid-remote",
+            monturaId = "m1",
+            tipo = "SALIDA_VENTA",
+            cantidad = 1,
+            stockPrevio = 5,
+            stockNuevo = 4,
+            referenciaId = "disp-1",
+            opticaId = "o1",
         )
 
         val (safeIds, conflictedIds) = ConflictHelper.detectConflictMovimientos(
             local = listOf(local),
-            remote = listOf(remote)
+            remote = listOf(remote),
         )
         assertTrue("local should be conflicted when stockNuevo differs", local.id in conflictedIds)
         assertTrue("no safe IDs when stock differs", safeIds.isEmpty())

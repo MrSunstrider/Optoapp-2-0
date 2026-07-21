@@ -1,11 +1,11 @@
 package com.example.optoapp.domain.sync
 
-import com.example.optoapp.util.AppLogger
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.OrdenCompraRepository
 import com.example.optoapp.data.ProveedorRepository
 import com.example.optoapp.data.Resource
 import com.example.optoapp.data.SessionManager
+import com.example.optoapp.util.AppLogger
 import kotlinx.coroutines.flow.first
 
 /**
@@ -18,7 +18,7 @@ class BumpEntityStrategy(
     private val repository: OptoRepository,
     private val proveedorRepository: ProveedorRepository,
     private val ordenCompraRepository: OrdenCompraRepository,
-    private val sessionManager: SessionManager
+    private val sessionManager: SessionManager,
 ) {
     private val TAG = "BumpEntityStrategy"
 
@@ -39,9 +39,10 @@ class BumpEntityStrategy(
     // ── Helpers ──────────────────────────────────────────────────────────
 
     private suspend fun <T> bumpWithResource(
-        entityId: String, entityType: String,
+        entityId: String,
+        entityType: String,
         fetcher: suspend () -> Resource<T>,
-        updater: suspend (T) -> Unit
+        updater: suspend (T) -> Unit,
     ) {
         val result = fetcher()
         if (result is Resource.Success && result.data != null) {
@@ -52,9 +53,10 @@ class BumpEntityStrategy(
     }
 
     private suspend fun <T> bumpWithNullable(
-        entityId: String, entityType: String,
+        entityId: String,
+        entityType: String,
         fetcher: suspend () -> T?,
-        updater: suspend (T) -> Unit
+        updater: suspend (T) -> Unit,
     ) {
         val entity = fetcher()
         if (entity != null) {
@@ -95,9 +97,10 @@ class BumpEntityStrategy(
             val mov = repository.getMovimientoMonturaById(id)
             if (mov != null) {
                 bumpWithResource(
-                    mov.monturaId, "parent montura",
+                    mov.monturaId,
+                    "parent montura",
                     { repository.getMonturaById(mov.monturaId, opticaId) },
-                    { repository.updateMontura(it) }
+                    { repository.updateMontura(it) },
                 )
             } else {
                 AppLogger.w(TAG, "bumpEntityUpdatedAt: montura_movimiento no encontrado id=$id")
@@ -120,15 +123,16 @@ class BumpEntityStrategy(
             val item = repository.getDispensacionItemById(id)
             if (item != null) {
                 bumpWithResource(
-                    item.dispensacionId, "parent dispensacion",
+                    item.dispensacionId,
+                    "parent dispensacion",
                     { repository.getDispensacionById(item.dispensacionId) },
-                    { repository.updateDispensacion(it) }
+                    { repository.updateDispensacion(it) },
                 )
                 repository.insertDispensacionItem(item)
             } else {
                 AppLogger.w(TAG, "bumpEntityUpdatedAt: dispensacion_item no encontrado id=$id")
             }
         },
-        "categoria_montura" to { _, _ -> AppLogger.w(TAG, "categoria_montura has no parent, skipping bump") }
+        "categoria_montura" to { _, _ -> AppLogger.w(TAG, "categoria_montura has no parent, skipping bump") },
     )
 }

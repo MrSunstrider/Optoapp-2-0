@@ -30,7 +30,7 @@ data class GastosUiState(
     val nota: String = "",
     val isRecurring: Boolean = false,
     val isLoading: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -39,7 +39,7 @@ class GastosViewModel @Inject constructor(
     private val repository: OptoRepository,
     private val sessionManager: SessionManager,
     private val postSaveSyncScheduler: PostSaveSyncScheduler,
-    private val syncFinanzasUseCase: SyncFinanzasUseCase
+    private val syncFinanzasUseCase: SyncFinanzasUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(GastosUiState())
@@ -82,7 +82,7 @@ class GastosViewModel @Inject constructor(
         val nuevos = autoGenerarRecurrentes(
             templates = gastos.filter { it.isRecurring },
             existentes = gastos,
-            mesActual = hoy
+            mesActual = hoy,
         )
         if (nuevos.isEmpty()) return gastos
         val opticaId = sessionManager.opticaId.first()
@@ -98,7 +98,7 @@ class GastosViewModel @Inject constructor(
         fun autoGenerarRecurrentes(
             templates: List<GastoOperativoEntity>,
             existentes: List<GastoOperativoEntity>,
-            mesActual: LocalDate
+            mesActual: LocalDate,
         ): List<GastoOperativoEntity> {
             val mesInicio = mesActual.withDayOfMonth(1)
             val mesFin = mesActual.withDayOfMonth(mesActual.lengthOfMonth())
@@ -107,8 +107,8 @@ class GastosViewModel @Inject constructor(
                 .filter { template ->
                     existentes.none { existente ->
                         existente.categoria == template.categoria &&
-                        !existente.fecha.isBefore(mesInicio) &&
-                        !existente.fecha.isAfter(mesFin)
+                            !existente.fecha.isBefore(mesInicio) &&
+                            !existente.fecha.isAfter(mesFin)
                     }
                 }
                 .map { template ->
@@ -116,7 +116,7 @@ class GastosViewModel @Inject constructor(
                         id = UUID.randomUUID().toString(),
                         fecha = mesInicio,
                         isRecurring = false,
-                        nota = "Auto-generado de ${template.categoria}"
+                        nota = "Auto-generado de ${template.categoria}",
                     )
                 }
         }
@@ -125,7 +125,7 @@ class GastosViewModel @Inject constructor(
     val categorias = CATEGORIAS
 
     fun showNewGasto() {
-            _uiState.value = GastosUiState(isDialogVisible = true)
+        _uiState.value = GastosUiState(isDialogVisible = true)
     }
 
     fun refreshGastos() {
@@ -147,7 +147,7 @@ class GastosViewModel @Inject constructor(
             descripcion = gasto.descripcion ?: "",
             monto = gasto.monto.toString(),
             fecha = gasto.fecha,
-            nota = gasto.nota ?: ""
+            nota = gasto.nota ?: "",
         )
     }
 
@@ -155,12 +155,24 @@ class GastosViewModel @Inject constructor(
         _uiState.value = GastosUiState()
     }
 
-    fun updateCategoria(c: String) { _uiState.update { it.copy(categoria = c) } }
-    fun updateDescripcion(d: String) { _uiState.update { it.copy(descripcion = d) } }
-    fun updateMonto(m: String) { _uiState.update { it.copy(monto = m) } }
-    fun updateFecha(f: LocalDate) { _uiState.update { it.copy(fecha = f) } }
-    fun updateNota(n: String) { _uiState.update { it.copy(nota = n) } }
-    fun toggleRecurrente() { _uiState.update { it.copy(isRecurring = !it.isRecurring) } }
+    fun updateCategoria(c: String) {
+        _uiState.update { it.copy(categoria = c) }
+    }
+    fun updateDescripcion(d: String) {
+        _uiState.update { it.copy(descripcion = d) }
+    }
+    fun updateMonto(m: String) {
+        _uiState.update { it.copy(monto = m) }
+    }
+    fun updateFecha(f: LocalDate) {
+        _uiState.update { it.copy(fecha = f) }
+    }
+    fun updateNota(n: String) {
+        _uiState.update { it.copy(nota = n) }
+    }
+    fun toggleRecurrente() {
+        _uiState.update { it.copy(isRecurring = !it.isRecurring) }
+    }
 
     fun save() {
         if (_uiState.value.isLoading) return
@@ -183,7 +195,7 @@ class GastosViewModel @Inject constructor(
                     fecha = s.fecha,
                     fechaProgramada = null,
                     nota = s.nota.ifBlank { null },
-                    isRecurring = s.isRecurring
+                    isRecurring = s.isRecurring,
                 )
                 repository.upsertGastoOperativo(gasto)
                 postSaveSyncScheduler.scheduleFinanzasSync(opticaId)

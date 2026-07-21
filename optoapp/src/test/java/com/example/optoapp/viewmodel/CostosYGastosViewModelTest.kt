@@ -91,7 +91,12 @@ class CostosYGastosViewModelTest {
         coEvery { costoProductoDao.getByBloque(opticaId, "stock") } returns flowOf(emptyList())
 
         viewModel = CostosYGastosViewModel(
-            repository, costoProductoDao, costoBiseladoDao, sessionManager, scheduler, syncFinanzas
+            repository,
+            costoProductoDao,
+            costoBiseladoDao,
+            sessionManager,
+            scheduler,
+            syncFinanzas,
         )
 
         viewModel.loadBlock("Stock Monofocal")
@@ -107,17 +112,19 @@ class CostosYGastosViewModelTest {
 
         // Verify upsertAll was called with one entity containing expected fields
         coVerify {
-            costoProductoDao.upsertAll(withArg { entities ->
-                assertEquals(1, entities.size)
-                val entity = entities[0]
-                assertEquals(opticaId, entity.opticaId)
-                assertEquals("CR39", entity.material)
-                assertEquals("Monofocal", entity.tipoLente)
-                assertEquals(150.0, entity.costoUnitario, 0.001)
-                assertEquals("2026-07-16", entity.vigenteDesde)
-                assertNotNull("Entity must have a generated UUID", entity.id)
-                assertTrue("Entity ID must not be blank", entity.id.isNotBlank())
-            })
+            costoProductoDao.upsertAll(
+                withArg { entities ->
+                    assertEquals(1, entities.size)
+                    val entity = entities[0]
+                    assertEquals(opticaId, entity.opticaId)
+                    assertEquals("CR39", entity.material)
+                    assertEquals("Monofocal", entity.tipoLente)
+                    assertEquals(150.0, entity.costoUnitario, 0.001)
+                    assertEquals("2026-07-16", entity.vigenteDesde)
+                    assertNotNull("Entity must have a generated UUID", entity.id)
+                    assertTrue("Entity ID must not be blank", entity.id.isNotBlank())
+                },
+            )
         }
 
         // Verify block was refreshed after save
@@ -136,7 +143,12 @@ class CostosYGastosViewModelTest {
     @Test
     fun saveCosto_rejectsEmptyMaterial_setsCostoSaveError() = runTest(testDispatcher) {
         viewModel = CostosYGastosViewModel(
-            repository, costoProductoDao, costoBiseladoDao, sessionManager, scheduler, syncFinanzas
+            repository,
+            costoProductoDao,
+            costoBiseladoDao,
+            sessionManager,
+            scheduler,
+            syncFinanzas,
         )
 
         viewModel.loadBlock("Stock Monofocal")
@@ -156,7 +168,12 @@ class CostosYGastosViewModelTest {
     @Test
     fun saveCosto_rejectsEmptyTipoLente_setsCostoSaveError() = runTest(testDispatcher) {
         viewModel = CostosYGastosViewModel(
-            repository, costoProductoDao, costoBiseladoDao, sessionManager, scheduler, syncFinanzas
+            repository,
+            costoProductoDao,
+            costoBiseladoDao,
+            sessionManager,
+            scheduler,
+            syncFinanzas,
         )
 
         viewModel.loadBlock("Stock Monofocal")
@@ -176,7 +193,12 @@ class CostosYGastosViewModelTest {
     @Test
     fun saveCosto_rejectsInvalidCostoUnitario_setsCostoSaveError() = runTest(testDispatcher) {
         viewModel = CostosYGastosViewModel(
-            repository, costoProductoDao, costoBiseladoDao, sessionManager, scheduler, syncFinanzas
+            repository,
+            costoProductoDao,
+            costoBiseladoDao,
+            sessionManager,
+            scheduler,
+            syncFinanzas,
         )
 
         viewModel.loadBlock("Stock Monofocal")
@@ -196,7 +218,12 @@ class CostosYGastosViewModelTest {
     @Test
     fun saveCosto_rejectsNegativeCostoUnitario_setsCostoSaveError() = runTest(testDispatcher) {
         viewModel = CostosYGastosViewModel(
-            repository, costoProductoDao, costoBiseladoDao, sessionManager, scheduler, syncFinanzas
+            repository,
+            costoProductoDao,
+            costoBiseladoDao,
+            sessionManager,
+            scheduler,
+            syncFinanzas,
         )
 
         viewModel.loadBlock("Stock Monofocal")
@@ -215,7 +242,12 @@ class CostosYGastosViewModelTest {
     @Test
     fun saveCosto_rejectsNonNumericCostoUnitario_setsCostoSaveError() = runTest(testDispatcher) {
         viewModel = CostosYGastosViewModel(
-            repository, costoProductoDao, costoBiseladoDao, sessionManager, scheduler, syncFinanzas
+            repository,
+            costoProductoDao,
+            costoBiseladoDao,
+            sessionManager,
+            scheduler,
+            syncFinanzas,
         )
 
         viewModel.loadBlock("Stock Monofocal")
@@ -243,13 +275,18 @@ class CostosYGastosViewModelTest {
             stockOFabricacion = "stock",
             costoUnitario = 150.0,
             vigenteDesde = "2026-01-01",
-            vigenteHasta = null
+            vigenteHasta = null,
         )
 
         coEvery { costoProductoDao.getByBloque(opticaId, "stock") } returns flowOf(listOf(existing))
 
         viewModel = CostosYGastosViewModel(
-            repository, costoProductoDao, costoBiseladoDao, sessionManager, scheduler, syncFinanzas
+            repository,
+            costoProductoDao,
+            costoBiseladoDao,
+            sessionManager,
+            scheduler,
+            syncFinanzas,
         )
 
         viewModel.loadBlock("Stock Monofocal")
@@ -267,12 +304,14 @@ class CostosYGastosViewModelTest {
 
         // Verify upsertAll was called with entity that has vigenteHasta set
         coVerify {
-            costoProductoDao.upsertAll(withArg { entities ->
-                assertEquals(1, entities.size)
-                val deleted = entities[0]
-                assertEquals("costo-1", deleted.id)
-                assertEquals("2026-07-16", deleted.vigenteHasta)
-            })
+            costoProductoDao.upsertAll(
+                withArg { entities ->
+                    assertEquals(1, entities.size)
+                    val deleted = entities[0]
+                    assertEquals("costo-1", deleted.id)
+                    assertEquals("2026-07-16", deleted.vigenteHasta)
+                },
+            )
         }
 
         // Verify block was refreshed
@@ -295,14 +334,19 @@ class CostosYGastosViewModelTest {
             stockOFabricacion = "fabricacion",
             costoUnitario = 250.0,
             vigenteDesde = "2026-01-01",
-            vigenteHasta = null
+            vigenteHasta = null,
         )
 
         coEvery { costoProductoDao.getByBloque(opticaId, "fabricacion") } returns flowOf(listOf(existing))
         coEvery { costoProductoDao.upsertAll(any()) } throws IOException("DB error")
 
         viewModel = CostosYGastosViewModel(
-            repository, costoProductoDao, costoBiseladoDao, sessionManager, scheduler, syncFinanzas
+            repository,
+            costoProductoDao,
+            costoBiseladoDao,
+            sessionManager,
+            scheduler,
+            syncFinanzas,
         )
 
         viewModel.loadBlock("Fabricación Resina")

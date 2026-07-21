@@ -8,7 +8,6 @@ import com.example.optoapp.data.montura.MonturaDashboardKpiRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.launch
 import java.time.LocalDate
 import javax.inject.Inject
 
@@ -17,13 +16,13 @@ data class MonturaDashboardKpiState(
     val stockByCategory: List<CategoriaCount> = emptyList(),
     val lowStockCount: Int = 0,
     val lastMovementDate: LocalDate? = null,
-    val isLoading: Boolean = true
+    val isLoading: Boolean = true,
 )
 
 @HiltViewModel
 class MonturaDashboardKpiViewModel @Inject constructor(
     private val repository: MonturaDashboardKpiRepository,
-    private val sessionManager: SessionManager
+    private val sessionManager: SessionManager,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(MonturaDashboardKpiState())
@@ -43,14 +42,14 @@ class MonturaDashboardKpiViewModel @Inject constructor(
                     repository.totalModelos(opticaId),
                     repository.stockByCategory(opticaId),
                     repository.lowStockCount(opticaId),
-                    repository.lastMovementDate(opticaId)
+                    repository.lastMovementDate(opticaId),
                 ) { total, categories, lowStock, lastDate ->
                     MonturaDashboardKpiState(
                         totalModelos = total,
                         stockByCategory = categories,
                         lowStockCount = lowStock,
                         lastMovementDate = lastDate,
-                        isLoading = false
+                        isLoading = false,
                     )
                 }
             }

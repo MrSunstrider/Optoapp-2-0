@@ -15,7 +15,7 @@ import javax.inject.Singleton
 
 @Singleton
 class NetworkMonitor @Inject constructor(
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
 ) {
     val isOnline: Flow<Boolean> = callbackFlow {
         val connectivityManager =
@@ -37,7 +37,7 @@ class NetworkMonitor @Inject constructor(
 
             override fun onCapabilitiesChanged(
                 network: Network,
-                capabilities: NetworkCapabilities
+                capabilities: NetworkCapabilities,
             ) {
                 trySend(capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET))
             }

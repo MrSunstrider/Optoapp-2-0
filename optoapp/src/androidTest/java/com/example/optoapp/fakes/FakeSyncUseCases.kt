@@ -18,7 +18,7 @@ class FakeSyncPacientesUseCase {
     /** Matches the signature of [com.example.optoapp.domain.SyncPacientesUseCase.invoke]. */
     suspend fun invoke(
         opticaId: String,
-        downloadAfterUpload: Boolean = true
+        downloadAfterUpload: Boolean = true,
     ): Resource<PacientesSyncResult> {
         uploadCallCount++
         lastOpticaId = opticaId

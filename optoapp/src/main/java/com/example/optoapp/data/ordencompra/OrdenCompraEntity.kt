@@ -12,15 +12,15 @@ import java.time.LocalDate
         Index(value = ["opticaId"]),
         Index(value = ["numero"]),
         Index(value = ["estado"]),
-        Index(value = ["proveedorId"])
+        Index(value = ["proveedorId"]),
     ],
     foreignKeys = [
         ForeignKey(
             entity = Proveedor::class,
             parentColumns = ["id"],
-            childColumns = ["proveedorId"]
-        )
-    ]
+            childColumns = ["proveedorId"],
+        ),
+    ],
 )
 data class OrdenCompra(
     @PrimaryKey val id: String,
@@ -31,28 +31,28 @@ data class OrdenCompra(
     val total: Double = 0.0,
     val opticaId: String,
     val updatedAt: String? = null,
-    val updatedBy: String? = null
+    val updatedBy: String? = null,
 )
 
 @Entity(
     tableName = "orden_compra_items",
     indices = [
         Index(value = ["ordenId"]),
-        Index(value = ["monturaId"])
+        Index(value = ["monturaId"]),
     ],
     foreignKeys = [
         ForeignKey(
             entity = OrdenCompra::class,
             parentColumns = ["id"],
             childColumns = ["ordenId"],
-            onDelete = ForeignKey.CASCADE
+            onDelete = ForeignKey.CASCADE,
         ),
         ForeignKey(
             entity = Montura::class,
             parentColumns = ["id"],
-            childColumns = ["monturaId"]
-        )
-    ]
+            childColumns = ["monturaId"],
+        ),
+    ],
 )
 data class OrdenCompraItem(
     @PrimaryKey val id: String,
@@ -60,5 +60,5 @@ data class OrdenCompraItem(
     val monturaId: String,
     val cantidad: Int,
     val costoUnitario: Double = 0.0,
-    val recibido: Int = 0
+    val recibido: Int = 0,
 )

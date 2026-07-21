@@ -14,13 +14,13 @@ import com.example.optoapp.viewmodel.EvaluacionUiState
 fun ExamenVisualSection(
     uiState: EvaluacionUiState,
     onUpdate: (EvaluacionUiState) -> Unit,
-    onShowOsdiDialog: () -> Unit
+    onShowOsdiDialog: () -> Unit,
 ) {
     Text("Agudeza Visual SIN corrección", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
     OptoTextField(
         value = uiState.avScAo,
         onValueChange = { onUpdate(uiState.copy(avScAo = it)) },
-        label = "Ambos ojos"
+        label = "Ambos ojos",
     )
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         OptoTextField(value = uiState.avScOdLejos, onValueChange = { onUpdate(uiState.copy(avScOdLejos = it)) }, label = "OD", modifier = Modifier.weight(1f))
@@ -32,7 +32,7 @@ fun ExamenVisualSection(
     OptoTextField(
         value = uiState.avCcAoPx,
         onValueChange = { onUpdate(uiState.copy(avCcAoPx = it)) },
-        label = "Ambos ojos"
+        label = "Ambos ojos",
     )
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         OptoTextField(value = uiState.avCcOdLejos, onValueChange = { onUpdate(uiState.copy(avCcOdLejos = it)) }, label = "OD", modifier = Modifier.weight(1f))
@@ -50,11 +50,11 @@ fun ExamenVisualSection(
 @Composable
 private fun VisionBinocularCard(
     uiState: EvaluacionUiState,
-    onUpdate: (EvaluacionUiState) -> Unit
+    onUpdate: (EvaluacionUiState) -> Unit,
 ) {
     OutlinedCard(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+        colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("Visión Binocular y Percepción", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
@@ -69,11 +69,11 @@ private fun VisionBinocularCard(
 @Composable
 private fun ColorPerceptionCard(
     uiState: EvaluacionUiState,
-    onUpdate: (EvaluacionUiState) -> Unit
+    onUpdate: (EvaluacionUiState) -> Unit,
 ) {
     OutlinedCard(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+        colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("Percepción del Color", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
@@ -87,11 +87,11 @@ private fun ColorPerceptionCard(
 private fun SaludOcularCard(
     uiState: EvaluacionUiState,
     onUpdate: (EvaluacionUiState) -> Unit,
-    onShowOsdiDialog: () -> Unit
+    onShowOsdiDialog: () -> Unit,
 ) {
     OutlinedCard(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+        colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("Salud de la Superficie Ocular y Función Visual", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
@@ -120,11 +120,11 @@ private fun SaludOcularCard(
 @Composable
 private fun OtrasPruebasCard(
     uiState: EvaluacionUiState,
-    onUpdate: (EvaluacionUiState) -> Unit
+    onUpdate: (EvaluacionUiState) -> Unit,
 ) {
     OutlinedCard(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+        colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("Otras Pruebas y Exámenes Previos", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)

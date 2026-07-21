@@ -15,7 +15,7 @@ fun DropdownField(
     label: String,
     selected: String,
     options: List<String>,
-    onSelected: (String) -> Unit
+    onSelected: (String) -> Unit,
 ) {
     var showDialog by remember { mutableStateOf(false) }
 
@@ -29,7 +29,7 @@ fun DropdownField(
                 Icon(Icons.Default.ArrowDropDown, contentDescription = "Desplegar")
             }
         },
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
     )
 
     if (showDialog) {
@@ -47,24 +47,27 @@ fun DropdownField(
                                 onSelected(opt)
                                 showDialog = false
                             },
-                            color = if (isSelected) MaterialTheme.colorScheme.primaryContainer
-                            else MaterialTheme.colorScheme.surface,
+                            color = if (isSelected) {
+                                MaterialTheme.colorScheme.primaryContainer
+                            } else {
+                                MaterialTheme.colorScheme.surface
+                            },
                             shape = MaterialTheme.shapes.small,
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth(),
                         ) {
                             Row(
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically
+                                verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 RadioButton(
                                     selected = isSelected,
-                                    onClick = null
+                                    onClick = null,
                                 )
                                 Spacer(Modifier.width(8.dp))
                                 Text(
                                     text = opt,
                                     style = MaterialTheme.typography.bodyLarge,
-                                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
+                                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
                                 )
                             }
                         }
@@ -73,7 +76,7 @@ fun DropdownField(
             },
             confirmButton = {
                 TextButton(onClick = { showDialog = false }) { Text("Cancelar") }
-            }
+            },
         )
     }
 }

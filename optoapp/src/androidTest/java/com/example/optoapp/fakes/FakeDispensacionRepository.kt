@@ -7,9 +7,7 @@ import com.example.optoapp.data.Resource
 import com.example.optoapp.data.ServicioExtra
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
-import java.time.LocalDate
 
 /**
  * In-memory [com.example.optoapp.data.DispensacionRepository] for E2E tests.
@@ -31,16 +29,17 @@ class FakeDispensacionRepository {
 
     // ── Dispensaciones ───────────────────────────────────────────────────────
 
-    fun getDispensacionesByPaciente(pacienteId: String): Flow<List<DispensacionOptica>> =
-        _dispensacionesFlow.map { list -> list.filter { it.pacienteId == pacienteId } }
+    fun getDispensacionesByPaciente(pacienteId: String): Flow<List<DispensacionOptica>> = _dispensacionesFlow.map { list -> list.filter { it.pacienteId == pacienteId } }
 
-    fun getAllDispensacionesForOptica(opticaId: String): Flow<List<DispensacionOptica>> =
-        _dispensacionesFlow.map { list -> list.filter { it.opticaId == opticaId } }
+    fun getAllDispensacionesForOptica(opticaId: String): Flow<List<DispensacionOptica>> = _dispensacionesFlow.map { list -> list.filter { it.opticaId == opticaId } }
 
     suspend fun getDispensacionById(id: String): Resource<DispensacionOptica> {
         val d = dispensaciones.find { it.id == id }
-        return if (d != null) Resource.Success(d)
-        else Resource.Error("Dispensación no encontrada")
+        return if (d != null) {
+            Resource.Success(d)
+        } else {
+            Resource.Error("Dispensación no encontrada")
+        }
     }
 
     suspend fun insertDispensacion(dispensacion: DispensacionOptica) {
@@ -67,8 +66,7 @@ class FakeDispensacionRepository {
 
     // ── Items ────────────────────────────────────────────────────────────────
 
-    fun getItemsByDispensacion(dispensacionId: String): Flow<List<DispensacionItem>> =
-        _itemsFlow.map { list -> list.filter { it.dispensacionId == dispensacionId } }
+    fun getItemsByDispensacion(dispensacionId: String): Flow<List<DispensacionItem>> = _itemsFlow.map { list -> list.filter { it.dispensacionId == dispensacionId } }
 
     suspend fun insertDispensacionItem(item: DispensacionItem) {
         items.add(item)
@@ -77,8 +75,7 @@ class FakeDispensacionRepository {
 
     // ── Pagos ────────────────────────────────────────────────────────────────
 
-    fun getPagosByDispensacion(dispensacionId: String): Flow<List<Pago>> =
-        _pagosFlow.map { list -> list.filter { it.dispensacionId == dispensacionId } }
+    fun getPagosByDispensacion(dispensacionId: String): Flow<List<Pago>> = _pagosFlow.map { list -> list.filter { it.dispensacionId == dispensacionId } }
 
     suspend fun insertPago(pago: Pago) {
         pagos.add(pago)
@@ -87,8 +84,7 @@ class FakeDispensacionRepository {
 
     // ── Servicios Extra ──────────────────────────────────────────────────────
 
-    fun getAllServiciosForOptica(opticaId: String): Flow<List<ServicioExtra>> =
-        _serviciosFlow.map { list -> list.filter { it.opticaId == opticaId } }
+    fun getAllServiciosForOptica(opticaId: String): Flow<List<ServicioExtra>> = _serviciosFlow.map { list -> list.filter { it.opticaId == opticaId } }
 
     suspend fun insertServicio(servicio: ServicioExtra) {
         servicios.add(servicio)

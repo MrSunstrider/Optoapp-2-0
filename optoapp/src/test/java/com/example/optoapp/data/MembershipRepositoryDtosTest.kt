@@ -33,7 +33,7 @@ class MembershipRepositoryDtosTest {
             planCode = "premium-2024", laboratorioNombre = "Lab1",
             laboratorioContacto = "123", fiscalDocTipo = "RUC",
             fiscalDocNumero = "12345678", razonSocial = "RS",
-            direccionFiscal = "Av. Siempre Viva"
+            direccionFiscal = "Av. Siempre Viva",
         )
         assertEquals("Mi Óptica", dto.nombre)
         assertEquals("premium-2024", dto.planCode)
@@ -56,9 +56,11 @@ class MembershipRepositoryDtosTest {
     @Test
     fun opticaMemberRow_constructsWithAllFields() {
         val row = OpticaMemberRow(
-            opticaId = "o2", userId = "u2",
-            email = "test@example.com", rol = "admin",
-            createdAt = "2024-01-01"
+            opticaId = "o2",
+            userId = "u2",
+            email = "test@example.com",
+            rol = "admin",
+            createdAt = "2024-01-01",
         )
         assertEquals("test@example.com", row.email)
         assertEquals("admin", row.rol)
@@ -70,9 +72,11 @@ class MembershipRepositoryDtosTest {
     @Test
     fun planSettings_freePlan() {
         val s = PlanSettings(
-            planCode = "free", maxOpticas = 1,
-            maxPacientesPorOptica = 20, maxUsuariosPorOptica = 2,
-            planStatus = "active"
+            planCode = "free",
+            maxOpticas = 1,
+            maxPacientesPorOptica = 20,
+            maxUsuariosPorOptica = 2,
+            planStatus = "active",
         )
         assertEquals("free", s.planCode)
         assertEquals(1, s.maxOpticas)
@@ -84,9 +88,11 @@ class MembershipRepositoryDtosTest {
     @Test
     fun planSettings_premiumPlan() {
         val s = PlanSettings(
-            planCode = "premium", maxOpticas = 10,
-            maxPacientesPorOptica = null, maxUsuariosPorOptica = null,
-            planStatus = "active"
+            planCode = "premium",
+            maxOpticas = 10,
+            maxPacientesPorOptica = null,
+            maxUsuariosPorOptica = null,
+            planStatus = "active",
         )
         assertEquals("premium", s.planCode)
         assertNull(s.maxPacientesPorOptica)
@@ -107,9 +113,11 @@ class MembershipRepositoryDtosTest {
     @Test
     fun opticaFiscalSettings_constructsWithValues() {
         val s = OpticaFiscalSettings(
-            nombreComercial = "Óptica Test", docTipo = "RUC",
-            docNumero = "123", razonSocial = "RS Test",
-            direccionFiscal = "Calle 123"
+            nombreComercial = "Óptica Test",
+            docTipo = "RUC",
+            docNumero = "123",
+            razonSocial = "RS Test",
+            direccionFiscal = "Calle 123",
         )
         assertEquals("Óptica Test", s.nombreComercial)
         assertEquals("RUC", s.docTipo)
@@ -122,7 +130,7 @@ class MembershipRepositoryDtosTest {
     fun opticaHeaderSummary_holdsValues() {
         val s = OpticaHeaderSummary(
             nombreOptica = "Mi Óptica",
-            fiscalEtiqueta = "RUC 12345678"
+            fiscalEtiqueta = "RUC 12345678",
         )
         assertEquals("Mi Óptica", s.nombreOptica)
         assertEquals("RUC 12345678", s.fiscalEtiqueta)
@@ -133,7 +141,9 @@ class MembershipRepositoryDtosTest {
     @Test
     fun usuarioOpticaDto_constructs() {
         val dto = UsuarioOpticaDto(
-            userId = "u1", opticaId = "o1", rol = "admin"
+            userId = "u1",
+            opticaId = "o1",
+            rol = "admin",
         )
         assertEquals("u1", dto.userId)
         assertEquals("o1", dto.opticaId)
@@ -160,7 +170,9 @@ class MembershipRepositoryDtosTest {
     @Test
     fun usuarioOpticaUpsertDto_constructs() {
         val dto = UsuarioOpticaUpsertDto(
-            userId = "u1", opticaId = "o1", rol = "admin"
+            userId = "u1",
+            opticaId = "o1",
+            rol = "admin",
         )
         assertEquals("u1", dto.userId)
         assertEquals("o1", dto.opticaId)
@@ -184,7 +196,7 @@ class MembershipRepositoryDtosTest {
     fun opticaLaboratorioPatch_constructs() {
         val patch = OpticaLaboratorioPatch(
             laboratorioNombre = "Lab X",
-            laboratorioContacto = "contacto@labx.com"
+            laboratorioContacto = "contacto@labx.com",
         )
         assertEquals("Lab X", patch.laboratorioNombre)
         assertEquals("contacto@labx.com", patch.laboratorioContacto)
@@ -195,9 +207,11 @@ class MembershipRepositoryDtosTest {
     @Test
     fun opticaFiscalPatch_constructs() {
         val patch = OpticaFiscalPatch(
-            nombre = "Óptica", fiscalDocTipo = "RUC",
-            fiscalDocNumero = "123", razonSocial = "RS",
-            direccionFiscal = "Calle 1"
+            nombre = "Óptica",
+            fiscalDocTipo = "RUC",
+            fiscalDocNumero = "123",
+            razonSocial = "RS",
+            direccionFiscal = "Calle 1",
         )
         assertEquals("Óptica", patch.nombre)
         assertEquals("RUC", patch.fiscalDocTipo)

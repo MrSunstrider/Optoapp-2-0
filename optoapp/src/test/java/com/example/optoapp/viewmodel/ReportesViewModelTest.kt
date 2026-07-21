@@ -5,9 +5,6 @@ import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Pago
 import com.example.optoapp.data.ServicioExtra
 import com.example.optoapp.data.SessionManager
-import com.example.optoapp.domain.MovimientoFinanciero
-import com.example.optoapp.domain.Origen
-import com.example.optoapp.domain.TipoMovimiento
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
@@ -66,10 +63,10 @@ class ReportesViewModelTest {
     fun `totalVendido from dispensaciones and servicios sums all in period`() = runTest(testDispatcher) {
         val dispensaciones = listOf(
             DispensacionOptica(id = "d1", pacienteId = "p1", fecha = today, montoTotal = 100.0, opticaId = opticaId),
-            DispensacionOptica(id = "d2", pacienteId = "p2", fecha = today, montoTotal = 200.0, opticaId = opticaId)
+            DispensacionOptica(id = "d2", pacienteId = "p2", fecha = today, montoTotal = 200.0, opticaId = opticaId),
         )
         val servicios = listOf(
-            ServicioExtra(id = "s1", descripcion = "Srv", montoTotal = 50.0, aCuenta = 50.0, estado = "Entregado", fecha = today, opticaId = opticaId)
+            ServicioExtra(id = "s1", descripcion = "Srv", montoTotal = 50.0, aCuenta = 50.0, estado = "Entregado", fecha = today, opticaId = opticaId),
         )
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
         every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(servicios)
@@ -80,17 +77,21 @@ class ReportesViewModelTest {
         advanceUntilIdle()
 
         // totalVendido from movimientos created from dispensaciones+servicios, filtered by period
-        assertEquals("totalVendido must sum all movimientos in period", 350.0,
-            viewModel.totalVendido.first(), 0.001)
+        assertEquals(
+            "totalVendido must sum all movimientos in period",
+            350.0,
+            viewModel.totalVendido.first(),
+            0.001,
+        )
     }
 
     @Test
     fun `totalVendido includes both dispensaciones and servicios`() = runTest(testDispatcher) {
         val dispensaciones = listOf(
-            DispensacionOptica(id = "d1", pacienteId = "p1", fecha = today, montoTotal = 100.0, opticaId = opticaId)
+            DispensacionOptica(id = "d1", pacienteId = "p1", fecha = today, montoTotal = 100.0, opticaId = opticaId),
         )
         val servicios = listOf(
-            ServicioExtra(id = "s1", descripcion = "Srv", montoTotal = 80.0, aCuenta = 50.0, estado = "Entregado", fecha = today, opticaId = opticaId)
+            ServicioExtra(id = "s1", descripcion = "Srv", montoTotal = 80.0, aCuenta = 50.0, estado = "Entregado", fecha = today, opticaId = opticaId),
         )
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
         every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(servicios)
@@ -100,8 +101,12 @@ class ReportesViewModelTest {
         viewModel.setFechaDiario(today)
         advanceUntilIdle()
 
-        assertEquals("totalVendido must sum from both origins", 180.0,
-            viewModel.totalVendido.first(), 0.001)
+        assertEquals(
+            "totalVendido must sum from both origins",
+            180.0,
+            viewModel.totalVendido.first(),
+            0.001,
+        )
     }
 
     @Test
@@ -111,8 +116,12 @@ class ReportesViewModelTest {
         viewModel.setFechaDiario(today)
         advanceUntilIdle()
 
-        assertEquals("totalVendido must be 0 for empty period", 0.0,
-            viewModel.totalVendido.first(), 0.001)
+        assertEquals(
+            "totalVendido must be 0 for empty period",
+            0.0,
+            viewModel.totalVendido.first(),
+            0.001,
+        )
     }
 
     // -----------------------------------------------------------------------
@@ -124,13 +133,13 @@ class ReportesViewModelTest {
     fun `cobrosPeriodo excludes anulacion pagos cross period`() = runTest(testDispatcher) {
         val yesterday = today.minusDays(1)
         val dispensaciones = listOf(
-            DispensacionOptica(id = "d1", pacienteId = "p1", fecha = yesterday, montoTotal = 100.0, opticaId = opticaId)
+            DispensacionOptica(id = "d1", pacienteId = "p1", fecha = yesterday, montoTotal = 100.0, opticaId = opticaId),
         )
         // Pago today for yesterday's disp (cobro atrasado)
         val pagosEnPeriodo = listOf(
             Pago(id = "p1", fecha = today, tipo = "Efectivo", monto = 100.0, opticaId = opticaId, dispensacionId = "d1"),
             // Anulación today for the same disp (negative)
-            Pago(id = "p2", fecha = today, tipo = "Anulación", monto = -100.0, opticaId = opticaId, dispensacionId = "d1")
+            Pago(id = "p2", fecha = today, tipo = "Anulación", monto = -100.0, opticaId = opticaId, dispensacionId = "d1"),
         )
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
         every { repository.getPagosByDateRangeForOptica(any(), any(), opticaId) } returns flowOf(pagosEnPeriodo)
@@ -141,8 +150,12 @@ class ReportesViewModelTest {
         advanceUntilIdle()
 
         // cobrosPeriodo should only count the Efectivo (100), not the Anulación (-100)
-        assertEquals("cobrosPeriodo must exclude anulacion pagos", 100.0,
-            viewModel.cobrosPeriodo.first(), 0.001)
+        assertEquals(
+            "cobrosPeriodo must exclude anulacion pagos",
+            100.0,
+            viewModel.cobrosPeriodo.first(),
+            0.001,
+        )
     }
 
     // -----------------------------------------------------------------------
@@ -153,15 +166,22 @@ class ReportesViewModelTest {
     fun `cobrosPeriodo excludes dual-reference pago with servicio in period`() = runTest(testDispatcher) {
         val yesterday = today.minusDays(1)
         val dispensaciones = listOf(
-            DispensacionOptica(id = "d1", pacienteId = "p1", fecha = yesterday, montoTotal = 100.0, opticaId = opticaId)
+            DispensacionOptica(id = "d1", pacienteId = "p1", fecha = yesterday, montoTotal = 100.0, opticaId = opticaId),
         )
         val servicios = listOf(
-            ServicioExtra(id = "s1", descripcion = "Srv", montoTotal = 50.0, aCuenta = 50.0, estado = "Entregado", fecha = today, opticaId = opticaId)
+            ServicioExtra(id = "s1", descripcion = "Srv", montoTotal = 50.0, aCuenta = 50.0, estado = "Entregado", fecha = today, opticaId = opticaId),
         )
         // Pago with BOTH disp AND serv refs: disp is old, servicio is current
         val pagosEnPeriodo = listOf(
-            Pago(id = "p1", fecha = today, tipo = "Efectivo", monto = 75.0, opticaId = opticaId,
-                dispensacionId = "d1", servicioExtraId = "s1")
+            Pago(
+                id = "p1",
+                fecha = today,
+                tipo = "Efectivo",
+                monto = 75.0,
+                opticaId = opticaId,
+                dispensacionId = "d1",
+                servicioExtraId = "s1",
+            ),
         )
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
         every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(servicios)
@@ -173,18 +193,22 @@ class ReportesViewModelTest {
         advanceUntilIdle()
 
         // The servicio (s1) is in period, so this pago should NOT count as cobrosPeriodo
-        assertEquals("cobrosPeriodo must be 0 because servicio ref is in period", 0.0,
-            viewModel.cobrosPeriodo.first(), 0.001)
+        assertEquals(
+            "cobrosPeriodo must be 0 because servicio ref is in period",
+            0.0,
+            viewModel.cobrosPeriodo.first(),
+            0.001,
+        )
     }
 
     @Test
     fun `totalTransacciones counts movimientos in period`() = runTest(testDispatcher) {
         val dispensaciones = listOf(
             DispensacionOptica(id = "d1", pacienteId = "p1", fecha = today, montoTotal = 100.0, opticaId = opticaId),
-            DispensacionOptica(id = "d2", pacienteId = "p2", fecha = today, montoTotal = 200.0, opticaId = opticaId)
+            DispensacionOptica(id = "d2", pacienteId = "p2", fecha = today, montoTotal = 200.0, opticaId = opticaId),
         )
         val servicios = listOf(
-            ServicioExtra(id = "s1", descripcion = "Srv", montoTotal = 50.0, aCuenta = 50.0, estado = "Entregado", fecha = today, opticaId = opticaId)
+            ServicioExtra(id = "s1", descripcion = "Srv", montoTotal = 50.0, aCuenta = 50.0, estado = "Entregado", fecha = today, opticaId = opticaId),
         )
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
         every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(servicios)
@@ -194,7 +218,10 @@ class ReportesViewModelTest {
         viewModel.setFechaDiario(today)
         advanceUntilIdle()
 
-        assertEquals("totalTransacciones must count all movimientos in period", 3,
-            viewModel.totalTransacciones.first())
+        assertEquals(
+            "totalTransacciones must count all movimientos in period",
+            3,
+            viewModel.totalTransacciones.first(),
+        )
     }
 }

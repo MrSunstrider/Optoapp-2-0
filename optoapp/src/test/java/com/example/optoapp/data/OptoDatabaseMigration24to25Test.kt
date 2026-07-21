@@ -44,7 +44,7 @@ class OptoDatabaseMigration24to25Test {
             MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11,
             MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16,
             MIGRATION_16_17, MIGRATION_17_18, MIGRATION_18_19, MIGRATION_19_20, MIGRATION_20_21,
-            MIGRATION_21_22, MIGRATION_22_23, MIGRATION_23_24, MIGRATION_24_25
+            MIGRATION_21_22, MIGRATION_22_23, MIGRATION_23_24, MIGRATION_24_25,
         )
 
         assertEquals(6, migrations.first().startVersion)
@@ -52,9 +52,9 @@ class OptoDatabaseMigration24to25Test {
 
         for (i in 0 until migrations.size - 1) {
             assertEquals(
-                "Migration ${i} end=${migrations[i].endVersion} should match ${i + 1} start=${migrations[i + 1].startVersion}",
+                "Migration $i end=${migrations[i].endVersion} should match ${i + 1} start=${migrations[i + 1].startVersion}",
                 migrations[i].endVersion,
-                migrations[i + 1].startVersion
+                migrations[i + 1].startVersion,
             )
         }
     }
@@ -72,19 +72,32 @@ class OptoDatabaseMigration24to25Test {
         val cat = CategoriaMontura(id = "c1", nombre = "SOL", opticaId = "o1")
         assertEquals("c1", cat.id)
 
-        val oc = OrdenCompra(id = "oc1", numero = "OC-001", proveedorId = "p1",
-            fecha = java.time.LocalDate.now(), opticaId = "o1")
+        val oc = OrdenCompra(
+            id = "oc1",
+            numero = "OC-001",
+            proveedorId = "p1",
+            fecha = java.time.LocalDate.now(),
+            opticaId = "o1",
+        )
         assertEquals("oc1", oc.id)
 
         val oci = OrdenCompraItem(id = "oci1", ordenId = "oc1", monturaId = "m1", cantidad = 5)
         assertEquals("oci1", oci.id)
 
-        val inv = InventarioFisico(id = "if1", fecha = java.time.LocalDate.now(),
-            opticaId = "o1", userId = "u1")
+        val inv = InventarioFisico(
+            id = "if1",
+            fecha = java.time.LocalDate.now(),
+            opticaId = "o1",
+            userId = "u1",
+        )
         assertEquals("if1", inv.id)
 
-        val invd = InventarioFisicoDetalle(id = "ifd1", inventarioId = "if1",
-            monturaId = "m1", stockSistema = 10)
+        val invd = InventarioFisicoDetalle(
+            id = "ifd1",
+            inventarioId = "if1",
+            monturaId = "m1",
+            stockSistema = 10,
+        )
         assertEquals("ifd1", invd.id)
     }
 
@@ -101,14 +114,14 @@ class OptoDatabaseMigration24to25Test {
             "categoriaMonturaDao" to "CategoriaMonturaDao",
             "ordenCompraDao" to "OrdenCompraDao",
             "ordenCompraItemDao" to "OrdenCompraItemDao",
-            "inventarioFisicoDao" to "InventarioFisicoDao"
+            "inventarioFisicoDao" to "InventarioFisicoDao",
         )
 
         for ((methodName, expectedReturnType) in newDaos) {
             val actualReturnType = abstractMethods[methodName]
             assertNotNull(
                 "OptoDatabase must declare abstract method '$methodName()' returning $expectedReturnType",
-                actualReturnType
+                actualReturnType,
             )
             assertEquals(expectedReturnType, actualReturnType)
         }
@@ -162,7 +175,8 @@ class OptoDatabaseMigration24to25Test {
             .callback(object : SupportSQLiteOpenHelper.Callback(24) {
                 override fun onCreate(db: SupportSQLiteDatabase) {
                     // monturas v24 schema (before Sprint A catalog fields)
-                    db.execSQL("""
+                    db.execSQL(
+                        """
                         CREATE TABLE monturas (
                             id TEXT NOT NULL PRIMARY KEY,
                             sku TEXT NOT NULL DEFAULT '',
@@ -185,9 +199,11 @@ class OptoDatabaseMigration24to25Test {
                             updatedAt TEXT,
                             updatedBy TEXT
                         )
-                    """)
+                    """,
+                    )
                     // montura_movimientos v24 schema (before Sprint A audit fields)
-                    db.execSQL("""
+                    db.execSQL(
+                        """
                         CREATE TABLE montura_movimientos (
                             id TEXT NOT NULL PRIMARY KEY,
                             monturaId TEXT NOT NULL,
@@ -202,13 +218,14 @@ class OptoDatabaseMigration24to25Test {
                             updatedAt TEXT,
                             updatedBy TEXT
                         )
-                    """)
+                    """,
+                    )
                 }
 
                 override fun onUpgrade(
                     db: SupportSQLiteDatabase,
                     oldVersion: Int,
-                    newVersion: Int
+                    newVersion: Int,
                 ) {
                     // No upgrade needed — this helper stays at v24
                 }
@@ -220,32 +237,40 @@ class OptoDatabaseMigration24to25Test {
 
         // ── Step 2: Insert test data ──
         // Montura: full row with specific values
-        v24Db.execSQL("""
+        v24Db.execSQL(
+            """
             INSERT INTO monturas (id, sku, marca, modelo, color, talla, costo, precio,
                 stockActual, stockMinimo, activo, tipoAro, materialMontura,
                 anchoMm, puenteMm, alturaMm, imagenUri, opticaId, updatedAt, updatedBy)
             VALUES ('m1', 'SKU-001', 'RayBan', 'Aviator', 'Negro', 'M',
                 50.0, 120.0, 10, 2, 1, 'COMPLETO', 'ACETATO',
                 140.0, 20.0, 45.0, 'uri://m1.jpg', 'o1', '2025-01-01', 'user1')
-        """)
+        """,
+        )
         // Montura: minimal row with defaults
-        v24Db.execSQL("""
+        v24Db.execSQL(
+            """
             INSERT INTO monturas (id, sku, marca, modelo, color, opticaId)
             VALUES ('m2', 'SKU-002', 'Oakley', 'Radar', 'Rojo', 'o1')
-        """)
+        """,
+        )
         // Movimiento for m1
-        v24Db.execSQL("""
+        v24Db.execSQL(
+            """
             INSERT INTO montura_movimientos (id, monturaId, fecha, tipo, cantidad,
                 stockPrevio, stockNuevo, referenciaId, nota, opticaId, updatedAt, updatedBy)
             VALUES ('mov1', 'm1', '2025-06-01', 'ENTRADA', 10, 0, 10, 'ref-001',
                 'Ingreso inicial', 'o1', '2025-06-01', 'user1')
-        """)
+        """,
+        )
         // Movimiento for m2
-        v24Db.execSQL("""
+        v24Db.execSQL(
+            """
             INSERT INTO montura_movimientos (id, monturaId, fecha, tipo, cantidad,
                 stockPrevio, stockNuevo, opticaId)
             VALUES ('mov2', 'm2', '2025-06-02', 'ENTRADA', 5, 0, 5, 'o1')
-        """)
+        """,
+        )
 
         v24Helper.close()
 
@@ -260,7 +285,7 @@ class OptoDatabaseMigration24to25Test {
                 override fun onUpgrade(
                     db: SupportSQLiteDatabase,
                     oldVersion: Int,
-                    newVersion: Int
+                    newVersion: Int,
                 ) {
                     if (oldVersion == 24 && newVersion == 25) {
                         MIGRATION_24_25.migrate(db)
@@ -380,7 +405,8 @@ class OptoDatabaseMigration24to25Test {
             .name(dbName)
             .callback(object : SupportSQLiteOpenHelper.Callback(24) {
                 override fun onCreate(db: SupportSQLiteDatabase) {
-                    db.execSQL("""
+                    db.execSQL(
+                        """
                         CREATE TABLE monturas (
                             id TEXT NOT NULL PRIMARY KEY,
                             sku TEXT NOT NULL DEFAULT '', marca TEXT NOT NULL DEFAULT '',
@@ -392,8 +418,10 @@ class OptoDatabaseMigration24to25Test {
                             anchoMm REAL, puenteMm REAL, alturaMm REAL, imagenUri TEXT,
                             opticaId TEXT NOT NULL DEFAULT 'mi_optica_base', updatedAt TEXT, updatedBy TEXT
                         )
-                    """)
-                    db.execSQL("""
+                    """,
+                    )
+                    db.execSQL(
+                        """
                         CREATE TABLE montura_movimientos (
                             id TEXT NOT NULL PRIMARY KEY, monturaId TEXT NOT NULL,
                             fecha TEXT NOT NULL, tipo TEXT NOT NULL,
@@ -403,7 +431,8 @@ class OptoDatabaseMigration24to25Test {
                             opticaId TEXT NOT NULL DEFAULT 'mi_optica_base',
                             updatedAt TEXT, updatedBy TEXT
                         )
-                    """)
+                    """,
+                    )
                 }
                 override fun onUpgrade(db: SupportSQLiteDatabase, oldVersion: Int, newVersion: Int) {}
             })

@@ -1,11 +1,9 @@
 package com.example.optoapp.domain
 
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
@@ -16,7 +14,10 @@ import org.junit.Test
  */
 class SyncFinanzasCostosTest {
 
-    private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
+    private val json = Json {
+        ignoreUnknownKeys = true
+        encodeDefaults = true
+    }
 
     // ── CostoProductoRemoto serialization ──────────────────────────────
 
@@ -33,7 +34,7 @@ class SyncFinanzasCostosTest {
             costoUnitario = 18.0,
             laboratorioId = "lab1",
             vigenteDesde = "2026-07-01",
-            vigenteHasta = null
+            vigenteHasta = null,
         )
 
         val encoded = json.encodeToString(original)
@@ -90,7 +91,7 @@ class SyncFinanzasCostosTest {
             tratamiento = "Simple",
             serie = null,
             costoUnitario = 20.0,
-            vigenteDesde = "2026-07-01"
+            vigenteDesde = "2026-07-01",
         )
 
         val encoded = json.encodeToString(original)
@@ -105,7 +106,7 @@ class SyncFinanzasCostosTest {
             id = "cp-3", opticaId = "optica1",
             material = "Resina", tipoLente = "Monofocal",
             stockOFabricacion = "stock", tratamiento = "AR", serie = 1,
-            costoUnitario = 5.0, vigenteDesde = "2026-01-01", vigenteHasta = null
+            costoUnitario = 5.0, vigenteDesde = "2026-01-01", vigenteHasta = null,
         )
 
         val encoded = json.encodeToString(original)
@@ -129,7 +130,7 @@ class SyncFinanzasCostosTest {
             costoPorPar = 15.0,
             proveedor = "Lab1",
             vigenteDesde = "2026-07-01",
-            vigenteHasta = null
+            vigenteHasta = null,
         )
 
         val encoded = json.encodeToString(original)
@@ -184,7 +185,7 @@ class SyncFinanzasCostosTest {
             downloadedPagos = 4,
             uploadedCostosProductos = 7,
             downloadedCostosProductos = 12,
-            downloadedCostosBiselado = 8
+            downloadedCostosBiselado = 8,
         )
 
         assertEquals(7, result.uploadedCostosProductos)
@@ -200,7 +201,7 @@ class SyncFinanzasCostosTest {
             uploadedPagos = 0,
             downloadedDispensaciones = 0,
             downloadedServicios = 0,
-            downloadedPagos = 0
+            downloadedPagos = 0,
         )
 
         assertEquals(0, result.uploadedCostosProductos)

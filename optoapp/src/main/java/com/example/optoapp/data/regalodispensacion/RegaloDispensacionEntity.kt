@@ -14,12 +14,12 @@ import com.example.optoapp.data.DispensacionOptica
             entity = DispensacionOptica::class,
             parentColumns = ["id"],
             childColumns = ["dispensacion_id"],
-            onDelete = ForeignKey.CASCADE
-        )
+            onDelete = ForeignKey.CASCADE,
+        ),
     ],
     indices = [
-        Index(value = ["dispensacion_id"])
-    ]
+        Index(value = ["dispensacion_id"]),
+    ],
 )
 data class RegaloDispensacionEntity(
     @PrimaryKey val id: String,
@@ -29,5 +29,5 @@ data class RegaloDispensacionEntity(
     @ColumnInfo(name = "costo_unitario") val costoUnitario: Double,
     val descripcion: String,
     val motivo: String = "",
-    @ColumnInfo(name = "optica_id") val opticaId: String
+    @ColumnInfo(name = "optica_id") val opticaId: String,
 )

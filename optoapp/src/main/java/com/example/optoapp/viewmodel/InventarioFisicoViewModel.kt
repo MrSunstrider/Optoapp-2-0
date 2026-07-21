@@ -19,7 +19,7 @@ sealed class InventarioFisicoUiState {
     data class Detail(
         val session: InventarioFisico,
         val detalles: kotlin.collections.List<InventarioFisicoDetalle>,
-        val progressMessage: String? = null
+        val progressMessage: String? = null,
     ) : InventarioFisicoUiState()
     data class Error(val message: String) : InventarioFisicoUiState()
 }
@@ -27,7 +27,7 @@ sealed class InventarioFisicoUiState {
 @HiltViewModel
 class InventarioFisicoViewModel @Inject constructor(
     private val repository: InventarioFisicoRepository,
-    private val sessionManager: SessionManager
+    private val sessionManager: SessionManager,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<InventarioFisicoUiState>(InventarioFisicoUiState.Loading)
@@ -50,7 +50,7 @@ class InventarioFisicoViewModel @Inject constructor(
             val session = repository.createSession(opticaId, userId)
             if (session == null) {
                 _uiState.value = InventarioFisicoUiState.Error(
-                    "Ya existe un conteo en progreso. Completa el actual antes de iniciar uno nuevo."
+                    "Ya existe un conteo en progreso. Completa el actual antes de iniciar uno nuevo.",
                 )
             } else {
                 loadSessionDetail(session.id)
@@ -70,7 +70,7 @@ class InventarioFisicoViewModel @Inject constructor(
             _uiState.value = InventarioFisicoUiState.Detail(
                 session = session,
                 detalles = detalles,
-                progressMessage = if (detalles.isNotEmpty()) "$counted de ${detalles.size} contados" else null
+                progressMessage = if (detalles.isNotEmpty()) "$counted de ${detalles.size} contados" else null,
             )
         }
     }
@@ -83,7 +83,7 @@ class InventarioFisicoViewModel @Inject constructor(
             val diferencia = stockContado - detalle.stockSistema
 
             repository.upsertDetalle(
-                detalle.copy(stockContado = stockContado, diferencia = diferencia)
+                detalle.copy(stockContado = stockContado, diferencia = diferencia),
             )
             loadSessionDetail(current.session.id)
         }

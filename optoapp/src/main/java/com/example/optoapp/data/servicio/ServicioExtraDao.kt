@@ -19,20 +19,30 @@ interface ServicioExtraDao {
     @Upsert
     suspend fun insertServicio(servicio: ServicioExtra)
 
-    @Query("""
+    @Query(
+        """
         UPDATE servicios_extra SET ot=:ot, descripcion=:descripcion,
         montoTotal=:montoTotal, aCuenta=:aCuenta, estado=:estado,
         fecha=:fecha, pacienteId=:pacienteId, metodoPago=:metodoPago,
         opticaId=:opticaId, fecha_entrega=:fechaEntrega,
         updatedAt=:updatedAt, updatedBy=:updatedBy
         WHERE id=:id AND opticaId=:opticaId
-    """)
+    """,
+    )
     suspend fun updateServicio(
-        id: String, opticaId: String, ot: String, descripcion: String,
-        montoTotal: Double, aCuenta: Double, estado: String,
-        fecha: java.time.LocalDate, pacienteId: String?,
-        metodoPago: String, fechaEntrega: java.time.LocalDate?,
-        updatedAt: String?, updatedBy: String?
+        id: String,
+        opticaId: String,
+        ot: String,
+        descripcion: String,
+        montoTotal: Double,
+        aCuenta: Double,
+        estado: String,
+        fecha: java.time.LocalDate,
+        pacienteId: String?,
+        metodoPago: String,
+        fechaEntrega: java.time.LocalDate?,
+        updatedAt: String?,
+        updatedBy: String?,
     ): Int
 
     @Query("SELECT * FROM servicios_extra WHERE fecha >= :start AND fecha <= :end AND opticaId = :opticaId ORDER BY fecha DESC")

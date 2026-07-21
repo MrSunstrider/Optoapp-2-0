@@ -84,7 +84,7 @@ class CostosYGastosScreenTest {
             "Fabricación Cristal",
             "Monturas",
             "Biselado",
-            "Lentes Contacto"
+            "Lentes Contacto",
         )
         assertEquals(8, blocks.size)
         assertTrue(blocks.contains("Stock Monofocal"))
@@ -105,7 +105,7 @@ class CostosYGastosScreenTest {
         val fields = CostosYGastosViewModel::class.java.declaredFields.map { it.name }
         assertTrue(
             "CostosYGastosViewModel debe tener uiState",
-            "uiState" in fields
+            "uiState" in fields,
         )
     }
 
@@ -114,7 +114,7 @@ class CostosYGastosScreenTest {
         val methods = CostosYGastosViewModel::class.java.declaredMethods.map { it.name }
         assertTrue(
             "CostosYGastosViewModel debe tener loadBlock",
-            "loadBlock" in methods
+            "loadBlock" in methods,
         )
     }
 
@@ -123,7 +123,7 @@ class CostosYGastosScreenTest {
         val methods = CostosYGastosViewModel::class.java.declaredMethods.map { it.name }
         assertTrue(
             "CostosYGastosViewModel debe tener selectTab",
-            "selectTab" in methods
+            "selectTab" in methods,
         )
     }
 }

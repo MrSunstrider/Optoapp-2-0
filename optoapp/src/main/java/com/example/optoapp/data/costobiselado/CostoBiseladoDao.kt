@@ -6,7 +6,8 @@ import androidx.room.Upsert
 
 @Dao
 interface CostoBiseladoDao {
-    @Query("""
+    @Query(
+        """
         SELECT * FROM costos_biselado
         WHERE material = :material
           AND tipo_aro = :tipoAro
@@ -15,21 +16,24 @@ interface CostoBiseladoDao {
           AND (alto_indice IS NULL AND :altoIndice IS NULL OR alto_indice = :altoIndice)
           AND vigente_hasta IS NULL
         LIMIT 1
-    """)
+    """,
+    )
     suspend fun lookup(
         material: String,
         tipoAro: String,
         stockOFabricacion: String,
         serie: Int?,
-        altoIndice: String?
+        altoIndice: String?,
     ): CostoBiseladoEntity?
 
-    @Query("""
+    @Query(
+        """
         SELECT * FROM costos_biselado
         WHERE optica_id = :opticaId
           AND vigente_hasta IS NULL
         ORDER BY material, tipo_aro
-    """)
+    """,
+    )
     suspend fun getByOpticaIdList(opticaId: String): List<CostoBiseladoEntity>
 
     @Upsert

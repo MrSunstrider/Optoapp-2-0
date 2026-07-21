@@ -1,7 +1,5 @@
 package com.example.optoapp.ui
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -9,8 +7,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.TextButton
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
@@ -18,6 +14,7 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -25,6 +22,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -75,7 +73,7 @@ class LoginFlowTest {
     @Composable
     private fun LoginEmailField(
         value: String = "",
-        onValueChange: (String) -> Unit = {}
+        onValueChange: (String) -> Unit = {},
     ) {
         OutlinedTextField(
             value = value,
@@ -86,14 +84,14 @@ class LoginFlowTest {
             modifier = Modifier
                 .fillMaxWidth()
                 .testTag(TestTags.LOGIN_EMAIL_FIELD),
-            shape = RoundedCornerShape(12.dp)
+            shape = RoundedCornerShape(12.dp),
         )
     }
 
     @Composable
     private fun LoginPasswordField(
         value: String = "",
-        onValueChange: (String) -> Unit = {}
+        onValueChange: (String) -> Unit = {},
     ) {
         var showPassword by remember { mutableStateOf(false) }
         OutlinedTextField(
@@ -104,9 +102,12 @@ class LoginFlowTest {
             trailingIcon = {
                 IconButton(onClick = { showPassword = !showPassword }) {
                     Icon(
-                        imageVector = if (showPassword) Icons.Default.VisibilityOff
-                                      else Icons.Default.Visibility,
-                        contentDescription = if (showPassword) "Ocultar" else "Mostrar"
+                        imageVector = if (showPassword) {
+                            Icons.Default.VisibilityOff
+                        } else {
+                            Icons.Default.Visibility
+                        },
+                        contentDescription = if (showPassword) "Ocultar" else "Mostrar",
                     )
                 }
             },
@@ -115,7 +116,7 @@ class LoginFlowTest {
             modifier = Modifier
                 .fillMaxWidth()
                 .testTag(TestTags.LOGIN_PASSWORD_FIELD),
-            shape = RoundedCornerShape(12.dp)
+            shape = RoundedCornerShape(12.dp),
         )
     }
 
@@ -124,21 +125,21 @@ class LoginFlowTest {
         Surface(
             color = MaterialTheme.colorScheme.error.copy(alpha = 0.12f),
             shape = RoundedCornerShape(8.dp),
-            modifier = Modifier.testTag(TestTags.LOGIN_ERROR_MESSAGE)
+            modifier = Modifier.testTag(TestTags.LOGIN_ERROR_MESSAGE),
         ) {
             Text(
                 text = message,
                 color = MaterialTheme.colorScheme.error,
                 modifier = Modifier.padding(12.dp),
                 fontSize = 13.sp,
-                fontWeight = FontWeight.Medium
+                fontWeight = FontWeight.Medium,
             )
         }
     }
 
     @Composable
     private fun LoginIngresarButton(
-        enabled: Boolean = true
+        enabled: Boolean = true,
     ) {
         Button(
             onClick = {},
@@ -147,12 +148,12 @@ class LoginFlowTest {
                 .fillMaxWidth()
                 .height(52.dp)
                 .testTag(TestTags.LOGIN_INGRESAR_BTN),
-            shape = RoundedCornerShape(12.dp)
+            shape = RoundedCornerShape(12.dp),
         ) {
             Text(
                 text = "ENTRAR AL SISTEMA",
                 fontSize = 16.sp,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
             )
         }
     }
@@ -182,7 +183,7 @@ class LoginFlowTest {
         composeTestRule.setContent {
             TextButton(
                 onClick = {},
-                modifier = Modifier.fillMaxWidth().testTag(TestTags.LOGIN_OLVIDASTE_BTN)
+                modifier = Modifier.fillMaxWidth().testTag(TestTags.LOGIN_OLVIDASTE_BTN),
             ) {
                 Text("¿Olvidaste tu contraseña?")
             }
@@ -198,7 +199,7 @@ class LoginFlowTest {
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .testTag(TestTags.LOGIN_REMEMBER_ACCOUNT_CHECK)
+                    .testTag(TestTags.LOGIN_REMEMBER_ACCOUNT_CHECK),
             ) {
                 Checkbox(checked = true, onCheckedChange = {})
                 Spacer(modifier = Modifier.width(4.dp))
@@ -214,12 +215,12 @@ class LoginFlowTest {
             OutlinedButton(
                 onClick = {},
                 modifier = Modifier.fillMaxWidth().height(48.dp),
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(12.dp),
             ) {
                 Icon(
                     imageVector = Icons.Default.Email,
                     contentDescription = null,
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(20.dp),
                 )
                 SpacerH(8)
                 Text("Continuar con Google", fontWeight = FontWeight.Medium)
@@ -234,12 +235,12 @@ class LoginFlowTest {
             OutlinedButton(
                 onClick = {},
                 modifier = Modifier.fillMaxWidth().height(48.dp),
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(12.dp),
             ) {
                 Icon(
                     imageVector = Icons.Default.Email,
                     contentDescription = null,
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(20.dp),
                 )
                 SpacerH(8)
                 Text("Crear cuenta con correo electrónico", fontWeight = FontWeight.Medium)
@@ -311,6 +312,6 @@ class LoginFlowTest {
 @Composable
 private fun SpacerH(width: Int) {
     androidx.compose.foundation.layout.Spacer(
-        modifier = Modifier.width(width.dp)
+        modifier = Modifier.width(width.dp),
     )
 }

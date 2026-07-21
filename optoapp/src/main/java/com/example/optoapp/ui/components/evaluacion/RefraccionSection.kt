@@ -34,19 +34,19 @@ import com.example.optoapp.viewmodel.EvaluacionViewModel
 fun RefraccionSection(
     uiState: EvaluacionUiState,
     onUpdate: (EvaluacionUiState) -> Unit,
-    viewModel: EvaluacionViewModel
+    viewModel: EvaluacionViewModel,
 ) {
     var refObjetivaExpanded by remember { mutableStateOf(false) }
     val chevronRefObjRotation by animateFloatAsState(
         targetValue = if (refObjetivaExpanded) 180f else 0f,
-        label = "chevronRefObj"
+        label = "chevronRefObj",
     )
 
     OutlinedCard(
         modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp),
         colors = CardDefaults.outlinedCardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-        )
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+        ),
     ) {
         Column {
             Row(
@@ -56,24 +56,24 @@ fun RefraccionSection(
                     .clickable { refObjetivaExpanded = !refObjetivaExpanded }
                     .padding(horizontal = 16.dp, vertical = 12.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text("Refracción Objetiva", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                 Icon(
                     imageVector = Icons.Default.ExpandMore,
                     contentDescription = if (refObjetivaExpanded) "Colapsar" else "Expandir",
                     modifier = Modifier.rotate(chevronRefObjRotation),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
             AnimatedVisibility(
                 visible = refObjetivaExpanded,
                 enter = expandVertically(),
-                exit = shrinkVertically()
+                exit = shrinkVertically(),
             ) {
                 Column(
                     modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         OptoTextField(value = uiState.objOdEsf, onValueChange = { onUpdate(uiState.copy(objOdEsf = it)) }, label = "OD Esf", modifier = Modifier.weight(1f))
@@ -97,19 +97,19 @@ fun RefraccionSection(
             value = uiState.recetaOdEsf,
             onValueChange = { onUpdate(uiState.copy(recetaOdEsf = it)) },
             label = "OD Esf",
-            modifier = Modifier.weight(1f).onFocusChanged { if (!it.isFocused) viewModel.normalizeAndTranspose("OD") }.testTag(TestTags.EVALUACION_ESFERA_OD)
+            modifier = Modifier.weight(1f).onFocusChanged { if (!it.isFocused) viewModel.normalizeAndTranspose("OD") }.testTag(TestTags.EVALUACION_ESFERA_OD),
         )
         OptoTextField(
             value = uiState.recetaOdCil,
             onValueChange = { onUpdate(uiState.copy(recetaOdCil = it)) },
             label = "OD Cil",
-            modifier = Modifier.weight(1f).onFocusChanged { if (!it.isFocused) viewModel.normalizeAndTranspose("OD") }.testTag(TestTags.EVALUACION_CILINDRO_OD)
+            modifier = Modifier.weight(1f).onFocusChanged { if (!it.isFocused) viewModel.normalizeAndTranspose("OD") }.testTag(TestTags.EVALUACION_CILINDRO_OD),
         )
         OptoTextField(
             value = uiState.recetaOdEje,
             onValueChange = { onUpdate(uiState.copy(recetaOdEje = it)) },
             label = "OD Eje",
-            modifier = Modifier.weight(1f).onFocusChanged { if (!it.isFocused) viewModel.normalizeAndTranspose("OD") }
+            modifier = Modifier.weight(1f).onFocusChanged { if (!it.isFocused) viewModel.normalizeAndTranspose("OD") },
         )
     }
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -117,19 +117,19 @@ fun RefraccionSection(
             value = uiState.recetaOiEsf,
             onValueChange = { onUpdate(uiState.copy(recetaOiEsf = it)) },
             label = "OI Esf",
-            modifier = Modifier.weight(1f).onFocusChanged { if (!it.isFocused) viewModel.normalizeAndTranspose("OI") }
+            modifier = Modifier.weight(1f).onFocusChanged { if (!it.isFocused) viewModel.normalizeAndTranspose("OI") },
         )
         OptoTextField(
             value = uiState.recetaOiCil,
             onValueChange = { onUpdate(uiState.copy(recetaOiCil = it)) },
             label = "OI Cil",
-            modifier = Modifier.weight(1f).onFocusChanged { if (!it.isFocused) viewModel.normalizeAndTranspose("OI") }
+            modifier = Modifier.weight(1f).onFocusChanged { if (!it.isFocused) viewModel.normalizeAndTranspose("OI") },
         )
         OptoTextField(
             value = uiState.recetaOiEje,
             onValueChange = { onUpdate(uiState.copy(recetaOiEje = it)) },
             label = "OI Eje",
-            modifier = Modifier.weight(1f).onFocusChanged { if (!it.isFocused) viewModel.normalizeAndTranspose("OI") }
+            modifier = Modifier.weight(1f).onFocusChanged { if (!it.isFocused) viewModel.normalizeAndTranspose("OI") },
         )
     }
     Text("VL AV CC", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary)
@@ -148,7 +148,7 @@ fun RefraccionSection(
 private fun DipSection(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiState) -> Unit) {
     OutlinedCard(
         modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
-        colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+        colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text("DIP / DNP", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
@@ -159,12 +159,15 @@ private fun DipSection(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiState)
                 OptoTextField(
                     value = dipValue,
                     onValueChange = { newVal ->
-                        if (uiState.isVpCerca) onUpdate(uiState.copy(dipCerca = newVal))
-                        else onUpdate(uiState.copy(dipIntermedio = newVal))
+                        if (uiState.isVpCerca) {
+                            onUpdate(uiState.copy(dipCerca = newVal))
+                        } else {
+                            onUpdate(uiState.copy(dipIntermedio = newVal))
+                        }
                     },
                     label = dipLabel,
                     keyboardType = KeyboardType.Decimal,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
                 )
             }
         }
@@ -176,12 +179,12 @@ private fun PrismasSection(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiSt
     var prismasExpanded by remember { mutableStateOf(false) }
     val chevronPrismasRotation by animateFloatAsState(
         targetValue = if (prismasExpanded) 180f else 0f,
-        label = "chevronPrismas"
+        label = "chevronPrismas",
     )
 
     OutlinedCard(
         modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
-        colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+        colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
     ) {
         Column {
             Row(
@@ -191,24 +194,24 @@ private fun PrismasSection(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiSt
                     .clickable { prismasExpanded = !prismasExpanded }
                     .padding(horizontal = 16.dp, vertical = 12.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text("Prismas", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                 Icon(
                     imageVector = Icons.Default.ExpandMore,
                     contentDescription = if (prismasExpanded) "Colapsar" else "Expandir",
                     modifier = Modifier.rotate(chevronPrismasRotation),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
             AnimatedVisibility(
                 visible = prismasExpanded,
                 enter = expandVertically(),
-                exit = shrinkVertically()
+                exit = shrinkVertically(),
             ) {
                 Column(
                     modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                         OptoTextField(
@@ -216,7 +219,7 @@ private fun PrismasSection(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiSt
                             onValueChange = { onUpdate(uiState.copy(prismaOdValor = it)) },
                             label = "OD",
                             modifier = Modifier.weight(1f),
-                            trailingIcon = { if (uiState.prismaOdValor.isNotBlank()) PrismaSuffix() }
+                            trailingIcon = { if (uiState.prismaOdValor.isNotBlank()) PrismaSuffix() },
                         )
                         Box(modifier = Modifier.weight(1f)) {
                             DropdownField(label = "Base", selected = uiState.prismaOdBase, options = basesPrisma, onSelected = { onUpdate(uiState.copy(prismaOdBase = it)) })
@@ -228,7 +231,7 @@ private fun PrismasSection(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiSt
                             onValueChange = { onUpdate(uiState.copy(prismaOiValor = it)) },
                             label = "OI",
                             modifier = Modifier.weight(1f),
-                            trailingIcon = { if (uiState.prismaOiValor.isNotBlank()) PrismaSuffix() }
+                            trailingIcon = { if (uiState.prismaOiValor.isNotBlank()) PrismaSuffix() },
                         )
                         Box(modifier = Modifier.weight(1f)) {
                             DropdownField(label = "Base", selected = uiState.prismaOiBase, options = basesPrisma, onSelected = { onUpdate(uiState.copy(prismaOiBase = it)) })
@@ -247,9 +250,8 @@ internal fun PrismaSuffix() {
     Text(
         "DP",
         style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
 }
 
-internal fun dipLabelForVpMode(isVpCerca: Boolean): String =
-    if (isVpCerca) "DNP Cerca" else "DNP Intermedio"
+internal fun dipLabelForVpMode(isVpCerca: Boolean): String = if (isVpCerca) "DNP Cerca" else "DNP Intermedio"

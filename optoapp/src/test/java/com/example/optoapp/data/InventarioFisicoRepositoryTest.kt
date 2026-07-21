@@ -19,7 +19,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import java.io.IOException
-import java.time.LocalDate
 
 @RunWith(RobolectricTestRunner::class)
 class InventarioFisicoRepositoryTest {
@@ -31,18 +30,20 @@ class InventarioFisicoRepositoryTest {
     fun setUp() {
         db = Room.inMemoryDatabaseBuilder(
             ApplicationProvider.getApplicationContext(),
-            OptoDatabase::class.java
+            OptoDatabase::class.java,
         ).allowMainThreadQueries().build()
         val scheduler = mockk<Lazy<PostSaveSyncScheduler>> {
             every { get() } returns mockk(relaxed = true)
         }
         val coordinator = MonturaInventoryCoordinator(
-            db.monturaDao(), db.monturaMovimientoDao(), scheduler
+            db.monturaDao(),
+            db.monturaMovimientoDao(),
+            scheduler,
         )
         repo = InventarioFisicoRepository(
             ifDao = db.inventarioFisicoDao(),
             monturaCoordinator = coordinator,
-            monturaDao = db.monturaDao()
+            monturaDao = db.monturaDao(),
         )
     }
 
@@ -54,10 +55,30 @@ class InventarioFisicoRepositoryTest {
 
     @Test
     fun createSession_snapshotsStockFromActiveMonturas() = runBlocking {
-        db.monturaDao().insertMontura(Montura(id = "m1", sku = "S1", marca = "A", modelo = "X",
-            color = "N", talla = "M", opticaId = "o1", stockActual = 10))
-        db.monturaDao().insertMontura(Montura(id = "m2", sku = "S2", marca = "B", modelo = "Y",
-            color = "R", talla = "L", opticaId = "o1", stockActual = 5))
+        db.monturaDao().insertMontura(
+            Montura(
+                id = "m1",
+                sku = "S1",
+                marca = "A",
+                modelo = "X",
+                color = "N",
+                talla = "M",
+                opticaId = "o1",
+                stockActual = 10,
+            ),
+        )
+        db.monturaDao().insertMontura(
+            Montura(
+                id = "m2",
+                sku = "S2",
+                marca = "B",
+                modelo = "Y",
+                color = "R",
+                talla = "L",
+                opticaId = "o1",
+                stockActual = 5,
+            ),
+        )
 
         val s = repo.createSession("o1", "u1")
         assertNotNull(s)
@@ -72,8 +93,17 @@ class InventarioFisicoRepositoryTest {
 
     @Test
     fun createSession_rejectsDuplicateEnProgreso() = runBlocking {
-        db.monturaDao().insertMontura(Montura(id = "m1", sku = "S1", marca = "A", modelo = "X",
-            color = "N", talla = "M", opticaId = "o1"))
+        db.monturaDao().insertMontura(
+            Montura(
+                id = "m1",
+                sku = "S1",
+                marca = "A",
+                modelo = "X",
+                color = "N",
+                talla = "M",
+                opticaId = "o1",
+            ),
+        )
         repo.createSession("o1", "u1")
 
         val duplicate = repo.createSession("o1", "u2")
@@ -82,8 +112,18 @@ class InventarioFisicoRepositoryTest {
 
     @Test
     fun closeSession_marksEstadoCompletado() = runBlocking {
-        db.monturaDao().insertMontura(Montura(id = "m1", sku = "S1", marca = "A", modelo = "X",
-            color = "N", talla = "M", opticaId = "o1", stockActual = 10))
+        db.monturaDao().insertMontura(
+            Montura(
+                id = "m1",
+                sku = "S1",
+                marca = "A",
+                modelo = "X",
+                color = "N",
+                talla = "M",
+                opticaId = "o1",
+                stockActual = 10,
+            ),
+        )
         val s = repo.createSession("o1", "u1")
         assertNotNull(s)
 
@@ -94,8 +134,18 @@ class InventarioFisicoRepositoryTest {
 
     @Test
     fun closeSession_createsAdjustmentMovementsForDifferences() = runBlocking {
-        db.monturaDao().insertMontura(Montura(id = "m1", sku = "S1", marca = "A", modelo = "X",
-            color = "N", talla = "M", opticaId = "o1", stockActual = 10))
+        db.monturaDao().insertMontura(
+            Montura(
+                id = "m1",
+                sku = "S1",
+                marca = "A",
+                modelo = "X",
+                color = "N",
+                talla = "M",
+                opticaId = "o1",
+                stockActual = 10,
+            ),
+        )
         val s = repo.createSession("o1", "u1")
         assertNotNull(s)
 
@@ -113,8 +163,18 @@ class InventarioFisicoRepositoryTest {
 
     @Test
     fun closeSession_noMovementForZeroDifference() = runBlocking {
-        db.monturaDao().insertMontura(Montura(id = "m1", sku = "S1", marca = "A", modelo = "X",
-            color = "N", talla = "M", opticaId = "o1", stockActual = 10))
+        db.monturaDao().insertMontura(
+            Montura(
+                id = "m1",
+                sku = "S1",
+                marca = "A",
+                modelo = "X",
+                color = "N",
+                talla = "M",
+                opticaId = "o1",
+                stockActual = 10,
+            ),
+        )
         val s = repo.createSession("o1", "u1")
         assertNotNull(s)
 
@@ -129,10 +189,30 @@ class InventarioFisicoRepositoryTest {
 
     @Test
     fun closeSession_adjustsStockAfterReconciliation() = runBlocking {
-        db.monturaDao().insertMontura(Montura(id = "m1", sku = "S1", marca = "A", modelo = "X",
-            color = "N", talla = "M", opticaId = "o1", stockActual = 10))
-        db.monturaDao().insertMontura(Montura(id = "m2", sku = "S2", marca = "B", modelo = "Y",
-            color = "R", talla = "L", opticaId = "o1", stockActual = 5))
+        db.monturaDao().insertMontura(
+            Montura(
+                id = "m1",
+                sku = "S1",
+                marca = "A",
+                modelo = "X",
+                color = "N",
+                talla = "M",
+                opticaId = "o1",
+                stockActual = 10,
+            ),
+        )
+        db.monturaDao().insertMontura(
+            Montura(
+                id = "m2",
+                sku = "S2",
+                marca = "B",
+                modelo = "Y",
+                color = "R",
+                talla = "L",
+                opticaId = "o1",
+                stockActual = 5,
+            ),
+        )
         val s = repo.createSession("o1", "u1")
         assertNotNull(s)
 
@@ -151,8 +231,17 @@ class InventarioFisicoRepositoryTest {
 
     @Test
     fun getSessionsByOptica_returnsOrderedByFecha() = runBlocking {
-        db.monturaDao().insertMontura(Montura(id = "m1", sku = "S1", marca = "A", modelo = "X",
-            color = "N", talla = "M", opticaId = "o1"))
+        db.monturaDao().insertMontura(
+            Montura(
+                id = "m1",
+                sku = "S1",
+                marca = "A",
+                modelo = "X",
+                color = "N",
+                talla = "M",
+                opticaId = "o1",
+            ),
+        )
         repo.createSession("o1", "u1")
         repo.createSession("o1", "u1")?.let { repo.closeSession(it.id) }
         repo.createSession("o1", "u1")

@@ -1,10 +1,10 @@
 package com.example.optoapp.domain
 
-import com.example.optoapp.util.AppLogger
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.PacienteDao
 import com.example.optoapp.data.Resource
 import com.example.optoapp.data.pago.PagoDao
+import com.example.optoapp.util.AppLogger
 import io.github.jan.supabase.postgrest.Postgrest
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
@@ -25,65 +25,63 @@ open class ObtenerDeudoresUseCase @Inject constructor(
     private val postgrest: Postgrest,
     private val repository: OptoRepository,
     private val pagoDao: PagoDao,
-    private val pacienteDao: PacienteDao
+    private val pacienteDao: PacienteDao,
 ) {
     companion object {
         private const val TAG = "ObtenerDeudores"
     }
 
-    suspend operator fun invoke(opticaId: String): Resource<List<Deudor>> {
-        return try {
-            val jsonArray = callRpcDeudores(opticaId)
-            val deudores = parseDeudoresFromJson(jsonArray)
-            Resource.Success(deudores)
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: IOException) {
-            AppLogger.w(TAG, "Offline — trying local Room data for deudores", e)
-            try {
-                val deudores = fallbackToRoomDeudores(opticaId)
-                Resource.Success(deudores, stale = true)
-            } catch (ee: Exception) {
-                AppLogger.w(TAG, "Offline — no data available for deudores", ee)
-                Resource.Error("No se pudieron cargar los datos de deudores")
-            }
-        } catch (e: Exception) {
-            AppLogger.e(TAG, "Error obteniendo deudores", e)
+    suspend operator fun invoke(opticaId: String): Resource<List<Deudor>> = try {
+        val jsonArray = callRpcDeudores(opticaId)
+        val deudores = parseDeudoresFromJson(jsonArray)
+        Resource.Success(deudores)
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: IOException) {
+        AppLogger.w(TAG, "Offline — trying local Room data for deudores", e)
+        try {
+            val deudores = fallbackToRoomDeudores(opticaId)
+            Resource.Success(deudores, stale = true)
+        } catch (ee: Exception) {
+            AppLogger.w(TAG, "Offline — no data available for deudores", ee)
             Resource.Error("No se pudieron cargar los datos de deudores")
         }
+    } catch (e: Exception) {
+        AppLogger.e(TAG, "Error obteniendo deudores", e)
+        Resource.Error("No se pudieron cargar los datos de deudores")
     }
 
-    internal open suspend fun callRpcDeudores(opticaId: String): JsonArray =
-        postgrest.rpc("rpc_deudores", buildJsonObject {
+    internal open suspend fun callRpcDeudores(opticaId: String): JsonArray = postgrest.rpc(
+        "rpc_deudores",
+        buildJsonObject {
             put("p_optica_id", opticaId)
-        }).decodeAs<JsonArray>()
+        },
+    ).decodeAs<JsonArray>()
 
-    private fun parseDeudoresFromJson(arr: JsonArray): List<Deudor> {
-        return arr.map { item ->
-            val obj = item.jsonObject
+    private fun parseDeudoresFromJson(arr: JsonArray): List<Deudor> = arr.map { item ->
+        val obj = item.jsonObject
 
-            fun string(n: String) = obj[n]?.jsonPrimitive?.contentOrNull ?: ""
-            fun double(n: String) = obj[n]?.jsonPrimitive?.doubleOrNull ?: 0.0
-            fun int(n: String) = obj[n]?.jsonPrimitive?.intOrNull ?: 0
+        fun string(n: String) = obj[n]?.jsonPrimitive?.contentOrNull ?: ""
+        fun double(n: String) = obj[n]?.jsonPrimitive?.doubleOrNull ?: 0.0
+        fun int(n: String) = obj[n]?.jsonPrimitive?.intOrNull ?: 0
 
-            Deudor(
-                pacienteNombre = string("paciente_nombre"),
-                pacienteTelefono = string("paciente_telefono"),
-                ventaId = string("venta_id"),
-                ventaFecha = try {
-                    val raw = string("venta_fecha")
-                    if (raw.isBlank()) java.time.LocalDate.MIN else LocalDate.parse(raw)
-                } catch (e: java.time.format.DateTimeParseException) {
-                    AppLogger.w(TAG, "Invalid venta_fecha for deudor row, using LocalDate.MIN", e)
-                    java.time.LocalDate.MIN
-                },
-                montoTotal = double("monto_total"),
-                totalPagado = double("total_pagado"),
-                saldo = double("saldo"),
-                diasDeuda = int("dias_deuda"),
-                pacienteId = string("paciente_id")
-            )
-        }
+        Deudor(
+            pacienteNombre = string("paciente_nombre"),
+            pacienteTelefono = string("paciente_telefono"),
+            ventaId = string("venta_id"),
+            ventaFecha = try {
+                val raw = string("venta_fecha")
+                if (raw.isBlank()) java.time.LocalDate.MIN else LocalDate.parse(raw)
+            } catch (e: java.time.format.DateTimeParseException) {
+                AppLogger.w(TAG, "Invalid venta_fecha for deudor row, using LocalDate.MIN", e)
+                java.time.LocalDate.MIN
+            },
+            montoTotal = double("monto_total"),
+            totalPagado = double("total_pagado"),
+            saldo = double("saldo"),
+            diasDeuda = int("dias_deuda"),
+            pacienteId = string("paciente_id"),
+        )
     }
 
     private suspend fun fallbackToRoomDeudores(opticaId: String): List<Deudor> {
@@ -119,8 +117,8 @@ open class ObtenerDeudoresUseCase @Inject constructor(
                         totalPagado = totalPagado,
                         saldo = disp.montoTotal - totalPagado,
                         diasDeuda = ChronoUnit.DAYS.between(disp.fecha, hoy).toInt(),
-                        pacienteId = disp.pacienteId
-                    )
+                        pacienteId = disp.pacienteId,
+                    ),
                 )
             }
         }
@@ -141,8 +139,8 @@ open class ObtenerDeudoresUseCase @Inject constructor(
                         totalPagado = totalPagado,
                         saldo = montoTotal - totalPagado,
                         diasDeuda = ChronoUnit.DAYS.between(serv.fecha, hoy).toInt(),
-                        pacienteId = serv.pacienteId ?: ""
-                    )
+                        pacienteId = serv.pacienteId ?: "",
+                    ),
                 )
             }
         }

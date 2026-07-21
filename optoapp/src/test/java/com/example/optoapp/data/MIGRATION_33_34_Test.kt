@@ -39,7 +39,8 @@ class MIGRATION_33_34_Test {
             .name(dbName)
             .callback(object : SupportSQLiteOpenHelper.Callback(33) {
                 override fun onCreate(db: SupportSQLiteDatabase) {
-                    db.execSQL("""
+                    db.execSQL(
+                        """
                         CREATE TABLE IF NOT EXISTS configuracion_financiera (
                             opticaId TEXT PRIMARY KEY NOT NULL,
                             margenNetoObjetivo REAL NOT NULL DEFAULT 15.0,
@@ -52,8 +53,10 @@ class MIGRATION_33_34_Test {
                             minVentasParaRecomendar INTEGER NOT NULL DEFAULT 5,
                             frecuenciaRecalculoDias INTEGER NOT NULL DEFAULT 1
                         )
-                    """.trimIndent())
-                    db.execSQL("""
+                        """.trimIndent(),
+                    )
+                    db.execSQL(
+                        """
                         CREATE TABLE IF NOT EXISTS ventas (
                             id TEXT NOT NULL PRIMARY KEY,
                             opticaId TEXT NOT NULL,
@@ -71,20 +74,21 @@ class MIGRATION_33_34_Test {
                             ot TEXT NOT NULL DEFAULT '',
                             categoriaProductoId TEXT
                         )
-                    """.trimIndent())
+                        """.trimIndent(),
+                    )
 
                     // Insert test rows
                     db.execSQL(
                         "INSERT INTO configuracion_financiera (opticaId, margenNetoObjetivo, deudaViejaAlertaDias) VALUES (?, ?, ?)",
-                        arrayOf<Any>("optica1", 15.0, 30)
+                        arrayOf<Any>("optica1", 15.0, 30),
                     )
                     db.execSQL(
                         "INSERT INTO configuracion_financiera (opticaId, margenNetoObjetivo, deudaViejaAlertaDias) VALUES (?, ?, ?)",
-                        arrayOf<Any>("optica2", 20.0, 45)
+                        arrayOf<Any>("optica2", 20.0, 45),
                     )
                     db.execSQL(
                         "INSERT INTO ventas (id, opticaId, origen, origenId, fecha, montoTotal, estado) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                        arrayOf<Any>("v1", "optica1", "disp", "d1", "2026-07-01", 100.0, "completada")
+                        arrayOf<Any>("v1", "optica1", "disp", "d1", "2026-07-01", 100.0, "completada"),
                     )
                 }
 
@@ -144,7 +148,7 @@ class MIGRATION_33_34_Test {
         // Step 5: Assert inserting into feedback_recomendaciones works
         v34Db.execSQL(
             "INSERT INTO feedback_recomendaciones (recomendacionId, opticaId, fueUtil, fecha) VALUES (?, ?, ?, ?)",
-            arrayOf<Any>("rec-abc", "optica1", 1, System.currentTimeMillis())
+            arrayOf<Any>("rec-abc", "optica1", 1, System.currentTimeMillis()),
         )
         val fbRow = v34Db.query("SELECT * FROM feedback_recomendaciones WHERE recomendacionId = 'rec-abc'")
         assertTrue(fbRow.moveToFirst())

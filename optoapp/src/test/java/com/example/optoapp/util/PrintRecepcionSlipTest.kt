@@ -61,7 +61,7 @@ class PrintRecepcionSlipTest {
         val html = PrintRecepcionSlip.buildReceiptHtml(
             testOc(fecha = LocalDate.of(2025, 3, 20)),
             emptyList(),
-            "Prov"
+            "Prov",
         )
         // Fecha formateada como dd/MM/yyyy
         assertTrue(html.contains("20/03/2025"))
@@ -72,7 +72,7 @@ class PrintRecepcionSlipTest {
         val html = PrintRecepcionSlip.buildReceiptHtml(
             testOc(estado = "RECIBIDA"),
             emptyList(),
-            "Prov"
+            "Prov",
         )
         assertTrue(html.contains("RECIBIDA"))
     }
@@ -103,7 +103,7 @@ class PrintRecepcionSlipTest {
         val html = PrintRecepcionSlip.buildReceiptHtml(
             testOc(total = 299.99),
             emptyList(),
-            "Prov"
+            "Prov",
         )
         assertTrue(html.contains("299.99"))
     }

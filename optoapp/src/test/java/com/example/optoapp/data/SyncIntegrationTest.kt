@@ -31,7 +31,7 @@ class SyncIntegrationTest {
         pacienteId = "p-1",
         fecha = testDate,
         opticaId = "optica-test",
-        updatedAt = updatedAt
+        updatedAt = updatedAt,
     )
 
     @Test
@@ -41,7 +41,8 @@ class SyncIntegrationTest {
         val uploaded = localEntity.toRemoto()
         assertEquals(
             "Upload must send the Room timestamp T1 — not a fabricated Instant.now()",
-            t1, uploaded.updatedAt
+            t1,
+            uploaded.updatedAt,
         )
 
         val serverResponse = DispensacionRemota(
@@ -49,23 +50,26 @@ class SyncIntegrationTest {
             pacienteId = localEntity.pacienteId,
             fecha = localEntity.fecha.toString(),
             opticaId = localEntity.opticaId,
-            updatedAt = t2
+            updatedAt = t2,
         )
         val downloadedEntity = serverResponse.toEntity()
         assertEquals(
             "Download must write the server-confirmed T2 to the Room entity",
-            t2, downloadedEntity.updatedAt
+            t2,
+            downloadedEntity.updatedAt,
         )
 
         val secondUpload = downloadedEntity.toRemoto()
         assertEquals(
             "Second upload must send T2 — toRemoto() must not replace it with Instant.now()",
-            t2, secondUpload.updatedAt
+            t2,
+            secondUpload.updatedAt,
         )
 
         assertEquals(
             "Roundtrip must be stable: local T2 == remote T2 means no timestamp drift across cycles",
-            secondUpload.updatedAt, t2
+            secondUpload.updatedAt,
+            t2,
         )
     }
 
@@ -79,7 +83,8 @@ class SyncIntegrationTest {
         assertEquals(
             "Repeated toRemoto() calls on the same post-download entity must yield identical " +
                 "updatedAt — any difference is phantom drift that triggers false conflicts",
-            firstUpload.updatedAt, secondUpload.updatedAt
+            firstUpload.updatedAt,
+            secondUpload.updatedAt,
         )
     }
 }

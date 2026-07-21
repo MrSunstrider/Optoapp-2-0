@@ -4,23 +4,23 @@ import android.content.Intent
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.CancellationException
-import java.io.IOException
 import com.example.optoapp.data.OpticaMembership
 import com.example.optoapp.viewmodel.auth.AuthDelegate
 import com.example.optoapp.viewmodel.auth.BackupDelegate
 import com.example.optoapp.viewmodel.auth.PinDelegate
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.io.IOException
 import javax.inject.Inject
 
 sealed class AuthState {
-    object Idle       : AuthState()
-    object Loading    : AuthState()
-    object Success    : AuthState()
+    object Idle : AuthState()
+    object Loading : AuthState()
+    object Success : AuthState()
     data class Error(val message: String) : AuthState()
 }
 
@@ -50,11 +50,12 @@ sealed class RecoveryState {
 class AuthViewModel @Inject constructor(
     private val authDelegate: AuthDelegate,
     private val pinDelegate: PinDelegate,
-    private val backupDelegate: BackupDelegate
+    private val backupDelegate: BackupDelegate,
 ) : ViewModel() {
 
-    companion object { private const val TAG = "AuthViewModel" }
-
+    companion object {
+        private const val TAG = "AuthViewModel"
+    }
 
     val pinInput: StateFlow<String> = pinDelegate.pinInput
 
@@ -74,16 +75,15 @@ class AuthViewModel @Inject constructor(
         pinDelegate.togglePinRequired(enabled)
     }
 
-
     private val _authState = MutableStateFlow<AuthState>(AuthState.Idle)
     val authState: StateFlow<AuthState> = _authState.asStateFlow()
 
-    val isLoggedIn    = authDelegate.isLoggedIn
-    val opticaId      = authDelegate.opticaId
-    val opticaRol     = authDelegate.opticaRol
-    val userEmail     = authDelegate.userEmail
-    val userName      = authDelegate.userName
-    val userTimeZone  = authDelegate.userTimeZone
+    val isLoggedIn = authDelegate.isLoggedIn
+    val opticaId = authDelegate.opticaId
+    val opticaRol = authDelegate.opticaRol
+    val userEmail = authDelegate.userEmail
+    val userName = authDelegate.userName
+    val userTimeZone = authDelegate.userTimeZone
     val pinHasBeenSet = pinDelegate.pinHasBeenSet
     val isPinRequired = pinDelegate.isPinRequired
 
@@ -96,7 +96,6 @@ class AuthViewModel @Inject constructor(
     val pendingMemberships: StateFlow<List<OpticaMembership>> = _pendingMemberships.asStateFlow()
 
     suspend fun isSessionTimeValid(): Boolean = authDelegate.isSessionTimeValid()
-
 
     private val _recoveryState = MutableStateFlow<RecoveryState>(RecoveryState.Idle)
     val recoveryState: StateFlow<RecoveryState> = _recoveryState.asStateFlow()
@@ -111,7 +110,7 @@ class AuthViewModel @Inject constructor(
         } catch (e: Exception) {
             Log.e(TAG, "Error enviando recovery email", e)
             _recoveryState.value = RecoveryState.Error(
-                "No se pudo enviar el correo. Intentá de nuevo más tarde."
+                "No se pudo enviar el correo. Intentá de nuevo más tarde.",
             )
         }
     }
@@ -140,7 +139,6 @@ class AuthViewModel @Inject constructor(
         _recoveryState.value = RecoveryState.Idle
     }
 
-
     fun login(email: String, password: String) = viewModelScope.launch {
         _authState.value = AuthState.Loading
         _pendingMemberships.value = emptyList()
@@ -148,7 +146,7 @@ class AuthViewModel @Inject constructor(
             authDelegate.login(email, password)
             val result = authDelegate.resolvePostLogin(
                 emailFallback = email,
-                nameFallback = email.substringBefore("@")
+                nameFallback = email.substringBefore("@"),
             )
             _pendingMemberships.value = result.memberships
             if (result.requiresOnboarding) _needsOnboarding.value = true
@@ -167,7 +165,7 @@ class AuthViewModel @Inject constructor(
                     e is IOException ->
                         "Sin conexión a internet"
                     else -> "Error inesperado. Reintente más tarde."
-                }
+                },
             )
         }
     }
@@ -218,7 +216,7 @@ class AuthViewModel @Inject constructor(
         try {
             val r = authDelegate.resolvePostLogin(
                 emailFallback = email,
-                nameFallback = email.substringBefore("@")
+                nameFallback = email.substringBefore("@"),
             )
             _pendingMemberships.value = r.memberships
             if (r.requiresOnboarding) _needsOnboarding.value = true
@@ -261,7 +259,6 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-
     fun saveRememberedEmail(email: String) = viewModelScope.launch {
         authDelegate.saveRememberedEmail(email)
     }
@@ -277,7 +274,6 @@ class AuthViewModel @Inject constructor(
         _pendingMemberships.value = emptyList()
         _authState.value = AuthState.Idle
     }
-
 
     fun checkExistingSession() = viewModelScope.launch {
         try {
@@ -298,14 +294,20 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-
     fun completeOnboardingOptica(
-        nombreOptica: String, fiscalDocTipo: String, fiscalDocNumero: String,
-        razonSocial: String, direccionFiscal: String,
-        onFinished: (Boolean, String) -> Unit
+        nombreOptica: String,
+        fiscalDocTipo: String,
+        fiscalDocNumero: String,
+        razonSocial: String,
+        direccionFiscal: String,
+        onFinished: (Boolean, String) -> Unit,
     ) = viewModelScope.launch {
         val result = authDelegate.completeOnboardingOptica(
-            nombreOptica, fiscalDocTipo, fiscalDocNumero, razonSocial, direccionFiscal
+            nombreOptica,
+            fiscalDocTipo,
+            fiscalDocNumero,
+            razonSocial,
+            direccionFiscal,
         )
         if (result.isSuccess) {
             _needsOnboarding.value = false
@@ -331,13 +333,11 @@ class AuthViewModel @Inject constructor(
         onFinished(authDelegate.resolveDuplicateHistorias())
     }
 
-
     suspend fun getBackupJson(): String = backupDelegate.getBackupJson()
 
     fun restoreBackup(json: String, onFinished: (String) -> Unit) = viewModelScope.launch {
         onFinished(backupDelegate.restoreBackup(json))
     }
-
 
     private fun friendlyOpticaError(raw: String): String = when {
         raw.contains("límite de ópticas", ignoreCase = true) ||

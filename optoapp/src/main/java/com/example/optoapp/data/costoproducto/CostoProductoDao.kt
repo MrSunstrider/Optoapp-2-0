@@ -7,7 +7,8 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface CostoProductoDao {
-    @Query("""
+    @Query(
+        """
         SELECT * FROM costos_productos
         WHERE material = :material
           AND tipo_lente = :tipoLente
@@ -16,36 +17,42 @@ interface CostoProductoDao {
           AND (serie IS NULL AND :serie IS NULL OR serie = :serie)
           AND vigente_hasta IS NULL
         LIMIT 1
-    """)
+    """,
+    )
     suspend fun lookup(
         material: String,
         tipoLente: String,
         stockOFabricacion: String,
         tratamiento: String?,
-        serie: Int?
+        serie: Int?,
     ): CostoProductoEntity?
 
-    @Query("""
+    @Query(
+        """
         SELECT * FROM costos_productos
         WHERE optica_id = :opticaId
           AND stock_o_fabricacion = :bloque
           AND vigente_hasta IS NULL
         ORDER BY material, tipo_lente
-    """)
+    """,
+    )
     fun getByBloque(opticaId: String, bloque: String): Flow<List<CostoProductoEntity>>
 
-    @Query("""
+    @Query(
+        """
         SELECT * FROM costos_productos
         WHERE optica_id = :opticaId
           AND vigente_hasta IS NULL
         ORDER BY material, tipo_lente
-    """)
+    """,
+    )
     suspend fun getByOpticaIdList(opticaId: String): List<CostoProductoEntity>
 
     @Upsert
     suspend fun upsertAll(entities: List<CostoProductoEntity>)
 
-    @Query("""
+    @Query(
+        """
         SELECT * FROM costos_productos
         WHERE material = :material
           AND tipo_lente = :tipoLente
@@ -53,11 +60,12 @@ interface CostoProductoDao {
           AND (laboratorio_id IS NULL OR laboratorio_id = :laboratorioId)
           AND vigente_hasta IS NULL
         LIMIT 1
-    """)
+    """,
+    )
     suspend fun lookupLc(
         material: String,
         tipoLente: String,
         stockOFabricacion: String,
-        laboratorioId: String?
+        laboratorioId: String?,
     ): CostoProductoEntity?
 }

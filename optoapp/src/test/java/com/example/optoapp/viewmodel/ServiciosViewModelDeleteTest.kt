@@ -4,7 +4,6 @@ import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Pago
 import com.example.optoapp.data.ServicioExtra
 import com.example.optoapp.data.SessionManager
-import com.example.optoapp.data.Resource
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -44,14 +43,26 @@ class ServiciosViewModelDeleteTest {
         id = servId, ot = "SERV-001", descripcion = "Limpieza de lentes",
         montoTotal = 200.0, aCuenta = 100.0, estado = "Pendiente",
         fecha = testDate, pacienteId = "pac-1",
-        metodoPago = "", opticaId = "optica-test"
+        metodoPago = "", opticaId = "optica-test",
     )
 
     private val testPagos = listOf(
-        Pago(id = "pago-serv-1", fecha = testDate, tipo = "Efectivo", monto = 50.0,
-            opticaId = "optica-test", servicioExtraId = servId),
-        Pago(id = "pago-serv-2", fecha = testDate, tipo = "Transferencia", monto = 50.0,
-            opticaId = "optica-test", servicioExtraId = servId)
+        Pago(
+            id = "pago-serv-1",
+            fecha = testDate,
+            tipo = "Efectivo",
+            monto = 50.0,
+            opticaId = "optica-test",
+            servicioExtraId = servId,
+        ),
+        Pago(
+            id = "pago-serv-2",
+            fecha = testDate,
+            tipo = "Transferencia",
+            monto = 50.0,
+            opticaId = "optica-test",
+            servicioExtraId = servId,
+        ),
     )
 
     @Before
@@ -113,7 +124,10 @@ class ServiciosViewModelDeleteTest {
         val pagoSlot = slot<Pago>()
         // Count how many times insertPago is called
         var insertCount = 0
-        coEvery { repository.insertPago(capture(pagoSlot)) } answers { insertCount++; Unit }
+        coEvery { repository.insertPago(capture(pagoSlot)) } answers {
+            insertCount++
+            Unit
+        }
 
         viewModel.confirmDelete()
         testDispatcher.scheduler.advanceUntilIdle()

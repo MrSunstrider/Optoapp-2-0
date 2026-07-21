@@ -10,8 +10,7 @@ import androidx.core.net.toUri
 import java.io.File
 
 object FileShareUtils {
-    fun getUri(context: Context, file: File): Uri =
-        FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+    fun getUri(context: Context, file: File): Uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
 
     fun openPdf(context: Context, file: File, chooserTitle: String = "Abrir PDF") {
         val uri = getUri(context, file)
@@ -35,7 +34,7 @@ object FileShareUtils {
         context: Context,
         phoneNumber: String,
         message: String,
-        emptyNumberMessage: String = "El paciente no tiene un número telefónico registrado."
+        emptyNumberMessage: String = "El paciente no tiene un número telefónico registrado.",
     ) {
         if (phoneNumber.isBlank()) {
             Toast.makeText(context, emptyNumberMessage, Toast.LENGTH_SHORT).show()
@@ -59,7 +58,7 @@ object FileShareUtils {
         context: Context,
         file: File,
         mimeType: String,
-        chooserTitle: String = "Compartir archivo"
+        chooserTitle: String = "Compartir archivo",
     ) {
         val uri = getUri(context, file)
         val intent = Intent(Intent.ACTION_SEND).apply {

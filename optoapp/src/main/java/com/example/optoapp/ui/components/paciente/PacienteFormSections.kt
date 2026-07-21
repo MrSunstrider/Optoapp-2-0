@@ -1,6 +1,5 @@
 package com.example.optoapp.ui.components.paciente
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -9,16 +8,47 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.OffsetMapping
+import androidx.compose.ui.text.input.TransformedText
+import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.unit.dp
 import com.example.optoapp.testing.TestTags
 import com.example.optoapp.util.DateUtils
 import java.time.LocalDate
+
+/**
+ * Validates a raw digits-only fechaNacimiento input.
+ * @return null if valid, or an error message string.
+ */
+internal fun validateFechaNacimiento(digits: String): String? {
+    return when (digits.length) {
+        0 -> null
+        in 1..7 -> "Fecha completa requerida (8 dígitos)"
+        else -> {
+            if (digits.filter { it.isDigit() }.length != 8) {
+                null
+            } else {
+                val d = digits.substring(0, 2).toIntOrNull() ?: 0
+                val m = digits.substring(2, 4).toIntOrNull() ?: 0
+                val y = digits.substring(4, 8).toIntOrNull() ?: 0
+                when {
+                    m !in 1..12 -> "Mes debe ser 1-12"
+                    d !in 1..31 -> "Día debe ser 1-31"
+                    y !in 1900..2100 -> "Año fuera de rango"
+                    else -> try {
+                        java.time.LocalDate.of(y, m, d)
+                        null
+                    } catch (_: Exception) {
+                        "Fecha inválida"
+                    }
+                }
+            }
+        }
+    }
+}
 
 /** Shows dd/mm/yyyy formatting without changing the underlying digits-only value */
 private object DateSlashTransformation : VisualTransformation {
@@ -31,19 +61,15 @@ private object DateSlashTransformation : VisualTransformation {
             }
         }
         val offsetMapping = object : OffsetMapping {
-            override fun originalToTransformed(offset: Int): Int {
-                return when {
-                    offset <= 2 -> offset
-                    offset <= 4 -> offset + 1
-                    else -> offset + 2
-                }
+            override fun originalToTransformed(offset: Int): Int = when {
+                offset <= 2 -> offset
+                offset <= 4 -> offset + 1
+                else -> offset + 2
             }
-            override fun transformedToOriginal(offset: Int): Int {
-                return when {
-                    offset <= 2 -> offset
-                    offset <= 5 -> offset - 1
-                    else -> offset - 2
-                }
+            override fun transformedToOriginal(offset: Int): Int = when {
+                offset <= 2 -> offset
+                offset <= 5 -> offset - 1
+                else -> offset - 2
             }
         }
         return TransformedText(androidx.compose.ui.text.AnnotatedString(formatted), offsetMapping)
@@ -61,19 +87,15 @@ private object PhoneSpaceTransformation : VisualTransformation {
             }
         }
         val offsetMapping = object : OffsetMapping {
-            override fun originalToTransformed(offset: Int): Int {
-                return when {
-                    offset <= 3 -> offset
-                    offset <= 6 -> offset + 1
-                    else -> offset + 2
-                }
+            override fun originalToTransformed(offset: Int): Int = when {
+                offset <= 3 -> offset
+                offset <= 6 -> offset + 1
+                else -> offset + 2
             }
-            override fun transformedToOriginal(offset: Int): Int {
-                return when {
-                    offset <= 3 -> offset
-                    offset <= 7 -> offset - 1
-                    else -> offset - 2
-                }
+            override fun transformedToOriginal(offset: Int): Int = when {
+                offset <= 3 -> offset
+                offset <= 7 -> offset - 1
+                else -> offset - 2
             }
         }
         return TransformedText(androidx.compose.ui.text.AnnotatedString(formatted), offsetMapping)
@@ -110,14 +132,14 @@ fun PacienteFormSections(
     onHobbiesChange: (String) -> Unit,
     fechaCreacion: LocalDate,
     onShowDatePicker: () -> Unit,
-    onSuggestHo: () -> Unit
+    onSuggestHo: () -> Unit,
 ) {
     var showSexoDialog by remember { mutableStateOf(false) }
     val sexos = listOf("Masculino", "Femenino")
 
     OutlinedButton(
         onClick = onShowDatePicker,
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
     ) {
         Text("Fecha de Registro: ${DateUtils.formatLocalized(fechaCreacion)}")
     }
@@ -125,17 +147,17 @@ fun PacienteFormSections(
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
     ) {
         OutlinedTextField(
             value = historiaOptometrica,
             onValueChange = onHistoriaOptometricaChange,
             label = { Text("N° Historia Optométrica") },
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.weight(1f),
         )
         TextButton(
             onClick = onSuggestHo,
-            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
+            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
         ) {
             Text("Sugerir HO", maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
         }
@@ -145,28 +167,10 @@ fun PacienteFormSections(
         value = nombreCompleto,
         onValueChange = onNombreCompletoChange,
         label = { Text("Nombre Completo *") },
-        modifier = Modifier.fillMaxWidth().testTag(TestTags.PACIENTE_NOMBRE_FIELD)
+        modifier = Modifier.fillMaxWidth().testTag(TestTags.PACIENTE_NOMBRE_FIELD),
     )
     val fechaNacError: String? = remember(fechaNacimiento) {
-        if (fechaNacimiento.length != 8) null
-        else {
-            val digits = fechaNacimiento.filter { it.isDigit() }
-            if (digits.length != 8) null
-            else {
-                val d = digits.substring(0, 2).toIntOrNull() ?: 0
-                val m = digits.substring(2, 4).toIntOrNull() ?: 0
-                val y = digits.substring(4, 8).toIntOrNull() ?: 0
-                when {
-                    m !in 1..12 -> "Mes debe ser 1-12"
-                    d !in 1..31 -> "Día debe ser 1-31"
-                    y !in 1900..2100 -> "Año fuera de rango"
-                    else -> try {
-                        java.time.LocalDate.of(y, m, d)
-                        null
-                    } catch (_: Exception) { "Fecha inválida" }
-                }
-            }
-        }
+        validateFechaNacimiento(fechaNacimiento)
     }
 
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -183,10 +187,10 @@ fun PacienteFormSections(
                 if (fechaNacError != null) {
                     Text(
                         text = fechaNacError,
-                        color = MaterialTheme.colorScheme.error
+                        color = MaterialTheme.colorScheme.error,
                     )
                 }
-            }
+            },
         )
         OutlinedTextField(
             value = edad,
@@ -198,7 +202,7 @@ fun PacienteFormSections(
             },
             label = { Text("Edad *") },
             modifier = Modifier.weight(1f).testTag(TestTags.PACIENTE_EDAD_FIELD),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
         )
     }
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -208,13 +212,13 @@ fun PacienteFormSections(
             label = { Text("Teléfono *") },
             modifier = Modifier.weight(1f).testTag(TestTags.PACIENTE_TELEFONO_FIELD),
             visualTransformation = PhoneSpaceTransformation,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
         )
         OutlinedTextField(
             value = dni,
             onValueChange = onDniChange,
             label = { Text("DNI / Cédula") },
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.weight(1f),
         )
     }
 
@@ -228,7 +232,7 @@ fun PacienteFormSections(
                 Icon(Icons.Default.ArrowDropDown, contentDescription = "Desplegar")
             }
         },
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
     )
 
     if (showSexoDialog) {
@@ -246,24 +250,27 @@ fun PacienteFormSections(
                                 onSexoChange(opt)
                                 showSexoDialog = false
                             },
-                            color = if (isSelected) MaterialTheme.colorScheme.primaryContainer
-                            else MaterialTheme.colorScheme.surface,
+                            color = if (isSelected) {
+                                MaterialTheme.colorScheme.primaryContainer
+                            } else {
+                                MaterialTheme.colorScheme.surface
+                            },
                             shape = MaterialTheme.shapes.small,
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth(),
                         ) {
                             Row(
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically
+                                verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 RadioButton(
                                     selected = isSelected,
-                                    onClick = null
+                                    onClick = null,
                                 )
                                 Spacer(Modifier.width(8.dp))
                                 Text(
                                     text = opt,
                                     style = MaterialTheme.typography.bodyLarge,
-                                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
+                                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
                                 )
                             }
                         }
@@ -272,7 +279,7 @@ fun PacienteFormSections(
             },
             confirmButton = {
                 TextButton(onClick = { showSexoDialog = false }) { Text("Cancelar") }
-            }
+            },
         )
     }
 
@@ -281,37 +288,37 @@ fun PacienteFormSections(
         onValueChange = onEmailChange,
         label = { Text("Correo Electrónico") },
         modifier = Modifier.fillMaxWidth().testTag(TestTags.PACIENTE_EMAIL_FIELD),
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
     )
     OutlinedTextField(
         value = direccion,
         onValueChange = onDireccionChange,
         label = { Text("Dirección") },
-        modifier = Modifier.fillMaxWidth().testTag(TestTags.PACIENTE_DIRECCION_FIELD)
+        modifier = Modifier.fillMaxWidth().testTag(TestTags.PACIENTE_DIRECCION_FIELD),
     )
     OutlinedTextField(
         value = distrito,
         onValueChange = onDistritoChange,
         label = { Text("Distrito") },
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
     )
     OutlinedTextField(
         value = ocupacion,
         onValueChange = onOcupacionChange,
         label = { Text("Ocupación") },
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
     )
     OutlinedTextField(
         value = acompanante,
         onValueChange = onAcompananteChange,
         label = { Text("Acompañante") },
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
     )
     OutlinedTextField(
         value = hobbies,
         onValueChange = onHobbiesChange,
         label = { Text("Hobbies / Hábitos") },
         modifier = Modifier.fillMaxWidth(),
-        minLines = 2
+        minLines = 2,
     )
 }

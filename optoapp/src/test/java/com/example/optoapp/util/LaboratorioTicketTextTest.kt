@@ -67,8 +67,10 @@ class LaboratorioTicketTextTest {
     @Test
     fun `bloqueFormulaLaboratorio with prism OD only`() {
         val ev = minimalEval().copy(
-            prismaOdValor = "2Δ", prismaOdBase = "nasal",
-            prismaOiValor = "", prismaOiBase = ""
+            prismaOdValor = "2Δ",
+            prismaOdBase = "nasal",
+            prismaOiValor = "",
+            prismaOiBase = "",
         )
         val result = LaboratorioTicketText.bloqueFormulaLaboratorio(ev)
         assertTrue(result.contains("OD 2Δ (base nasal)"))
@@ -110,7 +112,7 @@ class LaboratorioTicketTextTest {
         val ev = minimalEval().copy(
             addCercaOd = "+2.00",
             dnpOdMm = 32.0,
-            dnpOiMm = 33.0
+            dnpOiMm = 33.0,
         )
         val result = LaboratorioTicketText.lineaRefraccionFinalYDipNdP(ev)
         assertTrue(result.contains("cerca OD +2.00"))
@@ -139,8 +141,10 @@ class LaboratorioTicketTextTest {
     @Test
     fun `bloqueFormulaLaboratorio with prism both eyes`() {
         val ev = minimalEval().copy(
-            prismaOdValor = "3Δ", prismaOdBase = "temporal",
-            prismaOiValor = "2Δ", prismaOiBase = "nasal"
+            prismaOdValor = "3Δ",
+            prismaOdBase = "temporal",
+            prismaOiValor = "2Δ",
+            prismaOiBase = "nasal",
         )
         val result = LaboratorioTicketText.bloqueFormulaLaboratorio(ev)
         assertTrue(result.contains("OD 3Δ (base temporal)"))

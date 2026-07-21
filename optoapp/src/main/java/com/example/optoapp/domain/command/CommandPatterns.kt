@@ -11,28 +11,26 @@ interface Command {
 
 class BackupCommand(
     private val opticaId: String,
-    private val repository: com.example.optoapp.data.OptoRepository
+    private val repository: com.example.optoapp.data.OptoRepository,
 ) : Command {
-    override suspend fun execute(): Result<String> {
-        return try {
-            val data = repository.getBackupDataForOptica(opticaId)
-            // Lógica para guardar en archivo o nube
-            Result.success("Backup generado exitosamente")
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: IOException) {
-            AppLogger.e("BackupCommand", "Error en red generando backup: ${e.message}", e)
-            Result.failure(e)
-        } catch (e: Exception) {
-            AppLogger.e("BackupCommand", "Error inesperado generando backup: ${e.message}", e)
-            Result.failure(e)
-        }
+    override suspend fun execute(): Result<String> = try {
+        val data = repository.getBackupDataForOptica(opticaId)
+        // Lógica para guardar en archivo o nube
+        Result.success("Backup generado exitosamente")
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: IOException) {
+        AppLogger.e("BackupCommand", "Error en red generando backup: ${e.message}", e)
+        Result.failure(e)
+    } catch (e: Exception) {
+        AppLogger.e("BackupCommand", "Error inesperado generando backup: ${e.message}", e)
+        Result.failure(e)
     }
 }
 
 class ExportReportCommand(
     private val reportType: String,
-    private val data: List<Any>
+    private val data: List<Any>,
 ) : Command {
     override suspend fun execute(): Result<String> {
         // Lógica de exportación a PDF/Excel

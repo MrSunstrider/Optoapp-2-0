@@ -3,11 +3,6 @@ package com.example.optoapp.viewmodel.auth
 import android.content.Context
 import android.content.Intent
 import android.util.Log
-import androidx.core.content.edit
-import java.io.IOException
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import com.example.optoapp.BuildConfig
 import com.example.optoapp.data.ISecurityManager
 import com.example.optoapp.data.ISessionManager
@@ -16,23 +11,26 @@ import com.example.optoapp.data.OpticaFiscalSettings
 import com.example.optoapp.data.OpticaFiscalSettingsStore
 import com.example.optoapp.data.OpticaMembership
 import com.example.optoapp.data.OptoRepository
-import com.example.optoapp.domain.SyncSessionHelper
 import com.example.optoapp.notifications.NotificationHelper
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.SignOutScope
 import io.github.jan.supabase.auth.auth
-import io.github.jan.supabase.auth.providers.builtin.Email
-import io.github.jan.supabase.auth.providers.Google
 import io.github.jan.supabase.auth.handleDeeplinks
+import io.github.jan.supabase.auth.providers.Google
+import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.auth.user.UserInfo
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
-import java.time.LocalDate
-import javax.inject.Inject
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import java.io.IOException
+import java.time.LocalDate
+import javax.inject.Inject
 
 /**
  * Encapsula toda la lógica de autenticación (login, register, logout, sesión).
@@ -49,7 +47,7 @@ open class AuthDelegate @Inject constructor(
     private val membershipRepository: MembershipRepository,
     private val supabase: SupabaseClient,
     private val fiscalStore: OpticaFiscalSettingsStore,
-    @ApplicationContext private val appContext: Context
+    @ApplicationContext private val appContext: Context,
 ) {
     companion object {
         private const val TAG = "AuthDelegate"
@@ -58,7 +56,7 @@ open class AuthDelegate @Inject constructor(
         fun extractDisplayName(
             user: UserInfo,
             emailFallback: String?,
-            nameFallback: String?
+            nameFallback: String?,
         ): String {
             val meta = user.userMetadata
             val candidates = listOf(
@@ -67,7 +65,7 @@ open class AuthDelegate @Inject constructor(
                 meta?.get("name")?.toString(),
                 nameFallback,
                 emailFallback?.substringBefore("@"),
-                user.email?.substringBefore("@")
+                user.email?.substringBefore("@"),
             )
             return candidates.firstOrNull { !it.isNullOrBlank() }
                 ?.removePrefix("\"")
@@ -84,7 +82,7 @@ open class AuthDelegate @Inject constructor(
         }
     }
 
-    //── Flujos reactivos de sesión (delegados de SessionManager) ──────────────
+    // ── Flujos reactivos de sesión (delegados de SessionManager) ──────────────
 
     val isLoggedIn: Flow<Boolean> = sessionManager.isLoggedIn
     val opticaId: Flow<String> = sessionManager.opticaId
@@ -93,12 +91,11 @@ open class AuthDelegate @Inject constructor(
     val userName: Flow<String> = sessionManager.userName
     val userTimeZone: Flow<String?> = sessionManager.userTimeZone
 
-    //── Sesión ────────────────────────────────────────────────────────────────
+    // ── Sesión ────────────────────────────────────────────────────────────────
 
-    suspend fun isSessionTimeValid(): Boolean =
-        isTimestampWithinSessionWindow(sessionManager.lastLoginTimestamp.first())
+    suspend fun isSessionTimeValid(): Boolean = isTimestampWithinSessionWindow(sessionManager.lastLoginTimestamp.first())
 
-    //── Login ─────────────────────────────────────────────────────────────────
+    // ── Login ─────────────────────────────────────────────────────────────────
 
     suspend fun login(email: String, password: String) {
         supabase.auth.signInWith(Email) {
@@ -144,7 +141,7 @@ open class AuthDelegate @Inject constructor(
             ?: "No se pudo recuperar la sesión de Google. Reintenta el acceso."
     }
 
-    //── Register ──────────────────────────────────────────────────────────────
+    // ── Register ──────────────────────────────────────────────────────────────
 
     /**
      * Registra con email y espera la sesión. Si hay confirmación de email,
@@ -186,34 +183,36 @@ open class AuthDelegate @Inject constructor(
         }
     }
 
-    //── Selección de óptica ───────────────────────────────────────────────────
+    // ── Selección de óptica ───────────────────────────────────────────────────
 
     suspend fun selectOptica(membership: OpticaMembership) {
         sessionManager.saveSession(
             opticaId = membership.opticaId,
             email = pendingLoginEmail,
             name = pendingLoginName,
-            rol = membership.rol
+            rol = membership.rol,
         )
         repository.reassignLegacyMiOpticaBaseTo(membership.opticaId)
         if (BuildConfig.DEBUG) {
-            val uid = try { supabase.auth.currentUserOrNull()?.id } catch (_: Exception) { null }
+            val uid = try {
+                supabase.auth.currentUserOrNull()?.id
+            } catch (_: Exception) {
+                null
+            }
             Log.d(TAG, "Óptica seleccionada: ${membership.opticaId} rol=${membership.rol} uid=$uid")
         }
     }
 
-    suspend fun prepareOpticaSelection(): List<OpticaMembership> {
-        return membershipRepository.fetchMembershipsForCurrentUser()
-    }
+    suspend fun prepareOpticaSelection(): List<OpticaMembership> = membershipRepository.fetchMembershipsForCurrentUser()
 
-    //── Post-login (private en ViewModel original) ────────────────────────────
+    // ── Post-login (private en ViewModel original) ────────────────────────────
 
     data class PostLoginResult(
         val email: String,
         val name: String,
         val memberships: List<OpticaMembership>,
         val requiresSelection: Boolean,
-        val requiresOnboarding: Boolean
+        val requiresOnboarding: Boolean,
     )
 
     private var pendingLoginEmail: String = ""
@@ -223,7 +222,7 @@ open class AuthDelegate @Inject constructor(
 
     suspend fun resolvePostLogin(
         emailFallback: String? = null,
-        nameFallback: String? = null
+        nameFallback: String? = null,
     ): PostLoginResult {
         var user = supabase.auth.currentUserOrNull()
         if (user == null) {
@@ -255,7 +254,7 @@ open class AuthDelegate @Inject constructor(
                 name = nombre,
                 memberships = memberships,
                 requiresSelection = true,
-                requiresOnboarding = false
+                requiresOnboarding = false,
             )
             memberships.size == 1 -> {
                 val m = memberships.first()
@@ -263,7 +262,7 @@ open class AuthDelegate @Inject constructor(
                     opticaId = m.opticaId,
                     email = email,
                     name = nombre,
-                    rol = m.rol
+                    rol = m.rol,
                 )
                 repository.reassignLegacyMiOpticaBaseTo(m.opticaId)
                 PostLoginResult(
@@ -271,7 +270,7 @@ open class AuthDelegate @Inject constructor(
                     name = nombre,
                     memberships = memberships,
                     requiresSelection = false,
-                    requiresOnboarding = false
+                    requiresOnboarding = false,
                 )
             }
             else -> {
@@ -281,13 +280,13 @@ open class AuthDelegate @Inject constructor(
                     name = nombre,
                     memberships = emptyList(),
                     requiresSelection = false,
-                    requiresOnboarding = true
+                    requiresOnboarding = true,
                 )
             }
         }
     }
 
-    //── Recovery ──────────────────────────────────────────────────────────────
+    // ── Recovery ──────────────────────────────────────────────────────────────
 
     /** Token crudo del recovery link, para usarlo en la llamada REST directa */
     private var pendingRecoveryToken: String = ""
@@ -295,7 +294,7 @@ open class AuthDelegate @Inject constructor(
     suspend fun sendRecoveryEmail(email: String) {
         supabase.auth.resetPasswordForEmail(
             email = email,
-            redirectUrl = "optoapp://auth"
+            redirectUrl = "optoapp://auth",
         )
     }
 
@@ -335,11 +334,14 @@ open class AuthDelegate @Inject constructor(
                 conn.outputStream.write(json.toByteArray(Charsets.UTF_8))
                 val code = conn.responseCode
                 conn.disconnect()
-                if (code in 200..299) null
-                else {
+                if (code in 200..299) {
+                    null
+                } else {
                     val errorBody = try {
                         conn.errorStream?.bufferedReader()?.readText() ?: ""
-                    } catch (_: Exception) { "" }
+                    } catch (_: Exception) {
+                        ""
+                    }
                     Log.e(TAG, "Error actualizando contraseña via REST: HTTP $code $errorBody")
                     "No se pudo actualizar la contraseña. (código $code)"
                 }
@@ -352,7 +354,7 @@ open class AuthDelegate @Inject constructor(
         }
     }
 
-    //── Logout ────────────────────────────────────────────────────────────────
+    // ── Logout ────────────────────────────────────────────────────────────────
 
     suspend fun logout() {
         try {
@@ -367,7 +369,7 @@ open class AuthDelegate @Inject constructor(
         sessionManager.clearSession()
     }
 
-    //── Check session al inicio ───────────────────────────────────────────────
+    // ── Check session al inicio ───────────────────────────────────────────────
 
     /**
      * Valida la sesión al iniciar la app.
@@ -470,14 +472,14 @@ open class AuthDelegate @Inject constructor(
         }
     }
 
-    //── Onboarding ────────────────────────────────────────────────────────────
+    // ── Onboarding ────────────────────────────────────────────────────────────
 
     suspend fun completeOnboardingOptica(
         nombreOptica: String,
         fiscalDocTipo: String,
         fiscalDocNumero: String,
         razonSocial: String,
-        direccionFiscal: String
+        direccionFiscal: String,
     ): Result<OpticaMembership> {
         val email = pendingLoginEmail.ifBlank { sessionManager.userEmail.first() }
         val name = pendingLoginName.ifBlank { sessionManager.userName.first() }
@@ -488,7 +490,7 @@ open class AuthDelegate @Inject constructor(
             razonSocial = razonSocial,
             direccionFiscal = direccionFiscal,
             userId = pendingUserId.ifBlank { null },
-            overrideAccessToken = pendingAccessToken.ifBlank { null }
+            overrideAccessToken = pendingAccessToken.ifBlank { null },
         )
         if (result.isSuccess) {
             val m = result.getOrNull() ?: return result
@@ -496,17 +498,20 @@ open class AuthDelegate @Inject constructor(
                 opticaId = m.opticaId,
                 email = email,
                 name = name,
-                rol = "admin"
+                rol = "admin",
             )
             // Guardar datos fiscales localmente para que aparezcan en Configuración
             runCatching {
-                fiscalStore.save(m.opticaId, OpticaFiscalSettings(
-                    nombreComercial = nombreOptica.trim(),
-                    docTipo = fiscalDocTipo.trim().uppercase(),
-                    docNumero = fiscalDocNumero.trim(),
-                    razonSocial = razonSocial.trim(),
-                    direccionFiscal = direccionFiscal.trim()
-                ))
+                fiscalStore.save(
+                    m.opticaId,
+                    OpticaFiscalSettings(
+                        nombreComercial = nombreOptica.trim(),
+                        docTipo = fiscalDocTipo.trim().uppercase(),
+                        docNumero = fiscalDocNumero.trim(),
+                        razonSocial = razonSocial.trim(),
+                        direccionFiscal = direccionFiscal.trim(),
+                    ),
+                )
             }
         }
         return result
@@ -520,7 +525,7 @@ open class AuthDelegate @Inject constructor(
         return membershipRepository.createOpticaForCurrentUser(nombreOptica)
     }
 
-    //── Recordar Cuenta ────────────────────────────────────────────────────
+    // ── Recordar Cuenta ────────────────────────────────────────────────────
 
     suspend fun saveRememberedEmail(email: String) {
         sessionManager.saveRememberedEmail(email)
@@ -532,7 +537,7 @@ open class AuthDelegate @Inject constructor(
         sessionManager.clearRememberedEmail()
     }
 
-    //── Resolver duplicados (admin/gerente) ────────────────────────────────
+    // ── Resolver duplicados (admin/gerente) ────────────────────────────────
 
     suspend fun resolveDuplicateHistorias(): String {
         val rol = sessionManager.opticaRol.first().trim().lowercase()

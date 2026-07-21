@@ -2,7 +2,6 @@ package com.example.optoapp.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.optoapp.data.EvaluacionClinica
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Resource
 import com.example.optoapp.data.SessionManager
@@ -22,7 +21,7 @@ class EvaluacionViewModel @Inject constructor(
     private val repository: OptoRepository,
     private val sessionManager: SessionManager,
     private val postSaveSyncScheduler: PostSaveSyncScheduler,
-    private val notificationHelper: NotificationHelper
+    private val notificationHelper: NotificationHelper,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(EvaluacionUiState())
     val uiState: StateFlow<EvaluacionUiState> = _uiState.asStateFlow()
@@ -75,7 +74,7 @@ class EvaluacionViewModel @Inject constructor(
         pacienteId: String,
         evaluacionId: String?,
         programarRecordatorio: Boolean,
-        onComplete: (String) -> Unit
+        onComplete: (String) -> Unit,
     ) {
         saveEvaluacion(pacienteId, evaluacionId) { savedId, pName ->
             if (programarRecordatorio && _uiState.value.proximaCita != null) {
@@ -126,7 +125,9 @@ class EvaluacionViewModel @Inject constructor(
                         val withEdad = state.copy(pacienteEdad = edad)
                         if (add.isNotBlank()) {
                             withEdad.copy(hasAdd = true, addCercaOd = add, addCercaOi = add)
-                        } else withEdad
+                        } else {
+                            withEdad
+                        }
                     }
                 }
             }

@@ -28,19 +28,18 @@ import com.example.optoapp.domain.SyncOrdenesCompraUseCase
 import com.example.optoapp.domain.SyncPacientesUseCase
 import com.example.optoapp.domain.SyncProveedoresUseCase
 import com.example.optoapp.domain.observer.TableObserver
-import com.example.optoapp.domain.sync.SyncOrchestrator
 import com.example.optoapp.subscription.SubscriptionManager
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import com.example.optoapp.sync.SyncGate
 import com.example.optoapp.util.BackgroundErrorCollector
 import io.github.jan.supabase.SupabaseClient
+import io.mockk.Runs
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkStatic
-import io.mockk.Runs
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
@@ -93,7 +92,7 @@ class SyncViewModelThreeWayMergeTest {
         entityType = "paciente",
         localSnapshot = "2026-06-22T09:00:00Z",
         remoteSnapshot = "2026-06-22T10:00:00Z",
-        baseSnapshot = "{}"
+        baseSnapshot = "{}",
     )
 
     @Before
@@ -138,24 +137,28 @@ class SyncViewModelThreeWayMergeTest {
         coEvery { syncHistorialUseCase(any(), any(), any()) } returns Resource.Success(HistorialSyncResult(0, 0))
         coEvery { syncFinanzasUseCase(any(), any(), any()) } returns Resource.Success(
             FinanzasSyncResult(
-                uploadedDispensaciones = 0, uploadedServicios = 0, uploadedPagos = 0,
-                downloadedDispensaciones = 0, downloadedServicios = 0, downloadedPagos = 0
-            )
+                uploadedDispensaciones = 0,
+                uploadedServicios = 0,
+                uploadedPagos = 0,
+                downloadedDispensaciones = 0,
+                downloadedServicios = 0,
+                downloadedPagos = 0,
+            ),
         )
         coEvery { syncInventarioUseCase(any(), any(), any()) } returns Resource.Success(
-            InventarioSyncResult(0, 0, 0, 0)
+            InventarioSyncResult(0, 0, 0, 0),
         )
         coEvery { syncProveedoresUseCase(any(), any(), any()) } returns Resource.Success(
-            ProveedoresSyncResult(0, 0, 0, 0)
+            ProveedoresSyncResult(0, 0, 0, 0),
         )
         coEvery { syncOrdenesCompraUseCase(any(), any(), any()) } returns Resource.Success(
-            OrdenesCompraSyncResult(0, 0, 0, 0)
+            OrdenesCompraSyncResult(0, 0, 0, 0),
         )
         coEvery { syncInventarioFisicoUseCase(any(), any(), any()) } returns Resource.Success(
-            InventarioFisicoSyncResult(0, 0, 0, 0)
+            InventarioFisicoSyncResult(0, 0, 0, 0),
         )
         coEvery { syncInventoryKpisUseCase(any()) } returns Resource.Success(
-            com.example.optoapp.domain.InventoryKpiSummary(0, 0, emptyList(), null)
+            com.example.optoapp.domain.InventoryKpiSummary(0, 0, emptyList(), null),
         )
 
         coEvery { conflictDao.resolveConflict(any(), any()) } just Runs
@@ -186,7 +189,7 @@ class SyncViewModelThreeWayMergeTest {
             supabaseObserver = supabaseObserver,
             bgErrorCollector = bgErrorCollector,
             postSaveSyncScheduler = postSaveSyncScheduler,
-            syncOrchestrator = mockk(relaxed = true)
+            syncOrchestrator = mockk(relaxed = true),
         )
     }
 

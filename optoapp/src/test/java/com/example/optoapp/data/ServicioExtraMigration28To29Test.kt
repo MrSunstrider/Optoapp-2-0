@@ -42,7 +42,7 @@ class ServicioExtraMigration28To29Test {
             MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16,
             MIGRATION_16_17, MIGRATION_17_18, MIGRATION_18_19, MIGRATION_19_20, MIGRATION_20_21,
             MIGRATION_21_22, MIGRATION_22_23, MIGRATION_23_24, MIGRATION_24_25, MIGRATION_25_26,
-            MIGRATION_26_27, MIGRATION_27_28, MIGRATION_28_29
+            MIGRATION_26_27, MIGRATION_27_28, MIGRATION_28_29,
         )
 
         assertEquals(6, migrations.first().startVersion)
@@ -50,9 +50,9 @@ class ServicioExtraMigration28To29Test {
 
         for (i in 0 until migrations.size - 1) {
             assertEquals(
-                "Migration ${i} end=${migrations[i].endVersion} should match ${i + 1} start=${migrations[i + 1].startVersion}",
+                "Migration $i end=${migrations[i].endVersion} should match ${i + 1} start=${migrations[i + 1].startVersion}",
                 migrations[i].endVersion,
-                migrations[i + 1].startVersion
+                migrations[i + 1].startVersion,
             )
         }
     }
@@ -94,7 +94,7 @@ class ServicioExtraMigration28To29Test {
                             updatedBy TEXT,
                             FOREIGN KEY(pacienteId) REFERENCES pacientes(id) ON DELETE SET NULL
                         )
-                        """.trimIndent()
+                        """.trimIndent(),
                     )
                 }
 
@@ -111,12 +111,12 @@ class ServicioExtraMigration28To29Test {
         val rows = listOf(
             Triple("serv-1", "Reparación armazón", 50.0),
             Triple("serv-2", "Lente de sol", 120.0),
-            Triple("serv-3", "Accesorio", 25.0)
+            Triple("serv-3", "Accesorio", 25.0),
         )
         rows.forEach { (id, desc, monto) ->
             v28Db.execSQL(
                 "INSERT INTO servicios_extra (id, ot, descripcion, montoTotal, aCuenta, estado, fecha, pacienteId, metodoPago, opticaId) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                arrayOf<Any>(id, "ot-$id", desc, monto, monto / 2.0, "Pendiente", "2026-06-15", "paciente-1", "Efectivo", "optica-test")
+                arrayOf<Any>(id, "ot-$id", desc, monto, monto / 2.0, "Pendiente", "2026-06-15", "paciente-1", "Efectivo", "optica-test"),
             )
         }
 
@@ -138,7 +138,7 @@ class ServicioExtraMigration28To29Test {
                 override fun onUpgrade(
                     db: SupportSQLiteDatabase,
                     oldVersion: Int,
-                    newVersion: Int
+                    newVersion: Int,
                 ) {
                     if (oldVersion == 28 && newVersion == 29) {
                         MIGRATION_28_29.migrate(db)
@@ -159,8 +159,8 @@ class ServicioExtraMigration28To29Test {
                     allRowsCursor.getString(allRowsCursor.getColumnIndexOrThrow("id")),
                     allRowsCursor.getString(allRowsCursor.getColumnIndexOrThrow("descripcion")),
                     allRowsCursor.getDouble(allRowsCursor.getColumnIndexOrThrow("montoTotal")),
-                    allRowsCursor.getString(allRowsCursor.getColumnIndexOrThrow("fecha_entrega"))
-                )
+                    allRowsCursor.getString(allRowsCursor.getColumnIndexOrThrow("fecha_entrega")),
+                ),
             )
         }
         allRowsCursor.close()
@@ -218,7 +218,7 @@ class ServicioExtraMigration28To29Test {
                             updatedAt TEXT,
                             updatedBy TEXT
                         )
-                        """.trimIndent()
+                        """.trimIndent(),
                     )
                 }
 
@@ -228,7 +228,7 @@ class ServicioExtraMigration28To29Test {
         val v28Helper = factory.create(v28Config)
         v28Helper.writableDatabase.execSQL(
             "INSERT INTO servicios_extra (id, ot, descripcion, montoTotal, aCuenta, estado, fecha, pacienteId, metodoPago, opticaId) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            arrayOf<Any>("fresh-1", "ot-1", "Servicio v28", 80.0, 40.0, "Entregado", "2026-06-20", "paciente-1", "Tarjeta", "optica-x")
+            arrayOf<Any>("fresh-1", "ot-1", "Servicio v28", 80.0, 40.0, "Entregado", "2026-06-20", "paciente-1", "Tarjeta", "optica-x"),
         )
         v28Helper.close()
 
@@ -248,7 +248,7 @@ class ServicioExtraMigration28To29Test {
         // Insert a fresh row supplying fecha_entrega
         v29Db.execSQL(
             "INSERT INTO servicios_extra (id, ot, descripcion, montoTotal, aCuenta, estado, fecha, pacienteId, metodoPago, opticaId, fecha_entrega) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            arrayOf<Any>("fresh-2", "ot-2", "Servicio v29", 99.0, 99.0, "Entregado", "2026-07-01", "paciente-2", "Efectivo", "optica-x", "2026-07-01")
+            arrayOf<Any>("fresh-2", "ot-2", "Servicio v29", 99.0, 99.0, "Entregado", "2026-07-01", "paciente-2", "Efectivo", "optica-x", "2026-07-01"),
         )
 
         // Verify the fresh row has the provided fecha_entrega
@@ -295,7 +295,7 @@ class ServicioExtraMigration28To29Test {
                             updatedAt TEXT,
                             updatedBy TEXT
                         )
-                        """.trimIndent()
+                        """.trimIndent(),
                     )
                 }
 
@@ -327,7 +327,7 @@ class ServicioExtraMigration28To29Test {
         // Inserting a row without fecha_entrega must work (column is nullable)
         v29Db.execSQL(
             "INSERT INTO servicios_extra (id, ot, descripcion, montoTotal, aCuenta, estado, fecha, pacienteId, metodoPago, opticaId) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            arrayOf<Any>("empty-1", "ot-1", "Servicio vacío", 10.0, 5.0, "Pendiente", "2026-06-30", "paciente-1", "Efectivo", "optica-y")
+            arrayOf<Any>("empty-1", "ot-1", "Servicio vacío", 10.0, 5.0, "Pendiente", "2026-06-30", "paciente-1", "Efectivo", "optica-y"),
         )
         val rowCursor = v29Db.query("SELECT fecha_entrega FROM servicios_extra WHERE id = 'empty-1'")
         assertTrue(rowCursor.moveToFirst())

@@ -28,13 +28,13 @@ class MigrationTest {
             OptoDatabase.MIGRATION_15_16,
             OptoDatabase.MIGRATION_16_17,
             OptoDatabase.MIGRATION_17_18,
-            OptoDatabase.MIGRATION_18_19
+            OptoDatabase.MIGRATION_18_19,
         )
 
         val db = Room.databaseBuilder(
             ApplicationProvider.getApplicationContext(),
             OptoDatabase::class.java,
-            "migration-test-6-to-19"
+            "migration-test-6-to-19",
         )
             .addMigrations(*allMigrations.toTypedArray())
             .fallbackToDestructiveMigration(false)
@@ -63,7 +63,7 @@ class MigrationTest {
     fun destructiveMigrationIsDisabledInNonDebug() {
         assertTrue(
             "fallbackToDestructiveMigration should be disabled in production-like config",
-            true
+            true,
         )
     }
 }

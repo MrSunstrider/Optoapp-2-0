@@ -18,11 +18,11 @@ import com.example.optoapp.ui.theme.OptoTokens
 fun DataManagementCard(
     canManageBackups: Boolean,
     createBackupLauncher: androidx.activity.result.ActivityResultLauncher<String>,
-    restoreBackupLauncher: androidx.activity.result.ActivityResultLauncher<String>
+    restoreBackupLauncher: androidx.activity.result.ActivityResultLauncher<String>,
 ) {
     Card(
         shape = OptoTokens.shapes.medium,
-        elevation = CardDefaults.cardElevation(defaultElevation = OptoTokens.elevation.level1)
+        elevation = CardDefaults.cardElevation(defaultElevation = OptoTokens.elevation.level1),
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(stringResource(R.string.config_data_section_title), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
@@ -33,7 +33,7 @@ fun DataManagementCard(
             Button(
                 onClick = { createBackupLauncher.launch("OptoApp_Backup_${System.currentTimeMillis()}.json") },
                 modifier = Modifier.fillMaxWidth(),
-                enabled = canManageBackups
+                enabled = canManageBackups,
             ) {
                 Text(stringResource(R.string.config_backup_download_action))
             }
@@ -47,7 +47,7 @@ fun DataManagementCard(
                 onClick = { restoreBackupLauncher.launch("application/json") },
                 modifier = Modifier.fillMaxWidth(),
                 enabled = canManageBackups,
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
             ) {
                 Text(stringResource(R.string.config_backup_restore_action))
             }

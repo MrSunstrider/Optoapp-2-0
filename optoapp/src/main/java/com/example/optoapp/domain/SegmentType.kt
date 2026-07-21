@@ -4,5 +4,5 @@ enum class SegmentType {
     FLATTOP,
     INVISIBLE,
     PROGRESSIVE,
-    OCUPACIONAL
+    OCUPACIONAL,
 }

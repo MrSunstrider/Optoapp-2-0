@@ -2,12 +2,12 @@ package com.example.optoapp.viewmodel
 
 import com.example.optoapp.viewmodel.auth.AuthDelegate
 import io.github.jan.supabase.auth.user.UserInfo
-import kotlin.time.ExperimentalTime
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import org.junit.Assert.*
 import org.junit.Test
+import kotlin.time.ExperimentalTime
 
 /**
  * Unit tests for AuthDelegate pure logic extracted to companion object methods.
@@ -50,7 +50,7 @@ class AuthDelegateTest {
     private fun userInfo(
         id: String = "u1",
         email: String? = null,
-        metadata: JsonObject? = null
+        metadata: JsonObject? = null,
     ): UserInfo = UserInfo(id = id, aud = "authenticated", email = email, userMetadata = metadata)
 
     @Test
@@ -94,18 +94,22 @@ class AuthDelegateTest {
 
     @Test
     fun `extractDisplayName prefers nombre over full_name`() {
-        val user = userInfo(metadata = buildJsonObject {
-            put("nombre", "Primero")
-            put("full_name", "Segundo")
-        })
+        val user = userInfo(
+            metadata = buildJsonObject {
+                put("nombre", "Primero")
+                put("full_name", "Segundo")
+            },
+        )
         assertEquals("Primero", AuthDelegate.extractDisplayName(user, null, null))
     }
 
     @Test
     fun `extractDisplayName nombre is null falls through`() {
-        val user = userInfo(metadata = buildJsonObject {
-            put("full_name", "Solo Apellido")
-        })
+        val user = userInfo(
+            metadata = buildJsonObject {
+                put("full_name", "Solo Apellido")
+            },
+        )
         assertEquals("Solo Apellido", AuthDelegate.extractDisplayName(user, null, null))
     }
 }

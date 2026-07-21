@@ -3,9 +3,9 @@ package com.example.optoapp.domain
 import io.github.jan.supabase.exceptions.RestException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
-import kotlin.random.Random
 import java.io.IOException
 import javax.inject.Inject
+import kotlin.random.Random
 
 /**
  * Supabase sync must survive transient network blips without failing the entire batch.
@@ -14,7 +14,7 @@ import javax.inject.Inject
  * Uses [SyncLogger] instead of android.util.Log directly (A4 POC).
  */
 class NetworkRetryHelper @Inject constructor(
-    private val logger: SyncLogger
+    private val logger: SyncLogger,
 ) {
     companion object {
         private const val TAG = "SyncFinanzas"
@@ -23,7 +23,7 @@ class NetworkRetryHelper @Inject constructor(
 
     suspend fun retryNetwork(
         opName: String,
-        block: suspend () -> Unit
+        block: suspend () -> Unit,
     ) {
         var lastError: Exception? = null
         repeat(NETWORK_RETRY_ATTEMPTS) { attempt ->

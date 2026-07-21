@@ -4,7 +4,6 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
-import androidx.room.Update
 import com.example.optoapp.data.CategoriaMontura
 import kotlinx.coroutines.flow.Flow
 
@@ -19,10 +18,12 @@ interface CategoriaMonturaDao {
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insert(categoria: CategoriaMontura)
 
-    @Query("""
+    @Query(
+        """
         UPDATE categorias_montura SET nombre=:nombre, descripcion=:descripcion,
         opticaId=:opticaId WHERE id=:id AND opticaId=:opticaId
-    """)
+    """,
+    )
     suspend fun update(id: String, opticaId: String, nombre: String, descripcion: String): Int
 
     @Query("DELETE FROM categorias_montura WHERE id = :id AND opticaId = :opticaId")

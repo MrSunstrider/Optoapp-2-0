@@ -39,7 +39,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import com.example.optoapp.ui.components.OptoTopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -53,13 +52,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.example.optoapp.data.AppRoles
 import com.example.optoapp.ui.components.OptoTextField
+import com.example.optoapp.ui.components.OptoTopAppBar
 import com.example.optoapp.ui.components.monturas.MonturaEditForm
 import com.example.optoapp.ui.components.monturas.MonturaItem
 import com.example.optoapp.ui.theme.OptoTokens
 import com.example.optoapp.util.FileShareUtils
 import com.example.optoapp.util.InventarioMonturasPdfGenerator
-import com.example.optoapp.data.AppRoles
 import com.example.optoapp.viewmodel.AuthViewModel
 import com.example.optoapp.viewmodel.MonturasUiState
 import com.example.optoapp.viewmodel.MonturasViewModel
@@ -71,7 +71,7 @@ import java.util.Locale
 fun MonturasScreen(
     navController: NavController,
     viewModel: MonturasViewModel = hiltViewModel(),
-    authViewModel: AuthViewModel = hiltViewModel()
+    authViewModel: AuthViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
@@ -88,13 +88,15 @@ fun MonturasScreen(
     }
 
     val filtradas = monturas.filter { m ->
-        (uiState.query.isBlank() ||
-            m.sku.contains(uiState.query, ignoreCase = true) ||
-            m.marca.contains(uiState.query, ignoreCase = true) ||
-            m.modelo.contains(uiState.query, ignoreCase = true)) &&
-        (uiState.filterMarca == null || m.marca == uiState.filterMarca) &&
-        (uiState.filterMaterial == null || m.materialMontura == uiState.filterMaterial) &&
-        (!uiState.filterStockBajo || m.stockActual <= m.stockMinimo)
+        (
+            uiState.query.isBlank() ||
+                m.sku.contains(uiState.query, ignoreCase = true) ||
+                m.marca.contains(uiState.query, ignoreCase = true) ||
+                m.modelo.contains(uiState.query, ignoreCase = true)
+            ) &&
+            (uiState.filterMarca == null || m.marca == uiState.filterMarca) &&
+            (uiState.filterMaterial == null || m.materialMontura == uiState.filterMaterial) &&
+            (!uiState.filterStockBajo || m.stockActual <= m.stockMinimo)
     }
     val sortedFiltradas = when (uiState.sortBy) {
         "name" -> filtradas.sortedWith(compareBy({ it.marca }, { it.modelo }))
@@ -108,8 +110,11 @@ fun MonturasScreen(
     val stockTotal = filtradas.sumOf { it.stockActual }
     val valorCosto = filtradas.sumOf { it.stockActual * it.costo }
     val valorVenta = filtradas.sumOf { it.stockActual * it.precio }
-    val restantes = if (porReponer.isEmpty()) sortedFiltradas
-        else sortedFiltradas.filter { f -> porReponer.none { it.id == f.id } }
+    val restantes = if (porReponer.isEmpty()) {
+        sortedFiltradas
+    } else {
+        sortedFiltradas.filter { f -> porReponer.none { it.id == f.id } }
+    }
 
     if (uiState.editing) {
         MonturaEditFullScreen(viewModel = viewModel, uiState = uiState)
@@ -130,16 +135,16 @@ fun MonturasScreen(
                                 Icon(Icons.Default.Add, contentDescription = "Nuevo producto")
                             }
                         }
-                    }
+                    },
                 )
-            }
+            },
         ) { padding ->
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding)
                     .padding(horizontal = OptoTokens.spacing.lg),
-                verticalArrangement = Arrangement.spacedBy(OptoTokens.spacing.sm)
+                verticalArrangement = Arrangement.spacedBy(OptoTokens.spacing.sm),
             ) {
                 item {
                     OptoTextField(
@@ -148,7 +153,7 @@ fun MonturasScreen(
                         label = "Buscar por SKU, marca o modelo",
                         leadingIcon = {
                             Icon(Icons.Default.Search, contentDescription = "Buscar")
-                        }
+                        },
                     )
                 }
 
@@ -164,7 +169,7 @@ fun MonturasScreen(
                         onToggleStockBajo = viewModel::toggleFilterStockBajo,
                         onClearFilters = viewModel::clearFilters,
                         marcas = marcasDistintas,
-                        materiales = materialesDistintos
+                        materiales = materialesDistintos,
                     )
                 }
 
@@ -188,7 +193,7 @@ fun MonturasScreen(
                                 ?: InventarioMonturasPdfGenerator.generate(context, sortedFiltradas)
                             lastGeneratedPdf = file
                             FileShareUtils.sharePdf(context, file, "Compartir reporte de inventario")
-                        }
+                        },
                     )
                 }
 
@@ -197,7 +202,7 @@ fun MonturasScreen(
                         Text(
                             uiState.error ?: "",
                             color = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.padding(horizontal = OptoTokens.spacing.xs)
+                            modifier = Modifier.padding(horizontal = OptoTokens.spacing.xs),
                         )
                     }
                 }
@@ -206,7 +211,7 @@ fun MonturasScreen(
                         Text(
                             uiState.success ?: "",
                             color = MaterialTheme.colorScheme.tertiary,
-                            modifier = Modifier.padding(horizontal = OptoTokens.spacing.xs)
+                            modifier = Modifier.padding(horizontal = OptoTokens.spacing.xs),
                         )
                     }
                 }
@@ -222,7 +227,7 @@ fun MonturasScreen(
 private fun LazyListScope.monturaProductListing(
     porReponer: List<com.example.optoapp.data.Montura>,
     restantes: List<com.example.optoapp.data.Montura>,
-    viewModel: MonturasViewModel
+    viewModel: MonturasViewModel,
 ) {
     if (porReponer.isNotEmpty()) {
         item {
@@ -230,7 +235,7 @@ private fun LazyListScope.monturaProductListing(
                 "Por reponer",
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.padding(horizontal = OptoTokens.spacing.xs)
+                modifier = Modifier.padding(horizontal = OptoTokens.spacing.xs),
             )
         }
         items(porReponer, key = { "low-${it.id}" }) { m ->
@@ -239,7 +244,7 @@ private fun LazyListScope.monturaProductListing(
                 onEdit = { viewModel.startEdit(m) },
                 onDelete = { viewModel.delete(m) },
                 onEntrada = { viewModel.registrarEntrada(m, 1) },
-                onSalida = { viewModel.registrarSalida(m, 1) }
+                onSalida = { viewModel.registrarSalida(m, 1) },
             )
         }
         item {
@@ -247,7 +252,7 @@ private fun LazyListScope.monturaProductListing(
                 "Todos los productos",
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(horizontal = OptoTokens.spacing.xs)
+                modifier = Modifier.padding(horizontal = OptoTokens.spacing.xs),
             )
         }
     }
@@ -257,7 +262,7 @@ private fun LazyListScope.monturaProductListing(
             onEdit = { viewModel.startEdit(m) },
             onDelete = { viewModel.delete(m) },
             onEntrada = { viewModel.registrarEntrada(m, 1) },
-            onSalida = { viewModel.registrarSalida(m, 1) }
+            onSalida = { viewModel.registrarSalida(m, 1) },
         )
     }
 }
@@ -266,7 +271,7 @@ private fun LazyListScope.monturaProductListing(
 @Composable
 private fun MonturaEditFullScreen(
     viewModel: MonturasViewModel,
-    uiState: MonturasUiState
+    uiState: MonturasUiState,
 ) {
     val form = uiState.form
     val isNew = form.id == null
@@ -284,9 +289,9 @@ private fun MonturaEditFullScreen(
                     IconButton(onClick = { viewModel.save() }) {
                         Icon(Icons.Default.Check, contentDescription = "Guardar")
                     }
-                }
+                },
             )
-        }
+        },
     ) { padding ->
         Column(
             modifier = Modifier
@@ -294,17 +299,17 @@ private fun MonturaEditFullScreen(
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             MonturaEditForm(
                 form = form,
                 onUpdate = { newForm -> viewModel.updateForm { newForm } },
-                error = uiState.error
+                error = uiState.error,
             )
             Spacer(Modifier.height(16.dp))
             Button(
                 onClick = { viewModel.save() },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
             ) {
                 Text(if (isNew) "Crear Producto" else "Guardar Cambios")
             }
@@ -324,12 +329,12 @@ private fun SortFilterRow(
     onToggleStockBajo: () -> Unit,
     onClearFilters: () -> Unit,
     marcas: List<String>,
-    materiales: List<String>
+    materiales: List<String>,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(6.dp),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         var sortExpanded by remember { mutableStateOf(false) }
         Box {
@@ -344,26 +349,38 @@ private fun SortFilterRow(
                             "precio_desc" -> "Precio \u2193"
                             else -> "Ordenar"
                         },
-                        style = MaterialTheme.typography.labelSmall
+                        style = MaterialTheme.typography.labelSmall,
                     )
-                }
+                },
             )
             DropdownMenu(expanded = sortExpanded, onDismissRequest = { sortExpanded = false }) {
                 DropdownMenuItem(
                     text = { Text("Sin ordenar") },
-                    onClick = { onSortBy(null); sortExpanded = false }
+                    onClick = {
+                        onSortBy(null)
+                        sortExpanded = false
+                    },
                 )
                 DropdownMenuItem(
                     text = { Text("Nombre A-Z") },
-                    onClick = { onSortBy("name"); sortExpanded = false }
+                    onClick = {
+                        onSortBy("name")
+                        sortExpanded = false
+                    },
                 )
                 DropdownMenuItem(
                     text = { Text("Stock \u2193") },
-                    onClick = { onSortBy("stock_desc"); sortExpanded = false }
+                    onClick = {
+                        onSortBy("stock_desc")
+                        sortExpanded = false
+                    },
                 )
                 DropdownMenuItem(
                     text = { Text("Precio \u2193") },
-                    onClick = { onSortBy("precio_desc"); sortExpanded = false }
+                    onClick = {
+                        onSortBy("precio_desc")
+                        sortExpanded = false
+                    },
                 )
             }
         }
@@ -376,19 +393,25 @@ private fun SortFilterRow(
                 label = {
                     Text(
                         currentFilterMarca ?: "Marca",
-                        style = MaterialTheme.typography.labelSmall
+                        style = MaterialTheme.typography.labelSmall,
                     )
-                }
+                },
             )
             DropdownMenu(expanded = marcaExpanded, onDismissRequest = { marcaExpanded = false }) {
                 DropdownMenuItem(
                     text = { Text("Todas") },
-                    onClick = { onFilterMarca(null); marcaExpanded = false }
+                    onClick = {
+                        onFilterMarca(null)
+                        marcaExpanded = false
+                    },
                 )
                 marcas.forEach { marca ->
                     DropdownMenuItem(
                         text = { Text(marca) },
-                        onClick = { onFilterMarca(marca); marcaExpanded = false }
+                        onClick = {
+                            onFilterMarca(marca)
+                            marcaExpanded = false
+                        },
                     )
                 }
             }
@@ -402,19 +425,25 @@ private fun SortFilterRow(
                 label = {
                     Text(
                         currentFilterMaterial ?: "Material",
-                        style = MaterialTheme.typography.labelSmall
+                        style = MaterialTheme.typography.labelSmall,
                     )
-                }
+                },
             )
             DropdownMenu(expanded = materialExpanded, onDismissRequest = { materialExpanded = false }) {
                 DropdownMenuItem(
                     text = { Text("Todos") },
-                    onClick = { onFilterMaterial(null); materialExpanded = false }
+                    onClick = {
+                        onFilterMaterial(null)
+                        materialExpanded = false
+                    },
                 )
                 materiales.forEach { mat ->
                     DropdownMenuItem(
                         text = { Text(mat) },
-                        onClick = { onFilterMaterial(mat); materialExpanded = false }
+                        onClick = {
+                            onFilterMaterial(mat)
+                            materialExpanded = false
+                        },
                     )
                 }
             }
@@ -423,7 +452,7 @@ private fun SortFilterRow(
         FilterChip(
             selected = currentFilterStockBajo,
             onClick = onToggleStockBajo,
-            label = { Text("Stock bajo", style = MaterialTheme.typography.labelSmall) }
+            label = { Text("Stock bajo", style = MaterialTheme.typography.labelSmall) },
         )
 
         val hasFilters = currentFilterMarca != null || currentFilterMaterial != null || currentFilterStockBajo
@@ -432,7 +461,7 @@ private fun SortFilterRow(
                 Icon(
                     Icons.Default.Close,
                     contentDescription = "Limpiar filtros",
-                    tint = MaterialTheme.colorScheme.error
+                    tint = MaterialTheme.colorScheme.error,
                 )
             }
         }
@@ -458,49 +487,49 @@ private fun StockAlertCard(porReponer: List<com.example.optoapp.data.Montura>) {
         modifier = Modifier.fillMaxWidth(),
         shape = OptoTokens.shapes.medium,
         elevation = CardDefaults.elevatedCardElevation(defaultElevation = OptoTokens.elevation.level1),
-        colors = CardDefaults.elevatedCardColors(containerColor = containerColor)
+        colors = CardDefaults.elevatedCardColors(containerColor = containerColor),
     ) {
         Column(
             modifier = Modifier.padding(OptoTokens.spacing.md),
-            verticalArrangement = Arrangement.spacedBy(OptoTokens.spacing.sm)
+            verticalArrangement = Arrangement.spacedBy(OptoTokens.spacing.sm),
         ) {
             Row(
                 horizontalArrangement = Arrangement.spacedBy(OptoTokens.spacing.sm),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(
                     imageVector = icon,
                     contentDescription = "Estado stock",
-                    tint = contentColor
+                    tint = contentColor,
                 )
                 Text(
                     text = "Alertas de stock bajo: ${porReponer.size}",
                     style = MaterialTheme.typography.titleSmall,
-                    color = contentColor
+                    color = contentColor,
                 )
             }
             if (!hasAlerts) {
                 Text(
                     "No hay productos cr\u00EDticos por reposici\u00F3n.",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = contentColor
+                    color = contentColor,
                 )
             } else {
                 porReponer.take(5).forEach { m ->
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(OptoTokens.spacing.xs),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Icon(
                             imageVector = Icons.Default.Warning,
                             contentDescription = "Advertencia",
                             modifier = Modifier.size(16.dp),
-                            tint = MaterialTheme.colorScheme.error
+                            tint = MaterialTheme.colorScheme.error,
                         )
                         Text(
                             "${m.sku} ${m.marca} ${m.modelo}: ${m.stockActual}/${m.stockMinimo}",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = contentColor
+                            color = contentColor,
                         )
                     }
                 }
@@ -516,37 +545,37 @@ private fun SummaryCard(
     valorCosto: Double,
     valorVenta: Double,
     onGeneratePdf: () -> Unit,
-    onSharePdf: () -> Unit
+    onSharePdf: () -> Unit,
 ) {
     ElevatedCard(
         modifier = Modifier.fillMaxWidth(),
         shape = OptoTokens.shapes.medium,
         elevation = CardDefaults.elevatedCardElevation(defaultElevation = OptoTokens.elevation.level1),
-        colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surface)
+        colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surface),
     ) {
         Column(
             modifier = Modifier.padding(OptoTokens.spacing.md),
-            verticalArrangement = Arrangement.spacedBy(OptoTokens.spacing.sm)
+            verticalArrangement = Arrangement.spacedBy(OptoTokens.spacing.sm),
         ) {
             Row(
                 horizontalArrangement = Arrangement.spacedBy(OptoTokens.spacing.sm),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(
                     imageVector = Icons.Default.Assessment,
                     contentDescription = "Resumen",
-                    tint = MaterialTheme.colorScheme.primary
+                    tint = MaterialTheme.colorScheme.primary,
                 )
                 Text(
                     "Resumen inventario",
                     style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
             }
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(OptoTokens.spacing.md)
+                horizontalArrangement = Arrangement.spacedBy(OptoTokens.spacing.md),
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     KpiItem("Productos", "$filtradasSize")
@@ -582,12 +611,12 @@ private fun KpiItem(label: String, value: String) {
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Text(
             text = value,
             style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurface
+            color = MaterialTheme.colorScheme.onSurface,
         )
     }
 }

@@ -1,8 +1,8 @@
 package com.example.optoapp.data
 
-import com.example.optoapp.data.montura.MonturaDao
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
+import com.example.optoapp.data.montura.MonturaDao
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -31,7 +31,7 @@ class MonturaDaoTest {
     fun setUp() {
         db = Room.inMemoryDatabaseBuilder(
             ApplicationProvider.getApplicationContext(),
-            OptoDatabase::class.java
+            OptoDatabase::class.java,
         ).allowMainThreadQueries().build()
         dao = db.monturaDao()
     }
@@ -56,7 +56,7 @@ class MonturaDaoTest {
             stockActual = 10,
             stockMinimo = 2,
             activo = true,
-            opticaId = "optica1"
+            opticaId = "optica1",
         )
         dao.insertMontura(montura)
 
@@ -81,12 +81,12 @@ class MonturaDaoTest {
         val m1 = Montura(
             id = "m1", sku = "S001", marca = "MarcaA", modelo = "Mod1",
             color = "Negro", talla = "M", costo = 50.0, precio = 100.0,
-            stockActual = 5, stockMinimo = 2, activo = true, opticaId = "opticaA"
+            stockActual = 5, stockMinimo = 2, activo = true, opticaId = "opticaA",
         )
         val m2 = Montura(
             id = "m2", sku = "S002", marca = "MarcaB", modelo = "Mod2",
             color = "Rojo", talla = "L", costo = 60.0, precio = 120.0,
-            stockActual = 3, stockMinimo = 1, activo = true, opticaId = "opticaB"
+            stockActual = 3, stockMinimo = 1, activo = true, opticaId = "opticaB",
         )
         dao.insertMontura(m1)
         dao.insertMontura(m2)
@@ -102,12 +102,12 @@ class MonturaDaoTest {
         val activa = Montura(
             id = "m1", sku = "S001", marca = "Marca", modelo = "Mod1",
             color = "Negro", talla = "M", costo = 50.0, precio = 100.0,
-            stockActual = 5, stockMinimo = 2, activo = true, opticaId = "o1"
+            stockActual = 5, stockMinimo = 2, activo = true, opticaId = "o1",
         )
         val inactiva = Montura(
             id = "m2", sku = "S002", marca = "Marca", modelo = "Mod2",
             color = "Rojo", talla = "L", costo = 60.0, precio = 120.0,
-            stockActual = 0, stockMinimo = 1, activo = false, opticaId = "o1"
+            stockActual = 0, stockMinimo = 1, activo = false, opticaId = "o1",
         )
         dao.insertMontura(activa)
         dao.insertMontura(inactiva)
@@ -124,7 +124,7 @@ class MonturaDaoTest {
         val montura = Montura(
             id = "m1", sku = "S001", marca = "Marca", modelo = "Mod1",
             color = "Negro", talla = "M", costo = 50.0, precio = 100.0,
-            stockActual = 5, stockMinimo = 2, activo = true, opticaId = "o1"
+            stockActual = 5, stockMinimo = 2, activo = true, opticaId = "o1",
         )
         dao.insertMontura(montura)
 
@@ -140,7 +140,7 @@ class MonturaDaoTest {
         val montura = Montura(
             id = "m1", sku = "S001", marca = "Marca", modelo = "Mod1",
             color = "Negro", talla = "M", costo = 50.0, precio = 100.0,
-            stockActual = 10, stockMinimo = 2, activo = true, opticaId = "o1"
+            stockActual = 10, stockMinimo = 2, activo = true, opticaId = "o1",
         )
         dao.insertMontura(montura)
 
@@ -156,7 +156,7 @@ class MonturaDaoTest {
         val montura = Montura(
             id = "m1", sku = "S001", marca = "Marca", modelo = "Mod1",
             color = "Negro", talla = "M", costo = 50.0, precio = 100.0,
-            stockActual = 3, stockMinimo = 2, activo = true, opticaId = "o1"
+            stockActual = 3, stockMinimo = 2, activo = true, opticaId = "o1",
         )
         dao.insertMontura(montura)
 
@@ -174,7 +174,7 @@ class MonturaDaoTest {
         val montura = Montura(
             id = "m1", sku = "S001", marca = "Marca", modelo = "Mod1",
             color = "Negro", talla = "M", costo = 50.0, precio = 100.0,
-            stockActual = 5, stockMinimo = 2, activo = true, opticaId = "o1"
+            stockActual = 5, stockMinimo = 2, activo = true, opticaId = "o1",
         )
         dao.insertMontura(montura)
 
@@ -191,7 +191,7 @@ class MonturaDaoTest {
             categoria = updated.categoria, coleccion = updated.coleccion,
             temporada = updated.temporada, estadoComercial = updated.estadoComercial,
             genero = updated.genero, updatedAt = updated.updatedAt,
-            updatedBy = updated.updatedBy
+            updatedBy = updated.updatedBy,
         )
         assertEquals(1, rows)
 
@@ -205,7 +205,7 @@ class MonturaDaoTest {
         val montura = Montura(
             id = "m1", sku = "S001", marca = "Marca", modelo = "Mod1",
             color = "Negro", talla = "M", costo = 50.0, precio = 100.0,
-            stockActual = 5, stockMinimo = 2, activo = true, opticaId = "o1"
+            stockActual = 5, stockMinimo = 2, activo = true, opticaId = "o1",
         )
         dao.insertMontura(montura)
         dao.deleteMontura(montura.id, montura.opticaId)
@@ -219,7 +219,7 @@ class MonturaDaoTest {
         val montura = Montura(
             id = "m1", sku = "SKU001", marca = "Marca", modelo = "Modelo",
             color = "Negro", talla = "M", costo = 50.0, precio = 100.0,
-            stockActual = 5, stockMinimo = 2, activo = true, opticaId = "opticaX"
+            stockActual = 5, stockMinimo = 2, activo = true, opticaId = "opticaX",
         )
         dao.insertMontura(montura)
 
@@ -234,12 +234,12 @@ class MonturaDaoTest {
         val m1 = Montura(
             id = "m1", sku = "S001", marca = "A", modelo = "X",
             color = "Negro", talla = "M", costo = 50.0, precio = 100.0,
-            stockActual = 5, stockMinimo = 2, activo = true, opticaId = "o1"
+            stockActual = 5, stockMinimo = 2, activo = true, opticaId = "o1",
         )
         val m2 = Montura(
             id = "m2", sku = "S002", marca = "B", modelo = "Y",
             color = "Rojo", talla = "L", costo = 60.0, precio = 120.0,
-            stockActual = 3, stockMinimo = 1, activo = false, opticaId = "o1"
+            stockActual = 3, stockMinimo = 1, activo = false, opticaId = "o1",
         )
         dao.insertMontura(m1)
         dao.insertMontura(m2)

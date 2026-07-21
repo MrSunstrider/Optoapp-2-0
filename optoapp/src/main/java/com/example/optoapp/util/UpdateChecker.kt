@@ -12,9 +12,9 @@ import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Order
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.SerialName
 import java.io.File
 import java.io.FileOutputStream
 import java.net.HttpURLConnection
@@ -60,7 +60,7 @@ object UpdateChecker {
     data class UpdateInfo(
         val latestVersion: String,
         val downloadUrl: String,
-        val releaseUrl: String
+        val releaseUrl: String,
     )
 
     /** Resultado de la operación de descarga/instalación. */
@@ -179,7 +179,7 @@ object UpdateChecker {
         url: String,
         onError: ((String) -> Unit)? = { msg ->
             Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
-        }
+        },
     ): DownloadResult {
         return withContext(Dispatchers.IO) {
             try {
@@ -294,7 +294,7 @@ object UpdateChecker {
         context: Context,
         url: String,
         logMessage: String,
-        onError: ((String) -> Unit)?
+        onError: ((String) -> Unit)?,
     ) {
         try {
             val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {

@@ -35,7 +35,7 @@ import com.example.optoapp.viewmodel.AuthViewModel
 @Composable
 fun OnboardingOpticaScreen(
     navController: NavController,
-    viewModel: AuthViewModel = hiltViewModel()
+    viewModel: AuthViewModel = hiltViewModel(),
 ) {
     var nombreOptica by remember { mutableStateOf("") }
     var fiscalDocTipo by remember { mutableStateOf("RUC") }
@@ -63,7 +63,7 @@ fun OnboardingOpticaScreen(
         modifier = Modifier
             .fillMaxSize()
             .padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Text("Bienvenido a OptoApp", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
         Text("Crea tu óptica para empezar en modo gratuito.")
@@ -74,34 +74,34 @@ fun OnboardingOpticaScreen(
             onValueChange = { nombreOptica = it },
             modifier = Modifier.fillMaxWidth(),
             label = { Text("Nombre de tu óptica") },
-            singleLine = true
+            singleLine = true,
         )
         DropdownField(
             label = "Tipo documento fiscal",
             selected = fiscalDocTipo,
             options = listOf("RUC", "RUS"),
-            onSelected = { fiscalDocTipo = it }
+            onSelected = { fiscalDocTipo = it },
         )
         OutlinedTextField(
             value = fiscalDocNumero,
             onValueChange = { fiscalDocNumero = it },
             modifier = Modifier.fillMaxWidth(),
             label = { Text("Número $fiscalDocTipo") },
-            singleLine = true
+            singleLine = true,
         )
         OutlinedTextField(
             value = razonSocial,
             onValueChange = { razonSocial = it },
             modifier = Modifier.fillMaxWidth(),
             label = { Text("Razón social") },
-            singleLine = true
+            singleLine = true,
         )
         OutlinedTextField(
             value = direccionFiscal,
             onValueChange = { direccionFiscal = it },
             modifier = Modifier.fillMaxWidth(),
             label = { Text("Dirección fiscal") },
-            singleLine = true
+            singleLine = true,
         )
         if (error != null) Text(error ?: "", color = MaterialTheme.colorScheme.error)
         Button(
@@ -113,7 +113,7 @@ fun OnboardingOpticaScreen(
                     fiscalDocTipo = fiscalDocTipo,
                     fiscalDocNumero = fiscalDocNumero,
                     razonSocial = razonSocial,
-                    direccionFiscal = direccionFiscal
+                    direccionFiscal = direccionFiscal,
                 ) { ok, msg ->
                     loading = false
                     if (!ok) error = msg
@@ -124,7 +124,7 @@ fun OnboardingOpticaScreen(
                 razonSocial.isNotBlank() &&
                 direccionFiscal.isNotBlank() &&
                 !loading,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
         ) {
             if (loading) CircularProgressIndicator() else Text("Crear óptica y continuar")
         }

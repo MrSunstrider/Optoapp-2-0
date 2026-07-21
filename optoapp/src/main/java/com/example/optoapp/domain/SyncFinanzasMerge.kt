@@ -1,9 +1,9 @@
 package com.example.optoapp.domain
 
-import com.example.optoapp.util.AppLogger
 import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.SyncStateTracker
+import com.example.optoapp.util.AppLogger
 import javax.inject.Inject
 
 /**
@@ -12,7 +12,7 @@ import javax.inject.Inject
  */
 class DispensacionMergeHandler @Inject constructor(
     private val repository: OptoRepository,
-    private val syncStateTracker: SyncStateTracker
+    private val syncStateTracker: SyncStateTracker,
 ) {
     companion object {
         private const val TAG = "SyncFinanzas"
@@ -25,7 +25,7 @@ class DispensacionMergeHandler @Inject constructor(
     suspend fun mergeLocalDispensacionConflict(
         opticaId: String,
         canonical: DispensacionOptica,
-        duplicate: DispensacionOptica
+        duplicate: DispensacionOptica,
     ) {
         val merged = canonical.copy(
             ot = canonical.ot.ifBlank { duplicate.ot },
@@ -49,7 +49,7 @@ class DispensacionMergeHandler @Inject constructor(
             fechaVencimientoGarantia = canonical.fechaVencimientoGarantia ?: duplicate.fechaVencimientoGarantia,
             distanciaLente = canonical.distanciaLente.ifBlank { duplicate.distanciaLente },
             altura = canonical.altura.ifBlank { duplicate.altura },
-            subTipoBifocal = canonical.subTipoBifocal.ifBlank { duplicate.subTipoBifocal }
+            subTipoBifocal = canonical.subTipoBifocal.ifBlank { duplicate.subTipoBifocal },
         )
         var movedPagos = 0
         var movedItems = 0
@@ -68,7 +68,7 @@ class DispensacionMergeHandler @Inject constructor(
             canonical.id,
             "Conflicto de reconciliación resuelto: fusionada ${duplicate.id} en ${canonical.id}; " +
                 "ot=${merged.ot.ifBlank { "(sin OT)" }}, paciente_id=${merged.pacienteId}, " +
-                "pagos=$movedPagos, items=$movedItems, regalos=$movedRegalos."
+                "pagos=$movedPagos, items=$movedItems, regalos=$movedRegalos.",
         )
         AppLogger.w(TAG, "Dispensacion fusionada por conflicto remoto ${duplicate.id} -> ${canonical.id} (pagos=$movedPagos, items=$movedItems, regalos=$movedRegalos)")
     }
@@ -107,7 +107,7 @@ class DispensacionMergeHandler @Inject constructor(
                     "dispensacion",
                     duplicate.id,
                     "OT duplicada local ($otKey) resuelta automáticamente. Fusionada en ${canonical.id}; " +
-                        "pagos=$movedPagos, items=$movedItems, regalos=$movedRegalos."
+                        "pagos=$movedPagos, items=$movedItems, regalos=$movedRegalos.",
                 )
                 AppLogger.w(TAG, "Dispensacion duplicada OT=$otKey fusionada ${duplicate.id} -> ${canonical.id} (pagos=$movedPagos, items=$movedItems, regalos=$movedRegalos)")
             }

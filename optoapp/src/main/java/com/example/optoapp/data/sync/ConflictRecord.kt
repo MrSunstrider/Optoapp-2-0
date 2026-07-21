@@ -13,7 +13,7 @@ import androidx.room.Query
  */
 @Entity(
     tableName = "conflict_records",
-    primaryKeys = ["entityId", "opticaId"]
+    primaryKeys = ["entityId", "opticaId"],
 )
 data class ConflictRecord(
     val entityId: String,
@@ -24,14 +24,14 @@ data class ConflictRecord(
     val detectedAt: Long = System.currentTimeMillis(),
     val baseSnapshot: String = "{}",
     val localData: String = "{}",
-    val remoteData: String = "{}"
+    val remoteData: String = "{}",
 )
 
 /** Projection of the three snapshot columns for three-way merge resolution. */
 data class ConflictSnapshot(
     val baseSnapshot: String,
     val localData: String,
-    val remoteData: String
+    val remoteData: String,
 )
 
 @Dao
@@ -45,7 +45,8 @@ interface ConflictDao {
     @Query("SELECT COUNT(*) FROM conflict_records WHERE opticaId = :opticaId")
     suspend fun countConflicts(opticaId: String): Int
 
-    @Query("""
+    @Query(
+        """
         INSERT OR REPLACE INTO conflict_records (
             entityId, opticaId, entityType, localSnapshot, remoteSnapshot, detectedAt,
             baseSnapshot, localData, remoteData
@@ -54,7 +55,8 @@ interface ConflictDao {
             :entityId, :opticaId, :entityType, :localSnapshot, :remoteSnapshot, :detectedAt,
             :baseSnapshot, :localData, :remoteData
         )
-    """)
+    """,
+    )
     suspend fun upsertConflict(
         entityId: String,
         opticaId: String,
@@ -64,7 +66,7 @@ interface ConflictDao {
         detectedAt: Long = System.currentTimeMillis(),
         baseSnapshot: String = "{}",
         localData: String = "{}",
-        remoteData: String = "{}"
+        remoteData: String = "{}",
     )
 
     @Query("DELETE FROM conflict_records WHERE entityId = :entityId AND opticaId = :opticaId")

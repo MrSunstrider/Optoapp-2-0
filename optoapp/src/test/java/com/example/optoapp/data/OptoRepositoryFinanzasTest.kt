@@ -4,27 +4,25 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.example.optoapp.data.gastooperativo.GastoOperativoDao
 import com.example.optoapp.data.gastooperativo.GastoOperativoEntity
-import java.math.BigDecimal
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import dagger.Lazy
+import io.mockk.Runs
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
-import io.mockk.Runs
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import java.io.IOException
-import java.time.Instant
+import java.math.BigDecimal
 import java.time.LocalDate
 
 /**
@@ -55,7 +53,7 @@ class OptoRepositoryFinanzasTest {
     fun setUp() {
         db = Room.inMemoryDatabaseBuilder(
             ApplicationProvider.getApplicationContext(),
-            OptoDatabase::class.java
+            OptoDatabase::class.java,
         ).allowMainThreadQueries().build()
 
         gastoOperativoDao = db.gastoOperativoDao()
@@ -80,13 +78,26 @@ class OptoRepositoryFinanzasTest {
 
         val regaloDispensacionDao = db.regaloDispensacionDao()
         val snapshotCoordinator = com.example.optoapp.data.sync.SyncSnapshotCoordinator(
-            pacienteDao, monturaDao, monturaMovimientoDao, pacienteRepo, dispensacionRepo, syncRepo, regaloDispensacionDao
+            pacienteDao,
+            monturaDao,
+            monturaMovimientoDao,
+            pacienteRepo,
+            dispensacionRepo,
+            syncRepo,
+            regaloDispensacionDao,
         )
         val backupCoordinator = com.example.optoapp.data.backup.BackupRestoreCoordinator(
-            pacienteRepo, dispensacionRepo, evaluacionDao, pacienteDao, schedulerLazy, db
+            pacienteRepo,
+            dispensacionRepo,
+            evaluacionDao,
+            pacienteDao,
+            schedulerLazy,
+            db,
         )
         val monturaCoordinator = com.example.optoapp.data.montura.MonturaInventoryCoordinator(
-            monturaDao, monturaMovimientoDao, schedulerLazy
+            monturaDao,
+            monturaMovimientoDao,
+            schedulerLazy,
         )
 
         repo = OptoRepository(
@@ -99,7 +110,7 @@ class OptoRepositoryFinanzasTest {
             snapshotCoordinator = snapshotCoordinator,
             backupCoordinator = backupCoordinator,
             monturaCoordinator = monturaCoordinator,
-            gastoOperativoDao = gastoOperativoDao
+            gastoOperativoDao = gastoOperativoDao,
         )
     }
 
@@ -114,9 +125,13 @@ class OptoRepositoryFinanzasTest {
     @Test
     fun insertGastoOperativo_stamps_timestamp_when_null() = runBlocking {
         val entity = GastoOperativoEntity(
-            id = "g1", opticaId = opticaId, categoria = "alquiler",
-            descripcion = "Local junio", monto = BigDecimal.valueOf(500.0), fecha = testDate,
-            createdAt = null
+            id = "g1",
+            opticaId = opticaId,
+            categoria = "alquiler",
+            descripcion = "Local junio",
+            monto = BigDecimal.valueOf(500.0),
+            fecha = testDate,
+            createdAt = null,
         )
 
         repo.insertGastoOperativo(entity)
@@ -132,9 +147,13 @@ class OptoRepositoryFinanzasTest {
     fun insertGastoOperativo_preserves_createdAt_when_already_set() = runBlocking {
         val originalTimestamp = "2026-01-15T12:30:00Z"
         val entity = GastoOperativoEntity(
-            id = "g1b", opticaId = opticaId, categoria = "alquiler",
-            descripcion = "Local julio", monto = BigDecimal.valueOf(500.0), fecha = testDate,
-            createdAt = originalTimestamp
+            id = "g1b",
+            opticaId = opticaId,
+            categoria = "alquiler",
+            descripcion = "Local julio",
+            monto = BigDecimal.valueOf(500.0),
+            fecha = testDate,
+            createdAt = originalTimestamp,
         )
 
         repo.insertGastoOperativo(entity)
@@ -148,8 +167,12 @@ class OptoRepositoryFinanzasTest {
         coEvery { scheduler.scheduleFinanzasSync(any()) } just Runs
 
         val entity = GastoOperativoEntity(
-            id = "g2", opticaId = opticaId, categoria = "servicios",
-            descripcion = "Electricidad", monto = BigDecimal.valueOf(200.0), fecha = testDate
+            id = "g2",
+            opticaId = opticaId,
+            categoria = "servicios",
+            descripcion = "Electricidad",
+            monto = BigDecimal.valueOf(200.0),
+            fecha = testDate,
         )
 
         repo.insertGastoOperativo(entity)
@@ -161,9 +184,13 @@ class OptoRepositoryFinanzasTest {
     fun upsertGastoOperativo_preserves_createdAt_on_existing_record() = runBlocking {
         val originalTimestamp = "2026-01-01T00:00:00Z"
         val entity = GastoOperativoEntity(
-            id = "g3", opticaId = opticaId, categoria = "personal",
-            descripcion = "Asistente", monto = BigDecimal.valueOf(1500.0), fecha = testDate,
-            createdAt = originalTimestamp
+            id = "g3",
+            opticaId = opticaId,
+            categoria = "personal",
+            descripcion = "Asistente",
+            monto = BigDecimal.valueOf(1500.0),
+            fecha = testDate,
+            createdAt = originalTimestamp,
         )
 
         repo.upsertGastoOperativo(entity)
@@ -177,8 +204,12 @@ class OptoRepositoryFinanzasTest {
         coEvery { scheduler.scheduleFinanzasSync(any()) } just Runs
 
         val entity = GastoOperativoEntity(
-            id = "g4", opticaId = opticaId, categoria = "marketing",
-            descripcion = "Facebook Ads", monto = BigDecimal.valueOf(300.0), fecha = testDate
+            id = "g4",
+            opticaId = opticaId,
+            categoria = "marketing",
+            descripcion = "Facebook Ads",
+            monto = BigDecimal.valueOf(300.0),
+            fecha = testDate,
         )
 
         repo.upsertGastoOperativo(entity)
@@ -190,8 +221,12 @@ class OptoRepositoryFinanzasTest {
     fun deleteGastoOperativo_schedules_finanzas_sync() = runBlocking {
         coEvery { scheduler.scheduleFinanzasSync(any()) } just Runs
         val entity = GastoOperativoEntity(
-            id = "g_del", opticaId = opticaId, categoria = "otro",
-            descripcion = "A borrar", monto = BigDecimal.valueOf(50.0), fecha = testDate
+            id = "g_del",
+            opticaId = opticaId,
+            categoria = "otro",
+            descripcion = "A borrar",
+            monto = BigDecimal.valueOf(50.0),
+            fecha = testDate,
         )
         gastoOperativoDao.upsert(entity)
 
@@ -204,8 +239,12 @@ class OptoRepositoryFinanzasTest {
     fun deleteGastoOperativo_calls_markDeleted() = runBlocking {
         coEvery { scheduler.scheduleFinanzasSync(any()) } just Runs
         val entity = GastoOperativoEntity(
-            id = "g_md", opticaId = opticaId, categoria = "otro",
-            descripcion = "A marcar como eliminado", monto = BigDecimal.valueOf(60.0), fecha = testDate
+            id = "g_md",
+            opticaId = opticaId,
+            categoria = "otro",
+            descripcion = "A marcar como eliminado",
+            monto = BigDecimal.valueOf(60.0),
+            fecha = testDate,
         )
         gastoOperativoDao.upsert(entity)
 
@@ -219,12 +258,20 @@ class OptoRepositoryFinanzasTest {
     @Test
     fun getGastosOperativos_delegates_to_dao() = runBlocking {
         val g1 = GastoOperativoEntity(
-            id = "g_r1", opticaId = opticaId, categoria = "alquiler",
-            descripcion = "Local", monto = BigDecimal.valueOf(500.0), fecha = testDate.plusDays(1)
+            id = "g_r1",
+            opticaId = opticaId,
+            categoria = "alquiler",
+            descripcion = "Local",
+            monto = BigDecimal.valueOf(500.0),
+            fecha = testDate.plusDays(1),
         )
         val g2 = GastoOperativoEntity(
-            id = "g_r2", opticaId = opticaId, categoria = "servicios",
-            descripcion = "Fibra", monto = BigDecimal.valueOf(80.0), fecha = testDate
+            id = "g_r2",
+            opticaId = opticaId,
+            categoria = "servicios",
+            descripcion = "Fibra",
+            monto = BigDecimal.valueOf(80.0),
+            fecha = testDate,
         )
         gastoOperativoDao.upsert(g1)
         gastoOperativoDao.upsert(g2)
@@ -236,5 +283,4 @@ class OptoRepositoryFinanzasTest {
         assertEquals("g_r1", result[0].id)
         assertEquals("g_r2", result[1].id)
     }
-
 }

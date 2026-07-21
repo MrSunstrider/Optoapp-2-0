@@ -14,14 +14,12 @@ import androidx.compose.ui.unit.dp
 import com.example.optoapp.data.Proveedor
 import com.example.optoapp.ui.components.OptoTextField
 import com.example.optoapp.viewmodel.OrdenesCompraViewModel
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OrdenCompraEditDialog(
     viewModel: OrdenesCompraViewModel,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val form = uiState.form
@@ -37,17 +35,17 @@ fun OrdenCompraEditDialog(
         text = {
             Column(
                 modifier = Modifier.fillMaxWidth().heightIn(max = 500.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 OptoTextField(
                     value = form.proveedorId,
                     onValueChange = { v -> viewModel.updateForm { it.copy(proveedorId = v) } },
-                    label = "Proveedor ID *"
+                    label = "Proveedor ID *",
                 )
                 OptoTextField(
                     value = form.numero,
                     onValueChange = { v -> viewModel.updateForm { it.copy(numero = v) } },
-                    label = "Número OC"
+                    label = "Número OC",
                 )
                 if (uiState.error != null) {
                     Text(uiState.error ?: "", color = MaterialTheme.colorScheme.error)
@@ -55,7 +53,7 @@ fun OrdenCompraEditDialog(
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text("Ítems:", style = MaterialTheme.typography.titleSmall)
                     IconButton(onClick = { viewModel.addItem() }) {
@@ -64,21 +62,21 @@ fun OrdenCompraEditDialog(
                 }
                 LazyColumn(
                     modifier = Modifier.heightIn(max = 300.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
                     itemsIndexed(form.items) { index, item ->
                         EditItemRow(
                             item = item,
                             index = index,
                             onUpdate = { idx, upd -> viewModel.updateItem(idx, upd) },
-                            onRemove = { viewModel.removeItem(index) }
+                            onRemove = { viewModel.removeItem(index) },
                         )
                     }
                 }
             }
         },
         confirmButton = { TextButton(onClick = { viewModel.save() }) { Text("Guardar") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } }
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } },
     )
 }
 
@@ -87,14 +85,14 @@ private fun EditItemRow(
     item: com.example.optoapp.viewmodel.OCItemFormState,
     index: Int,
     onUpdate: (Int, (com.example.optoapp.viewmodel.OCItemFormState) -> com.example.optoapp.viewmodel.OCItemFormState) -> Unit,
-    onRemove: () -> Unit
+    onRemove: () -> Unit,
 ) {
     OutlinedCard(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text("Ítem ${index + 1}", style = MaterialTheme.typography.labelSmall)
                 IconButton(onClick = onRemove, modifier = Modifier.size(48.dp)) {
@@ -104,20 +102,20 @@ private fun EditItemRow(
             OptoTextField(
                 value = item.monturaId,
                 onValueChange = { v -> onUpdate(index) { it.copy(monturaId = v) } },
-                label = "Montura ID"
+                label = "Montura ID",
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OptoTextField(
                     value = item.cantidad,
                     onValueChange = { v -> onUpdate(index) { it.copy(cantidad = v) } },
                     label = "Cant.",
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
                 )
                 OptoTextField(
                     value = item.costoUnitario,
                     onValueChange = { v -> onUpdate(index) { it.copy(costoUnitario = v) } },
                     label = "Costo U.",
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
                 )
             }
         }

@@ -3,7 +3,6 @@ package com.example.optoapp.ui.components
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
@@ -28,26 +27,26 @@ import java.time.LocalDate
 fun FechaEntregaEditButton(
     fechaEntrega: LocalDate?,
     onFechaChanged: (LocalDate?) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     var showDatePicker by remember { mutableStateOf(false) }
 
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = modifier.clickable { showDatePicker = true }
+        modifier = modifier.clickable { showDatePicker = true },
     ) {
         Text(
             text = "Entregado el día ${fechaEntrega?.let { DateUtils.formatLocalized(it) } ?: ""}",
             fontSize = 13.sp,
             color = MaterialTheme.colorScheme.tertiary,
-            fontWeight = FontWeight.Medium
+            fontWeight = FontWeight.Medium,
         )
         Spacer(modifier = Modifier.width(4.dp))
         Icon(
             Icons.Default.Edit,
             contentDescription = "Editar fecha de entrega",
             tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.width(14.dp).height(14.dp)
+            modifier = Modifier.width(14.dp).height(14.dp),
         )
     }
 
@@ -58,7 +57,7 @@ fun FechaEntregaEditButton(
                 onFechaChanged(date)
                 showDatePicker = false
             },
-            onDismiss = { showDatePicker = false }
+            onDismiss = { showDatePicker = false },
         )
     }
 }

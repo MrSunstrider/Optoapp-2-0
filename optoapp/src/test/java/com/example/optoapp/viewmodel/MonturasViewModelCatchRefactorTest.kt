@@ -20,8 +20,11 @@ class MonturasViewModelCatchRefactorTest {
     @Test
     fun `montura error unique constraint message`() {
         val msg = "El SKU ya existe para otro producto."
-        val expected = if (true) "El SKU ya existe para otro producto."
-                      else "Error al guardar: null"
+        val expected = if (true) {
+            "El SKU ya existe para otro producto."
+        } else {
+            "Error al guardar: null"
+        }
         assertEquals(expected, msg)
     }
 

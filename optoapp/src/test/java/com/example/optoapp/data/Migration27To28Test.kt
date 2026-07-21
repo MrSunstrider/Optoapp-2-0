@@ -41,7 +41,7 @@ class Migration27To28Test {
             MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16,
             MIGRATION_16_17, MIGRATION_17_18, MIGRATION_18_19, MIGRATION_19_20, MIGRATION_20_21,
             MIGRATION_21_22, MIGRATION_22_23, MIGRATION_23_24, MIGRATION_24_25, MIGRATION_25_26,
-            MIGRATION_26_27, MIGRATION_27_28
+            MIGRATION_26_27, MIGRATION_27_28,
         )
 
         assertEquals(6, migrations.first().startVersion)
@@ -49,9 +49,9 @@ class Migration27To28Test {
 
         for (i in 0 until migrations.size - 1) {
             assertEquals(
-                "Migration ${i} end=${migrations[i].endVersion} should match ${i + 1} start=${migrations[i + 1].startVersion}",
+                "Migration $i end=${migrations[i].endVersion} should match ${i + 1} start=${migrations[i + 1].startVersion}",
                 migrations[i].endVersion,
-                migrations[i + 1].startVersion
+                migrations[i + 1].startVersion,
             )
         }
     }
@@ -77,7 +77,8 @@ class Migration27To28Test {
             .callback(object : SupportSQLiteOpenHelper.Callback(27) {
                 override fun onCreate(db: SupportSQLiteDatabase) {
                     // v27 schema for conflict_records (from MIGRATION_22_23)
-                    db.execSQL("""
+                    db.execSQL(
+                        """
                         CREATE TABLE IF NOT EXISTS conflict_records (
                             entityId TEXT NOT NULL PRIMARY KEY,
                             opticaId TEXT NOT NULL,
@@ -86,7 +87,8 @@ class Migration27To28Test {
                             remoteSnapshot TEXT NOT NULL,
                             detectedAt INTEGER NOT NULL DEFAULT 0
                         )
-                    """)
+                    """,
+                    )
                 }
 
                 override fun onUpgrade(db: SupportSQLiteDatabase, oldVersion: Int, newVersion: Int) {
@@ -104,12 +106,12 @@ class Migration27To28Test {
             Triple("id-2", "evaluacion", "2026-06-15T05:00:00Z"),
             Triple("id-3", "montura", "2026-06-15T06:00:00Z"),
             Triple("id-4", "proveedor", "2026-06-15T07:00:00Z"),
-            Triple("id-5", "orden_compra", "2026-06-15T08:00:00Z")
+            Triple("id-5", "orden_compra", "2026-06-15T08:00:00Z"),
         )
         rows.forEachIndexed { index, (id, type, ts) ->
             v27Db.execSQL(
                 "INSERT INTO conflict_records (entityId, opticaId, entityType, localSnapshot, remoteSnapshot, detectedAt) VALUES (?, ?, ?, ?, ?, ?)",
-                arrayOf<Any>(id, "optica-test", type, ts, ts, (index + 1).toLong())
+                arrayOf<Any>(id, "optica-test", type, ts, ts, (index + 1).toLong()),
             )
         }
 
@@ -132,7 +134,7 @@ class Migration27To28Test {
                 override fun onUpgrade(
                     db: SupportSQLiteDatabase,
                     oldVersion: Int,
-                    newVersion: Int
+                    newVersion: Int,
                 ) {
                     if (oldVersion == 27 && newVersion == 28) {
                         MIGRATION_27_28.migrate(db)
@@ -148,17 +150,19 @@ class Migration27To28Test {
         val allRowsCursor = v28Db.query("SELECT entityId, opticaId, entityType, localSnapshot, remoteSnapshot, detectedAt, baseSnapshot, localData, remoteData FROM conflict_records ORDER BY entityId")
         val surviving = mutableListOf<Array<Any?>>()
         while (allRowsCursor.moveToNext()) {
-            surviving.add(arrayOf(
-                allRowsCursor.getString(allRowsCursor.getColumnIndexOrThrow("entityId")),
-                allRowsCursor.getString(allRowsCursor.getColumnIndexOrThrow("opticaId")),
-                allRowsCursor.getString(allRowsCursor.getColumnIndexOrThrow("entityType")),
-                allRowsCursor.getString(allRowsCursor.getColumnIndexOrThrow("localSnapshot")),
-                allRowsCursor.getString(allRowsCursor.getColumnIndexOrThrow("remoteSnapshot")),
-                allRowsCursor.getLong(allRowsCursor.getColumnIndexOrThrow("detectedAt")),
-                allRowsCursor.getString(allRowsCursor.getColumnIndexOrThrow("baseSnapshot")),
-                allRowsCursor.getString(allRowsCursor.getColumnIndexOrThrow("localData")),
-                allRowsCursor.getString(allRowsCursor.getColumnIndexOrThrow("remoteData"))
-            ))
+            surviving.add(
+                arrayOf(
+                    allRowsCursor.getString(allRowsCursor.getColumnIndexOrThrow("entityId")),
+                    allRowsCursor.getString(allRowsCursor.getColumnIndexOrThrow("opticaId")),
+                    allRowsCursor.getString(allRowsCursor.getColumnIndexOrThrow("entityType")),
+                    allRowsCursor.getString(allRowsCursor.getColumnIndexOrThrow("localSnapshot")),
+                    allRowsCursor.getString(allRowsCursor.getColumnIndexOrThrow("remoteSnapshot")),
+                    allRowsCursor.getLong(allRowsCursor.getColumnIndexOrThrow("detectedAt")),
+                    allRowsCursor.getString(allRowsCursor.getColumnIndexOrThrow("baseSnapshot")),
+                    allRowsCursor.getString(allRowsCursor.getColumnIndexOrThrow("localData")),
+                    allRowsCursor.getString(allRowsCursor.getColumnIndexOrThrow("remoteData")),
+                ),
+            )
         }
         allRowsCursor.close()
 
@@ -208,7 +212,8 @@ class Migration27To28Test {
             .name(dbName)
             .callback(object : SupportSQLiteOpenHelper.Callback(27) {
                 override fun onCreate(db: SupportSQLiteDatabase) {
-                    db.execSQL("""
+                    db.execSQL(
+                        """
                         CREATE TABLE IF NOT EXISTS conflict_records (
                             entityId TEXT NOT NULL PRIMARY KEY,
                             opticaId TEXT NOT NULL,
@@ -217,7 +222,8 @@ class Migration27To28Test {
                             remoteSnapshot TEXT NOT NULL,
                             detectedAt INTEGER NOT NULL DEFAULT 0
                         )
-                    """)
+                    """,
+                    )
                 }
                 override fun onUpgrade(db: SupportSQLiteDatabase, oldVersion: Int, newVersion: Int) {}
             })
@@ -225,7 +231,7 @@ class Migration27To28Test {
         val v27Helper = factory.create(v27Config)
         v27Helper.writableDatabase.execSQL(
             "INSERT INTO conflict_records (entityId, opticaId, entityType, localSnapshot, remoteSnapshot, detectedAt) VALUES (?, ?, ?, ?, ?, ?)",
-            arrayOf<Any>("fresh-1", "optica-x", "paciente", "T1", "T2", 100L)
+            arrayOf<Any>("fresh-1", "optica-x", "paciente", "T1", "T2", 100L),
         )
         v27Helper.close()
 
@@ -253,8 +259,8 @@ class Migration27To28Test {
                 "fresh-2", "optica-x", "paciente", "T3", "T4", 200L,
                 """{"id":"fresh-2","nombre":"base"}""",
                 """{"id":"fresh-2","nombre":"local"}""",
-                """{"id":"fresh-2","nombre":"remote"}"""
-            )
+                """{"id":"fresh-2","nombre":"remote"}""",
+            ),
         )
 
         // Verify the fresh row has the provided JSON values (not the defaults)
@@ -287,7 +293,8 @@ class Migration27To28Test {
             .name(dbName)
             .callback(object : SupportSQLiteOpenHelper.Callback(27) {
                 override fun onCreate(db: SupportSQLiteDatabase) {
-                    db.execSQL("""
+                    db.execSQL(
+                        """
                         CREATE TABLE IF NOT EXISTS conflict_records (
                             entityId TEXT NOT NULL PRIMARY KEY,
                             opticaId TEXT NOT NULL,
@@ -296,7 +303,8 @@ class Migration27To28Test {
                             remoteSnapshot TEXT NOT NULL,
                             detectedAt INTEGER NOT NULL DEFAULT 0
                         )
-                    """)
+                    """,
+                    )
                 }
                 override fun onUpgrade(db: SupportSQLiteDatabase, oldVersion: Int, newVersion: Int) {}
             })
@@ -327,7 +335,7 @@ class Migration27To28Test {
         // Inserting a row using only defaults for new columns must work (DEFAULT '{}' applies)
         v28Db.execSQL(
             "INSERT INTO conflict_records (entityId, opticaId, entityType, localSnapshot, remoteSnapshot, detectedAt) VALUES (?, ?, ?, ?, ?, ?)",
-            arrayOf<Any>("empty-1", "optica-y", "paciente", "T", "T", 1L)
+            arrayOf<Any>("empty-1", "optica-y", "paciente", "T", "T", 1L),
         )
         val rowCursor = v28Db.query("SELECT baseSnapshot, localData, remoteData FROM conflict_records WHERE entityId = 'empty-1'")
         assertTrue(rowCursor.moveToFirst())

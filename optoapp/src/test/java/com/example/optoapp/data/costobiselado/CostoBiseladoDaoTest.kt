@@ -29,7 +29,7 @@ class CostoBiseladoDaoTest {
     fun setUp() {
         db = Room.inMemoryDatabaseBuilder(
             ApplicationProvider.getApplicationContext(),
-            OptoDatabase::class.java
+            OptoDatabase::class.java,
         ).allowMainThreadQueries().build()
         dao = db.costoBiseladoDao()
     }
@@ -53,7 +53,7 @@ class CostoBiseladoDaoTest {
             costoPorPar = 15.0,
             proveedor = "Lab1",
             vigenteDesde = "2026-01-01",
-            vigenteHasta = null
+            vigenteHasta = null,
         )
         dao.upsertAll(listOf(entity))
 
@@ -62,7 +62,7 @@ class CostoBiseladoDaoTest {
             tipoAro = "aro_completo",
             stockOFabricacion = "stock",
             serie = 2,
-            altoIndice = "1.50"
+            altoIndice = "1.50",
         )
 
         assertTrue(result != null)
@@ -78,7 +78,7 @@ class CostoBiseladoDaoTest {
             tipoAro = "taladro",
             stockOFabricacion = "fabricacion",
             serie = null,
-            altoIndice = "1.67"
+            altoIndice = "1.67",
         )
 
         assertNull(result)
@@ -98,7 +98,7 @@ class CostoBiseladoDaoTest {
             costoPorPar = 35.0,
             proveedor = "Lab1",
             vigenteDesde = "2026-01-01",
-            vigenteHasta = null
+            vigenteHasta = null,
         )
         dao.upsertAll(listOf(entity))
 
@@ -107,7 +107,7 @@ class CostoBiseladoDaoTest {
             tipoAro = "ranurado",
             stockOFabricacion = "fabricacion",
             serie = null,
-            altoIndice = "1.67"
+            altoIndice = "1.67",
         )
 
         assertTrue(result != null)
@@ -121,7 +121,7 @@ class CostoBiseladoDaoTest {
             id = "cb1", opticaId = "optica1",
             material = "Resina", tipoAro = "aro_completo",
             stockOFabricacion = "stock", serie = 1, altoIndice = "1.50",
-            costoPorPar = 12.0, vigenteDesde = "2026-01-01", vigenteHasta = null
+            costoPorPar = 12.0, vigenteDesde = "2026-01-01", vigenteHasta = null,
         )
         dao.upsertAll(listOf(original))
 
@@ -129,8 +129,11 @@ class CostoBiseladoDaoTest {
         dao.upsertAll(listOf(updated))
 
         val result = dao.lookup(
-            material = "Resina", tipoAro = "aro_completo",
-            stockOFabricacion = "stock", serie = 1, altoIndice = "1.50"
+            material = "Resina",
+            tipoAro = "aro_completo",
+            stockOFabricacion = "stock",
+            serie = 1,
+            altoIndice = "1.50",
         )
         assertTrue(result != null)
         assertEquals(14.0, result!!.costoPorPar, 0.001)

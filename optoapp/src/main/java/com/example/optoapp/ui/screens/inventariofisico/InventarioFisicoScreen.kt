@@ -22,7 +22,7 @@ import com.example.optoapp.viewmodel.InventarioFisicoViewModel
 @Composable
 fun InventarioFisicoScreen(
     navController: NavController,
-    viewModel: InventarioFisicoViewModel = hiltViewModel()
+    viewModel: InventarioFisicoViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -38,14 +38,14 @@ fun InventarioFisicoScreen(
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Volver")
                     }
-                }
+                },
             )
         },
         floatingActionButton = {
             FloatingActionButton(onClick = { viewModel.createSession() }) {
                 Icon(Icons.Default.Add, "Nuevo conteo")
             }
-        }
+        },
     ) { padding ->
         when (val state = uiState) {
             is InventarioFisicoUiState.Loading -> {
@@ -79,7 +79,7 @@ fun InventarioFisicoScreen(
                     LazyColumn(
                         modifier = Modifier.fillMaxSize().padding(padding),
                         contentPadding = PaddingValues(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         items(state.sessions) { session ->
                             SessionCard(session) {
@@ -96,7 +96,7 @@ fun InventarioFisicoScreen(
                     progressMessage = state.progressMessage,
                     onUpdateStock = { id, stock -> viewModel.updateStockContado(id, stock) },
                     onClose = { viewModel.closeSession() },
-                    onBack = { viewModel.loadSessions() }
+                    onBack = { viewModel.loadSessions() },
                 )
             }
         }
@@ -107,22 +107,22 @@ fun InventarioFisicoScreen(
 private fun SessionCard(session: InventarioFisico, onClick: () -> Unit) {
     Card(
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = session.fecha.toString(),
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.SemiBold,
                 )
                 Text(
                     text = "Usuario: ${session.userId}",
-                    style = MaterialTheme.typography.bodySmall
+                    style = MaterialTheme.typography.bodySmall,
                 )
             }
             AssistChip(
@@ -130,9 +130,9 @@ private fun SessionCard(session: InventarioFisico, onClick: () -> Unit) {
                 label = {
                     Text(
                         session.estado,
-                        style = MaterialTheme.typography.labelSmall
+                        style = MaterialTheme.typography.labelSmall,
                     )
-                }
+                },
             )
         }
     }

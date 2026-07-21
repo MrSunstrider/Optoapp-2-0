@@ -15,5 +15,4 @@ interface ConfiguracionFinancieraDao {
 
     @Upsert
     suspend fun upsert(config: ConfiguracionFinancieraEntity)
-
 }

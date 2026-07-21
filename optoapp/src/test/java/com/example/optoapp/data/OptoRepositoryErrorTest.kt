@@ -10,11 +10,7 @@ import com.example.optoapp.data.servicio.ServicioExtraDao
 import com.example.optoapp.data.sync.SyncSnapshotCoordinator
 import dagger.Lazy
 import io.mockk.coEvery
-import io.mockk.coVerify
-import io.mockk.every
-import io.mockk.just
 import io.mockk.mockk
-import io.mockk.Runs
 import io.mockk.unmockkAll
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
@@ -27,8 +23,6 @@ import org.robolectric.RobolectricTestRunner
 import java.io.IOException
 import java.time.LocalDate
 
-@RunWith(RobolectricTestRunner::class)
-
 /**
  * Approval + behavior tests for [OptoRepository] catch-block refactoring.
  *
@@ -38,6 +32,7 @@ import java.time.LocalDate
  * - [getMonturaById] DAO throws generic Exception → [Resource.Error]
  * - [restoreBackup] handles empty backup without error
  */
+@RunWith(RobolectricTestRunner::class)
 class OptoRepositoryErrorTest {
 
     private lateinit var database: OptoDatabase
@@ -73,11 +68,19 @@ class OptoRepositoryErrorTest {
         val regaloDispensacionDao = mockk<RegaloDispensacionDao>(relaxed = true)
 
         val snapshotCoordinator = SyncSnapshotCoordinator(
-            pacienteDao, monturaDao, monturaMovimientoDao, pacienteRepo, dispensacionRepo, syncRepo, regaloDispensacionDao
+            pacienteDao,
+            monturaDao,
+            monturaMovimientoDao,
+            pacienteRepo,
+            dispensacionRepo,
+            syncRepo,
+            regaloDispensacionDao,
         )
         val backupCoordinator = mockk<BackupRestoreCoordinator>(relaxed = true)
         val monturaCoordinator = MonturaInventoryCoordinator(
-            monturaDao, monturaMovimientoDao, scheduler
+            monturaDao,
+            monturaMovimientoDao,
+            scheduler,
         )
 
         repo = OptoRepository(
@@ -90,7 +93,7 @@ class OptoRepositoryErrorTest {
             snapshotCoordinator = snapshotCoordinator,
             backupCoordinator = backupCoordinator,
             monturaCoordinator = monturaCoordinator,
-            gastoOperativoDao = mockk(relaxed = true)
+            gastoOperativoDao = mockk(relaxed = true),
         )
     }
 
@@ -154,20 +157,24 @@ class OptoRepositoryErrorTest {
             evaluaciones = emptyList(),
             dispensaciones = emptyList(),
             pagos = emptyList(),
-            serviciosExtra = emptyList()
+            serviciosExtra = emptyList(),
         )
 
         private val BACKUP_WITH_PACIENTE = BackupData(
             pacientes = listOf(
                 Paciente(
-                    id = "p1", nombreCompleto = "Test", edad = 30, telefono = "123",
-                    fechaCreacion = LocalDate.of(2024, 1, 15), opticaId = "opt_abc"
-                )
+                    id = "p1",
+                    nombreCompleto = "Test",
+                    edad = 30,
+                    telefono = "123",
+                    fechaCreacion = LocalDate.of(2024, 1, 15),
+                    opticaId = "opt_abc",
+                ),
             ),
             evaluaciones = emptyList(),
             dispensaciones = emptyList(),
             pagos = emptyList(),
-            serviciosExtra = emptyList()
+            serviciosExtra = emptyList(),
         )
     }
 }

@@ -49,14 +49,14 @@ object InventarioMonturasPdfGenerator {
                 "Total: $total  |  Activas: $activas  |  Críticas: $criticas  |  Stock: $stock",
                 MARGIN,
                 y,
-                textPaint
+                textPaint,
             )
             y += 14f
             canvas.drawText(
                 "Valor costo: S/ ${valorCosto.toMoney()}  |  Valor venta: S/ ${valorPrecio.toMoney()}",
                 MARGIN,
                 y,
-                textPaint
+                textPaint,
             )
             y += 16f
             canvas.drawText("SKU", MARGIN, y, headerPaint)
@@ -83,7 +83,7 @@ object InventarioMonturasPdfGenerator {
         val rows = monturas.sortedWith(
             compareByDescending<Montura> { it.activo && it.stockActual <= it.stockMinimo }
                 .thenBy { it.marca.lowercase(Locale.getDefault()) }
-                .thenBy { it.modelo.lowercase(Locale.getDefault()) }
+                .thenBy { it.modelo.lowercase(Locale.getDefault()) },
         )
         rows.forEach { m ->
             if (y + ROW_H > PAGE_H - MARGIN) newPage()

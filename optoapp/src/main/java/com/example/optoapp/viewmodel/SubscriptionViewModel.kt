@@ -12,10 +12,10 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -23,7 +23,7 @@ import javax.inject.Inject
 class SubscriptionViewModel @Inject constructor(
     private val repository: OptoRepository,
     private val sessionManager: SessionManager,
-    private val subscriptionManager: SubscriptionManager
+    private val subscriptionManager: SubscriptionManager,
 ) : ViewModel() {
 
     val tier: StateFlow<SubscriptionTier> = subscriptionManager.tier

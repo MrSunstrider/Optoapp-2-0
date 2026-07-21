@@ -1,10 +1,10 @@
 package com.example.optoapp.util
 
+import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import kotlinx.serialization.json.Json
 
 class UpdateCheckerTest {
 
@@ -68,7 +68,8 @@ class UpdateCheckerTest {
             "assets": [
                 { "browser_download_url": "https://github.com/repo/release/app-debug.apk" }
             ]
-        }""".trimIndent()
+        }
+        """.trimIndent()
 
         val release = json.decodeFromString<UpdateChecker.GitHubRelease>(raw)
         assertEquals("v1.5.0", release.tagName)
@@ -83,7 +84,8 @@ class UpdateCheckerTest {
             "tag_name": "v1.5.0",
             "html_url": "https://github.com/repo/release",
             "assets": []
-        }""".trimIndent()
+        }
+        """.trimIndent()
 
         val release = json.decodeFromString<UpdateChecker.GitHubRelease>(raw)
         assertTrue(release.assets.isEmpty())
@@ -94,7 +96,8 @@ class UpdateCheckerTest {
         val raw = """{
             "version": "1.5.0",
             "apk_download_url": "https://supabase.co/storage/apk/app-debug.apk"
-        }""".trimIndent()
+        }
+        """.trimIndent()
 
         val release = json.decodeFromString<UpdateChecker.AppRelease>(raw)
         assertEquals("1.5.0", release.version)

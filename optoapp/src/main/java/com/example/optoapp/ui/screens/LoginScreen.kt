@@ -1,6 +1,5 @@
 package com.example.optoapp.ui.screens
 
-import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -27,8 +26,8 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -41,15 +40,14 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.optoapp.testing.TestTags
+import com.example.optoapp.ui.components.OptoCard
 import com.example.optoapp.viewmodel.AuthState
 import com.example.optoapp.viewmodel.AuthViewModel
-import com.example.optoapp.ui.components.OptoTopAppBar
-import com.example.optoapp.ui.components.OptoCard
 
 @Composable
 fun LoginScreen(
     navController: NavController,
-    viewModel: AuthViewModel = hiltViewModel()
+    viewModel: AuthViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
     val authState by viewModel.authState.collectAsState()
@@ -57,9 +55,9 @@ fun LoginScreen(
     val needsOnboarding by viewModel.needsOnboarding.collectAsState()
     val focusManager = LocalFocusManager.current
 
-    var email           by remember { mutableStateOf("") }
-    var password        by remember { mutableStateOf("") }
-    var showPassword    by remember { mutableStateOf(false) }
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var showPassword by remember { mutableStateOf(false) }
     var rememberAccount by remember { mutableStateOf(false) }
     var loginLocalError by remember { mutableStateOf<String?>(null) }
 
@@ -112,10 +110,10 @@ fun LoginScreen(
                 Brush.verticalGradient(
                     colors = listOf(
                         MaterialTheme.colorScheme.background,
-                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.20f)
-                    )
-                )
-            )
+                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.20f),
+                    ),
+                ),
+            ),
     ) {
         Column(
             modifier = Modifier
@@ -123,22 +121,21 @@ fun LoginScreen(
                 .align(Alignment.Center)
                 .padding(horizontal = 32.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-
             Spacer(modifier = Modifier.height(40.dp))
 
             val blurRadius = remember { Animatable(50f) }
             LaunchedEffect(Unit) {
                 blurRadius.animateTo(
                     targetValue = 0f,
-                    animationSpec = tween(durationMillis = 770, easing = FastOutSlowInEasing)
+                    animationSpec = tween(durationMillis = 770, easing = FastOutSlowInEasing),
                 )
             }
 
             AnimatedVisibility(
                 visible = true,
-                enter = fadeIn() + slideInVertically { -40 }
+                enter = fadeIn() + slideInVertically { -40 },
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Image(
@@ -147,25 +144,25 @@ fun LoginScreen(
                         modifier = Modifier
                             .fillMaxWidth(0.45f)
                             .clip(MaterialTheme.shapes.large)
-                            .blur(radiusX = blurRadius.value.dp, radiusY = blurRadius.value.dp)
+                            .blur(radiusX = blurRadius.value.dp, radiusY = blurRadius.value.dp),
                     )
                     Text(
                         text = "Optoapp",
                         style = MaterialTheme.typography.displayLarge,
-                        color = MaterialTheme.colorScheme.onBackground
+                        color = MaterialTheme.colorScheme.onBackground,
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = "Sistema de gestión óptica",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = "v${com.example.optoapp.BuildConfig.VERSION_NAME}",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                        textAlign = TextAlign.Center
+                        textAlign = TextAlign.Center,
                     )
                 }
             }
@@ -174,15 +171,14 @@ fun LoginScreen(
 
             OptoCard(
                 modifier = Modifier.fillMaxWidth(),
-                tonalElevation = 2.dp
+                tonalElevation = 2.dp,
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-
                     OutlinedTextField(
                         value = email,
                         onValueChange = { email = it.trim() },
@@ -192,14 +188,14 @@ fun LoginScreen(
                         },
                         keyboardOptions = KeyboardOptions(
                             keyboardType = KeyboardType.Email,
-                            imeAction    = ImeAction.Next
+                            imeAction = ImeAction.Next,
                         ),
                         keyboardActions = KeyboardActions(
-                            onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                            onNext = { focusManager.moveFocus(FocusDirection.Down) },
                         ),
                         singleLine = true,
-                        modifier   = Modifier.fillMaxWidth().testTag(TestTags.LOGIN_EMAIL_FIELD),
-                        shape = MaterialTheme.shapes.medium
+                        modifier = Modifier.fillMaxWidth().testTag(TestTags.LOGIN_EMAIL_FIELD),
+                        shape = MaterialTheme.shapes.medium,
                     )
 
                     OutlinedTextField(
@@ -212,17 +208,23 @@ fun LoginScreen(
                         trailingIcon = {
                             IconButton(onClick = { showPassword = !showPassword }) {
                                 Icon(
-                                    imageVector = if (showPassword) Icons.Default.VisibilityOff
-                                                  else Icons.Default.Visibility,
-                                    contentDescription = if (showPassword) "Ocultar" else "Mostrar"
+                                    imageVector = if (showPassword) {
+                                        Icons.Default.VisibilityOff
+                                    } else {
+                                        Icons.Default.Visibility
+                                    },
+                                    contentDescription = if (showPassword) "Ocultar" else "Mostrar",
                                 )
                             }
                         },
-                        visualTransformation = if (showPassword) VisualTransformation.None
-                                               else PasswordVisualTransformation(),
+                        visualTransformation = if (showPassword) {
+                            VisualTransformation.None
+                        } else {
+                            PasswordVisualTransformation()
+                        },
                         keyboardOptions = KeyboardOptions(
                             keyboardType = KeyboardType.Password,
-                            imeAction    = ImeAction.Done
+                            imeAction = ImeAction.Done,
                         ),
                         keyboardActions = KeyboardActions(
                             onDone = {
@@ -230,63 +232,63 @@ fun LoginScreen(
                                 if (email.isNotBlank() && password.isNotBlank()) {
                                     viewModel.login(email, password)
                                 }
-                            }
+                            },
                         ),
                         singleLine = true,
-                        modifier   = Modifier.fillMaxWidth().testTag(TestTags.LOGIN_PASSWORD_FIELD),
-                        shape = MaterialTheme.shapes.medium
+                        modifier = Modifier.fillMaxWidth().testTag(TestTags.LOGIN_PASSWORD_FIELD),
+                        shape = MaterialTheme.shapes.medium,
                     )
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.testTag(TestTags.LOGIN_REMEMBER_ACCOUNT_CHECK)
+                            modifier = Modifier.testTag(TestTags.LOGIN_REMEMBER_ACCOUNT_CHECK),
                         ) {
                             Checkbox(
                                 checked = rememberAccount,
-                                onCheckedChange = { rememberAccount = it }
+                                onCheckedChange = { rememberAccount = it },
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
                                 text = "Recordar Cuenta",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                         Spacer(modifier = Modifier.weight(1f))
                         TextButton(
                             onClick = { navController.navigate("recovery") },
-                            modifier = Modifier.testTag(TestTags.LOGIN_OLVIDASTE_BTN)
+                            modifier = Modifier.testTag(TestTags.LOGIN_OLVIDASTE_BTN),
                         ) {
                             Text(
                                 text = "¿Olvidaste tu contraseña?",
                                 color = MaterialTheme.colorScheme.primary,
                                 fontWeight = FontWeight.Medium,
-                                style = MaterialTheme.typography.bodySmall
+                                style = MaterialTheme.typography.bodySmall,
                             )
                         }
                     }
 
                     AnimatedVisibility(
                         visible = authState is AuthState.Error,
-                        enter   = fadeIn(),
-                        exit    = fadeOut()
+                        enter = fadeIn(),
+                        exit = fadeOut(),
                     ) {
                         if (authState is AuthState.Error) {
                             Surface(
                                 color = MaterialTheme.colorScheme.error.copy(alpha = 0.12f),
                                 shape = RoundedCornerShape(8.dp),
-                                modifier = Modifier.testTag(TestTags.LOGIN_ERROR_MESSAGE)
+                                modifier = Modifier.testTag(TestTags.LOGIN_ERROR_MESSAGE),
                             ) {
                                 Text(
                                     text = (authState as AuthState.Error).message,
                                     color = MaterialTheme.colorScheme.error,
                                     modifier = Modifier.padding(12.dp),
                                     style = MaterialTheme.typography.bodySmall,
-                                    fontWeight = FontWeight.Medium
+                                    fontWeight = FontWeight.Medium,
                                 )
                             }
                         }
@@ -295,14 +297,14 @@ fun LoginScreen(
                     loginLocalError?.let { err ->
                         Surface(
                             color = MaterialTheme.colorScheme.error.copy(alpha = 0.12f),
-                            shape = RoundedCornerShape(8.dp)
+                            shape = RoundedCornerShape(8.dp),
                         ) {
                             Text(
                                 text = err,
                                 color = MaterialTheme.colorScheme.error,
                                 modifier = Modifier.padding(12.dp),
                                 style = MaterialTheme.typography.bodySmall,
-                                fontWeight = FontWeight.Medium
+                                fontWeight = FontWeight.Medium,
                             )
                         }
                     }
@@ -317,25 +319,26 @@ fun LoginScreen(
                             loginLocalError = null
                             viewModel.login(email, password)
                         },
-                        enabled  = email.isNotBlank() && password.isNotBlank()
-                                && authState !is AuthState.Loading,
+                        enabled = email.isNotBlank() &&
+                            password.isNotBlank() &&
+                            authState !is AuthState.Loading,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(48.dp)
                             .testTag(TestTags.LOGIN_INGRESAR_BTN),
-                        shape = MaterialTheme.shapes.medium
+                        shape = MaterialTheme.shapes.medium,
                     ) {
                         if (authState is AuthState.Loading) {
                             CircularProgressIndicator(
                                 modifier = Modifier.size(22.dp),
                                 strokeWidth = 2.5.dp,
-                                color = MaterialTheme.colorScheme.onPrimary
+                                color = MaterialTheme.colorScheme.onPrimary,
                             )
                         } else {
                             Text(
                                 text = "ENTRAR AL SISTEMA",
                                 style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.Bold,
                             )
                         }
                     }
@@ -349,34 +352,34 @@ fun LoginScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(48.dp),
-                        shape = MaterialTheme.shapes.medium
+                        shape = MaterialTheme.shapes.medium,
                     ) {
                         Icon(
                             painter = painterResource(com.example.optoapp.R.drawable.ic_google_logo),
                             contentDescription = "Logo de Google",
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(20.dp),
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             "Continuar con Google",
-                            fontWeight = FontWeight.Medium
+                            fontWeight = FontWeight.Medium,
                         )
                     }
 
                     OutlinedButton(
                         onClick = { navController.navigate("register") },
                         modifier = Modifier.fillMaxWidth().height(48.dp),
-                        shape = MaterialTheme.shapes.medium
+                        shape = MaterialTheme.shapes.medium,
                     ) {
                         Icon(
                             imageVector = Icons.Default.Email,
                             contentDescription = "Correo",
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(20.dp),
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             "Crear cuenta con correo electrónico",
-                            fontWeight = FontWeight.Medium
+                            fontWeight = FontWeight.Medium,
                         )
                     }
                 }
@@ -387,7 +390,7 @@ fun LoginScreen(
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.padding(horizontal = 8.dp)
+                modifier = Modifier.padding(horizontal = 8.dp),
             )
         }
     }

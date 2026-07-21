@@ -8,7 +8,8 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface CostoLcDao {
 
-    @Query("""
+    @Query(
+        """
         SELECT * FROM costos_lc
         WHERE optica_id = :opticaId
           AND tipo_lc = :tipoLc
@@ -17,29 +18,34 @@ interface CostoLcDao {
           AND (laboratorio_id IS NULL AND :laboratorioId IS NULL OR laboratorio_id = :laboratorioId)
           AND vigente_hasta IS NULL
         LIMIT 1
-    """)
+    """,
+    )
     suspend fun lookup(
         opticaId: String,
         tipoLc: String,
         materialLc: String,
         modalidad: String,
-        laboratorioId: String?
+        laboratorioId: String?,
     ): CostoLcEntity?
 
-    @Query("""
+    @Query(
+        """
         SELECT * FROM costos_lc
         WHERE optica_id = :opticaId
           AND vigente_hasta IS NULL
         ORDER BY tipo_lc, material_lc
-    """)
+    """,
+    )
     fun getByOpticaId(opticaId: String): Flow<List<CostoLcEntity>>
 
-    @Query("""
+    @Query(
+        """
         SELECT * FROM costos_lc
         WHERE optica_id = :opticaId
           AND vigente_hasta IS NULL
         ORDER BY tipo_lc, material_lc
-    """)
+    """,
+    )
     suspend fun getByOpticaIdList(opticaId: String): List<CostoLcEntity>
 
     @Upsert

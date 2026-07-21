@@ -103,6 +103,6 @@ object OptoTokens {
     fun getShapes(): Shapes = Shapes(
         small = shapes.small,
         medium = shapes.medium,
-        large = shapes.large
+        large = shapes.large,
     )
 }

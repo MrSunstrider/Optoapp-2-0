@@ -5,7 +5,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -17,64 +16,64 @@ val osdiOptions = listOf(
     "Algunas veces (1)" to 1,
     "Mitad de las veces (2)" to 2,
     "La mayoría de las veces (3)" to 3,
-    "Todo el tiempo (4)" to 4
+    "Todo el tiempo (4)" to 4,
 )
 
 val osdiBloque1 = listOf(
     "¿Sensibilidad a la luz?",
     "¿Sensación de arenilla o polvo?",
     "¿Dolor o ardor en los ojos?",
-    "¿Visión borrosa o baja?"
+    "¿Visión borrosa o baja?",
 )
 
 val osdiBloque2 = listOf(
     "¿Leer o mirar pantallas?",
     "¿Conducir de noche?",
     "¿Usar cajeros automáticos o leer señales?",
-    "¿Ver televisión?"
+    "¿Ver televisión?",
 )
 
 val osdiBloque3 = listOf(
     "¿Viento o aire acondicionado?",
     "¿Ambientes muy secos (calefacción, aire acondicionado)?",
     "¿Ambientes con humo o contaminación?",
-    "¿Usar lentes de contacto (si aplica)?"
+    "¿Usar lentes de contacto (si aplica)?",
 )
 
 @Composable
 fun OSDIDialog(
     onDismissRequest: () -> Unit,
-    onSave: (puntuacion: Int, clasificacion: String) -> Unit
+    onSave: (puntuacion: Int, clasificacion: String) -> Unit,
 ) {
     // Almacenamos respuestas como mapa persistente en Compose: Index(0-11) -> Valor(0-4)
     val answers = remember { mutableStateMapOf<Int, Int>() }
-    
+
     Dialog(onDismissRequest = onDismissRequest) {
         Surface(
             shape = MaterialTheme.shapes.medium,
             color = MaterialTheme.colorScheme.surface,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
+                .padding(16.dp),
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(16.dp)
+                    .padding(16.dp),
             ) {
                 Text(
                     text = "Cuestionario OSDI",
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(bottom = 16.dp)
+                    modifier = Modifier.padding(bottom = 16.dp),
                 )
 
                 Column(
                     modifier = Modifier
                         .weight(1f)
                         .verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
                     Text("Bloque 1: Síntomas Visuales", fontWeight = FontWeight.Bold)
                     osdiBloque1.forEachIndexed { qIndex, question ->
@@ -82,9 +81,9 @@ fun OSDIDialog(
                             answers[qIndex] = ans
                         }
                     }
-                    
+
                     HorizontalDivider()
-                    
+
                     Text("Bloque 2: Problemas con actividades diarias", fontWeight = FontWeight.Bold)
                     osdiBloque2.forEachIndexed { qIndex, question ->
                         val globalIndex = qIndex + 4
@@ -92,9 +91,9 @@ fun OSDIDialog(
                             answers[globalIndex] = ans
                         }
                     }
-                    
+
                     HorizontalDivider()
-                    
+
                     Text("Bloque 3: Problemas con condiciones ambientales", fontWeight = FontWeight.Bold)
                     osdiBloque3.forEachIndexed { qIndex, question ->
                         val globalIndex = qIndex + 8
@@ -105,10 +104,10 @@ fun OSDIDialog(
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
-                
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
+                    horizontalArrangement = Arrangement.End,
                 ) {
                     TextButton(onClick = onDismissRequest) {
                         Text("Cancelar")
@@ -119,14 +118,14 @@ fun OSDIDialog(
                             val sum = answers.values.sum()
                             val answeredCount = answers.size
                             val score = Math.round((sum * 25.0) / answeredCount).toInt()
-                            
+
                             val clasificacion = when {
                                 score <= 12 -> "Normal"
                                 score <= 22 -> "Leve"
                                 score <= 32 -> "Moderado"
                                 else -> "Severo"
                             }
-                            
+
                             onSave(score, clasificacion)
                         } else {
                             onDismissRequest() // Si no se respondió nada, cierra sin guardar
@@ -147,21 +146,21 @@ fun QuestionItem(number: Int, question: String, selectedValue: Int?, onSelect: (
         Text(text = "$number. $question", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(bottom = 8.dp))
         var expanded by remember { mutableStateOf(false) }
         val selectedText = if (selectedValue != null) osdiOptions.find { it.second == selectedValue }?.first ?: "Seleccionar..." else "Seleccionar..."
-        
+
         ExposedDropdownMenuBox(
             expanded = expanded,
-            onExpandedChange = { expanded = it }
+            onExpandedChange = { expanded = it },
         ) {
             OutlinedTextField(
                 value = selectedText,
                 onValueChange = {},
                 readOnly = true,
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable)
+                modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable),
             )
             ExposedDropdownMenu(
                 expanded = expanded,
-                onDismissRequest = { expanded = false }
+                onDismissRequest = { expanded = false },
             ) {
                 osdiOptions.forEach { option ->
                     DropdownMenuItem(
@@ -169,7 +168,7 @@ fun QuestionItem(number: Int, question: String, selectedValue: Int?, onSelect: (
                         onClick = {
                             onSelect(option.second)
                             expanded = false
-                        }
+                        },
                     )
                 }
             }

@@ -17,7 +17,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.example.optoapp.data.AppRoles
 import com.example.optoapp.testing.TestTags
 import com.example.optoapp.util.SyncErrorSanitizer
 import com.example.optoapp.viewmodel.AuthViewModel
@@ -38,7 +37,7 @@ fun MainDrawerContent(
     opticaRol: String,
     showCierreCaja: Boolean,
     showBiYReportes: Boolean,
-    showOperacionHoy: Boolean
+    showOperacionHoy: Boolean,
 ) {
     val scope = rememberCoroutineScope()
     val syncState by syncViewModel.syncState.collectAsState()
@@ -51,33 +50,33 @@ fun MainDrawerContent(
         Column(
             modifier = Modifier
                 .fillMaxHeight()
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(rememberScrollState()),
         ) {
             Surface(
                 color = MaterialTheme.colorScheme.primaryContainer,
                 shape = RoundedCornerShape(
                     bottomStart = 24.dp,
-                    bottomEnd = 24.dp
+                    bottomEnd = 24.dp,
                 ),
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 28.dp, horizontal = 24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                    horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     val initial = opticaHeader.nombreOptica.firstOrNull()?.uppercase() ?: "O"
                     Surface(
                         shape = CircleShape,
                         color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(56.dp)
+                        modifier = Modifier.size(56.dp),
                     ) {
                         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                             Text(
                                 text = initial,
                                 style = MaterialTheme.typography.headlineMedium,
-                                color = MaterialTheme.colorScheme.onPrimary
+                                color = MaterialTheme.colorScheme.onPrimary,
                             )
                         }
                     }
@@ -88,12 +87,12 @@ fun MainDrawerContent(
                         fontWeight = FontWeight.SemiBold,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
                     )
                     Text(
                         text = "Plan Activo",
                         style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
                     )
                 }
             }
@@ -103,7 +102,7 @@ fun MainDrawerContent(
                 text = "GESTIÓN",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                modifier = Modifier.padding(start = 24.dp, top = 16.dp, bottom = 4.dp)
+                modifier = Modifier.padding(start = 24.dp, top = 16.dp, bottom = 4.dp),
             )
             NavigationDrawerItem(
                 label = { Text("Pacientes", fontWeight = FontWeight.SemiBold) },
@@ -115,7 +114,7 @@ fun MainDrawerContent(
                     }
                 },
                 icon = { Icon(Icons.Default.Person, contentDescription = "Pacientes") },
-                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding).testTag(TestTags.NAV_DRAWER_MENU)
+                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding).testTag(TestTags.NAV_DRAWER_MENU),
             )
             NavigationDrawerItem(
                 label = { Text("Servicios Varios", fontWeight = FontWeight.SemiBold) },
@@ -125,7 +124,7 @@ fun MainDrawerContent(
                     navController.navigate("servicios_extra")
                 },
                 icon = { Icon(Icons.Default.AddShoppingCart, contentDescription = "Servicios Varios") },
-                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
             )
             if (showOperacionHoy) {
                 NavigationDrawerItem(
@@ -136,7 +135,7 @@ fun MainDrawerContent(
                         navController.navigate("operacion_hoy")
                     },
                     icon = { Icon(Icons.Default.Today, contentDescription = "Dashboard") },
-                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
                 )
             }
 
@@ -144,7 +143,7 @@ fun MainDrawerContent(
                 text = "PROGRAMACIÓN",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                modifier = Modifier.padding(start = 24.dp, top = 16.dp, bottom = 4.dp)
+                modifier = Modifier.padding(start = 24.dp, top = 16.dp, bottom = 4.dp),
             )
             NavigationDrawerItem(
                 label = { Text("Agenda", fontWeight = FontWeight.SemiBold) },
@@ -154,7 +153,7 @@ fun MainDrawerContent(
                     navController.navigate("agenda")
                 },
                 icon = { Icon(Icons.Default.CalendarMonth, contentDescription = "Agenda") },
-                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding).testTag(TestTags.NAV_BOTTOM_AGENDA)
+                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding).testTag(TestTags.NAV_BOTTOM_AGENDA),
             )
             NavigationDrawerItem(
                 label = { Text("Inventario", fontWeight = FontWeight.SemiBold) },
@@ -164,7 +163,7 @@ fun MainDrawerContent(
                     navController.navigate("monturas")
                 },
                 icon = { Icon(Icons.Default.Inventory2, contentDescription = "Inventario") },
-                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
             )
             NavigationDrawerItem(
                 label = { Text("Órdenes de Compra", fontWeight = FontWeight.SemiBold) },
@@ -174,7 +173,7 @@ fun MainDrawerContent(
                     navController.navigate("ordenes_compra")
                 },
                 icon = { Icon(Icons.Default.Receipt, contentDescription = "Órdenes de Compra") },
-                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
             )
             NavigationDrawerItem(
                 label = { Text("Inventario Físico", fontWeight = FontWeight.SemiBold) },
@@ -184,7 +183,7 @@ fun MainDrawerContent(
                     navController.navigate("inventario_fisico")
                 },
                 icon = { Icon(Icons.Default.Inventory, contentDescription = "Inventario Físico") },
-                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
             )
 
             if (showCierreCaja || showBiYReportes) {
@@ -192,7 +191,7 @@ fun MainDrawerContent(
                     text = "FINANZAS",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                    modifier = Modifier.padding(start = 24.dp, top = 16.dp, bottom = 4.dp)
+                    modifier = Modifier.padding(start = 24.dp, top = 16.dp, bottom = 4.dp),
                 )
                 if (showCierreCaja) {
                     NavigationDrawerItem(
@@ -203,7 +202,7 @@ fun MainDrawerContent(
                             navController.navigate("cierre_caja")
                         },
                         icon = { Icon(Icons.Default.AccountBalanceWallet, contentDescription = "Cierre de Caja") },
-                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
                     )
                 }
                 if (showBiYReportes) {
@@ -214,8 +213,11 @@ fun MainDrawerContent(
                             scope.launch { drawerState.close() }
                             navController.navigate("estadisticas_bi")
                         },
-                        icon = { @Suppress("DEPRECATION") Icon(Icons.Default.TrendingUp, contentDescription = "Análisis Financiero") },
-                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                        icon = {
+                            @Suppress("DEPRECATION")
+                            Icon(Icons.Default.TrendingUp, contentDescription = "Análisis Financiero")
+                        },
+                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
                     )
                     NavigationDrawerItem(
                         label = { Text("Reportes", fontWeight = FontWeight.SemiBold) },
@@ -225,7 +227,7 @@ fun MainDrawerContent(
                             navController.navigate("reportes")
                         },
                         icon = { Icon(Icons.Default.DateRange, contentDescription = "Reportes") },
-                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
                     )
                 }
             }
@@ -234,7 +236,7 @@ fun MainDrawerContent(
                 text = "SISTEMA",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                modifier = Modifier.padding(start = 24.dp, top = 16.dp, bottom = 4.dp)
+                modifier = Modifier.padding(start = 24.dp, top = 16.dp, bottom = 4.dp),
             )
             NavigationDrawerItem(
                 label = { Text("Configuración", fontWeight = FontWeight.SemiBold) },
@@ -244,7 +246,7 @@ fun MainDrawerContent(
                     navController.navigate("configuracion")
                 },
                 icon = { Icon(Icons.Default.Settings, contentDescription = "Configuración") },
-                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding).testTag(TestTags.NAV_DRAWER_CONFIGURACION)
+                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding).testTag(TestTags.NAV_DRAWER_CONFIGURACION),
             )
 
             val context = androidx.compose.ui.platform.LocalContext.current
@@ -255,7 +257,7 @@ fun MainDrawerContent(
                         android.widget.Toast.makeText(
                             context,
                             (syncState as SyncState.Success).message,
-                            android.widget.Toast.LENGTH_SHORT
+                            android.widget.Toast.LENGTH_SHORT,
                         ).show()
                         syncViewModel.clearSyncUiState()
                     }
@@ -265,7 +267,7 @@ fun MainDrawerContent(
                     }
                     is SyncState.Error -> {
                         errorMessage = SyncErrorSanitizer.forUserMessage(
-                            (syncState as SyncState.Error).message
+                            (syncState as SyncState.Error).message,
                         )
                         showErrorDialog = true
                     }
@@ -296,7 +298,7 @@ fun MainDrawerContent(
                         Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                             Text(errorMessage)
                         }
-                    }
+                    },
                 )
             }
 
@@ -304,7 +306,7 @@ fun MainDrawerContent(
                 label = {
                     Text(
                         if (syncState is SyncState.Loading) "Sincronizando..." else "Sincronizar Cloud",
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.SemiBold,
                     )
                 },
                 selected = false,
@@ -320,7 +322,7 @@ fun MainDrawerContent(
                         Icon(Icons.Default.CloudSync, contentDescription = "Sincronizar")
                     }
                 },
-                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
             )
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp, horizontal = 16.dp))
             NavigationDrawerItem(
@@ -336,7 +338,7 @@ fun MainDrawerContent(
                     }
                 },
                 icon = { Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Salir") },
-                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
             )
             Spacer(modifier = Modifier.height(16.dp))
         }

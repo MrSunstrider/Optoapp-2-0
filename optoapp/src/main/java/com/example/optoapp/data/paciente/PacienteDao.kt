@@ -23,44 +23,30 @@ interface PacienteDao {
         WHERE opticaId = :opticaId
           AND UPPER(TRIM(ifnull(historiaOptometrica, ''))) = UPPER(TRIM(:historiaNorm))
           AND (:excludeId = '' OR id != :excludeId)
-        """
+        """,
     )
     suspend fun countPacientesByHistoriaOptometrica(opticaId: String, historiaNorm: String, excludeId: String): Int
 
     @Query("SELECT * FROM pacientes WHERE id = :id")
     suspend fun getPacienteById(id: String): Paciente?
 
-    @Query("""
+    @Query(
+        """
         SELECT * FROM pacientes WHERE opticaId = :opticaId AND (
             nombreCompleto LIKE '%' || :query || '%' OR id LIKE '%' || :query || '%' OR telefono LIKE '%' || :query || '%' OR ifnull(historiaOptometrica, '') LIKE '%' || :query || '%'
         )
-    """)
+    """,
+    )
     fun searchPacientesForOptica(opticaId: String, query: String): Flow<List<Paciente>>
 
     @Upsert
     suspend fun insertPaciente(paciente: Paciente)
 
-    @Query("""
-        UPDATE pacientes SET nombreCompleto=:nombreCompleto, edad=:edad,
-        telefono=:telefono, fechaCreacion=:fechaCreacion, dni=:dni,
-        fechaNacimiento=:fechaNacimiento, sexo=:sexo, email=:email,
-        historiaOptometrica=:historiaOptometrica, direccion=:direccion,
-        distrito=:distrito, ocupacion=:ocupacion, acompanante=:acompanante,
-        hobbies=:hobbies, ultimasEtiquetas=:ultimasEtiquetas,
-        opticaId=:opticaId, updatedAt=:updatedAt, updatedBy=:updatedBy
-        WHERE id=:id AND opticaId=:opticaId
-    """)
-    suspend fun updatePaciente(
-        id: String, opticaId: String, nombreCompleto: String, edad: Int,
-        telefono: String, fechaCreacion: java.time.LocalDate, dni: String?,
-        fechaNacimiento: java.time.LocalDate?, sexo: String?, email: String?,
-        historiaOptometrica: String?, direccion: String?, distrito: String?,
-        ocupacion: String?, acompanante: String?, hobbies: String?,
-        ultimasEtiquetas: List<String>, updatedAt: String?, updatedBy: String?
-    ): Int
+    @Upsert
+    suspend fun upsertPaciente(paciente: Paciente)
 
     @Query("DELETE FROM pacientes WHERE id = :id AND opticaId = :opticaId")
-    suspend fun deletePaciente(id: String, opticaId: String)
+    suspend fun deletePaciente(id: String, opticaId: String): Int
 
     @Query("UPDATE pacientes SET opticaId = :newOpticaId WHERE opticaId = 'mi_optica_base'")
     suspend fun reassignFromLegacyMiOpticaBase(newOpticaId: String): Int
@@ -77,19 +63,23 @@ interface PacienteDao {
     @Query("DELETE FROM pacientes WHERE id = :id AND opticaId = :opticaId")
     suspend fun deletePacienteById(id: String, opticaId: String): Int
 
-    @Query("""
+    @Query(
+        """
         SELECT * FROM pacientes WHERE opticaId = :opticaId AND (
         id IN (SELECT pacienteId FROM dispensaciones WHERE opticaId = :opticaId AND (montoTotal - montoPagado) > 0)
         OR id IN (SELECT pacienteId FROM servicios_extra WHERE opticaId = :opticaId AND (montoTotal - aCuenta) > 0)
         ) ORDER BY nombreCompleto ASC
-    """)
+    """,
+    )
     fun getPacientesWithPendingBalanceForOptica(opticaId: String): Flow<List<Paciente>>
 
-    @Query("""
+    @Query(
+        """
         SELECT * FROM pacientes WHERE opticaId = :opticaId AND (
         id IN (SELECT pacienteId FROM dispensaciones WHERE opticaId = :opticaId AND estadoEntrega = 'Pendiente')
         OR id IN (SELECT pacienteId FROM servicios_extra WHERE opticaId = :opticaId AND estado = 'Pendiente')
         ) ORDER BY nombreCompleto ASC
-    """)
+    """,
+    )
     fun getPacientesWithPendingDeliveryForOptica(opticaId: String): Flow<List<Paciente>>
 }

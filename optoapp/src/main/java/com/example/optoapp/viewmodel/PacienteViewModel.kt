@@ -3,21 +3,21 @@ package com.example.optoapp.viewmodel
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.optoapp.data.OptoRepository
-import java.io.IOException
-import kotlinx.coroutines.CancellationException
 import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.EvaluacionClinica
+import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Paciente
-import com.example.optoapp.data.SessionManager
 import com.example.optoapp.data.Resource
+import com.example.optoapp.data.SessionManager
 import com.example.optoapp.domain.auth.AuthorizationGuard
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import java.io.IOException
 import javax.inject.Inject
 
 sealed class DeletePacienteResult {
@@ -30,7 +30,7 @@ class PacienteViewModel @Inject constructor(
     private val repository: com.example.optoapp.data.OptoRepository,
     private val sessionManager: SessionManager,
     private val postSaveSyncScheduler: PostSaveSyncScheduler,
-    private val supabase: SupabaseClient
+    private val supabase: SupabaseClient,
 ) : ViewModel() {
     companion object {
         private const val TAG = "PacienteViewModel"
@@ -39,7 +39,7 @@ class PacienteViewModel @Inject constructor(
 
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery
-    
+
     private val _activeFilter = MutableStateFlow<String?>(null)
     val activeFilter: StateFlow<String?> = _activeFilter
 
@@ -54,10 +54,7 @@ class PacienteViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            // Wait until opticaId is known and pacientes flow emits first real data
-            sessionManager.opticaId.first { it.isNotBlank() }
-            // Small delay to let Room query settle
-            kotlinx.coroutines.delay(100)
+            pacientes.dropWhile { it.isEmpty() }.first()
             _isLoading.value = false
         }
     }
@@ -69,8 +66,7 @@ class PacienteViewModel @Inject constructor(
         _isLoading.value = true
         viewModelScope.launch {
             try {
-                sessionManager.opticaId.first { it.isNotBlank() }
-                kotlinx.coroutines.delay(100)
+                pacientes.dropWhile { it.isEmpty() }.first()
             } catch (_: Exception) { }
             _isLoading.value = false
         }
@@ -82,7 +78,7 @@ class PacienteViewModel @Inject constructor(
         _activeFilter,
         _sortOrder,
         _refreshTrigger,
-        sessionManager.opticaId
+        sessionManager.opticaId,
     ) { query, filter, sort, _, opticaId ->
         arrayOf(query, filter ?: "", sort, opticaId)
     }.flatMapLatest { (query, filter, sort, opticaId) ->
@@ -95,14 +91,14 @@ class PacienteViewModel @Inject constructor(
                 repository.searchPacientesForOptica(opticaId, query)
             }
         }
-        
+
         baseFlow.map { list ->
             if (query.isNotEmpty() && filter.isNotEmpty()) {
-                list.filter { 
-                    it.nombreCompleto.contains(query, ignoreCase = true) || 
-                    it.id.contains(query, ignoreCase = true) || 
-                    it.telefono.contains(query) ||
-                    it.historiaOptometrica.orEmpty().contains(query, ignoreCase = true)
+                list.filter {
+                    it.nombreCompleto.contains(query, ignoreCase = true) ||
+                        it.id.contains(query, ignoreCase = true) ||
+                        it.telefono.contains(query) ||
+                        it.historiaOptometrica.orEmpty().contains(query, ignoreCase = true)
                 }
             } else {
                 list
@@ -116,9 +112,15 @@ class PacienteViewModel @Inject constructor(
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    fun onSearchQueryChange(query: String) { _searchQuery.value = query }
-    fun setFilter(filter: String?) { _activeFilter.value = if (_activeFilter.value == filter) null else filter }
-    fun setSort(sort: String) { _sortOrder.value = sort }
+    fun onSearchQueryChange(query: String) {
+        _searchQuery.value = query
+    }
+    fun setFilter(filter: String?) {
+        _activeFilter.value = if (_activeFilter.value == filter) null else filter
+    }
+    fun setSort(sort: String) {
+        _sortOrder.value = sort
+    }
 
     private val _lastEvaluacion = MutableStateFlow<Resource<EvaluacionClinica>?>(null)
     val lastEvaluacion: StateFlow<Resource<EvaluacionClinica>?> = _lastEvaluacion
@@ -140,29 +142,35 @@ class PacienteViewModel @Inject constructor(
         }
     }
 
-    fun resetLastEvaluacion() { _lastEvaluacion.value = null }
-    fun resetLastDispensacion() { _lastDispensacion.value = null }
+    fun resetLastEvaluacion() {
+        _lastEvaluacion.value = null
+    }
+    fun resetLastDispensacion() {
+        _lastDispensacion.value = null
+    }
 
     suspend fun savePaciente(paciente: Paciente) {
         val oid = sessionManager.opticaId.first()
+        val role = sessionManager.opticaRol.first()
+        AuthorizationGuard.requireRole(role, setOf("admin", "gerente"), "guardar paciente")
         val toSave = paciente.copy(opticaId = oid)
         val historiaNorm = toSave.historiaOptometrica?.trim().orEmpty()
         if (historiaNorm.isNotEmpty()) {
             val duplicated = repository.existsDuplicateHistoriaOptometrica(
                 opticaId = oid,
                 historia = historiaNorm,
-                excludePacienteId = toSave.id
+                excludePacienteId = toSave.id,
             )
             if (duplicated) {
                 throw IllegalArgumentException(
-                    "Ya existe una historia optometrica con ese numero en esta optica."
+                    "Ya existe una historia optometrica con ese numero en esta optica.",
                 )
             }
         }
         repository.insertPaciente(toSave)
         postSaveSyncScheduler.schedulePacientesSync(oid)
     }
-    
+
     suspend fun getPaciente(id: String): Paciente? {
         val result = repository.getPacienteById(id)
         return if (result is Resource.Success) result.data else null
@@ -190,7 +198,7 @@ class PacienteViewModel @Inject constructor(
         val deletesToday = sessionManager.getPacienteDeleteCountToday(oid)
         if (deletesToday >= DAILY_DELETE_LIMIT) {
             return DeletePacienteResult.Error(
-                "Límite diario de eliminaciones alcanzado ($DAILY_DELETE_LIMIT). Contacta al administrador."
+                "Límite diario de eliminaciones alcanzado ($DAILY_DELETE_LIMIT). Contacta al administrador.",
             )
         }
 
@@ -205,8 +213,15 @@ class PacienteViewModel @Inject constructor(
                     }
                 }
             } catch (e: IOException) {
-                // Remote delete failed but local succeeded; the sync pipeline will propagate
-                // the deletion on next cycle.
+                // Local delete succeeded but remote delete failed. The patient will be
+                // re-downloaded from Supabase on the next sync cycle. Surface the error
+                // so the user knows the operation was incomplete.
+                Log.e(TAG, "deletePaciente: remote delete failed after local delete", e)
+                return DeletePacienteResult.Error(
+                    "El paciente se eliminó localmente pero no se pudo eliminar en " +
+                        "el servidor. Se reintentará automáticamente en la próxima " +
+                        "sincronización. Si el problema persiste, contacta al administrador.",
+                )
             }
             val used = sessionManager.incrementPacienteDeleteCountToday(oid)
             postSaveSyncScheduler.schedulePacientesSync(oid)
@@ -216,12 +231,12 @@ class PacienteViewModel @Inject constructor(
         } catch (e: IOException) {
             Log.e(TAG, "deletePaciente failed: IO error", e)
             DeletePacienteResult.Error(
-                "Error inesperado. Reintente más tarde."
+                "Error inesperado. Reintente más tarde.",
             )
         } catch (e: Exception) {
             Log.e(TAG, "deletePaciente failed", e)
             DeletePacienteResult.Error(
-                "Error inesperado. Reintente más tarde."
+                "Error inesperado. Reintente más tarde.",
             )
         }
     }

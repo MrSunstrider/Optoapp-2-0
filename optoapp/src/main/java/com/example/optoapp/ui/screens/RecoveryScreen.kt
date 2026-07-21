@@ -25,7 +25,7 @@ import com.example.optoapp.viewmodel.RecoveryState
 @Composable
 fun RecoveryScreen(
     navController: NavController,
-    viewModel: AuthViewModel
+    viewModel: AuthViewModel,
 ) {
     val recoveryState by viewModel.recoveryState.collectAsState()
     val focusManager = LocalFocusManager.current
@@ -49,14 +49,14 @@ fun RecoveryScreen(
                     }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
                     }
-                }
+                },
             )
-        }
+        },
     ) { padding ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
+                .padding(padding),
         ) {
             when (recoveryState) {
                 is RecoveryState.EmailSent -> {
@@ -66,18 +66,18 @@ fun RecoveryScreen(
                             .padding(32.dp)
                             .align(Alignment.Center),
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
                         Text(
                             text = "Correo enviado",
                             style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
                         )
                         Text(
                             text = "Si existe una cuenta con ese correo, vas a recibir un enlace para restablecer tu contraseña.",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center
+                            textAlign = TextAlign.Center,
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         OutlinedButton(
@@ -88,7 +88,7 @@ fun RecoveryScreen(
                                 }
                             },
                             modifier = Modifier.fillMaxWidth().height(48.dp),
-                            shape = RoundedCornerShape(12.dp)
+                            shape = RoundedCornerShape(12.dp),
                         ) {
                             Text("Volver a inicio de sesión")
                         }
@@ -101,24 +101,24 @@ fun RecoveryScreen(
                             .padding(32.dp)
                             .align(Alignment.Center),
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
                         Surface(
                             color = MaterialTheme.colorScheme.error.copy(alpha = 0.12f),
-                            shape = RoundedCornerShape(8.dp)
+                            shape = RoundedCornerShape(8.dp),
                         ) {
                             Text(
                                 text = (recoveryState as RecoveryState.Error).message,
                                 color = MaterialTheme.colorScheme.error,
                                 modifier = Modifier.padding(12.dp),
                                 fontSize = 13.sp,
-                                fontWeight = FontWeight.Medium
+                                fontWeight = FontWeight.Medium,
                             )
                         }
                         OutlinedButton(
                             onClick = { viewModel.resetRecoveryState() },
                             modifier = Modifier.fillMaxWidth().height(48.dp),
-                            shape = RoundedCornerShape(12.dp)
+                            shape = RoundedCornerShape(12.dp),
                         ) {
                             Text("Intentar de nuevo")
                         }
@@ -128,7 +128,7 @@ fun RecoveryScreen(
                                 navController.navigate("login") {
                                     popUpTo("login") { inclusive = true }
                                 }
-                            }
+                            },
                         ) {
                             Text("Volver a inicio de sesión")
                         }
@@ -141,13 +141,13 @@ fun RecoveryScreen(
                             .padding(horizontal = 32.dp)
                             .align(Alignment.Center),
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
                         Text(
                             text = "Ingresá el correo con el que te registraste",
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center
+                            textAlign = TextAlign.Center,
                         )
 
                         OutlinedTextField(
@@ -157,27 +157,27 @@ fun RecoveryScreen(
                             leadingIcon = { Icon(Icons.Default.Email, contentDescription = "Correo") },
                             keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
                                 keyboardType = KeyboardType.Email,
-                                imeAction = androidx.compose.ui.text.input.ImeAction.Done
+                                imeAction = androidx.compose.ui.text.input.ImeAction.Done,
                             ),
                             keyboardActions = androidx.compose.foundation.text.KeyboardActions(
-                                onDone = { focusManager.clearFocus() }
+                                onDone = { focusManager.clearFocus() },
                             ),
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp)
+                            shape = RoundedCornerShape(12.dp),
                         )
 
                         localError?.let { err ->
                             Surface(
                                 color = MaterialTheme.colorScheme.error.copy(alpha = 0.12f),
-                                shape = RoundedCornerShape(8.dp)
+                                shape = RoundedCornerShape(8.dp),
                             ) {
                                 Text(
                                     text = err,
                                     color = MaterialTheme.colorScheme.error,
                                     modifier = Modifier.padding(12.dp),
                                     fontSize = 13.sp,
-                                    fontWeight = FontWeight.Medium
+                                    fontWeight = FontWeight.Medium,
                                 )
                             }
                         }
@@ -196,18 +196,18 @@ fun RecoveryScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(52.dp),
-                            shape = RoundedCornerShape(12.dp)
+                            shape = RoundedCornerShape(12.dp),
                         ) {
                             if (recoveryState is RecoveryState.Loading) {
                                 CircularProgressIndicator(
                                     modifier = Modifier.size(22.dp),
                                     strokeWidth = 2.5.dp,
-                                    color = MaterialTheme.colorScheme.onPrimary
+                                    color = MaterialTheme.colorScheme.onPrimary,
                                 )
                             } else {
                                 Text(
                                     "Enviar enlace de recuperación",
-                                    fontWeight = FontWeight.Bold
+                                    fontWeight = FontWeight.Bold,
                                 )
                             }
                         }

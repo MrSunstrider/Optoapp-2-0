@@ -5,17 +5,17 @@ import com.example.optoapp.data.OpticaDto
 import com.example.optoapp.data.OpticaFiscalPatch
 import com.example.optoapp.data.OpticaFiscalSettings
 import com.example.optoapp.data.OpticaHeaderSummary
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
 import com.example.optoapp.data.OpticaLaboratorioPatch
 import com.example.optoapp.data.OpticaMembership
-
-
+import com.example.optoapp.data.opticasettings.OpticaSettingsEntity
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import java.io.IOException
 import java.util.UUID
 import javax.inject.Inject
@@ -23,7 +23,7 @@ import javax.inject.Singleton
 
 @Singleton
 open class OpticaSettingsDataSource @Inject constructor(
-    private val supabase: SupabaseClient
+    private val supabase: SupabaseClient,
 ) {
     suspend fun createOpticaForCurrentUser(
         nombreOptica: String,
@@ -32,7 +32,7 @@ open class OpticaSettingsDataSource @Inject constructor(
         razonSocial: String = "",
         direccionFiscal: String = "",
         userId: String? = null,
-        overrideAccessToken: String? = null
+        overrideAccessToken: String? = null,
     ): Result<OpticaMembership> {
         // Esperar hasta 6s a que la sesión esté disponible (ej: post-registro)
         var uid = userId
@@ -60,7 +60,7 @@ open class OpticaSettingsDataSource @Inject constructor(
                     put("p_fiscal_doc_numero", fiscalDocNumero.trim())
                     put("p_razon_social", razonSocial.trim())
                     put("p_direccion_fiscal", direccionFiscal.trim())
-                }
+                },
             )
             Result.success(OpticaMembership(opticaId = opticaId, nombre = nombre, rol = "admin"))
         } catch (e: CancellationException) {
@@ -126,7 +126,7 @@ open class OpticaSettingsDataSource @Inject constructor(
                 docTipo = row.fiscalDocTipo,
                 docNumero = row.fiscalDocNumero,
                 razonSocial = row.razonSocial,
-                direccionFiscal = row.direccionFiscal
+                direccionFiscal = row.direccionFiscal,
             )
         } catch (e: CancellationException) {
             throw e
@@ -147,7 +147,7 @@ open class OpticaSettingsDataSource @Inject constructor(
                 .decodeList<OpticaDto>()
             val row = list.firstOrNull() ?: return OpticaHeaderSummary(
                 nombreOptica = "Óptica sin nombre",
-                fiscalEtiqueta = "Sin documento fiscal"
+                fiscalEtiqueta = "Sin documento fiscal",
             )
             val fiscal = if (row.fiscalDocTipo.isBlank() || row.fiscalDocNumero.isBlank()) {
                 "Sin documento fiscal"
@@ -159,7 +159,7 @@ open class OpticaSettingsDataSource @Inject constructor(
                 .ifBlank { "Óptica sin nombre" }
             OpticaHeaderSummary(
                 nombreOptica = nombreComercial,
-                fiscalEtiqueta = fiscal
+                fiscalEtiqueta = fiscal,
             )
         } catch (e: CancellationException) {
             throw e
@@ -178,7 +178,7 @@ open class OpticaSettingsDataSource @Inject constructor(
         docTipo: String,
         docNumero: String,
         razonSocial: String,
-        direccionFiscal: String
+        direccionFiscal: String,
     ): Result<Unit> {
         if (supabase.auth.currentUserOrNull() == null) {
             return Result.failure(IllegalStateException("Sin sesión"))
@@ -189,7 +189,7 @@ open class OpticaSettingsDataSource @Inject constructor(
                 fiscalDocTipo = docTipo.trim().uppercase(),
                 fiscalDocNumero = docNumero.trim(),
                 razonSocial = razonSocial.trim(),
-                direccionFiscal = direccionFiscal.trim()
+                direccionFiscal = direccionFiscal.trim(),
             )
             supabase.postgrest[TABLE_OPTICAS].update(patch) {
                 filter { eq("id", opticaId) }
@@ -199,7 +199,7 @@ open class OpticaSettingsDataSource @Inject constructor(
                 .decodeList<OpticaDto>()
                 .firstOrNull()
                 ?: return Result.failure(
-                    IllegalStateException("No se pudo verificar la actualización de datos fiscales para esta óptica.")
+                    IllegalStateException("No se pudo verificar la actualización de datos fiscales para esta óptica."),
                 )
             val matches = persisted.fiscalDocTipo.trim().uppercase() == patch.fiscalDocTipo &&
                 persisted.nombre.trim() == patch.nombre &&
@@ -208,7 +208,7 @@ open class OpticaSettingsDataSource @Inject constructor(
                 persisted.direccionFiscal.trim() == patch.direccionFiscal
             if (!matches) {
                 return Result.failure(
-                    IllegalStateException("Supabase no confirmó la persistencia de los datos fiscales. Revisa políticas RLS de opticas.")
+                    IllegalStateException("Supabase no confirmó la persistencia de los datos fiscales. Revisa políticas RLS de opticas."),
                 )
             }
             Result.success(Unit)
@@ -226,7 +226,7 @@ open class OpticaSettingsDataSource @Inject constructor(
     suspend fun updateOpticaLaboratorioSettings(
         opticaId: String,
         laboratorioNombre: String,
-        laboratorioContacto: String
+        laboratorioContacto: String,
     ): Result<Unit> {
         if (supabase.auth.currentUserOrNull() == null) {
             return Result.failure(IllegalStateException("Sin sesión"))
@@ -235,8 +235,8 @@ open class OpticaSettingsDataSource @Inject constructor(
             supabase.postgrest[TABLE_OPTICAS].update(
                 OpticaLaboratorioPatch(
                     laboratorioNombre = laboratorioNombre.trim(),
-                    laboratorioContacto = laboratorioContacto.trim()
-                )
+                    laboratorioContacto = laboratorioContacto.trim(),
+                ),
             ) {
                 filter { eq("id", opticaId) }
             }
@@ -252,9 +252,40 @@ open class OpticaSettingsDataSource @Inject constructor(
         }
     }
 
+    open suspend fun fetchOpticaSettings(opticaId: String): OpticaSettingsEntity? {
+        if (supabase.auth.currentUserOrNull() == null) return null
+        return try {
+            val list = supabase.postgrest[TABLE_OPTICA_SETTINGS]
+                .select { filter { eq("optica_id", opticaId) } }
+                .decodeList<OpticaSettingsRow>()
+            list.firstOrNull()?.let { row ->
+                OpticaSettingsEntity(
+                    opticaId = opticaId,
+                    configJson = row.config_json,
+                )
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: IOException) {
+            Log.e(TAG, "fetchOpticaSettings: opticaId=$opticaId", e)
+            null
+        } catch (e: Exception) {
+            Log.e(TAG, "fetchOpticaSettings: opticaId=$opticaId", e)
+            null
+        }
+    }
+
     companion object {
         private const val TAG = "OpticaSettingsDataSource"
         private const val TABLE_OPTICAS = "opticas"
         private const val TABLE_UO = "usuario_optica"
+        private const val TABLE_OPTICA_SETTINGS = "optica_settings"
     }
 }
+
+// Serializable DTO for Supabase optica_settings table (snake_case columns)
+@kotlinx.serialization.Serializable
+data class OpticaSettingsRow(
+    val optica_id: String = "",
+    val config_json: String = "{}",
+)

@@ -30,7 +30,7 @@ class OrdenCompraRepositoryTest {
     fun setUp() {
         db = Room.inMemoryDatabaseBuilder(
             ApplicationProvider.getApplicationContext(),
-            OptoDatabase::class.java
+            OptoDatabase::class.java,
         ).allowMainThreadQueries().build()
 
         val mockScheduler = mockk<PostSaveSyncScheduler>(relaxed = true)
@@ -38,14 +38,19 @@ class OrdenCompraRepositoryTest {
         every { lazyScheduler.get() } returns mockScheduler
 
         val coordinator = MonturaInventoryCoordinator(
-            db.monturaDao(), db.monturaMovimientoDao(), lazyScheduler
+            db.monturaDao(),
+            db.monturaMovimientoDao(),
+            lazyScheduler,
         )
 
         val ocLazyScheduler = mockk<Lazy<PostSaveSyncScheduler>>()
         every { ocLazyScheduler.get() } returns mockScheduler
 
         repository = OrdenCompraRepository(
-            db.ordenCompraDao(), db.ordenCompraItemDao(), coordinator, ocLazyScheduler
+            db.ordenCompraDao(),
+            db.ordenCompraItemDao(),
+            coordinator,
+            ocLazyScheduler,
         )
     }
 
@@ -60,17 +65,42 @@ class OrdenCompraRepositoryTest {
     }
 
     private suspend fun seedMontura(id: String = "m1") {
-        db.monturaDao().insertMontura(Montura(id = id, sku = "SKU-$id", marca = "A",
-            modelo = "X", color = "N", talla = "M", opticaId = "o1"))
+        db.monturaDao().insertMontura(
+            Montura(
+                id = id,
+                sku = "SKU-$id",
+                marca = "A",
+                modelo = "X",
+                color = "N",
+                talla = "M",
+                opticaId = "o1",
+            ),
+        )
     }
 
     @Test
     fun getByOptica_returnsOCsinDescOrder() = runBlocking {
         seedProveedor()
-        repository.create(OrdenCompra(id = "oc1", numero = "OC-001", proveedorId = "p1",
-            fecha = LocalDate.of(2026, 1, 1), opticaId = "o1"), emptyList())
-        repository.create(OrdenCompra(id = "oc2", numero = "OC-002", proveedorId = "p1",
-            fecha = LocalDate.of(2026, 6, 17), opticaId = "o1"), emptyList())
+        repository.create(
+            OrdenCompra(
+                id = "oc1",
+                numero = "OC-001",
+                proveedorId = "p1",
+                fecha = LocalDate.of(2026, 1, 1),
+                opticaId = "o1",
+            ),
+            emptyList(),
+        )
+        repository.create(
+            OrdenCompra(
+                id = "oc2",
+                numero = "OC-002",
+                proveedorId = "p1",
+                fecha = LocalDate.of(2026, 6, 17),
+                opticaId = "o1",
+            ),
+            emptyList(),
+        )
 
         val list = repository.getByOptica("o1").first()
         assertEquals(2, list.size)
@@ -84,13 +114,31 @@ class OrdenCompraRepositoryTest {
         seedMontura("m2")
 
         val items = listOf(
-            OrdenCompraItem(id = "i1", ordenId = "oc1", monturaId = "m1",
-                cantidad = 10, costoUnitario = 120.0),
-            OrdenCompraItem(id = "i2", ordenId = "oc1", monturaId = "m2",
-                cantidad = 5, costoUnitario = 80.0)
+            OrdenCompraItem(
+                id = "i1",
+                ordenId = "oc1",
+                monturaId = "m1",
+                cantidad = 10,
+                costoUnitario = 120.0,
+            ),
+            OrdenCompraItem(
+                id = "i2",
+                ordenId = "oc1",
+                monturaId = "m2",
+                cantidad = 5,
+                costoUnitario = 80.0,
+            ),
         )
-        repository.create(OrdenCompra(id = "oc1", numero = "OC-001", proveedorId = "p1",
-            fecha = LocalDate.now(), opticaId = "o1"), items)
+        repository.create(
+            OrdenCompra(
+                id = "oc1",
+                numero = "OC-001",
+                proveedorId = "p1",
+                fecha = LocalDate.now(),
+                opticaId = "o1",
+            ),
+            items,
+        )
 
         val oc = db.ordenCompraDao().getById("oc1")
         assertNotNull(oc)
@@ -103,10 +151,25 @@ class OrdenCompraRepositoryTest {
     fun updateEstado_PENDIENTE_to_PARCIAL() = runBlocking {
         seedProveedor()
         seedMontura("m1")
-        repository.create(OrdenCompra(id = "oc1", numero = "OC-001", proveedorId = "p1",
-            fecha = LocalDate.now(), opticaId = "o1"),
-            listOf(OrdenCompraItem(id = "i1", ordenId = "oc1", monturaId = "m1",
-                cantidad = 10, costoUnitario = 100.0, recibido = 5)))
+        repository.create(
+            OrdenCompra(
+                id = "oc1",
+                numero = "OC-001",
+                proveedorId = "p1",
+                fecha = LocalDate.now(),
+                opticaId = "o1",
+            ),
+            listOf(
+                OrdenCompraItem(
+                    id = "i1",
+                    ordenId = "oc1",
+                    monturaId = "m1",
+                    cantidad = 10,
+                    costoUnitario = 100.0,
+                    recibido = 5,
+                ),
+            ),
+        )
 
         repository.updateEstado("oc1", "PARCIAL")
         val oc = db.ordenCompraDao().getById("oc1")
@@ -117,10 +180,24 @@ class OrdenCompraRepositoryTest {
     fun updateEstado_PARCIAL_to_COMPLETADA_withFullReceipt() = runBlocking {
         seedProveedor()
         seedMontura("m1")
-        repository.create(OrdenCompra(id = "oc1", numero = "OC-001", proveedorId = "p1",
-            fecha = LocalDate.now(), opticaId = "o1"),
-            listOf(OrdenCompraItem(id = "i1", ordenId = "oc1", monturaId = "m1",
-                cantidad = 10, costoUnitario = 100.0)))
+        repository.create(
+            OrdenCompra(
+                id = "oc1",
+                numero = "OC-001",
+                proveedorId = "p1",
+                fecha = LocalDate.now(),
+                opticaId = "o1",
+            ),
+            listOf(
+                OrdenCompraItem(
+                    id = "i1",
+                    ordenId = "oc1",
+                    monturaId = "m1",
+                    cantidad = 10,
+                    costoUnitario = 100.0,
+                ),
+            ),
+        )
 
         // Mark all items as fully received and complete
         val received = mapOf("i1" to 10)
@@ -134,10 +211,24 @@ class OrdenCompraRepositoryTest {
     fun getById_returnsOCwithItems() = runBlocking {
         seedProveedor()
         seedMontura("m1")
-        repository.create(OrdenCompra(id = "oc1", numero = "OC-001", proveedorId = "p1",
-            fecha = LocalDate.now(), opticaId = "o1"),
-            listOf(OrdenCompraItem(id = "i1", ordenId = "oc1", monturaId = "m1",
-                cantidad = 10, costoUnitario = 120.0)))
+        repository.create(
+            OrdenCompra(
+                id = "oc1",
+                numero = "OC-001",
+                proveedorId = "p1",
+                fecha = LocalDate.now(),
+                opticaId = "o1",
+            ),
+            listOf(
+                OrdenCompraItem(
+                    id = "i1",
+                    ordenId = "oc1",
+                    monturaId = "m1",
+                    cantidad = 10,
+                    costoUnitario = 120.0,
+                ),
+            ),
+        )
 
         val oc = repository.getById("oc1")
         assertNotNull(oc)
@@ -151,10 +242,24 @@ class OrdenCompraRepositoryTest {
     fun delete_removesOCandItems() = runBlocking {
         seedProveedor()
         seedMontura("m1")
-        repository.create(OrdenCompra(id = "oc1", numero = "OC-001", proveedorId = "p1",
-            fecha = LocalDate.now(), opticaId = "o1"),
-            listOf(OrdenCompraItem(id = "i1", ordenId = "oc1", monturaId = "m1",
-                cantidad = 10, costoUnitario = 100.0)))
+        repository.create(
+            OrdenCompra(
+                id = "oc1",
+                numero = "OC-001",
+                proveedorId = "p1",
+                fecha = LocalDate.now(),
+                opticaId = "o1",
+            ),
+            listOf(
+                OrdenCompraItem(
+                    id = "i1",
+                    ordenId = "oc1",
+                    monturaId = "m1",
+                    cantidad = 10,
+                    costoUnitario = 100.0,
+                ),
+            ),
+        )
 
         repository.delete("oc1")
         val cancelled = db.ordenCompraDao().getById("oc1")
@@ -168,14 +273,31 @@ class OrdenCompraRepositoryTest {
         seedProveedor()
         seedMontura("m1")
         seedMontura("m2")
-        repository.create(OrdenCompra(id = "oc1", numero = "OC-001", proveedorId = "p1",
-            fecha = LocalDate.now(), opticaId = "o1"),
+        repository.create(
+            OrdenCompra(
+                id = "oc1",
+                numero = "OC-001",
+                proveedorId = "p1",
+                fecha = LocalDate.now(),
+                opticaId = "o1",
+            ),
             listOf(
-                OrdenCompraItem(id = "i1", ordenId = "oc1", monturaId = "m1",
-                    cantidad = 10, costoUnitario = 100.0),
-                OrdenCompraItem(id = "i2", ordenId = "oc1", monturaId = "m2",
-                    cantidad = 5, costoUnitario = 50.0)
-            ))
+                OrdenCompraItem(
+                    id = "i1",
+                    ordenId = "oc1",
+                    monturaId = "m1",
+                    cantidad = 10,
+                    costoUnitario = 100.0,
+                ),
+                OrdenCompraItem(
+                    id = "i2",
+                    ordenId = "oc1",
+                    monturaId = "m2",
+                    cantidad = 5,
+                    costoUnitario = 50.0,
+                ),
+            ),
+        )
 
         repository.receiveItems("oc1", mapOf("i1" to 7))
 
@@ -193,10 +315,24 @@ class OrdenCompraRepositoryTest {
     fun estadoWorkflow_PENDIENTE_to_APROBADA_to_PARCIAL() = runBlocking {
         seedProveedor()
         seedMontura("m1")
-        repository.create(OrdenCompra(id = "oc1", numero = "OC-001", proveedorId = "p1",
-            fecha = LocalDate.now(), opticaId = "o1"),
-            listOf(OrdenCompraItem(id = "i1", ordenId = "oc1", monturaId = "m1",
-                cantidad = 10, costoUnitario = 100.0)))
+        repository.create(
+            OrdenCompra(
+                id = "oc1",
+                numero = "OC-001",
+                proveedorId = "p1",
+                fecha = LocalDate.now(),
+                opticaId = "o1",
+            ),
+            listOf(
+                OrdenCompraItem(
+                    id = "i1",
+                    ordenId = "oc1",
+                    monturaId = "m1",
+                    cantidad = 10,
+                    costoUnitario = 100.0,
+                ),
+            ),
+        )
 
         assertEquals("PENDIENTE", db.ordenCompraDao().getById("oc1")!!.estado)
         repository.updateEstado("oc1", "APROBADA")
@@ -211,10 +347,24 @@ class OrdenCompraRepositoryTest {
         seedMontura("m1")
         // Set initial stock
         db.monturaDao().adjustStock("m1", "o1", 20)
-        repository.create(OrdenCompra(id = "oc1", numero = "OC-001", proveedorId = "p1",
-            fecha = LocalDate.now(), opticaId = "o1"),
-            listOf(OrdenCompraItem(id = "i1", ordenId = "oc1", monturaId = "m1",
-                cantidad = 10, costoUnitario = 100.0)))
+        repository.create(
+            OrdenCompra(
+                id = "oc1",
+                numero = "OC-001",
+                proveedorId = "p1",
+                fecha = LocalDate.now(),
+                opticaId = "o1",
+            ),
+            listOf(
+                OrdenCompraItem(
+                    id = "i1",
+                    ordenId = "oc1",
+                    monturaId = "m1",
+                    cantidad = 10,
+                    costoUnitario = 100.0,
+                ),
+            ),
+        )
 
         repository.receiveItems("oc1", mapOf("i1" to 10))
         val oc = db.ordenCompraDao().getById("oc1")!!
@@ -230,10 +380,24 @@ class OrdenCompraRepositoryTest {
         seedProveedor()
         seedMontura("m1")
         db.monturaDao().adjustStock("m1", "o1", 20)
-        repository.create(OrdenCompra(id = "oc1", numero = "OC-001", proveedorId = "p1",
-            fecha = LocalDate.now(), opticaId = "o1"),
-            listOf(OrdenCompraItem(id = "i1", ordenId = "oc1", monturaId = "m1",
-                cantidad = 10, costoUnitario = 100.0)))
+        repository.create(
+            OrdenCompra(
+                id = "oc1",
+                numero = "OC-001",
+                proveedorId = "p1",
+                fecha = LocalDate.now(),
+                opticaId = "o1",
+            ),
+            listOf(
+                OrdenCompraItem(
+                    id = "i1",
+                    ordenId = "oc1",
+                    monturaId = "m1",
+                    cantidad = 10,
+                    costoUnitario = 100.0,
+                ),
+            ),
+        )
 
         repository.delete("oc1")
         val oc = db.ordenCompraDao().getById("oc1")!!

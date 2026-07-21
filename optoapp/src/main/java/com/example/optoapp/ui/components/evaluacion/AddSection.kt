@@ -15,8 +15,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.optoapp.ui.components.OptoSegmentedSelector
 import com.example.optoapp.ui.components.OptoQuickAddChip
+import com.example.optoapp.ui.components.OptoSegmentedSelector
 import com.example.optoapp.ui.components.OptoVisionInput
 import com.example.optoapp.ui.theme.SurfaceDark
 import com.example.optoapp.ui.theme.TextPrimaryDark
@@ -31,7 +31,7 @@ internal fun AddSection(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiState
     Surface(
         color = MaterialTheme.colorScheme.surfaceVariant,
         shape = RoundedCornerShape(20.dp),
-        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(
@@ -40,7 +40,7 @@ internal fun AddSection(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiState
                 fontSize = 18.sp,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.fillMaxWidth(),
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
             )
 
             OptoSegmentedSelector(
@@ -48,45 +48,54 @@ internal fun AddSection(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiState
                 selectedIndex = if (uiState.hasAdd) 1 else 0,
                 onSelect = { index ->
                     if (index == 0) {
-                        onUpdate(uiState.copy(
-                            hasAdd = false,
-                            addCercaOd = "", addCercaOi = "",
-                            addIntermediaOd = "", addIntermediaOi = ""
-                        ))
+                        onUpdate(
+                            uiState.copy(
+                                hasAdd = false,
+                                addCercaOd = "",
+                                addCercaOi = "",
+                                addIntermediaOd = "",
+                                addIntermediaOi = "",
+                            ),
+                        )
                     } else {
                         onUpdate(uiState.copy(hasAdd = true))
                     }
-                }
+                },
             )
 
             AnimatedVisibility(visible = uiState.shouldShowCercaIntermedio) {
                 OptoSegmentedSelector(
                     options = listOf("Cerca", "Intermedio"),
                     selectedIndex = if (uiState.isVpCerca) 0 else 1,
-                    onSelect = { onUpdate(uiState.copy(isVpCerca = it == 0)) }
+                    onSelect = { onUpdate(uiState.copy(isVpCerca = it == 0)) },
                 )
             }
 
             AnimatedVisibility(visible = uiState.hasAdd) {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-
                     NumericAddStepper(
                         value = currentAddOd,
                         onValueChange = { newVal ->
                             val updated = if (uiState.isAddAo) {
-                                if (uiState.isVpCerca) uiState.copy(addCercaOd = newVal, addCercaOi = newVal)
-                                else uiState.copy(addIntermediaOd = newVal, addIntermediaOi = newVal)
+                                if (uiState.isVpCerca) {
+                                    uiState.copy(addCercaOd = newVal, addCercaOi = newVal)
+                                } else {
+                                    uiState.copy(addIntermediaOd = newVal, addIntermediaOi = newVal)
+                                }
                             } else {
-                                if (uiState.isVpCerca) uiState.copy(addCercaOd = newVal)
-                                else uiState.copy(addIntermediaOd = newVal)
+                                if (uiState.isVpCerca) {
+                                    uiState.copy(addCercaOd = newVal)
+                                } else {
+                                    uiState.copy(addIntermediaOd = newVal)
+                                }
                             }
                             onUpdate(updated)
-                        }
+                        },
                     )
 
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
                     ) {
                         listOf("+1.00", "+2.00", "+3.00", "+4.00").forEach { value ->
                             OptoQuickAddChip(
@@ -94,15 +103,21 @@ internal fun AddSection(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiState
                                 isSelected = currentAddOd == value,
                                 onClick = {
                                     val updated = if (uiState.isAddAo) {
-                                        if (uiState.isVpCerca) uiState.copy(addCercaOd = value, addCercaOi = value)
-                                        else uiState.copy(addIntermediaOd = value, addIntermediaOi = value)
+                                        if (uiState.isVpCerca) {
+                                            uiState.copy(addCercaOd = value, addCercaOi = value)
+                                        } else {
+                                            uiState.copy(addIntermediaOd = value, addIntermediaOi = value)
+                                        }
                                     } else {
-                                        if (uiState.isVpCerca) uiState.copy(addCercaOd = value)
-                                        else uiState.copy(addIntermediaOd = value)
+                                        if (uiState.isVpCerca) {
+                                            uiState.copy(addCercaOd = value)
+                                        } else {
+                                            uiState.copy(addIntermediaOd = value)
+                                        }
                                     }
                                     onUpdate(updated)
                                 },
-                                modifier = Modifier.weight(1f)
+                                modifier = Modifier.weight(1f),
                             )
                         }
                     }
@@ -115,8 +130,8 @@ internal fun AddSection(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiState
                             onCheckedChange = { onUpdate(uiState.copy(isAddAo = it)) },
                             colors = SwitchDefaults.colors(
                                 checkedThumbColor = MaterialTheme.colorScheme.primary,
-                                checkedTrackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
-                            )
+                                checkedTrackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
+                            ),
                         )
                         Spacer(Modifier.width(8.dp))
                         Text("Ambos ojos igual", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -127,24 +142,30 @@ internal fun AddSection(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiState
                             value = currentAddOd,
                             onValueChange = { newVal ->
                                 val base = uiState.copy(isAddAo = false)
-                                val updated = if (uiState.isVpCerca) base.copy(addCercaOd = newVal)
-                                else base.copy(addIntermediaOd = newVal)
+                                val updated = if (uiState.isVpCerca) {
+                                    base.copy(addCercaOd = newVal)
+                                } else {
+                                    base.copy(addIntermediaOd = newVal)
+                                }
                                 onUpdate(updated)
                             },
                             label = "Add OD",
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
                         )
                         OptoVisionInput(
                             value = if (uiState.isAddAo) currentAddOd else currentAddOi,
                             onValueChange = { newVal ->
                                 val base = uiState.copy(isAddAo = false)
-                                val updated = if (uiState.isVpCerca) base.copy(addCercaOi = newVal)
-                                else base.copy(addIntermediaOi = newVal)
+                                val updated = if (uiState.isVpCerca) {
+                                    base.copy(addCercaOi = newVal)
+                                } else {
+                                    base.copy(addIntermediaOi = newVal)
+                                }
                                 onUpdate(updated)
                             },
                             label = "Add OI",
                             enabled = !uiState.isAddAo,
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
                         )
                     }
                 }
@@ -157,14 +178,14 @@ internal fun AddSection(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiState
                 fontSize = 14.sp,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.fillMaxWidth(),
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
             )
             Text(
                 "Aplica a Px présbitas y no présbitas.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.fillMaxWidth(),
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
             )
             Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                 OptoVisionInput(
@@ -172,7 +193,7 @@ internal fun AddSection(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiState
                     onValueChange = { onUpdate(uiState.copy(addAv = it)) },
                     label = "AV VP",
                     modifier = Modifier.width(140.dp),
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
                 )
             }
         }
@@ -183,14 +204,14 @@ internal fun AddSection(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiState
 private fun NumericAddStepper(
     value: String,
     onValueChange: (String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val currentVal = value.toDoubleOrNull() ?: 2.0
 
     Row(
         modifier = modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center
+        horizontalArrangement = Arrangement.Center,
     ) {
         CircularStepperButton(
             icon = Icons.Default.Remove,
@@ -198,7 +219,7 @@ private fun NumericAddStepper(
             onClick = {
                 val newVal = (currentVal - 0.25).coerceAtLeast(0.75)
                 onValueChange(formatAddValue(newVal))
-            }
+            },
         )
 
         Spacer(Modifier.width(20.dp))
@@ -207,7 +228,7 @@ private fun NumericAddStepper(
             text = "${formatAddValue(currentVal)} D",
             fontSize = 28.sp,
             fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary
+            color = MaterialTheme.colorScheme.primary,
         )
 
         Spacer(Modifier.width(20.dp))
@@ -218,7 +239,7 @@ private fun NumericAddStepper(
             onClick = {
                 val newVal = (currentVal + 0.25).coerceAtMost(4.00)
                 onValueChange(formatAddValue(newVal))
-            }
+            },
         )
     }
 }
@@ -228,7 +249,7 @@ private fun CircularStepperButton(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     contentDescription: String,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Surface(
         onClick = onClick,
@@ -236,7 +257,7 @@ private fun CircularStepperButton(
         shape = CircleShape,
         color = SurfaceDark,
         contentColor = TextPrimaryDark,
-        tonalElevation = 0.dp
+        tonalElevation = 0.dp,
     ) {
         Box(contentAlignment = Alignment.Center) {
             Icon(icon, contentDescription = contentDescription, modifier = Modifier.size(22.dp))
@@ -244,5 +265,4 @@ private fun CircularStepperButton(
     }
 }
 
-private fun formatAddValue(value: Double): String =
-    "+%.2f".format(Locale.US, value)
+private fun formatAddValue(value: Double): String = "+%.2f".format(Locale.US, value)

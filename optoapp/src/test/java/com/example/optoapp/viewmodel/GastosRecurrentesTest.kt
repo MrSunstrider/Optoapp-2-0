@@ -1,15 +1,14 @@
 package com.example.optoapp.viewmodel
 
 import com.example.optoapp.data.gastooperativo.GastoOperativoEntity
-import java.math.BigDecimal
 import org.junit.Assert.*
 import org.junit.Test
+import java.math.BigDecimal
 import java.time.LocalDate
 
 class GastosRecurrentesTest {
 
-    private fun autoGenerar(templates: List<GastoOperativoEntity>, existentes: List<GastoOperativoEntity>, mes: LocalDate) =
-        GastosViewModel.autoGenerarRecurrentes(templates, existentes, mes)
+    private fun autoGenerar(templates: List<GastoOperativoEntity>, existentes: List<GastoOperativoEntity>, mes: LocalDate) = GastosViewModel.autoGenerarRecurrentes(templates, existentes, mes)
 
     @Test
     fun `nuevo gasto tiene isRecurring false por defecto`() {
@@ -76,8 +75,16 @@ class GastosRecurrentesTest {
 
     @Test
     fun `CATEGORIAS contains exactly DB CHECK constraint values`() {
-        val expected = setOf("alquiler", "servicios", "personal", "proveedores",
-            "insumos", "marketing", "impuestos", "otro")
+        val expected = setOf(
+            "alquiler",
+            "servicios",
+            "personal",
+            "proveedores",
+            "insumos",
+            "marketing",
+            "impuestos",
+            "otro",
+        )
         assertEquals(expected, GastosViewModel.CATEGORIAS.toSet())
         assertEquals(8, GastosViewModel.CATEGORIAS.size)
     }

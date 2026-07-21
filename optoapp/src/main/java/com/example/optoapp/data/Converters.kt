@@ -1,9 +1,9 @@
 package com.example.optoapp.data
 
 import androidx.room.TypeConverter
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -21,7 +21,5 @@ class Converters {
     fun fromLocalDate(value: LocalDate?): String? = value?.format(isoFormatter)
 
     @TypeConverter
-    fun toLocalDate(value: String?): LocalDate? =
-        value?.takeIf { it.isNotBlank() }?.let { LocalDate.parse(it, isoFormatter) }
-
+    fun toLocalDate(value: String?): LocalDate? = value?.takeIf { it.isNotBlank() }?.let { LocalDate.parse(it, isoFormatter) }
 }

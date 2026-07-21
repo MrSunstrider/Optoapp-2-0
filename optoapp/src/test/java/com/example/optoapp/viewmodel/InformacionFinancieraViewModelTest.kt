@@ -3,22 +3,17 @@ package com.example.optoapp.viewmodel
 import com.example.optoapp.data.ContextoFinanciero
 import com.example.optoapp.data.DispensacionFinancieraRepository
 import com.example.optoapp.data.DispensacionOptica
-import com.example.optoapp.data.Resource
 import com.example.optoapp.data.Pago
+import com.example.optoapp.data.Resource
 import com.example.optoapp.data.SessionManager
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import io.mockk.coEvery
-import io.mockk.coVerify
-import io.mockk.coVerifyOrder
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
-import io.mockk.slot
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -27,7 +22,6 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import java.time.LocalDate
@@ -50,17 +44,23 @@ class InformacionFinancieraViewModelTest {
         pacienteNombre = "Juan Perez",
         pacienteId = "pac-1",
         fecha = testDate,
-        descripcion = "Monofocal"
+        descripcion = "Monofocal",
     )
 
     private val testPagos = listOf(
         Pago(id = "p-1", dispensacionId = dispId, fecha = testDate, tipo = "Abono", monto = 50.0, metodoPago = "Efectivo", opticaId = "optica-test"),
-        Pago(id = "p-2", dispensacionId = dispId, fecha = testDate, tipo = "Abono", monto = 30.0, metodoPago = "Tarjeta", opticaId = "optica-test")
+        Pago(id = "p-2", dispensacionId = dispId, fecha = testDate, tipo = "Abono", monto = 30.0, metodoPago = "Tarjeta", opticaId = "optica-test"),
     )
 
     private val testDispensacion = DispensacionOptica(
-        id = dispId, ot = "OT-2026-0001", pacienteId = "pac-1", fecha = testDate,
-        opticaId = "optica-test", tipoLente = "Monofocal", montoTotal = 150.0, estadoEntrega = "Pendiente"
+        id = dispId,
+        ot = "OT-2026-0001",
+        pacienteId = "pac-1",
+        fecha = testDate,
+        opticaId = "optica-test",
+        tipoLente = "Monofocal",
+        montoTotal = 150.0,
+        estadoEntrega = "Pendiente",
     )
 
     @Before

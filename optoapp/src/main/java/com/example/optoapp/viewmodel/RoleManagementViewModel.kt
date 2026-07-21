@@ -20,13 +20,13 @@ data class RoleManagementUiState(
     val roleInput: String = "especialista",
     val loading: Boolean = false,
     val message: String? = null,
-    val error: String? = null
+    val error: String? = null,
 )
 
 @HiltViewModel
 class RoleManagementViewModel @Inject constructor(
     private val membershipRepository: MembershipRepository,
-    private val sessionManager: SessionManager
+    private val sessionManager: SessionManager,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(RoleManagementUiState())
@@ -58,7 +58,7 @@ class RoleManagementViewModel @Inject constructor(
         val result = membershipRepository.assignRoleByEmail(
             opticaId = opticaId,
             email = state.emailInput,
-            rol = state.roleInput
+            rol = state.roleInput,
         )
         if (result.isSuccess) {
             val rows = membershipRepository.fetchMembersForOptica(opticaId)
@@ -67,14 +67,14 @@ class RoleManagementViewModel @Inject constructor(
                     members = rows,
                     loading = false,
                     message = "Rol asignado correctamente.",
-                    emailInput = ""
+                    emailInput = "",
                 )
             }
         } else {
             _uiState.update {
                 it.copy(
                     loading = false,
-                    error = result.exceptionOrNull()?.message ?: "No se pudo asignar el rol."
+                    error = result.exceptionOrNull()?.message ?: "No se pudo asignar el rol.",
                 )
             }
         }

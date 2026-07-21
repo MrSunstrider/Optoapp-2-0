@@ -27,7 +27,7 @@ class ConflictosScreenSnapshotTest {
         remoteSnapshot = """{"id":"paciente-ui-001","nombre":"Juan Remoto","telefono":"555-0999"}""",
         baseSnapshot = """{"id":"paciente-ui-001","nombre":"Juan Base","telefono":"555-0000"}""",
         localData = """{"id":"paciente-ui-001","nombre":"Juan Local","telefono":"555-0100"}""",
-        remoteData = """{"id":"paciente-ui-001","nombre":"Juan Remoto","telefono":"555-0999"}"""
+        remoteData = """{"id":"paciente-ui-001","nombre":"Juan Remoto","telefono":"555-0999"}""",
     )
 
     // Conflict WITHOUT snapshot data — should show timestamp display
@@ -37,14 +37,14 @@ class ConflictosScreenSnapshotTest {
         entityType = "paciente",
         localSnapshot = "2026-06-22T09:00:00Z",
         remoteSnapshot = "2026-06-22T10:00:00Z",
-        baseSnapshot = "{}"
+        baseSnapshot = "{}",
     )
 
     @Test
     fun conflictRecord_withBaseSnapshot_hasSnapshotData() {
         assertTrue(
             "Conflict with non-empty baseSnapshot should have snapshot data",
-            conflictWithSnapshot.baseSnapshot.isNotBlank() && conflictWithSnapshot.baseSnapshot != "{}"
+            conflictWithSnapshot.baseSnapshot.isNotBlank() && conflictWithSnapshot.baseSnapshot != "{}",
         )
     }
 
@@ -52,7 +52,7 @@ class ConflictosScreenSnapshotTest {
     fun conflictRecord_withoutBaseSnapshot_hasNoSnapshotData() {
         assertFalse(
             "Conflict with empty baseSnapshot should NOT have snapshot data",
-            conflictWithoutSnapshot.baseSnapshot.isNotBlank() && conflictWithoutSnapshot.baseSnapshot != "{}"
+            conflictWithoutSnapshot.baseSnapshot.isNotBlank() && conflictWithoutSnapshot.baseSnapshot != "{}",
         )
     }
 

@@ -13,8 +13,8 @@ import androidx.work.WorkerParameters
 import com.example.optoapp.MainActivity
 import com.example.optoapp.R
 import com.example.optoapp.data.resumendiario.ResumenDiarioDao
-import com.example.optoapp.util.formatAsCurrency
 import com.example.optoapp.data.resumendiario.ResumenDiarioEntity
+import com.example.optoapp.util.formatAsCurrency
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import java.time.LocalDate
@@ -23,7 +23,7 @@ import java.time.LocalDate
 class MiNegocioWidgetWorker @AssistedInject constructor(
     @Assisted appContext: Context,
     @Assisted workerParams: WorkerParameters,
-    private val dao: ResumenDiarioDao
+    private val dao: ResumenDiarioDao,
 ) : CoroutineWorker(appContext, workerParams) {
 
     override suspend fun doWork(): Result {
@@ -40,7 +40,7 @@ class MiNegocioWidgetWorker @AssistedInject constructor(
         }
 
         val appWidgetIds = getAppWidgetManager(context).getAppWidgetIds(
-            ComponentName(context, MiNegocioWidgetProvider::class.java)
+            ComponentName(context, MiNegocioWidgetProvider::class.java),
         )
 
         return doWorkCore(context, entity, today, appWidgetIds) { ids, views ->
@@ -54,7 +54,7 @@ class MiNegocioWidgetWorker @AssistedInject constructor(
             entity: ResumenDiarioEntity?,
             today: String,
             appWidgetIds: IntArray,
-            updateWidget: (appWidgetIds: IntArray, views: RemoteViews) -> Unit
+            updateWidget: (appWidgetIds: IntArray, views: RemoteViews) -> Unit,
         ): ListenableWorker.Result {
             val ventas = entity?.ventasMontoTotal ?: 0.0
             val porCobrar = entity?.saldoPendienteTotal ?: 0.0
@@ -68,8 +68,10 @@ class MiNegocioWidgetWorker @AssistedInject constructor(
                     flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                 }
                 val pendingIntent = PendingIntent.getActivity(
-                    context, 0, intent,
-                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                    context,
+                    0,
+                    intent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
                 )
                 views.setOnClickPendingIntent(R.id.widget_container, pendingIntent)
 
@@ -79,8 +81,7 @@ class MiNegocioWidgetWorker @AssistedInject constructor(
             return ListenableWorker.Result.success()
         }
 
-        private fun getAppWidgetManager(context: Context): AppWidgetManager =
-            AppWidgetManager.getInstance(context)
+        private fun getAppWidgetManager(context: Context): AppWidgetManager = AppWidgetManager.getInstance(context)
 
         fun readOpticaId(context: Context): String = try {
             val prefs = context.getSharedPreferences("secure_session_prefs", Context.MODE_PRIVATE)

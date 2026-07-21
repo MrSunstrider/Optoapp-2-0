@@ -2,7 +2,6 @@ package com.example.optoapp.domain
 
 import org.junit.Assert.assertEquals
 import org.junit.Test
-import java.time.LocalDate
 
 /**
  * Tests that PagoRemoto and ServicioRemoto normalize "Sin especificar" correctly
@@ -16,7 +15,7 @@ class SyncFinanzasDtoNormalizationTest {
             id = "p1",
             fecha = "2026-06-17",
             metodoPago = "Sin especificar",
-            opticaId = "optica-1"
+            opticaId = "optica-1",
         )
         val entity = remoto.toEntity()
         assertEquals("", entity.metodoPago)
@@ -28,7 +27,7 @@ class SyncFinanzasDtoNormalizationTest {
             id = "p2",
             fecha = "2026-06-17",
             metodoPago = "Efectivo",
-            opticaId = "optica-1"
+            opticaId = "optica-1",
         )
         val entity = remoto.toEntity()
         assertEquals("Efectivo", entity.metodoPago)
@@ -40,7 +39,7 @@ class SyncFinanzasDtoNormalizationTest {
             id = "p3",
             fecha = "2026-06-17",
             metodoPago = "",
-            opticaId = "optica-1"
+            opticaId = "optica-1",
         )
         val entity = remoto.toEntity()
         assertEquals("", entity.metodoPago)
@@ -52,7 +51,7 @@ class SyncFinanzasDtoNormalizationTest {
             id = "s1",
             fecha = "2026-06-17",
             metodoPago = "Sin especificar",
-            opticaId = "optica-1"
+            opticaId = "optica-1",
         )
         val entity = remoto.toEntity()
         assertEquals("", entity.metodoPago)
@@ -64,7 +63,7 @@ class SyncFinanzasDtoNormalizationTest {
             id = "s2",
             fecha = "2026-06-17",
             metodoPago = "Tarjeta",
-            opticaId = "optica-1"
+            opticaId = "optica-1",
         )
         val entity = remoto.toEntity()
         assertEquals("Tarjeta", entity.metodoPago)
@@ -76,18 +75,18 @@ class SyncFinanzasDtoNormalizationTest {
             id = "p",
             fecha = "2026-06-17",
             metodoPago = "Sin especificar",
-            opticaId = "optica-1"
+            opticaId = "optica-1",
         )
         val servRemoto = ServicioRemoto(
             id = "s",
             fecha = "2026-06-17",
             metodoPago = "Sin especificar",
-            opticaId = "optica-1"
+            opticaId = "optica-1",
         )
         assertEquals(
             "Both should normalize to the same value",
             pagoRemoto.toEntity().metodoPago,
-            servRemoto.toEntity().metodoPago
+            servRemoto.toEntity().metodoPago,
         )
     }
 

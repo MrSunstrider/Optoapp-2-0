@@ -26,7 +26,7 @@ interface EvaluacionDao {
 
     @Deprecated(
         message = "Use getEvaluacionesListByOptica to enforce multi-tenant isolation",
-        replaceWith = ReplaceWith("getEvaluacionesListByOptica(opticaId)")
+        replaceWith = ReplaceWith("getEvaluacionesListByOptica(opticaId)"),
     )
     @Query("SELECT * FROM evaluaciones")
     suspend fun getAllEvaluaciones(): List<EvaluacionClinica>
@@ -36,7 +36,7 @@ interface EvaluacionDao {
 
     @Deprecated(
         message = "Use countEvaluacionesInRangeForOptica to enforce multi-tenant isolation",
-        replaceWith = ReplaceWith("countEvaluacionesInRangeForOptica(start, end, opticaId)")
+        replaceWith = ReplaceWith("countEvaluacionesInRangeForOptica(start, end, opticaId)"),
     )
     @Query("SELECT COUNT(*) FROM evaluaciones WHERE fecha >= :start AND fecha <= :end")
     fun countEvaluacionesInRange(start: LocalDate, end: LocalDate): Flow<Int>
@@ -52,7 +52,7 @@ interface EvaluacionDao {
         AND proximaCita >= :start
         AND proximaCita <= :end
         ORDER BY proximaCita ASC
-        """
+        """,
     )
     fun getEvaluacionesConProximaCitaEnRango(opticaId: String, start: LocalDate, end: LocalDate): Flow<List<EvaluacionClinica>>
 

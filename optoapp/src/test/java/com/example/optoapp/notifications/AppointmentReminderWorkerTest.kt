@@ -26,7 +26,10 @@ class AppointmentReminderWorkerTest {
             patientName = "Juan Pérez",
             evaluationId = "eval-123",
             hasPermission = true,
-            showNotification = { name, id -> notifiedName = name; notifiedId = id }
+            showNotification = { name, id ->
+                notifiedName = name
+                notifiedId = id
+            },
         )
 
         assertEquals(ListenableWorker.Result.success(), result)
@@ -44,7 +47,7 @@ class AppointmentReminderWorkerTest {
             patientName = "Juan Pérez",
             evaluationId = "eval-123",
             hasPermission = false,
-            showNotification = { _, _ -> notified = true }
+            showNotification = { _, _ -> notified = true },
         )
 
         assertEquals(ListenableWorker.Result.success(), result)
@@ -59,7 +62,7 @@ class AppointmentReminderWorkerTest {
             patientName = null,
             evaluationId = "eval-123",
             hasPermission = true,
-            showNotification = { _, _ -> }
+            showNotification = { _, _ -> },
         )
 
         assertEquals(ListenableWorker.Result.failure(), result)
@@ -71,7 +74,7 @@ class AppointmentReminderWorkerTest {
             patientName = "Juan Pérez",
             evaluationId = null,
             hasPermission = true,
-            showNotification = { _, _ -> }
+            showNotification = { _, _ -> },
         )
 
         assertEquals(ListenableWorker.Result.failure(), result)
@@ -83,7 +86,7 @@ class AppointmentReminderWorkerTest {
             patientName = null,
             evaluationId = null,
             hasPermission = true,
-            showNotification = { _, _ -> }
+            showNotification = { _, _ -> },
         )
 
         assertEquals(ListenableWorker.Result.failure(), result)

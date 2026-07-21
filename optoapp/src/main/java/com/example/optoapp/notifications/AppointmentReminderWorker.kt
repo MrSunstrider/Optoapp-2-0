@@ -16,22 +16,24 @@ import dagger.assisted.AssistedInject
 class AppointmentReminderWorker @AssistedInject constructor(
     @Assisted appContext: Context,
     @Assisted workerParams: WorkerParameters,
-    private val notificationHelper: NotificationHelper
+    private val notificationHelper: NotificationHelper,
 ) : CoroutineWorker(appContext, workerParams) {
 
     override suspend fun doWork(): Result {
         val hasPermission = if (Build.VERSION.SDK_INT >= 33) {
             ContextCompat.checkSelfPermission(
                 applicationContext,
-                Manifest.permission.POST_NOTIFICATIONS
+                Manifest.permission.POST_NOTIFICATIONS,
             ) == PackageManager.PERMISSION_GRANTED
-        } else true
+        } else {
+            true
+        }
 
         return doWorkCore(
             patientName = inputData.getString("patient_name"),
             evaluationId = inputData.getString("evaluation_id"),
             hasPermission = hasPermission,
-            showNotification = { name, id -> notificationHelper.showNotification(name, id) }
+            showNotification = { name, id -> notificationHelper.showNotification(name, id) },
         )
     }
 
@@ -40,7 +42,7 @@ class AppointmentReminderWorker @AssistedInject constructor(
             patientName: String?,
             evaluationId: String?,
             hasPermission: Boolean,
-            showNotification: (patientName: String, notificationId: Int) -> Unit
+            showNotification: (patientName: String, notificationId: Int) -> Unit,
         ): ListenableWorker.Result {
             if (patientName == null || evaluationId == null) return ListenableWorker.Result.failure()
             if (!hasPermission) return ListenableWorker.Result.success()

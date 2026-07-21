@@ -24,7 +24,7 @@ class BackupRestoreCoordinator @Inject constructor(
     private val evaluacionDao: EvaluacionDao,
     private val pacienteDao: PacienteDao,
     private val postSaveSyncScheduler: Lazy<PostSaveSyncScheduler>,
-    private val database: OptoDatabase
+    private val database: OptoDatabase,
 ) {
     companion object {
         private const val TAG = "BackupRestoreCoordinator"
@@ -43,16 +43,14 @@ class BackupRestoreCoordinator @Inject constructor(
         }
     }
 
-    suspend fun getBackupDataForOptica(opticaId: String): BackupData {
-        return BackupData(
-            sourceOpticaId = opticaId,
-            pacientes = pacienteRepo.getPacientesSnapshotForOptica(opticaId),
-            evaluaciones = pacienteRepo.getEvaluacionesSnapshotForOptica(opticaId),
-            dispensaciones = dispensacionRepo.getDispensacionesSnapshotForOptica(opticaId),
-            pagos = dispensacionRepo.getPagosSnapshotForOptica(opticaId),
-            serviciosExtra = dispensacionRepo.getServiciosSnapshotForOptica(opticaId)
-        )
-    }
+    suspend fun getBackupDataForOptica(opticaId: String): BackupData = BackupData(
+        sourceOpticaId = opticaId,
+        pacientes = pacienteRepo.getPacientesSnapshotForOptica(opticaId),
+        evaluaciones = pacienteRepo.getEvaluacionesSnapshotForOptica(opticaId),
+        dispensaciones = dispensacionRepo.getDispensacionesSnapshotForOptica(opticaId),
+        pagos = dispensacionRepo.getPagosSnapshotForOptica(opticaId),
+        serviciosExtra = dispensacionRepo.getServiciosSnapshotForOptica(opticaId),
+    )
 
     suspend fun restoreBackup(backupData: BackupData, currentOpticaId: String) {
         clearAllData(currentOpticaId)
@@ -124,7 +122,7 @@ class BackupRestoreCoordinator @Inject constructor(
         distrito = distrito ?: "",
         ocupacion = ocupacion ?: "",
         acompanante = acompanante ?: "",
-        hobbies = hobbies ?: ""
+        hobbies = hobbies ?: "",
     )
 
     private fun EvaluacionClinica.withDefaults(): EvaluacionClinica = this

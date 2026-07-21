@@ -26,7 +26,6 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -52,7 +51,7 @@ class DispensacionViewModelReclamoTest {
     private val originalDispensacion = DispensacionOptica(
         id = originalId, ot = "OT-2026-0001", pacienteId = "pac-1", fecha = testDate,
         opticaId = "optica-test", tipoLente = "Monofocal", montoTotal = 300.0,
-        montoPagado = 200.0, estadoEntrega = "Pendiente", metodoPago = "Efectivo"
+        montoPagado = 200.0, estadoEntrega = "Pendiente", metodoPago = "Efectivo",
     )
 
     @Before
@@ -86,8 +85,13 @@ class DispensacionViewModelReclamoTest {
     fun `crearReclamo marks original as Reclamada`() = runTest {
         coEvery { calcularMontoPagadoUseCase(originalId) } returns 200.0
         viewModel = DispensacionViewModel(
-            repository, sessionManager, postSaveSyncScheduler, stockHelper, calcularMontoPagadoUseCase,
-            costoProductoDao, costoBiseladoDao
+            repository,
+            sessionManager,
+            postSaveSyncScheduler,
+            stockHelper,
+            calcularMontoPagadoUseCase,
+            costoProductoDao,
+            costoBiseladoDao,
         )
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -103,8 +107,13 @@ class DispensacionViewModelReclamoTest {
     fun `crearReclamo creates new dispensacion with reclamoOrigenId`() = runTest {
         coEvery { calcularMontoPagadoUseCase(originalId) } returns 200.0
         viewModel = DispensacionViewModel(
-            repository, sessionManager, postSaveSyncScheduler, stockHelper, calcularMontoPagadoUseCase,
-            costoProductoDao, costoBiseladoDao
+            repository,
+            sessionManager,
+            postSaveSyncScheduler,
+            stockHelper,
+            calcularMontoPagadoUseCase,
+            costoProductoDao,
+            costoBiseladoDao,
         )
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -124,8 +133,13 @@ class DispensacionViewModelReclamoTest {
     fun `crearReclamo diff greater than zero does not create refund Pago`() = runTest {
         coEvery { calcularMontoPagadoUseCase(originalId) } returns 200.0
         viewModel = DispensacionViewModel(
-            repository, sessionManager, postSaveSyncScheduler, stockHelper, calcularMontoPagadoUseCase,
-            costoProductoDao, costoBiseladoDao
+            repository,
+            sessionManager,
+            postSaveSyncScheduler,
+            stockHelper,
+            calcularMontoPagadoUseCase,
+            costoProductoDao,
+            costoBiseladoDao,
         )
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -143,8 +157,13 @@ class DispensacionViewModelReclamoTest {
     fun `crearReclamo diff less than zero creates refund Pago with negative monto`() = runTest {
         coEvery { calcularMontoPagadoUseCase(originalId) } returns 200.0
         viewModel = DispensacionViewModel(
-            repository, sessionManager, postSaveSyncScheduler, stockHelper, calcularMontoPagadoUseCase,
-            costoProductoDao, costoBiseladoDao
+            repository,
+            sessionManager,
+            postSaveSyncScheduler,
+            stockHelper,
+            calcularMontoPagadoUseCase,
+            costoProductoDao,
+            costoBiseladoDao,
         )
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -167,8 +186,13 @@ class DispensacionViewModelReclamoTest {
     fun `crearReclamo diff equals zero does not create any Pago`() = runTest {
         coEvery { calcularMontoPagadoUseCase(originalId) } returns 200.0
         viewModel = DispensacionViewModel(
-            repository, sessionManager, postSaveSyncScheduler, stockHelper, calcularMontoPagadoUseCase,
-            costoProductoDao, costoBiseladoDao
+            repository,
+            sessionManager,
+            postSaveSyncScheduler,
+            stockHelper,
+            calcularMontoPagadoUseCase,
+            costoProductoDao,
+            costoBiseladoDao,
         )
         testDispatcher.scheduler.advanceUntilIdle()
 

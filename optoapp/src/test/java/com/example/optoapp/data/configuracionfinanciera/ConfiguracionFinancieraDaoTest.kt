@@ -25,7 +25,7 @@ class ConfiguracionFinancieraDaoTest {
     fun setUp() {
         db = Room.inMemoryDatabaseBuilder(
             ApplicationProvider.getApplicationContext(),
-            OptoDatabase::class.java
+            OptoDatabase::class.java,
         ).allowMainThreadQueries().build()
         dao = db.configuracionFinancieraDao()
     }
@@ -42,7 +42,7 @@ class ConfiguracionFinancieraDaoTest {
             opticaId = "optica1",
             margenNetoObjetivo = 15.0,
             deudaViejaAlertaDias = 30,
-            minVentasParaRecomendar = 5
+            minVentasParaRecomendar = 5,
         )
         dao.upsert(config)
 
@@ -62,7 +62,7 @@ class ConfiguracionFinancieraDaoTest {
             opticaId = "optica2",
             margenNetoObjetivo = 25.0,
             deudaViejaAlertaDias = 45,
-            minVentasParaRecomendar = 10
+            minVentasParaRecomendar = 10,
         )
         dao.upsert(config)
 
@@ -85,14 +85,14 @@ class ConfiguracionFinancieraDaoTest {
         val config1 = ConfiguracionFinancieraEntity(
             opticaId = "optica1",
             margenNetoObjetivo = 15.0,
-            deudaViejaAlertaDias = 30
+            deudaViejaAlertaDias = 30,
         )
         dao.upsert(config1)
 
         val config2 = ConfiguracionFinancieraEntity(
             opticaId = "optica1",
             margenNetoObjetivo = 20.0,
-            deudaViejaAlertaDias = 60
+            deudaViejaAlertaDias = 60,
         )
         dao.upsert(config2)
 

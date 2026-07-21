@@ -82,10 +82,13 @@ class SyncFlowTest {
         // Create admin client with service_role key (bypasses RLS for setup).
         adminClient = createSupabaseClient(
             supabaseUrl = url,
-            supabaseKey = serviceKey
+            supabaseKey = serviceKey,
         ) {
             defaultSerializer = io.github.jan.supabase.serializer.KotlinXSerializer(
-                kotlinx.serialization.json.Json { ignoreUnknownKeys = true; coerceInputValues = true }
+                kotlinx.serialization.json.Json {
+                    ignoreUnknownKeys = true
+                    coerceInputValues = true
+                },
             )
             install(Postgrest)
             install(Auth)
@@ -101,31 +104,38 @@ class SyncFlowTest {
             ?: error("Failed to create test user")
 
         // Create test optica.
-        admin.postgrest["opticas"].upsert(mapOf(
-            "id" to testOpticaId,
-            "nombre" to "Test Optica $runId",
-            "plan" to "free",
-            "plan_code" to "free",
-            "max_pacientes_por_optica" to 100,
-            "max_usuarios_por_optica" to 5,
-            "max_opticas" to 1
-        ))
+        admin.postgrest["opticas"].upsert(
+            mapOf(
+                "id" to testOpticaId,
+                "nombre" to "Test Optica $runId",
+                "plan" to "free",
+                "plan_code" to "free",
+                "max_pacientes_por_optica" to 100,
+                "max_usuarios_por_optica" to 5,
+                "max_opticas" to 1,
+            ),
+        )
 
         // Create membership (admin role) so RLS allows the test user to access optica data.
-        admin.postgrest["usuario_optica"].upsert(mapOf(
-            "id" to "membership-$runId",
-            "usuario_id" to authUserId,
-            "optica_id" to testOpticaId,
-            "rol" to "admin"
-        ))
+        admin.postgrest["usuario_optica"].upsert(
+            mapOf(
+                "id" to "membership-$runId",
+                "usuario_id" to authUserId,
+                "optica_id" to testOpticaId,
+                "rol" to "admin",
+            ),
+        )
 
         // Create user client with anon key, then sign in as the test user.
         userClient = createSupabaseClient(
             supabaseUrl = url,
-            supabaseKey = anonKey
+            supabaseKey = anonKey,
         ) {
             defaultSerializer = io.github.jan.supabase.serializer.KotlinXSerializer(
-                kotlinx.serialization.json.Json { ignoreUnknownKeys = true; coerceInputValues = true }
+                kotlinx.serialization.json.Json {
+                    ignoreUnknownKeys = true
+                    coerceInputValues = true
+                },
             )
             install(Postgrest)
             install(Auth)
@@ -166,20 +176,22 @@ class SyncFlowTest {
         // Arrange: insert patient into Room.
         val paciente = TestDataFactory.createTestPaciente(
             opticaId = testOpticaId,
-            nombreCompleto = "Sync E2E Patient $runId"
+            nombreCompleto = "Sync E2E Patient $runId",
         )
         pacienteDao.insertPaciente(paciente)
 
         // Act: upsert the patient directly to Supabase (as the authenticated user).
         // In production, this is done by the sync coordinator after reading from Room.
-        client.postgrest["pacientes"].upsert(mapOf(
-            "id" to paciente.id,
-            "nombre_completo" to paciente.nombreCompleto,
-            "edad" to paciente.edad,
-            "telefono" to paciente.telefono,
-            "optica_id" to testOpticaId,
-            "fecha_creacion" to paciente.fechaCreacion.toString()
-        ))
+        client.postgrest["pacientes"].upsert(
+            mapOf(
+                "id" to paciente.id,
+                "nombre_completo" to paciente.nombreCompleto,
+                "edad" to paciente.edad,
+                "telefono" to paciente.telefono,
+                "optica_id" to testOpticaId,
+                "fecha_creacion" to paciente.fechaCreacion.toString(),
+            ),
+        )
 
         // Assert: poll Supabase until the patient appears (30s timeout).
         val startTime = System.currentTimeMillis()
@@ -207,35 +219,39 @@ class SyncFlowTest {
         // Arrange: insert linked patient + evaluation into Room.
         val paciente = TestDataFactory.createTestPaciente(
             opticaId = testOpticaId,
-            nombreCompleto = "Eval E2E Patient $runId"
+            nombreCompleto = "Eval E2E Patient $runId",
         )
         pacienteDao.insertPaciente(paciente)
 
         val evaluacion = TestDataFactory.createTestEvaluacion(
             pacienteId = paciente.id,
             opticaId = testOpticaId,
-            motivoConsulta = "E2E sync evaluation test"
+            motivoConsulta = "E2E sync evaluation test",
         )
         evaluacionDao.insertEvaluacion(evaluacion)
 
         // Act: upsert both to Supabase as authenticated user.
         // The app sync coordinator does paciente first, then historial.
-        client.postgrest["pacientes"].upsert(mapOf(
-            "id" to paciente.id,
-            "nombre_completo" to paciente.nombreCompleto,
-            "edad" to paciente.edad,
-            "telefono" to paciente.telefono,
-            "optica_id" to testOpticaId,
-            "fecha_creacion" to paciente.fechaCreacion.toString()
-        ))
-        client.postgrest["evaluaciones"].upsert(mapOf(
-            "id" to evaluacion.id,
-            "paciente_id" to paciente.id,
-            "optica_id" to testOpticaId,
-            "fecha" to evaluacion.fecha.toString(),
-            "motivo_consulta" to evaluacion.motivoConsulta,
-            "cita_estado" to evaluacion.citaEstado
-        ))
+        client.postgrest["pacientes"].upsert(
+            mapOf(
+                "id" to paciente.id,
+                "nombre_completo" to paciente.nombreCompleto,
+                "edad" to paciente.edad,
+                "telefono" to paciente.telefono,
+                "optica_id" to testOpticaId,
+                "fecha_creacion" to paciente.fechaCreacion.toString(),
+            ),
+        )
+        client.postgrest["evaluaciones"].upsert(
+            mapOf(
+                "id" to evaluacion.id,
+                "paciente_id" to paciente.id,
+                "optica_id" to testOpticaId,
+                "fecha" to evaluacion.fecha.toString(),
+                "motivo_consulta" to evaluacion.motivoConsulta,
+                "cita_estado" to evaluacion.citaEstado,
+            ),
+        )
 
         // Assert: poll Supabase until the evaluation appears.
         val startTime = System.currentTimeMillis()
@@ -264,7 +280,7 @@ class SyncFlowTest {
         // Arrange: insert patient with PENDING sync marker.
         val paciente = TestDataFactory.createTestPaciente(
             opticaId = testOpticaId,
-            nombreCompleto = "Sync Chain Patient $runId"
+            nombreCompleto = "Sync Chain Patient $runId",
         )
         pacienteDao.insertPaciente(paciente)
         syncDao.upsert(
@@ -273,8 +289,8 @@ class SyncFlowTest {
                 entityType = "paciente",
                 entityId = paciente.id,
                 status = "pending",
-                updatedAt = System.currentTimeMillis()
-            )
+                updatedAt = System.currentTimeMillis(),
+            ),
         )
 
         // Act: simulate the sync coordinator calling the use case.
@@ -297,7 +313,7 @@ class SyncFlowTest {
         // Arrange: create data while offline.
         val paciente = TestDataFactory.createTestPaciente(
             opticaId = testOpticaId,
-            nombreCompleto = "Offline Patient $runId"
+            nombreCompleto = "Offline Patient $runId",
         )
         pacienteDao.insertPaciente(paciente)
 
@@ -308,8 +324,8 @@ class SyncFlowTest {
                 entityType = "paciente",
                 entityId = paciente.id,
                 status = "pending",
-                updatedAt = System.currentTimeMillis()
-            )
+                updatedAt = System.currentTimeMillis(),
+            ),
         )
 
         // Assert: data persists in Room.

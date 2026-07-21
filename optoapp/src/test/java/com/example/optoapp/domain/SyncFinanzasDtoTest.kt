@@ -4,7 +4,6 @@ import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.FinanzasRemoteDefaults
 import com.example.optoapp.data.Pago
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -76,19 +75,20 @@ class SyncFinanzasDtoTest {
         montoTotal: Double = 0.0,
         montoPagado: Double = 0.0,
         fechaVencimientoGarantia: String? = null,
-        tratamientos: String? = null
+        tratamientos: String? = null,
     ) = DispensacionRemota(
         id = id, ot = ot, pacienteId = pacienteId, fecha = fecha, opticaId = opticaId,
         montoTotal = montoTotal, montoPagado = montoPagado,
         fechaVencimientoGarantia = fechaVencimientoGarantia,
-        tratamientos = tratamientos
+        tratamientos = tratamientos,
     )
 
     @Test
     fun dispensacionRemota_toEntity_normalValues_passesThrough() {
         val remoto = makeDispensacionRemota(
-            montoTotal = 250.0, montoPagado = 100.0,
-            tratamientos = "AntiReflejo, Fotocromático"
+            montoTotal = 250.0,
+            montoPagado = 100.0,
+            tratamientos = "AntiReflejo, Fotocromático",
         )
         val entity = remoto.toEntity()
         assertEquals("test-disp-id", entity.id)
@@ -139,8 +139,13 @@ class SyncFinanzasDtoTest {
     @Test
     fun pagoRemoto_toEntity_normalValues_passesThrough() {
         val remoto = PagoRemoto(
-            id = "pago-1", dispensacionId = "disp-1", fecha = "2024-06-15",
-            tipo = "Abono", monto = 50.0, metodoPago = "Efectivo", opticaId = "test-optica"
+            id = "pago-1",
+            dispensacionId = "disp-1",
+            fecha = "2024-06-15",
+            tipo = "Abono",
+            monto = 50.0,
+            metodoPago = "Efectivo",
+            opticaId = "test-optica",
         )
         val entity = remoto.toEntity()
         assertEquals("pago-1", entity.id)
@@ -151,8 +156,12 @@ class SyncFinanzasDtoTest {
     @Test
     fun pagoRemoto_toEntity_blankDispensacionId_returnsNull() {
         val remoto = PagoRemoto(
-            id = "pago-2", dispensacionId = "  ", fecha = "2024-06-15",
-            tipo = "Abono", monto = 0.0, opticaId = "test-optica"
+            id = "pago-2",
+            dispensacionId = "  ",
+            fecha = "2024-06-15",
+            tipo = "Abono",
+            monto = 0.0,
+            opticaId = "test-optica",
         )
         val entity = remoto.toEntity()
         assertNull(entity.dispensacionId)
@@ -161,8 +170,12 @@ class SyncFinanzasDtoTest {
     @Test
     fun pagoRemoto_toEntity_nullNota_returnsEmptyString() {
         val remoto = PagoRemoto(
-            id = "pago-3", fecha = "2024-06-15",
-            tipo = "Abono", monto = 0.0, nota = null, opticaId = "test-optica"
+            id = "pago-3",
+            fecha = "2024-06-15",
+            tipo = "Abono",
+            monto = 0.0,
+            nota = null,
+            opticaId = "test-optica",
         )
         val entity = remoto.toEntity()
         assertEquals("", entity.nota)
@@ -177,7 +190,7 @@ class SyncFinanzasDtoTest {
             fecha = LocalDate.of(2024, 6, 15), opticaId = "test-optica",
             montoTotal = 250.0, montoPagado = 100.0,
             tratamientos = listOf("AR", "FOT"),
-            fechaVencimientoGarantia = LocalDate.of(2025, 6, 15)
+            fechaVencimientoGarantia = LocalDate.of(2025, 6, 15),
         )
         val remoto = original.toRemoto()
         assertEquals(original.id, remoto.id)
@@ -193,9 +206,14 @@ class SyncFinanzasDtoTest {
     @Test
     fun pago_toRemoto_roundTrip() {
         val original = Pago(
-            id = "p1", dispensacionId = "d1", fecha = LocalDate.of(2024, 6, 15),
-            tipo = "Abono", monto = 50.0, metodoPago = "Efectivo",
-            nota = "Primer abono", opticaId = "test-optica"
+            id = "p1",
+            dispensacionId = "d1",
+            fecha = LocalDate.of(2024, 6, 15),
+            tipo = "Abono",
+            monto = 50.0,
+            metodoPago = "Efectivo",
+            nota = "Primer abono",
+            opticaId = "test-optica",
         )
         val remoto = original.toRemoto()
         assertEquals(original.id, remoto.id)
@@ -207,8 +225,12 @@ class SyncFinanzasDtoTest {
     @Test
     fun pago_toRemoto_blankMetodoPago_usesDefault() {
         val original = Pago(
-            id = "p2", fecha = LocalDate.of(2024, 6, 15),
-            tipo = "Abono", monto = 0.0, metodoPago = "  ", opticaId = "test-optica"
+            id = "p2",
+            fecha = LocalDate.of(2024, 6, 15),
+            tipo = "Abono",
+            monto = 0.0,
+            metodoPago = "  ",
+            opticaId = "test-optica",
         )
         val remoto = original.toRemoto()
         assertEquals(FinanzasRemoteDefaults.Pago.METODO_PAGO_VACIO, remoto.metodoPago)
@@ -222,7 +244,7 @@ class SyncFinanzasDtoTest {
             uploadedPagos = 10,
             downloadedDispensaciones = 2,
             downloadedServicios = 1,
-            downloadedPagos = 4
+            downloadedPagos = 4,
         )
     }
 
@@ -236,7 +258,7 @@ class SyncFinanzasDtoTest {
             uploadedPagos = 10,
             downloadedDispensaciones = 2,
             downloadedServicios = 1,
-            downloadedPagos = 4
+            downloadedPagos = 4,
         )
         assertEquals(5, result.uploadedDispensaciones)
         assertEquals(3, result.uploadedServicios)
@@ -251,12 +273,18 @@ class SyncFinanzasDtoTest {
     @Test
     fun mergePacienteData_canonicalTakesPriority() {
         val canonical = paciente(
-            id = "p1", nombre = "Juan Perez", edad = 30, telefono = "999111222",
-            historiaOptometrica = "HO-2024-0001"
+            id = "p1",
+            nombre = "Juan Perez",
+            edad = 30,
+            telefono = "999111222",
+            historiaOptometrica = "HO-2024-0001",
         )
         val duplicate = paciente(
-            id = "p2", nombre = "Juan Perez", edad = 30, telefono = "999333444",
-            historiaOptometrica = "HO-2024-0001"
+            id = "p2",
+            nombre = "Juan Perez",
+            edad = 30,
+            telefono = "999333444",
+            historiaOptometrica = "HO-2024-0001",
         )
         // The merge logic is tested via the package-level function in PacienteRepository.kt
         // We test the same logic contract via a local helper.
@@ -295,7 +323,7 @@ class SyncFinanzasDtoTest {
         telefono: String = "",
         historiaOptometrica: String? = null,
         etiquetas: List<String> = emptyList(),
-        fechaCreacion: LocalDate = LocalDate.now()
+        fechaCreacion: LocalDate = LocalDate.now(),
     ) = com.example.optoapp.data.Paciente(
         id = id,
         nombreCompleto = nombre,
@@ -303,17 +331,15 @@ class SyncFinanzasDtoTest {
         telefono = telefono,
         fechaCreacion = fechaCreacion,
         historiaOptometrica = historiaOptometrica,
-        ultimasEtiquetas = etiquetas
+        ultimasEtiquetas = etiquetas,
     )
 
     /**
      * Replicates the exact merge logic from PacienteRepository.kt's mergePacienteData().
      * Tests the contract, not the implementation details.
      */
-    private fun mergePacienteHelper(canonical: com.example.optoapp.data.Paciente, other: com.example.optoapp.data.Paciente)
-            : com.example.optoapp.data.Paciente {
-        fun chooseText(primary: String?, fallback: String?): String? =
-            primary?.takeIf { it.isNotBlank() } ?: fallback?.takeIf { it.isNotBlank() }
+    private fun mergePacienteHelper(canonical: com.example.optoapp.data.Paciente, other: com.example.optoapp.data.Paciente): com.example.optoapp.data.Paciente {
+        fun chooseText(primary: String?, fallback: String?): String? = primary?.takeIf { it.isNotBlank() } ?: fallback?.takeIf { it.isNotBlank() }
         return canonical.copy(
             nombreCompleto = if (canonical.nombreCompleto.isNotBlank()) canonical.nombreCompleto else other.nombreCompleto,
             edad = maxOf(canonical.edad, other.edad),
@@ -328,8 +354,7 @@ class SyncFinanzasDtoTest {
             ocupacion = chooseText(canonical.ocupacion, other.ocupacion),
             acompanante = chooseText(canonical.acompanante, other.acompanante),
             hobbies = chooseText(canonical.hobbies, other.hobbies),
-            ultimasEtiquetas = (canonical.ultimasEtiquetas + other.ultimasEtiquetas).distinct()
+            ultimasEtiquetas = (canonical.ultimasEtiquetas + other.ultimasEtiquetas).distinct(),
         )
     }
-
 }

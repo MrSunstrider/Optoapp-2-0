@@ -25,7 +25,7 @@ object ReporteFinancieroPdfGenerator {
         porCobrar: Double,
         ticketPromedio: Double,
         pagosSumByDispensacion: Map<String, Double> = emptyMap(),
-        aCuentaSumByServicio: Map<String, Double> = emptyMap()
+        aCuentaSumByServicio: Map<String, Double> = emptyMap(),
     ): File {
         val dir = File(context.cacheDir, "reportes").apply { mkdirs() }
         val file = File(dir, "reporte-financiero-${System.currentTimeMillis()}.pdf")

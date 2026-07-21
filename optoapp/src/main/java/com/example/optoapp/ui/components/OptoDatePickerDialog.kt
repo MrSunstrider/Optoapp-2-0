@@ -17,11 +17,11 @@ fun OptoDatePickerDialog(
     onDateSelected: (LocalDate) -> Unit,
     onDismiss: () -> Unit,
     yearRange: IntRange = 1920..2080,
-    dismissButton: (@Composable () -> Unit)? = null
+    dismissButton: (@Composable () -> Unit)? = null,
 ) {
     val datePickerState = rememberDatePickerState(
         initialSelectedDateMillis = DateUtils.localDateToPickerMillis(initialDate),
-        yearRange = yearRange
+        yearRange = yearRange,
     )
     DatePickerDialog(
         onDismissRequest = onDismiss,
@@ -33,7 +33,7 @@ fun OptoDatePickerDialog(
                 onDismiss()
             }) { Text("OK") }
         },
-        dismissButton = dismissButton
+        dismissButton = dismissButton,
     ) {
         DatePicker(state = datePickerState)
     }

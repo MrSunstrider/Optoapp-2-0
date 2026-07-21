@@ -62,7 +62,7 @@ class FakeConflictDao : ConflictDao {
         detectedAt: Long,
         baseSnapshot: String,
         localData: String,
-        remoteData: String
+        remoteData: String,
     ) {
         lastUpsertBaseSnapshot = baseSnapshot
         lastUpsertLocalData = localData
@@ -77,8 +77,8 @@ class FakeConflictDao : ConflictDao {
                 detectedAt = detectedAt,
                 baseSnapshot = baseSnapshot,
                 localData = localData,
-                remoteData = remoteData
-            )
+                remoteData = remoteData,
+            ),
         )
     }
     override suspend fun resolveConflict(entityId: String, opticaId: String) = Unit
@@ -96,5 +96,5 @@ data class UpsertConflictCall(
     val detectedAt: Long,
     val baseSnapshot: String,
     val localData: String,
-    val remoteData: String
+    val remoteData: String,
 )

@@ -11,7 +11,9 @@ import java.io.IOException
 
 /** Minimal [SyncLogger] stub that delegates to android.util.Log for test assertions. */
 private val testLogger = object : SyncLogger {
-    override fun d(tag: String, msg: String) { Log.d(tag, msg) }
+    override fun d(tag: String, msg: String) {
+        Log.d(tag, msg)
+    }
     override fun w(tag: String, msg: String, e: Throwable?) {
         if (e != null) Log.w(tag, msg, e) else Log.w(tag, msg)
     }
@@ -65,7 +67,7 @@ class NetworkRetryHelperTest {
         assertEquals("Should retry NETWORK_RETRY_ATTEMPTS times", 3, attempts)
         assertTrue(
             "Virtual time should reflect backoff delays (400 + 800 = 1200ms), got ${testScheduler.currentTime}ms",
-            testScheduler.currentTime >= 1200L
+            testScheduler.currentTime >= 1200L,
         )
     }
 
@@ -87,7 +89,7 @@ class NetworkRetryHelperTest {
         assertEquals(
             "Non-IOException should not be retried, even with transient-like message",
             1,
-            attempts
+            attempts,
         )
     }
 

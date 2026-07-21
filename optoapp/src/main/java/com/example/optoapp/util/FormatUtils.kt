@@ -8,12 +8,10 @@ import java.util.Locale
  * - Whole numbers → no decimal places (e.g. "1,234")
  * - Decimals → two decimal places (e.g. "1,234.56")
  */
-fun Double.fmt(): String {
-    return if (this == this.toLong().toDouble()) {
-        String.format(Locale.getDefault(), "%,.0f", this)
-    } else {
-        String.format(Locale.getDefault(), "%,.2f", this)
-    }
+fun Double.fmt(): String = if (this == this.toLong().toDouble()) {
+    String.format(Locale.US, "%,.0f", this)
+} else {
+    String.format(Locale.US, "%,.2f", this)
 }
 
 /** Formats a [Double] as currency with "S/ " prefix and two decimals. */

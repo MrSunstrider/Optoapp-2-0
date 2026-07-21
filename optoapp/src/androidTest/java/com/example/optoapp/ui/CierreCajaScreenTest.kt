@@ -31,7 +31,7 @@ class CierreCajaScreenTest {
         monto: Double = 50.0,
         dispensacionId: String? = null,
         servicioExtraId: String? = null,
-        nota: String = ""
+        nota: String = "",
     ) = Pago(
         id = id,
         dispensacionId = dispensacionId,
@@ -41,7 +41,7 @@ class CierreCajaScreenTest {
         monto = monto,
         metodoPago = metodoPago,
         nota = nota,
-        opticaId = "optica-test"
+        opticaId = "optica-test",
     )
 
     // Regression test for Bug #1: LazyColumn inside verticalScroll crash.
@@ -60,7 +60,7 @@ class CierreCajaScreenTest {
             val scrollState = rememberScrollState()
             Column(
                 modifier = Modifier.verticalScroll(scrollState),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 pagos.forEach { pago -> TransactionItem(pago) }
             }

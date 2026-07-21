@@ -117,7 +117,7 @@ class ThreeWayMergeTest {
         assertEquals(
             "conflictedFields should list both 'a' and 'b'",
             listOf("a", "b"),
-            result.conflictedFields.sorted()
+            result.conflictedFields.sorted(),
         )
         assertTrue("autoMergedFields must be empty — nothing auto-merged", result.autoMergedFields.isEmpty())
         assertTrue("hasConflict must be true when both sides changed the same field", result.hasConflict)
@@ -138,7 +138,7 @@ class ThreeWayMergeTest {
         assertEquals(
             "With empty base, all fields present in both sides are conflicting",
             listOf("a", "b"),
-            result.conflictedFields.sorted()
+            result.conflictedFields.sorted(),
         )
         assertTrue("hasConflict must be true with empty base and differing fields", result.hasConflict)
     }

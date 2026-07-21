@@ -13,7 +13,6 @@ import com.example.optoapp.viewmodel.EvaluacionUiState
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.time.LocalDate
 
 /**
  * Compose UI tests for the Evaluación (Clinical Evaluation) form.
@@ -39,7 +38,7 @@ class EvaluacionFlowTest {
                 onUpdate = {},
                 onShowProximaDatePicker = {},
                 onSave = {},
-                evaluacionId = null
+                evaluacionId = null,
             )
         }
 
@@ -54,7 +53,7 @@ class EvaluacionFlowTest {
                 onUpdate = {},
                 onShowProximaDatePicker = {},
                 onSave = {},
-                evaluacionId = null
+                evaluacionId = null,
             )
         }
 
@@ -70,7 +69,7 @@ class EvaluacionFlowTest {
                 onUpdate = {},
                 onShowProximaDatePicker = {},
                 onSave = { saved = true },
-                evaluacionId = null
+                evaluacionId = null,
             )
         }
 
@@ -86,7 +85,7 @@ class EvaluacionFlowTest {
                 onUpdate = {},
                 onShowProximaDatePicker = {},
                 onSave = {},
-                evaluacionId = null
+                evaluacionId = null,
             )
         }
 
@@ -101,7 +100,7 @@ class EvaluacionFlowTest {
         val uiState = EvaluacionUiState(
             recetaOdEsf = "-2.00",
             recetaOdCil = "-0.75",
-            diagnosticoOd = listOf("Miopía")
+            diagnosticoOd = listOf("Miopía"),
         )
 
         composeTestRule.setContent {
@@ -110,7 +109,7 @@ class EvaluacionFlowTest {
                 onUpdate = {},
                 onShowProximaDatePicker = {},
                 onSave = {},
-                evaluacionId = null
+                evaluacionId = null,
             )
         }
 
@@ -127,7 +126,7 @@ class EvaluacionFlowTest {
                 onUpdate = {},
                 onShowProximaDatePicker = {},
                 onSave = {},
-                evaluacionId = null
+                evaluacionId = null,
             )
         }
 

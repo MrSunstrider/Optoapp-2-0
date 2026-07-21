@@ -22,7 +22,7 @@ fun EvaluacionesList(
     evaluaciones: List<EvaluacionClinica>,
     paciente: Paciente,
     evaluacionViewModel: com.example.optoapp.viewmodel.EvaluacionViewModel,
-    onEdit: (String) -> Unit
+    onEdit: (String) -> Unit,
 ) {
     val context = LocalContext.current
     val selectedEvalForResumen = remember { mutableStateOf<EvaluacionClinica?>(null) }
@@ -40,7 +40,7 @@ fun EvaluacionesList(
                         notificationHelper.cancelReminder(eval.id)
                         evaluacionViewModel.deleteEvaluacion(eval.id) { }
                     },
-                    onResumen = { selectedEvalForResumen.value = eval }
+                    onResumen = { selectedEvalForResumen.value = eval },
                 )
             }
         }
@@ -51,7 +51,7 @@ fun EvaluacionesList(
             eval = currentEval,
             paciente = paciente,
             onDismiss = { selectedEvalForResumen.value = null },
-            onEdit = { onEdit(currentEval.id) }
+            onEdit = { onEdit(currentEval.id) },
         )
     }
 }
@@ -179,7 +179,10 @@ fun ResumenEvaluacionDialog(eval: EvaluacionClinica, paciente: Paciente, onDismi
         },
         confirmButton = {
             Row {
-                Button(onClick = { onDismiss(); onEdit() }) {
+                Button(onClick = {
+                    onDismiss()
+                    onEdit()
+                }) {
                     Icon(Icons.Default.Edit, null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Editar Completo")
@@ -188,7 +191,7 @@ fun ResumenEvaluacionDialog(eval: EvaluacionClinica, paciente: Paciente, onDismi
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text("Cerrar") }
-        }
+        },
     )
 }
 

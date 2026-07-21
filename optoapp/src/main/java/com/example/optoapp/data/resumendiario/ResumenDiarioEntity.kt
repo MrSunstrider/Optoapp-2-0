@@ -6,7 +6,7 @@ import androidx.room.PrimaryKey
 
 @Entity(
     tableName = "resumen_diario",
-    indices = [Index(value = ["opticaId", "fecha"], unique = true)]
+    indices = [Index(value = ["opticaId", "fecha"], unique = true)],
 )
 data class ResumenDiarioEntity(
     @PrimaryKey val id: String,
@@ -21,5 +21,5 @@ data class ResumenDiarioEntity(
     val saldoPendienteCantidad: Int = 0,
     val inventarioValor: Double? = null,
     val inventarioUnidades: Int? = null,
-    val calculadoEn: String? = null
+    val calculadoEn: String? = null,
 )

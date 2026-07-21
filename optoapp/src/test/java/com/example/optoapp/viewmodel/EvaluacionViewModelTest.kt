@@ -115,7 +115,7 @@ class EvaluacionViewModelTest {
             diagnostico = "Miopía",
             proximaCita = LocalDate.of(2026, 6, 1),
             isLoading = true,
-            error = "Algo salió mal"
+            error = "Algo salió mal",
         )
         assertEquals("Dolor de cabeza frecuente", state.motivoConsulta)
         assertEquals("Miopía", state.diagnostico)
@@ -129,7 +129,7 @@ class EvaluacionViewModelTest {
         val original = EvaluacionUiState(fecha = LocalDate.of(2024, 1, 1))
         val modified = original.copy(
             motivoConsulta = "Nuevo motivo",
-            isLoading = true
+            isLoading = true,
         )
         assertEquals("", original.motivoConsulta)
         assertEquals(false, original.isLoading)
@@ -147,11 +147,11 @@ class EvaluacionViewModelTest {
     fun evaluacionUiState_dataClassInequality() {
         val state1 = EvaluacionUiState(
             fecha = LocalDate.of(2024, 1, 1),
-            diagnostico = "Miopía"
+            diagnostico = "Miopía",
         )
         val state2 = EvaluacionUiState(
             fecha = LocalDate.of(2024, 1, 1),
-            diagnostico = "Hipermetropía"
+            diagnostico = "Hipermetropía",
         )
         assertNotEquals(state1, state2)
     }

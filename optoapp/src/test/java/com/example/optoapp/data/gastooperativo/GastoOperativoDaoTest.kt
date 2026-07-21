@@ -25,7 +25,7 @@ class GastoOperativoDaoTest {
     fun setUp() {
         db = Room.inMemoryDatabaseBuilder(
             ApplicationProvider.getApplicationContext(),
-            OptoDatabase::class.java
+            OptoDatabase::class.java,
         ).allowMainThreadQueries().build()
         dao = db.gastoOperativoDao()
     }
@@ -44,7 +44,7 @@ class GastoOperativoDaoTest {
             categoria = "servicios",
             descripcion = "Luz",
             monto = BigDecimal.valueOf(500.0),
-            fecha = LocalDate.parse("2026-07-01")
+            fecha = LocalDate.parse("2026-07-01"),
         )
         dao.insert(gasto)
 
@@ -57,9 +57,12 @@ class GastoOperativoDaoTest {
     @Test
     fun delete_removesGasto() = runBlocking {
         val gasto = GastoOperativoEntity(
-            id = "g1", opticaId = "optica1", categoria = "otro",
-            descripcion = "Temp", monto = BigDecimal.valueOf(50.0),
-            fecha = LocalDate.parse("2026-07-01")
+            id = "g1",
+            opticaId = "optica1",
+            categoria = "otro",
+            descripcion = "Temp",
+            monto = BigDecimal.valueOf(50.0),
+            fecha = LocalDate.parse("2026-07-01"),
         )
         dao.insert(gasto)
         dao.delete("g1", "optica1")
@@ -71,9 +74,12 @@ class GastoOperativoDaoTest {
     @Test
     fun upsert_updatesExisting() = runBlocking {
         val original = GastoOperativoEntity(
-            id = "g1", opticaId = "optica1", categoria = "alquiler",
-            descripcion = "Original", monto = BigDecimal.valueOf(800.0),
-            fecha = LocalDate.parse("2026-07-01")
+            id = "g1",
+            opticaId = "optica1",
+            categoria = "alquiler",
+            descripcion = "Original",
+            monto = BigDecimal.valueOf(800.0),
+            fecha = LocalDate.parse("2026-07-01"),
         )
         dao.upsert(original)
 

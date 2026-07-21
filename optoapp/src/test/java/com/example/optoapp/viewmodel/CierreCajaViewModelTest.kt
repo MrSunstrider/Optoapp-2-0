@@ -63,7 +63,6 @@ class CierreCajaViewModelTest {
         every { repository.getDispensacionesByDateRangeForOptica(any(), any(), any()) } returns flowOf(emptyList())
         every { repository.getServiciosByDateRangeForOptica(any(), any(), any()) } returns flowOf(emptyList())
         // getDispensacionesByIds and getServiciosByIds are suspend — relaxed mock returns defaults
-
     }
 
     @After
@@ -89,12 +88,25 @@ class CierreCajaViewModelTest {
     @Test
     fun `saldoPendiente full historical payment yields zero`() = runTest(testDispatcher) {
         val dispensaciones = listOf(
-            DispensacionOptica(id = "d1", pacienteId = "pac1", fecha = today,
-                montoTotal = 300.0, montoPagado = 300.0, opticaId = opticaId)
+            DispensacionOptica(
+                id = "d1",
+                pacienteId = "pac1",
+                fecha = today,
+                montoTotal = 300.0,
+                montoPagado = 300.0,
+                opticaId = opticaId,
+            ),
         )
         val servicios = listOf(
-            ServicioExtra(id = "s1", descripcion = "Servicio", montoTotal = 150.0,
-                aCuenta = 150.0, estado = "Entregado", fecha = today, opticaId = opticaId)
+            ServicioExtra(
+                id = "s1",
+                descripcion = "Servicio",
+                montoTotal = 150.0,
+                aCuenta = 150.0,
+                estado = "Entregado",
+                fecha = today,
+                opticaId = opticaId,
+            ),
         )
         every { repository.getDispensacionesByDateRangeForOptica(today, today, opticaId) } returns flowOf(dispensaciones)
         every { repository.getServiciosByDateRangeForOptica(today, today, opticaId) } returns flowOf(servicios)
@@ -107,8 +119,14 @@ class CierreCajaViewModelTest {
     @Test
     fun `saldoPendiente partial payment from prior day`() = runTest(testDispatcher) {
         val dispensaciones = listOf(
-            DispensacionOptica(id = "d1", pacienteId = "pac1", fecha = today,
-                montoTotal = 300.0, montoPagado = 200.0, opticaId = opticaId)
+            DispensacionOptica(
+                id = "d1",
+                pacienteId = "pac1",
+                fecha = today,
+                montoTotal = 300.0,
+                montoPagado = 200.0,
+                opticaId = opticaId,
+            ),
         )
         every { repository.getDispensacionesByDateRangeForOptica(today, today, opticaId) } returns flowOf(dispensaciones)
 
@@ -120,8 +138,14 @@ class CierreCajaViewModelTest {
     @Test
     fun `saldoPendiente same day full payment`() = runTest(testDispatcher) {
         val dispensaciones = listOf(
-            DispensacionOptica(id = "d1", pacienteId = "pac1", fecha = today,
-                montoTotal = 300.0, montoPagado = 300.0, opticaId = opticaId)
+            DispensacionOptica(
+                id = "d1",
+                pacienteId = "pac1",
+                fecha = today,
+                montoTotal = 300.0,
+                montoPagado = 300.0,
+                opticaId = opticaId,
+            ),
         )
         every { repository.getDispensacionesByDateRangeForOptica(today, today, opticaId) } returns flowOf(dispensaciones)
 
@@ -143,12 +167,25 @@ class CierreCajaViewModelTest {
         // S/300 disp, montoPagado=100 -> pendiente 200
         // S/100 serv, aCuenta=75 -> pendiente 25
         val dispensaciones = listOf(
-            DispensacionOptica(id = "d1", pacienteId = "pac1", fecha = today,
-                montoTotal = 300.0, montoPagado = 100.0, opticaId = opticaId)
+            DispensacionOptica(
+                id = "d1",
+                pacienteId = "pac1",
+                fecha = today,
+                montoTotal = 300.0,
+                montoPagado = 100.0,
+                opticaId = opticaId,
+            ),
         )
         val servicios = listOf(
-            ServicioExtra(id = "s1", descripcion = "Servicio", montoTotal = 100.0,
-                aCuenta = 75.0, estado = "Entregado", fecha = today, opticaId = opticaId)
+            ServicioExtra(
+                id = "s1",
+                descripcion = "Servicio",
+                montoTotal = 100.0,
+                aCuenta = 75.0,
+                estado = "Entregado",
+                fecha = today,
+                opticaId = opticaId,
+            ),
         )
         every { repository.getDispensacionesByDateRangeForOptica(today, today, opticaId) } returns flowOf(dispensaciones)
         every { repository.getServiciosByDateRangeForOptica(today, today, opticaId) } returns flowOf(servicios)
@@ -161,10 +198,23 @@ class CierreCajaViewModelTest {
     @Test
     fun `saldoPendiente and totalGeneral exclude anulated dispensaciones`() = runTest(testDispatcher) {
         val dispensaciones = listOf(
-            DispensacionOptica(id = "d1", pacienteId = "pac1", fecha = today,
-                montoTotal = 300.0, montoPagado = 300.0, estadoEntrega = "Anulado", opticaId = opticaId),
-            DispensacionOptica(id = "d2", pacienteId = "pac2", fecha = today,
-                montoTotal = 200.0, montoPagado = 50.0, opticaId = opticaId)
+            DispensacionOptica(
+                id = "d1",
+                pacienteId = "pac1",
+                fecha = today,
+                montoTotal = 300.0,
+                montoPagado = 300.0,
+                estadoEntrega = "Anulado",
+                opticaId = opticaId,
+            ),
+            DispensacionOptica(
+                id = "d2",
+                pacienteId = "pac2",
+                fecha = today,
+                montoTotal = 200.0,
+                montoPagado = 50.0,
+                opticaId = opticaId,
+            ),
         )
         every { repository.getDispensacionesByDateRangeForOptica(today, today, opticaId) } returns flowOf(dispensaciones)
 
@@ -183,10 +233,10 @@ class CierreCajaViewModelTest {
     fun `ventasHoy sums pagos collected today for today dispensaciones`() = runTest(testDispatcher) {
         val pagos = listOf(
             Pago(id = "p1", fecha = today, tipo = "Efectivo", monto = 100.0, opticaId = opticaId, dispensacionId = "d1"),
-            Pago(id = "p2", fecha = today, tipo = "Tarjeta",  monto = 50.0,  opticaId = opticaId, dispensacionId = "d1")
+            Pago(id = "p2", fecha = today, tipo = "Tarjeta", monto = 50.0, opticaId = opticaId, dispensacionId = "d1"),
         )
         val dispensaciones = listOf(
-            DispensacionOptica(id = "d1", pacienteId = "pac1", fecha = today, opticaId = opticaId)
+            DispensacionOptica(id = "d1", pacienteId = "pac1", fecha = today, opticaId = opticaId),
         )
         every { repository.getPagosByDateRangeForOptica(today, today, opticaId) } returns flowOf(pagos)
         every { repository.getDispensacionesByDateRangeForOptica(today, today, opticaId) } returns flowOf(dispensaciones)
@@ -200,14 +250,14 @@ class CierreCajaViewModelTest {
     fun `cobrosAtrasados sums pagos from older dispensaciones collected today`() = runTest(testDispatcher) {
         // Batch fetch: pago d1 references disp outside date range -> ViewModel fetches via getDispensacionesByIds
         val pagos = listOf(
-            Pago(id = "p1", fecha = today, tipo = "Efectivo", monto = 75.0,  opticaId = opticaId, dispensacionId = "d1"),
-            Pago(id = "p2", fecha = today, tipo = "Efectivo", monto = 100.0, opticaId = opticaId, dispensacionId = "d2")
+            Pago(id = "p1", fecha = today, tipo = "Efectivo", monto = 75.0, opticaId = opticaId, dispensacionId = "d1"),
+            Pago(id = "p2", fecha = today, tipo = "Efectivo", monto = 100.0, opticaId = opticaId, dispensacionId = "d2"),
         )
         val dispensaciones = listOf(
-            DispensacionOptica(id = "d2", pacienteId = "pac1", fecha = today, opticaId = opticaId)
+            DispensacionOptica(id = "d2", pacienteId = "pac1", fecha = today, opticaId = opticaId),
         )
         val extraDisp = listOf(
-            DispensacionOptica(id = "d1", pacienteId = "pac2", fecha = yesterday, opticaId = opticaId)
+            DispensacionOptica(id = "d1", pacienteId = "pac2", fecha = yesterday, opticaId = opticaId),
         )
         every { repository.getPagosByDateRangeForOptica(today, today, opticaId) } returns flowOf(pagos)
         every { repository.getDispensacionesByDateRangeForOptica(today, today, opticaId) } returns flowOf(dispensaciones)
@@ -222,11 +272,18 @@ class CierreCajaViewModelTest {
     @Test
     fun `totalDispensacionesHoy sums only dispensaciones`() = runTest(testDispatcher) {
         val dispensaciones = listOf(
-            DispensacionOptica(id = "d1", pacienteId = "pac1", fecha = today, montoTotal = 300.0, opticaId = opticaId)
+            DispensacionOptica(id = "d1", pacienteId = "pac1", fecha = today, montoTotal = 300.0, opticaId = opticaId),
         )
         val servicios = listOf(
-            ServicioExtra(id = "s1", descripcion = "Servicio", montoTotal = 150.0, aCuenta = 50.0,
-                estado = "Entregado", fecha = today, opticaId = opticaId)
+            ServicioExtra(
+                id = "s1",
+                descripcion = "Servicio",
+                montoTotal = 150.0,
+                aCuenta = 50.0,
+                estado = "Entregado",
+                fecha = today,
+                opticaId = opticaId,
+            ),
         )
         every { repository.getDispensacionesByDateRangeForOptica(today, today, opticaId) } returns flowOf(dispensaciones)
         every { repository.getServiciosByDateRangeForOptica(today, today, opticaId) } returns flowOf(servicios)
@@ -239,8 +296,15 @@ class CierreCajaViewModelTest {
     @Test
     fun `totalServiciosExtra includes today servicios`() = runTest(testDispatcher) {
         val servicios = listOf(
-            ServicioExtra(id = "s1", descripcion = "Servicio 1", montoTotal = 100.0, aCuenta = 50.0,
-                estado = "Entregado", fecha = today, opticaId = opticaId)
+            ServicioExtra(
+                id = "s1",
+                descripcion = "Servicio 1",
+                montoTotal = 100.0,
+                aCuenta = 50.0,
+                estado = "Entregado",
+                fecha = today,
+                opticaId = opticaId,
+            ),
         )
         every { repository.getServiciosByDateRangeForOptica(today, today, opticaId) } returns flowOf(servicios)
 
@@ -253,11 +317,18 @@ class CierreCajaViewModelTest {
     @Test
     fun `totalGeneral equals totalDispensacionesHoy plus totalServiciosExtra`() = runTest(testDispatcher) {
         val dispensaciones = listOf(
-            DispensacionOptica(id = "d1", pacienteId = "pac1", fecha = today, montoTotal = 300.0, opticaId = opticaId)
+            DispensacionOptica(id = "d1", pacienteId = "pac1", fecha = today, montoTotal = 300.0, opticaId = opticaId),
         )
         val servicios = listOf(
-            ServicioExtra(id = "s1", descripcion = "Servicio", montoTotal = 150.0, aCuenta = 50.0,
-                estado = "Entregado", fecha = today, opticaId = opticaId)
+            ServicioExtra(
+                id = "s1",
+                descripcion = "Servicio",
+                montoTotal = 150.0,
+                aCuenta = 50.0,
+                estado = "Entregado",
+                fecha = today,
+                opticaId = opticaId,
+            ),
         )
         every { repository.getDispensacionesByDateRangeForOptica(today, today, opticaId) } returns flowOf(dispensaciones)
         every { repository.getServiciosByDateRangeForOptica(today, today, opticaId) } returns flowOf(servicios)
@@ -274,11 +345,18 @@ class CierreCajaViewModelTest {
     @Test
     fun `ventasHoy includes pago linked to today servicio extra`() = runTest(testDispatcher) {
         val pagos = listOf(
-            Pago(id = "p1", fecha = today, tipo = "Efectivo", monto = 75.0, opticaId = opticaId, servicioExtraId = "s1")
+            Pago(id = "p1", fecha = today, tipo = "Efectivo", monto = 75.0, opticaId = opticaId, servicioExtraId = "s1"),
         )
         val servicios = listOf(
-            ServicioExtra(id = "s1", descripcion = "Servicio", montoTotal = 100.0, aCuenta = 75.0,
-                estado = "Entregado", fecha = today, opticaId = opticaId)
+            ServicioExtra(
+                id = "s1",
+                descripcion = "Servicio",
+                montoTotal = 100.0,
+                aCuenta = 75.0,
+                estado = "Entregado",
+                fecha = today,
+                opticaId = opticaId,
+            ),
         )
         every { repository.getPagosByDateRangeForOptica(today, today, opticaId) } returns flowOf(pagos)
         every { repository.getServiciosByDateRangeForOptica(today, today, opticaId) } returns flowOf(servicios)
@@ -292,11 +370,18 @@ class CierreCajaViewModelTest {
     @Test
     fun `cobrosAtrasados includes pago linked to older servicio extra`() = runTest(testDispatcher) {
         val pagos = listOf(
-            Pago(id = "p1", fecha = today, tipo = "Efectivo", monto = 75.0, opticaId = opticaId, servicioExtraId = "s1")
+            Pago(id = "p1", fecha = today, tipo = "Efectivo", monto = 75.0, opticaId = opticaId, servicioExtraId = "s1"),
         )
         val servicios = listOf(
-            ServicioExtra(id = "s1", descripcion = "Old Servicio", montoTotal = 100.0, aCuenta = 75.0,
-                estado = "Entregado", fecha = yesterday, opticaId = opticaId)
+            ServicioExtra(
+                id = "s1",
+                descripcion = "Old Servicio",
+                montoTotal = 100.0,
+                aCuenta = 75.0,
+                estado = "Entregado",
+                fecha = yesterday,
+                opticaId = opticaId,
+            ),
         )
         every { repository.getPagosByDateRangeForOptica(today, today, opticaId) } returns flowOf(pagos)
         every { repository.getServiciosByDateRangeForOptica(today, today, opticaId) } returns flowOf(servicios)
@@ -310,8 +395,15 @@ class CierreCajaViewModelTest {
     @Test
     fun `orphan pago contributes to ventasHoy`() = runTest(testDispatcher) {
         val pagos = listOf(
-            Pago(id = "p1", fecha = today, tipo = "Efectivo", monto = 80.0,
-                opticaId = opticaId, dispensacionId = null, servicioExtraId = null)
+            Pago(
+                id = "p1",
+                fecha = today,
+                tipo = "Efectivo",
+                monto = 80.0,
+                opticaId = opticaId,
+                dispensacionId = null,
+                servicioExtraId = null,
+            ),
         )
         every { repository.getPagosByDateRangeForOptica(today, today, opticaId) } returns flowOf(pagos)
 
@@ -325,14 +417,14 @@ class CierreCajaViewModelTest {
     fun `totalRecaudado equals ventasHoy plus cobrosAtrasados`() = runTest(testDispatcher) {
         val pagos = listOf(
             Pago(id = "p1", fecha = today, tipo = "Efectivo", monto = 100.0, opticaId = opticaId, dispensacionId = "d1"),
-            Pago(id = "p2", fecha = today, tipo = "Tarjeta",  monto = 50.0,  opticaId = opticaId, dispensacionId = "d1"),
-            Pago(id = "p3", fecha = today, tipo = "Efectivo", monto = 50.0,  opticaId = opticaId, dispensacionId = "d2")
+            Pago(id = "p2", fecha = today, tipo = "Tarjeta", monto = 50.0, opticaId = opticaId, dispensacionId = "d1"),
+            Pago(id = "p3", fecha = today, tipo = "Efectivo", monto = 50.0, opticaId = opticaId, dispensacionId = "d2"),
         )
         val dispensaciones = listOf(
-            DispensacionOptica(id = "d1", pacienteId = "pac1", fecha = today, opticaId = opticaId)
+            DispensacionOptica(id = "d1", pacienteId = "pac1", fecha = today, opticaId = opticaId),
         )
         val extraDisp = listOf(
-            DispensacionOptica(id = "d2", pacienteId = "pac2", fecha = yesterday, opticaId = opticaId)
+            DispensacionOptica(id = "d2", pacienteId = "pac2", fecha = yesterday, opticaId = opticaId),
         )
         every { repository.getPagosByDateRangeForOptica(today, today, opticaId) } returns flowOf(pagos)
         every { repository.getDispensacionesByDateRangeForOptica(today, today, opticaId) } returns flowOf(dispensaciones)
@@ -352,11 +444,11 @@ class CierreCajaViewModelTest {
     @Test
     fun `future dated dispensacion pago excluded from ventasHoy`() = runTest(testDispatcher) {
         val pagos = listOf(
-            Pago(id = "p1", fecha = today, tipo = "Efectivo", monto = 100.0, opticaId = opticaId, dispensacionId = "d1")
+            Pago(id = "p1", fecha = today, tipo = "Efectivo", monto = 100.0, opticaId = opticaId, dispensacionId = "d1"),
         )
         // Dispensacion with future fecha — not returned by date-range query, fetched via batch
         val extraDisp = listOf(
-            DispensacionOptica(id = "d1", pacienteId = "pac1", fecha = tomorrow, opticaId = opticaId)
+            DispensacionOptica(id = "d1", pacienteId = "pac1", fecha = tomorrow, opticaId = opticaId),
         )
         every { repository.getPagosByDateRangeForOptica(today, today, opticaId) } returns flowOf(pagos)
         every { repository.getDispensacionesByDateRangeForOptica(today, today, opticaId) } returns flowOf(emptyList())
@@ -370,11 +462,18 @@ class CierreCajaViewModelTest {
     @Test
     fun `future dated servicio pago excluded from ventasHoy`() = runTest(testDispatcher) {
         val pagos = listOf(
-            Pago(id = "p1", fecha = today, tipo = "Efectivo", monto = 100.0, opticaId = opticaId, servicioExtraId = "s1")
+            Pago(id = "p1", fecha = today, tipo = "Efectivo", monto = 100.0, opticaId = opticaId, servicioExtraId = "s1"),
         )
         val extraServ = listOf(
-            ServicioExtra(id = "s1", descripcion = "Futuro", montoTotal = 200.0, aCuenta = 0.0,
-                estado = "Pendiente", fecha = tomorrow, opticaId = opticaId)
+            ServicioExtra(
+                id = "s1",
+                descripcion = "Futuro",
+                montoTotal = 200.0,
+                aCuenta = 0.0,
+                estado = "Pendiente",
+                fecha = tomorrow,
+                opticaId = opticaId,
+            ),
         )
         every { repository.getPagosByDateRangeForOptica(today, today, opticaId) } returns flowOf(pagos)
         every { repository.getServiciosByDateRangeForOptica(today, today, opticaId) } returns flowOf(emptyList())
@@ -393,10 +492,10 @@ class CierreCajaViewModelTest {
     fun `anulacion pago offsets ventasHoy same day`() = runTest(testDispatcher) {
         val pagos = listOf(
             Pago(id = "p1", fecha = today, tipo = "Efectivo", monto = 100.0, opticaId = opticaId, dispensacionId = "d1"),
-            Pago(id = "p2", fecha = today, tipo = "Anulación", monto = -100.0, opticaId = opticaId, dispensacionId = "d1")
+            Pago(id = "p2", fecha = today, tipo = "Anulación", monto = -100.0, opticaId = opticaId, dispensacionId = "d1"),
         )
         val dispensaciones = listOf(
-            DispensacionOptica(id = "d1", pacienteId = "pac1", fecha = today, montoTotal = 100.0, opticaId = opticaId)
+            DispensacionOptica(id = "d1", pacienteId = "pac1", fecha = today, montoTotal = 100.0, opticaId = opticaId),
         )
         every { repository.getPagosByDateRangeForOptica(today, today, opticaId) } returns flowOf(pagos)
         every { repository.getDispensacionesByDateRangeForOptica(today, today, opticaId) } returns flowOf(dispensaciones)
@@ -414,9 +513,9 @@ class CierreCajaViewModelTest {
     fun `getTotalesPorMetodo groups pagos by metodoPago`() = runTest(testDispatcher) {
         val pagos = listOf(
             Pago(id = "p1", fecha = today, tipo = "abono", monto = 100.0, opticaId = opticaId, metodoPago = "Efectivo"),
-            Pago(id = "p2", fecha = today, tipo = "abono", monto = 50.0,  opticaId = opticaId, metodoPago = "Efectivo"),
+            Pago(id = "p2", fecha = today, tipo = "abono", monto = 50.0, opticaId = opticaId, metodoPago = "Efectivo"),
             Pago(id = "p3", fecha = today, tipo = "abono", monto = 200.0, opticaId = opticaId, metodoPago = "Tarjeta"),
-            Pago(id = "p4", fecha = today, tipo = "abono", monto = 75.0,  opticaId = opticaId, metodoPago = "Móvil")
+            Pago(id = "p4", fecha = today, tipo = "abono", monto = 75.0, opticaId = opticaId, metodoPago = "Móvil"),
         )
         every { repository.getPagosByDateRangeForOptica(today, today, opticaId) } returns flowOf(pagos)
 
@@ -425,24 +524,26 @@ class CierreCajaViewModelTest {
         val totales = vm.getTotalesPorMetodo()
         assertEquals("Efectivo total must be 150.0", 150.0, totales["Efectivo"] ?: 0.0, 0.001)
         assertEquals("Tarjeta total must be 200.0", 200.0, totales["Tarjeta"] ?: 0.0, 0.001)
-        assertEquals("Móvil total must be 75.0",    75.0,  totales["Móvil"]   ?: 0.0, 0.001)
+        assertEquals("Móvil total must be 75.0", 75.0, totales["Móvil"] ?: 0.0, 0.001)
     }
 
     @Test
     fun `getTotalesPorMetodo empty pagos returns empty map`() = runTest(testDispatcher) {
         val vm = createViewModel()
 
-        assertTrue("getTotalesPorMetodo must return empty map when no pagos exist",
-            vm.getTotalesPorMetodo().isEmpty())
+        assertTrue(
+            "getTotalesPorMetodo must return empty map when no pagos exist",
+            vm.getTotalesPorMetodo().isEmpty(),
+        )
     }
 
     @Test
     fun `getTotalesPorMetodo normalizes Sin especificar into empty string`() = runTest(testDispatcher) {
         val pagos = listOf(
             Pago(id = "p1", fecha = today, tipo = "Efectivo", monto = 100.0, metodoPago = "Efectivo", opticaId = opticaId),
-            Pago(id = "p2", fecha = today, tipo = "Efectivo", monto = 50.0,  metodoPago = "Sin especificar", opticaId = opticaId),
-            Pago(id = "p3", fecha = today, tipo = "Efectivo", monto = 30.0,  metodoPago = "", opticaId = opticaId),
-            Pago(id = "p4", fecha = today, tipo = "Tarjeta", monto = 200.0, metodoPago = "Tarjeta", opticaId = opticaId)
+            Pago(id = "p2", fecha = today, tipo = "Efectivo", monto = 50.0, metodoPago = "Sin especificar", opticaId = opticaId),
+            Pago(id = "p3", fecha = today, tipo = "Efectivo", monto = 30.0, metodoPago = "", opticaId = opticaId),
+            Pago(id = "p4", fecha = today, tipo = "Tarjeta", monto = 200.0, metodoPago = "Tarjeta", opticaId = opticaId),
         )
         every { repository.getPagosByDateRangeForOptica(today, today, opticaId) } returns flowOf(pagos)
 
@@ -486,8 +587,14 @@ class CierreCajaViewModelTest {
     fun `cross optica isolation returns empty for other optica`() = runTest(testDispatcher) {
         // Seed data for optica A repos, but session asks for optica B
         val dispensaciones = listOf(
-            DispensacionOptica(id = "d1", pacienteId = "pac1", fecha = today,
-                montoTotal = 300.0, montoPagado = 100.0, opticaId = opticaId)
+            DispensacionOptica(
+                id = "d1",
+                pacienteId = "pac1",
+                fecha = today,
+                montoTotal = 300.0,
+                montoPagado = 100.0,
+                opticaId = opticaId,
+            ),
         )
         every { repository.getDispensacionesByDateRangeForOptica(today, today, opticaId) } returns flowOf(dispensaciones)
         // For optica B, return empty
@@ -511,8 +618,14 @@ class CierreCajaViewModelTest {
     @Test
     fun `same optica returns correct data excluding other optica`() = runTest(testDispatcher) {
         val dispensaciones = listOf(
-            DispensacionOptica(id = "d1", pacienteId = "pac1", fecha = today,
-                montoTotal = 300.0, montoPagado = 100.0, opticaId = opticaId)
+            DispensacionOptica(
+                id = "d1",
+                pacienteId = "pac1",
+                fecha = today,
+                montoTotal = 300.0,
+                montoPagado = 100.0,
+                opticaId = opticaId,
+            ),
         )
         every { repository.getDispensacionesByDateRangeForOptica(today, today, opticaId) } returns flowOf(dispensaciones)
 
@@ -530,8 +643,14 @@ class CierreCajaViewModelTest {
     @Test
     fun `dispensacion per-item shows montoPagado as Pagado and correct Saldo`() = runTest(testDispatcher) {
         val dispensaciones = listOf(
-            DispensacionOptica(id = "d1", pacienteId = "pac1", fecha = today,
-                montoTotal = 300.0, montoPagado = 250.0, opticaId = opticaId)
+            DispensacionOptica(
+                id = "d1",
+                pacienteId = "pac1",
+                fecha = today,
+                montoTotal = 300.0,
+                montoPagado = 250.0,
+                opticaId = opticaId,
+            ),
         )
         every { repository.getDispensacionesByDateRangeForOptica(today, today, opticaId) } returns flowOf(dispensaciones)
 
@@ -545,8 +664,15 @@ class CierreCajaViewModelTest {
     @Test
     fun `servicio per-item shows aCuenta as Pagado and correct Saldo`() = runTest(testDispatcher) {
         val servicios = listOf(
-            ServicioExtra(id = "s1", descripcion = "Pagado", montoTotal = 80.0, aCuenta = 80.0,
-                estado = "Entregado", fecha = today, opticaId = opticaId)
+            ServicioExtra(
+                id = "s1",
+                descripcion = "Pagado",
+                montoTotal = 80.0,
+                aCuenta = 80.0,
+                estado = "Entregado",
+                fecha = today,
+                opticaId = opticaId,
+            ),
         )
         every { repository.getServiciosByDateRangeForOptica(today, today, opticaId) } returns flowOf(servicios)
 
@@ -564,10 +690,24 @@ class CierreCajaViewModelTest {
     @Test
     fun `anulado servicio excluido de totalServiciosExtra y saldoPendiente`() = runTest(testDispatcher) {
         val servicios = listOf(
-            ServicioExtra(id = "s1", descripcion = "Anulado", montoTotal = 200.0, aCuenta = 100.0,
-                estado = "Anulado", fecha = today, opticaId = opticaId),
-            ServicioExtra(id = "s2", descripcion = "Activo", montoTotal = 150.0, aCuenta = 50.0,
-                estado = "Entregado", fecha = today, opticaId = opticaId)
+            ServicioExtra(
+                id = "s1",
+                descripcion = "Anulado",
+                montoTotal = 200.0,
+                aCuenta = 100.0,
+                estado = "Anulado",
+                fecha = today,
+                opticaId = opticaId,
+            ),
+            ServicioExtra(
+                id = "s2",
+                descripcion = "Activo",
+                montoTotal = 150.0,
+                aCuenta = 50.0,
+                estado = "Entregado",
+                fecha = today,
+                opticaId = opticaId,
+            ),
         )
         every { repository.getServiciosByDateRangeForOptica(today, today, opticaId) } returns flowOf(servicios)
 
@@ -585,8 +725,14 @@ class CierreCajaViewModelTest {
     @Test
     fun `error en batch fetch emite errorMessage y isLoading false`() = runTest(testDispatcher) {
         val pagos = listOf(
-            Pago(id = "p1", fecha = today, tipo = "Efectivo", monto = 50.0,
-                opticaId = opticaId, dispensacionId = "d1")
+            Pago(
+                id = "p1",
+                fecha = today,
+                tipo = "Efectivo",
+                monto = 50.0,
+                opticaId = opticaId,
+                dispensacionId = "d1",
+            ),
         )
         every { repository.getPagosByDateRangeForOptica(today, today, opticaId) } returns flowOf(pagos)
         every { repository.getDispensacionesByDateRangeForOptica(today, today, opticaId) } returns flowOf(emptyList())
@@ -598,8 +744,10 @@ class CierreCajaViewModelTest {
         vm.uiState.first { !it.isLoading }
 
         assertNotNull("errorMessage must be set on crash", vm.uiState.value.errorMessage)
-        assertTrue("errorMessage must contain error text",
-            vm.uiState.value.errorMessage!!.contains("DB corrupted"))
+        assertTrue(
+            "errorMessage must contain error text",
+            vm.uiState.value.errorMessage!!.contains("DB corrupted"),
+        )
         assertFalse("isLoading must be false after error", vm.uiState.value.isLoading)
     }
 
@@ -610,16 +758,28 @@ class CierreCajaViewModelTest {
     @Test
     fun `pagosFuturos tracks future-dated payments`() = runTest(testDispatcher) {
         val pagos = listOf(
-            Pago(id = "p1", fecha = today, tipo = "Efectivo", monto = 100.0,
-                opticaId = opticaId, dispensacionId = "d1"),
-            Pago(id = "p2", fecha = today, tipo = "Tarjeta", monto = 50.0,
-                opticaId = opticaId, dispensacionId = "d2")
+            Pago(
+                id = "p1",
+                fecha = today,
+                tipo = "Efectivo",
+                monto = 100.0,
+                opticaId = opticaId,
+                dispensacionId = "d1",
+            ),
+            Pago(
+                id = "p2",
+                fecha = today,
+                tipo = "Tarjeta",
+                monto = 50.0,
+                opticaId = opticaId,
+                dispensacionId = "d2",
+            ),
         )
         val dispensaciones = listOf(
-            DispensacionOptica(id = "d2", pacienteId = "pac1", fecha = today, opticaId = opticaId)
+            DispensacionOptica(id = "d2", pacienteId = "pac1", fecha = today, opticaId = opticaId),
         )
         val extraDisp = listOf(
-            DispensacionOptica(id = "d1", pacienteId = "pac2", fecha = tomorrow, opticaId = opticaId)
+            DispensacionOptica(id = "d1", pacienteId = "pac2", fecha = tomorrow, opticaId = opticaId),
         )
         every { repository.getPagosByDateRangeForOptica(today, today, opticaId) } returns flowOf(pagos)
         every { repository.getDispensacionesByDateRangeForOptica(today, today, opticaId) } returns flowOf(dispensaciones)
@@ -634,12 +794,25 @@ class CierreCajaViewModelTest {
     @Test
     fun `pagosFuturos tracks future-dated servicio payments`() = runTest(testDispatcher) {
         val pagos = listOf(
-            Pago(id = "p1", fecha = today, tipo = "Efectivo", monto = 100.0,
-                opticaId = opticaId, servicioExtraId = "s1")
+            Pago(
+                id = "p1",
+                fecha = today,
+                tipo = "Efectivo",
+                monto = 100.0,
+                opticaId = opticaId,
+                servicioExtraId = "s1",
+            ),
         )
         val extraServ = listOf(
-            ServicioExtra(id = "s1", descripcion = "Futuro", montoTotal = 200.0, aCuenta = 0.0,
-                estado = "Pendiente", fecha = tomorrow, opticaId = opticaId)
+            ServicioExtra(
+                id = "s1",
+                descripcion = "Futuro",
+                montoTotal = 200.0,
+                aCuenta = 0.0,
+                estado = "Pendiente",
+                fecha = tomorrow,
+                opticaId = opticaId,
+            ),
         )
         every { repository.getPagosByDateRangeForOptica(today, today, opticaId) } returns flowOf(pagos)
         every { repository.getServiciosByDateRangeForOptica(today, today, opticaId) } returns flowOf(emptyList())
@@ -654,15 +827,29 @@ class CierreCajaViewModelTest {
     @Test
     fun `pago with both dispensacionId and servicioExtraId classifies by disp first`() = runTest(testDispatcher) {
         val pagos = listOf(
-            Pago(id = "p1", fecha = today, tipo = "Efectivo", monto = 100.0,
-                opticaId = opticaId, dispensacionId = "d1", servicioExtraId = "s1")
+            Pago(
+                id = "p1",
+                fecha = today,
+                tipo = "Efectivo",
+                monto = 100.0,
+                opticaId = opticaId,
+                dispensacionId = "d1",
+                servicioExtraId = "s1",
+            ),
         )
         val dispensaciones = listOf(
-            DispensacionOptica(id = "d1", pacienteId = "pac1", fecha = today, opticaId = opticaId)
+            DispensacionOptica(id = "d1", pacienteId = "pac1", fecha = today, opticaId = opticaId),
         )
         val servicios = listOf(
-            ServicioExtra(id = "s1", descripcion = "Serv", montoTotal = 100.0, aCuenta = 0.0,
-                estado = "Entregado", fecha = yesterday, opticaId = opticaId)
+            ServicioExtra(
+                id = "s1",
+                descripcion = "Serv",
+                montoTotal = 100.0,
+                aCuenta = 0.0,
+                estado = "Entregado",
+                fecha = yesterday,
+                opticaId = opticaId,
+            ),
         )
         every { repository.getPagosByDateRangeForOptica(today, today, opticaId) } returns flowOf(pagos)
         every { repository.getDispensacionesByDateRangeForOptica(today, today, opticaId) } returns flowOf(dispensaciones)
@@ -678,13 +865,27 @@ class CierreCajaViewModelTest {
     @Test
     fun `getTotalesPorMetodo includes anulacion negative amounts`() = runTest(testDispatcher) {
         val pagos = listOf(
-            Pago(id = "p1", fecha = today, tipo = "Efectivo", monto = 100.0,
-                metodoPago = "Efectivo", opticaId = opticaId, dispensacionId = "d1"),
-            Pago(id = "p2", fecha = today, tipo = "Anulación", monto = -100.0,
-                metodoPago = "Efectivo", opticaId = opticaId, dispensacionId = "d1")
+            Pago(
+                id = "p1",
+                fecha = today,
+                tipo = "Efectivo",
+                monto = 100.0,
+                metodoPago = "Efectivo",
+                opticaId = opticaId,
+                dispensacionId = "d1",
+            ),
+            Pago(
+                id = "p2",
+                fecha = today,
+                tipo = "Anulación",
+                monto = -100.0,
+                metodoPago = "Efectivo",
+                opticaId = opticaId,
+                dispensacionId = "d1",
+            ),
         )
         val dispensaciones = listOf(
-            DispensacionOptica(id = "d1", pacienteId = "pac1", fecha = today, montoTotal = 100.0, opticaId = opticaId)
+            DispensacionOptica(id = "d1", pacienteId = "pac1", fecha = today, montoTotal = 100.0, opticaId = opticaId),
         )
         every { repository.getPagosByDateRangeForOptica(today, today, opticaId) } returns flowOf(pagos)
         every { repository.getDispensacionesByDateRangeForOptica(today, today, opticaId) } returns flowOf(dispensaciones)

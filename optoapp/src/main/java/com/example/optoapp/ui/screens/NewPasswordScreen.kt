@@ -30,7 +30,7 @@ private const val WEAK_PASSWORD_ERROR = "Debe tener al menos 6 caracteres, una m
 @Composable
 fun NewPasswordScreen(
     navController: NavController,
-    viewModel: AuthViewModel
+    viewModel: AuthViewModel,
 ) {
     val recoveryState by viewModel.recoveryState.collectAsState()
     var newPassword by remember { mutableStateOf("") }
@@ -41,8 +41,9 @@ fun NewPasswordScreen(
     // Guard: if we somehow got here without a recovery link, go back
     // PasswordUpdated se permite para mostrar el mensaje de éxito
     LaunchedEffect(Unit) {
-        if (recoveryState !is RecoveryState.LinkReceived && recoveryState !is RecoveryState.Loading
-            && recoveryState !is RecoveryState.Error && recoveryState !is RecoveryState.PasswordUpdated) {
+        if (recoveryState !is RecoveryState.LinkReceived && recoveryState !is RecoveryState.Loading &&
+            recoveryState !is RecoveryState.Error && recoveryState !is RecoveryState.PasswordUpdated
+        ) {
             navController.navigate("login") {
                 popUpTo("login") { inclusive = true }
             }
@@ -76,14 +77,14 @@ fun NewPasswordScreen(
                     }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
                     }
-                }
+                },
             )
-        }
+        },
     ) { padding ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
+                .padding(padding),
         ) {
             when (recoveryState) {
                 is RecoveryState.PasswordUpdated -> {
@@ -93,18 +94,18 @@ fun NewPasswordScreen(
                             .padding(32.dp)
                             .align(Alignment.Center),
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
                         Text(
                             text = "Contraseña actualizada",
                             style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
                         )
                         Text(
                             text = "Tu contraseña se actualizó correctamente. Ahora podés iniciar sesión.",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center
+                            textAlign = TextAlign.Center,
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         OutlinedButton(
@@ -115,7 +116,7 @@ fun NewPasswordScreen(
                                 }
                             },
                             modifier = Modifier.fillMaxWidth().height(48.dp),
-                            shape = RoundedCornerShape(12.dp)
+                            shape = RoundedCornerShape(12.dp),
                         ) {
                             Text("Volver a iniciar sesión")
                         }
@@ -128,24 +129,24 @@ fun NewPasswordScreen(
                             .padding(32.dp)
                             .align(Alignment.Center),
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
                         Surface(
                             color = MaterialTheme.colorScheme.error.copy(alpha = 0.12f),
-                            shape = RoundedCornerShape(8.dp)
+                            shape = RoundedCornerShape(8.dp),
                         ) {
                             Text(
                                 text = (recoveryState as RecoveryState.Error).message,
                                 color = MaterialTheme.colorScheme.error,
                                 modifier = Modifier.padding(12.dp),
                                 fontSize = 13.sp,
-                                fontWeight = FontWeight.Medium
+                                fontWeight = FontWeight.Medium,
                             )
                         }
                         OutlinedButton(
                             onClick = { viewModel.resetRecoveryState() },
                             modifier = Modifier.fillMaxWidth().height(48.dp),
-                            shape = RoundedCornerShape(12.dp)
+                            shape = RoundedCornerShape(12.dp),
                         ) {
                             Text("Solicitar uno nuevo")
                         }
@@ -158,59 +159,77 @@ fun NewPasswordScreen(
                             .padding(horizontal = 32.dp)
                             .align(Alignment.Center),
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
                         Text(
                             text = "Elegí una contraseña nueva para tu cuenta",
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center
+                            textAlign = TextAlign.Center,
                         )
 
                         OutlinedTextField(
                             value = newPassword,
-                            onValueChange = { newPassword = it; localError = null },
+                            onValueChange = {
+                                newPassword = it
+                                localError = null
+                            },
                             label = { Text("Nueva contraseña") },
                             leadingIcon = { Icon(Icons.Default.Lock, contentDescription = "Bloqueado") },
                             trailingIcon = {
                                 IconButton(onClick = { showPassword = !showPassword }) {
                                     Icon(
-                                        imageVector = if (showPassword) Icons.Default.VisibilityOff
-                                                      else Icons.Default.Visibility,
-                                        contentDescription = if (showPassword) "Ocultar" else "Mostrar"
+                                        imageVector = if (showPassword) {
+                                            Icons.Default.VisibilityOff
+                                        } else {
+                                            Icons.Default.Visibility
+                                        },
+                                        contentDescription = if (showPassword) "Ocultar" else "Mostrar",
                                     )
                                 }
                             },
-                            visualTransformation = if (showPassword) VisualTransformation.None
-                                                   else PasswordVisualTransformation(),
+                            visualTransformation = if (showPassword) {
+                                VisualTransformation.None
+                            } else {
+                                PasswordVisualTransformation()
+                            },
                             keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
                                 keyboardType = KeyboardType.Password,
-                                imeAction = ImeAction.Next
+                                imeAction = ImeAction.Next,
                             ),
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp)
+                            shape = RoundedCornerShape(12.dp),
                         )
 
                         OutlinedTextField(
                             value = confirmPassword,
-                            onValueChange = { confirmPassword = it; localError = null },
+                            onValueChange = {
+                                confirmPassword = it
+                                localError = null
+                            },
                             label = { Text("Confirmar contraseña") },
                             leadingIcon = { Icon(Icons.Default.Lock, contentDescription = "Bloqueado") },
                             trailingIcon = {
                                 IconButton(onClick = { showPassword = !showPassword }) {
                                     Icon(
-                                        imageVector = if (showPassword) Icons.Default.VisibilityOff
-                                                      else Icons.Default.Visibility,
-                                        contentDescription = if (showPassword) "Ocultar" else "Mostrar"
+                                        imageVector = if (showPassword) {
+                                            Icons.Default.VisibilityOff
+                                        } else {
+                                            Icons.Default.Visibility
+                                        },
+                                        contentDescription = if (showPassword) "Ocultar" else "Mostrar",
                                     )
                                 }
                             },
-                            visualTransformation = if (showPassword) VisualTransformation.None
-                                                   else PasswordVisualTransformation(),
+                            visualTransformation = if (showPassword) {
+                                VisualTransformation.None
+                            } else {
+                                PasswordVisualTransformation()
+                            },
                             keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
                                 keyboardType = KeyboardType.Password,
-                                imeAction = ImeAction.Done
+                                imeAction = ImeAction.Done,
                             ),
                             keyboardActions = androidx.compose.foundation.text.KeyboardActions(
                                 onDone = {
@@ -221,24 +240,24 @@ fun NewPasswordScreen(
                                         localError = null
                                         viewModel.updatePassword(newPassword)
                                     }
-                                }
+                                },
                             ),
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp)
+                            shape = RoundedCornerShape(12.dp),
                         )
 
                         localError?.let { err ->
                             Surface(
                                 color = MaterialTheme.colorScheme.error.copy(alpha = 0.12f),
-                                shape = RoundedCornerShape(8.dp)
+                                shape = RoundedCornerShape(8.dp),
                             ) {
                                 Text(
                                     text = err,
                                     color = MaterialTheme.colorScheme.error,
                                     modifier = Modifier.padding(12.dp),
                                     fontSize = 13.sp,
-                                    fontWeight = FontWeight.Medium
+                                    fontWeight = FontWeight.Medium,
                                 )
                             }
                         }
@@ -253,23 +272,23 @@ fun NewPasswordScreen(
                                 localError = null
                                 viewModel.updatePassword(newPassword)
                             },
-                            enabled = newPassword.isNotBlank() && confirmPassword.isNotBlank()
-                                    && recoveryState !is RecoveryState.Loading,
+                            enabled = newPassword.isNotBlank() && confirmPassword.isNotBlank() &&
+                                recoveryState !is RecoveryState.Loading,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(52.dp),
-                            shape = RoundedCornerShape(12.dp)
+                            shape = RoundedCornerShape(12.dp),
                         ) {
                             if (recoveryState is RecoveryState.Loading) {
                                 CircularProgressIndicator(
                                     modifier = Modifier.size(22.dp),
                                     strokeWidth = 2.5.dp,
-                                    color = MaterialTheme.colorScheme.onPrimary
+                                    color = MaterialTheme.colorScheme.onPrimary,
                                 )
                             } else {
                                 Text(
                                     "Guardar contraseña",
-                                    fontWeight = FontWeight.Bold
+                                    fontWeight = FontWeight.Bold,
                                 )
                             }
                         }

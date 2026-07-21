@@ -20,17 +20,25 @@ fun computeDiagnosticoAuto(state: EvaluacionUiState): EvaluacionUiState {
     val hasDataOd = state.recetaOdEsf.trim().isNotEmpty() || state.recetaOdCil.trim().isNotEmpty()
     val hasDataOi = state.recetaOiEsf.trim().isNotEmpty() || state.recetaOiCil.trim().isNotEmpty()
 
-    val diagOd = if (effBalanceOd) "Balance"
-    else if (hasDataOd) DiagnosticoCalculator.calcularDiagnostico(state.recetaOdEsf, state.recetaOdCil)
-    else ""
+    val diagOd = if (effBalanceOd) {
+        "Balance"
+    } else if (hasDataOd) {
+        DiagnosticoCalculator.calcularDiagnostico(state.recetaOdEsf, state.recetaOdCil)
+    } else {
+        ""
+    }
 
-    val diagOi = if (effBalanceOi) "Balance"
-    else if (hasDataOi) DiagnosticoCalculator.calcularDiagnostico(state.recetaOiEsf, state.recetaOiCil)
-    else ""
+    val diagOi = if (effBalanceOi) {
+        "Balance"
+    } else if (hasDataOi) {
+        DiagnosticoCalculator.calcularDiagnostico(state.recetaOiEsf, state.recetaOiCil)
+    } else {
+        ""
+    }
 
     return state.copy(
         diagnosticoOd = if (diagOd.isNotEmpty()) listOf(diagOd) else emptyList(),
-        diagnosticoOi = if (diagOi.isNotEmpty()) listOf(diagOi) else emptyList()
+        diagnosticoOi = if (diagOi.isNotEmpty()) listOf(diagOi) else emptyList(),
     )
 }
 
@@ -45,15 +53,19 @@ fun computeOtrosAuto(state: EvaluacionUiState): EvaluacionUiState {
     val newAddIntermediaOi = if (state.isAddAo) state.addIntermediaOd else state.addIntermediaOi
 
     val presbiciaVal = sequenceOf(
-        state.addCercaOd, newAddCercaOi,
-        state.addIntermediaOd, newAddIntermediaOi
+        state.addCercaOd,
+        newAddCercaOi,
+        state.addIntermediaOd,
+        newAddIntermediaOi,
     ).any { (DiagnosticoCalculator.parseRefraction(it) ?: 0.0) > 0 }
 
     val eeOd = (DiagnosticoCalculator.parseRefraction(state.recetaOdEsf) ?: 0.0) + ((DiagnosticoCalculator.parseRefraction(state.recetaOdCil) ?: 0.0) / 2.0)
     val eeOi = (DiagnosticoCalculator.parseRefraction(state.recetaOiEsf) ?: 0.0) + ((DiagnosticoCalculator.parseRefraction(state.recetaOiCil) ?: 0.0) / 2.0)
 
-    val anisometropiaVal = if (!effBalanceOd && !effBalanceOi &&
-        state.recetaOdEsf.isNotEmpty() && state.recetaOiEsf.isNotEmpty()
+    val anisometropiaVal = if (!effBalanceOd &&
+        !effBalanceOi &&
+        state.recetaOdEsf.isNotEmpty() &&
+        state.recetaOiEsf.isNotEmpty()
     ) {
         abs(eeOd - eeOi) >= ANISOMETROPIA_UMBRAL_DIOPTRIAS
     } else {
@@ -64,14 +76,16 @@ fun computeOtrosAuto(state: EvaluacionUiState): EvaluacionUiState {
     val logMarOi = DiagnosticoCalculator.parseSnellenToLogMar(state.avCcOiLejos)
     val ambliopiaVal = if (logMarOd != null && logMarOi != null) {
         abs(logMarOd - logMarOi) >= 0.19
-    } else state.otrosAmbliopia
+    } else {
+        state.otrosAmbliopia
+    }
 
     return state.copy(
         addCercaOi = newAddCercaOi,
         addIntermediaOi = newAddIntermediaOi,
         otrosPresbicia = if (state.autoPresbicia) presbiciaVal else state.otrosPresbicia,
         otrosAnisometropia = if (state.autoAnisometropia) anisometropiaVal else state.otrosAnisometropia,
-        otrosAmbliopia = if (state.autoAmbliopia) ambliopiaVal else state.otrosAmbliopia
+        otrosAmbliopia = if (state.autoAmbliopia) ambliopiaVal else state.otrosAmbliopia,
     )
 }
 

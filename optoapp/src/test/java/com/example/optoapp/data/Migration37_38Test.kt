@@ -7,7 +7,6 @@ import androidx.sqlite.db.framework.FrameworkSQLiteOpenHelperFactory
 import androidx.test.core.app.ApplicationProvider
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -47,7 +46,8 @@ class Migration37_38Test {
             .name(dbName)
             .callback(object : SupportSQLiteOpenHelper.Callback(37) {
                 override fun onCreate(db: SupportSQLiteDatabase) {
-                    db.execSQL("""
+                    db.execSQL(
+                        """
                         CREATE TABLE IF NOT EXISTS dispensaciones (
                             id TEXT NOT NULL PRIMARY KEY,
                             ot TEXT NOT NULL DEFAULT '',
@@ -78,7 +78,8 @@ class Migration37_38Test {
                             updatedAt TEXT,
                             updatedBy TEXT
                         )
-                    """.trimIndent())
+                        """.trimIndent(),
+                    )
                     db.execSQL("CREATE INDEX IF NOT EXISTS index_dispensaciones_pacienteId ON dispensaciones(pacienteId)")
                     db.execSQL("CREATE INDEX IF NOT EXISTS index_dispensaciones_opticaId ON dispensaciones(opticaId)")
                 }
@@ -109,7 +110,7 @@ class Migration37_38Test {
 
         // ── Step 3: Assert regalos_dispensacion table exists ──
         val tableCursor = v38Db.query(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name='regalos_dispensacion'"
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='regalos_dispensacion'",
         )
         assertTrue(tableCursor.moveToFirst())
         assertEquals("regalos_dispensacion", tableCursor.getString(0))
@@ -144,7 +145,8 @@ class Migration37_38Test {
             .name(dbName)
             .callback(object : SupportSQLiteOpenHelper.Callback(37) {
                 override fun onCreate(db: SupportSQLiteDatabase) {
-                    db.execSQL("""
+                    db.execSQL(
+                        """
                         CREATE TABLE IF NOT EXISTS dispensaciones (
                             id TEXT NOT NULL PRIMARY KEY,
                             ot TEXT NOT NULL DEFAULT '',
@@ -175,13 +177,14 @@ class Migration37_38Test {
                             updatedAt TEXT,
                             updatedBy TEXT
                         )
-                    """.trimIndent())
+                        """.trimIndent(),
+                    )
 
                     // Insert a test dispensacion
                     db.execSQL(
                         """INSERT INTO dispensaciones (id, pacienteId, fecha, opticaId, montoTotal, estadoEntrega)
                            VALUES (?, ?, ?, ?, ?, ?)""",
-                        arrayOf<Any>("disp1", "p1", "2026-07-01", "optica1", 250.0, "Pendiente")
+                        arrayOf<Any>("disp1", "p1", "2026-07-01", "optica1", 250.0, "Pendiente"),
                     )
                 }
 
@@ -248,7 +251,7 @@ class Migration37_38Test {
         v38Db.execSQL(
             """INSERT INTO regalos_dispensacion (id, dispensacion_id, producto_id, cantidad, costo_unitario, descripcion, optica_id)
                VALUES (?, ?, ?, ?, ?, ?, ?)""",
-            arrayOf<Any>("r1", "disp1", "prod1", 2, 50.0, "Estuche de regalo", "optica1")
+            arrayOf<Any>("r1", "disp1", "prod1", 2, 50.0, "Estuche de regalo", "optica1"),
         )
         val regaloCount = v38Db.query("SELECT COUNT(*) FROM regalos_dispensacion")
         assertTrue(regaloCount.moveToFirst())

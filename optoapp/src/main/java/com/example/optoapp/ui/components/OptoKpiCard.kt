@@ -35,12 +35,12 @@ fun OptoKpiCard(
     color: Color,
     icon: ImageVector,
     modifier: Modifier = Modifier,
-    iconContentDescription: String? = title
+    iconContentDescription: String? = title,
 ) {
     Card(
         modifier = modifier,
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.08f))
+        colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.08f)),
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {

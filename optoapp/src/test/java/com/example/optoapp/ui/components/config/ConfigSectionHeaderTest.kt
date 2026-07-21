@@ -19,8 +19,8 @@ class ConfigSectionHeaderTest {
         val methods = clazz.declaredMethods.map { it.name }
         assertTrue(
             "SectionHeader debe ser función top-level en ConfigSectionHeaderKt. " +
-            "Encontrados: $methods",
-            methodName in methods
+                "Encontrados: $methods",
+            methodName in methods,
         )
     }
 
@@ -32,7 +32,7 @@ class ConfigSectionHeaderTest {
         val paramTypes = method.parameterTypes.map { it.simpleName }
         assertTrue(
             "Debe aceptar String como parámetro. Encontrados: $paramTypes",
-            paramTypes.contains("String")
+            paramTypes.contains("String"),
         )
     }
 
@@ -44,7 +44,7 @@ class ConfigSectionHeaderTest {
         val paramTypes = method.parameterTypes.map { it.simpleName }
         assertTrue(
             "Debe aceptar ImageVector como parámetro opcional. Encontrados: $paramTypes",
-            paramTypes.contains("ImageVector")
+            paramTypes.contains("ImageVector"),
         )
     }
 }

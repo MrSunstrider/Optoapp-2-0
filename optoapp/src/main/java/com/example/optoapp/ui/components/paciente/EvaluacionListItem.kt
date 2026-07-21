@@ -9,7 +9,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -21,7 +20,7 @@ fun EvaluacionListItem(
     eval: EvaluacionClinica,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
-    onResumen: () -> Unit
+    onResumen: () -> Unit,
 ) {
     val date = DateUtils.formatLocalized(eval.fecha)
     var showDeleteDialog by remember { mutableStateOf(false) }
@@ -31,13 +30,13 @@ fun EvaluacionListItem(
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.Event, contentDescription = "Evento", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
@@ -99,7 +98,7 @@ fun EvaluacionListItem(
                         onDelete()
                         showDeleteDialog = false
                     },
-                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
                 ) {
                     Text("Eliminar")
                 }
@@ -108,7 +107,7 @@ fun EvaluacionListItem(
                 TextButton(onClick = { showDeleteDialog = false }) {
                     Text("Cancelar")
                 }
-            }
+            },
         )
     }
 }

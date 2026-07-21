@@ -10,6 +10,7 @@ import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Pago
 import com.example.optoapp.data.ServicioExtra
 import com.example.optoapp.data.SessionManager
+import com.example.optoapp.util.DateUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,7 +26,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import java.time.LocalDate
-import com.example.optoapp.util.DateUtils
 import javax.inject.Inject
 
 data class CierreCajaUiState(
@@ -41,14 +41,14 @@ data class CierreCajaUiState(
     val saldoPendiente: Double = 0.0,
     val isLoading: Boolean = true,
     val errorMessage: String? = null,
-    val pagosFuturos: Double = 0.0
+    val pagosFuturos: Double = 0.0,
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class CierreCajaViewModel @Inject constructor(
     private val repository: OptoRepository,
-    private val sessionManager: SessionManager
+    private val sessionManager: SessionManager,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CierreCajaUiState())
@@ -68,7 +68,7 @@ class CierreCajaViewModel @Inject constructor(
         combine(
             _uiState.map { it.fecha }.distinctUntilChanged(),
             sessionManager.opticaId,
-            sessionManager.opticaRol
+            sessionManager.opticaRol,
         ) { fecha, opticaId, rol -> Triple(fecha, opticaId, rol) }
             .distinctUntilChanged()
             .flatMapLatest { (fecha, opticaId, rol) ->
@@ -81,7 +81,7 @@ class CierreCajaViewModel @Inject constructor(
                 combine(
                     repository.getPagosByDateRangeForOptica(fecha, fecha, opticaId),
                     repository.getDispensacionesByDateRangeForOptica(fecha, fecha, opticaId),
-                    repository.getServiciosByDateRangeForOptica(fecha, fecha, opticaId)
+                    repository.getServiciosByDateRangeForOptica(fecha, fecha, opticaId),
                 ) { pagos, dispensaciones, servicios ->
                     val dispMap = dispensaciones.associateBy { it.id }.toMutableMap()
                     val servMap = servicios.associateBy { it.id }.toMutableMap()
@@ -141,7 +141,7 @@ class CierreCajaViewModel @Inject constructor(
                         cobrosAtrasados = cobrosAtrasados,
                         saldoPendiente = saldoPendiente,
                         isLoading = false,
-                        pagosFuturos = pagosFuturos
+                        pagosFuturos = pagosFuturos,
                     )
                 }.catch { e ->
                     Log.e(TAG, "observePagos inner flow failed", e)
@@ -149,8 +149,8 @@ class CierreCajaViewModel @Inject constructor(
                         CierreCajaUiState(
                             fecha = fecha,
                             isLoading = false,
-                            errorMessage = "Error al cargar datos: ${e.message}"
-                        )
+                            errorMessage = "Error al cargar datos: ${e.message}",
+                        ),
                     )
                 }
             }

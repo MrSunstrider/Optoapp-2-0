@@ -32,7 +32,7 @@ class PostSaveSyncSchedulerNullUseCaseTest {
     private val testScope = TestScope(testDispatcher)
     private val fakeSupabase = createSupabaseClient(
         supabaseUrl = "https://test.supabase.co",
-        supabaseKey = "test-key"
+        supabaseKey = "test-key",
     ) { }
 
     @After
@@ -40,29 +40,27 @@ class PostSaveSyncSchedulerNullUseCaseTest {
         ShadowLog.clear()
     }
 
-    private fun createSchedulerWithNullUseCases(): PostSaveSyncScheduler {
-        return object : PostSaveSyncScheduler(
-            applicationScope = testScope,
-            syncGate = SyncGate(),
-            supabase = fakeSupabase,
-            syncPacientesUseCase = null,
-            syncHistorialUseCase = null,
-            syncFinanzasUseCase = null,
-            syncInventarioUseCase = null,
-            syncProveedoresUseCase = null,
-            syncOrdenesCompraUseCase = null,
-            syncInventarioFisicoUseCase = null,
-            syncInventoryKpisUseCase = null
-        ) {
-            override suspend fun ensureSessionForPostSaveSync(stage: String): Boolean = true
+    private fun createSchedulerWithNullUseCases(): PostSaveSyncScheduler = object : PostSaveSyncScheduler(
+        applicationScope = testScope,
+        syncGate = SyncGate(),
+        supabase = fakeSupabase,
+        syncPacientesUseCase = null,
+        syncHistorialUseCase = null,
+        syncFinanzasUseCase = null,
+        syncInventarioUseCase = null,
+        syncProveedoresUseCase = null,
+        syncOrdenesCompraUseCase = null,
+        syncInventarioFisicoUseCase = null,
+        syncInventoryKpisUseCase = null,
+    ) {
+        override suspend fun ensureSessionForPostSaveSync(stage: String): Boolean = true
 
-            override fun scheduleDebounced(
-                key: String,
-                delayMs: Long,
-                block: suspend () -> Unit
-            ) {
-                kotlinx.coroutines.runBlocking { block() }
-            }
+        override fun scheduleDebounced(
+            key: String,
+            delayMs: Long,
+            block: suspend () -> Unit,
+        ) {
+            kotlinx.coroutines.runBlocking { block() }
         }
     }
 
@@ -76,7 +74,7 @@ class PostSaveSyncSchedulerNullUseCaseTest {
         }
         assertTrue(
             "Expected no 'Error inesperado' log; useCase should be null-checked safely",
-            errorLogs.isEmpty()
+            errorLogs.isEmpty(),
         )
     }
 
@@ -90,7 +88,7 @@ class PostSaveSyncSchedulerNullUseCaseTest {
         }
         assertTrue(
             "Expected no 'Error inesperado' log; useCase should be null-checked safely",
-            errorLogs.isEmpty()
+            errorLogs.isEmpty(),
         )
     }
 
@@ -104,7 +102,7 @@ class PostSaveSyncSchedulerNullUseCaseTest {
         }
         assertTrue(
             "Expected no 'Error inesperado' log; useCase should be null-checked safely",
-            errorLogs.isEmpty()
+            errorLogs.isEmpty(),
         )
     }
 
@@ -118,7 +116,7 @@ class PostSaveSyncSchedulerNullUseCaseTest {
         }
         assertTrue(
             "Expected no 'Error inesperado' log; useCase should be null-checked safely",
-            errorLogs.isEmpty()
+            errorLogs.isEmpty(),
         )
     }
 
@@ -132,7 +130,7 @@ class PostSaveSyncSchedulerNullUseCaseTest {
         }
         assertTrue(
             "Expected no 'Error inesperado' log; useCase should be null-checked safely",
-            errorLogs.isEmpty()
+            errorLogs.isEmpty(),
         )
     }
 
@@ -146,7 +144,7 @@ class PostSaveSyncSchedulerNullUseCaseTest {
         }
         assertTrue(
             "Expected no 'Error inesperado' log; useCase should be null-checked safely",
-            errorLogs.isEmpty()
+            errorLogs.isEmpty(),
         )
     }
 
@@ -160,7 +158,7 @@ class PostSaveSyncSchedulerNullUseCaseTest {
         }
         assertTrue(
             "Expected no 'Error inesperado' log; useCase should be null-checked safely",
-            errorLogs.isEmpty()
+            errorLogs.isEmpty(),
         )
     }
 
@@ -174,7 +172,7 @@ class PostSaveSyncSchedulerNullUseCaseTest {
         }
         assertTrue(
             "Expected no 'Error inesperado' log; useCase should be null-checked safely",
-            errorLogs.isEmpty()
+            errorLogs.isEmpty(),
         )
     }
 }

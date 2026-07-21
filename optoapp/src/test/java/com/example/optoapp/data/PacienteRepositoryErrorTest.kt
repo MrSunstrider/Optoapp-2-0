@@ -13,8 +13,6 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import java.io.IOException
 
-@RunWith(RobolectricTestRunner::class)
-
 /**
  * Approval + behavior tests for [PacienteRepository] catch-block refactoring.
  *
@@ -23,6 +21,7 @@ import java.io.IOException
  * - CancellationException propagates (NOT caught by generic handler)
  * - Generic Exception still returns [Resource.Error]
  */
+@RunWith(RobolectricTestRunner::class)
 class PacienteRepositoryErrorTest {
 
     private lateinit var pacienteDao: PacienteDao

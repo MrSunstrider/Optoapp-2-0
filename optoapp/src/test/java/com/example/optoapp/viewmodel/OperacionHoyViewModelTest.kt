@@ -31,7 +31,7 @@ class OperacionHoyViewModelTest {
             entregasPendientes = 3,
             cobrosHoy = 450.0,
             stockCritico = 2,
-            alertas = listOf("Stock crítico", "Entregas atrasadas")
+            alertas = listOf("Stock crítico", "Entregas atrasadas"),
         )
         assertEquals(5, state.citasHoy)
         assertEquals(3, state.entregasPendientes)
@@ -43,7 +43,7 @@ class OperacionHoyViewModelTest {
     @Test
     fun operacionHoyUiState_copyWithModifications() {
         val original = OperacionHoyUiState(
-            fecha = LocalDate.of(2024, 1, 1)
+            fecha = LocalDate.of(2024, 1, 1),
         )
         val modified = original.copy(citasHoy = 10, alertas = listOf("Test alerta"))
         assertEquals(10, modified.citasHoy)
@@ -70,7 +70,7 @@ class OperacionHoyViewModelTest {
     fun operacionHoyUiState_alertasList_immutable() {
         val state = OperacionHoyUiState(
             fecha = LocalDate.of(2024, 1, 1),
-            alertas = mutableListOf("Alerta 1", "Alerta 2")
+            alertas = mutableListOf("Alerta 1", "Alerta 2"),
         )
         assertEquals(2, state.alertas.size)
     }
@@ -85,21 +85,21 @@ class OperacionHoyViewModelTest {
         val citas = listOf(
             EvaluacionClinica(id = "e1", pacienteId = "p1", fecha = today),
             EvaluacionClinica(id = "e2", pacienteId = "p2", fecha = today),
-            EvaluacionClinica(id = "e3", pacienteId = "p3", fecha = today)
+            EvaluacionClinica(id = "e3", pacienteId = "p3", fecha = today),
         )
         val dispensaciones = listOf(
             DispensacionOptica(id = "d1", pacienteId = "p1", fecha = today, estadoEntrega = "Pendiente"),
-            DispensacionOptica(id = "d2", pacienteId = "p2", fecha = today, estadoEntrega = "Entregado")
+            DispensacionOptica(id = "d2", pacienteId = "p2", fecha = today, estadoEntrega = "Entregado"),
         )
         val pagos = listOf(
-            Pago(id = "p1", fecha = today, tipo = "Efectivo", monto = 450.0)
+            Pago(id = "p1", fecha = today, tipo = "Efectivo", monto = 450.0),
         )
         val servicios = listOf(
-            ServicioExtra(id = "s1", descripcion = "Limpieza", montoTotal = 100.0, aCuenta = 0.0, estado = "Pendiente", fecha = today)
+            ServicioExtra(id = "s1", descripcion = "Limpieza", montoTotal = 100.0, aCuenta = 0.0, estado = "Pendiente", fecha = today),
         )
         val monturas = listOf(
             Montura(id = "m1", stockActual = 5, stockMinimo = 10, activo = true),
-            Montura(id = "m2", stockActual = 15, stockMinimo = 10, activo = true)
+            Montura(id = "m2", stockActual = 15, stockMinimo = 10, activo = true),
         )
 
         // ViewModel formulas: filter, count, sum
@@ -127,7 +127,7 @@ class OperacionHoyViewModelTest {
             pagosHoy = pagos,
             dispensacionesPendientes = dispPendientes,
             serviciosPendientes = servPendientes,
-            monturas = monturas
+            monturas = monturas,
         )
         assertEquals(3, state.citasHoy)
         assertEquals(2, state.entregasPendientes)
@@ -150,33 +150,33 @@ class OperacionHoyViewModelTest {
         val citas = listOf(
             EvaluacionClinica(id = "e1", pacienteId = "p1", fecha = today, citaEstado = "programada"),
             EvaluacionClinica(id = "e2", pacienteId = "p2", fecha = today, citaEstado = "confirmada"),
-            EvaluacionClinica(id = "e3", pacienteId = "p3", fecha = today, citaEstado = "programada")
+            EvaluacionClinica(id = "e3", pacienteId = "p3", fecha = today, citaEstado = "programada"),
         )
         // 4 dispensaciones: 2 pendientes (1 atrasada ayer), 1 entregada, 1 pendiente hoy
         val dispensaciones = listOf(
             DispensacionOptica(id = "d1", pacienteId = "p1", fecha = yesterday, estadoEntrega = "Pendiente"),
             DispensacionOptica(id = "d2", pacienteId = "p2", fecha = yesterday, estadoEntrega = "Entregado"),
             DispensacionOptica(id = "d3", pacienteId = "p3", fecha = yesterday, estadoEntrega = "Pendiente"),
-            DispensacionOptica(id = "d4", pacienteId = "p4", fecha = today, estadoEntrega = "Pendiente")
+            DispensacionOptica(id = "d4", pacienteId = "p4", fecha = today, estadoEntrega = "Pendiente"),
         )
         // 3 pagos today: total 850
         val pagos = listOf(
             Pago(id = "p1", fecha = today, tipo = "Efectivo", monto = 500.0),
             Pago(id = "p2", fecha = today, tipo = "Tarjeta", monto = 200.0),
-            Pago(id = "p3", fecha = today, tipo = "Transferencia", monto = 150.0)
+            Pago(id = "p3", fecha = today, tipo = "Transferencia", monto = 150.0),
         )
         // 2 servicios: 1 pendiente
         val servicios = listOf(
             ServicioExtra(id = "s1", descripcion = "Limpieza", montoTotal = 100.0, aCuenta = 0.0, estado = "Pendiente", fecha = today),
-            ServicioExtra(id = "s2", descripcion = "Reparación", montoTotal = 200.0, aCuenta = 200.0, estado = "Entregado", fecha = today)
+            ServicioExtra(id = "s2", descripcion = "Reparación", montoTotal = 200.0, aCuenta = 200.0, estado = "Entregado", fecha = today),
         )
         // 5 monturas: 2 críticas (stockActual <= stockMinimo + activo)
         val monturas = listOf(
-            Montura(id = "m1", stockActual = 3, stockMinimo = 10, activo = true),   // crítico
-            Montura(id = "m2", stockActual = 15, stockMinimo = 10, activo = true),  // ok
-            Montura(id = "m3", stockActual = 5, stockMinimo = 5, activo = true),    // crítico (igual)
-            Montura(id = "m4", stockActual = 0, stockMinimo = 5, activo = false),   // inactivo → no cuenta
-            Montura(id = "m5", stockActual = 20, stockMinimo = 10, activo = true)   // ok
+            Montura(id = "m1", stockActual = 3, stockMinimo = 10, activo = true), // crítico
+            Montura(id = "m2", stockActual = 15, stockMinimo = 10, activo = true), // ok
+            Montura(id = "m3", stockActual = 5, stockMinimo = 5, activo = true), // crítico (igual)
+            Montura(id = "m4", stockActual = 0, stockMinimo = 5, activo = false), // inactivo → no cuenta
+            Montura(id = "m5", stockActual = 20, stockMinimo = 10, activo = true), // ok
         )
 
         // Compute aggregation exactly as the ViewModel does
@@ -210,7 +210,7 @@ class OperacionHoyViewModelTest {
             pagosHoy = pagos,
             dispensacionesPendientes = dispPendientes,
             serviciosPendientes = servPendientes,
-            monturas = monturas
+            monturas = monturas,
         )
 
         assertEquals(today, state.fecha)
@@ -237,8 +237,8 @@ class OperacionHoyViewModelTest {
             citasHoy = 5,
             cobrosHoy = 1200.0,
             pagosHoy = listOf(
-                Pago(id = "p1", fecha = today, tipo = "Efectivo", monto = 1200.0)
-            )
+                Pago(id = "p1", fecha = today, tipo = "Efectivo", monto = 1200.0),
+            ),
             // entregasPendientes, stockCritico, alertas, dispensacionesPendientes,
             // serviciosPendientes, monturas all at defaults
         )
@@ -269,9 +269,9 @@ class OperacionHoyViewModelTest {
             monturas = listOf(
                 Montura(id = "m1", stockActual = 2, stockMinimo = 10, activo = true),
                 Montura(id = "m2", stockActual = 0, stockMinimo = 5, activo = true),
-                Montura(id = "m3", stockActual = 8, stockMinimo = 8, activo = true)
+                Montura(id = "m3", stockActual = 8, stockMinimo = 8, activo = true),
             ),
-            alertas = listOf("Hay 3 monturas en stock crítico.")
+            alertas = listOf("Hay 3 monturas en stock crítico."),
         )
 
         assertEquals(3, state.stockCritico)

@@ -16,7 +16,7 @@ interface SyncEntityStateDao {
         WHERE opticaId = :opticaId AND status = 'error'
         ORDER BY updatedAt DESC
         LIMIT 200
-        """
+        """,
     )
     fun observeErrorsForOptica(opticaId: String): Flow<List<SyncEntityState>>
 

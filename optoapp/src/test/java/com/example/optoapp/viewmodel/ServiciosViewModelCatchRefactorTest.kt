@@ -22,7 +22,7 @@ class ServiciosViewModelCatchRefactorTest {
     fun `servicio error message pattern`() {
         val message = "No se pudo guardar el servicio."
         val error = "Error de red: timeout"
-        val result = "$message ${error}"
+        val result = "$message $error"
         assertTrue(result.contains("No se pudo guardar el servicio."))
     }
 
@@ -65,7 +65,7 @@ class ServiciosViewModelCatchRefactorTest {
             try {
                 throw CancellationException("test cancel")
             } catch (e: CancellationException) {
-                throw e  // rethrow
+                throw e // rethrow
             } catch (e: Exception) {
                 caught.add(e)
             }
@@ -99,7 +99,7 @@ class ServiciosViewModelCatchRefactorTest {
         } catch (e: java.io.IOException) {
             caught = e
         } catch (e: Exception) {
-            caught = e  // Current behavior: this catches it
+            caught = e // Current behavior: this catches it
         }
         assertNotNull(caught)
         assertTrue(caught is RuntimeException)

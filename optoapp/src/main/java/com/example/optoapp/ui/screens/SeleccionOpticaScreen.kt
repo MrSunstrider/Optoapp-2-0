@@ -13,10 +13,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.example.optoapp.ui.components.OptoCard
+import com.example.optoapp.ui.components.OptoTopAppBar
 import com.example.optoapp.viewmodel.AuthViewModel
 import kotlinx.coroutines.launch
-import com.example.optoapp.ui.components.OptoTopAppBar
-import com.example.optoapp.ui.components.OptoCard
 
 /**
  * Elección de óptica cuando el usuario tiene varias membresías ([usuario_optica]).
@@ -25,7 +25,7 @@ import com.example.optoapp.ui.components.OptoCard
 @Composable
 fun SeleccionOpticaScreen(
     navController: NavController,
-    viewModel: AuthViewModel = hiltViewModel()
+    viewModel: AuthViewModel = hiltViewModel(),
 ) {
     val memberships by viewModel.pendingMemberships.collectAsState()
     val isPinRequired by viewModel.isPinRequired.collectAsState(initial = false)
@@ -44,19 +44,19 @@ fun SeleccionOpticaScreen(
         containerColor = MaterialTheme.colorScheme.surface,
         topBar = {
             OptoTopAppBar(title = "Seleccionar óptica", useWindowInsets = true)
-        }
+        },
     ) { padding ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
                 .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             item {
                 Text(
                     "Tienes acceso a varias ópticas. Elige con cuál trabajar ahora.",
-                    style = MaterialTheme.typography.bodyMedium
+                    style = MaterialTheme.typography.bodyMedium,
                 )
                 Spacer(Modifier.height(16.dp))
             }
@@ -74,21 +74,21 @@ fun SeleccionOpticaScreen(
                                 }
                                 busy = false
                             }
-                        }
+                        },
                 ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(16.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Column(Modifier.weight(1f)) {
                             Text(m.nombre, style = MaterialTheme.typography.titleMedium)
                             Text(
                                 "Rol: ${m.rol}",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                         Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Siguiente")

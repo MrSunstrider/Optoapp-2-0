@@ -35,7 +35,7 @@ fun InformacionFinancieraScreen(
     navController: NavController,
     dispensacionId: String?,
     onComplete: () -> Unit = { navController.popBackStack() },
-    viewModel: InformacionFinancieraViewModel = hiltViewModel()
+    viewModel: InformacionFinancieraViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -71,9 +71,9 @@ fun InformacionFinancieraScreen(
                     IconButton(onClick = { saveAction() }) {
                         Icon(Icons.Default.Check, contentDescription = "Guardar")
                     }
-                }
+                },
             )
-        }
+        },
     ) { padding ->
         Column(
             modifier = Modifier
@@ -82,12 +82,12 @@ fun InformacionFinancieraScreen(
                 .padding(16.dp)
                 .navigationBarsPadding()
                 .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             uiState.contexto?.let { ctx ->
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f))
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)),
                 ) {
                     Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text("OT: ${ctx.ot}", fontWeight = FontWeight.Bold, fontSize = 18.sp)
@@ -104,7 +104,7 @@ fun InformacionFinancieraScreen(
                 value = uiState.montoTotal,
                 onValueChange = { viewModel.updateMontoTotal(it) },
                 label = "Monto Total",
-                keyboardType = KeyboardType.Decimal
+                keyboardType = KeyboardType.Decimal,
             )
 
             HorizontalDivider()
@@ -118,17 +118,17 @@ fun InformacionFinancieraScreen(
             uiState.pagos.forEach { pago ->
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
                 ) {
                     Row(
                         modifier = Modifier.padding(12.dp),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 "${pago.metodoPago}: s/. ${String.format(Locale.getDefault(), "%.2f", pago.monto)}",
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.Bold,
                             )
                             if (pago.nota.isNotEmpty()) {
                                 Text(pago.nota, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -136,7 +136,7 @@ fun InformacionFinancieraScreen(
                             Text(
                                 DateUtils.formatLocalized(pago.fecha),
                                 fontSize = 11.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                         Row {
@@ -154,7 +154,7 @@ fun InformacionFinancieraScreen(
                                     onConfirm = { updatedPago: Pago ->
                                         viewModel.updatePago(updatedPago)
                                         showEditDialog = false
-                                    }
+                                    },
                                 )
                             }
                             IconButton(onClick = { showEditDialog = true }, modifier = Modifier.size(48.dp)) {
@@ -178,14 +178,14 @@ fun InformacionFinancieraScreen(
                     onConfirm = { nuevoPago: Pago ->
                         viewModel.addPago(nuevoPago)
                         showAddDialog = false
-                    }
+                    },
                 )
             }
 
             OutlinedButton(
                 onClick = { showAddDialog = true },
                 modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary)
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary),
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Agregar")
                 Spacer(Modifier.width(8.dp))
@@ -197,27 +197,27 @@ fun InformacionFinancieraScreen(
             // Saldo restante se calcula en el ViewModel para mantener una unica fuente de verdad
             Column(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(
                     "SALDO RESTANTE",
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 val formattedSaldo = String.format(Locale.getDefault(), "%.2f", saldo)
                 Text(
                     text = "s/. $formattedSaldo",
                     color = if (saldo > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary,
                     fontSize = 32.sp,
-                    fontWeight = FontWeight.ExtraBold
+                    fontWeight = FontWeight.ExtraBold,
                 )
             }
 
             DropdownField(
                 label = "Estado de Entrega",
                 selected = uiState.estadoEntrega,
-                options = listOf("Pendiente", "Entregado")
+                options = listOf("Pendiente", "Entregado"),
             ) { newEstado ->
                 viewModel.updateEstado(newEstado)
             }
@@ -227,13 +227,13 @@ fun InformacionFinancieraScreen(
                     fechaEntrega = uiState.fechaEntrega,
                     onFechaChanged = { nuevaFecha ->
                         viewModel.updateFechaEntrega(nuevaFecha)
-                    }
+                    },
                 )
             }
 
             Button(
                 onClick = { saveAction() },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
             ) {
                 Text("Guardar Cambios")
             }
@@ -242,7 +242,7 @@ fun InformacionFinancieraScreen(
                 Text(
                     text = uiState.error ?: "",
                     color = MaterialTheme.colorScheme.error,
-                    fontSize = 13.sp
+                    fontSize = 13.sp,
                 )
             }
 

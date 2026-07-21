@@ -39,7 +39,7 @@ private val DarkColorScheme = darkColorScheme(
     inverseOnSurface = OptoTokens.colorsDark.inverseOnSurface,
     inversePrimary = OptoTokens.colorsDark.inversePrimary,
     scrim = OptoTokens.colorsDark.scrim,
-    surfaceTint = OptoTokens.colorsDark.surfaceTint
+    surfaceTint = OptoTokens.colorsDark.surfaceTint,
 )
 
 private val LightColorScheme = lightColorScheme(
@@ -71,13 +71,13 @@ private val LightColorScheme = lightColorScheme(
     inverseOnSurface = OptoTokens.colors.inverseOnSurface,
     inversePrimary = OptoTokens.colors.inversePrimary,
     scrim = OptoTokens.colors.scrim,
-    surfaceTint = OptoTokens.colors.surfaceTint
+    surfaceTint = OptoTokens.colors.surfaceTint,
 )
 
 @Composable
 fun OptoAppTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
 
@@ -95,6 +95,6 @@ fun OptoAppTheme(
         colorScheme = colorScheme,
         typography = AppTypography,
         shapes = OptoTokens.getShapes(),
-        content = content
+        content = content,
     )
 }

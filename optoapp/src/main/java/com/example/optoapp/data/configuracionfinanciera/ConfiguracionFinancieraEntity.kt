@@ -14,5 +14,5 @@ data class ConfiguracionFinancieraEntity(
     val stockEstancadoAlertaDias: Int = 180,
     val stockBajoAlertaUnidades: Int = 2,
     val minVentasParaRecomendar: Int = 5,
-    val frecuenciaRecalculoDias: Int = 1
+    val frecuenciaRecalculoDias: Int = 1,
 )

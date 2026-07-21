@@ -1,6 +1,5 @@
 package com.example.optoapp.ui.components.paciente
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -8,10 +7,10 @@ import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.optoapp.data.Paciente
@@ -26,14 +25,14 @@ fun PacienteInfoHeader(paciente: Paciente, deudaTotal: Double = 0.0) {
             .padding(16.dp),
         shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Surface(
                     modifier = Modifier.size(60.dp),
                     shape = RoundedCornerShape(30.dp),
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(Icons.Default.Person, contentDescription = "Persona", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(32.dp))
@@ -54,15 +53,15 @@ fun PacienteInfoHeader(paciente: Paciente, deudaTotal: Double = 0.0) {
                 Surface(
                     shape = RoundedCornerShape(8.dp),
                     color = deudaColor.copy(alpha = 0.1f),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 ) {
                     Row(
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Icon(Icons.Default.AccountBalanceWallet, contentDescription = "Billetera", tint = deudaColor, modifier = Modifier.size(20.dp))
                         Spacer(Modifier.width(8.dp))
-                        Text("Deuda total: s/. ${String.format(Locale.getDefault(), "%,.2f", deudaTotal)}", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = deudaColor)
+                        Text("Deuda total: s/. ${String.format(Locale.US, "%,.2f", deudaTotal)}", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = deudaColor)
                     }
                 }
                 Spacer(modifier = Modifier.height(12.dp))

@@ -21,14 +21,14 @@ fun SectionHeader(text: String, icon: ImageVector? = null) {
     Row(
         modifier = Modifier.padding(start = 2.dp, top = 16.dp, bottom = OptoTokens.spacing.sm),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp)
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         if (icon != null) {
             Icon(
                 icon,
                 contentDescription = "Seccion",
                 tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(16.dp)
+                modifier = Modifier.size(16.dp),
             )
         }
         Text(
@@ -36,7 +36,7 @@ fun SectionHeader(text: String, icon: ImageVector? = null) {
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.primary,
             fontWeight = FontWeight.Bold,
-            letterSpacing = 0.5.sp
+            letterSpacing = 0.5.sp,
         )
     }
 }

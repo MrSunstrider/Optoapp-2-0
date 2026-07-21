@@ -17,29 +17,29 @@ import javax.inject.Inject
 class MonturaInventoryCoordinator @Inject constructor(
     private val monturaDao: MonturaDao,
     private val monturaMovimientoDao: MonturaMovimientoDao,
-    private val postSaveSyncScheduler: Lazy<PostSaveSyncScheduler>
+    private val postSaveSyncScheduler: Lazy<PostSaveSyncScheduler>,
 ) {
     companion object {
         private const val TAG = "MonturaInventoryCoordinator"
     }
 
-    fun getMonturasByOptica(opticaId: String): Flow<List<Montura>> =
-        monturaDao.getMonturasByOptica(opticaId)
+    fun getMonturasByOptica(opticaId: String): Flow<List<Montura>> = monturaDao.getMonturasByOptica(opticaId)
 
-    suspend fun getMonturaById(id: String, opticaId: String): Resource<Montura> {
-        return try {
-            val montura = monturaDao.getMonturaByIdForOptica(id, opticaId)
-            if (montura != null) Resource.Success(montura)
-            else Resource.Error("Montura no encontrada")
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: IOException) {
-            Log.e(TAG, "Error de red al obtener montura", e)
-            Resource.Error(e.message ?: "Error al obtener montura")
-        } catch (e: Exception) {
-            Log.e(TAG, "Error inesperado al obtener montura", e)
-            Resource.Error(e.message ?: "Error al obtener montura")
+    suspend fun getMonturaById(id: String, opticaId: String): Resource<Montura> = try {
+        val montura = monturaDao.getMonturaByIdForOptica(id, opticaId)
+        if (montura != null) {
+            Resource.Success(montura)
+        } else {
+            Resource.Error("Montura no encontrada")
         }
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: IOException) {
+        Log.e(TAG, "Error de red al obtener montura", e)
+        Resource.Error(e.message ?: "Error al obtener montura")
+    } catch (e: Exception) {
+        Log.e(TAG, "Error inesperado al obtener montura", e)
+        Resource.Error(e.message ?: "Error al obtener montura")
     }
 
     suspend fun insertMontura(montura: Montura) {
@@ -62,7 +62,7 @@ class MonturaInventoryCoordinator @Inject constructor(
             categoria = stamped.categoria, coleccion = stamped.coleccion,
             temporada = stamped.temporada, estadoComercial = stamped.estadoComercial,
             genero = stamped.genero, updatedAt = stamped.updatedAt,
-            updatedBy = stamped.updatedBy
+            updatedBy = stamped.updatedBy,
         )
         postSaveSyncScheduler.get().scheduleInventarioSync(stamped.opticaId)
     }
@@ -78,14 +78,11 @@ class MonturaInventoryCoordinator @Inject constructor(
         return changed
     }
 
-    fun getMovimientosMonturaByOptica(opticaId: String): Flow<List<MonturaMovimiento>> =
-        monturaMovimientoDao.getMovimientosByOptica(opticaId)
+    fun getMovimientosMonturaByOptica(opticaId: String): Flow<List<MonturaMovimiento>> = monturaMovimientoDao.getMovimientosByOptica(opticaId)
 
-    fun getMovimientosByMontura(monturaId: String): Flow<List<MonturaMovimiento>> =
-        monturaMovimientoDao.getMovimientosByMontura(monturaId)
+    fun getMovimientosByMontura(monturaId: String): Flow<List<MonturaMovimiento>> = monturaMovimientoDao.getMovimientosByMontura(monturaId)
 
-    suspend fun getMovimientoMonturaById(id: String): MonturaMovimiento? =
-        monturaMovimientoDao.getMovimientoById(id)
+    suspend fun getMovimientoMonturaById(id: String): MonturaMovimiento? = monturaMovimientoDao.getMovimientoById(id)
 
     suspend fun insertMonturaMovimiento(movimiento: MonturaMovimiento) {
         monturaMovimientoDao.insertMovimiento(movimiento)
@@ -100,7 +97,7 @@ class MonturaInventoryCoordinator @Inject constructor(
         costoUnitario: Double,
         tipoDocumento: String,
         referenciaId: String,
-        nota: String
+        nota: String,
     ): Resource<Unit> {
         try {
             val montura = monturaDao.getMonturaByIdForOptica(monturaId, opticaId)
@@ -123,7 +120,7 @@ class MonturaInventoryCoordinator @Inject constructor(
                 opticaId = opticaId,
                 userId = userId,
                 costoUnitario = costoUnitario,
-                tipoDocumento = tipoDocumento
+                tipoDocumento = tipoDocumento,
             )
             monturaMovimientoDao.insertMovimiento(movimiento)
             postSaveSyncScheduler.get().scheduleInventarioSync(opticaId)

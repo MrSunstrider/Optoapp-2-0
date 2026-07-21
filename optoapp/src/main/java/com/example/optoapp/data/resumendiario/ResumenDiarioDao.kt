@@ -10,22 +10,25 @@ interface ResumenDiarioDao {
     @Query("SELECT * FROM resumen_diario WHERE opticaId = :opticaId ORDER BY fecha DESC")
     fun getByOpticaId(opticaId: String): Flow<List<ResumenDiarioEntity>>
 
-    @Query("""
+    @Query(
+        """
         SELECT * FROM resumen_diario
         WHERE opticaId = :opticaId
           AND strftime('%Y-%m', fecha) = :yearMonth
         ORDER BY fecha ASC
-    """)
+    """,
+    )
     suspend fun getByOpticaAndMonth(opticaId: String, yearMonth: String): List<ResumenDiarioEntity>
 
-    @Query("""
+    @Query(
+        """
         SELECT * FROM resumen_diario
         WHERE opticaId = :opticaId AND fecha = :fecha
         LIMIT 1
-    """)
+    """,
+    )
     suspend fun getByOpticaAndDate(opticaId: String, fecha: String): ResumenDiarioEntity?
 
     @Upsert
     suspend fun upsert(resumen: ResumenDiarioEntity)
-
 }

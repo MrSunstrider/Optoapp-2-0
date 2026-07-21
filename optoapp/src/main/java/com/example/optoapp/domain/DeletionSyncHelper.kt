@@ -1,7 +1,7 @@
 package com.example.optoapp.domain
 
-import com.example.optoapp.util.AppLogger
 import com.example.optoapp.data.OptoRepository
+import com.example.optoapp.util.AppLogger
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.CancellationException
@@ -14,7 +14,7 @@ import javax.inject.Inject
  */
 class DeletionSyncHelper @Inject constructor(
     private val repository: OptoRepository,
-    private val supabase: SupabaseClient
+    private val supabase: SupabaseClient,
 ) {
     companion object {
         private const val TAG = "SyncFinanzas"
@@ -62,7 +62,5 @@ class DeletionSyncHelper @Inject constructor(
     }
 
     /** IDs marcados para eliminación que NO deben reinsertarse al bajar de la nube. */
-    suspend fun deletedIds(opticaId: String): Set<String> {
-        return repository.getPendingDeletions(opticaId).map { it.entityId }.toSet()
-    }
+    suspend fun deletedIds(opticaId: String): Set<String> = repository.getPendingDeletions(opticaId).map { it.entityId }.toSet()
 }

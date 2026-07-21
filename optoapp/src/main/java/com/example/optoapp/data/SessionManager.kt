@@ -2,7 +2,6 @@ package com.example.optoapp.data
 
 import android.content.Context
 import androidx.core.content.edit
-import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.*
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
@@ -36,7 +35,7 @@ interface ISessionManager {
  * Reutiliza el mismo dataStore que SecurityManager (mismo archivo "settings").
  */
 class SessionManager(private val context: Context) : ISessionManager {
-    
+
     private val masterKey = MasterKey.Builder(context)
         .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
         .build()
@@ -46,7 +45,7 @@ class SessionManager(private val context: Context) : ISessionManager {
         "secure_session_prefs",
         masterKey,
         EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
     )
 
     private val _opticaIdFlow = MutableStateFlow(getSecureOpticaId())
@@ -55,12 +54,12 @@ class SessionManager(private val context: Context) : ISessionManager {
     companion object {
         const val LEGACY_OPTICA_ID = "mi_optica_base"
 
-        private val IS_LOGGED_IN        = booleanPreferencesKey("saas_logged_in")
-        private val USER_NAME           = stringPreferencesKey("saas_user_name")
-        private val LAST_LOGIN_TS       = longPreferencesKey("saas_last_login_ts")
-        private val IS_PIN_REQUIRED     = booleanPreferencesKey("pref_is_pin_required")
-        private val USER_TIMEZONE       = stringPreferencesKey("pref_user_timezone")
-        private val PIN_HAS_BEEN_SET    = booleanPreferencesKey("pref_pin_has_been_set")
+        private val IS_LOGGED_IN = booleanPreferencesKey("saas_logged_in")
+        private val USER_NAME = stringPreferencesKey("saas_user_name")
+        private val LAST_LOGIN_TS = longPreferencesKey("saas_last_login_ts")
+        private val IS_PIN_REQUIRED = booleanPreferencesKey("pref_is_pin_required")
+        private val USER_TIMEZONE = stringPreferencesKey("pref_user_timezone")
+        private val PIN_HAS_BEEN_SET = booleanPreferencesKey("pref_pin_has_been_set")
     }
 
     // ─── Lectura reactiva ─────────────────────────────────────────────────────
@@ -73,13 +72,9 @@ class SessionManager(private val context: Context) : ISessionManager {
     /** Rol en la óptica activa (tabla usuario_optica). */
     override val opticaRol: Flow<String> = _opticaRolFlow
 
-    private fun getSecureOpticaId(): String {
-        return encryptedPrefs.getString("saas_optica_id", LEGACY_OPTICA_ID) ?: LEGACY_OPTICA_ID
-    }
+    private fun getSecureOpticaId(): String = encryptedPrefs.getString("saas_optica_id", LEGACY_OPTICA_ID) ?: LEGACY_OPTICA_ID
 
-    private fun getSecureOpticaRol(): String {
-        return encryptedPrefs.getString("saas_optica_rol", "admin") ?: "admin"
-    }
+    private fun getSecureOpticaRol(): String = encryptedPrefs.getString("saas_optica_rol", "admin") ?: "admin"
 
     override val userEmail: Flow<String> = context.dataStore.data
         .map { _: Preferences -> encryptedPrefs.getString("saas_user_email", "") ?: "" }
@@ -103,8 +98,11 @@ class SessionManager(private val context: Context) : ISessionManager {
 
     suspend fun setUserTimeZone(timeZoneId: String?) {
         context.dataStore.edit { prefs ->
-            if (timeZoneId == null) prefs.remove(USER_TIMEZONE)
-            else prefs[USER_TIMEZONE] = timeZoneId
+            if (timeZoneId == null) {
+                prefs.remove(USER_TIMEZONE)
+            } else {
+                prefs[USER_TIMEZONE] = timeZoneId
+            }
         }
     }
 
@@ -120,7 +118,7 @@ class SessionManager(private val context: Context) : ISessionManager {
 
         context.dataStore.edit { prefs ->
             prefs[IS_LOGGED_IN] = true
-            prefs[USER_NAME]    = name
+            prefs[USER_NAME] = name
             prefs[LAST_LOGIN_TS] = System.currentTimeMillis()
         }
     }
@@ -133,7 +131,7 @@ class SessionManager(private val context: Context) : ISessionManager {
         context.dataStore.edit { prefs -> prefs[IS_PIN_REQUIRED] = required }
     }
 
-    //── Recordar Cuenta ────────────────────────────────────────────────────
+    // ── Recordar Cuenta ────────────────────────────────────────────────────
 
     /**
      * Guarda el email para pre-cargarlo en el login si el usuario marcó
@@ -144,9 +142,7 @@ class SessionManager(private val context: Context) : ISessionManager {
     }
 
     /** Recupera el email guardado por "Recordar Cuenta". */
-    override suspend fun getRememberedEmail(): String {
-        return encryptedPrefs.getString("pref_remembered_email", "") ?: ""
-    }
+    override suspend fun getRememberedEmail(): String = encryptedPrefs.getString("pref_remembered_email", "") ?: ""
 
     /** Limpia el email recordado (cuando el usuario desmarca el checkbox). */
     override suspend fun clearRememberedEmail() {
@@ -157,10 +153,10 @@ class SessionManager(private val context: Context) : ISessionManager {
         encryptedPrefs.edit { clear() }
         _opticaIdFlow.value = LEGACY_OPTICA_ID
         _opticaRolFlow.value = "admin"
-        
+
         context.dataStore.edit { prefs ->
             prefs[IS_LOGGED_IN] = false
-            prefs[USER_NAME]    = ""
+            prefs[USER_NAME] = ""
             prefs[LAST_LOGIN_TS] = 0L
             prefs[IS_PIN_REQUIRED] = false
             prefs.remove(USER_TIMEZONE)

@@ -1,9 +1,9 @@
 package com.example.optoapp.data
 
-import com.example.optoapp.data.pago.PagoDao
-import com.example.optoapp.data.servicio.ServicioExtraDao
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
+import com.example.optoapp.data.pago.PagoDao
+import com.example.optoapp.data.servicio.ServicioExtraDao
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -36,7 +36,7 @@ class PagoDaoTest {
     fun setUp() {
         db = Room.inMemoryDatabaseBuilder(
             ApplicationProvider.getApplicationContext(),
-            OptoDatabase::class.java
+            OptoDatabase::class.java,
         ).allowMainThreadQueries().build()
         dao = db.pagoDao()
         dispensacionDao = db.dispensacionDao()
@@ -52,14 +52,24 @@ class PagoDaoTest {
 
     @Test
     fun insertPago_and_getById_returnsCorrectPago() = runBlocking {
-        pacienteDao.insertPaciente(Paciente(
-            id = "p_dummy", nombreCompleto = "Dummy", edad = 0, telefono = "000",
-            fechaCreacion = LocalDate.parse("2026-01-15"), opticaId = "optica1"
-        ))
-        dispensacionDao.insertDispensacion(DispensacionOptica(
-            id = "disp1", pacienteId = "p_dummy", fecha = LocalDate.parse("2026-01-15"),
-            opticaId = "optica1"
-        ))
+        pacienteDao.insertPaciente(
+            Paciente(
+                id = "p_dummy",
+                nombreCompleto = "Dummy",
+                edad = 0,
+                telefono = "000",
+                fechaCreacion = LocalDate.parse("2026-01-15"),
+                opticaId = "optica1",
+            ),
+        )
+        dispensacionDao.insertDispensacion(
+            DispensacionOptica(
+                id = "disp1",
+                pacienteId = "p_dummy",
+                fecha = LocalDate.parse("2026-01-15"),
+                opticaId = "optica1",
+            ),
+        )
         val pago = Pago(
             id = "pago1",
             dispensacionId = "disp1",
@@ -67,7 +77,7 @@ class PagoDaoTest {
             tipo = "CONTADO",
             monto = 150.0,
             metodoPago = "EFECTIVO",
-            opticaId = "optica1"
+            opticaId = "optica1",
         )
         dao.insertPago(pago)
 
@@ -87,29 +97,58 @@ class PagoDaoTest {
 
     @Test
     fun getPagosByDispensacion_returnsPaymentsForDispensacion() = runBlocking {
-        pacienteDao.insertPaciente(Paciente(
-            id = "p_dummy", nombreCompleto = "Dummy", edad = 0, telefono = "000",
-            fechaCreacion = LocalDate.parse("2026-01-15"), opticaId = "o1"
-        ))
-        dispensacionDao.insertDispensacion(DispensacionOptica(
-            id = "dispX", pacienteId = "p_dummy", fecha = LocalDate.parse("2026-01-15"),
-            opticaId = "o1"
-        ))
-        dispensacionDao.insertDispensacion(DispensacionOptica(
-            id = "dispY", pacienteId = "p_dummy", fecha = LocalDate.parse("2026-01-25"),
-            opticaId = "o1"
-        ))
+        pacienteDao.insertPaciente(
+            Paciente(
+                id = "p_dummy",
+                nombreCompleto = "Dummy",
+                edad = 0,
+                telefono = "000",
+                fechaCreacion = LocalDate.parse("2026-01-15"),
+                opticaId = "o1",
+            ),
+        )
+        dispensacionDao.insertDispensacion(
+            DispensacionOptica(
+                id = "dispX",
+                pacienteId = "p_dummy",
+                fecha = LocalDate.parse("2026-01-15"),
+                opticaId = "o1",
+            ),
+        )
+        dispensacionDao.insertDispensacion(
+            DispensacionOptica(
+                id = "dispY",
+                pacienteId = "p_dummy",
+                fecha = LocalDate.parse("2026-01-25"),
+                opticaId = "o1",
+            ),
+        )
         val pago1 = Pago(
-            id = "p1", dispensacionId = "dispX", fecha = LocalDate.parse("2026-01-15"),
-            tipo = "CONTADO", monto = 100.0, metodoPago = "EFECTIVO", opticaId = "o1"
+            id = "p1",
+            dispensacionId = "dispX",
+            fecha = LocalDate.parse("2026-01-15"),
+            tipo = "CONTADO",
+            monto = 100.0,
+            metodoPago = "EFECTIVO",
+            opticaId = "o1",
         )
         val pago2 = Pago(
-            id = "p2", dispensacionId = "dispX", fecha = LocalDate.parse("2026-01-20"),
-            tipo = "CREDITO", monto = 50.0, metodoPago = "TARJETA", opticaId = "o1"
+            id = "p2",
+            dispensacionId = "dispX",
+            fecha = LocalDate.parse("2026-01-20"),
+            tipo = "CREDITO",
+            monto = 50.0,
+            metodoPago = "TARJETA",
+            opticaId = "o1",
         )
         val pago3 = Pago(
-            id = "p3", dispensacionId = "dispY", fecha = LocalDate.parse("2026-01-25"),
-            tipo = "CONTADO", monto = 200.0, metodoPago = "TRANSFERENCIA", opticaId = "o1"
+            id = "p3",
+            dispensacionId = "dispY",
+            fecha = LocalDate.parse("2026-01-25"),
+            tipo = "CONTADO",
+            monto = 200.0,
+            metodoPago = "TRANSFERENCIA",
+            opticaId = "o1",
         )
         dao.insertPago(pago1)
         dao.insertPago(pago2)
@@ -124,18 +163,34 @@ class PagoDaoTest {
 
     @Test
     fun getPagosByServicioExtra_returnsPaymentsForServicio() = runBlocking {
-        servicioExtraDao.insertServicio(ServicioExtra(
-            id = "se1", descripcion = "Test", montoTotal = 0.0, aCuenta = 0.0,
-            estado = "Pendiente", fecha = LocalDate.parse("2026-02-01"),
-            opticaId = "o1"
-        ))
+        servicioExtraDao.insertServicio(
+            ServicioExtra(
+                id = "se1",
+                descripcion = "Test",
+                montoTotal = 0.0,
+                aCuenta = 0.0,
+                estado = "Pendiente",
+                fecha = LocalDate.parse("2026-02-01"),
+                opticaId = "o1",
+            ),
+        )
         val pago1 = Pago(
-            id = "p1", servicioExtraId = "se1", fecha = LocalDate.parse("2026-02-01"),
-            tipo = "CONTADO", monto = 80.0, metodoPago = "EFECTIVO", opticaId = "o1"
+            id = "p1",
+            servicioExtraId = "se1",
+            fecha = LocalDate.parse("2026-02-01"),
+            tipo = "CONTADO",
+            monto = 80.0,
+            metodoPago = "EFECTIVO",
+            opticaId = "o1",
         )
         val pago2 = Pago(
-            id = "p2", servicioExtraId = "se1", fecha = LocalDate.parse("2026-02-10"),
-            tipo = "CONTADO", monto = 20.0, metodoPago = "TARJETA", opticaId = "o1"
+            id = "p2",
+            servicioExtraId = "se1",
+            fecha = LocalDate.parse("2026-02-10"),
+            tipo = "CONTADO",
+            monto = 20.0,
+            metodoPago = "TARJETA",
+            opticaId = "o1",
         )
         dao.insertPago(pago1)
         dao.insertPago(pago2)
@@ -150,16 +205,28 @@ class PagoDaoTest {
     @Test
     fun getPagosByDateRange_returnsPaymentsInRange() = runBlocking {
         val pago1 = Pago(
-            id = "p1", fecha = LocalDate.parse("2026-03-01"), tipo = "CONTADO",
-            monto = 100.0, metodoPago = "EFECTIVO", opticaId = "o1"
+            id = "p1",
+            fecha = LocalDate.parse("2026-03-01"),
+            tipo = "CONTADO",
+            monto = 100.0,
+            metodoPago = "EFECTIVO",
+            opticaId = "o1",
         )
         val pago2 = Pago(
-            id = "p2", fecha = LocalDate.parse("2026-03-15"), tipo = "CONTADO",
-            monto = 200.0, metodoPago = "TARJETA", opticaId = "o1"
+            id = "p2",
+            fecha = LocalDate.parse("2026-03-15"),
+            tipo = "CONTADO",
+            monto = 200.0,
+            metodoPago = "TARJETA",
+            opticaId = "o1",
         )
         val pago3 = Pago(
-            id = "p3", fecha = LocalDate.parse("2026-04-01"), tipo = "CONTADO",
-            monto = 300.0, metodoPago = "TRANSFERENCIA", opticaId = "o1"
+            id = "p3",
+            fecha = LocalDate.parse("2026-04-01"),
+            tipo = "CONTADO",
+            monto = 300.0,
+            metodoPago = "TRANSFERENCIA",
+            opticaId = "o1",
         )
         dao.insertPago(pago1)
         dao.insertPago(pago2)
@@ -167,7 +234,7 @@ class PagoDaoTest {
 
         val range = dao.getPagosByDateRange(
             LocalDate.parse("2026-03-01"),
-            LocalDate.parse("2026-03-31")
+            LocalDate.parse("2026-03-31"),
         ).first()
 
         assertEquals(2, range.size)
@@ -176,14 +243,18 @@ class PagoDaoTest {
     @Test
     fun getPagosByDateRange_outsideRange_returnsEmpty() = runBlocking {
         val pago = Pago(
-            id = "p1", fecha = LocalDate.parse("2026-01-01"), tipo = "CONTADO",
-            monto = 100.0, metodoPago = "EFECTIVO", opticaId = "o1"
+            id = "p1",
+            fecha = LocalDate.parse("2026-01-01"),
+            tipo = "CONTADO",
+            monto = 100.0,
+            metodoPago = "EFECTIVO",
+            opticaId = "o1",
         )
         dao.insertPago(pago)
 
         val range = dao.getPagosByDateRange(
             LocalDate.parse("2026-06-01"),
-            LocalDate.parse("2026-06-30")
+            LocalDate.parse("2026-06-30"),
         ).first()
 
         assertEquals(0, range.size)
@@ -191,17 +262,32 @@ class PagoDaoTest {
 
     @Test
     fun updatePago_modifiesExistingRecord() = runBlocking {
-        pacienteDao.insertPaciente(Paciente(
-            id = "p_dummy", nombreCompleto = "Dummy", edad = 0, telefono = "000",
-            fechaCreacion = LocalDate.parse("2026-01-15"), opticaId = "o1"
-        ))
-        dispensacionDao.insertDispensacion(DispensacionOptica(
-            id = "d1", pacienteId = "p_dummy", fecha = LocalDate.parse("2026-01-15"),
-            opticaId = "o1"
-        ))
+        pacienteDao.insertPaciente(
+            Paciente(
+                id = "p_dummy",
+                nombreCompleto = "Dummy",
+                edad = 0,
+                telefono = "000",
+                fechaCreacion = LocalDate.parse("2026-01-15"),
+                opticaId = "o1",
+            ),
+        )
+        dispensacionDao.insertDispensacion(
+            DispensacionOptica(
+                id = "d1",
+                pacienteId = "p_dummy",
+                fecha = LocalDate.parse("2026-01-15"),
+                opticaId = "o1",
+            ),
+        )
         val pago = Pago(
-            id = "p1", dispensacionId = "d1", fecha = LocalDate.parse("2026-01-15"),
-            tipo = "CONTADO", monto = 100.0, metodoPago = "EFECTIVO", opticaId = "o1"
+            id = "p1",
+            dispensacionId = "d1",
+            fecha = LocalDate.parse("2026-01-15"),
+            tipo = "CONTADO",
+            monto = 100.0,
+            metodoPago = "EFECTIVO",
+            opticaId = "o1",
         )
         dao.insertPago(pago)
 
@@ -213,7 +299,7 @@ class PagoDaoTest {
             tipo = updated.tipo, monto = updated.monto,
             metodoPago = updated.metodoPago, nota = updated.nota,
             updatedAt = updated.updatedAt, updatedBy = updated.updatedBy,
-            ventaId = updated.ventaId
+            ventaId = updated.ventaId,
         )
         assertEquals(1, rows)
 
@@ -225,8 +311,12 @@ class PagoDaoTest {
     @Test
     fun deletePago_removesRecord() = runBlocking {
         val pago = Pago(
-            id = "p1", fecha = LocalDate.parse("2026-01-15"),
-            tipo = "CONTADO", monto = 100.0, metodoPago = "EFECTIVO", opticaId = "o1"
+            id = "p1",
+            fecha = LocalDate.parse("2026-01-15"),
+            tipo = "CONTADO",
+            monto = 100.0,
+            metodoPago = "EFECTIVO",
+            opticaId = "o1",
         )
         dao.insertPago(pago)
         dao.deletePago(pago.id, pago.opticaId)
@@ -238,12 +328,20 @@ class PagoDaoTest {
     @Test
     fun deleteAll_removesAllRecords() = runBlocking {
         val p1 = Pago(
-            id = "p1", fecha = LocalDate.parse("2026-01-15"),
-            tipo = "CONTADO", monto = 100.0, metodoPago = "EFECTIVO", opticaId = "o1"
+            id = "p1",
+            fecha = LocalDate.parse("2026-01-15"),
+            tipo = "CONTADO",
+            monto = 100.0,
+            metodoPago = "EFECTIVO",
+            opticaId = "o1",
         )
         val p2 = Pago(
-            id = "p2", fecha = LocalDate.parse("2026-02-15"),
-            tipo = "CREDITO", monto = 50.0, metodoPago = "TARJETA", opticaId = "o1"
+            id = "p2",
+            fecha = LocalDate.parse("2026-02-15"),
+            tipo = "CREDITO",
+            monto = 50.0,
+            metodoPago = "TARJETA",
+            opticaId = "o1",
         )
         dao.insertPago(p1)
         dao.insertPago(p2)
@@ -256,8 +354,12 @@ class PagoDaoTest {
     @Test
     fun `getPagoByIdForOptica respects opticaId filter`() = runBlocking {
         val pago = Pago(
-            id = "p1", fecha = LocalDate.parse("2026-07-05"),
-            tipo = "CONTADO", monto = 150.0, metodoPago = "EFECTIVO", opticaId = "opticaX"
+            id = "p1",
+            fecha = LocalDate.parse("2026-07-05"),
+            tipo = "CONTADO",
+            monto = 150.0,
+            metodoPago = "EFECTIVO",
+            opticaId = "opticaX",
         )
         dao.insertPago(pago)
 
@@ -270,12 +372,20 @@ class PagoDaoTest {
     @Test
     fun getPagosListByOptica_filtersByOptica() = runBlocking {
         val pago1 = Pago(
-            id = "p1", fecha = LocalDate.parse("2026-01-15"), tipo = "CONTADO",
-            monto = 100.0, metodoPago = "EFECTIVO", opticaId = "opticaA"
+            id = "p1",
+            fecha = LocalDate.parse("2026-01-15"),
+            tipo = "CONTADO",
+            monto = 100.0,
+            metodoPago = "EFECTIVO",
+            opticaId = "opticaA",
         )
         val pago2 = Pago(
-            id = "p2", fecha = LocalDate.parse("2026-01-20"), tipo = "CONTADO",
-            monto = 200.0, metodoPago = "TARJETA", opticaId = "opticaB"
+            id = "p2",
+            fecha = LocalDate.parse("2026-01-20"),
+            tipo = "CONTADO",
+            monto = 200.0,
+            metodoPago = "TARJETA",
+            opticaId = "opticaB",
         )
         dao.insertPago(pago1)
         dao.insertPago(pago2)
@@ -289,8 +399,12 @@ class PagoDaoTest {
     @Test
     fun reassignFromLegacyMiOpticaBase_updatesOpticaId() = runBlocking {
         val pago = Pago(
-            id = "p1", fecha = LocalDate.parse("2026-01-15"), tipo = "CONTADO",
-            monto = 100.0, metodoPago = "EFECTIVO", opticaId = "mi_optica_base"
+            id = "p1",
+            fecha = LocalDate.parse("2026-01-15"),
+            tipo = "CONTADO",
+            monto = 100.0,
+            metodoPago = "EFECTIVO",
+            opticaId = "mi_optica_base",
         )
         dao.insertPago(pago)
 
@@ -303,21 +417,40 @@ class PagoDaoTest {
 
     @Test
     fun reassignDispensacionId_updatesDispensacionReference() = runBlocking {
-        pacienteDao.insertPaciente(Paciente(
-            id = "p_dummy", nombreCompleto = "Dummy", edad = 0, telefono = "000",
-            fechaCreacion = LocalDate.parse("2026-01-15"), opticaId = "o1"
-        ))
-        dispensacionDao.insertDispensacion(DispensacionOptica(
-            id = "oldDisp", pacienteId = "p_dummy", fecha = LocalDate.parse("2026-01-15"),
-            opticaId = "o1"
-        ))
-        dispensacionDao.insertDispensacion(DispensacionOptica(
-            id = "newDisp", pacienteId = "p_dummy", fecha = LocalDate.parse("2026-01-15"),
-            opticaId = "o1"
-        ))
+        pacienteDao.insertPaciente(
+            Paciente(
+                id = "p_dummy",
+                nombreCompleto = "Dummy",
+                edad = 0,
+                telefono = "000",
+                fechaCreacion = LocalDate.parse("2026-01-15"),
+                opticaId = "o1",
+            ),
+        )
+        dispensacionDao.insertDispensacion(
+            DispensacionOptica(
+                id = "oldDisp",
+                pacienteId = "p_dummy",
+                fecha = LocalDate.parse("2026-01-15"),
+                opticaId = "o1",
+            ),
+        )
+        dispensacionDao.insertDispensacion(
+            DispensacionOptica(
+                id = "newDisp",
+                pacienteId = "p_dummy",
+                fecha = LocalDate.parse("2026-01-15"),
+                opticaId = "o1",
+            ),
+        )
         val pago = Pago(
-            id = "p1", dispensacionId = "oldDisp", fecha = LocalDate.parse("2026-01-15"),
-            tipo = "CONTADO", monto = 100.0, metodoPago = "EFECTIVO", opticaId = "o1"
+            id = "p1",
+            dispensacionId = "oldDisp",
+            fecha = LocalDate.parse("2026-01-15"),
+            tipo = "CONTADO",
+            monto = 100.0,
+            metodoPago = "EFECTIVO",
+            opticaId = "o1",
         )
         dao.insertPago(pago)
 

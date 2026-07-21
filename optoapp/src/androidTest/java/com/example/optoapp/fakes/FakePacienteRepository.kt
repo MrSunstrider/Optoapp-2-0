@@ -5,9 +5,7 @@ import com.example.optoapp.data.Paciente
 import com.example.optoapp.data.Resource
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
-import java.time.LocalDate
 
 /**
  * In-memory [com.example.optoapp.data.PacienteRepository] for E2E tests.
@@ -26,25 +24,27 @@ class FakePacienteRepository {
 
     // ── Paciente ─────────────────────────────────────────────────────────────
 
-    fun pacientesFlowForOptica(opticaId: String): Flow<List<Paciente>> =
-        _pacientesFlow.map { list -> list.filter { it.opticaId == opticaId } }
+    fun pacientesFlowForOptica(opticaId: String): Flow<List<Paciente>> = _pacientesFlow.map { list -> list.filter { it.opticaId == opticaId } }
 
-    fun countPacientesForOptica(opticaId: String): Flow<Int> =
-        _pacientesFlow.map { list -> list.count { it.opticaId == opticaId } }
+    fun countPacientesForOptica(opticaId: String): Flow<Int> = _pacientesFlow.map { list -> list.count { it.opticaId == opticaId } }
 
-    fun searchPacientesForOptica(opticaId: String, query: String): Flow<List<Paciente>> =
-        _pacientesFlow.map { list ->
-            list.filter { p ->
-                p.opticaId == opticaId &&
-                    (p.nombreCompleto.contains(query, ignoreCase = true) ||
-                        p.telefono.contains(query))
-            }
+    fun searchPacientesForOptica(opticaId: String, query: String): Flow<List<Paciente>> = _pacientesFlow.map { list ->
+        list.filter { p ->
+            p.opticaId == opticaId &&
+                (
+                    p.nombreCompleto.contains(query, ignoreCase = true) ||
+                        p.telefono.contains(query)
+                    )
         }
+    }
 
     suspend fun getPacienteById(id: String): Resource<Paciente> {
         val paciente = pacientes.find { it.id == id }
-        return if (paciente != null) Resource.Success(paciente)
-        else Resource.Error("Paciente no encontrado")
+        return if (paciente != null) {
+            Resource.Success(paciente)
+        } else {
+            Resource.Error("Paciente no encontrado")
+        }
     }
 
     suspend fun insertPaciente(paciente: Paciente) {
@@ -65,20 +65,21 @@ class FakePacienteRepository {
         _pacientesFlow.value = pacientes.toList()
     }
 
-    suspend fun getPacientesSnapshotForOptica(opticaId: String): List<Paciente> =
-        pacientes.filter { it.opticaId == opticaId }
+    suspend fun getPacientesSnapshotForOptica(opticaId: String): List<Paciente> = pacientes.filter { it.opticaId == opticaId }
 
     // ── Evaluación ───────────────────────────────────────────────────────────
 
-    fun getEvaluacionesByPaciente(pacienteId: String): Flow<List<EvaluacionClinica>> =
-        _evaluacionesFlow.map { list ->
-            list.filter { it.pacienteId == pacienteId }.sortedByDescending { it.fecha }
-        }
+    fun getEvaluacionesByPaciente(pacienteId: String): Flow<List<EvaluacionClinica>> = _evaluacionesFlow.map { list ->
+        list.filter { it.pacienteId == pacienteId }.sortedByDescending { it.fecha }
+    }
 
     suspend fun getEvaluacionById(id: String): Resource<EvaluacionClinica> {
         val evaluacion = evaluaciones.find { it.id == id }
-        return if (evaluacion != null) Resource.Success(evaluacion)
-        else Resource.Error("Evaluación no encontrada")
+        return if (evaluacion != null) {
+            Resource.Success(evaluacion)
+        } else {
+            Resource.Error("Evaluación no encontrada")
+        }
     }
 
     suspend fun insertEvaluacion(evaluacion: EvaluacionClinica) {
@@ -99,8 +100,7 @@ class FakePacienteRepository {
         _evaluacionesFlow.value = evaluaciones.toList()
     }
 
-    suspend fun getEvaluacionesSnapshotForOptica(opticaId: String): List<EvaluacionClinica> =
-        evaluaciones.filter { it.opticaId == opticaId }
+    suspend fun getEvaluacionesSnapshotForOptica(opticaId: String): List<EvaluacionClinica> = evaluaciones.filter { it.opticaId == opticaId }
 
     // ── Helpers ──────────────────────────────────────────────────────────────
 

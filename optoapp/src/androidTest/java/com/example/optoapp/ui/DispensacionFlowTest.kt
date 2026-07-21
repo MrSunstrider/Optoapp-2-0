@@ -8,7 +8,6 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -56,7 +55,7 @@ class DispensacionFlowTest {
                 onUpdate = {},
                 onAddPago = {},
                 onUpdatePago = {},
-                onRemovePago = {}
+                onRemovePago = {},
             )
         }
 
@@ -71,7 +70,7 @@ class DispensacionFlowTest {
                 onUpdate = {},
                 onAddPago = {},
                 onUpdatePago = {},
-                onRemovePago = {}
+                onRemovePago = {},
             )
         }
 
@@ -87,7 +86,7 @@ class DispensacionFlowTest {
                 onUpdate = { state = it },
                 onAddPago = {},
                 onUpdatePago = {},
-                onRemovePago = {}
+                onRemovePago = {},
             )
         }
 
@@ -105,7 +104,7 @@ class DispensacionFlowTest {
                 onUpdate = {},
                 onAddPago = {},
                 onUpdatePago = {},
-                onRemovePago = {}
+                onRemovePago = {},
             )
         }
 
@@ -120,7 +119,7 @@ class DispensacionFlowTest {
                 onUpdate = {},
                 onAddPago = {},
                 onUpdatePago = {},
-                onRemovePago = {}
+                onRemovePago = {},
             )
         }
 
@@ -135,7 +134,7 @@ class DispensacionFlowTest {
                 onUpdate = {},
                 onAddPago = {},
                 onUpdatePago = {},
-                onRemovePago = {}
+                onRemovePago = {},
             )
         }
 
@@ -150,7 +149,7 @@ class DispensacionFlowTest {
                 onUpdate = {},
                 onAddPago = {},
                 onUpdatePago = {},
-                onRemovePago = {}
+                onRemovePago = {},
             )
         }
 
@@ -170,9 +169,9 @@ class DispensacionFlowTest {
                     monto = 200.0,
                     metodoPago = "Efectivo",
                     opticaId = "test-optica",
-                    nota = ""
-                )
-            )
+                    nota = "",
+                ),
+            ),
         )
 
         composeTestRule.setContent {
@@ -181,10 +180,9 @@ class DispensacionFlowTest {
                 onUpdate = {},
                 onAddPago = {},
                 onUpdatePago = {},
-                onRemovePago = {}
+                onRemovePago = {},
             )
         }
-
 
         composeTestRule.onNodeWithText("s/. 300.00").assertIsDisplayed()
     }
@@ -196,7 +194,7 @@ class DispensacionFlowTest {
                 value = "",
                 onValueChange = {},
                 label = "N° OT (OT-AAAA-####)",
-                modifier = Modifier.testTag(TestTags.DISPENSACION_OT_FIELD)
+                modifier = Modifier.testTag(TestTags.DISPENSACION_OT_FIELD),
             )
         }
 
@@ -211,7 +209,7 @@ class DispensacionFlowTest {
                 value = otValue,
                 onValueChange = { otValue = it },
                 label = "N° OT (OT-AAAA-####)",
-                modifier = Modifier.testTag(TestTags.DISPENSACION_OT_FIELD)
+                modifier = Modifier.testTag(TestTags.DISPENSACION_OT_FIELD),
             )
         }
 
@@ -230,7 +228,7 @@ class DispensacionFlowTest {
                 value = "350.00",
                 onValueChange = {},
                 label = "Monto Total",
-                keyboardType = KeyboardType.Decimal
+                keyboardType = KeyboardType.Decimal,
             )
         }
         composeTestRule.onNodeWithText("Monto Total").assertIsDisplayed()
@@ -244,7 +242,7 @@ class DispensacionFlowTest {
                 value = value,
                 onValueChange = { value = it },
                 label = "Monto Total",
-                keyboardType = KeyboardType.Decimal
+                keyboardType = KeyboardType.Decimal,
             )
         }
         composeTestRule.onNodeWithText("Monto Total").performTextInput("450.00")
@@ -257,7 +255,7 @@ class DispensacionFlowTest {
             DropdownField(
                 label = "Estado de Entrega",
                 selected = "Pendiente",
-                options = listOf("Pendiente", "Entregado")
+                options = listOf("Pendiente", "Entregado"),
             ) { }
         }
         composeTestRule.onNodeWithText("Estado de Entrega").assertIsDisplayed()
@@ -268,7 +266,7 @@ class DispensacionFlowTest {
     @Composable
     private fun TipoLenteDropdownHarness(
         selected: String = "Lejos",
-        onSelected: (String) -> Unit = {}
+        onSelected: (String) -> Unit = {},
     ) {
         var expanded by remember { mutableStateOf(false) }
         val options = listOf("Lejos", "Cerca", "Bifocal", "Progresivo", "Ocupacional")
@@ -276,7 +274,7 @@ class DispensacionFlowTest {
             Text("Tipo de Lente", fontWeight = FontWeight.Bold)
             ExposedDropdownMenuBox(
                 expanded = expanded,
-                onExpandedChange = { expanded = !expanded }
+                onExpandedChange = { expanded = !expanded },
             ) {
                 OutlinedTextField(
                     value = selected,
@@ -284,11 +282,11 @@ class DispensacionFlowTest {
                     readOnly = true,
                     label = { Text("Tipo de Lente") },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                    modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true).fillMaxWidth().testTag("tipoLenteDropdown")
+                    modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true).fillMaxWidth().testTag("tipoLenteDropdown"),
                 )
                 ExposedDropdownMenu(
                     expanded = expanded,
-                    onDismissRequest = { expanded = false }
+                    onDismissRequest = { expanded = false },
                 ) {
                     options.forEach { option ->
                         DropdownMenuItem(
@@ -296,7 +294,7 @@ class DispensacionFlowTest {
                             onClick = {
                                 onSelected(option)
                                 expanded = false
-                            }
+                            },
                         )
                     }
                 }
@@ -329,7 +327,7 @@ class DispensacionFlowTest {
             DropdownField(
                 label = "Material del Lente",
                 selected = "Orgánico",
-                options = listOf("Orgánico", "Policarbonato", "Trivex", "Mineral")
+                options = listOf("Orgánico", "Policarbonato", "Trivex", "Mineral"),
             ) { }
         }
         composeTestRule.onNodeWithText("Material del Lente").assertIsDisplayed()
@@ -340,7 +338,7 @@ class DispensacionFlowTest {
     fun financieraInfoSection_showsAllLabels() {
         val uiState = DispensacionUiState(
             montoTotal = "500.00",
-            estadoEntrega = "Pendiente"
+            estadoEntrega = "Pendiente",
         )
         composeTestRule.setContent {
             com.example.optoapp.ui.screens.FinancieraInfoSection(
@@ -348,7 +346,7 @@ class DispensacionFlowTest {
                 onUpdate = {},
                 onAddPago = {},
                 onUpdatePago = {},
-                onRemovePago = {}
+                onRemovePago = {},
             )
         }
         composeTestRule.onNodeWithText("Información Financiera").assertIsDisplayed()

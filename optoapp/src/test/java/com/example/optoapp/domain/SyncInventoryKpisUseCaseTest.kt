@@ -6,9 +6,6 @@ import com.example.optoapp.data.Montura
 import com.example.optoapp.data.OptoDatabase
 import com.example.optoapp.data.Resource
 import com.example.optoapp.data.montura.MonturaDashboardKpiRepository
-import io.mockk.coEvery
-import io.mockk.mockk
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -28,7 +25,7 @@ class SyncInventoryKpisUseCaseTest {
     fun setUp() {
         db = Room.inMemoryDatabaseBuilder(
             ApplicationProvider.getApplicationContext(),
-            OptoDatabase::class.java
+            OptoDatabase::class.java,
         ).allowMainThreadQueries().build()
         repository = MonturaDashboardKpiRepository(db.monturaDao(), db.monturaMovimientoDao())
     }
@@ -41,15 +38,19 @@ class SyncInventoryKpisUseCaseTest {
     @Test
     fun syncKpis_collectsSummaryData() = runBlocking {
         db.monturaDao().insertMontura(
-            Montura(id = "m1", sku = "S1", marca = "A", modelo = "X",
+            Montura(
+                id = "m1", sku = "S1", marca = "A", modelo = "X",
                 color = "N", talla = "M", costo = 50.0, precio = 100.0,
-                stockActual = 3, stockMinimo = 5, activo = true, opticaId = "o1")
+                stockActual = 3, stockMinimo = 5, activo = true, opticaId = "o1",
+            ),
         )
         db.monturaDao().insertMontura(
-            Montura(id = "m2", sku = "S2", marca = "B", modelo = "Y",
+            Montura(
+                id = "m2", sku = "S2", marca = "B", modelo = "Y",
                 color = "N", talla = "M", costo = 60.0, precio = 120.0,
                 stockActual = 10, stockMinimo = 2, activo = true, opticaId = "o1",
-                categoria = "SOL")
+                categoria = "SOL",
+            ),
         )
 
         val useCase = SyncInventoryKpisUseCase(repository)

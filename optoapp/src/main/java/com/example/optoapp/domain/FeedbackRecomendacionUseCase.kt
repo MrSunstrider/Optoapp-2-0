@@ -5,15 +5,15 @@ import com.example.optoapp.data.feedbackrecomendacion.FeedbackRecomendacionEntit
 import javax.inject.Inject
 
 open class FeedbackRecomendacionUseCase @Inject constructor(
-    private val feedbackRecomendacionDao: FeedbackRecomendacionDao
+    private val feedbackRecomendacionDao: FeedbackRecomendacionDao,
 ) {
     suspend fun marcarUtil(recomendacionId: String, opticaId: String) {
         feedbackRecomendacionDao.upsert(
             FeedbackRecomendacionEntity(
                 recomendacionId = recomendacionId,
                 opticaId = opticaId,
-                fueUtil = true
-            )
+                fueUtil = true,
+            ),
         )
     }
 
@@ -22,8 +22,8 @@ open class FeedbackRecomendacionUseCase @Inject constructor(
             FeedbackRecomendacionEntity(
                 recomendacionId = recomendacionId,
                 opticaId = opticaId,
-                fueUtil = false
-            )
+                fueUtil = false,
+            ),
         )
     }
 }

@@ -18,14 +18,14 @@ import kotlinx.serialization.json.JsonObject
 data class MergeInput(
     val baseJson: JsonObject,
     val localJson: JsonObject,
-    val remoteJson: JsonObject
+    val remoteJson: JsonObject,
 )
 
 data class MergeResult<T>(
     val mergedEntity: T,
     val conflictedFields: List<String>,
     val autoMergedFields: List<String>,
-    val hasConflict: Boolean
+    val hasConflict: Boolean,
 )
 
 object ThreeWayMerge {
@@ -81,7 +81,7 @@ object ThreeWayMerge {
             mergedEntity = JsonObject(merged),
             conflictedFields = conflicted,
             autoMergedFields = autoMerged,
-            hasConflict = conflicted.isNotEmpty()
+            hasConflict = conflicted.isNotEmpty(),
         )
     }
 }

@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
 class NotificationHelper @Inject constructor(
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
 ) {
 
     private val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -36,7 +36,7 @@ class NotificationHelper @Inject constructor(
             val channel = NotificationChannel(
                 CHANNEL_ID,
                 "Recordatorios de Citas",
-                NotificationManager.IMPORTANCE_HIGH
+                NotificationManager.IMPORTANCE_HIGH,
             ).apply {
                 description = "Notificaciones para próximas citas de pacientes"
             }
@@ -67,7 +67,7 @@ class NotificationHelper @Inject constructor(
             context,
             notificationId,
             intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
 
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
@@ -113,13 +113,13 @@ class NotificationHelper @Inject constructor(
         } else {
             Log.d(
                 TAG,
-                "Recordatorio programado en ${delayMs / 1000}s para ${appointmentDate} 12:00 (eval=$evaluationId)"
+                "Recordatorio programado en ${delayMs / 1000}s para $appointmentDate 12:00 (eval=$evaluationId)",
             )
         }
 
         val inputData = workDataOf(
             "patient_name" to patientName,
-            "evaluation_id" to evaluationId
+            "evaluation_id" to evaluationId,
         )
 
         val workRequest = OneTimeWorkRequestBuilder<AppointmentReminderWorker>()
@@ -131,7 +131,7 @@ class NotificationHelper @Inject constructor(
         workManager.enqueueUniqueWork(
             "reminder_$evaluationId",
             ExistingWorkPolicy.REPLACE,
-            workRequest
+            workRequest,
         )
     }
 
@@ -142,6 +142,7 @@ class NotificationHelper @Inject constructor(
     companion object {
         const val CHANNEL_ID = "OPTOAPP_REMINDERS"
         private const val TAG = "NotificationHelper"
+
         /** Retraso cuando el mediodía del día de la cita ya pasó (mismo día). */
         private const val SOON_DELAY_SEC = 20L
     }

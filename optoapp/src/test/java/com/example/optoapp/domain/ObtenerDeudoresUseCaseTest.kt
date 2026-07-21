@@ -4,23 +4,18 @@ import android.util.Log
 import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Paciente
+import com.example.optoapp.data.PacienteDao
 import com.example.optoapp.data.Pago
 import com.example.optoapp.data.Resource
-import com.example.optoapp.data.ServicioExtra
 import com.example.optoapp.data.pago.PagoDao
-import com.example.optoapp.data.PacienteDao
 import io.github.jan.supabase.postgrest.Postgrest
 import io.mockk.clearAllMocks
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withContext
-import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.setMain
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
@@ -51,36 +46,42 @@ class ObtenerDeudoresUseCaseTest {
     }
 
     private fun rpcDeudoresJson() = buildJsonArray {
-        add(buildJsonObject {
-            put("paciente_nombre", "Carlos Diaz")
-            put("paciente_telefono", "555-0003")
-            put("venta_id", "v3")
-            put("venta_fecha", "2026-05-10")
-            put("monto_total", 500.0)
-            put("total_pagado", 0.0)
-            put("saldo", 500.0)
-            put("dias_deuda", 56)
-        })
-        add(buildJsonObject {
-            put("paciente_nombre", "Juan Perez")
-            put("paciente_telefono", "555-0001")
-            put("venta_id", "v1")
-            put("venta_fecha", "2026-06-01")
-            put("monto_total", 1000.0)
-            put("total_pagado", 400.0)
-            put("saldo", 600.0)
-            put("dias_deuda", 34)
-        })
-        add(buildJsonObject {
-            put("paciente_nombre", "Maria Lopez")
-            put("paciente_telefono", "555-0002")
-            put("venta_id", "v2")
-            put("venta_fecha", "2026-06-15")
-            put("monto_total", 2000.0)
-            put("total_pagado", 1500.0)
-            put("saldo", 500.0)
-            put("dias_deuda", 20)
-        })
+        add(
+            buildJsonObject {
+                put("paciente_nombre", "Carlos Diaz")
+                put("paciente_telefono", "555-0003")
+                put("venta_id", "v3")
+                put("venta_fecha", "2026-05-10")
+                put("monto_total", 500.0)
+                put("total_pagado", 0.0)
+                put("saldo", 500.0)
+                put("dias_deuda", 56)
+            },
+        )
+        add(
+            buildJsonObject {
+                put("paciente_nombre", "Juan Perez")
+                put("paciente_telefono", "555-0001")
+                put("venta_id", "v1")
+                put("venta_fecha", "2026-06-01")
+                put("monto_total", 1000.0)
+                put("total_pagado", 400.0)
+                put("saldo", 600.0)
+                put("dias_deuda", 34)
+            },
+        )
+        add(
+            buildJsonObject {
+                put("paciente_nombre", "Maria Lopez")
+                put("paciente_telefono", "555-0002")
+                put("venta_id", "v2")
+                put("venta_fecha", "2026-06-15")
+                put("monto_total", 2000.0)
+                put("total_pagado", 1500.0)
+                put("saldo", 500.0)
+                put("dias_deuda", 20)
+            },
+        )
     }
 
     @Test
@@ -125,9 +126,7 @@ class ObtenerDeudoresUseCaseTest {
         coEvery { pagoDao.getPagosListByOptica("optica1") } throws IOException("DB error")
 
         val useCase = object : ObtenerDeudoresUseCase(mockk<Postgrest>(), repository, pagoDao, mockk()) {
-            override suspend fun callRpcDeudores(opticaId: String): JsonArray {
-                throw IOException("No network")
-            }
+            override suspend fun callRpcDeudores(opticaId: String): JsonArray = throw IOException("No network")
         }
 
         val result = useCase("optica1")
@@ -138,9 +137,7 @@ class ObtenerDeudoresUseCaseTest {
     @Test
     fun unexpectedError_returnsResourceError() = runBlocking {
         val useCase = object : ObtenerDeudoresUseCase(mockk<Postgrest>(), mockk(), mockk(), mockk()) {
-            override suspend fun callRpcDeudores(opticaId: String): JsonArray {
-                throw RuntimeException("Unexpected")
-            }
+            override suspend fun callRpcDeudores(opticaId: String): JsonArray = throw RuntimeException("Unexpected")
         }
 
         val result = useCase("optica1")
@@ -151,15 +148,17 @@ class ObtenerDeudoresUseCaseTest {
     @Test
     fun null_ventaFecha_usesLocalDateMin() = runBlocking {
         val jsonWithNullFecha = buildJsonArray {
-            add(buildJsonObject {
-                put("paciente_nombre", "Cliente Sin Fecha")
-                put("paciente_telefono", "555-9999")
-                put("venta_id", "v-null")
-                put("monto_total", 500.0)
-                put("total_pagado", 100.0)
-                put("saldo", 400.0)
-                put("dias_deuda", 10)
-            })
+            add(
+                buildJsonObject {
+                    put("paciente_nombre", "Cliente Sin Fecha")
+                    put("paciente_telefono", "555-9999")
+                    put("venta_id", "v-null")
+                    put("monto_total", 500.0)
+                    put("total_pagado", 100.0)
+                    put("saldo", 400.0)
+                    put("dias_deuda", 10)
+                },
+            )
         }
 
         val useCase = object : ObtenerDeudoresUseCase(mockk<Postgrest>(), mockk(), mockk(), mockk()) {
@@ -181,26 +180,41 @@ class ObtenerDeudoresUseCaseTest {
         val pagoDao = mockk<PagoDao>()
         val pacienteDao = mockk<PacienteDao>()
 
-        coEvery { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(listOf(
-            DispensacionOptica(
-                id = "d1", opticaId = opticaId, pacienteId = "p1",
-                fecha = today.minusDays(10), montoTotal = 500.0
-            )
-        ))
+        coEvery { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(
+            listOf(
+                DispensacionOptica(
+                    id = "d1",
+                    opticaId = opticaId,
+                    pacienteId = "p1",
+                    fecha = today.minusDays(10),
+                    montoTotal = 500.0,
+                ),
+            ),
+        )
         coEvery { repository.getAllServiciosForOptica(opticaId) } returns flowOf(emptyList())
         coEvery { pagoDao.getPagosListByOptica(opticaId) } returns listOf(
-            Pago(id = "pg1", opticaId = opticaId, monto = 200.0, fecha = today,
-                tipo = "Efectivo", dispensacionId = "d1")
+            Pago(
+                id = "pg1",
+                opticaId = opticaId,
+                monto = 200.0,
+                fecha = today,
+                tipo = "Efectivo",
+                dispensacionId = "d1",
+            ),
         )
         coEvery { pacienteDao.getPacientesListByOptica(opticaId) } returns listOf(
-            Paciente(id = "p1", nombreCompleto = "Juan", edad = 30, telefono = "123",
-                fechaCreacion = today, opticaId = opticaId)
+            Paciente(
+                id = "p1",
+                nombreCompleto = "Juan",
+                edad = 30,
+                telefono = "123",
+                fechaCreacion = today,
+                opticaId = opticaId,
+            ),
         )
 
         val useCase = object : ObtenerDeudoresUseCase(mockk<Postgrest>(), repository, pagoDao, pacienteDao) {
-            override suspend fun callRpcDeudores(opticaId: String): JsonArray {
-                throw IOException("No network")
-            }
+            override suspend fun callRpcDeudores(opticaId: String): JsonArray = throw IOException("No network")
         }
 
         val result = useCase(opticaId)
@@ -222,9 +236,7 @@ class ObtenerDeudoresUseCaseTest {
         coEvery { pagoDao.getPagosListByOptica(opticaId) } returns emptyList()
 
         val useCase = object : ObtenerDeudoresUseCase(mockk<Postgrest>(), repository, pagoDao, mockk()) {
-            override suspend fun callRpcDeudores(opticaId: String): JsonArray {
-                throw IOException("No network")
-            }
+            override suspend fun callRpcDeudores(opticaId: String): JsonArray = throw IOException("No network")
         }
 
         // The fallback may or may not succeed in runBlocking; skip if not
@@ -244,26 +256,41 @@ class ObtenerDeudoresUseCaseTest {
         val pagoDao = mockk<PagoDao>()
         val pacienteDao = mockk<PacienteDao>()
 
-        coEvery { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(listOf(
-            DispensacionOptica(
-                id = "d1", opticaId = opticaId, pacienteId = "p1",
-                fecha = today.minusDays(10), montoTotal = 500.0
-            )
-        ))
+        coEvery { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(
+            listOf(
+                DispensacionOptica(
+                    id = "d1",
+                    opticaId = opticaId,
+                    pacienteId = "p1",
+                    fecha = today.minusDays(10),
+                    montoTotal = 500.0,
+                ),
+            ),
+        )
         coEvery { repository.getAllServiciosForOptica(opticaId) } returns flowOf(emptyList())
         coEvery { pagoDao.getPagosListByOptica(opticaId) } returns listOf(
-            Pago(id = "pg1", opticaId = opticaId, monto = 500.0, fecha = today,
-                tipo = "Efectivo", dispensacionId = "d1")
+            Pago(
+                id = "pg1",
+                opticaId = opticaId,
+                monto = 500.0,
+                fecha = today,
+                tipo = "Efectivo",
+                dispensacionId = "d1",
+            ),
         )
         coEvery { pacienteDao.getPacientesListByOptica(opticaId) } returns listOf(
-            Paciente(id = "p1", nombreCompleto = "Juan", edad = 30, telefono = "123",
-                fechaCreacion = today, opticaId = opticaId)
+            Paciente(
+                id = "p1",
+                nombreCompleto = "Juan",
+                edad = 30,
+                telefono = "123",
+                fechaCreacion = today,
+                opticaId = opticaId,
+            ),
         )
 
         val useCase = object : ObtenerDeudoresUseCase(mockk<Postgrest>(), repository, pagoDao, pacienteDao) {
-            override suspend fun callRpcDeudores(opticaId: String): JsonArray {
-                throw IOException("No network")
-            }
+            override suspend fun callRpcDeudores(opticaId: String): JsonArray = throw IOException("No network")
         }
 
         val result = useCase(opticaId)
@@ -280,20 +307,23 @@ class ObtenerDeudoresUseCaseTest {
         val pagoDao = mockk<PagoDao>()
         val pacienteDao = mockk<PacienteDao>()
 
-        coEvery { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(listOf(
-            DispensacionOptica(
-                id = "d1", opticaId = opticaId, pacienteId = "p-missing",
-                fecha = today.minusDays(10), montoTotal = 300.0
-            )
-        ))
+        coEvery { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(
+            listOf(
+                DispensacionOptica(
+                    id = "d1",
+                    opticaId = opticaId,
+                    pacienteId = "p-missing",
+                    fecha = today.minusDays(10),
+                    montoTotal = 300.0,
+                ),
+            ),
+        )
         coEvery { repository.getAllServiciosForOptica(opticaId) } returns flowOf(emptyList())
         coEvery { pagoDao.getPagosListByOptica(opticaId) } returns emptyList()
         coEvery { pacienteDao.getPacientesListByOptica(opticaId) } returns emptyList()
 
         val useCase = object : ObtenerDeudoresUseCase(mockk<Postgrest>(), repository, pagoDao, pacienteDao) {
-            override suspend fun callRpcDeudores(opticaId: String): JsonArray {
-                throw IOException("No network")
-            }
+            override suspend fun callRpcDeudores(opticaId: String): JsonArray = throw IOException("No network")
         }
 
         val result = useCase(opticaId)
@@ -306,9 +336,7 @@ class ObtenerDeudoresUseCaseTest {
     @Test
     fun `offline room fallback cancellationException rethrown`() = runBlocking {
         val useCase = object : ObtenerDeudoresUseCase(mockk<Postgrest>(), mockk(), mockk(), mockk()) {
-            override suspend fun callRpcDeudores(opticaId: String): JsonArray {
-                throw kotlinx.coroutines.CancellationException("Cancelled")
-            }
+            override suspend fun callRpcDeudores(opticaId: String): JsonArray = throw kotlinx.coroutines.CancellationException("Cancelled")
         }
 
         try {

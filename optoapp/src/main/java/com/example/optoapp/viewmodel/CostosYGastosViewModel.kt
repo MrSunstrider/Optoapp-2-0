@@ -29,7 +29,7 @@ val COST_BLOCKS = listOf(
     "Stock Bifocal",
     "Stock Multifocal",
     "Fabricación Resina",
-    "Fabricación Cristal"
+    "Fabricación Cristal",
 )
 
 /** Maps display block name to stock_o_fabricacion filter value. */
@@ -70,7 +70,7 @@ data class CostosYGastosUiState(
     val costoSerie: String = "",
     val costoCostoUnitario: String = "",
     val costoSaveError: String? = null,
-    val deletingCosto: CostoProductoEntity? = null
+    val deletingCosto: CostoProductoEntity? = null,
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -81,7 +81,7 @@ class CostosYGastosViewModel @Inject constructor(
     private val costoBiseladoDao: CostoBiseladoDao,
     private val sessionManager: SessionManager,
     private val postSaveSyncScheduler: PostSaveSyncScheduler,
-    private val syncFinanzasUseCase: SyncFinanzasUseCase
+    private val syncFinanzasUseCase: SyncFinanzasUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CostosYGastosUiState())
@@ -194,21 +194,33 @@ class CostosYGastosViewModel @Inject constructor(
                 monto = gasto.monto.toString(),
                 fecha = gasto.fecha,
                 nota = gasto.nota ?: "",
-                isRecurring = gasto.isRecurring
+                isRecurring = gasto.isRecurring,
             )
         }
     }
 
     fun dismissDialog() {
-                _uiState.update { it.copy(isDialogVisible = false, editingGasto = null, error = null) }
+        _uiState.update { it.copy(isDialogVisible = false, editingGasto = null, error = null) }
     }
 
-    fun updateCategoria(c: String) { _uiState.update { it.copy(categoria = c) } }
-    fun updateDescripcion(d: String) { _uiState.update { it.copy(descripcion = d) } }
-    fun updateMonto(m: String) { _uiState.update { it.copy(monto = m) } }
-    fun updateFecha(f: LocalDate) { _uiState.update { it.copy(fecha = f) } }
-    fun updateNota(n: String) { _uiState.update { it.copy(nota = n) } }
-    fun toggleRecurrente() { _uiState.update { it.copy(isRecurring = !it.isRecurring) } }
+    fun updateCategoria(c: String) {
+        _uiState.update { it.copy(categoria = c) }
+    }
+    fun updateDescripcion(d: String) {
+        _uiState.update { it.copy(descripcion = d) }
+    }
+    fun updateMonto(m: String) {
+        _uiState.update { it.copy(monto = m) }
+    }
+    fun updateFecha(f: LocalDate) {
+        _uiState.update { it.copy(fecha = f) }
+    }
+    fun updateNota(n: String) {
+        _uiState.update { it.copy(nota = n) }
+    }
+    fun toggleRecurrente() {
+        _uiState.update { it.copy(isRecurring = !it.isRecurring) }
+    }
 
     fun saveGasto() {
         val s = _uiState.value
@@ -229,11 +241,11 @@ class CostosYGastosViewModel @Inject constructor(
                     fecha = s.fecha,
                     fechaProgramada = null,
                     nota = s.nota.ifBlank { null },
-                    isRecurring = s.isRecurring
+                    isRecurring = s.isRecurring,
                 )
                 repository.upsertGastoOperativo(gasto)
                 postSaveSyncScheduler.scheduleFinanzasSync(opticaId)
-        _uiState.update { it.copy(isDialogVisible = false, editingGasto = null, error = null) }
+                _uiState.update { it.copy(isDialogVisible = false, editingGasto = null, error = null) }
             } catch (e: Exception) {
                 _uiState.update { it.copy(error = "Error al guardar") }
             }
@@ -261,33 +273,47 @@ class CostosYGastosViewModel @Inject constructor(
 
     fun showNewCosto() {
         val block = _uiState.value.selectedBlock
-        _uiState.update { it.copy(
-            isCostoDialogVisible = true,
-            creatingCosto = true,
-            costoMaterial = "",
-            costoTipoLente = "",
-            costoStockOFabricacion = block?.let { blockToFilter(it) } ?: "",
-            costoTratamiento = "",
-            costoSerie = "",
-            costoCostoUnitario = "",
-            costoSaveError = null,
-            deletingCosto = null
-        )}
+        _uiState.update {
+            it.copy(
+                isCostoDialogVisible = true,
+                creatingCosto = true,
+                costoMaterial = "",
+                costoTipoLente = "",
+                costoStockOFabricacion = block?.let { blockToFilter(it) } ?: "",
+                costoTratamiento = "",
+                costoSerie = "",
+                costoCostoUnitario = "",
+                costoSaveError = null,
+                deletingCosto = null,
+            )
+        }
     }
 
     fun dismissCostoDialog() {
-        _uiState.update { it.copy(
-            isCostoDialogVisible = false,
-            creatingCosto = false,
-            costoSaveError = null
-        )}
+        _uiState.update {
+            it.copy(
+                isCostoDialogVisible = false,
+                creatingCosto = false,
+                costoSaveError = null,
+            )
+        }
     }
 
-    fun updateCostoMaterial(value: String) { _uiState.update { it.copy(costoMaterial = value) } }
-    fun updateCostoTipoLente(value: String) { _uiState.update { it.copy(costoTipoLente = value) } }
-    fun updateCostoTratamiento(value: String) { _uiState.update { it.copy(costoTratamiento = value) } }
-    fun updateCostoSerie(value: String) { _uiState.update { it.copy(costoSerie = value) } }
-    fun updateCostoCostoUnitario(value: String) { _uiState.update { it.copy(costoCostoUnitario = value) } }
+    fun updateCostoMaterial(value: String) {
+        _uiState.update { it.copy(costoMaterial = value) }
+    }
+    fun updateCostoTipoLente(value: String) {
+        _uiState.update { it.copy(costoTipoLente = value) }
+    }
+    fun updateCostoTratamiento(value: String) {
+        _uiState.update { it.copy(costoTratamiento = value) }
+    }
+    fun updateCostoSerie(value: String) {
+        _uiState.update { it.copy(costoSerie = value) }
+    }
+    fun updateCostoCostoUnitario(value: String) {
+        _uiState.update { it.copy(costoCostoUnitario = value) }
+    }
 
     fun saveCosto() {
         val s = _uiState.value
@@ -317,24 +343,26 @@ class CostosYGastosViewModel @Inject constructor(
                     tratamiento = s.costoTratamiento.ifBlank { null },
                     serie = s.costoSerie.toIntOrNull(),
                     costoUnitario = costoUnitario,
-                    vigenteDesde = DateUtils.toIso(DateUtils.today())
+                    vigenteDesde = DateUtils.toIso(DateUtils.today()),
                 )
                 costoProductoDao.upsertAll(listOf(entity))
                 // Refresh block data
                 val bloqueFilter = blockToFilter(s.selectedBlock ?: return@launch)
                 val refreshed = costoProductoDao.getByBloque(opticaId, bloqueFilter).first()
-                _uiState.update { it.copy(
-                    isCostoDialogVisible = false,
-                    creatingCosto = false,
-                    costosDelBloque = refreshed,
-                    costoSaveError = null,
-                    costoMaterial = "",
-                    costoTipoLente = "",
-                    costoStockOFabricacion = "",
-                    costoTratamiento = "",
-                    costoSerie = "",
-                    costoCostoUnitario = ""
-                )}
+                _uiState.update {
+                    it.copy(
+                        isCostoDialogVisible = false,
+                        creatingCosto = false,
+                        costosDelBloque = refreshed,
+                        costoSaveError = null,
+                        costoMaterial = "",
+                        costoTipoLente = "",
+                        costoStockOFabricacion = "",
+                        costoTratamiento = "",
+                        costoSerie = "",
+                        costoCostoUnitario = "",
+                    )
+                }
                 postSaveSyncScheduler.scheduleFinanzasSync(opticaId)
             } catch (e: Exception) {
                 _uiState.update { it.copy(costoSaveError = "Error al guardar: ${e.message}") }
@@ -359,10 +387,12 @@ class CostosYGastosViewModel @Inject constructor(
                 val opticaId = sessionManager.opticaId.first()
                 val bloqueFilter = blockToFilter(_uiState.value.selectedBlock ?: return@launch)
                 val refreshed = costoProductoDao.getByBloque(opticaId, bloqueFilter).first()
-                _uiState.update { it.copy(
-                    deletingCosto = null,
-                    costosDelBloque = refreshed
-                )}
+                _uiState.update {
+                    it.copy(
+                        deletingCosto = null,
+                        costosDelBloque = refreshed,
+                    )
+                }
                 postSaveSyncScheduler.scheduleFinanzasSync(opticaId)
             } catch (e: CancellationException) {
                 throw e

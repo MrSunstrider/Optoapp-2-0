@@ -51,16 +51,11 @@ data class LaboratorioTicketContext(
 object DispensacionLaboratorioTicket {
     private const val AV_COL_W = 28
 
-    private fun tratamientosStr(tratamientos: List<String>) =
-        tratamientos.filter { it.isNotBlank() && it != "Ninguno" }.joinToString(", ")
+    private fun tratamientosStr(tratamientos: List<String>) = tratamientos.filter { it.isNotBlank() && it != "Ninguno" }.joinToString(", ")
 
-    fun textoCompleto(ctx: LaboratorioTicketContext, ultimaEval: EvaluacionClinica?): String {
-        return buildTicketFormatoLaboratorio(ctx, ultimaEval)
-    }
+    fun textoCompleto(ctx: LaboratorioTicketContext, ultimaEval: EvaluacionClinica?): String = buildTicketFormatoLaboratorio(ctx, ultimaEval)
 
-    fun textoCompacto(ctx: LaboratorioTicketContext, ultimaEval: EvaluacionClinica?): String {
-        return buildTicketFormatoLaboratorio(ctx, ultimaEval)
-    }
+    fun textoCompacto(ctx: LaboratorioTicketContext, ultimaEval: EvaluacionClinica?): String = buildTicketFormatoLaboratorio(ctx, ultimaEval)
 
     private fun buildTicketFormatoLaboratorio(ctx: LaboratorioTicketContext, ev: EvaluacionClinica?): String {
         val dipLinea = dipLejosCerca(ev)
@@ -113,11 +108,11 @@ object DispensacionLaboratorioTicket {
 
         val line1 = dosColumnas(
             "AVCC OD ${avccOd.uppercase(Locale.getDefault())}",
-            "AV CC AO"
+            "AV CC AO",
         )
         val line2 = dosColumnas(
             "AVCC OI ${avccOi.uppercase(Locale.getDefault())}",
-            avccAo.uppercase(Locale.getDefault())
+            avccAo.uppercase(Locale.getDefault()),
         )
         return listOf(line1, line2)
     }

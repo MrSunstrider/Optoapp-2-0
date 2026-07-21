@@ -25,9 +25,12 @@ fun UpdateDialog(updateInfo: UpdateChecker.UpdateInfo, onDismiss: () -> Unit) {
         icon = { Text("🔄", fontSize = 28.sp) },
         title = {
             Text(
-                if (errorMessage != null) "Error de actualización"
-                else "Nueva versión disponible",
-                fontWeight = FontWeight.Bold
+                if (errorMessage != null) {
+                    "Error de actualización"
+                } else {
+                    "Nueva versión disponible"
+                },
+                fontWeight = FontWeight.Bold,
             )
         },
         text = {
@@ -56,7 +59,7 @@ fun UpdateDialog(updateInfo: UpdateChecker.UpdateInfo, onDismiss: () -> Unit) {
                             }
                         }
                     },
-                    enabled = !isDownloading
+                    enabled = !isDownloading,
                 ) {
                     Text(if (isDownloading) "Descargando…" else "Descargar e instalar")
                 }
@@ -66,11 +69,11 @@ fun UpdateDialog(updateInfo: UpdateChecker.UpdateInfo, onDismiss: () -> Unit) {
             if (errorMessage == null) {
                 TextButton(
                     onClick = onDismiss,
-                    enabled = !isDownloading
+                    enabled = !isDownloading,
                 ) {
                     Text("Más tarde")
                 }
             }
-        }
+        },
     )
 }

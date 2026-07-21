@@ -79,6 +79,8 @@ object DiagnosticoCalculator {
             if (denominator <= 0) return null
             val decimalAV = numerator / denominator
             return -log10(decimalAV)
-        } catch (e: Exception) { return null }
+        } catch (e: Exception) {
+            return null
+        }
     }
 }

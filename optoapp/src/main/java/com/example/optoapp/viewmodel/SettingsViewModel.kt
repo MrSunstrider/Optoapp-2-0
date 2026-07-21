@@ -7,19 +7,19 @@ import com.example.optoapp.data.SecurityManager
 import com.example.optoapp.data.SessionManager
 import com.example.optoapp.notifications.NotificationHelper
 import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val reminderSettingsStore: ReminderSettingsStore,
     private val notificationHelper: NotificationHelper,
     private val sessionManager: SessionManager,
-    private val securityManager: SecurityManager
+    private val securityManager: SecurityManager,
 ) : ViewModel() {
 
     // ─── Notificaciones ──────────────────────────────────────────────────────
@@ -64,5 +64,4 @@ class SettingsViewModel @Inject constructor(
         if (!SecurityManager.isValidPin(newPin)) return@launch
         securityManager.savePin(newPin)
     }
-
 }

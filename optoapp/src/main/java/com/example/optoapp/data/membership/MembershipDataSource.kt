@@ -1,8 +1,8 @@
 package com.example.optoapp.data.membership
 
 import android.util.Log
-import com.example.optoapp.data.OpticaMembership
 import com.example.optoapp.data.OpticaMemberRow
+import com.example.optoapp.data.OpticaMembership
 import com.example.optoapp.data.UsuarioOpticaDto
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
@@ -17,7 +17,7 @@ import javax.inject.Singleton
 @Singleton
 class MembershipDataSource @Inject internal constructor(
     private val supabase: SupabaseClient,
-    private val opticaQueryHelper: OpticaQueryHelper
+    private val opticaQueryHelper: OpticaQueryHelper,
 ) {
     suspend fun fetchMembershipsForCurrentUser(): List<OpticaMembership> {
         val uid = supabase.auth.currentUserOrNull()?.id ?: return emptyList()
@@ -42,8 +42,8 @@ class MembershipDataSource @Inject internal constructor(
                 OpticaMembership(
                     opticaId = row.opticaId,
                     nombre = nombre.ifBlank { row.opticaId },
-                    rol = row.rol.ifBlank { "admin" }
-                )
+                    rol = row.rol.ifBlank { "admin" },
+                ),
             )
         }
         return out
@@ -82,7 +82,7 @@ class MembershipDataSource @Inject internal constructor(
                     put("p_optica_id", opticaId)
                     put("p_email", normalizedEmail)
                     put("p_rol", normalizedRole)
-                }
+                },
             )
             Result.success(Unit)
         } catch (e: CancellationException) {

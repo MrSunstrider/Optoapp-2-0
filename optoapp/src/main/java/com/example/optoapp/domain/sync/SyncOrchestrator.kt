@@ -31,7 +31,7 @@ class SyncOrchestrator @Inject constructor(
     private val syncOrdenesCompraUseCase: SyncOrdenesCompraUseCase,
     private val syncInventarioFisicoUseCase: SyncInventarioFisicoUseCase,
     private val syncInventoryKpisUseCase: SyncInventoryKpisUseCase,
-    private val syncGate: SyncGate
+    private val syncGate: SyncGate,
 ) {
     companion object {
         private const val TAG = "SyncOrchestrator"
@@ -49,36 +49,58 @@ class SyncOrchestrator @Inject constructor(
      * @param skipUpload when true, skips the local-upload phase (download-only).
      * @return true if any module returned [Resource.Error].
      */
-    suspend fun executeModules(opticaId: String, skipUpload: Boolean): Boolean {
-        return syncGate.mutex.withLock {
-            var hasErrors = false
+    suspend fun executeModules(opticaId: String, skipUpload: Boolean): Boolean = syncGate.mutex.withLock {
+        var hasErrors = false
 
-            val p = syncPacientesUseCase(opticaId, downloadAfterUpload = true, skipUpload = skipUpload)
-            if (p is Resource.Error) { hasErrors = true; Log.w(TAG, "pacientes: ${p.message}") }
-
-            val h = syncHistorialUseCase(opticaId, downloadAfterUpload = true, skipUpload = skipUpload)
-            if (h is Resource.Error) { hasErrors = true; Log.w(TAG, "historial: ${h.message}") }
-
-            val f = syncFinanzasUseCase(opticaId, downloadAfterUpload = true, skipUpload = skipUpload)
-            if (f is Resource.Error) { hasErrors = true; Log.w(TAG, "finanzas: ${f.message}") }
-
-            val pv = syncProveedoresUseCase(opticaId, downloadAfterUpload = true, skipUpload = skipUpload)
-            if (pv is Resource.Error) { hasErrors = true; Log.w(TAG, "proveedores: ${pv.message}") }
-
-            val oc = syncOrdenesCompraUseCase(opticaId, downloadAfterUpload = true, skipUpload = skipUpload)
-            if (oc is Resource.Error) { hasErrors = true; Log.w(TAG, "ordenes_compra: ${oc.message}") }
-
-            val kpi = syncInventoryKpisUseCase(opticaId)
-            if (kpi is Resource.Error) { hasErrors = true; Log.w(TAG, "inventory_kpis: ${kpi.message}") }
-
-            val i = syncInventarioUseCase(opticaId, downloadAfterUpload = true, skipUpload = skipUpload)
-            if (i is Resource.Error) { hasErrors = true; Log.w(TAG, "inventario: ${i.message}") }
-
-            val ifx = syncInventarioFisicoUseCase(opticaId, downloadAfterUpload = true, skipUpload = skipUpload)
-            if (ifx is Resource.Error) { hasErrors = true; Log.w(TAG, "inventario_fisico: ${ifx.message}") }
-
-            hasErrors
+        val p = syncPacientesUseCase(opticaId, downloadAfterUpload = true, skipUpload = skipUpload)
+        if (p is Resource.Error) {
+            hasErrors = true
+            Log.w(TAG, "pacientes: ${p.message}")
         }
+
+        val h = syncHistorialUseCase(opticaId, downloadAfterUpload = true, skipUpload = skipUpload)
+        if (h is Resource.Error) {
+            hasErrors = true
+            Log.w(TAG, "historial: ${h.message}")
+        }
+
+        val f = syncFinanzasUseCase(opticaId, downloadAfterUpload = true, skipUpload = skipUpload)
+        if (f is Resource.Error) {
+            hasErrors = true
+            Log.w(TAG, "finanzas: ${f.message}")
+        }
+
+        val pv = syncProveedoresUseCase(opticaId, downloadAfterUpload = true, skipUpload = skipUpload)
+        if (pv is Resource.Error) {
+            hasErrors = true
+            Log.w(TAG, "proveedores: ${pv.message}")
+        }
+
+        val oc = syncOrdenesCompraUseCase(opticaId, downloadAfterUpload = true, skipUpload = skipUpload)
+        if (oc is Resource.Error) {
+            hasErrors = true
+            Log.w(TAG, "ordenes_compra: ${oc.message}")
+        }
+
+        val kpi = syncInventoryKpisUseCase(opticaId)
+        if (kpi is Resource.Error) {
+            hasErrors = true
+            Log.w(TAG, "inventory_kpis: ${kpi.message}")
+        }
+
+        val i = syncInventarioUseCase(opticaId, downloadAfterUpload = true, skipUpload = skipUpload)
+        if (i is Resource.Error) {
+            hasErrors = true
+            Log.w(TAG, "inventario: ${i.message}")
+        }
+
+        val ifx = syncInventarioFisicoUseCase(opticaId, downloadAfterUpload = true, skipUpload = skipUpload)
+        if (ifx is Resource.Error) {
+            hasErrors = true
+            Log.w(TAG, "inventario_fisico: ${ifx.message}")
+        }
+
+        hasErrors
     }
 
     /**
@@ -91,7 +113,7 @@ class SyncOrchestrator @Inject constructor(
      */
     suspend fun executeSilentModules(
         opticaId: String,
-        onModuleResult: suspend (module: String, result: Resource<*>) -> Unit
+        onModuleResult: suspend (module: String, result: Resource<*>) -> Unit,
     ) {
         syncGate.mutex.withLock {
             onModuleResult("pacientes", syncPacientesUseCase(opticaId, downloadAfterUpload = true))

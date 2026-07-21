@@ -7,7 +7,7 @@ fun EvaluacionUiState.toEvaluacionClinica(
     evaluacionId: String?,
     pacienteId: String,
     opticaId: String,
-    dipParsed: DipParseResult
+    dipParsed: DipParseResult,
 ): EvaluacionClinica {
     val s = this
     return EvaluacionClinica(
@@ -83,7 +83,7 @@ fun EvaluacionUiState.toEvaluacionClinica(
         lcRadioBaseOi = s.lcRadioBaseOi, lcDiametroOi = s.lcOiDia,
         lcLaboratorio = s.lcLaboratorio, lcTipoLente = s.lcTipoLente,
         lcMaterial = s.lcMaterial, lcFechaAdaptacion = s.lcFechaAdaptacion,
-        lcObservaciones = s.lcObservaciones
+        lcObservaciones = s.lcObservaciones,
     )
 }
 
@@ -160,9 +160,11 @@ fun EvaluacionClinica.toEvaluacionUiState(): EvaluacionUiState {
         lcLaboratorio = e.lcLaboratorio, lcTipoLente = e.lcTipoLente,
         lcMaterial = e.lcMaterial, lcFechaAdaptacion = e.lcFechaAdaptacion,
         lcObservaciones = e.lcObservaciones,
-        hasAdd = e.addCercaOd.isNotEmpty() || e.addCercaOi.isNotEmpty() ||
-            e.addIntermediaOd.isNotEmpty() || e.addIntermediaOi.isNotEmpty() ||
+        hasAdd = e.addCercaOd.isNotEmpty() ||
+            e.addCercaOi.isNotEmpty() ||
+            e.addIntermediaOd.isNotEmpty() ||
+            e.addIntermediaOi.isNotEmpty() ||
             e.addAv.isNotEmpty(),
-        isAddAo = e.addCercaOd.isNotEmpty() && e.addCercaOd == e.addCercaOi
+        isAddAo = e.addCercaOd.isNotEmpty() && e.addCercaOd == e.addCercaOi,
     )
 }

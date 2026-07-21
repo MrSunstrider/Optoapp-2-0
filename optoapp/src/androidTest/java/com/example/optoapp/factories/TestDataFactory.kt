@@ -30,12 +30,12 @@ object TestDataFactory {
      */
     data class TestCredentials(
         val email: String,
-        val password: String
+        val password: String,
     )
 
     fun createTestUser(): TestCredentials = TestCredentials(
         email = "test-user-${timestampSuffix()}@optoapp-test.com",
-        password = "TestPass123!"
+        password = "TestPass123!",
     )
 
     // ── Paciente ─────────────────────────────────────────────────────────────
@@ -50,7 +50,7 @@ object TestDataFactory {
         dni: String? = null,
         email: String? = null,
         direccion: String? = null,
-        historiaOptometrica: String? = null
+        historiaOptometrica: String? = null,
     ): Paciente = Paciente(
         id = id,
         nombreCompleto = nombreCompleto,
@@ -61,7 +61,7 @@ object TestDataFactory {
         dni = dni,
         email = email,
         direccion = direccion,
-        historiaOptometrica = historiaOptometrica
+        historiaOptometrica = historiaOptometrica,
     )
 
     // ── Evaluación ───────────────────────────────────────────────────────────
@@ -73,7 +73,7 @@ object TestDataFactory {
         opticaId: String = "test-optica",
         motivoConsulta: String = "Control general",
         diagnostico: String = "",
-        citaEstado: String = "completada"
+        citaEstado: String = "completada",
     ): EvaluacionClinica = EvaluacionClinica(
         id = id,
         pacienteId = pacienteId,
@@ -81,7 +81,7 @@ object TestDataFactory {
         opticaId = opticaId,
         motivoConsulta = motivoConsulta,
         diagnostico = diagnostico,
-        citaEstado = citaEstado
+        citaEstado = citaEstado,
     )
 
     // ── Dispensación ─────────────────────────────────────────────────────────
@@ -95,7 +95,7 @@ object TestDataFactory {
         montoPagado: Double = 100.0,
         estadoEntrega: String = "Pendiente",
         ot: String = "OT-TEST-${timestampSuffix()}",
-        tratamientos: List<String> = listOf("Antireflex", "Endurecido")
+        tratamientos: List<String> = listOf("Antireflex", "Endurecido"),
     ): DispensacionOptica = DispensacionOptica(
         id = id,
         pacienteId = pacienteId,
@@ -105,7 +105,7 @@ object TestDataFactory {
         montoPagado = montoPagado,
         estadoEntrega = estadoEntrega,
         ot = ot,
-        tratamientos = tratamientos
+        tratamientos = tratamientos,
     )
 
     fun createTestDispensacionItem(
@@ -113,13 +113,13 @@ object TestDataFactory {
         dispensacionId: String,
         tipoLente: String = "Lejos",
         materialLente: String = "Orgánico",
-        opticaId: String = "test-optica"
+        opticaId: String = "test-optica",
     ): DispensacionItem = DispensacionItem(
         id = id,
         dispensacionId = dispensacionId,
         tipoLente = tipoLente,
         materialLente = materialLente,
-        opticaId = opticaId
+        opticaId = opticaId,
     )
 
     // ── Servicio Extra ────────────────────────────────────────────────────────
@@ -134,7 +134,7 @@ object TestDataFactory {
         fecha: LocalDate = LocalDate.now(),
         pacienteId: String? = null,
         metodoPago: String = "Efectivo",
-        opticaId: String = "test-optica"
+        opticaId: String = "test-optica",
     ): ServicioExtra = ServicioExtra(
         id = id,
         ot = ot,
@@ -145,7 +145,7 @@ object TestDataFactory {
         fecha = fecha,
         pacienteId = pacienteId,
         metodoPago = metodoPago,
-        opticaId = opticaId
+        opticaId = opticaId,
     )
 
     // ── Pago ─────────────────────────────────────────────────────────────────
@@ -157,7 +157,7 @@ object TestDataFactory {
         tipo: String = "Contado",
         monto: Double = 100.0,
         metodoPago: String = "Efectivo",
-        opticaId: String = "test-optica"
+        opticaId: String = "test-optica",
     ): Pago = Pago(
         id = id,
         dispensacionId = dispensacionId,
@@ -165,6 +165,6 @@ object TestDataFactory {
         tipo = tipo,
         monto = monto,
         metodoPago = metodoPago,
-        opticaId = opticaId
+        opticaId = opticaId,
     )
 }

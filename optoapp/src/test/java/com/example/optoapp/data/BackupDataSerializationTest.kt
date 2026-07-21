@@ -27,7 +27,7 @@ class BackupDataSerializationTest {
             evaluaciones = emptyList(),
             dispensaciones = emptyList(),
             pagos = emptyList(),
-            serviciosExtra = emptyList()
+            serviciosExtra = emptyList(),
         )
 
         val encoded = json.encodeToString(data)
@@ -52,11 +52,11 @@ class BackupDataSerializationTest {
             edad = 30,
             telefono = "123456789",
             fechaCreacion = LocalDate.of(2024, 1, 15),
-            opticaId = "opt_abc123"
+            opticaId = "opt_abc123",
         )
 
         val data = BackupData(
-            pacientes = listOf(paciente)
+            pacientes = listOf(paciente),
         )
 
         val encoded = json.encodeToString(data)
@@ -76,14 +76,14 @@ class BackupDataSerializationTest {
             id = "d1",
             pacienteId = "p1",
             fecha = LocalDate.of(2024, 6, 1),
-            opticaId = "opt_abc"
+            opticaId = "opt_abc",
         )
         val pago = Pago(
             id = "pay1",
             fecha = LocalDate.of(2024, 6, 1),
             tipo = "efectivo",
             monto = 150.0,
-            opticaId = "opt_abc"
+            opticaId = "opt_abc",
         )
         val servicio = ServicioExtra(
             id = "s1",
@@ -92,18 +92,18 @@ class BackupDataSerializationTest {
             aCuenta = 50.0,
             estado = "Pagado",
             fecha = LocalDate.of(2024, 6, 1),
-            opticaId = "opt_abc"
+            opticaId = "opt_abc",
         )
 
         val data = BackupData(
             sourceOpticaId = "opt_abc",
             pacientes = listOf(
-                Paciente("p1", "Ana Lopez", 25, "999888777", LocalDate.of(2024, 1, 15), opticaId = "opt_abc")
+                Paciente("p1", "Ana Lopez", 25, "999888777", LocalDate.of(2024, 1, 15), opticaId = "opt_abc"),
             ),
             evaluaciones = emptyList(),
             dispensaciones = listOf(dispensacion),
             pagos = listOf(pago),
-            serviciosExtra = listOf(servicio)
+            serviciosExtra = listOf(servicio),
         )
 
         val encoded = json.encodeToString(data)

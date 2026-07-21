@@ -9,7 +9,7 @@ import java.time.LocalDate
 interface PagoDao {
     @Deprecated(
         message = "Use getPagoByIdForOptica to enforce multi-tenant isolation",
-        replaceWith = ReplaceWith("getPagoByIdForOptica(id, opticaId)")
+        replaceWith = ReplaceWith("getPagoByIdForOptica(id, opticaId)"),
     )
     @Query("SELECT * FROM pagos WHERE id = :id")
     suspend fun getPagoById(id: String): Pago?
@@ -25,7 +25,7 @@ interface PagoDao {
 
     @Deprecated(
         message = "Use getPagosByDateRangeForOptica to enforce multi-tenant isolation",
-        replaceWith = ReplaceWith("getPagosByDateRangeForOptica(start, end, opticaId)")
+        replaceWith = ReplaceWith("getPagosByDateRangeForOptica(start, end, opticaId)"),
     )
     @Query("SELECT * FROM pagos WHERE fecha >= :start AND fecha <= :end ORDER BY fecha DESC")
     fun getPagosByDateRange(start: LocalDate, end: LocalDate): Flow<List<Pago>>
@@ -36,19 +36,29 @@ interface PagoDao {
     @Upsert
     suspend fun insertPago(pago: Pago)
 
-    @Query("""
+    @Query(
+        """
         UPDATE pagos SET dispensacionId=:dispensacionId,
         servicioExtraId=:servicioExtraId, fecha=:fecha, tipo=:tipo,
         monto=:monto, metodoPago=:metodoPago, nota=:nota,
         opticaId=:opticaId, updatedAt=:updatedAt, updatedBy=:updatedBy,
         ventaId=:ventaId
         WHERE id=:id AND opticaId=:opticaId
-    """)
+    """,
+    )
     suspend fun updatePago(
-        id: String, opticaId: String, dispensacionId: String?,
-        servicioExtraId: String?, fecha: java.time.LocalDate, tipo: String,
-        monto: Double, metodoPago: String, nota: String,
-        updatedAt: String?, updatedBy: String?, ventaId: String?
+        id: String,
+        opticaId: String,
+        dispensacionId: String?,
+        servicioExtraId: String?,
+        fecha: java.time.LocalDate,
+        tipo: String,
+        monto: Double,
+        metodoPago: String,
+        nota: String,
+        updatedAt: String?,
+        updatedBy: String?,
+        ventaId: String?,
     ): Int
 
     @Query("DELETE FROM pagos WHERE id = :id AND opticaId = :opticaId")
@@ -59,7 +69,7 @@ interface PagoDao {
 
     @Deprecated(
         message = "Use getPagosListByOptica to enforce multi-tenant isolation",
-        replaceWith = ReplaceWith("getPagosListByOptica(opticaId)")
+        replaceWith = ReplaceWith("getPagosListByOptica(opticaId)"),
     )
     @Query("SELECT * FROM pagos")
     suspend fun getAllPagos(): List<Pago>
@@ -72,7 +82,7 @@ interface PagoDao {
 
     @Deprecated(
         message = "Use reassignDispensacionIdForOptica to enforce multi-tenant isolation",
-        replaceWith = ReplaceWith("reassignDispensacionIdForOptica(oldDispensacionId, newDispensacionId, opticaId)")
+        replaceWith = ReplaceWith("reassignDispensacionIdForOptica(oldDispensacionId, newDispensacionId, opticaId)"),
     )
     @Query("UPDATE pagos SET dispensacionId = :newDispensacionId WHERE dispensacionId = :oldDispensacionId")
     suspend fun reassignDispensacionId(oldDispensacionId: String, newDispensacionId: String): Int

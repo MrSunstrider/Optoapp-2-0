@@ -1,20 +1,20 @@
 package com.example.optoapp.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.optoapp.data.MembershipRepository
 import com.example.optoapp.data.SessionHealth
-import com.example.optoapp.data.SyncTelemetryRemoteRow
+import com.example.optoapp.data.SessionManager
 import com.example.optoapp.data.SyncEntityState
 import com.example.optoapp.data.SyncEntityStateDao
-import com.example.optoapp.data.SessionManager
+import com.example.optoapp.data.SyncTelemetryRemoteRow
 import com.example.optoapp.util.BackgroundErrorCollector
-import android.util.Log
-import com.example.optoapp.util.SyncErrorSanitizer
+import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.postgrest
-import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -25,7 +25,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import java.util.UUID
 import javax.inject.Inject
 
@@ -44,7 +43,7 @@ class SyncDiagnosticsViewModel @Inject constructor(
     private val sessionManager: SessionManager,
     private val supabase: SupabaseClient,
     private val bgErrorCollector: BackgroundErrorCollector,
-    private val membershipRepository: MembershipRepository
+    private val membershipRepository: MembershipRepository,
 ) : ViewModel() {
     companion object {
         private const val TAG = "SyncDiagnosticsVM"
@@ -60,7 +59,6 @@ class SyncDiagnosticsViewModel @Inject constructor(
             }
         }
     }
-
 
     val errorRows: StateFlow<List<SyncEntityState>> = sessionManager.opticaId
         .flatMapLatest { oid -> syncEntityStateDao.observeErrorsForOptica(oid) }
@@ -109,7 +107,7 @@ class SyncDiagnosticsViewModel @Inject constructor(
                 hasValidSession = user != null && hasToken,
                 tokenExpiresAtMs = 0L, // supabase-kt no expone expires_at directamente
                 lastRefreshSuccessful = hasToken,
-                recentBackgroundErrors = bgErrorCollector.errors.value
+                recentBackgroundErrors = bgErrorCollector.errors.value,
             )
         }
     }
@@ -190,7 +188,7 @@ class SyncDiagnosticsViewModel @Inject constructor(
             val currentOid = sessionManager.opticaId.first()
             if (isValidUuid(currentOid)) {
                 _sessionRepairState.value = SessionRepairState.Success(
-                    "El ID de óptica ya es válido: $currentOid"
+                    "El ID de óptica ya es válido: $currentOid",
                 )
                 return@launch
             }
@@ -201,13 +199,13 @@ class SyncDiagnosticsViewModel @Inject constructor(
                     _sessionRepairState.value = SessionRepairState.Error(
                         "No se encontraron membresías en el servidor. " +
                             "Probablemente no hay ópticas asociadas a esta cuenta. " +
-                            "Probá cerrar sesión y volver a iniciar."
+                            "Probá cerrar sesión y volver a iniciar.",
                     )
                 }
                 memberships.size > 1 -> {
                     _sessionRepairState.value = SessionRepairState.Error(
                         "Tenés ${memberships.size} ópticas. " +
-                            "Andá a Configuración > Cambiar de óptica para seleccionar la correcta."
+                            "Andá a Configuración > Cambiar de óptica para seleccionar la correcta.",
                     )
                 }
                 else -> {
@@ -219,17 +217,17 @@ class SyncDiagnosticsViewModel @Inject constructor(
                         opticaId = m.opticaId,
                         email = email,
                         name = name,
-                        rol = rol
+                        rol = rol,
                     )
                     _sessionRepairState.value = SessionRepairState.Success(
-                        "Sesión reparada. ID de óptica actualizado a: ${m.opticaId}"
+                        "Sesión reparada. ID de óptica actualizado a: ${m.opticaId}",
                     )
                 }
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error reparando sesión", e)
             _sessionRepairState.value = SessionRepairState.Error(
-                "Error inesperado. Reintente más tarde."
+                "Error inesperado. Reintente más tarde.",
             )
         }
     }

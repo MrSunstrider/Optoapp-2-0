@@ -7,8 +7,8 @@ import com.example.optoapp.data.EvaluacionClinica
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Resource
 import com.example.optoapp.data.SessionManager
-import com.example.optoapp.sync.PostSaveSyncScheduler
 import com.example.optoapp.notifications.NotificationHelper
+import com.example.optoapp.sync.PostSaveSyncScheduler
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -17,10 +17,10 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -32,7 +32,7 @@ enum class AgendaFiltro { HOY, SEMANA, MES }
 
 data class AgendaFila(
     val evaluacion: EvaluacionClinica,
-    val nombrePaciente: String
+    val nombrePaciente: String,
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -41,7 +41,7 @@ class AgendaViewModel @Inject constructor(
     private val repository: OptoRepository,
     private val sessionManager: SessionManager,
     private val postSaveSyncScheduler: PostSaveSyncScheduler,
-    @ApplicationContext private val appContext: Context
+    @ApplicationContext private val appContext: Context,
 ) : ViewModel() {
 
     private val prefs = appContext.getSharedPreferences("optoapp_prefs", Context.MODE_PRIVATE)
@@ -87,7 +87,7 @@ class AgendaViewModel @Inject constructor(
                 val (start, end) = rangoPara(f, ym)
                 combine(
                     repository.getEvaluacionesProximaCitaEnRango(opticaId, start, end),
-                    repository.pacientesFlowForOptica(opticaId)
+                    repository.pacientesFlowForOptica(opticaId),
                 ) { evals, pacientes ->
                     val byId = pacientes.associateBy { it.id }
                     evals.map { e ->
@@ -113,7 +113,7 @@ class AgendaViewModel @Inject constructor(
             if (res !is Resource.Success) return@launch
             val ev = res.data ?: return@launch
             repository.updateEvaluacion(
-                ev.copy(proximaCita = nuevaFecha, citaEstado = "reprogramada")
+                ev.copy(proximaCita = nuevaFecha, citaEstado = "reprogramada"),
             )
             postSaveSyncScheduler.scheduleHistorialSync(sessionManager.opticaId.first())
 

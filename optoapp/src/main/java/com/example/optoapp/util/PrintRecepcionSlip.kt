@@ -1,7 +1,6 @@
 package com.example.optoapp.util
 
 import android.content.Context
-import android.content.Intent
 import android.print.PrintAttributes
 import android.print.PrintManager
 import android.webkit.WebView
@@ -31,7 +30,7 @@ object PrintRecepcionSlip {
                     PrintAttributes.Builder()
                         .setMediaSize(PrintAttributes.MediaSize.ISO_A4)
                         .setMinMargins(PrintAttributes.Margins.NO_MARGINS)
-                        .build()
+                        .build(),
                 )
             }
         }

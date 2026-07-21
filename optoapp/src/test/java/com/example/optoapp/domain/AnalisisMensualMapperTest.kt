@@ -1,9 +1,5 @@
 package com.example.optoapp.domain
 
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
@@ -76,12 +72,14 @@ class AnalisisMensualMapperTest {
             put("cobros_mes", 12000.0)
             put("margen_neto_pct", 25.5)
             putJsonArray("margen_por_categoria") {
-                add(buildJsonObject {
-                    put("categoria", "Lentes")
-                    put("ventas", 8000.0)
-                    put("costos", 4000.0)
-                    put("margen_pct", 50.0)
-                })
+                add(
+                    buildJsonObject {
+                        put("categoria", "Lentes")
+                        put("ventas", 8000.0)
+                        put("costos", 4000.0)
+                        put("margen_pct", 50.0)
+                    },
+                )
             }
             putJsonObject("deudores") {
                 put("cantidad", 5)
@@ -93,15 +91,17 @@ class AnalisisMensualMapperTest {
                 put("saldo_neto", 3000.0)
             }
             putJsonArray("stock_estancado") {
-                add(buildJsonObject {
-                    put("montura_id", "m1")
-                    put("sku", "SKU-001")
-                    put("modelo", "Modelo A")
-                    put("costo", 150.0)
-                    put("stock_actual", 5)
-                    put("ultima_venta", "2026-01-15")
-                    put("dias_sin_venta", 171)
-                })
+                add(
+                    buildJsonObject {
+                        put("montura_id", "m1")
+                        put("sku", "SKU-001")
+                        put("modelo", "Modelo A")
+                        put("costo", 150.0)
+                        put("stock_actual", 5)
+                        put("ultima_venta", "2026-01-15")
+                        put("dias_sin_venta", 171)
+                    },
+                )
             }
             put("valor_inventario", 45000.0)
             put("ventas_mes_anterior", 12000.0)
@@ -128,19 +128,21 @@ class AnalisisMensualMapperTest {
 
     @Test
     fun fromJson_emptyMonth_allZeros() {
-        val result = AnalisisMensual.fromJson(buildJsonObject {
-            put("ventas_mes", 0.0)
-            put("cobros_mes", 0.0)
-            put("margen_neto_pct", 0.0)
-            putJsonArray("margen_por_categoria") {}
-            putJsonObject("deudores") {
-                put("cantidad", 0)
-                put("saldo_total", 0.0)
-            }
-            putJsonArray("stock_estancado") {}
-            put("valor_inventario", 0.0)
-            put("ventas_mes_anterior", 0.0)
-        })
+        val result = AnalisisMensual.fromJson(
+            buildJsonObject {
+                put("ventas_mes", 0.0)
+                put("cobros_mes", 0.0)
+                put("margen_neto_pct", 0.0)
+                putJsonArray("margen_por_categoria") {}
+                putJsonObject("deudores") {
+                    put("cantidad", 0)
+                    put("saldo_total", 0.0)
+                }
+                putJsonArray("stock_estancado") {}
+                put("valor_inventario", 0.0)
+                put("ventas_mes_anterior", 0.0)
+            },
+        )
 
         assertEquals(0.0, result.ventasMes, 0.001)
         assertEquals(0, result.deudores.cantidad)

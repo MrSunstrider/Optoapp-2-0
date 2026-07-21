@@ -76,7 +76,7 @@ class LoginScreenTest {
         val allMethods = AuthViewModel::class.java.methods.map { it.name }
         assertTrue(
             "authState debe ser miembro de AuthViewModel",
-            "authState" in fields || "authState" in allMethods
+            "authState" in fields || "authState" in allMethods,
         )
     }
 
@@ -91,7 +91,7 @@ class LoginScreenTest {
         val methods = AuthDelegate.Companion::class.java.declaredMethods.map { it.name }
         assertTrue(
             "AuthDelegate debe tener extractDisplayName estático",
-            "extractDisplayName" in methods
+            "extractDisplayName" in methods,
         )
     }
 
@@ -100,7 +100,7 @@ class LoginScreenTest {
         val methods = AuthDelegate.Companion::class.java.declaredMethods.map { it.name }
         assertTrue(
             "AuthDelegate debe tener isTimestampWithinSessionWindow estático",
-            "isTimestampWithinSessionWindow" in methods
+            "isTimestampWithinSessionWindow" in methods,
         )
     }
 

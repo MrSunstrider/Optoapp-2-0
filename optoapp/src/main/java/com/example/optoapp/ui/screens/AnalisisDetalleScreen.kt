@@ -20,7 +20,6 @@ import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -31,14 +30,13 @@ import com.example.optoapp.ui.theme.AlertRed
 import com.example.optoapp.ui.theme.PositiveGreen
 import com.example.optoapp.ui.theme.WarningAmber
 import com.example.optoapp.viewmodel.AnalisisNegocioViewModel
-import java.util.Locale
 
 @Suppress("DEPRECATION")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AnalisisDetalleScreen(
     navController: NavController,
-    viewModel: AnalisisNegocioViewModel = hiltViewModel()
+    viewModel: AnalisisNegocioViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val analisis = uiState.analisis
@@ -64,9 +62,9 @@ fun AnalisisDetalleScreen(
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
                     }
-                }
+                },
             )
-        }
+        },
     ) { padding ->
         if (analisis == null) {
             Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
@@ -86,19 +84,19 @@ fun AnalisisDetalleScreen(
                 .padding(16.dp)
                 .verticalScroll(rememberScrollState())
                 .navigationBarsPadding(),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             ExpandableSection(
                 title = "Plata que entró y salió",
                 defaultExpanded = true,
-                icon = Icons.Default.AccountBalance
+                icon = Icons.Default.AccountBalance,
             ) {
                 BarraIngresosEgresos(analisis = analisis)
             }
 
             ExpandableSection(
                 title = "Lo que más te deja",
-                icon = Icons.Default.StarBorder
+                icon = Icons.Default.StarBorder,
             ) {
                 if (analisis.margenPorCategoria.isEmpty()) {
                     EmptyPlaceholder("Sin datos de categorías")
@@ -108,7 +106,7 @@ fun AnalisisDetalleScreen(
                             nombre = cat.categoria,
                             ventas = cat.ventas,
                             costos = cat.costos,
-                            margenPct = cat.margenPct
+                            margenPct = cat.margenPct,
                         )
                         HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
                     }
@@ -117,7 +115,7 @@ fun AnalisisDetalleScreen(
 
             ExpandableSection(
                 title = "Pacientes con deuda pendiente",
-                icon = Icons.Default.People
+                icon = Icons.Default.People,
             ) {
                 val deudoresTotales = uiState.deudores
                 if (deudoresTotales.isEmpty()) {
@@ -140,7 +138,7 @@ fun AnalisisDetalleScreen(
                                         navController.navigate("editar_servicio/$origenId")
                                     }
                                 }
-                            }
+                            },
                         )
                         HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
                     }
@@ -149,7 +147,7 @@ fun AnalisisDetalleScreen(
 
             ExpandableSection(
                 title = "Productos sin vender",
-                icon = Icons.Default.Inventory2
+                icon = Icons.Default.Inventory2,
             ) {
                 if (analisis.stockEstancado.isEmpty()) {
                     EmptyPlaceholder("Sin productos estancados")
@@ -160,7 +158,7 @@ fun AnalisisDetalleScreen(
                             sku = item.sku,
                             stock = item.stockActual,
                             diasSinVenta = item.diasSinVenta,
-                            costo = item.costo
+                            costo = item.costo,
                         )
                         HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
                     }
@@ -169,7 +167,7 @@ fun AnalisisDetalleScreen(
 
             ExpandableSection(
                 title = "Plata que vas a tener",
-                icon = Icons.Default.TrendingUp
+                icon = Icons.Default.TrendingUp,
             ) {
                 val proyeccion = analisis.proyeccionCaja
                 if (proyeccion == null) {
@@ -189,7 +187,7 @@ private fun ExpandableSection(
     title: String,
     defaultExpanded: Boolean = false,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
     var expanded by remember { mutableStateOf(defaultExpanded) }
 
@@ -197,7 +195,7 @@ private fun ExpandableSection(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-        shape = RoundedCornerShape(12.dp)
+        shape = RoundedCornerShape(12.dp),
     ) {
         Column {
             Row(
@@ -206,7 +204,7 @@ private fun ExpandableSection(
                     .clickable { expanded = !expanded }
                     .padding(16.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(icon, contentDescription = "Seccion", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
@@ -216,13 +214,13 @@ private fun ExpandableSection(
                 Icon(
                     if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
                     contentDescription = if (expanded) "Contraer" else "Expandir",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
             AnimatedVisibility(
                 visible = expanded,
                 enter = expandVertically(),
-                exit = shrinkVertically()
+                exit = shrinkVertically(),
             ) {
                 Column(modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp)) {
                     content()
@@ -260,7 +258,7 @@ private fun BarItem(label: String, value: Double, max: Double, color: Color) {
             progress = { fraction },
             modifier = Modifier.fillMaxWidth().height(8.dp),
             color = color,
-            trackColor = color.copy(alpha = 0.15f)
+            trackColor = color.copy(alpha = 0.15f),
         )
     }
 }
@@ -274,8 +272,11 @@ private fun CategoriaRankingRow(nombre: String, ventas: Double, costos: Double, 
             Text(nombre, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
             Text("${formatNumber(pct)}%", style = MaterialTheme.typography.bodyMedium, color = if (pct >= 25) PositiveGreen else WarningAmber)
         }
-        Text("S/ ${formatNumber(ventas)} ventas · S/ ${formatNumber(margen)} margen",
-            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(
+            "S/ ${formatNumber(ventas)} ventas · S/ ${formatNumber(margen)} margen",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 
@@ -284,7 +285,7 @@ private fun DeudorRow(nombre: String, telefono: String, saldo: Double, diasDeuda
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onClick() }
+            .clickable { onClick() },
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(Icons.Default.Person, contentDescription = "Persona", modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -296,7 +297,7 @@ private fun DeudorRow(nombre: String, telefono: String, saldo: Double, diasDeuda
             Text(telefono, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text("S/ ${formatNumber(saldo)}", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold, color = AlertRed)
         }
-        Text("${diasDeuda} días de deuda", style = MaterialTheme.typography.labelSmall, color = WarningAmber)
+        Text("$diasDeuda días de deuda", style = MaterialTheme.typography.labelSmall, color = WarningAmber)
     }
 }
 
@@ -335,26 +336,27 @@ private fun ProyeccionCard(proyeccion: com.example.optoapp.domain.ProyeccionCaja
             Surface(
                 color = WarningAmber.copy(alpha = 0.12f),
                 shape = RoundedCornerShape(8.dp),
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
             ) {
                 Row(
                     modifier = Modifier.padding(12.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Icon(
                         Icons.Default.Warning,
                         contentDescription = "Advertencia",
                         tint = WarningAmber,
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(18.dp),
                     )
                     Spacer(Modifier.width(8.dp))
                     Text(
-                        text = if (proyeccion.mesesHistoricos == 0)
+                        text = if (proyeccion.mesesHistoricos == 0) {
                             "Proyección basada en datos limitados. Se recomienda al menos 3 meses de historial."
-                        else
-                            "Proyección basada en ${proyeccion.mesesHistoricos} mes${if (proyeccion.mesesHistoricos == 1) "" else "es"} de datos. Se recomienda al menos 3 meses.",
+                        } else {
+                            "Proyección basada en ${proyeccion.mesesHistoricos} mes${if (proyeccion.mesesHistoricos == 1) "" else "es"} de datos. Se recomienda al menos 3 meses."
+                        },
                         style = MaterialTheme.typography.bodySmall,
-                        color = WarningAmber
+                        color = WarningAmber,
                     )
                 }
             }
@@ -368,6 +370,5 @@ private fun EmptyPlaceholder(text: String) {
         Text(text, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
     }
 }
-
 
 private fun formatNumber(value: Double): String = com.example.optoapp.util.NumberFormatter.formatCurrency(value)

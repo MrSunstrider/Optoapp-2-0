@@ -6,8 +6,6 @@ import com.example.optoapp.data.montura.MonturaDao
 import com.example.optoapp.data.montura.MonturaInventoryCoordinator
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
-import java.io.IOException
-import java.time.Instant
 import java.time.LocalDate
 import java.util.UUID
 import javax.inject.Inject
@@ -20,26 +18,21 @@ import javax.inject.Singleton
 open class InventarioFisicoRepository @Inject constructor(
     private val ifDao: InventarioFisicoDao,
     private val monturaCoordinator: MonturaInventoryCoordinator,
-    private val monturaDao: MonturaDao
+    private val monturaDao: MonturaDao,
 ) {
     companion object {
         private const val TAG = "InventarioFisicoRepo"
     }
 
-    fun getByOptica(opticaId: String): Flow<List<InventarioFisico>> =
-        ifDao.getByOptica(opticaId)
+    fun getByOptica(opticaId: String): Flow<List<InventarioFisico>> = ifDao.getByOptica(opticaId)
 
-    suspend fun getById(id: String): InventarioFisico? =
-        ifDao.getById(id)
+    suspend fun getById(id: String): InventarioFisico? = ifDao.getById(id)
 
-    suspend fun getListByOptica(opticaId: String): List<InventarioFisico> =
-        ifDao.getListByOptica(opticaId)
+    suspend fun getListByOptica(opticaId: String): List<InventarioFisico> = ifDao.getListByOptica(opticaId)
 
-    suspend fun getDetalles(inventarioId: String): List<InventarioFisicoDetalle> =
-        ifDao.getDetalles(inventarioId)
+    suspend fun getDetalles(inventarioId: String): List<InventarioFisicoDetalle> = ifDao.getDetalles(inventarioId)
 
-    suspend fun getActiveByOptica(opticaId: String): InventarioFisico? =
-        ifDao.getActiveByOptica(opticaId)
+    suspend fun getActiveByOptica(opticaId: String): InventarioFisico? = ifDao.getActiveByOptica(opticaId)
 
     open suspend fun createSession(opticaId: String, userId: String): InventarioFisico? {
         try {
@@ -51,7 +44,7 @@ open class InventarioFisicoRepository @Inject constructor(
                 fecha = LocalDate.now(),
                 estado = "EN_PROGRESO",
                 opticaId = opticaId,
-                userId = userId
+                userId = userId,
             )
             ifDao.insertSession(session)
 
@@ -61,7 +54,7 @@ open class InventarioFisicoRepository @Inject constructor(
                     id = UUID.randomUUID().toString(),
                     inventarioId = session.id,
                     monturaId = m.id,
-                    stockSistema = m.stockActual
+                    stockSistema = m.stockActual,
                 )
             }
             if (detalles.isNotEmpty()) {
@@ -101,7 +94,7 @@ open class InventarioFisicoRepository @Inject constructor(
                 opticaId = session.opticaId,
                 userId = session.userId,
                 costoUnitario = 0.0,
-                tipoDocumento = "AJUSTE_INVENTARIO"
+                tipoDocumento = "AJUSTE_INVENTARIO",
             )
             monturaCoordinator.insertMonturaMovimiento(movimiento)
         }

@@ -144,7 +144,7 @@ class RecoveryStateTest {
         val error = validateNewPassword("Pwd1!", "Pwd1!")
         assertEquals(
             "Debe tener al menos 6 caracteres, una mayúscula, una minúscula, un número y un símbolo.",
-            error
+            error,
         )
     }
 
@@ -153,7 +153,7 @@ class RecoveryStateTest {
         val error = validateNewPassword("PASSWORD1!", "PASSWORD1!")
         assertEquals(
             "Debe tener al menos 6 caracteres, una mayúscula, una minúscula, un número y un símbolo.",
-            error
+            error,
         )
     }
 
@@ -162,7 +162,7 @@ class RecoveryStateTest {
         val error = validateNewPassword("password1!", "password1!")
         assertEquals(
             "Debe tener al menos 6 caracteres, una mayúscula, una minúscula, un número y un símbolo.",
-            error
+            error,
         )
     }
 
@@ -171,7 +171,7 @@ class RecoveryStateTest {
         val error = validateNewPassword("Password!", "Password!")
         assertEquals(
             "Debe tener al menos 6 caracteres, una mayúscula, una minúscula, un número y un símbolo.",
-            error
+            error,
         )
     }
 
@@ -180,7 +180,7 @@ class RecoveryStateTest {
         val error = validateNewPassword("Password1", "Password1")
         assertEquals(
             "Debe tener al menos 6 caracteres, una mayúscula, una minúscula, un número y un símbolo.",
-            error
+            error,
         )
     }
 

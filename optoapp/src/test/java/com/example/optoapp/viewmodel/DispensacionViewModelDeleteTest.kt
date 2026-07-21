@@ -50,14 +50,20 @@ class DispensacionViewModelDeleteTest {
     private val testDispensacion = DispensacionOptica(
         id = dispId, ot = "OT-2026-0001", pacienteId = "pac-1", fecha = testDate,
         opticaId = "optica-test", tipoLente = "Monofocal", montoTotal = 300.0,
-        montoPagado = 150.0, estadoEntrega = "Pendiente", metodoPago = "Efectivo"
+        montoPagado = 150.0, estadoEntrega = "Pendiente", metodoPago = "Efectivo",
     )
 
     private val testRegalos = listOf(
         RegaloDispensacionEntity(
-            id = "reg-del-1", dispensacionId = dispId, productoId = "prod-1",
-            cantidad = 2, costoUnitario = 10.0, descripcion = "Estuche", motivo = "Cortesia", opticaId = "optica-test"
-        )
+            id = "reg-del-1",
+            dispensacionId = dispId,
+            productoId = "prod-1",
+            cantidad = 2,
+            costoUnitario = 10.0,
+            descripcion = "Estuche",
+            motivo = "Cortesia",
+            opticaId = "optica-test",
+        ),
     )
 
     @Before
@@ -94,8 +100,13 @@ class DispensacionViewModelDeleteTest {
     @Test
     fun `deleteDispensacion hard-deletes without anulacion`() = runTest {
         viewModel = DispensacionViewModel(
-            repository, sessionManager, postSaveSyncScheduler, stockHelper, calcularMontoPagadoUseCase,
-            costoProductoDao, costoBiseladoDao
+            repository,
+            sessionManager,
+            postSaveSyncScheduler,
+            stockHelper,
+            calcularMontoPagadoUseCase,
+            costoProductoDao,
+            costoBiseladoDao,
         )
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -111,8 +122,13 @@ class DispensacionViewModelDeleteTest {
     @Test
     fun `deleteDispensacion reverts regalo stock`() = runTest {
         viewModel = DispensacionViewModel(
-            repository, sessionManager, postSaveSyncScheduler, stockHelper, calcularMontoPagadoUseCase,
-            costoProductoDao, costoBiseladoDao
+            repository,
+            sessionManager,
+            postSaveSyncScheduler,
+            stockHelper,
+            calcularMontoPagadoUseCase,
+            costoProductoDao,
+            costoBiseladoDao,
         )
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -122,8 +138,12 @@ class DispensacionViewModelDeleteTest {
 
         coVerify {
             stockHelper.adjustStockAndRegistrarMovimiento(
-                "prod-1", "optica-test", 2,
-                "AJUSTE", dispId, "Devolución por borrado de dispensación"
+                "prod-1",
+                "optica-test",
+                2,
+                "AJUSTE",
+                dispId,
+                "Devolución por borrado de dispensación",
             )
         }
     }

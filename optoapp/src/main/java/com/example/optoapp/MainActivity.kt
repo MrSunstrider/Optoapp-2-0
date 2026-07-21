@@ -3,31 +3,31 @@ package com.example.optoapp
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
-import androidx.activity.viewModels
-import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.launch
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import com.example.optoapp.ui.components.OfflineBanner
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.optoapp.domain.observer.MembershipObserver
+import com.example.optoapp.ui.components.OfflineBanner
 import com.example.optoapp.ui.components.UpdateDialog
 import com.example.optoapp.ui.screens.*
 import com.example.optoapp.ui.theme.OptoAppTheme
-import com.example.optoapp.domain.observer.MembershipObserver
 import com.example.optoapp.util.UpdateChecker
 import com.example.optoapp.viewmodel.AuthViewModel
 import com.example.optoapp.viewmodel.RecoveryState
 import dagger.hilt.android.AndroidEntryPoint
 import io.github.jan.supabase.SupabaseClient
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -35,6 +35,7 @@ class MainActivity : ComponentActivity() {
     private val authViewModel: AuthViewModel by viewModels()
 
     @Inject lateinit var supabaseClient: SupabaseClient
+
     @Inject lateinit var supabaseObserver: com.example.optoapp.domain.observer.MembershipObserver
 
     private fun isRecoveryDeepLink(intent: Intent?): Boolean {
@@ -65,8 +66,12 @@ class MainActivity : ComponentActivity() {
 
         lifecycleScope.launch {
             authViewModel.userTimeZone.collect { tz ->
-                com.example.optoapp.util.DateUtils.userPreferredZone = tz?.let { 
-                    try { java.time.ZoneId.of(it) } catch (e: Exception) { null }
+                com.example.optoapp.util.DateUtils.userPreferredZone = tz?.let {
+                    try {
+                        java.time.ZoneId.of(it)
+                    } catch (e: Exception) {
+                        null
+                    }
                 }
             }
         }
@@ -75,7 +80,7 @@ class MainActivity : ComponentActivity() {
             OptoAppTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
+                    color = MaterialTheme.colorScheme.background,
                 ) {
                     OptoAppNavigation(authViewModel, supabaseClient, supabaseObserver)
                 }
@@ -98,7 +103,7 @@ class MainActivity : ComponentActivity() {
 fun OptoAppNavigation(
     authViewModel: AuthViewModel,
     supabaseClient: SupabaseClient,
-    supabaseObserver: com.example.optoapp.domain.observer.MembershipObserver
+    supabaseObserver: com.example.optoapp.domain.observer.MembershipObserver,
 ) {
     val navController = rememberNavController()
 
@@ -120,9 +125,10 @@ fun OptoAppNavigation(
     // Guardia global: si la sesión se invalida, volver al login vaciando la pila
     // No interfiere con el flujo de recuperación de contraseña
     LaunchedEffect(isLoggedIn) {
-        if (isLoggedIn == false
-            && recoveryState !is RecoveryState.LinkReceived
-            && recoveryState !is RecoveryState.PasswordUpdated) {
+        if (isLoggedIn == false &&
+            recoveryState !is RecoveryState.LinkReceived &&
+            recoveryState !is RecoveryState.PasswordUpdated
+        ) {
             navController.navigate("login") {
                 popUpTo(navController.graph.id) { inclusive = true }
             }
@@ -141,25 +147,24 @@ fun OptoAppNavigation(
     Column {
         OfflineBanner(isOnline = true) // TODO: wire to actual connectivity state
         NavHost(navController = navController, startDestination = "login", modifier = Modifier.weight(1f)) {
-
-        composable("create_pin") { CreatePinScreen(navController, viewModel = authViewModel) }
-        composable("pin") { PinScreen(navController, viewModel = authViewModel) }
-        composable("login") { LoginScreen(navController, viewModel = authViewModel) }
-        composable("register") { RegisterScreen(navController, viewModel = authViewModel) }
-        composable("sin_optica") { SinOpticaScreen(navController, supabaseObserver, authViewModel) }
-        composable("onboarding_optica") {
-            @Suppress("DEPRECATION")
-            OnboardingOpticaScreen(navController, viewModel = authViewModel)
+            composable("create_pin") { CreatePinScreen(navController, viewModel = authViewModel) }
+            composable("pin") { PinScreen(navController, viewModel = authViewModel) }
+            composable("login") { LoginScreen(navController, viewModel = authViewModel) }
+            composable("register") { RegisterScreen(navController, viewModel = authViewModel) }
+            composable("sin_optica") { SinOpticaScreen(navController, supabaseObserver, authViewModel) }
+            composable("onboarding_optica") {
+                @Suppress("DEPRECATION")
+                OnboardingOpticaScreen(navController, viewModel = authViewModel)
+            }
+            composable("seleccion_optica") { SeleccionOpticaScreen(navController, viewModel = authViewModel) }
+            composable("main") { MainDrawerScreen(navController, authViewModel = authViewModel) }
+            composable("recovery") {
+                RecoveryScreen(navController = navController, viewModel = authViewModel)
+            }
+            composable("new_password") {
+                NewPasswordScreen(navController = navController, viewModel = authViewModel)
+            }
         }
-        composable("seleccion_optica") { SeleccionOpticaScreen(navController, viewModel = authViewModel) }
-        composable("main") { MainDrawerScreen(navController, authViewModel = authViewModel) }
-        composable("recovery") {
-            RecoveryScreen(navController = navController, viewModel = authViewModel)
-        }
-        composable("new_password") {
-            NewPasswordScreen(navController = navController, viewModel = authViewModel)
-        }
-    }
     }
 
     // UpdateCheck sobrevive a la navegación — se muestra sobre la pantalla activa
@@ -167,4 +172,3 @@ fun OptoAppNavigation(
         UpdateDialog(updateInfo = info, onDismiss = { updateInfo = null })
     }
 }
-

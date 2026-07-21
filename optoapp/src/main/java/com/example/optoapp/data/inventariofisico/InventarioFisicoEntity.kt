@@ -10,8 +10,8 @@ import java.time.LocalDate
     tableName = "inventario_fisico",
     indices = [
         Index(value = ["opticaId"]),
-        Index(value = ["estado"])
-    ]
+        Index(value = ["estado"]),
+    ],
 )
 data class InventarioFisico(
     @PrimaryKey val id: String,
@@ -19,7 +19,7 @@ data class InventarioFisico(
     val estado: String = "EN_PROGRESO",
     val opticaId: String,
     val userId: String,
-    val notas: String = ""
+    val notas: String = "",
 )
 
 @Entity(
@@ -27,21 +27,21 @@ data class InventarioFisico(
     indices = [
         Index(value = ["inventarioId"]),
         Index(value = ["monturaId"]),
-        Index(value = ["inventarioId", "monturaId"], unique = true)
+        Index(value = ["inventarioId", "monturaId"], unique = true),
     ],
     foreignKeys = [
         ForeignKey(
             entity = InventarioFisico::class,
             parentColumns = ["id"],
             childColumns = ["inventarioId"],
-            onDelete = ForeignKey.CASCADE
+            onDelete = ForeignKey.CASCADE,
         ),
         ForeignKey(
             entity = Montura::class,
             parentColumns = ["id"],
-            childColumns = ["monturaId"]
-        )
-    ]
+            childColumns = ["monturaId"],
+        ),
+    ],
 )
 data class InventarioFisicoDetalle(
     @PrimaryKey val id: String,
@@ -49,5 +49,5 @@ data class InventarioFisicoDetalle(
     val monturaId: String,
     val stockSistema: Int,
     val stockContado: Int? = null,
-    val diferencia: Int? = null
+    val diferencia: Int? = null,
 )

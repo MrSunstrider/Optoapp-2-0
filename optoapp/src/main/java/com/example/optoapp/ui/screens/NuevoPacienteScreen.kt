@@ -1,31 +1,30 @@
 package com.example.optoapp.ui.screens
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
-import android.widget.Toast
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.optoapp.data.Paciente
 import com.example.optoapp.testing.TestTags
-import com.example.optoapp.viewmodel.PacienteViewModel
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.example.optoapp.ui.components.OptoDatePickerDialog
+import com.example.optoapp.ui.components.OptoTopAppBar
 import com.example.optoapp.ui.components.paciente.PacienteFormSections
 import com.example.optoapp.util.DateUtils
-import com.example.optoapp.ui.components.OptoDatePickerDialog
+import com.example.optoapp.viewmodel.PacienteViewModel
+import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.UUID
-import kotlinx.coroutines.launch
-import com.example.optoapp.ui.components.OptoTopAppBar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -49,8 +48,6 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
     var fechaCreacion by remember { mutableStateOf(DateUtils.today()) }
 
     var saving by remember { mutableStateOf(false) }
-    var showDuplicateHoWarning by remember { mutableStateOf(false) }
-    var duplicateHoWarningText by remember { mutableStateOf("") }
 
     LaunchedEffect(pacienteId) {
         if (pacienteId != null) {
@@ -80,18 +77,7 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
         OptoDatePickerDialog(
             initialDate = fechaCreacion,
             onDateSelected = { fechaCreacion = it },
-            onDismiss = { showDatePicker = false }
-        )
-    }
-
-    if (showDuplicateHoWarning) {
-        AlertDialog(
-            onDismissRequest = { showDuplicateHoWarning = false },
-            title = { Text("Advertencia de HO duplicada") },
-            text = { Text(duplicateHoWarningText) },
-            confirmButton = {
-                TextButton(onClick = { showDuplicateHoWarning = false }) { Text("Entendido") }
-            }
+            onDismiss = { showDatePicker = false },
         )
     }
 
@@ -106,9 +92,9 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
                     }
-                }
+                },
             )
-        }
+        },
     ) { padding ->
         Column(
             modifier = Modifier
@@ -117,13 +103,16 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
                 .padding(16.dp)
                 .navigationBarsPadding()
                 .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             PacienteFormSections(
                 nombreCompleto = nombreCompleto,
                 onNombreCompletoChange = { nombreCompleto = it },
                 edad = edad,
-                onEdadChange = { edad = it; fechaNacimiento = "" },
+                onEdadChange = {
+                    edad = it
+                    fechaNacimiento = ""
+                },
                 telefono = telefono,
                 onTelefonoChange = { telefono = it },
                 dni = dni,
@@ -144,9 +133,15 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
                                 val nac = LocalDate.of(y, m, d)
                                 val hoy = DateUtils.today()
                                 (hoy.year - nac.year - if (hoy.dayOfYear < nac.dayOfYear) 1 else 0).toString()
-                            } else edad
-                        } else edad
-                    } catch (_: Exception) { edad }
+                            } else {
+                                edad
+                            }
+                        } else {
+                            edad
+                        }
+                    } catch (_: Exception) {
+                        edad
+                    }
                 },
                 sexo = sexo,
                 onSexoChange = { sexo = it },
@@ -168,19 +163,19 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
                     scope.launch {
                         historiaOptometrica = viewModel.suggestHistoriaOptometrica()
                     }
-                }
+                },
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 OutlinedButton(
                     onClick = { navController.popBackStack() },
                     enabled = !saving,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
                 ) {
                     Text("Cancelar")
                 }
@@ -203,24 +198,11 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
                                 distrito = distrito,
                                 ocupacion = ocupacion,
                                 acompanante = acompanante,
-                                hobbies = hobbies
+                                hobbies = hobbies,
                             )
                             scope.launch {
                                 saving = true
                                 try {
-                                    val historiaNorm = historiaOptometrica.trim()
-                                    if (historiaNorm.isNotEmpty()) {
-                                        val duplicated = viewModel.existsDuplicateHistoriaOptometrica(
-                                            historia = historiaNorm,
-                                            excludePacienteId = pacienteId
-                                        )
-                                        if (duplicated) {
-                                            duplicateHoWarningText =
-                                                "Ya existe una historia optométrica con ese número en esta óptica."
-                                            showDuplicateHoWarning = true
-                                            return@launch
-                                        }
-                                    }
                                     viewModel.savePaciente(p)
                                     val currentRoute = navController.currentBackStackEntry?.destination?.route
                                     navController.navigate("detallePaciente/${p.id}") {
@@ -238,7 +220,7 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
                         }
                     },
                     enabled = !saving,
-                    modifier = Modifier.weight(1f).testTag(TestTags.PACIENTE_GUARDAR_BTN)
+                    modifier = Modifier.weight(1f).testTag(TestTags.PACIENTE_GUARDAR_BTN),
                 ) {
                     Text(if (saving) "Guardando…" else "Guardar")
                 }

@@ -9,7 +9,6 @@ import com.example.optoapp.data.MembershipRepository
 import com.example.optoapp.data.Montura
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.OrdenCompra
-import com.example.optoapp.data.OrdenCompraItem
 import com.example.optoapp.data.OrdenCompraRepository
 import com.example.optoapp.data.Paciente
 import com.example.optoapp.data.Proveedor
@@ -20,32 +19,31 @@ import com.example.optoapp.data.SyncEntityStateDao
 import com.example.optoapp.data.SyncTelemetry
 import com.example.optoapp.domain.FinanzasSyncResult
 import com.example.optoapp.domain.HistorialSyncResult
+import com.example.optoapp.domain.InventarioFisicoSyncResult
 import com.example.optoapp.domain.InventarioSyncResult
 import com.example.optoapp.domain.OrdenesCompraSyncResult
 import com.example.optoapp.domain.PacientesSyncResult
 import com.example.optoapp.domain.ProveedoresSyncResult
-import com.example.optoapp.domain.InventarioFisicoSyncResult
 import com.example.optoapp.domain.SyncFinanzasUseCase
 import com.example.optoapp.domain.SyncHistorialUseCase
+import com.example.optoapp.domain.SyncInventarioFisicoUseCase
 import com.example.optoapp.domain.SyncInventarioUseCase
+import com.example.optoapp.domain.SyncInventoryKpisUseCase
+import com.example.optoapp.domain.SyncOrdenesCompraUseCase
 import com.example.optoapp.domain.SyncPacientesUseCase
 import com.example.optoapp.domain.SyncProveedoresUseCase
-import com.example.optoapp.domain.SyncOrdenesCompraUseCase
-import com.example.optoapp.domain.SyncInventoryKpisUseCase
-import com.example.optoapp.domain.SyncInventarioFisicoUseCase
 import com.example.optoapp.domain.observer.TableObserver
-import com.example.optoapp.domain.sync.SyncOrchestrator
 import com.example.optoapp.subscription.SubscriptionManager
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import com.example.optoapp.sync.SyncGate
 import com.example.optoapp.util.BackgroundErrorCollector
 import io.github.jan.supabase.SupabaseClient
+import io.mockk.Runs
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.coVerifyOrder
 import io.mockk.just
 import io.mockk.mockk
-import io.mockk.Runs
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
@@ -56,7 +54,6 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
-import java.time.Instant
 import java.time.LocalDate
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -139,23 +136,23 @@ class SyncViewModelBumpCoverageTest {
                 uploadedPagos = 0,
                 downloadedDispensaciones = 0,
                 downloadedServicios = 0,
-                downloadedPagos = 0
-            )
+                downloadedPagos = 0,
+            ),
         )
         coEvery { syncInventarioUseCase(any(), any(), any()) } returns Resource.Success(
-            InventarioSyncResult(0, 0, 0, 0)
+            InventarioSyncResult(0, 0, 0, 0),
         )
         coEvery { syncProveedoresUseCase(any(), any(), any()) } returns Resource.Success(
-            ProveedoresSyncResult(0, 0, 0, 0)
+            ProveedoresSyncResult(0, 0, 0, 0),
         )
         coEvery { syncOrdenesCompraUseCase(any(), any(), any()) } returns Resource.Success(
-            OrdenesCompraSyncResult(0, 0, 0, 0)
+            OrdenesCompraSyncResult(0, 0, 0, 0),
         )
         coEvery { syncInventarioFisicoUseCase(any(), any(), any()) } returns Resource.Success(
-            InventarioFisicoSyncResult(0, 0, 0, 0)
+            InventarioFisicoSyncResult(0, 0, 0, 0),
         )
         coEvery { syncInventoryKpisUseCase(any()) } returns Resource.Success(
-            com.example.optoapp.domain.InventoryKpiSummary(0, 0, emptyList(), null)
+            com.example.optoapp.domain.InventoryKpiSummary(0, 0, emptyList(), null),
         )
 
         coEvery { conflictDao.resolveConflict(any(), any()) } just Runs
@@ -184,7 +181,7 @@ class SyncViewModelBumpCoverageTest {
             supabaseObserver = supabaseObserver,
             bgErrorCollector = bgErrorCollector,
             postSaveSyncScheduler = postSaveSyncScheduler,
-            syncOrchestrator = mockk(relaxed = true)
+            syncOrchestrator = mockk(relaxed = true),
         )
     }
 
@@ -200,7 +197,7 @@ class SyncViewModelBumpCoverageTest {
         opticaId = testOpticaId,
         entityType = entityType,
         localSnapshot = """{"id":"$entityId"}""",
-        remoteSnapshot = """{"id":"$entityId","remote":true}"""
+        remoteSnapshot = """{"id":"$entityId","remote":true}""",
     )
 
     private fun paciente(id: String) = Paciente(
@@ -209,28 +206,28 @@ class SyncViewModelBumpCoverageTest {
         edad = 30,
         telefono = "555-0001",
         fechaCreacion = LocalDate.of(2026, 1, 1),
-        opticaId = testOpticaId
+        opticaId = testOpticaId,
     )
 
     private fun evaluacion(id: String) = EvaluacionClinica(
         id = id,
         pacienteId = "pac-001",
         fecha = LocalDate.now(),
-        opticaId = testOpticaId
+        opticaId = testOpticaId,
     )
 
     private fun montura(id: String) = Montura(
         id = id,
         modelo = "Test",
         stockActual = 5,
-        opticaId = testOpticaId
+        opticaId = testOpticaId,
     )
 
     private fun proveedor(id: String) = Proveedor(
         id = id,
         nombre = "Proveedor Test",
         ruc = "12345678",
-        opticaId = testOpticaId
+        opticaId = testOpticaId,
     )
 
     private fun ordenCompra(id: String) = OrdenCompra(
@@ -240,7 +237,7 @@ class SyncViewModelBumpCoverageTest {
         proveedorId = "prov-001",
         estado = "PENDIENTE",
         total = 100.0,
-        opticaId = testOpticaId
+        opticaId = testOpticaId,
     )
 
     // ─── 4.1 RED: Bump coverage tests ──────────────────────────────────────

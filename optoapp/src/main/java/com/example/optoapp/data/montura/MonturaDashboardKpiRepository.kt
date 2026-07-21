@@ -6,17 +6,13 @@ import javax.inject.Inject
 
 class MonturaDashboardKpiRepository @Inject constructor(
     private val monturaDao: MonturaDao,
-    private val monturaMovimientoDao: MonturaMovimientoDao
+    private val monturaMovimientoDao: MonturaMovimientoDao,
 ) {
-    fun totalModelos(opticaId: String): Flow<Int> =
-        monturaDao.getTotalModelosCount(opticaId)
+    fun totalModelos(opticaId: String): Flow<Int> = monturaDao.getTotalModelosCount(opticaId)
 
-    fun stockByCategory(opticaId: String): Flow<List<CategoriaCount>> =
-        monturaDao.getStockByCategory(opticaId)
+    fun stockByCategory(opticaId: String): Flow<List<CategoriaCount>> = monturaDao.getStockByCategory(opticaId)
 
-    fun lowStockCount(opticaId: String, defaultThreshold: Int = 2): Flow<Int> =
-        monturaDao.getLowStockCount(opticaId, defaultThreshold)
+    fun lowStockCount(opticaId: String, defaultThreshold: Int = 2): Flow<Int> = monturaDao.getLowStockCount(opticaId, defaultThreshold)
 
-    fun lastMovementDate(opticaId: String): Flow<LocalDate?> =
-        monturaMovimientoDao.getLastMovementDate(opticaId)
+    fun lastMovementDate(opticaId: String): Flow<LocalDate?> = monturaMovimientoDao.getLastMovementDate(opticaId)
 }

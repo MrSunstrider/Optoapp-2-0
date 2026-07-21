@@ -1,26 +1,25 @@
 package com.example.optoapp.ui.screens
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import com.example.optoapp.data.AppRoles
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.example.optoapp.data.AppRoles
+import com.example.optoapp.ui.components.OfflineBanner
+import com.example.optoapp.ui.screens.ordenescompra.OrdenesCompraScreen
 import com.example.optoapp.viewmodel.AuthViewModel
 import com.example.optoapp.viewmodel.OpticaHeaderViewModel
-import com.example.optoapp.ui.screens.ordenescompra.OrdenesCompraScreen
-import com.example.optoapp.ui.components.OfflineBanner
 import kotlinx.coroutines.launch
 
 /** CompositionLocal para que cualquier pantalla pueda mostrar Snackbar sin acoplamiento. */
@@ -30,13 +29,13 @@ val LocalSnackbarHostState = staticCompositionLocalOf { SnackbarHostState() }
 fun MainDrawerScreen(
     parentNavController: NavController,
     /** Misma instancia que [LoginScreen] / [PinScreen] en [MainActivity]; si no, logout no resetea el estado que lee el login. */
-    authViewModel: AuthViewModel
+    authViewModel: AuthViewModel,
 ) {
     val context = LocalContext.current
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     val navController = rememberNavController()
-    
+
     val syncViewModel: com.example.optoapp.viewmodel.SyncViewModel = hiltViewModel()
     val opticaHeaderViewModel: OpticaHeaderViewModel = hiltViewModel()
     val syncState by syncViewModel.syncState.collectAsState()
@@ -59,182 +58,182 @@ fun MainDrawerScreen(
     val snackbarScope = rememberCoroutineScope()
 
     CompositionLocalProvider(LocalSnackbarHostState provides snackbarHostState) {
-    ModalNavigationDrawer(
-        drawerState = drawerState,
-        drawerContent = {
-            ModalDrawerSheet {
-                DrawerContent(
-                    currentRoute = currentRoute,
-                    drawerState = drawerState,
-                    navController = navController,
-                    opticaHeader = opticaHeader,
-                    showCierreCaja = showCierreCaja,
-                    showBiYReportes = showBiYReportes,
-                    showOperacionHoy = showOperacionHoy,
-                    showConfiguracion = showConfiguracion,
-                    syncState = syncState,
-                    syncViewModel = syncViewModel,
-                    authViewModel = authViewModel,
-                    parentNavController = parentNavController
-                )
-            }
-        }
-    ) {
-        Surface(
-            modifier = Modifier.fillMaxSize(),
-            color = MaterialTheme.colorScheme.background
+        ModalNavigationDrawer(
+            drawerState = drawerState,
+            drawerContent = {
+                ModalDrawerSheet {
+                    DrawerContent(
+                        currentRoute = currentRoute,
+                        drawerState = drawerState,
+                        navController = navController,
+                        opticaHeader = opticaHeader,
+                        showCierreCaja = showCierreCaja,
+                        showBiYReportes = showBiYReportes,
+                        showOperacionHoy = showOperacionHoy,
+                        showConfiguracion = showConfiguracion,
+                        syncState = syncState,
+                        syncViewModel = syncViewModel,
+                        authViewModel = authViewModel,
+                        parentNavController = parentNavController,
+                    )
+                }
+            },
         ) {
-            Column(modifier = Modifier.fillMaxSize()) {
-            if (isSilentSyncing) {
-                LinearProgressIndicator(
-                    modifier = Modifier.fillMaxWidth().height(2.dp),
-                    color = MaterialTheme.colorScheme.secondary,
-                    trackColor = MaterialTheme.colorScheme.surfaceVariant
-                )
-            }
             Surface(
-                tonalElevation = 1.dp,
-                color = MaterialTheme.colorScheme.surfaceVariant,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .statusBarsPadding()
+                modifier = Modifier.fillMaxSize(),
+                color = MaterialTheme.colorScheme.background,
             ) {
-                TextButton(
-                    onClick = {
-                        scope.launch {
-                            val hasMultiple = authViewModel.prepareOpticaSelection()
-                            if (hasMultiple) {
-                                parentNavController.navigate("seleccion_optica")
-                            } else {
-                                android.widget.Toast.makeText(
-                                    context,
-                                    "Solo tienes una óptica asociada.",
-                                    android.widget.Toast.LENGTH_SHORT
-                                ).show()
+                Column(modifier = Modifier.fillMaxSize()) {
+                    if (isSilentSyncing) {
+                        LinearProgressIndicator(
+                            modifier = Modifier.fillMaxWidth().height(2.dp),
+                            color = MaterialTheme.colorScheme.secondary,
+                            trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                        )
+                    }
+                    Surface(
+                        tonalElevation = 1.dp,
+                        color = MaterialTheme.colorScheme.surfaceVariant,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .statusBarsPadding(),
+                    ) {
+                        TextButton(
+                            onClick = {
+                                scope.launch {
+                                    val hasMultiple = authViewModel.prepareOpticaSelection()
+                                    if (hasMultiple) {
+                                        parentNavController.navigate("seleccion_optica")
+                                    } else {
+                                        android.widget.Toast.makeText(
+                                            context,
+                                            "Solo tienes una óptica asociada.",
+                                            android.widget.Toast.LENGTH_SHORT,
+                                        ).show()
+                                    }
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp),
+                        ) {
+                            Text(
+                                text = "Óptica activa: ${opticaHeader.nombreOptica} · ${opticaHeader.fiscalEtiqueta}",
+                                style = MaterialTheme.typography.labelSmall,
+                                modifier = Modifier.padding(vertical = 2.dp),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                    }
+                    OfflineBanner(isOnline = isOnline)
+
+                    Box(modifier = Modifier.weight(1f)) {
+                        NavHost(navController = navController, startDestination = "operacion_hoy", modifier = Modifier.fillMaxSize()) {
+                            composable("pacientes") { PacientesListScreen(navController, drawerState) }
+                            composable("agenda") { AgendaScreen(navController, drawerState) }
+                            composable("nuevoPaciente") { NuevoPacienteScreen(navController) }
+                            composable("editarPaciente/{id}") { backStackEntry ->
+                                NuevoPacienteScreen(navController, pacienteId = backStackEntry.arguments?.getString("id"))
+                            }
+                            composable("detallePaciente/{id}") { backStackEntry ->
+                                val pid = backStackEntry.arguments?.getString("id")
+                                if (pid.isNullOrBlank()) {
+                                    LaunchedEffect(Unit) { navController.popBackStack() }
+                                    Box(Modifier.fillMaxSize())
+                                } else {
+                                    DetallePacienteScreen(navController, id = pid)
+                                }
+                            }
+                            composable("nuevaEvaluacion/{pacienteId}") { backStackEntry ->
+                                val pacienteId = backStackEntry.arguments?.getString("pacienteId")
+                                if (pacienteId.isNullOrBlank()) {
+                                    LaunchedEffect(Unit) { navController.popBackStack() }
+                                    Box(Modifier.fillMaxSize())
+                                } else {
+                                    NuevaEvaluacionScreen(navController, pacienteId = pacienteId)
+                                }
+                            }
+                            composable("editarEvaluacion/{pacienteId}/{evalId}") { backStackEntry ->
+                                val pacienteId = backStackEntry.arguments?.getString("pacienteId")
+                                if (pacienteId.isNullOrBlank()) {
+                                    LaunchedEffect(Unit) { navController.popBackStack() }
+                                    Box(Modifier.fillMaxSize())
+                                } else {
+                                    NuevaEvaluacionScreen(
+                                        navController,
+                                        pacienteId = pacienteId,
+                                        evaluacionId = backStackEntry.arguments?.getString("evalId"),
+                                    )
+                                }
+                            }
+                            composable("nuevaDispensacion/{pacienteId}") { backStackEntry ->
+                                val pacienteId = backStackEntry.arguments?.getString("pacienteId")
+                                if (pacienteId.isNullOrBlank()) {
+                                    LaunchedEffect(Unit) { navController.popBackStack() }
+                                    Box(Modifier.fillMaxSize())
+                                } else {
+                                    NuevaDispensacionScreen(navController, pacienteId = pacienteId)
+                                }
+                            }
+                            composable("editarDispensacion/{pacienteId}/{dispId}") { backStackEntry ->
+                                val pacienteId = backStackEntry.arguments?.getString("pacienteId")
+                                if (pacienteId.isNullOrBlank()) {
+                                    LaunchedEffect(Unit) { navController.popBackStack() }
+                                    Box(Modifier.fillMaxSize())
+                                } else {
+                                    NuevaDispensacionScreen(
+                                        navController,
+                                        pacienteId = pacienteId,
+                                        dispensacionId = backStackEntry.arguments?.getString("dispId"),
+                                    )
+                                }
+                            }
+                            composable("servicios_extra") {
+                                ServiciosExtraScreen(navController, drawerState)
+                            }
+                            composable("monturas") { MonturasScreen(navController) }
+                            composable("proveedores") { ProveedoresScreen(navController) }
+                            composable("ordenes_compra") { OrdenesCompraScreen(navController) }
+                            composable("inventario_fisico") { com.example.optoapp.ui.screens.inventariofisico.InventarioFisicoScreen(navController) }
+                            composable("gastos") { GastosScreen(navController, drawerState) }
+                            composable("operacion_hoy") { OperacionHoyScreen(navController, drawerState) }
+                            composable("nuevo_servicio") {
+                                NuevoServicioScreen(navController, pacienteId = null)
+                            }
+                            composable("nuevo_servicio/{pacienteId}") { backStackEntry ->
+                                NuevoServicioScreen(navController, pacienteId = backStackEntry.arguments?.getString("pacienteId"))
+                            }
+                            composable("editar_servicio/{id}") { backStackEntry ->
+                                NuevoServicioScreen(navController, servicioId = backStackEntry.arguments?.getString("id"))
+                            }
+                            composable("reportes") { ReportesScreen(drawerState) }
+                            composable("costos_y_gastos") { CostosYGastosScreen(navController, drawerState) }
+                            composable("costos_y_gastos/{dispensacionId}") { backStackEntry ->
+                                val dispId = backStackEntry.arguments?.getString("dispensacionId")
+                                CostosYGastosScreen(navController, drawerState, dispensacionId = dispId)
+                            }
+                            composable("cierre_caja") { CierreCajaScreen(navController) }
+                            composable("estadisticas_bi") { AnalisisNegocioScreen(navController) }
+                            composable("analisis_detalle") { AnalisisDetalleScreen(navController) }
+                            composable("configuracion") { ConfiguracionScreen(navController, drawerState, syncViewModel) }
+                            composable("conflictos") { ConflictosScreen(navController, syncViewModel) }
+                            composable("informacion_financiera/{dispensacionId}") { backStackEntry ->
+                                val dispId = backStackEntry.arguments?.getString("dispensacionId")
+                                if (dispId.isNullOrBlank()) {
+                                    LaunchedEffect(Unit) { navController.popBackStack() }
+                                    Box(Modifier.fillMaxSize())
+                                } else {
+                                    InformacionFinancieraScreen(navController, dispensacionId = dispId)
+                                }
                             }
                         }
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp)
-                ) {
-                    Text(
-                        text = "Óptica activa: ${opticaHeader.nombreOptica} · ${opticaHeader.fiscalEtiqueta}",
-                        style = MaterialTheme.typography.labelSmall,
-                        modifier = Modifier.padding(vertical = 2.dp),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-            }
-            OfflineBanner(isOnline = isOnline)
-
-            Box(modifier = Modifier.weight(1f)) {
-                NavHost(navController = navController, startDestination = "operacion_hoy", modifier = Modifier.fillMaxSize()) {
-                composable("pacientes") { PacientesListScreen(navController, drawerState) }
-                composable("agenda") { AgendaScreen(navController, drawerState) }
-                composable("nuevoPaciente") { NuevoPacienteScreen(navController) }
-                composable("editarPaciente/{id}") { backStackEntry ->
-                    NuevoPacienteScreen(navController, pacienteId = backStackEntry.arguments?.getString("id"))
-                }
-                composable("detallePaciente/{id}") { backStackEntry ->
-                    val pid = backStackEntry.arguments?.getString("id")
-                    if (pid.isNullOrBlank()) {
-                        LaunchedEffect(Unit) { navController.popBackStack() }
-                        Box(Modifier.fillMaxSize())
-                    } else {
-                        DetallePacienteScreen(navController, id = pid)
-                    }
-                }
-                composable("nuevaEvaluacion/{pacienteId}") { backStackEntry ->
-                    val pacienteId = backStackEntry.arguments?.getString("pacienteId")
-                    if (pacienteId.isNullOrBlank()) {
-                        LaunchedEffect(Unit) { navController.popBackStack() }
-                        Box(Modifier.fillMaxSize())
-                    } else {
-                        NuevaEvaluacionScreen(navController, pacienteId = pacienteId)
-                    }
-                }
-                composable("editarEvaluacion/{pacienteId}/{evalId}") { backStackEntry ->
-                    val pacienteId = backStackEntry.arguments?.getString("pacienteId")
-                    if (pacienteId.isNullOrBlank()) {
-                        LaunchedEffect(Unit) { navController.popBackStack() }
-                        Box(Modifier.fillMaxSize())
-                    } else {
-                        NuevaEvaluacionScreen(
-                            navController,
-                            pacienteId = pacienteId,
-                            evaluacionId = backStackEntry.arguments?.getString("evalId")
+                        SnackbarHost(
+                            hostState = snackbarHostState,
+                            modifier = Modifier.align(Alignment.BottomCenter).padding(16.dp),
                         )
                     }
-                }
-                composable("nuevaDispensacion/{pacienteId}") { backStackEntry ->
-                    val pacienteId = backStackEntry.arguments?.getString("pacienteId")
-                    if (pacienteId.isNullOrBlank()) {
-                        LaunchedEffect(Unit) { navController.popBackStack() }
-                        Box(Modifier.fillMaxSize())
-                    } else {
-                        NuevaDispensacionScreen(navController, pacienteId = pacienteId)
-                    }
-                }
-                composable("editarDispensacion/{pacienteId}/{dispId}") { backStackEntry ->
-                    val pacienteId = backStackEntry.arguments?.getString("pacienteId")
-                    if (pacienteId.isNullOrBlank()) {
-                        LaunchedEffect(Unit) { navController.popBackStack() }
-                        Box(Modifier.fillMaxSize())
-                    } else {
-                        NuevaDispensacionScreen(
-                            navController,
-                            pacienteId = pacienteId,
-                            dispensacionId = backStackEntry.arguments?.getString("dispId")
-                        )
-                    }
-                }
-                composable("servicios_extra") { 
-                    ServiciosExtraScreen(navController, drawerState) 
-                }
-                composable("monturas") { MonturasScreen(navController) }
-                composable("proveedores") { ProveedoresScreen(navController) }
-                composable("ordenes_compra") { OrdenesCompraScreen(navController) }
-                composable("inventario_fisico") { com.example.optoapp.ui.screens.inventariofisico.InventarioFisicoScreen(navController) }
-                composable("gastos") { GastosScreen(navController, drawerState) }
-                composable("operacion_hoy") { OperacionHoyScreen(navController, drawerState) }
-                composable("nuevo_servicio") {
-                    NuevoServicioScreen(navController, pacienteId = null)
-                }
-                composable("nuevo_servicio/{pacienteId}") { backStackEntry ->
-                    NuevoServicioScreen(navController, pacienteId = backStackEntry.arguments?.getString("pacienteId"))
-                }
-                composable("editar_servicio/{id}") { backStackEntry ->
-                    NuevoServicioScreen(navController, servicioId = backStackEntry.arguments?.getString("id"))
-                }
-                composable("reportes") { ReportesScreen(drawerState) }
-                composable("costos_y_gastos") { CostosYGastosScreen(navController, drawerState) }
-                composable("costos_y_gastos/{dispensacionId}") { backStackEntry ->
-                    val dispId = backStackEntry.arguments?.getString("dispensacionId")
-                    CostosYGastosScreen(navController, drawerState, dispensacionId = dispId)
-                }
-                composable("cierre_caja") { CierreCajaScreen(navController) }
-                composable("estadisticas_bi") { AnalisisNegocioScreen(navController) }
-                composable("analisis_detalle") { AnalisisDetalleScreen(navController) }
-                composable("configuracion") { ConfiguracionScreen(navController, drawerState, syncViewModel) }
-                composable("conflictos") { ConflictosScreen(navController, syncViewModel) }
-                composable("informacion_financiera/{dispensacionId}") { backStackEntry ->
-                    val dispId = backStackEntry.arguments?.getString("dispensacionId")
-                    if (dispId.isNullOrBlank()) {
-                        LaunchedEffect(Unit) { navController.popBackStack() }
-                        Box(Modifier.fillMaxSize())
-                    } else {
-                        InformacionFinancieraScreen(navController, dispensacionId = dispId)
-                    }
-                }
-                    }
-                    SnackbarHost(
-                        hostState = snackbarHostState,
-                        modifier = Modifier.align(Alignment.BottomCenter).padding(16.dp)
-                    )
                 }
             }
         }
     }
-}
 }

@@ -11,15 +11,26 @@ import java.time.LocalDate
 class RecetaRefraccionTableTest {
 
     private fun eval(
-        recetaOdEsf: String = "", recetaOdCil: String = "", recetaOdEje: String = "",
-        recetaOiEsf: String = "", recetaOiCil: String = "", recetaOiEje: String = "",
-        avCcOdLejos: String = "", avCcOiLejos: String = "", avCcAoPx: String = "",
-        dipLejos: String = "", dipCerca: String = "",
-        addCercaOd: String = "", addCercaOi: String = "",
-        addIntermediaOd: String = "", addIntermediaOi: String = "",
+        recetaOdEsf: String = "",
+        recetaOdCil: String = "",
+        recetaOdEje: String = "",
+        recetaOiEsf: String = "",
+        recetaOiCil: String = "",
+        recetaOiEje: String = "",
+        avCcOdLejos: String = "",
+        avCcOiLejos: String = "",
+        avCcAoPx: String = "",
+        dipLejos: String = "",
+        dipCerca: String = "",
+        addCercaOd: String = "",
+        addCercaOi: String = "",
+        addIntermediaOd: String = "",
+        addIntermediaOi: String = "",
         avCcAoCerca: String = "",
-        prismaOdValor: String = "", prismaOdBase: String = "",
-        prismaOiValor: String = "", prismaOiBase: String = ""
+        prismaOdValor: String = "",
+        prismaOdBase: String = "",
+        prismaOiValor: String = "",
+        prismaOiBase: String = "",
     ): EvaluacionClinica {
         val today = LocalDate.now()
         return EvaluacionClinica(
@@ -32,7 +43,7 @@ class RecetaRefraccionTableTest {
             addIntermediaOd = addIntermediaOd, addIntermediaOi = addIntermediaOi,
             avCcAoCerca = avCcAoCerca,
             prismaOdValor = prismaOdValor, prismaOdBase = prismaOdBase,
-            prismaOiValor = prismaOiValor, prismaOiBase = prismaOiBase
+            prismaOiValor = prismaOiValor, prismaOiBase = prismaOiBase,
         )
     }
 
@@ -50,12 +61,14 @@ class RecetaRefraccionTableTest {
 
     @Test
     fun `distRows contains OD and OI with correct values`() {
-        val data = RefraccionTableBuilder.prepareData(eval(
-            recetaOdEsf = "-1.00", recetaOdCil = "-0.50", recetaOdEje = "90",
-            recetaOiEsf = "-2.00", recetaOiCil = "-0.75", recetaOiEje = "85",
-            avCcOdLejos = "0.8", avCcOiLejos = "0.6", avCcAoPx = "0.7",
-            dipLejos = "32", dipCerca = "30"
-        ))
+        val data = RefraccionTableBuilder.prepareData(
+            eval(
+                recetaOdEsf = "-1.00", recetaOdCil = "-0.50", recetaOdEje = "90",
+                recetaOiEsf = "-2.00", recetaOiCil = "-0.75", recetaOiEje = "85",
+                avCcOdLejos = "0.8", avCcOiLejos = "0.6", avCcAoPx = "0.7",
+                dipLejos = "32", dipCerca = "30",
+            ),
+        )
         assertEquals(2, data.distRows.size)
         assertEquals("OD", data.distRows[0].label)
         assertEquals("OI", data.distRows[1].label)
@@ -82,12 +95,16 @@ class RecetaRefraccionTableTest {
 
     @Test
     fun `nearRows contains near vision data`() {
-        val data = RefraccionTableBuilder.prepareData(eval(
-            addCercaOd = "+1.50", addCercaOi = "+1.50",
-            addIntermediaOd = "+1.25", addIntermediaOi = "+1.25",
-            dipCerca = "30",
-            avCcAoCerca = "0.8"
-        ))
+        val data = RefraccionTableBuilder.prepareData(
+            eval(
+                addCercaOd = "+1.50",
+                addCercaOi = "+1.50",
+                addIntermediaOd = "+1.25",
+                addIntermediaOi = "+1.25",
+                dipCerca = "30",
+                avCcAoCerca = "0.8",
+            ),
+        )
         assertEquals(2, data.nearRows.size)
         with(data.nearRows[0]) {
             assertEquals("OD", label)
@@ -107,10 +124,14 @@ class RecetaRefraccionTableTest {
 
     @Test
     fun `prismaRows contains prism data`() {
-        val data = RefraccionTableBuilder.prepareData(eval(
-            prismaOdValor = "2", prismaOdBase = "Nasal",
-            prismaOiValor = "1", prismaOiBase = "Temporal"
-        ))
+        val data = RefraccionTableBuilder.prepareData(
+            eval(
+                prismaOdValor = "2",
+                prismaOdBase = "Nasal",
+                prismaOiValor = "1",
+                prismaOiBase = "Temporal",
+            ),
+        )
         assertEquals(2, data.prismaRows.size)
         with(data.prismaRows[0]) {
             assertEquals("OD", label)

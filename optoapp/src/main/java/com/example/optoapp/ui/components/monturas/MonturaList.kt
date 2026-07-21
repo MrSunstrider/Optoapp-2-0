@@ -25,7 +25,7 @@ fun MonturaListSection(
     onEdit: (Montura) -> Unit,
     onDelete: (Montura) -> Unit,
     onEntrada: (Montura) -> Unit,
-    onSalida: (Montura) -> Unit
+    onSalida: (Montura) -> Unit,
 ) {
     LazyColumn(verticalArrangement = Arrangement.spacedBy(OptoTokens.spacing.sm)) {
         if (porReponer.isNotEmpty()) {
@@ -34,7 +34,7 @@ fun MonturaListSection(
                     "Por reponer",
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.padding(horizontal = OptoTokens.spacing.xs)
+                    modifier = Modifier.padding(horizontal = OptoTokens.spacing.xs),
                 )
             }
             items(porReponer, key = { "low-${it.id}" }) { m ->
@@ -43,7 +43,7 @@ fun MonturaListSection(
                     onEdit = { onEdit(m) },
                     onDelete = { onDelete(m) },
                     onEntrada = { onEntrada(m) },
-                    onSalida = { onSalida(m) }
+                    onSalida = { onSalida(m) },
                 )
             }
             item {
@@ -52,7 +52,7 @@ fun MonturaListSection(
                     "Todos los productos",
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(horizontal = OptoTokens.spacing.xs)
+                    modifier = Modifier.padding(horizontal = OptoTokens.spacing.xs),
                 )
             }
         }
@@ -62,7 +62,7 @@ fun MonturaListSection(
                 onEdit = { onEdit(m) },
                 onDelete = { onDelete(m) },
                 onEntrada = { onEntrada(m) },
-                onSalida = { onSalida(m) }
+                onSalida = { onSalida(m) },
             )
         }
     }
@@ -74,17 +74,17 @@ fun MonturaItem(
     onEdit: () -> Unit,
     onDelete: () -> Unit,
     onEntrada: () -> Unit,
-    onSalida: () -> Unit
+    onSalida: () -> Unit,
 ) {
     var showDelete by remember { mutableStateOf(false) }
     ElevatedCard(
         modifier = Modifier.fillMaxWidth(),
         shape = OptoTokens.shapes.medium,
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = OptoTokens.elevation.level1)
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = OptoTokens.elevation.level1),
     ) {
         Column(
             modifier = Modifier.padding(OptoTokens.spacing.md),
-            verticalArrangement = Arrangement.spacedBy(OptoTokens.spacing.xs)
+            verticalArrangement = Arrangement.spacedBy(OptoTokens.spacing.xs),
         ) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Column(modifier = Modifier.weight(1f)) {
@@ -120,7 +120,7 @@ fun MonturaItem(
             },
             dismissButton = {
                 OutlinedButton(onClick = { showDelete = false }) { Text("Cancelar") }
-            }
+            },
         )
     }
 }

@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.OptoRepository
-import com.example.optoapp.data.Pago
 import com.example.optoapp.data.ServicioExtra
 import com.example.optoapp.data.SessionManager
 import com.example.optoapp.domain.MovimientoFinanciero
@@ -12,18 +11,18 @@ import com.example.optoapp.domain.Origen
 import com.example.optoapp.domain.TipoMovimiento
 import com.example.optoapp.util.DateUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.Year
 import javax.inject.Inject
@@ -32,7 +31,7 @@ import javax.inject.Inject
 @HiltViewModel
 class ReportesViewModel @Inject constructor(
     private val repository: OptoRepository,
-    private val sessionManager: SessionManager
+    private val sessionManager: SessionManager,
 ) : ViewModel() {
 
     private val _isLoading = MutableStateFlow(true)
@@ -48,16 +47,22 @@ class ReportesViewModel @Inject constructor(
 
     private val _periodo = MutableStateFlow("Mensual")
     val periodo: StateFlow<String> = _periodo
-    
+
     private val _anio = MutableStateFlow(Year.now().value.toString())
     val anio: StateFlow<String> = _anio
 
     private val _fechaDiario = MutableStateFlow(LocalDate.now())
     val fechaDiario: StateFlow<LocalDate> = _fechaDiario
 
-    fun setPeriodo(p: String) { _periodo.value = p }
-    fun setAnio(a: String) { _anio.value = a }
-    fun setFechaDiario(fecha: LocalDate) { _fechaDiario.value = fecha }
+    fun setPeriodo(p: String) {
+        _periodo.value = p
+    }
+    fun setAnio(a: String) {
+        _anio.value = a
+    }
+    fun setFechaDiario(fecha: LocalDate) {
+        _fechaDiario.value = fecha
+    }
 
     // ── Navigation ──
     fun previous() {
@@ -88,7 +93,7 @@ class ReportesViewModel @Inject constructor(
                 "${DateUtils.formatLocalized(start)} - ${DateUtils.formatLocalized(end)}"
             }
             "Mensual" -> {
-                val months = arrayOf("Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre")
+                val months = arrayOf("Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre")
                 "${months[fd.monthValue - 1]} ${fd.year}"
             }
             "Anual" -> a
@@ -96,20 +101,18 @@ class ReportesViewModel @Inject constructor(
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
 
-    private fun dentroDelPeriodo(date: LocalDate, p: String, a: String, fechaDiario: LocalDate, now: LocalDate): Boolean {
-        return when (p) {
-            "Diario" -> date.isEqual(fechaDiario)
-            "Semanal" -> {
-                val dayOfWeek = fechaDiario.dayOfWeek.value
-                val startOfWeek = fechaDiario.minusDays(dayOfWeek.toLong() - 1)
-                val endOfWeek = startOfWeek.plusDays(6)
-                !date.isBefore(startOfWeek) && !date.isAfter(endOfWeek)
-            }
-            "Mensual" -> date.year == fechaDiario.year && date.month == fechaDiario.month
-            "Este año" -> date.year == fechaDiario.year
-            "Anual" -> date.year.toString() == a
-            else -> true
+    private fun dentroDelPeriodo(date: LocalDate, p: String, a: String, fechaDiario: LocalDate, now: LocalDate): Boolean = when (p) {
+        "Diario" -> date.isEqual(fechaDiario)
+        "Semanal" -> {
+            val dayOfWeek = fechaDiario.dayOfWeek.value
+            val startOfWeek = fechaDiario.minusDays(dayOfWeek.toLong() - 1)
+            val endOfWeek = startOfWeek.plusDays(6)
+            !date.isBefore(startOfWeek) && !date.isAfter(endOfWeek)
         }
+        "Mensual" -> date.year == fechaDiario.year && date.month == fechaDiario.month
+        "Este año" -> date.year == fechaDiario.year
+        "Anual" -> date.year.toString() == a
+        else -> true
     }
 
     private fun periodDateRange(p: String, a: String, fd: LocalDate, now: LocalDate): Pair<LocalDate, LocalDate> = when (p) {
@@ -131,7 +134,7 @@ class ReportesViewModel @Inject constructor(
                 repository.getAllDispensacionesForOptica(opticaId),
                 _periodo,
                 _anio,
-                _fechaDiario
+                _fechaDiario,
             ) { list, p, a, fd ->
                 val now = LocalDate.now()
                 list.filter { disp -> disp.estadoEntrega != "Anulado" && dentroDelPeriodo(disp.fecha, p, a, fd, now) }
@@ -145,7 +148,7 @@ class ReportesViewModel @Inject constructor(
                 repository.getAllServiciosForOptica(opticaId),
                 _periodo,
                 _anio,
-                _fechaDiario
+                _fechaDiario,
             ) { list, p, a, fd ->
                 val now = LocalDate.now()
                 list.filter { servicio -> servicio.estado != "Anulado" && dentroDelPeriodo(servicio.fecha, p, a, fd, now) }
@@ -163,7 +166,7 @@ class ReportesViewModel @Inject constructor(
                 combine(
                     repository.getAllDispensacionesForOptica(opticaId),
                     repository.getAllServiciosForOptica(opticaId),
-                    repository.getAllPagosFlowForOptica(opticaId)
+                    repository.getAllPagosFlowForOptica(opticaId),
                 ) { disps, servs, pagos ->
                     val pagosSumByDisp = pagos
                         .filter { it.tipo != "Anulación" && it.dispensacionId != null }
@@ -188,7 +191,7 @@ class ReportesViewModel @Inject constructor(
                                 pacienteId = d.pacienteId,
                                 opticaId = d.opticaId,
                                 descripcion = "OT ${d.ot}",
-                                vinculadoA = d.ot.takeIf { it.isNotBlank() }
+                                vinculadoA = d.ot.takeIf { it.isNotBlank() },
                             )
                         }
                     val servMovs = servs
@@ -206,7 +209,7 @@ class ReportesViewModel @Inject constructor(
                                 pacienteId = s.pacienteId ?: "",
                                 opticaId = s.opticaId,
                                 descripcion = s.descripcion.takeIf { it.isNotBlank() } ?: "Servicio OT ${s.ot}",
-                                vinculadoA = s.ot.takeIf { it.isNotBlank() }
+                                vinculadoA = s.ot.takeIf { it.isNotBlank() },
                             )
                         }
                     dispMovs + servMovs
@@ -272,7 +275,7 @@ class ReportesViewModel @Inject constructor(
             combine(
                 _periodo,
                 _anio,
-                _fechaDiario
+                _fechaDiario,
             ) { p, a, fd ->
                 val now = LocalDate.now()
                 val (start, end) = periodDateRange(p, a, fd, now)
@@ -299,7 +302,7 @@ class ReportesViewModel @Inject constructor(
                 combine(
                     repository.getPagosByDateRangeForOptica(start, end, opticaId),
                     repository.getAllDispensacionesForOptica(opticaId),
-                    repository.getAllServiciosForOptica(opticaId)
+                    repository.getAllServiciosForOptica(opticaId),
                 ) { pagos, todasDisp, todasServ ->
                     val dispMap = todasDisp.associateBy { it.id }
                     val servMap = todasServ.associateBy { it.id }

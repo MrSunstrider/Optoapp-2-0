@@ -27,7 +27,7 @@ class SettingsViewModelCharacterizationTest {
         val fields = SettingsViewModel::class.java.declaredFields.map { it.name }
         assertTrue(
             "remindersEnabled debe ser miembro (field o method)",
-            "remindersEnabled" in methods || "remindersEnabled" in fields
+            "remindersEnabled" in methods || "remindersEnabled" in fields,
         )
     }
 
@@ -37,7 +37,7 @@ class SettingsViewModelCharacterizationTest {
         val fields = SettingsViewModel::class.java.declaredFields.map { it.name }
         assertTrue(
             "userTimeZone debe ser miembro",
-            "userTimeZone" in methods || "userTimeZone" in fields
+            "userTimeZone" in methods || "userTimeZone" in fields,
         )
     }
 
@@ -67,7 +67,7 @@ class SettingsViewModelCharacterizationTest {
         val fields = SettingsViewModel::class.java.declaredFields.map { it.name }
         assertTrue(
             "pinHasBeenSet debe ser miembro de SettingsViewModel",
-            "pinHasBeenSet" in methods || "pinHasBeenSet" in fields
+            "pinHasBeenSet" in methods || "pinHasBeenSet" in fields,
         )
     }
 
@@ -77,7 +77,7 @@ class SettingsViewModelCharacterizationTest {
         val fields = SettingsViewModel::class.java.declaredFields.map { it.name }
         assertTrue(
             "isPinRequired debe ser miembro de SettingsViewModel",
-            "isPinRequired" in methods || "isPinRequired" in fields
+            "isPinRequired" in methods || "isPinRequired" in fields,
         )
     }
 
@@ -86,7 +86,7 @@ class SettingsViewModelCharacterizationTest {
         val names = SettingsViewModel::class.java.declaredMethods.map { it.name }
         assertTrue(
             "togglePinRequired debe ser miembro de SettingsViewModel",
-            "togglePinRequired" in names
+            "togglePinRequired" in names,
         )
     }
 
@@ -95,7 +95,7 @@ class SettingsViewModelCharacterizationTest {
         val names = SettingsViewModel::class.java.declaredMethods.map { it.name }
         assertTrue(
             "updatePin debe ser miembro de SettingsViewModel",
-            "updatePin" in names
+            "updatePin" in names,
         )
     }
 
@@ -110,7 +110,7 @@ class SettingsViewModelCharacterizationTest {
         assertEquals(
             "setRemindersEnabled debe aceptar Boolean/boolean",
             "boolean",
-            method?.parameterTypes?.first()?.name
+            method?.parameterTypes?.first()?.name,
         )
     }
 
@@ -123,7 +123,7 @@ class SettingsViewModelCharacterizationTest {
         assertEquals(
             "togglePinRequired debe aceptar Boolean/boolean",
             "boolean",
-            method?.parameterTypes?.first()?.name
+            method?.parameterTypes?.first()?.name,
         )
     }
 
@@ -137,5 +137,4 @@ class SettingsViewModelCharacterizationTest {
             assertEquals("updatePin parámetros deben ser String", "java.lang.String", paramType.name)
         }
     }
-
 }

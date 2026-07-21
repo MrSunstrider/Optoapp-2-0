@@ -1,11 +1,8 @@
 package com.example.optoapp.util
 
 import com.example.optoapp.data.Montura
-import com.example.optoapp.data.MonturaMovimiento
 import com.example.optoapp.data.Resource
 import com.example.optoapp.data.montura.MonturaInventoryCoordinator
-import com.example.optoapp.sync.PostSaveSyncScheduler
-import dagger.Lazy
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -89,14 +86,20 @@ class DispensacionStockHelperTest {
             cantidad = 1,
             stockPrevio = 5,
             referenciaId = "disp-1",
-            nota = "Salida por venta"
+            nota = "Salida por venta",
         )
 
-        coVerify { coordinator.insertMonturaMovimiento(match { mov ->
-            mov.monturaId == "m1" && mov.tipo == "SALIDA_VENTA" &&
-            mov.cantidad == 1 && mov.stockPrevio == 5 &&
-            mov.referenciaId == "disp-1"
-        }) }
+        coVerify {
+            coordinator.insertMonturaMovimiento(
+                match { mov ->
+                    mov.monturaId == "m1" &&
+                        mov.tipo == "SALIDA_VENTA" &&
+                        mov.cantidad == 1 &&
+                        mov.stockPrevio == 5 &&
+                        mov.referenciaId == "disp-1"
+                },
+            )
+        }
     }
 
     @Test
@@ -111,14 +114,18 @@ class DispensacionStockHelperTest {
             delta = -1,
             tipo = "SALIDA_VENTA",
             referenciaId = "disp-1",
-            nota = "Venta"
+            nota = "Venta",
         )
 
         assertTrue(result.isSuccess)
         coVerify { coordinator.adjustMonturaStock("m1", "o1", -1) }
-        coVerify { coordinator.insertMonturaMovimiento(match { mov ->
-            mov.monturaId == "m1" && mov.referenciaId == "disp-1"
-        }) }
+        coVerify {
+            coordinator.insertMonturaMovimiento(
+                match { mov ->
+                    mov.monturaId == "m1" && mov.referenciaId == "disp-1"
+                },
+            )
+        }
     }
 
     @Test
@@ -132,7 +139,7 @@ class DispensacionStockHelperTest {
             delta = -1,
             tipo = "SALIDA_VENTA",
             referenciaId = "disp-1",
-            nota = "Venta"
+            nota = "Venta",
         )
 
         assertTrue(result.isFailure)
@@ -151,7 +158,7 @@ class DispensacionStockHelperTest {
             delta = 3,
             tipo = "AJUSTE",
             referenciaId = "ref-ajuste",
-            nota = "Ajuste de inventario"
+            nota = "Ajuste de inventario",
         )
 
         assertTrue(result.isSuccess)
@@ -178,7 +185,7 @@ class DispensacionStockHelperTest {
             delta = -1,
             tipo = "SALIDA_VENTA",
             referenciaId = "disp-1",
-            nota = "Venta"
+            nota = "Venta",
         )
 
         assertTrue(result.isFailure)

@@ -23,7 +23,7 @@ class EvaluacionDiagnosticoHelperTest {
         val state = baseState.copy(
             recetaOdEsf = "+2.00",
             recetaOdCil = "+1.00",
-            recetaOdEje = "90"
+            recetaOdEje = "90",
         )
         val result = normalizeAndTranspose(state, "OD")
         assertEquals("+3.00", result.recetaOdEsf)
@@ -38,7 +38,7 @@ class EvaluacionDiagnosticoHelperTest {
         val state = baseState.copy(
             recetaOdEsf = "-1.00",
             recetaOdCil = "+2.00",
-            recetaOdEje = "100"
+            recetaOdEje = "100",
         )
         val result = normalizeAndTranspose(state, "OD")
         assertEquals("+1.00", result.recetaOdEsf)
@@ -53,7 +53,7 @@ class EvaluacionDiagnosticoHelperTest {
         val state = baseState.copy(
             recetaOdEsf = "-1.00",
             recetaOdCil = "+1.00",
-            recetaOdEje = "45"
+            recetaOdEje = "45",
         )
         val result = normalizeAndTranspose(state, "OD")
         assertEquals("plano", result.recetaOdEsf)
@@ -68,7 +68,7 @@ class EvaluacionDiagnosticoHelperTest {
         val state = baseState.copy(
             recetaOdEsf = "+0.50",
             recetaOdCil = "+0.75",
-            recetaOdEje = "100"
+            recetaOdEje = "100",
         )
         val result = normalizeAndTranspose(state, "OD")
         assertEquals("+1.25", result.recetaOdEsf)
@@ -83,7 +83,7 @@ class EvaluacionDiagnosticoHelperTest {
         val state = baseState.copy(
             recetaOdEsf = "-2.00",
             recetaOdCil = "-0.50",
-            recetaOdEje = "180"
+            recetaOdEje = "180",
         )
         val result = normalizeAndTranspose(state, "OD")
         assertEquals("-2.00", result.recetaOdEsf)
@@ -96,7 +96,7 @@ class EvaluacionDiagnosticoHelperTest {
         val state = baseState.copy(
             recetaOiEsf = "+1.50",
             recetaOiCil = "+0.75",
-            recetaOiEje = "170"
+            recetaOiEje = "170",
         )
         val result = normalizeAndTranspose(state, "OI")
         assertEquals("+2.25", result.recetaOiEsf)

@@ -77,7 +77,7 @@ class Migration38_39Test {
             })
             .build()
         val v38Helper = factory.create(v38Config)
-        v38Helper.writableDatabase  // force creation
+        v38Helper.writableDatabase // force creation
         v38Helper.close()
 
         val v39Config = SupportSQLiteOpenHelper.Configuration.builder(context)
@@ -117,8 +117,9 @@ class Migration38_39Test {
         while (pc.moveToNext()) cols.add(pc.getString(pc.getColumnIndexOrThrow("name")))
         pc.close()
 
-        listOf("material", "tipo_lente", "stock_o_fabricacion", "tratamiento",
-            "serie", "costo_unitario", "laboratorio_id", "vigente_desde", "vigente_hasta"
+        listOf(
+            "material", "tipo_lente", "stock_o_fabricacion", "tratamiento",
+            "serie", "costo_unitario", "laboratorio_id", "vigente_desde", "vigente_hasta",
         ).forEach { assertTrue("$it column", cols.contains(it)) }
 
         db.close()
@@ -143,8 +144,9 @@ class Migration38_39Test {
         while (pc.moveToNext()) cols.add(pc.getString(pc.getColumnIndexOrThrow("name")))
         pc.close()
 
-        listOf("material", "tipo_aro", "stock_o_fabricacion", "serie",
-            "alto_indice", "costo_por_par", "proveedor", "vigente_desde", "vigente_hasta"
+        listOf(
+            "material", "tipo_aro", "stock_o_fabricacion", "serie",
+            "alto_indice", "costo_por_par", "proveedor", "vigente_desde", "vigente_hasta",
         ).forEach { assertTrue("$it column", cols.contains(it)) }
 
         db.close()
@@ -164,7 +166,8 @@ class Migration38_39Test {
             .callback(object : SupportSQLiteOpenHelper.Callback(38) {
                 override fun onCreate(db: SupportSQLiteDatabase) {
                     // Full dispensaciones table with data
-                    db.execSQL("""
+                    db.execSQL(
+                        """
                         CREATE TABLE IF NOT EXISTS dispensaciones (
                             id TEXT NOT NULL PRIMARY KEY,
                             ot TEXT NOT NULL DEFAULT '',
@@ -177,13 +180,17 @@ class Migration38_39Test {
                             updatedAt TEXT,
                             updatedBy TEXT
                         )
-                    """.trimIndent())
-                    db.execSQL("""
+                        """.trimIndent(),
+                    )
+                    db.execSQL(
+                        """
                         INSERT INTO dispensaciones (id, pacienteId, fecha, opticaId, montoTotal)
                         VALUES ('disp1', 'p1', '2026-07-01', 'optica1', 350.0)
-                    """)
+                    """,
+                    )
                     // Also need dispensacion_items for the ALTER TABLE in migration
-                    db.execSQL("""
+                    db.execSQL(
+                        """
                         CREATE TABLE IF NOT EXISTS dispensacion_items (
                             id TEXT NOT NULL PRIMARY KEY,
                             dispensacion_id TEXT NOT NULL,
@@ -191,7 +198,8 @@ class Migration38_39Test {
                             material_lente TEXT NOT NULL DEFAULT '',
                             optica_id TEXT NOT NULL DEFAULT 'mi_optica_base'
                         )
-                    """.trimIndent())
+                        """.trimIndent(),
+                    )
                 }
                 override fun onUpgrade(db: SupportSQLiteDatabase, oldVersion: Int, newVersion: Int) {}
             })
@@ -256,7 +264,8 @@ class Migration38_39Test {
             .callback(object : SupportSQLiteOpenHelper.Callback(38) {
                 override fun onCreate(db: SupportSQLiteDatabase) {
                     // dispensaciones must exist (migration ALTERs it)
-                    db.execSQL("""
+                    db.execSQL(
+                        """
                         CREATE TABLE IF NOT EXISTS dispensaciones (
                             id TEXT NOT NULL PRIMARY KEY,
                             pacienteId TEXT NOT NULL,
@@ -266,9 +275,11 @@ class Migration38_39Test {
                             updatedAt TEXT,
                             updatedBy TEXT
                         )
-                    """.trimIndent())
+                        """.trimIndent(),
+                    )
                     // Full dispensacion_items table with data
-                    db.execSQL("""
+                    db.execSQL(
+                        """
                         CREATE TABLE IF NOT EXISTS dispensacion_items (
                             id TEXT NOT NULL PRIMARY KEY,
                             dispensacion_id TEXT NOT NULL,
@@ -276,11 +287,14 @@ class Migration38_39Test {
                             material_lente TEXT NOT NULL DEFAULT '',
                             optica_id TEXT NOT NULL DEFAULT 'mi_optica_base'
                         )
-                    """.trimIndent())
-                    db.execSQL("""
+                        """.trimIndent(),
+                    )
+                    db.execSQL(
+                        """
                         INSERT INTO dispensacion_items (id, dispensacion_id, tipo_lente, material_lente, optica_id)
                         VALUES ('item1', 'disp1', 'Monofocal', 'Resina', 'optica1')
-                    """)
+                    """,
+                    )
                 }
                 override fun onUpgrade(db: SupportSQLiteDatabase, oldVersion: Int, newVersion: Int) {}
             })
@@ -304,8 +318,9 @@ class Migration38_39Test {
         val cols = mutableSetOf<String>()
         while (pc.moveToNext()) cols.add(pc.getString(pc.getColumnIndexOrThrow("name")))
         pc.close()
-        listOf("alto_indice", "reduccion_diametro", "lenticular", "curva_base",
-            "costo_real_od", "costo_real_oi", "costo_real_montura", "costo_real_biselado", "costo_real_lc"
+        listOf(
+            "alto_indice", "reduccion_diametro", "lenticular", "curva_base",
+            "costo_real_od", "costo_real_oi", "costo_real_montura", "costo_real_biselado", "costo_real_lc",
         ).forEach { assertTrue("$it column", cols.contains(it)) }
 
         // Assert data preserved

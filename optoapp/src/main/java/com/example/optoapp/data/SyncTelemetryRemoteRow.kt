@@ -9,6 +9,5 @@ data class SyncTelemetryRemoteRow(
     @SerialName("last_sync_at") val lastSyncAt: String? = null,
     @SerialName("last_status") val lastStatus: String,
     @SerialName("last_stage") val lastStage: String,
-    @SerialName("last_error") val lastError: String = ""
+    @SerialName("last_error") val lastError: String = "",
 )
-

@@ -13,7 +13,7 @@ import com.example.optoapp.viewmodel.EvaluacionUiState
 fun AnamnesisSection(
     uiState: EvaluacionUiState,
     onUpdate: (EvaluacionUiState) -> Unit,
-    onShowDatePicker: () -> Unit
+    onShowDatePicker: () -> Unit,
 ) {
     OutlinedButton(onClick = onShowDatePicker, modifier = Modifier.fillMaxWidth()) {
         Text("Fecha Registro: ${DateUtils.formatLocalized(uiState.fecha)}")

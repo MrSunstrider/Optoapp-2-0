@@ -10,7 +10,7 @@ package com.example.optoapp.viewmodel
 data class DipParseResult(
     val dipTotalMm: Double? = null,
     val dnpOdMm: Double? = null,
-    val dnpOiMm: Double? = null
+    val dnpOiMm: Double? = null,
 )
 
 /**
@@ -42,7 +42,7 @@ object DipParser {
                     return DipParseResult(
                         dipTotalMm = od + oi,
                         dnpOdMm = od,
-                        dnpOiMm = oi
+                        dnpOiMm = oi,
                     )
                 }
             }
@@ -66,7 +66,7 @@ object DipParser {
         dipLejosRaw: String,
         dipTotalMm: Double?,
         dnpOdMm: Double?,
-        dnpOiMm: Double?
+        dnpOiMm: Double?,
     ): String {
         fun pretty(value: Double): String {
             val asLong = value.toLong()

@@ -1,10 +1,10 @@
 package com.example.optoapp.ui.screens
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -14,15 +14,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.optoapp.data.gastooperativo.GastoOperativoEntity
-import com.example.optoapp.ui.components.OptoTopAppBar
 import com.example.optoapp.ui.components.OptoDatePickerDialog
-import com.example.optoapp.ui.theme.PositiveGreen
+import com.example.optoapp.ui.components.OptoTopAppBar
 import com.example.optoapp.ui.theme.AlertRed
 import com.example.optoapp.util.DateUtils
 import com.example.optoapp.viewmodel.GastosViewModel
@@ -58,19 +56,19 @@ fun GastosScreen(navController: NavController, drawerState: DrawerState, viewMod
                     IconButton(onClick = { scope.launch { drawerState.open() } }) {
                         Icon(Icons.Default.Menu, contentDescription = "Menu")
                     }
-                }
+                },
             )
         },
         floatingActionButton = {
             FloatingActionButton(onClick = { viewModel.showNewGasto() }, modifier = Modifier.navigationBarsPadding()) {
                 Icon(Icons.Default.Add, contentDescription = "Añadir Gasto")
             }
-        }
+        },
     ) { padding ->
         if (uiState.isLoading) {
             Box(
                 modifier = Modifier.fillMaxSize().padding(padding),
-                contentAlignment = Alignment.Center
+                contentAlignment = Alignment.Center,
             ) {
                 CircularProgressIndicator()
             }
@@ -80,18 +78,18 @@ fun GastosScreen(navController: NavController, drawerState: DrawerState, viewMod
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(padding).navigationBarsPadding(),
             contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f))
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)),
                 ) {
                     Row(
                         modifier = Modifier.padding(16.dp).fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text("Total del mes", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                         Text("s/. ${fmt(totalMes.toDouble())}", fontWeight = FontWeight.Bold, fontSize = 22.sp, color = MaterialTheme.colorScheme.primary)
@@ -115,7 +113,7 @@ fun GastosScreen(navController: NavController, drawerState: DrawerState, viewMod
                 GastoCard(
                     gasto = gasto,
                     onEdit = { viewModel.editGasto(gasto) },
-                    onDelete = { viewModel.delete(gasto) }
+                    onDelete = { viewModel.delete(gasto) },
                 )
             }
 
@@ -137,11 +135,14 @@ fun GastosScreen(navController: NavController, drawerState: DrawerState, viewMod
                             readOnly = true,
                             label = { Text("Categoría") },
                             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                            modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true)
+                            modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true),
                         )
                         ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                             viewModel.categorias.forEach { cat ->
-                                DropdownMenuItem(text = { Text(cat) }, onClick = { viewModel.updateCategoria(cat); expanded = false })
+                                DropdownMenuItem(text = { Text(cat) }, onClick = {
+                                    viewModel.updateCategoria(cat)
+                                    expanded = false
+                                })
                             }
                         }
                     }
@@ -168,7 +169,7 @@ fun GastosScreen(navController: NavController, drawerState: DrawerState, viewMod
             },
             dismissButton = {
                 TextButton(onClick = { viewModel.dismissDialog() }) { Text("Cancelar") }
-            }
+            },
         )
     }
 }
@@ -178,7 +179,7 @@ private fun GastoCard(gasto: GastoOperativoEntity, onEdit: () -> Unit, onDelete:
     Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(10.dp)) {
         Row(
             modifier = Modifier.padding(14.dp).fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(gasto.categoria, fontWeight = FontWeight.Bold, fontSize = 14.sp)
@@ -199,7 +200,8 @@ private fun GastoCard(gasto: GastoOperativoEntity, onEdit: () -> Unit, onDelete:
     }
 }
 
-private fun fmt(value: Double): String {
-    return if (value == value.toLong().toDouble()) String.format(Locale.getDefault(), "%,.0f", value)
-    else String.format(Locale.getDefault(), "%,.2f", value)
+private fun fmt(value: Double): String = if (value == value.toLong().toDouble()) {
+    String.format(Locale.getDefault(), "%,.0f", value)
+} else {
+    String.format(Locale.getDefault(), "%,.2f", value)
 }

@@ -1,6 +1,7 @@
 package com.example.optoapp.ui.components
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -12,9 +13,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.example.optoapp.ui.theme.OptoTokens
-
-import androidx.compose.foundation.layout.WindowInsets
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -25,7 +23,7 @@ fun OptoTopAppBar(
     onNavigationClick: (() -> Unit)? = null,
     actions: @Composable () -> Unit = {},
     subtitle: String? = null,
-    useWindowInsets: Boolean = false
+    useWindowInsets: Boolean = false,
 ) {
     CenterAlignedTopAppBar(
         title = {
@@ -37,7 +35,7 @@ fun OptoTopAppBar(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
                     )
                 }
             }
@@ -53,7 +51,7 @@ fun OptoTopAppBar(
         },
         actions = { actions() },
         colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        )
+            containerColor = MaterialTheme.colorScheme.surface,
+        ),
     )
 }

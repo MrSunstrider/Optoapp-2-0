@@ -14,13 +14,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.optoapp.data.SecurityManager
 import com.example.optoapp.testing.TestTags
-import com.example.optoapp.viewmodel.AuthViewModel
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import kotlinx.coroutines.launch
 import com.example.optoapp.ui.components.OptoCard
+import com.example.optoapp.viewmodel.AuthViewModel
+import kotlinx.coroutines.launch
 
 @Composable
 fun PinScreen(navController: NavController, viewModel: AuthViewModel = hiltViewModel()) {
@@ -38,10 +38,10 @@ fun PinScreen(navController: NavController, viewModel: AuthViewModel = hiltViewM
                 Brush.verticalGradient(
                     colors = listOf(
                         MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-                        MaterialTheme.colorScheme.background
-                    )
-                )
-            )
+                        MaterialTheme.colorScheme.background,
+                    ),
+                ),
+            ),
     ) {
         Column(
             modifier = Modifier
@@ -49,20 +49,20 @@ fun PinScreen(navController: NavController, viewModel: AuthViewModel = hiltViewM
                 .align(Alignment.Center)
                 .padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             // ─── Logo "O" ────────────────────────────────────────────────────
             Surface(
                 shape = RoundedCornerShape(20.dp),
                 color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(64.dp)
+                modifier = Modifier.size(64.dp),
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Text(
                         text = "O",
                         fontSize = 32.sp,
                         fontWeight = FontWeight.ExtraBold,
-                        color = MaterialTheme.colorScheme.onPrimary
+                        color = MaterialTheme.colorScheme.onPrimary,
                     )
                 }
             }
@@ -73,14 +73,14 @@ fun PinScreen(navController: NavController, viewModel: AuthViewModel = hiltViewM
                 text = "OptoApp",
                 fontSize = 28.sp,
                 fontWeight = FontWeight.ExtraBold,
-                color = MaterialTheme.colorScheme.primary
+                color = MaterialTheme.colorScheme.primary,
             )
 
             Text(
                 text = "Ingresá tu PIN",
                 fontSize = 16.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -89,7 +89,7 @@ fun PinScreen(navController: NavController, viewModel: AuthViewModel = hiltViewM
             Row(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.testTag(TestTags.PIN_INPUT_FIELD)
+                modifier = Modifier.testTag(TestTags.PIN_INPUT_FIELD),
             ) {
                 repeat(SecurityManager.PIN_LENGTH) { index ->
                     val filled = index < pinInput.length
@@ -97,10 +97,13 @@ fun PinScreen(navController: NavController, viewModel: AuthViewModel = hiltViewM
                         modifier = Modifier
                             .size(16.dp)
                             .background(
-                                if (filled) MaterialTheme.colorScheme.primary
-                                else MaterialTheme.colorScheme.outlineVariant,
-                                shape = CircleShape
-                            )
+                                if (filled) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    MaterialTheme.colorScheme.outlineVariant
+                                },
+                                shape = CircleShape,
+                            ),
                     )
                 }
             }
@@ -110,7 +113,7 @@ fun PinScreen(navController: NavController, viewModel: AuthViewModel = hiltViewM
                 Surface(
                     color = MaterialTheme.colorScheme.error.copy(alpha = 0.12f),
                     shape = RoundedCornerShape(8.dp),
-                    modifier = Modifier.testTag(TestTags.PIN_ERROR_MESSAGE)
+                    modifier = Modifier.testTag(TestTags.PIN_ERROR_MESSAGE),
                 ) {
                     Text(
                         text = errorMessage ?: "",
@@ -118,7 +121,7 @@ fun PinScreen(navController: NavController, viewModel: AuthViewModel = hiltViewM
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Medium,
-                        textAlign = TextAlign.Center
+                        textAlign = TextAlign.Center,
                     )
                 }
             }
@@ -127,7 +130,7 @@ fun PinScreen(navController: NavController, viewModel: AuthViewModel = hiltViewM
                 CircularProgressIndicator(
                     modifier = Modifier.size(32.dp),
                     strokeWidth = 3.dp,
-                    color = MaterialTheme.colorScheme.primary
+                    color = MaterialTheme.colorScheme.primary,
                 )
             }
 
@@ -136,23 +139,23 @@ fun PinScreen(navController: NavController, viewModel: AuthViewModel = hiltViewM
             // ─── Number Pad ─────────────────────────────────────────────────
             OptoCard(
                 shape = RoundedCornerShape(24.dp),
-                elevation = 1.dp
+                elevation = 1.dp,
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     val numbers = listOf(
                         listOf("1", "2", "3"),
                         listOf("4", "5", "6"),
                         listOf("7", "8", "9"),
-                        listOf("C", "0", "OK")
+                        listOf("C", "0", "OK"),
                     )
 
                     numbers.forEach { row ->
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
                             row.forEach { char ->
                                 val isOk = char == "OK"
@@ -199,14 +202,14 @@ fun PinScreen(navController: NavController, viewModel: AuthViewModel = hiltViewM
                                             isOk -> MaterialTheme.colorScheme.onPrimary
                                             isClear -> MaterialTheme.colorScheme.onError
                                             else -> MaterialTheme.colorScheme.onSurfaceVariant
-                                        }
+                                        },
                                     ),
-                                    contentPadding = PaddingValues(0.dp)
+                                    contentPadding = PaddingValues(0.dp),
                                 ) {
                                     Text(
                                         text = char,
                                         fontSize = 24.sp,
-                                        fontWeight = if (isOk || isClear) FontWeight.Bold else FontWeight.Normal
+                                        fontWeight = if (isOk || isClear) FontWeight.Bold else FontWeight.Normal,
                                     )
                                 }
                             }
@@ -221,7 +224,7 @@ fun PinScreen(navController: NavController, viewModel: AuthViewModel = hiltViewM
                 text = "Ingresá tu PIN de seguridad",
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
             )
         }
     }

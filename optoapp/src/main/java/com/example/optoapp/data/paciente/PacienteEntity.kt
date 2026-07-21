@@ -12,8 +12,8 @@ import java.time.LocalDate
     tableName = "pacientes",
     indices = [
         Index(value = ["nombreCompleto"]),
-        Index(value = ["opticaId"])
-    ]
+        Index(value = ["opticaId"]),
+    ],
 )
 @Serializable
 data class Paciente(
@@ -39,20 +39,19 @@ data class Paciente(
     val hobbies: String? = null,
     val ultimasEtiquetas: List<String> = emptyList(),
     @SerialName("opticaId")
-    val opticaId: String = "mi_optica_base",
+    val opticaId: String = LEGACY_OPTICA_ID,
     @SerialName("updatedAt")
     val updatedAt: String? = null,
     @SerialName("updatedBy")
-    val updatedBy: String? = null
-)
+    val updatedBy: String? = null,
+) {
+    companion object {
+        const val LEGACY_OPTICA_ID = "mi_optica_base"
+    }
+}
 
 // ── Sexo-based helpers ───────────────────────────────────────────────────────
 
 fun Paciente.esMasculino(): Boolean = sexo.equals("Masculino", ignoreCase = true)
 fun Paciente.esFemenino(): Boolean = sexo.equals("Femenino", ignoreCase = true)
 
-fun Paciente.colorAvatarAlpha(): Float = when {
-    esMasculino() -> 0.12f
-    esFemenino() -> 0.12f
-    else -> 0.12f
-}

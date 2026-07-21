@@ -22,8 +22,7 @@ internal class FakeSharedPreferences : SharedPreferences {
     override fun getLong(key: String, defValue: Long): Long = (map[key] as? Long) ?: defValue
     override fun getFloat(key: String, defValue: Float): Float = (map[key] as? Float) ?: defValue
     override fun getBoolean(key: String, defValue: Boolean): Boolean = (map[key] as? Boolean) ?: defValue
-    override fun getStringSet(key: String, defValue: Set<String>?): Set<String>? =
-        (map[key] as? Set<*>)?.filterIsInstance<String>()?.toSet() ?: defValue
+    override fun getStringSet(key: String, defValue: Set<String>?): Set<String>? = (map[key] as? Set<*>)?.filterIsInstance<String>()?.toSet() ?: defValue
     override fun contains(key: String): Boolean = map.containsKey(key)
 
     // --- listeners (stub — not used by SecurityManager) ---
@@ -46,29 +45,21 @@ internal class FakeSharedPreferences : SharedPreferences {
         private val pendingRemovals = mutableSetOf<String>()
         private var clearAll = false
 
-        override fun putString(key: String, value: String?): SharedPreferences.Editor =
-            apply { pending[key] = value }
+        override fun putString(key: String, value: String?): SharedPreferences.Editor = apply { pending[key] = value }
 
-        override fun putInt(key: String, value: Int): SharedPreferences.Editor =
-            apply { pending[key] = value }
+        override fun putInt(key: String, value: Int): SharedPreferences.Editor = apply { pending[key] = value }
 
-        override fun putLong(key: String, value: Long): SharedPreferences.Editor =
-            apply { pending[key] = value }
+        override fun putLong(key: String, value: Long): SharedPreferences.Editor = apply { pending[key] = value }
 
-        override fun putFloat(key: String, value: Float): SharedPreferences.Editor =
-            apply { pending[key] = value }
+        override fun putFloat(key: String, value: Float): SharedPreferences.Editor = apply { pending[key] = value }
 
-        override fun putBoolean(key: String, value: Boolean): SharedPreferences.Editor =
-            apply { pending[key] = value }
+        override fun putBoolean(key: String, value: Boolean): SharedPreferences.Editor = apply { pending[key] = value }
 
-        override fun putStringSet(key: String, value: Set<String>?): SharedPreferences.Editor =
-            apply { pending[key] = value }
+        override fun putStringSet(key: String, value: Set<String>?): SharedPreferences.Editor = apply { pending[key] = value }
 
-        override fun remove(key: String): SharedPreferences.Editor =
-            apply { pendingRemovals.add(key) }
+        override fun remove(key: String): SharedPreferences.Editor = apply { pendingRemovals.add(key) }
 
-        override fun clear(): SharedPreferences.Editor =
-            apply { clearAll = true }
+        override fun clear(): SharedPreferences.Editor = apply { clearAll = true }
 
         override fun commit(): Boolean {
             apply()

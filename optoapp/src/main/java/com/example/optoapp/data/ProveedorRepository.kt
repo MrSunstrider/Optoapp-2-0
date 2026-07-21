@@ -15,20 +15,16 @@ import javax.inject.Singleton
 open class ProveedorRepository @Inject constructor(
     private val proveedorDao: ProveedorDao,
     private val monturaProveedorDao: MonturaProveedorDao,
-    private val categoriaMonturaDao: CategoriaMonturaDao
+    private val categoriaMonturaDao: CategoriaMonturaDao,
 ) {
 
-    fun getActivosByOptica(opticaId: String): Flow<List<Proveedor>> =
-        proveedorDao.getActivosByOptica(opticaId)
+    fun getActivosByOptica(opticaId: String): Flow<List<Proveedor>> = proveedorDao.getActivosByOptica(opticaId)
 
-    suspend fun getListByOptica(opticaId: String): List<Proveedor> =
-        proveedorDao.getListByOptica(opticaId)
+    suspend fun getListByOptica(opticaId: String): List<Proveedor> = proveedorDao.getListByOptica(opticaId)
 
-    suspend fun getById(id: String): Proveedor? =
-        proveedorDao.getById(id)
+    suspend fun getById(id: String): Proveedor? = proveedorDao.getById(id)
 
-    open suspend fun insert(proveedor: Proveedor) =
-        proveedorDao.insert(proveedor)
+    open suspend fun insert(proveedor: Proveedor) = proveedorDao.insert(proveedor)
 
     open suspend fun update(proveedor: Proveedor) {
         val stamped = proveedor.copy(updatedAt = Instant.now().toString())
@@ -38,7 +34,7 @@ open class ProveedorRepository @Inject constructor(
             telefono = stamped.telefono, email = stamped.email,
             direccion = stamped.direccion, contacto = stamped.contacto,
             activo = stamped.activo, updatedAt = stamped.updatedAt,
-            updatedBy = stamped.updatedBy
+            updatedBy = stamped.updatedBy,
         )
     }
 
@@ -51,18 +47,15 @@ open class ProveedorRepository @Inject constructor(
             telefono = stamped.telefono, email = stamped.email,
             direccion = stamped.direccion, contacto = stamped.contacto,
             activo = stamped.activo, updatedAt = stamped.updatedAt,
-            updatedBy = stamped.updatedBy
+            updatedBy = stamped.updatedBy,
         )
     }
 
-    fun getProveedoresByMontura(monturaId: String): Flow<List<MonturaProveedor>> =
-        monturaProveedorDao.getByMontura(monturaId)
+    fun getProveedoresByMontura(monturaId: String): Flow<List<MonturaProveedor>> = monturaProveedorDao.getByMontura(monturaId)
 
-    suspend fun getProveedorLinksByProveedor(proveedorId: String): List<MonturaProveedor> =
-        monturaProveedorDao.getByProveedor(proveedorId)
+    suspend fun getProveedorLinksByProveedor(proveedorId: String): List<MonturaProveedor> = monturaProveedorDao.getByProveedor(proveedorId)
 
-    open suspend fun linkMonturaProveedor(link: MonturaProveedor) =
-        monturaProveedorDao.insert(link)
+    open suspend fun linkMonturaProveedor(link: MonturaProveedor) = monturaProveedorDao.insert(link)
 
     open suspend fun unlinkMonturaProveedor(id: String) {
         val existing = monturaProveedorDao.getById(id) ?: return
@@ -73,20 +66,18 @@ open class ProveedorRepository @Inject constructor(
         monturaProveedorDao.update(link)
     }
 
-    fun getCategoriasByOptica(opticaId: String): Flow<List<CategoriaMontura>> =
-        categoriaMonturaDao.getByOptica(opticaId)
+    fun getCategoriasByOptica(opticaId: String): Flow<List<CategoriaMontura>> = categoriaMonturaDao.getByOptica(opticaId)
 
-    suspend fun getCategoriaListByOptica(opticaId: String): List<CategoriaMontura> =
-        categoriaMonturaDao.getListByOptica(opticaId)
+    suspend fun getCategoriaListByOptica(opticaId: String): List<CategoriaMontura> = categoriaMonturaDao.getListByOptica(opticaId)
 
-    open suspend fun insertCategoria(categoria: CategoriaMontura) =
-        categoriaMonturaDao.insert(categoria)
+    open suspend fun insertCategoria(categoria: CategoriaMontura) = categoriaMonturaDao.insert(categoria)
 
-    open suspend fun updateCategoria(categoria: CategoriaMontura) =
-        categoriaMonturaDao.update(
-            id = categoria.id, opticaId = categoria.opticaId,
-            nombre = categoria.nombre, descripcion = categoria.descripcion
-        )
+    open suspend fun updateCategoria(categoria: CategoriaMontura) = categoriaMonturaDao.update(
+        id = categoria.id,
+        opticaId = categoria.opticaId,
+        nombre = categoria.nombre,
+        descripcion = categoria.descripcion,
+    )
 
     open suspend fun upsertProveedor(proveedor: Proveedor) {
         val existing = proveedorDao.getById(proveedor.id)
@@ -97,7 +88,7 @@ open class ProveedorRepository @Inject constructor(
                 telefono = proveedor.telefono, email = proveedor.email,
                 direccion = proveedor.direccion, contacto = proveedor.contacto,
                 activo = proveedor.activo, updatedAt = proveedor.updatedAt,
-                updatedBy = proveedor.updatedBy
+                updatedBy = proveedor.updatedBy,
             )
         } else {
             runCatching { proveedorDao.insert(proveedor) }
@@ -107,8 +98,10 @@ open class ProveedorRepository @Inject constructor(
     open suspend fun upsertCategoria(categoria: CategoriaMontura) {
         runCatching { categoriaMonturaDao.insert(categoria) }.onFailure {
             categoriaMonturaDao.update(
-                id = categoria.id, opticaId = categoria.opticaId,
-                nombre = categoria.nombre, descripcion = categoria.descripcion
+                id = categoria.id,
+                opticaId = categoria.opticaId,
+                nombre = categoria.nombre,
+                descripcion = categoria.descripcion,
             )
         }
     }

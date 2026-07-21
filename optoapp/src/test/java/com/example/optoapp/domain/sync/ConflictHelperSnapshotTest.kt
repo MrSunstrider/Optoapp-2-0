@@ -2,19 +2,16 @@ package com.example.optoapp.domain.sync
 
 import com.example.optoapp.data.ConflictDao
 import com.example.optoapp.data.SyncStateTracker
+import io.github.jan.supabase.SupabaseClient
+import io.mockk.Runs
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.just
 import io.mockk.mockk
-import io.mockk.Runs
-import io.mockk.slot
-import io.github.jan.supabase.SupabaseClient
 import kotlinx.coroutines.runBlocking
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonObject
+import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
-import org.junit.Assert.*
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 
@@ -45,7 +42,7 @@ class ConflictHelperSnapshotTest {
         conflictHelper = TestConflictHelper(
             supabase = supabase,
             syncStateTracker = syncStateTracker,
-            conflictDao = conflictDao
+            conflictDao = conflictDao,
         )
     }
 
@@ -62,7 +59,7 @@ class ConflictHelperSnapshotTest {
         conflictHelper.remoteRowJsons = mapOf(entityId to remoteDataJson)
 
         val localEntities = listOf(
-            LocalEntity(id = entityId, updatedAt = "2026-06-22T09:00:00Z", localData = localDataJson)
+            LocalEntity(id = entityId, updatedAt = "2026-06-22T09:00:00Z", localData = localDataJson),
         )
 
         conflictHelper.filterConflicts(tableName, opticaId, entityType, localEntities)
@@ -77,7 +74,7 @@ class ConflictHelperSnapshotTest {
                 baseSnapshot = "{}",
                 localData = localDataJson,
                 remoteData = remoteDataJson,
-                detectedAt = any()
+                detectedAt = any(),
             )
         }
     }
@@ -92,7 +89,7 @@ class ConflictHelperSnapshotTest {
         conflictHelper.remoteTimestamps = mapOf(entityId to "2026-06-22T09:00:00Z")
 
         val localEntities = listOf(
-            LocalEntity(id = entityId, updatedAt = "2026-06-22T10:00:00Z", localData = """{"id":"$entityId"}""")
+            LocalEntity(id = entityId, updatedAt = "2026-06-22T10:00:00Z", localData = """{"id":"$entityId"}"""),
         )
 
         conflictHelper.filterConflicts(tableName, opticaId, entityType, localEntities)
@@ -108,7 +105,7 @@ class ConflictHelperSnapshotTest {
                 baseSnapshot = any(),
                 localData = any(),
                 remoteData = any(),
-                detectedAt = any()
+                detectedAt = any(),
             )
         }
     }
@@ -126,7 +123,7 @@ class ConflictHelperSnapshotTest {
         conflictHelper.throwOnRemoteRowFetch = true
 
         val localEntities = listOf(
-            LocalEntity(id = entityId, updatedAt = "2026-06-22T09:00:00Z", localData = localDataJson)
+            LocalEntity(id = entityId, updatedAt = "2026-06-22T09:00:00Z", localData = localDataJson),
         )
 
         conflictHelper.filterConflicts(tableName, opticaId, entityType, localEntities)
@@ -141,7 +138,7 @@ class ConflictHelperSnapshotTest {
                 baseSnapshot = "{}",
                 localData = localDataJson,
                 remoteData = "{}",
-                detectedAt = any()
+                detectedAt = any(),
             )
         }
     }
@@ -154,7 +151,7 @@ class ConflictHelperSnapshotTest {
 private class TestConflictHelper(
     supabase: SupabaseClient,
     syncStateTracker: SyncStateTracker,
-    conflictDao: ConflictDao
+    conflictDao: ConflictDao,
 ) : ConflictHelper(supabase, syncStateTracker, conflictDao) {
 
     /** Canned remote timestamps: entityId → updatedAt string */
@@ -169,13 +166,13 @@ private class TestConflictHelper(
     override suspend fun fetchRemoteUpdatedAt(
         tableName: String,
         opticaId: String,
-        ids: List<String>
+        ids: List<String>,
     ): Map<String, String> = remoteTimestamps
 
     override suspend fun fetchRemoteRowJson(
         tableName: String,
         opticaId: String,
-        entityId: String
+        entityId: String,
     ): String {
         if (throwOnRemoteRowFetch) throw RuntimeException("Simulated network error")
         return remoteRowJsons[entityId] ?: "{}"

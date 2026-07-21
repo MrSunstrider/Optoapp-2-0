@@ -25,7 +25,7 @@ import com.example.optoapp.viewmodel.MonturaFormState
 fun MonturaEditForm(
     form: MonturaFormState,
     onUpdate: (MonturaFormState) -> Unit,
-    error: String?
+    error: String?,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         if (!error.isNullOrBlank()) {
@@ -34,26 +34,26 @@ fun MonturaEditForm(
                 color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodySmall,
                 fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(bottom = 8.dp)
+                modifier = Modifier.padding(bottom = 8.dp),
             )
         }
         OptoTextField(
             value = form.sku,
             onValueChange = { v -> onUpdate(form.copy(sku = v)) },
             label = "SKU * (Código único)",
-            isError = error?.contains("SKU", ignoreCase = true) == true
+            isError = error?.contains("SKU", ignoreCase = true) == true,
         )
         OptoTextField(
             value = form.marca,
             onValueChange = { v -> onUpdate(form.copy(marca = v)) },
             label = "Marca / Fabricante *",
-            isError = error?.contains("Marca", ignoreCase = true) == true
+            isError = error?.contains("Marca", ignoreCase = true) == true,
         )
         OptoTextField(
             value = form.modelo,
             onValueChange = { v -> onUpdate(form.copy(modelo = v)) },
             label = "Modelo / Nombre Producto *",
-            isError = error?.contains("Modelo", ignoreCase = true) == true
+            isError = error?.contains("Modelo", ignoreCase = true) == true,
         )
         OptoTextField(form.color, { v -> onUpdate(form.copy(color = v)) }, "Color / Variedad")
         OptoTextField(form.talla, { v -> onUpdate(form.copy(talla = v)) }, "Talla / Tamaño")
@@ -79,17 +79,17 @@ fun MonturaEditForm(
                 .fillMaxWidth()
                 .clickable { expandedCatalogo = !expandedCatalogo }
                 .padding(top = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
                 "Catálogo extendido",
                 style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
             )
             Spacer(Modifier.weight(1f))
             Icon(
                 imageVector = if (expandedCatalogo) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
-                contentDescription = if (expandedCatalogo) "Collapse" else "Expand"
+                contentDescription = if (expandedCatalogo) "Collapse" else "Expand",
             )
         }
         AnimatedVisibility(visible = expandedCatalogo) {
@@ -97,19 +97,19 @@ fun MonturaEditForm(
                 DropdownField(
                     label = "Categoría",
                     selected = form.categoria,
-                    options = listOf("SOL", "GRADUADA", "DEPORTIVA", "INFANTIL")
+                    options = listOf("SOL", "GRADUADA", "DEPORTIVA", "INFANTIL"),
                 ) { opt -> onUpdate(form.copy(categoria = opt)) }
                 OptoTextField(form.coleccion, { v -> onUpdate(form.copy(coleccion = v)) }, "Colección")
                 OptoTextField(form.temporada, { v -> onUpdate(form.copy(temporada = v)) }, "Temporada")
                 DropdownField(
                     label = "Estado Comercial",
                     selected = form.estadoComercial,
-                    options = listOf("ACTIVO", "DISCONTINUADO", "PROMOCION", "PENDIENTE")
+                    options = listOf("ACTIVO", "DISCONTINUADO", "PROMOCION", "PENDIENTE"),
                 ) { opt -> onUpdate(form.copy(estadoComercial = opt)) }
                 DropdownField(
                     label = "Género",
                     selected = form.genero,
-                    options = listOf("MASCULINO", "FEMENINO", "UNISEX", "INFANTIL")
+                    options = listOf("MASCULINO", "FEMENINO", "UNISEX", "INFANTIL"),
                 ) { opt -> onUpdate(form.copy(genero = opt)) }
             }
         }
@@ -120,17 +120,17 @@ fun MonturaEditForm(
                 .fillMaxWidth()
                 .clickable { expandedProveedor = !expandedProveedor }
                 .padding(top = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
                 "Proveedor (opcional)",
                 style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
             )
             Spacer(Modifier.weight(1f))
             Icon(
                 imageVector = if (expandedProveedor) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
-                contentDescription = if (expandedProveedor) "Collapse" else "Expand"
+                contentDescription = if (expandedProveedor) "Collapse" else "Expand",
             )
         }
         AnimatedVisibility(visible = expandedProveedor) {
@@ -139,13 +139,13 @@ fun MonturaEditForm(
                     value = form.costoProveedor,
                     onValueChange = { v -> onUpdate(form.copy(costoProveedor = v)) },
                     label = "Costo proveedor",
-                    keyboardType = KeyboardType.Decimal
+                    keyboardType = KeyboardType.Decimal,
                 )
                 OptoTextField(
                     value = form.precioSugerido,
                     onValueChange = { v -> onUpdate(form.copy(precioSugerido = v)) },
                     label = "Precio sugerido",
-                    keyboardType = KeyboardType.Decimal
+                    keyboardType = KeyboardType.Decimal,
                 )
             }
         }

@@ -21,7 +21,7 @@ fun MonturaScanScreen(
     progressMessage: String?,
     onUpdateStock: (String, Int) -> Unit,
     onClose: () -> Unit,
-    onBack: () -> Unit
+    onBack: () -> Unit,
 ) {
     val canClose = session.estado == "EN_PROGRESO"
 
@@ -29,19 +29,19 @@ fun MonturaScanScreen(
         Row(
             Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Column {
                 Text(
                     text = "Conteo: ${session.fecha}",
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.SemiBold,
                 )
                 if (progressMessage != null) {
                     Text(
                         text = progressMessage,
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary
+                        color = MaterialTheme.colorScheme.primary,
                     )
                 }
             }
@@ -54,14 +54,14 @@ fun MonturaScanScreen(
         val total = detalles.size
         LinearProgressIndicator(
             progress = { if (total > 0) counted.toFloat() / total else 0f },
-            modifier = Modifier.fillMaxWidth().height(6.dp)
+            modifier = Modifier.fillMaxWidth().height(6.dp),
         )
 
         Spacer(Modifier.height(16.dp))
 
         LazyColumn(
             verticalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.weight(1f),
         ) {
             itemsIndexed(detalles) { _, detalle ->
                 DetalleRow(detalle) { stock ->
@@ -75,7 +75,7 @@ fun MonturaScanScreen(
             Button(
                 onClick = onClose,
                 modifier = Modifier.fillMaxWidth(),
-                enabled = counted > 0
+                enabled = counted > 0,
             ) {
                 Text("Completar conteo y ajustar stock")
             }
@@ -83,13 +83,13 @@ fun MonturaScanScreen(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant
-                )
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                ),
             ) {
                 Text(
                     text = "Conteo completado — solo lectura",
                     modifier = Modifier.padding(16.dp),
-                    style = MaterialTheme.typography.bodyMedium
+                    style = MaterialTheme.typography.bodyMedium,
                 )
             }
         }
@@ -106,18 +106,18 @@ private fun DetalleRow(detalle: InventarioFisicoDetalle, onUpdate: (Int) -> Unit
         Row(
             Modifier.padding(12.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(Modifier.weight(1f)) {
                 Text(
                     text = detalle.monturaId,
                     style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.SemiBold,
                 )
                 Text(
                     text = "Sistema: ${detalle.stockSistema}",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 detalle.diferencia?.let { diff ->
                     val color = when {
@@ -128,7 +128,7 @@ private fun DetalleRow(detalle: InventarioFisicoDetalle, onUpdate: (Int) -> Unit
                     Text(
                         text = "Dif: ${if (diff > 0) "+$diff" else "$diff"}",
                         style = MaterialTheme.typography.labelSmall,
-                        color = color
+                        color = color,
                     )
                 }
             }
@@ -142,7 +142,7 @@ private fun DetalleRow(detalle: InventarioFisicoDetalle, onUpdate: (Int) -> Unit
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 singleLine = true,
                 label = { Text("Contado") },
-                enabled = detalle.stockContado == null || stockText == detalle.stockContado.toString()
+                enabled = detalle.stockContado == null || stockText == detalle.stockContado.toString(),
             )
         }
     }

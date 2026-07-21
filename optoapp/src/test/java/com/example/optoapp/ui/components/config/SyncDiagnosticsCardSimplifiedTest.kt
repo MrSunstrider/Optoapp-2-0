@@ -28,7 +28,7 @@ class SyncDiagnosticsCardSimplifiedTest {
         // After simplification: accepts SyncDiagnosticsViewModel (no Context)
         assertTrue(
             "Debe aceptar SyncDiagnosticsViewModel (encontrado: $paramNames)",
-            paramTypes.any { it.simpleName == "SyncDiagnosticsViewModel" }
+            paramTypes.any { it.simpleName == "SyncDiagnosticsViewModel" },
         )
 
         // Must NOT accept removed params (Context, List, etc.)
@@ -37,7 +37,7 @@ class SyncDiagnosticsCardSimplifiedTest {
         val violations = forbidden.filter { it in paramSimpleNames }
         assertTrue(
             "No debe aceptar parámetros: Context/lista/telemetría/loading (violaciones: $violations)",
-            violations.isEmpty()
+            violations.isEmpty(),
         )
     }
 
@@ -48,7 +48,7 @@ class SyncDiagnosticsCardSimplifiedTest {
         val methodNames = clazz.declaredMethods.map { it.name }
         assertFalse(
             "BackgroundErrorsSection debe haber sido eliminada",
-            "BackgroundErrorsSection" in methodNames
+            "BackgroundErrorsSection" in methodNames,
         )
     }
 
@@ -62,7 +62,7 @@ class SyncDiagnosticsCardSimplifiedTest {
         val methodNames = clazz.declaredMethods.map { it.name }
         assertTrue(
             "SyncDiagnosticsCard must exist after simplification",
-            "SyncDiagnosticsCard" in methodNames
+            "SyncDiagnosticsCard" in methodNames,
         )
     }
 }

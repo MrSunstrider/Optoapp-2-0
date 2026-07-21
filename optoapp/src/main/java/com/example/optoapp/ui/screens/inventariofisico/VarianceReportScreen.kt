@@ -16,7 +16,7 @@ import com.example.optoapp.data.InventarioFisicoDetalle
 fun VarianceReportScreen(
     session: InventarioFisico,
     detalles: List<InventarioFisicoDetalle>,
-    onBack: () -> Unit
+    onBack: () -> Unit,
 ) {
     val withDiffs = detalles.filter { it.diferencia != null && it.diferencia != 0 }
     val totalDiff = withDiffs.sumOf { it.diferencia ?: 0 }
@@ -26,12 +26,12 @@ fun VarianceReportScreen(
         Row(
             Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
                 text = "Reporte de diferencias",
                 style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
             )
             TextButton(onClick = onBack) { Text("Volver") }
         }
@@ -40,7 +40,7 @@ fun VarianceReportScreen(
 
         Row(
             Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly
+            horizontalArrangement = Arrangement.SpaceEvenly,
         ) {
             SummaryChip("Variantes", "$variants")
             SummaryChip("Total dif", if (totalDiff > 0) "+$totalDiff" else "$totalDiff")
@@ -68,11 +68,11 @@ fun VarianceReportScreen(
 
                 Card(
                     Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = rowColor)
+                    colors = CardDefaults.cardColors(containerColor = rowColor),
                 ) {
                     Row(
                         Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(d.monturaId, Modifier.weight(1f))
                         Text("${d.stockSistema}", Modifier.weight(0.7f))
@@ -85,7 +85,7 @@ fun VarianceReportScreen(
                                 diff < 0 -> MaterialTheme.colorScheme.error
                                 else -> MaterialTheme.colorScheme.onSurfaceVariant
                             },
-                            fontWeight = FontWeight.SemiBold
+                            fontWeight = FontWeight.SemiBold,
                         )
                     }
                 }
@@ -97,7 +97,7 @@ fun VarianceReportScreen(
                         Text(
                             "Sin diferencias — el stock físico coincide con el sistema",
                             style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
@@ -112,12 +112,12 @@ private fun SummaryChip(label: String, value: String) {
         Text(
             text = value,
             style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
         )
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }

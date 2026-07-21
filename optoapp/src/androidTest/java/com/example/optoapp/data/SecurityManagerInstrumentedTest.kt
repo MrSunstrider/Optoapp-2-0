@@ -1,9 +1,9 @@
 package com.example.optoapp.data
 
 import android.content.Context
+import androidx.datastore.preferences.core.edit
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
-import androidx.datastore.preferences.core.edit
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.coroutines.flow.first
@@ -35,7 +35,7 @@ class SecurityManagerInstrumentedTest {
             "secure_security_prefs",
             masterKey,
             EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
         )
         encryptedPrefs.edit().clear().apply()
         // Clear DataStore
@@ -84,7 +84,7 @@ class SecurityManagerInstrumentedTest {
             "secure_security_prefs",
             masterKey,
             EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
         )
         encryptedPrefs.edit().putString("user_pin", "998877").apply()
 
@@ -107,7 +107,7 @@ class SecurityManagerInstrumentedTest {
             "secure_security_prefs",
             masterKey,
             EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
         )
         encryptedPrefs.edit().putString("user_pin", "123456").apply()
 

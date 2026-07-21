@@ -77,13 +77,13 @@ class SubscriptionViewModelTest {
     private fun canAddPaciente(
         tier: SubscriptionTier,
         count: Int,
-        maxPacientes: (SubscriptionTier) -> Int
+        maxPacientes: (SubscriptionTier) -> Int,
     ): Boolean = count < maxPacientes(tier)
 
     private fun launchProPurchase(
         planCode: PlanCode,
         onSuccess: () -> Unit,
-        onError: (String) -> Unit
+        onError: (String) -> Unit,
     ) {
         // Alpha: activate PRO directly via setProFromLocalCache()
         onSuccess()

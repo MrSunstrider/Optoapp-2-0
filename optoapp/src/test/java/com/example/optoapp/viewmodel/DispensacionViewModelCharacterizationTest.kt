@@ -23,7 +23,7 @@ class DispensacionViewModelCharacterizationTest {
         }
         assertTrue(
             "DispensacionViewModel debe recibir DispensacionStockHelper como parámetro de constructor",
-            hasStockHelper
+            hasStockHelper,
         )
     }
 }

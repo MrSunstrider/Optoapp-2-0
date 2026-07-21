@@ -96,13 +96,13 @@ class ReportesViewModelOtrosPeriodosTest {
     @Test
     fun `Semanal includes Mon through Sun of current week`() = runTest(testDispatcher) {
         val inWeek = listOf(
-            DispensacionOptica(id = "mon", pacienteId = "p", fecha = currentMonday,  montoTotal = 10.0, opticaId = opticaId),
+            DispensacionOptica(id = "mon", pacienteId = "p", fecha = currentMonday, montoTotal = 10.0, opticaId = opticaId),
             DispensacionOptica(id = "wed", pacienteId = "p", fecha = currentMonday.plusDays(2), montoTotal = 20.0, opticaId = opticaId),
-            DispensacionOptica(id = "sun", pacienteId = "p", fecha = currentSunday,  montoTotal = 30.0, opticaId = opticaId)
+            DispensacionOptica(id = "sun", pacienteId = "p", fecha = currentSunday, montoTotal = 30.0, opticaId = opticaId),
         )
         val outOfWeek = listOf(
             DispensacionOptica(id = "prev-sun", pacienteId = "p", fecha = prevSunday, montoTotal = 40.0, opticaId = opticaId),
-            DispensacionOptica(id = "next-mon", pacienteId = "p", fecha = nextMonday, montoTotal = 50.0, opticaId = opticaId)
+            DispensacionOptica(id = "next-mon", pacienteId = "p", fecha = nextMonday, montoTotal = 50.0, opticaId = opticaId),
         )
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(inWeek + outOfWeek)
 
@@ -111,19 +111,26 @@ class ReportesViewModelOtrosPeriodosTest {
         viewModel.setPeriodo("Semanal")
         advanceUntilIdle()
 
-        assertEquals("Semanal should include Mon-Sun of the current week",
-            3, viewModel.allDispensaciones.value.size)
-        assertTrue("Monday should be included",
-            viewModel.allDispensaciones.value.any { it.id == "mon" })
-        assertTrue("Sunday should be included",
-            viewModel.allDispensaciones.value.any { it.id == "sun" })
+        assertEquals(
+            "Semanal should include Mon-Sun of the current week",
+            3,
+            viewModel.allDispensaciones.value.size,
+        )
+        assertTrue(
+            "Monday should be included",
+            viewModel.allDispensaciones.value.any { it.id == "mon" },
+        )
+        assertTrue(
+            "Sunday should be included",
+            viewModel.allDispensaciones.value.any { it.id == "sun" },
+        )
     }
 
     @Test
     fun `Semanal excludes prev Sunday and next Monday`() = runTest(testDispatcher) {
         val dispensaciones = listOf(
             DispensacionOptica(id = "prev-sun", pacienteId = "p", fecha = prevSunday, montoTotal = 10.0, opticaId = opticaId),
-            DispensacionOptica(id = "next-mon", pacienteId = "p", fecha = nextMonday, montoTotal = 20.0, opticaId = opticaId)
+            DispensacionOptica(id = "next-mon", pacienteId = "p", fecha = nextMonday, montoTotal = 20.0, opticaId = opticaId),
         )
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
 
@@ -138,8 +145,8 @@ class ReportesViewModelOtrosPeriodosTest {
     @Test
     fun `Semanal totalVendido sums only week dispensaciones`() = runTest(testDispatcher) {
         val dispensaciones = listOf(
-            DispensacionOptica(id = "in",  pacienteId = "p", fecha = currentMonday, montoTotal = 100.0, opticaId = opticaId),
-            DispensacionOptica(id = "out", pacienteId = "p", fecha = prevSunday,    montoTotal = 200.0, opticaId = opticaId)
+            DispensacionOptica(id = "in", pacienteId = "p", fecha = currentMonday, montoTotal = 100.0, opticaId = opticaId),
+            DispensacionOptica(id = "out", pacienteId = "p", fecha = prevSunday, montoTotal = 200.0, opticaId = opticaId),
         )
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
 
@@ -154,14 +161,14 @@ class ReportesViewModelOtrosPeriodosTest {
     @Test
     fun `Semanal cobrosPeriodo classifies across week boundary`() = runTest(testDispatcher) {
         val todasLasDispensaciones = listOf(
-            DispensacionOptica(id = "in",  pacienteId = "p", fecha = currentMonday, montoTotal = 100.0, opticaId = opticaId),
-            DispensacionOptica(id = "out", pacienteId = "p", fecha = prevSunday,    montoTotal = 100.0, opticaId = opticaId)
+            DispensacionOptica(id = "in", pacienteId = "p", fecha = currentMonday, montoTotal = 100.0, opticaId = opticaId),
+            DispensacionOptica(id = "out", pacienteId = "p", fecha = prevSunday, montoTotal = 100.0, opticaId = opticaId),
         )
         val pagos = listOf(
             // Pago for in-week dispensation → venta del período
             Pago(id = "p1", fecha = currentMonday, tipo = "Efectivo", monto = 100.0, opticaId = opticaId, dispensacionId = "in"),
             // Pago for out-of-week dispensation → cobro atrasado
-            Pago(id = "p2", fecha = currentMonday, tipo = "Efectivo", monto = 50.0,  opticaId = opticaId, dispensacionId = "out")
+            Pago(id = "p2", fecha = currentMonday, tipo = "Efectivo", monto = 50.0, opticaId = opticaId, dispensacionId = "out"),
         )
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(todasLasDispensaciones)
         every { repository.getPagosByDateRangeForOptica(any(), any(), opticaId) } returns flowOf(pagos)
@@ -171,8 +178,12 @@ class ReportesViewModelOtrosPeriodosTest {
         viewModel.setPeriodo("Semanal")
         advanceUntilIdle()
 
-        assertEquals("cobrosPeriodo should include payments from outside the week",
-            50.0, viewModel.cobrosPeriodo.value, 0.001)
+        assertEquals(
+            "cobrosPeriodo should include payments from outside the week",
+            50.0,
+            viewModel.cobrosPeriodo.value,
+            0.001,
+        )
     }
 
     @Test
@@ -183,12 +194,12 @@ class ReportesViewModelOtrosPeriodosTest {
 
         val inMonth = listOf(
             DispensacionOptica(id = "d1", pacienteId = "p", fecha = firstOfMonth, montoTotal = 10.0, opticaId = opticaId),
-            DispensacionOptica(id = "d2", pacienteId = "p", fecha = now,          montoTotal = 20.0, opticaId = opticaId),
-            DispensacionOptica(id = "d3", pacienteId = "p", fecha = lastOfMonth,  montoTotal = 30.0, opticaId = opticaId)
+            DispensacionOptica(id = "d2", pacienteId = "p", fecha = now, montoTotal = 20.0, opticaId = opticaId),
+            DispensacionOptica(id = "d3", pacienteId = "p", fecha = lastOfMonth, montoTotal = 30.0, opticaId = opticaId),
         )
         val outOfMonth = listOf(
             DispensacionOptica(id = "d4", pacienteId = "p", fecha = firstOfMonth.minusDays(1), montoTotal = 40.0, opticaId = opticaId),
-            DispensacionOptica(id = "d5", pacienteId = "p", fecha = lastOfMonth.plusDays(1),   montoTotal = 50.0, opticaId = opticaId)
+            DispensacionOptica(id = "d5", pacienteId = "p", fecha = lastOfMonth.plusDays(1), montoTotal = 50.0, opticaId = opticaId),
         )
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(inMonth + outOfMonth)
 
@@ -197,8 +208,11 @@ class ReportesViewModelOtrosPeriodosTest {
         viewModel.setPeriodo("Mensual")
         advanceUntilIdle()
 
-        assertEquals("Este mes should include only current month dates",
-            3, viewModel.allDispensaciones.value.size)
+        assertEquals(
+            "Este mes should include only current month dates",
+            3,
+            viewModel.allDispensaciones.value.size,
+        )
     }
 
     @Test
@@ -206,8 +220,8 @@ class ReportesViewModelOtrosPeriodosTest {
         val now = LocalDate.now()
         val lastMonth = now.minusMonths(1)
         val dispensaciones = listOf(
-            DispensacionOptica(id = "in",  pacienteId = "p", fecha = now,        montoTotal = 100.0, opticaId = opticaId),
-            DispensacionOptica(id = "out", pacienteId = "p", fecha = lastMonth,  montoTotal = 500.0, opticaId = opticaId)
+            DispensacionOptica(id = "in", pacienteId = "p", fecha = now, montoTotal = 100.0, opticaId = opticaId),
+            DispensacionOptica(id = "out", pacienteId = "p", fecha = lastMonth, montoTotal = 500.0, opticaId = opticaId),
         )
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
 
@@ -226,13 +240,13 @@ class ReportesViewModelOtrosPeriodosTest {
         val lastOfYear = now.withDayOfYear(now.lengthOfYear())
 
         val inYear = listOf(
-            DispensacionOptica(id = "d1", pacienteId = "p", fecha = firstOfYear,  montoTotal = 10.0, opticaId = opticaId),
-            DispensacionOptica(id = "d2", pacienteId = "p", fecha = now,          montoTotal = 20.0, opticaId = opticaId),
-            DispensacionOptica(id = "d3", pacienteId = "p", fecha = lastOfYear,   montoTotal = 30.0, opticaId = opticaId)
+            DispensacionOptica(id = "d1", pacienteId = "p", fecha = firstOfYear, montoTotal = 10.0, opticaId = opticaId),
+            DispensacionOptica(id = "d2", pacienteId = "p", fecha = now, montoTotal = 20.0, opticaId = opticaId),
+            DispensacionOptica(id = "d3", pacienteId = "p", fecha = lastOfYear, montoTotal = 30.0, opticaId = opticaId),
         )
         val outOfYear = listOf(
             DispensacionOptica(id = "d4", pacienteId = "p", fecha = firstOfYear.minusDays(1), montoTotal = 40.0, opticaId = opticaId),
-            DispensacionOptica(id = "d5", pacienteId = "p", fecha = lastOfYear.plusDays(1),   montoTotal = 50.0, opticaId = opticaId)
+            DispensacionOptica(id = "d5", pacienteId = "p", fecha = lastOfYear.plusDays(1), montoTotal = 50.0, opticaId = opticaId),
         )
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(inYear + outOfYear)
 
@@ -242,15 +256,18 @@ class ReportesViewModelOtrosPeriodosTest {
         viewModel.setAnio(now.year.toString())
         advanceUntilIdle()
 
-        assertEquals("Anual should include only current year dates",
-            3, viewModel.allDispensaciones.value.size)
+        assertEquals(
+            "Anual should include only current year dates",
+            3,
+            viewModel.allDispensaciones.value.size,
+        )
     }
 
     @Test
     fun `Anual includes only dates from the selected year`() = runTest(testDispatcher) {
         val dispensaciones = listOf(
             DispensacionOptica(id = "d2025", pacienteId = "p", fecha = LocalDate.of(2025, 6, 23), montoTotal = 10.0, opticaId = opticaId),
-            DispensacionOptica(id = "d2026", pacienteId = "p", fecha = LocalDate.of(2026, 6, 23), montoTotal = 20.0, opticaId = opticaId)
+            DispensacionOptica(id = "d2026", pacienteId = "p", fecha = LocalDate.of(2026, 6, 23), montoTotal = 20.0, opticaId = opticaId),
         )
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
 
@@ -272,7 +289,7 @@ class ReportesViewModelOtrosPeriodosTest {
     @Test
     fun `Anual with no matching year returns empty`() = runTest(testDispatcher) {
         val dispensaciones = listOf(
-            DispensacionOptica(id = "d2025", pacienteId = "p", fecha = LocalDate.of(2025, 6, 23), montoTotal = 10.0, opticaId = opticaId)
+            DispensacionOptica(id = "d2025", pacienteId = "p", fecha = LocalDate.of(2025, 6, 23), montoTotal = 10.0, opticaId = opticaId),
         )
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
 
@@ -289,7 +306,7 @@ class ReportesViewModelOtrosPeriodosTest {
     fun `Anual totalVendido reflects selected year`() = runTest(testDispatcher) {
         val dispensaciones = listOf(
             DispensacionOptica(id = "d25", pacienteId = "p", fecha = LocalDate.of(2025, 1, 1), montoTotal = 500.0, opticaId = opticaId),
-            DispensacionOptica(id = "d26", pacienteId = "p", fecha = LocalDate.of(2026, 6, 1), montoTotal = 300.0, opticaId = opticaId)
+            DispensacionOptica(id = "d26", pacienteId = "p", fecha = LocalDate.of(2026, 6, 1), montoTotal = 300.0, opticaId = opticaId),
         )
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
 
@@ -308,9 +325,9 @@ class ReportesViewModelOtrosPeriodosTest {
     @Test
     fun `Total includes all dispensaciones regardless of date`() = runTest(testDispatcher) {
         val dispensaciones = listOf(
-            DispensacionOptica(id = "d1", pacienteId = "p", fecha = LocalDate.of(2020, 1, 1),  montoTotal = 10.0, opticaId = opticaId),
-            DispensacionOptica(id = "d2", pacienteId = "p", fecha = LocalDate.now(),            montoTotal = 20.0, opticaId = opticaId),
-            DispensacionOptica(id = "d3", pacienteId = "p", fecha = LocalDate.of(2030, 12, 31), montoTotal = 30.0, opticaId = opticaId)
+            DispensacionOptica(id = "d1", pacienteId = "p", fecha = LocalDate.of(2020, 1, 1), montoTotal = 10.0, opticaId = opticaId),
+            DispensacionOptica(id = "d2", pacienteId = "p", fecha = LocalDate.now(), montoTotal = 20.0, opticaId = opticaId),
+            DispensacionOptica(id = "d3", pacienteId = "p", fecha = LocalDate.of(2030, 12, 31), montoTotal = 30.0, opticaId = opticaId),
         )
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
 
@@ -325,8 +342,8 @@ class ReportesViewModelOtrosPeriodosTest {
     @Test
     fun `Total totalVendido includes everything`() = runTest(testDispatcher) {
         val dispensaciones = listOf(
-            DispensacionOptica(id = "d1", pacienteId = "p", fecha = LocalDate.of(2020, 1, 1),  montoTotal = 100.0, opticaId = opticaId),
-            DispensacionOptica(id = "d2", pacienteId = "p", fecha = LocalDate.now(),            montoTotal = 200.0, opticaId = opticaId)
+            DispensacionOptica(id = "d1", pacienteId = "p", fecha = LocalDate.of(2020, 1, 1), montoTotal = 100.0, opticaId = opticaId),
+            DispensacionOptica(id = "d2", pacienteId = "p", fecha = LocalDate.now(), montoTotal = 200.0, opticaId = opticaId),
         )
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
 
@@ -345,14 +362,14 @@ class ReportesViewModelOtrosPeriodosTest {
     @Test
     fun `Semanal totalVendido and totalPagado include servicios extra`() = runTest(testDispatcher) {
         val dispensaciones = listOf(
-            DispensacionOptica(id = "d1", pacienteId = "p", fecha = currentMonday, montoTotal = 100.0, montoPagado = 60.0, opticaId = opticaId)
+            DispensacionOptica(id = "d1", pacienteId = "p", fecha = currentMonday, montoTotal = 100.0, montoPagado = 60.0, opticaId = opticaId),
         )
         val servicios = listOf(
-            ServicioExtra(id = "s1", descripcion = "Servicio", montoTotal = 50.0, aCuenta = 25.0, estado = "Entregado", fecha = currentMonday, opticaId = opticaId)
+            ServicioExtra(id = "s1", descripcion = "Servicio", montoTotal = 50.0, aCuenta = 25.0, estado = "Entregado", fecha = currentMonday, opticaId = opticaId),
         )
         val pagos = listOf(
             Pago(id = "pg1", fecha = currentMonday, tipo = "Efectivo", monto = 60.0, opticaId = opticaId, dispensacionId = "d1"),
-            Pago(id = "pg2", fecha = currentMonday, tipo = "Efectivo", monto = 25.0, opticaId = opticaId, servicioExtraId = "s1")
+            Pago(id = "pg2", fecha = currentMonday, tipo = "Efectivo", monto = 25.0, opticaId = opticaId, servicioExtraId = "s1"),
         )
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
         every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(servicios)
@@ -371,14 +388,14 @@ class ReportesViewModelOtrosPeriodosTest {
     fun `Mensual totalVendido and totalPagado include servicios extra`() = runTest(testDispatcher) {
         val now = LocalDate.now()
         val dispensaciones = listOf(
-            DispensacionOptica(id = "d1", pacienteId = "p", fecha = now, montoTotal = 100.0, montoPagado = 60.0, opticaId = opticaId)
+            DispensacionOptica(id = "d1", pacienteId = "p", fecha = now, montoTotal = 100.0, montoPagado = 60.0, opticaId = opticaId),
         )
         val servicios = listOf(
-            ServicioExtra(id = "s1", descripcion = "Servicio", montoTotal = 50.0, aCuenta = 25.0, estado = "Entregado", fecha = now, opticaId = opticaId)
+            ServicioExtra(id = "s1", descripcion = "Servicio", montoTotal = 50.0, aCuenta = 25.0, estado = "Entregado", fecha = now, opticaId = opticaId),
         )
         val pagos = listOf(
             Pago(id = "pg1", fecha = now, tipo = "Efectivo", monto = 60.0, opticaId = opticaId, dispensacionId = "d1"),
-            Pago(id = "pg2", fecha = now, tipo = "Efectivo", monto = 25.0, opticaId = opticaId, servicioExtraId = "s1")
+            Pago(id = "pg2", fecha = now, tipo = "Efectivo", monto = 25.0, opticaId = opticaId, servicioExtraId = "s1"),
         )
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
         every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(servicios)
@@ -397,14 +414,14 @@ class ReportesViewModelOtrosPeriodosTest {
     fun `Este año totalVendido and totalPagado include servicios extra`() = runTest(testDispatcher) {
         val now = LocalDate.now()
         val dispensaciones = listOf(
-            DispensacionOptica(id = "d1", pacienteId = "p", fecha = now, montoTotal = 100.0, montoPagado = 60.0, opticaId = opticaId)
+            DispensacionOptica(id = "d1", pacienteId = "p", fecha = now, montoTotal = 100.0, montoPagado = 60.0, opticaId = opticaId),
         )
         val servicios = listOf(
-            ServicioExtra(id = "s1", descripcion = "Servicio", montoTotal = 50.0, aCuenta = 25.0, estado = "Entregado", fecha = now, opticaId = opticaId)
+            ServicioExtra(id = "s1", descripcion = "Servicio", montoTotal = 50.0, aCuenta = 25.0, estado = "Entregado", fecha = now, opticaId = opticaId),
         )
         val pagos = listOf(
             Pago(id = "pg1", fecha = now, tipo = "Efectivo", monto = 60.0, opticaId = opticaId, dispensacionId = "d1"),
-            Pago(id = "pg2", fecha = now, tipo = "Efectivo", monto = 25.0, opticaId = opticaId, servicioExtraId = "s1")
+            Pago(id = "pg2", fecha = now, tipo = "Efectivo", monto = 25.0, opticaId = opticaId, servicioExtraId = "s1"),
         )
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
         every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(servicios)
@@ -424,14 +441,14 @@ class ReportesViewModelOtrosPeriodosTest {
     fun `Anual totalVendido and totalPagado include servicios extra`() = runTest(testDispatcher) {
         val yearDate = LocalDate.of(2025, 6, 1)
         val dispensaciones = listOf(
-            DispensacionOptica(id = "d1", pacienteId = "p", fecha = yearDate, montoTotal = 100.0, montoPagado = 60.0, opticaId = opticaId)
+            DispensacionOptica(id = "d1", pacienteId = "p", fecha = yearDate, montoTotal = 100.0, montoPagado = 60.0, opticaId = opticaId),
         )
         val servicios = listOf(
-            ServicioExtra(id = "s1", descripcion = "Servicio", montoTotal = 50.0, aCuenta = 25.0, estado = "Entregado", fecha = yearDate, opticaId = opticaId)
+            ServicioExtra(id = "s1", descripcion = "Servicio", montoTotal = 50.0, aCuenta = 25.0, estado = "Entregado", fecha = yearDate, opticaId = opticaId),
         )
         val pagos = listOf(
             Pago(id = "pg1", fecha = yearDate, tipo = "Efectivo", monto = 60.0, opticaId = opticaId, dispensacionId = "d1"),
-            Pago(id = "pg2", fecha = yearDate, tipo = "Efectivo", monto = 25.0, opticaId = opticaId, servicioExtraId = "s1")
+            Pago(id = "pg2", fecha = yearDate, tipo = "Efectivo", monto = 25.0, opticaId = opticaId, servicioExtraId = "s1"),
         )
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
         every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(servicios)
@@ -450,14 +467,14 @@ class ReportesViewModelOtrosPeriodosTest {
     @Test
     fun `Total totalVendido and totalPagado include servicios extra`() = runTest(testDispatcher) {
         val dispensaciones = listOf(
-            DispensacionOptica(id = "d1", pacienteId = "p", fecha = LocalDate.of(2020, 1, 1), montoTotal = 100.0, montoPagado = 60.0, opticaId = opticaId)
+            DispensacionOptica(id = "d1", pacienteId = "p", fecha = LocalDate.of(2020, 1, 1), montoTotal = 100.0, montoPagado = 60.0, opticaId = opticaId),
         )
         val servicios = listOf(
-            ServicioExtra(id = "s1", descripcion = "Servicio", montoTotal = 50.0, aCuenta = 25.0, estado = "Entregado", fecha = LocalDate.of(2020, 1, 1), opticaId = opticaId)
+            ServicioExtra(id = "s1", descripcion = "Servicio", montoTotal = 50.0, aCuenta = 25.0, estado = "Entregado", fecha = LocalDate.of(2020, 1, 1), opticaId = opticaId),
         )
         val pagos = listOf(
             Pago(id = "pg1", fecha = LocalDate.of(2020, 1, 1), tipo = "Efectivo", monto = 60.0, opticaId = opticaId, dispensacionId = "d1"),
-            Pago(id = "pg2", fecha = LocalDate.of(2020, 1, 1), tipo = "Efectivo", monto = 25.0, opticaId = opticaId, servicioExtraId = "s1")
+            Pago(id = "pg2", fecha = LocalDate.of(2020, 1, 1), tipo = "Efectivo", monto = 25.0, opticaId = opticaId, servicioExtraId = "s1"),
         )
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
         every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(servicios)
@@ -476,11 +493,11 @@ class ReportesViewModelOtrosPeriodosTest {
     fun `Total cobrosPeriodo is always 0`() = runTest(testDispatcher) {
         val todasLasDispensaciones = listOf(
             DispensacionOptica(id = "d1", pacienteId = "p", fecha = LocalDate.of(2020, 1, 1), montoTotal = 100.0, opticaId = opticaId),
-            DispensacionOptica(id = "d2", pacienteId = "p", fecha = LocalDate.now(),           montoTotal = 200.0, opticaId = opticaId)
+            DispensacionOptica(id = "d2", pacienteId = "p", fecha = LocalDate.now(), montoTotal = 200.0, opticaId = opticaId),
         )
         val pagos = listOf(
-            Pago(id = "p1", fecha = LocalDate.now(), tipo = "Efectivo", monto = 50.0,  opticaId = opticaId, dispensacionId = "d1"),
-            Pago(id = "p2", fecha = LocalDate.now(), tipo = "Efectivo", monto = 100.0, opticaId = opticaId, dispensacionId = "d2")
+            Pago(id = "p1", fecha = LocalDate.now(), tipo = "Efectivo", monto = 50.0, opticaId = opticaId, dispensacionId = "d1"),
+            Pago(id = "p2", fecha = LocalDate.now(), tipo = "Efectivo", monto = 100.0, opticaId = opticaId, dispensacionId = "d2"),
         )
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(todasLasDispensaciones)
         every { repository.getPagosByDateRangeForOptica(any(), any(), opticaId) } returns flowOf(pagos)
@@ -500,7 +517,7 @@ class ReportesViewModelOtrosPeriodosTest {
         val now = LocalDate.now()
         val dispensaciones = listOf(
             DispensacionOptica(id = "d1", pacienteId = "p", fecha = now, montoTotal = 100.0, opticaId = opticaId),
-            DispensacionOptica(id = "d2", pacienteId = "p", fecha = now.minusMonths(3), montoTotal = 200.0, opticaId = opticaId)
+            DispensacionOptica(id = "d2", pacienteId = "p", fecha = now.minusMonths(3), montoTotal = 200.0, opticaId = opticaId),
         )
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
 

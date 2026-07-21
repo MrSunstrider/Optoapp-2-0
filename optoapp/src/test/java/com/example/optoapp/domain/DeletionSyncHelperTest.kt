@@ -74,7 +74,7 @@ class DeletionSyncHelperTest {
         val methods = DeletionSyncHelper::class.java.declaredMethods.map { it.name }
         assertTrue(
             "Debe tener método pushPendingDeletions",
-            "pushPendingDeletions" in methods
+            "pushPendingDeletions" in methods,
         )
     }
 
@@ -83,7 +83,7 @@ class DeletionSyncHelperTest {
         val methods = DeletionSyncHelper::class.java.declaredMethods.map { it.name }
         assertTrue(
             "Debe tener método deletedIds",
-            "deletedIds" in methods
+            "deletedIds" in methods,
         )
     }
 
@@ -265,7 +265,10 @@ class DeletionSyncHelperTest {
     fun pushPendingDeletions_withPending_queriesPendingDeletions() = runBlocking {
         val opticaId = "optica-test"
         val tombstone = SyncEntityState(
-            entityType = "dispensacion", entityId = "id-1", status = "pending", opticaId = opticaId
+            entityType = "dispensacion",
+            entityId = "id-1",
+            status = "pending",
+            opticaId = opticaId,
         )
         val repository = mockk<OptoRepository>()
         val supabase = mockk<SupabaseClient>()
@@ -310,7 +313,10 @@ class DeletionSyncHelperTest {
     fun pushPendingDeletions_cancellationException_isRethrown() = runBlocking {
         val opticaId = "optica-test"
         val tombstone = SyncEntityState(
-            entityType = "dispensacion", entityId = "id-1", status = "pending", opticaId = opticaId
+            entityType = "dispensacion",
+            entityId = "id-1",
+            status = "pending",
+            opticaId = opticaId,
         )
         val repository = mockk<OptoRepository>()
         val supabase = mockk<SupabaseClient>()
@@ -338,7 +344,10 @@ class DeletionSyncHelperTest {
     fun pushPendingDeletions_ioException_isLoggedAndSkipped() = runBlocking {
         val opticaId = "optica-test"
         val tombstone = SyncEntityState(
-            entityType = "dispensacion", entityId = "id-1", status = "pending", opticaId = opticaId
+            entityType = "dispensacion",
+            entityId = "id-1",
+            status = "pending",
+            opticaId = opticaId,
         )
         val repository = mockk<OptoRepository>()
         val supabase = mockk<SupabaseClient>()
@@ -360,7 +369,10 @@ class DeletionSyncHelperTest {
     fun pushPendingDeletions_genericException_isLoggedAndSkipped() = runBlocking {
         val opticaId = "optica-test"
         val tombstone = SyncEntityState(
-            entityType = "dispensacion", entityId = "id-1", status = "pending", opticaId = opticaId
+            entityType = "dispensacion",
+            entityId = "id-1",
+            status = "pending",
+            opticaId = opticaId,
         )
         val repository = mockk<OptoRepository>()
         val supabase = mockk<SupabaseClient>()
@@ -403,23 +415,23 @@ class DeletionSyncHelperTest {
         val allFields = DeletionSyncHelper::class.java.declaredFields.map { it.name }
         assertTrue(
             "Debe existir TABLE_DISPENSACIONES como constante (found: $allFields)",
-            allFields.any { it == "TABLE_DISPENSACIONES" || it.contains("TABLE_DISPENSACIONES") }
+            allFields.any { it == "TABLE_DISPENSACIONES" || it.contains("TABLE_DISPENSACIONES") },
         )
         assertTrue(
             "Debe existir TABLE_PAGOS como constante",
-            allFields.any { it == "TABLE_PAGOS" || it.contains("TABLE_PAGOS") }
+            allFields.any { it == "TABLE_PAGOS" || it.contains("TABLE_PAGOS") },
         )
         assertTrue(
             "Debe existir TABLE_SERVICIOS como constante",
-            allFields.any { it == "TABLE_SERVICIOS" || it.contains("TABLE_SERVICIOS") }
+            allFields.any { it == "TABLE_SERVICIOS" || it.contains("TABLE_SERVICIOS") },
         )
         assertTrue(
             "Debe existir TABLE_GASTOS_OPERATIVOS como constante",
-            allFields.any { it == "TABLE_GASTOS_OPERATIVOS" || it.contains("TABLE_GASTOS_OPERATIVOS") }
+            allFields.any { it == "TABLE_GASTOS_OPERATIVOS" || it.contains("TABLE_GASTOS_OPERATIVOS") },
         )
         assertTrue(
             "Debe existir TABLE_DISPENSACION_ITEMS como constante",
-            allFields.any { it == "TABLE_DISPENSACION_ITEMS" || it.contains("TABLE_DISPENSACION_ITEMS") }
+            allFields.any { it == "TABLE_DISPENSACION_ITEMS" || it.contains("TABLE_DISPENSACION_ITEMS") },
         )
     }
 }

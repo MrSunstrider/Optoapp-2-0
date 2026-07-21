@@ -55,8 +55,10 @@ class FileShareUtilsTest {
     @Test
     fun `sendWhatsAppMessage blank phone with custom message`() {
         FileShareUtils.sendWhatsAppMessage(
-            context, "", "Hola",
-            emptyNumberMessage = "No hay teléfono"
+            context,
+            "",
+            "Hola",
+            emptyNumberMessage = "No hay teléfono",
         )
         verify(exactly = 0) { context.startActivity(any<Intent>()) }
     }

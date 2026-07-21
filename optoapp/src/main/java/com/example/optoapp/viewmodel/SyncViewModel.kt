@@ -2,51 +2,51 @@ package com.example.optoapp.viewmodel
 
 import android.content.Context
 import android.net.ConnectivityManager
-import android.util.Log
 import android.net.NetworkCapabilities
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.optoapp.data.ConflictDao
 import com.example.optoapp.data.ConflictRecord
-import com.example.optoapp.data.OptoRepository
-import com.example.optoapp.data.ProveedorRepository
-import com.example.optoapp.data.OrdenCompraRepository
-import com.example.optoapp.data.SyncEntityStateDao
-import com.example.optoapp.data.Resource
+import com.example.optoapp.data.MembershipRepository
 import com.example.optoapp.data.OpticaMembership
+import com.example.optoapp.data.OptoRepository
+import com.example.optoapp.data.OrdenCompraRepository
+import com.example.optoapp.data.ProveedorRepository
+import com.example.optoapp.data.Resource
 import com.example.optoapp.data.SessionManager
+import com.example.optoapp.data.SyncEntityStateDao
 import com.example.optoapp.data.SyncTelemetry
 import com.example.optoapp.data.SyncTelemetryRemoteRow
-import com.example.optoapp.data.MembershipRepository
-import com.example.optoapp.subscription.SubscriptionManager
-import kotlinx.coroutines.CancellationException
-import java.io.IOException
-import com.example.optoapp.util.BackgroundErrorCollector
-import com.example.optoapp.util.SyncErrorSanitizer
-import com.example.optoapp.domain.sync.BumpEntityStrategy
-import com.example.optoapp.domain.sync.SyncOrchestrator
 import com.example.optoapp.domain.SyncFinanzasUseCase
 import com.example.optoapp.domain.SyncHistorialUseCase
+import com.example.optoapp.domain.SyncInventarioFisicoUseCase
 import com.example.optoapp.domain.SyncInventarioUseCase
 import com.example.optoapp.domain.SyncInventoryKpisUseCase
+import com.example.optoapp.domain.SyncOrdenesCompraUseCase
 import com.example.optoapp.domain.SyncPacientesUseCase
 import com.example.optoapp.domain.SyncProveedoresUseCase
-import com.example.optoapp.domain.SyncOrdenesCompraUseCase
-import com.example.optoapp.domain.SyncInventarioFisicoUseCase
 import com.example.optoapp.domain.SyncSessionHelper
-import com.example.optoapp.sync.SyncGate
+import com.example.optoapp.domain.sync.BumpEntityStrategy
+import com.example.optoapp.domain.sync.SyncOrchestrator
+import com.example.optoapp.subscription.SubscriptionManager
 import com.example.optoapp.sync.PostSaveSyncScheduler
+import com.example.optoapp.sync.SyncGate
+import com.example.optoapp.util.BackgroundErrorCollector
+import com.example.optoapp.util.SyncErrorSanitizer
+import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.postgrest
-import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.withLock
+import java.io.IOException
 import javax.inject.Inject
 
 sealed class SyncState {
@@ -82,7 +82,7 @@ class SyncViewModel @Inject constructor(
     private val supabaseObserver: com.example.optoapp.domain.observer.TableObserver,
     private val bgErrorCollector: BackgroundErrorCollector,
     private val postSaveSyncScheduler: PostSaveSyncScheduler,
-    private val syncOrchestrator: SyncOrchestrator
+    private val syncOrchestrator: SyncOrchestrator,
 ) : ViewModel() {
 
     companion object {
@@ -105,7 +105,10 @@ class SyncViewModel @Inject constructor(
     val conflictCount: StateFlow<Int> = _conflictCount.asStateFlow()
 
     private val bumpStrategy = BumpEntityStrategy(
-        repository, proveedorRepository, ordenCompraRepository, sessionManager
+        repository,
+        proveedorRepository,
+        ordenCompraRepository,
+        sessionManager,
     )
 
     private var wasOffline = false
@@ -127,7 +130,7 @@ class SyncViewModel @Inject constructor(
         }
         override fun onCapabilitiesChanged(
             network: android.net.Network,
-            capabilities: NetworkCapabilities
+            capabilities: NetworkCapabilities,
         ) {
             _isOnline.value = capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
         }
@@ -178,7 +181,7 @@ class SyncViewModel @Inject constructor(
     private suspend fun syncForEntityTypeWithResult(
         opticaId: String,
         entityType: String,
-        skipUpload: Boolean
+        skipUpload: Boolean,
     ): Resource<*> = when (entityType) {
         "paciente" -> syncPacientesUseCase(opticaId, skipUpload = skipUpload, downloadAfterUpload = true)
         "evaluacion" -> syncHistorialUseCase(opticaId, skipUpload = skipUpload, downloadAfterUpload = true)
@@ -438,7 +441,7 @@ class SyncViewModel @Inject constructor(
         opticaId: String,
         status: String,
         stage: String,
-        rawError: String?
+        rawError: String?,
     ) {
         runCatching {
             val safeError = SyncErrorSanitizer.forUserMessage(rawError).take(500)
@@ -447,7 +450,7 @@ class SyncViewModel @Inject constructor(
                 lastSyncAt = java.time.OffsetDateTime.now(java.time.ZoneOffset.UTC).toString(),
                 lastStatus = status,
                 lastStage = stage,
-                lastError = if (status == "error") safeError else ""
+                lastError = if (status == "error") safeError else "",
             )
             supabase.postgrest["sync_telemetry_optica"].upsert(row)
         }.onFailure { e ->

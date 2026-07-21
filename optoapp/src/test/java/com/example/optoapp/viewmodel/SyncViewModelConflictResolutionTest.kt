@@ -13,37 +13,36 @@ import com.example.optoapp.data.ProveedorRepository
 import com.example.optoapp.data.Resource
 import com.example.optoapp.data.ServicioExtra
 import com.example.optoapp.data.SessionManager
-import com.example.optoapp.domain.FinanzasSyncResult
-import com.example.optoapp.domain.HistorialSyncResult
-import com.example.optoapp.domain.InventarioSyncResult
-import com.example.optoapp.domain.PacientesSyncResult
 import com.example.optoapp.data.SyncEntityStateDao
 import com.example.optoapp.data.SyncTelemetry
+import com.example.optoapp.domain.FinanzasSyncResult
+import com.example.optoapp.domain.HistorialSyncResult
+import com.example.optoapp.domain.InventarioFisicoSyncResult
+import com.example.optoapp.domain.InventarioSyncResult
+import com.example.optoapp.domain.OrdenesCompraSyncResult
+import com.example.optoapp.domain.PacientesSyncResult
+import com.example.optoapp.domain.ProveedoresSyncResult
 import com.example.optoapp.domain.SyncFinanzasUseCase
 import com.example.optoapp.domain.SyncHistorialUseCase
+import com.example.optoapp.domain.SyncInventarioFisicoUseCase
 import com.example.optoapp.domain.SyncInventarioUseCase
+import com.example.optoapp.domain.SyncInventoryKpisUseCase
+import com.example.optoapp.domain.SyncOrdenesCompraUseCase
 import com.example.optoapp.domain.SyncPacientesUseCase
 import com.example.optoapp.domain.SyncProveedoresUseCase
-import com.example.optoapp.domain.SyncOrdenesCompraUseCase
-import com.example.optoapp.domain.SyncInventoryKpisUseCase
-import com.example.optoapp.domain.SyncInventarioFisicoUseCase
-import com.example.optoapp.domain.ProveedoresSyncResult
-import com.example.optoapp.domain.OrdenesCompraSyncResult
-import com.example.optoapp.domain.InventarioFisicoSyncResult
 import com.example.optoapp.domain.observer.TableObserver
-import com.example.optoapp.domain.sync.SyncOrchestrator
 import com.example.optoapp.subscription.SubscriptionManager
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import com.example.optoapp.sync.SyncGate
 import com.example.optoapp.util.BackgroundErrorCollector
 import io.github.jan.supabase.SupabaseClient
+import io.mockk.Runs
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.coVerifyOrder
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkStatic
-import io.mockk.Runs
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
@@ -90,7 +89,7 @@ class SyncViewModelConflictResolutionTest {
         opticaId = testOpticaId,
         entityType = "paciente",
         localSnapshot = """{"id":"paciente-001","nombre":"Juan"}""",
-        remoteSnapshot = """{"id":"paciente-001","nombre":"Juan Remoto"}"""
+        remoteSnapshot = """{"id":"paciente-001","nombre":"Juan Remoto"}""",
     )
 
     @Before
@@ -135,22 +134,22 @@ class SyncViewModelConflictResolutionTest {
         coEvery { syncPacientesUseCase(any(), any(), any()) } returns Resource.Success(PacientesSyncResult(0, 0))
         coEvery { syncHistorialUseCase(any(), any(), any()) } returns Resource.Success(HistorialSyncResult(0, 0))
         coEvery { syncFinanzasUseCase(any(), any(), any()) } returns Resource.Success(
-            FinanzasSyncResult(uploadedDispensaciones = 0, uploadedServicios = 0, uploadedPagos = 0, downloadedDispensaciones = 0, downloadedServicios = 0, downloadedPagos = 0)
+            FinanzasSyncResult(uploadedDispensaciones = 0, uploadedServicios = 0, uploadedPagos = 0, downloadedDispensaciones = 0, downloadedServicios = 0, downloadedPagos = 0),
         )
         coEvery { syncInventarioUseCase(any(), any(), any()) } returns Resource.Success(
-            InventarioSyncResult(uploadedMonturas = 0, uploadedMovimientos = 0, downloadedMonturas = 0, downloadedMovimientos = 0)
+            InventarioSyncResult(uploadedMonturas = 0, uploadedMovimientos = 0, downloadedMonturas = 0, downloadedMovimientos = 0),
         )
         coEvery { syncProveedoresUseCase(any(), any(), any()) } returns Resource.Success(
-            ProveedoresSyncResult(0, 0, 0, 0)
+            ProveedoresSyncResult(0, 0, 0, 0),
         )
         coEvery { syncOrdenesCompraUseCase(any(), any(), any()) } returns Resource.Success(
-            OrdenesCompraSyncResult(0, 0, 0, 0)
+            OrdenesCompraSyncResult(0, 0, 0, 0),
         )
         coEvery { syncInventarioFisicoUseCase(any(), any(), any()) } returns Resource.Success(
-            InventarioFisicoSyncResult(0, 0, 0, 0)
+            InventarioFisicoSyncResult(0, 0, 0, 0),
         )
         coEvery { syncInventoryKpisUseCase(any()) } returns Resource.Success(
-            com.example.optoapp.domain.InventoryKpiSummary(0, 0, emptyList(), null)
+            com.example.optoapp.domain.InventoryKpiSummary(0, 0, emptyList(), null),
         )
 
         coEvery { conflictDao.resolveConflict(any(), any()) } just Runs
@@ -181,7 +180,7 @@ class SyncViewModelConflictResolutionTest {
             supabaseObserver = supabaseObserver,
             bgErrorCollector = bgErrorCollector,
             postSaveSyncScheduler = postSaveSyncScheduler,
-            syncOrchestrator = mockk(relaxed = true)
+            syncOrchestrator = mockk(relaxed = true),
         )
     }
 
@@ -215,7 +214,7 @@ class SyncViewModelConflictResolutionTest {
             syncPacientesUseCase(
                 opticaId = testOpticaId,
                 skipUpload = false,
-                downloadAfterUpload = true
+                downloadAfterUpload = true,
             )
         }
     }
@@ -256,7 +255,7 @@ class SyncViewModelConflictResolutionTest {
         opticaId = testOpticaId,
         entityType = "servicio_extra",
         localSnapshot = """{"id":"$entityId","descripcion":"Consulta"}""",
-        remoteSnapshot = """{"id":"$entityId","descripcion":"Consulta Remota"}"""
+        remoteSnapshot = """{"id":"$entityId","descripcion":"Consulta Remota"}""",
     )
 
     private fun makeDispensacionConflict(entityId: String) = ConflictRecord(
@@ -264,7 +263,7 @@ class SyncViewModelConflictResolutionTest {
         opticaId = testOpticaId,
         entityType = "dispensacion",
         localSnapshot = """{"id":"$entityId"}""",
-        remoteSnapshot = """{"id":"$entityId","remote":true}"""
+        remoteSnapshot = """{"id":"$entityId","remote":true}""",
     )
 
     private fun makePagoConflict(entityId: String) = ConflictRecord(
@@ -272,7 +271,7 @@ class SyncViewModelConflictResolutionTest {
         opticaId = testOpticaId,
         entityType = "pago",
         localSnapshot = """{"id":"$entityId","monto":100}""",
-        remoteSnapshot = """{"id":"$entityId","monto":200}"""
+        remoteSnapshot = """{"id":"$entityId","monto":200}""",
     )
 
     private fun servicio(id: String) = ServicioExtra(
@@ -282,14 +281,14 @@ class SyncViewModelConflictResolutionTest {
         aCuenta = 0.0,
         estado = "Pendiente",
         fecha = java.time.LocalDate.now(),
-        opticaId = testOpticaId
+        opticaId = testOpticaId,
     )
 
     private fun dispensacion(id: String) = DispensacionOptica(
         id = id,
         pacienteId = "pac-001",
         fecha = java.time.LocalDate.now(),
-        opticaId = testOpticaId
+        opticaId = testOpticaId,
     )
 
     private fun pago(id: String) = Pago(
@@ -298,7 +297,7 @@ class SyncViewModelConflictResolutionTest {
         tipo = "efectivo",
         monto = 100.0,
         metodoPago = "efectivo",
-        opticaId = testOpticaId
+        opticaId = testOpticaId,
     )
 
     @Test

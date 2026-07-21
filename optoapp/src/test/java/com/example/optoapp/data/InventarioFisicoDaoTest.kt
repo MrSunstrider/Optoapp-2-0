@@ -25,7 +25,7 @@ class InventarioFisicoDaoTest {
     fun setUp() {
         db = Room.inMemoryDatabaseBuilder(
             ApplicationProvider.getApplicationContext(),
-            OptoDatabase::class.java
+            OptoDatabase::class.java,
         ).allowMainThreadQueries().build()
     }
 
@@ -38,8 +38,14 @@ class InventarioFisicoDaoTest {
     @Test
     fun insertSession_and_getById() = runBlocking {
         val dao = db.inventarioFisicoDao()
-        val session = InventarioFisico(id = "if1", fecha = LocalDate.now(),
-            estado = "EN_PROGRESO", opticaId = "o1", userId = "u1", notas = "Test")
+        val session = InventarioFisico(
+            id = "if1",
+            fecha = LocalDate.now(),
+            estado = "EN_PROGRESO",
+            opticaId = "o1",
+            userId = "u1",
+            notas = "Test",
+        )
         dao.insertSession(session)
 
         val retrieved = dao.getById("if1")
@@ -52,10 +58,22 @@ class InventarioFisicoDaoTest {
     @Test
     fun getByOptica_returnsSessionsInDescOrder() = runBlocking {
         val dao = db.inventarioFisicoDao()
-        dao.insertSession(InventarioFisico(id = "if1", fecha = LocalDate.of(2026, 1, 1),
-            opticaId = "o1", userId = "u1"))
-        dao.insertSession(InventarioFisico(id = "if2", fecha = LocalDate.of(2026, 6, 17),
-            opticaId = "o1", userId = "u1"))
+        dao.insertSession(
+            InventarioFisico(
+                id = "if1",
+                fecha = LocalDate.of(2026, 1, 1),
+                opticaId = "o1",
+                userId = "u1",
+            ),
+        )
+        dao.insertSession(
+            InventarioFisico(
+                id = "if2",
+                fecha = LocalDate.of(2026, 6, 17),
+                opticaId = "o1",
+                userId = "u1",
+            ),
+        )
 
         val list = dao.getByOptica("o1").first()
         assertEquals(2, list.size)
@@ -65,10 +83,24 @@ class InventarioFisicoDaoTest {
     @Test
     fun getActiveByOptica_returnsOnlyEnProgreso() = runBlocking {
         val dao = db.inventarioFisicoDao()
-        dao.insertSession(InventarioFisico(id = "if1", fecha = LocalDate.now(),
-            estado = "EN_PROGRESO", opticaId = "o1", userId = "u1"))
-        dao.insertSession(InventarioFisico(id = "if2", fecha = LocalDate.now(),
-            estado = "COMPLETADO", opticaId = "o1", userId = "u1"))
+        dao.insertSession(
+            InventarioFisico(
+                id = "if1",
+                fecha = LocalDate.now(),
+                estado = "EN_PROGRESO",
+                opticaId = "o1",
+                userId = "u1",
+            ),
+        )
+        dao.insertSession(
+            InventarioFisico(
+                id = "if2",
+                fecha = LocalDate.now(),
+                estado = "COMPLETADO",
+                opticaId = "o1",
+                userId = "u1",
+            ),
+        )
 
         val active = dao.getActiveByOptica("o1")
         assertNotNull(active)
@@ -78,8 +110,15 @@ class InventarioFisicoDaoTest {
     @Test
     fun getActiveByOptica_returnsNullWhenNoneActive() = runBlocking {
         val dao = db.inventarioFisicoDao()
-        dao.insertSession(InventarioFisico(id = "if1", fecha = LocalDate.now(),
-            estado = "COMPLETADO", opticaId = "o1", userId = "u1"))
+        dao.insertSession(
+            InventarioFisico(
+                id = "if1",
+                fecha = LocalDate.now(),
+                estado = "COMPLETADO",
+                opticaId = "o1",
+                userId = "u1",
+            ),
+        )
 
         assertNull(dao.getActiveByOptica("o1"))
     }
@@ -87,10 +126,24 @@ class InventarioFisicoDaoTest {
     @Test
     fun updateSession_changesEstado() = runBlocking {
         val dao = db.inventarioFisicoDao()
-        dao.insertSession(InventarioFisico(id = "if1", fecha = LocalDate.now(),
-            estado = "EN_PROGRESO", opticaId = "o1", userId = "u1"))
-        dao.updateSession(InventarioFisico(id = "if1", fecha = LocalDate.now(),
-            estado = "COMPLETADO", opticaId = "o1", userId = "u1"))
+        dao.insertSession(
+            InventarioFisico(
+                id = "if1",
+                fecha = LocalDate.now(),
+                estado = "EN_PROGRESO",
+                opticaId = "o1",
+                userId = "u1",
+            ),
+        )
+        dao.updateSession(
+            InventarioFisico(
+                id = "if1",
+                fecha = LocalDate.now(),
+                estado = "COMPLETADO",
+                opticaId = "o1",
+                userId = "u1",
+            ),
+        )
 
         assertEquals("COMPLETADO", dao.getById("if1")!!.estado)
     }
@@ -98,18 +151,52 @@ class InventarioFisicoDaoTest {
     @Test
     fun insertDetalles_and_retrieve() = runBlocking {
         val dao = db.inventarioFisicoDao()
-        dao.insertSession(InventarioFisico(id = "if1", fecha = LocalDate.now(),
-            opticaId = "o1", userId = "u1"))
-        db.monturaDao().insertMontura(Montura(id = "m1", sku = "S1", marca = "A", modelo = "X",
-            color = "N", talla = "M", opticaId = "o1"))
-        db.monturaDao().insertMontura(Montura(id = "m2", sku = "S2", marca = "B", modelo = "Y",
-            color = "R", talla = "L", opticaId = "o1"))
+        dao.insertSession(
+            InventarioFisico(
+                id = "if1",
+                fecha = LocalDate.now(),
+                opticaId = "o1",
+                userId = "u1",
+            ),
+        )
+        db.monturaDao().insertMontura(
+            Montura(
+                id = "m1",
+                sku = "S1",
+                marca = "A",
+                modelo = "X",
+                color = "N",
+                talla = "M",
+                opticaId = "o1",
+            ),
+        )
+        db.monturaDao().insertMontura(
+            Montura(
+                id = "m2",
+                sku = "S2",
+                marca = "B",
+                modelo = "Y",
+                color = "R",
+                talla = "L",
+                opticaId = "o1",
+            ),
+        )
 
         val detalles = listOf(
-            InventarioFisicoDetalle(id = "d1", inventarioId = "if1",
-                monturaId = "m1", stockSistema = 10, stockContado = 8),
-            InventarioFisicoDetalle(id = "d2", inventarioId = "if1",
-                monturaId = "m2", stockSistema = 5, stockContado = 5)
+            InventarioFisicoDetalle(
+                id = "d1",
+                inventarioId = "if1",
+                monturaId = "m1",
+                stockSistema = 10,
+                stockContado = 8,
+            ),
+            InventarioFisicoDetalle(
+                id = "d2",
+                inventarioId = "if1",
+                monturaId = "m2",
+                stockSistema = 5,
+                stockContado = 5,
+            ),
         )
         dao.insertDetalles(detalles)
 
@@ -124,15 +211,46 @@ class InventarioFisicoDaoTest {
     @Test
     fun updateDetalle_changesStockContado() = runBlocking {
         val dao = db.inventarioFisicoDao()
-        dao.insertSession(InventarioFisico(id = "if1", fecha = LocalDate.now(),
-            opticaId = "o1", userId = "u1"))
-        db.monturaDao().insertMontura(Montura(id = "m1", sku = "S1", marca = "A", modelo = "X",
-            color = "N", talla = "M", opticaId = "o1"))
-        dao.insertDetalles(listOf(InventarioFisicoDetalle(id = "d1",
-            inventarioId = "if1", monturaId = "m1", stockSistema = 10)))
+        dao.insertSession(
+            InventarioFisico(
+                id = "if1",
+                fecha = LocalDate.now(),
+                opticaId = "o1",
+                userId = "u1",
+            ),
+        )
+        db.monturaDao().insertMontura(
+            Montura(
+                id = "m1",
+                sku = "S1",
+                marca = "A",
+                modelo = "X",
+                color = "N",
+                talla = "M",
+                opticaId = "o1",
+            ),
+        )
+        dao.insertDetalles(
+            listOf(
+                InventarioFisicoDetalle(
+                    id = "d1",
+                    inventarioId = "if1",
+                    monturaId = "m1",
+                    stockSistema = 10,
+                ),
+            ),
+        )
 
-        dao.updateDetalle(InventarioFisicoDetalle(id = "d1", inventarioId = "if1",
-            monturaId = "m1", stockSistema = 10, stockContado = 7, diferencia = -3))
+        dao.updateDetalle(
+            InventarioFisicoDetalle(
+                id = "d1",
+                inventarioId = "if1",
+                monturaId = "m1",
+                stockSistema = 10,
+                stockContado = 7,
+                diferencia = -3,
+            ),
+        )
 
         val detalle = dao.getDetalles("if1")[0]
         assertEquals(7, detalle.stockContado)
@@ -142,16 +260,47 @@ class InventarioFisicoDaoTest {
     @Test
     fun uniqueInventarioMontura_constraint_enforced() = runBlocking {
         val dao = db.inventarioFisicoDao()
-        dao.insertSession(InventarioFisico(id = "if1", fecha = LocalDate.now(),
-            opticaId = "o1", userId = "u1"))
-        db.monturaDao().insertMontura(Montura(id = "m1", sku = "S1", marca = "A", modelo = "X",
-            color = "N", talla = "M", opticaId = "o1"))
-        dao.insertDetalles(listOf(InventarioFisicoDetalle(id = "d1",
-            inventarioId = "if1", monturaId = "m1", stockSistema = 10)))
+        dao.insertSession(
+            InventarioFisico(
+                id = "if1",
+                fecha = LocalDate.now(),
+                opticaId = "o1",
+                userId = "u1",
+            ),
+        )
+        db.monturaDao().insertMontura(
+            Montura(
+                id = "m1",
+                sku = "S1",
+                marca = "A",
+                modelo = "X",
+                color = "N",
+                talla = "M",
+                opticaId = "o1",
+            ),
+        )
+        dao.insertDetalles(
+            listOf(
+                InventarioFisicoDetalle(
+                    id = "d1",
+                    inventarioId = "if1",
+                    monturaId = "m1",
+                    stockSistema = 10,
+                ),
+            ),
+        )
 
         try {
-            dao.insertDetalles(listOf(InventarioFisicoDetalle(id = "d2",
-                inventarioId = "if1", monturaId = "m1", stockSistema = 8)))
+            dao.insertDetalles(
+                listOf(
+                    InventarioFisicoDetalle(
+                        id = "d2",
+                        inventarioId = "if1",
+                        monturaId = "m1",
+                        stockSistema = 8,
+                    ),
+                ),
+            )
             assertTrue("Expected unique constraint violation", false)
         } catch (e: Exception) {
             // Expected: UNIQUE(inventarioId, monturaId)
@@ -163,12 +312,29 @@ class InventarioFisicoDaoTest {
     @Test
     fun fkConstraint_detalleUnaffiliatedSession_shouldFail() = runBlocking {
         val dao = db.inventarioFisicoDao()
-        db.monturaDao().insertMontura(Montura(id = "m1", sku = "S1", marca = "A", modelo = "X",
-            color = "N", talla = "M", opticaId = "o1"))
+        db.monturaDao().insertMontura(
+            Montura(
+                id = "m1",
+                sku = "S1",
+                marca = "A",
+                modelo = "X",
+                color = "N",
+                talla = "M",
+                opticaId = "o1",
+            ),
+        )
 
         try {
-            dao.insertDetalles(listOf(InventarioFisicoDetalle(id = "d1",
-                inventarioId = "nonexistent", monturaId = "m1", stockSistema = 10)))
+            dao.insertDetalles(
+                listOf(
+                    InventarioFisicoDetalle(
+                        id = "d1",
+                        inventarioId = "nonexistent",
+                        monturaId = "m1",
+                        stockSistema = 10,
+                    ),
+                ),
+            )
             assertTrue("Expected FK constraint violation", false)
         } catch (e: Exception) {
             // Expected: FOREIGN KEY(inventarioId) REFERENCES inventario_fisico(id)
@@ -178,10 +344,22 @@ class InventarioFisicoDaoTest {
     @Test
     fun getByOptica_respectsOpticaIsolation() = runBlocking {
         val dao = db.inventarioFisicoDao()
-        dao.insertSession(InventarioFisico(id = "if1", fecha = LocalDate.now(),
-            opticaId = "o1", userId = "u1"))
-        dao.insertSession(InventarioFisico(id = "if2", fecha = LocalDate.now(),
-            opticaId = "o2", userId = "u2"))
+        dao.insertSession(
+            InventarioFisico(
+                id = "if1",
+                fecha = LocalDate.now(),
+                opticaId = "o1",
+                userId = "u1",
+            ),
+        )
+        dao.insertSession(
+            InventarioFisico(
+                id = "if2",
+                fecha = LocalDate.now(),
+                opticaId = "o2",
+                userId = "u2",
+            ),
+        )
 
         val o1List = dao.getByOptica("o1").first()
         assertEquals(1, o1List.size)
@@ -192,21 +370,61 @@ class InventarioFisicoDaoTest {
     @Test
     fun getDetalles_byInventarioId_returnsOnlyOwnDetalles() = runBlocking {
         val dao = db.inventarioFisicoDao()
-        dao.insertSession(InventarioFisico(id = "if1", fecha = LocalDate.now(),
-            opticaId = "o1", userId = "u1"))
-        dao.insertSession(InventarioFisico(id = "if2", fecha = LocalDate.now(),
-            opticaId = "o1", userId = "u1"))
-        db.monturaDao().insertMontura(Montura(id = "m1", sku = "S1", marca = "A", modelo = "X",
-            color = "N", talla = "M", opticaId = "o1"))
-        db.monturaDao().insertMontura(Montura(id = "m2", sku = "S2", marca = "B", modelo = "Y",
-            color = "R", talla = "L", opticaId = "o1"))
+        dao.insertSession(
+            InventarioFisico(
+                id = "if1",
+                fecha = LocalDate.now(),
+                opticaId = "o1",
+                userId = "u1",
+            ),
+        )
+        dao.insertSession(
+            InventarioFisico(
+                id = "if2",
+                fecha = LocalDate.now(),
+                opticaId = "o1",
+                userId = "u1",
+            ),
+        )
+        db.monturaDao().insertMontura(
+            Montura(
+                id = "m1",
+                sku = "S1",
+                marca = "A",
+                modelo = "X",
+                color = "N",
+                talla = "M",
+                opticaId = "o1",
+            ),
+        )
+        db.monturaDao().insertMontura(
+            Montura(
+                id = "m2",
+                sku = "S2",
+                marca = "B",
+                modelo = "Y",
+                color = "R",
+                talla = "L",
+                opticaId = "o1",
+            ),
+        )
 
-        dao.insertDetalles(listOf(
-            InventarioFisicoDetalle(id = "d1", inventarioId = "if1",
-                monturaId = "m1", stockSistema = 10),
-            InventarioFisicoDetalle(id = "d2", inventarioId = "if2",
-                monturaId = "m2", stockSistema = 5)
-        ))
+        dao.insertDetalles(
+            listOf(
+                InventarioFisicoDetalle(
+                    id = "d1",
+                    inventarioId = "if1",
+                    monturaId = "m1",
+                    stockSistema = 10,
+                ),
+                InventarioFisicoDetalle(
+                    id = "d2",
+                    inventarioId = "if2",
+                    monturaId = "m2",
+                    stockSistema = 5,
+                ),
+            ),
+        )
 
         val if1Detalles = dao.getDetalles("if1")
         assertEquals(1, if1Detalles.size)
@@ -216,12 +434,35 @@ class InventarioFisicoDaoTest {
     @Test
     fun deleteSession_cascadeDeletesDetalles() = runBlocking {
         val dao = db.inventarioFisicoDao()
-        dao.insertSession(InventarioFisico(id = "if1", fecha = LocalDate.now(),
-            opticaId = "o1", userId = "u1"))
-        db.monturaDao().insertMontura(Montura(id = "m1", sku = "S1", marca = "A", modelo = "X",
-            color = "N", talla = "M", opticaId = "o1"))
-        dao.insertDetalles(listOf(InventarioFisicoDetalle(id = "d1",
-            inventarioId = "if1", monturaId = "m1", stockSistema = 10)))
+        dao.insertSession(
+            InventarioFisico(
+                id = "if1",
+                fecha = LocalDate.now(),
+                opticaId = "o1",
+                userId = "u1",
+            ),
+        )
+        db.monturaDao().insertMontura(
+            Montura(
+                id = "m1",
+                sku = "S1",
+                marca = "A",
+                modelo = "X",
+                color = "N",
+                talla = "M",
+                opticaId = "o1",
+            ),
+        )
+        dao.insertDetalles(
+            listOf(
+                InventarioFisicoDetalle(
+                    id = "d1",
+                    inventarioId = "if1",
+                    monturaId = "m1",
+                    stockSistema = 10,
+                ),
+            ),
+        )
 
         db.openHelper.writableDatabase.delete("inventario_fisico", "id = ?", arrayOf("if1"))
 

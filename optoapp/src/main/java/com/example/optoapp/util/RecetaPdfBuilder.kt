@@ -11,7 +11,6 @@ import android.text.TextPaint
 import androidx.core.graphics.withTranslation
 import com.example.optoapp.data.EvaluacionClinica
 import com.example.optoapp.data.Paciente
-import java.time.LocalDate
 
 /**
  * Builder para generar [PdfDocument] de fórmula optométrica / resumen clínico.
@@ -24,7 +23,7 @@ class RecetaPdfBuilder {
     private val doc = PdfDocument()
     private var pageNum = 0
     private var page = doc.startPage(
-        PdfDocument.PageInfo.Builder(PdfStyle.PAGE_W, PdfStyle.PAGE_H, ++pageNum).create()
+        PdfDocument.PageInfo.Builder(PdfStyle.PAGE_W, PdfStyle.PAGE_H, ++pageNum).create(),
     )
     private var canvas: Canvas = page.canvas
     private var y = 0f
@@ -151,7 +150,7 @@ class RecetaPdfBuilder {
             layoutText = { text, paint, width, align ->
                 layoutText(text, paint, width, align)
             },
-            advance = { d -> advance(d) }
+            advance = { d -> advance(d) },
         )
         return this
     }
@@ -198,8 +197,10 @@ class RecetaPdfBuilder {
         val blockTop = y
         // Section bar
         val barRect = RectF(
-            PdfStyle.MARGIN, blockTop,
-            PdfStyle.MARGIN + PdfStyle.SECTION_BAR_W, blockTop + contentH
+            PdfStyle.MARGIN,
+            blockTop,
+            PdfStyle.MARGIN + PdfStyle.SECTION_BAR_W,
+            blockTop + contentH,
         )
         canvas.drawRoundRect(barRect, 2f, 2f, PdfStyle.sectionBarPaint)
 
@@ -211,9 +212,9 @@ class RecetaPdfBuilder {
         val triX = PdfStyle.PAGE_W - PdfStyle.MARGIN - triSize - 8f
         val triY = blockTop + 4f
         val triangle = Path().apply {
-            moveTo(triX, triY)                          // vértice superior
-            lineTo(triX + triSize / 2f, triY + triSize)  // base derecha
-            lineTo(triX - triSize / 2f, triY + triSize)  // base izquierda
+            moveTo(triX, triY) // vértice superior
+            lineTo(triX + triSize / 2f, triY + triSize) // base derecha
+            lineTo(triX - triSize / 2f, triY + triSize) // base izquierda
             close()
         }
         canvas.drawPath(triangle, PdfStyle.prismaTrianglePaint)
@@ -249,8 +250,10 @@ class RecetaPdfBuilder {
 
         val blockTop = y
         val barRect = RectF(
-            PdfStyle.MARGIN, blockTop,
-            PdfStyle.MARGIN + PdfStyle.SECTION_BAR_W, blockTop + contentH
+            PdfStyle.MARGIN,
+            blockTop,
+            PdfStyle.MARGIN + PdfStyle.SECTION_BAR_W,
+            blockTop + contentH,
         )
         canvas.drawRoundRect(barRect, 2f, 2f, PdfStyle.sectionBarPaint)
 
@@ -272,7 +275,7 @@ class RecetaPdfBuilder {
             footerText,
             PdfStyle.smallPaint,
             contentWidth(),
-            Layout.Alignment.ALIGN_CENTER
+            Layout.Alignment.ALIGN_CENTER,
         )
         val footerH = footerLayout.height + 8f
         if (!spaceAvailable(footerH)) newPage()
@@ -300,8 +303,7 @@ class RecetaPdfBuilder {
         doc.finishPage(page)
     }
 
-    private fun spaceAvailable(need: Float): Boolean =
-        y + need <= PdfStyle.PAGE_H - PdfStyle.BOTTOM_SAFE
+    private fun spaceAvailable(need: Float): Boolean = y + need <= PdfStyle.PAGE_H - PdfStyle.BOTTOM_SAFE
 
     private fun ensureSpace(need: Float) {
         if (!spaceAvailable(need)) newPage()
@@ -310,7 +312,7 @@ class RecetaPdfBuilder {
     private fun newPage() {
         finishPage()
         page = doc.startPage(
-            PdfDocument.PageInfo.Builder(PdfStyle.PAGE_W, PdfStyle.PAGE_H, ++pageNum).create()
+            PdfDocument.PageInfo.Builder(PdfStyle.PAGE_W, PdfStyle.PAGE_H, ++pageNum).create(),
         )
         canvas = page.canvas
         initPage()
@@ -324,7 +326,7 @@ class RecetaPdfBuilder {
         text: String,
         paint: TextPaint,
         width: Int,
-        align: Layout.Alignment = Layout.Alignment.ALIGN_NORMAL
+        align: Layout.Alignment = Layout.Alignment.ALIGN_NORMAL,
     ): StaticLayout = StaticLayout.Builder.obtain(text, 0, text.length, paint, width)
         .setAlignment(align)
         .setLineSpacing(0f, 1.22f)

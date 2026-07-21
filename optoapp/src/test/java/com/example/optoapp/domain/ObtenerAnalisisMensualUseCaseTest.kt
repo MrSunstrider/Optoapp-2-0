@@ -40,12 +40,14 @@ class ObtenerAnalisisMensualUseCaseTest {
         put("cobros_mes", 12000.0)
         put("margen_neto_pct", 25.5)
         putJsonArray("margen_por_categoria") {
-            add(buildJsonObject {
-                put("categoria", "Lentes")
-                put("ventas", 8000.0)
-                put("costos", 4000.0)
-                put("margen_pct", 50.0)
-            })
+            add(
+                buildJsonObject {
+                    put("categoria", "Lentes")
+                    put("ventas", 8000.0)
+                    put("costos", 4000.0)
+                    put("margen_pct", 50.0)
+                },
+            )
         }
         putJsonObject("deudores") {
             put("cantidad", 5)
@@ -89,21 +91,19 @@ class ObtenerAnalisisMensualUseCaseTest {
                 ventasCantidad = 2, ventasMontoTotal = 5000.0, ventasCostoTotal = 2000.0,
                 cobrosCantidad = 1, cobrosMontoTotal = 4000.0,
                 saldoPendienteTotal = 1000.0, saldoPendienteCantidad = 1,
-                inventarioValor = 30000.0
+                inventarioValor = 30000.0,
             ),
             ResumenDiarioEntity(
                 id = "r2", opticaId = "optica1", fecha = "2026-07-02",
                 ventasCantidad = 3, ventasMontoTotal = 7000.0, ventasCostoTotal = 3000.0,
                 cobrosCantidad = 2, cobrosMontoTotal = 5000.0,
                 saldoPendienteTotal = 2000.0, saldoPendienteCantidad = 1,
-                inventarioValor = 35000.0
-            )
+                inventarioValor = 35000.0,
+            ),
         )
 
         val useCase = object : ObtenerAnalisisMensualUseCase(mockk<Postgrest>(), dao) {
-            override suspend fun callRpc(function: String, params: JsonObject): JsonObject {
-                throw IOException("No network")
-            }
+            override suspend fun callRpc(function: String, params: JsonObject): JsonObject = throw IOException("No network")
         }
 
         val result = useCase("optica1", LocalDate.of(2026, 7, 1))
@@ -126,9 +126,7 @@ class ObtenerAnalisisMensualUseCaseTest {
     @Test
     fun unexpectedError_returnsResourceError() = runBlocking {
         val useCase = object : ObtenerAnalisisMensualUseCase(mockk<Postgrest>(), mockk()) {
-            override suspend fun callRpc(function: String, params: JsonObject): JsonObject {
-                throw RuntimeException("Unexpected")
-            }
+            override suspend fun callRpc(function: String, params: JsonObject): JsonObject = throw RuntimeException("Unexpected")
         }
 
         val result = useCase("optica1", LocalDate.of(2026, 7, 1))

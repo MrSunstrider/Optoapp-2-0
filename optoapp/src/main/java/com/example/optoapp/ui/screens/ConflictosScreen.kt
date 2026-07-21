@@ -19,9 +19,9 @@ import com.example.optoapp.data.ConflictRecord
 import com.example.optoapp.domain.sync.EntitySnapshotSerializer
 import com.example.optoapp.domain.sync.MergeInput
 import com.example.optoapp.domain.sync.ThreeWayMerge
-import com.example.optoapp.viewmodel.SyncViewModel
-import com.example.optoapp.ui.components.OptoTopAppBar
 import com.example.optoapp.ui.components.OptoCard
+import com.example.optoapp.ui.components.OptoTopAppBar
+import com.example.optoapp.viewmodel.SyncViewModel
 
 private val TYPE_LABELS = mapOf(
     "paciente" to "Paciente",
@@ -37,7 +37,7 @@ private val TYPE_LABELS = mapOf(
     "orden_compra_item" to "Ítem de orden de compra",
     "inventario_fisico" to "Inventario físico",
     "inventario_fisico_detalle" to "Detalle de inventario físico",
-    "dispensacion_item" to "Ítem de dispensación"
+    "dispensacion_item" to "Ítem de dispensación",
 )
 
 private fun entityTypeLabel(type: String): String = TYPE_LABELS[type] ?: type
@@ -46,7 +46,7 @@ private fun entityTypeLabel(type: String): String = TYPE_LABELS[type] ?: type
 @Composable
 fun ConflictosScreen(
     navController: NavController,
-    syncViewModel: SyncViewModel = hiltViewModel()
+    syncViewModel: SyncViewModel = hiltViewModel(),
 ) {
     val conflicts by syncViewModel.conflicts.collectAsState()
 
@@ -81,34 +81,34 @@ fun ConflictosScreen(
                             Text("Descartar todos")
                         }
                     }
-                }
+                },
             )
-        }
+        },
     ) { padding ->
         if (conflicts.isEmpty()) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding),
-                contentAlignment = Alignment.Center
+                contentAlignment = Alignment.Center,
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Icon(
                         Icons.Default.CheckCircle,
                         contentDescription = "Completado",
                         modifier = Modifier.size(64.dp),
-                        tint = MaterialTheme.colorScheme.primary
+                        tint = MaterialTheme.colorScheme.primary,
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
                         "No hay conflictos",
-                        style = MaterialTheme.typography.headlineSmall
+                        style = MaterialTheme.typography.headlineSmall,
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         "Todos los datos están sincronizados correctamente.",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
@@ -118,20 +118,20 @@ fun ConflictosScreen(
                     .fillMaxSize()
                     .padding(padding),
                 contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 item {
                     Text(
                         "${conflicts.size} conflicto(s) detectado(s)",
                         style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.padding(bottom = 8.dp)
+                        modifier = Modifier.padding(bottom = 8.dp),
                     )
                     Text(
                         "Dos dispositivos modificaron los mismos datos sin conexión. " +
                             "Elegí qué versión conservar.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(bottom = 16.dp)
+                        modifier = Modifier.padding(bottom = 16.dp),
                     )
                 }
 
@@ -140,7 +140,7 @@ fun ConflictosScreen(
                         conflict = conflict,
                         onKeepMine = { syncViewModel.resolveKeepMine(conflict) },
                         onAcceptTheirs = { syncViewModel.resolveAcceptTheirs(conflict) },
-                        onDismiss = { syncViewModel.dismissConflict(conflict) }
+                        onDismiss = { syncViewModel.dismissConflict(conflict) },
                     )
                 }
             }
@@ -153,25 +153,25 @@ private fun ConflictCard(
     conflict: ConflictRecord,
     onKeepMine: () -> Unit,
     onAcceptTheirs: () -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
 ) {
     OptoCard(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
-        )
+            containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f),
+        ),
     ) {
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(16.dp),
         ) {
             Row(
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                    Icon(
-                        Icons.Default.Warning,
-                        contentDescription = "Advertencia",
+                Icon(
+                    Icons.Default.Warning,
+                    contentDescription = "Advertencia",
                     tint = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(20.dp),
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
@@ -180,7 +180,7 @@ private fun ConflictCard(
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f, fill = false)
+                    modifier = Modifier.weight(1f, fill = false),
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
@@ -188,7 +188,7 @@ private fun ConflictCard(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
 
@@ -203,8 +203,8 @@ private fun ConflictCard(
                             MergeInput(
                                 baseJson = EntitySnapshotSerializer.parseSnapshot(conflict.baseSnapshot),
                                 localJson = EntitySnapshotSerializer.parseSnapshot(conflict.localData),
-                                remoteJson = EntitySnapshotSerializer.parseSnapshot(conflict.remoteData)
-                            )
+                                remoteJson = EntitySnapshotSerializer.parseSnapshot(conflict.remoteData),
+                            ),
                         )
                     }.getOrNull()
                 }
@@ -214,7 +214,7 @@ private fun ConflictCard(
                         Text(
                             "Campos en conflicto:",
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.error
+                            color = MaterialTheme.colorScheme.error,
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         mergeResult.conflictedFields.forEach { field ->
@@ -226,7 +226,7 @@ private fun ConflictCard(
                                 text = "$field: local=$localVal vs nube=$remoteVal",
                                 style = MaterialTheme.typography.bodySmall,
                                 maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
+                                overflow = TextOverflow.Ellipsis,
                             )
                         }
                     }
@@ -235,42 +235,42 @@ private fun ConflictCard(
                         Text(
                             "${mergeResult.autoMergedFields.size} campo(s) auto-mergeado(s)",
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 } else {
                     Text(
                         "Datos de conflicto disponibles",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             } else {
                 // Timestamp-based display (original behavior)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly
+                    horizontalArrangement = Arrangement.SpaceEvenly,
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text("Versión local", style = MaterialTheme.typography.labelSmall)
                         Text(
                             conflict.localSnapshot.take(19),
                             style = MaterialTheme.typography.bodySmall,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
                         )
                     }
                     Icon(
                         Icons.Default.SwapHoriz,
                         contentDescription = "Intercambiar",
                         tint = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(24.dp),
                     )
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text("Versión nube", style = MaterialTheme.typography.labelSmall)
                         Text(
                             conflict.remoteSnapshot.take(19),
                             style = MaterialTheme.typography.bodySmall,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
                         )
                     }
                 }
@@ -280,11 +280,11 @@ private fun ConflictCard(
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 OutlinedButton(
                     onClick = onKeepMine,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
                 ) {
                     Icon(Icons.Default.CloudUpload, contentDescription = "Subir", modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(4.dp))
@@ -292,7 +292,7 @@ private fun ConflictCard(
                 }
                 OutlinedButton(
                     onClick = onAcceptTheirs,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
                 ) {
                     Icon(Icons.Default.CloudDownload, contentDescription = "Descargar", modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(4.dp))

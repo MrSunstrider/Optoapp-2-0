@@ -8,7 +8,7 @@ data class ContextoFinanciero(
     val pacienteNombre: String,
     val pacienteId: String,
     val fecha: LocalDate,
-    val descripcion: String
+    val descripcion: String,
 )
 
 interface DispensacionFinancieraRepository {
@@ -25,24 +25,18 @@ interface DispensacionFinancieraRepository {
 }
 
 class DispensacionFinancieraRepositoryImpl(
-    private val optoRepository: OptoRepository
+    private val optoRepository: OptoRepository,
 ) : DispensacionFinancieraRepository {
 
     override fun runInTransaction(block: () -> Unit) {
         optoRepository.runInTransaction(block)
     }
 
-    override suspend fun <T> withTransaction(block: suspend () -> T): T {
-        return optoRepository.withTransaction(block)
-    }
+    override suspend fun <T> withTransaction(block: suspend () -> T): T = optoRepository.withTransaction(block)
 
-    override suspend fun obtenerDispensacion(dispensacionId: String): Resource<DispensacionOptica> {
-        return optoRepository.getDispensacionById(dispensacionId)
-    }
+    override suspend fun obtenerDispensacion(dispensacionId: String): Resource<DispensacionOptica> = optoRepository.getDispensacionById(dispensacionId)
 
-    override suspend fun obtenerPagos(dispensacionId: String): List<Pago> {
-        return optoRepository.getPagosByDispensacion(dispensacionId).first()
-    }
+    override suspend fun obtenerPagos(dispensacionId: String): List<Pago> = optoRepository.getPagosByDispensacion(dispensacionId).first()
 
     override suspend fun obtenerContexto(dispensacionId: String): ContextoFinanciero {
         val dispResult = optoRepository.getDispensacionById(dispensacionId)
@@ -57,7 +51,7 @@ class DispensacionFinancieraRepositoryImpl(
                 pacienteNombre = pacienteNombre,
                 pacienteId = d.pacienteId,
                 fecha = d.fecha,
-                descripcion = buildDescripcion(d)
+                descripcion = buildDescripcion(d),
             )
         }
         return ContextoFinanciero(ot = "", pacienteNombre = "", pacienteId = "", fecha = LocalDate.now(), descripcion = "")
@@ -97,5 +91,4 @@ class DispensacionFinancieraRepositoryImpl(
     override suspend fun eliminarPago(pago: Pago, opticaId: String) {
         optoRepository.deletePagoRegistrandoAnulacionEnCaja(pago, opticaId)
     }
-
 }

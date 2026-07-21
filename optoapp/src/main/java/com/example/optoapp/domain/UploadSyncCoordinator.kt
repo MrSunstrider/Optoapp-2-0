@@ -1,13 +1,11 @@
 package com.example.optoapp.domain
 
-import com.example.optoapp.util.AppLogger
-import com.example.optoapp.data.DispensacionItem
-import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.FinanzasRemoteDefaults
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.SyncStateTracker
 import com.example.optoapp.data.costobiselado.CostoBiseladoDao
 import com.example.optoapp.data.costoproducto.CostoProductoDao
+import com.example.optoapp.util.AppLogger
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.CancellationException
@@ -25,7 +23,7 @@ class UploadSyncCoordinator @Inject constructor(
     private val mergeHandler: DispensacionMergeHandler,
     private val networkRetryHelper: NetworkRetryHelper,
     private val costoProductoDao: CostoProductoDao,
-    private val costoBiseladoDao: CostoBiseladoDao
+    private val costoBiseladoDao: CostoBiseladoDao,
 ) {
     companion object {
         private const val TAG = "SyncFinanzas"
@@ -40,10 +38,10 @@ class UploadSyncCoordinator @Inject constructor(
         private const val UPSERT_BATCH_SIZE = 80
     }
 
-class UploadPreCheckFailedException(
-    message: String,
-    cause: Throwable
-) : Exception(message, cause)
+    class UploadPreCheckFailedException(
+        message: String,
+        cause: Throwable,
+    ) : Exception(message, cause)
 
     /**
      * Shared upload pipeline: chunk → retry → markSynced → track count.
@@ -58,7 +56,7 @@ class UploadPreCheckFailedException(
         batchTrackingType: String,
         rows: List<R>,
         idSelector: (R) -> String,
-        upsertBlock: suspend (List<R>) -> Unit
+        upsertBlock: suspend (List<R>) -> Unit,
     ): Int {
         if (rows.isEmpty()) {
             syncStateTracker.markSynced(opticaId, batchTrackingType, "batch")
@@ -146,7 +144,7 @@ class UploadPreCheckFailedException(
                     mergeHandler.mergeLocalDispensacionConflict(
                         opticaId = opticaId,
                         canonical = canonicalLocal,
-                        duplicate = duplicateLocal
+                        duplicate = duplicateLocal,
                     )
                 } else {
                     AppLogger.w(TAG, "OT duplicada en lote sin datos locales para fusión (dedupeKey=$dedupeKey, localId=${dispensacion.id})")
@@ -165,7 +163,7 @@ class UploadPreCheckFailedException(
                     mergeHandler.mergeLocalDispensacionConflict(
                         opticaId = opticaId,
                         canonical = canonicalLocal,
-                        duplicate = duplicateLocal
+                        duplicate = duplicateLocal,
                     )
                 } else {
                     AppLogger.w(TAG, "Conflicto de reconciliación sin datos locales para fusión ($localId -> $firstLocalId)")
@@ -294,8 +292,12 @@ class UploadPreCheckFailedException(
         val opticaRemota = opticaId.trim().ifBlank { FinanzasRemoteDefaults.OPTICA_ID_FALLBACK }
         val rows = items.map { it.toRemoto().copy(opticaId = opticaRemota) }.distinctBy { it.id }
         return executeSimpleUpsert(
-            opticaId, TABLE_DISPENSACION_ITEMS, "dispensacion_item",
-            "upload_dispensacion_items", rows, { it.id }
+            opticaId,
+            TABLE_DISPENSACION_ITEMS,
+            "dispensacion_item",
+            "upload_dispensacion_items",
+            rows,
+            { it.id },
         ) { supabase.postgrest[TABLE_DISPENSACION_ITEMS].upsert(it) }
     }
 
@@ -308,8 +310,12 @@ class UploadPreCheckFailedException(
         val opticaRemota = opticaId.trim().ifBlank { FinanzasRemoteDefaults.OPTICA_ID_FALLBACK }
         val rows = pagos.map { it.toRemoto().copy(opticaId = opticaRemota) }.distinctBy { it.id }
         return executeSimpleUpsert(
-            opticaId, TABLE_PAGOS, "pago",
-            "upload_pagos", rows, { it.id }
+            opticaId,
+            TABLE_PAGOS,
+            "pago",
+            "upload_pagos",
+            rows,
+            { it.id },
         ) { supabase.postgrest[TABLE_PAGOS].upsert(it) }
     }
 
@@ -322,8 +328,12 @@ class UploadPreCheckFailedException(
         val opticaRemota = opticaId.trim().ifBlank { FinanzasRemoteDefaults.OPTICA_ID_FALLBACK }
         val rows = localGastos.map { it.toRemoto().copy(opticaId = opticaRemota) }.distinctBy { it.id }
         return executeSimpleUpsert(
-            opticaId, TABLE_GASTOS_OPERATIVOS, "gasto_operativo",
-            "upload_gastos_operativos", rows, { it.id }
+            opticaId,
+            TABLE_GASTOS_OPERATIVOS,
+            "gasto_operativo",
+            "upload_gastos_operativos",
+            rows,
+            { it.id },
         ) { supabase.postgrest[TABLE_GASTOS_OPERATIVOS].upsert(it) }
     }
 
@@ -336,8 +346,12 @@ class UploadPreCheckFailedException(
         val opticaRemota = opticaId.trim().ifBlank { FinanzasRemoteDefaults.OPTICA_ID_FALLBACK }
         val rows = regalos.map { it.toRemoto().copy(opticaId = opticaRemota) }.distinctBy { it.id }
         return executeSimpleUpsert(
-            opticaId, TABLE_REGALOS, "regalo_dispensacion",
-            "upload_regalos", rows, { it.id }
+            opticaId,
+            TABLE_REGALOS,
+            "regalo_dispensacion",
+            "upload_regalos",
+            rows,
+            { it.id },
         ) { supabase.postgrest[TABLE_REGALOS].upsert(it) }
     }
 
@@ -350,8 +364,12 @@ class UploadPreCheckFailedException(
         val opticaRemota = opticaId.trim().ifBlank { FinanzasRemoteDefaults.OPTICA_ID_FALLBACK }
         val rows = localCostos.map { it.toRemoto().copy(opticaId = opticaRemota) }.distinctBy { it.id }
         return executeSimpleUpsert(
-            opticaId, TABLE_COSTOS_PRODUCTOS, "costo_producto",
-            "upload_costos_productos", rows, { it.id }
+            opticaId,
+            TABLE_COSTOS_PRODUCTOS,
+            "costo_producto",
+            "upload_costos_productos",
+            rows,
+            { it.id },
         ) { supabase.postgrest[TABLE_COSTOS_PRODUCTOS].upsert(it) }
     }
 
@@ -364,8 +382,12 @@ class UploadPreCheckFailedException(
         val opticaRemota = opticaId.trim().ifBlank { FinanzasRemoteDefaults.OPTICA_ID_FALLBACK }
         val rows = localBiselado.map { it.toRemoto().copy(opticaId = opticaRemota) }.distinctBy { it.id }
         return executeSimpleUpsert(
-            opticaId, TABLE_COSTOS_BISELADO, "costo_biselado",
-            "upload_costos_biselado", rows, { it.id }
+            opticaId,
+            TABLE_COSTOS_BISELADO,
+            "costo_biselado",
+            "upload_costos_biselado",
+            rows,
+            { it.id },
         ) { supabase.postgrest[TABLE_COSTOS_BISELADO].upsert(it) }
     }
 }

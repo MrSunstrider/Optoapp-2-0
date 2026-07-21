@@ -1,9 +1,9 @@
 package com.example.optoapp.ui.components
 
+import com.example.optoapp.viewmodel.AuthViewModel
 import com.example.optoapp.viewmodel.OpticaHeaderUi
 import com.example.optoapp.viewmodel.SyncState
 import com.example.optoapp.viewmodel.SyncViewModel
-import com.example.optoapp.viewmodel.AuthViewModel
 import org.junit.Assert.*
 import org.junit.Test
 
@@ -34,7 +34,7 @@ class MainDrawerContentTest {
             "Inventario",
             "Configuración",
             "Sincronizar Cloud",
-            "Cerrar Sesión"
+            "Cerrar Sesión",
         )
         assertEquals(7, items.size)
         assertTrue(items.contains("Pacientes"))
@@ -103,7 +103,7 @@ class MainDrawerContentTest {
         val methods = SyncViewModel::class.java.methods.map { it.name }
         assertTrue(
             "syncState debe ser miembro de SyncViewModel",
-            "syncState" in fields || "syncState" in methods
+            "syncState" in fields || "syncState" in methods,
         )
     }
 
@@ -113,7 +113,7 @@ class MainDrawerContentTest {
         val methods = SyncViewModel::class.java.methods.map { it.name }
         assertTrue(
             "isSilentSyncing debe ser miembro de SyncViewModel",
-            "isSilentSyncing" in fields || "isSilentSyncing" in methods
+            "isSilentSyncing" in fields || "isSilentSyncing" in methods,
         )
     }
 
@@ -122,7 +122,7 @@ class MainDrawerContentTest {
         val methods = SyncViewModel::class.java.declaredMethods.map { it.name }
         assertTrue(
             "clearSyncUiState debe ser método de SyncViewModel",
-            "clearSyncUiState" in methods
+            "clearSyncUiState" in methods,
         )
     }
 
@@ -131,7 +131,7 @@ class MainDrawerContentTest {
         val methods = SyncViewModel::class.java.declaredMethods.map { it.name }
         assertTrue(
             "performFullSync debe ser método de SyncViewModel",
-            "performFullSync" in methods
+            "performFullSync" in methods,
         )
     }
 
@@ -141,7 +141,7 @@ class MainDrawerContentTest {
         val allMethods = AuthViewModel::class.java.methods.map { it.name }
         assertTrue(
             "logout debe ser método de AuthViewModel",
-            "logout" in methods || "logout" in allMethods
+            "logout" in methods || "logout" in allMethods,
         )
     }
 
@@ -153,7 +153,7 @@ class MainDrawerContentTest {
         assertEquals(
             "nombreOptica debe ser String",
             "java.lang.String",
-            field?.type?.name
+            field?.type?.name,
         )
     }
 

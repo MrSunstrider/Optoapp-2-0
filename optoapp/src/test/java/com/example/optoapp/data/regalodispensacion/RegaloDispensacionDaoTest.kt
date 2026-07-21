@@ -2,8 +2,8 @@ package com.example.optoapp.data.regalodispensacion
 
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
-import com.example.optoapp.data.OptoDatabase
 import com.example.optoapp.data.DispensacionOptica
+import com.example.optoapp.data.OptoDatabase
 import com.example.optoapp.data.Paciente
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -27,7 +27,7 @@ class RegaloDispensacionDaoTest {
     fun setUp() {
         db = Room.inMemoryDatabaseBuilder(
             ApplicationProvider.getApplicationContext(),
-            OptoDatabase::class.java
+            OptoDatabase::class.java,
         ).allowMainThreadQueries().build()
         dao = db.regaloDispensacionDao()
     }
@@ -131,14 +131,14 @@ class RegaloDispensacionDaoTest {
         edad = 30,
         telefono = "123456789",
         fechaCreacion = LocalDate.parse("2026-07-01"),
-        opticaId = "optica1"
+        opticaId = "optica1",
     )
 
     private fun createDispensacion(id: String, pacienteId: String) = DispensacionOptica(
         id = id,
         pacienteId = pacienteId,
         fecha = LocalDate.parse("2026-07-01"),
-        opticaId = "optica1"
+        opticaId = "optica1",
     )
 
     private fun createTestRegalo(
@@ -149,7 +149,7 @@ class RegaloDispensacionDaoTest {
         costoUnitario: Double = 50.0,
         descripcion: String = "Estuche de regalo",
         motivo: String = "",
-        opticaId: String = "optica1"
+        opticaId: String = "optica1",
     ) = RegaloDispensacionEntity(
         id = id,
         dispensacionId = dispensacionId,
@@ -158,6 +158,6 @@ class RegaloDispensacionDaoTest {
         costoUnitario = costoUnitario,
         descripcion = descripcion,
         motivo = motivo,
-        opticaId = opticaId
+        opticaId = opticaId,
     )
 }

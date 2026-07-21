@@ -3,18 +3,18 @@ package com.example.optoapp.util
 import com.example.optoapp.data.MonturaMovimiento
 import com.example.optoapp.data.Resource
 import com.example.optoapp.data.montura.MonturaInventoryCoordinator
-import kotlin.math.abs
 import java.time.LocalDate
 import java.util.UUID
 import javax.inject.Inject
+import kotlin.math.abs
 
 class DispensacionStockHelper @Inject constructor(
-    private val coordinator: MonturaInventoryCoordinator
+    private val coordinator: MonturaInventoryCoordinator,
 ) {
     suspend fun adjustStock(
         monturaId: String,
         opticaId: String,
-        delta: Int
+        delta: Int,
     ): Result<Int> {
         val montura = when (val r = coordinator.getMonturaById(monturaId, opticaId)) {
             is Resource.Success -> r.data ?: return Result.failure(IllegalStateException("Montura no encontrada"))
@@ -28,9 +28,11 @@ class DispensacionStockHelper @Inject constructor(
 
         val newStock = montura.stockActual + delta
         if (newStock < 0) {
-            return Result.failure(IllegalStateException(
-                "Stock insuficiente: actual=${montura.stockActual}, delta=$delta"
-            ))
+            return Result.failure(
+                IllegalStateException(
+                    "Stock insuficiente: actual=${montura.stockActual}, delta=$delta",
+                ),
+            )
         }
 
         val affected = coordinator.adjustMonturaStock(monturaId, opticaId, delta)
@@ -49,7 +51,7 @@ class DispensacionStockHelper @Inject constructor(
         stockPrevio: Int,
         referenciaId: String,
         nota: String,
-        stockNuevo: Int? = null
+        stockNuevo: Int? = null,
     ) {
         val movimiento = MonturaMovimiento(
             id = UUID.randomUUID().toString(),
@@ -61,7 +63,7 @@ class DispensacionStockHelper @Inject constructor(
             stockNuevo = stockNuevo ?: (stockPrevio + cantidad),
             referenciaId = referenciaId,
             nota = nota,
-            opticaId = opticaId
+            opticaId = opticaId,
         )
         coordinator.insertMonturaMovimiento(movimiento)
     }
@@ -72,7 +74,7 @@ class DispensacionStockHelper @Inject constructor(
         delta: Int,
         tipo: String,
         referenciaId: String,
-        nota: String
+        nota: String,
     ): Result<Int> {
         val montura = when (val r = coordinator.getMonturaById(monturaId, opticaId)) {
             is Resource.Success -> r.data ?: return Result.failure(IllegalStateException("Montura no encontrada"))
@@ -86,9 +88,11 @@ class DispensacionStockHelper @Inject constructor(
 
         val newStock = montura.stockActual + delta
         if (newStock < 0) {
-            return Result.failure(IllegalStateException(
-                "Stock insuficiente: actual=${montura.stockActual}, delta=$delta"
-            ))
+            return Result.failure(
+                IllegalStateException(
+                    "Stock insuficiente: actual=${montura.stockActual}, delta=$delta",
+                ),
+            )
         }
 
         val affected = coordinator.adjustMonturaStock(monturaId, opticaId, delta)
@@ -102,13 +106,13 @@ class DispensacionStockHelper @Inject constructor(
                 monturaId = monturaId,
                 fecha = LocalDate.now(),
                 tipo = tipo,
-                cantidad = abs(delta),  // Always positive, representing units moved
+                cantidad = abs(delta), // Always positive, representing units moved
                 stockPrevio = montura.stockActual,
                 stockNuevo = montura.stockActual + delta,
                 referenciaId = referenciaId,
                 nota = nota,
-                opticaId = opticaId
-            )
+                opticaId = opticaId,
+            ),
         )
         return Result.success(affected)
     }

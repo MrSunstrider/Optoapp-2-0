@@ -7,7 +7,7 @@ import androidx.room.Entity
  */
 @Entity(
     tableName = "sync_entity_state",
-    primaryKeys = ["opticaId", "entityType", "entityId"]
+    primaryKeys = ["opticaId", "entityType", "entityId"],
 )
 data class SyncEntityState(
     val opticaId: String,
@@ -17,5 +17,5 @@ data class SyncEntityState(
     /** pending | synced | error */
     val status: String,
     val lastError: String = "",
-    val updatedAt: Long = System.currentTimeMillis()
+    val updatedAt: Long = System.currentTimeMillis(),
 )

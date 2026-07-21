@@ -48,20 +48,20 @@ class SyncFlowTest {
             if (isLoading) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(24.dp),
-                    strokeWidth = 2.dp
+                    strokeWidth = 2.dp,
                 )
                 Text(
                     text = "Sincronizando...",
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.SemiBold,
                 )
             } else {
                 Icon(
                     Icons.Default.CloudSync,
-                    contentDescription = null
+                    contentDescription = null,
                 )
                 Text(
                     text = "Sincronizar Cloud",
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.SemiBold,
                 )
             }
         }
@@ -73,11 +73,11 @@ class SyncFlowTest {
             Icon(
                 Icons.Default.Warning,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.error
+                tint = MaterialTheme.colorScheme.error,
             )
             Text(
                 text = message,
-                color = MaterialTheme.colorScheme.error
+                color = MaterialTheme.colorScheme.error,
             )
         }
     }
@@ -86,7 +86,7 @@ class SyncFlowTest {
     private fun SyncSuccessToast(message: String) {
         Text(
             text = message,
-            color = MaterialTheme.colorScheme.primary
+            color = MaterialTheme.colorScheme.primary,
         )
     }
 
@@ -154,7 +154,7 @@ class SyncFlowTest {
                 Icon(
                     Icons.Default.Warning,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.error
+                    tint = MaterialTheme.colorScheme.error,
                 )
                 Text("Conflictos de Sync")
             }

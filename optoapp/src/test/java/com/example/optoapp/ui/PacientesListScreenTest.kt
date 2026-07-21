@@ -1,13 +1,10 @@
 package com.example.optoapp.ui
 
-import com.example.optoapp.data.Paciente
 import com.example.optoapp.subscription.SubscriptionTier
-import com.example.optoapp.viewmodel.DeletePacienteResult
 import com.example.optoapp.viewmodel.PacienteViewModel
 import com.example.optoapp.viewmodel.SubscriptionViewModel
 import org.junit.Assert.*
 import org.junit.Test
-import java.time.LocalDate
 
 /**
  * Characterization tests for PacientesListScreen.
@@ -65,7 +62,7 @@ class PacientesListScreenTest {
         val methods = SubscriptionViewModel::class.java.methods.map { it.name }
         assertTrue(
             "canAddPaciente debe ser miembro de SubscriptionViewModel",
-            "canAddPaciente" in fields || "canAddPaciente" in methods
+            "canAddPaciente" in fields || "canAddPaciente" in methods,
         )
     }
 
@@ -75,7 +72,7 @@ class PacientesListScreenTest {
         val methods = SubscriptionViewModel::class.java.methods.map { it.name }
         assertTrue(
             "tier debe ser miembro de SubscriptionViewModel",
-            "tier" in fields || "tier" in methods
+            "tier" in fields || "tier" in methods,
         )
     }
 
@@ -85,7 +82,7 @@ class PacientesListScreenTest {
         val allMethods = SubscriptionViewModel::class.java.methods.map { it.name }
         assertTrue(
             "launchProPurchase debe ser método de SubscriptionViewModel",
-            "launchProPurchase" in methods || "launchProPurchase" in allMethods
+            "launchProPurchase" in methods || "launchProPurchase" in allMethods,
         )
     }
 
@@ -97,7 +94,7 @@ class PacientesListScreenTest {
         val methods = PacienteViewModel::class.java.methods.map { it.name }
         assertTrue(
             "pacientes state flow debe pertenecer a PacienteViewModel",
-            "pacientes" in fields || "pacientes" in methods
+            "pacientes" in fields || "pacientes" in methods,
         )
     }
 
@@ -106,7 +103,7 @@ class PacientesListScreenTest {
         val fields = PacienteViewModel::class.java.declaredFields.map { it.name }
         assertTrue(
             "searchQuery state flow debe estar en PacienteViewModel",
-            "searchQuery" in fields
+            "searchQuery" in fields,
         )
     }
 
@@ -115,7 +112,7 @@ class PacientesListScreenTest {
         val methods = PacienteViewModel::class.java.declaredMethods.map { it.name }
         assertTrue(
             "onSearchQueryChange debe ser método de PacienteViewModel",
-            "onSearchQueryChange" in methods
+            "onSearchQueryChange" in methods,
         )
     }
 
@@ -124,7 +121,7 @@ class PacientesListScreenTest {
         val methods = PacienteViewModel::class.java.declaredMethods.map { it.name }
         assertTrue(
             "setFilter debe ser método de PacienteViewModel",
-            "setFilter" in methods
+            "setFilter" in methods,
         )
     }
 

@@ -2,7 +2,6 @@ package com.example.optoapp.data
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -26,16 +25,21 @@ class SecurityManagerMigrationCharacterizationTest {
 
     @Test
     fun `PIN_LENGTH es 6`() {
-        assertEquals("La longitud de PIN debe ser exactamente 6",
-            6, SecurityManager.PIN_LENGTH)
+        assertEquals(
+            "La longitud de PIN debe ser exactamente 6",
+            6,
+            SecurityManager.PIN_LENGTH,
+        )
     }
 
     @Test
     fun `weakPinPatterns contiene 123456`() {
         // 8.1.x eliminó el caso especial de "123456" en migratePinHasBeenSet(),
         // pero isValidPin SIGUE rechazándolo como patrón débil.
-        assertFalse("\"123456\" debe estar en weakPinPatterns",
-            SecurityManager.isValidPin("123456"))
+        assertFalse(
+            "\"123456\" debe estar en weakPinPatterns",
+            SecurityManager.isValidPin("123456"),
+        )
     }
 
     // ---------------------------------------------------------------
@@ -90,7 +94,7 @@ class SecurityManagerMigrationCharacterizationTest {
         // "999999" es el fallback de desarrollo, no debe migrar flag pinHasBeenSet
         assertFalse(
             "DEV_FALLBACK_PIN no debe migrar flag pinHasBeenSet",
-            shouldMigrate(pinHasBeenSet = false, storedPin = "999999" /* was DEV_FALLBACK_PIN */)
+            shouldMigrate(pinHasBeenSet = false, storedPin = "999999" /* was DEV_FALLBACK_PIN */),
         )
     }
 
@@ -127,8 +131,10 @@ class SecurityManagerMigrationCharacterizationTest {
     @Test
     fun `ISecurityManager tiene getter pinHasBeenSet`() {
         val methods = ISecurityManager::class.java.declaredMethods.map { it.name }
-        assertTrue("pinHasBeenSet debe tener getter en ISecurityManager. Got: $methods",
-            methods.any { it == "getPinHasBeenSet" })
+        assertTrue(
+            "pinHasBeenSet debe tener getter en ISecurityManager. Got: $methods",
+            methods.any { it == "getPinHasBeenSet" },
+        )
     }
 
     // ---------------------------------------------------------------
@@ -137,8 +143,10 @@ class SecurityManagerMigrationCharacterizationTest {
 
     @Test
     fun `SecurityManager implementa ISecurityManager`() {
-        assertTrue("SecurityManager debe implementar ISecurityManager",
-            ISecurityManager::class.java.isAssignableFrom(SecurityManager::class.java))
+        assertTrue(
+            "SecurityManager debe implementar ISecurityManager",
+            ISecurityManager::class.java.isAssignableFrom(SecurityManager::class.java),
+        )
     }
 
     @Test

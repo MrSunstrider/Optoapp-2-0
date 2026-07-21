@@ -25,7 +25,7 @@ class ProveedorDaoTest {
     fun setUp() {
         db = Room.inMemoryDatabaseBuilder(
             ApplicationProvider.getApplicationContext(),
-            OptoDatabase::class.java
+            OptoDatabase::class.java,
         ).allowMainThreadQueries().build()
     }
 
@@ -38,8 +38,14 @@ class ProveedorDaoTest {
     @Test
     fun insert_and_getById_returnsCorrectProveedor() = runBlocking {
         val dao = db.proveedorDao()
-        val p = Proveedor(id = "p1", nombre = "Optical Corp", ruc = "20123456789",
-            telefono = "999888777", email = "ventas@optical.pe", opticaId = "o1")
+        val p = Proveedor(
+            id = "p1",
+            nombre = "Optical Corp",
+            ruc = "20123456789",
+            telefono = "999888777",
+            email = "ventas@optical.pe",
+            opticaId = "o1",
+        )
         dao.insert(p)
 
         val retrieved = dao.getById("p1")
@@ -99,7 +105,7 @@ class ProveedorDaoTest {
         val rows = dao.update(
             id = "p1", opticaId = "o1", nombre = "Updated", ruc = "111",
             telefono = "123", email = "", direccion = "",
-            contacto = "", activo = false, updatedAt = null, updatedBy = null
+            contacto = "", activo = false, updatedAt = null, updatedBy = null,
         )
         assertEquals(1, rows)
 
@@ -161,7 +167,7 @@ class ProveedorDaoTest {
             id = p2.id, opticaId = p2.opticaId, nombre = p2.nombre,
             ruc = p2.ruc, telefono = p2.telefono, email = p2.email,
             direccion = p2.direccion, contacto = p2.contacto,
-            activo = false, updatedAt = p2.updatedAt, updatedBy = p2.updatedBy
+            activo = false, updatedAt = p2.updatedAt, updatedBy = p2.updatedBy,
         )
 
         val after = dao.getActivosByOptica("o1").first()

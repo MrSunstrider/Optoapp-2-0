@@ -3,11 +3,9 @@ package com.example.optoapp.data
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
-import io.mockk.slot
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -27,7 +25,7 @@ class DispensacionFinancieraRepositoryTest {
         opticaId = "optica-test",
         tipoLente = "Monofocal",
         montoTotal = 150.0,
-        estadoEntrega = "Pendiente"
+        estadoEntrega = "Pendiente",
     )
 
     @Before
@@ -50,7 +48,7 @@ class DispensacionFinancieraRepositoryTest {
     @Test
     fun `obtenerPagos delegates to OptoRepository getPagosByDispensacion`() = runTest {
         val pagos = listOf(
-            Pago(id = "p-1", dispensacionId = "disp-1", fecha = testDate, tipo = "Abono", monto = 50.0, opticaId = "optica-test")
+            Pago(id = "p-1", dispensacionId = "disp-1", fecha = testDate, tipo = "Abono", monto = 50.0, opticaId = "optica-test"),
         )
         coEvery { optoRepository.getPagosByDispensacion("disp-1") } returns flowOf(pagos)
 
@@ -66,9 +64,13 @@ class DispensacionFinancieraRepositoryTest {
         coEvery { optoRepository.getDispensacionById("disp-1") } returns Resource.Success(testDispensacion)
         coEvery { optoRepository.getPacienteById("pac-1") } returns Resource.Success(
             Paciente(
-                id = "pac-1", nombreCompleto = "Juan Perez", edad = 30, telefono = "555",
-                fechaCreacion = testDate, opticaId = "optica-test"
-            )
+                id = "pac-1",
+                nombreCompleto = "Juan Perez",
+                edad = 30,
+                telefono = "555",
+                fechaCreacion = testDate,
+                opticaId = "optica-test",
+            ),
         )
 
         val result = repository.obtenerContexto("disp-1")
@@ -120,24 +122,28 @@ class DispensacionFinancieraRepositoryTest {
         repository.actualizarEstado("disp-1", "Entregado", fechaEntrega, "optica-test")
 
         coVerify {
-            optoRepository.updateDispensacion(match {
-                it.estadoEntrega == "Entregado" && it.fechaEntrega == fechaEntrega
-            })
+            optoRepository.updateDispensacion(
+                match {
+                    it.estadoEntrega == "Entregado" && it.fechaEntrega == fechaEntrega
+                },
+            )
         }
     }
 
     @Test
     fun `actualizarEstado sets fechaEntrega null when Pendiente`() = runTest {
         coEvery { optoRepository.getDispensacionById("disp-1") } returns Resource.Success(
-            testDispensacion.copy(estadoEntrega = "Entregado", fechaEntrega = LocalDate.of(2026, 7, 10))
+            testDispensacion.copy(estadoEntrega = "Entregado", fechaEntrega = LocalDate.of(2026, 7, 10)),
         )
 
         repository.actualizarEstado("disp-1", "Pendiente", null, "optica-test")
 
         coVerify {
-            optoRepository.updateDispensacion(match {
-                it.estadoEntrega == "Pendiente" && it.fechaEntrega == null
-            })
+            optoRepository.updateDispensacion(
+                match {
+                    it.estadoEntrega == "Pendiente" && it.fechaEntrega == null
+                },
+            )
         }
     }
 
@@ -150,7 +156,7 @@ class DispensacionFinancieraRepositoryTest {
             tipo = "Abono",
             monto = 50.0,
             metodoPago = "Efectivo",
-            opticaId = "optica-test"
+            opticaId = "optica-test",
         )
 
         repository.agregarPago(pago)
@@ -167,7 +173,7 @@ class DispensacionFinancieraRepositoryTest {
             tipo = "Abono",
             monto = 75.0,
             metodoPago = "Tarjeta",
-            opticaId = "optica-test"
+            opticaId = "optica-test",
         )
 
         repository.editarPago(pago)
@@ -183,12 +189,11 @@ class DispensacionFinancieraRepositoryTest {
             fecha = testDate,
             tipo = "Abono",
             monto = 50.0,
-            opticaId = "optica-test"
+            opticaId = "optica-test",
         )
 
         repository.eliminarPago(pago, "optica-test")
 
         coVerify { optoRepository.deletePagoRegistrandoAnulacionEnCaja(pago, "optica-test") }
     }
-
 }

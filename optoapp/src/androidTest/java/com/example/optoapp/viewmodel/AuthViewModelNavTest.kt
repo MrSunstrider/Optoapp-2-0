@@ -1,12 +1,12 @@
 package com.example.optoapp.viewmodel
 
 import android.content.Context
+import androidx.datastore.preferences.core.edit
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
-import androidx.datastore.preferences.core.edit
-import com.example.optoapp.data.dataStore
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.example.optoapp.data.dataStore
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -52,7 +52,7 @@ class AuthViewModelNavTest {
             "secure_security_prefs",
             masterKey,
             EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
         ).edit().clear().apply()
 
         context.dataStore.edit { it.clear() }
@@ -74,7 +74,7 @@ class AuthViewModelNavTest {
             "secure_security_prefs",
             masterKey,
             EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
         )
         encryptedPrefs.edit().clear().apply()
         context.dataStore.edit { it.clear() }

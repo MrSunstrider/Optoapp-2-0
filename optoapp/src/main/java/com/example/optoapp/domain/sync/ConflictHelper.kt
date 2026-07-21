@@ -1,16 +1,15 @@
 package com.example.optoapp.domain.sync
 
-import com.example.optoapp.util.AppLogger
 import androidx.annotation.VisibleForTesting
 import com.example.optoapp.data.ConflictDao
 import com.example.optoapp.data.MonturaMovimiento
 import com.example.optoapp.data.SyncStateTracker
+import com.example.optoapp.util.AppLogger
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import java.time.Instant
-import java.time.LocalDate
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -27,7 +26,7 @@ import javax.inject.Singleton
 open class ConflictHelper @Inject constructor(
     private val supabase: SupabaseClient,
     private val syncStateTracker: SyncStateTracker,
-    private val conflictDao: ConflictDao
+    private val conflictDao: ConflictDao,
 ) {
     companion object {
         private const val TAG = "ConflictHelper"
@@ -49,15 +48,13 @@ open class ConflictHelper @Inject constructor(
             return local >= remote
         }
 
-        private fun parseInstant(ts: String): Instant? {
-            return try {
-                Instant.parse(ts)
+        private fun parseInstant(ts: String): Instant? = try {
+            Instant.parse(ts)
+        } catch (_: Exception) {
+            try {
+                java.time.LocalDateTime.parse(ts).toInstant(java.time.ZoneOffset.UTC)
             } catch (_: Exception) {
-                try {
-                    java.time.LocalDateTime.parse(ts).toInstant(java.time.ZoneOffset.UTC)
-                } catch (_: Exception) {
-                    null
-                }
+                null
             }
         }
 
@@ -72,7 +69,7 @@ open class ConflictHelper @Inject constructor(
          */
         fun detectConflictMovimientos(
             local: List<MonturaMovimiento>,
-            remote: List<MonturaMovimiento>
+            remote: List<MonturaMovimiento>,
         ): Pair<List<String>, List<String>> {
             val remoteByKey = remote.associateBy {
                 Triple(it.referenciaId, it.tipo, it.monturaId)
@@ -113,7 +110,8 @@ open class ConflictHelper @Inject constructor(
         tableName: String,
         opticaId: String,
         entityType: String,
-        localEntities: List<LocalEntity>
+        localEntities: List<LocalEntity>,
+        remoteUpdatedAtMap: Map<String, String>? = null,
     ): List<LocalEntity> {
         if (localEntities.isEmpty()) return localEntities
 
@@ -127,7 +125,8 @@ open class ConflictHelper @Inject constructor(
         }
 
         val checkableIds = checkable.map { it.id }
-        val remoteTimestamps = fetchRemoteUpdatedAt(tableName, opticaId, checkableIds)
+        val remoteTimestamps = remoteUpdatedAtMap
+            ?: fetchRemoteUpdatedAt(tableName, opticaId, checkableIds)
 
         val safe = mutableListOf<LocalEntity>()
         for (entity in localEntities) {
@@ -159,7 +158,7 @@ open class ConflictHelper @Inject constructor(
                     remoteSnapshot = remoteUpdatedAt,
                     baseSnapshot = "{}",
                     localData = localDataJson,
-                    remoteData = remoteDataJson
+                    remoteData = remoteDataJson,
                 )
                 syncStateTracker.markConflicted(opticaId, entityType, entity.id)
             }
@@ -182,7 +181,7 @@ open class ConflictHelper @Inject constructor(
     internal open suspend fun fetchRemoteUpdatedAt(
         tableName: String,
         opticaId: String,
-        ids: List<String>
+        ids: List<String>,
     ): Map<String, String> {
         if (ids.isEmpty()) return emptyMap()
         return try {
@@ -203,17 +202,15 @@ open class ConflictHelper @Inject constructor(
     internal open suspend fun selectRemoteRows(
         tableName: String,
         opticaId: String,
-        ids: List<String>
-    ): List<RemoteTimestamp> {
-        return supabase.postgrest[tableName]
-            .select {
-                filter {
-                    eq("optica_id", opticaId)
-                    isIn("id", ids)
-                }
+        ids: List<String>,
+    ): List<RemoteTimestamp> = supabase.postgrest[tableName]
+        .select {
+            filter {
+                eq("optica_id", opticaId)
+                isIn("id", ids)
             }
-            .decodeList()
-    }
+        }
+        .decodeList()
 
     /**
      * Fetches the full remote row as a JSON string for snapshot capture.
@@ -227,22 +224,20 @@ open class ConflictHelper @Inject constructor(
     internal open suspend fun fetchRemoteRowJson(
         tableName: String,
         opticaId: String,
-        entityId: String
-    ): String {
-        return try {
-            val result = supabase.postgrest[tableName]
-                .select {
-                    filter {
-                        eq("optica_id", opticaId)
-                        eq("id", entityId)
-                    }
+        entityId: String,
+    ): String = try {
+        val result = supabase.postgrest[tableName]
+            .select {
+                filter {
+                    eq("optica_id", opticaId)
+                    eq("id", entityId)
                 }
-            val rawData = result.data
-            if (rawData.isBlank() || rawData == "[]") "{}" else rawData
-        } catch (e: Exception) {
-            AppLogger.e(TAG, "Error fetching remote row from $tableName/$entityId: ${e.message}")
-            "{}"
-        }
+            }
+        val rawData = result.data
+        if (rawData.isBlank() || rawData == "[]") "{}" else rawData
+    } catch (e: Exception) {
+        AppLogger.e(TAG, "Error fetching remote row from $tableName/$entityId: ${e.message}")
+        "{}"
     }
 
     /**
@@ -253,7 +248,7 @@ open class ConflictHelper @Inject constructor(
      */
     suspend fun filterConflictMovimientos(
         opticaId: String,
-        localMovimientos: List<MonturaMovimiento>
+        localMovimientos: List<MonturaMovimiento>,
     ): List<String> {
         if (localMovimientos.isEmpty()) return emptyList()
 
@@ -273,7 +268,7 @@ open class ConflictHelper @Inject constructor(
                 opticaId = opticaId,
                 entityType = "montura_movimiento",
                 localSnapshot = "",
-                remoteSnapshot = ""
+                remoteSnapshot = "",
             )
             syncStateTracker.markConflicted(opticaId, "montura_movimiento", id)
         }
@@ -291,12 +286,10 @@ open class ConflictHelper @Inject constructor(
      * Extracted as a testability seam — test subclasses override to inject canned data.
      */
     @VisibleForTesting
-    internal open suspend fun fetchRemoteMovimientos(opticaId: String): List<MonturaMovimiento> {
-        return supabase.postgrest["montura_movimientos"]
-            .select { filter { eq("optica_id", opticaId) } }
-            .decodeList<MovimientoRemotoRow>()
-            .mapNotNull { it.toEntityOrNull() }
-    }
+    internal open suspend fun fetchRemoteMovimientos(opticaId: String): List<MonturaMovimiento> = supabase.postgrest["montura_movimientos"]
+        .select { filter { eq("optica_id", opticaId) } }
+        .decodeList<MovimientoRemotoRow>()
+        .mapNotNull { it.toEntityOrNull() }
 }
 
 /** Internal so test subclasses in the same Gradle module can reference the type without exposing it to consumers. */
@@ -304,7 +297,7 @@ open class ConflictHelper @Inject constructor(
 internal data class RemoteTimestamp(
     val id: String,
     @SerialName("updated_at")
-    val updatedAt: String? = null
+    val updatedAt: String? = null,
 )
 
 /**
@@ -317,7 +310,7 @@ internal data class RemoteTimestamp(
 data class LocalEntity(
     val id: String,
     val updatedAt: String? = null,
-    val localData: String = ""
+    val localData: String = "",
 )
 
 /**
@@ -330,23 +323,21 @@ private data class MovimientoRemotoRow(
     @SerialName("montura_id") val monturaId: String,
     val tipo: String,
     @SerialName("stock_nuevo") val stockNuevo: Int,
-    @SerialName("referencia_id") val referenciaId: String
+    @SerialName("referencia_id") val referenciaId: String,
 ) {
-    fun toEntityOrNull(): MonturaMovimiento? {
-        return try {
-            MonturaMovimiento(
-                id = id,
-                monturaId = monturaId,
-                tipo = tipo,
-                cantidad = 0,
-                stockPrevio = 0,
-                stockNuevo = stockNuevo,
-                referenciaId = referenciaId,
-                nota = "",
-                opticaId = ""
-            )
-        } catch (_: Exception) {
-            null
-        }
+    fun toEntityOrNull(): MonturaMovimiento? = try {
+        MonturaMovimiento(
+            id = id,
+            monturaId = monturaId,
+            tipo = tipo,
+            cantidad = 0,
+            stockPrevio = 0,
+            stockNuevo = stockNuevo,
+            referenciaId = referenciaId,
+            nota = "",
+            opticaId = "",
+        )
+    } catch (_: Exception) {
+        null
     }
 }

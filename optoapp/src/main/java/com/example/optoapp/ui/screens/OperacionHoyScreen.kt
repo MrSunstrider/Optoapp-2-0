@@ -22,15 +22,15 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.optoapp.data.AppRoles
+import com.example.optoapp.ui.components.OptoTopAppBar
+import com.example.optoapp.ui.theme.AlertRed
+import com.example.optoapp.ui.theme.PositiveGreen
+import com.example.optoapp.ui.theme.WarningAmber
 import com.example.optoapp.util.DateUtils
 import com.example.optoapp.util.FileShareUtils
 import com.example.optoapp.util.InventarioMonturasPdfGenerator
 import com.example.optoapp.viewmodel.AuthViewModel
 import com.example.optoapp.viewmodel.OperacionHoyViewModel
-import com.example.optoapp.ui.components.OptoTopAppBar
-import com.example.optoapp.ui.theme.PositiveGreen
-import com.example.optoapp.ui.theme.AlertRed
-import com.example.optoapp.ui.theme.WarningAmber
 import kotlinx.coroutines.launch
 import java.util.*
 
@@ -40,7 +40,7 @@ fun OperacionHoyScreen(
     navController: NavController,
     drawerState: DrawerState,
     viewModel: OperacionHoyViewModel = hiltViewModel(),
-    authViewModel: AuthViewModel = hiltViewModel()
+    authViewModel: AuthViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -70,15 +70,15 @@ fun OperacionHoyScreen(
                     IconButton(onClick = { viewModel.refresh() }) {
                         Icon(Icons.Default.Refresh, contentDescription = "Actualizar")
                     }
-                }
+                },
             )
-        }
+        },
     ) { padding ->
         if (!canView) {
             Column(
                 modifier = Modifier.fillMaxSize().padding(padding).padding(24.dp),
                 verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Icon(Icons.Default.Lock, contentDescription = "Bloqueado", modifier = Modifier.size(48.dp), tint = MaterialTheme.colorScheme.error)
                 Spacer(Modifier.height(16.dp))
@@ -93,7 +93,7 @@ fun OperacionHoyScreen(
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
                 .navigationBarsPadding(),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             // ── Date header ──
             Text(
@@ -101,7 +101,7 @@ fun OperacionHoyScreen(
                 modifier = Modifier.padding(horizontal = 16.dp).padding(top = 12.dp),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
+                color = MaterialTheme.colorScheme.primary,
             )
 
             // ── Quick Actions ──
@@ -110,11 +110,11 @@ fun OperacionHoyScreen(
                 modifier = Modifier.padding(horizontal = 16.dp),
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Row(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 QuickAction("Paciente", Icons.Default.PersonAdd, MaterialTheme.colorScheme.primary, Modifier.weight(1f)) {
                     navController.navigate("nuevoPaciente")
@@ -130,7 +130,7 @@ fun OperacionHoyScreen(
             // ── KPIs 2x2 ──
             Column(
                 modifier = Modifier.padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+                verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     DashboardKpi(
@@ -138,7 +138,7 @@ fun OperacionHoyScreen(
                         icon = Icons.Default.Payments,
                         label = "Cobros hoy",
                         value = "s/. ${fmt(uiState.cobrosHoy)}",
-                        color = PositiveGreen
+                        color = PositiveGreen,
                     )
                     DashboardKpi(
                         modifier = Modifier.weight(1f),
@@ -146,7 +146,11 @@ fun OperacionHoyScreen(
                         label = "Citas hoy",
                         value = "${uiState.citasHoy}",
                         color = MaterialTheme.colorScheme.primary,
-                        onClick = if (uiState.citasHoy > 0) {{ navController.navigate("agenda") }} else null
+                        onClick = if (uiState.citasHoy > 0) {
+                            { navController.navigate("agenda") }
+                        } else {
+                            null
+                        },
                     )
                 }
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -156,7 +160,7 @@ fun OperacionHoyScreen(
                         label = "Entregas pendientes",
                         value = "${uiState.entregasPendientes}",
                         color = if (uiState.entregasPendientes > 0) AlertRed else PositiveGreen,
-                        highlight = uiState.entregasPendientes > 0
+                        highlight = uiState.entregasPendientes > 0,
                     )
                     DashboardKpi(
                         modifier = Modifier.weight(1f),
@@ -165,7 +169,11 @@ fun OperacionHoyScreen(
                         value = "${uiState.stockCritico}",
                         color = if (uiState.stockCritico > 0) AlertRed else PositiveGreen,
                         highlight = uiState.stockCritico > 0,
-                        onClick = if (uiState.stockCritico > 0) {{ navController.navigate("monturas") }} else null
+                        onClick = if (uiState.stockCritico > 0) {
+                            { navController.navigate("monturas") }
+                        } else {
+                            null
+                        },
                     )
                 }
             }
@@ -175,7 +183,7 @@ fun OperacionHoyScreen(
                 Card(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                     shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = WarningAmber.copy(alpha = 0.08f))
+                    colors = CardDefaults.cardColors(containerColor = WarningAmber.copy(alpha = 0.08f)),
                 ) {
                     Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -196,11 +204,11 @@ fun OperacionHoyScreen(
                 Card(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                     shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = PositiveGreen.copy(alpha = 0.06f))
+                    colors = CardDefaults.cardColors(containerColor = PositiveGreen.copy(alpha = 0.06f)),
                 ) {
                     Row(
                         modifier = Modifier.padding(14.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Icon(Icons.Default.CheckCircle, contentDescription = "Completado", tint = PositiveGreen, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(8.dp))
@@ -216,7 +224,7 @@ fun OperacionHoyScreen(
                     modifier = Modifier.padding(horizontal = 16.dp).padding(top = 4.dp),
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
 
                 uiState.dispensacionesPendientes.take(5).forEach { disp ->
@@ -224,11 +232,11 @@ fun OperacionHoyScreen(
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).clickable {
                             navController.navigate("informacion_financiera/${disp.id}")
                         },
-                        shape = MaterialTheme.shapes.small
+                        shape = MaterialTheme.shapes.small,
                     ) {
                         Row(
                             modifier = Modifier.padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                            verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Icon(Icons.Default.Inventory2, contentDescription = "Inventario", tint = AlertRed, modifier = Modifier.size(18.dp))
                             Spacer(Modifier.width(10.dp))
@@ -237,7 +245,7 @@ fun OperacionHoyScreen(
                                 Text(
                                     DateUtils.formatLocalized(disp.fecha) + if (disp.fecha.isBefore(uiState.fecha)) " · Atrasada" else "",
                                     fontSize = 11.sp,
-                                    color = if (disp.fecha.isBefore(uiState.fecha)) AlertRed else MaterialTheme.colorScheme.onSurfaceVariant
+                                    color = if (disp.fecha.isBefore(uiState.fecha)) AlertRed else MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
                             Text("s/. ${fmt(disp.montoTotal)}", fontWeight = FontWeight.Bold, fontSize = 13.sp)
@@ -250,11 +258,11 @@ fun OperacionHoyScreen(
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).clickable {
                             navController.navigate("editar_servicio/${serv.id}")
                         },
-                        shape = MaterialTheme.shapes.small
+                        shape = MaterialTheme.shapes.small,
                     ) {
                         Row(
                             modifier = Modifier.padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                            verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Icon(Icons.Default.Handyman, contentDescription = "Servicios", tint = AlertRed, modifier = Modifier.size(18.dp))
                             Spacer(Modifier.width(10.dp))
@@ -273,7 +281,7 @@ fun OperacionHoyScreen(
                         "... y ${totalPendientes - 8} más",
                         modifier = Modifier.padding(horizontal = 16.dp),
                         fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
@@ -285,7 +293,7 @@ fun OperacionHoyScreen(
                         val file = InventarioMonturasPdfGenerator.generate(context, uiState.monturas)
                         FileShareUtils.openPdf(context, file, "Abrir inventario PDF")
                     },
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                 ) {
                     Icon(Icons.Default.PictureAsPdf, contentDescription = "PDF", modifier = Modifier.size(16.dp))
                     Spacer(Modifier.width(6.dp))
@@ -304,11 +312,11 @@ private fun QuickAction(label: String, icon: ImageVector, color: Color, modifier
         onClick = onClick,
         modifier = modifier,
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.1f))
+        colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.1f)),
     ) {
         Column(
             modifier = Modifier.padding(12.dp).fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Icon(icon, contentDescription = label, tint = color, modifier = Modifier.size(24.dp))
             Spacer(Modifier.height(6.dp))
@@ -325,13 +333,13 @@ private fun DashboardKpi(
     value: String,
     color: Color,
     highlight: Boolean = false,
-    onClick: (() -> Unit)? = null
+    onClick: (() -> Unit)? = null,
 ) {
     Card(
         onClick = onClick ?: {},
         modifier = modifier,
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.08f))
+        colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.08f)),
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -351,10 +359,8 @@ private fun DashboardKpi(
     }
 }
 
-private fun fmt(value: Double): String {
-    return if (value == value.toLong().toDouble()) {
-        String.format(Locale.getDefault(), "%,.0f", value)
-    } else {
-        String.format(Locale.getDefault(), "%,.2f", value)
-    }
+private fun fmt(value: Double): String = if (value == value.toLong().toDouble()) {
+    String.format(Locale.getDefault(), "%,.0f", value)
+} else {
+    String.format(Locale.getDefault(), "%,.2f", value)
 }

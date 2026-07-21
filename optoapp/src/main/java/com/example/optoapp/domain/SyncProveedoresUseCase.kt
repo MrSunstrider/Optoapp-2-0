@@ -1,23 +1,21 @@
 package com.example.optoapp.domain
 
-import com.example.optoapp.util.AppLogger
 import com.example.optoapp.data.CategoriaMontura
 import com.example.optoapp.data.ConflictDao
 import com.example.optoapp.data.Proveedor
-import com.example.optoapp.domain.sync.EntitySnapshotSerializer
 import com.example.optoapp.data.ProveedorRepository
 import com.example.optoapp.data.Resource
 import com.example.optoapp.data.SyncStateTracker
 import com.example.optoapp.domain.sync.ConflictHelper
+import com.example.optoapp.domain.sync.EntitySnapshotSerializer
 import com.example.optoapp.domain.sync.LocalEntity
-import com.example.optoapp.sync.errorLabelForException
+import com.example.optoapp.util.AppLogger
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import java.io.IOException
-import java.time.Instant
 import javax.inject.Inject
 
 /** Pipeline stage 4: supplier sync runs after finanzas, before ordenes_compra. */
@@ -26,7 +24,7 @@ open class SyncProveedoresUseCase @Inject constructor(
     private val supabase: SupabaseClient,
     private val syncStateTracker: SyncStateTracker,
     private val conflictHelper: ConflictHelper,
-    private val conflictDao: ConflictDao
+    private val conflictDao: ConflictDao,
 ) {
     companion object {
         private const val TAG = "SyncProveedores"
@@ -38,40 +36,38 @@ open class SyncProveedoresUseCase @Inject constructor(
     suspend operator fun invoke(
         opticaId: String,
         downloadAfterUpload: Boolean = true,
-        skipUpload: Boolean = false
-    ): Resource<ProveedoresSyncResult> {
-        return try {
-            AppLogger.d(TAG, "Proveedores: inicio (opticaId=$opticaId, download=$downloadAfterUpload, skipUpload=$skipUpload)")
-            val provUp = if (skipUpload) 0 else uploadProveedores(opticaId)
-            val catUp = if (skipUpload) 0 else uploadCategorias(opticaId)
-            val provDown: Int
-            val catDown: Int
-            if (downloadAfterUpload) {
-                provDown = downloadProveedores(opticaId)
-                catDown = downloadCategorias(opticaId)
-                AppLogger.d(TAG, "Proveedores: fin OK (proveedores=$provDown categorias=$catDown)")
-            } else {
-                provDown = 0
-                catDown = 0
-                AppLogger.d(TAG, "Proveedores: fin upload-only OK")
-            }
-            Resource.Success(
-                ProveedoresSyncResult(
-                    uploadedProveedores = provUp,
-                    uploadedCategorias = catUp,
-                    downloadedProveedores = provDown,
-                    downloadedCategorias = catDown
-                )
-            )
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: IOException) {
-            AppLogger.e(TAG, "Error en red sincronizando proveedores: ${e.message}", e)
-            Resource.Error("Error sincronizando proveedores: ${e.localizedMessage}")
-        } catch (e: Exception) {
-            AppLogger.e(TAG, "Error inesperado sincronizando proveedores: ${e.message}", e)
-            Resource.Error("Error sincronizando proveedores: ${e.localizedMessage}")
+        skipUpload: Boolean = false,
+    ): Resource<ProveedoresSyncResult> = try {
+        AppLogger.d(TAG, "Proveedores: inicio (opticaId=$opticaId, download=$downloadAfterUpload, skipUpload=$skipUpload)")
+        val provUp = if (skipUpload) 0 else uploadProveedores(opticaId)
+        val catUp = if (skipUpload) 0 else uploadCategorias(opticaId)
+        val provDown: Int
+        val catDown: Int
+        if (downloadAfterUpload) {
+            provDown = downloadProveedores(opticaId)
+            catDown = downloadCategorias(opticaId)
+            AppLogger.d(TAG, "Proveedores: fin OK (proveedores=$provDown categorias=$catDown)")
+        } else {
+            provDown = 0
+            catDown = 0
+            AppLogger.d(TAG, "Proveedores: fin upload-only OK")
         }
+        Resource.Success(
+            ProveedoresSyncResult(
+                uploadedProveedores = provUp,
+                uploadedCategorias = catUp,
+                downloadedProveedores = provDown,
+                downloadedCategorias = catDown,
+            ),
+        )
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: IOException) {
+        AppLogger.e(TAG, "Error en red sincronizando proveedores: ${e.message}", e)
+        Resource.Error("Error sincronizando proveedores: ${e.localizedMessage}")
+    } catch (e: Exception) {
+        AppLogger.e(TAG, "Error inesperado sincronizando proveedores: ${e.message}", e)
+        Resource.Error("Error sincronizando proveedores: ${e.localizedMessage}")
     }
 
     private suspend fun uploadProveedores(opticaId: String): Int {
@@ -84,7 +80,7 @@ open class SyncProveedoresUseCase @Inject constructor(
             tableName = TABLE_PROVEEDORES,
             opticaId = opticaId,
             entityType = "proveedor",
-            localEntities = rows.map { LocalEntity(it.id, it.updatedAt, EntitySnapshotSerializer.serialize(it)) }
+            localEntities = rows.map { LocalEntity(it.id, it.updatedAt, EntitySnapshotSerializer.serialize(it)) },
         ).map { it.id }.toSet()
         val safeRows = rows.filter { it.id in safeIds }
         if (safeRows.isEmpty()) return 0
@@ -162,7 +158,7 @@ data class ProveedoresSyncResult(
     val uploadedProveedores: Int,
     val uploadedCategorias: Int,
     val downloadedProveedores: Int,
-    val downloadedCategorias: Int
+    val downloadedCategorias: Int,
 )
 
 // ─── Remota DTOs ───────────────────────────────────────────────────────────
@@ -179,12 +175,12 @@ internal data class ProveedorRemoto(
     val activo: Boolean = true,
     @SerialName("optica_id") val opticaId: String = "",
     @SerialName("updated_at") val updatedAt: String? = null,
-    @SerialName("updated_by") val updatedBy: String? = null
+    @SerialName("updated_by") val updatedBy: String? = null,
 ) {
     fun toEntity() = Proveedor(
         id = id, nombre = nombre, ruc = ruc, telefono = telefono,
         email = email, direccion = direccion, contacto = contacto,
-        activo = activo, opticaId = opticaId, updatedAt = updatedAt, updatedBy = updatedBy
+        activo = activo, opticaId = opticaId, updatedAt = updatedAt, updatedBy = updatedBy,
     )
 }
 
@@ -193,19 +189,25 @@ private data class CategoriaRemota(
     val id: String,
     val nombre: String,
     val descripcion: String = "",
-    @SerialName("optica_id") val opticaId: String = ""
+    @SerialName("optica_id") val opticaId: String = "",
 ) {
     fun toEntity() = CategoriaMontura(
-        id = id, nombre = nombre, descripcion = descripcion, opticaId = opticaId
+        id = id,
+        nombre = nombre,
+        descripcion = descripcion,
+        opticaId = opticaId,
     )
 }
 
 private fun Proveedor.toRemoto(): ProveedorRemoto = ProveedorRemoto(
     id = id, nombre = nombre, ruc = ruc, telefono = telefono,
     email = email, direccion = direccion, contacto = contacto,
-    activo = activo, opticaId = opticaId, updatedAt = updatedAt, updatedBy = updatedBy
+    activo = activo, opticaId = opticaId, updatedAt = updatedAt, updatedBy = updatedBy,
 )
 
 private fun CategoriaMontura.toRemoto(): CategoriaRemota = CategoriaRemota(
-    id = id, nombre = nombre, descripcion = descripcion, opticaId = opticaId
+    id = id,
+    nombre = nombre,
+    descripcion = descripcion,
+    opticaId = opticaId,
 )

@@ -51,7 +51,7 @@ class TestDatabaseRule : TestRule {
     /** The in-memory [OptoDatabase] instance, valid only during test execution. */
     val database: OptoDatabase
         get() = _database ?: throw IllegalStateException(
-            "TestDatabaseRule not initialized — did you forget @get:Rule?"
+            "TestDatabaseRule not initialized — did you forget @get:Rule?",
         )
 
     val pacienteDao: PacienteDao get() = checkNotNull(_pacienteDao)
@@ -64,15 +64,13 @@ class TestDatabaseRule : TestRule {
     val monturaMovimientoDao: MonturaMovimientoDao get() = checkNotNull(_monturaMovimientoDao)
     val syncEntityStateDao: SyncEntityStateDao get() = checkNotNull(_syncEntityStateDao)
 
-    override fun apply(base: Statement, description: Description): Statement {
-        return object : Statement() {
-            override fun evaluate() {
-                createDatabase()
-                try {
-                    base.evaluate()
-                } finally {
-                    closeDatabase()
-                }
+    override fun apply(base: Statement, description: Description): Statement = object : Statement() {
+        override fun evaluate() {
+            createDatabase()
+            try {
+                base.evaluate()
+            } finally {
+                closeDatabase()
             }
         }
     }
@@ -80,7 +78,7 @@ class TestDatabaseRule : TestRule {
     private fun createDatabase() {
         val db = Room.inMemoryDatabaseBuilder(
             ApplicationProvider.getApplicationContext(),
-            OptoDatabase::class.java
+            OptoDatabase::class.java,
         ).allowMainThreadQueries().build()
 
         _database = db

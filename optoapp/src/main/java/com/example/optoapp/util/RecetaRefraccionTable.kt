@@ -20,7 +20,7 @@ object RefraccionTableBuilder {
         val hasRx: Boolean,
         val distRows: List<Row>,
         val nearRows: List<Row>,
-        val prismaRows: List<Row>
+        val prismaRows: List<Row>,
     )
 
     fun prepareData(eval: EvaluacionClinica): TableData {
@@ -30,52 +30,70 @@ object RefraccionTableBuilder {
         fun dash(s: String) = if (s.isBlank()) "—" else s
 
         val distRows = listOf(
-            Row("OD", listOf(
-                Cell(dash(eval.recetaOdEsf)),
-                Cell(dash(eval.recetaOdCil)),
-                Cell(dash(eval.recetaOdEje)),
-                Cell(dash(eval.dipLejos)),
-                Cell(dash(eval.recetaOdAv.ifBlank { eval.avCcOdLejos })),
-                Cell(dash(eval.avCcAoPx))
-            )),
-            Row("OI", listOf(
-                Cell(dash(eval.recetaOiEsf)),
-                Cell(dash(eval.recetaOiCil)),
-                Cell(dash(eval.recetaOiEje)),
-                Cell(dash(eval.dipCerca)),
-                Cell(dash(eval.recetaOiAv.ifBlank { eval.avCcOiLejos })),
-                Cell(dash(eval.avCcAoPx))
-            ))
+            Row(
+                "OD",
+                listOf(
+                    Cell(dash(eval.recetaOdEsf)),
+                    Cell(dash(eval.recetaOdCil)),
+                    Cell(dash(eval.recetaOdEje)),
+                    Cell(dash(eval.dipLejos)),
+                    Cell(dash(eval.recetaOdAv.ifBlank { eval.avCcOdLejos })),
+                    Cell(dash(eval.avCcAoPx)),
+                ),
+            ),
+            Row(
+                "OI",
+                listOf(
+                    Cell(dash(eval.recetaOiEsf)),
+                    Cell(dash(eval.recetaOiCil)),
+                    Cell(dash(eval.recetaOiEje)),
+                    Cell(dash(eval.dipCerca)),
+                    Cell(dash(eval.recetaOiAv.ifBlank { eval.avCcOiLejos })),
+                    Cell(dash(eval.avCcAoPx)),
+                ),
+            ),
         )
 
         val nearRows = listOf(
-            Row("OD", listOf(
-                Cell(dash(eval.addCercaOd)),
-                Cell(dash(eval.addIntermediaOd)),
-                Cell(dash(eval.dipCerca)),
-                Cell(dash(eval.avCcAoCerca.ifBlank { eval.avScAoCerca })),
-                Cell("—")
-            )),
-            Row("OI", listOf(
-                Cell(dash(eval.addCercaOi)),
-                Cell(dash(eval.addIntermediaOi)),
-                Cell(dash(eval.dipCerca)),
-                Cell(dash(eval.avCcAoCerca.ifBlank { eval.avScAoCerca })),
-                Cell("—")
-            ))
+            Row(
+                "OD",
+                listOf(
+                    Cell(dash(eval.addCercaOd)),
+                    Cell(dash(eval.addIntermediaOd)),
+                    Cell(dash(eval.dipCerca)),
+                    Cell(dash(eval.avCcAoCerca.ifBlank { eval.avScAoCerca })),
+                    Cell("—"),
+                ),
+            ),
+            Row(
+                "OI",
+                listOf(
+                    Cell(dash(eval.addCercaOi)),
+                    Cell(dash(eval.addIntermediaOi)),
+                    Cell(dash(eval.dipCerca)),
+                    Cell(dash(eval.avCcAoCerca.ifBlank { eval.avScAoCerca })),
+                    Cell("—"),
+                ),
+            ),
         )
 
         val prismaRows = listOf(
-            Row("OD", listOf(
-                Cell(dash(eval.prismaOdValor)),
-                Cell(dash(eval.prismaOdBase)),
-                Cell("—")
-            )),
-            Row("OI", listOf(
-                Cell(dash(eval.prismaOiValor)),
-                Cell(dash(eval.prismaOiBase)),
-                Cell("—")
-            ))
+            Row(
+                "OD",
+                listOf(
+                    Cell(dash(eval.prismaOdValor)),
+                    Cell(dash(eval.prismaOdBase)),
+                    Cell("—"),
+                ),
+            ),
+            Row(
+                "OI",
+                listOf(
+                    Cell(dash(eval.prismaOiValor)),
+                    Cell(dash(eval.prismaOiBase)),
+                    Cell("—"),
+                ),
+            ),
         )
 
         return TableData(hasRx = hasRx, distRows = distRows, nearRows = nearRows, prismaRows = prismaRows)
@@ -88,7 +106,7 @@ object RefraccionTableBuilder {
         ensureSpace: (Float) -> Unit,
         drawSl: (StaticLayout, Float, Float) -> Unit,
         layoutText: (String, TextPaint, Int, Layout.Alignment) -> StaticLayout,
-        advance: (Float) -> Unit
+        advance: (Float) -> Unit,
     ): Float {
         val data = prepareData(eval)
         if (!data.hasRx) return yPos
@@ -108,7 +126,7 @@ object RefraccionTableBuilder {
         val colCil = unitW
         val colEje = unitW
         val colDip = unitW
-        val colAv  = unitW
+        val colAv = unitW
         val colAvAo = unitW * 2f
 
         val xLab = margin
@@ -116,16 +134,15 @@ object RefraccionTableBuilder {
         val xCil = xEsf + colEsf
         val xEje = xCil + colCil
         val xDip = xEje + colEje
-        val xAv  = xDip + colDip
+        val xAv = xDip + colDip
         val xAvAo = xAv + colAv
         val xRight = xAvAo + colAvAo
 
-        fun sl(text: String, paint: TextPaint, w: Int, align: Layout.Alignment): StaticLayout =
-            StaticLayout.Builder.obtain(text, 0, text.length, paint, w.coerceAtLeast(8))
-                .setAlignment(align)
-                .setLineSpacing(0f, 1.15f)
-                .setIncludePad(false)
-                .build()
+        fun sl(text: String, paint: TextPaint, w: Int, align: Layout.Alignment): StaticLayout = StaticLayout.Builder.obtain(text, 0, text.length, paint, w.coerceAtLeast(8))
+            .setAlignment(align)
+            .setLineSpacing(0f, 1.15f)
+            .setIncludePad(false)
+            .build()
 
         val headerPaint = PdfStyle.tableHeaderPaint
         val labelPaint = PdfStyle.labelPaint

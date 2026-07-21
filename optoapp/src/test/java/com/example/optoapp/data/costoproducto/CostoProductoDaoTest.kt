@@ -30,7 +30,7 @@ class CostoProductoDaoTest {
     fun setUp() {
         db = Room.inMemoryDatabaseBuilder(
             ApplicationProvider.getApplicationContext(),
-            OptoDatabase::class.java
+            OptoDatabase::class.java,
         ).allowMainThreadQueries().build()
         dao = db.costoProductoDao()
     }
@@ -54,7 +54,7 @@ class CostoProductoDaoTest {
             costoUnitario = 18.0,
             laboratorioId = "lab1",
             vigenteDesde = "2026-01-01",
-            vigenteHasta = null
+            vigenteHasta = null,
         )
         dao.upsertAll(listOf(entity))
 
@@ -63,7 +63,7 @@ class CostoProductoDaoTest {
             tipoLente = "Monofocal",
             stockOFabricacion = "stock",
             tratamiento = "Antireflex",
-            serie = 2
+            serie = 2,
         )
 
         assertTrue(result != null)
@@ -78,7 +78,7 @@ class CostoProductoDaoTest {
             tipoLente = "Monofocal",
             stockOFabricacion = "stock",
             tratamiento = "Nonexistent",
-            serie = 1
+            serie = 1,
         )
 
         assertNull(result)
@@ -96,7 +96,7 @@ class CostoProductoDaoTest {
             serie = 1,
             costoUnitario = 5.0,
             vigenteDesde = "2026-01-01",
-            vigenteHasta = null
+            vigenteHasta = null,
         )
         val expired = CostoProductoEntity(
             id = "cp-expired",
@@ -108,7 +108,7 @@ class CostoProductoDaoTest {
             serie = 1,
             costoUnitario = 3.0,
             vigenteDesde = "2025-01-01",
-            vigenteHasta = "2025-12-31"
+            vigenteHasta = "2025-12-31",
         )
         dao.upsertAll(listOf(active, expired))
 
@@ -117,7 +117,7 @@ class CostoProductoDaoTest {
             tipoLente = "Monofocal",
             stockOFabricacion = "stock",
             tratamiento = "Antireflex",
-            serie = 1
+            serie = 1,
         )
 
         assertTrue(result != null)
@@ -131,13 +131,13 @@ class CostoProductoDaoTest {
             id = "cp-s1", opticaId = "optica1",
             material = "Resina", tipoLente = "Monofocal",
             stockOFabricacion = "stock", tratamiento = "AR", serie = 1,
-            costoUnitario = 5.0, vigenteDesde = "2026-01-01", vigenteHasta = null
+            costoUnitario = 5.0, vigenteDesde = "2026-01-01", vigenteHasta = null,
         )
         val fabricacionEntity = CostoProductoEntity(
             id = "cp-f1", opticaId = "optica1",
             material = "Resina", tipoLente = "Bifocal",
             stockOFabricacion = "fabricacion", tratamiento = "Simple", serie = null,
-            costoUnitario = 20.0, vigenteDesde = "2026-01-01", vigenteHasta = null
+            costoUnitario = 20.0, vigenteDesde = "2026-01-01", vigenteHasta = null,
         )
         dao.upsertAll(listOf(stockEntity, fabricacionEntity))
 
@@ -153,7 +153,7 @@ class CostoProductoDaoTest {
             id = "cp1", opticaId = "optica1",
             material = "Resina", tipoLente = "Monofocal",
             stockOFabricacion = "stock", tratamiento = "AR", serie = 1,
-            costoUnitario = 5.0, vigenteDesde = "2026-01-01", vigenteHasta = null
+            costoUnitario = 5.0, vigenteDesde = "2026-01-01", vigenteHasta = null,
         )
         dao.upsertAll(listOf(original))
 
@@ -161,8 +161,11 @@ class CostoProductoDaoTest {
         dao.upsertAll(listOf(updated))
 
         val result = dao.lookup(
-            material = "Resina", tipoLente = "Monofocal",
-            stockOFabricacion = "stock", tratamiento = "AR", serie = 1
+            material = "Resina",
+            tipoLente = "Monofocal",
+            stockOFabricacion = "stock",
+            tratamiento = "AR",
+            serie = 1,
         )
         assertTrue(result != null)
         assertEquals(6.0, result!!.costoUnitario, 0.001)

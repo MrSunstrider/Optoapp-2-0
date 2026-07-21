@@ -1,10 +1,8 @@
 package com.example.optoapp.ui.screens
 
 import com.example.optoapp.data.AppRoles
-import com.example.optoapp.domain.AnalisisMensual
 import com.example.optoapp.domain.Prioridad
 import com.example.optoapp.domain.Recomendacion
-import com.example.optoapp.domain.RecomendacionTipo
 import com.example.optoapp.viewmodel.AnalisisNegocioUiState
 import com.example.optoapp.viewmodel.AnalisisNegocioViewModel
 import org.junit.Assert.*
@@ -171,7 +169,7 @@ class AnalisisNegocioScreenTest {
         val fields = AnalisisNegocioViewModel::class.java.declaredFields.map { it.name }
         assertTrue(
             "AnalisisNegocioViewModel debe tener uiState",
-            "uiState" in fields
+            "uiState" in fields,
         )
     }
 
@@ -180,7 +178,7 @@ class AnalisisNegocioScreenTest {
         val methods = AnalisisNegocioViewModel::class.java.declaredMethods.map { it.name }
         assertTrue(
             "AnalisisNegocioViewModel debe tener navigateMonth",
-            "navigateMonth" in methods
+            "navigateMonth" in methods,
         )
     }
 
@@ -189,7 +187,7 @@ class AnalisisNegocioScreenTest {
         val methods = AnalisisNegocioViewModel::class.java.declaredMethods.map { it.name }
         assertTrue(
             "AnalisisNegocioViewModel debe tener refresh",
-            "refresh" in methods
+            "refresh" in methods,
         )
     }
 
@@ -198,7 +196,7 @@ class AnalisisNegocioScreenTest {
         val methods = AppRoles::class.java.declaredMethods.map { it.name }
         assertTrue(
             "AppRoles debe tener canViewBiAndReports",
-            "canViewBiAndReports" in methods
+            "canViewBiAndReports" in methods,
         )
     }
 

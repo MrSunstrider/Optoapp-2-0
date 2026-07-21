@@ -1,5 +1,5 @@
-import java.util.Properties
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
@@ -7,6 +7,7 @@ plugins {
     alias(libs.plugins.hilt)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.spotless)
     jacoco
 }
 
@@ -14,13 +15,48 @@ jacoco {
     toolVersion = "0.8.12"
 }
 
-val localProperties = Properties().apply {
-    val f = rootProject.file("local.properties")
-    if (f.exists()) f.inputStream().use { load(it) }
+spotless {
+    kotlin {
+        target("src/**/*.kt")
+        ktlint(libs.versions.ktlint.get())
+            .editorConfigOverride(
+                mapOf(
+                    // Compose @Composable functions use PascalCase — canonical convention
+                    "ktlint_standard_function-naming" to "disabled",
+                    // Test classes with underscores (MIGRATION_33_34_Test), ViewModel backing props, constants
+                    "ktlint_standard_class-naming" to "disabled",
+                    "ktlint_standard_property-naming" to "disabled",
+                    "ktlint_standard_backing-property-naming" to "disabled",
+                    // Package cierre-caja uses hyphen for readability
+                    "ktlint_standard_package-name" to "disabled",
+                    // Strict comment-wrapping too noisy for existing codebase
+                    "ktlint_standard_comment-wrapping" to "disabled",
+                    // TODO: re-enable gradually — 130+ files to fix
+                    "ktlint_standard_no-wildcard-imports" to "disabled",
+                    // TODO: rename entity files (PacienteEntity -> Paciente)
+                    "ktlint_standard_filename" to "disabled",
+                    // TODO: remove or populate intentional empty files (Daos.kt, Entities.kt)
+                    "ktlint_standard_no-empty-file" to "disabled",
+                    // Formatting
+                    "indent_size" to "4",
+                    "ij_kotlin_allow_trailing_comma" to "true",
+                    "ij_kotlin_allow_trailing_comma_on_call_site" to "true",
+                ),
+            )
+    }
+    kotlinGradle {
+        target("*.gradle.kts")
+        ktlint(libs.versions.ktlint.get())
+    }
 }
 
-fun escapeForBuildConfigField(value: String): String =
-    value.replace("\\", "\\\\").replace("\"", "\\\"")
+val localProperties =
+    Properties().apply {
+        val f = rootProject.file("local.properties")
+        if (f.exists()) f.inputStream().use { load(it) }
+    }
+
+fun escapeForBuildConfigField(value: String): String = value.replace("\\", "\\\\").replace("\"", "\\\"")
 
 android {
     namespace = "com.example.optoapp"
@@ -32,7 +68,7 @@ android {
         targetSdk = 36
         versionCode = 40
         versionName = "1.15.0"
-        
+
         multiDexEnabled = true
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -46,12 +82,14 @@ android {
 
         val supabaseUrl = escapeForBuildConfigField(localProperties.getProperty("supabase.url", ""))
         val supabaseAnonKey = escapeForBuildConfigField(localProperties.getProperty("supabase.anon.key", ""))
-        val supabaseRedirectScheme = escapeForBuildConfigField(
-            localProperties.getProperty("supabase.redirect.scheme", "optoapp")
-        )
-        val supabaseRedirectHost = escapeForBuildConfigField(
-            localProperties.getProperty("supabase.redirect.host", "auth")
-        )
+        val supabaseRedirectScheme =
+            escapeForBuildConfigField(
+                localProperties.getProperty("supabase.redirect.scheme", "optoapp"),
+            )
+        val supabaseRedirectHost =
+            escapeForBuildConfigField(
+                localProperties.getProperty("supabase.redirect.host", "auth"),
+            )
         val forceProDev = localProperties.getProperty("optoapp.dev.force_pro", "false").equals("true", ignoreCase = true)
         buildConfigField("String", "SUPABASE_TEST_URL", "\"$supabaseTestUrl\"")
         buildConfigField("String", "SUPABASE_TEST_ANON_KEY", "\"$supabaseTestAnonKey\"")
@@ -88,7 +126,7 @@ android {
             isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
+                "proguard-rules.pro",
             )
         }
     }
@@ -181,20 +219,21 @@ tasks.withType<KotlinCompile>().configureEach {
     }
 }
 
-val jacocoFileFilter = listOf(
-    "**/R.class",
-    "**/R$*.class",
-    "**/BuildConfig.*",
-    "**/Manifest*.*",
-    "**/databinding/*",
-    "**/android/databinding/*",
-    "**/di/*",
-    "**/Dagger*",
-    "**/*Hilt*",
-    "**/*_Factory*",
-    "**/*_MembersInjector*",
-    "**/BR.class"
-)
+val jacocoFileFilter =
+    listOf(
+        "**/R.class",
+        "**/R$*.class",
+        "**/BuildConfig.*",
+        "**/Manifest*.*",
+        "**/databinding/*",
+        "**/android/databinding/*",
+        "**/di/*",
+        "**/Dagger*",
+        "**/*Hilt*",
+        "**/*_Factory*",
+        "**/*_MembersInjector*",
+        "**/BR.class",
+    )
 
 val jacocoKotlinClasses = layout.buildDirectory.dir("intermediates/built_in_kotlinc/debug/compileDebugKotlin/classes")
 val jacocoJavaClasses = layout.buildDirectory.dir("intermediates/javac/debug/classes")
@@ -209,7 +248,7 @@ val jacocoTestReport by tasks.registering(JacocoReport::class) {
     sourceDirectories.setFrom(files("src/main/java"))
     classDirectories.setFrom(
         fileTree(jacocoKotlinClasses) { exclude(jacocoFileFilter) },
-        fileTree(jacocoJavaClasses) { exclude(jacocoFileFilter) }
+        fileTree(jacocoJavaClasses) { exclude(jacocoFileFilter) },
     )
     executionData.setFrom(jacocoExecData)
 }
@@ -226,7 +265,7 @@ val jacocoCoverageVerification by tasks.registering(JacocoCoverageVerification::
     }
     classDirectories.setFrom(
         fileTree(jacocoKotlinClasses) { exclude(jacocoFileFilter) },
-        fileTree(jacocoJavaClasses) { exclude(jacocoFileFilter) }
+        fileTree(jacocoJavaClasses) { exclude(jacocoFileFilter) },
     )
     executionData.setFrom(jacocoExecData)
 }
@@ -234,4 +273,3 @@ val jacocoCoverageVerification by tasks.registering(JacocoCoverageVerification::
 ksp {
     arg("room.schemaLocation", "$projectDir/schemas")
 }
-

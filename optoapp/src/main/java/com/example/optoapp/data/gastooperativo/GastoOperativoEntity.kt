@@ -8,7 +8,7 @@ import java.time.LocalDate
 
 @Entity(
     tableName = "gastos_operativos",
-    indices = [Index(value = ["opticaId"])]
+    indices = [Index(value = ["opticaId"])],
 )
 data class GastoOperativoEntity(
     @PrimaryKey val id: String,
@@ -21,5 +21,5 @@ data class GastoOperativoEntity(
     val nota: String? = null,
     val isRecurring: Boolean = false,
     val frecuencia: String = "mensual",
-    val createdAt: String? = null
+    val createdAt: String? = null,
 )

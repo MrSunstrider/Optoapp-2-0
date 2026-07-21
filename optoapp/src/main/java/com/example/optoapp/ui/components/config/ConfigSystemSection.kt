@@ -25,12 +25,12 @@ fun SystemSection(
     systemNotificationsEnabled: Boolean,
     onUserTimeZoneSelected: (String) -> Unit,
     onRemindersEnabledChanged: (Boolean) -> Unit,
-    onSendTestNotification: () -> Unit
+    onSendTestNotification: () -> Unit,
 ) {
     // Preferencias
     Card(
         shape = OptoTokens.shapes.medium,
-        elevation = CardDefaults.cardElevation(defaultElevation = OptoTokens.elevation.level1)
+        elevation = CardDefaults.cardElevation(defaultElevation = OptoTokens.elevation.level1),
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(stringResource(R.string.config_general_section_title), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
@@ -43,7 +43,7 @@ fun SystemSection(
                     label = "Seleccionar Ciudad/Zona",
                     selected = userTimeZone ?: "Detectar automáticamente",
                     options = availableTimeZones,
-                    onSelected = onUserTimeZoneSelected
+                    onSelected = onUserTimeZoneSelected,
                 )
             }
 
@@ -52,19 +52,19 @@ fun SystemSection(
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(stringResource(R.string.config_general_reminders_title), fontSize = 16.sp)
                     Text(
                         stringResource(R.string.config_general_reminders_desc),
                         fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
                 Switch(
                     checked = remindersEnabled,
-                    onCheckedChange = onRemindersEnabledChanged
+                    onCheckedChange = onRemindersEnabledChanged,
                 )
             }
             // Reminders status badge inline
@@ -86,12 +86,12 @@ fun SystemSection(
             }
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Text(
                     text = stringResource(R.string.config_general_reminders_state_prefix),
                     fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
                     text = remindersStatusText,
@@ -100,12 +100,12 @@ fun SystemSection(
                     modifier = Modifier
                         .clip(RoundedCornerShape(4.dp))
                         .background(remindersStatusColor)
-                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                        .padding(horizontal = 6.dp, vertical = 2.dp),
                 )
             }
             OutlinedButton(
                 onClick = onSendTestNotification,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
             ) {
                 Text(stringResource(R.string.config_test_notification_action))
             }

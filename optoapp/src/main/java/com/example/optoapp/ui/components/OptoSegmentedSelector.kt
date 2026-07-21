@@ -4,7 +4,6 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -24,31 +23,33 @@ fun OptoSegmentedSelector(
     options: List<String>,
     selectedIndex: Int,
     onSelect: (Int) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Surface(
         color = OptoTokens.colors.surface,
         shape = OptoTokens.shapes.small,
-        modifier = modifier.fillMaxWidth()
+        modifier = modifier.fillMaxWidth(),
     ) {
         Row(modifier = Modifier.padding(3.dp)) {
             options.forEachIndexed { index, option ->
                 val isSelected = index == selectedIndex
                 val backgroundColor by animateColorAsState(
-                    targetValue = if (isSelected) 
-                        MaterialTheme.colorScheme.primaryContainer 
-                    else 
-                        Color.Transparent,
-                    label = "backgroundColor"
+                    targetValue = if (isSelected) {
+                        MaterialTheme.colorScheme.primaryContainer
+                    } else {
+                        Color.Transparent
+                    },
+                    label = "backgroundColor",
                 )
                 val textColor by animateColorAsState(
-                    targetValue = if (isSelected) 
+                    targetValue = if (isSelected) {
                         MaterialTheme.colorScheme.onSurface
-                    else 
-                        OptoTokens.colors.onSurfaceVariant,
-                    label = "textColor"
+                    } else {
+                        OptoTokens.colors.onSurfaceVariant
+                    },
+                    label = "textColor",
                 )
-                
+
                 Box(
                     modifier = Modifier
                         .weight(1f)
@@ -56,13 +57,13 @@ fun OptoSegmentedSelector(
                         .background(backgroundColor)
                         .clickable { onSelect(index) }
                         .padding(vertical = 8.dp),
-                    contentAlignment = Alignment.Center
+                    contentAlignment = Alignment.Center,
                 ) {
                     Text(
                         text = option,
                         fontSize = 13.sp,
                         fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                        color = textColor
+                        color = textColor,
                     )
                 }
             }

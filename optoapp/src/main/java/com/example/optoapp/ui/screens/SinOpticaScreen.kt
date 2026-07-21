@@ -44,7 +44,7 @@ import kotlinx.coroutines.launch
 fun SinOpticaScreen(
     navController: NavController,
     observer: MembershipObserver,
-    viewModel: AuthViewModel = hiltViewModel()
+    viewModel: AuthViewModel = hiltViewModel(),
 ) {
     val userEmail by viewModel.userEmail.collectAsState(initial = "")
     val isPinRequired by viewModel.isPinRequired.collectAsState(initial = false)
@@ -71,21 +71,21 @@ fun SinOpticaScreen(
                 .padding(padding)
                 .padding(horizontal = 24.dp),
             verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             if (!waitingMode) {
                 Text(
                     text = "¿Cómo vas a usar OptoApp?",
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
                 )
                 Spacer(Modifier.height(32.dp))
                 OutlinedButton(
                     onClick = { navController.navigate("onboarding_optica") },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(72.dp)
+                        .height(72.dp),
                 ) {
                     Icon(Icons.Default.Business, contentDescription = "Empresa")
                     Spacer(Modifier.width(12.dp))
@@ -99,7 +99,7 @@ fun SinOpticaScreen(
                     onClick = { waitingMode = true },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(72.dp)
+                        .height(72.dp),
                 ) {
                     Icon(Icons.Default.Person, contentDescription = "Persona")
                     Spacer(Modifier.width(12.dp))
@@ -114,21 +114,21 @@ fun SinOpticaScreen(
                 Text(
                     text = "Esperando que te agreguen a una óptica",
                     style = MaterialTheme.typography.titleMedium,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
                 )
                 Spacer(Modifier.height(8.dp))
                 Text(
                     text = "Pedile a tu administrador que te agregue con este email desde Configuración → Usuarios:",
                     style = MaterialTheme.typography.bodyMedium,
                     textAlign = TextAlign.Center,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Spacer(Modifier.height(8.dp))
                 Text(
                     text = userEmail,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
+                    color = MaterialTheme.colorScheme.primary,
                 )
                 Spacer(Modifier.height(24.dp))
                 if (noMembershipYet) {
@@ -136,7 +136,7 @@ fun SinOpticaScreen(
                         text = "Aún no fuiste agregado. Pedile al administrador que use exactamente este email.",
                         color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.bodySmall,
-                        textAlign = TextAlign.Center
+                        textAlign = TextAlign.Center,
                     )
                     Spacer(Modifier.height(12.dp))
                 }
@@ -155,13 +155,19 @@ fun SinOpticaScreen(
                         }
                     },
                     enabled = !checking,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 ) {
-                    if (checking) CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                    else Text("Ya me agregaron, verificar")
+                    if (checking) {
+                        CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                    } else {
+                        Text("Ya me agregaron, verificar")
+                    }
                 }
                 Spacer(Modifier.height(8.dp))
-                TextButton(onClick = { waitingMode = false; noMembershipYet = false }) {
+                TextButton(onClick = {
+                    waitingMode = false
+                    noMembershipYet = false
+                }) {
                     Text("Volver")
                 }
             }

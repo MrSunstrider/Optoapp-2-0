@@ -46,7 +46,9 @@ class PinDelegateTest {
         override val isPinRequired: Flow<Boolean> = _isPinRequired.asStateFlow()
         override suspend fun saveSession(opticaId: String, email: String, name: String, rol: String) {}
         override suspend fun clearSession() {}
-        override suspend fun setPinRequired(required: Boolean) { _isPinRequired.value = required }
+        override suspend fun setPinRequired(required: Boolean) {
+            _isPinRequired.value = required
+        }
         override suspend fun saveRememberedEmail(email: String) {}
         override suspend fun getRememberedEmail(): String = ""
         override suspend fun clearRememberedEmail() {}
@@ -94,7 +96,9 @@ class PinDelegateTest {
     @Test
     fun `clearPin resets pinInput to empty`() {
         val delegate = PinDelegate(FakeSecurityManager(), FakeSessionManager())
-        delegate.onPinDigit("1"); delegate.onPinDigit("2"); delegate.onPinDigit("3")
+        delegate.onPinDigit("1")
+        delegate.onPinDigit("2")
+        delegate.onPinDigit("3")
         assertEquals("123", delegate.pinInput.value)
         delegate.clearPin()
         assertEquals("", delegate.pinInput.value)

@@ -10,16 +10,18 @@ import kotlinx.serialization.Serializable
 
 @Entity(
     tableName = "dispensacion_items",
-    foreignKeys = [ForeignKey(
-        entity = DispensacionOptica::class,
-        parentColumns = ["id"],
-        childColumns = ["dispensacion_id"],
-        onDelete = ForeignKey.CASCADE
-    )],
+    foreignKeys = [
+        ForeignKey(
+            entity = DispensacionOptica::class,
+            parentColumns = ["id"],
+            childColumns = ["dispensacion_id"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+    ],
     indices = [
         Index(value = ["dispensacion_id"]),
-        Index(value = ["optica_id"])
-    ]
+        Index(value = ["optica_id"]),
+    ],
 )
 @Serializable
 data class DispensacionItem(
@@ -102,5 +104,5 @@ data class DispensacionItem(
     val costoRealBiselado: Double? = null,
     @SerialName("costo_real_lc")
     @ColumnInfo(name = "costo_real_lc")
-    val costoRealLc: Double? = null
+    val costoRealLc: Double? = null,
 )

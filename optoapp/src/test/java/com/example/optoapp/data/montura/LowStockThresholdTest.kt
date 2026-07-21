@@ -23,7 +23,7 @@ class LowStockThresholdTest {
     fun setUp() {
         db = Room.inMemoryDatabaseBuilder(
             ApplicationProvider.getApplicationContext(),
-            OptoDatabase::class.java
+            OptoDatabase::class.java,
         ).allowMainThreadQueries().build()
         dao = db.monturaDao()
     }
@@ -83,11 +83,11 @@ class LowStockThresholdTest {
         stockActual: Int = 10,
         stockMinimo: Int = 2,
         activo: Boolean = true,
-        opticaId: String = "o1"
+        opticaId: String = "o1",
     ) = Montura(
         id = id, sku = "SKU-$id", marca = "M", modelo = "X",
         color = "N", talla = "M", costo = 50.0, precio = 100.0,
         stockActual = stockActual, stockMinimo = stockMinimo,
-        activo = activo, opticaId = opticaId
+        activo = activo, opticaId = opticaId,
     )
 }

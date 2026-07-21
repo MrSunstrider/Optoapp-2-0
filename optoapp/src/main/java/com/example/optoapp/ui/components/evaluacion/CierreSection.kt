@@ -23,7 +23,7 @@ fun CierreSection(
     onUpdate: (EvaluacionUiState) -> Unit,
     onShowProximaDatePicker: () -> Unit,
     onSave: () -> Unit,
-    evaluacionId: String?
+    evaluacionId: String?,
 ) {
     Text("Diagnóstico y Plan", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
 
@@ -35,7 +35,7 @@ fun CierreSection(
     Button(
         onClick = onSave,
         modifier = Modifier.fillMaxWidth().height(56.dp).testTag(TestTags.EVALUACION_GUARDAR_BTN),
-        shape = RoundedCornerShape(12.dp)
+        shape = RoundedCornerShape(12.dp),
     ) {
         Icon(Icons.Default.Check, null)
         Spacer(Modifier.width(8.dp))
@@ -47,7 +47,7 @@ fun CierreSection(
 private fun DiagnosticoCard(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiState) -> Unit) {
     OutlinedCard(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+        colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text("Diagnóstico", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
@@ -58,7 +58,7 @@ private fun DiagnosticoCard(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiS
                         label = "Diagnóstico OD",
                         selected = uiState.diagnosticoOd.firstOrNull() ?: "",
                         options = diagnosticosRefraccion,
-                        onSelected = { onUpdate(uiState.copy(diagnosticoOd = listOf(it), balanceOd = it == "Balance")) }
+                        onSelected = { onUpdate(uiState.copy(diagnosticoOd = listOf(it), balanceOd = it == "Balance")) },
                     )
                 }
                 Spacer(Modifier.width(8.dp))
@@ -74,7 +74,7 @@ private fun DiagnosticoCard(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiS
                         label = "Diagnóstico OI",
                         selected = uiState.diagnosticoOi.firstOrNull() ?: "",
                         options = diagnosticosRefraccion,
-                        onSelected = { onUpdate(uiState.copy(diagnosticoOi = listOf(it), balanceOi = it == "Balance")) }
+                        onSelected = { onUpdate(uiState.copy(diagnosticoOi = listOf(it), balanceOi = it == "Balance")) },
                     )
                 }
                 Spacer(Modifier.width(8.dp))
@@ -90,7 +90,7 @@ private fun DiagnosticoCard(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiS
             listOf(
                 Triple("Presbicia", uiState.otrosPresbicia, uiState.autoPresbicia) to { v: Boolean -> onUpdate(uiState.copy(otrosPresbicia = v, autoPresbicia = false)) },
                 Triple("Anisometropía", uiState.otrosAnisometropia, uiState.autoAnisometropia) to { v: Boolean -> onUpdate(uiState.copy(otrosAnisometropia = v, autoAnisometropia = false)) },
-                Triple("Ambliopía", uiState.otrosAmbliopia, uiState.autoAmbliopia) to { v: Boolean -> onUpdate(uiState.copy(otrosAmbliopia = v, autoAmbliopia = false)) }
+                Triple("Ambliopía", uiState.otrosAmbliopia, uiState.autoAmbliopia) to { v: Boolean -> onUpdate(uiState.copy(otrosAmbliopia = v, autoAmbliopia = false)) },
             ).forEach { (triple, onChecked) ->
                 val (label, checked, auto) = triple
                 Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
@@ -120,7 +120,7 @@ private fun TratamientoCard(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiS
 private fun CitaCard(
     uiState: EvaluacionUiState,
     onUpdate: (EvaluacionUiState) -> Unit,
-    onShowProximaDatePicker: () -> Unit
+    onShowProximaDatePicker: () -> Unit,
 ) {
     OutlinedButton(onClick = onShowProximaDatePicker, modifier = Modifier.fillMaxWidth()) {
         val labelText = uiState.proximaCita?.let { "Próxima Cita: ${DateUtils.formatLocalized(it)}" }
@@ -133,7 +133,7 @@ private fun CitaCard(
             "confirmada" to "Confirmada",
             "asistio" to "Asistió",
             "no_asistio" to "No asistió",
-            "reprogramada" to "Reprogramada"
+            "reprogramada" to "Reprogramada",
         )
         val labelSeleccionado = estadosCitaOpciones
             .find { it.first == uiState.citaEstado.ifBlank { "programada" } }
@@ -146,7 +146,7 @@ private fun CitaCard(
             onSelected = { etiqueta ->
                 val codigo = estadosCitaOpciones.find { it.second == etiqueta }?.first ?: "programada"
                 onUpdate(uiState.copy(citaEstado = codigo))
-            }
+            },
         )
     }
 }
@@ -160,5 +160,5 @@ internal val diagnosticosRefraccion = listOf(
     "Astigmatismo hipermetrópico simple",
     "Astigmatismo hipermetrópico compuesto",
     "Astigmatismo mixto",
-    "Balance"
+    "Balance",
 )

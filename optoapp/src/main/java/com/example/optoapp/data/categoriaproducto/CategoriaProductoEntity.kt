@@ -8,5 +8,5 @@ data class CategoriaProductoEntity(
     @PrimaryKey val id: String,
     val nombre: String,
     val familia: String,
-    val orden: Int = 0
+    val orden: Int = 0,
 )

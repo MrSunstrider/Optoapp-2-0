@@ -6,7 +6,6 @@ import androidx.lifecycle.viewModelScope
 import com.example.optoapp.data.MonturaProveedor
 import com.example.optoapp.data.Proveedor
 import com.example.optoapp.data.ProveedorRepository
-import com.example.optoapp.data.Resource
 import com.example.optoapp.data.SessionManager
 import com.example.optoapp.domain.SyncProveedoresUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -15,8 +14,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -31,7 +30,7 @@ data class ProveedorFormState(
     val email: String = "",
     val direccion: String = "",
     val contacto: String = "",
-    val activo: Boolean = true
+    val activo: Boolean = true,
 )
 
 data class ProveedoresUiState(
@@ -39,7 +38,7 @@ data class ProveedoresUiState(
     val form: ProveedorFormState = ProveedorFormState(),
     val editing: Boolean = false,
     val error: String? = null,
-    val success: String? = null
+    val success: String? = null,
 )
 
 @HiltViewModel
@@ -47,7 +46,7 @@ data class ProveedoresUiState(
 class ProveedoresViewModel @Inject constructor(
     private val repository: ProveedorRepository,
     private val sessionManager: SessionManager,
-    private val syncProveedoresUseCase: SyncProveedoresUseCase
+    private val syncProveedoresUseCase: SyncProveedoresUseCase,
 ) : ViewModel() {
     companion object {
         private const val TAG = "ProveedoresViewModel"
@@ -88,8 +87,8 @@ class ProveedoresViewModel @Inject constructor(
                     email = proveedor.email,
                     direccion = proveedor.direccion,
                     contacto = proveedor.contacto,
-                    activo = proveedor.activo
-                )
+                    activo = proveedor.activo,
+                ),
             )
         }
     }
@@ -121,7 +120,7 @@ class ProveedoresViewModel @Inject constructor(
                     direccion = form.direccion.trim(),
                     contacto = form.contacto.trim(),
                     activo = form.activo,
-                    opticaId = opticaId
+                    opticaId = opticaId,
                 )
                 if (form.id != null) {
                     repository.update(proveedor)
@@ -129,15 +128,22 @@ class ProveedoresViewModel @Inject constructor(
                     repository.insert(proveedor)
                 }
                 _uiState.update {
-                    it.copy(editing = false, form = ProveedorFormState(), error = null,
-                        success = "Proveedor guardado")
+                    it.copy(
+                        editing = false,
+                        form = ProveedorFormState(),
+                        error = null,
+                        success = "Proveedor guardado",
+                    )
                 }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
                 Log.e(TAG, "save failed", e)
-                val msg = if (e.message?.contains("UNIQUE") == true) "El RUC ya existe para esta óptica."
-                          else "Error inesperado. Reintente más tarde."
+                val msg = if (e.message?.contains("UNIQUE") == true) {
+                    "El RUC ya existe para esta óptica."
+                } else {
+                    "Error inesperado. Reintente más tarde."
+                }
                 _uiState.update { it.copy(error = msg) }
             }
         }
@@ -158,7 +164,7 @@ class ProveedoresViewModel @Inject constructor(
                     monturaId = monturaId,
                     proveedorId = proveedorId,
                     costoProveedor = costoProveedor,
-                    precioSugerido = precioSugerido
+                    precioSugerido = precioSugerido,
                 )
                 repository.linkMonturaProveedor(link)
                 _uiState.update { it.copy(success = "Montura vinculada al proveedor") }

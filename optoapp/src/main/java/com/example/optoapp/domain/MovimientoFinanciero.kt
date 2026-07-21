@@ -14,7 +14,7 @@ data class MovimientoFinanciero(
     val pacienteId: String,
     val opticaId: String,
     val descripcion: String,
-    val vinculadoA: String? = null
+    val vinculadoA: String? = null,
 )
 
 enum class TipoMovimiento {
@@ -22,11 +22,11 @@ enum class TipoMovimiento {
     ANULACION,
     RECLAMO,
     REGALO,
-    ABONO
+    ABONO,
 }
 
 enum class Origen {
     DISPENSACION,
     SERVICIO,
-    REGALO
+    REGALO,
 }

@@ -21,26 +21,21 @@ open class OrdenCompraRepository @Inject constructor(
     private val ocDao: OrdenCompraDao,
     private val itemDao: OrdenCompraItemDao,
     private val monturaCoordinator: MonturaInventoryCoordinator,
-    private val postSaveSyncScheduler: Lazy<PostSaveSyncScheduler>
+    private val postSaveSyncScheduler: Lazy<PostSaveSyncScheduler>,
 ) {
     companion object {
         private const val TAG = "OrdenCompraRepo"
     }
 
-    fun getByOptica(opticaId: String): Flow<List<OrdenCompra>> =
-        ocDao.getByOptica(opticaId)
+    fun getByOptica(opticaId: String): Flow<List<OrdenCompra>> = ocDao.getByOptica(opticaId)
 
-    suspend fun getListByOptica(opticaId: String): List<OrdenCompra> =
-        ocDao.getListByOptica(opticaId)
+    suspend fun getListByOptica(opticaId: String): List<OrdenCompra> = ocDao.getListByOptica(opticaId)
 
-    suspend fun getById(id: String): OrdenCompra? =
-        ocDao.getById(id)
+    suspend fun getById(id: String): OrdenCompra? = ocDao.getById(id)
 
-    suspend fun getItems(ordenId: String): List<OrdenCompraItem> =
-        itemDao.getByOrden(ordenId)
+    suspend fun getItems(ordenId: String): List<OrdenCompraItem> = itemDao.getByOrden(ordenId)
 
-    suspend fun getOrdenItemById(id: String): OrdenCompraItem? =
-        itemDao.getById(id)
+    suspend fun getOrdenItemById(id: String): OrdenCompraItem? = itemDao.getById(id)
 
     open suspend fun create(oc: OrdenCompra, items: List<OrdenCompraItem>) {
         val total = items.sumOf { it.cantidad.toDouble() * it.costoUnitario }
@@ -81,12 +76,19 @@ open class OrdenCompraRepository @Inject constructor(
         val total = updatedItems.sumOf { it.recibido.toDouble() * it.costoUnitario }
 
         if (allFullyReceived && updatedItems.isNotEmpty()) {
-            ocDao.update(oc.copy(estado = "COMPLETADA", total = total,
-                updatedAt = Instant.now().toString()))
+            ocDao.update(
+                oc.copy(
+                    estado = "COMPLETADA",
+                    total = total,
+                    updatedAt = Instant.now().toString(),
+                ),
+            )
             // Stock must increase to reflect physical inventory after receipt
             updatedItems.forEach { item ->
                 val stockChanged = monturaCoordinator.adjustMonturaStock(
-                    item.monturaId, oc.opticaId, item.recibido
+                    item.monturaId,
+                    oc.opticaId,
+                    item.recibido,
                 )
                 if (stockChanged > 0) {
                     try {
@@ -103,7 +105,7 @@ open class OrdenCompraRepository @Inject constructor(
                             opticaId = oc.opticaId,
                             userId = oc.updatedBy ?: "",
                             costoUnitario = item.costoUnitario,
-                            tipoDocumento = "OC"
+                            tipoDocumento = "OC",
                         )
                         monturaCoordinator.insertMonturaMovimiento(movimiento)
                     } catch (e: CancellationException) {
@@ -116,8 +118,13 @@ open class OrdenCompraRepository @Inject constructor(
                 }
             }
         } else {
-            ocDao.update(oc.copy(total = total, estado = "PARCIAL",
-                updatedAt = Instant.now().toString()))
+            ocDao.update(
+                oc.copy(
+                    total = total,
+                    estado = "PARCIAL",
+                    updatedAt = Instant.now().toString(),
+                ),
+            )
         }
         postSaveSyncScheduler.get().scheduleOrdenCompraSync(oc.opticaId)
     }

@@ -1,14 +1,10 @@
 package com.example.optoapp.ui.screens
 
-import com.example.optoapp.domain.AnalisisMensual
 import com.example.optoapp.domain.Deudor
-import com.example.optoapp.domain.DeudoresResumen
-import com.example.optoapp.domain.MargenCategoria
 import com.example.optoapp.domain.ProyeccionCaja
 import com.example.optoapp.domain.StockEstancadoItem
 import org.junit.Assert.*
 import org.junit.Test
-import java.time.LocalDate
 
 class AnalisisDetalleScreenTest {
 
@@ -25,7 +21,7 @@ class AnalisisDetalleScreenTest {
         val proyeccion = ProyeccionCaja(
             ingresosEsperados = 5000.0,
             egresosProgramados = 2000.0,
-            saldoNeto = 3000.0
+            saldoNeto = 3000.0,
         )
         assertEquals(0, proyeccion.mesesHistoricos)
     }
@@ -36,7 +32,7 @@ class AnalisisDetalleScreenTest {
             ingresosEsperados = 5000.0,
             egresosProgramados = 2000.0,
             saldoNeto = 3000.0,
-            mesesHistoricos = 1
+            mesesHistoricos = 1,
         )
         val showWarning = proyeccion.mesesHistoricos < 3
         assertTrue("Warning should show when mesesHistoricos < 3", showWarning)
@@ -48,7 +44,7 @@ class AnalisisDetalleScreenTest {
             ingresosEsperados = 5000.0,
             egresosProgramados = 2000.0,
             saldoNeto = 3000.0,
-            mesesHistoricos = 5
+            mesesHistoricos = 5,
         )
         val showWarning = proyeccion.mesesHistoricos < 3
         assertFalse("Warning should NOT show when mesesHistoricos >= 3", showWarning)
@@ -60,7 +56,7 @@ class AnalisisDetalleScreenTest {
             ingresosEsperados = 5000.0,
             egresosProgramados = 2000.0,
             saldoNeto = 3000.0,
-            mesesHistoricos = 2
+            mesesHistoricos = 2,
         )
         val showWarning = proyeccion.mesesHistoricos < 3
         assertTrue("Warning should show when mesesHistoricos == 2 (edge)", showWarning)
@@ -72,7 +68,7 @@ class AnalisisDetalleScreenTest {
             ingresosEsperados = 5000.0,
             egresosProgramados = 2000.0,
             saldoNeto = 3000.0,
-            mesesHistoricos = 3
+            mesesHistoricos = 3,
         )
         val showWarning = proyeccion.mesesHistoricos < 3
         assertFalse("Warning should NOT show when mesesHistoricos == 3 (edge)", showWarning)

@@ -2,7 +2,6 @@ package com.example.optoapp.util
 
 import com.example.optoapp.data.BackupData
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.Serializable
 
 /**
  * Validación defensiva antes de importar un respaldo JSON (tamaño, forma básica, límites de filas).
@@ -20,7 +19,7 @@ object BackupImportValidator {
         }
         if (json.length > MAX_JSON_CHARS) {
             return Result.failure(
-                IllegalArgumentException("El archivo supera el tamaño máximo permitido para importación.")
+                IllegalArgumentException("El archivo supera el tamaño máximo permitido para importación."),
             )
         }
         val data = try {

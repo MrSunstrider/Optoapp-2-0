@@ -14,7 +14,7 @@ class PagoEntityTest {
             fecha = LocalDate.of(2026, 7, 1),
             tipo = "efectivo",
             monto = 100.0,
-            ventaId = "v123"
+            ventaId = "v123",
         )
         assertEquals("v123", pago.ventaId)
     }
@@ -25,7 +25,7 @@ class PagoEntityTest {
             id = "p2",
             fecha = LocalDate.of(2026, 7, 2),
             tipo = "tarjeta",
-            monto = 200.0
+            monto = 200.0,
         )
         assertNull(pago.ventaId)
     }

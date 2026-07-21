@@ -1,18 +1,17 @@
 package com.example.optoapp.data
 
+import android.util.Log
 import com.example.optoapp.data.membership.MembershipDataSource
 import com.example.optoapp.data.membership.OpticaQueryHelper
 import com.example.optoapp.data.membership.OpticaSettingsDataSource
+import com.example.optoapp.data.opticasettings.OpticaSettingsDao
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.auth.auth
-import android.util.Log
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import kotlinx.coroutines.runBlocking
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -41,7 +40,7 @@ class MembershipRepositoryTest {
         val opticaQueryHelper = OpticaQueryHelper(supabase)
         val membershipDataSource = MembershipDataSource(supabase, opticaQueryHelper)
         val opticaSettingsDataSource = OpticaSettingsDataSource(supabase)
-        repo = MembershipRepository(membershipDataSource, opticaSettingsDataSource)
+        repo = MembershipRepository(membershipDataSource, opticaSettingsDataSource, mockk(relaxed = true))
     }
 
     // ── Sin sesión — early returns ──────────────────────────────────────────
@@ -130,7 +129,7 @@ class MembershipRepositoryTest {
             docTipo = "RUC",
             docNumero = "12345678901",
             razonSocial = "Test SRL",
-            direccionFiscal = "Av Test 123"
+            direccionFiscal = "Av Test 123",
         )
 
         assertTrue(result.isFailure)

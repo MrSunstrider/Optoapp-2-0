@@ -9,7 +9,9 @@ import com.example.optoapp.data.MembershipRepository
 import com.example.optoapp.data.membership.MembershipDataSource
 import com.example.optoapp.data.membership.OpticaQueryHelper
 import com.example.optoapp.data.membership.OpticaSettingsDataSource
+import com.example.optoapp.data.opticasettings.OpticaSettingsDao
 import io.github.jan.supabase.createSupabaseClient
+import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -38,13 +40,14 @@ class SubscriptionManagerTest {
     fun setUp() {
         fakeDataStore = FakeDataStore()
         val dummySupabase = createSupabaseClient("https://test.supabase.co", "test-key") { }
-        val dummyMembership = MembershipRepository(
+        val dummyMembership =         MembershipRepository(
             MembershipDataSource(dummySupabase, OpticaQueryHelper(dummySupabase)),
-            OpticaSettingsDataSource(dummySupabase)
+            OpticaSettingsDataSource(dummySupabase),
+            mockk(relaxed = true),
         )
         subscriptionManager = object : SubscriptionManager(
             context = RuntimeEnvironment.getApplication().applicationContext,
-            membershipRepository = dummyMembership
+            membershipRepository = dummyMembership,
         ) {
             override fun isDevProEffective(prefs: Preferences): Boolean = false
         }
@@ -162,8 +165,9 @@ class SubscriptionManagerTest {
             context = RuntimeEnvironment.getApplication().applicationContext,
             membershipRepository = MembershipRepository(
                 MembershipDataSource(dummySupabase, OpticaQueryHelper(dummySupabase)),
-                OpticaSettingsDataSource(dummySupabase)
-            )
+                OpticaSettingsDataSource(dummySupabase),
+                mockk(relaxed = true),
+            ),
         ) {
             override fun isDevProEffective(prefs: Preferences): Boolean = true
         }
@@ -191,8 +195,9 @@ class SubscriptionManagerTest {
             context = RuntimeEnvironment.getApplication().applicationContext,
             membershipRepository = MembershipRepository(
                 MembershipDataSource(dummySupabase2, OpticaQueryHelper(dummySupabase2)),
-                OpticaSettingsDataSource(dummySupabase2)
-            )
+                OpticaSettingsDataSource(dummySupabase2),
+                mockk(relaxed = true),
+            ),
         ) {
             override fun isDevProEffective(prefs: Preferences): Boolean = false
             override suspend fun refreshPlanFromServer(opticaId: String) {
@@ -221,8 +226,9 @@ class SubscriptionManagerTest {
             context = RuntimeEnvironment.getApplication().applicationContext,
             membershipRepository = MembershipRepository(
                 MembershipDataSource(dummySupabase3, OpticaQueryHelper(dummySupabase3)),
-                OpticaSettingsDataSource(dummySupabase3)
-            )
+                OpticaSettingsDataSource(dummySupabase3),
+                mockk(relaxed = true),
+            ),
         ) {
             override fun isDevProEffective(prefs: Preferences): Boolean = false
             override suspend fun refreshPlanFromServer(opticaId: String) {
@@ -233,8 +239,11 @@ class SubscriptionManagerTest {
 
         manager.refreshPlanFromServer("optica-1")
         advanceUntilIdle()
-        assertEquals("plan unchanged when server returns null",
-            PlanCode.PRO_INDIVIDUAL, manager.planCode.first())
+        assertEquals(
+            "plan unchanged when server returns null",
+            PlanCode.PRO_INDIVIDUAL,
+            manager.planCode.first(),
+        )
     }
 
     // ─── setDevProOverride ─────────────────────────────────────────────────
@@ -258,3 +267,4 @@ class SubscriptionManagerTest {
         }
     }
 }
+

@@ -66,7 +66,7 @@ class Migration31To32Test {
                             updatedBy TEXT,
                             ot TEXT NOT NULL DEFAULT ''
                         )
-                        """.trimIndent()
+                        """.trimIndent(),
                     )
                     db.execSQL("CREATE INDEX IF NOT EXISTS index_ventas_opticaId ON ventas(opticaId)")
                     db.execSQL("CREATE INDEX IF NOT EXISTS index_ventas_origen_origenId ON ventas(origen, origenId)")
@@ -74,7 +74,7 @@ class Migration31To32Test {
                     // Insert a test venta row
                     db.execSQL(
                         "INSERT INTO ventas (id, opticaId, origen, origenId, pacienteId, fecha, montoTotal, estado) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                        arrayOf<Any>("v_test1", "optica1", "dispensacion", "disp1", "p1", "2026-07-01", 150.0, "Pendiente")
+                        arrayOf<Any>("v_test1", "optica1", "dispensacion", "disp1", "p1", "2026-07-01", 150.0, "Pendiente"),
                     )
                 }
 
@@ -168,11 +168,11 @@ class Migration31To32Test {
                             updatedBy TEXT,
                             ot TEXT NOT NULL DEFAULT ''
                         )
-                        """.trimIndent()
+                        """.trimIndent(),
                     )
                     db.execSQL(
                         "INSERT INTO ventas (id, opticaId, origen, origenId, pacienteId, fecha, montoTotal, estado) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                        arrayOf<Any>("v_test1", "optica1", "dispensacion", "disp1", "p1", "2026-07-01", 150.0, "Pendiente")
+                        arrayOf<Any>("v_test1", "optica1", "dispensacion", "disp1", "p1", "2026-07-01", 150.0, "Pendiente"),
                     )
                 }
 

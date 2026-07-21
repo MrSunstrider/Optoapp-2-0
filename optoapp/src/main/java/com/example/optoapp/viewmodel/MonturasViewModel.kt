@@ -4,24 +4,24 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.optoapp.data.Montura
-import java.io.IOException
-import kotlinx.coroutines.CancellationException
 import com.example.optoapp.data.MonturaMovimiento
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Resource
 import com.example.optoapp.data.SessionManager
 import com.example.optoapp.domain.auth.AuthorizationGuard
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
+import java.io.IOException
 import java.util.UUID
 import javax.inject.Inject
 
@@ -50,7 +50,7 @@ data class MonturaFormState(
     val genero: String = "",
     val selectedProveedorId: String? = null,
     val costoProveedor: String = "",
-    val precioSugerido: String = ""
+    val precioSugerido: String = "",
 )
 
 data class MonturasUiState(
@@ -65,14 +65,14 @@ data class MonturasUiState(
     val filterPrecioMin: String? = null,
     val filterPrecioMax: String? = null,
     val filterStockBajo: Boolean = false,
-    val sortBy: String? = null
+    val sortBy: String? = null,
 )
 
 @HiltViewModel
 @OptIn(ExperimentalCoroutinesApi::class)
 class MonturasViewModel @Inject constructor(
     private val repository: OptoRepository,
-    private val sessionManager: SessionManager
+    private val sessionManager: SessionManager,
 ) : ViewModel() {
     companion object {
         private const val TAG = "MonturasViewModel"
@@ -127,8 +127,8 @@ class MonturasViewModel @Inject constructor(
                     coleccion = montura.coleccion,
                     temporada = montura.temporada,
                     estadoComercial = montura.estadoComercial,
-                    genero = montura.genero
-                )
+                    genero = montura.genero,
+                ),
             )
         }
     }
@@ -198,7 +198,7 @@ class MonturasViewModel @Inject constructor(
                     temporada = form.temporada.trim(),
                     estadoComercial = form.estadoComercial.trim(),
                     genero = form.genero.trim(),
-                    opticaId = opticaId
+                    opticaId = opticaId,
                 )
                 when (repository.getMonturaById(montura.id, opticaId)) {
                     is Resource.Success -> repository.updateMontura(montura)
@@ -209,7 +209,7 @@ class MonturasViewModel @Inject constructor(
                         editing = false,
                         form = MonturaFormState(),
                         error = null,
-                        success = "Producto guardado"
+                        success = "Producto guardado",
                     )
                 }
             } catch (e: CancellationException) {
@@ -218,8 +218,11 @@ class MonturasViewModel @Inject constructor(
                 Log.e(TAG, "save failed: IO error", e)
                 _uiState.update { it.copy(error = "Error inesperado. Reintente más tarde.") }
             } catch (e: Exception) {
-                val msg = if (e.message?.contains("UNIQUE") == true) "El SKU ya existe para otro producto." 
-                          else "Error inesperado. Reintente más tarde."
+                val msg = if (e.message?.contains("UNIQUE") == true) {
+                    "El SKU ya existe para otro producto."
+                } else {
+                    "Error inesperado. Reintente más tarde."
+                }
                 Log.e(TAG, "save failed", e)
                 _uiState.update { it.copy(error = msg) }
             }
@@ -263,7 +266,7 @@ class MonturasViewModel @Inject constructor(
                 filterCategoria = null,
                 filterPrecioMin = null,
                 filterPrecioMax = null,
-                filterStockBajo = false
+                filterStockBajo = false,
             )
         }
     }
@@ -288,8 +291,8 @@ class MonturasViewModel @Inject constructor(
                         stockNuevo = montura.stockActual - cantidad,
                         referenciaId = "",
                         nota = "Salida manual desde inventario",
-                        opticaId = opticaId
-                    )
+                        opticaId = opticaId,
+                    ),
                 )
                 _uiState.update { it.copy(success = "Stock actualizado (-$cantidad)", error = null) }
             }
@@ -312,8 +315,8 @@ class MonturasViewModel @Inject constructor(
                         stockNuevo = montura.stockActual + cantidad,
                         referenciaId = "",
                         nota = "Ingreso manual desde inventario",
-                        opticaId = opticaId
-                    )
+                        opticaId = opticaId,
+                    ),
                 )
                 _uiState.update { it.copy(success = "Stock actualizado (+$cantidad)", error = null) }
             }

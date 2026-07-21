@@ -27,7 +27,7 @@ class MiNegocioWidgetWorkerTest {
             fecha = "2026-07-12",
             ventasCantidad = 5,
             ventasMontoTotal = 2500.0,
-            saldoPendienteTotal = 800.0
+            saldoPendienteTotal = 800.0,
         )
 
         val context = RuntimeEnvironment.getApplication()

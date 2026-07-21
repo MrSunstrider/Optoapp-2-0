@@ -38,7 +38,7 @@ import com.example.optoapp.viewmodel.EvaluacionUiState
 fun AnamnesisSection(
     uiState: EvaluacionUiState,
     onUpdate: (EvaluacionUiState) -> Unit,
-    onShowDatePicker: () -> Unit
+    onShowDatePicker: () -> Unit,
 ) {
     OutlinedButton(onClick = onShowDatePicker, modifier = Modifier.fillMaxWidth()) {
         Text("Fecha Registro: ${DateUtils.formatLocalized(uiState.fecha)}")
@@ -51,14 +51,14 @@ fun AnamnesisSection(
     var antecedentesExpanded by remember { mutableStateOf(false) }
     val chevronRotation by animateFloatAsState(
         targetValue = if (antecedentesExpanded) 180f else 0f,
-        label = "chevron"
+        label = "chevron",
     )
 
     OutlinedCard(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.outlinedCardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-        )
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+        ),
     ) {
         Column {
             Row(
@@ -68,24 +68,24 @@ fun AnamnesisSection(
                     .clickable { antecedentesExpanded = !antecedentesExpanded }
                     .padding(horizontal = 16.dp, vertical = 12.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text("Antecedentes", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                 Icon(
                     imageVector = Icons.Default.ExpandMore,
                     contentDescription = if (antecedentesExpanded) "Colapsar" else "Expandir",
                     modifier = Modifier.rotate(chevronRotation),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
             AnimatedVisibility(
                 visible = antecedentesExpanded,
                 enter = expandVertically(),
-                exit = shrinkVertically()
+                exit = shrinkVertically(),
             ) {
                 Column(
                     modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     OptoTextField(value = uiState.antecedentesPersonalesOculares, onValueChange = { onUpdate(uiState.copy(antecedentesPersonalesOculares = it)) }, label = "Pers. Oculares")
                     OptoTextField(value = uiState.antecedentesPersonalesSistemicos, onValueChange = { onUpdate(uiState.copy(antecedentesPersonalesSistemicos = it)) }, label = "Pers. Sistémicos")

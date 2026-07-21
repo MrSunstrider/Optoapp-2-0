@@ -19,7 +19,7 @@ class SyncProveedoresUseCaseKtTest {
             id = "p1", nombre = "Optical Corp", ruc = "20123456789",
             telefono = "999888", email = "a@b.com", direccion = "Calle 1",
             contacto = "Juan", activo = true, opticaId = "o1",
-            updatedAt = "2024-01-01T00:00:00Z"
+            updatedAt = "2024-01-01T00:00:00Z",
         )
         assertEquals("p1", p.id)
         assertEquals("Optical Corp", p.nombre)
@@ -36,7 +36,10 @@ class SyncProveedoresUseCaseKtTest {
     @Test
     fun proveedorEntity_defaultValues() {
         val p = Proveedor(
-            id = "p1", nombre = "Test", ruc = "111", opticaId = "o1"
+            id = "p1",
+            nombre = "Test",
+            ruc = "111",
+            opticaId = "o1",
         )
         assertEquals("", p.telefono)
         assertEquals("", p.email)
@@ -49,7 +52,11 @@ class SyncProveedoresUseCaseKtTest {
     @Test
     fun proveedorEntity_inactiveProveedor() {
         val p = Proveedor(
-            id = "p1", nombre = "Inactive", ruc = "111", opticaId = "o1", activo = false
+            id = "p1",
+            nombre = "Inactive",
+            ruc = "111",
+            opticaId = "o1",
+            activo = false,
         )
         assertEquals(false, p.activo)
     }
@@ -57,7 +64,10 @@ class SyncProveedoresUseCaseKtTest {
     @Test
     fun categoriaMonturaEntity_allFieldsAccessible() {
         val c = CategoriaMontura(
-            id = "c1", nombre = "Sol", descripcion = "Lentes de sol", opticaId = "o1"
+            id = "c1",
+            nombre = "Sol",
+            descripcion = "Lentes de sol",
+            opticaId = "o1",
         )
         assertEquals("c1", c.id)
         assertEquals("Sol", c.nombre)
@@ -68,7 +78,9 @@ class SyncProveedoresUseCaseKtTest {
     @Test
     fun categoriaMonturaEntity_defaultDescription() {
         val c = CategoriaMontura(
-            id = "c1", nombre = "Graduada", opticaId = "o1"
+            id = "c1",
+            nombre = "Graduada",
+            opticaId = "o1",
         )
         assertEquals("Graduada", c.nombre)
         assertEquals("", c.descripcion)
@@ -80,7 +92,7 @@ class SyncProveedoresUseCaseKtTest {
             uploadedProveedores = 5,
             uploadedCategorias = 3,
             downloadedProveedores = 2,
-            downloadedCategorias = 1
+            downloadedCategorias = 1,
         )
         assertEquals(5, result.uploadedProveedores)
         assertEquals(3, result.uploadedCategorias)
@@ -100,7 +112,7 @@ class SyncProveedoresUseCaseKtTest {
     @Test
     fun resourceSuccess_wrapsSyncResult() {
         val result = com.example.optoapp.data.Resource.Success(
-            ProveedoresSyncResult(1, 0, 0, 0)
+            ProveedoresSyncResult(1, 0, 0, 0),
         )
         assertNotNull(result.data)
         assertEquals(1, result.data!!.uploadedProveedores)

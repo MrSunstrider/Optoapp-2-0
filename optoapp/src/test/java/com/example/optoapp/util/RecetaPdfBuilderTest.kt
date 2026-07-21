@@ -52,7 +52,7 @@ class RecetaPdfBuilderTest {
         assertEquals(
             "altRowPaint ARGB value mismatch from generator's inline Color.argb(30,30,91,140)",
             0x1E1E5B8C.toInt(),
-            packed
+            packed,
         )
     }
 
@@ -66,7 +66,7 @@ class RecetaPdfBuilderTest {
         assertEquals(
             "contentWidth formula should produce 511 with current constants",
             511,
-            computed
+            computed,
         )
     }
 }

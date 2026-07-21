@@ -7,13 +7,15 @@ import kotlinx.coroutines.flow.Flow
 interface DispensacionItemDao {
 
     @MapInfo(keyColumn = "dispensacionId", valueColumn = "costoTotal")
-    @Query("""
+    @Query(
+        """
         SELECT dispensacion_id AS dispensacionId,
         COALESCE(SUM(COALESCE(costo_real_od, 0) + COALESCE(costo_real_oi, 0) + COALESCE(costo_real_montura, 0) + COALESCE(costo_real_biselado, 0) + COALESCE(costo_real_lc, 0)), 0) AS costoTotal
         FROM dispensacion_items 
         WHERE dispensacion_id IN (:ids) 
         GROUP BY dispensacion_id
-    """)
+    """,
+    )
     suspend fun getCostosByDispensacionIds(ids: Set<String>): Map<String, Double>
 
     @Query("SELECT * FROM dispensacion_items WHERE dispensacion_id = :dispensacionId ORDER BY rowid")
@@ -30,7 +32,7 @@ interface DispensacionItemDao {
 
     @Deprecated(
         message = "Use getItemsListByOptica to enforce multi-tenant isolation",
-        replaceWith = ReplaceWith("getItemsListByOptica(opticaId)")
+        replaceWith = ReplaceWith("getItemsListByOptica(opticaId)"),
     )
     @Query("SELECT * FROM dispensacion_items")
     suspend fun getAllItems(): List<DispensacionItem>

@@ -31,9 +31,14 @@ class RegaloDispensacionViewModelTest {
     private val dispId = "disp-1"
 
     private val testRegalo = RegaloDispensacionEntity(
-        id = "reg-1", dispensacionId = dispId, productoId = "prod-1",
-        cantidad = 2, costoUnitario = 10.0, descripcion = "Estuche",
-        motivo = "Cortesía", opticaId = opticaId
+        id = "reg-1",
+        dispensacionId = dispId,
+        productoId = "prod-1",
+        cantidad = 2,
+        costoUnitario = 10.0,
+        descripcion = "Estuche",
+        motivo = "Cortesía",
+        opticaId = opticaId,
     )
 
     @Before
@@ -76,8 +81,12 @@ class RegaloDispensacionViewModelTest {
 
         coVerify {
             stockHelper.adjustStockAndRegistrarMovimiento(
-                "prod-1", opticaId, -2,
-                "SALIDA_VENTA", dispId, "Salida por regalo"
+                "prod-1",
+                opticaId,
+                -2,
+                "SALIDA_VENTA",
+                dispId,
+                "Salida por regalo",
             )
         }
     }
@@ -108,8 +117,12 @@ class RegaloDispensacionViewModelTest {
 
         coVerify {
             stockHelper.adjustStockAndRegistrarMovimiento(
-                "prod-1", opticaId, 2,
-                "AJUSTE", dispId, "Reversión por eliminación de regalo"
+                "prod-1",
+                opticaId,
+                2,
+                "AJUSTE",
+                dispId,
+                "Reversión por eliminación de regalo",
             )
         }
     }

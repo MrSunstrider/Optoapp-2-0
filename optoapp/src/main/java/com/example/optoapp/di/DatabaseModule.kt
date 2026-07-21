@@ -2,16 +2,16 @@ package com.example.optoapp.di
 
 import android.content.Context
 import com.example.optoapp.data.*
-import com.example.optoapp.domain.SyncLogger
 import com.example.optoapp.data.backup.BackupRestoreCoordinator
-import com.example.optoapp.data.configuracionfinanciera.ConfiguracionFinancieraDao
 import com.example.optoapp.data.categoriaproducto.CategoriaProductoDao
+import com.example.optoapp.data.configuracionfinanciera.ConfiguracionFinancieraDao
 import com.example.optoapp.data.costobiselado.CostoBiseladoDao
-import com.example.optoapp.data.costoproducto.CostoProductoDao
 import com.example.optoapp.data.costolc.CostoLcDao
+import com.example.optoapp.data.costoproducto.CostoProductoDao
 import com.example.optoapp.data.feedbackrecomendacion.FeedbackRecomendacionDao
 import com.example.optoapp.data.gastooperativo.GastoOperativoDao
 import com.example.optoapp.data.inventariofisico.InventarioFisicoDao
+import com.example.optoapp.data.opticasettings.OpticaSettingsDao
 import com.example.optoapp.data.montura.MonturaDao
 import com.example.optoapp.data.montura.MonturaDashboardKpiRepository
 import com.example.optoapp.data.montura.MonturaInventoryCoordinator
@@ -26,6 +26,7 @@ import com.example.optoapp.data.regalodispensacion.RegaloDispensacionDao
 import com.example.optoapp.data.resumendiario.ResumenDiarioDao
 import com.example.optoapp.data.servicio.ServicioExtraDao
 import com.example.optoapp.data.sync.SyncSnapshotCoordinator
+import com.example.optoapp.domain.SyncLogger
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import com.example.optoapp.viewmodel.auth.AuthDelegate
 import com.example.optoapp.viewmodel.auth.BackupDelegate
@@ -34,10 +35,10 @@ import dagger.Lazy
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
-import kotlinx.serialization.json.Json
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import io.github.jan.supabase.SupabaseClient
+import kotlinx.serialization.json.Json
 import javax.inject.Singleton
 
 // SessionManager se provee aquí porque comparte el mismo DataStore que SecurityManager
@@ -48,16 +49,14 @@ object DatabaseModule {
 
     @Provides
     @Singleton
-    fun provideDatabase(@ApplicationContext context: Context): OptoDatabase {
-        return try {
-            OptoDatabase.getDatabase(context)
-        } catch (e: IllegalStateException) {
-            throw IllegalStateException(
-                "No se pudo abrir la base local por un conflicto de migración. " +
-                    "Tus datos no se han borrado. Exporta respaldo y actualiza la app.",
-                e
-            )
-        }
+    fun provideDatabase(@ApplicationContext context: Context): OptoDatabase = try {
+        OptoDatabase.getDatabase(context)
+    } catch (e: IllegalStateException) {
+        throw IllegalStateException(
+            "No se pudo abrir la base local por un conflicto de migración. " +
+                "Tus datos no se han borrado. Exporta respaldo y actualiza la app.",
+            e,
+        )
     }
 
     @Provides
@@ -137,21 +136,20 @@ object DatabaseModule {
     fun provideRegaloDispensacionDao(database: OptoDatabase): RegaloDispensacionDao = database.regaloDispensacionDao()
 
     @Provides
-    @Singleton
-    fun provideSecurityManager(@ApplicationContext context: Context): SecurityManager {
-        return SecurityManager(context)
-    }
+    fun provideOpticaSettingsDao(database: OptoDatabase): OpticaSettingsDao = database.opticaSettingsDao()
 
     @Provides
     @Singleton
-    fun provideSessionManager(@ApplicationContext context: Context): SessionManager {
-        return SessionManager(context)
-    }
+    fun provideSecurityManager(@ApplicationContext context: Context): SecurityManager = SecurityManager(context)
+
+    @Provides
+    @Singleton
+    fun provideSessionManager(@ApplicationContext context: Context): SessionManager = SessionManager(context)
 
     @Provides
     fun providePacienteRepository(
         pacienteDao: PacienteDao,
-        evaluacionDao: EvaluacionDao
+        evaluacionDao: EvaluacionDao,
     ): PacienteRepository = PacienteRepository(pacienteDao, evaluacionDao)
 
     @Provides
@@ -159,14 +157,14 @@ object DatabaseModule {
         dispensacionDao: DispensacionDao,
         dispensacionItemDao: DispensacionItemDao,
         pagoDao: PagoDao,
-        servicioExtraDao: ServicioExtraDao
+        servicioExtraDao: ServicioExtraDao,
     ): DispensacionRepository = DispensacionRepository(dispensacionDao, dispensacionItemDao, pagoDao, servicioExtraDao)
 
     @Provides
     fun provideSyncRepository(
         syncStateTracker: SyncStateTracker,
         monturaDao: MonturaDao,
-        monturaMovimientoDao: MonturaMovimientoDao
+        monturaMovimientoDao: MonturaMovimientoDao,
     ): SyncRepository = SyncRepository(syncStateTracker, monturaDao, monturaMovimientoDao)
 
     @Provides
@@ -177,9 +175,15 @@ object DatabaseModule {
         pacienteRepo: PacienteRepository,
         dispensacionRepo: DispensacionRepository,
         syncRepo: SyncRepository,
-        regaloDispensacionDao: RegaloDispensacionDao
+        regaloDispensacionDao: RegaloDispensacionDao,
     ): SyncSnapshotCoordinator = SyncSnapshotCoordinator(
-        pacienteDao, monturaDao, monturaMovimientoDao, pacienteRepo, dispensacionRepo, syncRepo, regaloDispensacionDao
+        pacienteDao,
+        monturaDao,
+        monturaMovimientoDao,
+        pacienteRepo,
+        dispensacionRepo,
+        syncRepo,
+        regaloDispensacionDao,
     )
 
     @Provides
@@ -189,24 +193,31 @@ object DatabaseModule {
         evaluacionDao: EvaluacionDao,
         pacienteDao: PacienteDao,
         postSaveSyncScheduler: Lazy<PostSaveSyncScheduler>,
-        database: OptoDatabase
+        database: OptoDatabase,
     ): BackupRestoreCoordinator = BackupRestoreCoordinator(
-        pacienteRepo, dispensacionRepo, evaluacionDao, pacienteDao, postSaveSyncScheduler, database
+        pacienteRepo,
+        dispensacionRepo,
+        evaluacionDao,
+        pacienteDao,
+        postSaveSyncScheduler,
+        database,
     )
 
     @Provides
     fun provideMonturaInventoryCoordinator(
         monturaDao: MonturaDao,
         monturaMovimientoDao: MonturaMovimientoDao,
-        postSaveSyncScheduler: Lazy<PostSaveSyncScheduler>
+        postSaveSyncScheduler: Lazy<PostSaveSyncScheduler>,
     ): MonturaInventoryCoordinator = MonturaInventoryCoordinator(
-        monturaDao, monturaMovimientoDao, postSaveSyncScheduler
+        monturaDao,
+        monturaMovimientoDao,
+        postSaveSyncScheduler,
     )
 
     @Provides
     fun provideMonturaDashboardKpiRepository(
         monturaDao: MonturaDao,
-        monturaMovimientoDao: MonturaMovimientoDao
+        monturaMovimientoDao: MonturaMovimientoDao,
     ): MonturaDashboardKpiRepository = MonturaDashboardKpiRepository(monturaDao, monturaMovimientoDao)
 
     @Provides
@@ -221,21 +232,19 @@ object DatabaseModule {
         snapshotCoordinator: SyncSnapshotCoordinator,
         backupCoordinator: BackupRestoreCoordinator,
         monturaCoordinator: MonturaInventoryCoordinator,
-        gastoOperativoDao: GastoOperativoDao
-    ): OptoRepository {
-        return OptoRepository(
-            database = database,
-            syncStateTracker = syncStateTracker,
-            postSaveSyncScheduler = postSaveSyncScheduler,
-            pacienteRepo = pacienteRepo,
-            dispensacionRepo = dispensacionRepo,
-            syncRepo = syncRepo,
-            snapshotCoordinator = snapshotCoordinator,
-            backupCoordinator = backupCoordinator,
-            monturaCoordinator = monturaCoordinator,
-            gastoOperativoDao = gastoOperativoDao
-        )
-    }
+        gastoOperativoDao: GastoOperativoDao,
+    ): OptoRepository = OptoRepository(
+        database = database,
+        syncStateTracker = syncStateTracker,
+        postSaveSyncScheduler = postSaveSyncScheduler,
+        pacienteRepo = pacienteRepo,
+        dispensacionRepo = dispensacionRepo,
+        syncRepo = syncRepo,
+        snapshotCoordinator = snapshotCoordinator,
+        backupCoordinator = backupCoordinator,
+        monturaCoordinator = monturaCoordinator,
+        gastoOperativoDao = gastoOperativoDao,
+    )
 
     @Provides
     @Singleton
@@ -257,14 +266,14 @@ object DatabaseModule {
         membershipRepository: MembershipRepository,
         supabase: SupabaseClient,
         fiscalStore: OpticaFiscalSettingsStore,
-        @ApplicationContext context: Context
+        @ApplicationContext context: Context,
     ): AuthDelegate = AuthDelegate(securityManager, sessionManager, repository, membershipRepository, supabase, fiscalStore, context)
 
     @Provides
     @Singleton
     fun providePinDelegate(
         securityManager: SecurityManager,
-        sessionManager: SessionManager
+        sessionManager: SessionManager,
     ): PinDelegate = PinDelegate(securityManager, sessionManager)
 
     @Provides
@@ -273,12 +282,12 @@ object DatabaseModule {
         repository: OptoRepository,
         sessionManager: SessionManager,
         supabase: SupabaseClient,
-        backupJson: Json
+        backupJson: Json,
     ): BackupDelegate = BackupDelegate(repository, sessionManager, supabase, backupJson)
 
     @Provides
     @Singleton
     fun provideDispensacionFinancieraRepository(
-        repository: OptoRepository
+        repository: OptoRepository,
     ): DispensacionFinancieraRepository = DispensacionFinancieraRepositoryImpl(repository)
 }

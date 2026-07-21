@@ -24,7 +24,7 @@ class ServiciosViewModelDeleteConfirmationTest {
         estado = "Pendiente",
         fecha = LocalDate.parse("2026-01-15"),
         metodoPago = "EFECTIVO",
-        opticaId = "optica1"
+        opticaId = "optica1",
     )
 
     // ─── showDeleteConfirmation state transitions ───────────────────────

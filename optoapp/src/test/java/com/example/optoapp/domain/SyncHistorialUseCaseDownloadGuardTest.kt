@@ -4,15 +4,15 @@ import com.example.optoapp.data.FakeConflictDao
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.SyncStateTracker
 import com.example.optoapp.domain.sync.ConflictHelper
+import io.github.jan.supabase.createSupabaseClient
+import io.mockk.Runs
 import io.mockk.coEvery
 import io.mockk.just
 import io.mockk.mockk
-import io.mockk.Runs
-import io.github.jan.supabase.createSupabaseClient
 import kotlinx.coroutines.runBlocking
+import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
-import org.junit.Assert.*
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 
@@ -28,7 +28,7 @@ class SyncHistorialUseCaseDownloadGuardTest {
 
     private val fakeSupabase = createSupabaseClient(
         supabaseUrl = "https://placeholder.supabase.co",
-        supabaseKey = "placeholder-key"
+        supabaseKey = "placeholder-key",
     ) {}
 
     private lateinit var useCase: SyncHistorialUseCase
@@ -44,7 +44,7 @@ class SyncHistorialUseCaseDownloadGuardTest {
             supabase = fakeSupabase,
             syncStateTracker = syncStateTracker,
             conflictHelper = conflictHelper,
-            conflictDao = conflictDao
+            conflictDao = conflictDao,
         )
     }
 
@@ -58,7 +58,7 @@ class SyncHistorialUseCaseDownloadGuardTest {
         assertEquals(
             "SyncHistorialUseCase should accept exactly 5 constructor params after ConflictDao injection",
             5,
-            params.size
+            params.size,
         )
     }
 
@@ -69,7 +69,7 @@ class SyncHistorialUseCaseDownloadGuardTest {
         val hasConflictDao = params.any { it.simpleName == "ConflictDao" }
         assertTrue(
             "ConflictDao must be a constructor parameter of SyncHistorialUseCase",
-            hasConflictDao
+            hasConflictDao,
         )
     }
 
@@ -81,7 +81,7 @@ class SyncHistorialUseCaseDownloadGuardTest {
 
         assertTrue(
             "downloadEvaluaciones() should call getConflictEntityIds",
-            conflictDao.getConflictEntityIdsCalled.get()
+            conflictDao.getConflictEntityIdsCalled.get(),
         )
     }
 
@@ -99,7 +99,7 @@ class SyncHistorialUseCaseDownloadGuardTest {
 
         assertTrue(
             "getConflictEntityIds should have been called",
-            conflictDao.getConflictEntityIdsCalled.get()
+            conflictDao.getConflictEntityIdsCalled.get(),
         )
     }
 }

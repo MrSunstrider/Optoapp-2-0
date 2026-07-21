@@ -1,6 +1,5 @@
 package com.example.optoapp.domain
 
-import com.example.optoapp.data.DispensacionItem
 import com.example.optoapp.data.DispensacionItemDao
 import com.example.optoapp.data.OptoRepository
 import java.time.LocalDate
@@ -13,12 +12,12 @@ import javax.inject.Inject
  */
 class ObtenerMovimientosFinancierosUseCase @Inject constructor(
     private val repository: OptoRepository,
-    private val dispensacionItemDao: DispensacionItemDao
+    private val dispensacionItemDao: DispensacionItemDao,
 ) {
     suspend operator fun invoke(
         opticaId: String,
         start: LocalDate,
-        end: LocalDate
+        end: LocalDate,
     ): List<MovimientoFinanciero> {
         val dispensaciones = repository.getDispensacionesSnapshotForOptica(opticaId)
             .filter { it.fecha >= start && it.fecha <= end }
@@ -40,7 +39,9 @@ class ObtenerMovimientosFinancierosUseCase @Inject constructor(
         val dispIds = dispensaciones.map { it.id }.toSet()
         val costosByDisp = if (dispIds.isNotEmpty()) {
             dispensacionItemDao.getCostosByDispensacionIds(dispIds)
-        } else emptyMap()
+        } else {
+            emptyMap()
+        }
 
         val dispMovs = dispensaciones.map { d ->
             MovimientoFinanciero(
@@ -55,7 +56,7 @@ class ObtenerMovimientosFinancierosUseCase @Inject constructor(
                 pacienteId = d.pacienteId,
                 opticaId = d.opticaId,
                 descripcion = "OT ${d.ot}",
-                vinculadoA = d.ot.takeIf { it.isNotBlank() }
+                vinculadoA = d.ot.takeIf { it.isNotBlank() },
             )
         }
 
@@ -72,7 +73,7 @@ class ObtenerMovimientosFinancierosUseCase @Inject constructor(
                 pacienteId = s.pacienteId ?: "",
                 opticaId = s.opticaId,
                 descripcion = s.descripcion.takeIf { it.isNotBlank() } ?: "Servicio OT ${s.ot}",
-                vinculadoA = s.ot.takeIf { it.isNotBlank() }
+                vinculadoA = s.ot.takeIf { it.isNotBlank() },
             )
         }
 
@@ -93,7 +94,7 @@ class ObtenerMovimientosFinancierosUseCase @Inject constructor(
                 pacienteId = dispensaciones.firstOrNull { it.id == r.dispensacionId }?.pacienteId ?: "",
                 opticaId = opticaId,
                 descripcion = "Regalo: ${r.descripcion}",
-                vinculadoA = r.dispensacionId
+                vinculadoA = r.dispensacionId,
             )
         }
 

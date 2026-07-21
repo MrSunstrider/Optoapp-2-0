@@ -21,17 +21,17 @@ internal fun transactionLabel(pago: Pago): String = when {
 fun TransactionItem(pago: Pago) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = transactionLabel(pago),
                     fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.primary
+                    color = MaterialTheme.colorScheme.primary,
                 )
                 Text(pago.metodoPago, fontWeight = FontWeight.Bold)
                 if (pago.nota.isNotEmpty()) {
@@ -45,7 +45,7 @@ fun TransactionItem(pago: Pago) {
                 color = when {
                     pago.monto < 0 -> MaterialTheme.colorScheme.error
                     else -> MaterialTheme.colorScheme.tertiary
-                }
+                },
             )
         }
     }

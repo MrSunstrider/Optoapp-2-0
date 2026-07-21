@@ -50,7 +50,7 @@ object LaboratorioTicketText {
         return listOfNotNull(
             rx.takeIf { it.isNotBlank() },
             addSeg.takeIf { it.isNotBlank() },
-            dipNdP.takeIf { it.isNotBlank() }
+            dipNdP.takeIf { it.isNotBlank() },
         ).joinToString(" · ")
     }
 
@@ -132,12 +132,12 @@ object LaboratorioTicketText {
         val parts = mutableListOf<String>()
         val cerca = listOfNotNull(
             ev.addCercaOd.takeIf { it.isNotBlank() }?.let { "cerca OD $it" },
-            ev.addCercaOi.takeIf { it.isNotBlank() }?.let { "cerca OI $it" }
+            ev.addCercaOi.takeIf { it.isNotBlank() }?.let { "cerca OI $it" },
         )
         if (cerca.isNotEmpty()) parts.add(cerca.joinToString(" · "))
         val inter = listOfNotNull(
             ev.addIntermediaOd.takeIf { it.isNotBlank() }?.let { "int. OD $it" },
-            ev.addIntermediaOi.takeIf { it.isNotBlank() }?.let { "int. OI $it" }
+            ev.addIntermediaOi.takeIf { it.isNotBlank() }?.let { "int. OI $it" },
         )
         if (inter.isNotEmpty()) parts.add(inter.joinToString(" · "))
         return parts.joinToString(" · ")
@@ -147,12 +147,12 @@ object LaboratorioTicketText {
         val parts = mutableListOf<String>()
         val cerca = listOfNotNull(
             ev.addCercaOd.takeIf { it.isNotBlank() }?.let { "cerca OD $it" },
-            ev.addCercaOi.takeIf { it.isNotBlank() }?.let { "cerca OI $it" }
+            ev.addCercaOi.takeIf { it.isNotBlank() }?.let { "cerca OI $it" },
         )
         if (cerca.isNotEmpty()) parts.add("ADD ${cerca.joinToString(" | ")}")
         val inter = listOfNotNull(
             ev.addIntermediaOd.takeIf { it.isNotBlank() }?.let { "int. OD $it" },
-            ev.addIntermediaOi.takeIf { it.isNotBlank() }?.let { "int. OI $it" }
+            ev.addIntermediaOi.takeIf { it.isNotBlank() }?.let { "int. OI $it" },
         )
         if (inter.isNotEmpty()) parts.add("ADD ${inter.joinToString(" | ")}")
         return parts.joinToString(" · ")
@@ -173,8 +173,11 @@ object LaboratorioTicketText {
         if (ev.dipIntermedio.isNotBlank()) parts.add("DIP interm. ${ev.dipIntermedio}")
         val total = ev.dipTotalMm
         if (total != null) {
-            if (parts.isEmpty()) parts.add("DIP total ${fmt(total)} mm")
-            else parts.add("DIP total ${fmt(total)} mm")
+            if (parts.isEmpty()) {
+                parts.add("DIP total ${fmt(total)} mm")
+            } else {
+                parts.add("DIP total ${fmt(total)} mm")
+            }
         }
         return parts.joinToString(" · ")
     }

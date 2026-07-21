@@ -10,7 +10,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
-import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -28,7 +27,7 @@ class PostSaveSyncSchedulerTest {
     private val testScope = TestScope(testDispatcher)
     private val fakeSupabase = createSupabaseClient(
         supabaseUrl = "https://test.supabase.co",
-        supabaseKey = "test-key"
+        supabaseKey = "test-key",
     ) { }
 
     // ─── Key mapping (scheduleDebounced is overridden → records keys) ─────────
@@ -73,8 +72,11 @@ class PostSaveSyncSchedulerTest {
         scheduler.schedulePacientesSync("optica-1")
         // Block runs synchronously via override → stages populated immediately
 
-        assertEquals("ensureSessionForPostSaveSync was called with pacientes",
-            listOf("pacientes"), stages)
+        assertEquals(
+            "ensureSessionForPostSaveSync was called with pacientes",
+            listOf("pacientes"),
+            stages,
+        )
     }
 
     @Test
@@ -91,7 +93,7 @@ class PostSaveSyncSchedulerTest {
 
         assertEquals(
             listOf("pacientes", "historial", "finanzas", "inventario", "proveedores", "ordenes_compra"),
-            stages
+            stages,
         )
     }
 
@@ -113,14 +115,14 @@ class PostSaveSyncSchedulerTest {
             syncPacientesUseCase = null,
             syncHistorialUseCase = null,
             syncFinanzasUseCase = null,
-            syncInventarioUseCase = null
+            syncInventarioUseCase = null,
         ) {
             override suspend fun ensureSessionForPostSaveSync(stage: String): Boolean = false
 
             override fun scheduleDebounced(
                 key: String,
                 delayMs: Long,
-                block: suspend () -> Unit
+                block: suspend () -> Unit,
             ) {
                 // Execute block synchronously so session check runs immediately
                 kotlinx.coroutines.runBlocking { block() }
@@ -138,7 +140,7 @@ class PostSaveSyncSchedulerTest {
         val scheduler = PostSaveSyncScheduler(
             applicationScope = testScope,
             syncGate = SyncGate(),
-            supabase = fakeSupabase
+            supabase = fakeSupabase,
         )
         val job = launch { delay(Long.MAX_VALUE) }
         scheduler.pendingJobs["test-key"] = job
@@ -147,7 +149,7 @@ class PostSaveSyncSchedulerTest {
 
         assertTrue(
             "cancelPending must cancel and join all pending jobs before returning (RC-5)",
-            job.isCancelled
+            job.isCancelled,
         )
     }
 
@@ -156,7 +158,7 @@ class PostSaveSyncSchedulerTest {
         val scheduler = PostSaveSyncScheduler(
             applicationScope = testScope,
             syncGate = SyncGate(),
-            supabase = fakeSupabase
+            supabase = fakeSupabase,
         )
         val job = launch { delay(Long.MAX_VALUE) }
         scheduler.pendingJobs["test-key"] = job
@@ -165,7 +167,7 @@ class PostSaveSyncSchedulerTest {
 
         assertTrue(
             "pendingJobs must be empty after cancelPending (RC-5)",
-            scheduler.pendingJobs.isEmpty()
+            scheduler.pendingJobs.isEmpty(),
         )
     }
 
@@ -182,7 +184,7 @@ class PostSaveSyncSchedulerTest {
             syncPacientesUseCase = mockSyncPacientes,
             syncHistorialUseCase = mockSyncHistorial,
             syncFinanzasUseCase = null,
-            syncInventarioUseCase = null
+            syncInventarioUseCase = null,
         ) {
             // Capture key only — don't execute the block (avoids android.util.Log without Robolectric).
             // The assertion only cares that mockSyncPacientes was never invoked as a side effect.
@@ -205,7 +207,7 @@ class PostSaveSyncSchedulerTest {
             syncPacientesUseCase = mockSyncPacientes,
             syncHistorialUseCase = null,
             syncFinanzasUseCase = mockSyncFinanzas,
-            syncInventarioUseCase = null
+            syncInventarioUseCase = null,
         ) {
             override fun scheduleDebounced(key: String, delayMs: Long, block: suspend () -> Unit) {}
         }
@@ -226,12 +228,12 @@ class PostSaveSyncSchedulerTest {
             syncPacientesUseCase = null,
             syncHistorialUseCase = null,
             syncFinanzasUseCase = null,
-            syncInventarioUseCase = null
+            syncInventarioUseCase = null,
         ) {
             override fun scheduleDebounced(
                 key: String,
                 delayMs: Long,
-                block: suspend () -> Unit
+                block: suspend () -> Unit,
             ) {
                 keys.add(key)
             }
@@ -247,7 +249,7 @@ class PostSaveSyncSchedulerTest {
             syncPacientesUseCase = null,
             syncHistorialUseCase = null,
             syncFinanzasUseCase = null,
-            syncInventarioUseCase = null
+            syncInventarioUseCase = null,
         ) {
             override suspend fun ensureSessionForPostSaveSync(stage: String): Boolean {
                 stages.add(stage)
@@ -257,7 +259,7 @@ class PostSaveSyncSchedulerTest {
             override fun scheduleDebounced(
                 key: String,
                 delayMs: Long,
-                block: suspend () -> Unit
+                block: suspend () -> Unit,
             ) {
                 kotlinx.coroutines.runBlocking { block() }
             }

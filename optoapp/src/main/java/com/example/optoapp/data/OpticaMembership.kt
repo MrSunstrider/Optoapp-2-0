@@ -6,7 +6,7 @@ package com.example.optoapp.data
 data class OpticaMembership(
     val opticaId: String,
     val nombre: String,
-    val rol: String
+    val rol: String,
 )
 
 /**

@@ -1,12 +1,11 @@
 package com.example.optoapp.ui.screens
 
-import com.example.optoapp.viewmodel.OperacionHoyUiState
-import com.example.optoapp.viewmodel.OperacionHoyViewModel
 import com.example.optoapp.data.AppRoles
 import com.example.optoapp.util.DateUtils
+import com.example.optoapp.viewmodel.OperacionHoyUiState
+import com.example.optoapp.viewmodel.OperacionHoyViewModel
 import org.junit.Assert.*
 import org.junit.Test
-import java.time.LocalDate
 
 /**
  * Characterization tests for OperacionHoyScreen.
@@ -178,7 +177,7 @@ class OperacionHoyScreenTest {
         val fields = OperacionHoyViewModel::class.java.declaredFields.map { it.name }
         assertTrue(
             "OperacionHoyViewModel debe tener uiState",
-            "uiState" in fields
+            "uiState" in fields,
         )
     }
 
@@ -188,7 +187,7 @@ class OperacionHoyScreenTest {
         val allMethods = OperacionHoyViewModel::class.java.methods.map { it.name }
         assertTrue(
             "OperacionHoyViewModel debe tener refresh",
-            "refresh" in methods || "refresh" in allMethods
+            "refresh" in methods || "refresh" in allMethods,
         )
     }
 
@@ -199,7 +198,7 @@ class OperacionHoyScreenTest {
         val methods = AppRoles::class.java.declaredMethods.map { it.name }
         assertTrue(
             "AppRoles debe tener canViewOperacionHoy",
-            "canViewOperacionHoy" in methods
+            "canViewOperacionHoy" in methods,
         )
     }
 
@@ -208,7 +207,7 @@ class OperacionHoyScreenTest {
         val methods = AppRoles::class.java.declaredMethods.map { it.name }
         assertTrue(
             "AppRoles debe tener canExportInventario",
-            "canExportInventario" in methods
+            "canExportInventario" in methods,
         )
     }
 

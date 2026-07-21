@@ -68,9 +68,7 @@ class SessionManagerTest {
             plainStore["pref_remembered_email"] = email
         }
 
-        override suspend fun getRememberedEmail(): String {
-            return plainStore["pref_remembered_email"] ?: ""
-        }
+        override suspend fun getRememberedEmail(): String = plainStore["pref_remembered_email"] ?: ""
 
         override suspend fun clearRememberedEmail() {
             plainStore.remove("pref_remembered_email")

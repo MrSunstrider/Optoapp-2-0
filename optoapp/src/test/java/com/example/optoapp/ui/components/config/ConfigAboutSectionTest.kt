@@ -19,8 +19,8 @@ class ConfigAboutSectionTest {
         val methods = clazz.declaredMethods.map { it.name }
         assertTrue(
             "ConfigAboutSection debe ser función top-level en ConfigAboutSectionKt. " +
-            "Encontrados: $methods",
-            methodName in methods
+                "Encontrados: $methods",
+            methodName in methods,
         )
     }
 
@@ -33,7 +33,7 @@ class ConfigAboutSectionTest {
         // Composable default parameters + modifier pattern
         assertTrue(
             "ConfigAboutSection debe tener pocos o ningún parámetro. Encontrados: $paramCount",
-            paramCount <= 2
+            paramCount <= 2,
         )
     }
 }

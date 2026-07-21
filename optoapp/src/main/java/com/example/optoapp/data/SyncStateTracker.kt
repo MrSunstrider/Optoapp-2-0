@@ -12,7 +12,7 @@ import javax.inject.Singleton
 @Singleton
 class SyncStateTracker @Inject constructor(
     internal val dao: SyncEntityStateDao,
-    private val database: OptoDatabase
+    private val database: OptoDatabase,
 ) {
     suspend fun markSynced(opticaId: String, entityType: String, entityId: String) {
         dao.upsert(
@@ -22,8 +22,8 @@ class SyncStateTracker @Inject constructor(
                 entityId = entityId,
                 status = "synced",
                 lastError = "",
-                updatedAt = System.currentTimeMillis()
-            )
+                updatedAt = System.currentTimeMillis(),
+            ),
         )
     }
 
@@ -35,8 +35,8 @@ class SyncStateTracker @Inject constructor(
                 entityId = entityId,
                 status = "error",
                 lastError = (err ?: "error").take(500),
-                updatedAt = System.currentTimeMillis()
-            )
+                updatedAt = System.currentTimeMillis(),
+            ),
         )
     }
 
@@ -48,8 +48,8 @@ class SyncStateTracker @Inject constructor(
                 entityId = entityId,
                 status = "deleted",
                 lastError = "",
-                updatedAt = System.currentTimeMillis()
-            )
+                updatedAt = System.currentTimeMillis(),
+            ),
         )
     }
 
@@ -62,17 +62,15 @@ class SyncStateTracker @Inject constructor(
                 entityId = entityId,
                 status = "conflicted",
                 lastError = "",
-                updatedAt = System.currentTimeMillis()
-            )
+                updatedAt = System.currentTimeMillis(),
+            ),
         )
     }
 
     /** Query estados por óptica */
-    suspend fun getConflictedCount(opticaId: String): Int =
-        dao.countByStatus(opticaId, "conflicted")
+    suspend fun getConflictedCount(opticaId: String): Int = dao.countByStatus(opticaId, "conflicted")
 
-    suspend fun getErrorsCount(opticaId: String): Int =
-        dao.countByStatus(opticaId, "error")
+    suspend fun getErrorsCount(opticaId: String): Int = dao.countByStatus(opticaId, "error")
 
     /**
      * Runs [block] inside a database transaction and marks [entityType]/[entityId]

@@ -6,21 +6,21 @@ import com.example.optoapp.data.MembershipRepository
 import com.example.optoapp.data.OpticaLaboratorioSettings
 import com.example.optoapp.data.SessionManager
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import javax.inject.Inject
 
 data class LaboratorioConfigUi(
     val opticaId: String = "",
     val laboratorioNombre: String = "",
-    val laboratorioContacto: String = ""
+    val laboratorioContacto: String = "",
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -28,7 +28,7 @@ data class LaboratorioConfigUi(
 class LaboratorioConfigViewModel @Inject constructor(
     private val settings: OpticaLaboratorioSettings,
     private val sessionManager: SessionManager,
-    private val membershipRepository: MembershipRepository
+    private val membershipRepository: MembershipRepository,
 ) : ViewModel() {
 
     init {
@@ -62,7 +62,7 @@ class LaboratorioConfigViewModel @Inject constructor(
             .stateIn(
                 viewModelScope,
                 SharingStarted.WhileSubscribed(5_000),
-                LaboratorioConfigUi()
+                LaboratorioConfigUi(),
             )
 
     fun save(laboratorioNombre: String, laboratorioContacto: String) {

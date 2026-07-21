@@ -31,7 +31,7 @@ fun AbonoDialog(
     defaultFecha: LocalDate = DateUtils.today(),
     montoMaximo: Double = Double.MAX_VALUE,
     onDismiss: () -> Unit,
-    onConfirm: (Pago) -> Unit
+    onConfirm: (Pago) -> Unit,
 ) {
     var monto by remember(pago?.id) { mutableStateOf(pago?.monto?.toString() ?: "") }
     var metodo by remember(pago?.id) { mutableStateOf(pago?.metodoPago ?: "Efectivo") }
@@ -41,7 +41,7 @@ fun AbonoDialog(
     var errorMsg by remember { mutableStateOf<String?>(null) }
 
     val datePickerState = rememberDatePickerState(
-        initialSelectedDateMillis = DateUtils.localDateToPickerMillis(fechaAbono)
+        initialSelectedDateMillis = DateUtils.localDateToPickerMillis(fechaAbono),
     )
 
     if (showDatePicker) {
@@ -57,7 +57,7 @@ fun AbonoDialog(
             },
             dismissButton = {
                 TextButton(onClick = { showDatePicker = false }) { Text("Cancelar") }
-            }
+            },
         ) {
             DatePicker(state = datePickerState)
         }
@@ -70,7 +70,7 @@ fun AbonoDialog(
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedButton(
                     onClick = { showDatePicker = true },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 ) {
                     Icon(Icons.Default.DateRange, contentDescription = "Fecha", modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(8.dp))
@@ -78,20 +78,23 @@ fun AbonoDialog(
                 }
                 OptoTextField(
                     value = monto,
-                    onValueChange = { monto = it; errorMsg = null },
+                    onValueChange = {
+                        monto = it
+                        errorMsg = null
+                    },
                     label = "Monto",
-                    keyboardType = KeyboardType.Decimal
+                    keyboardType = KeyboardType.Decimal,
                 )
                 DropdownField(
                     label = "Método de Pago",
                     selected = metodo,
                     options = listOf("Efectivo", "Tarjeta", "Transferencia"),
-                    onSelected = { metodo = it }
+                    onSelected = { metodo = it },
                 )
                 OptoTextField(
                     value = nota,
                     onValueChange = { nota = it },
-                    label = "Nota (Ejem: Yape, Visa, etc.)"
+                    label = "Nota (Ejem: Yape, Visa, etc.)",
                 )
 
                 if (errorMsg != null) {
@@ -100,7 +103,7 @@ fun AbonoDialog(
                         color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.bodySmall,
                         fontWeight = FontWeight.Bold,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
                     )
                 }
             }
@@ -121,7 +124,7 @@ fun AbonoDialog(
                         monto = m,
                         metodoPago = metodo,
                         nota = nota,
-                        fecha = fechaAbono
+                        fecha = fechaAbono,
                     )
                         ?: Pago(
                             id = UUID.randomUUID().toString(),
@@ -129,13 +132,13 @@ fun AbonoDialog(
                             metodoPago = metodo,
                             nota = nota,
                             fecha = fechaAbono,
-                            tipo = "Abono"
-                        )
+                            tipo = "Abono",
+                        ),
                 )
             }) { Text("Confirmar") }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text("Cancelar") }
-        }
+        },
     )
 }

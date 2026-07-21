@@ -1,8 +1,6 @@
 package com.example.optoapp.util
 
-import android.graphics.Color
 import android.graphics.Paint
-import android.graphics.Typeface
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -189,7 +187,7 @@ class PdfStyleTest {
             PdfStyle.gridStrokePaint, PdfStyle.altRowPaint, PdfStyle.prismaTrianglePaint,
             PdfStyle.titlePaint, PdfStyle.subtitlePaint, PdfStyle.sectionPaint,
             PdfStyle.bodyPaint, PdfStyle.bodyBoldPaint, PdfStyle.labelPaint,
-            PdfStyle.rxValuePaint, PdfStyle.tableHeaderPaint, PdfStyle.smallPaint
+            PdfStyle.rxValuePaint, PdfStyle.tableHeaderPaint, PdfStyle.smallPaint,
         )
         paints.forEach { paint ->
             assertTrue("${paint.javaClass.simpleName} is not anti-aliased", paint.isAntiAlias)

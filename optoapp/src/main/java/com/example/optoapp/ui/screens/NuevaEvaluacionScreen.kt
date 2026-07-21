@@ -1,23 +1,14 @@
 package com.example.optoapp.ui.screens
 
-import android.Manifest
 import android.content.Context
-import android.content.pm.PackageManager
-import android.net.Uri
-import androidx.core.content.ContextCompat
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.core.content.FileProvider
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -28,14 +19,14 @@ import androidx.navigation.NavController
 import com.example.optoapp.testing.TestTags
 import com.example.optoapp.ui.components.OSDIDialog
 import com.example.optoapp.ui.components.OptoDatePickerDialog
+import com.example.optoapp.ui.components.OptoTopAppBar
 import com.example.optoapp.ui.components.evaluacion.AnamnesisSection
 import com.example.optoapp.ui.components.evaluacion.CierreSection
 import com.example.optoapp.ui.components.evaluacion.ContactologiaSection
 import com.example.optoapp.ui.components.evaluacion.ExamenVisualSection
 import com.example.optoapp.ui.components.evaluacion.RefraccionSection
-import com.example.optoapp.viewmodel.EvaluacionViewModel
 import com.example.optoapp.util.DateUtils
-import com.example.optoapp.ui.components.OptoTopAppBar
+import com.example.optoapp.viewmodel.EvaluacionViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -43,7 +34,7 @@ fun NuevaEvaluacionScreen(
     navController: NavController,
     pacienteId: String,
     evaluacionId: String? = null,
-    viewModel: EvaluacionViewModel = hiltViewModel()
+    viewModel: EvaluacionViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var selectedTab by remember { mutableIntStateOf(0) }
@@ -56,13 +47,15 @@ fun NuevaEvaluacionScreen(
         if (evaluacionId != null) {
             viewModel.loadEvaluacion(evaluacionId)
         } else {
-            viewModel.updateUiState { it.copy(
-                diagnosticoOd = emptyList(),
-                diagnosticoOi = emptyList(),
-                otrosPresbicia = false,
-                otrosAnisometropia = false,
-                otrosAmbliopia = false
-            ) }
+            viewModel.updateUiState {
+                it.copy(
+                    diagnosticoOd = emptyList(),
+                    diagnosticoOi = emptyList(),
+                    otrosPresbicia = false,
+                    otrosAnisometropia = false,
+                    otrosAmbliopia = false,
+                )
+            }
             viewModel.loadPacienteEdadAndCalculateAdd(pacienteId)
         }
     }
@@ -81,7 +74,7 @@ fun NuevaEvaluacionScreen(
         uiState.isAddAo,
         uiState.recetaOdEsf, uiState.recetaOdCil, uiState.recetaOdEje,
         uiState.recetaOiEsf, uiState.recetaOiCil, uiState.recetaOiEje,
-        uiState.balanceOd, uiState.balanceOi
+        uiState.balanceOd, uiState.balanceOi,
     ) {
         viewModel.updateOtrosAuto()
     }
@@ -98,7 +91,7 @@ fun NuevaEvaluacionScreen(
             onDateSelected = { date ->
                 viewModel.updateUiState { it.copy(fecha = date) }
             },
-            onDismiss = { showDatePicker = false }
+            onDismiss = { showDatePicker = false },
         )
     }
 
@@ -114,7 +107,7 @@ fun NuevaEvaluacionScreen(
                     viewModel.updateUiState { it.copy(proximaCita = null, citaEstado = "programada") }
                     showProximaDatePicker = false
                 }) { Text("Limpiar") }
-            }
+            },
         )
     }
 
@@ -124,7 +117,7 @@ fun NuevaEvaluacionScreen(
             onDateSelected = { date ->
                 viewModel.updateUiState { it.copy(lcFechaAdaptacion = date) }
             },
-            onDismiss = { showLcDatePicker = false }
+            onDismiss = { showLcDatePicker = false },
         )
     }
 
@@ -136,7 +129,7 @@ fun NuevaEvaluacionScreen(
                     it.copy(osdiPuntuacion = puntuacion, osdiClasificacion = clasificacion)
                 }
                 showOsdiDialog = false
-            }
+            },
         )
     }
 
@@ -150,7 +143,7 @@ fun NuevaEvaluacionScreen(
                 TextButton(onClick = { viewModel.updateUiState { it.copy(error = null) } }) {
                     Text("OK")
                 }
-            }
+            },
         )
     }
 
@@ -179,22 +172,22 @@ fun NuevaEvaluacionScreen(
                     IconButton(onClick = { saveAction() }, modifier = Modifier.testTag(TestTags.EVALUACION_GUARDAR_BTN)) {
                         Icon(Icons.Default.Check, contentDescription = "Guardar")
                     }
-                }
+                },
             )
-        }
+        },
     ) { padding ->
         Column(modifier = Modifier.padding(padding)) {
             ScrollableTabRow(
                 selectedTabIndex = selectedTab,
                 edgePadding = 16.dp,
                 containerColor = MaterialTheme.colorScheme.surface,
-                contentColor = MaterialTheme.colorScheme.primary
+                contentColor = MaterialTheme.colorScheme.primary,
             ) {
                 tabs.forEachIndexed { index, title ->
                     Tab(
                         selected = selectedTab == index,
                         onClick = { selectedTab = index },
-                        text = { Text(title, fontSize = 13.sp, fontWeight = if (selectedTab == index) FontWeight.Bold else FontWeight.Normal) }
+                        text = { Text(title, fontSize = 13.sp, fontWeight = if (selectedTab == index) FontWeight.Bold else FontWeight.Normal) },
                     )
                 }
             }
@@ -205,7 +198,7 @@ fun NuevaEvaluacionScreen(
                     .padding(16.dp)
                     .navigationBarsPadding()
                     .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 if (uiState.isLoading) {
                     LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
@@ -215,17 +208,17 @@ fun NuevaEvaluacionScreen(
                     0 -> AnamnesisSection(
                         uiState = uiState,
                         onUpdate = { s -> viewModel.updateUiState { s } },
-                        onShowDatePicker = { showDatePicker = true }
+                        onShowDatePicker = { showDatePicker = true },
                     )
                     1 -> ExamenVisualSection(
                         uiState = uiState,
                         onUpdate = { s -> viewModel.updateUiState { s } },
-                        onShowOsdiDialog = { showOsdiDialog = true }
+                        onShowOsdiDialog = { showOsdiDialog = true },
                     )
-                     2 -> RefraccionSection(
+                    2 -> RefraccionSection(
                         uiState = uiState,
                         onUpdate = { s -> viewModel.updateUiState { s } },
-                        viewModel = viewModel
+                        viewModel = viewModel,
                     )
                     3 -> ContactologiaSection(
                         uiState = uiState,
@@ -234,14 +227,14 @@ fun NuevaEvaluacionScreen(
                         aplicarRecorteOi = aplicarRecorteOi,
                         onRecorteOdChange = { aplicarRecorteOd = it },
                         onRecorteOiChange = { aplicarRecorteOi = it },
-                        onShowLcDatePicker = { showLcDatePicker = true }
+                        onShowLcDatePicker = { showLcDatePicker = true },
                     )
                     4 -> CierreSection(
                         uiState = uiState,
                         onUpdate = { s -> viewModel.updateUiState { s } },
                         onShowProximaDatePicker = { showProximaDatePicker = true },
                         onSave = { saveAction() },
-                        evaluacionId = evaluacionId
+                        evaluacionId = evaluacionId,
                     )
                 }
             }

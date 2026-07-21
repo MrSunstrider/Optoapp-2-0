@@ -19,7 +19,7 @@ import javax.inject.Singleton
 
 enum class SubscriptionTier {
     FREE,
-    PRO
+    PRO,
 }
 
 enum class PlanCode {
@@ -27,13 +27,13 @@ enum class PlanCode {
     PRO_INDIVIDUAL,
     PRO_MULTISITE_15,
     ENTERPRISE,
-    DEV_OWNER
+    DEV_OWNER,
 }
 
 @Singleton
 open class SubscriptionManager @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val membershipRepository: MembershipRepository
+    private val membershipRepository: MembershipRepository,
 ) {
 
     /** Override in tests to inject a fake DataStore. */
@@ -53,7 +53,7 @@ open class SubscriptionManager @Inject constructor(
     val tier: Flow<SubscriptionTier>
         get() = combine(
             dataStore.data.map { isDevProEffective(it) },
-            dataStore.data.map { (it[keyCachedPlan] ?: "free").lowercase().trim() }
+            dataStore.data.map { (it[keyCachedPlan] ?: "free").lowercase().trim() },
         ) { dev, planStr ->
             when {
                 dev -> SubscriptionTier.PRO
@@ -77,11 +77,9 @@ open class SubscriptionManager @Inject constructor(
         SubscriptionTier.PRO -> Int.MAX_VALUE
     }
 
-    fun canAddPaciente(tier: SubscriptionTier, currentPacienteCount: Int): Boolean {
-        return when (tier) {
-            SubscriptionTier.FREE -> currentPacienteCount < FREE_MAX_PACIENTES
-            SubscriptionTier.PRO -> true
-        }
+    fun canAddPaciente(tier: SubscriptionTier, currentPacienteCount: Int): Boolean = when (tier) {
+        SubscriptionTier.FREE -> currentPacienteCount < FREE_MAX_PACIENTES
+        SubscriptionTier.PRO -> true
     }
 
     fun maxOpticas(planCode: PlanCode): Int? = when (planCode) {

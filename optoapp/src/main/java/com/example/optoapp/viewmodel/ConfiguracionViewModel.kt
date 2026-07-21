@@ -13,7 +13,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ConfiguracionViewModel @Inject constructor(
-    private val securityManager: SecurityManager
+    private val securityManager: SecurityManager,
 ) : ViewModel() {
 
     // ─── PIN form fields ───────────────────────────────────────────────────────
@@ -33,7 +33,7 @@ class ConfiguracionViewModel @Inject constructor(
         "Detectar automáticamente",
         "America/Lima", "America/Bogota", "America/Mexico_City",
         "America/Santiago", "America/Argentina/Buenos_Aires",
-        "America/Guayaquil", "America/Caracas", "Europe/Madrid"
+        "America/Guayaquil", "America/Caracas", "Europe/Madrid",
     )
 
     fun initLabFields(nombre: String, contacto: String) {

@@ -2,24 +2,20 @@ package com.example.optoapp.domain
 
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.doubleOrNull
+import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import kotlinx.serialization.json.doubleOrNull
-import kotlinx.serialization.json.intOrNull
-import kotlinx.serialization.json.contentOrNull
 
-private fun JsonObject.optDouble(key: String): Double =
-    this[key]?.jsonPrimitive?.doubleOrNull ?: 0.0
+private fun JsonObject.optDouble(key: String): Double = this[key]?.jsonPrimitive?.doubleOrNull ?: 0.0
 
-private fun JsonObject.optInt(key: String): Int =
-    this[key]?.jsonPrimitive?.intOrNull ?: 0
+private fun JsonObject.optInt(key: String): Int = this[key]?.jsonPrimitive?.intOrNull ?: 0
 
-private fun JsonObject.optDoubleNullable(key: String): Double? =
-    this[key]?.jsonPrimitive?.doubleOrNull
+private fun JsonObject.optDoubleNullable(key: String): Double? = this[key]?.jsonPrimitive?.doubleOrNull
 
-private fun JsonObject.optString(key: String): String =
-    this[key]?.jsonPrimitive?.contentOrNull ?: ""
+private fun JsonObject.optString(key: String): String = this[key]?.jsonPrimitive?.contentOrNull ?: ""
 
 data class AnalisisMensual(
     val ventasMes: Double,
@@ -36,7 +32,7 @@ data class AnalisisMensual(
     val saldoPendiente: Double = 0.0,
     val ticketPromedio: Double = 0.0,
     val cantidadVentas: Int = 0,
-    val esOffline: Boolean = false
+    val esOffline: Boolean = false,
 ) {
     companion object {
         fun fromJson(json: JsonElement): AnalisisMensual {
@@ -56,7 +52,7 @@ data class AnalisisMensual(
                 gastosMes = obj.optDouble("gastos_mes"),
                 saldoPendiente = obj.optDouble("saldo_pendiente"),
                 ticketPromedio = obj.optDouble("ticket_promedio"),
-                cantidadVentas = obj.optInt("cantidad_ventas")
+                cantidadVentas = obj.optInt("cantidad_ventas"),
             )
         }
 
@@ -68,7 +64,7 @@ data class AnalisisMensual(
                     categoria = obj.optString("categoria"),
                     ventas = obj.optDouble("ventas"),
                     costos = obj.optDouble("costos"),
-                    margenPct = obj.optDoubleNullable("margen_pct")
+                    margenPct = obj.optDoubleNullable("margen_pct"),
                 )
             }
         }
@@ -77,7 +73,7 @@ data class AnalisisMensual(
             val obj = this["deudores"]?.jsonObject ?: return DeudoresResumen(0, 0.0)
             return DeudoresResumen(
                 cantidad = obj.optInt("cantidad"),
-                saldoTotal = obj.optDouble("saldo_total")
+                saldoTotal = obj.optDouble("saldo_total"),
             )
         }
 
@@ -93,7 +89,7 @@ data class AnalisisMensual(
                 ingresosEsperados = obj?.optDouble("ingresos_esperados") ?: 0.0,
                 egresosProgramados = obj?.optDouble("egresos_programados") ?: 0.0,
                 saldoNeto = obj?.optDouble("saldo_neto") ?: 0.0,
-                mesesHistoricos = meses
+                mesesHistoricos = meses,
             )
         }
 
@@ -108,7 +104,7 @@ data class AnalisisMensual(
                     costo = obj.optDouble("costo"),
                     stockActual = obj.optInt("stock_actual"),
                     ultimaVenta = obj["ultima_venta"]?.jsonPrimitive?.contentOrNull,
-                    diasSinVenta = obj.optInt("dias_sin_venta")
+                    diasSinVenta = obj.optInt("dias_sin_venta"),
                 )
             }
         }
@@ -121,19 +117,19 @@ data class MargenCategoria(
     val categoria: String,
     val ventas: Double,
     val costos: Double,
-    val margenPct: Double?
+    val margenPct: Double?,
 )
 
 data class DeudoresResumen(
     val cantidad: Int,
-    val saldoTotal: Double
+    val saldoTotal: Double,
 )
 
 data class ProyeccionCaja(
     val ingresosEsperados: Double,
     val egresosProgramados: Double,
     val saldoNeto: Double,
-    val mesesHistoricos: Int = 0
+    val mesesHistoricos: Int = 0,
 )
 
 data class StockEstancadoItem(
@@ -143,5 +139,5 @@ data class StockEstancadoItem(
     val costo: Double,
     val stockActual: Int,
     val ultimaVenta: String?,
-    val diasSinVenta: Int
+    val diasSinVenta: Int,
 )

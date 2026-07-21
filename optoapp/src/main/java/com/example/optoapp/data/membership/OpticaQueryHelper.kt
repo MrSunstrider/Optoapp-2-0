@@ -11,23 +11,21 @@ import javax.inject.Singleton
 
 @Singleton
 internal class OpticaQueryHelper @Inject constructor(
-    private val supabase: SupabaseClient
+    private val supabase: SupabaseClient,
 ) {
-    suspend fun fetchOpticaNombre(opticaId: String): String {
-        return try {
-            val list = supabase.postgrest[TABLE_OPTICAS]
-                .select { filter { eq("id", opticaId) } }
-                .decodeList<OpticaDto>()
-            list.firstOrNull()?.nombre.orEmpty()
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: IOException) {
-            Log.e(TAG, "fetchOpticaNombre: opticaId=$opticaId", e)
-            ""
-        } catch (e: Exception) {
-            Log.e(TAG, "fetchOpticaNombre: opticaId=$opticaId", e)
-            ""
-        }
+    suspend fun fetchOpticaNombre(opticaId: String): String = try {
+        val list = supabase.postgrest[TABLE_OPTICAS]
+            .select { filter { eq("id", opticaId) } }
+            .decodeList<OpticaDto>()
+        list.firstOrNull()?.nombre.orEmpty()
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: IOException) {
+        Log.e(TAG, "fetchOpticaNombre: opticaId=$opticaId", e)
+        ""
+    } catch (e: Exception) {
+        Log.e(TAG, "fetchOpticaNombre: opticaId=$opticaId", e)
+        ""
     }
 
     companion object {

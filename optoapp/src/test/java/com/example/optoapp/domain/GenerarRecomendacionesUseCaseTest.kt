@@ -32,7 +32,7 @@ class GenerarRecomendacionesUseCaseTest {
         deudaViejaAlertaDias = 30,
         stockEstancadoAlertaDias = 180,
         caidaVentasAlertaPct = 10.0,
-        minVentasParaRecomendar = 5
+        minVentasParaRecomendar = 5,
     )
 
     @Before
@@ -46,7 +46,7 @@ class GenerarRecomendacionesUseCaseTest {
         nombre: String = "Cliente Test",
         saldo: Double = 1000.0,
         dias: Int = 10,
-        telefono: String = "999888777"
+        telefono: String = "999888777",
     ) = Deudor(
         pacienteNombre = nombre,
         pacienteTelefono = telefono,
@@ -55,23 +55,28 @@ class GenerarRecomendacionesUseCaseTest {
         montoTotal = saldo + 500.0,
         totalPagado = 500.0,
         saldo = saldo,
-        diasDeuda = dias
+        diasDeuda = dias,
     )
 
     private fun categoria(
         nombre: String = "Test Cat",
         ventas: Double = 100.0,
         costos: Double = 50.0,
-        margenPct: Double? = null
+        margenPct: Double? = null,
     ) = MargenCategoria(categoria = nombre, ventas = ventas, costos = costos, margenPct = margenPct)
 
     private fun stockItem(
         modelo: String = "Modelo Test",
         dias: Int = 200,
-        costo: Double = 100.0
+        costo: Double = 100.0,
     ) = StockEstancadoItem(
-        monturaId = "m-test", sku = "SKU-TEST", modelo = modelo,
-        costo = costo, stockActual = 2, ultimaVenta = null, diasSinVenta = dias
+        monturaId = "m-test",
+        sku = "SKU-TEST",
+        modelo = modelo,
+        costo = costo,
+        stockActual = 2,
+        ultimaVenta = null,
+        diasSinVenta = dias,
     )
 
     private fun cleanAnalisis(
@@ -80,24 +85,23 @@ class GenerarRecomendacionesUseCaseTest {
         variacionVentasPct: Double? = 0.0,
         categorias: List<MargenCategoria> = emptyList(),
         stockEstancado: List<StockEstancadoItem> = emptyList(),
-        deudoresResumen: DeudoresResumen = DeudoresResumen(0, 0.0)
+        deudoresResumen: DeudoresResumen = DeudoresResumen(0, 0.0),
     ) = AnalisisMensual(
         ventasMes = ventasMes, cobrosMes = 0.0, margenNetoPct = 0.0,
         margenPorCategoria = categorias, deudores = deudoresResumen,
         proyeccionCaja = null, stockEstancado = stockEstancado,
         valorInventario = 0.0, ventasMesAnterior = 0.0,
         variacionVentasPct = variacionVentasPct, gastosMes = gastosMes,
-        esOffline = false
+        esOffline = false,
     )
 
     private fun mockDeps(
-        config: ConfiguracionFinancieraEntity = defaultConfig
+        config: ConfiguracionFinancieraEntity = defaultConfig,
     ) {
         coEvery { configDao.getByOpticaIdOnce("optica1") } returns config
     }
 
-    private fun listaDe(result: Resource<List<Recomendacion>>): List<Recomendacion> =
-        (result as Resource.Success).data!!
+    private fun listaDe(result: Resource<List<Recomendacion>>): List<Recomendacion> = (result as Resource.Success).data!!
 
     // ── R1: COBRAR ─────────────────────────────────────────────────────────
 
@@ -105,7 +109,7 @@ class GenerarRecomendacionesUseCaseTest {
     fun cobrar_whenDeudaTotalExceedsThreshold_returnsRecomendacion() = runBlocking {
         val deudores = listOf(
             deudor("Juan", saldo = 2000.0, dias = 15),
-            deudor("Maria", saldo = 2200.0, dias = 10)
+            deudor("Maria", saldo = 2200.0, dias = 10),
         )
         mockDeps()
 
@@ -121,7 +125,7 @@ class GenerarRecomendacionesUseCaseTest {
     fun cobrar_whenOldDebtorExists_returnsRecomendacion() = runBlocking {
         val deudores = listOf(
             deudor("Juan", saldo = 500.0, dias = 45),
-            deudor("Maria", saldo = 1000.0, dias = 10)
+            deudor("Maria", saldo = 1000.0, dias = 10),
         )
         mockDeps()
 
@@ -143,7 +147,7 @@ class GenerarRecomendacionesUseCaseTest {
     @Test
     fun mejorarPrecio_whenLowMarginAboveThreshold_returnsRecomendacion() = runBlocking {
         val categorias = listOf(
-            categoria("Monturas Economicas", ventas = 960.0, costos = 880.0, margenPct = 8.3)
+            categoria("Monturas Economicas", ventas = 960.0, costos = 880.0, margenPct = 8.3),
         )
         mockDeps()
 
@@ -157,7 +161,7 @@ class GenerarRecomendacionesUseCaseTest {
     @Test
     fun mejorarPrecio_whenBelowMonetaryThreshold_returnsNull() = runBlocking {
         val categorias = listOf(
-            categoria("Accesorios", ventas = 2.0, costos = 1.9, margenPct = 5.0)
+            categoria("Accesorios", ventas = 2.0, costos = 1.9, margenPct = 5.0),
         )
         mockDeps()
 
@@ -168,7 +172,7 @@ class GenerarRecomendacionesUseCaseTest {
     @Test
     fun mejorarPrecio_whenHealthyMargin_returnsNull() = runBlocking {
         val categorias = listOf(
-            categoria("Lentes", ventas = 1000.0, costos = 700.0, margenPct = 30.0)
+            categoria("Lentes", ventas = 1000.0, costos = 700.0, margenPct = 30.0),
         )
         mockDeps()
 
@@ -183,7 +187,7 @@ class GenerarRecomendacionesUseCaseTest {
         val stock = listOf(
             stockItem("Modelo A", dias = 210, costo = 120.0),
             stockItem("Modelo B", dias = 210, costo = 80.0),
-            stockItem("Modelo C", dias = 45, costo = 100.0)
+            stockItem("Modelo C", dias = 45, costo = 100.0),
         )
         mockDeps()
 
@@ -218,7 +222,7 @@ class GenerarRecomendacionesUseCaseTest {
     fun venderMasDe_whenHighMarginHighContribution_returnsRecomendacion() = runBlocking {
         val categorias = listOf(
             categoria("Lentes Progresivos", ventas = 4800.0, costos = 2640.0, margenPct = 45.0),
-            categoria("Monturas Estandar", ventas = 1000.0, costos = 600.0, margenPct = 40.0)
+            categoria("Monturas Estandar", ventas = 1000.0, costos = 600.0, margenPct = 40.0),
         )
         mockDeps()
 
@@ -234,7 +238,7 @@ class GenerarRecomendacionesUseCaseTest {
     fun venderMasDe_whenHighMarginButLowContribution_returnsNull() = runBlocking {
         val categorias = listOf(
             categoria("Nicho", ventas = 100.0, costos = 50.0, margenPct = 50.0),
-            categoria("Volumen", ventas = 10000.0, costos = 7000.0, margenPct = 30.0)
+            categoria("Volumen", ventas = 10000.0, costos = 7000.0, margenPct = 30.0),
         )
         mockDeps()
 
@@ -245,7 +249,7 @@ class GenerarRecomendacionesUseCaseTest {
     @Test
     fun venderMasDe_whenBelowMonetaryThreshold_returnsNull() = runBlocking {
         val categorias = listOf(
-            categoria("Baratija", ventas = 3.0, costos = 1.65, margenPct = 45.0)
+            categoria("Baratija", ventas = 3.0, costos = 1.65, margenPct = 45.0),
         )
         mockDeps()
 
@@ -315,12 +319,15 @@ class GenerarRecomendacionesUseCaseTest {
         val categorias = listOf(
             categoria("Mont Econ", ventas = 960.0, costos = 880.0, margenPct = 8.3),
             categoria("Lentes Prog", ventas = 4800.0, costos = 2640.0, margenPct = 45.0),
-            categoria("Volumen", ventas = 10000.0, costos = 7000.0, margenPct = 30.0)
+            categoria("Volumen", ventas = 10000.0, costos = 7000.0, margenPct = 30.0),
         )
         val stock = listOf(stockItem("Mod A", dias = 210, costo = 120.0))
         val analisis = cleanAnalisis(
-            ventasMes = 12000.0, gastosMes = 6000.0, variacionVentasPct = -15.0,
-            categorias = categorias, stockEstancado = stock
+            ventasMes = 12000.0,
+            gastosMes = 6000.0,
+            variacionVentasPct = -15.0,
+            categorias = categorias,
+            stockEstancado = stock,
         )
         mockDeps()
 
@@ -370,12 +377,14 @@ class GenerarRecomendacionesUseCaseTest {
     fun invoke_prioridadOrderAltaBeforeMedia() = runBlocking {
         val deudores = listOf(deudor("Juan", saldo = 4000.0, dias = 15))
         val categorias = listOf(
-            categoria("Mont Econ", ventas = 960.0, costos = 880.0, margenPct = 8.3)
+            categoria("Mont Econ", ventas = 960.0, costos = 880.0, margenPct = 8.3),
         )
         val stock = listOf(stockItem("Mod A", dias = 210))
         val analisis = cleanAnalisis(
-            ventasMes = 10000.0, variacionVentasPct = -15.0,
-            categorias = categorias, stockEstancado = stock
+            ventasMes = 10000.0,
+            variacionVentasPct = -15.0,
+            categorias = categorias,
+            stockEstancado = stock,
         )
         mockDeps()
 
@@ -393,12 +402,15 @@ class GenerarRecomendacionesUseCaseTest {
         val categorias = listOf(
             categoria("Mont Econ", ventas = 960.0, costos = 880.0, margenPct = 8.3),
             categoria("Lentes Prog", ventas = 4800.0, costos = 2640.0, margenPct = 45.0),
-            categoria("Volumen", ventas = 10000.0, costos = 7000.0, margenPct = 30.0)
+            categoria("Volumen", ventas = 10000.0, costos = 7000.0, margenPct = 30.0),
         )
         val stock = listOf(stockItem("Mod A", dias = 210))
         val analisis = cleanAnalisis(
-            ventasMes = 12000.0, gastosMes = 6000.0, variacionVentasPct = -15.0,
-            categorias = categorias, stockEstancado = stock
+            ventasMes = 12000.0,
+            gastosMes = 6000.0,
+            variacionVentasPct = -15.0,
+            categorias = categorias,
+            stockEstancado = stock,
         )
         mockDeps()
 

@@ -12,8 +12,12 @@ val campoVisualOptions = listOf("Normal", "Anomalía detectada")
 val tiposLC = listOf("Blanda", "Rígida (RGP)", "Tórica", "Multifocal", "Cosmética")
 val materialesLC = listOf("Hidrogel", "Silicona Hidrogel", "PMMA", "Gas Permeable")
 val diagnosticosRefraccion = listOf(
-    "Emetropía", "Miopía", "Hipermetropía",
-    "Astigmatismo miópico simple", "Astigmatismo miópico compuesto",
-    "Astigmatismo hipermetrópico compuesto", "Astigmatismo mixto"
+    "Emetropía",
+    "Miopía",
+    "Hipermetropía",
+    "Astigmatismo miópico simple",
+    "Astigmatismo miópico compuesto",
+    "Astigmatismo hipermetrópico compuesto",
+    "Astigmatismo mixto",
 )
 val basesPrisma = listOf("Nasal", "Temporal", "Superior", "Inferior")

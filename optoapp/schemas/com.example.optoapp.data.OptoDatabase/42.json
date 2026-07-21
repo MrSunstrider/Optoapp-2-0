@@ -1,0 +1,3391 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 42,
+    "identityHash": "fe957784194b40faa011e4557aafc907",
+    "entities": [
+      {
+        "tableName": "pacientes",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `nombreCompleto` TEXT NOT NULL, `edad` INTEGER NOT NULL, `telefono` TEXT NOT NULL, `fechaCreacion` TEXT NOT NULL, `dni` TEXT, `fechaNacimiento` TEXT, `sexo` TEXT, `email` TEXT, `historiaOptometrica` TEXT, `direccion` TEXT, `distrito` TEXT, `ocupacion` TEXT, `acompanante` TEXT, `hobbies` TEXT, `ultimasEtiquetas` TEXT NOT NULL, `opticaId` TEXT NOT NULL, `updatedAt` TEXT, `updatedBy` TEXT, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nombreCompleto",
+            "columnName": "nombreCompleto",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "edad",
+            "columnName": "edad",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "telefono",
+            "columnName": "telefono",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fechaCreacion",
+            "columnName": "fechaCreacion",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dni",
+            "columnName": "dni",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "fechaNacimiento",
+            "columnName": "fechaNacimiento",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "sexo",
+            "columnName": "sexo",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "email",
+            "columnName": "email",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "historiaOptometrica",
+            "columnName": "historiaOptometrica",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "direccion",
+            "columnName": "direccion",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "distrito",
+            "columnName": "distrito",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "ocupacion",
+            "columnName": "ocupacion",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "acompanante",
+            "columnName": "acompanante",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "hobbies",
+            "columnName": "hobbies",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "ultimasEtiquetas",
+            "columnName": "ultimasEtiquetas",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "opticaId",
+            "columnName": "opticaId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "updatedBy",
+            "columnName": "updatedBy",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_pacientes_nombreCompleto",
+            "unique": false,
+            "columnNames": [
+              "nombreCompleto"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_pacientes_nombreCompleto` ON `${TABLE_NAME}` (`nombreCompleto`)"
+          },
+          {
+            "name": "index_pacientes_opticaId",
+            "unique": false,
+            "columnNames": [
+              "opticaId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_pacientes_opticaId` ON `${TABLE_NAME}` (`opticaId`)"
+          }
+        ]
+      },
+      {
+        "tableName": "evaluaciones",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `pacienteId` TEXT NOT NULL, `fecha` TEXT NOT NULL, `opticaId` TEXT NOT NULL, `motivoConsulta` TEXT NOT NULL, `sintomas` TEXT NOT NULL, `antecedentesPersonalesOculares` TEXT NOT NULL, `antecedentesPersonalesSistemicos` TEXT NOT NULL, `antecedentesFamiliaresOculares` TEXT NOT NULL, `antecedentesFamiliaresSistemicos` TEXT NOT NULL, `medicacion` TEXT NOT NULL, `alergias` TEXT NOT NULL, `necesidadVisual` TEXT NOT NULL, `avScOdLejos` TEXT NOT NULL, `avScOiLejos` TEXT NOT NULL, `avScOdCerca` TEXT NOT NULL, `avScOiCerca` TEXT NOT NULL, `avScAo` TEXT NOT NULL, `avScAoCerca` TEXT NOT NULL, `avCcOdLejos` TEXT NOT NULL, `avCcOiLejos` TEXT NOT NULL, `avCcOdCerca` TEXT NOT NULL, `avCcOiCerca` TEXT NOT NULL, `avCcAoPx` TEXT NOT NULL, `avCcAoCerca` TEXT NOT NULL, `phOd` TEXT NOT NULL, `phOi` TEXT NOT NULL, `kappaOd` TEXT NOT NULL, `kappaOi` TEXT NOT NULL, `hirshberg` TEXT NOT NULL, `duccionesOd` TEXT NOT NULL, `duccionesOi` TEXT NOT NULL, `versionesAo` TEXT NOT NULL, `estereopsisValor` TEXT NOT NULL, `estereopsisSegundos` TEXT NOT NULL, `lang` TEXT NOT NULL, `worth` TEXT NOT NULL, `ishihara` TEXT NOT NULL, `farnsworth` TEXT NOT NULL, `schirmerOd` TEXT NOT NULL, `schirmerOi` TEXT NOT NULL, `osdiPuntuacion` INTEGER, `osdiClasificacion` TEXT NOT NULL, `sensibilidadContraste` TEXT NOT NULL, `sensibilidadFrecuencia` TEXT NOT NULL, `amsler` TEXT NOT NULL, `campoVisual` TEXT NOT NULL, `campoVisualDescripcion` TEXT NOT NULL, `coverTest6m` TEXT NOT NULL, `coverTest40cm` TEXT NOT NULL, `coverTest10cm` TEXT NOT NULL, `ppcOr` TEXT NOT NULL, `ppcLuz` TEXT NOT NULL, `ppcFrl` TEXT NOT NULL, `reflejoFotomotor` TEXT NOT NULL, `reflejoConsensual` TEXT NOT NULL, `reflejoAcomodativo` TEXT NOT NULL, `k1Od` TEXT NOT NULL, `k2Od` TEXT NOT NULL, `k1Oi` TEXT NOT NULL, `k2Oi` TEXT NOT NULL, `objOdEsf` TEXT NOT NULL, `objOdCil` TEXT NOT NULL, `objOdEje` TEXT NOT NULL, `objOiEsf` TEXT NOT NULL, `objOiCil` TEXT NOT NULL, `objOiEje` TEXT NOT NULL, `subjOdEsf` TEXT NOT NULL, `subjOdCil` TEXT NOT NULL, `subjOdEje` TEXT NOT NULL, `subjOiEsf` TEXT NOT NULL, `subjOiCil` TEXT NOT NULL, `subjOiEje` TEXT NOT NULL, `recetaOdEsf` TEXT NOT NULL, `recetaOdCil` TEXT NOT NULL, `recetaOdEje` TEXT NOT NULL, `recetaOdAv` TEXT NOT NULL, `recetaOiEsf` TEXT NOT NULL, `recetaOiCil` TEXT NOT NULL, `recetaOiEje` TEXT NOT NULL, `recetaOiAv` TEXT NOT NULL, `addCercaOd` TEXT NOT NULL, `addCercaOi` TEXT NOT NULL, `addIntermediaOd` TEXT NOT NULL, `addIntermediaOi` TEXT NOT NULL, `addAv` TEXT NOT NULL, `dipLejos` TEXT NOT NULL, `dipCerca` TEXT NOT NULL, `dipIntermedio` TEXT NOT NULL, `dipTotalMm` REAL, `dnpOdMm` REAL, `dnpOiMm` REAL, `prismaOdValor` TEXT NOT NULL, `prismaOdBase` TEXT NOT NULL, `prismaOiValor` TEXT NOT NULL, `prismaOiBase` TEXT NOT NULL, `diagnostico` TEXT NOT NULL, `diagnosticoOd` TEXT NOT NULL, `diagnosticoOi` TEXT NOT NULL, `diagnosticoOtros` TEXT NOT NULL, `planTratamiento` TEXT NOT NULL, `observaciones` TEXT NOT NULL, `proximaFechaControl` TEXT NOT NULL, `proximaCita` TEXT, `citaEstado` TEXT NOT NULL, `balanceOd` INTEGER NOT NULL, `balanceOi` INTEGER NOT NULL, `otrosPresbicia` INTEGER NOT NULL, `otrosAnisometropia` INTEGER NOT NULL, `otrosAmbliopia` INTEGER NOT NULL, `autoPresbicia` INTEGER NOT NULL, `autoAnisometropia` INTEGER NOT NULL, `autoAmbliopia` INTEGER NOT NULL, `lcOdEsf` TEXT NOT NULL, `lcOdCil` TEXT NOT NULL, `lcOdEje` TEXT NOT NULL, `lcOiEsf` TEXT NOT NULL, `lcOiCil` TEXT NOT NULL, `lcOiEje` TEXT NOT NULL, `lcRadioBaseOd` TEXT NOT NULL, `lcDiametroOd` TEXT NOT NULL, `lcRadioBaseOi` TEXT NOT NULL, `lcDiametroOi` TEXT NOT NULL, `lcLaboratorio` TEXT NOT NULL, `lcTipoLente` TEXT NOT NULL, `lcMaterial` TEXT NOT NULL, `lcFechaAdaptacion` TEXT, `lcObservaciones` TEXT NOT NULL, `updatedAt` TEXT, `updatedBy` TEXT, PRIMARY KEY(`id`), FOREIGN KEY(`pacienteId`) REFERENCES `pacientes`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pacienteId",
+            "columnName": "pacienteId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fecha",
+            "columnName": "fecha",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "opticaId",
+            "columnName": "opticaId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "motivoConsulta",
+            "columnName": "motivoConsulta",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sintomas",
+            "columnName": "sintomas",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "antecedentesPersonalesOculares",
+            "columnName": "antecedentesPersonalesOculares",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "antecedentesPersonalesSistemicos",
+            "columnName": "antecedentesPersonalesSistemicos",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "antecedentesFamiliaresOculares",
+            "columnName": "antecedentesFamiliaresOculares",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "antecedentesFamiliaresSistemicos",
+            "columnName": "antecedentesFamiliaresSistemicos",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "medicacion",
+            "columnName": "medicacion",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "alergias",
+            "columnName": "alergias",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "necesidadVisual",
+            "columnName": "necesidadVisual",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "avScOdLejos",
+            "columnName": "avScOdLejos",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "avScOiLejos",
+            "columnName": "avScOiLejos",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "avScOdCerca",
+            "columnName": "avScOdCerca",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "avScOiCerca",
+            "columnName": "avScOiCerca",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "avScAo",
+            "columnName": "avScAo",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "avScAoCerca",
+            "columnName": "avScAoCerca",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "avCcOdLejos",
+            "columnName": "avCcOdLejos",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "avCcOiLejos",
+            "columnName": "avCcOiLejos",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "avCcOdCerca",
+            "columnName": "avCcOdCerca",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "avCcOiCerca",
+            "columnName": "avCcOiCerca",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "avCcAoPx",
+            "columnName": "avCcAoPx",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "avCcAoCerca",
+            "columnName": "avCcAoCerca",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "phOd",
+            "columnName": "phOd",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "phOi",
+            "columnName": "phOi",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "kappaOd",
+            "columnName": "kappaOd",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "kappaOi",
+            "columnName": "kappaOi",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "hirshberg",
+            "columnName": "hirshberg",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "duccionesOd",
+            "columnName": "duccionesOd",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "duccionesOi",
+            "columnName": "duccionesOi",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "versionesAo",
+            "columnName": "versionesAo",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "estereopsisValor",
+            "columnName": "estereopsisValor",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "estereopsisSegundos",
+            "columnName": "estereopsisSegundos",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lang",
+            "columnName": "lang",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "worth",
+            "columnName": "worth",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ishihara",
+            "columnName": "ishihara",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "farnsworth",
+            "columnName": "farnsworth",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "schirmerOd",
+            "columnName": "schirmerOd",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "schirmerOi",
+            "columnName": "schirmerOi",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "osdiPuntuacion",
+            "columnName": "osdiPuntuacion",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "osdiClasificacion",
+            "columnName": "osdiClasificacion",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sensibilidadContraste",
+            "columnName": "sensibilidadContraste",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sensibilidadFrecuencia",
+            "columnName": "sensibilidadFrecuencia",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "amsler",
+            "columnName": "amsler",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "campoVisual",
+            "columnName": "campoVisual",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "campoVisualDescripcion",
+            "columnName": "campoVisualDescripcion",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "coverTest6m",
+            "columnName": "coverTest6m",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "coverTest40cm",
+            "columnName": "coverTest40cm",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "coverTest10cm",
+            "columnName": "coverTest10cm",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ppcOr",
+            "columnName": "ppcOr",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ppcLuz",
+            "columnName": "ppcLuz",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ppcFrl",
+            "columnName": "ppcFrl",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "reflejoFotomotor",
+            "columnName": "reflejoFotomotor",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "reflejoConsensual",
+            "columnName": "reflejoConsensual",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "reflejoAcomodativo",
+            "columnName": "reflejoAcomodativo",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "k1Od",
+            "columnName": "k1Od",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "k2Od",
+            "columnName": "k2Od",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "k1Oi",
+            "columnName": "k1Oi",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "k2Oi",
+            "columnName": "k2Oi",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "objOdEsf",
+            "columnName": "objOdEsf",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "objOdCil",
+            "columnName": "objOdCil",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "objOdEje",
+            "columnName": "objOdEje",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "objOiEsf",
+            "columnName": "objOiEsf",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "objOiCil",
+            "columnName": "objOiCil",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "objOiEje",
+            "columnName": "objOiEje",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "subjOdEsf",
+            "columnName": "subjOdEsf",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "subjOdCil",
+            "columnName": "subjOdCil",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "subjOdEje",
+            "columnName": "subjOdEje",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "subjOiEsf",
+            "columnName": "subjOiEsf",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "subjOiCil",
+            "columnName": "subjOiCil",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "subjOiEje",
+            "columnName": "subjOiEje",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "recetaOdEsf",
+            "columnName": "recetaOdEsf",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "recetaOdCil",
+            "columnName": "recetaOdCil",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "recetaOdEje",
+            "columnName": "recetaOdEje",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "recetaOdAv",
+            "columnName": "recetaOdAv",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "recetaOiEsf",
+            "columnName": "recetaOiEsf",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "recetaOiCil",
+            "columnName": "recetaOiCil",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "recetaOiEje",
+            "columnName": "recetaOiEje",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "recetaOiAv",
+            "columnName": "recetaOiAv",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "addCercaOd",
+            "columnName": "addCercaOd",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "addCercaOi",
+            "columnName": "addCercaOi",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "addIntermediaOd",
+            "columnName": "addIntermediaOd",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "addIntermediaOi",
+            "columnName": "addIntermediaOi",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "addAv",
+            "columnName": "addAv",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dipLejos",
+            "columnName": "dipLejos",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dipCerca",
+            "columnName": "dipCerca",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dipIntermedio",
+            "columnName": "dipIntermedio",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dipTotalMm",
+            "columnName": "dipTotalMm",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "dnpOdMm",
+            "columnName": "dnpOdMm",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "dnpOiMm",
+            "columnName": "dnpOiMm",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "prismaOdValor",
+            "columnName": "prismaOdValor",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "prismaOdBase",
+            "columnName": "prismaOdBase",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "prismaOiValor",
+            "columnName": "prismaOiValor",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "prismaOiBase",
+            "columnName": "prismaOiBase",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "diagnostico",
+            "columnName": "diagnostico",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "diagnosticoOd",
+            "columnName": "diagnosticoOd",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "diagnosticoOi",
+            "columnName": "diagnosticoOi",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "diagnosticoOtros",
+            "columnName": "diagnosticoOtros",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "planTratamiento",
+            "columnName": "planTratamiento",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "observaciones",
+            "columnName": "observaciones",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "proximaFechaControl",
+            "columnName": "proximaFechaControl",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "proximaCita",
+            "columnName": "proximaCita",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "citaEstado",
+            "columnName": "citaEstado",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "balanceOd",
+            "columnName": "balanceOd",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "balanceOi",
+            "columnName": "balanceOi",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "otrosPresbicia",
+            "columnName": "otrosPresbicia",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "otrosAnisometropia",
+            "columnName": "otrosAnisometropia",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "otrosAmbliopia",
+            "columnName": "otrosAmbliopia",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "autoPresbicia",
+            "columnName": "autoPresbicia",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "autoAnisometropia",
+            "columnName": "autoAnisometropia",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "autoAmbliopia",
+            "columnName": "autoAmbliopia",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lcOdEsf",
+            "columnName": "lcOdEsf",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lcOdCil",
+            "columnName": "lcOdCil",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lcOdEje",
+            "columnName": "lcOdEje",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lcOiEsf",
+            "columnName": "lcOiEsf",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lcOiCil",
+            "columnName": "lcOiCil",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lcOiEje",
+            "columnName": "lcOiEje",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lcRadioBaseOd",
+            "columnName": "lcRadioBaseOd",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lcDiametroOd",
+            "columnName": "lcDiametroOd",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lcRadioBaseOi",
+            "columnName": "lcRadioBaseOi",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lcDiametroOi",
+            "columnName": "lcDiametroOi",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lcLaboratorio",
+            "columnName": "lcLaboratorio",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lcTipoLente",
+            "columnName": "lcTipoLente",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lcMaterial",
+            "columnName": "lcMaterial",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lcFechaAdaptacion",
+            "columnName": "lcFechaAdaptacion",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "lcObservaciones",
+            "columnName": "lcObservaciones",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "updatedBy",
+            "columnName": "updatedBy",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_evaluaciones_pacienteId",
+            "unique": false,
+            "columnNames": [
+              "pacienteId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_evaluaciones_pacienteId` ON `${TABLE_NAME}` (`pacienteId`)"
+          },
+          {
+            "name": "index_evaluaciones_opticaId",
+            "unique": false,
+            "columnNames": [
+              "opticaId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_evaluaciones_opticaId` ON `${TABLE_NAME}` (`opticaId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "pacientes",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "pacienteId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "dispensaciones",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `ot` TEXT NOT NULL, `monturaId` TEXT NOT NULL, `pacienteId` TEXT NOT NULL, `fecha` TEXT NOT NULL, `opticaId` TEXT NOT NULL, `tipoMontura` TEXT NOT NULL, `materialMontura` TEXT NOT NULL, `tipoLente` TEXT NOT NULL, `materialLente` TEXT NOT NULL, `tratamientos` TEXT NOT NULL, `colorLente` TEXT NOT NULL, `notasDiseno` TEXT NOT NULL, `origenMontura` TEXT NOT NULL, `tipoAro` TEXT NOT NULL, `descripcionMontura` TEXT NOT NULL, `montoTotal` REAL NOT NULL, `metodoPago` TEXT NOT NULL, `montoPagado` REAL NOT NULL, `estadoEntrega` TEXT NOT NULL, `fechaEntrega` TEXT, `fechaVencimientoGarantia` TEXT, `distanciaLente` TEXT NOT NULL, `altura` TEXT NOT NULL, `subTipoBifocal` TEXT NOT NULL, `filtro_discromatopsia_tipo` TEXT NOT NULL, `reclamo_origen_id` TEXT, `evaluacion_id` TEXT, `updatedAt` TEXT, `updatedBy` TEXT, PRIMARY KEY(`id`), FOREIGN KEY(`pacienteId`) REFERENCES `pacientes`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ot",
+            "columnName": "ot",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "monturaId",
+            "columnName": "monturaId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pacienteId",
+            "columnName": "pacienteId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fecha",
+            "columnName": "fecha",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "opticaId",
+            "columnName": "opticaId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tipoMontura",
+            "columnName": "tipoMontura",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "materialMontura",
+            "columnName": "materialMontura",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tipoLente",
+            "columnName": "tipoLente",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "materialLente",
+            "columnName": "materialLente",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tratamientos",
+            "columnName": "tratamientos",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "colorLente",
+            "columnName": "colorLente",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "notasDiseno",
+            "columnName": "notasDiseno",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "origenMontura",
+            "columnName": "origenMontura",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tipoAro",
+            "columnName": "tipoAro",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "descripcionMontura",
+            "columnName": "descripcionMontura",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "montoTotal",
+            "columnName": "montoTotal",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "metodoPago",
+            "columnName": "metodoPago",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "montoPagado",
+            "columnName": "montoPagado",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "estadoEntrega",
+            "columnName": "estadoEntrega",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fechaEntrega",
+            "columnName": "fechaEntrega",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "fechaVencimientoGarantia",
+            "columnName": "fechaVencimientoGarantia",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "distanciaLente",
+            "columnName": "distanciaLente",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "altura",
+            "columnName": "altura",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "subTipoBifocal",
+            "columnName": "subTipoBifocal",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "filtroDiscromatopsiaTipo",
+            "columnName": "filtro_discromatopsia_tipo",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "reclamoOrigenId",
+            "columnName": "reclamo_origen_id",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "evaluacionId",
+            "columnName": "evaluacion_id",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "updatedBy",
+            "columnName": "updatedBy",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_dispensaciones_pacienteId",
+            "unique": false,
+            "columnNames": [
+              "pacienteId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_dispensaciones_pacienteId` ON `${TABLE_NAME}` (`pacienteId`)"
+          },
+          {
+            "name": "index_dispensaciones_opticaId",
+            "unique": false,
+            "columnNames": [
+              "opticaId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_dispensaciones_opticaId` ON `${TABLE_NAME}` (`opticaId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "pacientes",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "pacienteId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "pagos",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `dispensacionId` TEXT, `servicioExtraId` TEXT, `fecha` TEXT NOT NULL, `tipo` TEXT NOT NULL, `monto` REAL NOT NULL, `metodoPago` TEXT NOT NULL, `nota` TEXT NOT NULL, `opticaId` TEXT NOT NULL, `updatedAt` TEXT, `updatedBy` TEXT, `ventaId` TEXT, PRIMARY KEY(`id`), FOREIGN KEY(`dispensacionId`) REFERENCES `dispensaciones`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`servicioExtraId`) REFERENCES `servicios_extra`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dispensacionId",
+            "columnName": "dispensacionId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "servicioExtraId",
+            "columnName": "servicioExtraId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "fecha",
+            "columnName": "fecha",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tipo",
+            "columnName": "tipo",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "monto",
+            "columnName": "monto",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "metodoPago",
+            "columnName": "metodoPago",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nota",
+            "columnName": "nota",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "opticaId",
+            "columnName": "opticaId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "updatedBy",
+            "columnName": "updatedBy",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "ventaId",
+            "columnName": "ventaId",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_pagos_dispensacionId",
+            "unique": false,
+            "columnNames": [
+              "dispensacionId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_pagos_dispensacionId` ON `${TABLE_NAME}` (`dispensacionId`)"
+          },
+          {
+            "name": "index_pagos_servicioExtraId",
+            "unique": false,
+            "columnNames": [
+              "servicioExtraId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_pagos_servicioExtraId` ON `${TABLE_NAME}` (`servicioExtraId`)"
+          },
+          {
+            "name": "index_pagos_opticaId",
+            "unique": false,
+            "columnNames": [
+              "opticaId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_pagos_opticaId` ON `${TABLE_NAME}` (`opticaId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "dispensaciones",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "dispensacionId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          },
+          {
+            "table": "servicios_extra",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "servicioExtraId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "servicios_extra",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `ot` TEXT NOT NULL, `descripcion` TEXT NOT NULL, `montoTotal` REAL NOT NULL, `aCuenta` REAL NOT NULL, `estado` TEXT NOT NULL, `fecha` TEXT NOT NULL, `pacienteId` TEXT, `metodoPago` TEXT NOT NULL, `opticaId` TEXT NOT NULL, `fecha_entrega` TEXT, `updatedAt` TEXT, `updatedBy` TEXT, PRIMARY KEY(`id`), FOREIGN KEY(`pacienteId`) REFERENCES `pacientes`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ot",
+            "columnName": "ot",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "descripcion",
+            "columnName": "descripcion",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "montoTotal",
+            "columnName": "montoTotal",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "aCuenta",
+            "columnName": "aCuenta",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "estado",
+            "columnName": "estado",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fecha",
+            "columnName": "fecha",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pacienteId",
+            "columnName": "pacienteId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "metodoPago",
+            "columnName": "metodoPago",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "opticaId",
+            "columnName": "opticaId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fechaEntrega",
+            "columnName": "fecha_entrega",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "updatedBy",
+            "columnName": "updatedBy",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_servicios_extra_pacienteId",
+            "unique": false,
+            "columnNames": [
+              "pacienteId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_servicios_extra_pacienteId` ON `${TABLE_NAME}` (`pacienteId`)"
+          },
+          {
+            "name": "index_servicios_extra_opticaId",
+            "unique": false,
+            "columnNames": [
+              "opticaId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_servicios_extra_opticaId` ON `${TABLE_NAME}` (`opticaId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "pacientes",
+            "onDelete": "SET NULL",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "pacienteId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "monturas",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `sku` TEXT NOT NULL, `marca` TEXT NOT NULL, `modelo` TEXT NOT NULL, `color` TEXT NOT NULL, `talla` TEXT NOT NULL, `costo` REAL NOT NULL, `precio` REAL NOT NULL, `stockActual` INTEGER NOT NULL, `stockMinimo` INTEGER NOT NULL, `activo` INTEGER NOT NULL, `tipoAro` TEXT NOT NULL, `materialMontura` TEXT NOT NULL, `anchoMm` REAL, `puenteMm` REAL, `alturaMm` REAL, `imagenUri` TEXT, `categoria` TEXT NOT NULL, `coleccion` TEXT NOT NULL, `temporada` TEXT NOT NULL, `estadoComercial` TEXT NOT NULL, `genero` TEXT NOT NULL, `opticaId` TEXT NOT NULL, `updatedAt` TEXT, `updatedBy` TEXT, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sku",
+            "columnName": "sku",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "marca",
+            "columnName": "marca",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "modelo",
+            "columnName": "modelo",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "color",
+            "columnName": "color",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "talla",
+            "columnName": "talla",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "costo",
+            "columnName": "costo",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "precio",
+            "columnName": "precio",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "stockActual",
+            "columnName": "stockActual",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "stockMinimo",
+            "columnName": "stockMinimo",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "activo",
+            "columnName": "activo",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tipoAro",
+            "columnName": "tipoAro",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "materialMontura",
+            "columnName": "materialMontura",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "anchoMm",
+            "columnName": "anchoMm",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "puenteMm",
+            "columnName": "puenteMm",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "alturaMm",
+            "columnName": "alturaMm",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "imagenUri",
+            "columnName": "imagenUri",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "categoria",
+            "columnName": "categoria",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "coleccion",
+            "columnName": "coleccion",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "temporada",
+            "columnName": "temporada",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "estadoComercial",
+            "columnName": "estadoComercial",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "genero",
+            "columnName": "genero",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "opticaId",
+            "columnName": "opticaId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "updatedBy",
+            "columnName": "updatedBy",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_monturas_opticaId",
+            "unique": false,
+            "columnNames": [
+              "opticaId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_monturas_opticaId` ON `${TABLE_NAME}` (`opticaId`)"
+          },
+          {
+            "name": "index_monturas_sku_opticaId",
+            "unique": true,
+            "columnNames": [
+              "sku",
+              "opticaId"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_monturas_sku_opticaId` ON `${TABLE_NAME}` (`sku`, `opticaId`)"
+          },
+          {
+            "name": "index_monturas_estadoComercial",
+            "unique": false,
+            "columnNames": [
+              "estadoComercial"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_monturas_estadoComercial` ON `${TABLE_NAME}` (`estadoComercial`)"
+          },
+          {
+            "name": "index_monturas_categoria",
+            "unique": false,
+            "columnNames": [
+              "categoria"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_monturas_categoria` ON `${TABLE_NAME}` (`categoria`)"
+          }
+        ]
+      },
+      {
+        "tableName": "montura_movimientos",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `monturaId` TEXT NOT NULL, `fecha` TEXT NOT NULL, `tipo` TEXT NOT NULL, `cantidad` INTEGER NOT NULL, `stockPrevio` INTEGER NOT NULL, `stockNuevo` INTEGER NOT NULL, `referenciaId` TEXT NOT NULL, `nota` TEXT NOT NULL, `opticaId` TEXT NOT NULL, `updatedAt` TEXT, `updatedBy` TEXT, `userId` TEXT NOT NULL, `costoUnitario` REAL NOT NULL, `tipoDocumento` TEXT NOT NULL, PRIMARY KEY(`id`), FOREIGN KEY(`monturaId`) REFERENCES `monturas`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "monturaId",
+            "columnName": "monturaId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fecha",
+            "columnName": "fecha",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tipo",
+            "columnName": "tipo",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cantidad",
+            "columnName": "cantidad",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "stockPrevio",
+            "columnName": "stockPrevio",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "stockNuevo",
+            "columnName": "stockNuevo",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "referenciaId",
+            "columnName": "referenciaId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nota",
+            "columnName": "nota",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "opticaId",
+            "columnName": "opticaId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "updatedBy",
+            "columnName": "updatedBy",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "userId",
+            "columnName": "userId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "costoUnitario",
+            "columnName": "costoUnitario",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tipoDocumento",
+            "columnName": "tipoDocumento",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_montura_movimientos_monturaId",
+            "unique": false,
+            "columnNames": [
+              "monturaId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_montura_movimientos_monturaId` ON `${TABLE_NAME}` (`monturaId`)"
+          },
+          {
+            "name": "index_montura_movimientos_opticaId",
+            "unique": false,
+            "columnNames": [
+              "opticaId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_montura_movimientos_opticaId` ON `${TABLE_NAME}` (`opticaId`)"
+          },
+          {
+            "name": "index_montura_movimientos_fecha",
+            "unique": false,
+            "columnNames": [
+              "fecha"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_montura_movimientos_fecha` ON `${TABLE_NAME}` (`fecha`)"
+          },
+          {
+            "name": "index_montura_movimientos_referenciaId",
+            "unique": false,
+            "columnNames": [
+              "referenciaId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_montura_movimientos_referenciaId` ON `${TABLE_NAME}` (`referenciaId`)"
+          },
+          {
+            "name": "index_montura_movimientos_referenciaId_tipo_monturaId",
+            "unique": true,
+            "columnNames": [
+              "referenciaId",
+              "tipo",
+              "monturaId"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_montura_movimientos_referenciaId_tipo_monturaId` ON `${TABLE_NAME}` (`referenciaId`, `tipo`, `monturaId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "monturas",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "monturaId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "sync_entity_state",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`opticaId` TEXT NOT NULL, `entityType` TEXT NOT NULL, `entityId` TEXT NOT NULL, `status` TEXT NOT NULL, `lastError` TEXT NOT NULL, `updatedAt` INTEGER NOT NULL, PRIMARY KEY(`opticaId`, `entityType`, `entityId`))",
+        "fields": [
+          {
+            "fieldPath": "opticaId",
+            "columnName": "opticaId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "entityType",
+            "columnName": "entityType",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "entityId",
+            "columnName": "entityId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastError",
+            "columnName": "lastError",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "opticaId",
+            "entityType",
+            "entityId"
+          ]
+        }
+      },
+      {
+        "tableName": "dispensacion_items",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `dispensacion_id` TEXT NOT NULL, `tipo_lente` TEXT NOT NULL, `material_lente` TEXT NOT NULL, `tratamientos` TEXT NOT NULL, `color_lente` TEXT NOT NULL, `distancia_lente` TEXT NOT NULL, `altura` TEXT NOT NULL, `sub_tipo_bifocal` TEXT NOT NULL, `filtro_discromatopsia_tipo` TEXT NOT NULL, `notas_diseno` TEXT NOT NULL, `montura_id` TEXT NOT NULL, `origen_montura` TEXT NOT NULL, `tipo_aro` TEXT NOT NULL, `material_montura` TEXT NOT NULL, `descripcion_montura` TEXT NOT NULL, `tipo_montura` TEXT NOT NULL, `optica_id` TEXT NOT NULL, `alto_indice` TEXT, `reduccion_diametro` TEXT, `lenticular` TEXT, `curva_base` TEXT, `costo_real_od` REAL, `costo_real_oi` REAL, `costo_real_montura` REAL, `costo_real_biselado` REAL, `costo_real_lc` REAL, PRIMARY KEY(`id`), FOREIGN KEY(`dispensacion_id`) REFERENCES `dispensaciones`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dispensacionId",
+            "columnName": "dispensacion_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tipoLente",
+            "columnName": "tipo_lente",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "materialLente",
+            "columnName": "material_lente",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tratamientos",
+            "columnName": "tratamientos",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "colorLente",
+            "columnName": "color_lente",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "distanciaLente",
+            "columnName": "distancia_lente",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "altura",
+            "columnName": "altura",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "subTipoBifocal",
+            "columnName": "sub_tipo_bifocal",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "filtroDiscromatopsiaTipo",
+            "columnName": "filtro_discromatopsia_tipo",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "notasDiseno",
+            "columnName": "notas_diseno",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "monturaId",
+            "columnName": "montura_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "origenMontura",
+            "columnName": "origen_montura",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tipoAro",
+            "columnName": "tipo_aro",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "materialMontura",
+            "columnName": "material_montura",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "descripcionMontura",
+            "columnName": "descripcion_montura",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tipoMontura",
+            "columnName": "tipo_montura",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "opticaId",
+            "columnName": "optica_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "altoIndice",
+            "columnName": "alto_indice",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "reduccionDiametro",
+            "columnName": "reduccion_diametro",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "lenticular",
+            "columnName": "lenticular",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "curvaBase",
+            "columnName": "curva_base",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "costoRealOd",
+            "columnName": "costo_real_od",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "costoRealOi",
+            "columnName": "costo_real_oi",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "costoRealMontura",
+            "columnName": "costo_real_montura",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "costoRealBiselado",
+            "columnName": "costo_real_biselado",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "costoRealLc",
+            "columnName": "costo_real_lc",
+            "affinity": "REAL"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_dispensacion_items_dispensacion_id",
+            "unique": false,
+            "columnNames": [
+              "dispensacion_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_dispensacion_items_dispensacion_id` ON `${TABLE_NAME}` (`dispensacion_id`)"
+          },
+          {
+            "name": "index_dispensacion_items_optica_id",
+            "unique": false,
+            "columnNames": [
+              "optica_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_dispensacion_items_optica_id` ON `${TABLE_NAME}` (`optica_id`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "dispensaciones",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "dispensacion_id"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "conflict_records",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`entityId` TEXT NOT NULL, `opticaId` TEXT NOT NULL, `entityType` TEXT NOT NULL, `localSnapshot` TEXT NOT NULL, `remoteSnapshot` TEXT NOT NULL, `detectedAt` INTEGER NOT NULL, `baseSnapshot` TEXT NOT NULL, `localData` TEXT NOT NULL, `remoteData` TEXT NOT NULL, PRIMARY KEY(`entityId`, `opticaId`))",
+        "fields": [
+          {
+            "fieldPath": "entityId",
+            "columnName": "entityId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "opticaId",
+            "columnName": "opticaId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "entityType",
+            "columnName": "entityType",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "localSnapshot",
+            "columnName": "localSnapshot",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "remoteSnapshot",
+            "columnName": "remoteSnapshot",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "detectedAt",
+            "columnName": "detectedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "baseSnapshot",
+            "columnName": "baseSnapshot",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "localData",
+            "columnName": "localData",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "remoteData",
+            "columnName": "remoteData",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "entityId",
+            "opticaId"
+          ]
+        }
+      },
+      {
+        "tableName": "proveedores",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `nombre` TEXT NOT NULL, `ruc` TEXT NOT NULL, `telefono` TEXT NOT NULL, `email` TEXT NOT NULL, `direccion` TEXT NOT NULL, `contacto` TEXT NOT NULL, `activo` INTEGER NOT NULL, `opticaId` TEXT NOT NULL, `updatedAt` TEXT, `updatedBy` TEXT, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nombre",
+            "columnName": "nombre",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ruc",
+            "columnName": "ruc",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "telefono",
+            "columnName": "telefono",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "email",
+            "columnName": "email",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "direccion",
+            "columnName": "direccion",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "contacto",
+            "columnName": "contacto",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "activo",
+            "columnName": "activo",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "opticaId",
+            "columnName": "opticaId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "updatedBy",
+            "columnName": "updatedBy",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_proveedores_opticaId",
+            "unique": false,
+            "columnNames": [
+              "opticaId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_proveedores_opticaId` ON `${TABLE_NAME}` (`opticaId`)"
+          },
+          {
+            "name": "index_proveedores_ruc_opticaId",
+            "unique": true,
+            "columnNames": [
+              "ruc",
+              "opticaId"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_proveedores_ruc_opticaId` ON `${TABLE_NAME}` (`ruc`, `opticaId`)"
+          }
+        ]
+      },
+      {
+        "tableName": "montura_proveedor",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `monturaId` TEXT NOT NULL, `proveedorId` TEXT NOT NULL, `costoProveedor` REAL NOT NULL, `precioSugerido` REAL NOT NULL, `activo` INTEGER NOT NULL, PRIMARY KEY(`id`), FOREIGN KEY(`monturaId`) REFERENCES `monturas`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`proveedorId`) REFERENCES `proveedores`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "monturaId",
+            "columnName": "monturaId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "proveedorId",
+            "columnName": "proveedorId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "costoProveedor",
+            "columnName": "costoProveedor",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "precioSugerido",
+            "columnName": "precioSugerido",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "activo",
+            "columnName": "activo",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_montura_proveedor_monturaId_proveedorId",
+            "unique": true,
+            "columnNames": [
+              "monturaId",
+              "proveedorId"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_montura_proveedor_monturaId_proveedorId` ON `${TABLE_NAME}` (`monturaId`, `proveedorId`)"
+          },
+          {
+            "name": "index_montura_proveedor_monturaId",
+            "unique": false,
+            "columnNames": [
+              "monturaId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_montura_proveedor_monturaId` ON `${TABLE_NAME}` (`monturaId`)"
+          },
+          {
+            "name": "index_montura_proveedor_proveedorId",
+            "unique": false,
+            "columnNames": [
+              "proveedorId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_montura_proveedor_proveedorId` ON `${TABLE_NAME}` (`proveedorId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "monturas",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "monturaId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          },
+          {
+            "table": "proveedores",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "proveedorId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "categorias_montura",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `nombre` TEXT NOT NULL, `descripcion` TEXT NOT NULL, `opticaId` TEXT NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nombre",
+            "columnName": "nombre",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "descripcion",
+            "columnName": "descripcion",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "opticaId",
+            "columnName": "opticaId",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_categorias_montura_nombre_opticaId",
+            "unique": true,
+            "columnNames": [
+              "nombre",
+              "opticaId"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_categorias_montura_nombre_opticaId` ON `${TABLE_NAME}` (`nombre`, `opticaId`)"
+          }
+        ]
+      },
+      {
+        "tableName": "ordenes_compra",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `numero` TEXT NOT NULL, `proveedorId` TEXT NOT NULL, `fecha` TEXT NOT NULL, `estado` TEXT NOT NULL, `total` REAL NOT NULL, `opticaId` TEXT NOT NULL, `updatedAt` TEXT, `updatedBy` TEXT, PRIMARY KEY(`id`), FOREIGN KEY(`proveedorId`) REFERENCES `proveedores`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "numero",
+            "columnName": "numero",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "proveedorId",
+            "columnName": "proveedorId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fecha",
+            "columnName": "fecha",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "estado",
+            "columnName": "estado",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "total",
+            "columnName": "total",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "opticaId",
+            "columnName": "opticaId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "updatedBy",
+            "columnName": "updatedBy",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_ordenes_compra_opticaId",
+            "unique": false,
+            "columnNames": [
+              "opticaId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_ordenes_compra_opticaId` ON `${TABLE_NAME}` (`opticaId`)"
+          },
+          {
+            "name": "index_ordenes_compra_numero",
+            "unique": false,
+            "columnNames": [
+              "numero"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_ordenes_compra_numero` ON `${TABLE_NAME}` (`numero`)"
+          },
+          {
+            "name": "index_ordenes_compra_estado",
+            "unique": false,
+            "columnNames": [
+              "estado"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_ordenes_compra_estado` ON `${TABLE_NAME}` (`estado`)"
+          },
+          {
+            "name": "index_ordenes_compra_proveedorId",
+            "unique": false,
+            "columnNames": [
+              "proveedorId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_ordenes_compra_proveedorId` ON `${TABLE_NAME}` (`proveedorId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "proveedores",
+            "onDelete": "NO ACTION",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "proveedorId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "orden_compra_items",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `ordenId` TEXT NOT NULL, `monturaId` TEXT NOT NULL, `cantidad` INTEGER NOT NULL, `costoUnitario` REAL NOT NULL, `recibido` INTEGER NOT NULL, PRIMARY KEY(`id`), FOREIGN KEY(`ordenId`) REFERENCES `ordenes_compra`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`monturaId`) REFERENCES `monturas`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ordenId",
+            "columnName": "ordenId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "monturaId",
+            "columnName": "monturaId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cantidad",
+            "columnName": "cantidad",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "costoUnitario",
+            "columnName": "costoUnitario",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "recibido",
+            "columnName": "recibido",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_orden_compra_items_ordenId",
+            "unique": false,
+            "columnNames": [
+              "ordenId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_orden_compra_items_ordenId` ON `${TABLE_NAME}` (`ordenId`)"
+          },
+          {
+            "name": "index_orden_compra_items_monturaId",
+            "unique": false,
+            "columnNames": [
+              "monturaId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_orden_compra_items_monturaId` ON `${TABLE_NAME}` (`monturaId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "ordenes_compra",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "ordenId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          },
+          {
+            "table": "monturas",
+            "onDelete": "NO ACTION",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "monturaId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "inventario_fisico",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `fecha` TEXT NOT NULL, `estado` TEXT NOT NULL, `opticaId` TEXT NOT NULL, `userId` TEXT NOT NULL, `notas` TEXT NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fecha",
+            "columnName": "fecha",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "estado",
+            "columnName": "estado",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "opticaId",
+            "columnName": "opticaId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "userId",
+            "columnName": "userId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "notas",
+            "columnName": "notas",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_inventario_fisico_opticaId",
+            "unique": false,
+            "columnNames": [
+              "opticaId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_inventario_fisico_opticaId` ON `${TABLE_NAME}` (`opticaId`)"
+          },
+          {
+            "name": "index_inventario_fisico_estado",
+            "unique": false,
+            "columnNames": [
+              "estado"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_inventario_fisico_estado` ON `${TABLE_NAME}` (`estado`)"
+          }
+        ]
+      },
+      {
+        "tableName": "inventario_fisico_detalle",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `inventarioId` TEXT NOT NULL, `monturaId` TEXT NOT NULL, `stockSistema` INTEGER NOT NULL, `stockContado` INTEGER, `diferencia` INTEGER, PRIMARY KEY(`id`), FOREIGN KEY(`inventarioId`) REFERENCES `inventario_fisico`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`monturaId`) REFERENCES `monturas`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "inventarioId",
+            "columnName": "inventarioId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "monturaId",
+            "columnName": "monturaId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "stockSistema",
+            "columnName": "stockSistema",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "stockContado",
+            "columnName": "stockContado",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "diferencia",
+            "columnName": "diferencia",
+            "affinity": "INTEGER"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_inventario_fisico_detalle_inventarioId",
+            "unique": false,
+            "columnNames": [
+              "inventarioId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_inventario_fisico_detalle_inventarioId` ON `${TABLE_NAME}` (`inventarioId`)"
+          },
+          {
+            "name": "index_inventario_fisico_detalle_monturaId",
+            "unique": false,
+            "columnNames": [
+              "monturaId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_inventario_fisico_detalle_monturaId` ON `${TABLE_NAME}` (`monturaId`)"
+          },
+          {
+            "name": "index_inventario_fisico_detalle_inventarioId_monturaId",
+            "unique": true,
+            "columnNames": [
+              "inventarioId",
+              "monturaId"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_inventario_fisico_detalle_inventarioId_monturaId` ON `${TABLE_NAME}` (`inventarioId`, `monturaId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "inventario_fisico",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "inventarioId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          },
+          {
+            "table": "monturas",
+            "onDelete": "NO ACTION",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "monturaId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "categorias_producto",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `nombre` TEXT NOT NULL, `familia` TEXT NOT NULL, `orden` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nombre",
+            "columnName": "nombre",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "familia",
+            "columnName": "familia",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "orden",
+            "columnName": "orden",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "gastos_operativos",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `opticaId` TEXT NOT NULL, `categoria` TEXT NOT NULL, `descripcion` TEXT, `monto` REAL NOT NULL, `fecha` TEXT NOT NULL, `fechaProgramada` TEXT, `nota` TEXT, `isRecurring` INTEGER NOT NULL, `frecuencia` TEXT NOT NULL, `createdAt` TEXT, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "opticaId",
+            "columnName": "opticaId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "categoria",
+            "columnName": "categoria",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "descripcion",
+            "columnName": "descripcion",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "monto",
+            "columnName": "monto",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fecha",
+            "columnName": "fecha",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fechaProgramada",
+            "columnName": "fechaProgramada",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "nota",
+            "columnName": "nota",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "isRecurring",
+            "columnName": "isRecurring",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "frecuencia",
+            "columnName": "frecuencia",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_gastos_operativos_opticaId",
+            "unique": false,
+            "columnNames": [
+              "opticaId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_gastos_operativos_opticaId` ON `${TABLE_NAME}` (`opticaId`)"
+          }
+        ]
+      },
+      {
+        "tableName": "resumen_diario",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `opticaId` TEXT NOT NULL, `fecha` TEXT NOT NULL, `ventasCantidad` INTEGER NOT NULL, `ventasMontoTotal` REAL NOT NULL, `ventasCostoTotal` REAL NOT NULL, `cobrosCantidad` INTEGER NOT NULL, `cobrosMontoTotal` REAL NOT NULL, `saldoPendienteTotal` REAL NOT NULL, `saldoPendienteCantidad` INTEGER NOT NULL, `inventarioValor` REAL, `inventarioUnidades` INTEGER, `calculadoEn` TEXT, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "opticaId",
+            "columnName": "opticaId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fecha",
+            "columnName": "fecha",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ventasCantidad",
+            "columnName": "ventasCantidad",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ventasMontoTotal",
+            "columnName": "ventasMontoTotal",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ventasCostoTotal",
+            "columnName": "ventasCostoTotal",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cobrosCantidad",
+            "columnName": "cobrosCantidad",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cobrosMontoTotal",
+            "columnName": "cobrosMontoTotal",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "saldoPendienteTotal",
+            "columnName": "saldoPendienteTotal",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "saldoPendienteCantidad",
+            "columnName": "saldoPendienteCantidad",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "inventarioValor",
+            "columnName": "inventarioValor",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "inventarioUnidades",
+            "columnName": "inventarioUnidades",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "calculadoEn",
+            "columnName": "calculadoEn",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_resumen_diario_opticaId_fecha",
+            "unique": true,
+            "columnNames": [
+              "opticaId",
+              "fecha"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_resumen_diario_opticaId_fecha` ON `${TABLE_NAME}` (`opticaId`, `fecha`)"
+          }
+        ]
+      },
+      {
+        "tableName": "configuracion_financiera",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`opticaId` TEXT NOT NULL, `margenNetoObjetivo` REAL NOT NULL, `ticketPromedioObjetivo` REAL, `caidaVentasAlertaPct` REAL NOT NULL, `deudaViejaAlertaDias` INTEGER NOT NULL, `deudaTotalAlertaMonto` REAL NOT NULL, `stockEstancadoAlertaDias` INTEGER NOT NULL, `stockBajoAlertaUnidades` INTEGER NOT NULL, `minVentasParaRecomendar` INTEGER NOT NULL, `frecuenciaRecalculoDias` INTEGER NOT NULL, PRIMARY KEY(`opticaId`))",
+        "fields": [
+          {
+            "fieldPath": "opticaId",
+            "columnName": "opticaId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "margenNetoObjetivo",
+            "columnName": "margenNetoObjetivo",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ticketPromedioObjetivo",
+            "columnName": "ticketPromedioObjetivo",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "caidaVentasAlertaPct",
+            "columnName": "caidaVentasAlertaPct",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "deudaViejaAlertaDias",
+            "columnName": "deudaViejaAlertaDias",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "deudaTotalAlertaMonto",
+            "columnName": "deudaTotalAlertaMonto",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "stockEstancadoAlertaDias",
+            "columnName": "stockEstancadoAlertaDias",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "stockBajoAlertaUnidades",
+            "columnName": "stockBajoAlertaUnidades",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "minVentasParaRecomendar",
+            "columnName": "minVentasParaRecomendar",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "frecuenciaRecalculoDias",
+            "columnName": "frecuenciaRecalculoDias",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "opticaId"
+          ]
+        }
+      },
+      {
+        "tableName": "feedback_recomendaciones",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `recomendacionId` TEXT NOT NULL, `opticaId` TEXT NOT NULL, `fueUtil` INTEGER NOT NULL, `fecha` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "recomendacionId",
+            "columnName": "recomendacionId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "opticaId",
+            "columnName": "opticaId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fueUtil",
+            "columnName": "fueUtil",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fecha",
+            "columnName": "fecha",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "regalos_dispensacion",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `dispensacion_id` TEXT NOT NULL, `producto_id` TEXT NOT NULL, `cantidad` INTEGER NOT NULL, `costo_unitario` REAL NOT NULL, `descripcion` TEXT NOT NULL, `motivo` TEXT NOT NULL, `optica_id` TEXT NOT NULL, PRIMARY KEY(`id`), FOREIGN KEY(`dispensacion_id`) REFERENCES `dispensaciones`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dispensacionId",
+            "columnName": "dispensacion_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "productoId",
+            "columnName": "producto_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cantidad",
+            "columnName": "cantidad",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "costoUnitario",
+            "columnName": "costo_unitario",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "descripcion",
+            "columnName": "descripcion",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "motivo",
+            "columnName": "motivo",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "opticaId",
+            "columnName": "optica_id",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_regalos_dispensacion_dispensacion_id",
+            "unique": false,
+            "columnNames": [
+              "dispensacion_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_regalos_dispensacion_dispensacion_id` ON `${TABLE_NAME}` (`dispensacion_id`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "dispensaciones",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "dispensacion_id"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "costos_productos",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `optica_id` TEXT NOT NULL, `material` TEXT NOT NULL, `tipo_lente` TEXT NOT NULL, `stock_o_fabricacion` TEXT NOT NULL, `tratamiento` TEXT, `serie` INTEGER, `costo_unitario` REAL NOT NULL, `laboratorio_id` TEXT, `vigente_desde` TEXT NOT NULL, `vigente_hasta` TEXT, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "opticaId",
+            "columnName": "optica_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "material",
+            "columnName": "material",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tipoLente",
+            "columnName": "tipo_lente",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "stockOFabricacion",
+            "columnName": "stock_o_fabricacion",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tratamiento",
+            "columnName": "tratamiento",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "serie",
+            "columnName": "serie",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "costoUnitario",
+            "columnName": "costo_unitario",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "laboratorioId",
+            "columnName": "laboratorio_id",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "vigenteDesde",
+            "columnName": "vigente_desde",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "vigenteHasta",
+            "columnName": "vigente_hasta",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "costos_biselado",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `optica_id` TEXT NOT NULL, `material` TEXT NOT NULL, `tipo_aro` TEXT NOT NULL, `stock_o_fabricacion` TEXT NOT NULL, `serie` INTEGER, `alto_indice` TEXT, `costo_por_par` REAL NOT NULL, `proveedor` TEXT, `vigente_desde` TEXT NOT NULL, `vigente_hasta` TEXT, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "opticaId",
+            "columnName": "optica_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "material",
+            "columnName": "material",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tipoAro",
+            "columnName": "tipo_aro",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "stockOFabricacion",
+            "columnName": "stock_o_fabricacion",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "serie",
+            "columnName": "serie",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "altoIndice",
+            "columnName": "alto_indice",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "costoPorPar",
+            "columnName": "costo_por_par",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "proveedor",
+            "columnName": "proveedor",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "vigenteDesde",
+            "columnName": "vigente_desde",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "vigenteHasta",
+            "columnName": "vigente_hasta",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "costos_lc",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `optica_id` TEXT NOT NULL, `tipo_lc` TEXT NOT NULL, `material_lc` TEXT NOT NULL, `modalidad` TEXT NOT NULL, `radio_base` TEXT, `diametro` TEXT, `laboratorio_id` TEXT, `costo_unitario` REAL NOT NULL, `vigente_desde` TEXT NOT NULL, `vigente_hasta` TEXT, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "opticaId",
+            "columnName": "optica_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tipoLc",
+            "columnName": "tipo_lc",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "materialLc",
+            "columnName": "material_lc",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "modalidad",
+            "columnName": "modalidad",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "radioBase",
+            "columnName": "radio_base",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "diametro",
+            "columnName": "diametro",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "laboratorioId",
+            "columnName": "laboratorio_id",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "costoUnitario",
+            "columnName": "costo_unitario",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "vigenteDesde",
+            "columnName": "vigente_desde",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "vigenteHasta",
+            "columnName": "vigente_hasta",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "optica_settings",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`opticaId` TEXT NOT NULL, `configJson` TEXT NOT NULL, PRIMARY KEY(`opticaId`))",
+        "fields": [
+          {
+            "fieldPath": "opticaId",
+            "columnName": "opticaId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "configJson",
+            "columnName": "configJson",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "opticaId"
+          ]
+        }
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'fe957784194b40faa011e4557aafc907')"
+    ]
+  }
+}

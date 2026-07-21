@@ -14,7 +14,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.optoapp.data.FinanzasRemoteDefaults
 import com.example.optoapp.data.Pago
 import com.example.optoapp.testing.TestTags
 import com.example.optoapp.ui.components.AbonoDialog
@@ -30,7 +29,7 @@ fun PagosSection(
     onUpdate: (DispensacionUiState) -> Unit,
     onAddPago: (Pago) -> Unit,
     onUpdatePago: (Pago) -> Unit,
-    onRemovePago: (Pago) -> Unit
+    onRemovePago: (Pago) -> Unit,
 ) {
     Card {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -41,7 +40,7 @@ fun PagosSection(
                 onValueChange = { onUpdate(uiState.copy(montoTotal = it)) },
                 label = "Monto Total",
                 keyboardType = KeyboardType.Decimal,
-                modifier = Modifier.testTag(TestTags.DISPENSACION_MONTO_TOTAL)
+                modifier = Modifier.testTag(TestTags.DISPENSACION_MONTO_TOTAL),
             )
 
             HorizontalDivider()
@@ -55,12 +54,12 @@ fun PagosSection(
             uiState.pagos.forEach { pago ->
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
                 ) {
                     Row(
                         modifier = Modifier.padding(12.dp),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text("${pago.metodoPago}: s/. ${String.format(Locale.getDefault(), "%.2f", pago.monto)}", fontWeight = FontWeight.Bold)
@@ -83,7 +82,7 @@ fun PagosSection(
                                     onConfirm = { updatedPago: Pago ->
                                         onUpdatePago(updatedPago)
                                         showEditDialog = false
-                                    }
+                                    },
                                 )
                             }
                             IconButton(onClick = { showEditDialog = true }, modifier = Modifier.size(48.dp)) {
@@ -108,14 +107,14 @@ fun PagosSection(
                     onConfirm = { nuevoPago: Pago ->
                         onAddPago(nuevoPago)
                         showAddDialog = false
-                    }
+                    },
                 )
             }
 
             OutlinedButton(
                 onClick = { showAddDialog = true },
                 modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary)
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary),
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Agregar")
                 Spacer(Modifier.width(8.dp))
@@ -126,7 +125,7 @@ fun PagosSection(
 
             Column(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text("SALDO RESTANTE", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
@@ -135,7 +134,7 @@ fun PagosSection(
                     text = "s/. " + formattedSaldo,
                     color = if (saldo > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary,
                     fontSize = 32.sp,
-                    fontWeight = FontWeight.ExtraBold
+                    fontWeight = FontWeight.ExtraBold,
                 )
             }
 

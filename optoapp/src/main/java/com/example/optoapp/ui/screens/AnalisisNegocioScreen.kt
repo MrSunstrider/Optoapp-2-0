@@ -40,7 +40,7 @@ fun AnalisisNegocioScreen(
     navController: NavController,
     viewModel: AnalisisNegocioViewModel = hiltViewModel(),
     authViewModel: AuthViewModel = hiltViewModel(),
-    gastosViewModel: GastosViewModel = hiltViewModel()
+    gastosViewModel: GastosViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val gastos by gastosViewModel.allGastos.collectAsState()
@@ -58,15 +58,15 @@ fun AnalisisNegocioScreen(
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
                     }
-                }
+                },
             )
-        }
+        },
     ) { padding ->
         if (!canView) {
             Column(
                 modifier = Modifier.fillMaxSize().padding(padding).padding(24.dp),
                 verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Icon(Icons.Default.Lock, contentDescription = "Bloqueado", modifier = Modifier.size(48.dp), tint = MaterialTheme.colorScheme.error)
                 Spacer(Modifier.height(16.dp))
@@ -83,7 +83,7 @@ fun AnalisisNegocioScreen(
                 .padding(16.dp)
                 .verticalScroll(rememberScrollState())
                 .navigationBarsPadding(),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             if (uiState.isLoading) {
                 LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
@@ -92,11 +92,11 @@ fun AnalisisNegocioScreen(
             if (uiState.analisis?.esOffline == true) {
                 Card(
                     colors = CardDefaults.cardColors(containerColor = WarningAmber.copy(alpha = 0.15f)),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 ) {
                     Row(
                         modifier = Modifier.padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Icon(Icons.Default.Warning, contentDescription = "Advertencia", tint = WarningAmber, modifier = Modifier.size(20.dp))
                         Spacer(Modifier.width(8.dp))
@@ -108,7 +108,7 @@ fun AnalisisNegocioScreen(
             uiState.error?.let { error ->
                 Card(
                     colors = CardDefaults.cardColors(containerColor = AlertRed.copy(alpha = 0.1f)),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 ) {
                     Column(modifier = Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(Icons.Default.Error, contentDescription = "Error", tint = AlertRed, modifier = Modifier.size(32.dp))
@@ -125,7 +125,7 @@ fun AnalisisNegocioScreen(
             MonthSwitcher(
                 currentMonth = uiState.mesSeleccionado,
                 onPrevious = { viewModel.navigateMonth(-1) },
-                onNext = { viewModel.navigateMonth(1) }
+                onNext = { viewModel.navigateMonth(1) },
             )
 
             uiState.analisis?.let { analisis ->
@@ -135,18 +135,18 @@ fun AnalisisNegocioScreen(
             if (uiState.isSeasonalityWarning) {
                 Card(
                     colors = CardDefaults.cardColors(containerColor = WarningAmber.copy(alpha = 0.15f)),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 ) {
                     Row(
                         modifier = Modifier.padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Icon(Icons.Default.Warning, contentDescription = "Advertencia", tint = WarningAmber, modifier = Modifier.size(20.dp))
                         Spacer(Modifier.width(8.dp))
                         Text(
                             "Este cálculo se basa en pocos meses. Podría no ser preciso.",
                             style = MaterialTheme.typography.bodySmall,
-                            color = WarningAmber
+                            color = WarningAmber,
                         )
                     }
                 }
@@ -156,7 +156,7 @@ fun AnalisisNegocioScreen(
                 "Recomendaciones",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
+                color = MaterialTheme.colorScheme.onSurface,
             )
             if (uiState.recomendaciones.isNotEmpty()) {
                 uiState.recomendaciones.take(3).forEach { rec ->
@@ -164,18 +164,18 @@ fun AnalisisNegocioScreen(
                         rec = rec,
                         feedbacksEnviados = uiState.feedbacksEnviados,
                         feedbackErrorRecId = uiState.feedbackErrorRecId,
-                        onFeedback = { fueUtil -> viewModel.onFeedback(rec.id, fueUtil) }
+                        onFeedback = { fueUtil -> viewModel.onFeedback(rec.id, fueUtil) },
                     )
                 }
             } else if (!uiState.isLoading && uiState.analisis != null) {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f)),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(12.dp),
                 ) {
                     Row(
                         modifier = Modifier.padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Icon(Icons.Default.Lightbulb, contentDescription = "Recomendacion", tint = WarningAmber, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(8.dp))
@@ -192,7 +192,6 @@ fun AnalisisNegocioScreen(
                 }
             }
 
-
             val mesActual = uiState.mesSeleccionado
             val gastosMes = remember(gastos, mesActual) {
                 gastos.filter { it.fecha.month == mesActual.month && it.fecha.year == mesActual.year }
@@ -204,7 +203,7 @@ fun AnalisisNegocioScreen(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)),
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(12.dp),
             ) {
                 var deleteTarget by remember { mutableStateOf<String?>(null) }
                 Column(modifier = Modifier.padding(14.dp)) {
@@ -215,7 +214,7 @@ fun AnalisisNegocioScreen(
                             Text("Gastos del mes", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                             IconButton(
                                 modifier = Modifier.size(28.dp),
-                                onClick = { gastosViewModel.refreshGastos() }
+                                onClick = { gastosViewModel.refreshGastos() },
                             ) {
                                 Icon(Icons.Default.Refresh, contentDescription = "Actualizar gastos", modifier = Modifier.size(16.dp))
                             }
@@ -230,11 +229,11 @@ fun AnalisisNegocioScreen(
                                     .fillMaxWidth()
                                     .combinedClickable(
                                         onClick = { gastosViewModel.editGasto(g) },
-                                        onLongClick = { deleteTarget = g.id }
+                                        onLongClick = { deleteTarget = g.id },
                                     )
                                     .padding(vertical = 4.dp, horizontal = 4.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
+                                verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 Column(Modifier.weight(1f)) {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -249,19 +248,19 @@ fun AnalisisNegocioScreen(
                                     Text(
                                         com.example.optoapp.util.DateUtils.formatLocalized(g.fecha),
                                         fontSize = 10.sp,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                                     )
                                 }
                                 Text("S/ ${formatNumber(g.monto.toDouble())}", fontSize = 12.sp, color = AlertRed, fontWeight = FontWeight.Medium)
                                 IconButton(
                                     modifier = Modifier.size(28.dp),
-                                    onClick = { gastosViewModel.editGasto(g) }
+                                    onClick = { gastosViewModel.editGasto(g) },
                                 ) {
                                     Icon(Icons.Default.Edit, contentDescription = "Editar", modifier = Modifier.size(14.dp))
                                 }
                                 IconButton(
                                     modifier = Modifier.size(28.dp),
-                                    onClick = { deleteTarget = g.id }
+                                    onClick = { deleteTarget = g.id },
                                 ) {
                                     Icon(Icons.Default.Delete, contentDescription = "Eliminar", modifier = Modifier.size(14.dp), tint = AlertRed)
                                 }
@@ -272,7 +271,7 @@ fun AnalisisNegocioScreen(
                         Text(
                             "No hay gastos registrados",
                             fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                         )
                     }
                     Spacer(Modifier.height(8.dp))
@@ -298,11 +297,14 @@ fun AnalisisNegocioScreen(
                             title = { Text("Eliminar gasto") },
                             text = { Text("¿Eliminar \"${target.categoria}${if (!target.descripcion.isNullOrBlank()) " · ${target.descripcion}" else ""}\" por S/ ${formatNumber(target.monto.toDouble())}?") },
                             confirmButton = {
-                                Button(onClick = { gastosViewModel.delete(target); deleteTarget = null }, colors = ButtonDefaults.buttonColors(containerColor = AlertRed)) {
+                                Button(onClick = {
+                                    gastosViewModel.delete(target)
+                                    deleteTarget = null
+                                }, colors = ButtonDefaults.buttonColors(containerColor = AlertRed)) {
                                     Text("Eliminar")
                                 }
                             },
-                            dismissButton = { TextButton(onClick = { deleteTarget = null }) { Text("Cancelar") } }
+                            dismissButton = { TextButton(onClick = { deleteTarget = null }) { Text("Cancelar") } },
                         )
                     }
                 }
@@ -312,16 +314,15 @@ fun AnalisisNegocioScreen(
                 Button(
                     onClick = { navController.navigate("analisis_detalle") },
                     modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                 ) {
-                    @Suppress("DEPRECATION") Icon(Icons.Default.TrendingUp, contentDescription = "Tendencia")
+                    @Suppress("DEPRECATION")
+                    Icon(Icons.Default.TrendingUp, contentDescription = "Tendencia")
                     Spacer(Modifier.width(8.dp))
                     Text("Ver análisis completo")
                 }
             }
         }
-
-
 
         if (gastosUiState.isDialogVisible) {
             var showDatePicker by remember { mutableStateOf(false) }
@@ -329,7 +330,7 @@ fun AnalisisNegocioScreen(
                 com.example.optoapp.ui.components.OptoDatePickerDialog(
                     initialDate = gastosUiState.fecha,
                     onDateSelected = { gastosViewModel.updateFecha(it) },
-                    onDismiss = { showDatePicker = false }
+                    onDismiss = { showDatePicker = false },
                 )
             }
             AlertDialog(
@@ -340,22 +341,28 @@ fun AnalisisNegocioScreen(
                         var expanded by remember { mutableStateOf(false) }
                         ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = !expanded }) {
                             OutlinedTextField(
-                                value = gastosUiState.categoria, onValueChange = {}, readOnly = true,
+                                value = gastosUiState.categoria,
+                                onValueChange = {},
+                                readOnly = true,
                                 label = { Text("Categoría") },
                                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                                modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true)
+                                modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true),
                             )
                             ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                                 gastosViewModel.categorias.forEach { cat ->
-                                    DropdownMenuItem(text = { Text(cat) }, onClick = { gastosViewModel.updateCategoria(cat); expanded = false })
+                                    DropdownMenuItem(text = { Text(cat) }, onClick = {
+                                        gastosViewModel.updateCategoria(cat)
+                                        expanded = false
+                                    })
                                 }
                             }
                         }
                         OutlinedTextField(
-                            value = gastosUiState.monto, onValueChange = { gastosViewModel.updateMonto(it) },
+                            value = gastosUiState.monto,
+                            onValueChange = { gastosViewModel.updateMonto(it) },
                             label = { Text("Monto") },
                             keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal),
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth(),
                         )
                         OutlinedTextField(value = gastosUiState.descripcion, onValueChange = { gastosViewModel.updateDescripcion(it) }, label = { Text("Descripción") }, modifier = Modifier.fillMaxWidth())
                         OutlinedButton(onClick = { showDatePicker = true }, modifier = Modifier.fillMaxWidth()) {
@@ -371,7 +378,7 @@ fun AnalisisNegocioScreen(
                     }
                 },
                 confirmButton = { Button(onClick = { gastosViewModel.save() }) { Text("Guardar") } },
-                dismissButton = { TextButton(onClick = { gastosViewModel.dismissDialog() }) { Text("Cancelar") } }
+                dismissButton = { TextButton(onClick = { gastosViewModel.dismissDialog() }) { Text("Cancelar") } },
             )
         }
     }
@@ -381,28 +388,30 @@ fun AnalisisNegocioScreen(
 private fun MonthSwitcher(
     currentMonth: java.time.LocalDate,
     onPrevious: () -> Unit,
-    onNext: () -> Unit
+    onNext: () -> Unit,
 ) {
     val formatter = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.forLanguageTag("es-PE"))
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             IconButton(onClick = onPrevious) {
-                @Suppress("DEPRECATION") Icon(Icons.Default.KeyboardArrowLeft, contentDescription = "Mes anterior")
+                @Suppress("DEPRECATION")
+                Icon(Icons.Default.KeyboardArrowLeft, contentDescription = "Mes anterior")
             }
             Text(
                 text = currentMonth.format(formatter).replaceFirstChar { it.uppercase() },
                 style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.SemiBold,
             )
             IconButton(onClick = onNext) {
-                @Suppress("DEPRECATION") Icon(Icons.Default.KeyboardArrowRight, contentDescription = "Mes siguiente")
+                @Suppress("DEPRECATION")
+                Icon(Icons.Default.KeyboardArrowRight, contentDescription = "Mes siguiente")
             }
         }
     }
@@ -415,7 +424,7 @@ private fun ResumenCard(analisis: AnalisisMensual) {
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        shape = RoundedCornerShape(16.dp)
+        shape = RoundedCornerShape(16.dp),
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text("Resumen del mes", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
@@ -425,25 +434,25 @@ private fun ResumenCard(analisis: AnalisisMensual) {
                     modifier = Modifier.weight(1f),
                     label = "Vendiste",
                     value = "S/ ${formatNumber(analisis.ventasMes)}",
-                    color = PositiveGreen
+                    color = PositiveGreen,
                 )
                 MetricItem(
                     modifier = Modifier.weight(1f),
                     label = "Cobraste",
                     value = "S/ ${formatNumber(analisis.cobrosMes)}",
-                    color = MaterialTheme.colorScheme.primary
+                    color = MaterialTheme.colorScheme.primary,
                 )
             }
             MetricItem(
                 modifier = Modifier.fillMaxWidth(),
                 label = "Saldo pendiente",
                 value = "S/ ${formatNumber(saldo)}",
-                color = if (saldo > 0) AlertRed else PositiveGreen
+                color = if (saldo > 0) AlertRed else PositiveGreen,
             )
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(12.dp),
             ) {
                 Column(modifier = Modifier.padding(12.dp)) {
                     Text("Margen neto", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -452,7 +461,7 @@ private fun ResumenCard(analisis: AnalisisMensual) {
                         "De cada S/ 100 que vendés, te quedan S/ ${Math.round(analisis.margenNetoPct)} (margen neto)",
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.SemiBold,
-                        color = if (analisis.margenNetoPct >= 25) PositiveGreen else WarningAmber
+                        color = if (analisis.margenNetoPct >= 25) PositiveGreen else WarningAmber,
                     )
                 }
             }
@@ -461,13 +470,13 @@ private fun ResumenCard(analisis: AnalisisMensual) {
                     modifier = Modifier.weight(1f),
                     label = "Ticket prom.",
                     value = "S/ ${formatNumber(analisis.ticketPromedio)}",
-                    color = MaterialTheme.colorScheme.primary
+                    color = MaterialTheme.colorScheme.primary,
                 )
                 MetricItem(
                     modifier = Modifier.weight(1f),
                     label = "Ventas",
                     value = "${analisis.cantidadVentas}",
-                    color = MaterialTheme.colorScheme.primary
+                    color = MaterialTheme.colorScheme.primary,
                 )
             }
         }
@@ -479,12 +488,12 @@ private fun MetricItem(
     modifier: Modifier = Modifier,
     label: String,
     value: String,
-    color: Color
+    color: Color,
 ) {
     Card(
         modifier = modifier,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
-        shape = RoundedCornerShape(12.dp)
+        shape = RoundedCornerShape(12.dp),
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
             Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -500,7 +509,7 @@ internal fun RecomendacionCard(
     rec: Recomendacion,
     feedbacksEnviados: Map<String, Boolean>,
     feedbackErrorRecId: String?,
-    onFeedback: (Boolean) -> Unit
+    onFeedback: (Boolean) -> Unit,
 ) {
     val feedbackSent = feedbacksEnviados.containsKey(rec.id)
     val hasError = feedbackErrorRecId == rec.id
@@ -518,7 +527,7 @@ internal fun RecomendacionCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = bgColor),
-        shape = RoundedCornerShape(12.dp)
+        shape = RoundedCornerShape(12.dp),
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
             Row(verticalAlignment = Alignment.Top) {
@@ -526,7 +535,7 @@ internal fun RecomendacionCard(
                     if (feedbackSent) Icons.Default.CheckCircle else Icons.Default.Info,
                     contentDescription = "Retroalimentacion",
                     tint = if (feedbackSent) PositiveGreen else accentColor,
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(20.dp),
                 )
                 Spacer(Modifier.width(8.dp))
                 Column(modifier = Modifier.weight(1f)) {
@@ -534,13 +543,13 @@ internal fun RecomendacionCard(
                         rec.titulo,
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = MaterialTheme.colorScheme.onSurface,
                     )
                     Spacer(Modifier.height(4.dp))
                     Text(
                         rec.detalle,
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     rec.accion?.let { accion ->
                         Spacer(Modifier.height(4.dp))
@@ -548,20 +557,20 @@ internal fun RecomendacionCard(
                             "→ $accion",
                             style = MaterialTheme.typography.bodySmall,
                             color = accentColor,
-                            fontWeight = FontWeight.Medium
+                            fontWeight = FontWeight.Medium,
                         )
                     }
                 }
                 Surface(
                     shape = RoundedCornerShape(8.dp),
-                    color = accentColor.copy(alpha = 0.15f)
+                    color = accentColor.copy(alpha = 0.15f),
                 ) {
                     Text(
                         rec.prioridad.name,
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
                         style = MaterialTheme.typography.labelSmall,
                         color = accentColor,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
                     )
                 }
             }
@@ -570,31 +579,31 @@ internal fun RecomendacionCard(
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Icon(
                         Icons.Default.CheckCircle,
                         contentDescription = "Completado",
                         tint = PositiveGreen,
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(16.dp),
                     )
                     Spacer(Modifier.width(6.dp))
                     Text(
                         "Gracias por tu valoración",
                         style = MaterialTheme.typography.bodySmall,
                         color = PositiveGreen,
-                        fontWeight = FontWeight.Medium
+                        fontWeight = FontWeight.Medium,
                     )
                 }
             } else {
                 Spacer(Modifier.height(8.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     FilledTonalButton(
                         onClick = { onFeedback(true) },
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
                     ) {
                         Icon(Icons.Default.ThumbUp, contentDescription = "Positivo", modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(4.dp))
@@ -602,7 +611,7 @@ internal fun RecomendacionCard(
                     }
                     FilledTonalButton(
                         onClick = { onFeedback(false) },
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
                     ) {
                         Icon(Icons.Default.ThumbDown, contentDescription = "Negativo", modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(4.dp))
@@ -615,7 +624,7 @@ internal fun RecomendacionCard(
                 Text(
                     "No se pudo enviar tu valoración. Intentalo de nuevo.",
                     style = MaterialTheme.typography.bodySmall,
-                    color = AlertRed
+                    color = AlertRed,
                 )
             }
         }

@@ -2,6 +2,7 @@ package com.example.optoapp.domain
 
 import android.util.Log
 import com.example.optoapp.data.FinanzasRemoteDefaults
+import io.mockk.Runs
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.coVerifyOrder
@@ -9,7 +10,6 @@ import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkStatic
-import io.mockk.Runs
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -41,11 +41,11 @@ class SyncFinanzasUseCaseKtTest {
         fecha: String = "2024-06-15",
         pacienteId: String? = null,
         metodoPago: String = "",
-        opticaId: String = "test-optica"
+        opticaId: String = "test-optica",
     ) = ServicioRemoto(
         id = id, ot = ot, descripcion = descripcion,
         montoTotal = montoTotal, aCuenta = aCuenta, estado = estado,
-        fecha = fecha, pacienteId = pacienteId, metodoPago = metodoPago, opticaId = opticaId
+        fecha = fecha, pacienteId = pacienteId, metodoPago = metodoPago, opticaId = opticaId,
     )
 
     @Test
@@ -118,7 +118,7 @@ class SyncFinanzasUseCaseKtTest {
             deletionSyncHelper = deletionSyncHelper,
             uploadSyncCoordinator = uploadCoordinator,
             downloadSyncCoordinator = downloadCoordinator,
-            networkRetryHelper = networkRetryHelper
+            networkRetryHelper = networkRetryHelper,
         )
 
         useCase("optica-test")
@@ -153,7 +153,7 @@ class SyncFinanzasUseCaseKtTest {
             deletionSyncHelper = deletionSyncHelper,
             uploadSyncCoordinator = uploadCoordinator,
             downloadSyncCoordinator = downloadCoordinator,
-            networkRetryHelper = networkRetryHelper
+            networkRetryHelper = networkRetryHelper,
         )
 
         useCase("optica-test")
@@ -191,7 +191,7 @@ class SyncFinanzasUseCaseKtTest {
             deletionSyncHelper = deletionSyncHelper,
             uploadSyncCoordinator = uploadCoordinator,
             downloadSyncCoordinator = downloadCoordinator,
-            networkRetryHelper = networkRetryHelper
+            networkRetryHelper = networkRetryHelper,
         )
 
         useCase("optica-test")
@@ -229,7 +229,7 @@ class SyncFinanzasUseCaseKtTest {
             deletionSyncHelper = deletionSyncHelper,
             uploadSyncCoordinator = uploadCoordinator,
             downloadSyncCoordinator = downloadCoordinator,
-            networkRetryHelper = networkRetryHelper
+            networkRetryHelper = networkRetryHelper,
         )
 
         useCase("optica-test")
@@ -262,7 +262,7 @@ class SyncFinanzasUseCaseKtTest {
             deletionSyncHelper = deletionSyncHelper,
             uploadSyncCoordinator = uploadCoordinator,
             downloadSyncCoordinator = downloadCoordinator,
-            networkRetryHelper = networkRetryHelper
+            networkRetryHelper = networkRetryHelper,
         )
 
         val result = useCase("optica-test")
@@ -280,13 +280,13 @@ class SyncFinanzasUseCaseKtTest {
         val networkRetryHelper = mockk<NetworkRetryHelper>()
 
         coEvery { deletionSyncHelper.pushPendingDeletions(any()) } throws
-                RuntimeException("Unexpected deletion error")
+            RuntimeException("Unexpected deletion error")
 
         val useCase = SyncFinanzasUseCase(
             deletionSyncHelper = deletionSyncHelper,
             uploadSyncCoordinator = uploadCoordinator,
             downloadSyncCoordinator = downloadCoordinator,
-            networkRetryHelper = networkRetryHelper
+            networkRetryHelper = networkRetryHelper,
         )
 
         val result = useCase("optica-test")
@@ -307,7 +307,7 @@ class SyncFinanzasUseCaseKtTest {
 
         coEvery { deletionSyncHelper.pushPendingDeletions(any()) } just Runs
         coEvery { uploadCoordinator.uploadDispensaciones(any()) } throws
-                IOException("Timeout uploading dispensaciones")
+            IOException("Timeout uploading dispensaciones")
         coEvery { uploadCoordinator.uploadDispensacionItems(any()) } returns 2
         coEvery { uploadCoordinator.uploadServicios(any()) } returns 1
         coEvery { uploadCoordinator.uploadPagos(any()) } returns 3
@@ -323,7 +323,7 @@ class SyncFinanzasUseCaseKtTest {
             deletionSyncHelper = deletionSyncHelper,
             uploadSyncCoordinator = uploadCoordinator,
             downloadSyncCoordinator = downloadCoordinator,
-            networkRetryHelper = networkRetryHelper
+            networkRetryHelper = networkRetryHelper,
         )
 
         useCase("optica-test")
@@ -344,7 +344,7 @@ class SyncFinanzasUseCaseKtTest {
 
         coEvery { deletionSyncHelper.pushPendingDeletions(any()) } just Runs
         coEvery { uploadCoordinator.uploadPagos(any()) } throws
-                IOException("Pagos upload failed")
+            IOException("Pagos upload failed")
         coEvery { uploadCoordinator.uploadServicios(any()) } returns 0
         coEvery { uploadCoordinator.uploadDispensaciones(any()) } returns 0
         coEvery { uploadCoordinator.uploadDispensacionItems(any()) } returns 0
@@ -360,7 +360,7 @@ class SyncFinanzasUseCaseKtTest {
             deletionSyncHelper = deletionSyncHelper,
             uploadSyncCoordinator = uploadCoordinator,
             downloadSyncCoordinator = downloadCoordinator,
-            networkRetryHelper = networkRetryHelper
+            networkRetryHelper = networkRetryHelper,
         )
 
         useCase("optica-test")

@@ -12,10 +12,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.example.optoapp.ui.components.servicio.ServicioForm
-import com.example.optoapp.util.DateUtils
 import com.example.optoapp.ui.components.OptoDatePickerDialog
 import com.example.optoapp.ui.components.OptoTopAppBar
+import com.example.optoapp.ui.components.servicio.ServicioForm
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -46,7 +45,7 @@ fun NuevoServicioScreen(navController: NavController, pacienteId: String? = null
             onDateSelected = { date ->
                 viewModel.updateUiState { it.copy(fecha = date) }
             },
-            onDismiss = { showDatePicker = false }
+            onDismiss = { showDatePicker = false },
         )
     }
 
@@ -72,9 +71,9 @@ fun NuevoServicioScreen(navController: NavController, pacienteId: String? = null
                     }) {
                         Icon(Icons.Default.Check, contentDescription = "Guardar")
                     }
-                }
+                },
             )
-        }
+        },
     ) { padding ->
         Column(
             modifier = Modifier
@@ -83,7 +82,7 @@ fun NuevoServicioScreen(navController: NavController, pacienteId: String? = null
                 .padding(horizontal = 16.dp)
                 .verticalScroll(rememberScrollState())
                 .navigationBarsPadding(),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             ServicioForm(
                 uiState = uiState,
@@ -94,7 +93,7 @@ fun NuevoServicioScreen(navController: NavController, pacienteId: String? = null
                 onAddPago = { viewModel.addPago(it) },
                 onUpdatePago = { viewModel.updatePagoLocal(it) },
                 onRemovePago = { viewModel.removePagoLocal(it) },
-                onShowDatePicker = { showDatePicker = true }
+                onShowDatePicker = { showDatePicker = true },
             )
         }
     }

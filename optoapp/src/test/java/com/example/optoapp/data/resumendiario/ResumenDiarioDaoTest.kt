@@ -26,7 +26,7 @@ class ResumenDiarioDaoTest {
     fun setUp() {
         db = Room.inMemoryDatabaseBuilder(
             ApplicationProvider.getApplicationContext(),
-            OptoDatabase::class.java
+            OptoDatabase::class.java,
         ).allowMainThreadQueries().build()
         dao = db.resumenDiarioDao()
     }
@@ -49,7 +49,7 @@ class ResumenDiarioDaoTest {
             cobrosCantidad = 3,
             cobrosMontoTotal = 2000.0,
             saldoPendienteTotal = 500.0,
-            saldoPendienteCantidad = 2
+            saldoPendienteCantidad = 2,
         )
         dao.upsert(resumen)
 
@@ -68,7 +68,7 @@ class ResumenDiarioDaoTest {
             opticaId = "optica1",
             fecha = "2026-07-05",
             ventasCantidad = 3,
-            ventasMontoTotal = 1500.0
+            ventasMontoTotal = 1500.0,
         )
         dao.upsert(resumen)
         db.openHelper.writableDatabase.execSQL("DELETE FROM resumen_diario WHERE opticaId = 'optica1'")
@@ -88,8 +88,8 @@ class ResumenDiarioDaoTest {
                     opticaId = "optica1",
                     fecha = date,
                     ventasCantidad = 1,
-                    ventasMontoTotal = 100.0 * day
-                )
+                    ventasMontoTotal = 100.0 * day,
+                ),
             )
         }
         // Insert June 2026 rows
@@ -99,8 +99,8 @@ class ResumenDiarioDaoTest {
                 opticaId = "optica1",
                 fecha = "2026-06-15",
                 ventasCantidad = 1,
-                ventasMontoTotal = 500.0
-            )
+                ventasMontoTotal = 500.0,
+            ),
         )
 
         val julyRows = dao.getByOpticaAndMonth("optica1", "2026-07")
@@ -118,7 +118,7 @@ class ResumenDiarioDaoTest {
             fecha = "2026-07-12",
             ventasCantidad = 10,
             ventasMontoTotal = 5000.0,
-            saldoPendienteTotal = 1500.0
+            saldoPendienteTotal = 1500.0,
         )
         dao.upsert(resumen)
 
@@ -135,7 +135,7 @@ class ResumenDiarioDaoTest {
             opticaId = "opticaX",
             fecha = "2026-07-05",
             ventasCantidad = 5,
-            ventasMontoTotal = 2500.0
+            ventasMontoTotal = 2500.0,
         )
         dao.upsert(resumen)
 

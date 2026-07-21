@@ -19,7 +19,7 @@ class ConfigProfileSectionTest {
         val methods = clazz.declaredMethods.map { it.name }
         assertTrue(
             "ConfigProfileSection debe existir en ConfigProfileSectionKt. Encontrados: $methods",
-            methodName in methods
+            methodName in methods,
         )
     }
 
@@ -31,13 +31,13 @@ class ConfigProfileSectionTest {
         val paramTypes = method.parameterTypes.map { it.simpleName }
         assertTrue(
             "Debe aceptar String para email. Encontrados: $paramTypes",
-            paramTypes.contains("String")
+            paramTypes.contains("String"),
         )
         // Must have at least 3 String params (email, rol, opticaName)
         val stringCount = paramTypes.count { it == "String" }
         assertTrue(
             "Debe tener al menos 3 parámetros String (email, rol, opticaName). Encontrados: $stringCount",
-            stringCount >= 3
+            stringCount >= 3,
         )
     }
 }

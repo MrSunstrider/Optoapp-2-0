@@ -58,7 +58,7 @@ class DetallePacienteScreenTest {
         val allMethods = PacienteViewModel::class.java.methods.map { it.name }
         assertTrue(
             "getPaciente debe ser método de PacienteViewModel",
-            "getPaciente" in methods || "getPaciente" in allMethods
+            "getPaciente" in methods || "getPaciente" in allMethods,
         )
     }
 
@@ -67,7 +67,7 @@ class DetallePacienteScreenTest {
         val methods = EvaluacionViewModel::class.java.declaredMethods.map { it.name }
         assertTrue(
             "getEvaluacionesByPaciente debe estar en EvaluacionViewModel",
-            "getEvaluacionesByPaciente" in methods
+            "getEvaluacionesByPaciente" in methods,
         )
     }
 
@@ -76,7 +76,7 @@ class DetallePacienteScreenTest {
         val methods = DispensacionViewModel::class.java.declaredMethods.map { it.name }
         assertTrue(
             "getDispensacionesByPaciente debe estar en DispensacionViewModel",
-            "getDispensacionesByPaciente" in methods
+            "getDispensacionesByPaciente" in methods,
         )
     }
 
@@ -86,7 +86,7 @@ class DetallePacienteScreenTest {
         val fields = ServiciosViewModel::class.java.declaredFields.map { it.name }
         assertTrue(
             "allServicios debe ser miembro de ServiciosViewModel",
-            "allServicios" in methods || "allServicios" in fields
+            "allServicios" in methods || "allServicios" in fields,
         )
     }
 
@@ -100,7 +100,7 @@ class DetallePacienteScreenTest {
         assertEquals(
             "nombreCompleto debe ser String",
             "java.lang.String",
-            field?.type?.name
+            field?.type?.name,
         )
     }
 
@@ -153,7 +153,7 @@ class DetallePacienteScreenTest {
         val expected = "nuevaEvaluacion/"
         assertTrue(
             "Navegación a nuevaEvaluacion debe incluir ruta base",
-            route.startsWith(expected.substringBefore("{id}"))
+            route.startsWith(expected.substringBefore("{id}")),
         )
     }
 
@@ -163,7 +163,7 @@ class DetallePacienteScreenTest {
         val expected = "nuevaDispensacion/"
         assertTrue(
             "Navegación a nuevaDispensacion debe incluir ruta base",
-            route.startsWith(expected.substringBefore("{id}"))
+            route.startsWith(expected.substringBefore("{id}")),
         )
     }
 
@@ -173,7 +173,7 @@ class DetallePacienteScreenTest {
         val expected = "nuevo_servicio/"
         assertTrue(
             "Navegación a nuevo_servicio debe incluir ruta base",
-            route.startsWith(expected.substringBefore("{id}"))
+            route.startsWith(expected.substringBefore("{id}")),
         )
     }
 }

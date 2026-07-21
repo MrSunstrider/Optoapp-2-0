@@ -64,7 +64,7 @@ val MIGRATION_9_10 = object : Migration(9, 10) {
                           'localtime',
                           CASE WHEN (abs(($column % $dayMillis)) < $utcMidnightThresholdMillis) THEN '+1 day' ELSE '+0 day' END
                         )
-                    """.trimIndent()
+            """.trimIndent()
         }
 
         db.execSQL("ALTER TABLE pacientes RENAME TO pacientes_old")
@@ -88,7 +88,7 @@ val MIGRATION_9_10 = object : Migration(9, 10) {
                       ultimasEtiquetas TEXT NOT NULL,
                       opticaId TEXT NOT NULL
                     )
-                    """.trimIndent()
+            """.trimIndent(),
         )
         db.execSQL(
             """
@@ -102,7 +102,7 @@ val MIGRATION_9_10 = object : Migration(9, 10) {
                       dni, fechaNacimiento, sexo, email, direccion,
                       distrito, ocupacion, acompanante, hobbies, ultimasEtiquetas, opticaId
                     FROM pacientes_old
-                    """.trimIndent()
+            """.trimIndent(),
         )
         db.execSQL("DROP TABLE pacientes_old")
 
@@ -236,7 +236,7 @@ val MIGRATION_9_10 = object : Migration(9, 10) {
                       lcObservaciones TEXT NOT NULL,
                       FOREIGN KEY(pacienteId) REFERENCES pacientes(id) ON DELETE CASCADE
                     )
-                    """.trimIndent()
+            """.trimIndent(),
         )
         db.execSQL(
             """
@@ -307,7 +307,7 @@ val MIGRATION_9_10 = object : Migration(9, 10) {
                       CASE WHEN lcFechaAdaptacion IS NULL THEN NULL ELSE ${millisToIsoExpr("lcFechaAdaptacion")} END AS lcFechaAdaptacion,
                       lcObservaciones
                     FROM evaluaciones_old
-                    """.trimIndent()
+            """.trimIndent(),
         )
         db.execSQL("CREATE INDEX IF NOT EXISTS index_evaluaciones_pacienteId ON evaluaciones(pacienteId)")
         db.execSQL("CREATE INDEX IF NOT EXISTS index_evaluaciones_opticaId ON evaluaciones(opticaId)")
@@ -340,7 +340,7 @@ val MIGRATION_9_10 = object : Migration(9, 10) {
                       subTipoBifocal TEXT NOT NULL,
                       FOREIGN KEY(pacienteId) REFERENCES pacientes(id) ON DELETE CASCADE
                     )
-                    """.trimIndent()
+            """.trimIndent(),
         )
         db.execSQL(
             """
@@ -358,7 +358,7 @@ val MIGRATION_9_10 = object : Migration(9, 10) {
                       fechaVencimientoGarantia,
                       distanciaLente, subTipoBifocal
                     FROM dispensaciones_old
-                    """.trimIndent()
+            """.trimIndent(),
         )
         db.execSQL("CREATE INDEX IF NOT EXISTS index_dispensaciones_pacienteId ON dispensaciones(pacienteId)")
         db.execSQL("CREATE INDEX IF NOT EXISTS index_dispensaciones_opticaId ON dispensaciones(opticaId)")
@@ -380,7 +380,7 @@ val MIGRATION_9_10 = object : Migration(9, 10) {
                       opticaId TEXT NOT NULL,
                       FOREIGN KEY(pacienteId) REFERENCES pacientes(id) ON DELETE SET NULL
                     )
-                    """.trimIndent()
+            """.trimIndent(),
         )
         db.execSQL(
             """
@@ -392,7 +392,7 @@ val MIGRATION_9_10 = object : Migration(9, 10) {
                       ${millisToIsoExpr("fecha")} AS fecha,
                       pacienteId, metodoPago, opticaId
                     FROM servicios_extra_old
-                    """.trimIndent()
+            """.trimIndent(),
         )
         db.execSQL("CREATE INDEX IF NOT EXISTS index_servicios_extra_pacienteId ON servicios_extra(pacienteId)")
         db.execSQL("CREATE INDEX IF NOT EXISTS index_servicios_extra_opticaId ON servicios_extra(opticaId)")
@@ -414,7 +414,7 @@ val MIGRATION_9_10 = object : Migration(9, 10) {
                       FOREIGN KEY(dispensacionId) REFERENCES dispensaciones(id) ON DELETE CASCADE,
                       FOREIGN KEY(servicioExtraId) REFERENCES servicios_extra(id) ON DELETE CASCADE
                     )
-                    """.trimIndent()
+            """.trimIndent(),
         )
         db.execSQL(
             """
@@ -426,7 +426,7 @@ val MIGRATION_9_10 = object : Migration(9, 10) {
                       ${millisToIsoExpr("fecha")} AS fecha,
                       tipo, monto, metodoPago, nota, opticaId
                     FROM pagos_old
-                    """.trimIndent()
+            """.trimIndent(),
         )
         db.execSQL("CREATE INDEX IF NOT EXISTS index_pagos_dispensacionId ON pagos(dispensacionId)")
         db.execSQL("CREATE INDEX IF NOT EXISTS index_pagos_servicioExtraId ON pagos(servicioExtraId)")
@@ -473,7 +473,7 @@ val MIGRATION_13_14 = object : Migration(13, 14) {
                         activo INTEGER NOT NULL,
                         opticaId TEXT NOT NULL
                     )
-                    """.trimIndent()
+            """.trimIndent(),
         )
         db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_monturas_sku_opticaId ON monturas(sku, opticaId)")
         db.execSQL("CREATE INDEX IF NOT EXISTS index_monturas_opticaId ON monturas(opticaId)")
@@ -498,7 +498,7 @@ val MIGRATION_14_15 = object : Migration(14, 15) {
                         opticaId TEXT NOT NULL,
                         FOREIGN KEY(monturaId) REFERENCES monturas(id) ON DELETE CASCADE
                     )
-                    """.trimIndent()
+            """.trimIndent(),
         )
         db.execSQL("CREATE INDEX IF NOT EXISTS index_montura_movimientos_monturaId ON montura_movimientos(monturaId)")
         db.execSQL("CREATE INDEX IF NOT EXISTS index_montura_movimientos_opticaId ON montura_movimientos(opticaId)")
@@ -519,14 +519,14 @@ val MIGRATION_15_16 = object : Migration(15, 16) {
                         WHERE length(trim(ot)) > 0
                         GROUP BY opticaId, UPPER(TRIM(ot))
                     )
-                    """.trimIndent()
+            """.trimIndent(),
         )
         db.execSQL(
             """
                     CREATE UNIQUE INDEX IF NOT EXISTS index_dispensaciones_optica_ot_unique
                     ON dispensaciones(opticaId, UPPER(TRIM(ot)))
                     WHERE length(trim(ot)) > 0
-                    """.trimIndent()
+            """.trimIndent(),
         )
     }
 }
@@ -534,7 +534,7 @@ val MIGRATION_15_16 = object : Migration(15, 16) {
 val MIGRATION_16_17 = object : Migration(16, 17) {
     override fun migrate(db: SupportSQLiteDatabase) {
         db.execSQL(
-            "ALTER TABLE evaluaciones ADD COLUMN citaEstado TEXT NOT NULL DEFAULT 'programada'"
+            "ALTER TABLE evaluaciones ADD COLUMN citaEstado TEXT NOT NULL DEFAULT 'programada'",
         )
     }
 }
@@ -552,7 +552,7 @@ val MIGRATION_17_18 = object : Migration(17, 18) {
                         updatedAt INTEGER NOT NULL,
                         PRIMARY KEY (opticaId, entityType, entityId)
                     )
-                    """.trimIndent()
+            """.trimIndent(),
         )
     }
 }
@@ -580,7 +580,8 @@ val MIGRATION_20_21 = object : Migration(20, 21) {
 
         // snake_case columns son intencionales: DispensacionItem usa @ColumnInfo(name = "snake_case")
         // para que Room y Supabase compartan el mismo schema sin mapeo adicional.
-        db.execSQL("""
+        db.execSQL(
+            """
             CREATE TABLE dispensacion_items (
                 id TEXT NOT NULL PRIMARY KEY,
                 dispensacion_id TEXT NOT NULL,
@@ -601,7 +602,8 @@ val MIGRATION_20_21 = object : Migration(20, 21) {
                 optica_id TEXT NOT NULL,
                 FOREIGN KEY (dispensacion_id) REFERENCES dispensaciones(id) ON DELETE CASCADE
             )
-        """)
+        """,
+        )
         db.execSQL("CREATE INDEX IF NOT EXISTS index_dispensacion_items_dispensacion_id ON dispensacion_items(dispensacion_id)")
         db.execSQL("CREATE INDEX IF NOT EXISTS index_dispensacion_items_optica_id ON dispensacion_items(optica_id)")
     }
@@ -634,7 +636,8 @@ val MIGRATION_22_23 = object : Migration(22, 23) {
         db.execSQL("ALTER TABLE montura_movimientos ADD COLUMN updatedAt TEXT")
         db.execSQL("ALTER TABLE montura_movimientos ADD COLUMN updatedBy TEXT")
 
-        db.execSQL("""
+        db.execSQL(
+            """
             CREATE TABLE IF NOT EXISTS conflict_records (
                 entityId TEXT NOT NULL PRIMARY KEY,
                 opticaId TEXT NOT NULL,
@@ -643,7 +646,8 @@ val MIGRATION_22_23 = object : Migration(22, 23) {
                 remoteSnapshot TEXT NOT NULL,
                 detectedAt INTEGER NOT NULL DEFAULT 0
             )
-        """)
+        """,
+        )
     }
 }
 
@@ -669,12 +673,14 @@ val MIGRATION_24_25 = object : Migration(24, 25) {
         db.execSQL("ALTER TABLE montura_movimientos ADD COLUMN tipoDocumento TEXT NOT NULL DEFAULT ''")
         // Remove duplicates before creating the unique index — pre-existing rows with the same
         // (referenciaId, tipo, monturaId) would cause CREATE UNIQUE INDEX to fail, blocking DB open.
-        db.execSQL("""
+        db.execSQL(
+            """
             DELETE FROM montura_movimientos
             WHERE id NOT IN (
                 SELECT MIN(id) FROM montura_movimientos GROUP BY referenciaId, tipo, monturaId
             )
-        """.trimIndent())
+            """.trimIndent(),
+        )
         db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_movimientos_conflict ON montura_movimientos(referenciaId, tipo, monturaId)")
 
         db.execSQL("CREATE TABLE IF NOT EXISTS proveedores (id TEXT NOT NULL PRIMARY KEY, nombre TEXT NOT NULL, ruc TEXT NOT NULL, telefono TEXT NOT NULL, email TEXT NOT NULL, direccion TEXT NOT NULL, contacto TEXT NOT NULL, activo INTEGER NOT NULL, opticaId TEXT NOT NULL, updatedAt TEXT, updatedBy TEXT)")
@@ -743,10 +749,10 @@ val MIGRATION_25_26 = object : Migration(25, 26) {
                 updatedAt TEXT NOT NULL,
                 updatedBy TEXT NOT NULL
             )
-            """.trimIndent()
+            """.trimIndent(),
         )
         db.execSQL(
-            "CREATE UNIQUE INDEX IF NOT EXISTS index_arqueo_caja_fecha_opticaId ON arqueo_caja(fecha, opticaId)"
+            "CREATE UNIQUE INDEX IF NOT EXISTS index_arqueo_caja_fecha_opticaId ON arqueo_caja(fecha, opticaId)",
         )
     }
 }
@@ -799,7 +805,8 @@ val MIGRATION_26_27 = object : Migration(26, 27) {
         db.execSQL("CREATE INDEX IF NOT EXISTS index_inventario_fisico_detalle_monturaId ON inventario_fisico_detalle(monturaId)")
         db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_inventario_fisico_detalle_inventarioId_monturaId ON inventario_fisico_detalle(inventarioId, monturaId)")
 
-        db.execSQL("""
+        db.execSQL(
+            """
             CREATE TABLE IF NOT EXISTS arqueo_caja (
                 id TEXT NOT NULL PRIMARY KEY,
                 fecha TEXT NOT NULL,
@@ -824,7 +831,8 @@ val MIGRATION_26_27 = object : Migration(26, 27) {
                 updatedAt TEXT NOT NULL,
                 updatedBy TEXT NOT NULL
             )
-        """.trimIndent())
+            """.trimIndent(),
+        )
         db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_arqueo_caja_fecha_opticaId ON arqueo_caja(fecha, opticaId)")
 
         db.execSQL("PRAGMA foreign_keys=ON")
@@ -853,7 +861,8 @@ val MIGRATION_29_30 = object : Migration(29, 30) {
     override fun migrate(db: SupportSQLiteDatabase) {
         // Create canonical ventas ledger table for unified income calculations.
         // Columns use camelCase per Room convention. Stored as TEXT for LocalDate fields.
-        db.execSQL("""
+        db.execSQL(
+            """
             CREATE TABLE IF NOT EXISTS ventas (
                 id TEXT NOT NULL PRIMARY KEY,
                 opticaId TEXT NOT NULL,
@@ -869,7 +878,8 @@ val MIGRATION_29_30 = object : Migration(29, 30) {
                 updatedAt TEXT,
                 updatedBy TEXT
             )
-        """.trimIndent())
+            """.trimIndent(),
+        )
         db.execSQL("CREATE INDEX IF NOT EXISTS index_ventas_opticaId ON ventas(opticaId)")
         db.execSQL("CREATE INDEX IF NOT EXISTS index_ventas_origen_origenId ON ventas(origen, origenId)")
     }
@@ -883,14 +893,16 @@ val MIGRATION_30_31 = object : Migration(30, 31) {
 
 val MIGRATION_31_32 = object : Migration(31, 32) {
     override fun migrate(db: SupportSQLiteDatabase) {
-        db.execSQL("""
+        db.execSQL(
+            """
             CREATE TABLE IF NOT EXISTS categorias_producto (
                 id TEXT PRIMARY KEY NOT NULL,
                 nombre TEXT NOT NULL,
                 familia TEXT NOT NULL,
                 orden INTEGER NOT NULL DEFAULT 0
             )
-        """.trimIndent())
+            """.trimIndent(),
+        )
 
         val seed = listOf(
             listOf("lente_progresivo", "Lentes Progresivos", "lente", 1),
@@ -901,18 +913,19 @@ val MIGRATION_31_32 = object : Migration(31, 32) {
             listOf("montura_estandar", "Monturas Estándar", "montura", 5),
             listOf("montura_economica", "Monturas Económicas", "montura", 6),
             listOf("servicio_extra", "Servicios Extra", "servicio", 7),
-            listOf("servicio_garantia", "Garantías Extendidas", "servicio", 8)
+            listOf("servicio_garantia", "Garantías Extendidas", "servicio", 8),
         )
         seed.forEach { (id, nombre, familia, orden) ->
             db.execSQL(
                 "INSERT OR IGNORE INTO categorias_producto (id, nombre, familia, orden) VALUES (?, ?, ?, ?)",
-                arrayOf<Any>(id, nombre, familia, orden)
+                arrayOf<Any>(id, nombre, familia, orden),
             )
         }
 
         db.execSQL("ALTER TABLE ventas ADD COLUMN categoriaProductoId TEXT")
 
-        db.execSQL("""
+        db.execSQL(
+            """
             CREATE TABLE IF NOT EXISTS gastos_operativos (
                 id TEXT PRIMARY KEY NOT NULL,
                 opticaId TEXT NOT NULL,
@@ -924,10 +937,12 @@ val MIGRATION_31_32 = object : Migration(31, 32) {
                 nota TEXT,
                 createdAt TEXT
             )
-        """.trimIndent())
+            """.trimIndent(),
+        )
         db.execSQL("CREATE INDEX IF NOT EXISTS index_gastos_operativos_opticaId ON gastos_operativos(opticaId)")
 
-        db.execSQL("""
+        db.execSQL(
+            """
             CREATE TABLE IF NOT EXISTS resumen_diario (
                 id TEXT PRIMARY KEY NOT NULL,
                 opticaId TEXT NOT NULL,
@@ -943,10 +958,12 @@ val MIGRATION_31_32 = object : Migration(31, 32) {
                 inventarioUnidades INTEGER,
                 calculadoEn TEXT
             )
-        """.trimIndent())
+            """.trimIndent(),
+        )
         db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_resumen_diario_opticaId_fecha ON resumen_diario(opticaId, fecha)")
 
-        db.execSQL("""
+        db.execSQL(
+            """
             CREATE TABLE IF NOT EXISTS configuracion_financiera (
                 opticaId TEXT PRIMARY KEY NOT NULL,
                 margenNetoObjetivo REAL NOT NULL DEFAULT 15.0,
@@ -959,7 +976,8 @@ val MIGRATION_31_32 = object : Migration(31, 32) {
                 minVentasParaRecomendar INTEGER NOT NULL DEFAULT 5,
                 frecuenciaRecalculoDias INTEGER NOT NULL DEFAULT 1
             )
-        """.trimIndent())
+            """.trimIndent(),
+        )
     }
 }
 
@@ -972,7 +990,8 @@ val MIGRATION_32_33 = object : Migration(32, 33) {
 
 val MIGRATION_33_34 = object : Migration(33, 34) {
     override fun migrate(db: SupportSQLiteDatabase) {
-        db.execSQL("""
+        db.execSQL(
+            """
             CREATE TABLE IF NOT EXISTS feedback_recomendaciones (
                 recomendacionId TEXT NOT NULL,
                 opticaId TEXT NOT NULL,
@@ -980,11 +999,14 @@ val MIGRATION_33_34 = object : Migration(33, 34) {
                 fecha INTEGER NOT NULL,
                 PRIMARY KEY (recomendacionId, opticaId)
             )
-        """.trimIndent())
-        db.execSQL("""
+            """.trimIndent(),
+        )
+        db.execSQL(
+            """
             CREATE INDEX IF NOT EXISTS index_feedback_recomendacionId_opticaId
                 ON feedback_recomendaciones(recomendacionId, opticaId)
-        """.trimIndent())
+            """.trimIndent(),
+        )
     }
 }
 
@@ -1005,7 +1027,8 @@ val MIGRATION_36_37 = object : Migration(36, 37) {
         // feedback_recomendaciones: composite PK (recomendacionId, opticaId) → single id PK
         // for Supabase sync compatibility. Cache-only table, safe to drop and recreate.
         db.execSQL("DROP TABLE IF EXISTS feedback_recomendaciones")
-        db.execSQL("""
+        db.execSQL(
+            """
             CREATE TABLE IF NOT EXISTS feedback_recomendaciones (
                 id TEXT NOT NULL PRIMARY KEY,
                 recomendacionId TEXT NOT NULL,
@@ -1013,14 +1036,16 @@ val MIGRATION_36_37 = object : Migration(36, 37) {
                 fueUtil INTEGER NOT NULL,
                 fecha INTEGER NOT NULL
             )
-        """.trimIndent())
+            """.trimIndent(),
+        )
     }
 }
 
 val MIGRATION_37_38 = object : Migration(37, 38) {
     override fun migrate(db: SupportSQLiteDatabase) {
         // Create regalos_dispensacion table for gift tracking on dispensaciones
-        db.execSQL("""
+        db.execSQL(
+            """
             CREATE TABLE IF NOT EXISTS regalos_dispensacion (
                 id TEXT NOT NULL PRIMARY KEY,
                 dispensacion_id TEXT NOT NULL,
@@ -1032,7 +1057,8 @@ val MIGRATION_37_38 = object : Migration(37, 38) {
                 optica_id TEXT NOT NULL,
                 FOREIGN KEY (dispensacion_id) REFERENCES dispensaciones(id) ON DELETE CASCADE
             )
-        """.trimIndent())
+            """.trimIndent(),
+        )
         db.execSQL("CREATE INDEX IF NOT EXISTS index_regalos_dispensacion_dispensacion_id ON regalos_dispensacion(dispensacion_id)")
 
         // Add reclamoOrigenId to dispensaciones — nullable, no default
@@ -1042,7 +1068,8 @@ val MIGRATION_37_38 = object : Migration(37, 38) {
 
 val MIGRATION_38_39 = object : Migration(38, 39) {
     override fun migrate(db: SupportSQLiteDatabase) {
-        db.execSQL("""
+        db.execSQL(
+            """
             CREATE TABLE IF NOT EXISTS costos_productos (
                 id TEXT NOT NULL PRIMARY KEY,
                 optica_id TEXT NOT NULL,
@@ -1056,9 +1083,11 @@ val MIGRATION_38_39 = object : Migration(38, 39) {
                 vigente_desde TEXT NOT NULL,
                 vigente_hasta TEXT
             )
-        """.trimIndent())
+            """.trimIndent(),
+        )
 
-        db.execSQL("""
+        db.execSQL(
+            """
             CREATE TABLE IF NOT EXISTS costos_biselado (
                 id TEXT NOT NULL PRIMARY KEY,
                 optica_id TEXT NOT NULL,
@@ -1072,7 +1101,8 @@ val MIGRATION_38_39 = object : Migration(38, 39) {
                 vigente_desde TEXT NOT NULL,
                 vigente_hasta TEXT
             )
-        """.trimIndent())
+            """.trimIndent(),
+        )
 
         db.execSQL("ALTER TABLE dispensaciones ADD COLUMN evaluacion_id TEXT")
 
@@ -1095,7 +1125,8 @@ val MIGRATION_38_39 = object : Migration(38, 39) {
 val MIGRATION_39_40 = object : Migration(39, 40) {
     override fun migrate(db: SupportSQLiteDatabase) {
         // ── Fix 2.5: Recreate conflict_records with composite PK ──────────
-        db.execSQL("""
+        db.execSQL(
+            """
             CREATE TABLE IF NOT EXISTS conflict_records_new (
                 entityId TEXT NOT NULL,
                 opticaId TEXT NOT NULL,
@@ -1108,30 +1139,38 @@ val MIGRATION_39_40 = object : Migration(39, 40) {
                 remoteData TEXT NOT NULL DEFAULT '{}',
                 PRIMARY KEY (entityId, opticaId)
             )
-        """.trimIndent())
-        db.execSQL("""
+            """.trimIndent(),
+        )
+        db.execSQL(
+            """
             INSERT OR IGNORE INTO conflict_records_new
             SELECT entityId, opticaId, entityType, localSnapshot, remoteSnapshot,
                    detectedAt, baseSnapshot, localData, remoteData
             FROM conflict_records
-        """.trimIndent())
+            """.trimIndent(),
+        )
         db.execSQL("DROP TABLE conflict_records")
         db.execSQL("ALTER TABLE conflict_records_new RENAME TO conflict_records")
 
         // ── Fix 2.6: Clean duplicates in resumen_diario, ensure unique index ──
-        db.execSQL("""
+        db.execSQL(
+            """
             DELETE FROM resumen_diario
             WHERE id NOT IN (
                 SELECT MIN(id) FROM resumen_diario GROUP BY opticaId, fecha
             )
-        """.trimIndent())
-        db.execSQL("""
+            """.trimIndent(),
+        )
+        db.execSQL(
+            """
             CREATE UNIQUE INDEX IF NOT EXISTS index_resumen_diario_opticaId_fecha
             ON resumen_diario(opticaId, fecha)
-        """.trimIndent())
+            """.trimIndent(),
+        )
 
         // ── gastos_operativos: rename esRecurrente → isRecurring ──
-        db.execSQL("""
+        db.execSQL(
+            """
             CREATE TABLE gastos_operativos_new (
                 id TEXT PRIMARY KEY NOT NULL,
                 opticaId TEXT NOT NULL,
@@ -1145,9 +1184,11 @@ val MIGRATION_39_40 = object : Migration(39, 40) {
                 frecuencia TEXT NOT NULL DEFAULT 'mensual',
                 createdAt TEXT
             )
-        """.trimIndent())
+            """.trimIndent(),
+        )
 
-        db.execSQL("""
+        db.execSQL(
+            """
             INSERT INTO gastos_operativos_new
                 (id, opticaId, categoria, descripcion, monto, fecha,
                  fechaProgramada, nota, isRecurring, frecuencia, createdAt)
@@ -1157,15 +1198,18 @@ val MIGRATION_39_40 = object : Migration(39, 40) {
                    COALESCE(frecuencia, 'mensual'),
                    createdAt
             FROM gastos_operativos
-        """.trimIndent())
+            """.trimIndent(),
+        )
 
         db.execSQL("DROP TABLE gastos_operativos")
         db.execSQL("ALTER TABLE gastos_operativos_new RENAME TO gastos_operativos")
 
-        db.execSQL("""
+        db.execSQL(
+            """
             CREATE INDEX IF NOT EXISTS index_gastos_operativos_opticaId
             ON gastos_operativos(opticaId)
-        """.trimIndent())
+            """.trimIndent(),
+        )
     }
 }
 
@@ -1174,5 +1218,20 @@ val MIGRATION_39_40 = object : Migration(39, 40) {
 val MIGRATION_40_41 = object : Migration(40, 41) {
     override fun migrate(db: SupportSQLiteDatabase) {
         // costos_lc is a new table — Room creates it automatically after migration
+    }
+}
+
+// ─── MIGRATION 41→42 ─────────────────────────────────────────────────────────
+// Add OpticaSettingsEntity — read per-tenant config from optica_settings table
+val MIGRATION_41_42 = object : Migration(41, 42) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS optica_settings (
+                opticaId TEXT NOT NULL PRIMARY KEY,
+                configJson TEXT NOT NULL DEFAULT '{}'
+            )
+            """.trimIndent(),
+        )
     }
 }

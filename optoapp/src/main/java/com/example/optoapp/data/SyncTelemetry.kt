@@ -16,7 +16,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class SyncTelemetry @Inject constructor(
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
 ) {
     private val keyLastSuccessMs = longPreferencesKey("sync_last_full_success_ms")
     private val keyLastError = stringPreferencesKey("sync_last_full_error")

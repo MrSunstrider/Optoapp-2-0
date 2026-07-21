@@ -1,9 +1,9 @@
 package com.example.optoapp.ui.screens
 
 import com.example.optoapp.data.AppRoles
-import com.example.optoapp.data.esMasculino
-import com.example.optoapp.data.esFemenino
 import com.example.optoapp.data.Paciente
+import com.example.optoapp.data.esFemenino
+import com.example.optoapp.data.esMasculino
 import com.example.optoapp.subscription.SubscriptionTier
 import com.example.optoapp.viewmodel.PacienteViewModel
 import com.example.optoapp.viewmodel.SubscriptionViewModel
@@ -60,7 +60,7 @@ class PacientesListScreenTest {
         val methods = PacienteViewModel::class.java.declaredMethods.map { it.name }
         assertTrue(
             "PacienteViewModel debe tener onSearchQueryChange",
-            "onSearchQueryChange" in methods
+            "onSearchQueryChange" in methods,
         )
     }
 
@@ -101,7 +101,7 @@ class PacientesListScreenTest {
             telefono = "999888777",
             fechaCreacion = LocalDate.now(),
             historiaOptometrica = "HO-001",
-            opticaId = "optica_1"
+            opticaId = "optica_1",
         )
         assertEquals("María García", paciente.nombreCompleto)
     }
@@ -115,7 +115,7 @@ class PacientesListScreenTest {
             telefono = "999888777",
             fechaCreacion = LocalDate.now(),
             historiaOptometrica = "HO-042",
-            opticaId = "optica_1"
+            opticaId = "optica_1",
         )
         assertEquals("HO-042", paciente.historiaOptometrica)
     }
@@ -128,7 +128,7 @@ class PacientesListScreenTest {
             edad = 25,
             telefono = "999888777",
             fechaCreacion = LocalDate.now(),
-            opticaId = "optica_1"
+            opticaId = "optica_1",
         )
         assertEquals("999888777", paciente.telefono)
     }
@@ -176,7 +176,7 @@ class PacientesListScreenTest {
         val allMethods = SubscriptionViewModel::class.java.methods.map { it.name }
         assertTrue(
             "SubscriptionViewModel debe tener refreshPlanFromServer",
-            "refreshPlanFromServer" in methods || "refreshPlanFromServer" in allMethods
+            "refreshPlanFromServer" in methods || "refreshPlanFromServer" in allMethods,
         )
     }
 
@@ -187,7 +187,7 @@ class PacientesListScreenTest {
         val methods = AppRoles::class.java.declaredMethods.map { it.name }
         assertTrue(
             "AppRoles debe tener canCreateEditPacientes",
-            "canCreateEditPacientes" in methods
+            "canCreateEditPacientes" in methods,
         )
     }
 
@@ -212,9 +212,13 @@ class PacientesListScreenTest {
     @Test
     fun paciente_sexoMasculino_avatarColorIsBlue() {
         val paciente = Paciente(
-            id = "1", nombreCompleto = "Juan Pérez", edad = 40,
-            telefono = "999888777", fechaCreacion = LocalDate.now(),
-            sexo = "Masculino", opticaId = "optica_1"
+            id = "1",
+            nombreCompleto = "Juan Pérez",
+            edad = 40,
+            telefono = "999888777",
+            fechaCreacion = LocalDate.now(),
+            sexo = "Masculino",
+            opticaId = "optica_1",
         )
         assertTrue(paciente.esMasculino())
     }
@@ -222,9 +226,13 @@ class PacientesListScreenTest {
     @Test
     fun paciente_sexoFemenino_avatarColorIsRose() {
         val paciente = Paciente(
-            id = "2", nombreCompleto = "María García", edad = 30,
-            telefono = "999888777", fechaCreacion = LocalDate.now(),
-            sexo = "Femenino", opticaId = "optica_1"
+            id = "2",
+            nombreCompleto = "María García",
+            edad = 30,
+            telefono = "999888777",
+            fechaCreacion = LocalDate.now(),
+            sexo = "Femenino",
+            opticaId = "optica_1",
         )
         assertTrue(paciente.esFemenino())
     }
@@ -232,12 +240,15 @@ class PacientesListScreenTest {
     @Test
     fun paciente_sexoNull_avatarColorIsDefault() {
         val paciente = Paciente(
-            id = "3", nombreCompleto = "Alex Cruz", edad = 25,
-            telefono = "999888777", fechaCreacion = LocalDate.now(),
-            sexo = null, opticaId = "optica_1"
+            id = "3",
+            nombreCompleto = "Alex Cruz",
+            edad = 25,
+            telefono = "999888777",
+            fechaCreacion = LocalDate.now(),
+            sexo = null,
+            opticaId = "optica_1",
         )
         assertFalse(paciente.esMasculino())
         assertFalse(paciente.esFemenino())
     }
-
 }

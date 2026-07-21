@@ -18,56 +18,53 @@ class DispensacionRepository(
     private val dispensacionDao: DispensacionDao,
     private val dispensacionItemDao: DispensacionItemDao,
     private val pagoDao: PagoDao,
-    private val servicioExtraDao: ServicioExtraDao
+    private val servicioExtraDao: ServicioExtraDao,
 ) {
 
     // ── Dispensaciones ───────────────────────────────────────────────────────
 
-    fun getDispensacionesByDateRangeForOptica(start: LocalDate, end: LocalDate, opticaId: String): Flow<List<DispensacionOptica>> =
-        dispensacionDao.getDispensacionesByDateRangeForOptica(start, end, opticaId)
+    fun getDispensacionesByDateRangeForOptica(start: LocalDate, end: LocalDate, opticaId: String): Flow<List<DispensacionOptica>> = dispensacionDao.getDispensacionesByDateRangeForOptica(start, end, opticaId)
 
-    fun getDispensacionesByPaciente(pacienteId: String): Flow<List<DispensacionOptica>> =
-        dispensacionDao.getDispensacionesByPaciente(pacienteId)
+    fun getDispensacionesByPaciente(pacienteId: String): Flow<List<DispensacionOptica>> = dispensacionDao.getDispensacionesByPaciente(pacienteId)
 
-    fun getAllDispensacionesForOptica(opticaId: String): Flow<List<DispensacionOptica>> =
-        dispensacionDao.getAllDispensacionesForOptica(opticaId)
+    fun getAllDispensacionesForOptica(opticaId: String): Flow<List<DispensacionOptica>> = dispensacionDao.getAllDispensacionesForOptica(opticaId)
 
-    fun getTotalVendidoForOptica(opticaId: String): Flow<Double?> =
-        dispensacionDao.getTotalVendidoForOptica(opticaId)
+    fun getTotalVendidoForOptica(opticaId: String): Flow<Double?> = dispensacionDao.getTotalVendidoForOptica(opticaId)
 
-    fun getTotalPagadoForOptica(opticaId: String): Flow<Double?> =
-        dispensacionDao.getTotalPagadoForOptica(opticaId)
+    fun getTotalPagadoForOptica(opticaId: String): Flow<Double?> = dispensacionDao.getTotalPagadoForOptica(opticaId)
 
-    suspend fun getDispensacionById(id: String): Resource<DispensacionOptica> {
-        return try {
-            val dispensacion = dispensacionDao.getDispensacionById(id)
-            if (dispensacion != null) Resource.Success(dispensacion)
-            else Resource.Error("Dispensación no encontrada")
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: IOException) {
-            Log.e(TAG, "getDispensacionById: id=$id", e)
-            Resource.Error("Error de red al obtener dispensación")
-        } catch (e: Exception) {
-            Log.e(TAG, "getDispensacionById: id=$id", e)
-            Resource.Error(e.message ?: "Error al obtener dispensación")
+    suspend fun getDispensacionById(id: String): Resource<DispensacionOptica> = try {
+        val dispensacion = dispensacionDao.getDispensacionById(id)
+        if (dispensacion != null) {
+            Resource.Success(dispensacion)
+        } else {
+            Resource.Error("Dispensación no encontrada")
         }
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: IOException) {
+        Log.e(TAG, "getDispensacionById: id=$id", e)
+        Resource.Error("Error de red al obtener dispensación")
+    } catch (e: Exception) {
+        Log.e(TAG, "getDispensacionById: id=$id", e)
+        Resource.Error(e.message ?: "Error al obtener dispensación")
     }
 
-    suspend fun getLastDispensacionByPacienteId(pacienteId: String): Resource<DispensacionOptica> {
-        return try {
-            val disp = dispensacionDao.getLastDispensacionByPacienteId(pacienteId)
-            if (disp != null) Resource.Success(disp)
-            else Resource.Error("No hay dispensaciones")
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: IOException) {
-            Log.e(TAG, "getLastDispensacionByPacienteId: pacienteId=$pacienteId", e)
-            Resource.Error("Error de red al obtener dispensación")
-        } catch (e: Exception) {
-            Log.e(TAG, "getLastDispensacionByPacienteId: pacienteId=$pacienteId", e)
-            Resource.Error(e.message ?: "Error al obtener dispensación")
+    suspend fun getLastDispensacionByPacienteId(pacienteId: String): Resource<DispensacionOptica> = try {
+        val disp = dispensacionDao.getLastDispensacionByPacienteId(pacienteId)
+        if (disp != null) {
+            Resource.Success(disp)
+        } else {
+            Resource.Error("No hay dispensaciones")
         }
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: IOException) {
+        Log.e(TAG, "getLastDispensacionByPacienteId: pacienteId=$pacienteId", e)
+        Resource.Error("Error de red al obtener dispensación")
+    } catch (e: Exception) {
+        Log.e(TAG, "getLastDispensacionByPacienteId: pacienteId=$pacienteId", e)
+        Resource.Error(e.message ?: "Error al obtener dispensación")
     }
 
     suspend fun insertDispensacion(dispensacion: DispensacionOptica) {
@@ -80,8 +77,7 @@ class DispensacionRepository(
 
     suspend fun deleteDispensacionById(id: String, opticaId: String): Int = dispensacionDao.deleteById(id, opticaId)
 
-    suspend fun getDispensacionesSnapshotForOptica(opticaId: String): List<DispensacionOptica> =
-        dispensacionDao.getDispensacionesListByOptica(opticaId)
+    suspend fun getDispensacionesSnapshotForOptica(opticaId: String): List<DispensacionOptica> = dispensacionDao.getDispensacionesListByOptica(opticaId)
 
     suspend fun suggestNextOt(opticaId: String, fecha: LocalDate): String {
         val year = fecha.year.toString()
@@ -104,35 +100,28 @@ class DispensacionRepository(
 
     // ── Items de Dispensación ─────────────────────────────────────────────────
 
-    fun getItemsByDispensacion(dispensacionId: String): Flow<List<DispensacionItem>> =
-        dispensacionItemDao.getItemsByDispensacion(dispensacionId)
+    fun getItemsByDispensacion(dispensacionId: String): Flow<List<DispensacionItem>> = dispensacionItemDao.getItemsByDispensacion(dispensacionId)
 
-    suspend fun getItemsListByDispensacion(dispensacionId: String): List<DispensacionItem> =
-        dispensacionItemDao.getItemsListByDispensacion(dispensacionId)
+    suspend fun getItemsListByDispensacion(dispensacionId: String): List<DispensacionItem> = dispensacionItemDao.getItemsListByDispensacion(dispensacionId)
 
-    suspend fun getItemsListByOptica(opticaId: String): List<DispensacionItem> =
-        dispensacionItemDao.getItemsListByOptica(opticaId)
+    suspend fun getItemsListByOptica(opticaId: String): List<DispensacionItem> = dispensacionItemDao.getItemsListByOptica(opticaId)
 
-    suspend fun getDispensacionItemById(id: String): DispensacionItem? =
-        dispensacionItemDao.getById(id)
+    suspend fun getDispensacionItemById(id: String): DispensacionItem? = dispensacionItemDao.getById(id)
 
     suspend fun insertDispensacionItem(item: DispensacionItem) {
         dispensacionItemDao.insertItem(item)
     }
 
-    suspend fun deleteDispensacionItemById(id: String, opticaId: String): Int =
-        dispensacionItemDao.deleteById(id, opticaId)
+    suspend fun deleteDispensacionItemById(id: String, opticaId: String): Int = dispensacionItemDao.deleteById(id, opticaId)
 
-    suspend fun deleteItemsByDispensacionId(dispensacionId: String, opticaId: String): Int =
-        dispensacionItemDao.deleteByDispensacionId(dispensacionId, opticaId)
+    suspend fun deleteItemsByDispensacionId(dispensacionId: String, opticaId: String): Int = dispensacionItemDao.deleteByDispensacionId(dispensacionId, opticaId)
 
     @Suppress("DEPRECATION")
     @Deprecated(
         message = "Use getItemsListByOptica to enforce multi-tenant isolation",
-        replaceWith = ReplaceWith("getItemsListByOptica(opticaId)")
+        replaceWith = ReplaceWith("getItemsListByOptica(opticaId)"),
     )
-    suspend fun getAllDispensacionItems(): List<DispensacionItem> =
-        dispensacionItemDao.getAllItems()
+    suspend fun getAllDispensacionItems(): List<DispensacionItem> = dispensacionItemDao.getAllItems()
 
     // ── Pagos ────────────────────────────────────────────────────────────────
 
@@ -150,17 +139,15 @@ class DispensacionRepository(
             tipo = pago.tipo, monto = pago.monto,
             metodoPago = pago.metodoPago, nota = pago.nota,
             updatedAt = pago.updatedAt, updatedBy = pago.updatedBy,
-            ventaId = pago.ventaId
+            ventaId = pago.ventaId,
         )
     }
 
     suspend fun getPagoById(id: String, opticaId: String): Pago? = pagoDao.getPagoByIdForOptica(id, opticaId)
 
-    suspend fun reassignPagosDispensacion(oldDispensacionId: String, newDispensacionId: String, opticaId: String): Int =
-        pagoDao.reassignDispensacionIdForOptica(oldDispensacionId, newDispensacionId, opticaId)
+    suspend fun reassignPagosDispensacion(oldDispensacionId: String, newDispensacionId: String, opticaId: String): Int = pagoDao.reassignDispensacionIdForOptica(oldDispensacionId, newDispensacionId, opticaId)
 
-    suspend fun reassignItemsDispensacion(sourceId: String, targetId: String): Int =
-        dispensacionItemDao.reassignItemsDispensacion(sourceId, targetId)
+    suspend fun reassignItemsDispensacion(sourceId: String, targetId: String): Int = dispensacionItemDao.reassignItemsDispensacion(sourceId, targetId)
 
     /**
      * Borra un abono. Si ya existía en BD, registra un movimiento de anulación
@@ -169,7 +156,7 @@ class DispensacionRepository(
      */
     suspend fun deletePagoRegistrandoAnulacionEnCaja(
         pago: Pago,
-        opticaId: String
+        opticaId: String,
     ) {
         val existing = pagoDao.getPagoByIdForOptica(pago.id, opticaId)
         if (existing != null && existing.monto != 0.0) {
@@ -183,7 +170,7 @@ class DispensacionRepository(
                 monto = -existing.monto,
                 metodoPago = existing.metodoPago,
                 nota = "Anula abono ${existing.id.take(8)}… (${DateUtils.formatLocalized(existing.fecha)})",
-                opticaId = opticaId
+                opticaId = opticaId,
             )
             pagoDao.insertPago(reversal)
         }
@@ -192,56 +179,48 @@ class DispensacionRepository(
 
     suspend fun deletePago(pago: Pago) = pagoDao.deletePago(pago.id, pago.opticaId)
 
-    fun getPagosByServicioExtra(servicioExtraId: String): Flow<List<Pago>> =
-        pagoDao.getPagosByServicioExtra(servicioExtraId)
+    fun getPagosByServicioExtra(servicioExtraId: String): Flow<List<Pago>> = pagoDao.getPagosByServicioExtra(servicioExtraId)
 
     @Suppress("DEPRECATION")
     @Deprecated(
         message = "Use getPagosByDateRangeForOptica to enforce multi-tenant isolation",
-        replaceWith = ReplaceWith("getPagosByDateRangeForOptica(start, end, opticaId)")
+        replaceWith = ReplaceWith("getPagosByDateRangeForOptica(start, end, opticaId)"),
     )
-    fun getPagosByDateRange(start: LocalDate, end: LocalDate): Flow<List<Pago>> =
-        pagoDao.getPagosByDateRange(start, end)
+    fun getPagosByDateRange(start: LocalDate, end: LocalDate): Flow<List<Pago>> = pagoDao.getPagosByDateRange(start, end)
 
-    fun getPagosByDateRangeForOptica(start: LocalDate, end: LocalDate, opticaId: String): Flow<List<Pago>> =
-        pagoDao.getPagosByDateRangeForOptica(start, end, opticaId)
+    fun getPagosByDateRangeForOptica(start: LocalDate, end: LocalDate, opticaId: String): Flow<List<Pago>> = pagoDao.getPagosByDateRangeForOptica(start, end, opticaId)
 
-    suspend fun getPagosSnapshotForOptica(opticaId: String): List<Pago> =
-        pagoDao.getPagosListByOptica(opticaId)
+    suspend fun getPagosSnapshotForOptica(opticaId: String): List<Pago> = pagoDao.getPagosListByOptica(opticaId)
 
-    fun getPagosFlowForOptica(opticaId: String): Flow<List<Pago>> =
-        pagoDao.getPagosFlowByOptica(opticaId)
+    fun getPagosFlowForOptica(opticaId: String): Flow<List<Pago>> = pagoDao.getPagosFlowByOptica(opticaId)
 
     // ── Servicios Extra ──────────────────────────────────────────────────────
 
-    fun getAllServiciosForOptica(opticaId: String): Flow<List<ServicioExtra>> =
-        servicioExtraDao.getAllServiciosForOptica(opticaId)
+    fun getAllServiciosForOptica(opticaId: String): Flow<List<ServicioExtra>> = servicioExtraDao.getAllServiciosForOptica(opticaId)
 
-    fun getServiciosByDateRangeForOptica(start: LocalDate, end: LocalDate, opticaId: String): Flow<List<ServicioExtra>> =
-        servicioExtraDao.getServiciosByDateRangeForOptica(start, end, opticaId)
+    fun getServiciosByDateRangeForOptica(start: LocalDate, end: LocalDate, opticaId: String): Flow<List<ServicioExtra>> = servicioExtraDao.getServiciosByDateRangeForOptica(start, end, opticaId)
 
-    suspend fun getServiciosByIds(ids: List<String>, opticaId: String): List<ServicioExtra> =
-        servicioExtraDao.getServiciosByIds(ids, opticaId)
+    suspend fun getServiciosByIds(ids: List<String>, opticaId: String): List<ServicioExtra> = servicioExtraDao.getServiciosByIds(ids, opticaId)
 
-    suspend fun getDispensacionesByIds(ids: List<String>, opticaId: String): List<DispensacionOptica> =
-        dispensacionDao.getDispensacionesByIds(ids, opticaId)
+    suspend fun getDispensacionesByIds(ids: List<String>, opticaId: String): List<DispensacionOptica> = dispensacionDao.getDispensacionesByIds(ids, opticaId)
 
     fun getServiciosByPaciente(pacienteId: String): Flow<List<ServicioExtra>> = servicioExtraDao.getServiciosByPaciente(pacienteId)
 
-    suspend fun getServicioById(id: String): Resource<ServicioExtra> {
-        return try {
-            val servicio = servicioExtraDao.getServicioById(id)
-            if (servicio != null) Resource.Success(servicio)
-            else Resource.Error("Servicio no encontrado")
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: IOException) {
-            Log.e(TAG, "getServicioById: id=$id", e)
-            Resource.Error("Error de red al obtener servicio")
-        } catch (e: Exception) {
-            Log.e(TAG, "getServicioById: id=$id", e)
-            Resource.Error(e.message ?: "Error al obtener servicio")
+    suspend fun getServicioById(id: String): Resource<ServicioExtra> = try {
+        val servicio = servicioExtraDao.getServicioById(id)
+        if (servicio != null) {
+            Resource.Success(servicio)
+        } else {
+            Resource.Error("Servicio no encontrado")
         }
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: IOException) {
+        Log.e(TAG, "getServicioById: id=$id", e)
+        Resource.Error("Error de red al obtener servicio")
+    } catch (e: Exception) {
+        Log.e(TAG, "getServicioById: id=$id", e)
+        Resource.Error(e.message ?: "Error al obtener servicio")
     }
 
     suspend fun insertServicio(servicio: ServicioExtra) {
@@ -256,7 +235,7 @@ class DispensacionRepository(
             estado = servicio.estado, fecha = servicio.fecha,
             pacienteId = servicio.pacienteId, metodoPago = servicio.metodoPago,
             fechaEntrega = servicio.fechaEntrega,
-            updatedAt = servicio.updatedAt, updatedBy = servicio.updatedBy
+            updatedAt = servicio.updatedAt, updatedBy = servicio.updatedBy,
         )
     }
 
@@ -264,8 +243,7 @@ class DispensacionRepository(
         servicioExtraDao.deleteServicio(servicio.id, servicio.opticaId)
     }
 
-    suspend fun getServiciosSnapshotForOptica(opticaId: String): List<ServicioExtra> =
-        servicioExtraDao.getServiciosListByOptica(opticaId)
+    suspend fun getServiciosSnapshotForOptica(opticaId: String): List<ServicioExtra> = servicioExtraDao.getServiciosListByOptica(opticaId)
 
     companion object {
         private const val TAG = "DispensacionRepository"

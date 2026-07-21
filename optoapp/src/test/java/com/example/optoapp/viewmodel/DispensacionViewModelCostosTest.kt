@@ -1,7 +1,5 @@
 package com.example.optoapp.viewmodel
 
-import com.example.optoapp.data.DispensacionOptica
-import com.example.optoapp.data.EvaluacionClinica
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -169,7 +167,7 @@ class DispensacionViewModelCostosTest {
         val fields = DispensacionUiState::class.java.declaredFields.map { it.name }
         assertTrue(
             "DispensacionUiState debe tener evaluacionId",
-            "evaluacionId" in fields
+            "evaluacionId" in fields,
         )
     }
 
@@ -186,7 +184,7 @@ class DispensacionViewModelCostosTest {
         val methods = DispensacionViewModel::class.java.declaredMethods.map { it.name }
         assertTrue(
             "DispensacionViewModel debe tener calculateCosts (or loadCostos)",
-            "calculateCosts" in methods || "loadCostos" in methods
+            "calculateCosts" in methods || "loadCostos" in methods,
         )
     }
 
@@ -195,7 +193,7 @@ class DispensacionViewModelCostosTest {
         val methods = DispensacionViewModel::class.java.declaredMethods.map { it.name }
         assertTrue(
             "DispensacionViewModel debe tener setEvaluacionId or onEvaluacionChanged",
-            "setEvaluacionId" in methods || "onEvaluacionChanged" in methods
+            "setEvaluacionId" in methods || "onEvaluacionChanged" in methods,
         )
     }
 

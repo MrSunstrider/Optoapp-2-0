@@ -14,7 +14,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.optoapp.data.FinanzasRemoteDefaults
 import com.example.optoapp.data.Montura
 import com.example.optoapp.data.Paciente
 import com.example.optoapp.data.Pago
@@ -37,7 +36,7 @@ fun ServicioForm(
     onAddPago: (Pago) -> Unit,
     onUpdatePago: (Pago) -> Unit,
     onRemovePago: (Pago) -> Unit,
-    onShowDatePicker: () -> Unit
+    onShowDatePicker: () -> Unit,
 ) {
     OutlinedButton(onClick = onShowDatePicker, modifier = Modifier.fillMaxWidth()) {
         Text("Fecha: ${DateUtils.formatLocalized(uiState.fecha)}")
@@ -63,12 +62,14 @@ fun ServicioForm(
                                     supportingContent = { Text("Color: ${montura.color} | SKU: ${montura.sku}") },
                                     trailingContent = { Text("s/. ${montura.precio}", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary) },
                                     modifier = Modifier.clickable {
-                                        onUpdate(uiState.copy(
-                                            descripcion = "${montura.marca} ${montura.modelo} (${montura.sku})",
-                                            montoTotal = montura.precio.toString()
-                                        ))
+                                        onUpdate(
+                                            uiState.copy(
+                                                descripcion = "${montura.marca} ${montura.modelo} (${montura.sku})",
+                                                montoTotal = montura.precio.toString(),
+                                            ),
+                                        )
                                         showMonturaDialog = false
-                                    }
+                                    },
                                 )
                                 HorizontalDivider(thickness = 0.5.dp)
                             }
@@ -78,7 +79,7 @@ fun ServicioForm(
             },
             confirmButton = {
                 TextButton(onClick = { showMonturaDialog = false }) { Text("Cerrar") }
-            }
+            },
         )
     }
 
@@ -90,14 +91,14 @@ fun ServicioForm(
             IconButton(onClick = { showMonturaDialog = true }) {
                 Icon(Icons.Default.Inventory2, contentDescription = "Vincular Inventario", tint = MaterialTheme.colorScheme.primary)
             }
-        }
+        },
     )
 
     OptoTextField(
         value = uiState.montoTotal,
         onValueChange = { onUpdate(uiState.copy(montoTotal = it)) },
         label = "Monto Total",
-        keyboardType = KeyboardType.Decimal
+        keyboardType = KeyboardType.Decimal,
     )
 
     HorizontalDivider()
@@ -111,12 +112,12 @@ fun ServicioForm(
     uiState.pagos.forEach { pago ->
         Card(
             modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
         ) {
             Row(
                 modifier = Modifier.padding(12.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text("${pago.metodoPago}: s/. ${String.format(Locale.getDefault(), "%.2f", pago.monto)}", fontWeight = FontWeight.Bold)
@@ -139,7 +140,7 @@ fun ServicioForm(
                             onConfirm = { updatedPago: Pago ->
                                 onUpdatePago(updatedPago)
                                 showEditDialog = false
-                            }
+                            },
                         )
                     }
                     IconButton(onClick = { showEditDialog = true }, modifier = Modifier.size(48.dp)) {
@@ -164,14 +165,14 @@ fun ServicioForm(
             onConfirm = { nuevoPago: Pago ->
                 onAddPago(nuevoPago)
                 showAddDialog = false
-            }
+            },
         )
     }
 
     OutlinedButton(
         onClick = { showAddDialog = true },
         modifier = Modifier.fillMaxWidth(),
-        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary)
+        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary),
     ) {
         Icon(Icons.Default.Add, contentDescription = "Agregar")
         Spacer(Modifier.width(8.dp))
@@ -182,7 +183,7 @@ fun ServicioForm(
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text("Saldo Restante:", fontWeight = FontWeight.Bold)
@@ -190,7 +191,7 @@ fun ServicioForm(
                 text = "s/. ${String.format(Locale.getDefault(), "%.2f", saldo)}",
                 fontSize = 24.sp,
                 fontWeight = FontWeight.ExtraBold,
-                color = if (saldo > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary
+                color = if (saldo > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary,
             )
         }
     }
@@ -199,7 +200,7 @@ fun ServicioForm(
         label = "Estado",
         selected = uiState.estado,
         options = listOf("Pendiente", "Entregado"),
-        onSelected = { onUpdateEstado(it) }
+        onSelected = { onUpdateEstado(it) },
     )
 
     if (uiState.fechaEntrega != null) {
@@ -207,15 +208,18 @@ fun ServicioForm(
             fechaEntrega = uiState.fechaEntrega,
             onFechaChanged = { nuevaFecha ->
                 onUpdate(uiState.copy(fechaEntrega = nuevaFecha))
-            }
+            },
         )
     }
 
     Text("Asociar a Paciente (Opcional)", fontWeight = FontWeight.Bold)
     var pExpanded by remember { mutableStateOf(false) }
     var pSearchQuery by remember { mutableStateOf("") }
-    val filteredPacientes = if (pSearchQuery.isEmpty()) pacientes
-    else pacientes.filter { it.nombreCompleto.contains(pSearchQuery, ignoreCase = true) }
+    val filteredPacientes = if (pSearchQuery.isEmpty()) {
+        pacientes
+    } else {
+        pacientes.filter { it.nombreCompleto.contains(pSearchQuery, ignoreCase = true) }
+    }
     val currentPacienteName = pacientes.find { it.id == uiState.pacienteId }?.nombreCompleto ?: "Ninguno"
 
     ExposedDropdownMenuBox(expanded = pExpanded, onExpandedChange = { pExpanded = !pExpanded }) {
@@ -226,7 +230,7 @@ fun ServicioForm(
             leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Buscar") },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = pExpanded) },
             modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryEditable).fillMaxWidth(),
-            colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors()
+            colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
         )
         ExposedDropdownMenu(expanded = pExpanded, onDismissRequest = { pExpanded = false }) {
             DropdownMenuItem(text = { Text("Ninguno") }, onClick = {

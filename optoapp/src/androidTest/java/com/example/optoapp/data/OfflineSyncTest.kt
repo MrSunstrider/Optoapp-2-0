@@ -37,7 +37,7 @@ class OfflineSyncTest {
         // Act: simulate creating a patient while offline.
         val paciente = TestDataFactory.createTestPaciente(
             opticaId = testOpticaId,
-            nombreCompleto = "Offline Patient"
+            nombreCompleto = "Offline Patient",
         )
         pacienteDao.insertPaciente(paciente)
 
@@ -48,8 +48,8 @@ class OfflineSyncTest {
                 entityType = "paciente",
                 entityId = paciente.id,
                 status = "pending",
-                updatedAt = System.currentTimeMillis()
-            )
+                updatedAt = System.currentTimeMillis(),
+            ),
         )
 
         // Assert: data persisted in Room despite being offline.
@@ -67,7 +67,7 @@ class OfflineSyncTest {
         // Arrange: create patient while "offline".
         val paciente = TestDataFactory.createTestPaciente(
             opticaId = testOpticaId,
-            nombreCompleto = "Queued Sync Patient"
+            nombreCompleto = "Queued Sync Patient",
         )
         pacienteDao.insertPaciente(paciente)
         syncDao.upsert(
@@ -76,8 +76,8 @@ class OfflineSyncTest {
                 entityType = "paciente",
                 entityId = paciente.id,
                 status = "pending",
-                updatedAt = System.currentTimeMillis()
-            )
+                updatedAt = System.currentTimeMillis(),
+            ),
         )
 
         // Simulate "coming online" by updating sync status to synced.
@@ -87,8 +87,8 @@ class OfflineSyncTest {
                 entityType = "paciente",
                 entityId = paciente.id,
                 status = "synced",
-                updatedAt = System.currentTimeMillis()
-            )
+                updatedAt = System.currentTimeMillis(),
+            ),
         )
 
         // Verify the data is still in Room and marked synced.
@@ -106,7 +106,7 @@ class OfflineSyncTest {
         val paciente = TestDataFactory.createTestPaciente(
             id = "conflict-patient-id",
             opticaId = testOpticaId,
-            nombreCompleto = "Local Version"
+            nombreCompleto = "Local Version",
         )
         pacienteDao.insertPaciente(paciente)
         syncDao.upsert(
@@ -115,8 +115,8 @@ class OfflineSyncTest {
                 entityType = "paciente",
                 entityId = paciente.id,
                 status = "pending",
-                updatedAt = System.currentTimeMillis()
-            )
+                updatedAt = System.currentTimeMillis(),
+            ),
         )
 
         // Act: mark synced with local data — local-wins policy.
@@ -126,15 +126,18 @@ class OfflineSyncTest {
                 entityType = "paciente",
                 entityId = paciente.id,
                 status = "synced",
-                updatedAt = System.currentTimeMillis()
-            )
+                updatedAt = System.currentTimeMillis(),
+            ),
         )
 
         // Assert: local version is preserved.
         val stored = pacienteDao.getPacienteById(paciente.id)
         assertNotNull(stored)
-        assertEquals("Local version must be preserved after sync conflict",
-            "Local Version", stored?.nombreCompleto)
+        assertEquals(
+            "Local version must be preserved after sync conflict",
+            "Local Version",
+            stored?.nombreCompleto,
+        )
     }
 
     @Test
@@ -146,40 +149,47 @@ class OfflineSyncTest {
         // Arrange: create a patient and evaluation while offline.
         val paciente1 = TestDataFactory.createTestPaciente(
             opticaId = testOpticaId,
-            nombreCompleto = "Offline Patient 1"
+            nombreCompleto = "Offline Patient 1",
         )
         val paciente2 = TestDataFactory.createTestPaciente(
             opticaId = testOpticaId,
-            nombreCompleto = "Offline Patient 2"
+            nombreCompleto = "Offline Patient 2",
         )
         pacienteDao.insertPaciente(paciente1)
         pacienteDao.insertPaciente(paciente2)
 
         syncDao.upsert(
-            SyncEntityState(testOpticaId, "paciente", paciente1.id, "pending")
+            SyncEntityState(testOpticaId, "paciente", paciente1.id, "pending"),
         )
         syncDao.upsert(
-            SyncEntityState(testOpticaId, "paciente", paciente2.id, "pending")
+            SyncEntityState(testOpticaId, "paciente", paciente2.id, "pending"),
         )
 
         val evaluacion = TestDataFactory.createTestEvaluacion(
             pacienteId = paciente1.id,
-            opticaId = testOpticaId
+            opticaId = testOpticaId,
         )
         evaluacionDao.insertEvaluacion(evaluacion)
         syncDao.upsert(
-            SyncEntityState(testOpticaId, "evaluacion", evaluacion.id, "pending")
+            SyncEntityState(testOpticaId, "evaluacion", evaluacion.id, "pending"),
         )
 
         // Verify all data is in Room.
-        assertEquals("Both patients should be in Room", 2,
-            pacienteDao.getPacientesListByOptica(testOpticaId).size)
-        assertNotNull("Evaluation should be in Room",
-            evaluacionDao.getEvaluacionById(evaluacion.id))
+        assertEquals(
+            "Both patients should be in Room",
+            2,
+            pacienteDao.getPacientesListByOptica(testOpticaId).size,
+        )
+        assertNotNull(
+            "Evaluation should be in Room",
+            evaluacionDao.getEvaluacionById(evaluacion.id),
+        )
 
         // Verify pending markers exist.
         val allPending = syncDao.getPendingForOptica(testOpticaId).first()
-        assertTrue("Pending markers should exist in sync_entity_state",
-            allPending.isNotEmpty())
+        assertTrue(
+            "Pending markers should exist in sync_entity_state",
+            allPending.isNotEmpty(),
+        )
     }
 }

@@ -6,7 +6,6 @@ import com.example.optoapp.data.OptoDatabase
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -24,7 +23,7 @@ class FeedbackRecomendacionDaoTest {
     fun setUp() {
         db = Room.inMemoryDatabaseBuilder(
             ApplicationProvider.getApplicationContext(),
-            OptoDatabase::class.java
+            OptoDatabase::class.java,
         ).allowMainThreadQueries().build()
         dao = db.feedbackRecomendacionDao()
     }
@@ -42,7 +41,7 @@ class FeedbackRecomendacionDaoTest {
             recomendacionId = "rec-abc",
             opticaId = "optica1",
             fueUtil = true,
-            fecha = System.currentTimeMillis()
+            fecha = System.currentTimeMillis(),
         )
         dao.upsert(feedback)
 
@@ -61,7 +60,7 @@ class FeedbackRecomendacionDaoTest {
             recomendacionId = "rec-abc",
             opticaId = "optica1",
             fueUtil = false,
-            fecha = 1000L
+            fecha = 1000L,
         )
         dao.upsert(fb1)
 
@@ -70,7 +69,7 @@ class FeedbackRecomendacionDaoTest {
             recomendacionId = "rec-abc",
             opticaId = "optica1",
             fueUtil = true,
-            fecha = 2000L
+            fecha = 2000L,
         )
         dao.upsert(fb2)
 
@@ -84,18 +83,33 @@ class FeedbackRecomendacionDaoTest {
     @Test
     fun getByOpticaId_returnsAllForOptica() = runBlocking {
         // Insert 2 for optica1 and 1 for optica2
-        dao.upsert(FeedbackRecomendacionEntity(
-            id = "fb-1", recomendacionId = "rec-1", opticaId = "optica1",
-            fueUtil = true, fecha = 1000L
-        ))
-        dao.upsert(FeedbackRecomendacionEntity(
-            id = "fb-2", recomendacionId = "rec-2", opticaId = "optica1",
-            fueUtil = false, fecha = 2000L
-        ))
-        dao.upsert(FeedbackRecomendacionEntity(
-            id = "fb-3", recomendacionId = "rec-3", opticaId = "optica2",
-            fueUtil = true, fecha = 1500L
-        ))
+        dao.upsert(
+            FeedbackRecomendacionEntity(
+                id = "fb-1",
+                recomendacionId = "rec-1",
+                opticaId = "optica1",
+                fueUtil = true,
+                fecha = 1000L,
+            ),
+        )
+        dao.upsert(
+            FeedbackRecomendacionEntity(
+                id = "fb-2",
+                recomendacionId = "rec-2",
+                opticaId = "optica1",
+                fueUtil = false,
+                fecha = 2000L,
+            ),
+        )
+        dao.upsert(
+            FeedbackRecomendacionEntity(
+                id = "fb-3",
+                recomendacionId = "rec-3",
+                opticaId = "optica2",
+                fueUtil = true,
+                fecha = 1500L,
+            ),
+        )
 
         val resultO1 = dao.getByOpticaId("optica1")
         assertEquals(2, resultO1.size)

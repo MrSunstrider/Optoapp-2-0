@@ -3,7 +3,6 @@ package com.example.optoapp.viewmodel
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.SessionManager
 import com.example.optoapp.data.gastooperativo.GastoOperativoEntity
-import java.math.BigDecimal
 import com.example.optoapp.domain.SyncFinanzasUseCase
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import io.mockk.coEvery
@@ -21,12 +20,12 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
-import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
 import java.io.IOException
+import java.math.BigDecimal
 import java.time.LocalDate
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -70,12 +69,16 @@ class GastosViewModelTest {
     @Test
     fun delete_when_repository_fails_sets_error_state() = runTest(testDispatcher) {
         val gasto = GastoOperativoEntity(
-            id = "g1", opticaId = opticaId, categoria = "alquiler",
-            descripcion = "Local",             monto = BigDecimal.valueOf(500.0), fecha = testDate
+            id = "g1",
+            opticaId = opticaId,
+            categoria = "alquiler",
+            descripcion = "Local",
+            monto = BigDecimal.valueOf(500.0),
+            fecha = testDate,
         )
 
         coEvery { repository.deleteGastoOperativo(gasto) } throws
-                IOException("Database write failed")
+            IOException("Database write failed")
 
         viewModel = GastosViewModel(repository, sessionManager, scheduler, syncFinanzas)
         viewModel.delete(gasto)
@@ -90,8 +93,12 @@ class GastosViewModelTest {
     @Test
     fun delete_success_does_not_set_error_state() = runTest(testDispatcher) {
         val gasto = GastoOperativoEntity(
-            id = "g2", opticaId = opticaId, categoria = "servicios",
-            descripcion = "Internet",             monto = BigDecimal.valueOf(80.0), fecha = testDate
+            id = "g2",
+            opticaId = opticaId,
+            categoria = "servicios",
+            descripcion = "Internet",
+            monto = BigDecimal.valueOf(80.0),
+            fecha = testDate,
         )
 
         coEvery { repository.deleteGastoOperativo(gasto) } returns Unit

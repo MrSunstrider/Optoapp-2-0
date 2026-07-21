@@ -15,22 +15,18 @@ import javax.inject.Singleton
  */
 @Singleton
 class OpticaLaboratorioSettings @Inject constructor(
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
 ) {
 
-    private fun keyNombre(opticaId: String) =
-        stringPreferencesKey("lab_nombre_" + sanitize(opticaId))
+    private fun keyNombre(opticaId: String) = stringPreferencesKey("lab_nombre_" + sanitize(opticaId))
 
-    private fun keyContacto(opticaId: String) =
-        stringPreferencesKey("lab_contacto_" + sanitize(opticaId))
+    private fun keyContacto(opticaId: String) = stringPreferencesKey("lab_contacto_" + sanitize(opticaId))
 
-    private fun sanitize(opticaId: String): String =
-        opticaId.replace(Regex("[^a-zA-Z0-9_]"), "_")
+    private fun sanitize(opticaId: String): String = opticaId.replace(Regex("[^a-zA-Z0-9_]"), "_")
 
-    fun settingsFlow(opticaId: String): Flow<Pair<String, String>> =
-        context.dataStore.data.map { prefs ->
-            (prefs[keyNombre(opticaId)] ?: "") to (prefs[keyContacto(opticaId)] ?: "")
-        }
+    fun settingsFlow(opticaId: String): Flow<Pair<String, String>> = context.dataStore.data.map { prefs ->
+        (prefs[keyNombre(opticaId)] ?: "") to (prefs[keyContacto(opticaId)] ?: "")
+    }
 
     suspend fun save(opticaId: String, laboratorioNombre: String, laboratorioContacto: String) {
         context.dataStore.edit { prefs ->

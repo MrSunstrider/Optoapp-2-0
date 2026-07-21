@@ -45,7 +45,8 @@ class MIGRATION_32_33_Test {
             .name(dbName)
             .callback(object : SupportSQLiteOpenHelper.Callback(32) {
                 override fun onCreate(db: SupportSQLiteDatabase) {
-                    db.execSQL("""
+                    db.execSQL(
+                        """
                         CREATE TABLE IF NOT EXISTS pagos (
                             id TEXT NOT NULL PRIMARY KEY,
                             dispensacionId TEXT,
@@ -59,7 +60,8 @@ class MIGRATION_32_33_Test {
                             updatedAt TEXT,
                             updatedBy TEXT
                         )
-                    """.trimIndent())
+                        """.trimIndent(),
+                    )
                     db.execSQL("CREATE INDEX IF NOT EXISTS index_pagos_dispensacionId ON pagos(dispensacionId)")
                     db.execSQL("CREATE INDEX IF NOT EXISTS index_pagos_servicioExtraId ON pagos(servicioExtraId)")
                     db.execSQL("CREATE INDEX IF NOT EXISTS index_pagos_opticaId ON pagos(opticaId)")
@@ -67,15 +69,15 @@ class MIGRATION_32_33_Test {
                     // Insert 3 test pago rows
                     db.execSQL(
                         "INSERT INTO pagos (id, dispensacionId, fecha, tipo, monto, metodoPago, opticaId) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                        arrayOf<Any>("p1", "d1", "2026-07-01", "efectivo", 100.0, "Efectivo", "optica1")
+                        arrayOf<Any>("p1", "d1", "2026-07-01", "efectivo", 100.0, "Efectivo", "optica1"),
                     )
                     db.execSQL(
                         "INSERT INTO pagos (id, servicioExtraId, fecha, tipo, monto, metodoPago, opticaId) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                        arrayOf<Any>("p2", "s1", "2026-07-02", "tarjeta", 200.0, "Tarjeta", "optica1")
+                        arrayOf<Any>("p2", "s1", "2026-07-02", "tarjeta", 200.0, "Tarjeta", "optica1"),
                     )
                     db.execSQL(
                         "INSERT INTO pagos (id, fecha, tipo, monto, metodoPago, opticaId) VALUES (?, ?, ?, ?, ?, ?)",
-                        arrayOf<Any>("p3", "2026-07-03", "transferencia", 300.0, "Transferencia", "optica1")
+                        arrayOf<Any>("p3", "2026-07-03", "transferencia", 300.0, "Transferencia", "optica1"),
                     )
                 }
 
@@ -137,7 +139,8 @@ class MIGRATION_32_33_Test {
             .name(dbName)
             .callback(object : SupportSQLiteOpenHelper.Callback(32) {
                 override fun onCreate(db: SupportSQLiteDatabase) {
-                    db.execSQL("""
+                    db.execSQL(
+                        """
                         CREATE TABLE IF NOT EXISTS pagos (
                             id TEXT NOT NULL PRIMARY KEY,
                             dispensacionId TEXT,
@@ -151,10 +154,11 @@ class MIGRATION_32_33_Test {
                             updatedAt TEXT,
                             updatedBy TEXT
                         )
-                    """.trimIndent())
+                        """.trimIndent(),
+                    )
                     db.execSQL(
                         "INSERT INTO pagos (id, fecha, tipo, monto, metodoPago, opticaId) VALUES (?, ?, ?, ?, ?, ?)",
-                        arrayOf<Any>("p1", "2026-07-01", "efectivo", 100.0, "Efectivo", "optica1")
+                        arrayOf<Any>("p1", "2026-07-01", "efectivo", 100.0, "Efectivo", "optica1"),
                     )
                 }
 

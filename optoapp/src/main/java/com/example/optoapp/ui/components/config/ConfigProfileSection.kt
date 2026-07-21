@@ -17,22 +17,22 @@ import com.example.optoapp.ui.theme.OptoTokens
 fun ConfigProfileSection(
     email: String,
     rol: String,
-    opticaName: String
+    opticaName: String,
 ) {
     Card(
         shape = OptoTokens.shapes.medium,
-        elevation = CardDefaults.cardElevation(defaultElevation = OptoTokens.elevation.level1)
+        elevation = CardDefaults.cardElevation(defaultElevation = OptoTokens.elevation.level1),
     ) {
         Column(
             modifier = Modifier.padding(16.dp).fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+            verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             Text(email.ifBlank { "\u2014" }, fontSize = 14.sp, fontWeight = FontWeight.Medium)
             Text(
                 text = stringResource(R.string.config_profile_rol_label),
                 fontSize = 12.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(rol.ifBlank { "\u2014" }, fontSize = 13.sp)
             if (opticaName.isNotBlank()) {
@@ -41,7 +41,7 @@ fun ConfigProfileSection(
             Text(
                 text = "v${BuildConfig.VERSION_NAME}",
                 fontSize = 11.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }

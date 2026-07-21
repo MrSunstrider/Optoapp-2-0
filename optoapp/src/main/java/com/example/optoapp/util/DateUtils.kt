@@ -5,7 +5,6 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
-import java.time.format.FormatStyle
 import java.util.Locale
 
 object DateUtils {
@@ -13,7 +12,7 @@ object DateUtils {
     private val isoFormatter: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE
 
     /**
-     * Preferencia global de zona horaria (SaaS). 
+     * Preferencia global de zona horaria (SaaS).
      * Se actualiza desde el SessionManager al iniciar el app o cambiar la config.
      */
     var userPreferredZone: ZoneId? = null
@@ -31,11 +30,9 @@ object DateUtils {
      * para esa fecha de calendario. Si se usa [ZoneId.systemDefault] al interpretar los millis, en zonas UTC−X
      * el día local queda un día **antes** que el elegido en el selector.
      */
-    fun localDateToPickerMillis(date: LocalDate): Long =
-        date.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+    fun localDateToPickerMillis(date: LocalDate): Long = date.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
 
-    fun pickerMillisToLocalDate(millis: Long): LocalDate =
-        Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate()
+    fun pickerMillisToLocalDate(millis: Long): LocalDate = Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate()
 
     fun toIso(date: LocalDate): String = date.format(isoFormatter)
 
@@ -43,8 +40,7 @@ object DateUtils {
 
     private val displayFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
 
-    fun fromDisplayFormat(value: String): LocalDate? =
-        runCatching { LocalDate.parse(value, displayFormatter) }.getOrNull()
+    fun fromDisplayFormat(value: String): LocalDate? = runCatching { LocalDate.parse(value, displayFormatter) }.getOrNull()
 
     /**
      * Auto-formatea input del usuario a dd/MM/yyyy.
@@ -62,15 +58,12 @@ object DateUtils {
     }
 
     /** Strip formatting slashes — returns only digits */
-    fun digitsOnly(formatted: String): String {
-        return formatted.filter { it.isDigit() }
-    }
+    fun digitsOnly(formatted: String): String = formatted.filter { it.isDigit() }
 
     fun formatLocalized(date: LocalDate): String {
         val formatter = DateTimeFormatter.ofPattern("dd 'de' MMMM 'de' yyyy", Locale.forLanguageTag("es-PE"))
         return date.format(formatter)
     }
 
-    fun getNoonTimestamp(date: LocalDate): Long =
-        date.atTime(12, 0).atZone(localZone).toInstant().toEpochMilli()
+    fun getNoonTimestamp(date: LocalDate): Long = date.atTime(12, 0).atZone(localZone).toInstant().toEpochMilli()
 }

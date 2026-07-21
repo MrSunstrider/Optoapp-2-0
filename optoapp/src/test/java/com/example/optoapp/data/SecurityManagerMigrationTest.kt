@@ -35,8 +35,10 @@ class SecurityManagerMigrationTest {
 
         // Migration se ejecuta lazy al leer pinHasBeenSet — no se necesita delay
         val pinSet: Boolean = sm.pinHasBeenSet.first()
-        assertFalse("Sin PIN legacy, pinHasBeenSet debe ser false",
-            pinSet)
+        assertFalse(
+            "Sin PIN legacy, pinHasBeenSet debe ser false",
+            pinSet,
+        )
     }
 
     // ---------------------------------------------------------------
@@ -54,8 +56,10 @@ class SecurityManagerMigrationTest {
 
         // La migración corre como parte de pinHasBeenSet.first() — lazy y síncrono
         val pinSet: Boolean = sm.pinHasBeenSet.first()
-        assertTrue("Con PIN legacy, pinHasBeenSet debe migrar a true",
-            pinSet)
+        assertTrue(
+            "Con PIN legacy, pinHasBeenSet debe migrar a true",
+            pinSet,
+        )
     }
 
     // ---------------------------------------------------------------
@@ -74,11 +78,17 @@ class SecurityManagerMigrationTest {
         // Leer pinHasBeenSet dispara la migración lazy
         sm.pinHasBeenSet.first()
 
-        assertTrue("PIN aleatorio debe ser válido",
-            SecurityManager.isValidPin("183729"))
-        assertFalse("PIN secuencial debe ser inválido",
-            SecurityManager.isValidPin("123456"))
-        assertFalse("PIN repetido debe ser inválido",
-            SecurityManager.isValidPin("111111"))
+        assertTrue(
+            "PIN aleatorio debe ser válido",
+            SecurityManager.isValidPin("183729"),
+        )
+        assertFalse(
+            "PIN secuencial debe ser inválido",
+            SecurityManager.isValidPin("123456"),
+        )
+        assertFalse(
+            "PIN repetido debe ser inválido",
+            SecurityManager.isValidPin("111111"),
+        )
     }
 }

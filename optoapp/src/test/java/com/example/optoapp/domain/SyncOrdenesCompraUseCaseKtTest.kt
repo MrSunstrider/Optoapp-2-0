@@ -22,7 +22,7 @@ class SyncOrdenesCompraUseCaseKtTest {
             id = "oc1", numero = "OC-001", proveedorId = "p1",
             fecha = LocalDate.of(2026, 6, 17), estado = "PENDIENTE",
             total = 1500.0, opticaId = "o1",
-            updatedAt = "2026-01-01T00:00:00Z", updatedBy = "user1"
+            updatedAt = "2026-01-01T00:00:00Z", updatedBy = "user1",
         )
         assertEquals("oc1", oc.id)
         assertEquals("OC-001", oc.numero)
@@ -38,8 +38,11 @@ class SyncOrdenesCompraUseCaseKtTest {
     @Test
     fun ordenCompraEntity_defaultValues() {
         val oc = OrdenCompra(
-            id = "oc1", numero = "OC-001", proveedorId = "p1",
-            fecha = LocalDate.now(), opticaId = "o1"
+            id = "oc1",
+            numero = "OC-001",
+            proveedorId = "p1",
+            fecha = LocalDate.now(),
+            opticaId = "o1",
         )
         assertEquals("PENDIENTE", oc.estado)
         assertEquals(0.0, oc.total, 0.001)
@@ -48,8 +51,12 @@ class SyncOrdenesCompraUseCaseKtTest {
     @Test
     fun ordenCompraItemEntity_allFieldsAreAccessible() {
         val item = OrdenCompraItem(
-            id = "i1", ordenId = "oc1", monturaId = "m1",
-            cantidad = 10, costoUnitario = 120.0, recibido = 5
+            id = "i1",
+            ordenId = "oc1",
+            monturaId = "m1",
+            cantidad = 10,
+            costoUnitario = 120.0,
+            recibido = 5,
         )
         assertEquals("i1", item.id)
         assertEquals("oc1", item.ordenId)
@@ -62,7 +69,10 @@ class SyncOrdenesCompraUseCaseKtTest {
     @Test
     fun ordenCompraItemEntity_defaultValues() {
         val item = OrdenCompraItem(
-            id = "i1", ordenId = "oc1", monturaId = "m1", cantidad = 10
+            id = "i1",
+            ordenId = "oc1",
+            monturaId = "m1",
+            cantidad = 10,
         )
         assertEquals(0.0, item.costoUnitario, 0.001)
         assertEquals(0, item.recibido)
@@ -71,8 +81,12 @@ class SyncOrdenesCompraUseCaseKtTest {
     @Test
     fun ordenCompraItemEntity_recibidoCannotExceedCantidad() {
         val item = OrdenCompraItem(
-            id = "i1", ordenId = "oc1", monturaId = "m1",
-            cantidad = 10, costoUnitario = 100.0, recibido = 10
+            id = "i1",
+            ordenId = "oc1",
+            monturaId = "m1",
+            cantidad = 10,
+            costoUnitario = 100.0,
+            recibido = 10,
         )
         assertEquals(10, item.recibido)
         assertTrue("recibido debe ser <= cantidad", item.recibido <= item.cantidad)
@@ -84,7 +98,7 @@ class SyncOrdenesCompraUseCaseKtTest {
             uploadedCompras = 3,
             uploadedItems = 10,
             downloadedCompras = 2,
-            downloadedItems = 8
+            downloadedItems = 8,
         )
         assertEquals(3, result.uploadedCompras)
         assertEquals(10, result.uploadedItems)
@@ -104,7 +118,7 @@ class SyncOrdenesCompraUseCaseKtTest {
     @Test
     fun resourceSuccess_wrapsSyncResult() {
         val result = Resource.Success(
-            OrdenesCompraSyncResult(1, 2, 0, 0)
+            OrdenesCompraSyncResult(1, 2, 0, 0),
         )
         assertNotNull(result.data)
         assertEquals(1, result.data!!.uploadedCompras)
@@ -123,7 +137,7 @@ class SyncOrdenesCompraUseCaseKtTest {
             uploadedCompras = 5,
             uploadedItems = 20,
             downloadedCompras = 0,
-            downloadedItems = 0
+            downloadedItems = 0,
         )
         assertEquals(5, result.uploadedCompras)
         assertEquals(20, result.uploadedItems)
@@ -137,7 +151,7 @@ class SyncOrdenesCompraUseCaseKtTest {
             uploadedCompras = 0,
             uploadedItems = 0,
             downloadedCompras = 4,
-            downloadedItems = 15
+            downloadedItems = 15,
         )
         assertEquals(0, result.uploadedCompras)
         assertEquals(0, result.uploadedItems)
@@ -148,10 +162,20 @@ class SyncOrdenesCompraUseCaseKtTest {
     @Test
     fun ordenCompra_totalMustEqualSumOfItemsCost() {
         val items = listOf(
-            OrdenCompraItem(id = "i1", ordenId = "oc1", monturaId = "m1",
-                cantidad = 10, costoUnitario = 120.0),
-            OrdenCompraItem(id = "i2", ordenId = "oc1", monturaId = "m2",
-                cantidad = 5, costoUnitario = 80.0)
+            OrdenCompraItem(
+                id = "i1",
+                ordenId = "oc1",
+                monturaId = "m1",
+                cantidad = 10,
+                costoUnitario = 120.0,
+            ),
+            OrdenCompraItem(
+                id = "i2",
+                ordenId = "oc1",
+                monturaId = "m2",
+                cantidad = 5,
+                costoUnitario = 80.0,
+            ),
         )
         val total = items.sumOf { it.cantidad.toDouble() * it.costoUnitario }
         assertEquals(1600.0, total, 0.001) // 10*120 + 5*80 = 1600

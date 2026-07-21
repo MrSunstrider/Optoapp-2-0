@@ -18,7 +18,7 @@ data class SessionHealth(
     /** Timestamp de expiración del token actual (epoch ms, 0 = desconocido) */
     val tokenExpiresAtMs: Long = 0L,
     /** Errores recientes del background sync/auth (últimos 20) */
-    val recentBackgroundErrors: List<BackgroundError> = emptyList()
+    val recentBackgroundErrors: List<BackgroundError> = emptyList(),
 )
 
 /**
@@ -28,5 +28,5 @@ data class SessionHealth(
 data class BackgroundError(
     val source: String,
     val message: String,
-    val timestampMs: Long = System.currentTimeMillis()
+    val timestampMs: Long = System.currentTimeMillis(),
 )

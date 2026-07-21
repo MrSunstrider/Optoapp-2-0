@@ -66,7 +66,7 @@ class OptoRepositoryFromRemoteTest {
             snapshotCoordinator = snapshotCoordinator,
             backupCoordinator = backupCoordinator,
             monturaCoordinator = monturaCoordinator,
-            gastoOperativoDao = mockk(relaxed = true)
+            gastoOperativoDao = mockk(relaxed = true),
         )
     }
 
@@ -80,8 +80,14 @@ class OptoRepositoryFromRemoteTest {
     @Test
     fun `upsertServicioFromRemote passes entity with original updatedAt to sub-repo`() = runTest {
         val entity = ServicioExtra(
-            id = "s1", descripcion = "Lente", montoTotal = 100.0, aCuenta = 50.0,
-            estado = "Pendiente", fecha = testDate, opticaId = opticaId, updatedAt = T_REMOTE
+            id = "s1",
+            descripcion = "Lente",
+            montoTotal = 100.0,
+            aCuenta = 50.0,
+            estado = "Pendiente",
+            fecha = testDate,
+            opticaId = opticaId,
+            updatedAt = T_REMOTE,
         )
 
         repo.upsertServicioFromRemote(entity)
@@ -92,8 +98,14 @@ class OptoRepositoryFromRemoteTest {
     @Test
     fun `upsertServicioFromRemote does NOT call PostSaveSyncScheduler`() = runTest {
         val entity = ServicioExtra(
-            id = "s1", descripcion = "Lente", montoTotal = 100.0, aCuenta = 50.0,
-            estado = "Pendiente", fecha = testDate, opticaId = opticaId, updatedAt = T_REMOTE
+            id = "s1",
+            descripcion = "Lente",
+            montoTotal = 100.0,
+            aCuenta = 50.0,
+            estado = "Pendiente",
+            fecha = testDate,
+            opticaId = opticaId,
+            updatedAt = T_REMOTE,
         )
 
         repo.upsertServicioFromRemote(entity)
@@ -106,7 +118,11 @@ class OptoRepositoryFromRemoteTest {
     @Test
     fun `upsertDispensacionFromRemote passes entity with original updatedAt to sub-repo`() = runTest {
         val entity = DispensacionOptica(
-            id = "d1", pacienteId = "p1", fecha = testDate, opticaId = opticaId, updatedAt = T_REMOTE
+            id = "d1",
+            pacienteId = "p1",
+            fecha = testDate,
+            opticaId = opticaId,
+            updatedAt = T_REMOTE,
         )
 
         repo.upsertDispensacionFromRemote(entity)
@@ -117,7 +133,11 @@ class OptoRepositoryFromRemoteTest {
     @Test
     fun `upsertDispensacionFromRemote does NOT call PostSaveSyncScheduler`() = runTest {
         val entity = DispensacionOptica(
-            id = "d1", pacienteId = "p1", fecha = testDate, opticaId = opticaId, updatedAt = T_REMOTE
+            id = "d1",
+            pacienteId = "p1",
+            fecha = testDate,
+            opticaId = opticaId,
+            updatedAt = T_REMOTE,
         )
 
         repo.upsertDispensacionFromRemote(entity)
@@ -130,8 +150,13 @@ class OptoRepositoryFromRemoteTest {
     @Test
     fun `upsertPagoFromRemote passes entity with original updatedAt to sub-repo`() = runTest {
         val entity = Pago(
-            id = "pg1", fecha = testDate, tipo = "Abono", monto = 200.0,
-            metodoPago = "EFECTIVO", opticaId = opticaId, updatedAt = T_REMOTE
+            id = "pg1",
+            fecha = testDate,
+            tipo = "Abono",
+            monto = 200.0,
+            metodoPago = "EFECTIVO",
+            opticaId = opticaId,
+            updatedAt = T_REMOTE,
         )
 
         repo.upsertPagoFromRemote(entity)
@@ -142,8 +167,13 @@ class OptoRepositoryFromRemoteTest {
     @Test
     fun `upsertPagoFromRemote does NOT call PostSaveSyncScheduler`() = runTest {
         val entity = Pago(
-            id = "pg1", fecha = testDate, tipo = "Abono", monto = 200.0,
-            metodoPago = "EFECTIVO", opticaId = opticaId, updatedAt = T_REMOTE
+            id = "pg1",
+            fecha = testDate,
+            tipo = "Abono",
+            monto = 200.0,
+            metodoPago = "EFECTIVO",
+            opticaId = opticaId,
+            updatedAt = T_REMOTE,
         )
 
         repo.upsertPagoFromRemote(entity)
@@ -156,7 +186,11 @@ class OptoRepositoryFromRemoteTest {
     @Test
     fun `upsertEvaluacionFromRemote passes entity with original updatedAt to sub-repo`() = runTest {
         val entity = EvaluacionClinica(
-            id = "ev1", pacienteId = "p1", fecha = testDate, opticaId = opticaId, updatedAt = T_REMOTE
+            id = "ev1",
+            pacienteId = "p1",
+            fecha = testDate,
+            opticaId = opticaId,
+            updatedAt = T_REMOTE,
         )
 
         repo.upsertEvaluacionFromRemote(entity)
@@ -167,7 +201,11 @@ class OptoRepositoryFromRemoteTest {
     @Test
     fun `upsertEvaluacionFromRemote does NOT call PostSaveSyncScheduler`() = runTest {
         val entity = EvaluacionClinica(
-            id = "ev1", pacienteId = "p1", fecha = testDate, opticaId = opticaId, updatedAt = T_REMOTE
+            id = "ev1",
+            pacienteId = "p1",
+            fecha = testDate,
+            opticaId = opticaId,
+            updatedAt = T_REMOTE,
         )
 
         repo.upsertEvaluacionFromRemote(entity)
@@ -182,8 +220,14 @@ class OptoRepositoryFromRemoteTest {
     @Test
     fun `insertServicio stamps updatedAt to non-null and calls scheduleFinanzasSync`() = runTest {
         val entity = ServicioExtra(
-            id = "s2", descripcion = "Montura", montoTotal = 50.0, aCuenta = 0.0,
-            estado = "Pendiente", fecha = testDate, opticaId = opticaId, updatedAt = null
+            id = "s2",
+            descripcion = "Montura",
+            montoTotal = 50.0,
+            aCuenta = 0.0,
+            estado = "Pendiente",
+            fecha = testDate,
+            opticaId = opticaId,
+            updatedAt = null,
         )
 
         repo.insertServicio(entity)
@@ -196,8 +240,14 @@ class OptoRepositoryFromRemoteTest {
     fun `updateServicio refreshes updatedAt and calls scheduleFinanzasSync`() = runTest {
         val existingUpdatedAt = "2026-01-01T00:00:00Z"
         val entity = ServicioExtra(
-            id = "s3", descripcion = "Ajuste", montoTotal = 30.0, aCuenta = 0.0,
-            estado = "Completado", fecha = testDate, opticaId = opticaId, updatedAt = existingUpdatedAt
+            id = "s3",
+            descripcion = "Ajuste",
+            montoTotal = 30.0,
+            aCuenta = 0.0,
+            estado = "Completado",
+            fecha = testDate,
+            opticaId = opticaId,
+            updatedAt = existingUpdatedAt,
         )
 
         repo.updateServicio(entity)
@@ -205,5 +255,4 @@ class OptoRepositoryFromRemoteTest {
         coVerify(exactly = 1) { dispensacionRepo.updateServicio(match { it.updatedAt != null }) }
         coVerify(exactly = 1) { scheduler.scheduleFinanzasSync(opticaId) }
     }
-
 }

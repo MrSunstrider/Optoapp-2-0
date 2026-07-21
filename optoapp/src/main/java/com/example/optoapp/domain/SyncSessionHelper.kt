@@ -67,8 +67,11 @@ object SyncSessionHelper {
     fun looksLikeAuthError(message: String?): Boolean {
         if (message.isNullOrBlank()) return false
         val m = message.lowercase()
-        return m.contains("jwt") || m.contains("401") ||
-            m.contains("unauthorized") || m.contains("invalid_grant") ||
-            m.contains("session") && m.contains("expired")
+        return m.contains("jwt") ||
+            m.contains("401") ||
+            m.contains("unauthorized") ||
+            m.contains("invalid_grant") ||
+            m.contains("session") &&
+            m.contains("expired")
     }
 }

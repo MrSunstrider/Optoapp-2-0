@@ -1,8 +1,8 @@
 package com.example.optoapp.data
 
-import com.example.optoapp.data.servicio.ServicioExtraDao
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
+import com.example.optoapp.data.servicio.ServicioExtraDao
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -33,7 +33,7 @@ class ServicioExtraDaoTest {
     fun setUp() {
         db = Room.inMemoryDatabaseBuilder(
             ApplicationProvider.getApplicationContext(),
-            OptoDatabase::class.java
+            OptoDatabase::class.java,
         ).allowMainThreadQueries().build()
         dao = db.servicioExtraDao()
         pacienteDao = db.pacienteDao()
@@ -56,7 +56,7 @@ class ServicioExtraDaoTest {
             estado = "Pendiente",
             fecha = LocalDate.parse("2026-01-15"),
             metodoPago = "EFECTIVO",
-            opticaId = "optica1"
+            opticaId = "optica1",
         )
         dao.insertServicio(servicio)
 
@@ -78,14 +78,24 @@ class ServicioExtraDaoTest {
     @Test
     fun getAllServiciosForOptica_returnsServiciosForOpticaOnly() = runBlocking {
         val s1 = ServicioExtra(
-            id = "s1", descripcion = "Servicio A", montoTotal = 100.0, aCuenta = 50.0,
-            estado = "Entregado", fecha = LocalDate.parse("2026-01-15"),
-            metodoPago = "EFECTIVO", opticaId = "opticaA"
+            id = "s1",
+            descripcion = "Servicio A",
+            montoTotal = 100.0,
+            aCuenta = 50.0,
+            estado = "Entregado",
+            fecha = LocalDate.parse("2026-01-15"),
+            metodoPago = "EFECTIVO",
+            opticaId = "opticaA",
         )
         val s2 = ServicioExtra(
-            id = "s2", descripcion = "Servicio B", montoTotal = 200.0, aCuenta = 100.0,
-            estado = "Pendiente", fecha = LocalDate.parse("2026-02-01"),
-            metodoPago = "TARJETA", opticaId = "opticaB"
+            id = "s2",
+            descripcion = "Servicio B",
+            montoTotal = 200.0,
+            aCuenta = 100.0,
+            estado = "Pendiente",
+            fecha = LocalDate.parse("2026-02-01"),
+            metodoPago = "TARJETA",
+            opticaId = "opticaB",
         )
         dao.insertServicio(s1)
         dao.insertServicio(s2)
@@ -98,23 +108,35 @@ class ServicioExtraDaoTest {
 
     @Test
     fun getServiciosByPaciente_returnsServiciosForPaciente() = runBlocking {
-        pacienteDao.insertPaciente(Paciente(
-            id = "pac1", nombreCompleto = "Juan Perez", edad = 30, telefono = "999",
-            fechaCreacion = LocalDate.parse("2026-01-15"), opticaId = "o1"
-        ))
-        pacienteDao.insertPaciente(Paciente(
-            id = "pac2", nombreCompleto = "Maria Lopez", edad = 25, telefono = "888",
-            fechaCreacion = LocalDate.parse("2026-01-15"), opticaId = "o1"
-        ))
+        pacienteDao.insertPaciente(
+            Paciente(
+                id = "pac1",
+                nombreCompleto = "Juan Perez",
+                edad = 30,
+                telefono = "999",
+                fechaCreacion = LocalDate.parse("2026-01-15"),
+                opticaId = "o1",
+            ),
+        )
+        pacienteDao.insertPaciente(
+            Paciente(
+                id = "pac2",
+                nombreCompleto = "Maria Lopez",
+                edad = 25,
+                telefono = "888",
+                fechaCreacion = LocalDate.parse("2026-01-15"),
+                opticaId = "o1",
+            ),
+        )
         val s1 = ServicioExtra(
             id = "s1", descripcion = "Para Juan", montoTotal = 100.0, aCuenta = 50.0,
             estado = "Pendiente", fecha = LocalDate.parse("2026-01-15"),
-            pacienteId = "pac1", metodoPago = "EFECTIVO", opticaId = "o1"
+            pacienteId = "pac1", metodoPago = "EFECTIVO", opticaId = "o1",
         )
         val s2 = ServicioExtra(
             id = "s2", descripcion = "Para Maria", montoTotal = 200.0, aCuenta = 100.0,
             estado = "Entregado", fecha = LocalDate.parse("2026-02-01"),
-            pacienteId = "pac2", metodoPago = "TARJETA", opticaId = "o1"
+            pacienteId = "pac2", metodoPago = "TARJETA", opticaId = "o1",
         )
         dao.insertServicio(s1)
         dao.insertServicio(s2)
@@ -128,9 +150,14 @@ class ServicioExtraDaoTest {
     @Test
     fun updateServicio_modifiesExistingRecord() = runBlocking {
         val servicio = ServicioExtra(
-            id = "s1", descripcion = "Original", montoTotal = 100.0, aCuenta = 50.0,
-            estado = "Pendiente", fecha = LocalDate.parse("2026-01-15"),
-            metodoPago = "EFECTIVO", opticaId = "o1"
+            id = "s1",
+            descripcion = "Original",
+            montoTotal = 100.0,
+            aCuenta = 50.0,
+            estado = "Pendiente",
+            fecha = LocalDate.parse("2026-01-15"),
+            metodoPago = "EFECTIVO",
+            opticaId = "o1",
         )
         dao.insertServicio(servicio)
 
@@ -142,7 +169,7 @@ class ServicioExtraDaoTest {
             estado = updated.estado, fecha = updated.fecha,
             pacienteId = updated.pacienteId, metodoPago = updated.metodoPago,
             fechaEntrega = updated.fechaEntrega,
-            updatedAt = updated.updatedAt, updatedBy = updated.updatedBy
+            updatedAt = updated.updatedAt, updatedBy = updated.updatedBy,
         )
         assertEquals(1, rows)
 
@@ -154,9 +181,14 @@ class ServicioExtraDaoTest {
     @Test
     fun deleteServicio_removesRecord() = runBlocking {
         val servicio = ServicioExtra(
-            id = "s1", descripcion = "Temp", montoTotal = 100.0, aCuenta = 50.0,
-            estado = "Pendiente", fecha = LocalDate.parse("2026-01-15"),
-            metodoPago = "EFECTIVO", opticaId = "o1"
+            id = "s1",
+            descripcion = "Temp",
+            montoTotal = 100.0,
+            aCuenta = 50.0,
+            estado = "Pendiente",
+            fecha = LocalDate.parse("2026-01-15"),
+            metodoPago = "EFECTIVO",
+            opticaId = "o1",
         )
         dao.insertServicio(servicio)
         dao.deleteServicio(servicio.id, servicio.opticaId)
@@ -168,14 +200,24 @@ class ServicioExtraDaoTest {
     @Test
     fun deleteAll_removesAllServicios() = runBlocking {
         val s1 = ServicioExtra(
-            id = "s1", descripcion = "A", montoTotal = 50.0, aCuenta = 25.0,
-            estado = "Pendiente", fecha = LocalDate.parse("2026-01-15"),
-            metodoPago = "EFECTIVO", opticaId = "o1"
+            id = "s1",
+            descripcion = "A",
+            montoTotal = 50.0,
+            aCuenta = 25.0,
+            estado = "Pendiente",
+            fecha = LocalDate.parse("2026-01-15"),
+            metodoPago = "EFECTIVO",
+            opticaId = "o1",
         )
         val s2 = ServicioExtra(
-            id = "s2", descripcion = "B", montoTotal = 75.0, aCuenta = 0.0,
-            estado = "Entregado", fecha = LocalDate.parse("2026-02-01"),
-            metodoPago = "TARJETA", opticaId = "o1"
+            id = "s2",
+            descripcion = "B",
+            montoTotal = 75.0,
+            aCuenta = 0.0,
+            estado = "Entregado",
+            fecha = LocalDate.parse("2026-02-01"),
+            metodoPago = "TARJETA",
+            opticaId = "o1",
         )
         dao.insertServicio(s1)
         dao.insertServicio(s2)
@@ -188,9 +230,14 @@ class ServicioExtraDaoTest {
     @Test
     fun getServiciosListByOptica_returnsServiciosForOptica() = runBlocking {
         val s1 = ServicioExtra(
-            id = "s1", descripcion = "A", montoTotal = 100.0, aCuenta = 50.0,
-            estado = "Pendiente", fecha = LocalDate.parse("2026-01-15"),
-            metodoPago = "EFECTIVO", opticaId = "opticaX"
+            id = "s1",
+            descripcion = "A",
+            montoTotal = 100.0,
+            aCuenta = 50.0,
+            estado = "Pendiente",
+            fecha = LocalDate.parse("2026-01-15"),
+            metodoPago = "EFECTIVO",
+            opticaId = "opticaX",
         )
         dao.insertServicio(s1)
 
@@ -203,9 +250,14 @@ class ServicioExtraDaoTest {
     @Test
     fun reassignFromLegacyMiOpticaBase_updatesOpticaId() = runBlocking {
         val servicio = ServicioExtra(
-            id = "s1", descripcion = "Legacy", montoTotal = 100.0, aCuenta = 50.0,
-            estado = "Pendiente", fecha = LocalDate.parse("2026-01-15"),
-            metodoPago = "EFECTIVO", opticaId = "mi_optica_base"
+            id = "s1",
+            descripcion = "Legacy",
+            montoTotal = 100.0,
+            aCuenta = 50.0,
+            estado = "Pendiente",
+            fecha = LocalDate.parse("2026-01-15"),
+            metodoPago = "EFECTIVO",
+            opticaId = "mi_optica_base",
         )
         dao.insertServicio(servicio)
 

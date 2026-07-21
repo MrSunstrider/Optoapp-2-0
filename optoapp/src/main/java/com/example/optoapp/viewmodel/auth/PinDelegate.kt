@@ -18,9 +18,9 @@ import javax.inject.Inject
  */
 class PinDelegate @Inject constructor(
     private val securityManager: ISecurityManager,
-    private val sessionManager: ISessionManager
+    private val sessionManager: ISessionManager,
 ) {
-    //── Estado PIN ────────────────────────────────────────────────────────────
+    // ── Estado PIN ────────────────────────────────────────────────────────────
 
     private val _pinInput = MutableStateFlow("")
     val pinInput: StateFlow<String> = _pinInput.asStateFlow()
@@ -28,7 +28,7 @@ class PinDelegate @Inject constructor(
     val pinHasBeenSet: Flow<Boolean> = securityManager.pinHasBeenSet
     val isPinRequired: Flow<Boolean> = sessionManager.isPinRequired
 
-    //── Brute-force protection ────────────────────────────────────────────────
+    // ── Brute-force protection ────────────────────────────────────────────────
 
     private var failedAttempts = 0
     private var cooldownUntil: Long = 0L
@@ -42,7 +42,7 @@ class PinDelegate @Inject constructor(
         return if (remaining > 0) (remaining / 1000).toInt() else 0
     }
 
-    //── Digit input ───────────────────────────────────────────────────────────
+    // ── Digit input ───────────────────────────────────────────────────────────
 
     fun onPinDigit(digit: String) {
         if (_pinInput.value.length < SecurityManager.PIN_LENGTH) {
@@ -54,7 +54,7 @@ class PinDelegate @Inject constructor(
         _pinInput.value = ""
     }
 
-    //── Validación ────────────────────────────────────────────────────────────
+    // ── Validación ────────────────────────────────────────────────────────────
 
     suspend fun validatePin(): Boolean {
         val now = System.currentTimeMillis()
@@ -66,15 +66,15 @@ class PinDelegate @Inject constructor(
         } else {
             failedAttempts++
             cooldownUntil = when {
-                failedAttempts >= 10 -> now + 300_000L  // 5 min
-                failedAttempts >= 5  -> now + 30_000L   // 30 s
-                else                -> now               // no cooldown
+                failedAttempts >= 10 -> now + 300_000L // 5 min
+                failedAttempts >= 5 -> now + 30_000L // 30 s
+                else -> now // no cooldown
             }
         }
         return isValid
     }
 
-    //── Creación / Actualización ──────────────────────────────────────────────
+    // ── Creación / Actualización ──────────────────────────────────────────────
 
     suspend fun updatePin(oldPin: String, newPin: String) {
         if (oldPin != securityManager.userPin.first()) return

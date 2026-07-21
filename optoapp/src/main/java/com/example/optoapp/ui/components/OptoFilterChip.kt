@@ -6,8 +6,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import com.example.optoapp.ui.theme.OptoTokens
 
 @Composable
 fun OptoFilterChip(
@@ -15,7 +13,7 @@ fun OptoFilterChip(
     onClick: () -> Unit,
     label: String,
     modifier: Modifier = Modifier,
-    leadingIcon: @Composable (() -> Unit)? = null
+    leadingIcon: @Composable (() -> Unit)? = null,
 ) {
     FilterChip(
         selected = selected,
@@ -27,7 +25,7 @@ fun OptoFilterChip(
             containerColor = MaterialTheme.colorScheme.surface,
             selectedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
             labelColor = MaterialTheme.colorScheme.onSurface,
-            selectedLabelColor = MaterialTheme.colorScheme.onSecondaryContainer
-        )
+            selectedLabelColor = MaterialTheme.colorScheme.onSecondaryContainer,
+        ),
     )
 }

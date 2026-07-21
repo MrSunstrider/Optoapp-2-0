@@ -29,7 +29,7 @@ import java.time.format.DateTimeFormatter
 fun OrdenesCompraScreen(
     navController: NavController,
     viewModel: OrdenesCompraViewModel = hiltViewModel(),
-    authViewModel: AuthViewModel = hiltViewModel()
+    authViewModel: AuthViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val ordenesCompra by viewModel.ordenesCompra.collectAsState()
@@ -37,8 +37,9 @@ fun OrdenesCompraScreen(
     val canEdit = AppRoles.canEditInventory(opticaRol)
 
     val filtradas = ordenesCompra.filter {
-        if (uiState.query.isBlank()) true
-        else {
+        if (uiState.query.isBlank()) {
+            true
+        } else {
             it.numero.contains(uiState.query, ignoreCase = true) ||
                 it.proveedorId.contains(uiState.query, ignoreCase = true)
         }
@@ -47,7 +48,7 @@ fun OrdenesCompraScreen(
     if (uiState.editing) {
         OrdenCompraEditDialog(
             viewModel = viewModel,
-            onDismiss = { viewModel.cancelEdit() }
+            onDismiss = { viewModel.cancelEdit() },
         )
     }
 
@@ -57,7 +58,7 @@ fun OrdenesCompraScreen(
             OrdenCompraDetailDialog(
                 oc = oc,
                 viewModel = viewModel,
-                onDismiss = { viewModel.closeDetail() }
+                onDismiss = { viewModel.closeDetail() },
             )
         }
     }
@@ -78,21 +79,21 @@ fun OrdenesCompraScreen(
                             Icon(Icons.Default.Add, contentDescription = "Nueva OC")
                         }
                     }
-                }
+                },
             )
-        }
+        },
     ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
                 .padding(horizontal = 14.dp, vertical = 4.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             OptoTextField(
                 value = uiState.query,
                 onValueChange = viewModel::onQueryChange,
-                label = "Buscar por número o proveedor"
+                label = "Buscar por número o proveedor",
             )
 
             if (!uiState.error.isNullOrBlank()) {
@@ -105,12 +106,12 @@ fun OrdenesCompraScreen(
             if (filtradas.isEmpty()) {
                 Box(
                     modifier = Modifier.fillMaxSize().padding(32.dp),
-                    contentAlignment = Alignment.Center
+                    contentAlignment = Alignment.Center,
                 ) {
                     Text(
                         "No hay órdenes de compra registradas",
                         style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             } else {
@@ -123,7 +124,7 @@ fun OrdenesCompraScreen(
                             onEdit = { viewModel.startEdit(it) },
                             onCancel = { viewModel.delete(it.id) },
                             onApprove = { viewModel.updateEstado(it.id, "APROBADA") },
-                            onReceive = { viewModel.viewDetail(it.id) }
+                            onReceive = { viewModel.viewDetail(it.id) },
                         )
                     }
                 }
@@ -140,7 +141,7 @@ private fun OrdenCompraCard(
     onEdit: (OrdenCompra) -> Unit,
     onCancel: (OrdenCompra) -> Unit,
     onApprove: (OrdenCompra) -> Unit,
-    onReceive: (OrdenCompra) -> Unit
+    onReceive: (OrdenCompra) -> Unit,
 ) {
     val dateFormatter = remember { DateTimeFormatter.ofPattern("dd/MM/yyyy") }
     val statusColor = when (oc.estado) {
@@ -155,38 +156,38 @@ private fun OrdenCompraCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onView(oc) }
+            .clickable { onView(oc) },
     ) {
         Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
                     text = oc.numero,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
                 )
                 Surface(
                     shape = MaterialTheme.shapes.small,
-                    color = statusColor.copy(alpha = 0.15f)
+                    color = statusColor.copy(alpha = 0.15f),
                 ) {
                     Text(
                         text = oc.estado,
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
                         style = MaterialTheme.typography.labelSmall,
-                        color = statusColor
+                        color = statusColor,
                     )
                 }
             }
             Text(
                 "Fecha: ${oc.fecha.format(dateFormatter)}",
-                style = MaterialTheme.typography.bodyMedium
+                style = MaterialTheme.typography.bodyMedium,
             )
             Text(
                 "Total: S/. ${String.format("%.2f", oc.total)}",
-                style = MaterialTheme.typography.bodySmall
+                style = MaterialTheme.typography.bodySmall,
             )
             if (canEdit) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -197,8 +198,8 @@ private fun OrdenCompraCard(
                         TextButton(
                             onClick = { onCancel(oc) },
                             colors = ButtonDefaults.textButtonColors(
-                                contentColor = MaterialTheme.colorScheme.error
-                            )
+                                contentColor = MaterialTheme.colorScheme.error,
+                            ),
                         ) { Text("Cancelar") }
                     }
                     if (oc.estado == "APROBADA" || oc.estado == "PARCIAL") {
@@ -215,7 +216,7 @@ private fun OrdenCompraCard(
 private fun OrdenCompraDetailDialog(
     oc: OrdenCompra,
     viewModel: OrdenesCompraViewModel,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
 ) {
     var items by remember { mutableStateOf<List<com.example.optoapp.data.OrdenCompraItem>>(emptyList()) }
     LaunchedEffect(oc.id) {
@@ -228,7 +229,7 @@ private fun OrdenCompraDetailDialog(
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(oc.numero, fontWeight = FontWeight.Bold)
                 IconButton(onClick = onDismiss) {
@@ -253,6 +254,6 @@ private fun OrdenCompraDetailDialog(
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text("Cerrar") }
-        }
+        },
     )
 }

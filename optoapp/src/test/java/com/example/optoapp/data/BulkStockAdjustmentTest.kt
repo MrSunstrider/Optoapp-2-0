@@ -10,13 +10,11 @@ import io.mockk.mockk
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import java.io.IOException
-import java.time.LocalDate
 
 /**
  * Bulk stock adjustment: commit differences from inventario_fisico results
@@ -32,18 +30,20 @@ class BulkStockAdjustmentTest {
     fun setUp() {
         db = Room.inMemoryDatabaseBuilder(
             ApplicationProvider.getApplicationContext(),
-            OptoDatabase::class.java
+            OptoDatabase::class.java,
         ).allowMainThreadQueries().build()
         val scheduler = mockk<Lazy<PostSaveSyncScheduler>> {
             every { get() } returns mockk(relaxed = true)
         }
         val coordinator = MonturaInventoryCoordinator(
-            db.monturaDao(), db.monturaMovimientoDao(), scheduler
+            db.monturaDao(),
+            db.monturaMovimientoDao(),
+            scheduler,
         )
         repo = InventarioFisicoRepository(
             ifDao = db.inventarioFisicoDao(),
             monturaCoordinator = coordinator,
-            monturaDao = db.monturaDao()
+            monturaDao = db.monturaDao(),
         )
     }
 
@@ -55,12 +55,42 @@ class BulkStockAdjustmentTest {
 
     @Test
     fun adjust_createsMovementForEachDifference() = runBlocking {
-        db.monturaDao().insertMontura(Montura(id = "m1", sku = "S1", marca = "A", modelo = "X",
-            color = "N", talla = "M", opticaId = "o1", stockActual = 10))
-        db.monturaDao().insertMontura(Montura(id = "m2", sku = "S2", marca = "B", modelo = "Y",
-            color = "R", talla = "L", opticaId = "o1", stockActual = 20))
-        db.monturaDao().insertMontura(Montura(id = "m3", sku = "S3", marca = "C", modelo = "Z",
-            color = "B", talla = "S", opticaId = "o1", stockActual = 30))
+        db.monturaDao().insertMontura(
+            Montura(
+                id = "m1",
+                sku = "S1",
+                marca = "A",
+                modelo = "X",
+                color = "N",
+                talla = "M",
+                opticaId = "o1",
+                stockActual = 10,
+            ),
+        )
+        db.monturaDao().insertMontura(
+            Montura(
+                id = "m2",
+                sku = "S2",
+                marca = "B",
+                modelo = "Y",
+                color = "R",
+                talla = "L",
+                opticaId = "o1",
+                stockActual = 20,
+            ),
+        )
+        db.monturaDao().insertMontura(
+            Montura(
+                id = "m3",
+                sku = "S3",
+                marca = "C",
+                modelo = "Z",
+                color = "B",
+                talla = "S",
+                opticaId = "o1",
+                stockActual = 30,
+            ),
+        )
 
         val s = repo.createSession("o1", "u1")
         val dao = db.inventarioFisicoDao()
@@ -88,10 +118,30 @@ class BulkStockAdjustmentTest {
 
     @Test
     fun adjust_updatesStockActualForEachDifference() = runBlocking {
-        db.monturaDao().insertMontura(Montura(id = "m1", sku = "S1", marca = "A", modelo = "X",
-            color = "N", talla = "M", opticaId = "o1", stockActual = 10))
-        db.monturaDao().insertMontura(Montura(id = "m2", sku = "S2", marca = "B", modelo = "Y",
-            color = "R", talla = "L", opticaId = "o1", stockActual = 20))
+        db.monturaDao().insertMontura(
+            Montura(
+                id = "m1",
+                sku = "S1",
+                marca = "A",
+                modelo = "X",
+                color = "N",
+                talla = "M",
+                opticaId = "o1",
+                stockActual = 10,
+            ),
+        )
+        db.monturaDao().insertMontura(
+            Montura(
+                id = "m2",
+                sku = "S2",
+                marca = "B",
+                modelo = "Y",
+                color = "R",
+                talla = "L",
+                opticaId = "o1",
+                stockActual = 20,
+            ),
+        )
 
         val s = repo.createSession("o1", "u1")
         val dao = db.inventarioFisicoDao()
@@ -107,8 +157,18 @@ class BulkStockAdjustmentTest {
 
     @Test
     fun adjust_marksSessionCompletadoAfterCommit() = runBlocking {
-        db.monturaDao().insertMontura(Montura(id = "m1", sku = "S1", marca = "A", modelo = "X",
-            color = "N", talla = "M", opticaId = "o1", stockActual = 10))
+        db.monturaDao().insertMontura(
+            Montura(
+                id = "m1",
+                sku = "S1",
+                marca = "A",
+                modelo = "X",
+                color = "N",
+                talla = "M",
+                opticaId = "o1",
+                stockActual = 10,
+            ),
+        )
         val s = repo.createSession("o1", "u1")
         repo.closeSession(s!!.id)
 
@@ -117,8 +177,18 @@ class BulkStockAdjustmentTest {
 
     @Test
     fun adjust_skipsZeroDifferences() = runBlocking {
-        db.monturaDao().insertMontura(Montura(id = "m1", sku = "S1", marca = "A", modelo = "X",
-            color = "N", talla = "M", opticaId = "o1", stockActual = 10))
+        db.monturaDao().insertMontura(
+            Montura(
+                id = "m1",
+                sku = "S1",
+                marca = "A",
+                modelo = "X",
+                color = "N",
+                talla = "M",
+                opticaId = "o1",
+                stockActual = 10,
+            ),
+        )
         val s = repo.createSession("o1", "u1")
         val dao = db.inventarioFisicoDao()
         val detalles = dao.getDetalles(s!!.id)

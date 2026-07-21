@@ -7,10 +7,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.optoapp.ui.components.DropdownField
 import com.example.optoapp.ui.components.CalculationCard
-import com.example.optoapp.ui.components.SuggestionCard
+import com.example.optoapp.ui.components.DropdownField
 import com.example.optoapp.ui.components.OptoTextField
+import com.example.optoapp.ui.components.SuggestionCard
 import com.example.optoapp.util.DateUtils
 import com.example.optoapp.viewmodel.EvaluacionUiState
 
@@ -22,7 +22,7 @@ fun ContactologiaSection(
     aplicarRecorteOi: Boolean,
     onRecorteOdChange: (Boolean) -> Unit,
     onRecorteOiChange: (Boolean) -> Unit,
-    onShowLcDatePicker: () -> Unit
+    onShowLcDatePicker: () -> Unit,
 ) {
     QueratometriaCard(uiState, onUpdate)
 
@@ -85,7 +85,7 @@ fun ContactologiaSection(
 private fun QueratometriaCard(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiState) -> Unit) {
     OutlinedCard(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+        colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text("Queratometría", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)

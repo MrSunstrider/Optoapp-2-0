@@ -12,13 +12,13 @@ import com.example.optoapp.data.SessionManager
 import com.example.optoapp.util.DateUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import java.time.LocalDate
 import javax.inject.Inject
 
@@ -34,14 +34,14 @@ data class OperacionHoyUiState(
     val dispensacionesPendientes: List<DispensacionOptica> = emptyList(),
     val serviciosPendientes: List<ServicioExtra> = emptyList(),
     val monturas: List<Montura> = emptyList(),
-    val error: String? = null
+    val error: String? = null,
 )
 
 @HiltViewModel
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class OperacionHoyViewModel @Inject constructor(
     private val repository: OptoRepository,
-    private val sessionManager: SessionManager
+    private val sessionManager: SessionManager,
 ) : ViewModel() {
 
     companion object {
@@ -129,7 +129,7 @@ class OperacionHoyViewModel @Inject constructor(
                         dispensacionesPendientes = dispPendientes,
                         serviciosPendientes = servPendientes,
                         monturas = monturas,
-                        error = null
+                        error = null,
                     )
                 }
         }

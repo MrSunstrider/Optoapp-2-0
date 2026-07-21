@@ -28,7 +28,7 @@ data class OCEditFormState(
     val proveedorId: String = "",
     val fecha: LocalDate = LocalDate.now(),
     val estado: String = "PENDIENTE",
-    val items: List<OCItemFormState> = emptyList()
+    val items: List<OCItemFormState> = emptyList(),
 )
 
 data class OCItemFormState(
@@ -36,7 +36,7 @@ data class OCItemFormState(
     val monturaId: String = "",
     val cantidad: String = "0",
     val costoUnitario: String = "0.0",
-    val recibido: String = "0"
+    val recibido: String = "0",
 )
 
 data class OrdenesCompraUiState(
@@ -45,14 +45,14 @@ data class OrdenesCompraUiState(
     val editing: Boolean = false,
     val viewingId: String? = null,
     val error: String? = null,
-    val success: String? = null
+    val success: String? = null,
 )
 
 @HiltViewModel
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class OrdenesCompraViewModel @Inject constructor(
     private val repository: OrdenCompraRepository,
-    private val sessionManager: SessionManager
+    private val sessionManager: SessionManager,
 ) : ViewModel() {
     companion object {
         private const val TAG = "OrdenesCompraVM"
@@ -101,10 +101,10 @@ class OrdenesCompraViewModel @Inject constructor(
                                 monturaId = item.monturaId,
                                 cantidad = item.cantidad.toString(),
                                 costoUnitario = item.costoUnitario.toString(),
-                                recibido = item.recibido.toString()
+                                recibido = item.recibido.toString(),
                             )
-                        }
-                    )
+                        },
+                    ),
                 )
             }
         }
@@ -124,9 +124,11 @@ class OrdenesCompraViewModel @Inject constructor(
 
     fun addItem() {
         _uiState.update {
-            it.copy(form = it.form.copy(
-                items = it.form.items + OCItemFormState()
-            ))
+            it.copy(
+                form = it.form.copy(
+                    items = it.form.items + OCItemFormState(),
+                ),
+            )
         }
     }
 
@@ -172,7 +174,7 @@ class OrdenesCompraViewModel @Inject constructor(
                         },
                         cantidad = itemForm.cantidad.toIntOrNull() ?: 0,
                         costoUnitario = itemForm.costoUnitario.toDoubleOrNull() ?: 0.0,
-                        recibido = itemForm.recibido.toIntOrNull() ?: 0
+                        recibido = itemForm.recibido.toIntOrNull() ?: 0,
                     )
                 }
                 val oc = OrdenCompra(
@@ -181,7 +183,7 @@ class OrdenesCompraViewModel @Inject constructor(
                     proveedorId = form.proveedorId,
                     fecha = form.fecha,
                     estado = form.estado,
-                    opticaId = opticaId
+                    opticaId = opticaId,
                 )
                 if (form.id != null) {
                     repository.update(oc)
@@ -190,8 +192,12 @@ class OrdenesCompraViewModel @Inject constructor(
                     repository.create(oc, ocItems)
                 }
                 _uiState.update {
-                    it.copy(editing = false, form = OCEditFormState(), error = null,
-                        success = "Orden de compra guardada")
+                    it.copy(
+                        editing = false,
+                        form = OCEditFormState(),
+                        error = null,
+                        success = "Orden de compra guardada",
+                    )
                 }
             } catch (e: CancellationException) {
                 throw e

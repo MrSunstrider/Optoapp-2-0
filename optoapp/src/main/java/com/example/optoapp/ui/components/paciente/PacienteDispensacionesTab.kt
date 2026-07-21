@@ -50,7 +50,7 @@ fun DispensacionesList(
                     shape = RoundedCornerShape(12.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                     border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                    onClick = { onEdit(disp.id) }
+                    onClick = { onEdit(disp.id) },
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
@@ -61,7 +61,7 @@ fun DispensacionesList(
                                         Icons.Filled.Science,
                                         contentDescription = "Ticket de laboratorio",
                                         tint = MaterialTheme.colorScheme.tertiary,
-                                        modifier = Modifier.size(20.dp)
+                                        modifier = Modifier.size(20.dp),
                                     )
                                 }
                                 IconButton(modifier = Modifier.size(48.dp), onClick = { selectedDispForResumen.value = disp }) {
@@ -69,14 +69,14 @@ fun DispensacionesList(
                                 }
                                 Surface(
                                     color = if (disp.estadoEntrega == "Entregado") MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.secondary,
-                                    shape = RoundedCornerShape(8.dp)
+                                    shape = RoundedCornerShape(8.dp),
                                 ) {
                                     Text(
                                         disp.estadoEntrega,
                                         color = if (disp.estadoEntrega == "Entregado") MaterialTheme.colorScheme.onTertiary else MaterialTheme.colorScheme.onSecondary,
                                         fontSize = 10.sp,
                                         fontWeight = FontWeight.Bold,
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                                     )
                                 }
                             }
@@ -86,7 +86,7 @@ fun DispensacionesList(
                                 text = "Entregado el ${com.example.optoapp.util.DateUtils.formatLocalized(disp.fechaEntrega)}",
                                 fontSize = 11.sp,
                                 color = MaterialTheme.colorScheme.tertiary,
-                                fontWeight = FontWeight.Medium
+                                fontWeight = FontWeight.Medium,
                             )
                         }
                         Spacer(modifier = Modifier.height(4.dp))
@@ -94,7 +94,7 @@ fun DispensacionesList(
                         Spacer(modifier = Modifier.height(4.dp))
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
                             Text(text = "Saldo:", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            val formattedSaldo = String.format(Locale.getDefault(), "%.2f", saldo)
+                            val formattedSaldo = String.format(Locale.US, "%.2f", saldo)
                             Text(text = "s/. $formattedSaldo", color = if (saldo > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary, fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
                         }
                     }
@@ -121,7 +121,7 @@ fun DispensacionesList(
             paciente = paciente,
             onDismiss = { selectedDispForResumen.value = null },
             onEdit = { onEdit(currentDisp.id) },
-            pagosSum = pagosSumMap[currentDisp.id] ?: 0.0
+            pagosSum = pagosSumMap[currentDisp.id] ?: 0.0,
         )
     }
 }
@@ -187,9 +187,9 @@ fun ResumenDispensacionDialog(
                 InfoSection("Resumen Financiero") {
                     val computedMontoPagado = pagosSum
                     val saldo = disp.montoTotal - computedMontoPagado
-                    val formattedTotal = String.format(Locale.getDefault(), "%.2f", disp.montoTotal)
-                    val formattedPagado = String.format(Locale.getDefault(), "%.2f", computedMontoPagado)
-                    val formattedSaldo = String.format(Locale.getDefault(), "%.2f", saldo)
+                    val formattedTotal = String.format(Locale.US, "%.2f", disp.montoTotal)
+                    val formattedPagado = String.format(Locale.US, "%.2f", computedMontoPagado)
+                    val formattedSaldo = String.format(Locale.US, "%.2f", saldo)
 
                     Text("Monto Total: s/. $formattedTotal", fontSize = 14.sp)
                     if (disp.metodoPago.isNotBlank()) Text("Método de Pago: ${disp.metodoPago}", fontSize = 14.sp)
@@ -199,7 +199,7 @@ fun ResumenDispensacionDialog(
                         "Saldo Restante: s/. $formattedSaldo",
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
-                        color = if (saldo > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary
+                        color = if (saldo > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary,
                     )
                 }
 
@@ -208,13 +208,13 @@ fun ResumenDispensacionDialog(
                         text = disp.estadoEntrega,
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
-                        color = if (disp.estadoEntrega == "Entregado") MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.secondary
+                        color = if (disp.estadoEntrega == "Entregado") MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.secondary,
                     )
                     if (disp.fechaEntrega != null) {
                         Text(
                             text = "Entregado el día ${com.example.optoapp.util.DateUtils.formatLocalized(disp.fechaEntrega)}",
                             fontSize = 13.sp,
-                            color = MaterialTheme.colorScheme.tertiary
+                            color = MaterialTheme.colorScheme.tertiary,
                         )
                     }
                 }
@@ -222,7 +222,10 @@ fun ResumenDispensacionDialog(
         },
         confirmButton = {
             Row {
-                Button(onClick = { onDismiss(); onEdit() }) {
+                Button(onClick = {
+                    onDismiss()
+                    onEdit()
+                }) {
                     Icon(Icons.Default.Edit, null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Editar Completo")
@@ -238,8 +241,6 @@ fun ResumenDispensacionDialog(
                 }
                 TextButton(onClick = onDismiss) { Text("Cerrar") }
             }
-        }
+        },
     )
 }
-
-

@@ -5,18 +5,17 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.ElevatedCard
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.DrawerState
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -25,8 +24,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import com.example.optoapp.ui.components.OptoTopAppBar
-import com.example.optoapp.ui.components.OptoDatePickerDialog
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -39,10 +36,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.optoapp.ui.components.DropdownField
+import com.example.optoapp.ui.components.OptoDatePickerDialog
+import com.example.optoapp.ui.components.OptoTopAppBar
 import com.example.optoapp.util.DateUtils
 import com.example.optoapp.viewmodel.AgendaFiltro
 import com.example.optoapp.viewmodel.AgendaViewModel
@@ -56,7 +54,7 @@ private val estadosCitaInternas = listOf(
     "confirmada",
     "asistio",
     "no_asistio",
-    "reprogramada"
+    "reprogramada",
 )
 
 private fun etiquetaEstadoCita(codigo: String): String = when (codigo) {
@@ -73,7 +71,7 @@ private fun etiquetaEstadoCita(codigo: String): String = when (codigo) {
 fun AgendaScreen(
     navController: NavController,
     drawerState: DrawerState,
-    viewModel: AgendaViewModel = hiltViewModel()
+    viewModel: AgendaViewModel = hiltViewModel(),
 ) {
     val filas by viewModel.filas.collectAsState()
     val filtro by viewModel.filtroState.collectAsState()
@@ -94,7 +92,7 @@ fun AgendaScreen(
                     viewModel.reprogramar(id, date)
                 },
                 onDismiss = { reprogramarEvalId = null },
-                dismissButton = { TextButton(onClick = { reprogramarEvalId = null }) { Text("Cancelar") } }
+                dismissButton = { TextButton(onClick = { reprogramarEvalId = null }) { Text("Cancelar") } },
             )
         }
     }
@@ -108,34 +106,34 @@ fun AgendaScreen(
                     IconButton(onClick = { scope.launch { drawerState.open() } }) {
                         Icon(Icons.Default.Menu, contentDescription = "Menú")
                     }
-                }
+                },
             )
-        }
+        },
     ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 16.dp)
+                .padding(horizontal = 16.dp),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 FilterChip(
                     selected = filtro == AgendaFiltro.HOY,
                     onClick = { viewModel.setFiltro(AgendaFiltro.HOY) },
-                    label = { Text("Hoy") }
+                    label = { Text("Hoy") },
                 )
                 FilterChip(
                     selected = filtro == AgendaFiltro.SEMANA,
                     onClick = { viewModel.setFiltro(AgendaFiltro.SEMANA) },
-                    label = { Text("Semana") }
+                    label = { Text("Semana") },
                 )
                 FilterChip(
                     selected = filtro == AgendaFiltro.MES,
                     onClick = { viewModel.setFiltro(AgendaFiltro.MES) },
-                    label = { Text("Mes") }
+                    label = { Text("Mes") },
                 )
             }
             if (filtro == AgendaFiltro.MES) {
@@ -143,14 +141,14 @@ fun AgendaScreen(
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center
+                    horizontalArrangement = Arrangement.Center,
                 ) {
                     IconButton(onClick = { viewModel.mesAnterior() }) {
                         Icon(Icons.Default.ChevronLeft, contentDescription = "Mes anterior")
                     }
                     Text(
                         text = mesCursor.format(DateTimeFormatter.ofPattern("LLLL yyyy", Locale.getDefault())),
-                        style = MaterialTheme.typography.titleMedium
+                        style = MaterialTheme.typography.titleMedium,
                     )
                     IconButton(onClick = { viewModel.mesSiguiente() }) {
                         Icon(Icons.Default.ChevronRight, contentDescription = "Mes siguiente")
@@ -161,57 +159,57 @@ fun AgendaScreen(
             if (filas.isEmpty()) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
+                    contentAlignment = Alignment.Center,
                 ) {
                     Text(
                         "No hay citas con fecha en este período.",
                         style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                items(filas, key = { it.evaluacion.id }) { fila ->
-                    val e = fila.evaluacion
-                    ElevatedCard(modifier = Modifier.fillMaxWidth()) {
-                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text(fila.nombrePaciente, fontWeight = FontWeight.Bold)
-                            Text(
-                                "Cita: ${e.proximaCita?.let { DateUtils.formatLocalized(it) } ?: "—"}",
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                            DropdownField(
-                                label = "Estado",
-                                selected = etiquetaEstadoCita(e.citaEstado.ifBlank { "programada" }),
-                                options = estadosCitaInternas.map(::etiquetaEstadoCita),
-                                onSelected = { label ->
-                                    val codigo = estadosCitaInternas.find { etiquetaEstadoCita(it) == label }
-                                        ?: "programada"
-                                    viewModel.actualizarEstado(e.id, codigo)
-                                }
-                            )
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                TextButton(onClick = { reprogramarEvalId = e.id }) {
-                                    Text("Reprogramar")
-                                }
-                                TextButton(
-                                    onClick = {
-                                        navController.navigate("editarEvaluacion/${e.pacienteId}/${e.id}")
-                                    }
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    items(filas, key = { it.evaluacion.id }) { fila ->
+                        val e = fila.evaluacion
+                        ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+                            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text(fila.nombrePaciente, fontWeight = FontWeight.Bold)
+                                Text(
+                                    "Cita: ${e.proximaCita?.let { DateUtils.formatLocalized(it) } ?: "—"}",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                )
+                                DropdownField(
+                                    label = "Estado",
+                                    selected = etiquetaEstadoCita(e.citaEstado.ifBlank { "programada" }),
+                                    options = estadosCitaInternas.map(::etiquetaEstadoCita),
+                                    onSelected = { label ->
+                                        val codigo = estadosCitaInternas.find { etiquetaEstadoCita(it) == label }
+                                            ?: "programada"
+                                        viewModel.actualizarEstado(e.id, codigo)
+                                    },
+                                )
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                                 ) {
-                                    Text("Abrir evaluación")
+                                    TextButton(onClick = { reprogramarEvalId = e.id }) {
+                                        Text("Reprogramar")
+                                    }
+                                    TextButton(
+                                        onClick = {
+                                            navController.navigate("editarEvaluacion/${e.pacienteId}/${e.id}")
+                                        },
+                                    ) {
+                                        Text("Abrir evaluación")
+                                    }
                                 }
                             }
                         }
                     }
                 }
-            }
             }
         }
     }

@@ -50,12 +50,12 @@ fun LaboratorioTicketAlertDialog(
                     .fillMaxWidth()
                     .heightIn(max = 420.dp)
                     .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Text(
                     text = ticketTextoCompleto,
                     fontSize = 13.sp,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
             }
         },
@@ -63,7 +63,7 @@ fun LaboratorioTicketAlertDialog(
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.End,
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+                verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 if (laboratorioContacto.isNotBlank()) {
                     TextButton(onClick = {
@@ -71,7 +71,7 @@ fun LaboratorioTicketAlertDialog(
                             context,
                             laboratorioContacto,
                             mensajeWhatsappLab,
-                            "Configura el contacto del laboratorio en Configuración."
+                            "Configura el contacto del laboratorio en Configuración.",
                         )
                     }) { Text("WhatsApp laboratorio") }
                 }
@@ -90,6 +90,6 @@ fun LaboratorioTicketAlertDialog(
                 }
             }
         },
-        dismissButton = null
+        dismissButton = null,
     )
 }

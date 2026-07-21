@@ -12,7 +12,6 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -29,18 +28,20 @@ class PhysicalInventoryLifecycleTest {
     fun setUp() {
         db = Room.inMemoryDatabaseBuilder(
             ApplicationProvider.getApplicationContext(),
-            OptoDatabase::class.java
+            OptoDatabase::class.java,
         ).allowMainThreadQueries().build()
         val scheduler = mockk<Lazy<PostSaveSyncScheduler>> {
             every { get() } returns mockk(relaxed = true)
         }
         val coordinator = MonturaInventoryCoordinator(
-            db.monturaDao(), db.monturaMovimientoDao(), scheduler
+            db.monturaDao(),
+            db.monturaMovimientoDao(),
+            scheduler,
         )
         repo = InventarioFisicoRepository(
             ifDao = db.inventarioFisicoDao(),
             monturaCoordinator = coordinator,
-            monturaDao = db.monturaDao()
+            monturaDao = db.monturaDao(),
         )
     }
 
@@ -52,12 +53,42 @@ class PhysicalInventoryLifecycleTest {
 
     @Test
     fun fullLifecycle_createCountDetailCommitVerify() = runBlocking {
-        db.monturaDao().insertMontura(Montura(id = "m1", sku = "SKU1", marca = "RayBan", modelo = "Aviator",
-            color = "Negro", talla = "M", opticaId = "o1", stockActual = 10))
-        db.monturaDao().insertMontura(Montura(id = "m2", sku = "SKU2", marca = "Oakley", modelo = "Holbrook",
-            color = "Marrón", talla = "L", opticaId = "o1", stockActual = 5))
-        db.monturaDao().insertMontura(Montura(id = "m3", sku = "SKU3", marca = "Persol", modelo = "PO",
-            color = "Carey", talla = "M", opticaId = "o1", stockActual = 0))
+        db.monturaDao().insertMontura(
+            Montura(
+                id = "m1",
+                sku = "SKU1",
+                marca = "RayBan",
+                modelo = "Aviator",
+                color = "Negro",
+                talla = "M",
+                opticaId = "o1",
+                stockActual = 10,
+            ),
+        )
+        db.monturaDao().insertMontura(
+            Montura(
+                id = "m2",
+                sku = "SKU2",
+                marca = "Oakley",
+                modelo = "Holbrook",
+                color = "Marrón",
+                talla = "L",
+                opticaId = "o1",
+                stockActual = 5,
+            ),
+        )
+        db.monturaDao().insertMontura(
+            Montura(
+                id = "m3",
+                sku = "SKU3",
+                marca = "Persol",
+                modelo = "PO",
+                color = "Carey",
+                talla = "M",
+                opticaId = "o1",
+                stockActual = 0,
+            ),
+        )
 
         val session = repo.createSession("o1", "u1")
         assertNotNull(session)
@@ -72,12 +103,18 @@ class PhysicalInventoryLifecycleTest {
 
         assertNull(repo.createSession("o1", "u2"))
 
-        dao.updateDetalle(detalles.find { it.monturaId == "m1" }!!
-            .copy(stockContado = 8, diferencia = -2))
-        dao.updateDetalle(detalles.find { it.monturaId == "m2" }!!
-            .copy(stockContado = 7, diferencia = 2))
-        dao.updateDetalle(detalles.find { it.monturaId == "m3" }!!
-            .copy(stockContado = 0, diferencia = 0))
+        dao.updateDetalle(
+            detalles.find { it.monturaId == "m1" }!!
+                .copy(stockContado = 8, diferencia = -2),
+        )
+        dao.updateDetalle(
+            detalles.find { it.monturaId == "m2" }!!
+                .copy(stockContado = 7, diferencia = 2),
+        )
+        dao.updateDetalle(
+            detalles.find { it.monturaId == "m3" }!!
+                .copy(stockContado = 0, diferencia = 0),
+        )
 
         val updatedDetalles = dao.getDetalles(session.id)
         assertEquals(-2, updatedDetalles.find { it.monturaId == "m1" }!!.diferencia)

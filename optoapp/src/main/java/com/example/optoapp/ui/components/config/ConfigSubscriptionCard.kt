@@ -21,11 +21,11 @@ fun SubscriptionCard(
     planCode: PlanCode,
     devProOverride: Boolean,
     subscriptionVm: SubscriptionViewModel,
-    context: Context
+    context: Context,
 ) {
     Card(
         shape = OptoTokens.shapes.medium,
-        elevation = CardDefaults.cardElevation(defaultElevation = OptoTokens.elevation.level1)
+        elevation = CardDefaults.cardElevation(defaultElevation = OptoTokens.elevation.level1),
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(stringResource(R.string.config_subscription_section_title), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
@@ -41,14 +41,14 @@ fun SubscriptionCard(
                 Text(
                     stringResource(R.string.config_subscription_force_pro_debug),
                     fontSize = 11.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
             if (BuildConfig.DEBUG) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(stringResource(R.string.config_subscription_dev_mode_title), fontSize = 14.sp)
@@ -56,13 +56,13 @@ fun SubscriptionCard(
                     }
                     Switch(
                         checked = devProOverride,
-                        onCheckedChange = { subscriptionVm.setDevProOverride(it) }
+                        onCheckedChange = { subscriptionVm.setDevProOverride(it) },
                     )
                 }
             }
             OutlinedButton(
                 onClick = { subscriptionVm.refreshPlanFromServer() },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
             ) {
                 Text(stringResource(R.string.config_subscription_sync_plan_action))
             }

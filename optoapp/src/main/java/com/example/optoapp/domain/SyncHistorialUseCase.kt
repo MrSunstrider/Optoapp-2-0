@@ -1,17 +1,16 @@
 package com.example.optoapp.domain
 
-import com.example.optoapp.util.AppLogger
 import com.example.optoapp.data.ConflictDao
 import com.example.optoapp.data.EvaluacionClinica
 import com.example.optoapp.data.OptoRepository
-import com.example.optoapp.domain.sync.EntitySnapshotSerializer
 import com.example.optoapp.data.Paciente
 import com.example.optoapp.data.Resource
-import com.example.optoapp.sync.errorLabelForException
-import kotlinx.coroutines.CancellationException
-import java.io.IOException
+import com.example.optoapp.domain.sync.EntitySnapshotSerializer
+import com.example.optoapp.util.AppLogger
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
+import kotlinx.coroutines.CancellationException
+import java.io.IOException
 import javax.inject.Inject
 
 /**
@@ -28,7 +27,7 @@ open class SyncHistorialUseCase @Inject constructor(
     private val supabase: SupabaseClient,
     private val syncStateTracker: com.example.optoapp.data.SyncStateTracker,
     private val conflictHelper: com.example.optoapp.domain.sync.ConflictHelper,
-    private val conflictDao: ConflictDao
+    private val conflictDao: ConflictDao,
 ) {
 
     companion object {
@@ -39,23 +38,21 @@ open class SyncHistorialUseCase @Inject constructor(
     suspend operator fun invoke(
         opticaId: String,
         downloadAfterUpload: Boolean = true,
-        skipUpload: Boolean = false
-    ): Resource<HistorialSyncResult> {
-        return try {
-            AppLogger.d(TAG, "Evaluaciones: inicio sync (opticaId=$opticaId, download=$downloadAfterUpload, skipUpload=$skipUpload)")
-            val uploaded = if (skipUpload) 0 else uploadEvaluaciones(opticaId)
-            val downloaded = if (downloadAfterUpload) downloadEvaluaciones(opticaId) else 0
-            AppLogger.d(TAG, "Evaluaciones: fin OK (subidas=$uploaded, bajadas=$downloaded)")
-            Resource.Success(HistorialSyncResult(uploaded, downloaded))
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: IOException) {
-            AppLogger.e(TAG, "Error en red sincronizando evaluaciones: ${e.message}", e)
-            Resource.Error("Error sincronizando historial clínico: ${e.localizedMessage}")
-        } catch (e: Exception) {
-            AppLogger.e(TAG, "Error inesperado sincronizando evaluaciones: ${e.message}", e)
-            Resource.Error("Error sincronizando historial clínico: ${e.localizedMessage}")
-        }
+        skipUpload: Boolean = false,
+    ): Resource<HistorialSyncResult> = try {
+        AppLogger.d(TAG, "Evaluaciones: inicio sync (opticaId=$opticaId, download=$downloadAfterUpload, skipUpload=$skipUpload)")
+        val uploaded = if (skipUpload) 0 else uploadEvaluaciones(opticaId)
+        val downloaded = if (downloadAfterUpload) downloadEvaluaciones(opticaId) else 0
+        AppLogger.d(TAG, "Evaluaciones: fin OK (subidas=$uploaded, bajadas=$downloaded)")
+        Resource.Success(HistorialSyncResult(uploaded, downloaded))
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: IOException) {
+        AppLogger.e(TAG, "Error en red sincronizando evaluaciones: ${e.message}", e)
+        Resource.Error("Error sincronizando historial clínico: ${e.localizedMessage}")
+    } catch (e: Exception) {
+        AppLogger.e(TAG, "Error inesperado sincronizando evaluaciones: ${e.message}", e)
+        Resource.Error("Error sincronizando historial clínico: ${e.localizedMessage}")
     }
 
     private suspend fun uploadEvaluaciones(opticaId: String): Int {
@@ -108,7 +105,7 @@ open class SyncHistorialUseCase @Inject constructor(
                     hobbies = p.hobbies ?: "",
                     ultimasEtiquetas = p.ultimasEtiquetas.joinToString(","),
                     opticaId = opticaId,
-                    updatedAt = p.updatedAt
+                    updatedAt = p.updatedAt,
                 )
             }
             runCatching {
@@ -135,8 +132,10 @@ open class SyncHistorialUseCase @Inject constructor(
         val outputIds = builtRows.map { it.id }.toSet()
         (inputIds - outputIds).forEach { skippedId ->
             syncStateTracker.markError(
-                opticaId, "evaluacion", skippedId,
-                "Paciente remoto inexistente. Se omite para evitar FK."
+                opticaId,
+                "evaluacion",
+                skippedId,
+                "Paciente remoto inexistente. Se omite para evitar FK.",
             )
         }
 
@@ -145,7 +144,7 @@ open class SyncHistorialUseCase @Inject constructor(
             tableName = TABLE,
             opticaId = opticaId,
             entityType = "evaluacion",
-            localEntities = builtRows.map { com.example.optoapp.domain.sync.LocalEntity(it.id, it.updatedAt, EntitySnapshotSerializer.serialize(it)) }
+            localEntities = builtRows.map { com.example.optoapp.domain.sync.LocalEntity(it.id, it.updatedAt, EntitySnapshotSerializer.serialize(it)) },
         )
         val finalRows = builtRows.filter { r -> conflictSafe.any { it.id == r.id } }
 
@@ -231,7 +230,7 @@ internal fun buildUploadRows(
     evaluaciones: List<EvaluacionClinica>,
     localPacientes: List<Paciente>,
     remotePacientes: List<PacienteRemoto>,
-    opticaId: String
+    opticaId: String,
 ): List<EvaluacionRemota> {
     val remoteByHistoria = remotePacientes
         .mapNotNull { rp ->
@@ -269,4 +268,3 @@ internal fun normalizedHistoriaKey(historia: String?): String? {
     val normalized = historia?.trim()?.uppercase().orEmpty()
     return normalized.ifBlank { null }
 }
-

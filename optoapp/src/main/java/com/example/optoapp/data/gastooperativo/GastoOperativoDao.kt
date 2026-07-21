@@ -16,7 +16,7 @@ interface GastoOperativoDao {
     fun getByOpticaIdAndDateRange(
         opticaId: String,
         start: LocalDate,
-        end: LocalDate
+        end: LocalDate,
     ): Flow<List<GastoOperativoEntity>>
 
     @Insert
@@ -30,5 +30,4 @@ interface GastoOperativoDao {
 
     @Query("DELETE FROM gastos_operativos WHERE id = :id AND opticaId = :opticaId")
     suspend fun delete(id: String, opticaId: String)
-
 }

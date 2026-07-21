@@ -4,17 +4,11 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.example.optoapp.data.Montura
 import com.example.optoapp.data.MonturaMovimiento
-import com.example.optoapp.data.OpticaFiscalSettingsStore
-import com.example.optoapp.data.OpticaMembership
 import com.example.optoapp.data.OptoDatabase
-import com.example.optoapp.data.montura.MonturaDashboardKpiRepository
 import com.example.optoapp.data.montura.MonturaDao
+import com.example.optoapp.data.montura.MonturaDashboardKpiRepository
 import com.example.optoapp.data.montura.MonturaMovimientoDao
-import com.example.optoapp.util.BackgroundErrorCollector
-import io.mockk.every
-import io.mockk.mockk
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -37,7 +31,7 @@ class MonturaDashboardKpiViewModelTest {
     fun setUp() {
         db = Room.inMemoryDatabaseBuilder(
             ApplicationProvider.getApplicationContext(),
-            OptoDatabase::class.java
+            OptoDatabase::class.java,
         ).allowMainThreadQueries().build()
         monturaDao = db.monturaDao()
         movimientoDao = db.monturaMovimientoDao()
@@ -96,12 +90,28 @@ class MonturaDashboardKpiViewModelTest {
         val fecha1 = LocalDate.of(2026, 6, 10)
         val fecha2 = LocalDate.of(2026, 6, 15)
         movimientoDao.insertMovimiento(
-            MonturaMovimiento(id = "mov1", monturaId = "m1", tipo = "ENTRADA",
-                cantidad = 5, stockPrevio = 0, stockNuevo = 5, opticaId = "o1", fecha = fecha1)
+            MonturaMovimiento(
+                id = "mov1",
+                monturaId = "m1",
+                tipo = "ENTRADA",
+                cantidad = 5,
+                stockPrevio = 0,
+                stockNuevo = 5,
+                opticaId = "o1",
+                fecha = fecha1,
+            ),
         )
         movimientoDao.insertMovimiento(
-            MonturaMovimiento(id = "mov2", monturaId = "m2", tipo = "SALIDA_VENTA",
-                cantidad = 1, stockPrevio = 5, stockNuevo = 4, opticaId = "o1", fecha = fecha2)
+            MonturaMovimiento(
+                id = "mov2",
+                monturaId = "m2",
+                tipo = "SALIDA_VENTA",
+                cantidad = 1,
+                stockPrevio = 5,
+                stockNuevo = 4,
+                opticaId = "o1",
+                fecha = fecha2,
+            ),
         )
 
         val lastDate = repository.lastMovementDate("o1").first()
@@ -138,7 +148,7 @@ class MonturaDashboardKpiViewModelTest {
         activo: Boolean = true,
         categoria: String = "",
         stockActual: Int = 10,
-        stockMinimo: Int = 2
+        stockMinimo: Int = 2,
     ) {
         monturaDao.insertMontura(
             Montura(
@@ -154,8 +164,8 @@ class MonturaDashboardKpiViewModelTest {
                 stockMinimo = stockMinimo,
                 activo = activo,
                 categoria = categoria,
-                opticaId = "o1"
-            )
+                opticaId = "o1",
+            ),
         )
     }
 }

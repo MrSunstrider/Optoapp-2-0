@@ -73,7 +73,6 @@ class AnalisisNegocioViewModelTest {
         unmockkAll()
     }
 
-
     private fun createAnalisis(
         ventasMes: Double = 10000.0,
         cobrosMes: Double = 8000.0,
@@ -81,45 +80,60 @@ class AnalisisNegocioViewModelTest {
         ventasMesAnterior: Double = 9000.0,
         variacionVentasPct: Double? = 11.1,
         esOffline: Boolean = false,
-        gastosMes: Double = 2000.0
+        gastosMes: Double = 2000.0,
     ): AnalisisMensual = AnalisisMensual(
         ventasMes = ventasMes,
         cobrosMes = cobrosMes,
         margenNetoPct = margenNetoPct,
         margenPorCategoria = listOf(
             MargenCategoria("Monturas", 5000.0, 3000.0, 40.0),
-            MargenCategoria("Lentes de Contacto", 3000.0, 2000.0, 33.3)
+            MargenCategoria("Lentes de Contacto", 3000.0, 2000.0, 33.3),
         ),
         deudores = com.example.optoapp.domain.DeudoresResumen(5, 2500.0),
         proyeccionCaja = com.example.optoapp.domain.ProyeccionCaja(12000.0, 4000.0, 8000.0),
         stockEstancado = listOf(
-            com.example.optoapp.domain.StockEstancadoItem("m1", "SKU001", "Modelo A", 150.0, 3, "2026-05-01", 60)
+            com.example.optoapp.domain.StockEstancadoItem("m1", "SKU001", "Modelo A", 150.0, 3, "2026-05-01", 60),
         ),
         valorInventario = 50000.0,
         ventasMesAnterior = ventasMesAnterior,
         variacionVentasPct = variacionVentasPct,
         gastosMes = gastosMes,
-        esOffline = esOffline
+        esOffline = esOffline,
     )
 
     private fun createDeudores(): List<Deudor> = listOf(
         Deudor("Juan P\u00e9rez", "999888777", "v1", LocalDate.of(2026, 6, 15), 500.0, 200.0, 300.0, 15),
-        Deudor("Mar\u00eda L\u00f3pez", "999888776", "v2", LocalDate.of(2026, 5, 1), 1200.0, 0.0, 1200.0, 60)
+        Deudor("Mar\u00eda L\u00f3pez", "999888776", "v2", LocalDate.of(2026, 5, 1), 1200.0, 0.0, 1200.0, 60),
     )
 
     private fun createRecomendaciones(): List<Recomendacion> = listOf(
-        Recomendacion("r1", RecomendacionTipo.COBRAR, "Cobranza pendiente",
-            "Deuda total de S/ 1,500 en 2 deudores.", prioridad = Prioridad.ALTA),
-        Recomendacion("r2", RecomendacionTipo.MEJORAR_PRECIO, "Mejorar precio de Monturas",
-            "Margen bajo del 8%.", prioridad = Prioridad.ALTA),
-        Recomendacion("r3", RecomendacionTipo.LIQUIDAR_STOCK, "Liquidar stock estancado",
-            "1 item sin venderse.", prioridad = Prioridad.MEDIA)
+        Recomendacion(
+            "r1",
+            RecomendacionTipo.COBRAR,
+            "Cobranza pendiente",
+            "Deuda total de S/ 1,500 en 2 deudores.",
+            prioridad = Prioridad.ALTA,
+        ),
+        Recomendacion(
+            "r2",
+            RecomendacionTipo.MEJORAR_PRECIO,
+            "Mejorar precio de Monturas",
+            "Margen bajo del 8%.",
+            prioridad = Prioridad.ALTA,
+        ),
+        Recomendacion(
+            "r3",
+            RecomendacionTipo.LIQUIDAR_STOCK,
+            "Liquidar stock estancado",
+            "1 item sin venderse.",
+            prioridad = Prioridad.MEDIA,
+        ),
     )
 
     private fun primeUseCases(
         analisis: Resource<AnalisisMensual> = Resource.Success(createAnalisis()),
         deudores: Resource<List<Deudor>> = Resource.Success(createDeudores()),
-        recomendaciones: Resource<List<Recomendacion>> = Resource.Success(createRecomendaciones())
+        recomendaciones: Resource<List<Recomendacion>> = Resource.Success(createRecomendaciones()),
     ) {
         coEvery { obtenerAnalisisMensual(opticaId, any()) } returns analisis
         coEvery { obtenerDeudores(opticaId) } returns deudores
@@ -133,7 +147,11 @@ class AnalisisNegocioViewModelTest {
         primeUseCases()
 
         viewModel = AnalisisNegocioViewModel(
-            obtenerAnalisisMensual, obtenerDeudores, generarRecomendaciones, feedbackRecomendacion, sessionManager
+            obtenerAnalisisMensual,
+            obtenerDeudores,
+            generarRecomendaciones,
+            feedbackRecomendacion,
+            sessionManager,
         )
         advanceUntilIdle()
 
@@ -152,7 +170,11 @@ class AnalisisNegocioViewModelTest {
         primeUseCases()
 
         viewModel = AnalisisNegocioViewModel(
-            obtenerAnalisisMensual, obtenerDeudores, generarRecomendaciones, feedbackRecomendacion, sessionManager
+            obtenerAnalisisMensual,
+            obtenerDeudores,
+            generarRecomendaciones,
+            feedbackRecomendacion,
+            sessionManager,
         )
         advanceUntilIdle()
 
@@ -169,7 +191,11 @@ class AnalisisNegocioViewModelTest {
         primeUseCases()
 
         viewModel = AnalisisNegocioViewModel(
-            obtenerAnalisisMensual, obtenerDeudores, generarRecomendaciones, feedbackRecomendacion, sessionManager
+            obtenerAnalisisMensual,
+            obtenerDeudores,
+            generarRecomendaciones,
+            feedbackRecomendacion,
+            sessionManager,
         )
         advanceUntilIdle()
 
@@ -185,7 +211,11 @@ class AnalisisNegocioViewModelTest {
         primeUseCases()
 
         viewModel = AnalisisNegocioViewModel(
-            obtenerAnalisisMensual, obtenerDeudores, generarRecomendaciones, feedbackRecomendacion, sessionManager
+            obtenerAnalisisMensual,
+            obtenerDeudores,
+            generarRecomendaciones,
+            feedbackRecomendacion,
+            sessionManager,
         )
         advanceUntilIdle()
 
@@ -198,11 +228,15 @@ class AnalisisNegocioViewModelTest {
     fun `error state when analisis use case fails`() = runTest(testDispatcher) {
         primeUseCases(
             analisis = Resource.Error("Error en analisis mensual"),
-            recomendaciones = Resource.Error("No hay datos de analisis para generar recomendaciones")
+            recomendaciones = Resource.Error("No hay datos de analisis para generar recomendaciones"),
         )
 
         viewModel = AnalisisNegocioViewModel(
-            obtenerAnalisisMensual, obtenerDeudores, generarRecomendaciones, feedbackRecomendacion, sessionManager
+            obtenerAnalisisMensual,
+            obtenerDeudores,
+            generarRecomendaciones,
+            feedbackRecomendacion,
+            sessionManager,
         )
         advanceUntilIdle()
 
@@ -217,11 +251,15 @@ class AnalisisNegocioViewModelTest {
     @Test
     fun `offline detection propagates esOffline flag`() = runTest(testDispatcher) {
         primeUseCases(
-            analisis = Resource.Success(createAnalisis(esOffline = true))
+            analisis = Resource.Success(createAnalisis(esOffline = true)),
         )
 
         viewModel = AnalisisNegocioViewModel(
-            obtenerAnalisisMensual, obtenerDeudores, generarRecomendaciones, feedbackRecomendacion, sessionManager
+            obtenerAnalisisMensual,
+            obtenerDeudores,
+            generarRecomendaciones,
+            feedbackRecomendacion,
+            sessionManager,
         )
         advanceUntilIdle()
 
@@ -236,11 +274,15 @@ class AnalisisNegocioViewModelTest {
         primeUseCases(
             analisis = Resource.Error("Error A"),
             deudores = Resource.Error("Error B"),
-            recomendaciones = Resource.Error("Datos insuficientes para generar recomendaciones")
+            recomendaciones = Resource.Error("Datos insuficientes para generar recomendaciones"),
         )
 
         viewModel = AnalisisNegocioViewModel(
-            obtenerAnalisisMensual, obtenerDeudores, generarRecomendaciones, feedbackRecomendacion, sessionManager
+            obtenerAnalisisMensual,
+            obtenerDeudores,
+            generarRecomendaciones,
+            feedbackRecomendacion,
+            sessionManager,
         )
         advanceUntilIdle()
 
@@ -256,7 +298,11 @@ class AnalisisNegocioViewModelTest {
         coEvery { feedbackRecomendacion.marcarUtil("r1", opticaId) } returns Unit
 
         viewModel = AnalisisNegocioViewModel(
-            obtenerAnalisisMensual, obtenerDeudores, generarRecomendaciones, feedbackRecomendacion, sessionManager
+            obtenerAnalisisMensual,
+            obtenerDeudores,
+            generarRecomendaciones,
+            feedbackRecomendacion,
+            sessionManager,
         )
         advanceUntilIdle()
 
@@ -273,7 +319,11 @@ class AnalisisNegocioViewModelTest {
         coEvery { feedbackRecomendacion.marcarNoUtil("r2", opticaId) } returns Unit
 
         viewModel = AnalisisNegocioViewModel(
-            obtenerAnalisisMensual, obtenerDeudores, generarRecomendaciones, feedbackRecomendacion, sessionManager
+            obtenerAnalisisMensual,
+            obtenerDeudores,
+            generarRecomendaciones,
+            feedbackRecomendacion,
+            sessionManager,
         )
         advanceUntilIdle()
 
@@ -287,7 +337,11 @@ class AnalisisNegocioViewModelTest {
         primeUseCases(analisis = Resource.Success(createAnalisis(esOffline = false)))
 
         viewModel = AnalisisNegocioViewModel(
-            obtenerAnalisisMensual, obtenerDeudores, generarRecomendaciones, feedbackRecomendacion, sessionManager
+            obtenerAnalisisMensual,
+            obtenerDeudores,
+            generarRecomendaciones,
+            feedbackRecomendacion,
+            sessionManager,
         )
         advanceUntilIdle()
 
@@ -303,7 +357,11 @@ class AnalisisNegocioViewModelTest {
 
         try {
             viewModel = AnalisisNegocioViewModel(
-                obtenerAnalisisMensual, obtenerDeudores, generarRecomendaciones, feedbackRecomendacion, sessionManager
+                obtenerAnalisisMensual,
+                obtenerDeudores,
+                generarRecomendaciones,
+                feedbackRecomendacion,
+                sessionManager,
             )
         } catch (_: CancellationException) {
             // Expected — cancellation should propagate, not be swallowed

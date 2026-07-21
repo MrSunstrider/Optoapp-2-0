@@ -15,12 +15,12 @@ import com.example.optoapp.domain.Recomendacion
 import com.example.optoapp.util.DateUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import javax.inject.Inject
@@ -35,7 +35,7 @@ data class AnalisisNegocioUiState(
     val isSeasonalityWarning: Boolean = false,
     val debtorsStale: Boolean = false,
     val feedbacksEnviados: Map<String, Boolean> = emptyMap(),
-    val feedbackErrorRecId: String? = null
+    val feedbackErrorRecId: String? = null,
 )
 
 @HiltViewModel
@@ -44,7 +44,7 @@ class AnalisisNegocioViewModel @Inject constructor(
     private val obtenerDeudores: ObtenerDeudoresUseCase,
     private val generarRecomendaciones: GenerarRecomendacionesUseCase,
     private val feedbackRecomendacion: FeedbackRecomendacionUseCase,
-    private val sessionManager: SessionManager
+    private val sessionManager: SessionManager,
 ) : ViewModel() {
 
     companion object {
@@ -81,7 +81,7 @@ class AnalisisNegocioViewModel @Inject constructor(
                 }
                 _uiState.value = _uiState.value.copy(
                     feedbacksEnviados = _uiState.value.feedbacksEnviados + (recomendacionId to fueUtil),
-                    feedbackErrorRecId = null
+                    feedbackErrorRecId = null,
                 )
             } catch (e: Exception) {
                 Log.e(TAG, "Error sending recommendation feedback", e)
@@ -122,7 +122,7 @@ class AnalisisNegocioViewModel @Inject constructor(
 
                     val rpcErrors = listOfNotNull(
                         (analisisResult as? Resource.Error)?.message,
-                        (deudoresResult as? Resource.Error)?.message
+                        (deudoresResult as? Resource.Error)?.message,
                     )
                     val recError = (recomendacionesResult as? Resource.Error)?.message
                     val errors = (rpcErrors + listOfNotNull(recError)).toSet()
@@ -134,7 +134,7 @@ class AnalisisNegocioViewModel @Inject constructor(
                         isLoading = false,
                         error = errors.joinToString("; ").ifEmpty { null },
                         isSeasonalityWarning = analisis?.esOffline == true || (analisis != null && analisis.ventasMesAnterior == 0.0),
-                        debtorsStale = debtorsStale
+                        debtorsStale = debtorsStale,
                     )
                 } catch (e: CancellationException) {
                     throw e
@@ -142,7 +142,7 @@ class AnalisisNegocioViewModel @Inject constructor(
                     Log.e(TAG, "Unexpected error loading data", e)
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
-                        error = "Error inesperado al cargar datos"
+                        error = "Error inesperado al cargar datos",
                     )
                 }
             } finally {

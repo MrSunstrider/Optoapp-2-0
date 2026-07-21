@@ -20,7 +20,6 @@ import io.mockk.slot
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -52,18 +51,30 @@ class DispensacionViewModelAnulacionTest {
     private val testDispensacion = DispensacionOptica(
         id = dispId, ot = "OT-2026-0001", pacienteId = "pac-1", fecha = testDate,
         opticaId = "optica-test", tipoLente = "Monofocal", montoTotal = 300.0,
-        montoPagado = 150.0, estadoEntrega = "Pendiente", metodoPago = "Efectivo"
+        montoPagado = 150.0, estadoEntrega = "Pendiente", metodoPago = "Efectivo",
     )
 
     private val testRegalos = listOf(
         RegaloDispensacionEntity(
-            id = "reg-1", dispensacionId = dispId, productoId = "prod-1",
-            cantidad = 2, costoUnitario = 10.0, descripcion = "Estuche", motivo = "Cortesía", opticaId = "optica-test"
+            id = "reg-1",
+            dispensacionId = dispId,
+            productoId = "prod-1",
+            cantidad = 2,
+            costoUnitario = 10.0,
+            descripcion = "Estuche",
+            motivo = "Cortesía",
+            opticaId = "optica-test",
         ),
         RegaloDispensacionEntity(
-            id = "reg-2", dispensacionId = dispId, productoId = "prod-2",
-            cantidad = 1, costoUnitario = 15.0, descripcion = "Líquido", motivo = "Promoción", opticaId = "optica-test"
-        )
+            id = "reg-2",
+            dispensacionId = dispId,
+            productoId = "prod-2",
+            cantidad = 1,
+            costoUnitario = 15.0,
+            descripcion = "Líquido",
+            motivo = "Promoción",
+            opticaId = "optica-test",
+        ),
     )
 
     @Before
@@ -99,8 +110,13 @@ class DispensacionViewModelAnulacionTest {
     @Test
     fun `anularDispensacion flips estado to Anulado`() = runTest {
         viewModel = DispensacionViewModel(
-            repository, sessionManager, postSaveSyncScheduler, stockHelper, calcularMontoPagadoUseCase,
-            costoProductoDao, costoBiseladoDao
+            repository,
+            sessionManager,
+            postSaveSyncScheduler,
+            stockHelper,
+            calcularMontoPagadoUseCase,
+            costoProductoDao,
+            costoBiseladoDao,
         )
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -114,8 +130,13 @@ class DispensacionViewModelAnulacionTest {
     @Test
     fun `anularDispensacion creates inverse Pago with negative monto`() = runTest {
         viewModel = DispensacionViewModel(
-            repository, sessionManager, postSaveSyncScheduler, stockHelper, calcularMontoPagadoUseCase,
-            costoProductoDao, costoBiseladoDao
+            repository,
+            sessionManager,
+            postSaveSyncScheduler,
+            stockHelper,
+            calcularMontoPagadoUseCase,
+            costoProductoDao,
+            costoBiseladoDao,
         )
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -134,8 +155,13 @@ class DispensacionViewModelAnulacionTest {
     @Test
     fun `anularDispensacion restores stock for associated regalos`() = runTest {
         viewModel = DispensacionViewModel(
-            repository, sessionManager, postSaveSyncScheduler, stockHelper, calcularMontoPagadoUseCase,
-            costoProductoDao, costoBiseladoDao
+            repository,
+            sessionManager,
+            postSaveSyncScheduler,
+            stockHelper,
+            calcularMontoPagadoUseCase,
+            costoProductoDao,
+            costoBiseladoDao,
         )
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -146,12 +172,20 @@ class DispensacionViewModelAnulacionTest {
         // Verify stock restored for each regalo with positive delta
         coVerify {
             stockHelper.adjustStockAndRegistrarMovimiento(
-                "prod-1", "optica-test", 2,
-                "AJUSTE", dispId, "Reversión por anulación de dispensación"
+                "prod-1",
+                "optica-test",
+                2,
+                "AJUSTE",
+                dispId,
+                "Reversión por anulación de dispensación",
             )
             stockHelper.adjustStockAndRegistrarMovimiento(
-                "prod-2", "optica-test", 1,
-                "AJUSTE", dispId, "Reversión por anulación de dispensación"
+                "prod-2",
+                "optica-test",
+                1,
+                "AJUSTE",
+                dispId,
+                "Reversión por anulación de dispensación",
             )
         }
     }
@@ -159,8 +193,13 @@ class DispensacionViewModelAnulacionTest {
     @Test
     fun `anularDispensacion calls onComplete`() = runTest {
         viewModel = DispensacionViewModel(
-            repository, sessionManager, postSaveSyncScheduler, stockHelper, calcularMontoPagadoUseCase,
-            costoProductoDao, costoBiseladoDao
+            repository,
+            sessionManager,
+            postSaveSyncScheduler,
+            stockHelper,
+            calcularMontoPagadoUseCase,
+            costoProductoDao,
+            costoBiseladoDao,
         )
         testDispatcher.scheduler.advanceUntilIdle()
 

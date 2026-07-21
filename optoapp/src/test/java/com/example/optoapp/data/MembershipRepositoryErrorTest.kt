@@ -1,12 +1,13 @@
 package com.example.optoapp.data
 
+import android.util.Log
 import com.example.optoapp.data.membership.MembershipDataSource
 import com.example.optoapp.data.membership.OpticaQueryHelper
 import com.example.optoapp.data.membership.OpticaSettingsDataSource
+import com.example.optoapp.data.opticasettings.OpticaSettingsDao
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.auth.auth
-import android.util.Log
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
@@ -40,7 +41,7 @@ class MembershipRepositoryErrorTest {
         val opticaQueryHelper = OpticaQueryHelper(supabase)
         val membershipDataSource = MembershipDataSource(supabase, opticaQueryHelper)
         val opticaSettingsDataSource = OpticaSettingsDataSource(supabase)
-        repo = MembershipRepository(membershipDataSource, opticaSettingsDataSource)
+        repo = MembershipRepository(membershipDataSource, opticaSettingsDataSource, mockk(relaxed = true))
     }
 
     @After
@@ -69,7 +70,12 @@ class MembershipRepositoryErrorTest {
     @Test
     fun `updateOpticaFiscalSettings no session returns failure`() = runTest {
         val result = repo.updateOpticaFiscalSettings(
-            "opt_abc", "Optica", "RUC", "123", "Razon", "Dir"
+            "opt_abc",
+            "Optica",
+            "RUC",
+            "123",
+            "Razon",
+            "Dir",
         )
 
         assertTrue("Expected failure but got $result", result.isFailure)

@@ -2,10 +2,10 @@ package com.example.optoapp.data
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.core.content.edit
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStore
-import androidx.core.content.edit
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import kotlinx.coroutines.flow.Flow
@@ -34,8 +34,8 @@ class SecurityManager(
             .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
             .build(),
         EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-    )
+        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
+    ),
 ) : ISecurityManager {
 
     companion object {
@@ -50,7 +50,7 @@ class SecurityManager(
             "000000", "111111", "222222", "333333", "444444",
             "555555", "666666", "777777", "888888", "999999",
             "123456", "234567", "345678", "456789",
-            "654321", "543210"
+            "654321", "543210",
         )
     }
 
@@ -82,9 +82,7 @@ class SecurityManager(
         }
     }
 
-    private fun getSecurePin(): String {
-        return encryptedPrefs.getString("user_pin", "") ?: ""
-    }
+    private fun getSecurePin(): String = encryptedPrefs.getString("user_pin", "") ?: ""
 
     suspend fun getStoredPin(): String {
         if (!pinHasBeenSet.first()) return ""
@@ -94,8 +92,8 @@ class SecurityManager(
     override suspend fun savePin(pin: String) {
         encryptedPrefs.edit { putString("user_pin", pin) }
         _pinFlow.value = pin
-        
-        dataStore.edit { prefs -> 
+
+        dataStore.edit { prefs ->
             prefs[prefPinHasBeenSet] = true
             prefs.remove(stringPreferencesKey("user_pin"))
         }

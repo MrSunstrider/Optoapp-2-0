@@ -148,7 +148,7 @@ data class EvaluacionRemota(
     @SerialName("lc_fecha_adaptacion") val lcFechaAdaptacion: String? = null,
     @SerialName("lc_observaciones") val lcObservaciones: String? = null,
     @SerialName("updated_at") val updatedAt: String? = null,
-    @SerialName("updated_by") val updatedBy: String? = null
+    @SerialName("updated_by") val updatedBy: String? = null,
 ) {
     fun toEntity(): EvaluacionClinica = EvaluacionClinica(
         id = id, pacienteId = pacienteId, fecha = LocalDate.parse(fecha), opticaId = opticaId.ifBlank { "mi_optica_base" },
@@ -210,7 +210,7 @@ data class EvaluacionRemota(
         lcFechaAdaptacion = lcFechaAdaptacion?.trim()?.takeIf { it.isNotEmpty() }?.let(LocalDate::parse),
         lcObservaciones = lcObservaciones.orEmpty(),
         updatedAt = updatedAt,
-        updatedBy = updatedBy
+        updatedBy = updatedBy,
     )
 }
 
@@ -272,5 +272,5 @@ fun EvaluacionClinica.toRemoto(): EvaluacionRemota = EvaluacionRemota(
     lcMaterial = lcMaterial, lcFechaAdaptacion = lcFechaAdaptacion?.toString(),
     lcObservaciones = lcObservaciones,
     updatedAt = updatedAt,
-    updatedBy = updatedBy
+    updatedBy = updatedBy,
 )

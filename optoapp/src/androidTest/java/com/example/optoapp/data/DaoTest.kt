@@ -28,7 +28,7 @@ class DaoTest {
     fun createDb() {
         db = Room.inMemoryDatabaseBuilder(
             ApplicationProvider.getApplicationContext(),
-            OptoDatabase::class.java
+            OptoDatabase::class.java,
         ).allowMainThreadQueries().build()
 
         pacienteDao = db.pacienteDao()
@@ -51,7 +51,7 @@ class DaoTest {
             edad = 30,
             telefono = "123456789",
             fechaCreacion = LocalDate.parse("2026-01-01"),
-            opticaId = "optica1"
+            opticaId = "optica1",
         )
         pacienteDao.insertPaciente(paciente)
 
@@ -69,23 +69,12 @@ class DaoTest {
             edad = 30,
             telefono = "123456789",
             fechaCreacion = LocalDate.parse("2026-01-01"),
-            opticaId = "optica1"
+            opticaId = "optica1",
         )
         pacienteDao.insertPaciente(paciente)
 
         val updated = paciente.copy(nombreCompleto = "Juan Carlos Perez", telefono = "987654321")
-        pacienteDao.updatePaciente(
-            id = updated.id, opticaId = updated.opticaId,
-            nombreCompleto = updated.nombreCompleto, edad = updated.edad,
-            telefono = updated.telefono, fechaCreacion = updated.fechaCreacion,
-            dni = updated.dni, fechaNacimiento = updated.fechaNacimiento,
-            sexo = updated.sexo, email = updated.email,
-            historiaOptometrica = updated.historiaOptometrica,
-            direccion = updated.direccion, distrito = updated.distrito,
-            ocupacion = updated.ocupacion, acompanante = updated.acompanante,
-            hobbies = updated.hobbies, ultimasEtiquetas = updated.ultimasEtiquetas,
-            updatedAt = updated.updatedAt, updatedBy = updated.updatedBy
-        )
+        pacienteDao.upsertPaciente(updated)
 
         val retrieved = pacienteDao.getPacienteById("p1")
         assertEquals("Juan Carlos Perez", retrieved?.nombreCompleto)
@@ -100,7 +89,7 @@ class DaoTest {
             edad = 30,
             telefono = "123456789",
             fechaCreacion = LocalDate.parse("2026-01-01"),
-            opticaId = "optica1"
+            opticaId = "optica1",
         )
         pacienteDao.insertPaciente(paciente)
         pacienteDao.deletePaciente(paciente.id, paciente.opticaId)
@@ -112,12 +101,20 @@ class DaoTest {
     @Test
     fun pacienteSearchByOptica() = runBlocking {
         val p1 = Paciente(
-            id = "p1", nombreCompleto = "Juan", edad = 30, telefono = "111",
-            fechaCreacion = LocalDate.parse("2026-01-01"), opticaId = "optica1"
+            id = "p1",
+            nombreCompleto = "Juan",
+            edad = 30,
+            telefono = "111",
+            fechaCreacion = LocalDate.parse("2026-01-01"),
+            opticaId = "optica1",
         )
         val p2 = Paciente(
-            id = "p2", nombreCompleto = "Maria", edad = 25, telefono = "222",
-            fechaCreacion = LocalDate.parse("2026-01-01"), opticaId = "optica2"
+            id = "p2",
+            nombreCompleto = "Maria",
+            edad = 25,
+            telefono = "222",
+            fechaCreacion = LocalDate.parse("2026-01-01"),
+            opticaId = "optica2",
         )
         pacienteDao.insertPaciente(p1)
         pacienteDao.insertPaciente(p2)
@@ -130,8 +127,12 @@ class DaoTest {
     @Test
     fun evaluacionInsertAndRetrieve() = runBlocking {
         val paciente = Paciente(
-            id = "p1", nombreCompleto = "Test", edad = 20, telefono = "123",
-            fechaCreacion = LocalDate.parse("2026-01-01"), opticaId = "o1"
+            id = "p1",
+            nombreCompleto = "Test",
+            edad = 20,
+            telefono = "123",
+            fechaCreacion = LocalDate.parse("2026-01-01"),
+            opticaId = "o1",
         )
         pacienteDao.insertPaciente(paciente)
 
@@ -141,7 +142,7 @@ class DaoTest {
             fecha = LocalDate.parse("2026-05-09"),
             opticaId = "o1",
             motivoConsulta = "Control",
-            citaEstado = "programada"
+            citaEstado = "programada",
         )
         evaluacionDao.insertEvaluacion(evaluacion)
 
@@ -159,7 +160,7 @@ class DaoTest {
             entityId = "p1",
             status = "error",
             lastError = "test error",
-            updatedAt = System.currentTimeMillis()
+            updatedAt = System.currentTimeMillis(),
         )
         syncDao.upsert(state)
 
@@ -176,7 +177,7 @@ class DaoTest {
             entityId = "p1",
             status = "error",
             lastError = "test error",
-            updatedAt = System.currentTimeMillis()
+            updatedAt = System.currentTimeMillis(),
         )
         syncDao.upsert(state)
 
@@ -192,7 +193,7 @@ class DaoTest {
             entityType = "paciente",
             entityId = "p1",
             status = "deleted",
-            updatedAt = System.currentTimeMillis()
+            updatedAt = System.currentTimeMillis(),
         )
         syncDao.upsert(state)
 
@@ -204,15 +205,19 @@ class DaoTest {
     @Test
     fun dispensacionWithMontura() = runBlocking {
         val paciente = Paciente(
-            id = "p1", nombreCompleto = "Test", edad = 20, telefono = "123",
-            fechaCreacion = LocalDate.parse("2026-01-01"), opticaId = "o1"
+            id = "p1",
+            nombreCompleto = "Test",
+            edad = 20,
+            telefono = "123",
+            fechaCreacion = LocalDate.parse("2026-01-01"),
+            opticaId = "o1",
         )
         pacienteDao.insertPaciente(paciente)
 
         val montura = Montura(
             id = "m1", sku = "SKU001", marca = "Marca", modelo = "Modelo",
             color = "Negro", talla = "M", costo = 50.0, precio = 100.0,
-            stockActual = 5, stockMinimo = 2, activo = true, opticaId = "o1"
+            stockActual = 5, stockMinimo = 2, activo = true, opticaId = "o1",
         )
         db.monturaDao().insertMontura(montura)
 
@@ -221,7 +226,7 @@ class DaoTest {
             opticaId = "o1",
             montoTotal = 100.0, montoPagado = 50.0, estadoEntrega = "Pendiente",
             monturaId = "m1", ot = "OT-2026-001",
-            tratamientos = emptyList()
+            tratamientos = emptyList(),
         )
         dispensacionDao.insertDispensacion(dispensacion)
 
@@ -234,14 +239,22 @@ class DaoTest {
     @Test
     fun pacienteDeleteCascadingPreservesOtherTables() = runBlocking {
         val paciente = Paciente(
-            id = "p1", nombreCompleto = "Test", edad = 20, telefono = "123",
-            fechaCreacion = LocalDate.parse("2026-01-01"), opticaId = "o1"
+            id = "p1",
+            nombreCompleto = "Test",
+            edad = 20,
+            telefono = "123",
+            fechaCreacion = LocalDate.parse("2026-01-01"),
+            opticaId = "o1",
         )
         pacienteDao.insertPaciente(paciente)
 
         val ev = EvaluacionClinica(
-            id = "e1", pacienteId = "p1", fecha = LocalDate.parse("2026-01-01"),
-            opticaId = "o1", motivoConsulta = "", citaEstado = "programada"
+            id = "e1",
+            pacienteId = "p1",
+            fecha = LocalDate.parse("2026-01-01"),
+            opticaId = "o1",
+            motivoConsulta = "",
+            citaEstado = "programada",
         )
         evaluacionDao.insertEvaluacion(ev)
 

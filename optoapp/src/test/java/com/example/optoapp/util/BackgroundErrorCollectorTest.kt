@@ -1,6 +1,5 @@
 package com.example.optoapp.util
 
-import com.example.optoapp.data.BackgroundError
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals

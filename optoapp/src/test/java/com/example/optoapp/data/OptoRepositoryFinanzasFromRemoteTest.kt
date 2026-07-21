@@ -3,7 +3,6 @@ package com.example.optoapp.data
 import com.example.optoapp.data.backup.BackupRestoreCoordinator
 import com.example.optoapp.data.gastooperativo.GastoOperativoDao
 import com.example.optoapp.data.gastooperativo.GastoOperativoEntity
-import java.math.BigDecimal
 import com.example.optoapp.data.montura.MonturaInventoryCoordinator
 import com.example.optoapp.data.sync.SyncSnapshotCoordinator
 import com.example.optoapp.sync.PostSaveSyncScheduler
@@ -18,6 +17,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import java.math.BigDecimal
 import java.time.LocalDate
 
 /**
@@ -69,7 +69,7 @@ class OptoRepositoryFinanzasFromRemoteTest {
             snapshotCoordinator = snapshotCoordinator,
             backupCoordinator = backupCoordinator,
             monturaCoordinator = monturaCoordinator,
-            gastoOperativoDao = gastoOperativoDao
+            gastoOperativoDao = gastoOperativoDao,
         )
     }
 
@@ -83,9 +83,13 @@ class OptoRepositoryFinanzasFromRemoteTest {
     @Test
     fun `upsertGastoOperativoFromRemote passes entity with original timestamp to dao`() = runTest {
         val entity = GastoOperativoEntity(
-            id = "g1", opticaId = opticaId, categoria = "alquiler",
-            descripcion = "Local junio", monto = BigDecimal.valueOf(500.0), fecha = testDate,
-            createdAt = T_REMOTE
+            id = "g1",
+            opticaId = opticaId,
+            categoria = "alquiler",
+            descripcion = "Local junio",
+            monto = BigDecimal.valueOf(500.0),
+            fecha = testDate,
+            createdAt = T_REMOTE,
         )
 
         repo.upsertGastoOperativoFromRemote(entity)
@@ -96,9 +100,13 @@ class OptoRepositoryFinanzasFromRemoteTest {
     @Test
     fun `upsertGastoOperativoFromRemote does NOT call PostSaveSyncScheduler`() = runTest {
         val entity = GastoOperativoEntity(
-            id = "g1", opticaId = opticaId, categoria = "alquiler",
-            descripcion = "Local junio", monto = BigDecimal.valueOf(500.0), fecha = testDate,
-            createdAt = T_REMOTE
+            id = "g1",
+            opticaId = opticaId,
+            categoria = "alquiler",
+            descripcion = "Local junio",
+            monto = BigDecimal.valueOf(500.0),
+            fecha = testDate,
+            createdAt = T_REMOTE,
         )
 
         repo.upsertGastoOperativoFromRemote(entity)

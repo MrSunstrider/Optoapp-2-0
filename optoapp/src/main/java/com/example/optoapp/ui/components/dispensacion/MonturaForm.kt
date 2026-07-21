@@ -19,14 +19,17 @@ import com.example.optoapp.viewmodel.DispensacionUiState
 fun MonturaForm(
     uiState: DispensacionUiState,
     onUpdate: (DispensacionUiState) -> Unit,
-    monturasActivas: List<Montura>
+    monturasActivas: List<Montura>,
 ) {
     Card {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("Información de Montura", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
             DropdownField(label = "Origen", selected = uiState.origenMontura, options = listOf("Tienda", "Paciente")) {
-                if (it == "Tienda") onUpdate(uiState.copy(origenMontura = it))
-                else onUpdate(uiState.copy(origenMontura = it, monturaId = ""))
+                if (it == "Tienda") {
+                    onUpdate(uiState.copy(origenMontura = it))
+                } else {
+                    onUpdate(uiState.copy(origenMontura = it, monturaId = ""))
+                }
             }
             if (uiState.origenMontura == "Tienda" || uiState.origenMontura == "Nueva de Tienda") {
                 val monturaSeleccionada = monturasActivas.firstOrNull { it.id == uiState.monturaId }
@@ -51,14 +54,14 @@ fun MonturaForm(
                         .filter { it.stockActual > 0 }
                         .filter {
                             it.marca.contains(monturaQuery, ignoreCase = true) ||
-                            it.modelo.contains(monturaQuery, ignoreCase = true) ||
-                            it.sku.contains(monturaQuery, ignoreCase = true)
+                                it.modelo.contains(monturaQuery, ignoreCase = true) ||
+                                it.sku.contains(monturaQuery, ignoreCase = true)
                         }
                 }
 
                 ExposedDropdownMenuBox(
                     expanded = expanded && filteredMonturas.isNotEmpty(),
-                    onExpandedChange = { expanded = it }
+                    onExpandedChange = { expanded = it },
                 ) {
                     OutlinedTextField(
                         value = monturaQuery,
@@ -73,11 +76,11 @@ fun MonturaForm(
                         placeholder = { Text("Ej: Ray-Ban, RX-1234...") },
                         leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Buscar") },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                        modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryEditable).fillMaxWidth()
+                        modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryEditable).fillMaxWidth(),
                     )
                     ExposedDropdownMenu(
                         expanded = expanded && filteredMonturas.isNotEmpty(),
-                        onDismissRequest = { expanded = false }
+                        onDismissRequest = { expanded = false },
                     ) {
                         filteredMonturas.forEach { montura ->
                             DropdownMenuItem(
@@ -85,28 +88,34 @@ fun MonturaForm(
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
                                         horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
+                                        verticalAlignment = Alignment.CenterVertically,
                                     ) {
                                         Column(modifier = Modifier.weight(1f)) {
                                             Text("${montura.marca} ${montura.modelo}", fontWeight = FontWeight.Bold)
-                                            Text("SKU: ${montura.sku} | ${montura.color}",
-                                                style = MaterialTheme.typography.bodySmall)
+                                            Text(
+                                                "SKU: ${montura.sku} | ${montura.color}",
+                                                style = MaterialTheme.typography.bodySmall,
+                                            )
                                         }
-                                        Text("Stock: ${montura.stockActual}",
+                                        Text(
+                                            "Stock: ${montura.stockActual}",
                                             fontWeight = FontWeight.Bold,
                                             color = MaterialTheme.colorScheme.primary,
-                                            style = MaterialTheme.typography.bodySmall)
+                                            style = MaterialTheme.typography.bodySmall,
+                                        )
                                     }
                                 },
                                 onClick = {
                                     monturaQuery = "${montura.marca} ${montura.modelo}"
-                                    onUpdate(uiState.copy(
-                                        monturaId = montura.id,
-                                        tipoAro = montura.tipoAro,
-                                        materialMontura = montura.materialMontura
-                                    ))
+                                    onUpdate(
+                                        uiState.copy(
+                                            monturaId = montura.id,
+                                            tipoAro = montura.tipoAro,
+                                            materialMontura = montura.materialMontura,
+                                        ),
+                                    )
                                     expanded = false
-                                }
+                                },
                             )
                         }
                     }

@@ -15,32 +15,35 @@ fun PacienteWhatsAppMenu(
     paciente: Paciente,
     evaluaciones: List<EvaluacionClinica>,
     onDismiss: () -> Unit,
-    onSendMessage: (mensaje: String) -> Unit
+    onSendMessage: (mensaje: String) -> Unit,
+    nombreOptica: String = "",
+    horarioAtencion: String = "",
 ) {
     DropdownMenu(
         expanded = expanded,
-        onDismissRequest = onDismiss
+        onDismissRequest = onDismiss,
     ) {
         val nombre = paciente.nombreCompleto.split(" ").firstOrNull() ?: ""
+        val optica = nombreOptica.ifBlank { "Su óptica" }
 
         DropdownMenuItem(
             text = { Text("Mensaje Libre") },
             onClick = {
                 onDismiss()
                 onSendMessage("Hola $nombre,")
-            }
+            },
         )
 
         DropdownMenuItem(
             text = { Text("Invitación Control Anual") },
             onClick = {
                 onDismiss()
-                val msg = "Hola $nombre, te saludamos de Óptica Sersa Visual y Preventiva. " +
+                val msg = "Hola $nombre, te saludamos de $optica. " +
                     "Nos preocupamos por tu salud visual; te recordamos que ya se cumplió un año " +
                     "desde tu última evaluación y te invitamos a visitarnos para tu control optométrico anual. " +
                     "¡Esperamos verte pronto!"
                 onSendMessage(msg)
-            }
+            },
         )
 
         val ultimaEval = evaluaciones.maxByOrNull { it.fecha }
@@ -50,11 +53,11 @@ fun PacienteWhatsAppMenu(
                 text = { Text("Recordar Próxima Cita ($proxFecha)") },
                 onClick = {
                     onDismiss()
-                    val msg = "Hola $nombre, te saludamos de Óptica Sersa Visual y Preventiva. " +
+                    val msg = "Hola $nombre, te saludamos de $optica. " +
                         "Te recordamos cordialmente que tienes una cita de control optométrico " +
                         "programada con nosotros para el día $proxFecha. ¡Te esperamos!"
                     onSendMessage(msg)
-                }
+                },
             )
         }
 
@@ -67,7 +70,7 @@ fun PacienteWhatsAppMenu(
                 val msg = "Hola $nombre, le recordamos que tiene pendiente el recojo de sus lentes. " +
                     "Lo esperamos en nuestra óptica en nuestro horario de atención."
                 onSendMessage(msg)
-            }
+            },
         )
 
         DropdownMenuItem(
@@ -82,12 +85,15 @@ fun PacienteWhatsAppMenu(
                 val apellido = paciente.nombreCompleto.split(" ").let { partes ->
                     if (partes.size >= 2) partes[1] else nombre
                 }
-                val msg = "Buen día. $titulo $apellido, sus lentes ya están listos, " +
-                    "puede venir a recogerlos en este horario: " +
-                    "Martes a Sábado de 10am a 6:30pm y Domingos de 10am a 2pm. " +
-                    "Lo esperamos."
+                val msg = buildString {
+                    append("Buen día. $titulo $apellido, sus lentes ya están listos")
+                    if (horarioAtencion.isNotBlank()) {
+                        append(", puede venir a recogerlos en este horario: $horarioAtencion.")
+                    }
+                    append(" Lo esperamos.")
+                }
                 onSendMessage(msg)
-            }
+            },
         )
     }
 }

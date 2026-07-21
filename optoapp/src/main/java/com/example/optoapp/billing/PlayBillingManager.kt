@@ -2,15 +2,15 @@ package com.example.optoapp.billing
 
 import android.app.Activity
 import android.content.Context
+import android.util.Log
 import com.android.billingclient.api.AcknowledgePurchaseParams
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingFlowParams
 import com.android.billingclient.api.BillingResult
-import com.android.billingclient.api.ProductDetails
 import com.android.billingclient.api.PendingPurchasesParams
+import com.android.billingclient.api.ProductDetails
 import com.android.billingclient.api.Purchase
-import android.util.Log
 import com.android.billingclient.api.QueryProductDetailsParams
 import com.example.optoapp.data.SessionManager
 import com.example.optoapp.subscription.SubscriptionManager
@@ -22,14 +22,14 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
 import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.put
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.resume
@@ -45,7 +45,7 @@ class PlayBillingManager @Inject constructor(
     @ApplicationContext private val app: Context,
     private val subscriptionManager: SubscriptionManager,
     private val supabase: SupabaseClient,
-    private val sessionManager: SessionManager
+    private val sessionManager: SessionManager,
 ) {
     private val ioScope = CoroutineScope(Dispatchers.IO)
     private var client: BillingClient? = null
@@ -67,7 +67,7 @@ class PlayBillingManager @Inject constructor(
                 }
             }
             .enablePendingPurchases(
-                PendingPurchasesParams.newBuilder().enableOneTimeProducts().build()
+                PendingPurchasesParams.newBuilder().enableOneTimeProducts().build(),
             )
             .build()
         client = c
@@ -100,7 +100,7 @@ class PlayBillingManager @Inject constructor(
                 body = buildJsonObject {
                     put("purchaseToken", purchaseToken)
                     put("opticaId", opticaId)
-                }
+                },
             )
             val bodyText = response.bodyAsText()
             val json = Json.parseToJsonElement(bodyText).jsonObject
@@ -137,23 +137,22 @@ class PlayBillingManager @Inject constructor(
         })
     }
 
-    private suspend fun querySubscriptionProduct(billingClient: BillingClient): ProductDetails? =
-        suspendCancellableCoroutine { cont ->
-            val productList = listOf(
-                QueryProductDetailsParams.Product.newBuilder()
-                    .setProductId(SUBSCRIPTION_PRODUCT_ID)
-                    .setProductType(BillingClient.ProductType.SUBS)
-                    .build()
-            )
-            val params = QueryProductDetailsParams.newBuilder().setProductList(productList).build()
-            billingClient.queryProductDetailsAsync(params) { result, detailsList ->
-                if (result.responseCode != BillingClient.BillingResponseCode.OK || detailsList.isNullOrEmpty()) {
-                    cont.resume(null)
-                } else {
-                    cont.resume(detailsList.first())
-                }
+    private suspend fun querySubscriptionProduct(billingClient: BillingClient): ProductDetails? = suspendCancellableCoroutine { cont ->
+        val productList = listOf(
+            QueryProductDetailsParams.Product.newBuilder()
+                .setProductId(SUBSCRIPTION_PRODUCT_ID)
+                .setProductType(BillingClient.ProductType.SUBS)
+                .build(),
+        )
+        val params = QueryProductDetailsParams.newBuilder().setProductList(productList).build()
+        billingClient.queryProductDetailsAsync(params) { result, detailsList ->
+            if (result.responseCode != BillingClient.BillingResponseCode.OK || detailsList.isNullOrEmpty()) {
+                cont.resume(null)
+            } else {
+                cont.resume(detailsList.first())
             }
         }
+    }
 
     /**
      * Lanza el flujo de compra. El producto debe existir en Play Console (prueba interna/cerrada).
@@ -187,7 +186,7 @@ class PlayBillingManager @Inject constructor(
                     }
                 }
             },
-            onFailure = { onError("Billing no disponible (¿Play Store instalado?).") }
+            onFailure = { onError("Billing no disponible (¿Play Store instalado?).") },
         )
     }
 }
