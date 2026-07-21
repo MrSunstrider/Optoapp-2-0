@@ -13,14 +13,6 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import java.io.IOException
 
-/**
- * Approval + behavior tests for [PacienteRepository] catch-block refactoring.
- *
- * Verifies:
- * - IOException in DAO calls is caught and returned as [Resource.Error]
- * - CancellationException propagates (NOT caught by generic handler)
- * - Generic Exception still returns [Resource.Error]
- */
 @RunWith(RobolectricTestRunner::class)
 class PacienteRepositoryErrorTest {
 
@@ -40,13 +32,11 @@ class PacienteRepositoryErrorTest {
         unmockkAll()
     }
 
-    // ── PacienteDao.getPacienteById ────────────────────────────────────
-
     @Test
     fun `getPacienteById dao throws IOException returns Error`() = runTest {
-        coEvery { pacienteDao.getPacienteById("p1") } throws IOException("Network error")
+        coEvery { pacienteDao.getPacienteByIdScoped("p1", any()) } throws IOException("Network error")
 
-        val result = repo.getPacienteById("p1")
+        val result = repo.getPacienteById("p1", "o1")
 
         assertTrue("Expected Resource.Error but got $result", result is Resource.Error)
         assertNotNull((result as Resource.Error).message)
@@ -54,11 +44,11 @@ class PacienteRepositoryErrorTest {
 
     @Test
     fun `getPacienteById dao throws CancellationException rethrows`() = runTest {
-        coEvery { pacienteDao.getPacienteById("p1") } throws CancellationException("Cancelled")
+        coEvery { pacienteDao.getPacienteByIdScoped("p1", any()) } throws CancellationException("Cancelled")
 
         var caught = false
         try {
-            repo.getPacienteById("p1")
+            repo.getPacienteById("p1", "o1")
         } catch (e: CancellationException) {
             caught = true
         }
@@ -67,15 +57,13 @@ class PacienteRepositoryErrorTest {
 
     @Test
     fun `getPacienteById dao throws generic Exception returns Error`() = runTest {
-        coEvery { pacienteDao.getPacienteById("p1") } throws RuntimeException("DB corrupt")
+        coEvery { pacienteDao.getPacienteByIdScoped("p1", any()) } throws RuntimeException("DB corrupt")
 
-        val result = repo.getPacienteById("p1")
+        val result = repo.getPacienteById("p1", "o1")
 
         assertTrue("Expected Resource.Error but got $result", result is Resource.Error)
         assertEquals("DB corrupt", (result as Resource.Error).message)
     }
-
-    // ── EvaluacionDao.getEvaluacionById ────────────────────────────────
 
     @Test
     fun `getEvaluacionById dao throws IOException returns Error`() = runTest {

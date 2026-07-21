@@ -1,5 +1,6 @@
 package com.example.optoapp.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.optoapp.data.MembershipRepository
@@ -29,6 +30,10 @@ class OpticaHeaderViewModel @Inject constructor(
     private val fiscalStore: OpticaFiscalSettingsStore,
     private val opticaSettingsDao: OpticaSettingsDao,
 ) : ViewModel() {
+
+    companion object {
+        private const val TAG = "OpticaHeaderVM"
+    }
 
     private val _uiState = MutableStateFlow(OpticaHeaderUi())
     val uiState: StateFlow<OpticaHeaderUi> = _uiState.asStateFlow()
@@ -68,7 +73,8 @@ class OpticaHeaderViewModel @Inject constructor(
                             JSONObject(settings.configJson)
                                 .optString("business_hours", "")
                                 .trim()
-                        } catch (_: Exception) {
+                        } catch (e: Exception) {
+                            Log.w(TAG, "Malformed configJson for optica $opticaId: ${e.message}")
                             ""
                         }
                     } else {

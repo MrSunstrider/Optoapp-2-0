@@ -17,12 +17,6 @@ import java.io.IOException
 import java.time.Instant
 import java.time.LocalDate
 
-/**
- * Tests de integración para [PacienteRepository] usando Room in-memory database.
- *
- * Verifica CRUD de pacientes y evaluaciones, sugerencia de historia optométrica,
- * y detección de duplicados.
- */
 @RunWith(RobolectricTestRunner::class)
 class PacienteRepositoryTest {
 
@@ -114,7 +108,7 @@ class PacienteRepositoryTest {
             ),
         )
 
-        val result = repo.getPacienteById("p1")
+        val result = repo.getPacienteById("p1", "o1")
 
         assertTrue(result is Resource.Success)
         assertEquals("Carlos", (result as Resource.Success).data!!.nombreCompleto)
@@ -122,7 +116,7 @@ class PacienteRepositoryTest {
 
     @Test
     fun getPacienteById_withUnknownId_returnsError() = runBlocking {
-        val result = repo.getPacienteById("nonexistent")
+        val result = repo.getPacienteById("nonexistent", "o1")
 
         assertTrue(result is Resource.Error)
     }
@@ -251,8 +245,6 @@ class PacienteRepositoryTest {
         assertTrue(isDuplicate)
     }
 
-    // ─── Virtual Try-On: measurement persistence ──────────────────────────
-
     @Test
     fun updateEvaluacion_persistsDIPandDNPmeasurements() = runBlocking {
         val paciente = Paciente(
@@ -319,8 +311,6 @@ class PacienteRepositoryTest {
         assertNull("dnpOiMm debe poder ser null", result.dnpOiMm)
     }
 
-    // ─── B4: deletePaciente returns Int ─────────────────────────────────
-
     @Test
     fun deletePaciente_returnsOneForExistingRecord() = runBlocking {
         pacienteDao.insertPaciente(
@@ -342,8 +332,6 @@ class PacienteRepositoryTest {
 
         assertEquals(0, rowsDeleted)
     }
-
-    // ─── F2: resolveDuplicatePacientesByHistoria with 3+ duplicates ──────
 
     @Test
     fun resolveDuplicatePacientesByHistoria_threeDuplicates_accumulatesAllFields() = runBlocking {
@@ -380,8 +368,6 @@ class PacienteRepositoryTest {
         assertNull("dup-C deleted", pacienteDao.getPacienteById("dup-C"))
     }
 
-    // ─── F2 regression: 2 duplicates (val→var canonical change) ──────────
-
     @Test
     fun resolveDuplicatePacientesByHistoria_twoDuplicates_mergesCorrectly() = runBlocking {
         val pA = Paciente(
@@ -406,8 +392,6 @@ class PacienteRepositoryTest {
         assertEquals("direccion from A preserved", "Calle A", merged.direccion)
         assertNull("dup-2-B deleted", pacienteDao.getPacienteById("dup-2-B"))
     }
-
-    // ─── F3: updatedAt stamping ─────────────────────────────────────────
 
     @Test
     fun insertPaciente_preservesUpdatedAtAtRepoLevel() = runBlocking {

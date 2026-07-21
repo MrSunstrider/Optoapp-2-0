@@ -154,7 +154,11 @@ class PacienteViewModel @Inject constructor(
     suspend fun savePaciente(paciente: Paciente) {
         val oid = sessionManager.opticaId.first()
         val role = sessionManager.opticaRol.first()
-        AuthorizationGuard.requireRole(role, setOf("admin", "gerente"), "guardar paciente")
+        try {
+            AuthorizationGuard.requireRole(role, setOf("admin", "gerente"), "guardar paciente")
+        } catch (e: IllegalArgumentException) {
+            throw IllegalArgumentException("No autorizado para guardar pacientes")
+        }
         val toSave = paciente.copy(opticaId = oid)
         val historiaNorm = toSave.historiaOptometrica?.trim().orEmpty()
         if (historiaNorm.isNotEmpty()) {
@@ -174,7 +178,8 @@ class PacienteViewModel @Inject constructor(
     }
 
     suspend fun getPaciente(id: String): Paciente? {
-        val result = repository.getPacienteById(id)
+        val oid = sessionManager.opticaId.first()
+        val result = repository.getPacienteByIdScoped(id, oid)
         return if (result is Resource.Success) result.data else null
     }
 

@@ -7,10 +7,7 @@ import kotlinx.coroutines.flow.Flow
 import java.io.IOException
 import java.time.LocalDate
 
-/**
- * Repositorio especializado en operaciones de Paciente y EvaluacionClinica.
- * Extraído de [OptoRepository] para reducir el God class.
- */
+// Extracted from OptoRepository to keep the god class manageable as patient operations grew.
 class PacienteRepository(
     private val pacienteDao: PacienteDao,
     private val evaluacionDao: EvaluacionDao,
@@ -29,8 +26,8 @@ class PacienteRepository(
 
     fun getPacientesWithPendingDeliveryForOptica(opticaId: String): Flow<List<Paciente>> = pacienteDao.getPacientesWithPendingDeliveryForOptica(opticaId)
 
-    suspend fun getPacienteById(id: String): Resource<Paciente> = try {
-        val paciente = pacienteDao.getPacienteById(id)
+    suspend fun getPacienteById(id: String, opticaId: String): Resource<Paciente> = try {
+        val paciente = pacienteDao.getPacienteByIdScoped(id, opticaId)
         if (paciente != null) {
             Resource.Success(paciente)
         } else {
@@ -46,6 +43,20 @@ class PacienteRepository(
         Resource.Error(e.message ?: "Error al obtener paciente")
     }
 
+    @Deprecated("Use getPacienteById(id, opticaId) for multi-tenant safety")
+    suspend fun getPacienteByIdLegacy(id: String): Resource<Paciente> = try {
+        val paciente = pacienteDao.getPacienteById(id)
+        if (paciente != null) Resource.Success(paciente) else Resource.Error("Paciente no encontrado")
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: IOException) {
+        Log.e(TAG, "getPacienteByIdLegacy: id=$id", e)
+        Resource.Error("Error de red al obtener paciente")
+    } catch (e: Exception) {
+        Log.e(TAG, "getPacienteByIdLegacy: id=$id", e)
+        Resource.Error(e.message ?: "Error al obtener paciente")
+    }
+
     suspend fun insertPaciente(paciente: Paciente) {
         pacienteDao.insertPaciente(paciente)
     }
@@ -54,7 +65,11 @@ class PacienteRepository(
         pacienteDao.upsertPaciente(paciente)
     }
 
-    suspend fun deletePaciente(paciente: Paciente) = pacienteDao.deletePaciente(paciente.id, paciente.opticaId)
+    suspend fun deletePaciente(paciente: Paciente): Int {
+        val affected = pacienteDao.deletePaciente(paciente.id, paciente.opticaId)
+        if (affected == 0) Log.w(TAG, "deletePaciente: no rows affected for ${paciente.id}")
+        return affected
+    }
 
     suspend fun getPacientesSnapshotForOptica(opticaId: String): List<Paciente> = pacienteDao.getPacientesListByOptica(opticaId)
 

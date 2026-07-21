@@ -57,7 +57,7 @@ fun PacientesListScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
     val opticaRol by authViewModel.opticaRol.collectAsState(initial = "")
-    val canCreateEdit = AppRoles.canCreateEditPacientes(opticaRol)
+    val canCreateEdit = opticaRol in setOf("admin", "gerente")
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
