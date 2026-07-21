@@ -65,7 +65,6 @@ data class DispensacionUiState(
     val regalos: List<RegaloDispensacionUi> = emptyList(),
     val monturasDisponibles: List<Montura> = emptyList(),
 
-    // ── Costos y Gastos (Phase 4) ──
     val evaluacionId: String? = null,
     val evaluacionesDisponibles: List<EvaluacionClinica> = emptyList(),
 )
@@ -96,7 +95,6 @@ data class DispensacionItemUi(
     val materialMontura: String = "",
     val descripcionMontura: String = "",
     val tipoMontura: String = "",
-    // ── Cost fields (auto-filled from matrix, manually overridable) ──
     val costoRealOd: Double? = null,
     val costoRealOi: Double? = null,
     val costoRealMontura: Double? = null,
@@ -119,7 +117,7 @@ class DispensacionViewModel @Inject constructor(
     private val _monturasActivas = MutableStateFlow<List<com.example.optoapp.data.Montura>>(emptyList())
     val monturasActivas: StateFlow<List<com.example.optoapp.data.Montura>> = _monturasActivas.asStateFlow()
 
-    /** Precargada para el ticket de laboratorio: evita que el óptico cambie de pantalla consultando la última refracción y DIP del paciente. */
+    // WHY: pre-loaded so the optician doesn't need to navigate away from the screen
     private val _ultimaEvaluacionTicket = MutableStateFlow<EvaluacionClinica?>(null)
     val ultimaEvaluacionTicket: StateFlow<EvaluacionClinica?> = _ultimaEvaluacionTicket.asStateFlow()
 
@@ -310,8 +308,6 @@ class DispensacionViewModel @Inject constructor(
             s.copy(items = finalItems, itemsToDelete = toDelete)
         }
     }
-
-    // ─── Regalo management ─────────────────────────────────────────────────────
 
     fun addRegalo(regalo: RegaloDispensacionUi) {
         _uiState.update { it.copy(regalos = it.regalos + regalo) }
@@ -721,8 +717,6 @@ class DispensacionViewModel @Inject constructor(
     }
 
     private fun isOrigenTienda(value: String): Boolean = value == ORIGEN_TIENDA || value == ORIGEN_TIENDA_LEGACY
-
-    // ─── Costos y Gastos: evaluacion_id linkage ───────────────────────────
 
     fun loadEvaluacionesDisponibles(pacienteId: String) {
         viewModelScope.launch {

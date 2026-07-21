@@ -16,19 +16,15 @@ class ConfiguracionViewModel @Inject constructor(
     private val securityManager: SecurityManager,
 ) : ViewModel() {
 
-    // ─── PIN form fields ───────────────────────────────────────────────────────
     var pinActual by mutableStateOf("")
     var nuevoPin by mutableStateOf("")
     var confirmPin by mutableStateOf("")
 
-    // ─── Laboratorio form fields ───────────────────────────────────────────────
     var labNombre by mutableStateOf("")
     var labContacto by mutableStateOf("")
 
-    // ─── Dialog ────────────────────────────────────────────────────────────────
     var dialogMessage by mutableStateOf<String?>(null)
 
-    // ─── Static data ───────────────────────────────────────────────────────────
     val availableTimeZones = listOf(
         "Detectar automáticamente",
         "America/Lima", "America/Bogota", "America/Mexico_City",

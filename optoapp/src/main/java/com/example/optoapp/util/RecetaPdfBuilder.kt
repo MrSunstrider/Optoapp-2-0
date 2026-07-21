@@ -28,15 +28,12 @@ class RecetaPdfBuilder {
     private var canvas: Canvas = page.canvas
     private var y = 0f
 
-    // ─── Public API ─────────────────────────────────────────────────────────
-
     /**
      * Dibuja la cabecera del PDF: título centrado + nombre comercial + tarjeta de paciente.
      */
     fun addHeader(paciente: Paciente, eval: EvaluacionClinica, opticaNombre: String = ""): RecetaPdfBuilder {
         initPage()
 
-        // Título centrado
         val title = layoutText("FÓRMULA OPTOMÉTRICA", PdfStyle.titlePaint, contentWidth(), Layout.Alignment.ALIGN_CENTER)
         drawStaticLayout(title, PdfStyle.MARGIN, y)
         advance(title.height + 6f)
@@ -285,8 +282,6 @@ class RecetaPdfBuilder {
         finishPage()
         return doc
     }
-
-    // ─── Internal helpers ───────────────────────────────────────────────────
 
     private fun initPage() {
         drawPageTopAccent()

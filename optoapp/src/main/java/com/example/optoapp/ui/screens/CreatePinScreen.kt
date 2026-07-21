@@ -50,7 +50,6 @@ fun CreatePinScreen(navController: NavController, viewModel: AuthViewModel = hil
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            // ─── Logo "O" ────────────────────────────────────────────────────
             Surface(
                 shape = RoundedCornerShape(20.dp),
                 color = MaterialTheme.colorScheme.primary,
@@ -88,7 +87,6 @@ fun CreatePinScreen(navController: NavController, viewModel: AuthViewModel = hil
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // ─── PIN Dots ────────────────────────────────────────────────────
             val displayPin = if (step == 1) firstPin else secondPin
             Row(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -111,7 +109,6 @@ fun CreatePinScreen(navController: NavController, viewModel: AuthViewModel = hil
                 }
             }
 
-            // ─── Error message ──────────────────────────────────────────────
             if (errorMessage != null) {
                 Surface(
                     color = MaterialTheme.colorScheme.error.copy(alpha = 0.12f),
@@ -138,7 +135,6 @@ fun CreatePinScreen(navController: NavController, viewModel: AuthViewModel = hil
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // ─── Number Pad ─────────────────────────────────────────────────
             OptoCard(
                 shape = RoundedCornerShape(24.dp),
                 elevation = 1.dp,

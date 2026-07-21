@@ -145,7 +145,6 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
                 }
             }
 
-            // ─── Evaluación vinculada ───────────────────────────────────────
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
@@ -224,7 +223,6 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
                 }
             }
 
-            // ─── Productos (collapsible items) ─────────────────────────────
             Text(
                 "Productos",
                 fontWeight = FontWeight.Bold,
@@ -256,7 +254,6 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
                 Text("Agregar otro producto (lente + montura)")
             }
 
-            // ─── Información Financiera ─────────────────────────────────────
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
@@ -386,7 +383,6 @@ private fun CollapsibleItemCard(
         shape = RoundedCornerShape(12.dp),
     ) {
         Column {
-            // Collapsed header (always visible)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -423,7 +419,6 @@ private fun CollapsibleItemCard(
                 )
             }
 
-            // Expanded form
             AnimatedVisibility(
                 visible = isExpanded,
                 enter = expandVertically(),
@@ -439,7 +434,6 @@ private fun CollapsibleItemCard(
                         onRemove = onRemove,
                     )
                     Spacer(Modifier.height(8.dp))
-                    // Calculate costs button
                     OutlinedButton(
                         onClick = onCalculateCosts,
                         modifier = Modifier.fillMaxWidth(),

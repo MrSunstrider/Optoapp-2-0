@@ -69,8 +69,6 @@ object UpdateChecker {
         data class Error(val message: String) : DownloadResult()
     }
 
-    // ─── Cadena de respaldo ─────────────────────────────────────────────
-
     /**
      * @param supabase Si se provee, se usa como respaldo si GitHub falla.
      */
@@ -85,8 +83,6 @@ object UpdateChecker {
 
         return null
     }
-
-    // ─── Primario: GitHub API ───────────────────────────────────────────
 
     /**
      * Consulta la API pública de GitHub Releases.
@@ -133,8 +129,6 @@ object UpdateChecker {
         return conn.inputStream.bufferedReader().readText()
     }
 
-    // ─── Respaldo: Supabase ─────────────────────────────────────────────
-
     /**
      * Consulta la tabla `app_releases` en Supabase.
      * El CI inserta aquí via Edge Function track-release.
@@ -163,8 +157,6 @@ object UpdateChecker {
             null
         }
     }
-
-    // ─── Descarga e instalación ─────────────────────────────────────────
 
     /**
      * Descarga el APK en segundo plano, lo valida y abre el intent de instalación.

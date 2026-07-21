@@ -33,11 +33,6 @@ import com.example.optoapp.viewmodel.CostosYGastosViewModel
 import kotlinx.coroutines.launch
 import java.util.Locale
 
-/**
- * Costos y Gastos screen with 2 tabs:
- * Tab 1: Matriz de Costos — block dropdown + matrix grid + costos por orden (filtered by dispensacionId)
- * Tab 2: Gastos Operativos — CRUD (replaces standalone GastosScreen)
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CostosYGastosScreen(
@@ -108,8 +103,6 @@ fun CostosYGastosScreen(
         }
     }
 }
-
-// ─── Tab 1: Matriz de Costos ─────────────────────────────────────────────
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -215,10 +208,9 @@ private fun MatrizDeCostosTab(
                 Text(error, color = MaterialTheme.colorScheme.error, fontSize = 13.sp)
             }
 
-            // Spacer so FAB doesn't cover last items
             Spacer(Modifier.height(80.dp))
 
-            // ── Edit Cost Dialog (R6: manual override) ──
+        
             uiState.editingCosto?.let { costo ->
                 var editValue by remember { mutableStateOf(uiState.nuevoCostoUnitario) }
                 AlertDialog(
@@ -252,7 +244,6 @@ private fun MatrizDeCostosTab(
             }
         }
 
-        // FAB for creating new cost entry (same position as Tab 1 FAB)
         if (uiState.selectedBlock != null) {
             FloatingActionButton(
                 onClick = { viewModel.showNewCosto() },
@@ -265,14 +256,13 @@ private fun MatrizDeCostosTab(
             }
         }
 
-        // ── Create Cost Dialog ──
+    
         if (uiState.isCostoDialogVisible) {
             AlertDialog(
                 onDismissRequest = { viewModel.dismissCostoDialog() },
                 title = { Text("Nuevo Costo", fontWeight = FontWeight.Bold) },
                 text = {
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        // Material dropdown
                         var materialExpanded by remember { mutableStateOf(false) }
                         ExposedDropdownMenuBox(expanded = materialExpanded, onExpandedChange = { materialExpanded = !materialExpanded }) {
                             OutlinedTextField(
@@ -293,7 +283,6 @@ private fun MatrizDeCostosTab(
                             }
                         }
 
-                        // Tipo lente dropdown
                         var tipoExpanded by remember { mutableStateOf(false) }
                         ExposedDropdownMenuBox(expanded = tipoExpanded, onExpandedChange = { tipoExpanded = !tipoExpanded }) {
                             OutlinedTextField(
@@ -373,7 +362,7 @@ private fun MatrizDeCostosTab(
             )
         }
 
-        // ── Delete Cost Confirmation Dialog ──
+    
         uiState.deletingCosto?.let { costo ->
             AlertDialog(
                 onDismissRequest = { viewModel.dismissDeleteDialog() },
@@ -392,8 +381,6 @@ private fun MatrizDeCostosTab(
         }
     }
 }
-
-// ─── Tab 2: Gastos Operativos (mirrors GastosScreen pattern) ─────────────
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -563,8 +550,6 @@ private fun fmt(value: Double): String = if (value == value.toLong().toDouble())
 } else {
     String.format(Locale.getDefault(), "%,.2f", value)
 }
-
-// ─── Costo Producto Row (matrix grid) ──────────────────────────────────────
 
 @Composable
 private fun CostoProductoRow(costo: CostoProductoEntity, onClick: () -> Unit = {}, onDelete: () -> Unit = {}) {

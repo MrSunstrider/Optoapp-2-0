@@ -116,13 +116,9 @@ class CostosYGastosViewModel @Inject constructor(
         }
     }
 
-    // ─── Tab management ───────────────────────────────────────────────────
-
     fun selectTab(index: Int) {
         _uiState.update { it.copy(selectedTab = index) }
     }
-
-    // ─── Block management ─────────────────────────────────────────────────
 
     fun loadBlock(block: String) {
         _uiState.update { it.copy(selectedBlock = block, isLoading = true) }
@@ -139,7 +135,7 @@ class CostosYGastosViewModel @Inject constructor(
         }
     }
 
-    // ─── Cost override editing (R6: manual override persists) ──────────
+    // R6: manual override persists
 
     fun showEditCosto(costo: CostoProductoEntity) {
         _uiState.update { it.copy(editingCosto = costo, nuevoCostoUnitario = costo.costoUnitario.toString(), error = null) }
@@ -165,8 +161,7 @@ class CostosYGastosViewModel @Inject constructor(
             try {
                 val updated = costo.copy(costoUnitario = nuevoValor)
                 costoProductoDao.upsertAll(listOf(updated))
-                // Refresh block data
-                val opticaId = sessionManager.opticaId.first()
+                                val opticaId = sessionManager.opticaId.first()
                 val bloqueFilter = blockToFilter(s.selectedBlock ?: return@launch)
                 val refreshed = costoProductoDao.getByBloque(opticaId, bloqueFilter).first()
                 _uiState.update { it.copy(editingCosto = null, nuevoCostoUnitario = "", costosDelBloque = refreshed, error = null) }
@@ -175,8 +170,6 @@ class CostosYGastosViewModel @Inject constructor(
             }
         }
     }
-
-    // ─── Gastos Operativos CRUD (replicates GastosViewModel pattern) ──────
 
     val categorias = CATEGORIAS
 
@@ -265,8 +258,6 @@ class CostosYGastosViewModel @Inject constructor(
         }
     }
 
-    // ─── Costos Productos CRUD (Matriz de Costos, Tab 0) ───────────────────
-
     val materialesOpticos = OpticalCatalog.MATERIALES
     val tiposLente = OpticalCatalog.TIPO_LENTE.filter { it != "Lentes de Contacto" }
     val tratamientos = OpticalCatalog.TRATAMIENTOS
@@ -317,8 +308,7 @@ class CostosYGastosViewModel @Inject constructor(
 
     fun saveCosto() {
         val s = _uiState.value
-        // Validate required fields
-        if (s.costoMaterial.isBlank()) {
+                if (s.costoMaterial.isBlank()) {
             _uiState.update { it.copy(costoSaveError = "Selecciona un material") }
             return
         }
@@ -346,8 +336,7 @@ class CostosYGastosViewModel @Inject constructor(
                     vigenteDesde = DateUtils.toIso(DateUtils.today()),
                 )
                 costoProductoDao.upsertAll(listOf(entity))
-                // Refresh block data
-                val bloqueFilter = blockToFilter(s.selectedBlock ?: return@launch)
+                                val bloqueFilter = blockToFilter(s.selectedBlock ?: return@launch)
                 val refreshed = costoProductoDao.getByBloque(opticaId, bloqueFilter).first()
                 _uiState.update {
                     it.copy(

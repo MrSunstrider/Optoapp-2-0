@@ -51,7 +51,6 @@ fun PinScreen(navController: NavController, viewModel: AuthViewModel = hiltViewM
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            // ─── Logo "O" ────────────────────────────────────────────────────
             Surface(
                 shape = RoundedCornerShape(20.dp),
                 color = MaterialTheme.colorScheme.primary,
@@ -85,7 +84,6 @@ fun PinScreen(navController: NavController, viewModel: AuthViewModel = hiltViewM
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // ─── PIN Dots ────────────────────────────────────────────────────
             Row(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -108,7 +106,6 @@ fun PinScreen(navController: NavController, viewModel: AuthViewModel = hiltViewM
                 }
             }
 
-            // ─── Error message ──────────────────────────────────────────────
             if (errorMessage != null) {
                 Surface(
                     color = MaterialTheme.colorScheme.error.copy(alpha = 0.12f),
@@ -136,7 +133,6 @@ fun PinScreen(navController: NavController, viewModel: AuthViewModel = hiltViewM
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // ─── Number Pad ─────────────────────────────────────────────────
             OptoCard(
                 shape = RoundedCornerShape(24.dp),
                 elevation = 1.dp,

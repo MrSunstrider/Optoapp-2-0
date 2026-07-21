@@ -165,7 +165,6 @@ object RefraccionTableBuilder {
             canvas.drawLine(margin, yy, xRight, yy, PdfStyle.gridStrokePaint)
         }
 
-        // ─── 1. Visión Lejana ─────────────────────────────────────────────────
         val distTitleSl = sl("Visión Lejana", PdfStyle.sectionPaint, innerW.toInt(), Layout.Alignment.ALIGN_CENTER)
         drawSl(distTitleSl, margin, cy)
         cy += sectionTitleH
@@ -215,7 +214,6 @@ object RefraccionTableBuilder {
         fullDivider(cy)
         cy += gap
 
-        // ─── 2. Visión Próxima ─────────────────────────────────────────────────
         // 6 cols: label | Cerca | Intermedia | DIP/DNP | AV | AV/AO
         val nearColCercaInter = (colEsf + colCil + colEje) / 2f
 
@@ -269,7 +267,6 @@ object RefraccionTableBuilder {
         fullDivider(cy)
         cy += 4f
 
-        // ─── 3. Prismas ─────────────────────────────────────────────────────────
         val oneSeventh = innerW / 7f
         val prismaColW = oneSeventh
         val pLabel = margin

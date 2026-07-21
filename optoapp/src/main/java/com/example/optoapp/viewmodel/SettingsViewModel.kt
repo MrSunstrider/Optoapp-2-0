@@ -22,8 +22,6 @@ class SettingsViewModel @Inject constructor(
     private val securityManager: SecurityManager,
 ) : ViewModel() {
 
-    // ─── Notificaciones ──────────────────────────────────────────────────────
-
     val remindersEnabled: StateFlow<Boolean> = reminderSettingsStore.enableRemindersFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
 
@@ -45,8 +43,6 @@ class SettingsViewModel @Inject constructor(
     fun sendTestNotification() {
         notificationHelper.showNotification("Prueba OptoApp")
     }
-
-    // ─── PIN ─────────────────────────────────────────────────────────────────
 
     val pinHasBeenSet: StateFlow<Boolean> = sessionManager.pinHasBeenSet
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)

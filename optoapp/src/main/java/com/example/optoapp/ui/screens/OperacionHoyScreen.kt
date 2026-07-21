@@ -95,7 +95,7 @@ fun OperacionHoyScreen(
                 .navigationBarsPadding(),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            // ── Date header ──
+        
             Text(
                 DateUtils.formatLocalized(uiState.fecha),
                 modifier = Modifier.padding(horizontal = 16.dp).padding(top = 12.dp),
@@ -104,7 +104,7 @@ fun OperacionHoyScreen(
                 color = MaterialTheme.colorScheme.primary,
             )
 
-            // ── Quick Actions ──
+        
             Text(
                 "Acciones rápidas",
                 modifier = Modifier.padding(horizontal = 16.dp),
@@ -127,7 +127,7 @@ fun OperacionHoyScreen(
                 }
             }
 
-            // ── KPIs 2x2 ──
+        
             Column(
                 modifier = Modifier.padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -178,7 +178,7 @@ fun OperacionHoyScreen(
                 }
             }
 
-            // ── Alertas ──
+        
             if (uiState.alertas.isNotEmpty()) {
                 Card(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
@@ -217,7 +217,7 @@ fun OperacionHoyScreen(
                 }
             }
 
-            // ── Pendientes del día ──
+        
             if (uiState.dispensacionesPendientes.isNotEmpty() || uiState.serviciosPendientes.isNotEmpty()) {
                 Text(
                     "Pendientes de entrega",
@@ -286,7 +286,7 @@ fun OperacionHoyScreen(
                 }
             }
 
-            // ── Export ──
+        
             if (canExportInventario) {
                 OutlinedButton(
                     onClick = {

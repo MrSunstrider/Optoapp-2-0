@@ -64,7 +64,6 @@ class ReportesViewModel @Inject constructor(
         _fechaDiario.value = fecha
     }
 
-    // ── Navigation ──
     fun previous() {
         when (_periodo.value) {
             "Diario" -> _fechaDiario.value = _fechaDiario.value.minusDays(1)
@@ -83,7 +82,6 @@ class ReportesViewModel @Inject constructor(
         }
     }
 
-    // ── Period labels for display ──
     val periodoLabel: StateFlow<String> = combine(_periodo, _fechaDiario, _anio) { p, fd, a ->
         when (p) {
             "Diario" -> DateUtils.formatLocalized(fd)
@@ -245,7 +243,7 @@ class ReportesViewModel @Inject constructor(
         .map { it.size }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
-    // ── Pagos sum maps for per-row saldo computation (montoPagado/aCuenta are @Ignore) ──
+    // montoPagado/aCuenta are @Ignore in entity, compute from pagos sum
     // Anulaciones (negative monto) are INCLUDED so they net out correctly.
 
     @OptIn(ExperimentalCoroutinesApi::class)

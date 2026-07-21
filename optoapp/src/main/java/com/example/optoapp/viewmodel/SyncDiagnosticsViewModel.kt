@@ -35,7 +35,6 @@ sealed interface SessionRepairState {
     data class Error(val message: String) : SessionRepairState
 }
 
-/** Lectura de filas con error de sync por óptica (diagnóstico en Configuración). */
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class SyncDiagnosticsViewModel @Inject constructor(
@@ -73,7 +72,7 @@ class SyncDiagnosticsViewModel @Inject constructor(
     private val _remoteTelemetryError = MutableStateFlow<String?>(null)
     val remoteTelemetryError: StateFlow<String?> = _remoteTelemetryError.asStateFlow()
 
-    // ── Sesión salud ─────────────────────────────────────────────────────────
+
 
     private val _sessionHealth = MutableStateFlow(SessionHealth())
     val sessionHealth: StateFlow<SessionHealth> = _sessionHealth.asStateFlow()

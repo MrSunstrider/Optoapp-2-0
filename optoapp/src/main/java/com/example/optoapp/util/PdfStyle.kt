@@ -7,8 +7,6 @@ import android.text.TextPaint
 
 object PdfStyle {
 
-    // ─── Layout dimensions ──────────────────────────────────────────────────
-
     const val PAGE_W = 595
     const val PAGE_H = 842
     const val MARGIN = 42f
@@ -19,8 +17,7 @@ object PdfStyle {
     const val CARD_PAD = 10f
     const val SECTION_BAR_W = 4f
 
-    // ─── Colors (raw ARGB ints, no Android dependency) ──────────────────────
-
+    // Colors are raw ARGB ints (no Android dependency)
     val COLOR_ACCENT: Int = 0xFF1E5B8C.toInt()
     val COLOR_ACCENT_LIGHT: Int = 0xFFE8F0F8.toInt()
     val COLOR_TEXT: Int = 0xFF1C1C1E.toInt()
@@ -28,8 +25,6 @@ object PdfStyle {
     val COLOR_BORDER: Int = 0xFFD2DAE4.toInt()
     val COLOR_CARD_FILL: Int = 0xFFFCFDFF.toInt()
     val COLOR_RULE: Int = 0xFFE6EBF2.toInt()
-
-    // ─── Paint presets ──────────────────────────────────────────────────────
 
     val accentBarPaint: Paint by lazy {
         Paint(Paint.ANTI_ALIAS_FLAG).apply { color = COLOR_ACCENT }
@@ -76,8 +71,6 @@ object PdfStyle {
     val altRowPaint: Paint by lazy {
         Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.argb(30, 30, 91, 140) }
     }
-
-    // ─── TextPaint presets ──────────────────────────────────────────────────
 
     val titlePaint: TextPaint by lazy {
         TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
