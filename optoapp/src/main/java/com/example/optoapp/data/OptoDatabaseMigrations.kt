@@ -4,13 +4,6 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import java.util.concurrent.TimeUnit
 
-// ─── Categorización de migraciones ──────────────────────────────────────────
-// v6→v8   : Multióptica (opticaId), campos de evaluación clínica
-// v8→v14  : Expansión modelo evaluaciones (estereopsis, colores, schirmer, etc.)
-// v14→v20 : Inventario (monturas, proveedores, órdenes de compra), dispensaciones
-// v20→v27 : sync_entity_state, sesión multi-dispositivo
-// ─────────────────────────────────────────────────────────────────────────────
-
 val MIGRATION_6_7 = object : Migration(6, 7) {
     override fun migrate(db: SupportSQLiteDatabase) {
         db.execSQL("ALTER TABLE evaluaciones ADD COLUMN avScAoCerca TEXT NOT NULL DEFAULT ''")
@@ -1119,12 +1112,8 @@ val MIGRATION_38_39 = object : Migration(38, 39) {
     }
 }
 
-// ─── MIGRATION 39→40 ─────────────────────────────────────────────────────────
-// Fix 2.5: ConflictRecord — composite PK (entityId, opticaId) replaces single PK (entityId)
-// Fix 2.6: ResumenDiarioEntity — declare unique index (opticaId, fecha), clean duplicates
 val MIGRATION_39_40 = object : Migration(39, 40) {
     override fun migrate(db: SupportSQLiteDatabase) {
-        // ── Fix 2.5: Recreate conflict_records with composite PK ──────────
         db.execSQL(
             """
             CREATE TABLE IF NOT EXISTS conflict_records_new (
@@ -1152,7 +1141,6 @@ val MIGRATION_39_40 = object : Migration(39, 40) {
         db.execSQL("DROP TABLE conflict_records")
         db.execSQL("ALTER TABLE conflict_records_new RENAME TO conflict_records")
 
-        // ── Fix 2.6: Clean duplicates in resumen_diario, ensure unique index ──
         db.execSQL(
             """
             DELETE FROM resumen_diario
@@ -1168,7 +1156,6 @@ val MIGRATION_39_40 = object : Migration(39, 40) {
             """.trimIndent(),
         )
 
-        // ── gastos_operativos: rename esRecurrente → isRecurring ──
         db.execSQL(
             """
             CREATE TABLE gastos_operativos_new (
@@ -1213,16 +1200,12 @@ val MIGRATION_39_40 = object : Migration(39, 40) {
     }
 }
 
-// ─── MIGRATION 40→41 ─────────────────────────────────────────────────────────
-// Add CostoLcEntity — Room auto-creates new table, no DDL needed.
 val MIGRATION_40_41 = object : Migration(40, 41) {
     override fun migrate(db: SupportSQLiteDatabase) {
         // costos_lc is a new table — Room creates it automatically after migration
     }
 }
 
-// ─── MIGRATION 41→42 ─────────────────────────────────────────────────────────
-// Add OpticaSettingsEntity — read per-tenant config from optica_settings table
 val MIGRATION_41_42 = object : Migration(41, 42) {
     override fun migrate(db: SupportSQLiteDatabase) {
         db.execSQL(

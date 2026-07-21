@@ -11,8 +11,6 @@ package com.example.optoapp.testing
  */
 object TestTags {
 
-    // ── Login Screen ─────────────────────────────────────────────────────────
-
     const val LOGIN_EMAIL_FIELD = "login_email_field"
     const val LOGIN_PASSWORD_FIELD = "login_password_field"
     const val LOGIN_INGRESAR_BTN = "login_ingresar_btn"
@@ -21,15 +19,11 @@ object TestTags {
     const val LOGIN_OLVIDASTE_BTN = "login_olvidaste_btn"
     const val LOGIN_SCREEN_ROOT = "login_screen_root"
 
-    // ── PIN Screen ───────────────────────────────────────────────────────────
-
     const val PIN_INPUT_FIELD = "pin_input_field"
     const val PIN_SCREEN_ROOT = "pin_screen_root"
     const val PIN_CREAR_BTN = "pin_crear_btn"
     const val PIN_CONFIRMAR_BTN = "pin_confirmar_btn"
     const val PIN_ERROR_MESSAGE = "pin_error_message"
-
-    // ── Navigation ───────────────────────────────────────────────────────────
 
     const val NAV_BOTTOM_PACIENTES = "nav_bottom_pacientes"
     const val NAV_BOTTOM_EVALUACIONES = "nav_bottom_evaluaciones"
@@ -40,8 +34,6 @@ object TestTags {
     const val NAV_DRAWER_CONFIGURACION = "nav_drawer_configuracion"
     const val NAV_DRAWER_CIERRE_CAJA = "nav_drawer_cierre_caja"
     const val NAV_DRAWER_REPORTES = "nav_drawer_reportes"
-
-    // ── Paciente Screen ──────────────────────────────────────────────────────
 
     const val PACIENTE_NOMBRE_FIELD = "paciente_nombre_field"
     const val PACIENTE_EDAD_FIELD = "paciente_edad_field"
@@ -57,8 +49,6 @@ object TestTags {
     const val PACIENTE_CARD_LAST_EVAL_BTN = "paciente_card_last_eval_btn"
     const val PACIENTE_CARD_LAST_DISP_BTN = "paciente_card_last_disp_btn"
 
-    // ── Evaluación Screen ────────────────────────────────────────────────────
-
     const val EVALUACION_MOTIVO_FIELD = "evaluacion_motivo_field"
     const val EVALUACION_DIP_FIELD = "evaluacion_dip_field"
     const val EVALUACION_ESFERA_OD = "evaluacion_esfera_od"
@@ -71,8 +61,6 @@ object TestTags {
     const val EVALUACION_AUTO_DIAGNOSTICO = "evaluacion_auto_diagnostico"
     const val EVALUACION_SCREEN_ROOT = "evaluacion_screen_root"
     const val EVALUACION_ERROR_MESSAGE = "evaluacion_error_message"
-
-    // ── Dispensación Screen ──────────────────────────────────────────────────
 
     const val DISPENSACION_AGREGAR_ITEM_BTN = "dispensacion_agregar_item_btn"
     const val DISPENSACION_OT_FIELD = "dispensacion_ot_field"
