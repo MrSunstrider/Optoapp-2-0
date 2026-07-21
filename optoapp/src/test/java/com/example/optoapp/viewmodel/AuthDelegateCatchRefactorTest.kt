@@ -1,4 +1,4 @@
-package com.example.optoapp.viewmodel
+﻿package com.example.optoapp.viewmodel
 
 import kotlinx.coroutines.CancellationException
 import org.junit.Assert.*
@@ -13,8 +13,6 @@ import org.junit.Test
  * Tests verify error message patterns and CancellationException rethrow.
  */
 class AuthDelegateCatchRefactorTest {
-
-    // ─── register() error message pattern (line 143) ────────────────────
 
     @Test
     fun `register error message prefix`() {
@@ -36,8 +34,6 @@ class AuthDelegateCatchRefactorTest {
         val msg = "No se pudo crear la cuenta: ${localized ?: "error desconocido"}"
         assertEquals("No se pudo crear la cuenta: error desconocido", msg)
     }
-
-    // ─── logout() catch pattern (line 238) ─────────────────────────────
 
     @Test
     fun `logout warning message prefix`() {

@@ -1,4 +1,4 @@
-package com.example.optoapp.viewmodel
+﻿package com.example.optoapp.viewmodel
 
 import com.example.optoapp.viewmodel.auth.BackupDelegate
 import org.junit.Assert.*
@@ -15,8 +15,6 @@ import org.junit.Test
  * Supabase RPC and repository persistence require integration tests.
  */
 class BackupDelegateTest {
-
-    // ─── checkExportAdmin ─────────────────────────────────────────────────
 
     @Test
     fun `checkExportAdmin nonAdmin returns error message`() {
@@ -60,8 +58,6 @@ class BackupDelegateTest {
         assertNotNull(BackupDelegate.checkExportAdmin(""))
     }
 
-    // ─── checkRestoreAdmin ────────────────────────────────────────────────
-
     @Test
     fun `checkRestoreAdmin nonAdmin returns error message`() {
         val msg = BackupDelegate.checkRestoreAdmin("user")
@@ -78,8 +74,6 @@ class BackupDelegateTest {
     fun `checkRestoreAdmin gerente returns error message`() {
         assertNotNull(BackupDelegate.checkRestoreAdmin("gerente"))
     }
-
-    // ─── validateSourceOpticaId ───────────────────────────────────────────
 
     @Test
     fun `validateSourceOpticaId null returns error message`() {
@@ -100,8 +94,6 @@ class BackupDelegateTest {
     fun `validateSourceOpticaId valid returns null`() {
         assertNull(BackupDelegate.validateSourceOpticaId("opt_abc123"))
     }
-
-    // ─── validateOpticaIdMatch ────────────────────────────────────────────
 
     @Test
     fun `validateOpticaIdMatch matching returns null`() {

@@ -1,4 +1,4 @@
-package com.example.optoapp.util
+﻿package com.example.optoapp.util
 
 import android.graphics.Paint
 import org.junit.Assert.assertEquals
@@ -10,8 +10,6 @@ import org.robolectric.RobolectricTestRunner
 
 @RunWith(RobolectricTestRunner::class)
 class PdfStyleTest {
-
-    // ── Layout constants ────────────────────────────────────────────────
 
     @Test
     fun `page dimensions are standard A4 at 72dpi`() {
@@ -26,8 +24,6 @@ class PdfStyleTest {
         assertTrue(PdfStyle.TABLE_CELL_PAD > 0)
         assertTrue(PdfStyle.CARD_RADIUS > 0)
     }
-
-    // ── Color constants ─────────────────────────────────────────────────
 
     @Test
     fun `COLOR_ACCENT is a blue tone`() {
@@ -72,8 +68,6 @@ class PdfStyleTest {
         assertTrue(PdfStyle.COLOR_RULE != 0)
     }
 
-    // ── Paint presets ───────────────────────────────────────────────────
-
     @Test
     fun `accentBarPaint has correct color`() {
         assertEquals(PdfStyle.COLOR_ACCENT, PdfStyle.accentBarPaint.color)
@@ -105,8 +99,6 @@ class PdfStyleTest {
         assertEquals(Paint.Style.FILL, PdfStyle.prismaTrianglePaint.style)
         assertEquals(60, PdfStyle.prismaTrianglePaint.alpha)
     }
-
-    // ── TextPaint presets ───────────────────────────────────────────────
 
     @Test
     fun `titlePaint is bold and larger than body`() {
@@ -162,8 +154,6 @@ class PdfStyleTest {
         assertEquals(11f, PdfStyle.rxValuePaint.textSize)
         assertEquals(PdfStyle.COLOR_TEXT, PdfStyle.rxValuePaint.color)
     }
-
-    // ── Paints are lazily initialized singletons ────────────────────────
 
     @Test
     fun `paint singletons return same instance`() {

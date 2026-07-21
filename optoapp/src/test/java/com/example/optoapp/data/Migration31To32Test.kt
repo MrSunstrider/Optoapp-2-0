@@ -1,4 +1,4 @@
-package com.example.optoapp.data
+﻿package com.example.optoapp.data
 
 import android.content.Context
 import androidx.sqlite.db.SupportSQLiteDatabase
@@ -42,8 +42,6 @@ class Migration31To32Test {
         val dbName = "migration-31to32-test.db"
         context.deleteDatabase(dbName)
         val factory = FrameworkSQLiteOpenHelperFactory()
-
-        // ── Step 1: Create v31 database with ventas table ──
         val v31Config = SupportSQLiteOpenHelper.Configuration.builder(context)
             .name(dbName)
             .callback(object : SupportSQLiteOpenHelper.Callback(31) {
@@ -92,8 +90,6 @@ class Migration31To32Test {
         preCount.close()
 
         v31Helper.close()
-
-        // ── Step 2: Run MIGRATION_31_32_STUB ──
         val v32Config = SupportSQLiteOpenHelper.Configuration.builder(context)
             .name(dbName)
             .callback(object : SupportSQLiteOpenHelper.Callback(32) {
@@ -108,8 +104,6 @@ class Migration31To32Test {
 
         val v32Helper = factory.create(v32Config)
         val v32Db = v32Helper.writableDatabase
-
-        // ── Step 3: Assert new tables exist ──
         val catCount = v32Db.query("SELECT COUNT(*) FROM categorias_producto")
         assertTrue("categorias_producto table should exist after migration", catCount.moveToFirst())
         assertEquals("categorias_producto should have 9 seed rows", 9, catCount.getInt(0))
@@ -144,8 +138,6 @@ class Migration31To32Test {
         val dbName = "migration-31to32-col-test.db"
         context.deleteDatabase(dbName)
         val factory = FrameworkSQLiteOpenHelperFactory()
-
-        // ── Step 1: Create v31 with ventas table ──
         val v31Config = SupportSQLiteOpenHelper.Configuration.builder(context)
             .name(dbName)
             .callback(object : SupportSQLiteOpenHelper.Callback(31) {
@@ -183,8 +175,6 @@ class Migration31To32Test {
         val v31Helper = factory.create(v31Config)
         v31Helper.writableDatabase
         v31Helper.close()
-
-        // ── Step 2: Run MIGRATION_31_32_STUB ──
         val v32Config = SupportSQLiteOpenHelper.Configuration.builder(context)
             .name(dbName)
             .callback(object : SupportSQLiteOpenHelper.Callback(32) {
@@ -199,8 +189,6 @@ class Migration31To32Test {
 
         val v32Helper = factory.create(v32Config)
         val v32Db = v32Helper.writableDatabase
-
-        // ── Step 3: Assert categoriaProductoId column exists ──
         // This query will throw android.database.sqlite.SQLiteException.
         val cursor = v32Db.query("SELECT id, categoriaProductoId FROM ventas WHERE id = 'v_test1'")
         assertTrue(cursor.moveToFirst())

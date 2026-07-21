@@ -1,4 +1,4 @@
-package com.example.optoapp.data
+﻿package com.example.optoapp.data
 
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
@@ -67,8 +67,6 @@ class DispensacionRepositoryTest {
             ),
         )
     }
-
-    // ── Dispensaciones ──────────────────────────────────────────────────────
 
     @Test
     fun getDispensacionById_withExistingId_returnsSuccess() = runBlocking {
@@ -189,8 +187,6 @@ class DispensacionRepositoryTest {
         assertEquals("OT-$year-0004", next)
     }
 
-    // ── Pagos ───────────────────────────────────────────────────────────────
-
     @Test
     fun insertPago_and_getByDispensacion_returnsPago() = runBlocking {
         insertDummyPaciente()
@@ -302,8 +298,6 @@ class DispensacionRepositoryTest {
         val allPagos = pagoDao.getAllPagos()
         assertEquals(0, allPagos.size)
     }
-
-    // ── Servicios Extra ─────────────────────────────────────────────────────
 
     @Test
     fun insertServicio_and_getAll_returnsServicio() = runBlocking {

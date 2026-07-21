@@ -1,4 +1,4 @@
-package com.example.optoapp.util
+﻿package com.example.optoapp.util
 
 import android.content.ActivityNotFoundException
 import android.content.Context
@@ -36,15 +36,11 @@ class FileShareUtilsTest {
         // unmockkStatic is not called to avoid issues with shared state in Robolectric
     }
 
-    // ── getUri ──────────────────────────────────────────────────────────
-
     @Test
     fun `getUri returns provider URI`() {
         val uri = FileShareUtils.getUri(context, testFile)
         org.junit.Assert.assertEquals(mockUri, uri)
     }
-
-    // ── sendWhatsAppMessage ─────────────────────────────────────────────
 
     @Test
     fun `sendWhatsAppMessage blank phone shows toast and returns`() {
@@ -91,8 +87,6 @@ class FileShareUtilsTest {
         verify(exactly = 1) { context.startActivity(any<Intent>()) }
     }
 
-    // ── sharePdf / shareFile ────────────────────────────────────────────
-
     @Test
     fun `sharePdf delegates to shareFile`() {
         FileShareUtils.sharePdf(context, testFile, "Compartir")
@@ -106,8 +100,6 @@ class FileShareUtilsTest {
         FileShareUtils.shareFile(context, testFile, "application/pdf", "Compartir")
         verify(exactly = 1) { context.startActivity(any<Intent>()) }
     }
-
-    // ── openPdf ─────────────────────────────────────────────────────────
 
     @Test
     fun `openPdf starts activity with chooser`() {

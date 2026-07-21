@@ -1,4 +1,4 @@
-package com.example.optoapp.domain
+﻿package com.example.optoapp.domain
 
 import android.util.Log
 import com.example.optoapp.data.FinanzasRemoteDefaults
@@ -28,8 +28,6 @@ class SyncFinanzasUseCaseKtTest {
         every { Log.e(any(), any<String>()) } returns 0
         every { Log.e(any(), any<String>(), any()) } returns 0
     }
-
-    // ── ServicioRemoto DTO mapping tests ────────────────────────────────────
 
     private fun makeServicioRemoto(
         id: String = "test-servicio-id",
@@ -91,8 +89,6 @@ class SyncFinanzasUseCaseKtTest {
         assertEquals(0.0, entity.montoTotal, 0.001)
         assertEquals(0.0, entity.aCuenta, 0.001)
     }
-
-    // ── Sync sequence tests (no Venta) ──────────────────────────────────────
 
     @Test
     fun syncFinanzas_includes_gastosOperativos_in_upload_sequence() = runBlocking {
@@ -242,12 +238,8 @@ class SyncFinanzasUseCaseKtTest {
             downloadCoordinator.downloadPagos("optica-test")
         }
     }
-
-    // ═══════════════════════════════════════════════════════════════════════════
     // Bug 1 (Part 2): partial upload skips download — smoke test
-    // ═══════════════════════════════════════════════════════════════════════════
     // Bug 3 RED: pushPendingDeletions inside try block
-    // ═══════════════════════════════════════════════════════════════════════════
 
     @Test
     fun pushPendingDeletions_error_returns_ResourceError_not_crash() = runBlocking {
@@ -293,10 +285,7 @@ class SyncFinanzasUseCaseKtTest {
 
         assertTrue(result is com.example.optoapp.data.Resource.Error)
     }
-
-    // ═══════════════════════════════════════════════════════════════════════════
     // Bug 2 RED: single upload failure does not abort entire sync
-    // ═══════════════════════════════════════════════════════════════════════════
 
     @Test
     fun single_upload_failure_continues_to_next_steps() = runBlocking {

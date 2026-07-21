@@ -1,11 +1,9 @@
-package com.example.optoapp.util
+﻿package com.example.optoapp.util
 
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class InputFormattersTest {
-
-    // ── formatPhoneInput (XXX XXX XXX) ─────────────────────────────────
 
     @Test
     fun formatPhoneInput_empty_returnsEmpty() {

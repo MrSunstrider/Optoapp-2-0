@@ -1,4 +1,4 @@
-package com.example.optoapp.viewmodel
+﻿package com.example.optoapp.viewmodel
 
 import com.example.optoapp.data.SecurityManager
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,14 +14,10 @@ import org.junit.Test
  */
 class PinDelegateCharacterizationTest {
 
-    // ─── PIN_LENGTH constant ──────────────────────────────────────────
-
     @Test
     fun pinLength_isSix() {
         assertEquals(6, SecurityManager.PIN_LENGTH)
     }
-
-    // ─── pinInput flow behavior ───────────────────────────────────────
 
     @Test
     fun pinInput_startsEmpty() {
@@ -76,8 +72,6 @@ class PinDelegateCharacterizationTest {
         assertEquals("123", flow.value)
     }
 
-    // ─── clearPin behavior ────────────────────────────────────────────
-
     @Test
     fun clearPin_resetsToEmptyString() {
         val flow = MutableStateFlow("123456")
@@ -98,8 +92,6 @@ class PinDelegateCharacterizationTest {
         flow.value = ""
         assertEquals("", flow.value)
     }
-
-    // ─── validatePin: comparison logic ────────────────────────────────
 
     @Test
     fun validatePin_matchingInput_returnsTrue() {
@@ -128,8 +120,6 @@ class PinDelegateCharacterizationTest {
         val input = ""
         assertEquals(storedPin, input)
     }
-
-    // ─── isValidPin companion behavior ─────────────────────────────────
 
     @Test
     fun isValidPin_validPattern_returnsTrue() {
@@ -171,8 +161,6 @@ class PinDelegateCharacterizationTest {
         assertFalse(SecurityManager.isValidPin("654321"))
     }
 
-    // ─── updatePin guard logic ────────────────────────────────────────
-
     @Test
     fun updatePin_requiresCorrectOldPin() {
         val storedPin = "123789"
@@ -195,15 +183,11 @@ class PinDelegateCharacterizationTest {
         assertTrue(SecurityManager.isValidPin(newPin))
     }
 
-    // ─── createPin guard logic ────────────────────────────────────────
-
     @Test
     fun createPin_requiresValidPin() {
         assertFalse(SecurityManager.isValidPin("123"))
         assertTrue(SecurityManager.isValidPin("789123"))
     }
-
-    // ─── togglePinRequired behavior ───────────────────────────────────
 
     @Test
     fun togglePinRequired_enabled() {
@@ -219,8 +203,6 @@ class PinDelegateCharacterizationTest {
         assertFalse(flow.value)
     }
 
-    // ─── pinHasBeenSet flow ───────────────────────────────────────────
-
     @Test
     fun pinHasBeenSet_startsFalse() {
         val flow = MutableStateFlow(false)
@@ -233,8 +215,6 @@ class PinDelegateCharacterizationTest {
         flow.value = true
         assertTrue(flow.value)
     }
-
-    // ─── isPinRequired flow ───────────────────────────────────────────
 
     @Test
     fun isPinRequired_startsTrue() {
@@ -250,8 +230,6 @@ class PinDelegateCharacterizationTest {
         flow.value = true
         assertTrue(flow.value)
     }
-
-    // ─── pinHasBeenSet from SecurityManager (current behavior) ─────────
 
     @Test
     fun securityManager_getStoredPin_emptyWhenNotSet() {

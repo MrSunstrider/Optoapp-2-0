@@ -1,4 +1,4 @@
-package com.example.optoapp.viewmodel
+﻿package com.example.optoapp.viewmodel
 
 import kotlinx.coroutines.CancellationException
 import org.junit.Assert.*
@@ -14,8 +14,6 @@ import org.junit.Test
  * Tests verify error messages, unique constraint handling, CancellationException rethrow.
  */
 class MonturasViewModelCatchRefactorTest {
-
-    // ─── Error message patterns ──────────────────────────────────────────
 
     @Test
     fun `montura error unique constraint message`() {
@@ -57,8 +55,6 @@ class MonturasViewModelCatchRefactorTest {
         assertNull(afterSave.error)
         assertEquals("Producto guardado", afterSave.success)
     }
-
-    // ─── CancellationException rethrow pattern ──────────────────────────
 
     @Test
     fun `montura catch rethrows CancellationException`() {

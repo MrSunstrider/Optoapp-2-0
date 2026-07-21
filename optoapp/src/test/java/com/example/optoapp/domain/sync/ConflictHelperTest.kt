@@ -1,4 +1,4 @@
-package com.example.optoapp.domain.sync
+﻿package com.example.optoapp.domain.sync
 
 import com.example.optoapp.data.ConflictDao
 import com.example.optoapp.data.MonturaMovimiento
@@ -18,8 +18,6 @@ import org.robolectric.RobolectricTestRunner
 /** Tests for [ConflictHelper]. */
 @RunWith(RobolectricTestRunner::class)
 class ConflictHelperTest {
-
-    // ── isLocalNewerOrEqual (static, no instance needed) ─────────────────────
 
     @Test
     fun `same instant with Z and +0000 are equal`() {
@@ -157,8 +155,6 @@ class ConflictHelperTest {
         )
     }
 
-    // ── Instance test helpers ─────────────────────────────────────────────────
-
     private val mockSupabase: SupabaseClient = mockk(relaxed = true)
     private val mockTracker: SyncStateTracker = mockk(relaxed = true)
     private val mockConflictDao: ConflictDao = mockk(relaxed = true)
@@ -197,8 +193,6 @@ class ConflictHelperTest {
             return rowsToReturn
         }
     }
-
-    // ── RC-1: fetchRemoteUpdatedAt ────────────────────────────────────────────
 
     @Test
     fun fetchRemoteUpdatedAt_returnsEmptyMap_whenIdsEmpty() = runTest {
@@ -257,8 +251,6 @@ class ConflictHelperTest {
         assertFalse("id3 must not appear in result", ID3 in result)
     }
 
-    // ── RC-3: filterConflicts auto-clear ──────────────────────────────────────
-
     @Test
     fun filterConflicts_callsResolveConflict_forSafeEntityWithRecord() = runTest {
         // e1: local T2 > remote T1 → safe
@@ -286,8 +278,6 @@ class ConflictHelperTest {
 
         coVerify(exactly = 0) { mockConflictDao.resolveConflict(ID2, any()) }
     }
-
-    // ── RC-4: null updatedAt early-return path auto-heals conflict records ───────
 
     @Test
     fun filterConflicts_clearsStaleConflicts_whenAllEntitiesHaveNullUpdatedAt() = runTest {
@@ -327,8 +317,6 @@ class ConflictHelperTest {
         assertTrue("Expected no exception but got: $exceptionThrown", exceptionThrown == null)
         coVerify(exactly = 1) { mockConflictDao.resolveConflict(ID3, OPTICA_ID) }
     }
-
-    // ── Bug F3: Composite key dedup ────────────────────────────────────────
 
     /**
      * BUG-F3: distinctBy { it.id } allows duplicate uploads when two movements

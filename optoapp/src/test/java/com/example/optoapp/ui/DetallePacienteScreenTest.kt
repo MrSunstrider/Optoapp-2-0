@@ -1,4 +1,4 @@
-package com.example.optoapp.ui.screens
+﻿package com.example.optoapp.ui.screens
 
 import com.example.optoapp.data.Paciente
 import com.example.optoapp.viewmodel.DeletePacienteResult
@@ -20,8 +20,6 @@ import org.junit.Test
  * test contracts via data class constructors, reflection, and sealed class behavior.
  */
 class DetallePacienteScreenTest {
-
-    // ─── Tab structure ──────────────────────────────────────────────────
 
     @Test
     fun tabs_containsThreeTabs() {
@@ -49,8 +47,6 @@ class DetallePacienteScreenTest {
     fun tabs_expectedTabContent_servicios() {
         // The Screen shows ServiciosExtraList at selectedTab == 2
     }
-
-    // ─── ViewModel contracts used by Screen ─────────────────────────────
 
     @Test
     fun pacienteViewModel_getPaciente_isDeclared() {
@@ -89,8 +85,6 @@ class DetallePacienteScreenTest {
             "allServicios" in methods || "allServicios" in fields,
         )
     }
-
-    // ─── State management contracts ─────────────────────────────────────
 
     @Test
     fun pacienteDataClass_nombreCompletoExists() {
@@ -144,8 +138,6 @@ class DetallePacienteScreenTest {
         val r2 = DeletePacienteResult.Error("msg")
         assertEquals(r1, r2)
     }
-
-    // ─── Navigation contracts ───────────────────────────────────────────
 
     @Test
     fun navigationRoutes_newEvaluationExists() {

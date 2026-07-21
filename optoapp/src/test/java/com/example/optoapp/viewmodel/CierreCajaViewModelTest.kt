@@ -1,4 +1,4 @@
-package com.example.optoapp.viewmodel
+﻿package com.example.optoapp.viewmodel
 
 import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.OptoRepository
@@ -80,10 +80,7 @@ class CierreCajaViewModelTest {
         vm.uiState.first { !it.isLoading }
         return vm
     }
-
-    // ═════════════════════════════════════════════════════════════════════
     // REQ-CIERRE-001: Saldo Pendiente Correcto
-    // ═════════════════════════════════════════════════════════════════════
 
     @Test
     fun `saldoPendiente full historical payment yields zero`() = runTest(testDispatcher) {
@@ -224,10 +221,7 @@ class CierreCajaViewModelTest {
         assertEquals(200.0, vm.uiState.value.totalGeneral, 0.001)
         assertEquals(1, vm.uiState.value.dispensacionesHoy.size)
     }
-
-    // ═════════════════════════════════════════════════════════════════════
     // Ventas Hoy and Cobros Atrasados
-    // ═════════════════════════════════════════════════════════════════════
 
     @Test
     fun `ventasHoy sums pagos collected today for today dispensaciones`() = runTest(testDispatcher) {
@@ -337,10 +331,7 @@ class CierreCajaViewModelTest {
 
         assertEquals("totalGeneral must be sum of both totals", 450.0, vm.uiState.value.totalGeneral, 0.001)
     }
-
-    // ═════════════════════════════════════════════════════════════════════
     // Pago classification: dispensacion-linked and servicio-linked
-    // ═════════════════════════════════════════════════════════════════════
 
     @Test
     fun `ventasHoy includes pago linked to today servicio extra`() = runTest(testDispatcher) {
@@ -436,10 +427,7 @@ class CierreCajaViewModelTest {
         val totalRecaudado = state.ventasHoy + state.cobrosAtrasados
         assertEquals(200.0, totalRecaudado, 0.001)
     }
-
-    // ═════════════════════════════════════════════════════════════════════
     // REQ-CIERRE-005: Future-date classification
-    // ═════════════════════════════════════════════════════════════════════
 
     @Test
     fun `future dated dispensacion pago excluded from ventasHoy`() = runTest(testDispatcher) {
@@ -483,10 +471,7 @@ class CierreCajaViewModelTest {
 
         assertEquals("ventasHoy must exclude future-dated servicio payment", 0.0, vm.uiState.value.ventasHoy, 0.001)
     }
-
-    // ═════════════════════════════════════════════════════════════════════
     // Anulacion pagos
-    // ═════════════════════════════════════════════════════════════════════
 
     @Test
     fun `anulacion pago offsets ventasHoy same day`() = runTest(testDispatcher) {
@@ -504,10 +489,7 @@ class CierreCajaViewModelTest {
 
         assertEquals("ventasHoy must be 0 (100 + -100)", 0.0, vm.uiState.value.ventasHoy, 0.001)
     }
-
-    // ═════════════════════════════════════════════════════════════════════
     // getTotalesPorMetodo
-    // ═════════════════════════════════════════════════════════════════════
 
     @Test
     fun `getTotalesPorMetodo groups pagos by metodoPago`() = runTest(testDispatcher) {
@@ -555,10 +537,7 @@ class CierreCajaViewModelTest {
         assertEquals(200.0, totales["Tarjeta"] ?: 0.0, 0.001)
         assertEquals("getTotalesPorMetodo should have exactly 3 keys", 3, totales.size)
     }
-
-    // ═════════════════════════════════════════════════════════════════════
     // setFecha and empty state
-    // ═════════════════════════════════════════════════════════════════════
 
     @Test
     fun `setFecha updates fecha in uiState`() = runTest(testDispatcher) {
@@ -578,10 +557,7 @@ class CierreCajaViewModelTest {
         assertEquals(0.0, state.cobrosAtrasados, 0.001)
         assertTrue("pagos must be empty when no pagos returned", state.pagos.isEmpty())
     }
-
-    // ═════════════════════════════════════════════════════════════════════
     // REQ-CIERRE-006: Multi-optica isolation
-    // ═════════════════════════════════════════════════════════════════════
 
     @Test
     fun `cross optica isolation returns empty for other optica`() = runTest(testDispatcher) {
@@ -635,10 +611,7 @@ class CierreCajaViewModelTest {
         assertEquals("d1", vm.uiState.value.dispensacionesHoy[0].id)
         assertEquals("totalGeneral must reflect only optica A data", 300.0, vm.uiState.value.totalGeneral, 0.001)
     }
-
-    // ═════════════════════════════════════════════════════════════════════
     // REQ-CIERRE-002: Per-item Pagado from entity fields
-    // ═════════════════════════════════════════════════════════════════════
 
     @Test
     fun `dispensacion per-item shows montoPagado as Pagado and correct Saldo`() = runTest(testDispatcher) {
@@ -682,10 +655,7 @@ class CierreCajaViewModelTest {
         assertNotNull(serv)
         assertEquals(80.0, serv!!.aCuenta, 0.001)
     }
-
-    // ═════════════════════════════════════════════════════════════════════
     // Anulado ServicioExtra exclusion from totals
-    // ═════════════════════════════════════════════════════════════════════
 
     @Test
     fun `anulado servicio excluido de totalServiciosExtra y saldoPendiente`() = runTest(testDispatcher) {
@@ -717,10 +687,7 @@ class CierreCajaViewModelTest {
         assertEquals(100.0, vm.uiState.value.saldoPendiente, 0.001)
         assertEquals(1, vm.uiState.value.serviciosExtraHoy.size)
     }
-
-    // ═════════════════════════════════════════════════════════════════════
     // Error handling
-    // ═════════════════════════════════════════════════════════════════════
 
     @Test
     fun `error en batch fetch emite errorMessage y isLoading false`() = runTest(testDispatcher) {
@@ -750,10 +717,7 @@ class CierreCajaViewModelTest {
         )
         assertFalse("isLoading must be false after error", vm.uiState.value.isLoading)
     }
-
-    // ═════════════════════════════════════════════════════════════════════
     // Pagos futuros metric
-    // ═════════════════════════════════════════════════════════════════════
 
     @Test
     fun `pagosFuturos tracks future-dated payments`() = runTest(testDispatcher) {

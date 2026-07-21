@@ -1,4 +1,4 @@
-package com.example.optoapp.util
+﻿package com.example.optoapp.util
 
 import org.junit.Assert.*
 import org.junit.Test
@@ -13,8 +13,6 @@ import org.junit.Test
  */
 class RecetaPdfBuilderTest {
 
-    // ─── PdfStyle layout constants (pure Int/Float) ────────────────────────
-
     @Test
     fun pdfStyle_layout_constants_match_generator() {
         assertEquals(595, PdfStyle.PAGE_W)
@@ -28,8 +26,6 @@ class RecetaPdfBuilderTest {
         assertEquals(4f, PdfStyle.SECTION_BAR_W, 0.001f)
     }
 
-    // ─── PdfStyle color constants (pure Int) ────────────────────────────────
-
     @Test
     fun pdfStyle_color_constants_match_generator() {
         assertEquals(0xFF1E5B8C.toInt(), PdfStyle.COLOR_ACCENT)
@@ -40,8 +36,6 @@ class RecetaPdfBuilderTest {
         assertEquals(0xFFFCFDFF.toInt(), PdfStyle.COLOR_CARD_FILL)
         assertEquals(0xFFE6EBF2.toInt(), PdfStyle.COLOR_RULE)
     }
-
-    // ─── Characterisation: altRowPaint ARGB value ──────────────────────────
 
     @Test
     fun pdfStyle_altRowPaint_matches_old_generator_color() {
@@ -55,8 +49,6 @@ class RecetaPdfBuilderTest {
             packed,
         )
     }
-
-    // ─── Characterisation: contentWidth() formula ──────────────────────────
 
     @Test
     fun pdfStyle_contentWidth_formula_matches_expected() {

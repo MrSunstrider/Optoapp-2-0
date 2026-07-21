@@ -123,12 +123,6 @@ class ReportesViewModelTest {
             0.001,
         )
     }
-
-    // -----------------------------------------------------------------------
-    // Fix 2: cobrosPeriodo must exclude Anulación pagos
-    // Cross-period refund: disp from yesterday with pago 100, Anulación today -100
-    // cobrosPeriodo must exclude the -100, porCobrar = 0
-    // -----------------------------------------------------------------------
     @Test
     fun `cobrosPeriodo excludes anulacion pagos cross period`() = runTest(testDispatcher) {
         val yesterday = today.minusDays(1)
@@ -157,11 +151,6 @@ class ReportesViewModelTest {
             0.001,
         )
     }
-
-    // -----------------------------------------------------------------------
-    // Fix 8: cobrosPeriodo with dual-reference pago (disp old, servicio current)
-    // Should NOT count as cobrosPeriodo because the servicio is in-period
-    // -----------------------------------------------------------------------
     @Test
     fun `cobrosPeriodo excludes dual-reference pago with servicio in period`() = runTest(testDispatcher) {
         val yesterday = today.minusDays(1)

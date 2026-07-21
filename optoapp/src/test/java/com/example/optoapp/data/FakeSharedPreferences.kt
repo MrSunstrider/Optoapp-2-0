@@ -14,8 +14,6 @@ internal class FakeSharedPreferences : SharedPreferences {
     private val map = mutableMapOf<String, Any?>()
     private val listeners = mutableSetOf<SharedPreferences.OnSharedPreferenceChangeListener>()
 
-    // --- reads ---
-
     override fun getAll(): Map<String, *> = map.toMap()
     override fun getString(key: String, defValue: String?): String? = (map[key] as? String) ?: defValue
     override fun getInt(key: String, defValue: Int): Int = (map[key] as? Int) ?: defValue
@@ -25,8 +23,6 @@ internal class FakeSharedPreferences : SharedPreferences {
     override fun getStringSet(key: String, defValue: Set<String>?): Set<String>? = (map[key] as? Set<*>)?.filterIsInstance<String>()?.toSet() ?: defValue
     override fun contains(key: String): Boolean = map.containsKey(key)
 
-    // --- listeners (stub — not used by SecurityManager) ---
-
     override fun registerOnSharedPreferenceChangeListener(listener: SharedPreferences.OnSharedPreferenceChangeListener) {
         listeners.add(listener)
     }
@@ -34,8 +30,6 @@ internal class FakeSharedPreferences : SharedPreferences {
     override fun unregisterOnSharedPreferenceChangeListener(listener: SharedPreferences.OnSharedPreferenceChangeListener) {
         listeners.remove(listener)
     }
-
-    // --- editor ---
 
     override fun edit(): SharedPreferences.Editor = FakeEditor()
 

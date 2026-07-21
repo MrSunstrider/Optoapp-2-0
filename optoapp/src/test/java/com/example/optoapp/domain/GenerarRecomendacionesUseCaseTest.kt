@@ -1,4 +1,4 @@
-package com.example.optoapp.domain
+﻿package com.example.optoapp.domain
 
 import com.example.optoapp.data.Resource
 import com.example.optoapp.data.configuracionfinanciera.ConfiguracionFinancieraDao
@@ -39,8 +39,6 @@ class GenerarRecomendacionesUseCaseTest {
     fun setUp() {
         useCase = GenerarRecomendacionesUseCase(configDao)
     }
-
-    // ── Helpers ────────────────────────────────────────────────────────────
 
     private fun deudor(
         nombre: String = "Cliente Test",
@@ -103,8 +101,6 @@ class GenerarRecomendacionesUseCaseTest {
 
     private fun listaDe(result: Resource<List<Recomendacion>>): List<Recomendacion> = (result as Resource.Success).data!!
 
-    // ── R1: COBRAR ─────────────────────────────────────────────────────────
-
     @Test
     fun cobrar_whenDeudaTotalExceedsThreshold_returnsRecomendacion() = runBlocking {
         val deudores = listOf(
@@ -142,8 +138,6 @@ class GenerarRecomendacionesUseCaseTest {
         assertNull("COBRAR should not fire with empty deudores", lista.find { it.tipo == RecomendacionTipo.COBRAR })
     }
 
-    // ── R2: MEJORAR_PRECIO ─────────────────────────────────────────────────
-
     @Test
     fun mejorarPrecio_whenLowMarginAboveThreshold_returnsRecomendacion() = runBlocking {
         val categorias = listOf(
@@ -180,8 +174,6 @@ class GenerarRecomendacionesUseCaseTest {
         assertNull(lista.find { it.tipo == RecomendacionTipo.MEJORAR_PRECIO })
     }
 
-    // ── R3: LIQUIDAR_STOCK ─────────────────────────────────────────────────
-
     @Test
     fun liquidarStock_whenItemsExceedDiasThreshold_returnsRecomendacion() = runBlocking {
         val stock = listOf(
@@ -215,8 +207,6 @@ class GenerarRecomendacionesUseCaseTest {
         val lista = listaDe(useCase.invoke(cleanAnalisis(stockEstancado = emptyList()), emptyList(), "optica1"))
         assertNull(lista.find { it.tipo == RecomendacionTipo.LIQUIDAR_STOCK })
     }
-
-    // ── R4: VENDER_MAS_DE ──────────────────────────────────────────────────
 
     @Test
     fun venderMasDe_whenHighMarginHighContribution_returnsRecomendacion() = runBlocking {
@@ -257,8 +247,6 @@ class GenerarRecomendacionesUseCaseTest {
         assertNull(lista.find { it.tipo == RecomendacionTipo.VENDER_MAS_DE })
     }
 
-    // ── R5: ALERTA_CAIDA ───────────────────────────────────────────────────
-
     @Test
     fun alertaCaida_whenDropExceedsThreshold_returnsRecomendacion() = runBlocking {
         mockDeps()
@@ -284,8 +272,6 @@ class GenerarRecomendacionesUseCaseTest {
         assertNull(lista.find { it.tipo == RecomendacionTipo.ALERTA_CAIDA })
     }
 
-    // ── R6: REDUCIR_GASTO ──────────────────────────────────────────────────
-
     @Test
     fun reducirGasto_whenRatioExceeds40Percent_returnsRecomendacion() = runBlocking {
         mockDeps()
@@ -310,8 +296,6 @@ class GenerarRecomendacionesUseCaseTest {
         val lista = listaDe(useCase.invoke(cleanAnalisis(ventasMes = 0.0, gastosMes = 5000.0), emptyList(), "optica1"))
         assertNull(lista.find { it.tipo == RecomendacionTipo.REDUCIR_GASTO })
     }
-
-    // ── Orchestrator ───────────────────────────────────────────────────────
 
     @Test
     fun invoke_whenAllRulesFire_returnsCappedList() = runBlocking {

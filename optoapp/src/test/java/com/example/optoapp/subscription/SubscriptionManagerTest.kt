@@ -1,4 +1,4 @@
-package com.example.optoapp.subscription
+﻿package com.example.optoapp.subscription
 
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
@@ -54,8 +54,6 @@ class SubscriptionManagerTest {
         subscriptionManager.dataStore = fakeDataStore
     }
 
-    // ─── maxPacientes (pure function) ──────────────────────────────────────
-
     @Test
     fun `maxPacientes FREE returns 50`() {
         assertEquals(50, subscriptionManager.maxPacientes(SubscriptionTier.FREE))
@@ -65,8 +63,6 @@ class SubscriptionManagerTest {
     fun `maxPacientes PRO returns Int MAX_VALUE`() {
         assertEquals(Int.MAX_VALUE, subscriptionManager.maxPacientes(SubscriptionTier.PRO))
     }
-
-    // ─── maxOpticas (pure function) ────────────────────────────────────────
 
     @Test
     fun `maxOpticas FREE returns unlimited`() {
@@ -92,8 +88,6 @@ class SubscriptionManagerTest {
     fun `maxOpticas DEV_OWNER returns null`() {
         assertNull(subscriptionManager.maxOpticas(PlanCode.DEV_OWNER))
     }
-
-    // ─── planCode flow ─────────────────────────────────────────────────────
 
     @Test
     fun `planCode defaults to FREE`() = testScope.runTest {
@@ -128,8 +122,6 @@ class SubscriptionManagerTest {
         advanceUntilIdle()
         assertEquals(PlanCode.ENTERPRISE, subscriptionManager.planCode.first())
     }
-
-    // ─── tier flow ─────────────────────────────────────────────────────────
 
     @Test
     fun `tier defaults to FREE`() = testScope.runTest {
@@ -176,16 +168,12 @@ class SubscriptionManagerTest {
         assertEquals(SubscriptionTier.PRO, proManager.tier.first())
     }
 
-    // ─── setProFromLocalCache ──────────────────────────────────────────────
-
     @Test
     fun `setProFromLocalCache writes pro_individual`() = testScope.runTest {
         subscriptionManager.setProFromLocalCache()
         advanceUntilIdle()
         assertEquals(PlanCode.PRO_INDIVIDUAL, subscriptionManager.planCode.first())
     }
-
-    // ─── refreshPlanFromServer ─────────────────────────────────────────────
 
     @Test
     fun `refreshPlanFromServer fetches and caches plan code`() = testScope.runTest {
@@ -246,8 +234,6 @@ class SubscriptionManagerTest {
         )
     }
 
-    // ─── setDevProOverride ─────────────────────────────────────────────────
-
     @Test
     fun `setDevProOverride writes to DataStore`() = testScope.runTest {
         subscriptionManager.setDevProOverride(true)
@@ -256,8 +242,6 @@ class SubscriptionManagerTest {
         val written = fakeDataStore.data.first()[booleanPreferencesKey("sub_dev_pro")]
         assertTrue("dev_pro flag should be true", written == true)
     }
-
-    // ─── Helpers ───────────────────────────────────────────────────────────
 
     private suspend fun writePlanToDataStore(planCode: String) {
         fakeDataStore.updateData { prefs ->

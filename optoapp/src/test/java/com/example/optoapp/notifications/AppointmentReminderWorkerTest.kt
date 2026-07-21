@@ -1,4 +1,4 @@
-package com.example.optoapp.notifications
+﻿package com.example.optoapp.notifications
 
 import androidx.work.ListenableWorker
 import org.junit.Assert.assertEquals
@@ -14,8 +14,6 @@ import org.junit.Test
  * `hasPermission` contra el sistema y delega en doWorkCore.
  */
 class AppointmentReminderWorkerTest {
-
-    // ─── Permission granted → posts notification ────────────────────────────
 
     @Test
     fun `with valid inputs and permission granted returns success and invokes notification`() {
@@ -37,8 +35,6 @@ class AppointmentReminderWorkerTest {
         assertEquals("eval-123".hashCode(), notifiedId)
     }
 
-    // ─── Permission denied → success, no notification ───────────────────────
-
     @Test
     fun `with valid inputs and no permission returns success without notification`() {
         var notified = false
@@ -53,8 +49,6 @@ class AppointmentReminderWorkerTest {
         assertEquals(ListenableWorker.Result.success(), result)
         assertEquals("no se debe notificar sin permiso", false, notified)
     }
-
-    // ─── Input validation ──────────────────────────────────────────────────
 
     @Test
     fun `without patient_name returns failure`() {

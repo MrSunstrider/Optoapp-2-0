@@ -1,4 +1,4 @@
-package com.example.optoapp.data
+﻿package com.example.optoapp.data
 
 import android.content.Context
 import androidx.sqlite.db.SupportSQLiteDatabase
@@ -168,8 +168,6 @@ class OptoDatabaseMigration24to25Test {
         context.deleteDatabase(dbName)
 
         val factory = FrameworkSQLiteOpenHelperFactory()
-
-        // ── Step 1: Create v24 database with monturas + montura_movimientos ──
         val v24Config = SupportSQLiteOpenHelper.Configuration.builder(context)
             .name(dbName)
             .callback(object : SupportSQLiteOpenHelper.Callback(24) {
@@ -234,8 +232,6 @@ class OptoDatabaseMigration24to25Test {
 
         val v24Helper = factory.create(v24Config)
         val v24Db = v24Helper.writableDatabase
-
-        // ── Step 2: Insert test data ──
         // Montura: full row with specific values
         v24Db.execSQL(
             """
@@ -273,8 +269,6 @@ class OptoDatabaseMigration24to25Test {
         )
 
         v24Helper.close()
-
-        // ── Step 3: Open at v25 and run MIGRATION_24_25 ──
         val v25Config = SupportSQLiteOpenHelper.Configuration.builder(context)
             .name(dbName)
             .callback(object : SupportSQLiteOpenHelper.Callback(25) {
@@ -296,8 +290,6 @@ class OptoDatabaseMigration24to25Test {
 
         val v25Helper = factory.create(v25Config)
         val v25Db = v25Helper.writableDatabase
-
-        // ── Step 4: Verify data preserved on montura 'm1' ──
         val m1Cursor = v25Db.query("SELECT * FROM monturas WHERE id = 'm1'")
         assertTrue("Montura m1 should exist after migration", m1Cursor.moveToFirst())
         assertEquals("m1", m1Cursor.getString(m1Cursor.getColumnIndexOrThrow("id")))
@@ -320,16 +312,12 @@ class OptoDatabaseMigration24to25Test {
         assertEquals("o1", m1Cursor.getString(m1Cursor.getColumnIndexOrThrow("opticaId")))
         assertEquals("2025-01-01", m1Cursor.getString(m1Cursor.getColumnIndexOrThrow("updatedAt")))
         assertEquals("user1", m1Cursor.getString(m1Cursor.getColumnIndexOrThrow("updatedBy")))
-
-        // ── Step 5: Verify new catalog columns have default '' ──
         assertEquals("", m1Cursor.getString(m1Cursor.getColumnIndexOrThrow("categoria")))
         assertEquals("", m1Cursor.getString(m1Cursor.getColumnIndexOrThrow("coleccion")))
         assertEquals("", m1Cursor.getString(m1Cursor.getColumnIndexOrThrow("temporada")))
         assertEquals("", m1Cursor.getString(m1Cursor.getColumnIndexOrThrow("estadoComercial")))
         assertEquals("", m1Cursor.getString(m1Cursor.getColumnIndexOrThrow("genero")))
         m1Cursor.close()
-
-        // ── Step 6: Verify data preserved on montura 'm2' (minimal row) ──
         val m2Cursor = v25Db.query("SELECT * FROM monturas WHERE id = 'm2'")
         assertTrue("Montura m2 should exist after migration", m2Cursor.moveToFirst())
         assertEquals("m2", m2Cursor.getString(m2Cursor.getColumnIndexOrThrow("id")))
@@ -347,8 +335,6 @@ class OptoDatabaseMigration24to25Test {
         assertEquals("", m2Cursor.getString(m2Cursor.getColumnIndexOrThrow("estadoComercial")))
         assertEquals("", m2Cursor.getString(m2Cursor.getColumnIndexOrThrow("genero")))
         m2Cursor.close()
-
-        // ── Step 7: Verify data preserved on montura_movimiento 'mov1' ──
         val mov1Cursor = v25Db.query("SELECT * FROM montura_movimientos WHERE id = 'mov1'")
         assertTrue("Movimiento mov1 should exist after migration", mov1Cursor.moveToFirst())
         assertEquals("mov1", mov1Cursor.getString(mov1Cursor.getColumnIndexOrThrow("id")))
@@ -361,14 +347,10 @@ class OptoDatabaseMigration24to25Test {
         assertEquals("ref-001", mov1Cursor.getString(mov1Cursor.getColumnIndexOrThrow("referenciaId")))
         assertEquals("Ingreso inicial", mov1Cursor.getString(mov1Cursor.getColumnIndexOrThrow("nota")))
         assertEquals("o1", mov1Cursor.getString(mov1Cursor.getColumnIndexOrThrow("opticaId")))
-
-        // ── Step 8: Verify new audit columns have default values ──
         assertEquals("", mov1Cursor.getString(mov1Cursor.getColumnIndexOrThrow("userId")))
         assertEquals(0.0, mov1Cursor.getDouble(mov1Cursor.getColumnIndexOrThrow("costoUnitario")), 0.001)
         assertEquals("", mov1Cursor.getString(mov1Cursor.getColumnIndexOrThrow("tipoDocumento")))
         mov1Cursor.close()
-
-        // ── Step 9: Verify montura_movimiento 'mov2' preserved ──
         val mov2Cursor = v25Db.query("SELECT * FROM montura_movimientos WHERE id = 'mov2'")
         assertTrue("Movimiento mov2 should exist after migration", mov2Cursor.moveToFirst())
         assertEquals("mov2", mov2Cursor.getString(mov2Cursor.getColumnIndexOrThrow("id")))

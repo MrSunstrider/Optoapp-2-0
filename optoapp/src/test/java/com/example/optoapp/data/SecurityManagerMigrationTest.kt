@@ -22,10 +22,6 @@ import org.robolectric.RobolectricTestRunner
 @RunWith(RobolectricTestRunner::class)
 class SecurityManagerMigrationTest {
 
-    // ---------------------------------------------------------------
-    // 8.2.2 — Migration without legacy data
-    // ---------------------------------------------------------------
-
     @Test
     fun `migration without legacy data does nothing`() = runBlocking {
         val fakeDataStore: DataStore<Preferences> = FakeDataStore()
@@ -40,10 +36,6 @@ class SecurityManagerMigrationTest {
             pinSet,
         )
     }
-
-    // ---------------------------------------------------------------
-    // 8.2.3 — Migration with legacy data
-    // ---------------------------------------------------------------
 
     @Test
     fun `migration with legacy pin converts flag to true`() = runBlocking {
@@ -61,10 +53,6 @@ class SecurityManagerMigrationTest {
             pinSet,
         )
     }
-
-    // ---------------------------------------------------------------
-    // 8.2.4 — PIN validation after migration
-    // ---------------------------------------------------------------
 
     @Test
     fun `PIN validation after migration works correctly`() = runBlocking {

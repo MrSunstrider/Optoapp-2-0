@@ -1,4 +1,4 @@
-package com.example.optoapp.data
+﻿package com.example.optoapp.data
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,8 +20,6 @@ import org.junit.Test
  *   ./gradlew :optoapp:connectedAndroidTest
  */
 class SessionManagerTest {
-
-    // ─── Fake that mirrors correct encrypted-storage behavior ───────────────
 
     /**
      * In-memory fake implementing ISessionManager.
@@ -62,8 +60,6 @@ class SessionManagerTest {
             _isPinRequired.value = required
         }
 
-        // ── Remembered Email (plain store — email is less sensitive) ─────
-
         override suspend fun saveRememberedEmail(email: String) {
             plainStore["pref_remembered_email"] = email
         }
@@ -74,8 +70,6 @@ class SessionManagerTest {
             plainStore.remove("pref_remembered_email")
         }
     }
-
-    // ─── Email Tests ────────────────────────────────────────────────────────
 
     @Test
     fun `saveRememberedEmail stores email that can be retrieved`() = runTest {
@@ -93,8 +87,6 @@ class SessionManagerTest {
 
         assertEquals("", sm.getRememberedEmail())
     }
-
-    // ─── Session Lifecycle Tests ────────────────────────────────────────────
 
     @Test
     fun `isLoggedIn is false by default`() = runTest {

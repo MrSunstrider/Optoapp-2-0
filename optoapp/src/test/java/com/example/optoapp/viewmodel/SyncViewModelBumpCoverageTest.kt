@@ -1,4 +1,4 @@
-package com.example.optoapp.viewmodel
+﻿package com.example.optoapp.viewmodel
 
 import android.content.Context
 import android.net.ConnectivityManager
@@ -190,8 +190,6 @@ class SyncViewModelBumpCoverageTest {
         Dispatchers.resetMain()
     }
 
-    // ─── Helpers ───────────────────────────────────────────────────────────
-
     private fun makeConflict(entityId: String, entityType: String) = ConflictRecord(
         entityId = entityId,
         opticaId = testOpticaId,
@@ -239,8 +237,6 @@ class SyncViewModelBumpCoverageTest {
         total = 100.0,
         opticaId = testOpticaId,
     )
-
-    // ─── 4.1 RED: Bump coverage tests ──────────────────────────────────────
 
     @Test
     fun bumpPaciente_callsUpdatePaciente() = runTest(testDispatcher) {

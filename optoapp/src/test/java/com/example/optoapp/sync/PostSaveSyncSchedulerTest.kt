@@ -1,4 +1,4 @@
-package com.example.optoapp.sync
+﻿package com.example.optoapp.sync
 
 import com.example.optoapp.domain.SyncFinanzasUseCase
 import com.example.optoapp.domain.SyncHistorialUseCase
@@ -30,8 +30,6 @@ class PostSaveSyncSchedulerTest {
         supabaseKey = "test-key",
     ) { }
 
-    // ─── Key mapping (scheduleDebounced is overridden → records keys) ─────────
-
     @Test
     fun `scheduleDebounced is called with correct key per module`() = runTest(testDispatcher) {
         val (scheduler, calls) = createKeyRecorder()
@@ -61,8 +59,6 @@ class PostSaveSyncSchedulerTest {
         assertEquals("pacientes:optica-A", calls[0])
         assertEquals("pacientes:optica-B", calls[1])
     }
-
-    // ─── Session gating (scheduleDebounced executes block synchronously) ────
 
     @Test
     fun `ensureSessionForPostSaveSync is called before block execution`() = runTest(testDispatcher) {
@@ -133,8 +129,6 @@ class PostSaveSyncSchedulerTest {
         scheduler.schedulePacientesSync("o1")
     }
 
-    // ─── RC-5: cancelPending race fix ─────────────────────────────────────
-
     @Test
     fun `cancelPending_awaitsJobCancellation_beforeReturn`() = runTest(testDispatcher) {
         val scheduler = PostSaveSyncScheduler(
@@ -170,8 +164,6 @@ class PostSaveSyncSchedulerTest {
             scheduler.pendingJobs.isEmpty(),
         )
     }
-
-    // ─── RC-2: scheduler isolation — no pacientes cascade ────────────────────
 
     @Test
     fun scheduleHistorialSync_doesNotInvokeSyncPacientes() = runTest(testDispatcher) {
@@ -216,8 +208,6 @@ class PostSaveSyncSchedulerTest {
 
         coVerify(exactly = 0) { mockSyncPacientes(any()) }
     }
-
-    // ─── Helpers ───────────────────────────────────────────────────────────
 
     private fun createKeyRecorder(): Pair<PostSaveSyncScheduler, MutableList<String>> {
         val keys = mutableListOf<String>()

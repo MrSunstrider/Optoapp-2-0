@@ -1,4 +1,4 @@
-package com.example.optoapp.domain
+﻿package com.example.optoapp.domain
 
 import com.example.optoapp.data.InventarioFisico
 import com.example.optoapp.data.InventarioFisicoDetalle
@@ -108,8 +108,6 @@ class SyncInventarioFisicoUseCaseKtTest {
         assertEquals(10, result.uploadedDetalles)
         assertEquals(0, result.downloadedSessions)
     }
-
-    // ── Bug 2: toRemoto() debe propagar opticaId real ─────────────────────
 
     @Test
     fun toRemoto_detalle_passesRealOpticaId() {

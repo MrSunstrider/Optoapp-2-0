@@ -1,4 +1,4 @@
-package com.example.optoapp.domain.sync
+﻿package com.example.optoapp.domain.sync
 
 import com.example.optoapp.data.ConflictDao
 import com.example.optoapp.data.MonturaMovimiento
@@ -46,8 +46,6 @@ class ConflictHelperMovimientoPersistenceTest {
         referenciaId = refId, nota = "", opticaId = opticaId,
         fecha = LocalDate.now(),
     )
-
-    // ─── TDD RED: filterConflictMovimientos calls upsertConflict ──────────
 
     @Test
     fun filterConflictMovimientos_callsUpsertConflictForStockDiscrepancies() = runTest {

@@ -1,4 +1,4 @@
-package com.example.optoapp.domain
+﻿package com.example.optoapp.domain
 
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -18,8 +18,6 @@ class SyncFinanzasCostosTest {
         ignoreUnknownKeys = true
         encodeDefaults = true
     }
-
-    // ── CostoProductoRemoto serialization ──────────────────────────────
 
     @Test
     fun costoProductoRemoto_serialization_roundTrip() {
@@ -115,8 +113,6 @@ class SyncFinanzasCostosTest {
         assertNull(decoded.vigenteHasta)
     }
 
-    // ── CostoBiseladoRemoto serialization ──────────────────────────────
-
     @Test
     fun costoBiseladoRemoto_serialization_roundTrip() {
         val original = CostoBiseladoRemoto(
@@ -171,8 +167,6 @@ class SyncFinanzasCostosTest {
         assertEquals("fabricacion", decoded.stockOFabricacion)
         assertEquals(35.0, decoded.costoPorPar, 0.001)
     }
-
-    // ── FinanzasSyncResult new fields ─────────────────────────────────
 
     @Test
     fun finanzasSyncResult_includesCostosCounters() {

@@ -1,4 +1,4 @@
-package com.example.optoapp.data
+﻿package com.example.optoapp.data
 
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
@@ -13,8 +13,6 @@ class BackupDataSerializationTest {
         ignoreUnknownKeys = true
         encodeDefaults = true
     }
-
-    // ─── Roundtrip via default serializer ───────────────────────────────
 
     @Test
     fun roundtrip_emptyBackupData_preservesAllFields() {
@@ -117,8 +115,6 @@ class BackupDataSerializationTest {
         assertEquals("d1", decoded.dispensaciones?.first()?.id)
         assertEquals(150.0, decoded.pagos!!.first().monto, 0.001)
     }
-
-    // ─── BackupDataSerializer: backward compat with old keys ────────────
 
     @Test
     fun backwardCompat_ordenesKey_mapsToDispensaciones() {

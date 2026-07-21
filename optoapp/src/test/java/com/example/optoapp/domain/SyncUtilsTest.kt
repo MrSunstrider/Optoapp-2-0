@@ -1,4 +1,4 @@
-package com.example.optoapp.domain
+﻿package com.example.optoapp.domain
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -13,8 +13,6 @@ import org.junit.Test
  * SyncHistorialUseCase.kt — callable directly from this package.
  */
 class SyncUtilsTest {
-
-    // ── normalizedOtForUnique ──────────────────────────────────────────────
 
     @Test
     fun normalizedOtForUnique_trimsAndUppercases() {
@@ -40,8 +38,6 @@ class SyncUtilsTest {
     fun normalizedOtForUnique_blankInput_returnsNull() {
         assertNull(normalizedOtForUnique("   "))
     }
-
-    // ── normalizedHistoriaKey (extracted to top-level in SyncHistorialUseCase.kt) ─
 
     @Test
     fun normalizedHistoriaKey_trimsAndUppercases() {

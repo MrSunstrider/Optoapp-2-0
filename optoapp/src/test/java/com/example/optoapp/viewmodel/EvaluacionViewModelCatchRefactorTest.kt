@@ -1,4 +1,4 @@
-package com.example.optoapp.viewmodel
+﻿package com.example.optoapp.viewmodel
 
 import com.example.optoapp.viewmodel.diagnostico.DiagnosticoCalculator
 import org.junit.Assert.*
@@ -12,8 +12,6 @@ import org.junit.Test
  * lives in DiagnosticoCalculator — the single source of truth.
  */
 class EvaluacionViewModelCatchRefactorTest {
-
-    // ─── parseSnellenToLogMar — delegates to DiagnosticoCalculator ───
 
     @Test
     fun `parseSnellenToLogMar valid input returns logMAR`() {

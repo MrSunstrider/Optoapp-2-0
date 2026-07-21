@@ -1,4 +1,4 @@
-package com.example.optoapp.util.refraction
+﻿package com.example.optoapp.util.refraction
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -6,8 +6,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class SphereTest {
-
-    // ── Sphere validation ───────────────────────────────────────────────
 
     @Test
     fun `sphere accepts positive integer`() {
@@ -61,8 +59,6 @@ class SphereTest {
         assertEquals("+2.00", Sphere.fromString("  +2.00  ").value)
     }
 
-    // ── Cylinder validation ─────────────────────────────────────────────
-
     @Test
     fun `cylinder accepts valid values same as sphere`() {
         assertTrue(Cylinder("-1.75").isValid)
@@ -87,8 +83,6 @@ class SphereTest {
         assertEquals("", Cylinder("").toDisplayString())
         assertEquals("-1.00", Cylinder.fromString(" -1.00 ").value)
     }
-
-    // ── Axis validation ─────────────────────────────────────────────────
 
     @Test
     fun `axis accepts one to three digits`() {
@@ -121,8 +115,6 @@ class SphereTest {
         assertEquals("", Axis("").toDisplayString())
         assertEquals("180", Axis.fromString(" 180 ").value)
     }
-
-    // ── VisualAcuity validation ─────────────────────────────────────────
 
     @Test
     fun `visual acuity accepts 20-20 notation`() {
@@ -169,8 +161,6 @@ class SphereTest {
         assertEquals("", VisualAcuity("").toDisplayString())
         assertEquals("0.5", VisualAcuity.fromString(" 0.5 ").value)
     }
-
-    // ── Prism and DipMeasurement ────────────────────────────────────────
 
     @Test
     fun `prism toDisplayString and fromString`() {

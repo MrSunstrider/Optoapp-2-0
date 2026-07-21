@@ -1,4 +1,4 @@
-package com.example.optoapp.domain
+﻿package com.example.optoapp.domain
 
 import com.example.optoapp.data.FakeConflictDao
 import com.example.optoapp.data.OptoRepository
@@ -89,8 +89,6 @@ class SyncPacientesUseCaseDownloadGuardTest {
         assertTrue("getConflictEntityIds should have been called", conflictDao.getConflictEntityIdsCalled.get())
     }
 
-    // ─── F1: Phase 1 retry (tombstone resurrection prevention) ────────────
-
     @Test
     fun `download phase1 retry fails preserves tombstone`() = runBlocking {
         val tombstone = SyncEntityState(
@@ -133,8 +131,6 @@ class SyncPacientesUseCaseDownloadGuardTest {
         coVerify { syncStateDao.getPendingDeletions(opticaId) }
     }
 
-    // ─── F4 RED: CancellationException propagation ────────────────────────
-
     @Test
     fun `download phase1 cancellationException propagates from inner loop`() = runBlocking {
         // The inner loop's CancellationException is tested by making
@@ -151,8 +147,6 @@ class SyncPacientesUseCaseDownloadGuardTest {
             // (catch (e: CancellationException) { throw e }) rethrows.
         }
     }
-
-    // ─── B5: CancellationException propagation in download Phase 1 ──────────
 
     @Test
     fun `upload double batch and per-entity fetch failure marks error`() = runBlocking {
@@ -194,8 +188,6 @@ class SyncPacientesUseCaseDownloadGuardTest {
             syncStateTracker.markError(opticaId, "upload_pacientes", "batch", "Double fetch failure")
         }
     }
-
-    // ─── B3: download() returns actual upserted count ────────────────────
 
     @Test
     fun `download returns count of actually upserted rows not total fetched`() = runBlocking {
@@ -248,8 +240,6 @@ class SyncPacientesUseCaseDownloadGuardTest {
         assertTrue(result is Resource.Success)
         assertEquals(0, (result as Resource.Success).data!!.downloaded)
     }
-
-    // ─── Test seam for download count verification ───────────────────────
 
     class TestableDownloadUseCase(
         repository: OptoRepository,

@@ -1,4 +1,4 @@
-package com.example.optoapp.viewmodel
+﻿package com.example.optoapp.viewmodel
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Assert.*
@@ -12,8 +12,6 @@ import org.junit.Test
  * patterns and pure validation logic.
  */
 class RecoveryStateTest {
-
-    // ─── RecoveryState sealed class behavior ─────────────────────────────
 
     @Test
     fun recoveryStateIdle_dataObject() {
@@ -78,8 +76,6 @@ class RecoveryStateTest {
         assertFalse(s1 is RecoveryState.Error)
     }
 
-    // ─── State machine: MutableStateFlow<RecoveryState> pattern ──────────
-
     @Test
     fun recoveryStateFlow_startsAsIdle() {
         val flow = MutableStateFlow<RecoveryState>(RecoveryState.Idle)
@@ -121,8 +117,6 @@ class RecoveryStateTest {
         assertTrue(flow.value is RecoveryState.Error)
         assertEquals("error", (flow.value as RecoveryState.Error).message)
     }
-
-    // ─── Password validation logic (same rules as RegisterScreen) ────────
 
     private fun validateNewPassword(password: String, confirmPassword: String): String? = when {
         password.length < 6 -> "Debe tener al menos 6 caracteres, una mayúscula, una minúscula, un número y un símbolo."

@@ -1,4 +1,4 @@
-package com.example.optoapp.domain
+﻿package com.example.optoapp.domain
 
 import com.example.optoapp.data.FakeConflictDao
 import com.example.optoapp.data.OptoRepository
@@ -48,8 +48,6 @@ class SyncInventarioUseCaseDownloadGuardTest {
         )
     }
 
-    // ─── Constructor contract ────────────────────────────────────────────
-
     @Test
     fun constructor_takesFiveDependencies() {
         val constructors = SyncInventarioUseCase::class.java.declaredConstructors
@@ -72,8 +70,6 @@ class SyncInventarioUseCaseDownloadGuardTest {
             hasConflictDao,
         )
     }
-
-    // ─── Guard: downloadMonturas fires with "montura" ─────────────────────
 
     @Test
     fun downloadMonturas_queriesConflictEntityIds() = runBlocking {

@@ -1,4 +1,4 @@
-package com.example.optoapp.viewmodel
+﻿package com.example.optoapp.viewmodel
 
 import android.content.Context
 import android.net.ConnectivityManager
@@ -191,8 +191,6 @@ class SyncViewModelChildBumpTest {
         Dispatchers.resetMain()
     }
 
-    // ─── Helpers ───────────────────────────────────────────────────────────
-
     private fun makeConflict(entityId: String, entityType: String) = ConflictRecord(
         entityId = entityId,
         opticaId = testOpticaId,
@@ -249,8 +247,6 @@ class SyncViewModelChildBumpTest {
         dispensacionId = dispensacionId,
         opticaId = testOpticaId,
     )
-
-    // ─── 5.1 RED: Child→Parent bump tests ──────────────────────────────────
 
     @Test
     fun monturaMovimiento_bumpsParentMontura() = runTest(testDispatcher) {

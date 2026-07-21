@@ -1,4 +1,4 @@
-package com.example.optoapp.viewmodel
+﻿package com.example.optoapp.viewmodel
 
 import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.EvaluacionClinica
@@ -75,8 +75,6 @@ class OperacionHoyViewModelTest {
         assertEquals(2, state.alertas.size)
     }
 
-    // ─── 2.5.2: Five query sources map to state fields ───────────────────────
-
     @Test
     fun operacionHoyUiState_holdsDataFromAllFiveQuerySources() {
         val today = LocalDate.of(2024, 6, 15)
@@ -138,8 +136,6 @@ class OperacionHoyViewModelTest {
         assertEquals(1, state.serviciosPendientes.size)
         assertEquals(2, state.monturas.size)
     }
-
-    // ─── 2.5.3: All sources success → combined state correct ─────────────────
 
     @Test
     fun operacionHoyUiState_combinesAllSourcesWithCorrectFormulas() {
@@ -224,8 +220,6 @@ class OperacionHoyViewModelTest {
         assertTrue("alertas should mention servicios pendientes", state.alertas.any { it.contains("Servicios extra") })
         assertTrue("alertas should mention citas hoy", state.alertas.any { it.contains("Citas de control") })
     }
-
-    // ─── 2.5.4: Partial failure → structural capacity for partial results ────
 
     @Test
     fun operacionHoyUiState_partialData_showsAvailableFieldsWithDefaultsForMissing() {

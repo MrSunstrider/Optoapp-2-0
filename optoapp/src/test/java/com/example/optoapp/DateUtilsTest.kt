@@ -1,4 +1,4 @@
-package com.example.optoapp
+﻿package com.example.optoapp
 
 import com.example.optoapp.util.DateUtils
 import org.junit.Assert.assertEquals
@@ -10,8 +10,6 @@ import java.util.Date
 import java.util.TimeZone
 
 class DateUtilsTest {
-
-    // ── fromDisplayFormat (dd/MM/yyyy → LocalDate) ──────────────────────
 
     @Test
     fun fromDisplayFormat_validDate_returnsLocalDate() {
@@ -35,8 +33,6 @@ class DateUtilsTest {
         val result = DateUtils.fromDisplayFormat("25/12/2024")
         assertEquals(LocalDate.of(2024, 12, 25), result)
     }
-
-    // ── formatDateInput (auto-slash dd/MM/yyyy) ────────────────────────
 
     @Test
     fun formatDateInput_empty_returnsEmpty() {
@@ -121,8 +117,6 @@ class DateUtilsTest {
         // Simulate backspace from "15/03" → "15/0" → "15/0"
         assertEquals("15/0", DateUtils.formatDateInput("15/0"))
     }
-
-    // ── existing tests ──────────────────────────────────────────────────
 
     @Test
     fun testDateOffset() {

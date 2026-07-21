@@ -1,4 +1,4 @@
-package com.example.optoapp.viewmodel
+﻿package com.example.optoapp.viewmodel
 
 import android.content.Context
 import android.net.ConnectivityManager
@@ -247,8 +247,6 @@ class SyncViewModelConflictResolutionTest {
         coVerify { conflictDao.clearConflicts(testOpticaId) }
         coVerify { syncEntityStateDao.deleteConflictedForOptica(testOpticaId) }
     }
-
-    // ─── Phase 4 RED: resolveKeepMine bump tests ──────────────────────────
 
     private fun makeServicioConflict(entityId: String) = ConflictRecord(
         entityId = entityId,

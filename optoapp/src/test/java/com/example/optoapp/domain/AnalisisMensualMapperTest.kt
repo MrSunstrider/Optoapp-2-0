@@ -11,8 +11,6 @@ import org.junit.Test
 
 class AnalisisMensualMapperTest {
 
-    // --- meses_historicos tests ---
-
     @Test
     fun fromJson_withMesesHistoricos_parsesCorrectly() {
         val json = buildJsonObject {

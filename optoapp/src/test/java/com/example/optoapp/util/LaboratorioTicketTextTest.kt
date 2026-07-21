@@ -1,4 +1,4 @@
-package com.example.optoapp.util
+﻿package com.example.optoapp.util
 
 import com.example.optoapp.data.EvaluacionClinica
 import org.junit.Assert.assertEquals
@@ -26,8 +26,6 @@ class LaboratorioTicketTextTest {
         recetaOiCil = oiCil,
         recetaOiEje = oiEje,
     )
-
-    // ── bloqueFormulaLaboratorio ────────────────────────────────────────
 
     @Test
     fun `bloqueFormulaLaboratorio null eval returns empty`() {
@@ -91,8 +89,6 @@ class LaboratorioTicketTextTest {
         assertTrue(result.contains("Add: —"))
         assertTrue(result.contains("h: 22 mm"))
     }
-
-    // ── lineaRefraccionFinalYDipNdP ─────────────────────────────────────
 
     @Test
     fun `lineaRefraccionFinalYDipNdP null eval returns empty`() {

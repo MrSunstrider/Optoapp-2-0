@@ -1,4 +1,4 @@
-package com.example.optoapp.data
+﻿package com.example.optoapp.data
 
 import android.content.Context
 import androidx.sqlite.db.SupportSQLiteDatabase
@@ -70,8 +70,6 @@ class Migration27To28Test {
         context.deleteDatabase(dbName)
 
         val factory = FrameworkSQLiteOpenHelperFactory()
-
-        // ── Step 1: Create v27 database with conflict_records table ──
         val v27Config = SupportSQLiteOpenHelper.Configuration.builder(context)
             .name(dbName)
             .callback(object : SupportSQLiteOpenHelper.Callback(27) {
@@ -99,8 +97,6 @@ class Migration27To28Test {
 
         val v27Helper = factory.create(v27Config)
         val v27Db = v27Helper.writableDatabase
-
-        // ── Step 2: Insert 5 conflict_records rows ──
         val rows = listOf(
             Triple("id-1", "paciente", "2026-06-15T04:00:00Z"),
             Triple("id-2", "evaluacion", "2026-06-15T05:00:00Z"),
@@ -122,8 +118,6 @@ class Migration27To28Test {
         countCursor.close()
 
         v27Helper.close()
-
-        // ── Step 3: Open at v28 and run MIGRATION_27_28 ──
         val v28Config = SupportSQLiteOpenHelper.Configuration.builder(context)
             .name(dbName)
             .callback(object : SupportSQLiteOpenHelper.Callback(28) {
@@ -145,8 +139,6 @@ class Migration27To28Test {
 
         val v28Helper = factory.create(v28Config)
         val v28Db = v28Helper.writableDatabase
-
-        // ── Step 4: Verify all 5 rows preserved with original column values ──
         val allRowsCursor = v28Db.query("SELECT entityId, opticaId, entityType, localSnapshot, remoteSnapshot, detectedAt, baseSnapshot, localData, remoteData FROM conflict_records ORDER BY entityId")
         val surviving = mutableListOf<Array<Any?>>()
         while (allRowsCursor.moveToNext()) {

@@ -1,4 +1,4 @@
-package com.example.optoapp.viewmodel
+﻿package com.example.optoapp.viewmodel
 
 import org.junit.Assert.*
 import org.junit.Test
@@ -18,8 +18,6 @@ class SettingsViewModelCharacterizationTest {
         assertNotNull("SettingsViewModel debe existir", clazz)
         assertEquals("SettingsViewModel", clazz.simpleName)
     }
-
-    // ─── EXISTING members (approval tests) ─────────────────────────────
 
     @Test
     fun remindersEnabled_isDeclaredMember() {
@@ -59,8 +57,6 @@ class SettingsViewModelCharacterizationTest {
         assertTrue("sendTestNotification debe ser miembro", "sendTestNotification" in names)
     }
 
-    // ─── NEW PIN method signatures (RED tests - will fail first) ───────
-
     @Test
     fun pinHasBeenSet_isDeclaredMember() {
         val methods = SettingsViewModel::class.java.declaredMethods.map { it.name }
@@ -98,8 +94,6 @@ class SettingsViewModelCharacterizationTest {
             "updatePin" in names,
         )
     }
-
-    // ─── Method parameter contract tests via Java reflection ────────────
 
     @Test
     fun setRemindersEnabled_acceptsBooleanParameter() {

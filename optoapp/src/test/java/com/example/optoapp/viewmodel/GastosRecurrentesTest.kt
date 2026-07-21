@@ -1,4 +1,4 @@
-package com.example.optoapp.viewmodel
+﻿package com.example.optoapp.viewmodel
 
 import com.example.optoapp.data.gastooperativo.GastoOperativoEntity
 import org.junit.Assert.*
@@ -65,8 +65,6 @@ class GastosRecurrentesTest {
         assertEquals(1, nuevos.size)
         assertEquals(LocalDate.of(2026, 7, 1), nuevos[0].fecha)
     }
-
-    // ── R30: Category constraint tests ────────────────────────────────────────
 
     @Test
     fun `GastosUiState default categoria is alquiler`() {

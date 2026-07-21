@@ -1,4 +1,4 @@
-package com.example.optoapp.viewmodel.diagnostico
+﻿package com.example.optoapp.viewmodel.diagnostico
 
 import org.junit.Assert.*
 import org.junit.Test
@@ -9,8 +9,6 @@ import org.junit.Test
  * calcularDiagnostico, and parseSnellenToLogMar.
  */
 class DiagnosticoCalculatorTest {
-
-    // ─── parseRefraction: keyword synonyms ─────────────────────────────
 
     @Test
     fun `parseRefraction plano returns 0`() {
@@ -42,8 +40,6 @@ class DiagnosticoCalculatorTest {
         assertEquals(0.0, DiagnosticoCalculator.parseRefraction("NeuTro")!!, 0.001)
     }
 
-    // ─── parseRefraction: numeric values ──────────────────────────────
-
     @Test
     fun `parseRefraction positive integer`() {
         assertEquals(2.0, DiagnosticoCalculator.parseRefraction("2")!!, 0.001)
@@ -69,8 +65,6 @@ class DiagnosticoCalculatorTest {
         assertEquals(0.0, DiagnosticoCalculator.parseRefraction("0")!!, 0.001)
     }
 
-    // ─── parseRefraction: edge cases ──────────────────────────────────
-
     @Test
     fun `parseRefraction empty string returns null`() {
         assertNull(DiagnosticoCalculator.parseRefraction(""))
@@ -91,8 +85,6 @@ class DiagnosticoCalculatorTest {
         assertEquals(1.5, DiagnosticoCalculator.parseRefraction("  1.50  ")!!, 0.001)
     }
 
-    // ─── calcularDiagnostico: both null ───────────────────────────────
-
     @Test
     fun `calcularDiagnostico both null returns empty`() {
         assertEquals("", DiagnosticoCalculator.calcularDiagnostico("", ""))
@@ -104,8 +96,6 @@ class DiagnosticoCalculatorTest {
         assertEquals("Emetropía", DiagnosticoCalculator.calcularDiagnostico("", "pl"))
     }
 
-    // ─── calcularDiagnostico: emetropia ────────────────────────────────
-
     @Test
     fun `calcularDiagnostico plano and plano returns Emetropia`() {
         assertEquals("Emetropía", DiagnosticoCalculator.calcularDiagnostico("plano", "plano"))
@@ -116,8 +106,6 @@ class DiagnosticoCalculatorTest {
         assertEquals("Emetropía", DiagnosticoCalculator.calcularDiagnostico("0", "0"))
     }
 
-    // ─── calcularDiagnostico: pure myopia/hyperopia ────────────────────
-
     @Test
     fun `calcularDiagnostico negative esf zero cil returns Miopia`() {
         assertEquals("Miopía", DiagnosticoCalculator.calcularDiagnostico("-2.00", "0"))
@@ -127,8 +115,6 @@ class DiagnosticoCalculatorTest {
     fun `calcularDiagnostico positive esf zero cil returns Hipermetropia`() {
         assertEquals("Hipermetropía", DiagnosticoCalculator.calcularDiagnostico("+1.00", "0"))
     }
-
-    // ─── calcularDiagnostico: simple astigmatism ───────────────────────
 
     @Test
     fun `calcularDiagnostico plano esf negative cil returns miopico simple`() {
@@ -155,8 +141,6 @@ class DiagnosticoCalculatorTest {
         )
     }
 
-    // ─── calcularDiagnostico: compound astigmatism ─────────────────────
-
     @Test
     fun `calcularDiagnostico both negative returns miopico compuesto`() {
         assertEquals(
@@ -173,8 +157,6 @@ class DiagnosticoCalculatorTest {
             DiagnosticoCalculator.calcularDiagnostico("+1.00", "+1.00"),
         )
     }
-
-    // ─── calcularDiagnostico: mixed astigmatism ───────────────────────
 
     @Test
     fun `calcularDiagnostico meridianos opuestos returns mixto`() {
@@ -194,8 +176,6 @@ class DiagnosticoCalculatorTest {
         )
     }
 
-    // ─── calcularDiagnostico: transpose positive cylinder ────────────────
-
     @Test
     fun `calcularDiagnostico transposes positive cylinder to negative`() {
         // esf = -2.00, cil = +1.00 → transpose: e = -1.0, c = -1.0
@@ -205,8 +185,6 @@ class DiagnosticoCalculatorTest {
             DiagnosticoCalculator.calcularDiagnostico("-2.00", "+1.00"),
         )
     }
-
-    // ─── parseSnellenToLogMar ─────────────────────────────────────────
 
     @Test
     fun `parseSnellenToLogMar 20 over 20 returns 0`() {

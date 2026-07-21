@@ -18,8 +18,6 @@ import org.robolectric.annotation.Config
 @Config(sdk = [34])
 class OptoThemeIntegrationTest {
 
-    // --- Token-to-Color.kt consistency ---
-
     @Test
     fun color_primary_matchesOptoTokens() {
         assertEquals(OptoTokens.colors.primary, Primary)
@@ -62,8 +60,6 @@ class OptoThemeIntegrationTest {
         assertEquals(OptoTokens.colorsDark.error, ErrorDark)
     }
 
-    // --- Shapes integration ---
-
     @Test
     fun shapes_small_is12dp() {
         assertEquals(RoundedCornerShape(12.dp), OptoTokens.shapes.small)
@@ -86,8 +82,6 @@ class OptoThemeIntegrationTest {
         assertEquals(OptoTokens.shapes.medium, shapes.medium)
         assertEquals(OptoTokens.shapes.large, shapes.large)
     }
-
-    // --- Color scheme slot completeness ---
 
     @Test
     fun theme_m3Slots_defined() {

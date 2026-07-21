@@ -1,4 +1,4 @@
-package com.example.optoapp.viewmodel
+﻿package com.example.optoapp.viewmodel
 
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.SessionManager
@@ -83,8 +83,6 @@ class CostosYGastosViewModelTest {
         unmockkAll()
     }
 
-    // ── saveCosto: successful create ──────────────────────────────────────
-
     @Test
     fun saveCosto_createsEntityWithUuidOpticaIdAndVigenteDesde_callsUpsertAll() = runTest(testDispatcher) {
         // Mock DAO refresh to return empty after upsert
@@ -137,8 +135,6 @@ class CostosYGastosViewModelTest {
         assertFalse("Dialog must be dismissed after successful save", viewModel.uiState.value.isCostoDialogVisible)
         assertNull("No error expected after successful save", viewModel.uiState.value.costoSaveError)
     }
-
-    // ── saveCosto: validation errors ─────────────────────────────────────
 
     @Test
     fun saveCosto_rejectsEmptyMaterial_setsCostoSaveError() = runTest(testDispatcher) {
@@ -262,8 +258,6 @@ class CostosYGastosViewModelTest {
 
         assertEquals("Ingresa un costo unitario válido", viewModel.uiState.value.costoSaveError)
     }
-
-    // ── deleteCosto: soft-delete ──────────────────────────────────────────
 
     @Test
     fun deleteCosto_setsVigenteHasta_callsUpsertAll_refreshesBlock_schedulesSync() = runTest(testDispatcher) {

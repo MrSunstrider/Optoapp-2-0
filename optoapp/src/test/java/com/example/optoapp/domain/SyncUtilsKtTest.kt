@@ -1,4 +1,4 @@
-package com.example.optoapp.domain
+﻿package com.example.optoapp.domain
 
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -13,8 +13,6 @@ import org.junit.Test
  * This file tests the pure logic contract that both share.
  */
 class SyncUtilsKtTest {
-
-    // ── UseCase variant (includes "connect failed") ─────────────────────
 
     @Test
     fun isTransientNetworkError_timeoutMessage_returnsTrue() {

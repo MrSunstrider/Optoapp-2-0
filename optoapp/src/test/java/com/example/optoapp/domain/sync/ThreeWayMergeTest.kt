@@ -1,4 +1,4 @@
-package com.example.optoapp.domain.sync
+﻿package com.example.optoapp.domain.sync
 
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -36,8 +36,6 @@ class ThreeWayMergeTest {
 
     private fun strField(o: JsonObject, name: String): String? = o[name]?.jsonPrimitive?.contentOrNull
 
-    // ── FR-09 Scenario: "No changes from either side" ────────────────────────
-
     @Test
     fun `all_unchanged_returns_base_with_no_conflicts_and_no_auto_merge`() {
         val base = obj("a" to JsonPrimitive(1), "b" to JsonPrimitive(2))
@@ -52,8 +50,6 @@ class ThreeWayMergeTest {
         assertTrue("autoMergedFields must be empty", result.autoMergedFields.isEmpty())
         assertFalse("hasConflict must be false when no changes", result.hasConflict)
     }
-
-    // ── FR-09 Scenario: "local != base AND remote == base → apply local" ─────
 
     @Test
     fun `local_only_change_auto_merges_local_value`() {
@@ -70,8 +66,6 @@ class ThreeWayMergeTest {
         assertFalse("hasConflict must be false for local-only change", result.hasConflict)
     }
 
-    // ── FR-09 Scenario: "local == base AND remote != base → apply remote" ────
-
     @Test
     fun `remote_only_change_auto_merges_remote_value`() {
         val base = obj("a" to JsonPrimitive(1), "b" to JsonPrimitive(2))
@@ -87,8 +81,6 @@ class ThreeWayMergeTest {
         assertFalse("hasConflict must be false for remote-only change", result.hasConflict)
     }
 
-    // ── FR-09 Scenario: "Non-overlapping changes auto-merge" ─────────────────
-
     @Test
     fun `non_overlapping_changes_auto_merge_both_fields`() {
         val base = obj("a" to JsonPrimitive(1), "b" to JsonPrimitive(2))
@@ -103,8 +95,6 @@ class ThreeWayMergeTest {
         assertEquals("autoMergedFields should include both 'a' and 'b'", listOf("a", "b"), result.autoMergedFields.sorted())
         assertFalse("hasConflict must be false when changes don't overlap", result.hasConflict)
     }
-
-    // ── FR-09 Scenario: "Overlapping changes produce conflict" ───────────────
 
     @Test
     fun `overlapping_changes_produce_conflict_on_both_fields`() {
@@ -123,8 +113,6 @@ class ThreeWayMergeTest {
         assertTrue("hasConflict must be true when both sides changed the same field", result.hasConflict)
     }
 
-    // ── FR-09 Scenario: "Missing snapshot fields treated as no-change" → empty base ──
-
     @Test
     fun `empty_base_treats_all_fields_as_conflicting_when_both_sides_have_data`() {
         // baseSnapshot = '{}' (empty object) — per FR-09, all fields in both local and remote
@@ -142,8 +130,6 @@ class ThreeWayMergeTest {
         )
         assertTrue("hasConflict must be true with empty base and differing fields", result.hasConflict)
     }
-
-    // ── FR-09 Scenario: "Missing fields in one side" ─────────────────────────
 
     @Test
     fun `field_present_in_base_and_local_but_missing_in_remote_keeps_local`() {
@@ -178,8 +164,6 @@ class ThreeWayMergeTest {
         assertFalse("hasConflict must be false", result.hasConflict)
     }
 
-    // ── FR-09 Scenario: "no-changes" (redundant with first test but with different field shapes) ──
-
     @Test
     fun `no_changes_returns_base_identical_with_string_fields`() {
         val base = obj("nombre" to JsonPrimitive("Juan"), "telefono" to JsonPrimitive("555"))
@@ -194,8 +178,6 @@ class ThreeWayMergeTest {
         assertTrue(result.autoMergedFields.isEmpty())
         assertFalse(result.hasConflict)
     }
-
-    // ── Mixed scenario: one auto-merge + one conflict ────────────────────────
 
     @Test
     fun `mixed_auto_merge_and_conflict_reports_correct_lists`() {

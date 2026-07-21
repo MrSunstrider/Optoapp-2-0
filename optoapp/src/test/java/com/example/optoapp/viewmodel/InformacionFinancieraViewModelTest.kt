@@ -1,4 +1,4 @@
-package com.example.optoapp.viewmodel
+﻿package com.example.optoapp.viewmodel
 
 import com.example.optoapp.data.ContextoFinanciero
 import com.example.optoapp.data.DispensacionFinancieraRepository
@@ -96,8 +96,6 @@ class InformacionFinancieraViewModelTest {
         Dispatchers.resetMain()
     }
 
-    // ── 2.1 Tests: load ──────────────────────────────────────────────────────
-
     @Test
     fun `loadFinanciera loads contexto pagos and montoTotal`() = runTest {
         val vm = InformacionFinancieraViewModel(repository, sessionManager, postSaveSyncScheduler)
@@ -126,8 +124,6 @@ class InformacionFinancieraViewModelTest {
         assertEquals(2, vm.uiState.value.pagos.size)
     }
 
-    // ── 2.2 Tests: saldo reactivity ──────────────────────────────────────────
-
     @Test
     fun `saldoRestante is calculated from montoTotal minus pagos`() = runTest {
         val vm = InformacionFinancieraViewModel(repository, sessionManager, postSaveSyncScheduler)
@@ -152,8 +148,6 @@ class InformacionFinancieraViewModelTest {
         val state = vm.uiState.value
         assertEquals(0.0, state.saldoRestante, 0.001)
     }
-
-    // ── 2.3 Tests: pagos CRUD ─────────────────────────────────────────────────
 
     @Test
     fun `addPago appends pago to list`() = runTest {
@@ -197,8 +191,6 @@ class InformacionFinancieraViewModelTest {
         assertEquals(1, vm.uiState.value.pagosToDelete.size)
     }
 
-    // ── 2.4 Tests: estado toggle ──────────────────────────────────────────────
-
     @Test
     fun `updateEstado changes estadoEntrega`() = runTest {
         val vm = InformacionFinancieraViewModel(repository, sessionManager, postSaveSyncScheduler)
@@ -230,8 +222,6 @@ class InformacionFinancieraViewModelTest {
         assertEquals("Pendiente", vm.uiState.value.estadoEntrega)
         assertEquals(null, vm.uiState.value.fechaEntrega)
     }
-
-    // ── 2.5 Tests: save ──────────────────────────────────────────────────────
 
     // All tests that call vm.save() and verify repository calls were removed
     // because withContext(Dispatchers.IO) in the production save() method is

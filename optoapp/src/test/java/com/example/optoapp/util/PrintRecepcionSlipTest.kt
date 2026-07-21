@@ -1,4 +1,4 @@
-package com.example.optoapp.util
+﻿package com.example.optoapp.util
 
 import com.example.optoapp.data.OrdenCompra
 import com.example.optoapp.data.OrdenCompraItem
@@ -35,8 +35,6 @@ class PrintRecepcionSlipTest {
         cantidad = cantidad,
         costoUnitario = costoUnitario,
     )
-
-    // ── buildReceiptHtml ────────────────────────────────────────────────
 
     @Test
     fun `buildReceiptHtml contains OC number`() {

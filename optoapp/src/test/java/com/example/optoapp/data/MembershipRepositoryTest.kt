@@ -1,4 +1,4 @@
-package com.example.optoapp.data
+﻿package com.example.optoapp.data
 
 import android.util.Log
 import com.example.optoapp.data.membership.MembershipDataSource
@@ -42,8 +42,6 @@ class MembershipRepositoryTest {
         val opticaSettingsDataSource = OpticaSettingsDataSource(supabase)
         repo = MembershipRepository(membershipDataSource, opticaSettingsDataSource, mockk(relaxed = true))
     }
-
-    // ── Sin sesión — early returns ──────────────────────────────────────────
 
     @Test
     fun fetchMembershipsForCurrentUser_noSession_returnsEmptyList() = runBlocking {

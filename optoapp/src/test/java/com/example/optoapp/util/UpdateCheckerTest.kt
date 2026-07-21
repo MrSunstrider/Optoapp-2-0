@@ -1,4 +1,4 @@
-package com.example.optoapp.util
+﻿package com.example.optoapp.util
 
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
@@ -7,8 +7,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class UpdateCheckerTest {
-
-    // ── isNewer ─────────────────────────────────────────────────────────
 
     @Test
     fun isNewer_returnsTrue_whenLatestIsHigher() {
@@ -56,8 +54,6 @@ class UpdateCheckerTest {
         assertTrue(UpdateChecker.isNewer("1.0.0", ""))
     }
 
-    // ── JSON parsing ────────────────────────────────────────────────────
-
     private val json = Json { ignoreUnknownKeys = true }
 
     @Test
@@ -103,8 +99,6 @@ class UpdateCheckerTest {
         assertEquals("1.5.0", release.version)
         assertEquals("https://supabase.co/storage/apk/app-debug.apk", release.apkDownloadUrl)
     }
-
-    // ── DownloadResult ──────────────────────────────────────────────────
 
     @Test
     fun downloadResult_success_isObject() {

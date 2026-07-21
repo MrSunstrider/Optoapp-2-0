@@ -1,4 +1,4 @@
-package com.example.optoapp.viewmodel
+﻿package com.example.optoapp.viewmodel
 
 import com.example.optoapp.data.Resource
 import com.example.optoapp.domain.FinanzasSyncResult
@@ -28,8 +28,6 @@ import org.junit.Test
  * in isolation — the same contract that performSilentSync must honour.
  */
 class SyncViewModelSilentSyncTest {
-
-    // ── Fakes that capture the downloadAfterUpload argument ──────────────────
 
     private fun makeRecordingPacientes(): Pair<SyncPacientesUseCase, MutableList<Boolean>> {
         val recorded = mutableListOf<Boolean>()
@@ -83,8 +81,6 @@ class SyncViewModelSilentSyncTest {
         }
         return useCase to recorded
     }
-
-    // ── Tests ─────────────────────────────────────────────────────────────────
 
     @Test
     fun silentSync_nullUpdatedAt_stableAcross3Cycles() {

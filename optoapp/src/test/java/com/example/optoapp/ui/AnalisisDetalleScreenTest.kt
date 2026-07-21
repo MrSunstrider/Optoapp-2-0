@@ -8,8 +8,6 @@ import org.junit.Test
 
 class AnalisisDetalleScreenTest {
 
-    // --- meses_historicos warning tests ---
-
     @Test
     fun proyeccionCaja_hasMesesHistoricosField() {
         val fields = ProyeccionCaja::class.java.declaredFields.map { it.name }

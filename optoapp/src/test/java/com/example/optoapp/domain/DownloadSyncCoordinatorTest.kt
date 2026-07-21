@@ -1,4 +1,4 @@
-package com.example.optoapp.domain
+﻿package com.example.optoapp.domain
 
 import org.junit.Assert.*
 import org.junit.Ignore
@@ -11,8 +11,6 @@ import org.junit.Test
  * error handling patterns, deletion skip logic.
  */
 class DownloadSyncCoordinatorTest {
-
-    // ─── Class structure ──────────────────────────────────────────────────
 
     @Test
     fun class_exists() {
@@ -40,8 +38,6 @@ class DownloadSyncCoordinatorTest {
             .any { it.annotationClass.qualifiedName?.contains("Inject") == true }
         assertTrue("DownloadSyncCoordinator debe tener @Inject", classHasInject || constructorHasInject)
     }
-
-    // ─── Entity types handled ────────────────────────────────────────────
 
     @Test
     fun handlesDispensacionItems() {
@@ -80,8 +76,6 @@ class DownloadSyncCoordinatorTest {
         )
     }
 
-    // ─── Method signatures ────────────────────────────────────────────────
-
     @Test
     fun downloadMethods_existWithOpticaIdParam() {
         val methods = DownloadSyncCoordinator::class.java.declaredMethods
@@ -104,8 +98,6 @@ class DownloadSyncCoordinatorTest {
         assertTrue("Debe tener downloadPagos", "downloadPagos" in methodNames)
         // All methods are suspend — compiled to accept a Continuation parameter
     }
-
-    // ─── Table constants ──────────────────────────────────────────────────
 
     @Test
     fun companion_hasTableConstants() {
@@ -134,8 +126,6 @@ class DownloadSyncCoordinatorTest {
         assertEquals("pagos", pagos)
     }
 
-    // ─── Deletion skip logic ──────────────────────────────────────────────
-
     @Test
     fun deletionSkipLogic_usesDeletedIds() {
         // Methods that use deletionSyncHelper have skipIds parameter
@@ -150,8 +140,6 @@ class DownloadSyncCoordinatorTest {
         val skipMethods = setOf("downloadDispensaciones", "downloadServicios", "downloadPagos")
         assertFalse("downloadDispensacionItems" in skipMethods)
     }
-
-    // ─── Error handling pattern ───────────────────────────────────────────
 
     @Test
     @Ignore("Not yet implemented — requires code review of try-catch patterns")

@@ -1,4 +1,4 @@
-package com.example.optoapp.data
+﻿package com.example.optoapp.data
 
 import com.example.optoapp.data.pago.PagoDao
 import com.example.optoapp.data.servicio.ServicioExtraDao
@@ -46,8 +46,6 @@ class DispensacionRepositoryErrorTest {
         unmockkAll()
     }
 
-    // ── DispensacionDao.getDispensacionById ───────────────────────────
-
     @Test
     fun `getDispensacionById dao throws IOException returns Error`() = runTest {
         coEvery { dispensacionDao.getDispensacionById("d1") } throws IOException("Network error")
@@ -80,8 +78,6 @@ class DispensacionRepositoryErrorTest {
         assertTrue("Expected Resource.Error but got $result", result is Resource.Error)
         assertEquals("DB corrupt", (result as Resource.Error).message)
     }
-
-    // ── ServicioExtraDao.getServicioById ───────────────────────────────
 
     @Test
     fun `getServicioById dao throws IOException returns Error`() = runTest {

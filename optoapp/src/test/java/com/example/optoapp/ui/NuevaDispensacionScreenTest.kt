@@ -1,4 +1,4 @@
-package com.example.optoapp.ui.screens
+﻿package com.example.optoapp.ui.screens
 
 import com.example.optoapp.viewmodel.DispensacionUiState
 import com.example.optoapp.viewmodel.DispensacionViewModel
@@ -13,8 +13,6 @@ import java.time.LocalDate
  * validation rules, and ViewModel contracts.
  */
 class NuevaDispensacionScreenTest {
-
-    // ─── DispensacionUiState defaults ─────────────────────────────────
 
     @Test
     fun uiState_defaultValuesAreCorrect() {
@@ -52,8 +50,6 @@ class NuevaDispensacionScreenTest {
         assertNull(state.error)
     }
 
-    // ─── Screen title logic ───────────────────────────────────────────
-
     @Test
     fun screenTitle_newModeIsNuevaDispensacion() {
         val title = "Nueva Dispensación"
@@ -65,8 +61,6 @@ class NuevaDispensacionScreenTest {
         val title = "Editar Dispensación"
         assertEquals("Editar Dispensación", title)
     }
-
-    // ─── Form field labels ────────────────────────────────────────────
 
     @Test
     fun formFields_containsOtField() {
@@ -86,8 +80,6 @@ class NuevaDispensacionScreenTest {
         assertEquals("Sugerir OT", label)
     }
 
-    // ─── Section headers ──────────────────────────────────────────────
-
     @Test
     fun sections_containsLenteInfo() {
         val header = "Información del Lente"
@@ -106,8 +98,6 @@ class NuevaDispensacionScreenTest {
         assertEquals("Información Financiera", header)
     }
 
-    // ─── Button labels ────────────────────────────────────────────────
-
     @Test
     fun buttonLabels_confirmarOrdenForNew() {
         val label = "Confirmar Orden"
@@ -125,8 +115,6 @@ class NuevaDispensacionScreenTest {
         val label = "Sugerir OT"
         assertEquals("Sugerir OT", label)
     }
-
-    // ─── Validation rules ─────────────────────────────────────────────
 
     @Test
     fun validation_otRequiredErrorMessage() {
@@ -155,8 +143,6 @@ class NuevaDispensacionScreenTest {
         assertTrue(error.contains("abonos"))
         assertTrue(error.contains("monto total"))
     }
-
-    // ─── DispensacionViewModel contracts ──────────────────────────────
 
     @Test
     fun dispensacionViewModel_uiState_isDeclared() {
@@ -205,8 +191,6 @@ class NuevaDispensacionScreenTest {
         )
     }
 
-    // ─── Duplicate OT warning ─────────────────────────────────────────
-
     @Test
     fun duplicateOtWarning_titleExists() {
         val title = "Advertencia de OT duplicada"
@@ -218,8 +202,6 @@ class NuevaDispensacionScreenTest {
         val button = "Entendido"
         assertEquals("Entendido", button)
     }
-
-    // ─── DropdownField options ────────────────────────────────────────
 
     @Test
     fun lenteTipoOptions_containsExpected() {
@@ -244,8 +226,6 @@ class NuevaDispensacionScreenTest {
         val options = listOf("Pendiente", "Entregado")
         assertEquals(2, options.size)
     }
-
-    // ─── DispensacionUiState data class ───────────────────────────────
 
     @Test
     fun uiState_generatedId_isSetByViewModel() {

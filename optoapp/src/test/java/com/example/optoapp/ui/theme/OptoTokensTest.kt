@@ -14,8 +14,6 @@ import org.junit.Test
  */
 class OptoTokensTest {
 
-    // --- Spacing token tests ---
-
     @Test
     fun spacing_xs_is4dp() {
         assertEquals(4.dp, OptoTokens.spacing.xs)
@@ -46,8 +44,6 @@ class OptoTokensTest {
         assertEquals(32.dp, OptoTokens.spacing.xxl)
     }
 
-    // --- Shape token tests ---
-
     @Test
     fun shape_small_is12dp() {
         assertEquals(RoundedCornerShape(12.dp), OptoTokens.shapes.small)
@@ -62,8 +58,6 @@ class OptoTokensTest {
     fun shape_large_is24dp() {
         assertEquals(RoundedCornerShape(24.dp), OptoTokens.shapes.large)
     }
-
-    // --- Elevation token tests ---
 
     @Test
     fun elevation_level0_is0dp() {
@@ -84,8 +78,6 @@ class OptoTokensTest {
     fun elevation_level3_is8dp() {
         assertEquals(8.dp, OptoTokens.elevation.level3)
     }
-
-    // --- Light theme color token tests ---
 
     @Test
     fun primary_light_is006D6F() {
@@ -157,8 +149,6 @@ class OptoTokensTest {
         assertEquals(Color(0xFF006D6F), OptoTokens.colors.surfaceTint)
     }
 
-    // --- Dark theme color token tests ---
-
     @Test
     fun primary_dark_is4EDBDB() {
         assertEquals(Color(0xFF4EDBDB), OptoTokens.colorsDark.primary)
@@ -228,8 +218,6 @@ class OptoTokensTest {
     fun surfaceTint_dark_is4EDBDB() {
         assertEquals(Color(0xFF4EDBDB), OptoTokens.colorsDark.surfaceTint)
     }
-
-    // --- WCAG AA Contrast Ratio Tests ---
 
     private fun relativeLuminance(c: Color): Double {
         fun linearize(channel: Float): Double {

@@ -1,4 +1,4 @@
-package com.example.optoapp.viewmodel
+﻿package com.example.optoapp.viewmodel
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Assert.*
@@ -13,8 +13,6 @@ import org.junit.Test
  * No mocking library available — tests verify observable contracts and state machine patterns.
  */
 class AuthDelegateCharacterizationTest {
-
-    // ─── AuthState sealed class behavior ─────────────────────────────────
 
     @Test
     fun authStateIdle_dataClass() {
@@ -70,8 +68,6 @@ class AuthDelegateCharacterizationTest {
         assertFalse(success is AuthState.Loading)
     }
 
-    // ─── State machine: MutableStateFlow<AuthState> pattern ────────────
-
     @Test
     fun authStateFlow_startsAsIdle() {
         val flow = MutableStateFlow<AuthState>(AuthState.Idle)
@@ -114,8 +110,6 @@ class AuthDelegateCharacterizationTest {
         assertEquals(AuthState.Loading, flow.value)
     }
 
-    // ─── Session time validation logic (from isSessionTimeValid) ────────
-
     @Test
     fun sessionTimeValid_within3h_returnsTrue() {
         val lastTs = System.currentTimeMillis() - (1000L * 60 * 60 * 2) // 2 hours ago
@@ -154,8 +148,6 @@ class AuthDelegateCharacterizationTest {
         assertFalse(diffHours < 3)
     }
 
-    // ─── PendingMemberships flow pattern ─────────────────────────────────
-
     @Test
     fun pendingMemberships_initialEmpty() {
         val flow = MutableStateFlow<List<Any>>(emptyList())
@@ -176,8 +168,6 @@ class AuthDelegateCharacterizationTest {
         assertTrue(flow.value.isEmpty())
     }
 
-    // ─── isAuthChecked flow pattern ─────────────────────────────────────
-
     @Test
     fun isAuthChecked_initialFalse() {
         val flow = MutableStateFlow(false)
@@ -190,8 +180,6 @@ class AuthDelegateCharacterizationTest {
         flow.value = true
         assertTrue(flow.value)
     }
-
-    // ─── login method contract ──────────────────────────────────────────
 
     @Test
     fun login_signatureTakesEmailAndPassword() {
@@ -208,8 +196,6 @@ class AuthDelegateCharacterizationTest {
         assertNotNull(loginFn)
     }
 
-    // ─── register method contract ───────────────────────────────────────
-
     @Test
     fun register_signatureTakesEmailPasswordAndCallback() {
         val registerFn: (String, String, (String) -> Unit) -> Unit = { _, _, _ -> }
@@ -223,8 +209,6 @@ class AuthDelegateCharacterizationTest {
         callback("Cuenta creada")
         assertEquals("Cuenta creada", result)
     }
-
-    // ─── logout method contract ─────────────────────────────────────────
 
     @Test
     fun logout_signatureIsSuspend() {
@@ -246,23 +230,17 @@ class AuthDelegateCharacterizationTest {
         assertEquals(AuthState.Idle, flow.value)
     }
 
-    // ─── checkExistingSession contract ──────────────────────────────────
-
     @Test
     fun checkExistingSession_usesViewModelScope() {
         val checkFn: () -> Unit = { }
         assertNotNull(checkFn)
     }
 
-    // ─── selectOptica / prepareOpticaSelection patterns ──────────────────
-
     @Test
     fun prepareOpticaSelection_returnsBoolean() {
         val prepFn: suspend () -> Boolean = { false }
         assertNotNull(prepFn)
     }
-
-    // ─── isLoggedIn / opticaId flow contracts ───────────────────────────
 
     @Test
     fun isLoggedIn_flowStartsFalse() {

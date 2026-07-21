@@ -1,4 +1,4 @@
-package com.example.optoapp.ui.screens
+﻿package com.example.optoapp.ui.screens
 
 import com.example.optoapp.viewmodel.CostosYGastosUiState
 import com.example.optoapp.viewmodel.CostosYGastosViewModel
@@ -12,8 +12,6 @@ import org.junit.Test
  * (the screen and ViewModel don't exist yet — that's expected in RED phase).
  */
 class CostosYGastosScreenTest {
-
-    // ─── UiState defaults ─────────────────────────────────────────────
 
     @Test
     fun uiState_defaults_tabIsMatriz() {
@@ -57,8 +55,6 @@ class CostosYGastosScreenTest {
         assertNull(state.dispensacionFilterId)
     }
 
-    // ─── Tab structure ────────────────────────────────────────────────
-
     @Test
     fun uiState_tabTitles_containsMatriz() {
         val tabs = listOf("Matriz de Costos", "Gastos Operativos")
@@ -71,8 +67,6 @@ class CostosYGastosScreenTest {
         val state = CostosYGastosUiState(selectedTab = 1)
         assertEquals(1, state.selectedTab)
     }
-
-    // ─── Block dropdown ───────────────────────────────────────────────
 
     @Test
     fun uiState_blockList_contains8Blocks() {
@@ -97,8 +91,6 @@ class CostosYGastosScreenTest {
         val state = CostosYGastosUiState(selectedBlock = "Stock Monofocal")
         assertEquals("Stock Monofocal", state.selectedBlock)
     }
-
-    // ─── CostosYGastosViewModel reflection ───────────────────────────
 
     @Test
     fun viewModel_hasUiStateField() {

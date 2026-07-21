@@ -1,4 +1,4 @@
-package com.example.optoapp.util
+﻿package com.example.optoapp.util
 
 import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.EvaluacionClinica
@@ -52,8 +52,6 @@ class DispensacionLaboratorioTicketTest {
         recetaOiEje = oiEje,
     )
 
-    // ── LaboratorioTicketContext.fromDispensacion ───────────────────────
-
     @Test
     fun `fromDispensacion maps all fields`() {
         val disp = DispensacionOptica(
@@ -74,8 +72,6 @@ class DispensacionLaboratorioTicketTest {
         assertEquals("22", ctx.altura)
         assertEquals("Policarbonato", ctx.materialLente)
     }
-
-    // ── textoCompleto ───────────────────────────────────────────────────
 
     @Test
     fun `textoCompleto null eval generates ticket without formula`() {

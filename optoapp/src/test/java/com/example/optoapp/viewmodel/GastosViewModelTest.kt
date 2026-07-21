@@ -1,4 +1,4 @@
-package com.example.optoapp.viewmodel
+﻿package com.example.optoapp.viewmodel
 
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.SessionManager
@@ -63,8 +63,6 @@ class GastosViewModelTest {
         Dispatchers.resetMain()
         unmockkAll()
     }
-
-    // ── Bug 3: delete() error handling ───────────────────────────────────
 
     @Test
     fun delete_when_repository_fails_sets_error_state() = runTest(testDispatcher) {

@@ -1,4 +1,4 @@
-package com.example.optoapp.util
+﻿package com.example.optoapp.util
 
 import android.content.ActivityNotFoundException
 import android.content.Context
@@ -56,13 +56,9 @@ class RecetaEvaluacionPdfGeneratorTest {
         mockkStatic(FileProvider::class)
         every { FileProvider.getUriForFile(any(), any(), any()) } returns mockUri
     }
-
-    // ── generate — integration tests (these require full PDF pipeline) ──
     // Skipped: PdfDocument shadow in Robolectric is limited and throws
     // "document is closed!" when RecetaPdfBuilder starts a page. The
     // RecetaPdfBuilder has its own dedicated tests (RecetaPdfBuilderTest).
-
-    // ── openPdf ─────────────────────────────────────────────────────────
 
     @Test
     fun `openPdf starts activity with chooser`() {

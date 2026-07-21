@@ -1,4 +1,4 @@
-package com.example.optoapp.viewmodel
+﻿package com.example.optoapp.viewmodel
 
 import com.example.optoapp.viewmodel.auth.AuthDelegate
 import io.github.jan.supabase.auth.user.UserInfo
@@ -18,8 +18,6 @@ import kotlin.time.ExperimentalTime
  * Supabase-dependent methods (login, register, logout) require integration tests.
  */
 class AuthDelegateTest {
-
-    // ─── isTimestampWithinSessionWindow ───────────────────────────────────
 
     @Test
     fun `isTimestampWithinSessionWindow zero timestamp returns false`() {
@@ -43,8 +41,6 @@ class AuthDelegateTest {
         val ts = System.currentTimeMillis() - 1000L * 60 * 60 * 4
         assertFalse(AuthDelegate.isTimestampWithinSessionWindow(ts))
     }
-
-    // ─── extractDisplayName ───────────────────────────────────────────────
 
     @OptIn(ExperimentalTime::class)
     private fun userInfo(

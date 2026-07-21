@@ -19,10 +19,6 @@ import org.junit.Test
  */
 class SecurityManagerMigrationCharacterizationTest {
 
-    // ---------------------------------------------------------------
-    // Constantes del muro de ladrillos
-    // ---------------------------------------------------------------
-
     @Test
     fun `PIN_LENGTH es 6`() {
         assertEquals(
@@ -41,10 +37,6 @@ class SecurityManagerMigrationCharacterizationTest {
             SecurityManager.isValidPin("123456"),
         )
     }
-
-    // ---------------------------------------------------------------
-    // isValidPin — comportamiento actual post-simplificación
-    // ---------------------------------------------------------------
 
     @Test
     fun `isValidPin rechaza digitos repetidos`() {
@@ -78,10 +70,6 @@ class SecurityManagerMigrationCharacterizationTest {
         assertTrue(SecurityManager.isValidPin("904812"))
     }
 
-    // ---------------------------------------------------------------
-    // Lógica de migración extraída como función pura
-    // ---------------------------------------------------------------
-
     @Test
     fun `debeMigrarPin con PIN legacy personalizado devuelve true`() {
         // Caso: pinHasBeenSet=false, storedPin personalizado (no default) → debe migrar
@@ -112,10 +100,6 @@ class SecurityManagerMigrationCharacterizationTest {
         assertFalse(shouldMigrate(pinHasBeenSet = true, storedPin = "999999" /* was DEV_FALLBACK_PIN */))
     }
 
-    // ---------------------------------------------------------------
-    // ISecurityManager — contrato de interface
-    // ---------------------------------------------------------------
-
     @Test
     fun `ISecurityManager tiene metodo getUserPin`() {
         val methods = ISecurityManager::class.java.declaredMethods.map { it.name }
@@ -136,10 +120,6 @@ class SecurityManagerMigrationCharacterizationTest {
             methods.any { it == "getPinHasBeenSet" },
         )
     }
-
-    // ---------------------------------------------------------------
-    // SecurityManager — estructura general
-    // ---------------------------------------------------------------
 
     @Test
     fun `SecurityManager implementa ISecurityManager`() {

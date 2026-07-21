@@ -1,4 +1,4 @@
-package com.example.optoapp.viewmodel
+﻿package com.example.optoapp.viewmodel
 
 import kotlinx.coroutines.CancellationException
 import org.junit.Assert.*
@@ -14,8 +14,6 @@ import org.junit.Test
  * Tests verify error message patterns and CancellationException rethrow.
  */
 class FiscalConfigViewModelCatchRefactorTest {
-
-    // ─── Error message patterns ──────────────────────────────────────────
 
     @Test
     fun `fiscal error uses localizedMessage`() {
@@ -48,8 +46,6 @@ class FiscalConfigViewModelCatchRefactorTest {
         assertEquals("Datos fiscales guardados.", status.message)
         assertNull(status.error)
     }
-
-    // ─── CancellationException rethrow pattern ──────────────────────────
 
     @Test
     fun `fiscal save catch rethrows CancellationException`() {

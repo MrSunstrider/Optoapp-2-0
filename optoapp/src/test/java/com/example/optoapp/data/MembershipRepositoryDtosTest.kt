@@ -1,4 +1,4 @@
-package com.example.optoapp.data
+﻿package com.example.optoapp.data
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -11,8 +11,6 @@ import org.junit.Test
  * correctly after extraction to MembershipRepositoryDtos.kt.
  */
 class MembershipRepositoryDtosTest {
-
-    // ── OpticaDto ─────────────────────────────────────────────────────────────
 
     @Test
     fun opticaDto_constructsWithMinimalParams() {
@@ -41,8 +39,6 @@ class MembershipRepositoryDtosTest {
         assertEquals("RUC", dto.fiscalDocTipo)
     }
 
-    // ── OpticaMemberRow ───────────────────────────────────────────────────────
-
     @Test
     fun opticaMemberRow_constructsWithDefaults() {
         val row = OpticaMemberRow(opticaId = "o1", userId = "u1")
@@ -66,8 +62,6 @@ class MembershipRepositoryDtosTest {
         assertEquals("admin", row.rol)
         assertEquals("2024-01-01", row.createdAt)
     }
-
-    // ── PlanSettings ──────────────────────────────────────────────────────────
 
     @Test
     fun planSettings_freePlan() {
@@ -99,8 +93,6 @@ class MembershipRepositoryDtosTest {
         assertNull(s.maxUsuariosPorOptica)
     }
 
-    // ── OpticaFiscalSettings ──────────────────────────────────────────────────
-
     @Test
     fun opticaFiscalSettings_constructsWithDefaults() {
         val s = OpticaFiscalSettings()
@@ -124,8 +116,6 @@ class MembershipRepositoryDtosTest {
         assertEquals("123", s.docNumero)
     }
 
-    // ── OpticaHeaderSummary ───────────────────────────────────────────────────
-
     @Test
     fun opticaHeaderSummary_holdsValues() {
         val s = OpticaHeaderSummary(
@@ -135,8 +125,6 @@ class MembershipRepositoryDtosTest {
         assertEquals("Mi Óptica", s.nombreOptica)
         assertEquals("RUC 12345678", s.fiscalEtiqueta)
     }
-
-    // ── UsuarioOpticaDto (internal) ───────────────────────────────────────────
 
     @Test
     fun usuarioOpticaDto_constructs() {
@@ -156,16 +144,12 @@ class MembershipRepositoryDtosTest {
         assertEquals("admin", dto.rol)
     }
 
-    // ── UserProfileRow (internal) ─────────────────────────────────────────────
-
     @Test
     fun userProfileRow_constructs() {
         val row = UserProfileRow(userId = "u1", email = "a@b.com")
         assertEquals("u1", row.userId)
         assertEquals("a@b.com", row.email)
     }
-
-    // ── UsuarioOpticaUpsertDto (internal) ─────────────────────────────────────
 
     @Test
     fun usuarioOpticaUpsertDto_constructs() {
@@ -179,8 +163,6 @@ class MembershipRepositoryDtosTest {
         assertEquals("admin", dto.rol)
     }
 
-    // ── OpticaInsertDto (internal) ────────────────────────────────────────────
-
     @Test
     fun opticaInsertDto_freePlanDefaults() {
         val dto = OpticaInsertDto(id = "opt_new", nombre = "Nueva")
@@ -189,8 +171,6 @@ class MembershipRepositoryDtosTest {
         assertEquals("free", dto.plan)
         assertEquals("", dto.fiscalDocTipo)
     }
-
-    // ── OpticaLaboratorioPatch (internal) ─────────────────────────────────────
 
     @Test
     fun opticaLaboratorioPatch_constructs() {
@@ -201,8 +181,6 @@ class MembershipRepositoryDtosTest {
         assertEquals("Lab X", patch.laboratorioNombre)
         assertEquals("contacto@labx.com", patch.laboratorioContacto)
     }
-
-    // ── OpticaFiscalPatch (internal) ──────────────────────────────────────────
 
     @Test
     fun opticaFiscalPatch_constructs() {

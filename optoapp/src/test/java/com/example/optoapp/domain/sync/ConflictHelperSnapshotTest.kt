@@ -1,4 +1,4 @@
-package com.example.optoapp.domain.sync
+﻿package com.example.optoapp.domain.sync
 
 import com.example.optoapp.data.ConflictDao
 import com.example.optoapp.data.SyncStateTracker
@@ -46,8 +46,6 @@ class ConflictHelperSnapshotTest {
         )
     }
 
-    // ─── Test 1: conflict detection captures localData + remoteData ────────
-
     @Test
     fun filterConflicts_capturesLocalDataAndRemoteDataOnConflict() = runBlocking {
         val entityId = "conflict-paciente-1"
@@ -79,8 +77,6 @@ class ConflictHelperSnapshotTest {
         }
     }
 
-    // ─── Test 2: no snapshots when no conflict ───────────────────────────
-
     @Test
     fun filterConflicts_doesNotCaptureSnapshotsForNonConflictedEntities() = runBlocking {
         val entityId = "safe-paciente-1"
@@ -109,8 +105,6 @@ class ConflictHelperSnapshotTest {
             )
         }
     }
-
-    // ─── Test 3: remote fetch failure → remoteData = "{}" ───────────────
 
     @Test
     fun filterConflicts_whenRemoteFetchFails_setsEmptyRemoteData() = runBlocking {

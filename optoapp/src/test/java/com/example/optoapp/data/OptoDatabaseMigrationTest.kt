@@ -1,4 +1,4 @@
-package com.example.optoapp.data
+﻿package com.example.optoapp.data
 
 import android.content.Context
 import androidx.room.Room
@@ -107,8 +107,6 @@ class OptoDatabaseMigrationTest {
         assertEquals(41, MIGRATION_41_42.startVersion)
         assertEquals(42, MIGRATION_41_42.endVersion)
     }
-
-    // ─── Schema version characterization ────────────────────────────────
     //
     // Room @Database has CLASS retention (not RUNTIME), so annotation
     // is not visible via reflection at runtime. These tests verify the
@@ -133,8 +131,6 @@ class OptoDatabaseMigrationTest {
         assertEquals(42, MIGRATION_41_42.endVersion)
         assertEquals(MIGRATION_41_42.endVersion, MIGRATION_41_42.startVersion + 1)
     }
-
-    // ─── Full migration chain data-preservation test ────────────────────
     //
     // Creates a realistic v30 database (all tables that migrations 30→40
     // expect to exist, with columns that existed before those migrations),
@@ -353,8 +349,6 @@ class OptoDatabaseMigrationTest {
         val dbName = "migration-30-to-42-test.db"
         context.deleteDatabase(dbName)
         val factory = FrameworkSQLiteOpenHelperFactory()
-
-        // ── Step 1: Create v30 database with all required tables ──
         val v30Config = SupportSQLiteOpenHelper.Configuration.builder(context)
             .name(dbName)
             .callback(object : SupportSQLiteOpenHelper.Callback(30) {
@@ -379,8 +373,6 @@ class OptoDatabaseMigrationTest {
         assertEquals("Juan", preCursor.getString(0))
         preCursor.close()
         v30Helper.close()
-
-        // ── Step 2: Run all migrations 30→31→...→42 ──
         val v42Config = SupportSQLiteOpenHelper.Configuration.builder(context)
             .name(dbName)
             .callback(object : SupportSQLiteOpenHelper.Callback(42) {
@@ -405,15 +397,11 @@ class OptoDatabaseMigrationTest {
 
         val v42Helper = factory.create(v42Config)
         val db = v42Helper.writableDatabase
-
-        // ── Step 3: Assert data survived all migrations ──
         val cursor = db.query("SELECT id, nombreCompleto FROM pacientes WHERE id = 'p1'")
         assertTrue("Data should survive migration 30→42", cursor.moveToFirst())
         assertEquals("p1", cursor.getString(cursor.getColumnIndexOrThrow("id")))
         assertEquals("Juan", cursor.getString(cursor.getColumnIndexOrThrow("nombreCompleto")))
         cursor.close()
-
-        // ── Step 4: Assert optica_settings table exists ──
         val settingsCursor = db.query("SELECT * FROM optica_settings")
         assertNotNull(settingsCursor)
         settingsCursor.close()
@@ -449,8 +437,6 @@ class OptoDatabaseMigrationTest {
 
         db.close()
     }
-
-    // ─── DAO accessibility via OptoDatabase abstract methods ───
     //
     // These verify each DAO is accessible via its abstract method on OptoDatabase.
     // We use individual tests for clear failure reporting.

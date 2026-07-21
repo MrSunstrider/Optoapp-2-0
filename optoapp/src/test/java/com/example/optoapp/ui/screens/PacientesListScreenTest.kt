@@ -1,4 +1,4 @@
-package com.example.optoapp.ui.screens
+﻿package com.example.optoapp.ui.screens
 
 import com.example.optoapp.data.AppRoles
 import com.example.optoapp.data.Paciente
@@ -20,8 +20,6 @@ import java.time.LocalDate
  */
 class PacientesListScreenTest {
 
-    // ─── Empty list state ─────────────────────────────────────────────────
-
     @Test
     fun emptyList_whenNoPacientes_showsEmptyState() {
         val pacientes = emptyList<Paciente>()
@@ -39,8 +37,6 @@ class PacientesListScreenTest {
         val fabLabel = "Añadir Paciente"
         assertTrue(fabLabel.contains("Añadir"))
     }
-
-    // ─── Search query ─────────────────────────────────────────────────────
 
     @Test
     fun searchQuery_empty_defaultsEmpty() {
@@ -63,8 +59,6 @@ class PacientesListScreenTest {
             "onSearchQueryChange" in methods,
         )
     }
-
-    // ─── Filter options ──────────────────────────────────────────────────
 
     @Test
     fun filters_includeTodos() {
@@ -89,8 +83,6 @@ class PacientesListScreenTest {
         val filters = listOf("Todos", "Saldo Pendiente", "Entrega")
         assertEquals(3, filters.size)
     }
-
-    // ─── Paciente item structure ──────────────────────────────────────────
 
     @Test
     fun pacienteItem_showsNombreCompleto() {
@@ -140,8 +132,6 @@ class PacientesListScreenTest {
         assertEquals("MG", initials)
     }
 
-    // ─── Paywall dialog ──────────────────────────────────────────────────
-
     @Test
     fun paywall_triggersWhenFreeLimitReached() {
         val tier = SubscriptionTier.FREE
@@ -168,8 +158,6 @@ class PacientesListScreenTest {
         assertEquals("Actualizar plan", buttonText)
     }
 
-    // ─── SubscriptionViewModel contracts ──────────────────────────────────
-
     @Test
     fun subscriptionViewModel_refreshPlanFromServer_isDeclared() {
         val methods = SubscriptionViewModel::class.java.declaredMethods.map { it.name }
@@ -179,8 +167,6 @@ class PacientesListScreenTest {
             "refreshPlanFromServer" in methods || "refreshPlanFromServer" in allMethods,
         )
     }
-
-    // ─── Role-based FAB behavior ─────────────────────────────────────────
 
     @Test
     fun appRoles_canCreateEditPacientes_isDeclared() {
@@ -199,15 +185,11 @@ class PacientesListScreenTest {
         assertTrue(toastMessage.contains("rol"))
     }
 
-    // ─── "Crear cuenta con correo" button label ────────────────────────
-
     @Test
     fun screen_topBarTitle_isPacientes() {
         val title = "Pacientes"
         assertEquals("Pacientes", title)
     }
-
-    // ─── RED: Sexo-based avatar styling ───────────────────────────────────
 
     @Test
     fun paciente_sexoMasculino_avatarColorIsBlue() {

@@ -1,4 +1,4 @@
-package com.example.optoapp.viewmodel
+﻿package com.example.optoapp.viewmodel
 
 import android.content.Context
 import android.net.ConnectivityManager
@@ -198,8 +198,6 @@ class SyncViewModelThreeWayMergeTest {
         Dispatchers.resetMain()
     }
 
-    // ─── FR-10: resolveKeepMine → fallback bump path ────────────────────
-
     @Test
     fun resolveKeepMine_withoutSnapshots_callsResolve() = runTest(testDispatcher) {
         coEvery { repository.getPacienteById(conflictWithoutSnapshots.entityId) } returns Resource.Error("test")
@@ -211,7 +209,5 @@ class SyncViewModelThreeWayMergeTest {
             conflictDao.resolveConflict(conflictWithoutSnapshots.entityId, testOpticaId)
         }
     }
-
-    // ─── FR-11: resolveAcceptTheirs tests removed with three-way merge ──
     // See M6: merge path was dead code, deferred until baseSnapshot is populated.
 }

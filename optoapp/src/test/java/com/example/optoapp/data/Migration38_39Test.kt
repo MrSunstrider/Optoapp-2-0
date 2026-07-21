@@ -1,4 +1,4 @@
-package com.example.optoapp.data
+﻿package com.example.optoapp.data
 
 import android.content.Context
 import androidx.sqlite.db.SupportSQLiteDatabase
@@ -61,8 +61,6 @@ class Migration38_39Test {
         context.deleteDatabase("migration-38to39-data-test.db")
         context.deleteDatabase("migration-38to39-items-test.db")
     }
-
-    // ── Helper: open v39 database applying MIGRATION_38_39 ────────────
     private fun openV39(dbName: String, v38OnCreate: (SupportSQLiteDatabase) -> Unit): SupportSQLiteDatabase {
         context.deleteDatabase(dbName)
         val factory = FrameworkSQLiteOpenHelperFactory()
@@ -93,10 +91,7 @@ class Migration38_39Test {
             .build()
         return factory.create(v39Config).writableDatabase
     }
-
-    // ═══════════════════════════════════════════════════════════════════
     // Test 1: costos_productos matrix table
-    // ═══════════════════════════════════════════════════════════════════
     @Test
     fun migration38to39_createsCostosProductosTable() {
         val db = openV39("migration-38to39-test.db") { d ->
@@ -124,10 +119,7 @@ class Migration38_39Test {
 
         db.close()
     }
-
-    // ═══════════════════════════════════════════════════════════════════
     // Test 2: costos_biselado table
-    // ═══════════════════════════════════════════════════════════════════
     @Test
     fun migration38to39_createsCostosBiseladoTable() {
         val db = openV39("migration-38to39-test.db") { d ->
@@ -151,10 +143,7 @@ class Migration38_39Test {
 
         db.close()
     }
-
-    // ═══════════════════════════════════════════════════════════════════
     // Test 3: evaluacion_id on dispensaciones + data preserved
-    // ═══════════════════════════════════════════════════════════════════
     @Test
     fun migration38to39_addsEvaluacionIdToDispensacionesAndPreservesData() {
         val dbName = "migration-38to39-data-test.db"
@@ -249,10 +238,7 @@ class Migration38_39Test {
         c.close()
         db.close()
     }
-
-    // ═══════════════════════════════════════════════════════════════════
     // Test 4: 9 new columns on dispensacion_items
-    // ═══════════════════════════════════════════════════════════════════
     @Test
     fun migration38to39_addsColumnsToDispensacionItems() {
         val dbName = "migration-38to39-items-test.db"

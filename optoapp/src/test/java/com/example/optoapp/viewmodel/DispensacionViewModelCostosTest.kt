@@ -1,4 +1,4 @@
-package com.example.optoapp.viewmodel
+﻿package com.example.optoapp.viewmodel
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -18,8 +18,6 @@ import java.time.LocalDate
  * that don't depend on Room, Supabase, or Hilt.
  */
 class DispensacionViewModelCostosTest {
-
-    // ─── Pure cost calculation logic ──────────────────────────────────
 
     /**
      * Determines if a lens is stock or fabrication based on sphere and cylinder power.
@@ -131,8 +129,6 @@ class DispensacionViewModelCostosTest {
         // → CostoProductoDao.lookup() returns S/ 20.00 per design
     }
 
-    // ─── normalizeTipoAro ────────────────────────────────────────────
-
     /**
      * Normalizes tipo_aro values from the form to DB lookup keys.
      * "Completo" → "aro_completo", "Semi" → "semi_aire",
@@ -160,8 +156,6 @@ class DispensacionViewModelCostosTest {
         assertEquals("aro_completo", normalizeTipoAro("taladro"))
     }
 
-    // ─── UiState evaluacionId field ───────────────────────────────────
-
     @Test
     fun uiState_hasEvaluacionIdField() {
         val fields = DispensacionUiState::class.java.declaredFields.map { it.name }
@@ -176,8 +170,6 @@ class DispensacionViewModelCostosTest {
         val state = DispensacionUiState(fecha = LocalDate.of(2026, 7, 1))
         assertNull(state.evaluacionId)
     }
-
-    // ─── ViewModel cost calculation method ───────────────────────────
 
     @Test
     fun viewModel_hasCalculateCostsMethod() {
@@ -197,8 +189,6 @@ class DispensacionViewModelCostosTest {
         )
     }
 
-    // ─── Montura cost fallback logic ─────────────────────────────────
-
     @Test
     fun costCalc_montura_fallbackFromMonturasCosto() {
         // If no rule in costos_productos where stockOFabricacion='montura',
@@ -210,8 +200,6 @@ class DispensacionViewModelCostosTest {
         val costoFromMatrix = 75.0
         assertEquals(75.0, costoFromMatrix, 0.001)
     }
-
-    // ─── Per-eye independent calculation ─────────────────────────────
 
     @Test
     fun costCalc_perEye_independent() {

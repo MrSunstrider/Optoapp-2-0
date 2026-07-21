@@ -1,4 +1,4 @@
-package com.example.optoapp.ui.components.paciente
+﻿package com.example.optoapp.ui.components.paciente
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -13,8 +13,6 @@ import org.junit.Test
  * infrastructure.
  */
 class PacienteWhatsAppActionsTest {
-
-    // ─── Message generation tests ──────────────────────────────────────────
 
     @Test
     fun `invitacionControlAnual message uses nombreOptica`() {
@@ -72,8 +70,6 @@ class PacienteWhatsAppActionsTest {
         assertTrue(msg.contains("recojo de sus lentes"))
         assertTrue(msg.contains("horario de atención"))
     }
-
-    // ─── Helper functions (mirror message generation logic) ────────────────
 
     private fun buildMensajeLibre(nombre: String): String = "Hola $nombre,"
 

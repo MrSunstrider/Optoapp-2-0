@@ -1,4 +1,4 @@
-package com.example.optoapp.ui.screens
+﻿package com.example.optoapp.ui.screens
 
 import com.example.optoapp.testing.TestTags
 import com.example.optoapp.viewmodel.AuthState
@@ -14,8 +14,6 @@ import org.junit.Test
  * Google button presence, entrada button enabled/disabled logic, OAuth error path.
  */
 class LoginScreenTest {
-
-    // ─── AuthState sealed class ───────────────────────────────────────────
 
     @Test
     fun authState_sealedClassesExist() {
@@ -51,8 +49,6 @@ class LoginScreenTest {
         val b = AuthState.Idle
         assertSame(a, b)
     }
-
-    // ─── AuthViewModel contracts ──────────────────────────────────────────
 
     @Test
     fun authViewModel_loginMethod_exists() {
@@ -104,8 +100,6 @@ class LoginScreenTest {
         )
     }
 
-    // ─── Test tags para UI testing ────────────────────────────────────────
-
     @Test
     fun testTags_loginScreen_areDefined() {
         // These tags are used in LoginScreen composable for UI tests
@@ -141,8 +135,6 @@ class LoginScreenTest {
     fun testTag_loginError_isNotEmpty() {
         assertTrue(TestTags.LOGIN_ERROR_MESSAGE.isNotBlank())
     }
-
-    // ─── Botón ENTRAR habilitado/deshabilitado ────────────────────────────
 
     @Test
     fun buttonEnabled_whenEmailAndPasswordAreBlank_isDisabled() {
@@ -194,8 +186,6 @@ class LoginScreenTest {
         assertTrue(isEnabled)
     }
 
-    // ─── Google OAuth ─────────────────────────────────────────────────────
-
     @Test
     fun googleButton_isPresent() {
         // LoginScreen renders an OutlinedButton with text "Continuar con Google"
@@ -218,8 +208,6 @@ class LoginScreenTest {
         assertTrue(googleButtonEnabled)
     }
 
-    // ─── Error de OAuth ───────────────────────────────────────────────────
-
     @Test
     fun oauthError_googleLoginFailure_displaysMessage() {
         // When handleAuthDeepLinkIntent fails, AuthState.Error is set
@@ -233,8 +221,6 @@ class LoginScreenTest {
         val error = AuthState.Error("test error")
         assertEquals("test error", error.message)
     }
-
-    // ─── Navegación ──────────────────────────────────────────────────────
 
     @Test
     fun navigation_routes_registerExists() {
@@ -266,8 +252,6 @@ class LoginScreenTest {
         assertEquals("seleccion_optica", route)
     }
 
-    // ─── Recordar cuenta ──────────────────────────────────────────────────
-
     @Test
     fun rememberAccount_checkbox_defaultsFalse() {
         // LaunchedEffect loads saved email; checkbox is unchecked by default
@@ -283,8 +267,6 @@ class LoginScreenTest {
         remember = !remember // toggle back
         assertFalse(remember)
     }
-
-    // ─── Renderizado inicial ──────────────────────────────────────────────
 
     @Test
     fun initialScreen_showsLogo() {

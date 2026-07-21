@@ -1,4 +1,4 @@
-package com.example.optoapp.viewmodel
+﻿package com.example.optoapp.viewmodel
 
 import org.junit.Assert.*
 import org.junit.Test
@@ -11,8 +11,6 @@ import org.junit.Test
  * Must pass before AND after refactoring.
  */
 class BackupDelegateCharacterizationTest {
-
-    // ─── Role check: admin-only for backup ──────────────────────────────
 
     @Test
     fun backupExport_requiresAdminRole() {
@@ -44,8 +42,6 @@ class BackupDelegateCharacterizationTest {
             assertEquals("Solo admin puede restaurar respaldos.", message)
         }
     }
-
-    // ─── restoreBackup: opticaId validation ─────────────────────────────
 
     @Test
     fun restoreBackup_requiresSourceOpticaId() {
@@ -92,8 +88,6 @@ class BackupDelegateCharacterizationTest {
         assertEquals(current, source.trim())
     }
 
-    // ─── getBackupJson: role and opticaId requirements ──────────────────
-
     @Test
     fun backupExport_requiresOpticaId() {
         val opticaId = "opt_abc123"
@@ -118,8 +112,6 @@ class BackupDelegateCharacterizationTest {
         }
     }
 
-    // ─── BackupImportValidator error message patterns ──────────────────
-
     @Test
     fun restoreBackup_parseError_returnsMessage() {
         val errorMessage = "No se pudo validar el respaldo."
@@ -138,8 +130,6 @@ class BackupDelegateCharacterizationTest {
         assertTrue(message.startsWith("Error al restaurar:"))
     }
 
-    // ─── resolveDuplicateHistorias patterns ─────────────────────────────
-
     @Test
     fun resolveDuplicates_requiresAdminOrGerente() {
         val adminRoles = setOf("admin", "gerente")
@@ -154,8 +144,6 @@ class BackupDelegateCharacterizationTest {
         val message = "Solo admin o gerente pueden resolver duplicados de historia optométrica."
         assertEquals("Solo admin o gerente pueden resolver duplicados de historia optométrica.", message)
     }
-
-    // ─── assertBackupOperationAllowed contract ──────────────────────────
 
     @Test
     fun assertBackupOperation_allowsExport() {
@@ -174,8 +162,6 @@ class BackupDelegateCharacterizationTest {
         val assertFn: suspend (String, String, String) -> Unit = { _, _, _ -> }
         assertNotNull(assertFn)
     }
-
-    // ─── OnboardingOptica method contracts ──────────────────────────────
 
     @Test
     fun completeOnboardingOptica_acceptsFiveParams() {

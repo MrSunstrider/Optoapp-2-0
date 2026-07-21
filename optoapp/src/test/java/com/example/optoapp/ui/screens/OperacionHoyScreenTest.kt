@@ -1,4 +1,4 @@
-package com.example.optoapp.ui.screens
+﻿package com.example.optoapp.ui.screens
 
 import com.example.optoapp.data.AppRoles
 import com.example.optoapp.util.DateUtils
@@ -14,8 +14,6 @@ import org.junit.Test
  * export section, role-based access, refresh action.
  */
 class OperacionHoyScreenTest {
-
-    // ─── OperacionHoyUiState data class ────────────────────────────────────
 
     @Test
     fun uiState_defaults_todayIsNotNull() {
@@ -91,8 +89,6 @@ class OperacionHoyScreenTest {
         assertEquals("Error de red", state.error)
     }
 
-    // ─── KPI labels ──────────────────────────────────────────────────────
-
     @Test
     fun kpiCards_containsCitasHoy() {
         val label = "Citas Hoy"
@@ -129,8 +125,6 @@ class OperacionHoyScreenTest {
         assertTrue(state.stockCritico > 0)
     }
 
-    // ─── Alertas section ──────────────────────────────────────────────────
-
     @Test
     fun alertasSection_titleIsAlertas() {
         val title = "Alertas"
@@ -150,8 +144,6 @@ class OperacionHoyScreenTest {
         assertTrue(alertas.all { it.isNotBlank() })
     }
 
-    // ─── Exportaciones section ────────────────────────────────────────────
-
     @Test
     fun exportacionesSection_titleIsExportaciones() {
         val title = "Exportaciones"
@@ -169,8 +161,6 @@ class OperacionHoyScreenTest {
         val buttonText = "Actualizar"
         assertEquals("Actualizar", buttonText)
     }
-
-    // ─── ViewModel contracts ──────────────────────────────────────────────
 
     @Test
     fun operacionHoyViewModel_uiState_isDeclared() {
@@ -190,8 +180,6 @@ class OperacionHoyScreenTest {
             "refresh" in methods || "refresh" in allMethods,
         )
     }
-
-    // ─── Role-based access ────────────────────────────────────────────────
 
     @Test
     fun appRoles_canViewOperacionHoy_isDeclared() {
@@ -219,8 +207,6 @@ class OperacionHoyScreenTest {
         assertTrue(title.isNotBlank())
         assertTrue(message.isNotBlank())
     }
-
-    // ─── Screen structure ─────────────────────────────────────────────────
 
     @Test
     fun screen_titleIsOperacionDeHoy() {

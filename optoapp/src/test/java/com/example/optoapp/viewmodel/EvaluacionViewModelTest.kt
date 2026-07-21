@@ -1,4 +1,4 @@
-package com.example.optoapp.viewmodel
+﻿package com.example.optoapp.viewmodel
 
 import com.example.optoapp.ui.components.evaluacion.dipLabelForVpMode
 import org.junit.Assert.*
@@ -14,8 +14,6 @@ import java.time.LocalDate
  * so we test data classes and method signatures.
  */
 class EvaluacionViewModelTest {
-
-    // ─── EvaluacionUiState data class ─────────────────────────────────────
 
     @Test
     fun evaluacionUiState_hasDefaultStringValues() {
@@ -63,8 +61,6 @@ class EvaluacionViewModelTest {
         assertNull(state.error)
         assertNull(state.pacienteEdad)
     }
-
-    // ─── Cerca/Intermedio visibility logic ─────────────────────────────
 
     @Test
     fun shouldShowCercaIntermedio_noAdd_youngPatient_hidden() {
@@ -156,14 +152,10 @@ class EvaluacionViewModelTest {
         assertNotEquals(state1, state2)
     }
 
-    // ─── EvaluacionViewModel companion object ─────────────────────────────
-
     @Test
     fun anisometropiaUmbral_isTwoDioptrias() {
         assertEquals(2.0, ANISOMETROPIA_UMBRAL_DIOPTRIAS, 0.001)
     }
-
-    // ─── saveEvaluacion method contract ────────────────────────────────
 
     @Test
     fun saveEvaluacion_acceptsCallbackWithStringParams() {
@@ -175,8 +167,6 @@ class EvaluacionViewModelTest {
         assertNotNull(lambda)
     }
 
-    // ─── dipLabelForVpMode (DipSection helper) ─────────────────────────
-
     @Test
     fun dipLabelForVpMode_cercaMode() {
         assertEquals("DNP Cerca", dipLabelForVpMode(true))
@@ -186,8 +176,6 @@ class EvaluacionViewModelTest {
     fun dipLabelForVpMode_intermedioMode() {
         assertEquals("DNP Intermedio", dipLabelForVpMode(false))
     }
-
-    // ─── saveAndScheduleReminder method contract ───────────────────────
 
     @Test
     fun saveAndScheduleReminder_acceptsCallbackWithStringParam() {

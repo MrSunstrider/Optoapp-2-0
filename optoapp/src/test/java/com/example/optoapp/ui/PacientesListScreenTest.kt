@@ -1,4 +1,4 @@
-package com.example.optoapp.ui
+﻿package com.example.optoapp.ui
 
 import com.example.optoapp.subscription.SubscriptionTier
 import com.example.optoapp.viewmodel.PacienteViewModel
@@ -13,8 +13,6 @@ import org.junit.Test
  * and ViewModel interactions used by the screen.
  */
 class PacientesListScreenTest {
-
-    // ─── Filter structure ─────────────────────────────────────────────
 
     @Test
     fun filters_containsThreeDefaults() {
@@ -34,8 +32,6 @@ class PacientesListScreenTest {
         assertTrue(filters.contains("Entrega"))
     }
 
-    // ─── SubscriptionTier enum ────────────────────────────────────────
-
     @Test
     fun subscriptionTier_containsFreeAndPro() {
         val values = SubscriptionTier.entries.map { it.name }
@@ -52,8 +48,6 @@ class PacientesListScreenTest {
     fun subscriptionTier_PRO_isUpgraded() {
         assertEquals(SubscriptionTier.PRO, SubscriptionTier.valueOf("PRO"))
     }
-
-    // ─── SubscriptionViewModel contracts ──────────────────────────────
 
     @Test
     fun subscriptionViewModel_canAddPaciente_isDeclared() {
@@ -85,8 +79,6 @@ class PacientesListScreenTest {
             "launchProPurchase" in methods || "launchProPurchase" in allMethods,
         )
     }
-
-    // ─── PacienteViewModel contracts ──────────────────────────────────
 
     @Test
     fun pacienteViewModel_pacientes_isDeclared() {
@@ -125,8 +117,6 @@ class PacientesListScreenTest {
         )
     }
 
-    // ─── Paywall dialog structure ─────────────────────────────────────
-
     @Test
     fun paywallDialog_containsExpectedLabels() {
         val title = "Límite del plan gratuito"
@@ -144,8 +134,6 @@ class PacientesListScreenTest {
         assertTrue(text.contains("PRO"))
         assertTrue(text.contains("ilimitados"))
     }
-
-    // ─── Navigation ──────────────────────────────────────────────────
 
     @Test
     fun navigationRoute_nuevoPaciente_isCorrect() {

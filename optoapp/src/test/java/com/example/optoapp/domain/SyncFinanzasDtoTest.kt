@@ -1,4 +1,4 @@
-package com.example.optoapp.domain
+﻿package com.example.optoapp.domain
 
 import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.FinanzasRemoteDefaults
@@ -14,8 +14,6 @@ import java.time.LocalDate
  * from SyncFinanzasUseCase into SyncFinanzasDto.kt.
  */
 class SyncFinanzasDtoTest {
-
-    // ── normalizedOtForUnique ─────────────────────────────────────────────
 
     @Test
     fun normalizedOtForUnique_trimsAndUppercases() {
@@ -42,8 +40,6 @@ class SyncFinanzasDtoTest {
         assertNull(normalizedOtForUnique("   "))
     }
 
-    // ── normalizeOptionalFk ───────────────────────────────────────────────
-
     @Test
     fun normalizeOptionalFk_null_returnsNull() {
         assertNull(null.normalizeOptionalFk())
@@ -63,8 +59,6 @@ class SyncFinanzasDtoTest {
     fun normalizeOptionalFk_validString_returnsTrimmed() {
         assertEquals("abc-123", "  abc-123  ".normalizeOptionalFk())
     }
-
-    // ── DispensacionRemota.toEntity ───────────────────────────────────────
 
     private fun makeDispensacionRemota(
         id: String = "test-disp-id",
@@ -134,8 +128,6 @@ class SyncFinanzasDtoTest {
         assertEquals("", entity.ot)
     }
 
-    // ── PagoRemoto.toEntity ───────────────────────────────────────────────
-
     @Test
     fun pagoRemoto_toEntity_normalValues_passesThrough() {
         val remoto = PagoRemoto(
@@ -181,8 +173,6 @@ class SyncFinanzasDtoTest {
         assertEquals("", entity.nota)
     }
 
-    // ── DispensacionOptica.toRemoto (reverse mapping) ─────────────────────
-
     @Test
     fun dispensacionOptica_toRemoto_roundTrip() {
         val original = DispensacionOptica(
@@ -200,8 +190,6 @@ class SyncFinanzasDtoTest {
         assertEquals("AR,FOT", remoto.tratamientos)
         assertEquals("2025-06-15", remoto.fechaVencimientoGarantia)
     }
-
-    // ── Pago.toRemoto (reverse mapping) ───────────────────────────────────
 
     @Test
     fun pago_toRemoto_roundTrip() {
@@ -248,8 +236,6 @@ class SyncFinanzasDtoTest {
         )
     }
 
-    // ── FinanzasSyncResult ────────────────────────────────────────────────
-
     @Test
     fun finanzasSyncResult_holdsValues() {
         val result = FinanzasSyncResult(
@@ -267,8 +253,6 @@ class SyncFinanzasDtoTest {
         assertEquals(1, result.downloadedServicios)
         assertEquals(4, result.downloadedPagos)
     }
-
-    // ── mergePacienteData (pure function from PacienteRepository) ─────────
 
     @Test
     fun mergePacienteData_canonicalTakesPriority() {
@@ -312,8 +296,6 @@ class SyncFinanzasDtoTest {
         assertTrue(merged.ultimasEtiquetas.contains("Nuevo"))
         assertTrue(merged.ultimasEtiquetas.contains("Descuento"))
     }
-
-    // ── Helpers ───────────────────────────────────────────────────────────
 
     /** Minimal Paciente factory for test clarity. */
     private fun paciente(

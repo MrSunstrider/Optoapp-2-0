@@ -1,4 +1,4 @@
-package com.example.optoapp.viewmodel
+﻿package com.example.optoapp.viewmodel
 
 import kotlinx.coroutines.CancellationException
 import org.junit.Assert.*
@@ -14,8 +14,6 @@ import org.junit.Test
  * Tests verify error message patterns and CancellationException rethrow.
  */
 class BackupDelegateCatchRefactorTest {
-
-    // ─── restoreBackup() error message pattern (line 87) ────────────────
 
     @Test
     fun `restoreBackup error message prefix`() {
@@ -43,8 +41,6 @@ class BackupDelegateCatchRefactorTest {
         val msg = "Base de datos restaurada correctamente."
         assertEquals("Base de datos restaurada correctamente.", msg)
     }
-
-    // ─── CancellationException rethrow pattern ──────────────────────────
 
     @Test
     fun `restoreBackup catch rethrows CancellationException`() {

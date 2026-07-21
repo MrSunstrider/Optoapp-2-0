@@ -1,4 +1,4 @@
-package com.example.optoapp.viewmodel
+﻿package com.example.optoapp.viewmodel
 
 import kotlinx.coroutines.CancellationException
 import org.junit.Assert.*
@@ -14,8 +14,6 @@ import org.junit.Test
  * Tests verify error message patterns and CancellationException rethrow.
  */
 class PacienteViewModelCatchRefactorTest {
-
-    // ─── Error message patterns ──────────────────────────────────────────
 
     @Test
     fun `paciente delete error message prefix`() {
@@ -51,16 +49,12 @@ class PacienteViewModelCatchRefactorTest {
         assertEquals("No se pudo eliminar el paciente: error desconocido", result)
     }
 
-    // ─── DeletePacienteResult.Error contract ────────────────────────────
-
     @Test
     fun `deletePacienteResult Error holds message`() {
         val error: DeletePacienteResult = DeletePacienteResult.Error("No se pudo eliminar el paciente: error")
         assertTrue(error is DeletePacienteResult.Error)
         assertEquals("No se pudo eliminar el paciente: error", (error as DeletePacienteResult.Error).message)
     }
-
-    // ─── CancellationException rethrow pattern ──────────────────────────
 
     @Test
     fun `paciente delete catch rethrows CancellationException`() {

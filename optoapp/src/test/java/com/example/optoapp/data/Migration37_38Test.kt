@@ -1,4 +1,4 @@
-package com.example.optoapp.data
+﻿package com.example.optoapp.data
 
 import android.content.Context
 import androidx.sqlite.db.SupportSQLiteDatabase
@@ -40,8 +40,6 @@ class Migration37_38Test {
         val dbName = "migration-37to38-test.db"
         context.deleteDatabase(dbName)
         val factory = FrameworkSQLiteOpenHelperFactory()
-
-        // ── Step 1: Create v37 database with dispensaciones table ──
         val v37Config = SupportSQLiteOpenHelper.Configuration.builder(context)
             .name(dbName)
             .callback(object : SupportSQLiteOpenHelper.Callback(37) {
@@ -91,8 +89,6 @@ class Migration37_38Test {
         val v37Helper = factory.create(v37Config)
         v37Helper.writableDatabase
         v37Helper.close()
-
-        // ── Step 2: Run MIGRATION_37_38 ──
         val v38Config = SupportSQLiteOpenHelper.Configuration.builder(context)
             .name(dbName)
             .callback(object : SupportSQLiteOpenHelper.Callback(38) {
@@ -107,8 +103,6 @@ class Migration37_38Test {
 
         val v38Helper = factory.create(v38Config)
         val v38Db = v38Helper.writableDatabase
-
-        // ── Step 3: Assert regalos_dispensacion table exists ──
         val tableCursor = v38Db.query(
             "SELECT name FROM sqlite_master WHERE type='table' AND name='regalos_dispensacion'",
         )
@@ -139,8 +133,6 @@ class Migration37_38Test {
         val dbName = "migration-37to38-data-test.db"
         context.deleteDatabase(dbName)
         val factory = FrameworkSQLiteOpenHelperFactory()
-
-        // ── Step 1: Create v37 database with dispensacion data ──
         val v37Config = SupportSQLiteOpenHelper.Configuration.builder(context)
             .name(dbName)
             .callback(object : SupportSQLiteOpenHelper.Callback(37) {
@@ -213,8 +205,6 @@ class Migration37_38Test {
         assertTrue("reclamo_origen_id should NOT exist before migration", !hasReclamoBefore)
 
         v37Helper.close()
-
-        // ── Step 2: Run MIGRATION_37_38 ──
         val v38Config = SupportSQLiteOpenHelper.Configuration.builder(context)
             .name(dbName)
             .callback(object : SupportSQLiteOpenHelper.Callback(38) {
@@ -229,8 +219,6 @@ class Migration37_38Test {
 
         val v38Helper = factory.create(v38Config)
         val v38Db = v38Helper.writableDatabase
-
-        // ── Step 3: Assert reclamoOrigenId column exists ──
         val postColumns = v38Db.query("PRAGMA table_info(dispensaciones)")
         val columnNames = mutableSetOf<String>()
         while (postColumns.moveToNext()) {
@@ -238,16 +226,12 @@ class Migration37_38Test {
         }
         postColumns.close()
         assertTrue("reclamo_origen_id should exist after migration", columnNames.contains("reclamo_origen_id"))
-
-        // ── Step 4: Assert existing data preserved ──
         val cursor = v38Db.query("SELECT id, montoTotal, reclamo_origen_id FROM dispensaciones WHERE id = 'disp1'")
         assertTrue(cursor.moveToFirst())
         assertEquals("disp1", cursor.getString(cursor.getColumnIndexOrThrow("id")))
         assertEquals(250.0, cursor.getDouble(cursor.getColumnIndexOrThrow("montoTotal")), 0.001)
         assertTrue(cursor.isNull(cursor.getColumnIndexOrThrow("reclamo_origen_id")))
         cursor.close()
-
-        // ── Step 5: Assert regalos_dispensacion table is usable ──
         v38Db.execSQL(
             """INSERT INTO regalos_dispensacion (id, dispensacion_id, producto_id, cantidad, costo_unitario, descripcion, optica_id)
                VALUES (?, ?, ?, ?, ?, ?, ?)""",

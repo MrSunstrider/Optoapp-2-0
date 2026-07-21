@@ -1,4 +1,4 @@
-package com.example.optoapp.data
+﻿package com.example.optoapp.data
 
 import com.example.optoapp.domain.toRemoto
 import org.junit.Assert.assertEquals
@@ -20,8 +20,6 @@ import java.time.LocalDate
 class SyncDtoTimestampTest {
 
     private val testDate = LocalDate.of(2024, 6, 15)
-
-    // ── EvaluacionClinica ─────────────────────────────────────────────────────
 
     private fun evaluacion(updatedAt: String? = null) = EvaluacionClinica(
         id = "ev-1",
@@ -61,8 +59,6 @@ class SyncDtoTimestampTest {
         assertEquals(ts, remoto.updatedAt)
     }
 
-    // ── DispensacionOptica ────────────────────────────────────────────────────
-
     private fun dispensacion(updatedAt: String? = null) = DispensacionOptica(
         id = "d-1",
         pacienteId = "p-1",
@@ -92,8 +88,6 @@ class SyncDtoTimestampTest {
         assertEquals(ts, dispensacion(updatedAt = ts).toRemoto().updatedAt)
     }
 
-    // ── Pago ──────────────────────────────────────────────────────────────────
-
     private fun pago(updatedAt: String? = null) = Pago(
         id = "pg-1",
         fecha = testDate,
@@ -122,8 +116,6 @@ class SyncDtoTimestampTest {
         val ts = "2024-06-15T10:00:00Z"
         assertEquals(ts, pago(updatedAt = ts).toRemoto().updatedAt)
     }
-
-    // ── ServicioExtra ─────────────────────────────────────────────────────────
 
     private fun servicio(updatedAt: String? = null) = ServicioExtra(
         id = "se-1",

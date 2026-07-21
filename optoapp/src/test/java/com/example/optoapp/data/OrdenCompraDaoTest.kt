@@ -1,4 +1,4 @@
-package com.example.optoapp.data
+﻿package com.example.optoapp.data
 
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
@@ -173,8 +173,6 @@ class OrdenCompraDaoTest {
         val last = ocDao.getLastNumero("o1", "OC-20260617-%")
         assertEquals("OC-20260617-003", last)
     }
-
-    // ─── Items ──────────────────────────────────────────
 
     @Test
     fun insertItems_and_getByOrden() = runBlocking {

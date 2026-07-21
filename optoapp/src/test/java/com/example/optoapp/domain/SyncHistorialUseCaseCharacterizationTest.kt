@@ -1,4 +1,4 @@
-package com.example.optoapp.domain
+﻿package com.example.optoapp.domain
 
 import com.example.optoapp.data.EvaluacionClinica
 import com.example.optoapp.data.Paciente
@@ -24,8 +24,6 @@ import java.time.LocalDate
  */
 class SyncHistorialUseCaseCharacterizationTest {
 
-    // ── normalizedHistoriaKey ──────────────────────────────────────────────
-
     @Test
     fun `normalizedHistoriaKey trims and uppercases`() {
         assertEquals("ABC123", normalizedHistoriaKey(" abc123 "))
@@ -46,8 +44,6 @@ class SyncHistorialUseCaseCharacterizationTest {
     fun `normalizedHistoriaKey handles already normalized`() {
         assertEquals("TEST", normalizedHistoriaKey("TEST"))
     }
-
-    // ── buildUploadRows — FK-map logic ──────────────────────────────────
 
     private val testOptica = "optica-1"
     private val today = LocalDate.of(2025, 6, 15)

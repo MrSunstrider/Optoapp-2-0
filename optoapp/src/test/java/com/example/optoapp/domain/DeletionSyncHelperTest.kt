@@ -1,4 +1,4 @@
-package com.example.optoapp.domain
+﻿package com.example.optoapp.domain
 
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.SyncEntityState
@@ -37,8 +37,6 @@ class DeletionSyncHelperTest {
         every { android.util.Log.w(any(), any<String>(), any()) } returns 0
     }
 
-    // ─── Class structure ──────────────────────────────────────────────────
-
     @Test
     fun class_exists() {
         val clazz = DeletionSyncHelper::class.java
@@ -66,8 +64,6 @@ class DeletionSyncHelperTest {
             .any { it.annotationClass.qualifiedName?.contains("Inject") == true }
         assertTrue("DeletionSyncHelper debe tener @Inject", hasInject || constructorHasInject)
     }
-
-    // ─── Method contracts ─────────────────────────────────────────────────
 
     @Test
     fun pushPendingDeletions_methodExists() {
@@ -114,8 +110,6 @@ class DeletionSyncHelperTest {
         assertTrue("Debe tener deletedIds", "deletedIds" in methodNames)
         // Both methods are suspend — compiled to accept a Continuation parameter
     }
-
-    // ─── Entity type to table mapping ─────────────────────────────────────
 
     @Test
     fun entityTypeMapping_servicioExtra_to_serviciosExtra() {
@@ -227,8 +221,6 @@ class DeletionSyncHelperTest {
         assertNull("Tabla debe ser null para entidad desconocida", table)
     }
 
-    // ─── Empty pending deletions ─────────────────────────────────────────
-
     @Test
     fun emptyPendingDeletions_returnsEarly() {
         // When pending.isEmpty(), pushPendingDeletions returns early
@@ -243,8 +235,6 @@ class DeletionSyncHelperTest {
         assertEquals(2, pending.size)
     }
 
-    // ─── deletedIds contract ──────────────────────────────────────────────
-
     @Test
     fun deletedIds_returnsDistinctIds() {
         val ids = setOf("abc", "def", "ghi")
@@ -258,8 +248,6 @@ class DeletionSyncHelperTest {
         val ids = emptySet<String>()
         assertTrue(ids.isEmpty())
     }
-
-    // ─── Error handling ───────────────────────────────────────────────────
 
     @Test
     fun pushPendingDeletions_withPending_queriesPendingDeletions() = runBlocking {
@@ -389,8 +377,6 @@ class DeletionSyncHelperTest {
         coVerify(exactly = 0) { repository.clearDeletionState(any(), any(), any()) }
         unmockkStatic("io.github.jan.supabase.postgrest.PostgrestKt")
     }
-
-    // ─── Edge cases ──────────────────────────────────────────────────────
 
     @Test
     fun tableConstants_areCorrect() {

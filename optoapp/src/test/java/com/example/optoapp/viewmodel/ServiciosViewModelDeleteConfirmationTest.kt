@@ -1,4 +1,4 @@
-package com.example.optoapp.viewmodel
+﻿package com.example.optoapp.viewmodel
 
 import com.example.optoapp.data.ServicioExtra
 import kotlinx.coroutines.CancellationException
@@ -27,8 +27,6 @@ class ServiciosViewModelDeleteConfirmationTest {
         opticaId = "optica1",
     )
 
-    // ─── showDeleteConfirmation state transitions ───────────────────────
-
     @Test
     fun `showDeleteConfirmation sets showDialog true`() {
         var showDialog = false
@@ -51,8 +49,6 @@ class ServiciosViewModelDeleteConfirmationTest {
         assertNull(error)
     }
 
-    // ─── dismissDeleteDialog state transitions ──────────────────────────
-
     @Test
     fun `dismissDeleteDialog clears showDialog`() {
         var showDialog = true
@@ -73,8 +69,6 @@ class ServiciosViewModelDeleteConfirmationTest {
         error = null
         assertNull(error)
     }
-
-    // ─── confirmDelete error message patterns ───────────────────────────
 
     @Test
     fun `confirmDelete error uses message or fallback`() {
@@ -98,8 +92,6 @@ class ServiciosViewModelDeleteConfirmationTest {
         val result = "$message $error"
         assertTrue(result.contains("No se pudo eliminar el servicio."))
     }
-
-    // ─── CancellationException rethrow pattern ──────────────────────────
 
     @Test
     fun `confirmDelete catch must rethrow CancellationException`() {
@@ -131,16 +123,12 @@ class ServiciosViewModelDeleteConfirmationTest {
         assertTrue(caught[0] is RuntimeException)
     }
 
-    // ─── clearDeleteError ───────────────────────────────────────────────
-
     @Test
     fun `clearDeleteError clears error state`() {
         var error: String? = "Some error"
         error = null
         assertNull(error)
     }
-
-    // ─── confirmDelete returns early when no servicioToDelete ────────────
 
     @Test
     fun `confirmDelete does nothing when servicioToDelete is null`() {

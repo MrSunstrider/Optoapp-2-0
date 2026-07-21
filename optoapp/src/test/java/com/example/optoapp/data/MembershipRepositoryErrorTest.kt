@@ -1,4 +1,4 @@
-package com.example.optoapp.data
+﻿package com.example.optoapp.data
 
 import android.util.Log
 import com.example.optoapp.data.membership.MembershipDataSource
@@ -49,8 +49,6 @@ class MembershipRepositoryErrorTest {
         unmockkAll()
     }
 
-    // ── Pre-condition: no authenticated user → early return ───────────
-
     @Test
     fun `createOpticaForCurrentUser no session returns failure`() = runTest {
         val result = repo.createOpticaForCurrentUser("Test Optica")
@@ -89,8 +87,6 @@ class MembershipRepositoryErrorTest {
         assertTrue("Expected failure but got $result", result.isFailure)
         assertEquals("Sin sesión", (result.exceptionOrNull() as? IllegalStateException)?.message)
     }
-
-    // ── fetch methods: no session returns empty default ──────────────
 
     @Test
     fun `fetchMembershipsForCurrentUser no session returns empty`() = runTest {

@@ -1,4 +1,4 @@
-package com.example.optoapp.viewmodel
+﻿package com.example.optoapp.viewmodel
 
 import kotlinx.coroutines.CancellationException
 import org.junit.Assert.*
@@ -15,8 +15,6 @@ import org.junit.Test
  * are preserved after refactoring.
  */
 class ServiciosViewModelCatchRefactorTest {
-
-    // ─── Error message patterns (preserved across refactoring) ───────────
 
     @Test
     fun `servicio error message pattern`() {
@@ -52,8 +50,6 @@ class ServiciosViewModelCatchRefactorTest {
         assertNotNull(stateWithError.error)
         assertEquals("Connection reset", stateWithError.error)
     }
-
-    // ─── CancellationException rethrow pattern ──────────────────────────
 
     @Test
     fun `servicio catch must rethrow CancellationException`() {

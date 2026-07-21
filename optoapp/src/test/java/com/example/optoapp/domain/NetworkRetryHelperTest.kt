@@ -26,8 +26,6 @@ private val testLogger = object : SyncLogger {
 @RunWith(RobolectricTestRunner::class)
 class NetworkRetryHelperTest {
 
-    // ---- Bug 2: 429 rate-limit detection tests ----
-
     @Test
     fun `isRetryable returns true for HTTP 429 IOException`() {
         val helper = NetworkRetryHelper(testLogger)
@@ -49,8 +47,6 @@ class NetworkRetryHelperTest {
         assertTrue(helper.isRetryable(ex))
     }
 
-    // ---- Bug 1: Missing delay in IOException branch ----
-
     @Test
     fun `retryNetwork delays before retrying transient IOException`() = runTest {
         var attempts = 0
@@ -70,8 +66,6 @@ class NetworkRetryHelperTest {
             testScheduler.currentTime >= 1200L,
         )
     }
-
-    // ---- Bug 3: Generic Exception should NOT be retried ----
 
     @Test
     fun `retryNetwork does not retry non-IOException with transient-like message`() = runTest {

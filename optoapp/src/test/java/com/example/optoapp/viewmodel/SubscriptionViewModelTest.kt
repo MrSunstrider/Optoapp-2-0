@@ -1,4 +1,4 @@
-package com.example.optoapp.viewmodel
+﻿package com.example.optoapp.viewmodel
 
 import com.example.optoapp.subscription.PlanCode
 import com.example.optoapp.subscription.SubscriptionManager
@@ -18,8 +18,6 @@ import org.junit.Test
  * See: SubscriptionManagerTest for tier/planCode flow testing.
  */
 class SubscriptionViewModelTest {
-
-    // ─── canAddPaciente pure logic ─────────────────────────────────────────
     // Logic: combine(tier, pacienteCount) { t, count -> count < maxPacientes(t) }
 
     @Test
@@ -52,8 +50,6 @@ class SubscriptionViewModelTest {
         assertFalse("5 >= 5", canAddPaciente(SubscriptionTier.FREE, 5, customMax))
     }
 
-    // ─── launchProPurchase alpha bypass ───────────────────────────────────
-
     @Test
     fun `launchProPurchase PRO_INDIVIDUAL activates PRO`() {
         var error: String? = null
@@ -71,8 +67,6 @@ class SubscriptionViewModelTest {
         assertTrue("FREE plan activates PRO in alpha", success)
         assertEquals("no error for FREE plan", null, error)
     }
-
-    // ─── Helper functions mirroring ViewModel logic ────────────────────────
 
     private fun canAddPaciente(
         tier: SubscriptionTier,

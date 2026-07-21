@@ -1,4 +1,4 @@
-package com.example.optoapp.viewmodel
+﻿package com.example.optoapp.viewmodel
 
 import com.example.optoapp.data.ISecurityManager
 import com.example.optoapp.data.ISessionManager
@@ -18,8 +18,6 @@ import org.junit.Test
  * Dependencies are fakes: [FakeSecurityManager], [FakeSessionManager].
  */
 class PinDelegateTest {
-
-    // ─── Fake implementations ─────────────────────────────────────────────
 
     private class FakeSecurityManager : ISecurityManager {
         private val _userPin = MutableStateFlow("")
@@ -53,8 +51,6 @@ class PinDelegateTest {
         override suspend fun getRememberedEmail(): String = ""
         override suspend fun clearRememberedEmail() {}
     }
-
-    // ─── pinInput management ──────────────────────────────────────────────
 
     @Test
     fun `onPinDigit appends digit to pinInput`() {
@@ -111,8 +107,6 @@ class PinDelegateTest {
         assertEquals("", delegate.pinInput.value)
     }
 
-    // ─── validatePin ──────────────────────────────────────────────────────
-
     @Test
     fun `validatePin matching input returns true`() = runTest {
         val sec = FakeSecurityManager()
@@ -153,8 +147,6 @@ class PinDelegateTest {
         assertTrue(delegate.validatePin())
     }
 
-    // ─── createPin ────────────────────────────────────────────────────────
-
     @Test
     fun `createPin valid pin saves`() = runTest {
         val sec = FakeSecurityManager()
@@ -187,8 +179,6 @@ class PinDelegateTest {
         assertEquals("", sec.userPin.first())
     }
 
-    // ─── updatePin ────────────────────────────────────────────────────────
-
     @Test
     fun `updatePin with correct oldPin saves newPin`() = runTest {
         val sec = FakeSecurityManager()
@@ -216,8 +206,6 @@ class PinDelegateTest {
         assertEquals("123789", sec.userPin.first()) // unchanged
     }
 
-    // ─── togglePinRequired ────────────────────────────────────────────────
-
     @Test
     fun `togglePinRequired disabled sets isPinRequired to false`() = runTest {
         val sess = FakeSessionManager()
@@ -235,8 +223,6 @@ class PinDelegateTest {
         delegate.togglePinRequired(true)
         assertTrue(sess.isPinRequired.first())
     }
-
-    // ─── pinHasBeenSet / isPinRequired delegation ─────────────────────────
 
     @Test
     fun `pinHasBeenSet delegates to securityManager`() {
