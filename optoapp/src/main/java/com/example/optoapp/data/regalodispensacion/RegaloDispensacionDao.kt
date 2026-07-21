@@ -25,6 +25,6 @@ interface RegaloDispensacionDao {
     @Query("DELETE FROM regalos_dispensacion WHERE dispensacion_id = :dispId AND optica_id = :opticaId")
     suspend fun deleteByDispensacionId(dispId: String, opticaId: String)
 
-    @Query("UPDATE regalos_dispensacion SET dispensacion_id = :targetId WHERE dispensacion_id = :sourceId")
-    suspend fun reassignRegalosDispensacion(sourceId: String, targetId: String): Int
+    @Query("UPDATE regalos_dispensacion SET dispensacion_id = :targetId WHERE dispensacion_id = :sourceId AND optica_id = :opticaId")
+    suspend fun reassignRegalosDispensacion(sourceId: String, targetId: String, opticaId: String): Int
 }

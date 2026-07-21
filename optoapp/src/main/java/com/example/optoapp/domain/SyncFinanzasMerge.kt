@@ -49,8 +49,8 @@ class DispensacionMergeHandler @Inject constructor(
         repository.withTransaction {
             repository.updateDispensacion(merged)
             movedPagos = repository.reassignPagosDispensacion(duplicate.id, canonical.id, opticaId)
-            movedItems = repository.reassignItemsDispensacion(duplicate.id, canonical.id)
-            movedRegalos = repository.reassignRegalosDispensacion(duplicate.id, canonical.id)
+            movedItems = repository.reassignItemsDispensacion(duplicate.id, canonical.id, opticaId)
+            movedRegalos = repository.reassignRegalosDispensacion(duplicate.id, canonical.id, opticaId)
             repository.deleteDispensacionById(duplicate.id, opticaId)
         }
         syncStateTracker.markSynced(opticaId, "dispensacion", duplicate.id)
@@ -86,8 +86,8 @@ class DispensacionMergeHandler @Inject constructor(
                 var movedRegalos = 0
                 repository.withTransaction {
                     movedPagos = repository.reassignPagosDispensacion(duplicate.id, canonical.id, opticaId)
-                    movedItems = repository.reassignItemsDispensacion(duplicate.id, canonical.id)
-                    movedRegalos = repository.reassignRegalosDispensacion(duplicate.id, canonical.id)
+                    movedItems = repository.reassignItemsDispensacion(duplicate.id, canonical.id, opticaId)
+                    movedRegalos = repository.reassignRegalosDispensacion(duplicate.id, canonical.id, opticaId)
                     repository.deleteDispensacionById(duplicate.id, opticaId)
                 }
                 syncStateTracker.markError(

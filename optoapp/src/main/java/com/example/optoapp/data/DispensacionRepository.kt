@@ -137,7 +137,7 @@ class DispensacionRepository(
 
     suspend fun reassignPagosDispensacion(oldDispensacionId: String, newDispensacionId: String, opticaId: String): Int = pagoDao.reassignDispensacionIdForOptica(oldDispensacionId, newDispensacionId, opticaId)
 
-    suspend fun reassignItemsDispensacion(sourceId: String, targetId: String): Int = dispensacionItemDao.reassignItemsDispensacion(sourceId, targetId)
+    suspend fun reassignItemsDispensacion(sourceId: String, targetId: String, opticaId: String): Int = dispensacionItemDao.reassignItemsDispensacion(sourceId, targetId, opticaId)
 
     suspend fun deletePagoRegistrandoAnulacionEnCaja(
         pago: Pago,

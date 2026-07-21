@@ -14,6 +14,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.postgrest
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,7 +26,12 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.io.IOException
+import java.net.ConnectException
+import java.net.SocketTimeoutException
+import java.net.UnknownHostException
 import java.util.UUID
+import java.util.concurrent.TimeoutException
 import javax.inject.Inject
 
 sealed interface SessionRepairState {
@@ -46,7 +52,8 @@ class SyncDiagnosticsViewModel @Inject constructor(
 ) : ViewModel() {
     companion object {
         private const val TAG = "SyncDiagnosticsVM"
-        private const val REMOTE_TELEMETRY_RETRY_ATTEMPTS = 3
+        /** Visible for testing. Must be ≥1. */
+        internal var remoteTelemetryRetryAttempts = 5
 
         internal fun isValidUuid(value: String): Boolean {
             if (value.isBlank()) return false
@@ -129,20 +136,21 @@ class SyncDiagnosticsViewModel @Inject constructor(
         }
         _remoteTelemetryLoading.value = true
         _remoteTelemetryError.value = null
-        runCatching {
-            fetchRemoteTelemetryWithRetry(opticaId)
-        }.onSuccess { row ->
+        try {
+            val row = fetchRemoteTelemetryWithRetry(opticaId)
             _remoteTelemetry.value = row
-        }.onFailure { e ->
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
             Log.e(TAG, "Error fetching remote telemetry", e)
             _remoteTelemetryError.value = "Error inesperado. Reintente más tarde."
         }
         _remoteTelemetryLoading.value = false
     }
 
-    private suspend fun fetchRemoteTelemetryWithRetry(opticaId: String): SyncTelemetryRemoteRow? {
+    internal suspend fun fetchRemoteTelemetryWithRetry(opticaId: String): SyncTelemetryRemoteRow? {
         var lastError: Throwable? = null
-        repeat(REMOTE_TELEMETRY_RETRY_ATTEMPTS) { attempt ->
+        repeat(remoteTelemetryRetryAttempts) { attempt ->
             runCatching {
                 supabase.postgrest["sync_telemetry_optica"]
                     .select {
@@ -153,22 +161,26 @@ class SyncDiagnosticsViewModel @Inject constructor(
             }.onSuccess { return it }
                 .onFailure { e ->
                     lastError = e
-                    if (!isTransientNetworkError(e) || attempt == REMOTE_TELEMETRY_RETRY_ATTEMPTS - 1) {
+                    if (!isTransientNetworkError(e) || attempt == remoteTelemetryRetryAttempts - 1) {
                         throw e
                     }
-                    delay(300L * (attempt + 1))
+                    val delayMs = (1000L * (1L shl attempt)) + kotlin.random.Random.nextLong(0, 200)
+                    delay(delayMs)
                 }
         }
         throw (lastError ?: IllegalStateException("No se pudo consultar telemetría remota."))
     }
 
     internal fun isTransientNetworkError(error: Throwable): Boolean {
-        val m = (error.localizedMessage ?: error.message).orEmpty().lowercase()
-        return m.contains("timeout") ||
-            m.contains("timed out") ||
-            m.contains("unable to resolve host") ||
-            m.contains("network is unreachable") ||
-            m.contains("connection reset")
+        if (error is java.util.concurrent.TimeoutException) return true
+        if (error is java.net.SocketTimeoutException) return true
+        if (error is java.net.UnknownHostException) return true
+        if (error is java.net.ConnectException) return true
+        if (error is java.io.IOException) {
+            val msg = error.message?.lowercase() ?: return false
+            return msg.contains("connection reset") || msg.contains("broken pipe") || msg.contains("connection refused")
+        }
+        return false
     }
 
     /** Elimina solo el historial de errores mostrado en la app (no borra datos clínicos). */

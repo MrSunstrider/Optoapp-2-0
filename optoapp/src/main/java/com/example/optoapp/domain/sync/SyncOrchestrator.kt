@@ -3,6 +3,7 @@ package com.example.optoapp.domain.sync
 import android.util.Log
 import com.example.optoapp.data.Resource
 import com.example.optoapp.domain.SyncFinanzasUseCase
+import com.example.optoapp.util.AppLogger
 import com.example.optoapp.domain.SyncHistorialUseCase
 import com.example.optoapp.domain.SyncInventarioFisicoUseCase
 import com.example.optoapp.domain.SyncInventarioUseCase
@@ -11,7 +12,10 @@ import com.example.optoapp.domain.SyncOrdenesCompraUseCase
 import com.example.optoapp.domain.SyncPacientesUseCase
 import com.example.optoapp.domain.SyncProveedoresUseCase
 import com.example.optoapp.sync.SyncGate
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withTimeout
+import androidx.annotation.VisibleForTesting
 import javax.inject.Inject
 
 class SyncOrchestrator @Inject constructor(
@@ -27,62 +31,75 @@ class SyncOrchestrator @Inject constructor(
 ) {
     companion object {
         private const val TAG = "SyncOrchestrator"
+
+        @VisibleForTesting
+        @Volatile
+        var syncTimeoutMs: Long = 300_000L
     }
 
     // Modules always called with downloadAfterUpload=true so server-stamped
     // timestamps are written back to Room
-    suspend fun executeModules(opticaId: String, skipUpload: Boolean): Boolean = syncGate.mutex.withLock {
-        var hasErrors = false
+    suspend fun executeModules(opticaId: String, skipUpload: Boolean): Boolean {
+        return try {
+            withTimeout(syncTimeoutMs) {
+                syncGate.mutex.withLock {
+                    var hasErrors = false
 
-        val p = syncPacientesUseCase(opticaId, downloadAfterUpload = true, skipUpload = skipUpload)
-        if (p is Resource.Error) {
-            hasErrors = true
-            Log.w(TAG, "pacientes: ${p.message}")
+                    val p = syncPacientesUseCase(opticaId, downloadAfterUpload = true, skipUpload = skipUpload)
+                    if (p is Resource.Error) {
+                        hasErrors = true
+                        Log.w(TAG, "pacientes: ${p.message}")
+                    }
+
+                    val h = syncHistorialUseCase(opticaId, downloadAfterUpload = true, skipUpload = skipUpload)
+                    if (h is Resource.Error) {
+                        hasErrors = true
+                        Log.w(TAG, "historial: ${h.message}")
+                    }
+
+                    val f = syncFinanzasUseCase(opticaId, downloadAfterUpload = true, skipUpload = skipUpload)
+                    if (f is Resource.Error) {
+                        hasErrors = true
+                        Log.w(TAG, "finanzas: ${f.message}")
+                    }
+
+                    val pv = syncProveedoresUseCase(opticaId, downloadAfterUpload = true, skipUpload = skipUpload)
+                    if (pv is Resource.Error) {
+                        hasErrors = true
+                        Log.w(TAG, "proveedores: ${pv.message}")
+                    }
+
+                    val oc = syncOrdenesCompraUseCase(opticaId, downloadAfterUpload = true, skipUpload = skipUpload)
+                    if (oc is Resource.Error) {
+                        hasErrors = true
+                        Log.w(TAG, "ordenes_compra: ${oc.message}")
+                    }
+
+                    val kpi = syncInventoryKpisUseCase(opticaId)
+                    if (kpi is Resource.Error) {
+                        hasErrors = true
+                        Log.w(TAG, "inventory_kpis: ${kpi.message}")
+                    }
+
+                    val i = syncInventarioUseCase(opticaId, downloadAfterUpload = true, skipUpload = skipUpload)
+                    if (i is Resource.Error) {
+                        hasErrors = true
+                        Log.w(TAG, "inventario: ${i.message}")
+                    }
+
+                    val ifx = syncInventarioFisicoUseCase(opticaId, downloadAfterUpload = true, skipUpload = skipUpload)
+                    if (ifx is Resource.Error) {
+                        hasErrors = true
+                        Log.w(TAG, "inventario_fisico: ${ifx.message}")
+                    }
+
+                    hasErrors
+                }
+            }
+        } catch (e: TimeoutCancellationException) {
+            Log.e(TAG, "Sync execution timed out after ${syncTimeoutMs}ms", e)
+            true
         }
-
-        val h = syncHistorialUseCase(opticaId, downloadAfterUpload = true, skipUpload = skipUpload)
-        if (h is Resource.Error) {
-            hasErrors = true
-            Log.w(TAG, "historial: ${h.message}")
-        }
-
-        val f = syncFinanzasUseCase(opticaId, downloadAfterUpload = true, skipUpload = skipUpload)
-        if (f is Resource.Error) {
-            hasErrors = true
-            Log.w(TAG, "finanzas: ${f.message}")
-        }
-
-        val pv = syncProveedoresUseCase(opticaId, downloadAfterUpload = true, skipUpload = skipUpload)
-        if (pv is Resource.Error) {
-            hasErrors = true
-            Log.w(TAG, "proveedores: ${pv.message}")
-        }
-
-        val oc = syncOrdenesCompraUseCase(opticaId, downloadAfterUpload = true, skipUpload = skipUpload)
-        if (oc is Resource.Error) {
-            hasErrors = true
-            Log.w(TAG, "ordenes_compra: ${oc.message}")
-        }
-
-        val kpi = syncInventoryKpisUseCase(opticaId)
-        if (kpi is Resource.Error) {
-            hasErrors = true
-            Log.w(TAG, "inventory_kpis: ${kpi.message}")
-        }
-
-        val i = syncInventarioUseCase(opticaId, downloadAfterUpload = true, skipUpload = skipUpload)
-        if (i is Resource.Error) {
-            hasErrors = true
-            Log.w(TAG, "inventario: ${i.message}")
-        }
-
-        val ifx = syncInventarioFisicoUseCase(opticaId, downloadAfterUpload = true, skipUpload = skipUpload)
-        if (ifx is Resource.Error) {
-            hasErrors = true
-            Log.w(TAG, "inventario_fisico: ${ifx.message}")
-        }
-
-        hasErrors
     }
 
     /**
@@ -97,15 +114,22 @@ class SyncOrchestrator @Inject constructor(
         opticaId: String,
         onModuleResult: suspend (module: String, result: Resource<*>) -> Unit,
     ) {
-        syncGate.mutex.withLock {
-            onModuleResult("pacientes", syncPacientesUseCase(opticaId, downloadAfterUpload = true))
-            onModuleResult("historial", syncHistorialUseCase(opticaId, downloadAfterUpload = true))
-            onModuleResult("finanzas", syncFinanzasUseCase(opticaId, downloadAfterUpload = true))
-            onModuleResult("proveedores", syncProveedoresUseCase(opticaId, downloadAfterUpload = true))
-            onModuleResult("ordenes_compra", syncOrdenesCompraUseCase(opticaId, downloadAfterUpload = true))
-            onModuleResult("inventory_kpis", syncInventoryKpisUseCase(opticaId))
-            onModuleResult("inventario", syncInventarioUseCase(opticaId, downloadAfterUpload = true))
-            onModuleResult("inventario_fisico", syncInventarioFisicoUseCase(opticaId, downloadAfterUpload = true))
+        try {
+            withTimeout(syncTimeoutMs) {
+                syncGate.mutex.withLock {
+                    onModuleResult("pacientes", syncPacientesUseCase(opticaId, downloadAfterUpload = true))
+                    onModuleResult("historial", syncHistorialUseCase(opticaId, downloadAfterUpload = true))
+                    onModuleResult("finanzas", syncFinanzasUseCase(opticaId, downloadAfterUpload = true))
+                    onModuleResult("proveedores", syncProveedoresUseCase(opticaId, downloadAfterUpload = true))
+                    onModuleResult("ordenes_compra", syncOrdenesCompraUseCase(opticaId, downloadAfterUpload = true))
+                    onModuleResult("inventory_kpis", syncInventoryKpisUseCase(opticaId))
+                    onModuleResult("inventario", syncInventarioUseCase(opticaId, downloadAfterUpload = true))
+                    onModuleResult("inventario_fisico", syncInventarioFisicoUseCase(opticaId, downloadAfterUpload = true))
+                }
+            }
+        } catch (e: TimeoutCancellationException) {
+            AppLogger.e(TAG, "Silent sync timed out after ${syncTimeoutMs}ms")
+            onModuleResult("_timeout", Resource.Error<Any?>("Sync timed out after ${syncTimeoutMs}ms"))
         }
     }
 }

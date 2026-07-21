@@ -105,6 +105,62 @@ class RegaloDispensacionDaoTest {
     }
 
     @Test
+    fun reassignRegalosDispensacion_onlyMovesRegalosForGivenOptica() = runBlocking {
+        // Given: two tenants with regalos assigned to their dispensaciones
+        val p1 = createPacienteWithOptica("optica1")
+        db.pacienteDao().insertPaciente(p1)
+        db.dispensacionDao().insertDispensacion(createDispensacionWithOptica("dsrc1", p1.id, "optica1"))
+        db.dispensacionDao().insertDispensacion(createDispensacionWithOptica("dtgt1", p1.id, "optica1"))
+
+        val p2 = createPacienteWithOptica("optica2")
+        db.pacienteDao().insertPaciente(p2)
+        db.dispensacionDao().insertDispensacion(createDispensacionWithOptica("dsrc2", p2.id, "optica2"))
+        db.dispensacionDao().insertDispensacion(createDispensacionWithOptica("dtgt2", p2.id, "optica2"))
+
+        dao.insert(createTestRegalo("r-o1", "dsrc1", opticaId = "optica1"))
+        dao.insert(createTestRegalo("r-o2", "dsrc2", opticaId = "optica2"))
+
+        // When: reassign regalos for optica1 only
+        val moved = dao.reassignRegalosDispensacion("dsrc1", "dtgt1", "optica1")
+
+        // Then: only optica1 regalo was reassigned
+        assertEquals(1, moved)
+
+        assertEquals(1, dao.getByDispensacionId("dtgt1").size)
+        assertTrue(dao.getByDispensacionId("dsrc1").isEmpty())
+
+        assertEquals(1, dao.getByDispensacionId("dsrc2").size)
+        assertEquals("r-o2", dao.getByDispensacionId("dsrc2")[0].id)
+    }
+
+    @Test
+    fun reassignRegalosDispensacion_crossTenant_doesNotMoveOtherTenant() = runBlocking {
+        // Given: two tenants with regalos
+        val p1 = createPacienteWithOptica("optica1")
+        db.pacienteDao().insertPaciente(p1)
+        db.dispensacionDao().insertDispensacion(createDispensacionWithOptica("s1", p1.id, "optica1"))
+        db.dispensacionDao().insertDispensacion(createDispensacionWithOptica("t1", p1.id, "optica1"))
+
+        val p2 = createPacienteWithOptica("optica2")
+        db.pacienteDao().insertPaciente(p2)
+        db.dispensacionDao().insertDispensacion(createDispensacionWithOptica("s2", p2.id, "optica2"))
+        db.dispensacionDao().insertDispensacion(createDispensacionWithOptica("t2", p2.id, "optica2"))
+
+        dao.insert(createTestRegalo("r1", "s1", opticaId = "optica1"))
+        dao.insert(createTestRegalo("r2", "s2", opticaId = "optica2"))
+
+        // When: try to reassign optica2 data using optica1 filter
+        val moved = dao.reassignRegalosDispensacion("s2", "t2", "optica1")
+
+        // Then: 0 rows affected
+        assertEquals(0, moved)
+
+        // optica2 regalo still in source
+        assertEquals(1, dao.getByDispensacionId("s2").size)
+        assertEquals("r2", dao.getByDispensacionId("s2")[0].id)
+    }
+
+    @Test
     fun cascadeDelete_whenDispensacionDeleted_regalosAutoDeleted() = runBlocking {
         // Given: a paciente, a dispensacion, and a regalo
         val paciente = createPaciente()
@@ -134,11 +190,27 @@ class RegaloDispensacionDaoTest {
         opticaId = "optica1",
     )
 
+    private fun createPacienteWithOptica(opticaId: String) = Paciente(
+        id = UUID.randomUUID().toString(),
+        nombreCompleto = "Test Paciente",
+        edad = 30,
+        telefono = "123456789",
+        fechaCreacion = LocalDate.parse("2026-07-01"),
+        opticaId = opticaId,
+    )
+
     private fun createDispensacion(id: String, pacienteId: String) = DispensacionOptica(
         id = id,
         pacienteId = pacienteId,
         fecha = LocalDate.parse("2026-07-01"),
         opticaId = "optica1",
+    )
+
+    private fun createDispensacionWithOptica(id: String, pacienteId: String, opticaId: String) = DispensacionOptica(
+        id = id,
+        pacienteId = pacienteId,
+        fecha = LocalDate.parse("2026-07-01"),
+        opticaId = opticaId,
     )
 
     private fun createTestRegalo(

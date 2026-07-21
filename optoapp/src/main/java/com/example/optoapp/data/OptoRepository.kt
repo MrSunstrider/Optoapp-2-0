@@ -164,8 +164,8 @@ open class OptoRepository(
     }
     suspend fun getPagoById(id: String, opticaId: String) = dispensacionRepo.getPagoById(id, opticaId)
     suspend fun reassignPagosDispensacion(oldDispensacionId: String, newDispensacionId: String, opticaId: String) = dispensacionRepo.reassignPagosDispensacion(oldDispensacionId, newDispensacionId, opticaId)
-    suspend fun reassignItemsDispensacion(sourceId: String, targetId: String) = dispensacionRepo.reassignItemsDispensacion(sourceId, targetId)
-    suspend fun reassignRegalosDispensacion(sourceId: String, targetId: String) = database.regaloDispensacionDao().reassignRegalosDispensacion(sourceId, targetId)
+    suspend fun reassignItemsDispensacion(sourceId: String, targetId: String, opticaId: String) = dispensacionRepo.reassignItemsDispensacion(sourceId, targetId, opticaId)
+    suspend fun reassignRegalosDispensacion(sourceId: String, targetId: String, opticaId: String) = database.regaloDispensacionDao().reassignRegalosDispensacion(sourceId, targetId, opticaId)
     suspend fun deletePagoRegistrandoAnulacionEnCaja(pago: Pago, opticaId: String) = dispensacionRepo.deletePagoRegistrandoAnulacionEnCaja(pago, opticaId)
     suspend fun deletePago(pago: Pago) = dispensacionRepo.deletePago(pago)
     fun getPagosByServicioExtra(servicioExtraId: String) = dispensacionRepo.getPagosByServicioExtra(servicioExtraId)

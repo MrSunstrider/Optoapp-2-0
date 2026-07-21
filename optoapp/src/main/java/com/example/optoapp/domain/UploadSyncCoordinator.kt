@@ -1,8 +1,8 @@
 package com.example.optoapp.domain
 
-import com.example.optoapp.data.FinanzasRemoteDefaults
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.SyncStateTracker
+import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.costobiselado.CostoBiseladoDao
 import com.example.optoapp.data.costoproducto.CostoProductoDao
 import com.example.optoapp.util.AppLogger
@@ -10,6 +10,7 @@ import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.CancellationException
 import java.io.IOException
+import java.time.Instant
 import javax.inject.Inject
 
 /**
@@ -77,14 +78,15 @@ class UploadSyncCoordinator @Inject constructor(
             syncStateTracker.markError(opticaId, batchTrackingType, "batch", e.message)
             throw e
         }
-        syncStateTracker.markSynced(opticaId, batchTrackingType, "batch")
         rows.forEach { r ->
             syncStateTracker.markSynced(opticaId, entityType, idSelector(r))
         }
+        syncStateTracker.markSynced(opticaId, batchTrackingType, "batch")
         return uploadedCount
     }
 
     suspend fun uploadDispensaciones(opticaId: String): Int {
+        require(opticaId.isNotBlank()) { "opticaId must not be blank for upload" }
         mergeHandler.resolveLocalDuplicateDispensaciones(opticaId)
         val dispensaciones = repository.getDispensacionesSnapshotForOptica(opticaId)
         if (dispensaciones.isEmpty()) {
@@ -97,7 +99,7 @@ class UploadSyncCoordinator @Inject constructor(
             .groupBy { it.dispensacionId!! }
             .mapValues { (_, pags) -> pags.sumOf { it.monto } }
         val localById = dispensaciones.associateBy { it.id }
-        val opticaRemota = opticaId.trim().ifBlank { FinanzasRemoteDefaults.OPTICA_ID_FALLBACK }
+        val opticaRemota = opticaId.trim()
         val remotosExistentes = try {
             supabase.postgrest[TABLE_DISPENSACIONES]
                 .select {
@@ -115,6 +117,7 @@ class UploadSyncCoordinator @Inject constructor(
                 normalizedOtForUnique(r.ot)?.let { key -> key to r.id }
             }
             .toMap()
+        val deferredMerges = mutableListOf<Pair<DispensacionOptica, DispensacionOptica>>()
         val uniqueRows = LinkedHashMap<String, Pair<String, DispensacionRemota>>()
         dispensaciones.forEach { dispensacion ->
             val pagosSum = pagosSumByDisp[dispensacion.id] ?: 0.0
@@ -136,11 +139,7 @@ class UploadSyncCoordinator @Inject constructor(
                 val canonicalLocal = localById[canonicalLocalId]
                 val duplicateLocal = localById[dispensacion.id]
                 if (canonicalLocal != null && duplicateLocal != null) {
-                    mergeHandler.mergeLocalDispensacionConflict(
-                        opticaId = opticaId,
-                        canonical = canonicalLocal,
-                        duplicate = duplicateLocal,
-                    )
+                    deferredMerges.add(canonicalLocal to duplicateLocal)
                 } else {
                     AppLogger.w(TAG, "OT duplicada en lote sin datos locales para fusión (dedupeKey=$dedupeKey, localId=${dispensacion.id})")
                 }
@@ -155,11 +154,7 @@ class UploadSyncCoordinator @Inject constructor(
                 val canonicalLocal = localById[firstLocalId]
                 val duplicateLocal = localById[localId]
                 if (canonicalLocal != null && duplicateLocal != null) {
-                    mergeHandler.mergeLocalDispensacionConflict(
-                        opticaId = opticaId,
-                        canonical = canonicalLocal,
-                        duplicate = duplicateLocal,
-                    )
+                    deferredMerges.add(canonicalLocal to duplicateLocal)
                 } else {
                     AppLogger.w(TAG, "Conflicto de reconciliación sin datos locales para fusión ($localId -> $firstLocalId)")
                 }
@@ -187,10 +182,17 @@ class UploadSyncCoordinator @Inject constructor(
             syncStateTracker.markError(opticaId, "upload_dispensaciones", "batch", e.message)
             throw e
         }
-        syncStateTracker.markSynced(opticaId, "upload_dispensaciones", "batch")
+        deferredMerges.forEach { (canonical, duplicate) ->
+            mergeHandler.mergeLocalDispensacionConflict(
+                opticaId = opticaId,
+                canonical = canonical,
+                duplicate = duplicate,
+            )
+        }
         uniqueById.values.forEach { (localId, _) ->
             syncStateTracker.markSynced(opticaId, "dispensacion", localId)
         }
+        syncStateTracker.markSynced(opticaId, "upload_dispensaciones", "batch")
         return rows.size
     }
 
@@ -205,7 +207,8 @@ class UploadSyncCoordinator @Inject constructor(
             .filter { it.tipo != "Anulación" && it.servicioExtraId != null }
             .groupBy { it.servicioExtraId!! }
             .mapValues { (_, pags) -> pags.sumOf { it.monto } }
-        val opticaRemota = opticaId.trim().ifBlank { FinanzasRemoteDefaults.OPTICA_ID_FALLBACK }
+        require(opticaId.isNotBlank()) { "opticaId must not be blank for upload" }
+        val opticaRemota = opticaId.trim()
         val remotosExistentes = try {
             supabase.postgrest[TABLE_SERVICIOS]
                 .select {
@@ -244,7 +247,18 @@ class UploadSyncCoordinator @Inject constructor(
             val dedupeKey = row.ot?.trim()?.takeIf { it.isNotBlank() } ?: "id:${row.id}"
             val existing = uniqueRows[dedupeKey]
             if (existing != null && existing.id != row.id) {
-                val winner = if ((row.updatedAt ?: "") > (existing.updatedAt ?: "")) row else existing
+                val winner = try {
+                    val rowTime = row.updatedAt?.let { Instant.parse(it) }
+                    val existingTime = existing.updatedAt?.let { Instant.parse(it) }
+                    if (rowTime != null && existingTime != null) {
+                        if (rowTime > existingTime) row else existing
+                    } else {
+                        existing
+                    }
+                } catch (e: Exception) {
+                    AppLogger.w(TAG, "Failed to parse timestamp for servicio dedup, keeping existing", e)
+                    existing
+                }
                 uniqueRows[dedupeKey] = winner
             } else {
                 uniqueRows[dedupeKey] = row
@@ -270,10 +284,10 @@ class UploadSyncCoordinator @Inject constructor(
             syncStateTracker.markError(opticaId, "upload_servicios_extra", "batch", e.message)
             throw e
         }
-        syncStateTracker.markSynced(opticaId, "upload_servicios_extra", "batch")
         rows.forEach { r ->
             syncStateTracker.markSynced(opticaId, "servicio_extra", r.id)
         }
+        syncStateTracker.markSynced(opticaId, "upload_servicios_extra", "batch")
         return rows.size
     }
 
@@ -283,7 +297,8 @@ class UploadSyncCoordinator @Inject constructor(
             syncStateTracker.markSynced(opticaId, "upload_dispensacion_items", "batch")
             return 0
         }
-        val opticaRemota = opticaId.trim().ifBlank { FinanzasRemoteDefaults.OPTICA_ID_FALLBACK }
+        require(opticaId.isNotBlank()) { "opticaId must not be blank for upload" }
+        val opticaRemota = opticaId.trim()
         val rows = items.map { it.toRemoto().copy(opticaId = opticaRemota) }.distinctBy { it.id }
         return executeSimpleUpsert(
             opticaId,
@@ -301,7 +316,8 @@ class UploadSyncCoordinator @Inject constructor(
             syncStateTracker.markSynced(opticaId, "upload_pagos", "batch")
             return 0
         }
-        val opticaRemota = opticaId.trim().ifBlank { FinanzasRemoteDefaults.OPTICA_ID_FALLBACK }
+        require(opticaId.isNotBlank()) { "opticaId must not be blank for upload" }
+        val opticaRemota = opticaId.trim()
         val rows = pagos.map { it.toRemoto().copy(opticaId = opticaRemota) }.distinctBy { it.id }
         return executeSimpleUpsert(
             opticaId,
@@ -319,7 +335,8 @@ class UploadSyncCoordinator @Inject constructor(
             syncStateTracker.markSynced(opticaId, "upload_gastos_operativos", "batch")
             return 0
         }
-        val opticaRemota = opticaId.trim().ifBlank { FinanzasRemoteDefaults.OPTICA_ID_FALLBACK }
+        require(opticaId.isNotBlank()) { "opticaId must not be blank for upload" }
+        val opticaRemota = opticaId.trim()
         val rows = localGastos.map { it.toRemoto().copy(opticaId = opticaRemota) }.distinctBy { it.id }
         return executeSimpleUpsert(
             opticaId,
@@ -337,7 +354,8 @@ class UploadSyncCoordinator @Inject constructor(
             syncStateTracker.markSynced(opticaId, "upload_regalos", "batch")
             return 0
         }
-        val opticaRemota = opticaId.trim().ifBlank { FinanzasRemoteDefaults.OPTICA_ID_FALLBACK }
+        require(opticaId.isNotBlank()) { "opticaId must not be blank for upload" }
+        val opticaRemota = opticaId.trim()
         val rows = regalos.map { it.toRemoto().copy(opticaId = opticaRemota) }.distinctBy { it.id }
         return executeSimpleUpsert(
             opticaId,
@@ -355,7 +373,8 @@ class UploadSyncCoordinator @Inject constructor(
             syncStateTracker.markSynced(opticaId, "upload_costos_productos", "batch")
             return 0
         }
-        val opticaRemota = opticaId.trim().ifBlank { FinanzasRemoteDefaults.OPTICA_ID_FALLBACK }
+        require(opticaId.isNotBlank()) { "opticaId must not be blank for upload" }
+        val opticaRemota = opticaId.trim()
         val rows = localCostos.map { it.toRemoto().copy(opticaId = opticaRemota) }.distinctBy { it.id }
         return executeSimpleUpsert(
             opticaId,
@@ -373,7 +392,8 @@ class UploadSyncCoordinator @Inject constructor(
             syncStateTracker.markSynced(opticaId, "upload_costos_biselado", "batch")
             return 0
         }
-        val opticaRemota = opticaId.trim().ifBlank { FinanzasRemoteDefaults.OPTICA_ID_FALLBACK }
+        require(opticaId.isNotBlank()) { "opticaId must not be blank for upload" }
+        val opticaRemota = opticaId.trim()
         val rows = localBiselado.map { it.toRemoto().copy(opticaId = opticaRemota) }.distinctBy { it.id }
         return executeSimpleUpsert(
             opticaId,
