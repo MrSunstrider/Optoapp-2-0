@@ -6,7 +6,7 @@ import java.io.IOException
 
 interface Command {
     suspend fun execute(): Result<String>
-    suspend fun undo(): Result<Unit> = Result.success(Unit) // Opcional
+    suspend fun undo(): Result<Unit> = Result.success(Unit)
 }
 
 class BackupCommand(
@@ -15,7 +15,6 @@ class BackupCommand(
 ) : Command {
     override suspend fun execute(): Result<String> = try {
         val data = repository.getBackupDataForOptica(opticaId)
-        // Lógica para guardar en archivo o nube
         Result.success("Backup generado exitosamente")
     } catch (e: CancellationException) {
         throw e
@@ -33,14 +32,10 @@ class ExportReportCommand(
     private val data: List<Any>,
 ) : Command {
     override suspend fun execute(): Result<String> {
-        // Lógica de exportación a PDF/Excel
         return Result.success("Reporte $reportType exportado")
     }
 }
 
-/**
- * Invocador que gestiona la cola de comandos y el historial para deshacer.
- */
 class CommandInvoker {
     private val history = mutableListOf<Command>()
 

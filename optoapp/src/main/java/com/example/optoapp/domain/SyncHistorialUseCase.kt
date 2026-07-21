@@ -13,15 +13,6 @@ import kotlinx.coroutines.CancellationException
 import java.io.IOException
 import javax.inject.Inject
 
-/**
- * FASE 3 – Paso 3.2
- * Sincronización de Evaluaciones Clínicas (historial clínico).
- *
- * DTOs (EvaluacionRemota, HistorialSyncResult) y extensiones (toRemoto) viven en SyncHistorialDto.kt.
- *
- * La orquestación upload → download ocurre en [invoke].
- * La lógica de FK-map se delega a [buildUploadRows] (función pura testeable).
- */
 open class SyncHistorialUseCase @Inject constructor(
     private val repository: OptoRepository,
     private val supabase: SupabaseClient,
@@ -139,7 +130,6 @@ open class SyncHistorialUseCase @Inject constructor(
             )
         }
 
-        // Detección de conflictos
         val conflictSafe = conflictHelper.filterConflicts(
             tableName = TABLE,
             opticaId = opticaId,
@@ -214,18 +204,6 @@ open class SyncHistorialUseCase @Inject constructor(
     }
 }
 
-/**
- * Construye las filas [EvaluacionRemota] listas para upsert a Supabase,
- * mapeando FK de pacientes locales → remotos vía historia optométrica.
- *
- * Es una función pura (sin side effects) para facilitar tests unitarios.
- *
- * @param evaluaciones evaluaciones locales a subir
- * @param localPacientes pacientes locales (para leer historiaOptometrica)
- * @param remotePacientes pacientes remotos (para resolver FK)
- * @param opticaId óptica a la que pertenecen los datos
- * @return lista de filas deduplicadas por id, lista para upsert
- */
 internal fun buildUploadRows(
     evaluaciones: List<EvaluacionClinica>,
     localPacientes: List<Paciente>,
@@ -257,13 +235,6 @@ internal fun buildUploadRows(
     return rows.distinctBy { it.id }
 }
 
-/**
- * Normaliza una historia clínica para comparación como clave única.
- *
- * Aplica trim + uppercase, y retorna `null` si el resultado es blank.
- * Usada por [SyncHistorialUseCase] y [SyncPacientesUseCase] para mapear
- * pacientes locales a remotos vía su historia optométrica.
- */
 internal fun normalizedHistoriaKey(historia: String?): String? {
     val normalized = historia?.trim()?.uppercase().orEmpty()
     return normalized.ifBlank { null }

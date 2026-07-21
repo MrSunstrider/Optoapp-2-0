@@ -161,8 +161,6 @@ data class ProveedoresSyncResult(
     val downloadedCategorias: Int,
 )
 
-// ─── Remota DTOs ───────────────────────────────────────────────────────────
-
 @Serializable
 internal data class ProveedorRemoto(
     val id: String,

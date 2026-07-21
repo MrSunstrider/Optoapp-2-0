@@ -6,10 +6,6 @@ import com.example.optoapp.data.SyncStateTracker
 import com.example.optoapp.util.AppLogger
 import javax.inject.Inject
 
-/**
- * Handles merge and deduplication of DispensacionOptica records during sync.
- * Extracted from [SyncFinanzasUseCase] to reduce class size.
- */
 class DispensacionMergeHandler @Inject constructor(
     private val repository: OptoRepository,
     private val syncStateTracker: SyncStateTracker,
@@ -18,10 +14,6 @@ class DispensacionMergeHandler @Inject constructor(
         private const val TAG = "SyncFinanzas"
     }
 
-    /**
-     * Fusiona dos dispensaciones locales que apuntan al mismo id remoto (reconciliación).
-     * Conserva datos más completos de cada una y reasigna pagos antes de eliminar el duplicado.
-     */
     suspend fun mergeLocalDispensacionConflict(
         opticaId: String,
         canonical: DispensacionOptica,
@@ -73,10 +65,6 @@ class DispensacionMergeHandler @Inject constructor(
         AppLogger.w(TAG, "Dispensacion fusionada por conflicto remoto ${duplicate.id} -> ${canonical.id} (pagos=$movedPagos, items=$movedItems, regalos=$movedRegalos)")
     }
 
-    /**
-     * Resuelve duplicados locales por OT normalizada: conserva la más reciente,
-     * reasigna pagos y elimina la duplicada.
-     */
     suspend fun resolveLocalDuplicateDispensaciones(opticaId: String) {
         val local = repository.getDispensacionesSnapshotForOptica(opticaId)
         if (local.isEmpty()) return

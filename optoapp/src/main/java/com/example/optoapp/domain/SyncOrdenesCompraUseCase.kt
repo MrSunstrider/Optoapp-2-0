@@ -165,8 +165,6 @@ data class OrdenesCompraSyncResult(
     val downloadedItems: Int,
 )
 
-// ─── Remota DTOs ───────────────────────────────────────────────────────────
-
 @Serializable
 private data class OrdenCompraRemota(
     val id: String,

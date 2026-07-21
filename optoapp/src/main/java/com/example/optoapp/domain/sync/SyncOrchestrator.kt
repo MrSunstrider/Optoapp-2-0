@@ -14,14 +14,6 @@ import com.example.optoapp.sync.SyncGate
 import kotlinx.coroutines.sync.withLock
 import javax.inject.Inject
 
-/**
- * Drives the sync iteration across all entity modules under a global mutex.
- *
- * This class owns the "run all 8 modules" loop that was duplicated across
- * [com.example.optoapp.viewmodel.SyncViewModel]'s three sync methods.
- * Each method ([executeModules], [executeSilentModules]) handles a different
- * orchestration style (error aggregation vs. per-module callback).
- */
 class SyncOrchestrator @Inject constructor(
     private val syncPacientesUseCase: SyncPacientesUseCase,
     private val syncHistorialUseCase: SyncHistorialUseCase,
@@ -37,18 +29,8 @@ class SyncOrchestrator @Inject constructor(
         private const val TAG = "SyncOrchestrator"
     }
 
-    /**
-     * Runs all 8 entity modules under the sync mutex and returns whether any
-     * module reported a [Resource.Error].
-     *
-     * Used by the full-sync and download-only flows. Modules are always called
-     * with [downloadAfterUpload] = true so the server-stamped timestamps are
-     * written back to Room.
-     *
-     * @param opticaId the optica context.
-     * @param skipUpload when true, skips the local-upload phase (download-only).
-     * @return true if any module returned [Resource.Error].
-     */
+    // Modules always called with downloadAfterUpload=true so server-stamped
+    // timestamps are written back to Room
     suspend fun executeModules(opticaId: String, skipUpload: Boolean): Boolean = syncGate.mutex.withLock {
         var hasErrors = false
 

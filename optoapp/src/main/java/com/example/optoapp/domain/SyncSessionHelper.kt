@@ -33,15 +33,13 @@ object SyncSessionHelper {
             supabase.auth.refreshCurrentSession()
             AppLogger.d(TAG, "Sesión refrescada explícitamente antes de sincronizar")
 
-            // Verificación post-refresh: confirmar que el JWT realmente se actualizó
             val refreshedSession = runCatching { supabase.auth.currentSessionOrNull() }.getOrNull()
             if (refreshedSession?.accessToken.isNullOrBlank()) {
                 AppLogger.w(TAG, "Sesión sin accessToken tras refresh; abortando sync")
                 return false
             }
 
-            // Verificar que NO sea una sesión anónima — cuando el refresh token expiró,
-            // el server devuelve una sesión con role: "anon" en vez de lanzar error.
+            // Server returns anon session instead of throwing when refresh token expired
             val currentUser = runCatching { supabase.auth.currentUserOrNull() }.getOrNull()
             if (currentUser == null) {
                 AppLogger.w(TAG, "Refresh devolvió sesión anónima (refresh token inválido/expirado); abortando sync")
@@ -61,9 +59,6 @@ object SyncSessionHelper {
         }
     }
 
-    /**
-     * Retorna `true` si el mensaje de error parece un error de autenticación Supabase.
-     */
     fun looksLikeAuthError(message: String?): Boolean {
         if (message.isNullOrBlank()) return false
         val m = message.lowercase()

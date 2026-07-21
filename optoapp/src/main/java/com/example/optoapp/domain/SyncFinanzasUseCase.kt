@@ -8,15 +8,9 @@ import java.io.IOException
 import javax.inject.Inject
 
 /**
- * FASE 3 – Paso 3.3
- * Sincronización de Dispensaciones, Pagos y Servicios Extra.
- *
- * P0-T2 — Orden de subida obligatorio: **Dispensaciones → servicios_extra → pagos**
- * (padres antes que pagos; pagos referencian dispensación y/o servicio).
- *
- * Orden de bajada: el mismo, para que existan padres antes de insertar pagos locales.
- *
- * Delega la ejecución a helpers extraídos para mantener la clase por debajo de 250 líneas.
+ * P0-T2 — Upload order: Dispensaciones → servicios_extra → pagos
+ * (parents before payments; payments reference dispensación and/or service).
+ * Download order: same, so parents exist before inserting local payments.
  */
 
 /**
@@ -38,9 +32,6 @@ open class SyncFinanzasUseCase @Inject constructor(
         private const val TAG = "SyncFinanzas"
     }
 
-    /**
-     * Ejecuta la sincronización completa del módulo financiero (Upload -> Download).
-     */
     suspend operator fun invoke(
         opticaId: String,
         downloadAfterUpload: Boolean = true,
@@ -155,10 +146,7 @@ open class SyncFinanzasUseCase @Inject constructor(
         Resource.Error("Error sincronizando finanzas: ${e.localizedMessage}")
     }
 
-    /**
-     * Ejecuta un paso de download individual con try-catch aislado para que
-     * un fallo no bloquee las descargas de otras entidades.
-     */
+    // Isolated try-catch so one entity's failure doesn't block other downloads
     private suspend fun safeDownload(name: String, block: suspend () -> Int): Int = try {
         block()
     } catch (e: CancellationException) {
@@ -169,9 +157,6 @@ open class SyncFinanzasUseCase @Inject constructor(
     }
 
     /**
-     * Ejecuta un paso de upload individual; si falla, registra el error y retorna 0
-     * para que los pasos restantes puedan continuar.
-     *
      * NOTE: counts may be 0 even when partial data was uploaded before the error.
      * The per-chunk count is propagated via [UploadPartialException] for methods
      * that use [UploadSyncCoordinator.executeSimpleUpsert].

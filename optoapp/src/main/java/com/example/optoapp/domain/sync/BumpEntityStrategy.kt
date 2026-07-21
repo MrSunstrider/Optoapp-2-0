@@ -8,12 +8,6 @@ import com.example.optoapp.data.SessionManager
 import com.example.optoapp.util.AppLogger
 import kotlinx.coroutines.flow.first
 
-/**
- * Strategy for bumping an entity's `updatedAt` timestamp to resolve "keep mine" conflicts.
- *
- * Each entity type has a handler that fetches the entity from Room, then calls the
- * corresponding repository update method (which auto-stamps `updatedAt = Instant.now()`).
- */
 class BumpEntityStrategy(
     private val repository: OptoRepository,
     private val proveedorRepository: ProveedorRepository,
@@ -22,10 +16,6 @@ class BumpEntityStrategy(
 ) {
     private val TAG = "BumpEntityStrategy"
 
-    /**
-     * Bumps the entity identified by [entityId] and [entityType], delegating to the
-     * appropriate handler in [bumpHandlers].
-     */
     suspend fun bump(entityId: String, entityType: String) {
         val opticaId = sessionManager.opticaId.first()
         val handler = bumpHandlers[entityType]
@@ -35,8 +25,6 @@ class BumpEntityStrategy(
             AppLogger.d(TAG, "bumpEntityUpdatedAt: tipo no aplica bump: $entityType")
         }
     }
-
-    // ── Helpers ──────────────────────────────────────────────────────────
 
     private suspend fun <T> bumpWithResource(
         entityId: String,
@@ -65,8 +53,6 @@ class BumpEntityStrategy(
             AppLogger.w(TAG, "bumpEntityUpdatedAt: $entityType no encontrado id=$entityId")
         }
     }
-
-    // ── Handler map (entity type → bump logic) ───────────────────────────
 
     private val bumpHandlers: Map<String, suspend (entityId: String, opticaId: String) -> Unit> = mapOf(
         "servicio_extra" to { id, _ ->

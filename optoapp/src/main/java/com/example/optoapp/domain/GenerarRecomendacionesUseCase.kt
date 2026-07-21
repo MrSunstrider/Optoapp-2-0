@@ -51,8 +51,6 @@ open class GenerarRecomendacionesUseCase @Inject constructor(
         return Resource.Success(sorted.take(5))
     }
 
-    // ── R1: COBRAR (ALTA) ──────────────────────────────────────────────────
-
     private fun evaluarCobrar(
         deudores: List<Deudor>,
         config: ConfiguracionFinancieraEntity,
@@ -86,8 +84,6 @@ open class GenerarRecomendacionesUseCase @Inject constructor(
         )
     }
 
-    // ── R2: MEJORAR_PRECIO (ALTA) ──────────────────────────────────────────
-
     private fun evaluarMejorarPrecio(
         categorias: List<MargenCategoria>,
         config: ConfiguracionFinancieraEntity,
@@ -113,8 +109,6 @@ open class GenerarRecomendacionesUseCase @Inject constructor(
             datosAccion = null,
         )
     }
-
-    // ── R3: LIQUIDAR_STOCK (MEDIA) ─────────────────────────────────────────
 
     private fun evaluarLiquidarStock(
         stockEstancado: List<StockEstancadoItem>,
@@ -144,8 +138,6 @@ open class GenerarRecomendacionesUseCase @Inject constructor(
             ),
         )
     }
-
-    // ── R4: VENDER_MAS_DE (MEDIA) ──────────────────────────────────────────
 
     private fun evaluarVenderMasDe(
         categorias: List<MargenCategoria>,
@@ -179,8 +171,6 @@ open class GenerarRecomendacionesUseCase @Inject constructor(
             datosAccion = null,
         )
     }
-
-    // ── R5: ALERTA_CAIDA (ALTA) ────────────────────────────────────────────
 
     private fun evaluarAlertaCaida(
         analisis: AnalisisMensual,
@@ -233,8 +223,6 @@ open class GenerarRecomendacionesUseCase @Inject constructor(
             datosAccion = null,
         )
     }
-
-    // ── R6: REDUCIR_GASTO (MEDIA) ──────────────────────────────────────────
 
     private fun evaluarReducirGasto(
         analisis: AnalisisMensual,

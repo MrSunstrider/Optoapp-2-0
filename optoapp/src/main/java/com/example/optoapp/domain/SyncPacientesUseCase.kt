@@ -16,10 +16,6 @@ import java.io.IOException
 import java.time.LocalDate
 import javax.inject.Inject
 
-/**
- * FASE 3 – Paso 3.1
- * Sincronización bidireccional de Pacientes.
- */
 open class SyncPacientesUseCase @Inject constructor(
     private val repository: OptoRepository,
     private val supabase: SupabaseClient,
@@ -64,8 +60,7 @@ open class SyncPacientesUseCase @Inject constructor(
 
         val rows = pacientes.map { it.toRemoto().copy(opticaId = opticaId) }
 
-        // Fetch all remote pacientes once and derive both dedup and conflict maps.
-        // null = network error, empty list = genuinely no remote data.
+        // null = network error, empty list = genuinely no remote data
         val rawRemoteRows = fetchAllRemotePacientes(opticaId)
         val batchFetchFailed = rawRemoteRows == null
         val allRemoteRows = rawRemoteRows ?: emptyList()
@@ -131,7 +126,6 @@ open class SyncPacientesUseCase @Inject constructor(
 
         val deduplicated = filteredRows.distinctBy { it.id }
 
-        // Detección de conflictos usando el mapa de timestamps ya obtenido
         val conflictSafe = conflictHelper.filterConflicts(
             tableName = TABLE,
             opticaId = opticaId,
@@ -190,9 +184,8 @@ open class SyncPacientesUseCase @Inject constructor(
     }
 
     private suspend fun download(opticaId: String): Int {
-        // Phase 1: Retry pending remote deletes for paciente type before download.
-        // This prevents dead entries in Supabase from being re-downloaded after a
-        // prior partial failure (local delete succeeded, remote delete failed).
+        // Prevents dead entries from being re-downloaded after a prior partial failure
+        // (local delete succeeded, remote delete failed)
         try {
             val pendingPacienteDeletions = syncStateTracker.dao.getPendingDeletions(opticaId)
                 .filter { it.entityType == "paciente" }
@@ -224,7 +217,6 @@ open class SyncPacientesUseCase @Inject constructor(
             AppLogger.e(TAG, "Error during Phase 1 pending-delete retry for paciente type: ${e.message}", e)
         }
 
-        // Phase 2: Determine which remote IDs to skip during download
         val conflictedIds = try {
             conflictDao.getConflictEntityIds(opticaId, "paciente").toSet()
         } catch (e: Exception) {
@@ -273,10 +265,7 @@ open class SyncPacientesUseCase @Inject constructor(
         return upserted
     }
 
-    /**
-     * Test seam — fetches remote pacientes for download. Override in tests
-     * to return controlled data instead of hitting Supabase.
-     */
+    // Test seam — override in tests to return controlled data instead of hitting Supabase
     internal open suspend fun fetchRemotePacientesForDownload(opticaId: String): List<PacienteRemoto> {
         return supabase.postgrest[TABLE]
             .select {
@@ -286,14 +275,8 @@ open class SyncPacientesUseCase @Inject constructor(
     }
 
     /**
-     * Fetches all remote pacientes for the given optica. Used to derive both
-     * the historia-optometrica dedup map and the id→updatedAt conflict map
-     * from a single network call, avoiding the redundant fetch that previously
-     * happened when filterConflicts queried the same table again.
-     */
-    /**
      * Returns null when the network call fails, empty list when there are genuinely
-     * no remote rows. Callers use null to distinguish "fetch error" from "no data".
+     * no remote rows — so callers can distinguish "fetch error" from "no data".
      */
     private suspend fun fetchAllRemotePacientes(opticaId: String): List<PacienteRemoto>? {
         return try {

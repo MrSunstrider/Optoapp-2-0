@@ -5,11 +5,6 @@ import com.example.optoapp.data.OptoRepository
 import java.time.LocalDate
 import javax.inject.Inject
 
-/**
- * Builds a [MovimientoFinanciero] list from dispensaciones + servicios_extra + regalos + pagos.
- * 3-query approach: loads all dispensaciones, servicios, regalos and pagos for an optica,
- * then computes montoPagado/aCuenta dynamically from pagos (including anulaciones which net out).
- */
 class ObtenerMovimientosFinancierosUseCase @Inject constructor(
     private val repository: OptoRepository,
     private val dispensacionItemDao: DispensacionItemDao,
@@ -25,7 +20,6 @@ class ObtenerMovimientosFinancierosUseCase @Inject constructor(
             .filter { it.fecha >= start && it.fecha <= end }
         val pagos = repository.getPagosSnapshotForOptica(opticaId)
 
-        // Include anulaciones (negative monto) so they net out correctly
         val pagosSumByDisp = pagos
             .filter { it.dispensacionId != null }
             .groupBy { it.dispensacionId!! }
@@ -35,7 +29,6 @@ class ObtenerMovimientosFinancierosUseCase @Inject constructor(
             .groupBy { it.servicioExtraId!! }
             .mapValues { (_, pags) -> pags.sumOf { it.monto } }
 
-        // Load real cost from dispensacion_items for all relevant dispensacion IDs
         val dispIds = dispensaciones.map { it.id }.toSet()
         val costosByDisp = if (dispIds.isNotEmpty()) {
             dispensacionItemDao.getCostosByDispensacionIds(dispIds)
@@ -77,7 +70,6 @@ class ObtenerMovimientosFinancierosUseCase @Inject constructor(
             )
         }
 
-        // Regalos: include gift movements with their cost
         val regalos = repository.getRegalosSnapshotForOptica(opticaId)
             .filter { it.dispensacionId in dispIds }
         val regaloMovs = regalos.map { r ->

@@ -43,12 +43,8 @@ class UploadSyncCoordinator @Inject constructor(
         cause: Throwable,
     ) : Exception(message, cause)
 
-    /**
-     * Shared upload pipeline: chunk → retry → markSynced → track count.
-     * Serialization must happen inside [upsertBlock] at the call site where
-     * the concrete DTO type is known — kotlinx.serialization cannot resolve
-     * erased generic type parameters.
-     */
+    // WHY: kotlinx.serialization cannot resolve erased generic type parameters,
+    // so serialization must happen inside upsertBlock at the call site
     private suspend fun <R> executeSimpleUpsert(
         opticaId: String,
         tableName: String,
@@ -95,7 +91,6 @@ class UploadSyncCoordinator @Inject constructor(
             syncStateTracker.markSynced(opticaId, "upload_dispensaciones", "batch")
             return 0
         }
-        // Compute montoPagado dynamically from pagos (montoPagado is @Ignore in entity)
         val allPagos = repository.getPagosSnapshotForOptica(opticaId)
         val pagosSumByDisp = allPagos
             .filter { it.tipo != "Anulación" && it.dispensacionId != null }
@@ -205,7 +200,6 @@ class UploadSyncCoordinator @Inject constructor(
             syncStateTracker.markSynced(opticaId, "upload_servicios_extra", "batch")
             return 0
         }
-        // Compute aCuenta dynamically from pagos (aCuenta is @Ignore in entity)
         val allPagosServ = repository.getPagosSnapshotForOptica(opticaId)
         val aCuentaSumByServ = allPagosServ
             .filter { it.tipo != "Anulación" && it.servicioExtraId != null }
