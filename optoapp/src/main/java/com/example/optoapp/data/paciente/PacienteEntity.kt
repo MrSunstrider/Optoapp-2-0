@@ -49,9 +49,6 @@ data class Paciente(
         const val LEGACY_OPTICA_ID = "mi_optica_base"
     }
 }
-
-// ── Sexo-based helpers ───────────────────────────────────────────────────────
-
 fun Paciente.esMasculino(): Boolean = sexo.equals("Masculino", ignoreCase = true)
 fun Paciente.esFemenino(): Boolean = sexo.equals("Femenino", ignoreCase = true)
 
