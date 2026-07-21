@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "chunks": [
+    {
+      "id": "24bf60e4",
+      "created_by": "usuario",
+      "created_at": "2026-07-21T00:42:37Z",
+      "sessions": 278,
+      "memories": 566,
+      "prompts": 1214
+    }
+  ]
+}
