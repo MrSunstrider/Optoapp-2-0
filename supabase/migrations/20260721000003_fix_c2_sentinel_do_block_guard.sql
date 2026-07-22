@@ -7,11 +7,10 @@ BEGIN
     -- Sentinel: if has_optica_role-based policies already exist on ALL 5 core tables,
     -- skip the foundational policy recreation to avoid downgrading role matrix
     IF EXISTS (
-        SELECT 1 FROM pg_policies p
-        JOIN pg_class c ON c.oid = p.polrelid
-        WHERE p.schemaname = 'public'
-          AND c.relname IN ('pacientes','evaluaciones','dispensaciones','servicios_extra','pagos')
-          AND pg_get_expr(p.polqual, p.polrelid)::text LIKE '%has_optica_role%'
+        SELECT 1 FROM pg_policy pol
+        JOIN pg_class c ON c.oid = pol.polrelid
+        WHERE c.relname IN ('pacientes','evaluaciones','dispensaciones','servicios_extra','pagos')
+          AND pg_get_expr(pol.polqual, pol.polrelid)::text LIKE '%has_optica_role%'
     ) THEN
         RAISE NOTICE 'Restrictive policies exist on core tables — skipping foundational policy recreation';
     ELSE
