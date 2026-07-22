@@ -14,12 +14,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.optoapp.data.Paciente
 import com.example.optoapp.ui.components.OptoTopAppBar
+import com.example.optoapp.ui.components.common.EmptyState
 import com.example.optoapp.ui.components.paciente.DeletePacienteDialog
 import com.example.optoapp.ui.components.paciente.DispensacionesList
 import com.example.optoapp.ui.components.paciente.EvaluacionesList
@@ -34,6 +37,7 @@ import com.example.optoapp.viewmodel.EvaluacionViewModel
 import com.example.optoapp.viewmodel.OpticaHeaderViewModel
 import com.example.optoapp.viewmodel.PacienteViewModel
 import com.example.optoapp.viewmodel.ServiciosViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
@@ -57,15 +61,27 @@ fun DetallePacienteScreen(
         serviciosViewModel.allServicios.map { list -> list.filter { it.pacienteId == id } }
     }.collectAsState(initial = emptyList())
 
+    var retryTrigger by remember { mutableIntStateOf(0) }
+    var showError by remember { mutableStateOf(false) }
+    val loadKey = "$id-${retryTrigger}"
+
+    LaunchedEffect(loadKey) {
+        showError = false
+        paciente = pacienteViewModel.getPaciente(id)
+    }
+
+    LaunchedEffect(loadKey) {
+        delay(5_000L)
+        if (paciente == null) {
+            showError = true
+        }
+    }
+
     var selectedTab by remember { mutableIntStateOf(0) }
     val tabs = listOf("Evaluaciones", "Dispensaciones", "Servicios")
     var showWhatsAppMenu by remember { mutableStateOf(false) }
     var showDeletePacienteDialog by remember { mutableStateOf(false) }
     var deletingPaciente by remember { mutableStateOf(false) }
-
-    LaunchedEffect(id) {
-        paciente = pacienteViewModel.getPaciente(id)
-    }
 
     // Dynamic deuda computed from pagos (montoPagado/aCuenta are @Ignore in entities)
     val pagosSumByDisp by dispensacionViewModel.pagosSumByDispensacion.collectAsState()
@@ -156,97 +172,152 @@ fun DetallePacienteScreen(
             }
         },
     ) { padding ->
-        paciente?.let { p ->
-            if (showDeletePacienteDialog) {
-                DeletePacienteDialog(
-                    deleting = deletingPaciente,
-                    onDismiss = { showDeletePacienteDialog = false },
-                    onConfirm = {
-                        deletingPaciente = true
-                        scope.launch {
-                            try {
-                                when (val result = pacienteViewModel.deletePacienteGuarded(p)) {
-                                    is DeletePacienteResult.Success -> {
-                                        Toast.makeText(
-                                            context,
-                                            "Paciente eliminado. Quedan ${result.remainingDeletesToday} eliminaciones hoy.",
-                                            Toast.LENGTH_LONG,
-                                        ).show()
-                                        showDeletePacienteDialog = false
-                                        navController.popBackStack()
+        when {
+            paciente != null -> {
+                val p = paciente!!
+                if (showDeletePacienteDialog) {
+                    DeletePacienteDialog(
+                        deleting = deletingPaciente,
+                        onDismiss = { showDeletePacienteDialog = false },
+                        onConfirm = {
+                            deletingPaciente = true
+                            scope.launch {
+                                try {
+                                    when (val result = pacienteViewModel.deletePacienteGuarded(p)) {
+                                        is DeletePacienteResult.Success -> {
+                                            Toast.makeText(
+                                                context,
+                                                "Paciente eliminado. Quedan ${result.remainingDeletesToday} eliminaciones hoy.",
+                                                Toast.LENGTH_LONG,
+                                            ).show()
+                                            showDeletePacienteDialog = false
+                                            navController.popBackStack()
+                                        }
+                                        is DeletePacienteResult.Error -> {
+                                            Toast.makeText(context, result.message, Toast.LENGTH_LONG).show()
+                                        }
                                     }
-                                    is DeletePacienteResult.Error -> {
-                                        Toast.makeText(context, result.message, Toast.LENGTH_LONG).show()
-                                    }
+                                } finally {
+                                    deletingPaciente = false
                                 }
-                            } finally {
-                                deletingPaciente = false
                             }
-                        }
-                    },
-                    onCancel = { showDeletePacienteDialog = false },
-                )
-            }
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .navigationBarsPadding(),
-            ) {
-                PacienteInfoHeader(paciente = p, deudaTotal = deudaTotal)
-
-                ScrollableTabRow(
-                    selectedTabIndex = selectedTab,
-                    edgePadding = 16.dp,
-                    containerColor = Color.Transparent,
-                    contentColor = MaterialTheme.colorScheme.primary,
-                    indicator = { tabPositions ->
-                        TabRowDefaults.SecondaryIndicator(
-                            Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
-                            color = MaterialTheme.colorScheme.primary,
-                        )
-                    },
+                        },
+                        onCancel = { showDeletePacienteDialog = false },
+                    )
+                }
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding)
+                        .navigationBarsPadding(),
                 ) {
-                    tabs.forEachIndexed { index, title ->
-                        val count = when (index) {
-                            0 -> evaluaciones.size
-                            1 -> dispensaciones.size
-                            2 -> servicios.size
-                            else -> 0
-                        }
-                        val label = if (count > 0) "$title ($count)" else title
-                        Tab(
-                            selected = selectedTab == index,
-                            onClick = { selectedTab = index },
-                            text = { Text(label, fontWeight = if (selectedTab == index) FontWeight.Bold else FontWeight.Normal, maxLines = 1) },
-                        )
-                    }
-                }
+                    PacienteInfoHeader(paciente = p, deudaTotal = deudaTotal)
 
-                Box(modifier = Modifier.fillMaxSize()) {
-                    when (selectedTab) {
-                        0 -> EvaluacionesList(evaluaciones, p, evaluacionViewModel) { evalId ->
-                            navController.navigate("editarEvaluacion/$id/$evalId")
+                    ScrollableTabRow(
+                        selectedTabIndex = selectedTab,
+                        edgePadding = 16.dp,
+                        containerColor = Color.Transparent,
+                        contentColor = MaterialTheme.colorScheme.primary,
+                        indicator = { tabPositions ->
+                            TabRowDefaults.SecondaryIndicator(
+                                Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                        },
+                    ) {
+                        tabs.forEachIndexed { index, title ->
+                            val count = when (index) {
+                                0 -> evaluaciones.size
+                                1 -> dispensaciones.size
+                                2 -> servicios.size
+                                else -> 0
+                            }
+                            val label = if (count > 0) "$title ($count)" else title
+                            Tab(
+                                selected = selectedTab == index,
+                                onClick = { selectedTab = index },
+                                text = { Text(label, fontWeight = if (selectedTab == index) FontWeight.Bold else FontWeight.Normal, maxLines = 1) },
+                            )
                         }
-                        1 -> DispensacionesList(
-                            dispensaciones = dispensaciones,
-                            paciente = p,
-                            evaluaciones = evaluaciones,
-                            onEdit = { dispId ->
-                                navController.navigate("editarDispensacion/$id/$dispId")
-                            },
-                            pagosSumMap = pagosSumByDisp,
-                        )
-                        2 -> ServiciosExtraList(
-                            servicios = servicios,
-                            onEdit = { servId -> navController.navigate("editar_servicio/$servId") },
-                            aCuentaSumMap = aCuentaSumByServ,
-                        )
+                    }
+
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        when (selectedTab) {
+                            0 -> EvaluacionesList(evaluaciones, p, evaluacionViewModel) { evalId ->
+                                navController.navigate("editarEvaluacion/$id/$evalId")
+                            }
+                            1 -> DispensacionesList(
+                                dispensaciones = dispensaciones,
+                                paciente = p,
+                                evaluaciones = evaluaciones,
+                                onEdit = { dispId ->
+                                    navController.navigate("editarDispensacion/$id/$dispId")
+                                },
+                                pagosSumMap = pagosSumByDisp,
+                            )
+                            2 -> ServiciosExtraList(
+                                servicios = servicios,
+                                onEdit = { servId -> navController.navigate("editar_servicio/$servId") },
+                                aCuentaSumMap = aCuentaSumByServ,
+                            )
+                        }
                     }
                 }
             }
-        } ?: Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator()
+            showError -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.testTag("error_state"),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ErrorOutline,
+                            contentDescription = null,
+                            modifier = Modifier.size(64.dp),
+                            tint = MaterialTheme.colorScheme.error,
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = "Error al cargar el paciente",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            textAlign = TextAlign.Center,
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "El paciente no pudo cargarse. Verifica tu conexión e intenta de nuevo.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(horizontal = 32.dp),
+                        )
+                        Spacer(modifier = Modifier.height(24.dp))
+                        OutlinedButton(
+                            onClick = { retryTrigger++ },
+                            modifier = Modifier.testTag("retry_button"),
+                        ) {
+                            Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(8.dp))
+                            Text("Reintentar")
+                        }
+                    }
+                }
+            }
+            else -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    CircularProgressIndicator(modifier = Modifier.testTag("loading_spinner"))
+                }
+            }
         }
     }
 }

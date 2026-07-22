@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.sp
 import com.example.optoapp.data.Paciente
 import java.util.Locale
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun PacienteInfoHeader(paciente: Paciente, deudaTotal: Double = 0.0) {
     val deudaColor = if (deudaTotal > 0) Color(0xFFD32F2F) else Color(0xFF388E3C)
@@ -88,6 +89,22 @@ fun PacienteInfoHeader(paciente: Paciente, deudaTotal: Double = 0.0) {
                     }
                 }
                 InfoItem(label = "HO", value = paciente.historiaOptometrica ?: "—", modifier = Modifier.weight(1f))
+            }
+
+            if (paciente.ultimasEtiquetas.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(12.dp))
+                FlowRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    paciente.ultimasEtiquetas.forEach { tag ->
+                        SuggestionChip(
+                            onClick = { },
+                            label = { Text(tag, fontSize = 11.sp) },
+                        )
+                    }
+                }
             }
         }
     }

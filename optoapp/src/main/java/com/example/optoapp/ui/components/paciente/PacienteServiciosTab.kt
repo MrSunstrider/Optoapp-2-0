@@ -13,12 +13,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.optoapp.data.ServicioExtra
+import com.example.optoapp.ui.components.common.EmptyState
 import java.util.Locale
 
 @Composable
 fun ServiciosExtraList(servicios: List<ServicioExtra>, onEdit: (String) -> Unit, aCuentaSumMap: Map<String, Double> = emptyMap()) {
     if (servicios.isEmpty()) {
-        EmptyListMessage("No hay servicios varios.")
+        EmptyState(
+            title = "Sin servicios",
+            subtitle = "No hay servicios varios registrados.",
+        )
     } else {
         LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             items(servicios) { serv ->

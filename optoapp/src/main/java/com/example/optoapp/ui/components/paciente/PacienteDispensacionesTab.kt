@@ -18,6 +18,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.EvaluacionClinica
 import com.example.optoapp.data.Paciente
+import com.example.optoapp.ui.components.common.EmptyState
 import com.example.optoapp.ui.components.LaboratorioTicketAlertDialog
 import com.example.optoapp.util.DispensacionLaboratorioTicket
 import com.example.optoapp.util.LaboratorioTicketContext
@@ -38,7 +39,10 @@ fun DispensacionesList(
     val labCfg by laboratorioVm.uiState.collectAsState()
 
     if (dispensaciones.isEmpty()) {
-        EmptyListMessage("No hay dispensaciones.")
+        EmptyState(
+            title = "Sin dispensaciones",
+            subtitle = "No hay dispensaciones registradas.",
+        )
     } else {
         LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             items(dispensaciones) { disp ->

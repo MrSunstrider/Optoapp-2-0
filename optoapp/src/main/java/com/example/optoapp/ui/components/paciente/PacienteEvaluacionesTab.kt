@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.optoapp.data.EvaluacionClinica
 import com.example.optoapp.data.Paciente
+import com.example.optoapp.ui.components.common.EmptyState
 
 @Composable
 fun EvaluacionesList(
@@ -28,7 +29,10 @@ fun EvaluacionesList(
     val selectedEvalForResumen = remember { mutableStateOf<EvaluacionClinica?>(null) }
 
     if (evaluaciones.isEmpty()) {
-        EmptyListMessage("No hay evaluaciones registradas.")
+        EmptyState(
+            title = "Sin evaluaciones",
+            subtitle = "No hay evaluaciones registradas.",
+        )
     } else {
         LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             items(evaluaciones, key = { it.id }) { eval ->
@@ -205,12 +209,4 @@ fun InfoSection(title: String, content: @Composable () -> Unit) {
     }
 }
 
-@Composable
-fun EmptyListMessage(text: String) {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(Icons.Default.Inbox, contentDescription = "Vacio", modifier = Modifier.size(48.dp), tint = MaterialTheme.colorScheme.outlineVariant)
-            Text(text, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
-        }
-    }
-}
+
