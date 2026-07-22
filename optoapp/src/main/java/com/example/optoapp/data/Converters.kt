@@ -10,7 +10,7 @@ import java.time.format.DateTimeFormatter
 val syncJson = Json { ignoreUnknownKeys = true }
 
 class Converters {
-    private val json = Json { ignoreUnknownKeys = true }
+    private val json = syncJson
     private val isoFormatter = DateTimeFormatter.ISO_LOCAL_DATE
 
     @TypeConverter

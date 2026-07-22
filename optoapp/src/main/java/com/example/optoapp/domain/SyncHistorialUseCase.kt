@@ -12,7 +12,6 @@ import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 import java.io.IOException
 import javax.inject.Inject
 
