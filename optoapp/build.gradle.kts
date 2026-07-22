@@ -138,6 +138,9 @@ android {
     testOptions {
         unitTests {
             isIncludeAndroidResources = true
+            all {
+                it.jvmArgs("-Xshare:off")
+            }
             if (project.hasProperty("forbidOnly")) {
                 all { test -> test.systemProperty("junit.jupiter.execution.only.enabled", "false") }
             }
