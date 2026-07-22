@@ -7,6 +7,8 @@ import kotlinx.serialization.json.Json
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
+val syncJson = Json { ignoreUnknownKeys = true }
+
 class Converters {
     private val json = Json { ignoreUnknownKeys = true }
     private val isoFormatter = DateTimeFormatter.ISO_LOCAL_DATE

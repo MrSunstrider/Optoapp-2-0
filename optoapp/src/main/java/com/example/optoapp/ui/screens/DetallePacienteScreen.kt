@@ -37,7 +37,7 @@ import com.example.optoapp.viewmodel.EvaluacionViewModel
 import com.example.optoapp.viewmodel.OpticaHeaderViewModel
 import com.example.optoapp.viewmodel.PacienteViewModel
 import com.example.optoapp.viewmodel.ServiciosViewModel
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
@@ -67,12 +67,12 @@ fun DetallePacienteScreen(
 
     LaunchedEffect(loadKey) {
         showError = false
-        paciente = pacienteViewModel.getPaciente(id)
-    }
-
-    LaunchedEffect(loadKey) {
-        delay(5_000L)
-        if (paciente == null) {
+        val result = withTimeoutOrNull(5_000L) {
+            pacienteViewModel.getPaciente(id)
+        }
+        if (result != null) {
+            paciente = result
+        } else {
             showError = true
         }
     }

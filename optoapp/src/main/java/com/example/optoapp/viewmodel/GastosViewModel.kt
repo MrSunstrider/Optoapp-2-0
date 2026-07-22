@@ -62,7 +62,7 @@ class GastosViewModel @Inject constructor(
                         _allGastos.value = autoGenerarSiFalta(gastos).sortedByDescending { it.fecha }
                     } catch (e: Exception) {
                         Log.e(TAG, "autoGenerarSiFalta failed, showing raw gastos", e)
-                        _allGastos.value = gastos
+                        _allGastos.value = gastos.sortedByDescending { it.fecha }
                     }
                     if (!syncTriggered && gastos.isEmpty()) {
                         syncTriggered = true

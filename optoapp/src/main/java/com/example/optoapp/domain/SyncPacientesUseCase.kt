@@ -4,6 +4,7 @@ import com.example.optoapp.data.ConflictDao
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Paciente
 import com.example.optoapp.data.Resource
+import com.example.optoapp.data.syncJson
 import com.example.optoapp.data.SyncEntityState
 import com.example.optoapp.domain.sync.EntitySnapshotSerializer
 import com.example.optoapp.util.AppLogger
@@ -18,8 +19,6 @@ import kotlinx.serialization.json.Json
 import java.io.IOException
 import java.time.LocalDate
 import javax.inject.Inject
-
-private val json = Json { ignoreUnknownKeys = true }
 
 open class SyncPacientesUseCase @Inject constructor(
     private val repository: OptoRepository,
@@ -340,7 +339,7 @@ data class PacienteRemoto(
         ultimasEtiquetas = ultimasEtiquetas
             ?.let { raw ->
                 try {
-                    json.decodeFromString<List<String>>(raw)
+                    syncJson.decodeFromString<List<String>>(raw)
                 } catch (_: Exception) {
                     // CSV fallback for existing rows stored before JSON migration
                     // TODO: Remove CSV fallback after all clients have synced the JSON format
@@ -370,7 +369,7 @@ fun Paciente.toRemoto(): PacienteRemoto = PacienteRemoto(
     ocupacion = ocupacion ?: "",
     acompanante = acompanante ?: "",
     hobbies = hobbies ?: "",
-    ultimasEtiquetas = json.encodeToString(ultimasEtiquetas),
+    ultimasEtiquetas = syncJson.encodeToString(ultimasEtiquetas),
     opticaId = opticaId.ifBlank { Paciente.LEGACY_OPTICA_ID },
     updatedAt = updatedAt,
     updatedBy = updatedBy,

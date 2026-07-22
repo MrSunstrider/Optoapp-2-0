@@ -5,6 +5,7 @@ import com.example.optoapp.data.EvaluacionClinica
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Paciente
 import com.example.optoapp.data.Resource
+import com.example.optoapp.data.syncJson
 import com.example.optoapp.domain.sync.EntitySnapshotSerializer
 import com.example.optoapp.util.AppLogger
 import io.github.jan.supabase.SupabaseClient
@@ -14,8 +15,6 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.IOException
 import javax.inject.Inject
-
-private val json = Json { ignoreUnknownKeys = true }
 
 open class SyncHistorialUseCase @Inject constructor(
     private val repository: OptoRepository,
@@ -98,7 +97,7 @@ open class SyncHistorialUseCase @Inject constructor(
                     ocupacion = p.ocupacion ?: "",
                     acompanante = p.acompanante ?: "",
                     hobbies = p.hobbies ?: "",
-                    ultimasEtiquetas = json.encodeToString(p.ultimasEtiquetas),
+                    ultimasEtiquetas = syncJson.encodeToString(p.ultimasEtiquetas),
                     opticaId = opticaId,
                     updatedAt = p.updatedAt,
                 )

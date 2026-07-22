@@ -51,10 +51,11 @@
 **Risk**: 6 migrations (30→36) not covered. If someone bumps version without migration, test won't catch it.
 **Fix**: Extend migration chain test to cover all 30 migration objects (v6→v36).
 
-### H5 — 25 `assertTrue(true)` stubs inflate test count (HIGH)
-**Audit**: R3 Reliability #2 | **Files**: 7 test files
+### H5 — `assertTrue(true)` stubs inflate test count (HIGH)
+**Audit**: R3 Reliability #2 | **Files**: 7 test files → now 6 (after removal of `DetallePacienteScreenErrorTest.kt`)
 **Risk**: Tests report as "passing" but verify nothing. Mask real failures.
 **Fix**: Replace with real assertions or remove placeholder tests.
+**Note 2026-07-21**: 6 stubs removed from `DetallePacienteScreenErrorTest.kt` (deleted). That file's intended timeout/error/retry behavior for `DetallePacienteScreen` remains uncovered — full Compose rendering tests blocked by Hilt DI in the screen composable. If/when Hilt is testable in Compose tests, this scenario should be revisited.
 
 ### H6 — `SyncStateTracker` not transactional with entity writes (HIGH)
 **Audit**: R3 Reliability #3 | **Files**: `SyncStateTracker.kt`
