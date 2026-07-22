@@ -64,8 +64,8 @@ class BumpEntityStrategy(
         "pago" to { id, opticaId ->
             bumpWithNullable(id, "pago", { repository.getPagoById(id, opticaId) }, { repository.updatePago(it) })
         },
-        "paciente" to { id, _ ->
-            bumpWithResource(id, "paciente", { repository.getPacienteById(id) }, { repository.updatePaciente(it) })
+        "paciente" to { id, opticaId ->
+            bumpWithResource(id, "paciente", { repository.getPacienteByIdScoped(id, opticaId) }, { repository.updatePaciente(it) })
         },
         "evaluacion" to { id, _ ->
             bumpWithResource(id, "evaluacion", { repository.getEvaluacionById(id) }, { repository.updateEvaluacion(it) })

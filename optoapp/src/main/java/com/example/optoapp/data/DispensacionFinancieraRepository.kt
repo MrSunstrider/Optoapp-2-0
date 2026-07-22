@@ -42,7 +42,7 @@ class DispensacionFinancieraRepositoryImpl(
         val dispResult = optoRepository.getDispensacionById(dispensacionId)
         if (dispResult is Resource.Success && dispResult.data != null) {
             val d = dispResult.data
-            val pacienteNombre = when (val pResult = optoRepository.getPacienteById(d.pacienteId)) {
+            val pacienteNombre = when (val pResult = optoRepository.getPacienteByIdScoped(d.pacienteId, d.opticaId)) {
                 is Resource.Success -> pResult.data?.nombreCompleto ?: ""
                 else -> ""
             }

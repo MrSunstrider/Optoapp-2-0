@@ -64,7 +64,7 @@ class EvaluacionViewModel @Inject constructor(
                 repository.insertEvaluacion(ev)
             }
             postSaveSyncScheduler.scheduleHistorialSync(currentOpticaId)
-            val pResult = repository.getPacienteById(pacienteId)
+            val pResult = repository.getPacienteByIdScoped(pacienteId, currentOpticaId)
             val pName = if (pResult is Resource.Success) pResult.data?.nombreCompleto ?: "Paciente" else "Paciente"
             onComplete(ev.id, pName)
         }
@@ -117,7 +117,7 @@ class EvaluacionViewModel @Inject constructor(
     fun loadPacienteEdadAndCalculateAdd(pacienteId: String) {
         viewModelScope.launch {
             runCatching {
-                val p = repository.getPacienteById(pacienteId)
+                val p = repository.getPacienteByIdScoped(pacienteId, sessionManager.opticaId.first())
                 if (p is Resource.Success) {
                     val edad = p.data?.edad ?: 0
                     val add = com.example.optoapp.util.calcularAddPorEdad(edad)

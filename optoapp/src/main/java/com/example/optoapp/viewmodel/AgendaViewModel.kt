@@ -120,7 +120,7 @@ class AgendaViewModel @Inject constructor(
             val remindersOn = prefs.getBoolean("pref_enable_reminders", true)
             val helper = NotificationHelper(appContext)
             if (remindersOn) {
-                val pName = when (val pr = repository.getPacienteById(ev.pacienteId)) {
+                val pName = when (val pr = repository.getPacienteByIdScoped(ev.pacienteId, sessionManager.opticaId.first())) {
                     is Resource.Success -> pr.data?.nombreCompleto ?: "Paciente"
                     else -> "Paciente"
                 }

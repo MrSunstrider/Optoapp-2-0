@@ -30,6 +30,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -232,7 +233,10 @@ class PacienteFlowTest {
         }
 
         composeTestRule.onNodeWithTag(TestTags.PACIENTE_FECHA_NAC_FIELD)
+            .performTextClearance()
+        composeTestRule.onNodeWithTag(TestTags.PACIENTE_FECHA_NAC_FIELD)
             .performTextInput("01131990") // month 13 → invalid
+        composeTestRule.waitForIdle()
 
         composeTestRule.onNodeWithText("Mes debe ser 1-12").assertIsDisplayed()
     }
@@ -248,7 +252,10 @@ class PacienteFlowTest {
         }
 
         composeTestRule.onNodeWithTag(TestTags.PACIENTE_FECHA_NAC_FIELD)
+            .performTextClearance()
+        composeTestRule.onNodeWithTag(TestTags.PACIENTE_FECHA_NAC_FIELD)
             .performTextInput("32011990") // day 32 → invalid
+        composeTestRule.waitForIdle()
 
         composeTestRule.onNodeWithText("Día debe ser 1-31").assertIsDisplayed()
     }
@@ -264,7 +271,10 @@ class PacienteFlowTest {
         }
 
         composeTestRule.onNodeWithTag(TestTags.PACIENTE_FECHA_NAC_FIELD)
+            .performTextClearance()
+        composeTestRule.onNodeWithTag(TestTags.PACIENTE_FECHA_NAC_FIELD)
             .performTextInput("15061990")
+        composeTestRule.waitForIdle()
 
         composeTestRule.onNodeWithText("15/06/1990").assertIsDisplayed()
     }

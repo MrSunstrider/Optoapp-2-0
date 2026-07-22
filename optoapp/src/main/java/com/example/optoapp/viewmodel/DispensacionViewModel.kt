@@ -159,7 +159,7 @@ class DispensacionViewModel @Inject constructor(
 
     fun loadPacienteNombre(pacienteId: String) {
         viewModelScope.launch {
-            when (val result = repository.getPacienteById(pacienteId)) {
+            when (val result = repository.getPacienteByIdScoped(pacienteId, sessionManager.opticaId.first())) {
                 is Resource.Success -> {
                     val nombre = result.data?.nombreCompleto.orEmpty()
                     _uiState.update { it.copy(pacienteNombre = nombre) }

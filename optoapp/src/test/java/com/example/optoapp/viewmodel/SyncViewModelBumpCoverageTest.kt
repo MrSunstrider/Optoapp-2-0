@@ -242,7 +242,7 @@ class SyncViewModelBumpCoverageTest {
     fun bumpPaciente_callsUpdatePaciente() = runTest(testDispatcher) {
         val conflict = makeConflict("pac-bump", "paciente")
         val entity = paciente("pac-bump")
-        coEvery { repository.getPacienteById("pac-bump") } returns Resource.Success(entity)
+        coEvery { repository.getPacienteByIdScoped("pac-bump", any()) } returns Resource.Success(entity)
         coEvery { repository.updatePaciente(any()) } just Runs
 
         viewModel.resolveKeepMine(conflict)
@@ -321,7 +321,7 @@ class SyncViewModelBumpCoverageTest {
     @Test
     fun bumpPaciente_whenNotFound_logsWarningAndDoesNotCrash() = runTest(testDispatcher) {
         val conflict = makeConflict("pac-missing", "paciente")
-        coEvery { repository.getPacienteById("pac-missing") } returns Resource.Error("Not found")
+        coEvery { repository.getPacienteByIdScoped("pac-missing", any()) } returns Resource.Error("Not found")
 
         viewModel.resolveKeepMine(conflict)
         testDispatcher.scheduler.advanceUntilIdle()

@@ -452,7 +452,7 @@ open class AuthDelegate @Inject constructor(
                 estado !in setOf("asistio", "no_asistio")
 
             if (shouldNotify) {
-                val paciente = repository.getPacienteById(ev.pacienteId)
+                val paciente = repository.getPacienteByIdScoped(ev.pacienteId, opticaId)
                 val nombre = if (paciente is com.example.optoapp.data.Resource.Success) {
                     paciente.data?.nombreCompleto ?: "Paciente"
                 } else {

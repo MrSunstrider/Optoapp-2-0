@@ -62,7 +62,7 @@ class DispensacionFinancieraRepositoryTest {
     @Test
     fun `obtenerContexto builds ContextoFinanciero from dispensacion and paciente`() = runTest {
         coEvery { optoRepository.getDispensacionById("disp-1") } returns Resource.Success(testDispensacion)
-        coEvery { optoRepository.getPacienteById("pac-1") } returns Resource.Success(
+        coEvery { optoRepository.getPacienteByIdScoped("pac-1", any()) } returns Resource.Success(
             Paciente(
                 id = "pac-1",
                 nombreCompleto = "Juan Perez",
@@ -80,7 +80,7 @@ class DispensacionFinancieraRepositoryTest {
         assertEquals(testDate, result.fecha)
         assertTrue(result.descripcion.contains("Monofocal"))
         coVerify { optoRepository.getDispensacionById("disp-1") }
-        coVerify { optoRepository.getPacienteById("pac-1") }
+        coVerify { optoRepository.getPacienteByIdScoped("pac-1", any()) }
     }
 
     @Test

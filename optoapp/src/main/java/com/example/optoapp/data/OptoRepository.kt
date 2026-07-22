@@ -57,7 +57,7 @@ open class OptoRepository(
     fun getPacientesWithPendingBalanceForOptica(opticaId: String) = pacienteRepo.getPacientesWithPendingBalanceForOptica(opticaId)
     fun getPacientesWithPendingDeliveryForOptica(opticaId: String) = pacienteRepo.getPacientesWithPendingDeliveryForOptica(opticaId)
     @Deprecated("Use getPacienteByIdScoped to enforce multi-tenant isolation")
-    suspend fun getPacienteById(id: String) = pacienteRepo.getPacienteByIdLegacy(id)
+    suspend fun getPacienteById(id: String) = pacienteRepo.getPacienteById(id, "")
     suspend fun getPacienteByIdScoped(id: String, opticaId: String) = pacienteRepo.getPacienteById(id, opticaId)
     suspend fun insertPaciente(paciente: Paciente) {
         val stamped = paciente.copy(updatedAt = Instant.now().toString())
