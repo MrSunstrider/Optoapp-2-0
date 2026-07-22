@@ -183,7 +183,8 @@ object UpdateChecker {
 
                 val conn = URL(url).openConnection() as HttpURLConnection
                 conn.connectTimeout = 15_000
-                conn.readTimeout = 30_000
+                conn.readTimeout = 300_000 // 5 min — APK is ~15 MB, mobile networks need more time
+                conn.setInstanceFollowRedirects(true)
                 conn.connect()
 
                 // Obtener tamaño esperado antes de descargar
