@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -86,6 +87,30 @@ class MonturasViewModel @Inject constructor(
     }.flatMapLatest { (query, opticaId) ->
         repository.getMonturasByOptica(opticaId)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val sortedMonturas: StateFlow<List<Montura>> = combine(monturas, _uiState) { monturasList, state ->
+        val filtradas = monturasList.filter { m ->
+            (state.query.isBlank() ||
+                m.sku.contains(state.query, ignoreCase = true) ||
+                m.marca.contains(state.query, ignoreCase = true) ||
+                m.modelo.contains(state.query, ignoreCase = true)) &&
+                (state.filterMarca == null || m.marca == state.filterMarca) &&
+                (state.filterMaterial == null || m.materialMontura == state.filterMaterial) &&
+                (!state.filterStockBajo || m.stockActual <= m.stockMinimo)
+        }
+        when (state.sortBy) {
+            "name" -> filtradas.sortedWith(compareBy({ it.marca }, { it.modelo }))
+            "stock_desc" -> filtradas.sortedByDescending { it.stockActual }
+            "precio_desc" -> filtradas.sortedByDescending { it.precio }
+            else -> filtradas
+        }
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    val porReponerMonturas: StateFlow<List<Montura>> = monturas.map { monturasList ->
+        monturasList
+            .filter { it.activo && it.stockActual <= it.stockMinimo }
+            .sortedBy { it.stockActual - it.stockMinimo }
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     fun onQueryChange(value: String) {
         _uiState.update { it.copy(query = value) }

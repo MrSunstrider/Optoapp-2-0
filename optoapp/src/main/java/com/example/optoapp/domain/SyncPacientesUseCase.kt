@@ -12,9 +12,14 @@ import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import java.io.IOException
 import java.time.LocalDate
 import javax.inject.Inject
+
+private val json = Json { ignoreUnknownKeys = true }
 
 open class SyncPacientesUseCase @Inject constructor(
     private val repository: OptoRepository,
@@ -333,8 +338,15 @@ data class PacienteRemoto(
         acompanante = acompanante,
         hobbies = hobbies,
         ultimasEtiquetas = ultimasEtiquetas
-            ?.split(",")
-            ?.filter { it.isNotBlank() }
+            ?.let { raw ->
+                try {
+                    json.decodeFromString<List<String>>(raw)
+                } catch (_: Exception) {
+                    // CSV fallback for existing rows stored before JSON migration
+                    // TODO: Remove CSV fallback after all clients have synced the JSON format
+                    raw.split(",").filter { it.isNotBlank() }
+                }
+            }
             ?: emptyList(),
         opticaId = opticaId.ifBlank { Paciente.LEGACY_OPTICA_ID },
         updatedAt = updatedAt,
@@ -342,7 +354,7 @@ data class PacienteRemoto(
     )
 }
 
-private fun Paciente.toRemoto(): PacienteRemoto = PacienteRemoto(
+fun Paciente.toRemoto(): PacienteRemoto = PacienteRemoto(
     id = id,
     nombreCompleto = nombreCompleto.ifBlank { "-" },
     edad = edad,
@@ -358,7 +370,7 @@ private fun Paciente.toRemoto(): PacienteRemoto = PacienteRemoto(
     ocupacion = ocupacion ?: "",
     acompanante = acompanante ?: "",
     hobbies = hobbies ?: "",
-    ultimasEtiquetas = ultimasEtiquetas.joinToString(","),
+    ultimasEtiquetas = json.encodeToString(ultimasEtiquetas),
     opticaId = opticaId.ifBlank { Paciente.LEGACY_OPTICA_ID },
     updatedAt = updatedAt,
     updatedBy = updatedBy,

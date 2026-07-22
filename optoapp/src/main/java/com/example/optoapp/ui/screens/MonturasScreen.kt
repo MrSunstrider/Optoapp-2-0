@@ -76,6 +76,8 @@ fun MonturasScreen(
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
     val monturas by viewModel.monturas.collectAsState()
+    val sortedMonturas by viewModel.sortedMonturas.collectAsState()
+    val porReponerMonturas by viewModel.porReponerMonturas.collectAsState()
     val opticaRol by authViewModel.opticaRol.collectAsState(initial = "admin")
     val canEdit = AppRoles.canEditInventory(opticaRol)
     var lastGeneratedPdf by remember { mutableStateOf<File?>(null) }
@@ -87,33 +89,13 @@ fun MonturasScreen(
         monturas.map { it.materialMontura }.filter { it.isNotBlank() }.distinct().sorted()
     }
 
-    val filtradas = monturas.filter { m ->
-        (
-            uiState.query.isBlank() ||
-                m.sku.contains(uiState.query, ignoreCase = true) ||
-                m.marca.contains(uiState.query, ignoreCase = true) ||
-                m.modelo.contains(uiState.query, ignoreCase = true)
-            ) &&
-            (uiState.filterMarca == null || m.marca == uiState.filterMarca) &&
-            (uiState.filterMaterial == null || m.materialMontura == uiState.filterMaterial) &&
-            (!uiState.filterStockBajo || m.stockActual <= m.stockMinimo)
-    }
-    val sortedFiltradas = when (uiState.sortBy) {
-        "name" -> filtradas.sortedWith(compareBy({ it.marca }, { it.modelo }))
-        "stock_desc" -> filtradas.sortedByDescending { it.stockActual }
-        "precio_desc" -> filtradas.sortedByDescending { it.precio }
-        else -> filtradas
-    }
-    val porReponer = monturas
-        .filter { it.activo && it.stockActual <= it.stockMinimo }
-        .sortedBy { it.stockActual - it.stockMinimo }
-    val stockTotal = filtradas.sumOf { it.stockActual }
-    val valorCosto = filtradas.sumOf { it.stockActual * it.costo }
-    val valorVenta = filtradas.sumOf { it.stockActual * it.precio }
-    val restantes = if (porReponer.isEmpty()) {
-        sortedFiltradas
+    val stockTotal = sortedMonturas.sumOf { it.stockActual }
+    val valorCosto = sortedMonturas.sumOf { it.stockActual * it.costo }
+    val valorVenta = sortedMonturas.sumOf { it.stockActual * it.precio }
+    val restantes = if (porReponerMonturas.isEmpty()) {
+        sortedMonturas
     } else {
-        sortedFiltradas.filter { f -> porReponer.none { it.id == f.id } }
+        sortedMonturas.filter { f -> porReponerMonturas.none { it.id == f.id } }
     }
 
     if (uiState.editing) {
@@ -174,23 +156,23 @@ fun MonturasScreen(
                 }
 
                 item {
-                    StockAlertCard(porReponer = porReponer)
+                    StockAlertCard(porReponer = porReponerMonturas)
                 }
 
                 item {
                     SummaryCard(
-                        filtradasSize = filtradas.size,
+                        filtradasSize = sortedMonturas.size,
                         stockTotal = stockTotal,
                         valorCosto = valorCosto,
                         valorVenta = valorVenta,
                         onGeneratePdf = {
-                            val pdf = InventarioMonturasPdfGenerator.generate(context, sortedFiltradas)
+                            val pdf = InventarioMonturasPdfGenerator.generate(context, sortedMonturas)
                             lastGeneratedPdf = pdf
                             FileShareUtils.openPdf(context, pdf, "Abrir reporte de inventario")
                         },
                         onSharePdf = {
                             val file = lastGeneratedPdf
-                                ?: InventarioMonturasPdfGenerator.generate(context, sortedFiltradas)
+                                ?: InventarioMonturasPdfGenerator.generate(context, sortedMonturas)
                             lastGeneratedPdf = file
                             FileShareUtils.sharePdf(context, file, "Compartir reporte de inventario")
                         },
@@ -216,7 +198,7 @@ fun MonturasScreen(
                     }
                 }
 
-                monturaProductListing(porReponer, restantes, viewModel)
+                monturaProductListing(porReponerMonturas, restantes, viewModel)
 
                 item { Spacer(modifier = Modifier.height(OptoTokens.spacing.xl)) }
             }

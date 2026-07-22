@@ -74,13 +74,8 @@ class PacienteRepository(
     suspend fun getPacientesSnapshotForOptica(opticaId: String): List<Paciente> = pacienteDao.getPacientesListByOptica(opticaId)
 
     suspend fun suggestNextHistoriaOptometrica(opticaId: String): String {
-        val historias = pacienteDao.getHistoriasOptometricasByOptica(opticaId)
         val year = LocalDate.now().year.toString()
-        val regex = Regex("^HO-$year-(\\d+)$", RegexOption.IGNORE_CASE)
-        var max = 0
-        for (historia in historias) {
-            regex.find(historia.trim())?.groupValues?.get(1)?.toIntOrNull()?.let { if (it > max) max = it }
-        }
+        val max = pacienteDao.getMaxHistoriaNum(opticaId, year) ?: 0
         val next = max + 1
         return "HO-$year-" + next.toString().padStart(4, '0')
     }

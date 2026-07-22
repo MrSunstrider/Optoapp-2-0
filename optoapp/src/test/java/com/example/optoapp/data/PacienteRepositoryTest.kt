@@ -227,6 +227,66 @@ class PacienteRepositoryTest {
     }
 
     @Test
+    fun getMaxHistoriaNum_returnsMaxForCurrentYear() = runBlocking {
+        val year = LocalDate.now().year.toString()
+        pacienteDao.insertPaciente(
+            Paciente(
+                id = "max1", nombreCompleto = "A", edad = 20, telefono = "1",
+                fechaCreacion = LocalDate.parse("2026-01-01"), opticaId = "o1",
+                historiaOptometrica = "HO-$year-0005",
+            ),
+        )
+        pacienteDao.insertPaciente(
+            Paciente(
+                id = "max2", nombreCompleto = "B", edad = 22, telefono = "2",
+                fechaCreacion = LocalDate.parse("2026-01-01"), opticaId = "o1",
+                historiaOptometrica = "HO-$year-0042",
+            ),
+        )
+        pacienteDao.insertPaciente(
+            Paciente(
+                id = "max3", nombreCompleto = "C", edad = 24, telefono = "3",
+                fechaCreacion = LocalDate.parse("2026-01-01"), opticaId = "o1",
+                historiaOptometrica = "HO-2025-9999",  // different year, should be excluded
+            ),
+        )
+
+        val max = pacienteDao.getMaxHistoriaNum("o1", year)
+
+        assertEquals(42, max)
+    }
+
+    @Test
+    fun getMaxHistoriaNum_returnsNull_whenNoHistoriaForYear() = runBlocking {
+        val max = pacienteDao.getMaxHistoriaNum("o1", "2030")
+
+        assertEquals(null, max)
+    }
+
+    @Test
+    fun getMaxHistoriaNum_ignoresOtherOpticas() = runBlocking {
+        val year = LocalDate.now().year.toString()
+        pacienteDao.insertPaciente(
+            Paciente(
+                id = "mx_a", nombreCompleto = "A", edad = 20, telefono = "1",
+                fechaCreacion = LocalDate.parse("2026-01-01"), opticaId = "o1",
+                historiaOptometrica = "HO-$year-0010",
+            ),
+        )
+        pacienteDao.insertPaciente(
+            Paciente(
+                id = "mx_b", nombreCompleto = "B", edad = 22, telefono = "2",
+                fechaCreacion = LocalDate.parse("2026-01-01"), opticaId = "o2",
+                historiaOptometrica = "HO-$year-9999",
+            ),
+        )
+
+        val max = pacienteDao.getMaxHistoriaNum("o1", year)
+
+        assertEquals(10, max)
+    }
+
+    @Test
     fun existsDuplicateHistoriaOptometrica_detectsDuplicate() = runBlocking {
         pacienteDao.insertPaciente(
             Paciente(

@@ -109,7 +109,7 @@ fun GastosScreen(navController: NavController, drawerState: DrawerState, viewMod
                 }
             }
 
-            items(gastos.sortedByDescending { it.fecha }) { gasto ->
+            items(gastos) { gasto ->
                 GastoCard(
                     gasto = gasto,
                     onEdit = { viewModel.editGasto(gasto) },

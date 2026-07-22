@@ -20,8 +20,10 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import java.io.IOException
@@ -108,5 +110,58 @@ class GastosViewModelTest {
 
         val error = viewModel.uiState.value.error
         assertNull("Expected no error after successful delete, but got: $error", error)
+    }
+
+    @Test
+    fun `allGastos emits sorted by fecha descending`() = runTest(testDispatcher) {
+        val earlyDate = LocalDate.of(2026, 1, 15)
+        val midDate = LocalDate.of(2026, 6, 15)
+        val lateDate = LocalDate.of(2026, 12, 20)
+        val gastoEarly = GastoOperativoEntity(
+            id = "g_early", opticaId = opticaId, categoria = "alquiler",
+            monto = BigDecimal.valueOf(100.0), fecha = earlyDate,
+        )
+        val gastoMid = GastoOperativoEntity(
+            id = "g_mid", opticaId = opticaId, categoria = "servicios",
+            monto = BigDecimal.valueOf(200.0), fecha = midDate,
+        )
+        val gastoLate = GastoOperativoEntity(
+            id = "g_late", opticaId = opticaId, categoria = "insumos",
+            monto = BigDecimal.valueOf(300.0), fecha = lateDate,
+        )
+        // Return unsorted — VM must sort descending
+        every { repository.getGastosOperativos(opticaId) } returns flowOf(
+            listOf(gastoMid, gastoEarly, gastoLate),
+        )
+
+        viewModel = GastosViewModel(repository, sessionManager, scheduler, syncFinanzas)
+        advanceUntilIdle()
+
+        val emitted = viewModel.allGastos.value
+        assertEquals(3, emitted.size)
+        assertEquals("g_late", emitted[0].id)
+        assertEquals("g_mid", emitted[1].id)
+        assertEquals("g_early", emitted[2].id)
+    }
+
+    @Test
+    fun `allGastos maintains sort with auto-generated recurring gastos`() = runTest(testDispatcher) {
+        val today = LocalDate.of(2026, 6, 15)
+        val older = today.minusMonths(1)
+        val gastoExisting = GastoOperativoEntity(
+            id = "g_existing", opticaId = opticaId, categoria = "alquiler",
+            monto = BigDecimal.valueOf(500.0), fecha = today,
+        )
+        // Return existing gasto and the repository will auto-generate a recurring one
+        every { repository.getGastosOperativos(opticaId) } returns flowOf(listOf(gastoExisting))
+
+        viewModel = GastosViewModel(repository, sessionManager, scheduler, syncFinanzas)
+        advanceUntilIdle()
+
+        val emitted = viewModel.allGastos.value
+        // Should have at least the existing gasto (auto-generated goes to different category)
+        assertTrue(emitted.isNotEmpty())
+        // First item should be the most recent (today)
+        assertEquals(today, emitted.first().fecha)
     }
 }

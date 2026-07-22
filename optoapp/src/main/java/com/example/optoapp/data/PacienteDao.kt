@@ -14,8 +14,8 @@ interface PacienteDao {
     @Query("SELECT * FROM pacientes WHERE opticaId = :opticaId ORDER BY nombreCompleto ASC")
     suspend fun getPacientesListByOptica(opticaId: String): List<Paciente>
 
-    @Query("SELECT historiaOptometrica FROM pacientes WHERE opticaId = :opticaId AND ifnull(historiaOptometrica, '') <> ''")
-    suspend fun getHistoriasOptometricasByOptica(opticaId: String): List<String>
+    @Query("SELECT MAX(CAST(SUBSTR(historiaOptometrica, 9) AS INTEGER)) FROM pacientes WHERE opticaId = :opticaId AND historiaOptometrica LIKE 'HO-' || :year || '-%'")
+    suspend fun getMaxHistoriaNum(opticaId: String, year: String): Int?
 
     @Query(
         """
