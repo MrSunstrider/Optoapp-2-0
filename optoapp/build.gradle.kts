@@ -66,8 +66,8 @@ android {
         applicationId = "com.example.optoapp"
         minSdk = 24
         targetSdk = 36
-        versionCode = 40
-        versionName = "1.15.0"
+        versionCode = 41
+        versionName = "1.15.1"
 
         multiDexEnabled = true
 
