@@ -62,6 +62,9 @@ class SyncOrchestratorTest {
         coEvery { pacientesUseCase(any(), any(), any()) } returns success()
         val bgErrorCollector = mockk<BackgroundErrorCollector>(relaxed = true)
 
+        // WHY: Mutex held for 10s — timeout must fire before mutex is released to test the timeout path
+        SyncOrchestrator.syncTimeoutMs = 50L
+
         val result = SyncOrchestrator(
             syncPacientesUseCase = pacientesUseCase,
             syncHistorialUseCase = mockk(relaxed = true),
