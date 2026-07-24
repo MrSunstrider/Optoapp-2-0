@@ -13,65 +13,107 @@ import androidx.compose.ui.unit.sp
 import com.example.optoapp.util.UpdateChecker
 import kotlinx.coroutines.launch
 
+private sealed class DialogState {
+    data object Ready : DialogState()
+    data object Downloading : DialogState()
+    data class Error(val message: String) : DialogState()
+    data object NeedsPermission : DialogState()
+}
+
 @Composable
 fun UpdateDialog(updateInfo: UpdateChecker.UpdateInfo, onDismiss: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    var isDownloading by remember { mutableStateOf(false) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
+    var state by remember { mutableStateOf<DialogState>(DialogState.Ready) }
 
     AlertDialog(
-        onDismissRequest = { if (!isDownloading) onDismiss() },
-        icon = { Text("🔄", fontSize = 28.sp) },
+        onDismissRequest = {
+            if (state !is DialogState.Downloading) onDismiss()
+        },
+        icon = {
+            Text(
+                when (state) {
+                    is DialogState.Error -> "⚠️"
+                    is DialogState.NeedsPermission -> "🔒"
+                    else -> "🔄"
+                },
+                fontSize = 28.sp,
+            )
+        },
         title = {
             Text(
-                if (errorMessage != null) {
-                    "Error de actualización"
-                } else {
-                    "Nueva versión disponible"
+                when (state) {
+                    is DialogState.Error -> "Error de actualización"
+                    is DialogState.NeedsPermission -> "Permiso necesario"
+                    is DialogState.Downloading -> "Nueva versión disponible"
+                    is DialogState.Ready -> "Nueva versión disponible"
                 },
                 fontWeight = FontWeight.Bold,
             )
         },
         text = {
-            when {
-                errorMessage != null -> Text(errorMessage ?: "Ocurrió un error al descargar la actualización.")
-                isDownloading -> Text("Descargando actualización…")
-                else -> Text("Versión ${updateInfo.latestVersion} disponible para descargar.")
+            when (val s = state) {
+                is DialogState.Ready -> Text("Versión ${updateInfo.latestVersion} disponible para descargar.")
+                is DialogState.Downloading -> Text("Descargando actualización…")
+                is DialogState.Error -> Text(s.message)
+                is DialogState.NeedsPermission -> Text(
+                    "Para instalar la actualización, esta app necesita permiso para instalar " +
+                        "aplicaciones. Tocá \"Abrir Ajustes\" y activá \"Permitir de esta fuente\".",
+                )
             }
         },
         confirmButton = {
-            when {
-                errorMessage != null -> TextButton(onClick = onDismiss) {
-                    Text("Cerrar")
-                }
-                else -> TextButton(
+            when (val s = state) {
+                is DialogState.Ready -> TextButton(
                     onClick = {
-                        if (!isDownloading) {
-                            isDownloading = true
-                            scope.launch {
-                                val result = UpdateChecker.downloadAndInstall(context, updateInfo.downloadUrl)
-                                if (result is UpdateChecker.DownloadResult.Error) {
-                                    errorMessage = result.message
-                                } else {
+                        state = DialogState.Downloading
+                        scope.launch {
+                            val result = UpdateChecker.downloadAndInstall(context, updateInfo.downloadUrl)
+                            state = when (result) {
+                                is UpdateChecker.DownloadResult.Success -> {
                                     onDismiss()
+                                    DialogState.Ready // no se usa, onDismiss ya limpió
                                 }
+                                is UpdateChecker.DownloadResult.Error -> DialogState.Error(result.message)
+                                is UpdateChecker.DownloadResult.NeedsInstallPermission -> DialogState.NeedsPermission
                             }
                         }
                     },
-                    enabled = !isDownloading,
                 ) {
-                    Text(if (isDownloading) "Descargando…" else "Descargar e instalar")
+                    Text("Descargar e instalar")
+                }
+                is DialogState.Downloading -> TextButton(onClick = {}, enabled = false) {
+                    Text("Descargando…")
+                }
+                is DialogState.Error -> TextButton(
+                    onClick = {
+                        UpdateChecker.openDownloadInBrowser(context, updateInfo.downloadUrl)
+                    },
+                ) {
+                    Text("Descargar en navegador")
+                }
+                is DialogState.NeedsPermission -> TextButton(
+                    onClick = {
+                        UpdateChecker.openInstallPermissionSettings(context)
+                    },
+                ) {
+                    Text("Abrir Ajustes")
                 }
             }
         },
         dismissButton = {
-            if (errorMessage == null) {
-                TextButton(
-                    onClick = onDismiss,
-                    enabled = !isDownloading,
-                ) {
+            when (state) {
+                is DialogState.Ready -> TextButton(onClick = onDismiss) {
                     Text("Más tarde")
+                }
+                is DialogState.Downloading -> TextButton(onClick = {}, enabled = false) {
+                    Text("Más tarde")
+                }
+                is DialogState.Error -> TextButton(onClick = onDismiss) {
+                    Text("Cerrar")
+                }
+                is DialogState.NeedsPermission -> TextButton(onClick = onDismiss) {
+                    Text("Cerrar")
                 }
             }
         },

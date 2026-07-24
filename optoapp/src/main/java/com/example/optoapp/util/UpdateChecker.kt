@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
+import android.provider.Settings
 import android.widget.Toast
 import androidx.core.content.FileProvider
 import com.example.optoapp.BuildConfig
@@ -67,6 +68,8 @@ object UpdateChecker {
     sealed class DownloadResult {
         data object Success : DownloadResult()
         data class Error(val message: String) : DownloadResult()
+        /** El APK se descargó pero la app no tiene permiso para instalar paquetes. */
+        data object NeedsInstallPermission : DownloadResult()
     }
 
     /**
@@ -159,19 +162,17 @@ object UpdateChecker {
     }
 
     /**
-     * Descarga el APK en segundo plano, lo valida y abre el intent de instalación.
+     * Descarga el APK en segundo plano, lo valida e instala si tiene permiso.
      *
-     * @param context Contexto de la aplicación.
-     * @param url URL de descarga del APK.
-     * @param onError Callback opcional para notificar errores al usuario.
-     * @return [DownloadResult] indicando si la operación fue exitosa.
+     * NO abre el navegador ante errores — la UI decide cómo manejar cada caso.
+     * Usar [openDownloadInBrowser] como fallback manual desde la UI.
+     *
+     * @return [DownloadResult.NeedsInstallPermission] si el APK se descargó bien
+     *   pero falta el permiso REQUEST_INSTALL_PACKAGES.
      */
     suspend fun downloadAndInstall(
         context: Context,
         url: String,
-        onError: ((String) -> Unit)? = { msg ->
-            Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
-        },
     ): DownloadResult {
         return withContext(Dispatchers.IO) {
             try {
@@ -200,11 +201,20 @@ object UpdateChecker {
                 val validationError = verifyApk(apk, expectedSize)
                 if (validationError != null) {
                     apk.delete()
-                    val msg = "La descarga está corrupta: $validationError"
-                    withContext(Dispatchers.Main) {
-                        openInBrowser(context, url, msg, onError)
+                    return@withContext DownloadResult.Error("Descarga corrupta: $validationError")
+                }
+
+                // Verificar permiso de instalación antes de lanzar el intent
+                val canInstall = withContext(Dispatchers.Main) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        context.packageManager.canRequestPackageInstalls()
+                    } else {
+                        true // Android < 8 no necesita este permiso
                     }
-                    return@withContext DownloadResult.Error(msg)
+                }
+
+                if (!canInstall) {
+                    return@withContext DownloadResult.NeedsInstallPermission
                 }
 
                 withContext(Dispatchers.Main) {
@@ -214,11 +224,50 @@ object UpdateChecker {
                 DownloadResult.Success
             } catch (e: Exception) {
                 val msg = e.localizedMessage ?: "Error al descargar la actualización"
-                withContext(Dispatchers.Main) {
-                    openInBrowser(context, url, msg, onError)
-                }
                 DownloadResult.Error(msg)
             }
+        }
+    }
+
+    /**
+     * Abre la URL de descarga en el navegador como fallback.
+     * Usar solo cuando [downloadAndInstall] falló y el usuario quiere intentar manualmente.
+     */
+    fun openDownloadInBrowser(context: Context, url: String) {
+        try {
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            if (intent.resolveActivity(context.packageManager) != null) {
+                context.startActivity(intent)
+            } else {
+                Toast.makeText(context, "No hay navegador disponible. Abrí manualmente:\n$url", Toast.LENGTH_LONG).show()
+            }
+        } catch (e: Exception) {
+            Toast.makeText(context, "Error al abrir navegador. Link:\n$url", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    /**
+     * Abre la pantalla de Settings para que el usuario otorgue
+     * el permiso "Instalar apps desconocidas" a esta app.
+     */
+    fun openInstallPermissionSettings(context: Context) {
+        try {
+            val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
+                    data = Uri.parse("package:${context.packageName}")
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+            } else {
+                // Android < 8: abrir settings de seguridad genérico
+                Intent(Settings.ACTION_SECURITY_SETTINGS).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+            }
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            Toast.makeText(context, "No se pudo abrir Ajustes. Buscá 'Instalar apps desconocidas'.", Toast.LENGTH_LONG).show()
         }
     }
 
@@ -275,27 +324,7 @@ object UpdateChecker {
         if (intent.resolveActivity(context.packageManager) != null) {
             context.startActivity(intent)
         } else {
-            openInBrowser(context, fallbackUrl, "No se pudo iniciar la instalación", null)
-        }
-    }
-
-    /**
-     * Abre la URL de descarga en el navegador como fallback.
-     * En Android 11+ requiere `<queries>` en el manifest (ya agregado).
-     */
-    private fun openInBrowser(
-        context: Context,
-        url: String,
-        logMessage: String,
-        onError: ((String) -> Unit)?,
-    ) {
-        try {
-            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
-            context.startActivity(intent)
-        } catch (e: Exception) {
-            onError?.invoke("$logMessage. Abrí el link manualmente: $url")
+            openDownloadInBrowser(context, fallbackUrl)
         }
     }
 
