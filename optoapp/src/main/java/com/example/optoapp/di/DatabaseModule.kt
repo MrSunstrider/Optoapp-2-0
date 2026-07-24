@@ -137,6 +137,9 @@ object DatabaseModule {
     fun provideOpticaSettingsDao(database: OptoDatabase): OpticaSettingsDao = database.opticaSettingsDao()
 
     @Provides
+    fun provideSyncTelemetryLogDao(database: OptoDatabase): SyncTelemetryLogDao = database.syncTelemetryLogDao()
+
+    @Provides
     @Singleton
     fun provideSecurityManager(@ApplicationContext context: Context): SecurityManager = SecurityManager(context)
 

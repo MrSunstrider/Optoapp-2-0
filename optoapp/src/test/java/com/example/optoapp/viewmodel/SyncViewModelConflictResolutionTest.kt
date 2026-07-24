@@ -181,6 +181,7 @@ class SyncViewModelConflictResolutionTest {
             bgErrorCollector = bgErrorCollector,
             postSaveSyncScheduler = postSaveSyncScheduler,
             syncOrchestrator = mockk(relaxed = true),
+            syncTelemetryLogDao = mockk(relaxed = true),
         )
     }
 

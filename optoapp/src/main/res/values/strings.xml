@@ -101,6 +101,7 @@
     <string name="config_sync_verify_now">Verificar sync ahora</string>
     <string name="config_sync_remote_error">Error al consultar servidor: %1$s</string>
     <string name="config_sync_local_errors_title">Errores locales de sincronización</string>
+    <string name="config_sync_history_title">Historial de sync</string>
     <string name="config_sync_bg_errors_title">Errores en segundo plano</string>
     <string name="config_sync_bg_errors_empty">Sin errores en segundo plano.</string>
     <string name="config_sync_bg_errors_clear">Limpiar errores</string>

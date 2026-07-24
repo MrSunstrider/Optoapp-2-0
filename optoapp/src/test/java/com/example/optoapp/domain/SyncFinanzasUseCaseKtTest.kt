@@ -1,7 +1,9 @@
-﻿package com.example.optoapp.domain
+package com.example.optoapp.domain
 
 import android.util.Log
 import com.example.optoapp.data.FinanzasRemoteDefaults
+import io.ktor.client.statement.HttpResponse
+import io.ktor.http.HttpStatusCode
 import io.mockk.Runs
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -92,7 +94,7 @@ class SyncFinanzasUseCaseKtTest {
 
     @Test
     fun syncFinanzas_includes_gastosOperativos_in_upload_sequence() = runBlocking {
-        val uploadCoordinator = mockk<UploadSyncCoordinator>()
+        val uploadCoordinator = mockk<UploadSyncCoordinator>(relaxed = true)
         val downloadCoordinator = mockk<DownloadSyncCoordinator>()
         val deletionSyncHelper = mockk<DeletionSyncHelper>()
         val networkRetryHelper = mockk<NetworkRetryHelper>()
@@ -127,7 +129,7 @@ class SyncFinanzasUseCaseKtTest {
 
     @Test
     fun syncFinanzas_includes_resumenDiario_in_download_sequence() = runBlocking {
-        val uploadCoordinator = mockk<UploadSyncCoordinator>()
+        val uploadCoordinator = mockk<UploadSyncCoordinator>(relaxed = true)
         val downloadCoordinator = mockk<DownloadSyncCoordinator>()
         val deletionSyncHelper = mockk<DeletionSyncHelper>()
         val networkRetryHelper = mockk<NetworkRetryHelper>()
@@ -159,7 +161,7 @@ class SyncFinanzasUseCaseKtTest {
 
     @Test
     fun syncFinanzas_includes_configuracionFinanciera_in_download_sequence() = runBlocking {
-        val uploadCoordinator = mockk<UploadSyncCoordinator>()
+        val uploadCoordinator = mockk<UploadSyncCoordinator>(relaxed = true)
         val downloadCoordinator = mockk<DownloadSyncCoordinator>()
         val deletionSyncHelper = mockk<DeletionSyncHelper>()
         val networkRetryHelper = mockk<NetworkRetryHelper>()
@@ -219,6 +221,7 @@ class SyncFinanzasUseCaseKtTest {
         coEvery { downloadCoordinator.downloadRegalos(any()) } returns 0
         coEvery { downloadCoordinator.downloadGastosOperativos(any()) } returns 0
         coEvery { uploadCoordinator.uploadCostosProductos(any()) } returns 0
+        coEvery { uploadCoordinator.uploadCostosBiselado(any()) } returns 0
         coEvery { uploadCoordinator.uploadRegalos(any()) } returns 0
 
         val useCase = SyncFinanzasUseCase(
@@ -238,8 +241,7 @@ class SyncFinanzasUseCaseKtTest {
             downloadCoordinator.downloadPagos("optica-test")
         }
     }
-    // Bug 1 (Part 2): partial upload skips download — smoke test
-    // Bug 3 RED: pushPendingDeletions inside try block
+    // WHY: Verifies that a single upload failure doesn't prevent downloads — partial success must still sync
 
     @Test
     fun pushPendingDeletions_error_returns_ResourceError_not_crash() = runBlocking {
@@ -285,10 +287,10 @@ class SyncFinanzasUseCaseKtTest {
 
         assertTrue(result is com.example.optoapp.data.Resource.Error)
     }
-    // Bug 2 RED: single upload failure does not abort entire sync
+    // WHY: UploadPartialException carries partial progress — must not abort sync, only IOException should propagate
 
     @Test
-    fun single_upload_failure_continues_to_next_steps() = runBlocking {
+    fun `partial upload via UploadPartialException continues to next steps`() = runBlocking {
         val uploadCoordinator = mockk<UploadSyncCoordinator>(relaxed = true)
         val downloadCoordinator = mockk<DownloadSyncCoordinator>()
         val deletionSyncHelper = mockk<DeletionSyncHelper>()
@@ -296,17 +298,24 @@ class SyncFinanzasUseCaseKtTest {
 
         coEvery { deletionSyncHelper.pushPendingDeletions(any()) } just Runs
         coEvery { uploadCoordinator.uploadDispensaciones(any()) } throws
-            IOException("Timeout uploading dispensaciones")
+            UploadPartialException(5, IOException("Partial"))
         coEvery { uploadCoordinator.uploadDispensacionItems(any()) } returns 2
         coEvery { uploadCoordinator.uploadServicios(any()) } returns 1
+        coEvery { uploadCoordinator.uploadCostosProductos(any()) } returns 0
+        coEvery { uploadCoordinator.uploadCostosBiselado(any()) } returns 0
         coEvery { uploadCoordinator.uploadPagos(any()) } returns 3
         coEvery { uploadCoordinator.uploadGastosOperativos(any()) } returns 0
+        coEvery { uploadCoordinator.uploadRegalos(any()) } returns 0
         coEvery { downloadCoordinator.downloadDispensaciones(any()) } returns 0
         coEvery { downloadCoordinator.downloadDispensacionItems(any()) } returns 0
         coEvery { downloadCoordinator.downloadServicios(any()) } returns 0
         coEvery { downloadCoordinator.downloadPagos(any()) } returns 0
         coEvery { downloadCoordinator.downloadResumenDiario(any()) } returns 0
         coEvery { downloadCoordinator.downloadConfiguracionFinanciera(any()) } returns 0
+        coEvery { downloadCoordinator.downloadCostosProductos(any()) } returns 0
+        coEvery { downloadCoordinator.downloadCostosBiselado(any()) } returns 0
+        coEvery { downloadCoordinator.downloadRegalos(any()) } returns 0
+        coEvery { downloadCoordinator.downloadGastosOperativos(any()) } returns 0
 
         val useCase = SyncFinanzasUseCase(
             deletionSyncHelper = deletionSyncHelper,
@@ -324,26 +333,36 @@ class SyncFinanzasUseCaseKtTest {
         coVerify(exactly = 1) { uploadCoordinator.uploadGastosOperativos("optica-test") }
     }
 
+    // WHY: These tests verify safeUpload's new error propagation contract — IOException after retry exhaustion,
+    // RestException immediate throw, and UploadPartialException partial-count passthrough
+
     @Test
-    fun single_upload_failure_still_runs_download() = runBlocking {
-        val uploadCoordinator = mockk<UploadSyncCoordinator>(relaxed = true)
+    fun `full network failure propagates IOException to Resource Error`() = runBlocking {
+        val uploadCoordinator = mockk<UploadSyncCoordinator>()
         val downloadCoordinator = mockk<DownloadSyncCoordinator>()
         val deletionSyncHelper = mockk<DeletionSyncHelper>()
         val networkRetryHelper = mockk<NetworkRetryHelper>()
 
         coEvery { deletionSyncHelper.pushPendingDeletions(any()) } just Runs
-        coEvery { uploadCoordinator.uploadPagos(any()) } throws
-            IOException("Pagos upload failed")
-        coEvery { uploadCoordinator.uploadServicios(any()) } returns 0
-        coEvery { uploadCoordinator.uploadDispensaciones(any()) } returns 0
-        coEvery { uploadCoordinator.uploadDispensacionItems(any()) } returns 0
-        coEvery { uploadCoordinator.uploadGastosOperativos(any()) } returns 0
-        coEvery { downloadCoordinator.downloadDispensaciones(any()) } returns 2
+        coEvery { uploadCoordinator.uploadDispensaciones(any()) } throws IOException("Network failure")
+        coEvery { uploadCoordinator.uploadDispensacionItems(any()) } throws IOException("Network failure")
+        coEvery { uploadCoordinator.uploadServicios(any()) } throws IOException("Network failure")
+        coEvery { uploadCoordinator.uploadCostosProductos(any()) } throws IOException("Network failure")
+        coEvery { uploadCoordinator.uploadCostosBiselado(any()) } throws IOException("Network failure")
+        coEvery { uploadCoordinator.uploadPagos(any()) } throws IOException("Network failure")
+        coEvery { uploadCoordinator.uploadGastosOperativos(any()) } throws IOException("Network failure")
+        coEvery { uploadCoordinator.uploadRegalos(any()) } throws IOException("Network failure")
+        // Mock downloads to return 0 so download phase doesn't throw before IOException propagates
+        coEvery { downloadCoordinator.downloadDispensaciones(any()) } returns 0
         coEvery { downloadCoordinator.downloadDispensacionItems(any()) } returns 0
         coEvery { downloadCoordinator.downloadServicios(any()) } returns 0
+        coEvery { downloadCoordinator.downloadCostosProductos(any()) } returns 0
+        coEvery { downloadCoordinator.downloadCostosBiselado(any()) } returns 0
         coEvery { downloadCoordinator.downloadPagos(any()) } returns 0
         coEvery { downloadCoordinator.downloadResumenDiario(any()) } returns 0
         coEvery { downloadCoordinator.downloadConfiguracionFinanciera(any()) } returns 0
+        coEvery { downloadCoordinator.downloadRegalos(any()) } returns 0
+        coEvery { downloadCoordinator.downloadGastosOperativos(any()) } returns 0
 
         val useCase = SyncFinanzasUseCase(
             deletionSyncHelper = deletionSyncHelper,
@@ -352,9 +371,173 @@ class SyncFinanzasUseCaseKtTest {
             networkRetryHelper = networkRetryHelper,
         )
 
-        useCase("optica-test")
+        val result = useCase("optica-test")
+        assertTrue("IOException should propagate to Resource.Error", result is com.example.optoapp.data.Resource.Error)
+    }
 
-        coVerify(exactly = 1) { uploadCoordinator.uploadGastosOperativos("optica-test") }
-        coVerify(exactly = 1) { downloadCoordinator.downloadDispensaciones("optica-test") }
+    @Test
+    fun `UploadPartialException returns partial count`() = runBlocking {
+        val uploadCoordinator = mockk<UploadSyncCoordinator>(relaxed = true)
+        val downloadCoordinator = mockk<DownloadSyncCoordinator>()
+        val deletionSyncHelper = mockk<DeletionSyncHelper>()
+        val networkRetryHelper = mockk<NetworkRetryHelper>()
+
+        coEvery { deletionSyncHelper.pushPendingDeletions(any()) } just Runs
+        coEvery { uploadCoordinator.uploadDispensaciones(any()) } throws UploadPartialException(5, IOException("Partial"))
+        coEvery { uploadCoordinator.uploadDispensacionItems(any()) } returns 3
+        coEvery { uploadCoordinator.uploadServicios(any()) } returns 2
+        coEvery { uploadCoordinator.uploadCostosProductos(any()) } returns 0
+        coEvery { uploadCoordinator.uploadCostosBiselado(any()) } returns 0
+        coEvery { uploadCoordinator.uploadPagos(any()) } returns 4
+        coEvery { uploadCoordinator.uploadGastosOperativos(any()) } returns 0
+        coEvery { uploadCoordinator.uploadRegalos(any()) } returns 0
+        coEvery { downloadCoordinator.downloadDispensaciones(any()) } returns 0
+        coEvery { downloadCoordinator.downloadDispensacionItems(any()) } returns 0
+        coEvery { downloadCoordinator.downloadServicios(any()) } returns 0
+        coEvery { downloadCoordinator.downloadResumenDiario(any()) } returns 0
+        coEvery { downloadCoordinator.downloadConfiguracionFinanciera(any()) } returns 0
+        coEvery { downloadCoordinator.downloadCostosProductos(any()) } returns 0
+        coEvery { downloadCoordinator.downloadCostosBiselado(any()) } returns 0
+        coEvery { downloadCoordinator.downloadPagos(any()) } returns 0
+        coEvery { downloadCoordinator.downloadRegalos(any()) } returns 0
+        coEvery { downloadCoordinator.downloadGastosOperativos(any()) } returns 0
+
+        val useCase = SyncFinanzasUseCase(
+            deletionSyncHelper = deletionSyncHelper,
+            uploadSyncCoordinator = uploadCoordinator,
+            downloadSyncCoordinator = downloadCoordinator,
+            networkRetryHelper = networkRetryHelper,
+        )
+
+        val result = useCase("optica-test")
+        assertTrue(result is com.example.optoapp.data.Resource.Success)
+        val success = result as com.example.optoapp.data.Resource.Success
+        assertEquals(
+            "UploadPartialException should preserve partial count of 5",
+            5, success.data!!.uploadedDispensaciones,
+        )
+    }
+
+    @Test
+    fun `401 RestException propagates immediately to Resource Error`() = runBlocking {
+        val uploadCoordinator = mockk<UploadSyncCoordinator>(relaxed = true)
+        val downloadCoordinator = mockk<DownloadSyncCoordinator>()
+        val deletionSyncHelper = mockk<DeletionSyncHelper>()
+        val networkRetryHelper = mockk<NetworkRetryHelper>()
+
+        val mockResponse = mockk<HttpResponse>(relaxed = true)
+        every { mockResponse.status } returns HttpStatusCode(401, "Unauthorized")
+        coEvery { deletionSyncHelper.pushPendingDeletions(any()) } just Runs
+        coEvery { uploadCoordinator.uploadDispensaciones(any()) } throws
+            io.github.jan.supabase.exceptions.RestException("Unauthorized", null, mockResponse)
+
+        val useCase = SyncFinanzasUseCase(
+            deletionSyncHelper = deletionSyncHelper,
+            uploadSyncCoordinator = uploadCoordinator,
+            downloadSyncCoordinator = downloadCoordinator,
+            networkRetryHelper = networkRetryHelper,
+        )
+
+        val result = useCase("optica-test")
+        assertTrue("401 RestException should propagate to Resource.Error", result is com.example.optoapp.data.Resource.Error)
+    }
+
+    @Test
+    fun `nonAuth RestException propagates to Resource Error`() = runBlocking {
+        val uploadCoordinator = mockk<UploadSyncCoordinator>(relaxed = true)
+        val downloadCoordinator = mockk<DownloadSyncCoordinator>()
+        val deletionSyncHelper = mockk<DeletionSyncHelper>()
+        val networkRetryHelper = mockk<NetworkRetryHelper>()
+
+        val mockResponse500 = mockk<HttpResponse>(relaxed = true)
+        every { mockResponse500.status } returns HttpStatusCode(500, "Server Error")
+        coEvery { deletionSyncHelper.pushPendingDeletions(any()) } just Runs
+        coEvery { uploadCoordinator.uploadDispensaciones(any()) } throws
+            io.github.jan.supabase.exceptions.RestException("Server error", null, mockResponse500)
+        // Mock downloads so the test only passes if 500 propagates from safeUpload
+        coEvery { downloadCoordinator.downloadDispensaciones(any()) } returns 0
+        coEvery { downloadCoordinator.downloadDispensacionItems(any()) } returns 0
+        coEvery { downloadCoordinator.downloadServicios(any()) } returns 0
+        coEvery { downloadCoordinator.downloadCostosProductos(any()) } returns 0
+        coEvery { downloadCoordinator.downloadCostosBiselado(any()) } returns 0
+        coEvery { downloadCoordinator.downloadPagos(any()) } returns 0
+        coEvery { downloadCoordinator.downloadResumenDiario(any()) } returns 0
+        coEvery { downloadCoordinator.downloadConfiguracionFinanciera(any()) } returns 0
+        coEvery { downloadCoordinator.downloadRegalos(any()) } returns 0
+        coEvery { downloadCoordinator.downloadGastosOperativos(any()) } returns 0
+
+        val useCase = SyncFinanzasUseCase(
+            deletionSyncHelper = deletionSyncHelper,
+            uploadSyncCoordinator = uploadCoordinator,
+            downloadSyncCoordinator = downloadCoordinator,
+            networkRetryHelper = networkRetryHelper,
+        )
+
+        val result = useCase("optica-test")
+        assertTrue("Non-auth RestException should propagate to Resource.Error", result is com.example.optoapp.data.Resource.Error)
+    }
+
+    @Test
+    fun `generic Exception propagates to Resource Error`() = runBlocking {
+        val uploadCoordinator = mockk<UploadSyncCoordinator>(relaxed = true)
+        val downloadCoordinator = mockk<DownloadSyncCoordinator>()
+        val deletionSyncHelper = mockk<DeletionSyncHelper>()
+        val networkRetryHelper = mockk<NetworkRetryHelper>()
+
+        coEvery { deletionSyncHelper.pushPendingDeletions(any()) } just Runs
+        coEvery { uploadCoordinator.uploadDispensaciones(any()) } throws RuntimeException("Unexpected error")
+        // Mock downloads so the test only passes if generic Exception propagates from safeUpload
+        coEvery { downloadCoordinator.downloadDispensaciones(any()) } returns 0
+        coEvery { downloadCoordinator.downloadDispensacionItems(any()) } returns 0
+        coEvery { downloadCoordinator.downloadServicios(any()) } returns 0
+        coEvery { downloadCoordinator.downloadCostosProductos(any()) } returns 0
+        coEvery { downloadCoordinator.downloadCostosBiselado(any()) } returns 0
+        coEvery { downloadCoordinator.downloadPagos(any()) } returns 0
+        coEvery { downloadCoordinator.downloadResumenDiario(any()) } returns 0
+        coEvery { downloadCoordinator.downloadConfiguracionFinanciera(any()) } returns 0
+        coEvery { downloadCoordinator.downloadRegalos(any()) } returns 0
+        coEvery { downloadCoordinator.downloadGastosOperativos(any()) } returns 0
+
+        val useCase = SyncFinanzasUseCase(
+            deletionSyncHelper = deletionSyncHelper,
+            uploadSyncCoordinator = uploadCoordinator,
+            downloadSyncCoordinator = downloadCoordinator,
+            networkRetryHelper = networkRetryHelper,
+        )
+
+        val result = useCase("optica-test")
+        assertTrue("Generic Exception should propagate to Resource.Error", result is com.example.optoapp.data.Resource.Error)
+    }
+
+    @Test
+    fun `IOException in safeUpload aborts remaining uploads and returns Resource Error`() = runBlocking {
+        val uploadCoordinator = mockk<UploadSyncCoordinator>(relaxed = true)
+        val downloadCoordinator = mockk<DownloadSyncCoordinator>()
+        val deletionSyncHelper = mockk<DeletionSyncHelper>()
+        val networkRetryHelper = mockk<NetworkRetryHelper>()
+
+        coEvery { deletionSyncHelper.pushPendingDeletions(any()) } just Runs
+        coEvery { uploadCoordinator.uploadPagos(any()) } throws
+            IOException("Pagos upload failed")
+        coEvery { uploadCoordinator.uploadDispensaciones(any()) } returns 0
+        coEvery { uploadCoordinator.uploadDispensacionItems(any()) } returns 0
+        coEvery { uploadCoordinator.uploadServicios(any()) } returns 0
+        coEvery { uploadCoordinator.uploadCostosProductos(any()) } returns 0
+        coEvery { uploadCoordinator.uploadCostosBiselado(any()) } returns 0
+        coEvery { uploadCoordinator.uploadGastosOperativos(any()) } returns 0
+        coEvery { uploadCoordinator.uploadRegalos(any()) } returns 0
+
+        val useCase = SyncFinanzasUseCase(
+            deletionSyncHelper = deletionSyncHelper,
+            uploadSyncCoordinator = uploadCoordinator,
+            downloadSyncCoordinator = downloadCoordinator,
+            networkRetryHelper = networkRetryHelper,
+        )
+
+        val result = useCase("optica-test")
+
+        // Initial call + 3 retries = 4 total
+        coVerify(exactly = 4) { uploadCoordinator.uploadPagos("optica-test") }
+        assertTrue("IOException should propagate to Resource.Error", result is com.example.optoapp.data.Resource.Error)
     }
 }

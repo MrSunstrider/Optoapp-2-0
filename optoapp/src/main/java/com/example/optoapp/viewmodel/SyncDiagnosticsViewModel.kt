@@ -8,6 +8,8 @@ import com.example.optoapp.data.SessionHealth
 import com.example.optoapp.data.SessionManager
 import com.example.optoapp.data.SyncEntityState
 import com.example.optoapp.data.SyncEntityStateDao
+import com.example.optoapp.data.SyncTelemetryLogDao
+import com.example.optoapp.data.SyncTelemetryLogEntity
 import com.example.optoapp.data.SyncTelemetryRemoteRow
 import com.example.optoapp.util.BackgroundErrorCollector
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -49,6 +51,7 @@ class SyncDiagnosticsViewModel @Inject constructor(
     private val supabase: SupabaseClient,
     private val bgErrorCollector: BackgroundErrorCollector,
     private val membershipRepository: MembershipRepository,
+    private val syncTelemetryLogDao: SyncTelemetryLogDao,
 ) : ViewModel() {
     companion object {
         private const val TAG = "SyncDiagnosticsVM"
@@ -79,7 +82,9 @@ class SyncDiagnosticsViewModel @Inject constructor(
     private val _remoteTelemetryError = MutableStateFlow<String?>(null)
     val remoteTelemetryError: StateFlow<String?> = _remoteTelemetryError.asStateFlow()
 
-
+    val syncHistory: StateFlow<List<SyncTelemetryLogEntity>> = sessionManager.opticaId
+        .flatMapLatest { oid -> syncTelemetryLogDao.observeByOpticaId(oid) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     private val _sessionHealth = MutableStateFlow(SessionHealth())
     val sessionHealth: StateFlow<SessionHealth> = _sessionHealth.asStateFlow()
@@ -100,10 +105,7 @@ class SyncDiagnosticsViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Actualiza el estado de salud de la sesión. Se llama al iniciar y
-     * puede llamarse manualmente desde la UI.
-     */
+    // WHY: Session token can expire silently — user needs visibility before sync fails
     fun refreshSessionHealth() {
         viewModelScope.launch {
             val session = runCatching { supabase.auth.currentSessionOrNull() }.getOrNull()
@@ -118,7 +120,7 @@ class SyncDiagnosticsViewModel @Inject constructor(
         }
     }
 
-    /** Limpia los errores de background. */
+    // WHY: Volatile collector survives ViewModel recreation — explicit clear gives user control
     fun clearBackgroundErrors() {
         bgErrorCollector.clear()
         _sessionHealth.value = _sessionHealth.value.copy(recentBackgroundErrors = emptyList())
@@ -183,16 +185,13 @@ class SyncDiagnosticsViewModel @Inject constructor(
         return false
     }
 
-    /** Elimina solo el historial de errores mostrado en la app (no borra datos clínicos). */
+    // WHY: Only clear sync-error metadata — clinical data must never be touched from diagnostics
     fun clearErrorHistory() = viewModelScope.launch {
         val oid = sessionManager.opticaId.first()
         syncEntityStateDao.deleteErrorsForOptica(oid)
     }
 
-    /**
-     * Re-fetches the membership from Supabase and fixes the session's opticaId
-     * if the current value is not a valid UUID.
-     */
+    // WHY: Corrupt session opticaId (e.g., "mi_optica_base") blocks all sync — repair fetches the real UUID from server
     fun repairSessionOpticaId() = viewModelScope.launch {
         _sessionRepairState.value = SessionRepairState.Working
         try {

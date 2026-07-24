@@ -3,6 +3,7 @@ package com.example.optoapp.viewmodel
 import com.example.optoapp.data.MembershipRepository
 import com.example.optoapp.data.SessionManager
 import com.example.optoapp.data.SyncEntityStateDao
+import com.example.optoapp.data.SyncTelemetryLogDao
 import com.example.optoapp.data.SyncTelemetryRemoteRow
 import com.example.optoapp.util.BackgroundErrorCollector
 import io.github.jan.supabase.SupabaseClient
@@ -31,6 +32,7 @@ class SyncDiagnosticsViewModelRetryTest {
     private val supabase = mockk<SupabaseClient>(relaxed = true)
     private val bgErrorCollector = mockk<BackgroundErrorCollector>(relaxed = true)
     private val membershipRepository = mockk<MembershipRepository>(relaxed = true)
+    private val syncTelemetryLogDao = mockk<SyncTelemetryLogDao>(relaxed = true)
 
     @Before
     fun setUp() {
@@ -98,6 +100,7 @@ class SyncDiagnosticsViewModelRetryTest {
             supabase = supabase,
             bgErrorCollector = bgErrorCollector,
             membershipRepository = membershipRepository,
+            syncTelemetryLogDao = syncTelemetryLogDao,
         )
 
         val transientMsg = SocketTimeoutException("connection timeout")

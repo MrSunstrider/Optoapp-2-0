@@ -4,6 +4,7 @@ import com.example.optoapp.data.Resource
 import com.example.optoapp.util.AppLogger
 import io.github.jan.supabase.exceptions.RestException
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.delay
 import java.io.IOException
 import javax.inject.Inject
 
@@ -181,16 +182,30 @@ open class SyncFinanzasUseCase @Inject constructor(
         e.uploadedCount
     } catch (e: IOException) {
         AppLogger.e(TAG, "Error en red subiendo $entityName: ${e.message}", e)
-        0
-    } catch (e: RestException) {
-        // Auth/permission errors should NOT be silenced
-        if (e.statusCode == 401 || e.statusCode == 403 || e.statusCode == 409) {
-            throw e
+        // WHY: Transient network failures (socket timeout, connection reset) often recover within seconds —
+        // retrying avoids marking the entire sync cycle as partial for a blip
+        var lastError = e
+        repeat(3) { attempt ->
+            val backoffMs = 1000L * (1L shl attempt)
+            delay(backoffMs)
+            try {
+                return block()
+            } catch (e2: CancellationException) {
+                throw e2
+            } catch (e2: UploadPartialException) {
+                AppLogger.w(TAG, "Upload parcial de $entityName en reintento: ${e2.uploadedCount} subidos antes del error", e2)
+                return e2.uploadedCount
+            } catch (e2: IOException) {
+                lastError = e2
+                AppLogger.e(TAG, "Error en red subiendo $entityName (intento ${attempt + 2}): ${e2.message}", e2)
+            }
         }
+        throw lastError
+    } catch (e: RestException) {
         AppLogger.e(TAG, "Error REST subiendo $entityName (${e.statusCode}): ${e.message}", e)
-        0
+        throw e
     } catch (e: Exception) {
         AppLogger.e(TAG, "Error inesperado subiendo $entityName: ${e.message}", e)
-        0
+        throw e
     }
 }

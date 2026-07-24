@@ -680,7 +680,7 @@ val MIGRATION_24_25 = object : Migration(24, 25) {
         db.execSQL("CREATE INDEX IF NOT EXISTS index_proveedores_opticaId ON proveedores(opticaId)")
         db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_proveedores_ruc_opticaId ON proveedores(ruc, opticaId)")
 
-        // Many-to-many frame↔supplier link — no DEFAULT values, all entity-defined indexes
+        // WHY: Link frame to supplier so purchase orders resolve costs per supplier — denies duplicate links via unique index
         db.execSQL("CREATE TABLE IF NOT EXISTS montura_proveedor (id TEXT NOT NULL PRIMARY KEY, monturaId TEXT NOT NULL, proveedorId TEXT NOT NULL, costoProveedor REAL NOT NULL, precioSugerido REAL NOT NULL, activo INTEGER NOT NULL, FOREIGN KEY(monturaId) REFERENCES monturas(id) ON DELETE CASCADE, FOREIGN KEY(proveedorId) REFERENCES proveedores(id) ON DELETE CASCADE)")
         db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_montura_proveedor_monturaId_proveedorId ON montura_proveedor(monturaId, proveedorId)")
         db.execSQL("CREATE INDEX IF NOT EXISTS index_montura_proveedor_monturaId ON montura_proveedor(monturaId)")
@@ -689,14 +689,14 @@ val MIGRATION_24_25 = object : Migration(24, 25) {
         db.execSQL("CREATE TABLE IF NOT EXISTS categorias_montura (id TEXT NOT NULL PRIMARY KEY, nombre TEXT NOT NULL, descripcion TEXT NOT NULL, opticaId TEXT NOT NULL)")
         db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_categorias_montura_nombre_opticaId ON categorias_montura(nombre, opticaId)")
 
-        // Purchase orders — no DEFAULT values, all entity-defined indexes
+        // WHY: Purchase orders track frame procurement — separate table from dispensations for inventory lifecycle
         db.execSQL("CREATE TABLE IF NOT EXISTS ordenes_compra (id TEXT NOT NULL PRIMARY KEY, numero TEXT NOT NULL, proveedorId TEXT NOT NULL, fecha TEXT NOT NULL, estado TEXT NOT NULL, total REAL NOT NULL, opticaId TEXT NOT NULL, updatedAt TEXT, updatedBy TEXT, FOREIGN KEY(proveedorId) REFERENCES proveedores(id))")
         db.execSQL("CREATE INDEX IF NOT EXISTS index_ordenes_compra_opticaId ON ordenes_compra(opticaId)")
         db.execSQL("CREATE INDEX IF NOT EXISTS index_ordenes_compra_numero ON ordenes_compra(numero)")
         db.execSQL("CREATE INDEX IF NOT EXISTS index_ordenes_compra_estado ON ordenes_compra(estado)")
         db.execSQL("CREATE INDEX IF NOT EXISTS index_ordenes_compra_proveedorId ON ordenes_compra(proveedorId)")
 
-        // Purchase order line items — no DEFAULT values, all entity-defined indexes
+        // WHY: Line items link purchase orders to specific frames with per-unit cost — receiving updates stock
         db.execSQL("CREATE TABLE IF NOT EXISTS orden_compra_items (id TEXT NOT NULL PRIMARY KEY, ordenId TEXT NOT NULL, monturaId TEXT NOT NULL, cantidad INTEGER NOT NULL, costoUnitario REAL NOT NULL, recibido INTEGER NOT NULL, FOREIGN KEY(ordenId) REFERENCES ordenes_compra(id) ON DELETE CASCADE, FOREIGN KEY(monturaId) REFERENCES monturas(id))")
         db.execSQL("CREATE INDEX IF NOT EXISTS index_orden_compra_items_ordenId ON orden_compra_items(ordenId)")
         db.execSQL("CREATE INDEX IF NOT EXISTS index_orden_compra_items_monturaId ON orden_compra_items(monturaId)")
@@ -897,6 +897,8 @@ val MIGRATION_31_32 = object : Migration(31, 32) {
             """.trimIndent(),
         )
 
+        // WHY: Pre-populate product categories so financial reports can group by family (lente/montura/servicio)
+        // without requiring every optica to create categories from scratch
         val seed = listOf(
             listOf("lente_progresivo", "Lentes Progresivos", "lente", 1),
             listOf("lente_monofocal", "Lentes Monofocales", "lente", 2),
@@ -1215,6 +1217,26 @@ val MIGRATION_41_42 = object : Migration(41, 42) {
                 configJson TEXT NOT NULL DEFAULT '{}'
             )
             """.trimIndent(),
+        )
+    }
+}
+
+val MIGRATION_42_43 = object : Migration(42, 43) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS sync_telemetry_log (
+                id TEXT NOT NULL PRIMARY KEY,
+                opticaId TEXT NOT NULL,
+                status TEXT NOT NULL,
+                stage TEXT NOT NULL,
+                errorMessage TEXT NOT NULL,
+                createdAt INTEGER NOT NULL
+            )
+            """.trimIndent(),
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS idx_sync_telemetry_log_optica_created_at ON sync_telemetry_log (opticaId, createdAt DESC)",
         )
     }
 }

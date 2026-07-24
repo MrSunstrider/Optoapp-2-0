@@ -17,6 +17,8 @@ import com.example.optoapp.data.Resource
 import com.example.optoapp.data.SessionManager
 import com.example.optoapp.data.SyncEntityStateDao
 import com.example.optoapp.data.SyncTelemetry
+import com.example.optoapp.data.SyncTelemetryLogDao
+import com.example.optoapp.data.SyncTelemetryLogEntity
 import com.example.optoapp.data.SyncTelemetryRemoteRow
 import com.example.optoapp.domain.SyncFinanzasUseCase
 import com.example.optoapp.domain.SyncHistorialUseCase
@@ -36,6 +38,7 @@ import com.example.optoapp.util.BackgroundErrorCollector
 import com.example.optoapp.util.SyncErrorSanitizer
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import androidx.annotation.VisibleForTesting
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.postgrest
@@ -83,6 +86,7 @@ class SyncViewModel @Inject constructor(
     private val bgErrorCollector: BackgroundErrorCollector,
     private val postSaveSyncScheduler: PostSaveSyncScheduler,
     private val syncOrchestrator: SyncOrchestrator,
+    private val syncTelemetryLogDao: SyncTelemetryLogDao,
 ) : ViewModel() {
 
     companion object {
@@ -437,14 +441,17 @@ class SyncViewModel @Inject constructor(
         }
     }
 
-    private suspend fun recordRemoteSyncTelemetry(
+    @VisibleForTesting
+    internal suspend fun recordRemoteSyncTelemetry(
         opticaId: String,
         status: String,
         stage: String,
         rawError: String?,
     ) {
+        val safeError = SyncErrorSanitizer.forUserMessage(rawError).take(500)
+        // WHY: Dual-write — latest status for quick checks + append-only log so sync history
+        // survives across cycles (UPSERT overwrites, INSERT preserves every attempt)
         runCatching {
-            val safeError = SyncErrorSanitizer.forUserMessage(rawError).take(500)
             val row = SyncTelemetryRemoteRow(
                 opticaId = opticaId,
                 lastSyncAt = java.time.OffsetDateTime.now(java.time.ZoneOffset.UTC).toString(),
@@ -455,6 +462,32 @@ class SyncViewModel @Inject constructor(
             supabase.postgrest["sync_telemetry_optica"].upsert(row)
         }.onFailure { e ->
             Log.w(TAG, "No se pudo guardar telemetría remota de sync: ${e.message}")
+        }
+        runCatching {
+            supabase.postgrest["sync_telemetry_log"].insert(
+                mapOf(
+                    "optica_id" to opticaId,
+                    "status" to status,
+                    "stage" to stage,
+                    "error_message" to safeError,
+                ),
+            )
+        }.onFailure { e ->
+            Log.w(TAG, "No se pudo insertar en sync_telemetry_log: ${e.message}")
+        }
+        // WHY: Room mirror — diagnostics UI reads history without hitting network
+        runCatching {
+            val entity = SyncTelemetryLogEntity(
+                id = java.util.UUID.randomUUID().toString(),
+                opticaId = opticaId,
+                status = status,
+                stage = stage,
+                errorMessage = safeError,
+                createdAt = System.currentTimeMillis(),
+            )
+            syncTelemetryLogDao.insert(entity)
+        }.onFailure { e ->
+            Log.w(TAG, "No se pudo insertar local sync_telemetry_log: ${e.message}")
         }
     }
 

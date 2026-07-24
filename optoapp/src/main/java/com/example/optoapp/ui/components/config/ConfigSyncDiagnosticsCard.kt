@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.sp
 import com.example.optoapp.R
 import com.example.optoapp.data.BackgroundError
 import com.example.optoapp.data.SyncEntityState
+import com.example.optoapp.data.SyncTelemetryLogEntity
 import com.example.optoapp.ui.theme.OptoTokens
 import com.example.optoapp.viewmodel.SessionRepairState
 import com.example.optoapp.viewmodel.SyncDiagnosticsViewModel
@@ -42,6 +43,7 @@ fun SyncDiagnosticsCard(
     val remoteTelemetryError by syncDiagVm.remoteTelemetryError.collectAsState()
     val errorRows by syncDiagVm.errorRows.collectAsState()
     val backgroundErrors by syncDiagVm.backgroundErrors.collectAsState()
+    val syncHistory by syncDiagVm.syncHistory.collectAsState()
     val ctx = LocalContext.current
 
     Card(
@@ -327,6 +329,83 @@ fun SyncDiagnosticsCard(
                     Text(stringResource(R.string.config_sync_bg_errors_clear), fontSize = 12.sp)
                 }
             }
+
+            if (syncHistory.isNotEmpty()) {
+                HorizontalDivider()
+
+                Text(
+                    stringResource(R.string.config_sync_history_title),
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 13.sp,
+                )
+
+                Card(
+                    shape = MaterialTheme.shapes.small,
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    ),
+                ) {
+                    LazyColumn(
+                        modifier = Modifier.heightIn(max = 200.dp),
+                        contentPadding = PaddingValues(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        items(syncHistory.take(20), key = { it.id }) { entry ->
+                            SyncHistoryRow(entry)
+                        }
+                        if (syncHistory.size > 20) {
+                            item {
+                                Text(
+                                    "... y ${syncHistory.size - 20} más",
+                                    fontSize = 11.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SyncHistoryRow(entry: SyncTelemetryLogEntity) {
+    val statusIcon = if (entry.status == "ok") Icons.Filled.CheckCircle else Icons.Filled.ErrorOutline
+    val statusColor = if (entry.status == "ok") MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.error
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Icon(
+            statusIcon,
+            contentDescription = if (entry.status == "ok") "Éxito" else "Error",
+            tint = statusColor,
+            modifier = Modifier.size(14.dp),
+        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                "[${entry.stage}]",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            if (entry.errorMessage.isNotBlank()) {
+                Text(
+                    entry.errorMessage,
+                    fontSize = 10.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            Text(
+                java.text.SimpleDateFormat("dd/MM HH:mm", java.util.Locale.getDefault())
+                    .format(java.util.Date(entry.createdAt)),
+                fontSize = 9.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }
