@@ -2,6 +2,8 @@ package com.example.optoapp.util
 
 import android.content.Context
 import android.content.Intent
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
@@ -11,6 +13,7 @@ import com.example.optoapp.BuildConfig
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Order
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
@@ -35,6 +38,7 @@ import java.net.URL
  */
 object UpdateChecker {
 
+    private const val TAG = "UpdateChecker"
     private const val GITHUB_REPO = "MrSunstrider/Optoapp-2-0"
     private const val GITHUB_API = "https://api.github.com/repos/$GITHUB_REPO/releases/latest"
     private const val GITHUB_WEB = "https://github.com/$GITHUB_REPO/releases/latest"
@@ -77,7 +81,7 @@ object UpdateChecker {
      */
     suspend fun check(supabase: SupabaseClient? = null): UpdateInfo? {
         // 1 — GitHub Releases API (primario)
-        tryCheckGithub()?.let { return it }
+        tryCheckGitHub()?.let { return it }
 
         // 2 — Supabase app_releases (respaldo)
         if (supabase != null) {
@@ -95,7 +99,7 @@ object UpdateChecker {
      * Si el release existe pero sin asset APK ([) -> retorna null para que
      * la cadena de respaldo (Supabase) pueda tomar el control.
      */
-    private suspend fun tryCheckGithub(): UpdateInfo? {
+    private suspend fun tryCheckGitHub(): UpdateInfo? {
         return try {
             val json = withContext(Dispatchers.IO) {
                 URL(GITHUB_API).readTextWithTimeout()
@@ -119,17 +123,22 @@ object UpdateChecker {
                 downloadUrl = apkUrl,
                 releaseUrl = release.htmlUrl.ifBlank { GITHUB_WEB },
             )
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            AppLogger.w(TAG, "GitHub API falló, se intentará Supabase como respaldo: ${e.message}", e)
             null
         }
     }
 
-    /** Lee el body de una URL con timeout de 8s. */
+    /** Lee el body de una URL con timeout de 8s y garantiza disconnect. */
     private fun URL.readTextWithTimeout(): String {
         val conn = openConnection() as HttpURLConnection
-        conn.connectTimeout = 8_000
-        conn.readTimeout = 8_000
-        return conn.inputStream.bufferedReader().readText()
+        try {
+            conn.connectTimeout = 8_000
+            conn.readTimeout = 8_000
+            return conn.inputStream.bufferedReader().readText()
+        } finally {
+            conn.disconnect()
+        }
     }
 
     /**
@@ -156,7 +165,8 @@ object UpdateChecker {
                 downloadUrl = latestRelease.apkDownloadUrl,
                 releaseUrl = latestRelease.apkDownloadUrl,
             )
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            AppLogger.w(TAG, "Supabase app_releases falló: ${e.message}", e)
             null
         }
     }
@@ -174,68 +184,106 @@ object UpdateChecker {
         context: Context,
         url: String,
     ): DownloadResult {
+        // Usar applicationContext para evitar leaks si la Activity muere durante la descarga
+        val appContext = context.applicationContext
         return withContext(Dispatchers.IO) {
             try {
-                val dir = File(context.cacheDir, "updates").apply { mkdirs() }
+                // Verificar conectividad antes de intentar la descarga
+                if (!isOnline(appContext)) {
+                    return@withContext DownloadResult.Error("No hay conexión a Internet")
+                }
+
+                val dir = File(appContext.cacheDir, "updates").apply { mkdirs() }
                 val apk = File(dir, "optoapp-update.apk")
 
                 // Limpiar descarga previa fallida
                 if (apk.exists()) apk.delete()
 
                 val conn = URL(url).openConnection() as HttpURLConnection
-                conn.connectTimeout = 15_000
-                conn.readTimeout = 300_000 // 5 min — APK is ~15 MB, mobile networks need more time
-                conn.setInstanceFollowRedirects(true)
-                conn.connect()
+                var expectedSize = -1L
+                try {
+                    conn.connectTimeout = 15_000
+                    conn.readTimeout = 300_000 // 5 min — APK is ~15 MB, mobile networks need more time
+                    conn.setInstanceFollowRedirects(true)
+                    conn.connect()
 
-                // Obtener tamaño esperado antes de descargar
-                val expectedSize = conn.contentLengthLong
+                    // Obtener tamaño esperado antes de descargar
+                    expectedSize = conn.contentLengthLong
 
-                conn.inputStream.use { input ->
-                    FileOutputStream(apk).use { output ->
-                        input.copyTo(output)
+                    conn.inputStream.use { input ->
+                        FileOutputStream(apk).use { output ->
+                            input.copyTo(output)
+                        }
                     }
+                } finally {
+                    conn.disconnect()
                 }
 
                 // Validar el APK descargado
                 val validationError = verifyApk(apk, expectedSize)
                 if (validationError != null) {
                     apk.delete()
+                    AppLogger.w(TAG, "APK validation failed: $validationError")
                     return@withContext DownloadResult.Error("Descarga corrupta: $validationError")
                 }
 
                 // Verificar permiso de instalación antes de lanzar el intent
                 val canInstall = withContext(Dispatchers.Main) {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                        context.packageManager.canRequestPackageInstalls()
+                        appContext.packageManager.canRequestPackageInstalls()
                     } else {
                         true // Android < 8 no necesita este permiso
                     }
                 }
 
                 if (!canInstall) {
+                    AppLogger.w(TAG, "Install permission not granted, prompting user")
                     return@withContext DownloadResult.NeedsInstallPermission
                 }
 
                 withContext(Dispatchers.Main) {
-                    launchInstallIntent(context, apk, url)
+                    launchInstallIntent(appContext, apk, url)
                 }
 
                 DownloadResult.Success
+            } catch (e: CancellationException) {
+                // Corrutina cancelada — limpiar y propagar
+                val apk = File(appContext.cacheDir, "updates/optoapp-update.apk")
+                if (apk.exists()) apk.delete()
+                throw e
             } catch (e: Exception) {
+                // Limpiar descarga parcial
+                val apk = File(appContext.cacheDir, "updates/optoapp-update.apk")
+                if (apk.exists()) apk.delete()
                 val msg = e.localizedMessage ?: "Error al descargar la actualización"
+                AppLogger.e(TAG, "Download failed: $msg", e)
                 DownloadResult.Error(msg)
             }
         }
     }
 
+    /** Verifica conectividad de red usando [ConnectivityManager]. */
+    private fun isOnline(context: Context): Boolean {
+        val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager ?: return true
+        val network = cm.activeNetwork ?: return false
+        val caps = cm.getNetworkCapabilities(network) ?: return false
+        return caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+    }
+
     /**
      * Abre la URL de descarga en el navegador como fallback.
      * Usar solo cuando [downloadAndInstall] falló y el usuario quiere intentar manualmente.
+     * Solo permite esquemas https por seguridad.
      */
     fun openDownloadInBrowser(context: Context, url: String) {
+        val uri = Uri.parse(url)
+        if (uri.scheme != "https") {
+            AppLogger.w(TAG, "openDownloadInBrowser: URL scheme no es https: $url")
+            Toast.makeText(context, "URL de descarga insegura", Toast.LENGTH_SHORT).show()
+            return
+        }
         try {
-            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
+            val intent = Intent(Intent.ACTION_VIEW, uri).apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
             if (intent.resolveActivity(context.packageManager) != null) {
@@ -244,6 +292,7 @@ object UpdateChecker {
                 Toast.makeText(context, "No hay navegador disponible. Abrí manualmente:\n$url", Toast.LENGTH_LONG).show()
             }
         } catch (e: Exception) {
+            AppLogger.e(TAG, "openDownloadInBrowser failed", e)
             Toast.makeText(context, "Error al abrir navegador. Link:\n$url", Toast.LENGTH_LONG).show()
         }
     }
@@ -260,13 +309,13 @@ object UpdateChecker {
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
             } else {
-                // Android < 8: abrir settings de seguridad genérico
                 Intent(Settings.ACTION_SECURITY_SETTINGS).apply {
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
             }
             context.startActivity(intent)
         } catch (e: Exception) {
+            AppLogger.e(TAG, "openInstallPermissionSettings failed", e)
             Toast.makeText(context, "No se pudo abrir Ajustes. Buscá 'Instalar apps desconocidas'.", Toast.LENGTH_LONG).show()
         }
     }

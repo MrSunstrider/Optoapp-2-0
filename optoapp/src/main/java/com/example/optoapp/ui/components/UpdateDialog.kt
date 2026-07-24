@@ -26,6 +26,21 @@ fun UpdateDialog(updateInfo: UpdateChecker.UpdateInfo, onDismiss: () -> Unit) {
     val scope = rememberCoroutineScope()
     var state by remember { mutableStateOf<DialogState>(DialogState.Ready) }
 
+    fun triggerDownload() {
+        state = DialogState.Downloading
+        scope.launch {
+            val result = UpdateChecker.downloadAndInstall(context, updateInfo.downloadUrl)
+            state = when (result) {
+                is UpdateChecker.DownloadResult.Success -> {
+                    onDismiss()
+                    return@launch
+                }
+                is UpdateChecker.DownloadResult.Error -> DialogState.Error(result.message)
+                is UpdateChecker.DownloadResult.NeedsInstallPermission -> DialogState.NeedsPermission
+            }
+        }
+    }
+
     AlertDialog(
         onDismissRequest = {
             if (state !is DialogState.Downloading) onDismiss()
@@ -64,33 +79,17 @@ fun UpdateDialog(updateInfo: UpdateChecker.UpdateInfo, onDismiss: () -> Unit) {
         },
         confirmButton = {
             when (val s = state) {
-                is DialogState.Ready -> TextButton(
-                    onClick = {
-                        state = DialogState.Downloading
-                        scope.launch {
-                            val result = UpdateChecker.downloadAndInstall(context, updateInfo.downloadUrl)
-                            state = when (result) {
-                                is UpdateChecker.DownloadResult.Success -> {
-                                    onDismiss()
-                                    DialogState.Ready // no se usa, onDismiss ya limpió
-                                }
-                                is UpdateChecker.DownloadResult.Error -> DialogState.Error(result.message)
-                                is UpdateChecker.DownloadResult.NeedsInstallPermission -> DialogState.NeedsPermission
-                            }
-                        }
-                    },
-                ) {
+                is DialogState.Ready -> TextButton(onClick = { triggerDownload() }) {
                     Text("Descargar e instalar")
                 }
                 is DialogState.Downloading -> TextButton(onClick = {}, enabled = false) {
                     Text("Descargando…")
                 }
-                is DialogState.Error -> TextButton(
-                    onClick = {
-                        UpdateChecker.openDownloadInBrowser(context, updateInfo.downloadUrl)
-                    },
-                ) {
-                    Text("Descargar en navegador")
+                is DialogState.Error -> {
+                    // Botón primario: reintentar descarga
+                    TextButton(onClick = { triggerDownload() }) {
+                        Text("Reintentar")
+                    }
                 }
                 is DialogState.NeedsPermission -> TextButton(
                     onClick = {
@@ -109,11 +108,21 @@ fun UpdateDialog(updateInfo: UpdateChecker.UpdateInfo, onDismiss: () -> Unit) {
                 is DialogState.Downloading -> TextButton(onClick = {}, enabled = false) {
                     Text("Más tarde")
                 }
-                is DialogState.Error -> TextButton(onClick = onDismiss) {
-                    Text("Cerrar")
+                is DialogState.Error -> {
+                    // Botón secundario: fallback al navegador
+                    TextButton(
+                        onClick = {
+                            UpdateChecker.openDownloadInBrowser(context, updateInfo.downloadUrl)
+                        },
+                    ) {
+                        Text("Descargar en navegador")
+                    }
                 }
-                is DialogState.NeedsPermission -> TextButton(onClick = onDismiss) {
-                    Text("Cerrar")
+                is DialogState.NeedsPermission -> {
+                    // Botón secundario: reintentar (por si ya dio el permiso en Settings)
+                    TextButton(onClick = { triggerDownload() }) {
+                        Text("Reintentar")
+                    }
                 }
             }
         },
