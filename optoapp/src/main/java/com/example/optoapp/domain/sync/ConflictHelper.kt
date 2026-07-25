@@ -7,6 +7,9 @@ import com.example.optoapp.data.SyncStateTracker
 import com.example.optoapp.util.AppLogger
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import java.time.Instant
@@ -48,8 +51,30 @@ open class ConflictHelper @Inject constructor(
             return local >= remote
         }
 
+        /**
+         * Normalizes a timestamp string for [Instant.parse] compatibility.
+         * Truncates fractional seconds to at most 3 digits and replaces
+         * `+00:00` / `+0000` UTC offset suffixes with `Z`.
+         *
+         * Idempotent — already-normalized timestamps pass through unchanged.
+         */
+        internal fun normalizeTimestamp(ts: String): String {
+            val dotIndex = ts.indexOf('.')
+            val result = if (dotIndex >= 0) {
+                val afterDot = ts.substring(dotIndex + 1)
+                val endIdx = afterDot.indexOfFirst { it == 'Z' || it == '+' || it == '-' }
+                val fraction = if (endIdx >= 0) afterDot.substring(0, endIdx) else afterDot
+                val truncated = if (fraction.length > 3) fraction.substring(0, 3) else fraction
+                ts.substring(0, dotIndex + 1) + truncated +
+                    if (endIdx >= 0) afterDot.substring(endIdx) else ""
+            } else {
+                ts
+            }
+            return result.replace("+00:00", "Z").replace("+0000", "Z")
+        }
+
         private fun parseInstant(ts: String): Instant? = try {
-            Instant.parse(ts)
+            Instant.parse(normalizeTimestamp(ts))
         } catch (_: Exception) {
             try {
                 java.time.LocalDateTime.parse(ts).toInstant(java.time.ZoneOffset.UTC)
@@ -184,22 +209,20 @@ open class ConflictHelper @Inject constructor(
         ids: List<String>,
     ): Map<String, String> {
         if (ids.isEmpty()) return emptyMap()
-        return try {
-            val rows = selectRemoteRows(tableName, opticaId, ids)
-            rows.mapNotNull { row -> row.updatedAt?.let { ts -> row.id to ts } }.toMap()
-        } catch (e: Exception) {
-            AppLogger.e(TAG, "Error fetching remote timestamps from $tableName: ${e.message}")
-            emptyMap()
+        val rows = selectRemoteRows(tableName, opticaId, ids)
+        if (ids.isNotEmpty() && rows.isEmpty()) {
+            throw RuntimeException("All chunk queries failed for $tableName")
         }
+        return rows.mapNotNull { row -> row.updatedAt?.let { ts -> row.id to ts } }.toMap()
     }
 
     /**
-     * Executes the actual Supabase query for remote timestamps, filtered to exactly
-     * the given [ids]. Extracted as a seam to allow test subclasses in the same module
-     * to override without touching the network.
+     * Executes a single-chunk Supabase query for remote timestamps, filtered to
+     * exactly the given [ids]. Extracted as a seam to allow test subclasses to
+     * override per-chunk behavior without bypassing the chunking logic.
      */
     @VisibleForTesting
-    internal open suspend fun selectRemoteRows(
+    internal open suspend fun selectRemoteRowsChunk(
         tableName: String,
         opticaId: String,
         ids: List<String>,
@@ -211,6 +234,34 @@ open class ConflictHelper @Inject constructor(
             }
         }
         .decodeList()
+
+    /**
+     * Executes remote timestamp queries in batches of at most 80 IDs per chunk,
+     * running chunks in parallel via structured concurrency. Merges results.
+     *
+     * Per-chunk failures are caught and logged; surviving chunks still contribute
+     * results. Returns empty list only when ALL chunks fail or [ids] is empty.
+     */
+    @VisibleForTesting
+    internal open suspend fun selectRemoteRows(
+        tableName: String,
+        opticaId: String,
+        ids: List<String>,
+    ): List<RemoteTimestamp> {
+        if (ids.isEmpty()) return emptyList()
+        return coroutineScope {
+            ids.chunked(80).map { chunk ->
+                async {
+                    try {
+                        selectRemoteRowsChunk(tableName, opticaId, chunk)
+                    } catch (e: Exception) {
+                        AppLogger.w(TAG, "Chunk query failed for ${chunk.size} IDs: ${e.message}")
+                        emptyList()
+                    }
+                }
+            }.awaitAll().flatten()
+        }
+    }
 
     /**
      * Fetches the full remote row as a JSON string for snapshot capture.

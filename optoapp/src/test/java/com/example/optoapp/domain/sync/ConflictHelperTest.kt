@@ -11,13 +11,45 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.robolectric.RobolectricTestRunner
 
 /** Tests for [ConflictHelper]. */
-@RunWith(RobolectricTestRunner::class)
 class ConflictHelperTest {
+
+    // ===== normalizeTimestamp tests (1.1–1.4) =====
+
+    @Test
+    fun `normalizeTimestamp truncates microseconds with colon offset`() {
+        assertEquals(
+            "2026-07-25T02:32:19.469Z",
+            ConflictHelper.normalizeTimestamp("2026-07-25T02:32:19.469712+00:00"),
+        )
+    }
+
+    @Test
+    fun `normalizeTimestamp truncates microseconds without colon offset`() {
+        assertEquals(
+            "2026-07-25T02:32:19.469Z",
+            ConflictHelper.normalizeTimestamp("2026-07-25T02:32:19.469712+0000"),
+        )
+    }
+
+    @Test
+    fun `normalizeTimestamp is idempotent for millisecond Z timestamps`() {
+        assertEquals(
+            "2026-07-25T02:32:19.469Z",
+            ConflictHelper.normalizeTimestamp("2026-07-25T02:32:19.469Z"),
+        )
+    }
+
+    @Test
+    fun `normalizeTimestamp passes through timestamps without fractional seconds`() {
+        assertEquals(
+            "2026-07-25T02:32:19Z",
+            ConflictHelper.normalizeTimestamp("2026-07-25T02:32:19Z"),
+        )
+    }
 
     @Test
     fun `same instant with Z and +0000 are equal`() {
@@ -191,6 +223,108 @@ class ConflictHelperTest {
             selectRemoteRowsCalled = true
             capturedIds = ids
             return rowsToReturn
+        }
+    }
+
+    /**
+     * Fake that overrides [selectRemoteRowsChunk] (the per-chunk seam) instead
+     * of [selectRemoteRows], allowing the chunking logic in [selectRemoteRows]
+     * to execute while still controlling per-chunk behavior.
+     */
+    private inner class ChunkCapturingHelper(
+        private val alwaysEmpty: Boolean = false,
+    ) : ConflictHelper(mockSupabase, mockTracker, mockConflictDao) {
+        val chunkCalls = mutableListOf<List<String>>()
+
+        internal override suspend fun selectRemoteRowsChunk(
+            tableName: String,
+            opticaId: String,
+            ids: List<String>,
+        ): List<RemoteTimestamp> {
+            chunkCalls.add(ids)
+            if (alwaysEmpty) return emptyList()
+            return ids.map { RemoteTimestamp(it, "2026-07-25T00:00:00Z") }
+        }
+    }
+
+    /**
+     * Fake that fails on a specific chunk index to test partial failure recovery.
+     */
+    private inner class SingleChunkFailingHelper(
+        private val failOnChunkIndex: Int,
+    ) : ConflictHelper(mockSupabase, mockTracker, mockConflictDao) {
+        val chunkCalls = mutableListOf<List<String>>()
+        private var callCount = 0
+
+        internal override suspend fun selectRemoteRowsChunk(
+            tableName: String,
+            opticaId: String,
+            ids: List<String>,
+        ): List<RemoteTimestamp> {
+            chunkCalls.add(ids)
+            val currentIndex = callCount++
+            if (currentIndex == failOnChunkIndex) {
+                throw RuntimeException("Simulated chunk failure")
+            }
+            return ids.map { RemoteTimestamp(it, "2026-07-25T00:00:00Z") }
+        }
+    }
+
+    // ===== Chunking tests (1.6–1.8) =====
+
+    @Test
+    fun `selectRemoteRows with 50 IDs issues 1 query`() = runTest {
+        val ids = (1..50).map { "id-$it" }
+        val helper = ChunkCapturingHelper()
+
+        helper.selectRemoteRows(TABLE, OPTICA_ID, ids)
+
+        assertEquals(1, helper.chunkCalls.size)
+    }
+
+    @Test
+    fun `selectRemoteRows with 80 IDs issues 1 query`() = runTest {
+        val ids = (1..80).map { "id-$it" }
+        val helper = ChunkCapturingHelper()
+
+        helper.selectRemoteRows(TABLE, OPTICA_ID, ids)
+
+        assertEquals(1, helper.chunkCalls.size)
+    }
+
+    @Test
+    fun `selectRemoteRows with 200 IDs issues 3 queries`() = runTest {
+        val ids = (1..200).map { "id-$it" }
+        val helper = ChunkCapturingHelper()
+
+        helper.selectRemoteRows(TABLE, OPTICA_ID, ids)
+
+        assertEquals(3, helper.chunkCalls.size)
+        assertEquals(80, helper.chunkCalls[0].size)
+        assertEquals(80, helper.chunkCalls[1].size)
+        assertEquals(40, helper.chunkCalls[2].size)
+    }
+
+    @Test
+    fun `selectRemoteRows single chunk failure returns partial results`() = runTest {
+        val ids = (1..200).map { "id-$it" }
+        val helper = SingleChunkFailingHelper(failOnChunkIndex = 1) // second chunk (80–159) fails
+
+        val result = helper.selectRemoteRows(TABLE, OPTICA_ID, ids)
+
+        assertEquals(3, helper.chunkCalls.size)
+        assertEquals(120, result.size) // 80 + 40 = 120
+    }
+
+    @Test
+    fun `fetchRemoteUpdatedAt throws when all chunks return empty for non-empty ids`() = runTest {
+        val helper = ChunkCapturingHelper(alwaysEmpty = true)
+
+        try {
+            helper.fetchRemoteUpdatedAt(TABLE, OPTICA_ID, listOf("id-1", "id-2"))
+            fail("Expected exception when all chunks return empty for non-empty ids")
+        } catch (_: Exception) {
+            // expected
         }
     }
 
