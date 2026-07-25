@@ -281,32 +281,37 @@ private fun PacienteCard(
         shape = OptoTokens.shapes.large,
         elevation = 1.dp,
     ) {
-        Row(
+        Column(
             modifier = Modifier.fillMaxWidth().padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Surface(modifier = Modifier.size(44.dp), shape = RoundedCornerShape(12.dp), color = avatarColor.copy(alpha = 0.12f)) {
-                Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.Person, contentDescription = "Foto de perfil", modifier = Modifier.size(24.dp), tint = avatarColor) }
-            }
-
-            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(paciente.nombreCompleto, fontWeight = FontWeight.Bold, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Surface(modifier = Modifier.size(44.dp), shape = RoundedCornerShape(12.dp), color = avatarColor.copy(alpha = 0.12f)) {
+                    Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.Person, contentDescription = "Foto de perfil", modifier = Modifier.size(24.dp), tint = avatarColor) }
                 }
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text("Edad: ${paciente.edad}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f, fill = false))
-                    if (paciente.telefono.isNotBlank()) {
-                        Text("Tel: ${paciente.telefono}", fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f, fill = false))
+
+                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(paciente.nombreCompleto, fontWeight = FontWeight.Bold, fontSize = 15.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text("Edad: ${paciente.edad}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f, fill = false))
+                        if (paciente.telefono.isNotBlank()) {
+                            Text("Tel: ${paciente.telefono}", fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f, fill = false))
+                        }
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        // We don't have debt in the entity, but we show date as reference
+                        Text(DateUtils.formatLocalized(paciente.fechaCreacion), fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f))
                     }
                 }
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    // We don't have debt in the entity, but we show date as reference
-                    Text(DateUtils.formatLocalized(paciente.fechaCreacion), fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f))
-                }
             }
 
-            Row(horizontalArrangement = Arrangement.spacedBy(0.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+            ) {
                 IconButton(onClick = { onShowLastEvaluacion(paciente.id) }, modifier = Modifier.size(48.dp).testTag(TestTags.PACIENTE_CARD_LAST_EVAL_BTN)) {
                     Icon(Icons.Default.Visibility, contentDescription = "Ver evaluación", modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
                 }

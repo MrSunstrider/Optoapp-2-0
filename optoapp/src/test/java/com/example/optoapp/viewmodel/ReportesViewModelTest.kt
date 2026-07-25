@@ -213,4 +213,66 @@ class ReportesViewModelTest {
             viewModel.totalTransacciones.first(),
         )
     }
+
+    // ── pagosSumByDispensacion: reactive sum (abonos only, exclude Anulaci�n) ──
+
+    @Test
+    fun `pagosSumByDispensacion excludes Anulacion tipo`() = runTest(testDispatcher) {
+        val pagos = listOf(
+            Pago(id = "p1", dispensacionId = "d1", tipo = "Abono", monto = 100.0, opticaId = opticaId, fecha = today),
+            Pago(id = "p2", dispensacionId = "d1", tipo = "Anulación", monto = -100.0, opticaId = opticaId, fecha = today),
+        )
+        every { repository.getAllPagosFlowForOptica(opticaId) } returns flowOf(pagos)
+
+        viewModel = ReportesViewModel(repository, sessionManager)
+        advanceUntilIdle()
+
+        val result = viewModel.pagosSumByDispensacion.first()
+        assertEquals("d1 sum should be 100 (excluding Anulación -100)", 100.0, result["d1"] ?: 0.0, 0.001)
+    }
+
+    @Test
+    fun `pagosSumByDispensacion only abono yields correct sum`() = runTest(testDispatcher) {
+        val pagos = listOf(
+            Pago(id = "p1", dispensacionId = "d1", tipo = "Abono", monto = 100.0, opticaId = opticaId, fecha = today),
+        )
+        every { repository.getAllPagosFlowForOptica(opticaId) } returns flowOf(pagos)
+
+        viewModel = ReportesViewModel(repository, sessionManager)
+        advanceUntilIdle()
+
+        val result = viewModel.pagosSumByDispensacion.first()
+        assertEquals("d1 sum should be 100", 100.0, result["d1"] ?: 0.0, 0.001)
+    }
+
+    // ── aCuentaSumByServicio: reactive sum (abonos only, exclude Anulaci�n) ──
+
+    @Test
+    fun `aCuentaSumByServicio excludes Anulacion tipo`() = runTest(testDispatcher) {
+        val pagos = listOf(
+            Pago(id = "p1", servicioExtraId = "s1", tipo = "Abono", monto = 100.0, opticaId = opticaId, fecha = today),
+            Pago(id = "p2", servicioExtraId = "s1", tipo = "Anulación", monto = -100.0, opticaId = opticaId, fecha = today),
+        )
+        every { repository.getAllPagosFlowForOptica(opticaId) } returns flowOf(pagos)
+
+        viewModel = ReportesViewModel(repository, sessionManager)
+        advanceUntilIdle()
+
+        val result = viewModel.aCuentaSumByServicio.first()
+        assertEquals("s1 sum should be 100 (excluding Anulación -100)", 100.0, result["s1"] ?: 0.0, 0.001)
+    }
+
+    @Test
+    fun `aCuentaSumByServicio only abono yields correct sum`() = runTest(testDispatcher) {
+        val pagos = listOf(
+            Pago(id = "p1", servicioExtraId = "s1", tipo = "Abono", monto = 100.0, opticaId = opticaId, fecha = today),
+        )
+        every { repository.getAllPagosFlowForOptica(opticaId) } returns flowOf(pagos)
+
+        viewModel = ReportesViewModel(repository, sessionManager)
+        advanceUntilIdle()
+
+        val result = viewModel.aCuentaSumByServicio.first()
+        assertEquals("s1 sum should be 100", 100.0, result["s1"] ?: 0.0, 0.001)
+    }
 }
