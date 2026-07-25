@@ -13,6 +13,7 @@ import com.example.optoapp.domain.auth.AuthorizationGuard
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
@@ -150,6 +151,19 @@ class PacienteViewModel @Inject constructor(
     fun resetLastDispensacion() {
         _lastDispensacion.value = null
     }
+
+    // Reactive pagos sum by dispensacion for ResumenDispensacionDialog balance
+    // Anulaciones (negative monto) are INCLUDED so they net out correctly.
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val pagosSumByDispensacion: StateFlow<Map<String, Double>> = sessionManager.opticaId
+        .flatMapLatest { opticaId ->
+            repository.getAllPagosFlowForOptica(opticaId)
+                .map { pagos ->
+                    pagos.filter { it.dispensacionId != null }
+                        .groupBy { it.dispensacionId!! }
+                        .mapValues { (_, pags) -> pags.sumOf { it.monto } }
+                }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
 
     suspend fun savePaciente(paciente: Paciente) {
         val oid = sessionManager.opticaId.first()

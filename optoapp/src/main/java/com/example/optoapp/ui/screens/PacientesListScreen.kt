@@ -64,6 +64,7 @@ fun PacientesListScreen(
     var activeDialog by remember { mutableStateOf(QuickSummaryDialog.NONE) }
     val lastEvalState by viewModel.lastEvaluacion.collectAsState()
     val lastDispState by viewModel.lastDispensacion.collectAsState()
+    val pagosSumByDispensacion by viewModel.pagosSumByDispensacion.collectAsState()
     val closeAndResetEval: () -> Unit = {
         activeDialog = QuickSummaryDialog.NONE
         viewModel.resetLastEvaluacion()
@@ -247,7 +248,13 @@ fun PacientesListScreen(
                             resource.data?.let { disp ->
                                 val paciente = pacientes.find { it.id == disp.pacienteId } ?: pacientes.firstOrNull()
                                 if (paciente != null) {
-                                    ResumenDispensacionDialog(disp = disp, paciente = paciente, onDismiss = closeAndResetDisp, onEdit = {}, onGoToFinanciero = { target ->
+                                    ResumenDispensacionDialog(
+                                        disp = disp,
+                                        paciente = paciente,
+                                        onDismiss = closeAndResetDisp,
+                                        onEdit = {},
+                                        pagosSum = pagosSumByDispensacion[disp.id] ?: 0.0,
+                                        onGoToFinanciero = { target ->
                                         closeAndResetDisp()
                                         navController.navigate("informacion_financiera/${target.id}")
                                     })
@@ -281,46 +288,35 @@ private fun PacienteCard(
         shape = OptoTokens.shapes.large,
         elevation = 1.dp,
     ) {
-        Column(
+        Row(
             modifier = Modifier.fillMaxWidth().padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                Surface(modifier = Modifier.size(44.dp), shape = RoundedCornerShape(12.dp), color = avatarColor.copy(alpha = 0.12f)) {
-                    Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.Person, contentDescription = "Foto de perfil", modifier = Modifier.size(24.dp), tint = avatarColor) }
-                }
-
-                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text(paciente.nombreCompleto, fontWeight = FontWeight.Bold, fontSize = 15.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Text("Edad: ${paciente.edad}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f, fill = false))
-                        if (paciente.telefono.isNotBlank()) {
-                            Text("Tel: ${paciente.telefono}", fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f, fill = false))
-                        }
-                    }
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        // We don't have debt in the entity, but we show date as reference
-                        Text(DateUtils.formatLocalized(paciente.fechaCreacion), fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f))
-                    }
-                }
+            Surface(modifier = Modifier.size(44.dp), shape = RoundedCornerShape(12.dp), color = avatarColor.copy(alpha = 0.12f)) {
+                Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.Person, contentDescription = "Foto de perfil", modifier = Modifier.size(24.dp), tint = avatarColor) }
             }
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End,
-            ) {
-                IconButton(onClick = { onShowLastEvaluacion(paciente.id) }, modifier = Modifier.size(48.dp).testTag(TestTags.PACIENTE_CARD_LAST_EVAL_BTN)) {
-                    Icon(Icons.Default.Visibility, contentDescription = "Ver evaluación", modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
-                }
-                IconButton(onClick = { onShowLastDispensacion(paciente.id) }, modifier = Modifier.size(48.dp).testTag(TestTags.PACIENTE_CARD_LAST_DISP_BTN)) {
-                    Icon(Icons.Default.Inventory2, contentDescription = "Ver dispensación", modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.tertiary)
-                }
-                if (paciente.telefono.isNotBlank()) {
-                    IconButton(onClick = onCall, modifier = Modifier.size(48.dp)) {
-                        Icon(Icons.Default.Call, contentDescription = "Llamar", modifier = Modifier.size(18.dp), tint = PositiveGreen)
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(paciente.nombreCompleto, fontWeight = FontWeight.Bold, fontSize = 15.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text("Edad: ${paciente.edad}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        DateUtils.formatLocalized(paciente.fechaCreacion),
+                        fontSize = 10.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                        modifier = Modifier.weight(1f),
+                    )
+                    IconButton(onClick = { onShowLastEvaluacion(paciente.id) }, modifier = Modifier.size(36.dp).testTag(TestTags.PACIENTE_CARD_LAST_EVAL_BTN)) {
+                        Icon(Icons.Default.Visibility, contentDescription = "Ver evaluación", modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary)
+                    }
+                    IconButton(onClick = { onShowLastDispensacion(paciente.id) }, modifier = Modifier.size(36.dp).testTag(TestTags.PACIENTE_CARD_LAST_DISP_BTN)) {
+                        Icon(Icons.Default.Inventory2, contentDescription = "Ver dispensación", modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.tertiary)
+                    }
+                    if (paciente.telefono.isNotBlank()) {
+                        IconButton(onClick = onCall, modifier = Modifier.size(36.dp)) {
+                            Icon(Icons.Default.Call, contentDescription = "Llamar", modifier = Modifier.size(16.dp), tint = PositiveGreen)
+                        }
                     }
                 }
             }

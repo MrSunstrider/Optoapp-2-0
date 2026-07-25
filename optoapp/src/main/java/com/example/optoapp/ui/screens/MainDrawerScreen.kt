@@ -61,7 +61,7 @@ fun MainDrawerScreen(
         ModalNavigationDrawer(
             drawerState = drawerState,
             drawerContent = {
-                ModalDrawerSheet {
+                ModalDrawerSheet(modifier = Modifier.width(280.dp)) {
                     DrawerContent(
                         currentRoute = currentRoute,
                         drawerState = drawerState,

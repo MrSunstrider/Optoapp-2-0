@@ -244,13 +244,14 @@ class ReportesViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
     // montoPagado/aCuenta are @Ignore in entity, compute from pagos sum
+    // Anulaciones (negative monto) are INCLUDED so they net out correctly.
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val pagosSumByDispensacion: StateFlow<Map<String, Double>> = sessionManager.opticaId
         .flatMapLatest { opticaId ->
             repository.getAllPagosFlowForOptica(opticaId)
                 .map { pagos ->
-                    pagos.filter { it.tipo != "Anulación" && it.dispensacionId != null }
+                    pagos.filter { it.dispensacionId != null }
                         .groupBy { it.dispensacionId!! }
                         .mapValues { (_, pags) -> pags.sumOf { it.monto } }
                 }
@@ -261,7 +262,7 @@ class ReportesViewModel @Inject constructor(
         .flatMapLatest { opticaId ->
             repository.getAllPagosFlowForOptica(opticaId)
                 .map { pagos ->
-                    pagos.filter { it.tipo != "Anulación" && it.servicioExtraId != null }
+                    pagos.filter { it.servicioExtraId != null }
                         .groupBy { it.servicioExtraId!! }
                         .mapValues { (_, pags) -> pags.sumOf { it.monto } }
                 }

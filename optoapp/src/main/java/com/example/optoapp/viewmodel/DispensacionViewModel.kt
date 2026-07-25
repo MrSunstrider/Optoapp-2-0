@@ -134,12 +134,13 @@ class DispensacionViewModel @Inject constructor(
     fun getDispensacionesByPaciente(pacienteId: String) = repository.getDispensacionesByPaciente(pacienteId)
 
     // Reactive pagos sum maps for dynamic saldo computation (montoPagado/aCuenta are @Ignore)
+    // Anulaciones (negative monto) are INCLUDED so they net out correctly.
     @OptIn(ExperimentalCoroutinesApi::class)
     val pagosSumByDispensacion: StateFlow<Map<String, Double>> = sessionManager.opticaId
         .flatMapLatest { opticaId ->
             repository.getAllPagosFlowForOptica(opticaId)
                 .map { pagos ->
-                    pagos.filter { it.tipo != "Anulación" && it.dispensacionId != null }
+                    pagos.filter { it.dispensacionId != null }
                         .groupBy { it.dispensacionId!! }
                         .mapValues { (_, pags) -> pags.sumOf { it.monto } }
                 }
@@ -150,7 +151,7 @@ class DispensacionViewModel @Inject constructor(
         .flatMapLatest { opticaId ->
             repository.getAllPagosFlowForOptica(opticaId)
                 .map { pagos ->
-                    pagos.filter { it.tipo != "Anulación" && it.servicioExtraId != null }
+                    pagos.filter { it.servicioExtraId != null }
                         .groupBy { it.servicioExtraId!! }
                         .mapValues { (_, pags) -> pags.sumOf { it.monto } }
                 }
