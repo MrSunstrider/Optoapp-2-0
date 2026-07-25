@@ -195,7 +195,7 @@ fun MainDrawerScreen(
                             composable("proveedores") { ProveedoresScreen(navController) }
                             composable("ordenes_compra") { OrdenesCompraScreen(navController) }
                             composable("inventario_fisico") { com.example.optoapp.ui.screens.inventariofisico.InventarioFisicoScreen(navController) }
-                            composable("gastos") { GastosScreen(navController, drawerState) }
+                            composable("gastos") { CostosYGastosScreen(navController, drawerState) }
                             composable("operacion_hoy") { OperacionHoyScreen(navController, drawerState) }
                             composable("nuevo_servicio") {
                                 NuevoServicioScreen(navController, pacienteId = null)

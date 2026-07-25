@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface DispensacionItemDao {
 
+    @Suppress("DEPRECATION")
     @MapInfo(keyColumn = "dispensacionId", valueColumn = "costoTotal")
     @Query(
         """
