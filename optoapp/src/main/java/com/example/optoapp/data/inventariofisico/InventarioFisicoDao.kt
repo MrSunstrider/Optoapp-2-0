@@ -2,6 +2,7 @@ package com.example.optoapp.data.inventariofisico
 
 import androidx.room.Dao
 import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import com.example.optoapp.data.InventarioFisico
@@ -25,10 +26,10 @@ interface InventarioFisicoDao {
     @Query("SELECT * FROM inventario_fisico_detalle WHERE inventarioId = :inventarioId")
     suspend fun getDetalles(inventarioId: String): List<InventarioFisicoDetalle>
 
-    @Insert
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertSession(session: InventarioFisico)
 
-    @Insert
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertDetalles(detalles: List<InventarioFisicoDetalle>)
 
     @Update

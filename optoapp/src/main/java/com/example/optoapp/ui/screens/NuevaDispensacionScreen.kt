@@ -199,14 +199,14 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
 
                     // Prisma read-only display from linked evaluation — only if values exist
                     if (selectedEvaluacion != null &&
-                        (selectedEvaluacion.prismaOdValor.isNotBlank() || selectedEvaluacion.prismaOiValor.isNotBlank())
+                        (selectedEvaluacion.prismaOdValor.orEmpty().isNotBlank() || selectedEvaluacion.prismaOiValor.orEmpty().isNotBlank())
                     ) {
                         HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
                         Text("Prisma (solo lectura)", fontWeight = FontWeight.SemiBold, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             Text("OD:", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             Text(
-                                buildPrismaDisplay(selectedEvaluacion.prismaOdValor, selectedEvaluacion.prismaOdBase),
+                                buildPrismaDisplay(selectedEvaluacion.prismaOdValor.orEmpty(), selectedEvaluacion.prismaOdBase.orEmpty()),
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Medium,
                             )
@@ -214,7 +214,7 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             Text("OI:", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             Text(
-                                buildPrismaDisplay(selectedEvaluacion.prismaOiValor, selectedEvaluacion.prismaOiBase),
+                                buildPrismaDisplay(selectedEvaluacion.prismaOiValor.orEmpty(), selectedEvaluacion.prismaOiBase.orEmpty()),
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Medium,
                             )

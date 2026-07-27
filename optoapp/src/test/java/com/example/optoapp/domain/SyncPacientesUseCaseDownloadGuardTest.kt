@@ -1,6 +1,7 @@
 ﻿package com.example.optoapp.domain
 
 import com.example.optoapp.data.FakeConflictDao
+import com.example.optoapp.data.OptoDatabase
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Resource
 import com.example.optoapp.data.SyncEntityState
@@ -27,6 +28,7 @@ class SyncPacientesUseCaseDownloadGuardTest {
 
     private val opticaId = "optica-pacientes-guard"
     private val repository = mockk<OptoRepository>(relaxed = true)
+    private val database = mockk<OptoDatabase>(relaxed = true)
     private val syncStateTracker = mockk<SyncStateTracker>(relaxed = true)
     private val conflictHelper = mockk<ConflictHelper>(relaxed = true)
     private val conflictDao = FakeConflictDao()
@@ -49,6 +51,7 @@ class SyncPacientesUseCaseDownloadGuardTest {
         useCase = SyncPacientesUseCase(
             repository = repository,
             supabase = fakeSupabase,
+            database = database,
             syncStateTracker = syncStateTracker,
             conflictHelper = conflictHelper,
             conflictDao = conflictDao,
@@ -56,8 +59,8 @@ class SyncPacientesUseCaseDownloadGuardTest {
     }
 
     @Test
-    fun constructor_takesFiveDependencies() {
-        assertEquals(5, SyncPacientesUseCase::class.java.declaredConstructors[0].parameterTypes.size)
+    fun constructor_takesSixDependencies() {
+        assertEquals(6, SyncPacientesUseCase::class.java.declaredConstructors[0].parameterTypes.size)
     }
 
     @Test
@@ -194,6 +197,7 @@ class SyncPacientesUseCaseDownloadGuardTest {
         val testUseCase = TestableDownloadUseCase(
             repository = repository,
             supabase = fakeSupabase,
+            database = database,
             syncStateTracker = syncStateTracker,
             conflictHelper = conflictHelper,
             conflictDao = conflictDao,
@@ -224,6 +228,7 @@ class SyncPacientesUseCaseDownloadGuardTest {
         val testUseCase = TestableDownloadUseCase(
             repository = repository,
             supabase = fakeSupabase,
+            database = database,
             syncStateTracker = syncStateTracker,
             conflictHelper = conflictHelper,
             conflictDao = conflictDao,
@@ -244,10 +249,11 @@ class SyncPacientesUseCaseDownloadGuardTest {
     class TestableDownloadUseCase(
         repository: OptoRepository,
         supabase: io.github.jan.supabase.SupabaseClient,
+        database: OptoDatabase,
         syncStateTracker: SyncStateTracker,
         conflictHelper: ConflictHelper,
         conflictDao: com.example.optoapp.data.ConflictDao,
-    ) : SyncPacientesUseCase(repository, supabase, syncStateTracker, conflictHelper, conflictDao) {
+    ) : SyncPacientesUseCase(repository, supabase, database, syncStateTracker, conflictHelper, conflictDao) {
         var remoteRows: List<PacienteRemoto> = emptyList()
 
         override suspend fun fetchRemotePacientesForDownload(opticaId: String): List<PacienteRemoto> {

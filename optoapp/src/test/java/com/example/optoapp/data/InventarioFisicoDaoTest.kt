@@ -290,23 +290,21 @@ class InventarioFisicoDaoTest {
             ),
         )
 
-        try {
-            dao.insertDetalles(
-                listOf(
-                    InventarioFisicoDetalle(
-                        id = "d2",
-                        inventarioId = "if1",
-                        monturaId = "m1",
-                        stockSistema = 8,
-                    ),
+        // REPLACE silently overwrites conflicting row
+        dao.insertDetalles(
+            listOf(
+                InventarioFisicoDetalle(
+                    id = "d2",
+                    inventarioId = "if1",
+                    monturaId = "m1",
+                    stockSistema = 8,
                 ),
-            )
-            assertTrue("Expected unique constraint violation", false)
-        } catch (e: Exception) {
-            // Expected: UNIQUE(inventarioId, monturaId)
-        }
+            ),
+        )
 
-        assertEquals(1, dao.getDetalles("if1").size)
+        val detalles = dao.getDetalles("if1")
+        assertEquals(1, detalles.size)
+        assertEquals(8, detalles[0].stockSistema) // second insert overwrites
     }
 
     @Test

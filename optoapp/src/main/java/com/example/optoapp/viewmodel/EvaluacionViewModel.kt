@@ -34,7 +34,7 @@ class EvaluacionViewModel @Inject constructor(
             when (val result = repository.getEvaluacionById(evaluacionId)) {
                 is Resource.Success -> {
                     val e = result.data ?: return@launch
-                    val dipFormatted = DipParser.formatDipForUi(e.dipLejos, e.dipTotalMm, e.dnpOdMm, e.dnpOiMm)
+                    val dipFormatted = DipParser.formatDipForUi(e.dipLejos.orEmpty(), e.dipTotalMm, e.dnpOdMm, e.dnpOiMm)
                     _uiState.update {
                         e.toEvaluacionUiState().copy(dipLejos = dipFormatted)
                     }

@@ -2,6 +2,7 @@ package com.example.optoapp.domain
 
 import com.example.optoapp.data.DispensacionItem
 import com.example.optoapp.data.DispensacionOptica
+import com.example.optoapp.data.OptoDatabase
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.SyncStateTracker
 import com.example.optoapp.data.costobiselado.CostoBiseladoDao
@@ -26,6 +27,7 @@ class UploadSyncCoordinatorTest {
 
     private val repository = mockk<OptoRepository>(relaxed = true)
     private val supabase = mockk<SupabaseClient>(relaxed = true)
+    private val database = mockk<OptoDatabase>(relaxed = true)
     private val syncStateTracker = mockk<SyncStateTracker>(relaxed = true)
     private val mergeHandler = mockk<DispensacionMergeHandler>(relaxed = true)
     private val networkRetryHelper = mockk<NetworkRetryHelper>(relaxed = true)
@@ -36,15 +38,19 @@ class UploadSyncCoordinatorTest {
     @Before
     fun setUp() {
         mockkStatic("android.util.Log")
-        coordinator = UploadSyncCoordinator(
+        // Override runInTransaction to run blocks inline without a real DB transaction
+        coordinator = object : UploadSyncCoordinator(
             repository = repository,
             supabase = supabase,
+            database = database,
             syncStateTracker = syncStateTracker,
             mergeHandler = mergeHandler,
             networkRetryHelper = networkRetryHelper,
             costoProductoDao = costoProductoDao,
             costoBiseladoDao = costoBiseladoDao,
-        )
+        ) {
+            override suspend fun <T> runInTransaction(block: suspend () -> T): T = block()
+        }
     }
 
     @After
@@ -88,23 +94,18 @@ class UploadSyncCoordinatorTest {
             // acceptable — mock can't handle inline Postgrest DSL
         }
 
-        // RED (current code): merge IS called inline during dedup → coVerify fails
         // GREEN (fixed code): merge deferred after upsert → upsert failed → merge NOT called
         coVerify(exactly = 0) { mergeHandler.mergeLocalDispensacionConflict(any(), any(), any()) }
     }
 
     @Test
     fun `servicio dedup should use Instant comparison not string comparison`() {
-        // The bug: string comparison "2025-01-01T10:00:00Z" > "2025-01-01T10:00:00.500Z"
-        //         incorrectly picks the older record (Z sorts before '.')
         val olderStr = "2025-01-01T10:00:00Z"
         val newerStr = "2025-01-01T10:00:00.500Z"
 
-        // String compare (current buggy code)
         val stringWinner = if (newerStr > olderStr) newerStr else olderStr
         assertEquals("String compare picks older (Z > .)", olderStr, stringWinner)
 
-        // Instant compare (fixed code)
         val olderInstant = Instant.parse(olderStr)
         val newerInstant = Instant.parse(newerStr)
         val instantWinner = if (newerInstant > olderInstant) newerStr else olderStr
@@ -116,7 +117,6 @@ class UploadSyncCoordinatorTest {
         val validTimestamp = "2025-01-01T10:00:00Z"
         val malformedTimestamp = "not-a-timestamp"
 
-        // Verify that Instant.parse throws on malformed input (renders it unparseable)
         var caught = false
         try {
             Instant.parse(malformedTimestamp)
@@ -125,19 +125,15 @@ class UploadSyncCoordinatorTest {
         }
         assertEquals("Instant.parse throws on malformed", true, caught)
 
-        // The fix's logic: try { Instant.parse(ts) } catch (e: Exception) { keep existing }
-        // Given:
         val existingTime = validTimestamp.let { Instant.parse(it) }
         val rowTime = try { Instant.parse(malformedTimestamp) } catch (_: Exception) { null }
 
-        // When: rowTime is null → keep existing
         val winner = if (rowTime != null && existingTime != null) {
             if (rowTime > existingTime) "new" else "existing"
         } else {
             "existing"
         }
 
-        // Then: existing is kept
         assertEquals("existing", winner)
     }
 
@@ -159,8 +155,6 @@ class UploadSyncCoordinatorTest {
 
         coordinator.uploadDispensacionItems("optica-test")
 
-        // RED (current code): batch BEFORE individual → ["batch", "individual"]
-        // GREEN (fixed code): individual BEFORE batch → ["individual", "batch"]
         assertEquals(listOf("individual", "batch"), callOrder)
     }
 }

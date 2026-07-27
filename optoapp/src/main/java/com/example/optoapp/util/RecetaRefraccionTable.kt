@@ -24,10 +24,10 @@ object RefraccionTableBuilder {
     )
 
     fun prepareData(eval: EvaluacionClinica): TableData {
-        val hasRx = eval.recetaOdEsf.isNotBlank() || eval.recetaOdCil.isNotBlank() ||
-            eval.recetaOiEsf.isNotBlank() || eval.recetaOiCil.isNotBlank()
+        val hasRx = eval.recetaOdEsf?.isNotBlank() == true || eval.recetaOdCil?.isNotBlank() == true ||
+            eval.recetaOiEsf?.isNotBlank() == true || eval.recetaOiCil?.isNotBlank() == true
 
-        fun dash(s: String) = if (s.isBlank()) "—" else s
+        fun dash(s: String?) = if (s.isNullOrBlank()) "—" else s
 
         val distRows = listOf(
             Row(
@@ -37,7 +37,7 @@ object RefraccionTableBuilder {
                     Cell(dash(eval.recetaOdCil)),
                     Cell(dash(eval.recetaOdEje)),
                     Cell(dash(eval.dipLejos)),
-                    Cell(dash(eval.recetaOdAv.ifBlank { eval.avCcOdLejos })),
+                    Cell(dash(eval.recetaOdAv?.takeIf { it.isNotBlank() } ?: eval.avCcOdLejos)),
                     Cell(dash(eval.avCcAoPx)),
                 ),
             ),
@@ -48,7 +48,7 @@ object RefraccionTableBuilder {
                     Cell(dash(eval.recetaOiCil)),
                     Cell(dash(eval.recetaOiEje)),
                     Cell(dash(eval.dipCerca)),
-                    Cell(dash(eval.recetaOiAv.ifBlank { eval.avCcOiLejos })),
+                    Cell(dash(eval.recetaOiAv?.takeIf { it.isNotBlank() } ?: eval.avCcOiLejos)),
                     Cell(dash(eval.avCcAoPx)),
                 ),
             ),
@@ -61,7 +61,7 @@ object RefraccionTableBuilder {
                     Cell(dash(eval.addCercaOd)),
                     Cell(dash(eval.addIntermediaOd)),
                     Cell(dash(eval.dipCerca)),
-                    Cell(dash(eval.avCcAoCerca.ifBlank { eval.avScAoCerca })),
+                    Cell(dash(eval.avCcAoCerca?.takeIf { it.isNotBlank() } ?: eval.avScAoCerca)),
                     Cell("—"),
                 ),
             ),
@@ -71,7 +71,7 @@ object RefraccionTableBuilder {
                     Cell(dash(eval.addCercaOi)),
                     Cell(dash(eval.addIntermediaOi)),
                     Cell(dash(eval.dipCerca)),
-                    Cell(dash(eval.avCcAoCerca.ifBlank { eval.avScAoCerca })),
+                    Cell(dash(eval.avCcAoCerca?.takeIf { it.isNotBlank() } ?: eval.avScAoCerca)),
                     Cell("—"),
                 ),
             ),

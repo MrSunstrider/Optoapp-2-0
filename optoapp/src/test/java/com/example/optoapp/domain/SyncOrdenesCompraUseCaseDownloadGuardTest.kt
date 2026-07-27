@@ -1,6 +1,7 @@
 ﻿package com.example.optoapp.domain
 
 import com.example.optoapp.data.FakeConflictDao
+import com.example.optoapp.data.OptoDatabase
 import com.example.optoapp.data.OrdenCompraRepository
 import com.example.optoapp.data.SyncStateTracker
 import com.example.optoapp.domain.sync.ConflictHelper
@@ -22,6 +23,7 @@ class SyncOrdenesCompraUseCaseDownloadGuardTest {
     private val opticaId = "optica-oc-guard"
 
     private val repository = mockk<OrdenCompraRepository>(relaxed = true)
+    private val database = mockk<OptoDatabase>(relaxed = true)
     private val syncStateTracker = mockk<SyncStateTracker>(relaxed = true)
     private val conflictHelper = mockk<ConflictHelper>(relaxed = true)
     private val conflictDao = FakeConflictDao()
@@ -42,6 +44,7 @@ class SyncOrdenesCompraUseCaseDownloadGuardTest {
         useCase = SyncOrdenesCompraUseCase(
             repository = repository,
             supabase = fakeSupabase,
+            database = database,
             syncStateTracker = syncStateTracker,
             conflictHelper = conflictHelper,
             conflictDao = conflictDao,
@@ -49,13 +52,13 @@ class SyncOrdenesCompraUseCaseDownloadGuardTest {
     }
 
     @Test
-    fun constructor_takesFiveDependencies() {
+    fun constructor_takesSixDependencies() {
         val constructors = SyncOrdenesCompraUseCase::class.java.declaredConstructors
         assertEquals(1, constructors.size)
         val params = constructors[0].parameterTypes
         assertEquals(
-            "SyncOrdenesCompraUseCase should accept exactly 5 constructor params after ConflictDao injection",
-            5,
+            "SyncOrdenesCompraUseCase should accept exactly 6 constructor params after database injection",
+            6,
             params.size,
         )
     }

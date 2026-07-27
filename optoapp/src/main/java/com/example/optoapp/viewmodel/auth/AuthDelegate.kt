@@ -446,7 +446,7 @@ open class AuthDelegate @Inject constructor(
 
         for (ev in evaluaciones) {
             val cita = ev.proximaCita
-            val estado = ev.citaEstado.trim().lowercase()
+            val estado = ev.citaEstado?.trim()?.lowercase() ?: ""
             val shouldNotify = cita != null &&
                 !cita.isBefore(today) &&
                 estado !in setOf("asistio", "no_asistio")

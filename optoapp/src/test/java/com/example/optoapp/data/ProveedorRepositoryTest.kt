@@ -98,15 +98,15 @@ class ProveedorRepositoryTest {
     }
 
     @Test
-    fun duplicateRuc_sameOptica_rejected() = runBlocking {
+    fun duplicateRuc_sameOptica_replaced() = runBlocking {
         repository.insert(Proveedor(id = "p1", nombre = "A", ruc = "DUP", opticaId = "o1"))
-        // Room's ABORT strategy throws on duplicate
-        val caught = assertThrows(Exception::class.java) {
-            runBlocking {
-                repository.insert(Proveedor(id = "p2", nombre = "B", ruc = "DUP", opticaId = "o1"))
-            }
-        }
-        assertNotNull(caught)
+        // Room's REPLACE strategy silently overwrites on conflict
+        repository.insert(Proveedor(id = "p2", nombre = "B", ruc = "DUP", opticaId = "o1"))
+
+        // Second insert replaced the first — only one row with ruc DUP
+        val all = db.proveedorDao().getListByOptica("o1")
+        assertEquals(1, all.size)
+        assertEquals("B", all[0].nombre)
     }
 
     @Test

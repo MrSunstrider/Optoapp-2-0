@@ -1,6 +1,7 @@
 package com.example.optoapp.domain
 
 import com.example.optoapp.data.ConflictDao
+import com.example.optoapp.data.OptoDatabase
 import com.example.optoapp.data.OrdenCompra
 import com.example.optoapp.data.OrdenCompraItem
 import com.example.optoapp.data.OrdenCompraRepository
@@ -10,6 +11,7 @@ import com.example.optoapp.domain.sync.ConflictHelper
 import com.example.optoapp.domain.sync.EntitySnapshotSerializer
 import com.example.optoapp.domain.sync.LocalEntity
 import com.example.optoapp.util.AppLogger
+import androidx.room.withTransaction
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.CancellationException
@@ -25,6 +27,7 @@ import javax.inject.Inject
 open class SyncOrdenesCompraUseCase @Inject constructor(
     private val repository: OrdenCompraRepository,
     private val supabase: SupabaseClient,
+    private val database: OptoDatabase,
     private val syncStateTracker: SyncStateTracker,
     private val conflictHelper: ConflictHelper,
     private val conflictDao: ConflictDao,
@@ -91,7 +94,9 @@ open class SyncOrdenesCompraUseCase @Inject constructor(
         safeRows.chunked(UPSERT_BATCH_SIZE).forEach { chunk ->
             supabase.postgrest[TABLE_OC].upsert(chunk)
         }
-        safeRows.forEach { r -> syncStateTracker.markSynced(opticaId, "orden_compra", r.id) }
+        database.withTransaction {
+            safeRows.forEach { r -> syncStateTracker.markSynced(opticaId, "orden_compra", r.id) }
+        }
         return rows.size
     }
 
@@ -105,7 +110,9 @@ open class SyncOrdenesCompraUseCase @Inject constructor(
         allItems.chunked(UPSERT_BATCH_SIZE).forEach { chunk ->
             supabase.postgrest[TABLE_ITEMS].upsert(chunk)
         }
-        allItems.forEach { r -> syncStateTracker.markSynced(opticaId, "orden_compra_item", r.id) }
+        database.withTransaction {
+            allItems.forEach { r -> syncStateTracker.markSynced(opticaId, "orden_compra_item", r.id) }
+        }
         return allItems.size
     }
 

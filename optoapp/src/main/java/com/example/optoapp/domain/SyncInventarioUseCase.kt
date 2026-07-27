@@ -3,10 +3,12 @@ package com.example.optoapp.domain
 import com.example.optoapp.data.ConflictDao
 import com.example.optoapp.data.Montura
 import com.example.optoapp.data.MonturaMovimiento
+import com.example.optoapp.data.OptoDatabase
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Resource
 import com.example.optoapp.domain.sync.EntitySnapshotSerializer
 import com.example.optoapp.util.AppLogger
+import androidx.room.withTransaction
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.CancellationException
@@ -24,6 +26,7 @@ import javax.inject.Inject
 open class SyncInventarioUseCase @Inject constructor(
     private val repository: OptoRepository,
     private val supabase: SupabaseClient,
+    private val database: OptoDatabase,
     private val syncStateTracker: com.example.optoapp.data.SyncStateTracker,
     private val conflictHelper: com.example.optoapp.domain.sync.ConflictHelper,
     private val conflictDao: ConflictDao,
@@ -103,8 +106,10 @@ open class SyncInventarioUseCase @Inject constructor(
             syncStateTracker.markError(opticaId, "upload_monturas", "batch", e.message)
             throw e
         }
+        database.withTransaction {
+            rows2.forEach { m -> syncStateTracker.markSynced(opticaId, "montura", m.id) }
+        }
         syncStateTracker.markSynced(opticaId, "upload_monturas", "batch")
-        rows2.forEach { m -> syncStateTracker.markSynced(opticaId, "montura", m.id) }
         return rows2.size
     }
 
@@ -146,8 +151,10 @@ open class SyncInventarioUseCase @Inject constructor(
             syncStateTracker.markError(opticaId, "upload_montura_movimientos", "batch", e.message)
             throw e
         }
+        database.withTransaction {
+            rows.forEach { r -> syncStateTracker.markSynced(opticaId, "montura_movimiento", r.id) }
+        }
         syncStateTracker.markSynced(opticaId, "upload_montura_movimientos", "batch")
-        rows.forEach { r -> syncStateTracker.markSynced(opticaId, "montura_movimiento", r.id) }
         return rows.size
     }
 

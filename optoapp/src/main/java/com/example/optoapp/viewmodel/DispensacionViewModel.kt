@@ -746,10 +746,10 @@ class DispensacionViewModel @Inject constructor(
                     val opticaId = sessionManager.opticaId.first()
 
                     // Parse receta values from linked evaluation
-                    val odEsf = evaluacion.recetaOdEsf.replace(",", ".").toDoubleOrNull()
-                    val odCil = evaluacion.recetaOdCil.replace(",", ".").toDoubleOrNull()
-                    val oiEsf = evaluacion.recetaOiEsf.replace(",", ".").toDoubleOrNull()
-                    val oiCil = evaluacion.recetaOiCil.replace(",", ".").toDoubleOrNull()
+                    val odEsf = evaluacion.recetaOdEsf?.replace(",", ".")?.toDoubleOrNull()
+                    val odCil = evaluacion.recetaOdCil?.replace(",", ".")?.toDoubleOrNull()
+                    val oiEsf = evaluacion.recetaOiEsf?.replace(",", ".")?.toDoubleOrNull()
+                    val oiCil = evaluacion.recetaOiCil?.replace(",", ".")?.toDoubleOrNull()
 
                     var costoOd: Double? = null
                     var costoOi: Double? = null
@@ -765,8 +765,8 @@ class DispensacionViewModel @Inject constructor(
                             item.tipoLente.contains("Medida", ignoreCase = true) -> "lente_contacto_medida"
                             else -> item.tipoLente // pass through as-is
                         }
-                        val lcMaterial = evaluacion.lcMaterial.ifBlank { item.materialLente }
-                        val lcLab = evaluacion.lcLaboratorio.ifBlank { null }
+                        val lcMaterial = evaluacion.lcMaterial?.ifBlank { item.materialLente } ?: item.materialLente
+                        val lcLab = evaluacion.lcLaboratorio?.ifBlank { null }
                         val lcLookup = costoProductoDao.lookupLc(
                             material = lcMaterial,
                             tipoLente = lcTipo,

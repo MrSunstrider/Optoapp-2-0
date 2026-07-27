@@ -87,15 +87,17 @@ class ProveedorDaoTest {
     }
 
     @Test
-    fun duplicateRuc_sameOptica_rejected() = runBlocking {
+    fun duplicateRuc_sameOptica_replaced() = runBlocking {
         val dao = db.proveedorDao()
         dao.insert(Proveedor(id = "p1", nombre = "A", ruc = "DUPLICATE", opticaId = "o1"))
 
-        val caught = assertThrows(Exception::class.java) {
-            runBlocking {
-                dao.insert(Proveedor(id = "p2", nombre = "B", ruc = "DUPLICATE", opticaId = "o1"))
-            }
-        }
+        // REPLACE silently overwrites the conflicting row
+        dao.insert(Proveedor(id = "p2", nombre = "B", ruc = "DUPLICATE", opticaId = "o1"))
+
+        // Second insert replaced the first
+        val all = dao.getListByOptica("o1")
+        assertEquals(1, all.size)
+        assertEquals("B", all[0].nombre)
     }
 
     @Test

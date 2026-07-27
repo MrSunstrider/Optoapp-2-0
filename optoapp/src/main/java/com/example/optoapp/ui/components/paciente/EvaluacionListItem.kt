@@ -56,20 +56,26 @@ fun EvaluacionListItem(
                 }
             }
             val formulaStr = buildString {
-                val hasOd = eval.recetaOdEsf.isNotBlank() || eval.recetaOdCil.isNotBlank()
-                val hasOi = eval.recetaOiEsf.isNotBlank() || eval.recetaOiCil.isNotBlank()
+                val odEsf = eval.recetaOdEsf.orEmpty()
+                val odCil = eval.recetaOdCil.orEmpty()
+                val odEje = eval.recetaOdEje.orEmpty()
+                val oiEsf = eval.recetaOiEsf.orEmpty()
+                val oiCil = eval.recetaOiCil.orEmpty()
+                val oiEje = eval.recetaOiEje.orEmpty()
+                val hasOd = odEsf.isNotBlank() || odCil.isNotBlank()
+                val hasOi = oiEsf.isNotBlank() || oiCil.isNotBlank()
                 if (hasOd) {
-                    append("OD: ${eval.recetaOdEsf}/${eval.recetaOdCil}x${eval.recetaOdEje}°")
-                    if (eval.recetaOdAv.isNotBlank()) append(" (${eval.recetaOdAv}) ") else append(" ")
+                    append("OD: $odEsf/$odCil x ${odEje}°")
+                    if (eval.recetaOdAv.orEmpty().isNotBlank()) append(" (${eval.recetaOdAv}) ") else append(" ")
                 }
                 if (hasOi) {
-                    append("OI: ${eval.recetaOiEsf}/${eval.recetaOiCil}x${eval.recetaOiEje}°")
-                    if (eval.recetaOiAv.isNotBlank()) append(" (${eval.recetaOiAv})")
+                    append("OI: $oiEsf/$oiCil x ${oiEje}°")
+                    if (eval.recetaOiAv.orEmpty().isNotBlank()) append(" (${eval.recetaOiAv})")
                 }
             }
             val diagStr = buildString {
-                val dOd = eval.diagnosticoOd.firstOrNull() ?: ""
-                val dOi = eval.diagnosticoOi.firstOrNull() ?: ""
+                val dOd = eval.diagnosticoOd?.firstOrNull().orEmpty()
+                val dOi = eval.diagnosticoOi?.firstOrNull().orEmpty()
                 if (dOd.isNotBlank()) append("OD: $dOd ")
                 if (dOi.isNotBlank()) append("OI: $dOi")
             }.trim()

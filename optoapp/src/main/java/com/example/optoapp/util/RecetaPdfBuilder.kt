@@ -157,14 +157,14 @@ class RecetaPdfBuilder {
      */
     fun addDiagnostico(eval: EvaluacionClinica): RecetaPdfBuilder {
         val diag = buildString {
-            val dOd = eval.diagnosticoOd.firstOrNull().orEmpty()
-            val dOi = eval.diagnosticoOi.firstOrNull().orEmpty()
+            val dOd = eval.diagnosticoOd?.firstOrNull().orEmpty()
+            val dOi = eval.diagnosticoOi?.firstOrNull().orEmpty()
             if (dOd.isNotBlank()) appendLine("OD: $dOd")
             if (dOi.isNotBlank()) appendLine("OI: $dOi")
-            if (eval.diagnostico.isNotBlank()) appendLine(eval.diagnostico)
-            if (eval.otrosPresbicia) appendLine("Presbicia")
-            if (eval.otrosAnisometropia) appendLine("Anisometropía")
-            if (eval.otrosAmbliopia) appendLine("Ambliopía")
+            if (eval.diagnostico?.isNotBlank() == true) appendLine(eval.diagnostico)
+            if (eval.otrosPresbicia == true) appendLine("Presbicia")
+            if (eval.otrosAnisometropia == true) appendLine("Anisometropía")
+            if (eval.otrosAmbliopia == true) appendLine("Ambliopía")
         }
         if (diag.isNotBlank()) sectionWithBadge("Diagnóstico", diag.trimEnd())
         sectionWithBadge("Tratamiento", "Uso de lentes correctores.")
@@ -175,8 +175,8 @@ class RecetaPdfBuilder {
      * Dibuja "Prismas" con triángulo de base abajo centrado.
      */
     fun addPrismas(eval: EvaluacionClinica): RecetaPdfBuilder {
-        val hasOd = eval.prismaOdValor.isNotBlank()
-        val hasOi = eval.prismaOiValor.isNotBlank()
+        val hasOd = eval.prismaOdValor?.isNotBlank() == true
+        val hasOi = eval.prismaOiValor?.isNotBlank() == true
         if (!hasOd && !hasOi) return this
 
         val prismaText = buildString {

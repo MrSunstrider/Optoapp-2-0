@@ -1,6 +1,7 @@
 package com.example.optoapp.domain
 
 import com.example.optoapp.data.ConflictDao
+import com.example.optoapp.data.OptoDatabase
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Paciente
 import com.example.optoapp.data.Resource
@@ -8,6 +9,7 @@ import com.example.optoapp.data.syncJson
 import com.example.optoapp.data.SyncEntityState
 import com.example.optoapp.domain.sync.EntitySnapshotSerializer
 import com.example.optoapp.util.AppLogger
+import androidx.room.withTransaction
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.CancellationException
@@ -22,6 +24,7 @@ import javax.inject.Inject
 open class SyncPacientesUseCase @Inject constructor(
     private val repository: OptoRepository,
     private val supabase: SupabaseClient,
+    private val database: OptoDatabase,
     private val syncStateTracker: com.example.optoapp.data.SyncStateTracker,
     private val conflictHelper: com.example.optoapp.domain.sync.ConflictHelper,
     private val conflictDao: com.example.optoapp.data.ConflictDao,
@@ -177,10 +180,12 @@ open class SyncPacientesUseCase @Inject constructor(
             syncStateTracker.markError(opticaId, "upload_pacientes", "batch", e.message)
             throw e
         }
-        syncStateTracker.markSynced(opticaId, "upload_pacientes", "batch")
-        finalRows.forEach { p ->
-            syncStateTracker.markSynced(opticaId, "paciente", p.id)
+        database.withTransaction {
+            finalRows.forEach { p ->
+                syncStateTracker.markSynced(opticaId, "paciente", p.id)
+            }
         }
+        syncStateTracker.markSynced(opticaId, "upload_pacientes", "batch")
 
         AppLogger.d(TAG, "Subidos ${finalRows.size} pacientes a Supabase (optica_id=$opticaId).")
         return finalRows.size

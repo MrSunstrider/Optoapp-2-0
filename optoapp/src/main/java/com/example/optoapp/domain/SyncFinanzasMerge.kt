@@ -52,8 +52,8 @@ class DispensacionMergeHandler @Inject constructor(
             movedItems = repository.reassignItemsDispensacion(duplicate.id, canonical.id, opticaId)
             movedRegalos = repository.reassignRegalosDispensacion(duplicate.id, canonical.id, opticaId)
             repository.deleteDispensacionById(duplicate.id, opticaId)
+            syncStateTracker.markSynced(opticaId, "dispensacion", duplicate.id)
         }
-        syncStateTracker.markSynced(opticaId, "dispensacion", duplicate.id)
         syncStateTracker.markError(
             opticaId,
             "dispensacion",

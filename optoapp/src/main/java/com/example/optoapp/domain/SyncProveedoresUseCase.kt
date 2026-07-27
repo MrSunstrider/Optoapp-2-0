@@ -2,6 +2,7 @@ package com.example.optoapp.domain
 
 import com.example.optoapp.data.CategoriaMontura
 import com.example.optoapp.data.ConflictDao
+import com.example.optoapp.data.OptoDatabase
 import com.example.optoapp.data.Proveedor
 import com.example.optoapp.data.ProveedorRepository
 import com.example.optoapp.data.Resource
@@ -10,6 +11,7 @@ import com.example.optoapp.domain.sync.ConflictHelper
 import com.example.optoapp.domain.sync.EntitySnapshotSerializer
 import com.example.optoapp.domain.sync.LocalEntity
 import com.example.optoapp.util.AppLogger
+import androidx.room.withTransaction
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.CancellationException
@@ -22,6 +24,7 @@ import javax.inject.Inject
 open class SyncProveedoresUseCase @Inject constructor(
     private val repository: ProveedorRepository,
     private val supabase: SupabaseClient,
+    private val database: OptoDatabase,
     private val syncStateTracker: SyncStateTracker,
     private val conflictHelper: ConflictHelper,
     private val conflictDao: ConflictDao,
@@ -88,7 +91,9 @@ open class SyncProveedoresUseCase @Inject constructor(
         safeRows.chunked(UPSERT_BATCH_SIZE).forEach { chunk ->
             supabase.postgrest[TABLE_PROVEEDORES].upsert(chunk)
         }
-        safeRows.forEach { r -> syncStateTracker.markSynced(opticaId, "proveedor", r.id) }
+        database.withTransaction {
+            safeRows.forEach { r -> syncStateTracker.markSynced(opticaId, "proveedor", r.id) }
+        }
         return rows.size
     }
 
@@ -101,7 +106,9 @@ open class SyncProveedoresUseCase @Inject constructor(
         rows.chunked(UPSERT_BATCH_SIZE).forEach { chunk ->
             supabase.postgrest[TABLE_CATEGORIAS].upsert(chunk)
         }
-        rows.forEach { r -> syncStateTracker.markSynced(opticaId, "categoria_montura", r.id) }
+        database.withTransaction {
+            rows.forEach { r -> syncStateTracker.markSynced(opticaId, "categoria_montura", r.id) }
+        }
         return rows.size
     }
 

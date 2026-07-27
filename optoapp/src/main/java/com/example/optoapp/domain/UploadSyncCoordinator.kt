@@ -1,11 +1,13 @@
 package com.example.optoapp.domain
 
+import com.example.optoapp.data.OptoDatabase
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.SyncStateTracker
 import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.costobiselado.CostoBiseladoDao
 import com.example.optoapp.data.costoproducto.CostoProductoDao
 import com.example.optoapp.util.AppLogger
+import androidx.room.withTransaction
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.CancellationException
@@ -17,9 +19,10 @@ import javax.inject.Inject
  * Extracted from [SyncFinanzasUseCase] so each entity type can be uploaded independently
  * while sharing deduplication (OT-based reconciliation), retry, and state tracking.
  */
-class UploadSyncCoordinator @Inject constructor(
+open class UploadSyncCoordinator @Inject constructor(
     private val repository: OptoRepository,
     private val supabase: SupabaseClient,
+    private val database: OptoDatabase,
     private val syncStateTracker: SyncStateTracker,
     private val mergeHandler: DispensacionMergeHandler,
     private val networkRetryHelper: NetworkRetryHelper,
@@ -43,6 +46,12 @@ class UploadSyncCoordinator @Inject constructor(
         message: String,
         cause: Throwable,
     ) : Exception(message, cause)
+
+    // WHY: testability seam — Room's withTransaction is an extension function on
+    // RoomDatabase that cannot be mocked by MockK. Making this open lets tests
+    // override it to run the block inline without a real database transaction.
+    internal open suspend fun <T> runInTransaction(block: suspend () -> T): T =
+        database.withTransaction(block)
 
     // WHY: kotlinx.serialization cannot resolve erased generic type parameters,
     // so serialization must happen inside upsertBlock at the call site
@@ -78,8 +87,10 @@ class UploadSyncCoordinator @Inject constructor(
             syncStateTracker.markError(opticaId, batchTrackingType, "batch", e.message)
             throw e
         }
-        rows.forEach { r ->
-            syncStateTracker.markSynced(opticaId, entityType, idSelector(r))
+        runInTransaction {
+            rows.forEach { r ->
+                syncStateTracker.markSynced(opticaId, entityType, idSelector(r))
+            }
         }
         syncStateTracker.markSynced(opticaId, batchTrackingType, "batch")
         return uploadedCount
@@ -189,8 +200,10 @@ class UploadSyncCoordinator @Inject constructor(
                 duplicate = duplicate,
             )
         }
-        uniqueById.values.forEach { (localId, _) ->
-            syncStateTracker.markSynced(opticaId, "dispensacion", localId)
+        runInTransaction {
+            uniqueById.values.forEach { (localId, _) ->
+                syncStateTracker.markSynced(opticaId, "dispensacion", localId)
+            }
         }
         syncStateTracker.markSynced(opticaId, "upload_dispensaciones", "batch")
         return rows.size
@@ -284,8 +297,10 @@ class UploadSyncCoordinator @Inject constructor(
             syncStateTracker.markError(opticaId, "upload_servicios_extra", "batch", e.message)
             throw e
         }
-        rows.forEach { r ->
-            syncStateTracker.markSynced(opticaId, "servicio_extra", r.id)
+        runInTransaction {
+            rows.forEach { r ->
+                syncStateTracker.markSynced(opticaId, "servicio_extra", r.id)
+            }
         }
         syncStateTracker.markSynced(opticaId, "upload_servicios_extra", "batch")
         return rows.size

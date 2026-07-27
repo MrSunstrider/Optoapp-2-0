@@ -183,7 +183,7 @@ fun AgendaScreen(
                                 )
                                 DropdownField(
                                     label = "Estado",
-                                    selected = etiquetaEstadoCita(e.citaEstado.ifBlank { "programada" }),
+                                    selected = etiquetaEstadoCita(e.citaEstado.orEmpty().ifBlank { "programada" }),
                                     options = estadosCitaInternas.map(::etiquetaEstadoCita),
                                     onSelected = { label ->
                                         val codigo = estadosCitaInternas.find { etiquetaEstadoCita(it) == label }

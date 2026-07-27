@@ -100,9 +100,9 @@ object DispensacionLaboratorioTicket {
 
     private fun avCcLines(ev: EvaluacionClinica?): List<String> {
         if (ev == null) return emptyList()
-        val avccOd = ev.recetaOdAv.ifBlank { ev.avCcOdLejos }.ifBlank { "—" }
-        val avccOi = ev.recetaOiAv.ifBlank { ev.avCcOiLejos }.ifBlank { "—" }
-        val avccAo = ev.avCcAoPx.ifBlank { "—" }
+        val avccOd = ev.recetaOdAv.orEmpty().ifBlank { ev.avCcOdLejos.orEmpty() }.ifBlank { "—" }
+        val avccOi = ev.recetaOiAv.orEmpty().ifBlank { ev.avCcOiLejos.orEmpty() }.ifBlank { "—" }
+        val avccAo = ev.avCcAoPx.orEmpty().ifBlank { "—" }
         val anyAv = avccOd != "—" || avccOi != "—" || avccAo != "—"
         if (!anyAv) return emptyList()
 
@@ -126,8 +126,8 @@ object DispensacionLaboratorioTicket {
 
     private fun dipLejosCerca(ev: EvaluacionClinica?): String {
         if (ev == null) return ""
-        val lejos = ev.dipLejos.trim()
-        val cerca = ev.dipCerca.trim()
+        val lejos = ev.dipLejos?.trim().orEmpty()
+        val cerca = ev.dipCerca?.trim().orEmpty()
         return when {
             lejos.isNotBlank() && cerca.isNotBlank() -> "$lejos (lejos) / $cerca (cerca)"
             lejos.isNotBlank() -> "$lejos (lejos)"
@@ -138,8 +138,8 @@ object DispensacionLaboratorioTicket {
 
     private fun addOdOi(ev: EvaluacionClinica?): String {
         if (ev == null) return ""
-        val od = ev.addCercaOd.trim()
-        val oi = ev.addCercaOi.trim()
+        val od = ev.addCercaOd?.trim().orEmpty()
+        val oi = ev.addCercaOi?.trim().orEmpty()
         return when {
             od.isNotBlank() && oi.isNotBlank() -> "OD $od · OI $oi"
             od.isNotBlank() -> "OD $od"

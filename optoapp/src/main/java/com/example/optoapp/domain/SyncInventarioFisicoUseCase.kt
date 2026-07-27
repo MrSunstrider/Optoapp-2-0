@@ -3,11 +3,13 @@ package com.example.optoapp.domain
 import com.example.optoapp.data.InventarioFisico
 import com.example.optoapp.data.InventarioFisicoDetalle
 import com.example.optoapp.data.InventarioFisicoRepository
+import com.example.optoapp.data.OptoDatabase
 import com.example.optoapp.data.Resource
 import com.example.optoapp.data.SyncStateTracker
 import com.example.optoapp.domain.sync.ConflictHelper
 import com.example.optoapp.domain.sync.LocalEntity
 import com.example.optoapp.util.AppLogger
+import androidx.room.withTransaction
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.CancellationException
@@ -20,6 +22,7 @@ import javax.inject.Inject
 open class SyncInventarioFisicoUseCase @Inject constructor(
     private val repository: InventarioFisicoRepository,
     private val supabase: SupabaseClient,
+    private val database: OptoDatabase,
     private val syncStateTracker: SyncStateTracker,
     private val conflictHelper: ConflictHelper,
 ) {
@@ -85,7 +88,9 @@ open class SyncInventarioFisicoUseCase @Inject constructor(
             safeRows.chunked(UPSERT_BATCH_SIZE).forEach { chunk ->
                 supabase.postgrest[TABLE_SESSIONS].upsert(chunk)
             }
-            safeRows.forEach { r -> syncStateTracker.markSynced(opticaId, "inventario_fisico", r.id) }
+            database.withTransaction {
+                safeRows.forEach { r -> syncStateTracker.markSynced(opticaId, "inventario_fisico", r.id) }
+            }
             list.size
         } catch (e: CancellationException) {
             throw e
@@ -106,7 +111,9 @@ open class SyncInventarioFisicoUseCase @Inject constructor(
             allDetalles.chunked(UPSERT_BATCH_SIZE).forEach { chunk ->
                 supabase.postgrest[TABLE_DETALLES].upsert(chunk)
             }
-            allDetalles.forEach { r -> syncStateTracker.markSynced(opticaId, "inventario_fisico_detalle", r.id) }
+            database.withTransaction {
+                allDetalles.forEach { r -> syncStateTracker.markSynced(opticaId, "inventario_fisico_detalle", r.id) }
+            }
             allDetalles.size
         } catch (e: CancellationException) {
             throw e

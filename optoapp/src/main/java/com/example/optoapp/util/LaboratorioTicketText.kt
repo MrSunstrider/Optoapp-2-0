@@ -54,18 +54,18 @@ object LaboratorioTicketText {
         ).joinToString(" · ")
     }
 
-    private fun formatoOjoFormula(esf: String, cil: String, eje: String, tag: String): String {
-        val e = esf.ifBlank { "—" }
-        val c = cil.ifBlank { "—" }
-        val ej = eje.ifBlank { "—" }
+    private fun formatoOjoFormula(esf: String?, cil: String?, eje: String?, tag: String): String {
+        val e = esf.orEmpty().ifBlank { "—" }
+        val c = cil.orEmpty().ifBlank { "—" }
+        val ej = eje.orEmpty().ifBlank { "—" }
         return "$tag: $e / $c × $ej°"
     }
 
-    private fun rxOjoLinePlano(esf: String, cil: String, eje: String, tag: String): String {
-        if (esf.isBlank() && cil.isBlank() && eje.isBlank()) return ""
-        val e = esf.ifBlank { "—" }
-        val c = cil.ifBlank { "—" }
-        val ej = eje.ifBlank { "—" }
+    private fun rxOjoLinePlano(esf: String?, cil: String?, eje: String?, tag: String): String {
+        if (esf.orEmpty().isBlank() && cil.orEmpty().isBlank() && eje.orEmpty().isBlank()) return ""
+        val e = esf.orEmpty().ifBlank { "—" }
+        val c = cil.orEmpty().ifBlank { "—" }
+        val ej = eje.orEmpty().ifBlank { "—" }
         return "$tag $e / $c x $ej°"
     }
 
@@ -103,9 +103,9 @@ object LaboratorioTicketText {
 
     private fun dipFormateado(ev: EvaluacionClinica): String {
         val parts = mutableListOf<String>()
-        if (ev.dipLejos.isNotBlank()) parts.add("${ev.dipLejos.trim()} (lejos)")
-        if (ev.dipCerca.isNotBlank()) parts.add("${ev.dipCerca.trim()} (cerca)")
-        if (ev.dipIntermedio.isNotBlank()) parts.add("${ev.dipIntermedio.trim()} (interm.)")
+        if (ev.dipLejos.orEmpty().isNotBlank()) parts.add("${ev.dipLejos?.trim().orEmpty()} (lejos)")
+        if (ev.dipCerca.orEmpty().isNotBlank()) parts.add("${ev.dipCerca?.trim().orEmpty()} (cerca)")
+        if (ev.dipIntermedio.orEmpty().isNotBlank()) parts.add("${ev.dipIntermedio?.trim().orEmpty()} (interm.)")
         val total = ev.dipTotalMm
         if (parts.isEmpty() && total != null) {
             parts.add("${fmt(total)} mm (DIP total)")
@@ -117,9 +117,9 @@ object LaboratorioTicketText {
 
     /** Prismas prescritos, si hay. */
     private fun lineaPrismas(ev: EvaluacionClinica): String? {
-        fun ojo(valor: String, base: String, tag: String): String? {
-            if (valor.isBlank()) return null
-            val b = base.trim().takeIf { it.isNotBlank() }
+        fun ojo(valor: String?, base: String?, tag: String): String? {
+            if (valor.orEmpty().isBlank()) return null
+            val b = base.orEmpty().trim().takeIf { it.isNotBlank() }
             return if (b != null) "$tag $valor (base $b)" else "$tag $valor"
         }
         val od = ojo(ev.prismaOdValor, ev.prismaOdBase, "OD")
@@ -131,13 +131,13 @@ object LaboratorioTicketText {
     private fun textoAdd(ev: EvaluacionClinica): String {
         val parts = mutableListOf<String>()
         val cerca = listOfNotNull(
-            ev.addCercaOd.takeIf { it.isNotBlank() }?.let { "cerca OD $it" },
-            ev.addCercaOi.takeIf { it.isNotBlank() }?.let { "cerca OI $it" },
+            ev.addCercaOd?.takeIf { it.isNotBlank() }?.let { "cerca OD $it" },
+            ev.addCercaOi?.takeIf { it.isNotBlank() }?.let { "cerca OI $it" },
         )
         if (cerca.isNotEmpty()) parts.add(cerca.joinToString(" · "))
         val inter = listOfNotNull(
-            ev.addIntermediaOd.takeIf { it.isNotBlank() }?.let { "int. OD $it" },
-            ev.addIntermediaOi.takeIf { it.isNotBlank() }?.let { "int. OI $it" },
+            ev.addIntermediaOd?.takeIf { it.isNotBlank() }?.let { "int. OD $it" },
+            ev.addIntermediaOi?.takeIf { it.isNotBlank() }?.let { "int. OI $it" },
         )
         if (inter.isNotEmpty()) parts.add(inter.joinToString(" · "))
         return parts.joinToString(" · ")
@@ -146,13 +146,13 @@ object LaboratorioTicketText {
     private fun addicionSegment(ev: EvaluacionClinica): String {
         val parts = mutableListOf<String>()
         val cerca = listOfNotNull(
-            ev.addCercaOd.takeIf { it.isNotBlank() }?.let { "cerca OD $it" },
-            ev.addCercaOi.takeIf { it.isNotBlank() }?.let { "cerca OI $it" },
+            ev.addCercaOd?.takeIf { it.isNotBlank() }?.let { "cerca OD $it" },
+            ev.addCercaOi?.takeIf { it.isNotBlank() }?.let { "cerca OI $it" },
         )
         if (cerca.isNotEmpty()) parts.add("ADD ${cerca.joinToString(" | ")}")
         val inter = listOfNotNull(
-            ev.addIntermediaOd.takeIf { it.isNotBlank() }?.let { "int. OD $it" },
-            ev.addIntermediaOi.takeIf { it.isNotBlank() }?.let { "int. OI $it" },
+            ev.addIntermediaOd?.takeIf { it.isNotBlank() }?.let { "int. OD $it" },
+            ev.addIntermediaOi?.takeIf { it.isNotBlank() }?.let { "int. OI $it" },
         )
         if (inter.isNotEmpty()) parts.add("ADD ${inter.joinToString(" | ")}")
         return parts.joinToString(" · ")
@@ -168,9 +168,9 @@ object LaboratorioTicketText {
                 if (ev.dnpOiMm != null) parts.add("DNP OI ${fmt(ev.dnpOiMm)} mm")
             }
         }
-        if (ev.dipLejos.isNotBlank()) parts.add("DIP lejos ${ev.dipLejos}")
-        if (ev.dipCerca.isNotBlank()) parts.add("DIP cerca ${ev.dipCerca}")
-        if (ev.dipIntermedio.isNotBlank()) parts.add("DIP interm. ${ev.dipIntermedio}")
+        if (ev.dipLejos.orEmpty().isNotBlank()) parts.add("DIP lejos ${ev.dipLejos}")
+        if (ev.dipCerca.orEmpty().isNotBlank()) parts.add("DIP cerca ${ev.dipCerca}")
+        if (ev.dipIntermedio.orEmpty().isNotBlank()) parts.add("DIP interm. ${ev.dipIntermedio}")
         val total = ev.dipTotalMm
         if (total != null) {
             if (parts.isEmpty()) {

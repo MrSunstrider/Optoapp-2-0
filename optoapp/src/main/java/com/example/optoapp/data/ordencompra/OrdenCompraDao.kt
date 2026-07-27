@@ -2,6 +2,7 @@ package com.example.optoapp.data.ordencompra
 
 import androidx.room.Dao
 import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import com.example.optoapp.data.OrdenCompra
@@ -21,7 +22,7 @@ interface OrdenCompraDao {
     @Query("SELECT MAX(numero) FROM ordenes_compra WHERE opticaId = :opticaId AND numero LIKE :prefix")
     suspend fun getLastNumero(opticaId: String, prefix: String): String?
 
-    @Insert
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(oc: OrdenCompra)
 
     @Update

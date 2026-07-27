@@ -317,15 +317,11 @@ class ConflictHelperTest {
     }
 
     @Test
-    fun `fetchRemoteUpdatedAt throws when all chunks return empty for non-empty ids`() = runTest {
+    fun `fetchRemoteUpdatedAt returns empty map when all chunks return empty for non-empty ids`() = runTest {
         val helper = ChunkCapturingHelper(alwaysEmpty = true)
 
-        try {
-            helper.fetchRemoteUpdatedAt(TABLE, OPTICA_ID, listOf("id-1", "id-2"))
-            fail("Expected exception when all chunks return empty for non-empty ids")
-        } catch (_: Exception) {
-            // expected
-        }
+        val result = helper.fetchRemoteUpdatedAt(TABLE, OPTICA_ID, listOf("id-1", "id-2"))
+        assertTrue("Expected empty map when all chunks fail, got $result", result.isEmpty())
     }
 
     @Test

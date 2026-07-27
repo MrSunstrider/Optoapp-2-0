@@ -84,22 +84,28 @@ fun ResumenEvaluacionDialog(eval: EvaluacionClinica, paciente: Paciente, onDismi
                     Text("Fecha de Eval: $date", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
                 }
 
-                val showOd = eval.recetaOdEsf.isNotBlank() || eval.recetaOdCil.isNotBlank()
-                val showOi = eval.recetaOiEsf.isNotBlank() || eval.recetaOiCil.isNotBlank()
+                val odEsf = eval.recetaOdEsf.orEmpty()
+                val odCil = eval.recetaOdCil.orEmpty()
+                val odEje = eval.recetaOdEje.orEmpty()
+                val oiEsf = eval.recetaOiEsf.orEmpty()
+                val oiCil = eval.recetaOiCil.orEmpty()
+                val oiEje = eval.recetaOiEje.orEmpty()
+                val showOd = odEsf.isNotBlank() || odCil.isNotBlank()
+                val showOi = oiEsf.isNotBlank() || oiCil.isNotBlank()
                 if (showOd || showOi) {
                     InfoSection("VL Fórmula Optométrica") {
                         if (showOd) {
-                            Text("OD: ${eval.recetaOdEsf} / ${eval.recetaOdCil} x ${eval.recetaOdEje}°", fontSize = 14.sp)
+                            Text("OD: $odEsf / $odCil x $odEje°", fontSize = 14.sp)
                         }
                         if (showOi) {
-                            Text("OI: ${eval.recetaOiEsf} / ${eval.recetaOiCil} x ${eval.recetaOiEje}°", fontSize = 14.sp)
+                            Text("OI: $oiEsf / $oiCil x $oiEje°", fontSize = 14.sp)
                         }
                     }
                 }
 
-                val avccOd = eval.recetaOdAv.ifBlank { eval.avCcOdLejos }
-                val avccOi = eval.recetaOiAv.ifBlank { eval.avCcOiLejos }
-                val avccAo = eval.avCcAoPx
+                val avccOd = eval.recetaOdAv.orEmpty().ifBlank { eval.avCcOdLejos.orEmpty() }
+                val avccOi = eval.recetaOiAv.orEmpty().ifBlank { eval.avCcOiLejos.orEmpty() }
+                val avccAo = eval.avCcAoPx.orEmpty()
                 val hasAvcc = avccOd.isNotBlank() || avccOi.isNotBlank() || avccAo.isNotBlank()
                 if (hasAvcc) {
                     InfoSection("VL AV CC") {
@@ -108,39 +114,40 @@ fun ResumenEvaluacionDialog(eval: EvaluacionClinica, paciente: Paciente, onDismi
                     }
                 }
 
-                val hasAdd = eval.addCercaOd.isNotBlank() || eval.addCercaOi.isNotBlank() || eval.addAv.isNotBlank()
+                val hasAdd = eval.addCercaOd.orEmpty().isNotBlank() || eval.addCercaOi.orEmpty().isNotBlank() || eval.addAv.orEmpty().isNotBlank()
                 if (hasAdd) {
                     InfoSection("Adición (ADD)") {
-                        if (eval.addCercaOd.isNotBlank()) Text("OD: ${eval.addCercaOd}", fontSize = 14.sp)
-                        if (eval.addCercaOi.isNotBlank()) Text("OI: ${eval.addCercaOi}", fontSize = 14.sp)
-                        if (eval.addAv.isNotBlank()) Text("AV VP: ${eval.addAv}", fontSize = 14.sp)
+                        if (eval.addCercaOd.orEmpty().isNotBlank()) Text("OD: ${eval.addCercaOd}", fontSize = 14.sp)
+                        if (eval.addCercaOi.orEmpty().isNotBlank()) Text("OI: ${eval.addCercaOi}", fontSize = 14.sp)
+                        if (eval.addAv.orEmpty().isNotBlank()) Text("AV VP: ${eval.addAv}", fontSize = 14.sp)
                     }
                 }
 
-                val hasDip = eval.dipLejos.isNotBlank() || eval.dipIntermedio.isNotBlank() || eval.dipCerca.isNotBlank()
+                val hasDip = eval.dipLejos.orEmpty().isNotBlank() || eval.dipIntermedio.orEmpty().isNotBlank() || eval.dipCerca.orEmpty().isNotBlank()
                 if (hasDip) {
                     InfoSection("DIP / DNP") {
-                        if (eval.dipLejos.isNotBlank()) Text("DNP Lejos: ${eval.dipLejos}", fontSize = 14.sp)
-                        if (eval.dipIntermedio.isNotBlank()) Text("DNP Intermedio: ${eval.dipIntermedio}", fontSize = 14.sp)
-                        if (eval.dipCerca.isNotBlank()) Text("DNP Cerca: ${eval.dipCerca}", fontSize = 14.sp)
+                        if (eval.dipLejos.orEmpty().isNotBlank()) Text("DNP Lejos: ${eval.dipLejos}", fontSize = 14.sp)
+                        if (eval.dipIntermedio.orEmpty().isNotBlank()) Text("DNP Intermedio: ${eval.dipIntermedio}", fontSize = 14.sp)
+                        if (eval.dipCerca.orEmpty().isNotBlank()) Text("DNP Cerca: ${eval.dipCerca}", fontSize = 14.sp)
                     }
                 }
 
-                val diagOd = eval.diagnosticoOd.firstOrNull() ?: ""
-                val diagOi = eval.diagnosticoOi.firstOrNull() ?: ""
+                val diagOd = eval.diagnosticoOd?.firstOrNull().orEmpty()
+                val diagOi = eval.diagnosticoOi?.firstOrNull().orEmpty()
+                val diagStr = eval.diagnostico.orEmpty()
 
-                if (diagOd.isNotBlank() || diagOi.isNotBlank() || eval.diagnostico.isNotBlank()) {
+                if (diagOd.isNotBlank() || diagOi.isNotBlank() || diagStr.isNotBlank()) {
                     InfoSection("Diagnóstico") {
-                        if (eval.diagnostico.isNotBlank()) Text(eval.diagnostico, fontSize = 14.sp)
+                        if (diagStr.isNotBlank()) Text(diagStr, fontSize = 14.sp)
                         if (diagOd.isNotBlank()) Text("OD: $diagOd", fontSize = 14.sp)
                         if (diagOi.isNotBlank()) Text("OI: $diagOi", fontSize = 14.sp)
                     }
                 }
 
                 val diagOtrosList = mutableListOf<String>()
-                if (eval.otrosPresbicia) diagOtrosList.add("Presbicia")
-                if (eval.otrosAnisometropia) diagOtrosList.add("Anisometropía")
-                if (eval.otrosAmbliopia) diagOtrosList.add("Ambliopía")
+                if (eval.otrosPresbicia == true) diagOtrosList.add("Presbicia")
+                if (eval.otrosAnisometropia == true) diagOtrosList.add("Anisometropía")
+                if (eval.otrosAmbliopia == true) diagOtrosList.add("Ambliopía")
 
                 if (diagOtrosList.isNotEmpty()) {
                     InfoSection("Condiciones Asociadas") {
@@ -150,16 +157,16 @@ fun ResumenEvaluacionDialog(eval: EvaluacionClinica, paciente: Paciente, onDismi
                     }
                 }
 
-                val hasPrisma = eval.prismaOdValor.isNotBlank() || eval.prismaOiValor.isNotBlank()
+                val hasPrisma = eval.prismaOdValor.orEmpty().isNotBlank() || eval.prismaOiValor.orEmpty().isNotBlank()
                 if (hasPrisma) {
                     InfoSection("Prismas") {
-                        if (eval.prismaOdValor.isNotBlank()) Text("OD: ${eval.prismaOdValor} (Base: ${eval.prismaOdBase})", fontSize = 14.sp)
-                        if (eval.prismaOiValor.isNotBlank()) Text("OI: ${eval.prismaOiValor} (Base: ${eval.prismaOiBase})", fontSize = 14.sp)
+                        if (eval.prismaOdValor.orEmpty().isNotBlank()) Text("OD: ${eval.prismaOdValor} (Base: ${eval.prismaOdBase})", fontSize = 14.sp)
+                        if (eval.prismaOiValor.orEmpty().isNotBlank()) Text("OI: ${eval.prismaOiValor} (Base: ${eval.prismaOiBase})", fontSize = 14.sp)
                     }
                 }
 
-                val keratoOd = eval.k1Od.isNotBlank() || eval.k2Od.isNotBlank()
-                val keratoOi = eval.k1Oi.isNotBlank() || eval.k2Oi.isNotBlank()
+                val keratoOd = eval.k1Od.orEmpty().isNotBlank() || eval.k2Od.orEmpty().isNotBlank()
+                val keratoOi = eval.k1Oi.orEmpty().isNotBlank() || eval.k2Oi.orEmpty().isNotBlank()
                 if (keratoOd || keratoOi) {
                     InfoSection("Queratometría") {
                         if (keratoOd) Text("OD: ${eval.k1Od} / ${eval.k2Od}", fontSize = 14.sp)
@@ -167,7 +174,7 @@ fun ResumenEvaluacionDialog(eval: EvaluacionClinica, paciente: Paciente, onDismi
                     }
                 }
 
-                val tieneLC = eval.lcOdEsf.isNotBlank() || eval.lcOiEsf.isNotBlank()
+                val tieneLC = eval.lcOdEsf.orEmpty().isNotBlank() || eval.lcOiEsf.orEmpty().isNotBlank()
                 if (tieneLC) {
                     InfoSection("Contactología") {
                         Text("Contiene datos de adaptación", color = MaterialTheme.colorScheme.tertiary, fontSize = 14.sp)

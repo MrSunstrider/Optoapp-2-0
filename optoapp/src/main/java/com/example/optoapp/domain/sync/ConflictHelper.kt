@@ -211,7 +211,7 @@ open class ConflictHelper @Inject constructor(
         if (ids.isEmpty()) return emptyMap()
         val rows = selectRemoteRows(tableName, opticaId, ids)
         if (ids.isNotEmpty() && rows.isEmpty()) {
-            throw RuntimeException("All chunk queries failed for $tableName")
+            AppLogger.w(TAG, "All chunk queries failed for $tableName — returning empty map")
         }
         return rows.mapNotNull { row -> row.updatedAt?.let { ts -> row.id to ts } }.toMap()
     }

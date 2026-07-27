@@ -7,7 +7,7 @@ import androidx.room.Query
 
 @Dao
 interface RegaloDispensacionDao {
-    @Insert
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(regalo: RegaloDispensacionEntity)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)

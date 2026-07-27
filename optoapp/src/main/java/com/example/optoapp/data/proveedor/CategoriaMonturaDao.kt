@@ -15,7 +15,7 @@ interface CategoriaMonturaDao {
     @Query("SELECT * FROM categorias_montura WHERE opticaId = :opticaId")
     suspend fun getListByOptica(opticaId: String): List<CategoriaMontura>
 
-    @Insert(onConflict = OnConflictStrategy.ABORT)
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(categoria: CategoriaMontura)
 
     @Query(
