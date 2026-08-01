@@ -161,7 +161,7 @@ open class SyncHistorialUseCase @Inject constructor(
             throw e
         }
         database.withTransaction {
-            evaluaciones.forEach { ev ->
+            finalRows.forEach { ev ->
                 syncStateTracker.markSynced(opticaId, "evaluacion", ev.id)
             }
         }

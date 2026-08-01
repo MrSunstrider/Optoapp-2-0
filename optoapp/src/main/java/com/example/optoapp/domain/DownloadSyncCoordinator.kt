@@ -71,6 +71,7 @@ class DownloadSyncCoordinator @Inject constructor(
             syncStateTracker.markError(opticaId, "download_$entityType", "batch", e.message)
             return 0
         }
+        var persisted = 0
         remotos.forEach { r ->
             if (skipDeletions && getId(r) in skipIds) return@forEach
             try {
@@ -78,6 +79,7 @@ class DownloadSyncCoordinator @Inject constructor(
                     upsert(r)
                     syncStateTracker.markSynced(opticaId, entityType, getId(r))
                 }
+                persisted++
             } catch (e: CancellationException) {
                 throw e
             } catch (e: IOException) {
@@ -88,7 +90,7 @@ class DownloadSyncCoordinator @Inject constructor(
                 syncStateTracker.markError(opticaId, entityType, getId(r), e.message)
             }
         }
-        return remotos.size
+        return persisted
     }
 
     suspend fun downloadDispensacionItems(opticaId: String): Int = downloadTable<DispensacionItemRemota>(
@@ -142,9 +144,12 @@ class DownloadSyncCoordinator @Inject constructor(
     }
 
     suspend fun downloadResumenDiario(opticaId: String): Int = try {
-        val remotos = supabase.postgrest[TABLE_RESUMEN_DIARIO]
-            .select { filter { eq("optica_id", opticaId) } }
-            .decodeList<ResumenDiarioRemoto>()
+        var remotos: List<ResumenDiarioRemoto> = emptyList()
+        networkRetryHelper.retryNetwork("download:$TABLE_RESUMEN_DIARIO") {
+            remotos = supabase.postgrest[TABLE_RESUMEN_DIARIO]
+                .select { filter { eq("optica_id", opticaId) } }
+                .decodeList<ResumenDiarioRemoto>()
+        }
         remotos.forEach { r ->
             try {
                 repository.withTransaction {
@@ -176,9 +181,12 @@ class DownloadSyncCoordinator @Inject constructor(
     }
 
     suspend fun downloadConfiguracionFinanciera(opticaId: String): Int = try {
-        val remotos = supabase.postgrest[TABLE_CONFIGURACION_FINANCIERA]
-            .select { filter { eq("optica_id", opticaId) } }
-            .decodeList<ConfiguracionFinancieraRemoto>()
+        var remotos: List<ConfiguracionFinancieraRemoto> = emptyList()
+        networkRetryHelper.retryNetwork("download:$TABLE_CONFIGURACION_FINANCIERA") {
+            remotos = supabase.postgrest[TABLE_CONFIGURACION_FINANCIERA]
+                .select { filter { eq("optica_id", opticaId) } }
+                .decodeList<ConfiguracionFinancieraRemoto>()
+        }
         remotos.forEach { r ->
             try {
                 repository.withTransaction {

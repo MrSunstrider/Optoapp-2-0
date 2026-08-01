@@ -70,9 +70,13 @@ object ThreeWayMerge {
                     autoMerged.add(field)
                 }
                 else -> {
-                    // Both sides changed → conflict. Keep local as the default starting point.
-                    merged[field] = localVal ?: remoteVal!!
-                    conflicted.add(field)
+                    if (localVal == remoteVal) {
+                        merged[field] = localVal!!
+                        autoMerged.add(field)
+                    } else {
+                        merged[field] = localVal ?: remoteVal!!
+                        conflicted.add(field)
+                    }
                 }
             }
         }

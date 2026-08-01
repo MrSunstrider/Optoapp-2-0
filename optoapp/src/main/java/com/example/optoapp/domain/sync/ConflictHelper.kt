@@ -46,7 +46,7 @@ open class ConflictHelper @Inject constructor(
             val remote = parseInstant(remoteTs)
             if (local == null || remote == null) {
                 AppLogger.w(TAG, "No se pudieron parsear timestamps, fallback a string comparison: local=$localTs, remote=$remoteTs")
-                return localTs >= remoteTs
+                return normalizeTimestamp(localTs) >= normalizeTimestamp(remoteTs)
             }
             return local >= remote
         }
@@ -168,7 +168,7 @@ open class ConflictHelper @Inject constructor(
             } else {
                 AppLogger.w(TAG, "Conflicto en $entityType/${entity.id}: local=${entity.updatedAt} < remoto=$remoteUpdatedAt")
                 // FR-08: Capture full-entity snapshots at conflict detection time
-                val localDataJson = entity.localData.ifBlank { entity.updatedAt ?: "" }
+                val localDataJson = entity.localData.ifBlank { "{}" }
                 val remoteDataJson = try {
                     fetchRemoteRowJson(tableName, opticaId, entity.id)
                 } catch (e: Exception) {
@@ -179,7 +179,7 @@ open class ConflictHelper @Inject constructor(
                     entityId = entity.id,
                     opticaId = opticaId,
                     entityType = entityType,
-                    localSnapshot = entity.updatedAt,
+                    localSnapshot = if (entity.localData.isNotBlank()) entity.localData else localDataJson,
                     remoteSnapshot = remoteUpdatedAt,
                     baseSnapshot = "{}",
                     localData = localDataJson,
@@ -211,7 +211,7 @@ open class ConflictHelper @Inject constructor(
         if (ids.isEmpty()) return emptyMap()
         val rows = selectRemoteRows(tableName, opticaId, ids)
         if (ids.isNotEmpty() && rows.isEmpty()) {
-            AppLogger.w(TAG, "All chunk queries failed for $tableName — returning empty map")
+            AppLogger.w(TAG, "No remote rows found for $tableName (IDs may not exist remotely or all chunks failed)")
         }
         return rows.mapNotNull { row -> row.updatedAt?.let { ts -> row.id to ts } }.toMap()
     }
@@ -318,8 +318,8 @@ open class ConflictHelper @Inject constructor(
                 entityId = id,
                 opticaId = opticaId,
                 entityType = "montura_movimiento",
-                localSnapshot = "",
-                remoteSnapshot = "",
+                localSnapshot = localMovimientos.find { it.id == id }?.let { EntitySnapshotSerializer.serialize(it) } ?: "{}",
+                remoteSnapshot = remoteMovimientos.find { it.id == id }?.let { EntitySnapshotSerializer.serialize(it) } ?: "{}",
             )
             syncStateTracker.markConflicted(opticaId, "montura_movimiento", id)
         }

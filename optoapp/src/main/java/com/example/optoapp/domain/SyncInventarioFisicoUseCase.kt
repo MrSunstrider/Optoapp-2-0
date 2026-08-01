@@ -91,7 +91,7 @@ open class SyncInventarioFisicoUseCase @Inject constructor(
             database.withTransaction {
                 safeRows.forEach { r -> syncStateTracker.markSynced(opticaId, "inventario_fisico", r.id) }
             }
-            list.size
+            safeRows.size
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -140,8 +140,6 @@ open class SyncInventarioFisicoUseCase @Inject constructor(
     }
 
     private suspend fun downloadDetalles(opticaId: String): Int {
-        val sessions = repository.getListByOptica(opticaId)
-        val sessionIds = sessions.map { it.id }.toSet()
         val remotos = supabase.postgrest[TABLE_DETALLES]
             .select {
                 filter {

@@ -29,6 +29,7 @@ import com.example.optoapp.domain.SyncInventarioUseCase
 import com.example.optoapp.domain.SyncInventoryKpisUseCase
 import com.example.optoapp.domain.SyncOrdenesCompraUseCase
 import com.example.optoapp.domain.SyncPacientesUseCase
+import com.example.optoapp.domain.SyncSessionHelper
 import com.example.optoapp.domain.SyncProveedoresUseCase
 import com.example.optoapp.domain.observer.TableObserver
 import com.example.optoapp.subscription.SubscriptionManager
@@ -42,6 +43,7 @@ import io.mockk.coVerify
 import io.mockk.coVerifyOrder
 import io.mockk.just
 import io.mockk.mockk
+import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -381,5 +383,47 @@ class SyncViewModelConflictResolutionTest {
         coVerify { conflictDao.resolveConflict("srv-bulk", testOpticaId) }
         coVerify { conflictDao.resolveConflict("pago-bulk", testOpticaId) }
         coVerify { syncEntityStateDao.deleteConflictedForOptica(testOpticaId) }
+    }
+
+    // ── resolveAcceptTheirs: must NOT delete conflict before download succeeds ──
+
+    @Test
+    fun resolveAcceptTheirs_deletesConflictOnlyAfterDownloadSucceeds() = runTest(testDispatcher) {
+        mockkObject(SyncSessionHelper)
+        coEvery { SyncSessionHelper.refreshSessionBeforeSync(any()) } returns true
+
+        viewModel.resolveAcceptTheirs(pacienteConflict)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coVerifyOrder {
+            syncPacientesUseCase(testOpticaId, skipUpload = true, downloadAfterUpload = true)
+            conflictDao.resolveConflict(pacienteConflict.entityId, testOpticaId)
+        }
+    }
+
+    @Test
+    fun resolveAcceptTheirs_retainsConflict_whenDownloadFails() = runTest(testDispatcher) {
+        mockkObject(SyncSessionHelper)
+        coEvery { SyncSessionHelper.refreshSessionBeforeSync(any()) } returns true
+        coEvery {
+            syncPacientesUseCase(testOpticaId, skipUpload = true, downloadAfterUpload = true)
+        } returns Resource.Error("network error")
+
+        viewModel.resolveAcceptTheirs(pacienteConflict)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coVerify(exactly = 0) { conflictDao.resolveConflict(pacienteConflict.entityId, testOpticaId) }
+    }
+
+    @Test
+    fun resolveAcceptTheirs_retainsConflict_whenJwtRefreshFails() = runTest(testDispatcher) {
+        mockkObject(SyncSessionHelper)
+        coEvery { SyncSessionHelper.refreshSessionBeforeSync(any()) } returns false
+
+        viewModel.resolveAcceptTheirs(pacienteConflict)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coVerify(exactly = 0) { conflictDao.resolveConflict(pacienteConflict.entityId, testOpticaId) }
+        coVerify(exactly = 0) { syncPacientesUseCase(any(), any(), any()) }
     }
 }

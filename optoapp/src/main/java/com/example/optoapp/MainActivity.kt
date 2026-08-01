@@ -17,6 +17,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.optoapp.domain.observer.MembershipObserver
 import com.example.optoapp.ui.components.OfflineBanner
+import com.example.optoapp.util.NetworkMonitor
 import com.example.optoapp.ui.components.UpdateDialog
 import com.example.optoapp.ui.screens.*
 import com.example.optoapp.ui.theme.OptoAppTheme
@@ -37,6 +38,8 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var supabaseClient: SupabaseClient
 
     @Inject lateinit var supabaseObserver: com.example.optoapp.domain.observer.MembershipObserver
+
+    @Inject lateinit var networkMonitor: NetworkMonitor
 
     private fun isRecoveryDeepLink(intent: Intent?): Boolean {
         val fragment = intent?.data?.fragment ?: return false
@@ -82,7 +85,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background,
                 ) {
-                    OptoAppNavigation(authViewModel, supabaseClient, supabaseObserver)
+                    OptoAppNavigation(authViewModel, supabaseClient, supabaseObserver, networkMonitor)
                 }
             }
         }
@@ -104,6 +107,7 @@ fun OptoAppNavigation(
     authViewModel: AuthViewModel,
     supabaseClient: SupabaseClient,
     supabaseObserver: com.example.optoapp.domain.observer.MembershipObserver,
+    networkMonitor: NetworkMonitor,
 ) {
     val navController = rememberNavController()
 
@@ -145,7 +149,8 @@ fun OptoAppNavigation(
     }
 
     Column {
-        OfflineBanner(isOnline = true) // TODO: wire to actual connectivity state
+        val isOnline by networkMonitor.isOnline.collectAsState(initial = true)
+        OfflineBanner(isOnline = isOnline)
         NavHost(navController = navController, startDestination = "login", modifier = Modifier.weight(1f)) {
             composable("create_pin") { CreatePinScreen(navController, viewModel = authViewModel) }
             composable("pin") { PinScreen(navController, viewModel = authViewModel) }

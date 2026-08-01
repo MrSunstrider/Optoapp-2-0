@@ -74,8 +74,8 @@ class ConflictHelperMovimientoPersistenceTest {
                 entityId = movIdConflict,
                 opticaId = opticaId,
                 entityType = "montura_movimiento",
-                localSnapshot = "",
-                remoteSnapshot = "",
+                localSnapshot = any(),
+                remoteSnapshot = any(),
                 detectedAt = any(),
             )
         }

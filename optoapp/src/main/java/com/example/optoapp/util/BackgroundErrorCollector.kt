@@ -32,7 +32,7 @@ class BackgroundErrorCollector @Inject constructor() {
      */
     fun record(source: String, message: String) {
         val entry = BackgroundError(source = source, message = message)
-        _errors.value = (_errors.value + entry).takeLast(MAX_EVENTS)
+        synchronized(this) { _errors.value = (_errors.value + entry).takeLast(MAX_EVENTS) }
         android.util.Log.w(TAG, "[$source] $message")
     }
 

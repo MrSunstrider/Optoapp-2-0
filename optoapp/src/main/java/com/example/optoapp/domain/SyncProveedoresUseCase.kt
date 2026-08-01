@@ -94,7 +94,7 @@ open class SyncProveedoresUseCase @Inject constructor(
         database.withTransaction {
             safeRows.forEach { r -> syncStateTracker.markSynced(opticaId, "proveedor", r.id) }
         }
-        return rows.size
+        return safeRows.size
     }
 
     private suspend fun uploadCategorias(opticaId: String): Int {

@@ -97,7 +97,7 @@ open class SyncOrdenesCompraUseCase @Inject constructor(
         database.withTransaction {
             safeRows.forEach { r -> syncStateTracker.markSynced(opticaId, "orden_compra", r.id) }
         }
-        return rows.size
+        return safeRows.size
     }
 
     private suspend fun uploadItems(opticaId: String): Int {

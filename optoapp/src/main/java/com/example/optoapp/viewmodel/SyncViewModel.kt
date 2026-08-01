@@ -35,6 +35,7 @@ import com.example.optoapp.subscription.SubscriptionManager
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import com.example.optoapp.sync.SyncGate
 import com.example.optoapp.util.BackgroundErrorCollector
+import com.example.optoapp.util.ConnectivityChecker
 import com.example.optoapp.util.SyncErrorSanitizer
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -278,12 +279,18 @@ class SyncViewModel @Inject constructor(
         viewModelScope.launch {
             val opticaId = sessionManager.opticaId.first()
             try {
-                conflictDao.resolveConflict(entity.entityId, opticaId)
-                _conflicts.value = _conflicts.value.filter { it.entityId != entity.entityId }
-                _conflictCount.value = _conflicts.value.size
                 if (!SyncSessionHelper.refreshSessionBeforeSync(supabase)) return@launch
-                syncForEntityType(opticaId, entity.entityType, skipUpload = true)
-                Log.d(TAG, "Conflicto resuelto (accept theirs): ${entity.entityType}/${entity.entityId}")
+                val syncResult = syncGate.mutex.withLock {
+                    syncForEntityTypeWithResult(opticaId, entity.entityType, skipUpload = true)
+                }
+                if (syncResult !is Resource.Error) {
+                    conflictDao.resolveConflict(entity.entityId, opticaId)
+                    _conflicts.value = _conflicts.value.filter { it.entityId != entity.entityId }
+                    _conflictCount.value = _conflicts.value.size
+                    Log.d(TAG, "Conflicto resuelto (accept theirs): ${entity.entityType}/${entity.entityId}")
+                } else {
+                    Log.w(TAG, "Accept theirs: download falló, conflicto retenido: ${entity.entityType}/${entity.entityId}")
+                }
             } catch (e: Exception) {
                 Log.e(TAG, "Error resolviendo conflicto: ${e.message}", e)
             }
@@ -428,7 +435,7 @@ class SyncViewModel @Inject constructor(
                 }
             }
             if (!hasErrors) {
-                recordRemoteSyncTelemetry(opticaId, "ok", "inventario", null)
+                recordRemoteSyncTelemetry(opticaId, "ok", "completado", null)
             }
         } catch (e: CancellationException) {
             throw e
@@ -469,7 +476,7 @@ class SyncViewModel @Inject constructor(
                     "optica_id" to opticaId,
                     "status" to status,
                     "stage" to stage,
-                    "error_message" to safeError,
+                    "error_message" to (if (status == "error") safeError else ""),
                 ),
             )
         }.onFailure { e ->
@@ -482,7 +489,7 @@ class SyncViewModel @Inject constructor(
                 opticaId = opticaId,
                 status = status,
                 stage = stage,
-                errorMessage = safeError,
+                errorMessage = if (status == "error") safeError else "",
                 createdAt = System.currentTimeMillis(),
             )
             syncTelemetryLogDao.insert(entity)
@@ -501,15 +508,7 @@ class SyncViewModel @Inject constructor(
     }
 
     private fun isNetworkAvailable(): Boolean {
-        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-        val network = connectivityManager.activeNetwork ?: return false
-        val activeNetwork = connectivityManager.getNetworkCapabilities(network) ?: return false
-        return when {
-            activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> true
-            activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> true
-            activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> true
-            else -> false
-        }
+        return ConnectivityChecker.isNetworkAvailable(context)
     }
 
     private suspend fun ensureSyncContext(allowCached: Boolean = false): String? {

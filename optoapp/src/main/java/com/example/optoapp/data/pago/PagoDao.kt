@@ -7,10 +7,7 @@ import java.time.LocalDate
 
 @Dao
 interface PagoDao {
-    @Deprecated(
-        message = "Use getPagoByIdForOptica to enforce multi-tenant isolation",
-        replaceWith = ReplaceWith("getPagoByIdForOptica(id, opticaId)"),
-    )
+    // Legacy — prefer getPagoByIdForOptica for multi-tenant isolation
     @Query("SELECT * FROM pagos WHERE id = :id")
     suspend fun getPagoById(id: String): Pago?
 
@@ -23,10 +20,7 @@ interface PagoDao {
     @Query("SELECT * FROM pagos WHERE servicioExtraId = :servicioExtraId ORDER BY fecha DESC")
     fun getPagosByServicioExtra(servicioExtraId: String): Flow<List<Pago>>
 
-    @Deprecated(
-        message = "Use getPagosByDateRangeForOptica to enforce multi-tenant isolation",
-        replaceWith = ReplaceWith("getPagosByDateRangeForOptica(start, end, opticaId)"),
-    )
+    // Legacy — prefer getPagosByDateRangeForOptica for multi-tenant isolation
     @Query("SELECT * FROM pagos WHERE fecha >= :start AND fecha <= :end ORDER BY fecha DESC")
     fun getPagosByDateRange(start: LocalDate, end: LocalDate): Flow<List<Pago>>
 
@@ -67,10 +61,7 @@ interface PagoDao {
     @Query("UPDATE pagos SET opticaId = :newOpticaId WHERE opticaId = 'mi_optica_base'")
     suspend fun reassignFromLegacyMiOpticaBase(newOpticaId: String): Int
 
-    @Deprecated(
-        message = "Use getPagosListByOptica to enforce multi-tenant isolation",
-        replaceWith = ReplaceWith("getPagosListByOptica(opticaId)"),
-    )
+    // Legacy — prefer getPagosListByOptica for multi-tenant isolation
     @Query("SELECT * FROM pagos")
     suspend fun getAllPagos(): List<Pago>
 
@@ -80,10 +71,7 @@ interface PagoDao {
     @Query("SELECT * FROM pagos WHERE opticaId = :opticaId")
     fun getPagosFlowByOptica(opticaId: String): Flow<List<Pago>>
 
-    @Deprecated(
-        message = "Use reassignDispensacionIdForOptica to enforce multi-tenant isolation",
-        replaceWith = ReplaceWith("reassignDispensacionIdForOptica(oldDispensacionId, newDispensacionId, opticaId)"),
-    )
+    // Legacy — prefer reassignDispensacionIdForOptica for multi-tenant isolation
     @Query("UPDATE pagos SET dispensacionId = :newDispensacionId WHERE dispensacionId = :oldDispensacionId")
     suspend fun reassignDispensacionId(oldDispensacionId: String, newDispensacionId: String): Int
 

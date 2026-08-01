@@ -182,14 +182,13 @@ open class SyncFinanzasUseCase @Inject constructor(
         e.uploadedCount
     } catch (e: IOException) {
         AppLogger.e(TAG, "Error en red subiendo $entityName: ${e.message}", e)
-        // WHY: Transient network failures (socket timeout, connection reset) often recover within seconds —
-        // retrying avoids marking the entire sync cycle as partial for a blip
         var lastError = e
         repeat(3) { attempt ->
             val backoffMs = 1000L * (1L shl attempt)
             delay(backoffMs)
             try {
-                return block()
+                val retryResult = block()
+                return retryResult
             } catch (e2: CancellationException) {
                 throw e2
             } catch (e2: UploadPartialException) {

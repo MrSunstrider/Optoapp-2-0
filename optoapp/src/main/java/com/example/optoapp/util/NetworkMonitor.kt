@@ -14,42 +14,51 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class NetworkMonitor @Inject constructor(
+open class NetworkMonitor @Inject constructor(
     @ApplicationContext private val context: Context,
 ) {
     val isOnline: Flow<Boolean> = callbackFlow {
         val connectivityManager =
             context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
 
-        // Emit initial state
-        val activeNetwork = connectivityManager.activeNetwork ?: return@callbackFlow
-        val capabilities = connectivityManager.getNetworkCapabilities(activeNetwork) ?: return@callbackFlow
-        trySend(capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET))
+        // Emit initial state without closing the flow — the callback handles future changes
+        val activeNetwork = connectivityManager.activeNetwork
+        val capabilities = activeNetwork?.let { connectivityManager.getNetworkCapabilities(it) }
+        val online = capabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) ?: false
+        trySend(online)
 
-        val callback = object : ConnectivityManager.NetworkCallback() {
-            override fun onAvailable(network: Network) {
-                trySend(true)
-            }
-
-            override fun onLost(network: Network) {
-                trySend(false)
-            }
-
-            override fun onCapabilitiesChanged(
-                network: Network,
-                capabilities: NetworkCapabilities,
-            ) {
-                trySend(capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET))
-            }
-        }
-
-        val request = NetworkRequest.Builder()
-            .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-            .build()
+        val callback = createNetworkCallback { value -> trySend(value) }
+        val request = createNetworkRequest()
         connectivityManager.registerNetworkCallback(request, callback)
 
         awaitClose {
             connectivityManager.unregisterNetworkCallback(callback)
         }
     }.distinctUntilChanged()
+
+    /** Override in tests to avoid Android stub-jar instantiation. */
+    internal open fun createNetworkRequest(): NetworkRequest = NetworkRequest.Builder()
+        .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+        .build()
+
+    /** Override in tests to avoid Android stub-jar instantiation. */
+    internal open fun createNetworkCallback(
+        emit: (Boolean) -> Unit,
+    ): ConnectivityManager.NetworkCallback =
+        object : ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: Network) {
+                emit(true)
+            }
+
+            override fun onLost(network: Network) {
+                emit(false)
+            }
+
+            override fun onCapabilitiesChanged(
+                network: Network,
+                capabilities: NetworkCapabilities,
+            ) {
+                emit(capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET))
+            }
+        }
 }

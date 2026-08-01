@@ -31,10 +31,7 @@ interface DispensacionItemDao {
     @Query("SELECT * FROM dispensacion_items WHERE optica_id = :opticaId")
     suspend fun getItemsListByOptica(opticaId: String): List<DispensacionItem>
 
-    @Deprecated(
-        message = "Use getItemsListByOptica to enforce multi-tenant isolation",
-        replaceWith = ReplaceWith("getItemsListByOptica(opticaId)"),
-    )
+    // Legacy — prefer getItemsListByOptica for multi-tenant isolation
     @Query("SELECT * FROM dispensacion_items")
     suspend fun getAllItems(): List<DispensacionItem>
 

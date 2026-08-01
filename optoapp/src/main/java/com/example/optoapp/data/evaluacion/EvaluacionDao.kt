@@ -24,20 +24,14 @@ interface EvaluacionDao {
     @Query("UPDATE evaluaciones SET opticaId = :newOpticaId WHERE opticaId = 'mi_optica_base'")
     suspend fun reassignFromLegacyMiOpticaBase(newOpticaId: String): Int
 
-    @Deprecated(
-        message = "Use getEvaluacionesListByOptica to enforce multi-tenant isolation",
-        replaceWith = ReplaceWith("getEvaluacionesListByOptica(opticaId)"),
-    )
+    // Legacy — prefer getEvaluacionesListByOptica for multi-tenant isolation
     @Query("SELECT * FROM evaluaciones")
     suspend fun getAllEvaluaciones(): List<EvaluacionClinica>
 
     @Query("SELECT * FROM evaluaciones WHERE opticaId = :opticaId")
     suspend fun getEvaluacionesListByOptica(opticaId: String): List<EvaluacionClinica>
 
-    @Deprecated(
-        message = "Use countEvaluacionesInRangeForOptica to enforce multi-tenant isolation",
-        replaceWith = ReplaceWith("countEvaluacionesInRangeForOptica(start, end, opticaId)"),
-    )
+    // Legacy — prefer countEvaluacionesInRangeForOptica for multi-tenant isolation
     @Query("SELECT COUNT(*) FROM evaluaciones WHERE fecha >= :start AND fecha <= :end")
     fun countEvaluacionesInRange(start: LocalDate, end: LocalDate): Flow<Int>
 

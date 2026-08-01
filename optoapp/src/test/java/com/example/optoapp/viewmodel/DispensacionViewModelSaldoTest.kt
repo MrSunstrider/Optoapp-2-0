@@ -69,7 +69,7 @@ class DispensacionViewModelSaldoTest {
     }
 
     @Test
-    fun `pagosSumByDispensacion excludes Anulacion tipo`() = runTest(testDispatcher) {
+    fun `pagosSumByDispensacion includes Anulacion tipo netting to zero`() = runTest(testDispatcher) {
         val pagos = listOf(
             Pago(id = "p1", dispensacionId = "d1", tipo = "Abono", monto = 100.0, opticaId = "optica-test", fecha = testDate),
             Pago(id = "p2", dispensacionId = "d1", tipo = "Anulación", monto = -100.0, opticaId = "optica-test", fecha = testDate),
@@ -84,15 +84,15 @@ class DispensacionViewModelSaldoTest {
 
         val result = viewModel.pagosSumByDispensacion.first()
         assertEquals(
-            "Should sum only Abono (100.0), excluding Anulación (-100.0)",
-            100.0,
+            "Anulaciones are INCLUDED so Abono 100 + Anulación -100 nets to 0",
+            0.0,
             result["d1"] ?: 0.0,
             0.001,
         )
     }
 
     @Test
-    fun `pagosSumByDispensacion handles multiple dispensaciones`() = runTest(testDispatcher) {
+    fun `pagosSumByDispensacion handles multiple dispensaciones with anulaciones`() = runTest(testDispatcher) {
         val pagos = listOf(
             Pago(id = "p1", dispensacionId = "d1", tipo = "Abono", monto = 100.0, opticaId = "optica-test", fecha = testDate),
             Pago(id = "p2", dispensacionId = "d2", tipo = "Abono", monto = 200.0, opticaId = "optica-test", fecha = testDate),
@@ -107,12 +107,12 @@ class DispensacionViewModelSaldoTest {
         advanceUntilIdle()
 
         val result = viewModel.pagosSumByDispensacion.first()
-        assertEquals("d1 sum excludes anulacion → 100.0", 100.0, result["d1"] ?: 0.0, 0.001)
+        assertEquals("d1 includes anulacion → 100 + (-100) = 0", 0.0, result["d1"] ?: 0.0, 0.001)
         assertEquals("d2 sum stays 200.0", 200.0, result["d2"] ?: 0.0, 0.001)
     }
 
     @Test
-    fun `aCuentaSumByServicio excludes Anulacion tipo`() = runTest(testDispatcher) {
+    fun `aCuentaSumByServicio includes Anulacion tipo netting to zero`() = runTest(testDispatcher) {
         val pagos = listOf(
             Pago(id = "p1", servicioExtraId = "s1", tipo = "Abono", monto = 100.0, opticaId = "optica-test", fecha = testDate),
             Pago(id = "p2", servicioExtraId = "s1", tipo = "Anulación", monto = -100.0, opticaId = "optica-test", fecha = testDate),
@@ -127,15 +127,15 @@ class DispensacionViewModelSaldoTest {
 
         val result = viewModel.aCuentaSumByServicio.first()
         assertEquals(
-            "Should sum only Abono (100.0), excluding Anulación (-100.0)",
-            100.0,
+            "Anulaciones are INCLUDED so Abono 100 + Anulación -100 nets to 0",
+            0.0,
             result["s1"] ?: 0.0,
             0.001,
         )
     }
 
     @Test
-    fun `aCuentaSumByServicio handles multiple servicios`() = runTest(testDispatcher) {
+    fun `aCuentaSumByServicio handles multiple servicios with anulaciones`() = runTest(testDispatcher) {
         val pagos = listOf(
             Pago(id = "p1", servicioExtraId = "s1", tipo = "Abono", monto = 50.0, opticaId = "optica-test", fecha = testDate),
             Pago(id = "p2", servicioExtraId = "s2", tipo = "Abono", monto = 75.0, opticaId = "optica-test", fecha = testDate),
@@ -150,7 +150,7 @@ class DispensacionViewModelSaldoTest {
         advanceUntilIdle()
 
         val result = viewModel.aCuentaSumByServicio.first()
-        assertEquals("s1 sum excludes anulacion → 50.0", 50.0, result["s1"] ?: 0.0, 0.001)
+        assertEquals("s1 includes anulacion → 50 + (-50) = 0", 0.0, result["s1"] ?: 0.0, 0.001)
         assertEquals("s2 sum stays 75.0", 75.0, result["s2"] ?: 0.0, 0.001)
     }
 }

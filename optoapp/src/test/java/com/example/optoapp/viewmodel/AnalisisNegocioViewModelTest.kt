@@ -48,7 +48,7 @@ class AnalisisNegocioViewModelTest {
     private lateinit var viewModel: AnalisisNegocioViewModel
 
     private val opticaId = "optica-test-1"
-    private val currentMonth = LocalDate.of(2026, 7, 1)
+    private val currentMonth = LocalDate.now().withDayOfMonth(1)
 
     @Before
     fun setUp() {
