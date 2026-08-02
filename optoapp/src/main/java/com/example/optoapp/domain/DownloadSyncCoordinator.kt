@@ -10,7 +10,10 @@ import com.example.optoapp.util.AppLogger
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.CancellationException
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import java.io.IOException
+import java.time.LocalDate
 import javax.inject.Inject
 
 /**
@@ -144,6 +147,20 @@ class DownloadSyncCoordinator @Inject constructor(
     }
 
     suspend fun downloadResumenDiario(opticaId: String): Int = try {
+        // Trigger server-side recalculation so downloaded data is always fresh
+        try {
+            val today = java.time.LocalDate.now().toString()
+            val params = buildJsonObject {
+                put("p_optica_id", opticaId)
+                put("p_fecha", today)
+            }
+            supabase.postgrest.rpc("recalcular_resumen_diario", params)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            AppLogger.w(TAG, "resumen_diario recalc RPC failed (non-fatal): ${e.message}")
+        }
+
         var remotos: List<ResumenDiarioRemoto> = emptyList()
         networkRetryHelper.retryNetwork("download:$TABLE_RESUMEN_DIARIO") {
             remotos = supabase.postgrest[TABLE_RESUMEN_DIARIO]
