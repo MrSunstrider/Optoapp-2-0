@@ -18,6 +18,7 @@ import com.example.optoapp.data.Paciente
 import com.example.optoapp.testing.TestTags
 import com.example.optoapp.ui.components.OptoDatePickerDialog
 import com.example.optoapp.ui.components.OptoTopAppBar
+import com.example.optoapp.ui.navigation.Route
 import com.example.optoapp.ui.components.paciente.PacienteFormSections
 import com.example.optoapp.util.DateUtils
 import com.example.optoapp.viewmodel.PacienteViewModel
@@ -205,7 +206,7 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
                                 try {
                                     viewModel.savePaciente(p)
                                     val currentRoute = navController.currentBackStackEntry?.destination?.route
-                                    navController.navigate("detallePaciente/${p.id}") {
+                                    navController.navigate(Route.DetallePaciente(p.id).route) {
                                         if (currentRoute != null) {
                                             popUpTo(currentRoute) { inclusive = true }
                                         }

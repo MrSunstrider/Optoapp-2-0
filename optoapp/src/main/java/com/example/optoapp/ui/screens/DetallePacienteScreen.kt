@@ -22,6 +22,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.optoapp.data.Paciente
 import com.example.optoapp.ui.components.OptoTopAppBar
+import com.example.optoapp.ui.navigation.Route
 import com.example.optoapp.ui.components.common.EmptyState
 import com.example.optoapp.ui.components.paciente.DeletePacienteDialog
 import com.example.optoapp.ui.components.paciente.DispensacionesList
@@ -143,7 +144,7 @@ fun DetallePacienteScreen(
                     ) {
                         Icon(Icons.Default.PictureAsPdf, contentDescription = "Exportar fórmula en PDF")
                     }
-                    IconButton(onClick = { navController.navigate("editarPaciente/$id") }) {
+                    IconButton(onClick = { navController.navigate(Route.EditarPaciente(id).route) }) {
                         Icon(Icons.Default.Edit, contentDescription = "Editar Perfil")
                     }
                     IconButton(
@@ -159,9 +160,9 @@ fun DetallePacienteScreen(
             FloatingActionButton(
                 onClick = {
                     when (selectedTab) {
-                        0 -> navController.navigate("nuevaEvaluacion/$id")
-                        1 -> navController.navigate("nuevaDispensacion/$id")
-                        2 -> navController.navigate("nuevo_servicio/$id")
+                        0 -> navController.navigate(Route.NuevaEvaluacion(id).route)
+                        1 -> navController.navigate(Route.NuevaDispensacion(id).route)
+                        2 -> navController.navigate(Route.NuevoServicioPaciente(id).route)
                     }
                 },
                 modifier = Modifier.navigationBarsPadding(),
@@ -244,20 +245,20 @@ fun DetallePacienteScreen(
                     Box(modifier = Modifier.fillMaxSize()) {
                         when (selectedTab) {
                             0 -> EvaluacionesList(evaluaciones, p, evaluacionViewModel) { evalId ->
-                                navController.navigate("editarEvaluacion/$id/$evalId")
+                                navController.navigate(Route.EditarEvaluacion(id, evalId).route)
                             }
                             1 -> DispensacionesList(
                                 dispensaciones = dispensaciones,
                                 paciente = p,
                                 evaluaciones = evaluaciones,
                                 onEdit = { dispId ->
-                                    navController.navigate("editarDispensacion/$id/$dispId")
+                                    navController.navigate(Route.EditarDispensacion(id, dispId).route)
                                 },
                                 pagosSumMap = pagosSumByDisp,
                             )
                             2 -> ServiciosExtraList(
                                 servicios = servicios,
-                                onEdit = { servId -> navController.navigate("editar_servicio/$servId") },
+                                onEdit = { servId -> navController.navigate(Route.EditarServicio(servId).route) },
                                 aCuentaSumMap = aCuentaSumByServ,
                             )
                         }

@@ -41,6 +41,7 @@ import androidx.navigation.NavController
 import com.example.optoapp.ui.components.DropdownField
 import com.example.optoapp.ui.components.OptoDatePickerDialog
 import com.example.optoapp.ui.components.OptoTopAppBar
+import com.example.optoapp.ui.navigation.Route
 import com.example.optoapp.util.DateUtils
 import com.example.optoapp.viewmodel.AgendaFiltro
 import com.example.optoapp.viewmodel.AgendaViewModel
@@ -200,7 +201,7 @@ fun AgendaScreen(
                                     }
                                     TextButton(
                                         onClick = {
-                                            navController.navigate("editarEvaluacion/${e.pacienteId}/${e.id}")
+                                            navController.navigate(Route.EditarEvaluacion(e.pacienteId, e.id).route)
                                         },
                                     ) {
                                         Text("Abrir evaluación")

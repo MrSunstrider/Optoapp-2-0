@@ -31,6 +31,7 @@ import com.example.optoapp.data.Resource
 import com.example.optoapp.testing.TestTags
 import com.example.optoapp.ui.components.OptoCard
 import com.example.optoapp.ui.components.OptoTopAppBar
+import com.example.optoapp.ui.navigation.Route
 import com.example.optoapp.ui.components.paciente.ResumenDispensacionDialog
 import com.example.optoapp.ui.components.paciente.ResumenEvaluacionDialog
 import com.example.optoapp.ui.theme.AlertRed
@@ -116,7 +117,7 @@ fun PacientesListScreen(
                     if (!canCreateEdit) {
                         Toast.makeText(context, "Tu rol no permite crear pacientes.", Toast.LENGTH_SHORT).show()
                     } else {
-                        navController.navigate("nuevoPaciente")
+                        navController.navigate(Route.NuevoPaciente.route)
                     }
                 },
                 modifier = Modifier.navigationBarsPadding(),
@@ -202,7 +203,7 @@ fun PacientesListScreen(
                     items(pacientes, key = { it.id }) { paciente ->
                         PacienteCard(
                             paciente = paciente,
-                            onClick = { navController.navigate("detallePaciente/${paciente.id}") },
+                            onClick = { navController.navigate(Route.DetallePaciente(paciente.id).route) },
                             onShowLastEvaluacion = { id ->
                                 activeDialog = QuickSummaryDialog.EVAL
                                 viewModel.loadLastEvaluacion(id)
@@ -256,7 +257,7 @@ fun PacientesListScreen(
                                         pagosSum = pagosSumByDispensacion[disp.id] ?: 0.0,
                                         onGoToFinanciero = { target ->
                                         closeAndResetDisp()
-                                        navController.navigate("informacion_financiera/${target.id}")
+                                        navController.navigate(Route.InformacionFinanciera(target.id).route)
                                     })
                                 } else {
                                     closeAndResetDisp()

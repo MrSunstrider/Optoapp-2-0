@@ -33,6 +33,7 @@ import com.example.optoapp.ui.components.FechaEntregaEditButton
 import com.example.optoapp.ui.components.OptoDatePickerDialog
 import com.example.optoapp.ui.components.OptoTextField
 import com.example.optoapp.ui.components.OptoTopAppBar
+import com.example.optoapp.ui.navigation.Route
 import com.example.optoapp.ui.components.dispensacion.LenteForm
 import com.example.optoapp.util.DateUtils
 import com.example.optoapp.viewmodel.DispensacionItemUi
@@ -81,7 +82,7 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
         try {
             viewModel.saveDispensacion(pacienteId, dispensacionId) {
                 if (dispensacionId == null) {
-                    navController.navigate("informacion_financiera/${viewModel.uiState.value.generatedId}") {
+                    navController.navigate(Route.InformacionFinanciera(viewModel.uiState.value.generatedId).route) {
                         popUpTo("nuevaDispensacion/$pacienteId") { inclusive = true }
                     }
                 } else {
@@ -299,14 +300,14 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
                             Text(uiState.estadoEntrega, fontWeight = FontWeight.Bold)
                         }
                         OutlinedButton(
-                            onClick = { navController.navigate("informacion_financiera/$dispensacionId") },
+                            onClick = { navController.navigate(Route.InformacionFinanciera(dispensacionId).route) },
                             modifier = Modifier.fillMaxWidth(),
                         ) {
                             Text("Gestionar Pagos")
                         }
                         // Gestionar costos button (only for existing dispensaciones)
                         OutlinedButton(
-                            onClick = { navController.navigate("costos_y_gastos/$dispensacionId") },
+                            onClick = { navController.navigate(Route.CostosYGastosDisp(dispensacionId).route) },
                             modifier = Modifier.fillMaxWidth(),
                         ) {
                             Icon(Icons.Default.Receipt, contentDescription = "Recibo", modifier = Modifier.size(16.dp))

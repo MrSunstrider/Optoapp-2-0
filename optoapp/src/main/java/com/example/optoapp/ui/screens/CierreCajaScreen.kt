@@ -21,6 +21,7 @@ import com.example.optoapp.data.AppRoles
 import com.example.optoapp.ui.components.OptoCard
 import com.example.optoapp.ui.components.OptoDatePickerDialog
 import com.example.optoapp.ui.components.OptoTopAppBar
+import com.example.optoapp.ui.navigation.Route
 import com.example.optoapp.ui.components.cierre_caja.ResumenCard
 import com.example.optoapp.util.DateUtils
 import com.example.optoapp.viewmodel.AuthViewModel
@@ -227,7 +228,7 @@ fun CierreCajaScreen(
                             modifier = Modifier.fillMaxWidth()
                                 .clickable {
                                     if (disp.pacienteId.isNotBlank()) {
-                                        navController.navigate("editarDispensacion/${disp.pacienteId}/${disp.id}")
+                                        navController.navigate(Route.EditarDispensacion(disp.pacienteId, disp.id).route)
                                     }
                                 },
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
@@ -264,7 +265,7 @@ fun CierreCajaScreen(
                         Card(
                             modifier = Modifier.fillMaxWidth()
                                 .clickable {
-                                    navController.navigate("editar_servicio/${serv.id}")
+                                    navController.navigate(Route.EditarServicio(serv.id).route)
                                 },
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
                         ) {

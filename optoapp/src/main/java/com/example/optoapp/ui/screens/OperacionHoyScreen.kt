@@ -156,13 +156,13 @@ fun OperacionHoyScreen(
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 QuickAction("Paciente", Icons.Default.PersonAdd, MaterialTheme.colorScheme.primary, Modifier.weight(1f)) {
-                    navController.navigate("nuevoPaciente")
+                    navController.navigate(Route.NuevoPaciente.route)
                 }
                 QuickAction("Servicio", Icons.Default.Handyman, MaterialTheme.colorScheme.tertiary, Modifier.weight(1f)) {
-                    navController.navigate("nuevo_servicio")
+                    navController.navigate(Route.NuevoServicio.route)
                 }
                 QuickAction("Caja", Icons.Default.PointOfSale, MaterialTheme.colorScheme.secondary, Modifier.weight(1f)) {
-                    navController.navigate("cierre_caja")
+                    navController.navigate(Route.CierreCaja.route)
                 }
             }
 
@@ -186,7 +186,7 @@ fun OperacionHoyScreen(
                         value = "${uiState.citasHoy}",
                         color = MaterialTheme.colorScheme.primary,
                         onClick = if (uiState.citasHoy > 0) {
-                            { navController.navigate("agenda") }
+                            { navController.navigate(Route.Agenda.route) }
                         } else {
                             null
                         },
@@ -209,7 +209,7 @@ fun OperacionHoyScreen(
                         color = if (uiState.stockCritico > 0) AlertRed else PositiveGreen,
                         highlight = uiState.stockCritico > 0,
                         onClick = if (uiState.stockCritico > 0) {
-                            { navController.navigate("monturas") }
+                            { navController.navigate(Route.Monturas.route) }
                         } else {
                             null
                         },
@@ -269,7 +269,7 @@ fun OperacionHoyScreen(
                 uiState.dispensacionesPendientes.take(5).forEach { disp ->
                     Card(
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).clickable {
-                            navController.navigate("informacion_financiera/${disp.id}")
+                            navController.navigate(Route.InformacionFinanciera(disp.id).route)
                         },
                         shape = MaterialTheme.shapes.small,
                     ) {
@@ -295,7 +295,7 @@ fun OperacionHoyScreen(
                 uiState.serviciosPendientes.take(3).forEach { serv ->
                     Card(
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).clickable {
-                            navController.navigate("editar_servicio/${serv.id}")
+                            navController.navigate(Route.EditarServicio(serv.id).route)
                         },
                         shape = MaterialTheme.shapes.small,
                     ) {

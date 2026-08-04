@@ -25,6 +25,7 @@ import com.example.optoapp.domain.AnalisisMensual
 import com.example.optoapp.domain.Prioridad
 import com.example.optoapp.domain.Recomendacion
 import com.example.optoapp.ui.components.OptoTopAppBar
+import com.example.optoapp.ui.navigation.Route
 import com.example.optoapp.ui.theme.AlertRed
 import com.example.optoapp.ui.theme.PositiveGreen
 import com.example.optoapp.ui.theme.WarningAmber
@@ -282,7 +283,7 @@ fun AnalisisNegocioScreen(
                             Text("Agregar", fontSize = 12.sp)
                         }
                         if (gastosMes.isNotEmpty()) {
-                            OutlinedButton(onClick = { navController.navigate("gastos") }, modifier = Modifier.weight(1f)) {
+                            OutlinedButton(onClick = { navController.navigate(Route.Gastos.route) }, modifier = Modifier.weight(1f)) {
                                 Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Lista", modifier = Modifier.size(16.dp))
                                 Spacer(Modifier.width(4.dp))
                                 Text("Ver todos", fontSize = 12.sp)
@@ -312,7 +313,7 @@ fun AnalisisNegocioScreen(
 
             if (uiState.analisis != null) {
                 Button(
-                    onClick = { navController.navigate("analisis_detalle") },
+                    onClick = { navController.navigate(Route.AnalisisDetalle.route) },
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                 ) {

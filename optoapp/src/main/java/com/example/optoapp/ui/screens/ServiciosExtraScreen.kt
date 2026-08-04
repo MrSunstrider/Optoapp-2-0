@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.optoapp.data.ServicioExtra
+import com.example.optoapp.ui.navigation.Route
 import com.example.optoapp.ui.components.OptoDatePickerDialog
 import com.example.optoapp.ui.components.OptoKpiCard
 import com.example.optoapp.ui.components.OptoTopAppBar
@@ -115,7 +116,7 @@ fun ServiciosExtraScreen(navController: NavController, drawerState: DrawerState,
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { navController.navigate("nuevo_servicio") },
+                onClick = { navController.navigate(Route.NuevoServicio.route) },
                 modifier = Modifier.navigationBarsPadding(),
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Añadir Servicio")
@@ -194,7 +195,7 @@ fun ServiciosExtraScreen(navController: NavController, drawerState: DrawerState,
                     ServicioCard(
                         servicio = servicio,
                         aCuenta = aCuentaSumByServicio[servicio.id] ?: 0.0,
-                        onEdit = { navController.navigate("editar_servicio/${servicio.id}") },
+                        onEdit = { navController.navigate(Route.EditarServicio(servicio.id).route) },
                         onDelete = { viewModel.showDeleteConfirmation(servicio) },
                     )
                 }
