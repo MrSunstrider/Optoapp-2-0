@@ -11,6 +11,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.tooling.preview.Preview
+import com.example.optoapp.ui.theme.OptoAppTheme
 
 @Composable
 fun OptoCard(
@@ -42,5 +44,13 @@ fun OptoCard(
             elevation = cardElevation,
             content = content,
         )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun OptoCardPreview() {
+    OptoAppTheme {
+        OptoCard { androidx.compose.material3.Text("Card content") }
     }
 }

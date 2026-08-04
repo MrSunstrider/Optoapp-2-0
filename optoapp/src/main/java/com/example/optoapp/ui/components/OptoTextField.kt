@@ -9,6 +9,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
+import com.example.optoapp.ui.theme.OptoAppTheme
 
 @Composable
 fun OptoTextField(
@@ -58,4 +60,10 @@ fun OptoTextField(
         maxLines = 1,
         textStyle = TextStyle(textAlign = textAlign),
     )
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun OptoTextFieldPreview() {
+    OptoAppTheme { OptoTextField(value = "", onValueChange = {}, label = "Etiqueta") }
 }
