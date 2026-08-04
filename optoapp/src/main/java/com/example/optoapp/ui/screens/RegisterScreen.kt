@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.optoapp.ui.components.OptoTopAppBar
+import com.example.optoapp.ui.navigation.Route
 import com.example.optoapp.viewmodel.AuthState
 import com.example.optoapp.viewmodel.AuthViewModel
 
@@ -50,13 +51,13 @@ fun RegisterScreen(
     LaunchedEffect(authState, pendingMemberships, isLoggedIn, needsOnboarding) {
         if (authState !is AuthState.Success) return@LaunchedEffect
         if (needsOnboarding) {
-            navController.navigate("sin_optica") {
+            navController.navigate(Route.SinOptica.route) {
                 popUpTo("register") { inclusive = true }
             }
             return@LaunchedEffect
         }
         if (pendingMemberships.isNotEmpty()) {
-            navController.navigate("seleccion_optica") {
+            navController.navigate(Route.SeleccionOptica.route) {
                 popUpTo("register") { inclusive = true }
             }
             return@LaunchedEffect

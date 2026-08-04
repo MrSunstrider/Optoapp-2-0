@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.optoapp.ui.components.OptoTopAppBar
+import com.example.optoapp.ui.navigation.Route
 import com.example.optoapp.viewmodel.AuthViewModel
 import com.example.optoapp.viewmodel.RecoveryState
 
@@ -83,8 +84,8 @@ fun RecoveryScreen(
                         OutlinedButton(
                             onClick = {
                                 viewModel.resetRecoveryState()
-                                navController.navigate("login") {
-                                    popUpTo("login") { inclusive = true }
+                                navController.navigate(Route.Login.route) {
+                                    popUpTo(Route.Login.route) { inclusive = true }
                                 }
                             },
                             modifier = Modifier.fillMaxWidth().height(48.dp),
@@ -125,8 +126,8 @@ fun RecoveryScreen(
                         TextButton(
                             onClick = {
                                 viewModel.resetRecoveryState()
-                                navController.navigate("login") {
-                                    popUpTo("login") { inclusive = true }
+                                navController.navigate(Route.Login.route) {
+                                    popUpTo(Route.Login.route) { inclusive = true }
                                 }
                             },
                         ) {

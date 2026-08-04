@@ -27,6 +27,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.optoapp.BuildConfig
+import com.example.optoapp.ui.navigation.Route
 import com.example.optoapp.util.SyncErrorSanitizer
 import com.example.optoapp.viewmodel.AuthViewModel
 import com.example.optoapp.viewmodel.OpticaHeaderUi
@@ -351,7 +352,7 @@ fun DrawerContent(
                 scope.launch {
                     drawerState.close()
                     authViewModel.logout()
-                    parentNavController.navigate("login") {
+                    parentNavController.navigate(Route.Login.route) {
                         popUpTo(parentNavController.graph.id) { inclusive = true }
                     }
                 }

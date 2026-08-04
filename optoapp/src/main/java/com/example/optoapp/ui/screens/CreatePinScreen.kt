@@ -17,6 +17,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.optoapp.data.SecurityManager
 import com.example.optoapp.ui.components.OptoCard
+import com.example.optoapp.ui.navigation.Route
 import com.example.optoapp.viewmodel.AuthViewModel
 import kotlinx.coroutines.launch
 
@@ -184,7 +185,7 @@ fun CreatePinScreen(navController: NavController, viewModel: AuthViewModel = hil
                                                     } else {
                                                         if (secondPin == firstPin) {
                                                             viewModel.createPin(firstPin)
-                                                            navController.navigate("main") {
+                                                            navController.navigate(Route.Main.route) {
                                                                 popUpTo("create_pin") { inclusive = true }
                                                             }
                                                         } else {

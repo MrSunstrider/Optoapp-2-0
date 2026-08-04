@@ -41,6 +41,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.optoapp.testing.TestTags
 import com.example.optoapp.ui.components.OptoCard
+import com.example.optoapp.ui.navigation.Route
 import com.example.optoapp.viewmodel.AuthState
 import com.example.optoapp.viewmodel.AuthViewModel
 
@@ -82,13 +83,13 @@ fun LoginScreen(
         }
 
         if (needsOnboarding) {
-            navController.navigate("sin_optica") {
+            navController.navigate(Route.SinOptica.route) {
                 popUpTo("login") { inclusive = true }
             }
             return@LaunchedEffect
         }
         if (pendingMemberships.isNotEmpty()) {
-            navController.navigate("seleccion_optica") {
+            navController.navigate(Route.SeleccionOptica.route) {
                 popUpTo("login") { inclusive = true }
             }
             return@LaunchedEffect
@@ -260,7 +261,7 @@ fun LoginScreen(
                         }
                         Spacer(modifier = Modifier.weight(1f))
                         TextButton(
-                            onClick = { navController.navigate("recovery") },
+                            onClick = { navController.navigate(Route.Recovery.route) },
                             modifier = Modifier.testTag(TestTags.LOGIN_OLVIDASTE_BTN),
                         ) {
                             Text(
@@ -367,7 +368,7 @@ fun LoginScreen(
                     }
 
                     OutlinedButton(
-                        onClick = { navController.navigate("register") },
+                        onClick = { navController.navigate(Route.Register.route) },
                         modifier = Modifier.fillMaxWidth().height(48.dp),
                         shape = MaterialTheme.shapes.medium,
                     ) {

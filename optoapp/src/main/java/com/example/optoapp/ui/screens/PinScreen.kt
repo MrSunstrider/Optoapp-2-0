@@ -19,6 +19,7 @@ import androidx.navigation.NavController
 import com.example.optoapp.data.SecurityManager
 import com.example.optoapp.testing.TestTags
 import com.example.optoapp.ui.components.OptoCard
+import com.example.optoapp.ui.navigation.Route
 import com.example.optoapp.viewmodel.AuthViewModel
 import kotlinx.coroutines.launch
 
@@ -167,7 +168,7 @@ fun PinScreen(navController: NavController, viewModel: AuthViewModel = hiltViewM
                                                 scope.launch {
                                                     isLoading = true
                                                     if (viewModel.validatePin()) {
-                                                        navController.navigate("main") {
+                                                        navController.navigate(Route.Main.route) {
                                                             popUpTo("pin") { inclusive = true }
                                                         }
                                                     } else {

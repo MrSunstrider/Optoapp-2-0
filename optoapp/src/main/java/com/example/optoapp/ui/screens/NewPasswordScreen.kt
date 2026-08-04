@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.optoapp.ui.components.OptoTopAppBar
+import com.example.optoapp.ui.navigation.Route
 import com.example.optoapp.viewmodel.AuthViewModel
 import com.example.optoapp.viewmodel.RecoveryState
 
@@ -44,7 +45,7 @@ fun NewPasswordScreen(
         if (recoveryState !is RecoveryState.LinkReceived && recoveryState !is RecoveryState.Loading &&
             recoveryState !is RecoveryState.Error && recoveryState !is RecoveryState.PasswordUpdated
         ) {
-            navController.navigate("login") {
+                                navController.navigate(Route.Login.route) {
                 popUpTo("login") { inclusive = true }
             }
         }
@@ -111,7 +112,7 @@ fun NewPasswordScreen(
                         OutlinedButton(
                             onClick = {
                                 viewModel.resetRecoveryState()
-                                navController.navigate("login") {
+            navController.navigate(Route.Login.route) {
                                     popUpTo(0) { inclusive = true }
                                 }
                             },
