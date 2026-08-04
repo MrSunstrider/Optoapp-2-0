@@ -1,5 +1,6 @@
 package com.example.optoapp.ui.screens
 
+import androidx.compose.animation.*
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -23,6 +24,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.optoapp.data.AppRoles
 import com.example.optoapp.ui.components.OptoTopAppBar
+import com.example.optoapp.ui.navigation.Route
 import com.example.optoapp.ui.theme.AlertRed
 import com.example.optoapp.ui.theme.PositiveGreen
 import com.example.optoapp.ui.theme.WarningAmber
@@ -58,6 +60,43 @@ fun OperacionHoyScreen(
     Scaffold(
         containerColor = MaterialTheme.colorScheme.surface,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        floatingActionButton = {
+            var expanded by remember { mutableStateOf(false) }
+            Column(horizontalAlignment = Alignment.End) {
+                AnimatedVisibility(visible = expanded, enter = fadeIn() + slideInVertically(), exit = fadeOut() + slideOutVertically()) {
+                    Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        SmallFloatingActionButton(
+                            onClick = {
+                                navController.navigate(Route.NuevoPaciente.route)
+                                expanded = false
+                            },
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        ) {
+                            Icon(Icons.Default.PersonAdd, "Nuevo Paciente")
+                        }
+                        SmallFloatingActionButton(
+                            onClick = {
+                                navController.navigate(Route.NuevoServicio.route)
+                                expanded = false
+                            },
+                            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                        ) {
+                            Icon(Icons.Default.PostAdd, "Nuevo Servicio")
+                        }
+                    }
+                    Spacer(Modifier.height(8.dp))
+                }
+                FloatingActionButton(
+                    onClick = { expanded = !expanded },
+                    containerColor = MaterialTheme.colorScheme.primary,
+                ) {
+                    Icon(
+                        if (expanded) Icons.Default.Close else Icons.Default.Add,
+                        contentDescription = "Acciones rápidas",
+                    )
+                }
+            }
+        },
         topBar = {
             OptoTopAppBar(
                 title = "Dashboard",

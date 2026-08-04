@@ -1,6 +1,7 @@
 package com.example.optoapp.ui.screens
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -232,6 +233,30 @@ fun MainDrawerScreen(
                             hostState = snackbarHostState,
                             modifier = Modifier.align(Alignment.BottomCenter).padding(16.dp),
                         )
+                    }
+
+                    // Bottom navigation — 4 tabs coexistiendo con el drawer
+                    NavigationBar {
+                        val tabs = listOf(
+                            Triple(Route.OperacionHoy, "Operación", Icons.Default.Home),
+                            Triple(Route.InventarioFisico, "Inventario", Icons.Default.Build),
+                            Triple(Route.CierreCaja, "Finanzas", Icons.Default.AccountBalanceWallet),
+                            Triple(Route.Configuracion, "Sistema", Icons.Default.Settings),
+                        )
+                        tabs.forEach { (route, label, icon) ->
+                            NavigationBarItem(
+                                selected = currentRoute == route.route,
+                                onClick = {
+                                    navController.navigate(route.route) {
+                                        popUpTo(navController.graph.startDestinationId) { saveState = true }
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
+                                },
+                                icon = { Icon(icon, contentDescription = label) },
+                                label = { Text(label) },
+                            )
+                        }
                     }
                 }
             }
