@@ -17,6 +17,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.optoapp.domain.observer.MembershipObserver
 import com.example.optoapp.ui.components.OfflineBanner
+import com.example.optoapp.ui.navigation.Route
 import com.example.optoapp.util.NetworkMonitor
 import com.example.optoapp.ui.components.UpdateDialog
 import com.example.optoapp.ui.screens.*
@@ -133,7 +134,7 @@ fun OptoAppNavigation(
             recoveryState !is RecoveryState.LinkReceived &&
             recoveryState !is RecoveryState.PasswordUpdated
         ) {
-            navController.navigate("login") {
+            navController.navigate(Route.Login.route) {
                 popUpTo(navController.graph.id) { inclusive = true }
             }
         }
@@ -142,7 +143,7 @@ fun OptoAppNavigation(
     LaunchedEffect(recoveryState) {
         when (recoveryState) {
             is RecoveryState.LinkReceived -> {
-                navController.navigate("new_password")
+                navController.navigate(Route.NewPassword.route)
             }
             else -> {} // PasswordUpdated lo maneja NewPasswordScreen (mensaje + botón)
         }
@@ -151,22 +152,18 @@ fun OptoAppNavigation(
     Column {
         val isOnline by networkMonitor.isOnline.collectAsState(initial = true)
         OfflineBanner(isOnline = isOnline)
-        NavHost(navController = navController, startDestination = "login", modifier = Modifier.weight(1f)) {
-            composable("create_pin") { CreatePinScreen(navController, viewModel = authViewModel) }
-            composable("pin") { PinScreen(navController, viewModel = authViewModel) }
-            composable("login") { LoginScreen(navController, viewModel = authViewModel) }
-            composable("register") { RegisterScreen(navController, viewModel = authViewModel) }
-            composable("sin_optica") { SinOpticaScreen(navController, supabaseObserver, authViewModel) }
-            composable("onboarding_optica") {
-                @Suppress("DEPRECATION")
-                OnboardingOpticaScreen(navController, viewModel = authViewModel)
-            }
-            composable("seleccion_optica") { SeleccionOpticaScreen(navController, viewModel = authViewModel) }
-            composable("main") { MainDrawerScreen(navController, authViewModel = authViewModel) }
-            composable("recovery") {
+        NavHost(navController = navController, startDestination = Route.Login.route, modifier = Modifier.weight(1f)) {
+            composable(Route.CreatePin.route) { CreatePinScreen(navController, viewModel = authViewModel) }
+            composable(Route.Pin.route) { PinScreen(navController, viewModel = authViewModel) }
+            composable(Route.Login.route) { LoginScreen(navController, viewModel = authViewModel) }
+            composable(Route.Register.route) { RegisterScreen(navController, viewModel = authViewModel) }
+            composable(Route.SinOptica.route) { SinOpticaScreen(navController, supabaseObserver, authViewModel) }
+            composable(Route.SeleccionOptica.route) { SeleccionOpticaScreen(navController, viewModel = authViewModel) }
+            composable(Route.Main.route) { MainDrawerScreen(navController, authViewModel = authViewModel) }
+            composable(Route.Recovery.route) {
                 RecoveryScreen(navController = navController, viewModel = authViewModel)
             }
-            composable("new_password") {
+            composable(Route.NewPassword.route) {
                 NewPasswordScreen(navController = navController, viewModel = authViewModel)
             }
         }

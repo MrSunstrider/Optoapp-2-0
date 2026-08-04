@@ -17,6 +17,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.optoapp.data.AppRoles
 import com.example.optoapp.ui.components.OfflineBanner
+import com.example.optoapp.ui.navigation.Route
 import com.example.optoapp.ui.screens.ordenescompra.OrdenesCompraScreen
 import com.example.optoapp.viewmodel.AuthViewModel
 import com.example.optoapp.viewmodel.OpticaHeaderViewModel
@@ -103,7 +104,7 @@ fun MainDrawerScreen(
                                 scope.launch {
                                     val hasMultiple = authViewModel.prepareOpticaSelection()
                                     if (hasMultiple) {
-                                        parentNavController.navigate("seleccion_optica")
+                                        parentNavController.navigate(Route.SeleccionOptica.route)
                                     } else {
                                         android.widget.Toast.makeText(
                                             context,
@@ -128,14 +129,14 @@ fun MainDrawerScreen(
                     OfflineBanner(isOnline = isOnline)
 
                     Box(modifier = Modifier.weight(1f)) {
-                        NavHost(navController = navController, startDestination = "operacion_hoy", modifier = Modifier.fillMaxSize()) {
-                            composable("pacientes") { PacientesListScreen(navController, drawerState) }
-                            composable("agenda") { AgendaScreen(navController, drawerState) }
-                            composable("nuevoPaciente") { NuevoPacienteScreen(navController) }
-                            composable("editarPaciente/{id}") { backStackEntry ->
+                        NavHost(navController = navController, startDestination = Route.OperacionHoy.route, modifier = Modifier.fillMaxSize()) {
+                            composable(Route.Pacientes.route) { PacientesListScreen(navController, drawerState) }
+                            composable(Route.Agenda.route) { AgendaScreen(navController, drawerState) }
+                            composable(Route.NuevoPaciente.route) { NuevoPacienteScreen(navController) }
+                            composable(Route.EditarPaciente("{id}").route) { backStackEntry ->
                                 NuevoPacienteScreen(navController, pacienteId = backStackEntry.arguments?.getString("id"))
                             }
-                            composable("detallePaciente/{id}") { backStackEntry ->
+                            composable(Route.DetallePaciente("{id}").route) { backStackEntry ->
                                 val pid = backStackEntry.arguments?.getString("id")
                                 if (pid.isNullOrBlank()) {
                                     LaunchedEffect(Unit) { navController.popBackStack() }
@@ -144,7 +145,7 @@ fun MainDrawerScreen(
                                     DetallePacienteScreen(navController, id = pid)
                                 }
                             }
-                            composable("nuevaEvaluacion/{pacienteId}") { backStackEntry ->
+                            composable(Route.NuevaEvaluacion("{pacienteId}").route) { backStackEntry ->
                                 val pacienteId = backStackEntry.arguments?.getString("pacienteId")
                                 if (pacienteId.isNullOrBlank()) {
                                     LaunchedEffect(Unit) { navController.popBackStack() }
@@ -153,7 +154,7 @@ fun MainDrawerScreen(
                                     NuevaEvaluacionScreen(navController, pacienteId = pacienteId)
                                 }
                             }
-                            composable("editarEvaluacion/{pacienteId}/{evalId}") { backStackEntry ->
+                            composable(Route.EditarEvaluacion("{pacienteId}", "{evalId}").route) { backStackEntry ->
                                 val pacienteId = backStackEntry.arguments?.getString("pacienteId")
                                 if (pacienteId.isNullOrBlank()) {
                                     LaunchedEffect(Unit) { navController.popBackStack() }
@@ -166,7 +167,7 @@ fun MainDrawerScreen(
                                     )
                                 }
                             }
-                            composable("nuevaDispensacion/{pacienteId}") { backStackEntry ->
+                            composable(Route.NuevaDispensacion("{pacienteId}").route) { backStackEntry ->
                                 val pacienteId = backStackEntry.arguments?.getString("pacienteId")
                                 if (pacienteId.isNullOrBlank()) {
                                     LaunchedEffect(Unit) { navController.popBackStack() }
@@ -175,7 +176,7 @@ fun MainDrawerScreen(
                                     NuevaDispensacionScreen(navController, pacienteId = pacienteId)
                                 }
                             }
-                            composable("editarDispensacion/{pacienteId}/{dispId}") { backStackEntry ->
+                            composable(Route.EditarDispensacion("{pacienteId}", "{dispId}").route) { backStackEntry ->
                                 val pacienteId = backStackEntry.arguments?.getString("pacienteId")
                                 if (pacienteId.isNullOrBlank()) {
                                     LaunchedEffect(Unit) { navController.popBackStack() }
@@ -188,36 +189,36 @@ fun MainDrawerScreen(
                                     )
                                 }
                             }
-                            composable("servicios_extra") {
+                            composable(Route.ServiciosExtra.route) {
                                 ServiciosExtraScreen(navController, drawerState)
                             }
-                            composable("monturas") { MonturasScreen(navController) }
-                            composable("proveedores") { ProveedoresScreen(navController) }
-                            composable("ordenes_compra") { OrdenesCompraScreen(navController) }
-                            composable("inventario_fisico") { com.example.optoapp.ui.screens.inventariofisico.InventarioFisicoScreen(navController) }
-                            composable("gastos") { CostosYGastosScreen(navController, drawerState) }
-                            composable("operacion_hoy") { OperacionHoyScreen(navController, drawerState) }
-                            composable("nuevo_servicio") {
+                            composable(Route.Monturas.route) { MonturasScreen(navController) }
+                            composable(Route.Proveedores.route) { ProveedoresScreen(navController) }
+                            composable(Route.OrdenesCompra.route) { OrdenesCompraScreen(navController) }
+                            composable(Route.InventarioFisico.route) { com.example.optoapp.ui.screens.inventariofisico.InventarioFisicoScreen(navController) }
+                            composable(Route.Gastos.route) { CostosYGastosScreen(navController, drawerState) }
+                            composable(Route.OperacionHoy.route) { OperacionHoyScreen(navController, drawerState) }
+                            composable(Route.NuevoServicio.route) {
                                 NuevoServicioScreen(navController, pacienteId = null)
                             }
-                            composable("nuevo_servicio/{pacienteId}") { backStackEntry ->
+                            composable(Route.NuevoServicioPaciente("{pacienteId}").route) { backStackEntry ->
                                 NuevoServicioScreen(navController, pacienteId = backStackEntry.arguments?.getString("pacienteId"))
                             }
-                            composable("editar_servicio/{id}") { backStackEntry ->
+                            composable(Route.EditarServicio("{id}").route) { backStackEntry ->
                                 NuevoServicioScreen(navController, servicioId = backStackEntry.arguments?.getString("id"))
                             }
-                            composable("reportes") { ReportesScreen(drawerState) }
-                            composable("costos_y_gastos") { CostosYGastosScreen(navController, drawerState) }
-                            composable("costos_y_gastos/{dispensacionId}") { backStackEntry ->
+                            composable(Route.Reportes.route) { ReportesScreen(drawerState) }
+                            composable(Route.CostosYGastos.route) { CostosYGastosScreen(navController, drawerState) }
+                            composable(Route.CostosYGastosDisp("{dispensacionId}").route) { backStackEntry ->
                                 val dispId = backStackEntry.arguments?.getString("dispensacionId")
                                 CostosYGastosScreen(navController, drawerState, dispensacionId = dispId)
                             }
-                            composable("cierre_caja") { CierreCajaScreen(navController) }
-                            composable("estadisticas_bi") { AnalisisNegocioScreen(navController) }
-                            composable("analisis_detalle") { AnalisisDetalleScreen(navController) }
-                            composable("configuracion") { ConfiguracionScreen(navController, drawerState, syncViewModel) }
-                            composable("conflictos") { ConflictosScreen(navController, syncViewModel) }
-                            composable("informacion_financiera/{dispensacionId}") { backStackEntry ->
+                            composable(Route.CierreCaja.route) { CierreCajaScreen(navController) }
+                            composable(Route.EstadisticasBI.route) { AnalisisNegocioScreen(navController) }
+                            composable(Route.AnalisisDetalle.route) { AnalisisDetalleScreen(navController) }
+                            composable(Route.Configuracion.route) { ConfiguracionScreen(navController, drawerState, syncViewModel) }
+                            composable(Route.Conflictos.route) { ConflictosScreen(navController, syncViewModel) }
+                            composable(Route.InformacionFinanciera("{dispensacionId}").route) { backStackEntry ->
                                 val dispId = backStackEntry.arguments?.getString("dispensacionId")
                                 if (dispId.isNullOrBlank()) {
                                     LaunchedEffect(Unit) { navController.popBackStack() }

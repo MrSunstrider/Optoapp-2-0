@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.optoapp.domain.observer.MembershipObserver
+import com.example.optoapp.ui.navigation.Route
 import com.example.optoapp.viewmodel.AuthViewModel
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
@@ -82,7 +83,7 @@ fun SinOpticaScreen(
                 )
                 Spacer(Modifier.height(32.dp))
                 OutlinedButton(
-                    onClick = { navController.navigate("onboarding_optica") },
+                    onClick = { navController.navigate(Route.SeleccionOptica.route) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(72.dp),

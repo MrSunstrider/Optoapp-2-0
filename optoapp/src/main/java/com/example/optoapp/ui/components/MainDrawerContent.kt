@@ -18,6 +18,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.optoapp.testing.TestTags
+import com.example.optoapp.ui.navigation.Route
 import com.example.optoapp.util.SyncErrorSanitizer
 import com.example.optoapp.viewmodel.AuthViewModel
 import com.example.optoapp.viewmodel.OpticaHeaderUi
@@ -109,7 +110,7 @@ fun MainDrawerContent(
                 selected = currentRoute == "pacientes",
                 onClick = {
                     scope.launch { drawerState.close() }
-                    navController.navigate("pacientes") {
+                    navController.navigate(Route.Pacientes.route) {
                         popUpTo("pacientes") { inclusive = true }
                     }
                 },
@@ -121,7 +122,7 @@ fun MainDrawerContent(
                 selected = currentRoute == "servicios_extra",
                 onClick = {
                     scope.launch { drawerState.close() }
-                    navController.navigate("servicios_extra")
+                    navController.navigate(Route.ServiciosExtra.route)
                 },
                 icon = { Icon(Icons.Default.AddShoppingCart, contentDescription = "Servicios Varios") },
                 modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
@@ -132,7 +133,7 @@ fun MainDrawerContent(
                     selected = currentRoute == "operacion_hoy",
                     onClick = {
                         scope.launch { drawerState.close() }
-                        navController.navigate("operacion_hoy")
+                        navController.navigate(Route.OperacionHoy.route)
                     },
                     icon = { Icon(Icons.Default.Today, contentDescription = "Dashboard") },
                     modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
@@ -150,7 +151,7 @@ fun MainDrawerContent(
                 selected = currentRoute == "agenda",
                 onClick = {
                     scope.launch { drawerState.close() }
-                    navController.navigate("agenda")
+                    navController.navigate(Route.Agenda.route)
                 },
                 icon = { Icon(Icons.Default.CalendarMonth, contentDescription = "Agenda") },
                 modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding).testTag(TestTags.NAV_BOTTOM_AGENDA),
@@ -160,7 +161,7 @@ fun MainDrawerContent(
                 selected = currentRoute == "monturas",
                 onClick = {
                     scope.launch { drawerState.close() }
-                    navController.navigate("monturas")
+                    navController.navigate(Route.Monturas.route)
                 },
                 icon = { Icon(Icons.Default.Inventory2, contentDescription = "Inventario") },
                 modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
@@ -170,7 +171,7 @@ fun MainDrawerContent(
                 selected = currentRoute == "ordenes_compra",
                 onClick = {
                     scope.launch { drawerState.close() }
-                    navController.navigate("ordenes_compra")
+                    navController.navigate(Route.OrdenesCompra.route)
                 },
                 icon = { Icon(Icons.Default.Receipt, contentDescription = "Órdenes de Compra") },
                 modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
@@ -180,7 +181,7 @@ fun MainDrawerContent(
                 selected = currentRoute == "inventario_fisico",
                 onClick = {
                     scope.launch { drawerState.close() }
-                    navController.navigate("inventario_fisico")
+                    navController.navigate(Route.InventarioFisico.route)
                 },
                 icon = { Icon(Icons.Default.Inventory, contentDescription = "Inventario Físico") },
                 modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
@@ -199,7 +200,7 @@ fun MainDrawerContent(
                         selected = currentRoute == "cierre_caja",
                         onClick = {
                             scope.launch { drawerState.close() }
-                            navController.navigate("cierre_caja")
+                            navController.navigate(Route.CierreCaja.route)
                         },
                         icon = { Icon(Icons.Default.AccountBalanceWallet, contentDescription = "Cierre de Caja") },
                         modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
@@ -211,7 +212,7 @@ fun MainDrawerContent(
                         selected = currentRoute == "estadisticas_bi",
                         onClick = {
                             scope.launch { drawerState.close() }
-                            navController.navigate("estadisticas_bi")
+                            navController.navigate(Route.EstadisticasBI.route)
                         },
                         icon = {
                             @Suppress("DEPRECATION")
@@ -224,7 +225,7 @@ fun MainDrawerContent(
                         selected = currentRoute == "reportes",
                         onClick = {
                             scope.launch { drawerState.close() }
-                            navController.navigate("reportes")
+                            navController.navigate(Route.Reportes.route)
                         },
                         icon = { Icon(Icons.Default.DateRange, contentDescription = "Reportes") },
                         modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
@@ -243,7 +244,7 @@ fun MainDrawerContent(
                 selected = currentRoute == "configuracion",
                 onClick = {
                     scope.launch { drawerState.close() }
-                    navController.navigate("configuracion")
+                    navController.navigate(Route.Configuracion.route)
                 },
                 icon = { Icon(Icons.Default.Settings, contentDescription = "Configuración") },
                 modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding).testTag(TestTags.NAV_DRAWER_CONFIGURACION),
@@ -332,7 +333,7 @@ fun MainDrawerContent(
                     scope.launch {
                         drawerState.close()
                         authViewModel.logout()
-                        parentNavController.navigate("login") {
+                        parentNavController.navigate(Route.Login.route) {
                             popUpTo(parentNavController.graph.id) { inclusive = true }
                         }
                     }
