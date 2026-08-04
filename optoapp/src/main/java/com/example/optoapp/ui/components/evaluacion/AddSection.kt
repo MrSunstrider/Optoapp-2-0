@@ -17,7 +17,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.optoapp.ui.components.OptoQuickAddChip
 import com.example.optoapp.ui.components.OptoSegmentedSelector
-import com.example.optoapp.ui.components.OptoVisionInput
+import com.example.optoapp.ui.components.OptoTextField
 import com.example.optoapp.ui.theme.SurfaceDark
 import com.example.optoapp.ui.theme.TextPrimaryDark
 import com.example.optoapp.viewmodel.EvaluacionUiState
@@ -138,7 +138,7 @@ internal fun AddSection(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiState
                     }
 
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OptoVisionInput(
+                        OptoTextField(
                             value = currentAddOd,
                             onValueChange = { newVal ->
                                 val base = uiState.copy(isAddAo = false)
@@ -152,7 +152,7 @@ internal fun AddSection(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiState
                             label = "Add OD",
                             modifier = Modifier.weight(1f),
                         )
-                        OptoVisionInput(
+                        OptoTextField(
                             value = if (uiState.isAddAo) currentAddOd else currentAddOi,
                             onValueChange = { newVal ->
                                 val base = uiState.copy(isAddAo = false)
@@ -188,7 +188,7 @@ internal fun AddSection(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiState
                 textAlign = TextAlign.Center,
             )
             Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                OptoVisionInput(
+                OptoTextField(
                     value = uiState.addAv,
                     onValueChange = { onUpdate(uiState.copy(addAv = it)) },
                     label = "AV VP",

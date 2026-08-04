@@ -26,7 +26,7 @@ import androidx.compose.ui.unit.sp
 import com.example.optoapp.testing.TestTags
 import com.example.optoapp.ui.components.DropdownField
 import com.example.optoapp.ui.components.OptoTextField
-import com.example.optoapp.ui.components.OptoVisionInput
+import com.example.optoapp.ui.components.OptoTextField
 import com.example.optoapp.viewmodel.EvaluacionUiState
 import com.example.optoapp.viewmodel.EvaluacionViewModel
 
@@ -134,9 +134,9 @@ fun RefraccionSection(
     }
     Text("VL AV CC", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary)
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        OptoVisionInput(value = uiState.recetaOdAv, onValueChange = { onUpdate(uiState.copy(recetaOdAv = it)) }, label = "AV OD", modifier = Modifier.weight(1f))
-        OptoVisionInput(value = uiState.recetaOiAv, onValueChange = { onUpdate(uiState.copy(recetaOiAv = it)) }, label = "AV OI", modifier = Modifier.weight(1f))
-        OptoVisionInput(value = uiState.avCcAoPx, onValueChange = { onUpdate(uiState.copy(avCcAoPx = it)) }, label = "AV AO", modifier = Modifier.weight(1f))
+        OptoTextField(value = uiState.recetaOdAv, onValueChange = { onUpdate(uiState.copy(recetaOdAv = it)) }, label = "AV OD", modifier = Modifier.weight(1f))
+        OptoTextField(value = uiState.recetaOiAv, onValueChange = { onUpdate(uiState.copy(recetaOiAv = it)) }, label = "AV OI", modifier = Modifier.weight(1f))
+        OptoTextField(value = uiState.avCcAoPx, onValueChange = { onUpdate(uiState.copy(avCcAoPx = it)) }, label = "AV AO", modifier = Modifier.weight(1f))
     }
 
     AddSection(uiState, onUpdate)

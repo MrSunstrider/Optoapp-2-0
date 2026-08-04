@@ -264,4 +264,58 @@ class OptoTokensTest {
         val ratio = contrastRatio(OptoTokens.colorsDark.surface, OptoTokens.colorsDark.onSurfaceVariant)
         assertTrue("Dark surface/onSurfaceVariant contrast $ratio is below 3:1 (AA large)", ratio >= 3.0)
     }
+
+    // --- Semantic light colors ---
+
+    @Test
+    fun semantic_positiveGreen_light() {
+        assertEquals(Color(0xFF27AE60), OptoTokens.semantic.positiveGreenLight)
+    }
+
+    @Test
+    fun semantic_alertRed_light() {
+        assertEquals(Color(0xFFE74C3C), OptoTokens.semantic.alertRedLight)
+    }
+
+    @Test
+    fun semantic_warningGold_light() {
+        assertEquals(Color(0xFFD97706), OptoTokens.semantic.warningGoldLight)
+    }
+
+    @Test
+    fun semantic_warningAmber_light() {
+        assertEquals(Color(0xFFF39C12), OptoTokens.semantic.warningAmberLight)
+    }
+
+    @Test
+    fun semantic_textDark_light() {
+        assertEquals(Color(0xFF2C3E50), OptoTokens.semantic.textDarkLight)
+    }
+
+    // --- Semantic dark colors ---
+
+    @Test
+    fun semantic_positiveGreen_dark() {
+        assertEquals(Color(0xFF2ECC71), OptoTokens.semantic.positiveGreenDark)
+    }
+
+    @Test
+    fun semantic_alertRed_dark() {
+        assertEquals(Color(0xFFFF6B6B), OptoTokens.semantic.alertRedDark)
+    }
+
+    @Test
+    fun semantic_warningGold_dark() {
+        assertEquals(Color(0xFFFBBF24), OptoTokens.semantic.warningGoldDark)
+    }
+
+    @Test
+    fun semantic_warningAmber_dark() {
+        assertEquals(Color(0xFFF7DC6F), OptoTokens.semantic.warningAmberDark)
+    }
+
+    @Test
+    fun semantic_textDark_dark() {
+        assertEquals(Color(0xFFE0E3E3), OptoTokens.semantic.textDarkDark)
+    }
 }

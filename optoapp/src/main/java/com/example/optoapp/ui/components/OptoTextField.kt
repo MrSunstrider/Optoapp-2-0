@@ -6,7 +6,9 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 
 @Composable
 fun OptoTextField(
@@ -22,6 +24,7 @@ fun OptoTextField(
     leadingIcon: @Composable (() -> Unit)? = null,
     maxLength: Int? = null,
     showCharCount: Boolean = false,
+    textAlign: TextAlign = TextAlign.Start,
 ) {
     OutlinedTextField(
         value = value,
@@ -33,7 +36,7 @@ fun OptoTextField(
             }
             onValueChange(limitedValue)
         },
-        label = { Text(label) },
+        label = { Text(label, textAlign = textAlign, modifier = Modifier.fillMaxWidth()) },
         modifier = modifier.fillMaxWidth(),
         keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
         isError = isError,
@@ -52,5 +55,7 @@ fun OptoTextField(
         enabled = enabled,
         leadingIcon = leadingIcon,
         trailingIcon = trailingIcon,
+        maxLines = 1,
+        textStyle = TextStyle(textAlign = textAlign),
     )
 }

@@ -28,6 +28,19 @@ object OptoTokens {
         val warningAmber: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFF39C12)
     }
 
+    object semantic {
+        val positiveGreenLight: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF27AE60)
+        val positiveGreenDark: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF2ECC71)
+        val alertRedLight: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFE74C3C)
+        val alertRedDark: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFFF6B6B)
+        val warningGoldLight: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFD97706)
+        val warningGoldDark: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFFBBF24)
+        val warningAmberLight: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFF39C12)
+        val warningAmberDark: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFF7DC6F)
+        val textDarkLight: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF2C3E50)
+        val textDarkDark: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFE0E3E3)
+    }
+
     object elevation {
         val level0: Dp = 0.dp
         val level1: Dp = 2.dp

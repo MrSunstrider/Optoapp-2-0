@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.optoapp.data.InventarioFisico
+import com.example.optoapp.ui.components.OptoTopAppBar
 import com.example.optoapp.viewmodel.InventarioFisicoUiState
 import com.example.optoapp.viewmodel.InventarioFisicoViewModel
 
@@ -32,13 +33,10 @@ fun InventarioFisicoScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Inventario Físico") },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Volver")
-                    }
-                },
+            OptoTopAppBar(
+                title = "Inventario Físico",
+                navigationIcon = { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Volver") },
+                onNavigationClick = { navController.popBackStack() },
             )
         },
         floatingActionButton = {
