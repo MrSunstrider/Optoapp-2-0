@@ -20,6 +20,7 @@ import com.example.optoapp.testing.TestTags
 import com.example.optoapp.ui.components.OSDIDialog
 import com.example.optoapp.ui.components.OptoDatePickerDialog
 import com.example.optoapp.ui.components.OptoTopAppBar
+import com.example.optoapp.ui.components.StepIndicator
 import com.example.optoapp.ui.components.evaluacion.AnamnesisSection
 import com.example.optoapp.ui.components.evaluacion.CierreSection
 import com.example.optoapp.ui.components.evaluacion.ContactologiaSection
@@ -37,8 +38,8 @@ fun NuevaEvaluacionScreen(
     viewModel: EvaluacionViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    var selectedTab by remember { mutableIntStateOf(0) }
-    val tabs = listOf("Anamnesis", "Examen Visual", "Refracción", "Contactología", "Cierre")
+    var currentStep by remember { mutableIntStateOf(0) }
+    val stepLabels = listOf("Anamnesis", "Examen", "Refracción", "LC", "Cierre")
 
     var aplicarRecorteOd by remember { mutableStateOf(false) }
     var aplicarRecorteOi by remember { mutableStateOf(false) }
@@ -175,36 +176,64 @@ fun NuevaEvaluacionScreen(
                 },
             )
         },
-    ) { padding ->
-        Column(modifier = Modifier.padding(padding)) {
-            ScrollableTabRow(
-                selectedTabIndex = selectedTab,
-                edgePadding = 16.dp,
-                containerColor = MaterialTheme.colorScheme.surface,
-                contentColor = MaterialTheme.colorScheme.primary,
-            ) {
-                tabs.forEachIndexed { index, title ->
-                    Tab(
-                        selected = selectedTab == index,
-                        onClick = { selectedTab = index },
-                        text = { Text(title, fontSize = 13.sp, fontWeight = if (selectedTab == index) FontWeight.Bold else FontWeight.Normal) },
-                    )
+        bottomBar = {
+            Surface(tonalElevation = 3.dp) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .navigationBarsPadding()
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    if (currentStep > 0) {
+                        OutlinedButton(onClick = { currentStep-- }) {
+                            Text("Anterior")
+                        }
+                    } else {
+                        Spacer(Modifier.width(1.dp))
+                    }
+                    if (currentStep < 4) {
+                        Button(onClick = { currentStep++ }) {
+                            Text("Siguiente")
+                        }
+                    } else {
+                        Button(onClick = { saveAction() }) {
+                            Text("Finalizar")
+                        }
+                    }
                 }
+            }
+        },
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .padding(padding)
+                .fillMaxSize(),
+        ) {
+            StepIndicator(
+                currentStep = currentStep,
+                totalSteps = 5,
+                labels = stepLabels,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+            )
+
+            HorizontalDivider()
+
+            if (uiState.isLoading) {
+                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
             }
 
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(16.dp)
-                    .navigationBarsPadding()
-                    .verticalScroll(rememberScrollState()),
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                if (uiState.isLoading) {
-                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-                }
-
-                when (selectedTab) {
+                when (currentStep) {
                     0 -> AnamnesisSection(
                         uiState = uiState,
                         onUpdate = { s -> viewModel.updateUiState { s } },
