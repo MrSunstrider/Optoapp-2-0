@@ -7,7 +7,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import com.example.optoapp.ui.theme.OptoTokens
+import com.example.optoapp.ui.theme.OptoAppTheme
 
 @Composable
 fun FormActions(
@@ -41,4 +43,16 @@ fun FormActions(
             modifier = Modifier.weight(1f),
         )
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun FormActionsPreview() {
+    OptoAppTheme { FormActions(onSave = {}, onCancel = {}) }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun FormActionsLoadingPreview() {
+    OptoAppTheme { FormActions(onSave = {}, saveLoading = true) }
 }

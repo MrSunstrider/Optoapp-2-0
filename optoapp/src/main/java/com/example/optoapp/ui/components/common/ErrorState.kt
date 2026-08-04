@@ -19,9 +19,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTag
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import com.example.optoapp.ui.components.OptoButton
 import com.example.optoapp.ui.components.OptoButtonVariant
 import com.example.optoapp.ui.theme.OptoTokens
+import com.example.optoapp.ui.theme.OptoAppTheme
 
 @Composable
 fun ErrorState(
@@ -60,4 +62,16 @@ fun ErrorState(
             )
         }
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun ErrorStatePreview() {
+    OptoAppTheme { ErrorState(message = "Error de conexión") }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun ErrorStateWithRetryPreview() {
+    OptoAppTheme { ErrorState(message = "Error de conexión", onRetry = {}) }
 }

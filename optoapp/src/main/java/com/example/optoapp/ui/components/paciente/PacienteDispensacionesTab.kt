@@ -19,6 +19,7 @@ import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.EvaluacionClinica
 import com.example.optoapp.data.Paciente
 import com.example.optoapp.ui.components.common.EmptyState
+import com.example.optoapp.ui.components.common.InfoSection
 import com.example.optoapp.ui.components.LaboratorioTicketAlertDialog
 import com.example.optoapp.util.DispensacionLaboratorioTicket
 import com.example.optoapp.util.LaboratorioTicketContext

@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.sp
 import com.example.optoapp.data.EvaluacionClinica
 import com.example.optoapp.data.Paciente
 import com.example.optoapp.ui.components.common.EmptyState
+import com.example.optoapp.ui.components.common.InfoSection
 
 @Composable
 fun EvaluacionesList(
@@ -205,15 +206,4 @@ fun ResumenEvaluacionDialog(eval: EvaluacionClinica, paciente: Paciente, onDismi
         },
     )
 }
-
-@Composable
-fun InfoSection(title: String, content: @Composable () -> Unit) {
-    Column {
-        Text(text = title, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
-        Spacer(modifier = Modifier.height(4.dp))
-        content()
-        HorizontalDivider(modifier = Modifier.padding(top = 8.dp), thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
-    }
-}
-
 
