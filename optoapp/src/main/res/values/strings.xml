@@ -147,4 +147,44 @@
     <string name="new_password_error_expired">El enlace de recuperación no es válido o expiró. Solicitá uno nuevo.</string>
     <string name="new_password_error_generic">No se pudo actualizar la contraseña. El enlace puede haber expirado.</string>
     <string name="new_password_to_login">Volver a iniciar sesión</string>
+
+    <!-- Common actions -->
+    <string name="common_save">Guardar</string>
+    <string name="common_cancel">Cancelar</string>
+    <string name="common_delete">Eliminar</string>
+    <string name="common_search">Buscar...</string>
+    <string name="common_loading">Cargando...</string>
+    <string name="common_retry">Reintentar</string>
+    <string name="common_error">Error de conexión</string>
+    <string name="common_no_results">Sin resultados</string>
+    <string name="common_close">Cerrar</string>
+
+    <!-- Confirm delete -->
+    <string name="delete_title">Eliminar</string>
+    <string name="delete_confirm_message">¿Estás seguro de que deseas eliminar \"%1$s\"? Esta acción no se puede deshacer.</string>
+    <string name="delete_deleting">Eliminando...</string>
+
+    <!-- Auth -->
+    <string name="login_title">Iniciar sesión</string>
+    <string name="login_email_label">Correo electrónico</string>
+    <string name="login_password_label">Contraseña</string>
+    <string name="login_button">Ingresar</string>
+    <string name="login_register_link">¿No tienes cuenta? Regístrate</string>
+    <string name="register_title">Crear cuenta</string>
+    <string name="pin_title">Ingresa tu PIN</string>
+
+    <!-- Navigation -->
+    <string name="nav_operacion">Operación</string>
+    <string name="nav_inventario">Inventario</string>
+    <string name="nav_finanzas">Finanzas</string>
+    <string name="nav_sistema">Sistema</string>
+    <string name="drawer_gestion">GESTIÓN</string>
+    <string name="drawer_programacion">PROGRAMACIÓN</string>
+    <string name="drawer_finanzas">FINANZAS</string>
+    <string name="drawer_sistema">SISTEMA</string>
+
+    <!-- Dashboard -->
+    <string name="dashboard_title">Dashboard</string>
+    <string name="dashboard_quick_patient">Nuevo Paciente</string>
+    <string name="dashboard_quick_service">Nuevo Servicio</string>
 </resources>

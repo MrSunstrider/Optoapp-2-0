@@ -7,7 +7,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
+import com.example.optoapp.R
 import com.example.optoapp.ui.theme.OptoTokens
 import com.example.optoapp.ui.theme.OptoAppTheme
 
@@ -17,8 +19,8 @@ fun FormActions(
     onCancel: (() -> Unit)? = null,
     saveEnabled: Boolean = true,
     saveLoading: Boolean = false,
-    saveText: String = "Guardar",
-    cancelText: String = "Cancelar",
+    saveText: String = stringResource(R.string.common_save),
+    cancelText: String = stringResource(R.string.common_cancel),
     modifier: Modifier = Modifier,
 ) {
     Row(

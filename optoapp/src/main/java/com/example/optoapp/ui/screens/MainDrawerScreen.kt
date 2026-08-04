@@ -8,7 +8,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
+import com.example.optoapp.R
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
@@ -238,10 +240,10 @@ fun MainDrawerScreen(
                     // Bottom navigation — 4 tabs coexistiendo con el drawer
                     NavigationBar {
                         val tabs = listOf(
-                            Triple(Route.OperacionHoy, "Operación", Icons.Default.Home),
-                            Triple(Route.InventarioFisico, "Inventario", Icons.Default.Build),
-                            Triple(Route.CierreCaja, "Finanzas", Icons.Default.AccountBalanceWallet),
-                            Triple(Route.Configuracion, "Sistema", Icons.Default.Settings),
+                            Triple(Route.OperacionHoy, stringResource(R.string.nav_operacion), Icons.Default.Home),
+                            Triple(Route.InventarioFisico, stringResource(R.string.nav_inventario), Icons.Default.Build),
+                            Triple(Route.CierreCaja, stringResource(R.string.nav_finanzas), Icons.Default.AccountBalanceWallet),
+                            Triple(Route.Configuracion, stringResource(R.string.nav_sistema), Icons.Default.Settings),
                         )
                         tabs.forEach { (route, label, icon) ->
                             NavigationBarItem(
