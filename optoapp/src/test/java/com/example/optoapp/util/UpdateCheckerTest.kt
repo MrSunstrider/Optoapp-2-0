@@ -111,4 +111,66 @@ class UpdateCheckerTest {
         val result = UpdateChecker.DownloadResult.Error("connection failed")
         assertEquals("connection failed", (result as UpdateChecker.DownloadResult.Error).message)
     }
+
+    // --- findLatestByVersion tests ---
+
+    private fun appRelease(version: String) = UpdateChecker.AppRelease(version, "https://example.com/$version.apk")
+
+    @Test
+    fun findLatestByVersion_returnsHighestSemanticVersion_notLexicographicFirst() {
+        val releases = listOf(
+            appRelease("1.9.0"),
+            appRelease("1.15.8"),
+            appRelease("1.10.0"),
+        )
+        val result = UpdateChecker.findLatestByVersion(releases)
+        assertEquals("1.15.8", result?.version)
+    }
+
+    @Test
+    fun findLatestByVersion_returnsHighestWhenSegmentsDiffer() {
+        val releases = listOf(
+            appRelease("2.0"),
+            appRelease("1.9.9"),
+            appRelease("1.10.1"),
+        )
+        val result = UpdateChecker.findLatestByVersion(releases)
+        assertEquals("2.0", result?.version)
+    }
+
+    @Test
+    fun findLatestByVersion_returnsOnlyVersionForSingleElementList() {
+        val releases = listOf(appRelease("1.0.0"))
+        val result = UpdateChecker.findLatestByVersion(releases)
+        assertEquals("1.0.0", result?.version)
+    }
+
+    @Test
+    fun findLatestByVersion_returnsNullForEmptyList() {
+        val releases = emptyList<UpdateChecker.AppRelease>()
+        val result = UpdateChecker.findLatestByVersion(releases)
+        assertEquals(null, result)
+    }
+
+    @Test
+    fun findLatestByVersion_handlesIdenticalVersions() {
+        val releases = listOf(
+            appRelease("1.5.0"),
+            appRelease("1.5.0"),
+        )
+        val result = UpdateChecker.findLatestByVersion(releases)
+        assertTrue(result != null)
+        assertEquals("1.5.0", result?.version)
+    }
+
+    @Test
+    fun findLatestByVersion_handlesMajorJump() {
+        val releases = listOf(
+            appRelease("1.15.8"),
+            appRelease("2.0.0"),
+            appRelease("1.20.3"),
+        )
+        val result = UpdateChecker.findLatestByVersion(releases)
+        assertEquals("2.0.0", result?.version)
+    }
 }
