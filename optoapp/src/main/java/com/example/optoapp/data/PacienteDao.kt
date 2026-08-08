@@ -27,11 +27,6 @@ interface PacienteDao {
     )
     suspend fun countPacientesByHistoriaOptometrica(opticaId: String, historiaNorm: String, excludeId: String): Int
 
-    // Prefer getPacienteByIdScoped for multi-tenant safety. This method exists
-    // for backward compatibility with callers that don't have opticaId available.
-    @Query("SELECT * FROM pacientes WHERE id = :id")
-    suspend fun getPacienteById(id: String): Paciente?
-
     @Query("SELECT * FROM pacientes WHERE id = :id AND opticaId = :opticaId")
     suspend fun getPacienteByIdScoped(id: String, opticaId: String): Paciente?
 
