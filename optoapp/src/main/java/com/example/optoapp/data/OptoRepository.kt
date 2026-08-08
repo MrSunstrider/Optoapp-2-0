@@ -87,7 +87,7 @@ open class OptoRepository(
         }
     }
 
-    fun getEvaluacionesByPaciente(pacienteId: String) = pacienteRepo.getEvaluacionesByPaciente(pacienteId)
+    fun getEvaluacionesByPaciente(pacienteId: String, opticaId: String) = pacienteRepo.getEvaluacionesByPaciente(pacienteId, opticaId)
     fun getEvaluacionesProximaCitaEnRango(opticaId: String, start: LocalDate, end: LocalDate) = pacienteRepo.getEvaluacionesProximaCitaEnRango(opticaId, start, end)
 
     @Suppress("DEPRECATION")
@@ -97,8 +97,8 @@ open class OptoRepository(
     )
     fun countEvaluacionesInRange(start: LocalDate, end: LocalDate) = pacienteRepo.countEvaluacionesInRange(start, end)
     fun countEvaluacionesInRangeForOptica(start: LocalDate, end: LocalDate, opticaId: String) = pacienteRepo.countEvaluacionesInRangeForOptica(start, end, opticaId)
-    suspend fun getEvaluacionById(id: String) = pacienteRepo.getEvaluacionById(id)
-    suspend fun getLastEvaluacionByPacienteId(pacienteId: String) = pacienteRepo.getLastEvaluacionByPacienteId(pacienteId)
+    suspend fun getEvaluacionById(id: String, opticaId: String) = pacienteRepo.getEvaluacionById(id, opticaId)
+    suspend fun getLastEvaluacionByPacienteId(pacienteId: String, opticaId: String) = pacienteRepo.getLastEvaluacionByPacienteId(pacienteId, opticaId)
     suspend fun deleteEvaluacion(evaluacion: EvaluacionClinica) = pacienteRepo.deleteEvaluacion(evaluacion)
     suspend fun insertEvaluacion(evaluacion: EvaluacionClinica) {
         val stamped = evaluacion.copy(updatedAt = Instant.now().toString())
