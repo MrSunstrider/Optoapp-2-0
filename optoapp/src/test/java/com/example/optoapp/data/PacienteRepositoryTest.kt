@@ -133,7 +133,7 @@ class PacienteRepositoryTest {
         )
         repo.insertPaciente(paciente)
 
-        val retrieved = pacienteDao.getPacienteById("p_new")
+        val retrieved = pacienteDao.getPacienteByIdScoped("p_new", "o1")
         assertNotNull(retrieved)
         assertEquals("Diana", retrieved!!.nombreCompleto)
     }
@@ -150,11 +150,11 @@ class PacienteRepositoryTest {
                 opticaId = "o1",
             ),
         )
-        val updated = pacienteDao.getPacienteById("p1")!!.copy(nombreCompleto = "Elena Updated", edad = 33)
+        val updated = pacienteDao.getPacienteByIdScoped("p1", "o1")!!.copy(nombreCompleto = "Elena Updated", edad = 33)
 
         repo.upsertPaciente(updated)
 
-        val retrieved = pacienteDao.getPacienteById("p1")
+        val retrieved = pacienteDao.getPacienteByIdScoped("p1", "o1")
         assertEquals("Elena Updated", retrieved!!.nombreCompleto)
         assertEquals(33, retrieved.edad)
     }
@@ -172,7 +172,7 @@ class PacienteRepositoryTest {
 
         repo.upsertPaciente(paciente)
 
-        val retrieved = pacienteDao.getPacienteById("p_insert_upsert")
+        val retrieved = pacienteDao.getPacienteByIdScoped("p_insert_upsert", "o1")
         assertNotNull(retrieved)
         assertEquals("New Patient", retrieved!!.nombreCompleto)
     }
@@ -191,7 +191,7 @@ class PacienteRepositoryTest {
 
         repo.deletePaciente(paciente)
 
-        val retrieved = pacienteDao.getPacienteById("p_del")
+        val retrieved = pacienteDao.getPacienteByIdScoped("p_del", "o1")
         assertTrue(retrieved == null)
     }
 
@@ -332,7 +332,7 @@ class PacienteRepositoryTest {
         )
         repo.updateEvaluacion(updated)
 
-        val eval = evaluacionDao.getEvaluacionById("eval_meas")!!
+        val eval = evaluacionDao.getEvaluacionById("eval_meas", "o1")!!
         assertEquals(63.5, eval.dipTotalMm!!, 0.001)
         assertEquals(31.0, eval.dnpOdMm!!, 0.001)
         assertEquals(32.5, eval.dnpOiMm!!, 0.001)
@@ -364,7 +364,7 @@ class PacienteRepositoryTest {
         val cleared = evaluacion.copy(dipTotalMm = null, dnpOdMm = null, dnpOiMm = null)
         repo.updateEvaluacion(cleared)
 
-        val result = evaluacionDao.getEvaluacionById("eval_null")
+        val result = evaluacionDao.getEvaluacionById("eval_null", "o1")
         assertNotNull(result)
         assertNull("dipTotalMm debe poder ser null", result!!.dipTotalMm)
         assertNull("dnpOdMm debe poder ser null", result.dnpOdMm)
@@ -419,13 +419,13 @@ class PacienteRepositoryTest {
 
         assertTrue("Should have merged pacientes", result.mergedPacientes > 0)
         // Oldest paciente (pA) should survive
-        val merged = pacienteDao.getPacienteById("dup-A")!!
+        val merged = pacienteDao.getPacienteByIdScoped("dup-A", "o1")!!
         assertEquals("email from A", "a@test.com", merged.email)
         assertEquals("telefono from B", "111", merged.telefono)
         assertEquals("direccion from C", "Calle 1", merged.direccion)
         // Duplicates B and C should be deleted
-        assertNull("dup-B deleted", pacienteDao.getPacienteById("dup-B"))
-        assertNull("dup-C deleted", pacienteDao.getPacienteById("dup-C"))
+        assertNull("dup-B deleted", pacienteDao.getPacienteByIdScoped("dup-B", "o1"))
+        assertNull("dup-C deleted", pacienteDao.getPacienteByIdScoped("dup-C", "o1"))
     }
 
     @Test
@@ -446,11 +446,11 @@ class PacienteRepositoryTest {
         val result = repo.resolveDuplicatePacientesByHistoria("o1", db)
 
         assertTrue("Should have merged 1 duplicate", result.mergedPacientes > 0)
-        val merged = pacienteDao.getPacienteById("dup-2-A")!!
+        val merged = pacienteDao.getPacienteByIdScoped("dup-2-A", "o1")!!
         assertEquals("telefono from A preserved", "111", merged.telefono)
         assertEquals("email from B preserved", "a@test.com", merged.email)
         assertEquals("direccion from A preserved", "Calle A", merged.direccion)
-        assertNull("dup-2-B deleted", pacienteDao.getPacienteById("dup-2-B"))
+        assertNull("dup-2-B deleted", pacienteDao.getPacienteByIdScoped("dup-2-B", "o1"))
     }
 
     @Test
@@ -461,7 +461,7 @@ class PacienteRepositoryTest {
             opticaId = "o1", updatedAt = null,
         )
         repo.insertPaciente(paciente)
-        val saved = pacienteDao.getPacienteById("f3-ts")!!
+        val saved = pacienteDao.getPacienteByIdScoped("f3-ts", "o1")!!
         assertNull("PacienteRepository does not stamp updatedAt", saved.updatedAt)
     }
 

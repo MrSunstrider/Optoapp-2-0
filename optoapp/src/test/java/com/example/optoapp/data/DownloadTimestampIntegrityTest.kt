@@ -219,7 +219,7 @@ class DownloadTimestampIntegrityTest {
 
         repo.upsertEvaluacionFromRemote(entity)
 
-        val stored = evaluacionDao.getEvaluacionById("ev1")
+        val stored = evaluacionDao.getEvaluacionById("ev1", opticaId)
         assertNotNull("Record should exist in DB", stored)
         assertEquals(
             "Stored updatedAt must equal the remote timestamp",
