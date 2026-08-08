@@ -55,7 +55,7 @@ class DaoTest {
         )
         pacienteDao.insertPaciente(paciente)
 
-        val retrieved = pacienteDao.getPacienteById("p1")
+        val retrieved = pacienteDao.getPacienteByIdScoped("p1", "optica1")
         assertNotNull(retrieved)
         assertEquals("Juan Perez", retrieved?.nombreCompleto)
         assertEquals("optica1", retrieved?.opticaId)
@@ -76,7 +76,7 @@ class DaoTest {
         val updated = paciente.copy(nombreCompleto = "Juan Carlos Perez", telefono = "987654321")
         pacienteDao.upsertPaciente(updated)
 
-        val retrieved = pacienteDao.getPacienteById("p1")
+        val retrieved = pacienteDao.getPacienteByIdScoped("p1", "optica1")
         assertEquals("Juan Carlos Perez", retrieved?.nombreCompleto)
         assertEquals("987654321", retrieved?.telefono)
     }
@@ -94,7 +94,7 @@ class DaoTest {
         pacienteDao.insertPaciente(paciente)
         pacienteDao.deletePaciente(paciente.id, paciente.opticaId)
 
-        val retrieved = pacienteDao.getPacienteById("p1")
+        val retrieved = pacienteDao.getPacienteByIdScoped("p1", "optica1")
         assertNull(retrieved)
     }
 
@@ -146,7 +146,7 @@ class DaoTest {
         )
         evaluacionDao.insertEvaluacion(evaluacion)
 
-        val retrieved = evaluacionDao.getEvaluacionById("e1")
+        val retrieved = evaluacionDao.getEvaluacionById("e1", "o1")
         assertNotNull(retrieved)
         assertEquals("Control", retrieved?.motivoConsulta)
         assertEquals("programada", retrieved?.citaEstado)
@@ -260,7 +260,7 @@ class DaoTest {
 
         pacienteDao.deletePaciente(paciente.id, paciente.opticaId)
 
-        assertNull(pacienteDao.getPacienteById("p1"))
-        assertNull(evaluacionDao.getEvaluacionById("e1"))
+        assertNull(pacienteDao.getPacienteByIdScoped("p1", "o1"))
+        assertNull(evaluacionDao.getEvaluacionById("e1", "o1"))
     }
 }

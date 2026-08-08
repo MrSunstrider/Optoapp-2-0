@@ -207,7 +207,7 @@ class SyncFlowTest {
             delay(1000)
         }
         assertTrue("Patient should appear in Supabase within 30s", found)
-        assertTrue("Patient should also exist in Room", pacienteDao.getPacienteById(paciente.id) != null)
+        assertTrue("Patient should also exist in Room", pacienteDao.getPacienteByIdScoped(paciente.id, paciente.opticaId) != null)
     }
 
     @Test
@@ -267,7 +267,7 @@ class SyncFlowTest {
             delay(1000)
         }
         assertTrue("Evaluation should appear in Supabase within 30s", found)
-        assertTrue("Evaluation should also exist in Room", evaluacionDao.getEvaluacionById(evaluacion.id) != null)
+        assertTrue("Evaluation should also exist in Room", evaluacionDao.getEvaluacionById(evaluacion.id, evaluacion.opticaId) != null)
     }
 
     // ── Sync Chain Unit Test (via FakeSyncPacientesUseCase) ──────────────────
@@ -300,7 +300,7 @@ class SyncFlowTest {
         assertTrue("Sync should succeed", result is Resource.Success)
         assertTrue("Upload should have been called", fakeSyncUseCase.uploadCallCount > 0)
         assertEquals("Last sync optica should match", testOpticaId, fakeSyncUseCase.lastOpticaId)
-        assertTrue("Patient should still exist in Room", pacienteDao.getPacienteById(paciente.id) != null)
+        assertTrue("Patient should still exist in Room", pacienteDao.getPacienteByIdScoped(paciente.id, paciente.opticaId) != null)
     }
 
     // ── Offline Test ─────────────────────────────────────────────────────────
@@ -329,7 +329,7 @@ class SyncFlowTest {
         )
 
         // Assert: data persists in Room.
-        val stored = pacienteDao.getPacienteById(paciente.id)
+        val stored = pacienteDao.getPacienteByIdScoped(paciente.id, paciente.opticaId)
         assertTrue("Patient data must persist in Room while offline", stored != null)
         assertEquals("Patient name should match", "Offline Patient $runId", stored?.nombreCompleto)
     }
