@@ -27,7 +27,7 @@ import com.example.optoapp.ui.components.OptoTopAppBar
 import com.example.optoapp.ui.navigation.Route
 import com.example.optoapp.ui.theme.AlertRed
 import com.example.optoapp.ui.theme.PositiveGreen
-import com.example.optoapp.ui.theme.WarningAmber
+import com.example.optoapp.ui.theme.warningAmber
 import com.example.optoapp.util.DateUtils
 import com.example.optoapp.util.FileShareUtils
 import com.example.optoapp.util.InventarioMonturasPdfGenerator
@@ -222,13 +222,13 @@ fun OperacionHoyScreen(
                 Card(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                     shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = WarningAmber.copy(alpha = 0.08f)),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.warningAmber.copy(alpha = 0.08f)),
                 ) {
                     Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Notifications, contentDescription = "Notificaciones", tint = WarningAmber, modifier = Modifier.size(18.dp))
+                            Icon(Icons.Default.Notifications, contentDescription = "Notificaciones", tint = MaterialTheme.colorScheme.warningAmber, modifier = Modifier.size(18.dp))
                             Spacer(Modifier.width(8.dp))
-                            Text("Alertas", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = WarningAmber)
+                            Text("Alertas", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.warningAmber)
                         }
                         uiState.alertas.take(5).forEach { alerta ->
                             Row(verticalAlignment = Alignment.Top) {

@@ -28,7 +28,7 @@ import com.example.optoapp.ui.components.OptoKpiCard
 import com.example.optoapp.ui.components.OptoTopAppBar
 import com.example.optoapp.ui.theme.AlertRed
 import com.example.optoapp.ui.theme.PositiveGreen
-import com.example.optoapp.ui.theme.WarningAmber
+import com.example.optoapp.ui.theme.warningAmber
 import com.example.optoapp.util.DateUtils
 import com.example.optoapp.util.FileShareUtils
 import com.example.optoapp.util.ReporteFinancieroPdfGenerator
@@ -191,7 +191,7 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
             item {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OptoKpiCard("Transacciones", "$totalTransacciones", MaterialTheme.colorScheme.tertiary, Icons.Default.ShoppingCart, Modifier.weight(1f))
-                    OptoKpiCard("Pendiente", "s/. ${porCobrar.fmt()}", WarningAmber, Icons.Default.Schedule, Modifier.weight(1f))
+                    OptoKpiCard("Pendiente", "s/. ${porCobrar.fmt()}", MaterialTheme.colorScheme.warningAmber, Icons.Default.Schedule, Modifier.weight(1f))
                 }
             }
 

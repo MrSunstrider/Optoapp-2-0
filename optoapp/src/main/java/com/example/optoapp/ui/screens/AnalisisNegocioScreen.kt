@@ -28,7 +28,7 @@ import com.example.optoapp.ui.components.OptoTopAppBar
 import com.example.optoapp.ui.navigation.Route
 import com.example.optoapp.ui.theme.AlertRed
 import com.example.optoapp.ui.theme.PositiveGreen
-import com.example.optoapp.ui.theme.WarningAmber
+import com.example.optoapp.ui.theme.warningAmber
 import com.example.optoapp.viewmodel.AnalisisNegocioViewModel
 import com.example.optoapp.viewmodel.AuthViewModel
 import com.example.optoapp.viewmodel.GastosViewModel
@@ -92,16 +92,16 @@ fun AnalisisNegocioScreen(
 
             if (uiState.analisis?.esOffline == true) {
                 Card(
-                    colors = CardDefaults.cardColors(containerColor = WarningAmber.copy(alpha = 0.15f)),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.warningAmber.copy(alpha = 0.15f)),
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Row(
                         modifier = Modifier.padding(12.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Icon(Icons.Default.Warning, contentDescription = "Advertencia", tint = WarningAmber, modifier = Modifier.size(20.dp))
+                        Icon(Icons.Default.Warning, contentDescription = "Advertencia", tint = MaterialTheme.colorScheme.warningAmber, modifier = Modifier.size(20.dp))
                         Spacer(Modifier.width(8.dp))
-                        Text("Datos limitados — sin conexión", style = MaterialTheme.typography.bodySmall, color = WarningAmber)
+                        Text("Datos limitados — sin conexión", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.warningAmber)
                     }
                 }
             }
@@ -135,19 +135,19 @@ fun AnalisisNegocioScreen(
 
             if (uiState.isSeasonalityWarning) {
                 Card(
-                    colors = CardDefaults.cardColors(containerColor = WarningAmber.copy(alpha = 0.15f)),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.warningAmber.copy(alpha = 0.15f)),
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Row(
                         modifier = Modifier.padding(12.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Icon(Icons.Default.Warning, contentDescription = "Advertencia", tint = WarningAmber, modifier = Modifier.size(20.dp))
+                        Icon(Icons.Default.Warning, contentDescription = "Advertencia", tint = MaterialTheme.colorScheme.warningAmber, modifier = Modifier.size(20.dp))
                         Spacer(Modifier.width(8.dp))
                         Text(
                             "Este cálculo se basa en pocos meses. Podría no ser preciso.",
                             style = MaterialTheme.typography.bodySmall,
-                            color = WarningAmber,
+                            color = MaterialTheme.colorScheme.warningAmber,
                         )
                     }
                 }
@@ -178,7 +178,7 @@ fun AnalisisNegocioScreen(
                         modifier = Modifier.padding(12.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Icon(Icons.Default.Lightbulb, contentDescription = "Recomendacion", tint = WarningAmber, modifier = Modifier.size(18.dp))
+                        Icon(Icons.Default.Lightbulb, contentDescription = "Recomendacion", tint = MaterialTheme.colorScheme.warningAmber, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(8.dp))
                         Text("Sin recomendaciones por ahora — tus métricas están dentro de lo esperado.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
@@ -462,7 +462,7 @@ private fun ResumenCard(analisis: AnalisisMensual) {
                         "De cada S/ 100 que vendés, te quedan S/ ${Math.round(analisis.margenNetoPct)} (margen neto)",
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.SemiBold,
-                        color = if (analisis.margenNetoPct >= 25) PositiveGreen else WarningAmber,
+                        color = if (analisis.margenNetoPct >= 25) PositiveGreen else MaterialTheme.colorScheme.warningAmber,
                     )
                 }
             }
@@ -517,12 +517,12 @@ internal fun RecomendacionCard(
 
     val bgColor = when (rec.prioridad) {
         Prioridad.ALTA -> AlertRed.copy(alpha = 0.08f)
-        Prioridad.MEDIA -> WarningAmber.copy(alpha = 0.08f)
+        Prioridad.MEDIA -> MaterialTheme.colorScheme.warningAmber.copy(alpha = 0.08f)
         Prioridad.BAJA -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
     }
     val accentColor = when (rec.prioridad) {
         Prioridad.ALTA -> AlertRed
-        Prioridad.MEDIA -> WarningAmber
+        Prioridad.MEDIA -> MaterialTheme.colorScheme.warningAmber
         Prioridad.BAJA -> MaterialTheme.colorScheme.onSurfaceVariant
     }
     Card(

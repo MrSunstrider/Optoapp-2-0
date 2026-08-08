@@ -28,7 +28,7 @@ import com.example.optoapp.domain.AnalisisMensual
 import com.example.optoapp.ui.components.OptoTopAppBar
 import com.example.optoapp.ui.theme.AlertRed
 import com.example.optoapp.ui.theme.PositiveGreen
-import com.example.optoapp.ui.theme.WarningAmber
+import com.example.optoapp.ui.theme.warningAmber
 import com.example.optoapp.viewmodel.AnalisisNegocioViewModel
 
 @Suppress("DEPRECATION")
@@ -238,7 +238,7 @@ private fun BarraIngresosEgresos(analisis: AnalisisMensual) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         BarItem(label = "Ventas", value = analisis.ventasMes, max = maxValor, color = PositiveGreen)
         BarItem(label = "Cobros", value = analisis.cobrosMes, max = maxValor, color = MaterialTheme.colorScheme.primary)
-        BarItem(label = "Costos", value = analisis.costoDeVentas(), max = maxValor, color = WarningAmber)
+        BarItem(label = "Costos", value = analisis.costoDeVentas(), max = maxValor, color = MaterialTheme.colorScheme.warningAmber)
         BarItem(label = "Gastos", value = analisis.gastosMes, max = maxValor, color = AlertRed)
         HorizontalDivider()
         BarItem(label = "Ganancia", value = ganancia, max = maxValor, color = if (ganancia >= 0) PositiveGreen else AlertRed)
@@ -270,7 +270,7 @@ private fun CategoriaRankingRow(nombre: String, ventas: Double, costos: Double, 
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text(nombre, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
-            Text("${formatNumber(pct)}%", style = MaterialTheme.typography.bodyMedium, color = if (pct >= 25) PositiveGreen else WarningAmber)
+            Text("${formatNumber(pct)}%", style = MaterialTheme.typography.bodyMedium, color = if (pct >= 25) PositiveGreen else MaterialTheme.colorScheme.warningAmber)
         }
         Text(
             "S/ ${formatNumber(ventas)} ventas · S/ ${formatNumber(margen)} margen",
@@ -297,7 +297,7 @@ private fun DeudorRow(nombre: String, telefono: String, saldo: Double, diasDeuda
             Text(telefono, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text("S/ ${formatNumber(saldo)}", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold, color = AlertRed)
         }
-        Text("$diasDeuda días de deuda", style = MaterialTheme.typography.labelSmall, color = WarningAmber)
+        Text("$diasDeuda días de deuda", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.warningAmber)
     }
 }
 
@@ -334,7 +334,7 @@ private fun ProyeccionCard(proyeccion: com.example.optoapp.domain.ProyeccionCaja
         if (proyeccion.mesesHistoricos < 3) {
             Spacer(Modifier.height(4.dp))
             Surface(
-                color = WarningAmber.copy(alpha = 0.12f),
+                color = MaterialTheme.colorScheme.warningAmber.copy(alpha = 0.12f),
                 shape = RoundedCornerShape(8.dp),
                 modifier = Modifier.fillMaxWidth(),
             ) {
@@ -345,7 +345,7 @@ private fun ProyeccionCard(proyeccion: com.example.optoapp.domain.ProyeccionCaja
                     Icon(
                         Icons.Default.Warning,
                         contentDescription = "Advertencia",
-                        tint = WarningAmber,
+                        tint = MaterialTheme.colorScheme.warningAmber,
                         modifier = Modifier.size(18.dp),
                     )
                     Spacer(Modifier.width(8.dp))
@@ -356,7 +356,7 @@ private fun ProyeccionCard(proyeccion: com.example.optoapp.domain.ProyeccionCaja
                             "Proyección basada en ${proyeccion.mesesHistoricos} mes${if (proyeccion.mesesHistoricos == 1) "" else "es"} de datos. Se recomienda al menos 3 meses."
                         },
                         style = MaterialTheme.typography.bodySmall,
-                        color = WarningAmber,
+                        color = MaterialTheme.colorScheme.warningAmber,
                     )
                 }
             }

@@ -23,7 +23,7 @@ import com.example.optoapp.ui.components.OptoKpiCard
 import com.example.optoapp.ui.components.OptoTopAppBar
 import com.example.optoapp.ui.theme.AlertRed
 import com.example.optoapp.ui.theme.PositiveGreen
-import com.example.optoapp.ui.theme.WarningAmber
+import com.example.optoapp.ui.theme.warningAmber
 import com.example.optoapp.util.DateUtils
 import com.example.optoapp.viewmodel.ServiciosViewModel
 import kotlinx.coroutines.launch
@@ -132,7 +132,7 @@ fun ServiciosExtraScreen(navController: NavController, drawerState: DrawerState,
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OptoKpiCard("Facturado", "s/. ${fmt(totalFacturado)}", MaterialTheme.colorScheme.primary, Icons.Default.Receipt, Modifier.weight(1f))
                     OptoKpiCard("Pendiente", "s/. ${fmt(totalPendiente)}", if (totalPendiente > 0) AlertRed else PositiveGreen, Icons.Default.Schedule, Modifier.weight(1f))
-                    OptoKpiCard("Cantidad", "$pendientesCount", WarningAmber, Icons.Default.Handyman, Modifier.weight(1f))
+                    OptoKpiCard("Cantidad", "$pendientesCount", MaterialTheme.colorScheme.warningAmber, Icons.Default.Handyman, Modifier.weight(1f))
                 }
             }
 
@@ -211,7 +211,7 @@ private fun ServicioCard(servicio: ServicioExtra, aCuenta: Double = 0.0, onEdit:
     val saldo = servicio.montoTotal - aCuenta
     val estadoColor = when (servicio.estado) {
         "Entregado" -> PositiveGreen
-        "Pendiente" -> if (saldo > 0) AlertRed else WarningAmber
+        "Pendiente" -> if (saldo > 0) AlertRed else MaterialTheme.colorScheme.warningAmber
         else -> MaterialTheme.colorScheme.onSurfaceVariant
     }
 
