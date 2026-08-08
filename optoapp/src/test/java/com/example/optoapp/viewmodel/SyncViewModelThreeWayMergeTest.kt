@@ -201,7 +201,7 @@ class SyncViewModelThreeWayMergeTest {
 
     @Test
     fun resolveKeepMine_withoutSnapshots_callsResolve() = runTest(testDispatcher) {
-        coEvery { repository.getPacienteById(conflictWithoutSnapshots.entityId) } returns Resource.Error("test")
+        coEvery { repository.getPacienteByIdScoped(conflictWithoutSnapshots.entityId, testOpticaId) } returns Resource.Error("test")
 
         viewModel.resolveKeepMine(conflictWithoutSnapshots)
         testDispatcher.scheduler.advanceUntilIdle()
