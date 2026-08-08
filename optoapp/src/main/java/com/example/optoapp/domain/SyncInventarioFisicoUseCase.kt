@@ -108,13 +108,28 @@ open class SyncInventarioFisicoUseCase @Inject constructor(
                 .distinctBy { it.id }
             if (allDetalles.isEmpty()) return 0
 
-            allDetalles.chunked(UPSERT_BATCH_SIZE).forEach { chunk ->
+            val reconciled = try {
+                val remotos = fetchRemoteDetallesForLookup(opticaId)
+                val remoteIdByKey = remotos.associateBy { IFDetalleKey(it.inventarioId, it.monturaId) }
+                allDetalles.map { row ->
+                    val key = IFDetalleKey(row.inventarioId, row.monturaId)
+                    val remoteId = remoteIdByKey[key]?.id
+                    if (remoteId != null && remoteId != row.id) row.copy(id = remoteId) else row
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                AppLogger.e(TAG, "Reconciliation fetch failed for IF detalles, skipping: ${e.message}", e)
+                return 0
+            }
+
+            reconciled.chunked(UPSERT_BATCH_SIZE).forEach { chunk ->
                 supabase.postgrest[TABLE_DETALLES].upsert(chunk)
             }
             database.withTransaction {
-                allDetalles.forEach { r -> syncStateTracker.markSynced(opticaId, "inventario_fisico_detalle", r.id) }
+                reconciled.forEach { r -> syncStateTracker.markSynced(opticaId, "inventario_fisico_detalle", r.id) }
             }
-            allDetalles.size
+            reconciled.size
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -122,6 +137,11 @@ open class SyncInventarioFisicoUseCase @Inject constructor(
             0
         }
     }
+
+    internal open suspend fun fetchRemoteDetallesForLookup(opticaId: String): List<IFDetalleRemotoLookup> =
+        supabase.postgrest[TABLE_DETALLES]
+            .select { filter { eq("optica_id", opticaId) } }
+            .decodeList<IFDetalleRemotoLookup>()
 
     private suspend fun downloadSessions(opticaId: String): Int {
         val remotos = supabase.postgrest[TABLE_SESSIONS]
@@ -205,6 +225,18 @@ internal data class IFDetalleRemoto(
         diferencia = diferencia,
     )
 }
+
+@Serializable
+internal data class IFDetalleRemotoLookup(
+    val id: String,
+    @SerialName("inventario_id") val inventarioId: String,
+    @SerialName("montura_id") val monturaId: String,
+)
+
+private data class IFDetalleKey(
+    val inventarioId: String,
+    val monturaId: String,
+)
 
 private fun InventarioFisico.toRemoto(): IFRemoto = IFRemoto(
     id = id,

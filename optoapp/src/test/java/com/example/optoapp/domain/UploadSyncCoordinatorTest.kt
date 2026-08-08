@@ -306,4 +306,146 @@ class UploadSyncCoordinatorTest {
         val ok = UploadSyncCoordinator.parseAdjustStockOk(response)
         assertFalse(ok)
     }
+
+    // ── T2.1 RED: Pagos reconciliation tests ──────────────────────────
+
+    private fun createPagoCoordinator(
+        fetchPagos: suspend (String) -> List<PagoRemotoLookup>,
+    ): UploadSyncCoordinator = object : UploadSyncCoordinator(
+        repository = repository,
+        supabase = supabase,
+        database = database,
+        syncStateTracker = syncStateTracker,
+        mergeHandler = mergeHandler,
+        networkRetryHelper = networkRetryHelper,
+        costoProductoDao = costoProductoDao,
+        costoBiseladoDao = costoBiseladoDao,
+    ) {
+        override suspend fun <T> runInTransaction(block: suspend () -> T): T = block()
+        override suspend fun fetchRemotePagosForLookup(opticaId: String): List<PagoRemotoLookup> =
+            fetchPagos(opticaId)
+    }
+
+    @Test
+    fun `pagos reconciliation - remote match adopts ID`() = runTest {
+        val opticaId = "optica-test"
+        var fetchCalled = false
+        val testCoordinator = createPagoCoordinator { _ ->
+            fetchCalled = true
+            listOf(
+                PagoRemotoLookup(
+                    id = "remote-1", dispensacionId = "disp-1",
+                    tipo = "Pago", monto = 100.0, metodoPago = "Efectivo", fecha = "2026-01-01",
+                ),
+            )
+        }
+
+        coEvery { repository.getPagosSnapshotForOptica(opticaId) } returns listOf(
+            com.example.optoapp.data.Pago(
+                id = "local-1", dispensacionId = "disp-1", tipo = "Pago", monto = 100.0,
+                metodoPago = "Efectivo", fecha = LocalDate.parse("2026-01-01"), opticaId = opticaId,
+            ),
+        )
+        coEvery { networkRetryHelper.retryNetwork(any(), any()) } returns Unit
+
+        testCoordinator.uploadPagos(opticaId)
+
+        assertTrue("fetch should be called for reconciliation", fetchCalled)
+        coVerify { syncStateTracker.markSynced(opticaId, "pago", "remote-1") }
+    }
+
+    @Test
+    fun `pagos reconciliation - no remote match keeps local ID`() = runTest {
+        val opticaId = "optica-test"
+        var fetchCalled = false
+        val testCoordinator = createPagoCoordinator { _ ->
+            fetchCalled = true
+            listOf(
+                PagoRemotoLookup(
+                    id = "remote-999", dispensacionId = "other-disp",
+                    tipo = "Pago", monto = 200.0, metodoPago = "Tarjeta", fecha = "2026-01-02",
+                ),
+            )
+        }
+
+        coEvery { repository.getPagosSnapshotForOptica(opticaId) } returns listOf(
+            com.example.optoapp.data.Pago(
+                id = "local-1", dispensacionId = "disp-1", tipo = "Pago", monto = 100.0,
+                metodoPago = "Efectivo", fecha = LocalDate.parse("2026-01-01"), opticaId = opticaId,
+            ),
+        )
+        coEvery { networkRetryHelper.retryNetwork(any(), any()) } returns Unit
+
+        testCoordinator.uploadPagos(opticaId)
+
+        assertTrue("fetch should be called for reconciliation", fetchCalled)
+        coVerify { syncStateTracker.markSynced(opticaId, "pago", "local-1") }
+    }
+
+    @Test
+    fun `pagos reconciliation - null dispensacionId skips lookup`() = runTest {
+        val opticaId = "optica-test"
+        var fetchCalled = false
+        val testCoordinator = createPagoCoordinator { _ ->
+            fetchCalled = true
+            listOf(
+                PagoRemotoLookup(
+                    id = "remote-1", dispensacionId = "some-disp",
+                    tipo = "Pago", monto = 100.0, metodoPago = "Efectivo", fecha = "2026-01-01",
+                ),
+            )
+        }
+
+        coEvery { repository.getPagosSnapshotForOptica(opticaId) } returns listOf(
+            com.example.optoapp.data.Pago(
+                id = "local-null", dispensacionId = null, tipo = "Anulación", monto = 50.0,
+                metodoPago = "Efectivo", fecha = LocalDate.parse("2026-01-01"), opticaId = opticaId,
+            ),
+        )
+        coEvery { networkRetryHelper.retryNetwork(any(), any()) } returns Unit
+
+        testCoordinator.uploadPagos(opticaId)
+
+        assertTrue("fetch is called for reconciliation", fetchCalled)
+        coVerify { syncStateTracker.markSynced(opticaId, "pago", "local-null") }
+    }
+
+    @Test
+    fun `pagos reconciliation - fetch failure throws UploadPreCheckFailedException`() = runTest {
+        val opticaId = "optica-test"
+        val testCoordinator = createPagoCoordinator { _ ->
+            throw IOException("Simulated network failure")
+        }
+
+        coEvery { repository.getPagosSnapshotForOptica(opticaId) } returns listOf(
+            com.example.optoapp.data.Pago(
+                id = "local-1", dispensacionId = "disp-1", tipo = "Pago", monto = 100.0,
+                metodoPago = "Efectivo", fecha = LocalDate.parse("2026-01-01"), opticaId = opticaId,
+            ),
+        )
+
+        try {
+            testCoordinator.uploadPagos(opticaId)
+            fail("Expected UploadPreCheckFailedException")
+        } catch (e: UploadSyncCoordinator.UploadPreCheckFailedException) {
+            assertTrue(e.message!!.contains("Reconciliation fetch failed"))
+        }
+    }
+
+    @Test
+    fun `pagos reconciliation - empty list no-ops without fetch`() = runTest {
+        val opticaId = "optica-test"
+        var fetchCalled = false
+        val testCoordinator = createPagoCoordinator { _ ->
+            fetchCalled = true
+            emptyList()
+        }
+
+        coEvery { repository.getPagosSnapshotForOptica(opticaId) } returns emptyList()
+
+        val result = testCoordinator.uploadPagos(opticaId)
+
+        assertEquals(0, result)
+        assertFalse("fetch should not be called for empty local list", fetchCalled)
+    }
 }

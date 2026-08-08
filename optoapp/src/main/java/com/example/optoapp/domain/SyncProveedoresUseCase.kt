@@ -20,7 +20,6 @@ import kotlinx.serialization.Serializable
 import java.io.IOException
 import javax.inject.Inject
 
-/** Pipeline stage 4: supplier sync runs after finanzas, before ordenes_compra. */
 open class SyncProveedoresUseCase @Inject constructor(
     private val repository: ProveedorRepository,
     private val supabase: SupabaseClient,
@@ -73,6 +72,11 @@ open class SyncProveedoresUseCase @Inject constructor(
         Resource.Error("Error sincronizando proveedores: ${e.localizedMessage}")
     }
 
+    internal open suspend fun fetchRemoteProveedoresForLookup(opticaId: String): List<ProveedorRemotoLookup> =
+        supabase.postgrest[TABLE_PROVEEDORES]
+            .select { filter { eq("optica_id", opticaId) } }
+            .decodeList<ProveedorRemotoLookup>()
+
     private suspend fun uploadProveedores(opticaId: String): Int {
         val rows = repository.getListByOptica(opticaId)
             .map { it.toRemoto() }
@@ -85,8 +89,27 @@ open class SyncProveedoresUseCase @Inject constructor(
             entityType = "proveedor",
             localEntities = rows.map { LocalEntity(it.id, it.updatedAt, EntitySnapshotSerializer.serialize(it)) },
         ).map { it.id }.toSet()
-        val safeRows = rows.filter { it.id in safeIds }
+        var safeRows = rows.filter { it.id in safeIds }
         if (safeRows.isEmpty()) return 0
+
+        // Reconcile IDs with remote: two devices may create the same proveedor
+        // with different UUIDs. The UNIQUE constraint is on (ruc, optica_id).
+        try {
+            val remotos = fetchRemoteProveedoresForLookup(opticaId)
+            val remoteIdByRuc = remotos
+                .filter { it.ruc.isNotBlank() }
+                .associateBy { it.ruc.trim() }
+            safeRows = safeRows.map { row ->
+                val key = row.ruc.trim()
+                val remoteId = if (key.isNotBlank()) remoteIdByRuc[key]?.id else null
+                if (remoteId != null && remoteId != row.id) row.copy(id = remoteId) else row
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            AppLogger.e(TAG, "Reconciliation fetch failed for proveedores, skipping: ${e.message}", e)
+            return 0
+        }
 
         safeRows.chunked(UPSERT_BATCH_SIZE).forEach { chunk ->
             supabase.postgrest[TABLE_PROVEEDORES].upsert(chunk)
@@ -97,19 +120,43 @@ open class SyncProveedoresUseCase @Inject constructor(
         return safeRows.size
     }
 
+    internal open suspend fun fetchRemoteCategoriasForLookup(opticaId: String): List<CategoriaRemotaLookup> =
+        supabase.postgrest[TABLE_CATEGORIAS]
+            .select { filter { eq("optica_id", opticaId) } }
+            .decodeList<CategoriaRemotaLookup>()
+
     private suspend fun uploadCategorias(opticaId: String): Int {
         val rows = repository.getCategoriaListByOptica(opticaId)
             .map { it.toRemoto() }
             .distinctBy { it.id }
         if (rows.isEmpty()) return 0
 
-        rows.chunked(UPSERT_BATCH_SIZE).forEach { chunk ->
+        // Reconcile IDs with remote: two devices may create the same category
+        // with different UUIDs. The UNIQUE constraint is on (nombre, optica_id).
+        val reconciledRows = try {
+            val remotos = fetchRemoteCategoriasForLookup(opticaId)
+            val remoteIdByNombre = remotos
+                .filter { it.nombre.isNotBlank() }
+                .associateBy { it.nombre.trim().lowercase() }
+            rows.map { row ->
+                val key = row.nombre.trim().lowercase()
+                val remoteId = if (key.isNotBlank()) remoteIdByNombre[key]?.id else null
+                if (remoteId != null && remoteId != row.id) row.copy(id = remoteId) else row
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            AppLogger.e(TAG, "Reconciliation fetch failed for categorias, skipping: ${e.message}", e)
+            return 0
+        }
+
+        reconciledRows.chunked(UPSERT_BATCH_SIZE).forEach { chunk ->
             supabase.postgrest[TABLE_CATEGORIAS].upsert(chunk)
         }
         database.withTransaction {
-            rows.forEach { r -> syncStateTracker.markSynced(opticaId, "categoria_montura", r.id) }
+            reconciledRows.forEach { r -> syncStateTracker.markSynced(opticaId, "categoria_montura", r.id) }
         }
-        return rows.size
+        return reconciledRows.size
     }
 
     private suspend fun downloadProveedores(opticaId: String): Int {
@@ -203,6 +250,20 @@ private data class CategoriaRemota(
         opticaId = opticaId,
     )
 }
+
+@Serializable
+internal data class ProveedorRemotoLookup(
+    val id: String,
+    val ruc: String,
+    @SerialName("optica_id") val opticaId: String,
+)
+
+@Serializable
+internal data class CategoriaRemotaLookup(
+    val id: String,
+    val nombre: String,
+    @SerialName("optica_id") val opticaId: String,
+)
 
 private fun Proveedor.toRemoto(): ProveedorRemoto = ProveedorRemoto(
     id = id, nombre = nombre, ruc = ruc, telefono = telefono,

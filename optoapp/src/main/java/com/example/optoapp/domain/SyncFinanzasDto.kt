@@ -420,6 +420,16 @@ internal data class DispensacionRemotaLookup(
     val ot: String? = null,
 )
 
+@Serializable
+internal data class PagoRemotoLookup(
+    val id: String,
+    @SerialName("dispensacion_id") val dispensacionId: String? = null,
+    val tipo: String = "",
+    val monto: Double = 0.0,
+    @SerialName("metodo_pago") val metodoPago: String = "",
+    val fecha: String = "",
+)
+
 fun DispensacionOptica.toRemoto(pagosSum: Double = montoPagado): DispensacionRemota = DispensacionRemota(
     id = id, ot = ot, monturaId = monturaId, pacienteId = pacienteId, fecha = fecha.toString(), opticaId = opticaId,
     tipoMontura = tipoMontura, materialMontura = materialMontura,

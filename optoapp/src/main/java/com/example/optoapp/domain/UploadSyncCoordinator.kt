@@ -48,7 +48,6 @@ open class UploadSyncCoordinator @Inject constructor(
 
         // ── RPC helpers (T2.2) ─────────────────────────────────────────
 
-        /** Build the JsonObject parameters for rpc_adjust_montura_stock. */
         internal fun buildAdjustStockParams(
             monturaId: String,
             opticaId: String,
@@ -67,15 +66,12 @@ open class UploadSyncCoordinator @Inject constructor(
             put("p_fecha", fecha)
         }
 
-        /** Extract the [ok] boolean from an RPC jsonb response. */
         internal fun parseAdjustStockOk(response: JsonObject): Boolean =
             response["ok"]?.jsonPrimitive?.let { it.content == "true" } ?: false
 
-        /** Extract [new_stock] from a successful RPC response. */
         internal fun parseAdjustStockNewStock(response: JsonObject): Int? =
             response["new_stock"]?.jsonPrimitive?.content?.toIntOrNull()
 
-        /** Extract the [error] string from a failed RPC response. */
         internal fun parseAdjustStockError(response: JsonObject): String? =
             response["error"]?.jsonPrimitive?.content
     }
@@ -396,6 +392,25 @@ open class UploadSyncCoordinator @Inject constructor(
         ) { supabase.postgrest[TABLE_DISPENSACION_ITEMS].upsert(it) }
     }
 
+    // WHY: testability seam — MockK cannot mock chained PostgREST DSL calls.
+    // Test subclasses override this to return canned lookup data for reconciliation testing.
+    internal open suspend fun fetchRemotePagosForLookup(opticaId: String): List<PagoRemotoLookup> {
+        val remotos = supabase.postgrest[TABLE_PAGOS]
+            .select { filter { eq("optica_id", opticaId) } }
+            .decodeList<PagoRemotoLookup>()
+        return remotos
+    }
+
+    // ── Pagos business-key reconciliation ─────────────────────────────
+
+    internal data class PagoKey(
+        val dispensacionId: String,
+        val tipo: String,
+        val monto: Double,
+        val metodoPago: String,
+        val fecha: String,
+    )
+
     suspend fun uploadPagos(opticaId: String): Int {
         val pagos = repository.getPagosSnapshotForOptica(opticaId)
         if (pagos.isEmpty()) {
@@ -405,12 +420,35 @@ open class UploadSyncCoordinator @Inject constructor(
         require(opticaId.isNotBlank()) { "opticaId must not be blank for upload" }
         val opticaRemota = opticaId.trim()
         val rows = pagos.map { it.toRemoto().copy(opticaId = opticaRemota) }.distinctBy { it.id }
+
+        // Reconcile by business key (dispensacion_id, tipo, monto, metodo_pago, fecha)
+        val remotos = try {
+            fetchRemotePagosForLookup(opticaRemota)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            AppLogger.e(TAG, "FATAL: Cannot reconcile pagos with remote. Aborting to prevent duplicates.", e)
+            throw UploadPreCheckFailedException("Reconciliation fetch failed for $TABLE_PAGOS", e)
+        }
+        val remoteIdByKey = remotos.mapNotNull { r ->
+            r.dispensacionId?.let { dispId ->
+                PagoKey(dispId, r.tipo, r.monto, r.metodoPago, r.fecha) to r.id
+            }
+        }.toMap()
+        val reconciled = rows.map { row ->
+            val key = row.dispensacionId?.let { dispId ->
+                PagoKey(dispId, row.tipo, row.monto, row.metodoPago, row.fecha)
+            }
+            val remoteId = key?.let { remoteIdByKey[it] }
+            if (remoteId != null && remoteId != row.id) row.copy(id = remoteId) else row
+        }
+
         return executeSimpleUpsert(
             opticaId,
             TABLE_PAGOS,
             "pago",
             "upload_pagos",
-            rows,
+            reconciled,
             { it.id },
         ) { supabase.postgrest[TABLE_PAGOS].upsert(it) }
     }
