@@ -131,7 +131,10 @@ class DispensacionViewModel @Inject constructor(
         }
     }
 
-    fun getDispensacionesByPaciente(pacienteId: String) = repository.getDispensacionesByPaciente(pacienteId)
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun getDispensacionesByPaciente(pacienteId: String) = sessionManager.opticaId.flatMapLatest { opticaId ->
+        repository.getDispensacionesByPaciente(pacienteId, opticaId)
+    }
 
     // Reactive pagos sum maps for dynamic saldo computation (montoPagado/aCuenta are @Ignore)
     // Anulaciones (negative monto) are INCLUDED so they net out correctly.

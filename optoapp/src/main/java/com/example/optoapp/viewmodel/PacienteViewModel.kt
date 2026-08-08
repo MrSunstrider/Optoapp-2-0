@@ -141,7 +141,7 @@ class PacienteViewModel @Inject constructor(
     fun loadLastDispensacion(pacienteId: String) {
         viewModelScope.launch {
             _lastDispensacion.value = Resource.Loading()
-            _lastDispensacion.value = repository.getLastDispensacionByPacienteId(pacienteId)
+            _lastDispensacion.value = repository.getLastDispensacionByPacienteId(pacienteId, sessionManager.opticaId.first())
         }
     }
 
@@ -241,7 +241,6 @@ class PacienteViewModel @Inject constructor(
                 )
             }
             val used = sessionManager.incrementPacienteDeleteCountToday(oid)
-            postSaveSyncScheduler.schedulePacientesSync(oid)
             DeletePacienteResult.Success((DAILY_DELETE_LIMIT - used).coerceAtLeast(0))
         } catch (e: CancellationException) {
             throw e
