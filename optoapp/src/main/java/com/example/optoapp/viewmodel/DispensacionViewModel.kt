@@ -171,7 +171,8 @@ class DispensacionViewModel @Inject constructor(
 
     fun loadUltimaEvaluacionParaTicket(pacienteId: String) {
         viewModelScope.launch {
-            val list = repository.getEvaluacionesByPaciente(pacienteId).first()
+            val opticaId = sessionManager.opticaId.first()
+            val list = repository.getEvaluacionesByPaciente(pacienteId, opticaId).first()
             _ultimaEvaluacionTicket.value = list.maxByOrNull { it.fecha }
         }
     }
@@ -720,7 +721,8 @@ class DispensacionViewModel @Inject constructor(
 
     fun loadEvaluacionesDisponibles(pacienteId: String) {
         viewModelScope.launch {
-            val list = repository.getEvaluacionesByPaciente(pacienteId).first()
+            val opticaId = sessionManager.opticaId.first()
+            val list = repository.getEvaluacionesByPaciente(pacienteId, opticaId).first()
             _uiState.update { it.copy(evaluacionesDisponibles = list) }
             val last = list.maxByOrNull { it.fecha }
             if (last != null) {
@@ -737,7 +739,7 @@ class DispensacionViewModel @Inject constructor(
         val s = _uiState.value
         val evalId = s.evaluacionId ?: return
         viewModelScope.launch {
-            when (val result = repository.getEvaluacionById(evalId)) {
+            when (val result = repository.getEvaluacionById(evalId, sessionManager.opticaId.first())) {
                 is Resource.Success -> {
                     val evaluacion = result.data ?: return@launch
                     if (itemIndex !in s.items.indices) return@launch

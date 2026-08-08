@@ -134,7 +134,7 @@ class PacienteViewModel @Inject constructor(
     fun loadLastEvaluacion(pacienteId: String) {
         viewModelScope.launch {
             _lastEvaluacion.value = Resource.Loading()
-            _lastEvaluacion.value = repository.getLastEvaluacionByPacienteId(pacienteId)
+            _lastEvaluacion.value = repository.getLastEvaluacionByPacienteId(pacienteId, sessionManager.opticaId.first())
         }
     }
 

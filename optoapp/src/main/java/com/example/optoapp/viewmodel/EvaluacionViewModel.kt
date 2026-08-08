@@ -8,14 +8,17 @@ import com.example.optoapp.data.SessionManager
 import com.example.optoapp.notifications.NotificationHelper
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class EvaluacionViewModel @Inject constructor(
     private val repository: OptoRepository,
@@ -26,12 +29,14 @@ class EvaluacionViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(EvaluacionUiState())
     val uiState: StateFlow<EvaluacionUiState> = _uiState.asStateFlow()
 
-    fun getEvaluacionesByPaciente(pacienteId: String) = repository.getEvaluacionesByPaciente(pacienteId)
+    fun getEvaluacionesByPaciente(pacienteId: String) = sessionManager.opticaId.flatMapLatest { opticaId ->
+        repository.getEvaluacionesByPaciente(pacienteId, opticaId)
+    }
 
     fun loadEvaluacion(evaluacionId: String) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
-            when (val result = repository.getEvaluacionById(evaluacionId)) {
+            when (val result = repository.getEvaluacionById(evaluacionId, sessionManager.opticaId.first())) {
                 is Resource.Success -> {
                     val e = result.data ?: return@launch
                     val dipFormatted = DipParser.formatDipForUi(e.dipLejos.orEmpty(), e.dipTotalMm, e.dnpOdMm, e.dnpOiMm)
@@ -88,7 +93,7 @@ class EvaluacionViewModel @Inject constructor(
 
     fun deleteEvaluacion(evaluacionId: String, onComplete: () -> Unit) {
         viewModelScope.launch {
-            val result = repository.getEvaluacionById(evaluacionId)
+            val result = repository.getEvaluacionById(evaluacionId, sessionManager.opticaId.first())
             if (result is Resource.Success) {
                 result.data?.let { repoData ->
                     repository.deleteEvaluacion(repoData)
