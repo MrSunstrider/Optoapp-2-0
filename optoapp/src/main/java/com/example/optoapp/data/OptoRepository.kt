@@ -111,13 +111,13 @@ open class OptoRepository(
         postSaveSyncScheduler.get().scheduleHistorialSync(stamped.opticaId)
     }
 
-    fun getDispensacionesByPaciente(pacienteId: String) = dispensacionRepo.getDispensacionesByPaciente(pacienteId)
+    fun getDispensacionesByPaciente(pacienteId: String, opticaId: String) = dispensacionRepo.getDispensacionesByPaciente(pacienteId, opticaId)
     fun getAllDispensacionesForOptica(opticaId: String) = dispensacionRepo.getAllDispensacionesForOptica(opticaId)
     fun getTotalVendidoForOptica(opticaId: String) = dispensacionRepo.getTotalVendidoForOptica(opticaId)
     fun getTotalPagadoForOptica(opticaId: String) = dispensacionRepo.getTotalPagadoForOptica(opticaId)
     fun getDispensacionesByDateRangeForOptica(start: LocalDate, end: LocalDate, opticaId: String) = dispensacionRepo.getDispensacionesByDateRangeForOptica(start, end, opticaId)
     suspend fun getDispensacionById(id: String) = dispensacionRepo.getDispensacionById(id)
-    suspend fun getLastDispensacionByPacienteId(pacienteId: String) = dispensacionRepo.getLastDispensacionByPacienteId(pacienteId)
+    suspend fun getLastDispensacionByPacienteId(pacienteId: String, opticaId: String) = dispensacionRepo.getLastDispensacionByPacienteId(pacienteId, opticaId)
     suspend fun insertDispensacion(dispensacion: DispensacionOptica) {
         val stamped = dispensacion.copy(updatedAt = Instant.now().toString())
         dispensacionRepo.insertDispensacion(stamped)
@@ -183,7 +183,6 @@ open class OptoRepository(
     fun getServiciosByDateRangeForOptica(start: LocalDate, end: LocalDate, opticaId: String) = dispensacionRepo.getServiciosByDateRangeForOptica(start, end, opticaId)
     suspend fun getServiciosByIds(ids: List<String>, opticaId: String) = dispensacionRepo.getServiciosByIds(ids, opticaId)
     suspend fun getDispensacionesByIds(ids: List<String>, opticaId: String) = dispensacionRepo.getDispensacionesByIds(ids, opticaId)
-    fun getServiciosByPaciente(pacienteId: String) = dispensacionRepo.getServiciosByPaciente(pacienteId)
     suspend fun getServicioById(id: String) = dispensacionRepo.getServicioById(id)
     suspend fun insertServicio(servicio: ServicioExtra) {
         val stamped = servicio.copy(updatedAt = Instant.now().toString())

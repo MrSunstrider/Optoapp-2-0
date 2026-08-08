@@ -107,47 +107,6 @@ class ServicioExtraDaoTest {
     }
 
     @Test
-    fun getServiciosByPaciente_returnsServiciosForPaciente() = runBlocking {
-        pacienteDao.insertPaciente(
-            Paciente(
-                id = "pac1",
-                nombreCompleto = "Juan Perez",
-                edad = 30,
-                telefono = "999",
-                fechaCreacion = LocalDate.parse("2026-01-15"),
-                opticaId = "o1",
-            ),
-        )
-        pacienteDao.insertPaciente(
-            Paciente(
-                id = "pac2",
-                nombreCompleto = "Maria Lopez",
-                edad = 25,
-                telefono = "888",
-                fechaCreacion = LocalDate.parse("2026-01-15"),
-                opticaId = "o1",
-            ),
-        )
-        val s1 = ServicioExtra(
-            id = "s1", descripcion = "Para Juan", montoTotal = 100.0, aCuenta = 50.0,
-            estado = "Pendiente", fecha = LocalDate.parse("2026-01-15"),
-            pacienteId = "pac1", metodoPago = "EFECTIVO", opticaId = "o1",
-        )
-        val s2 = ServicioExtra(
-            id = "s2", descripcion = "Para Maria", montoTotal = 200.0, aCuenta = 100.0,
-            estado = "Entregado", fecha = LocalDate.parse("2026-02-01"),
-            pacienteId = "pac2", metodoPago = "TARJETA", opticaId = "o1",
-        )
-        dao.insertServicio(s1)
-        dao.insertServicio(s2)
-
-        val pac1Servicios = dao.getServiciosByPaciente("pac1").first()
-
-        assertEquals(1, pac1Servicios.size)
-        assertEquals("Para Juan", pac1Servicios[0].descripcion)
-    }
-
-    @Test
     fun updateServicio_modifiesExistingRecord() = runBlocking {
         val servicio = ServicioExtra(
             id = "s1",

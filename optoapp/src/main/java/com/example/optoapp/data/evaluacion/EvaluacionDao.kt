@@ -24,10 +24,6 @@ interface EvaluacionDao {
     @Query("UPDATE evaluaciones SET opticaId = :newOpticaId WHERE opticaId = 'mi_optica_base'")
     suspend fun reassignFromLegacyMiOpticaBase(newOpticaId: String): Int
 
-    // Legacy — prefer getEvaluacionesListByOptica for multi-tenant isolation
-    @Query("SELECT * FROM evaluaciones")
-    suspend fun getAllEvaluaciones(): List<EvaluacionClinica>
-
     @Query("SELECT * FROM evaluaciones WHERE opticaId = :opticaId")
     suspend fun getEvaluacionesListByOptica(opticaId: String): List<EvaluacionClinica>
 

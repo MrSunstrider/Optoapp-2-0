@@ -19,7 +19,7 @@ class DispensacionRepository(
 
     fun getDispensacionesByDateRangeForOptica(start: LocalDate, end: LocalDate, opticaId: String): Flow<List<DispensacionOptica>> = dispensacionDao.getDispensacionesByDateRangeForOptica(start, end, opticaId)
 
-    fun getDispensacionesByPaciente(pacienteId: String): Flow<List<DispensacionOptica>> = dispensacionDao.getDispensacionesByPaciente(pacienteId)
+    fun getDispensacionesByPaciente(pacienteId: String, opticaId: String): Flow<List<DispensacionOptica>> = dispensacionDao.getDispensacionesByPaciente(pacienteId, opticaId)
 
     fun getAllDispensacionesForOptica(opticaId: String): Flow<List<DispensacionOptica>> = dispensacionDao.getAllDispensacionesForOptica(opticaId)
 
@@ -44,8 +44,8 @@ class DispensacionRepository(
         Resource.Error(e.message ?: "Error al obtener dispensación")
     }
 
-    suspend fun getLastDispensacionByPacienteId(pacienteId: String): Resource<DispensacionOptica> = try {
-        val disp = dispensacionDao.getLastDispensacionByPacienteId(pacienteId)
+    suspend fun getLastDispensacionByPacienteId(pacienteId: String, opticaId: String): Resource<DispensacionOptica> = try {
+        val disp = dispensacionDao.getLastDispensacionByPacienteId(pacienteId, opticaId)
         if (disp != null) {
             Resource.Success(disp)
         } else {
@@ -186,8 +186,6 @@ class DispensacionRepository(
     suspend fun getServiciosByIds(ids: List<String>, opticaId: String): List<ServicioExtra> = servicioExtraDao.getServiciosByIds(ids, opticaId)
 
     suspend fun getDispensacionesByIds(ids: List<String>, opticaId: String): List<DispensacionOptica> = dispensacionDao.getDispensacionesByIds(ids, opticaId)
-
-    fun getServiciosByPaciente(pacienteId: String): Flow<List<ServicioExtra>> = servicioExtraDao.getServiciosByPaciente(pacienteId)
 
     suspend fun getServicioById(id: String): Resource<ServicioExtra> = try {
         val servicio = servicioExtraDao.getServicioById(id)
