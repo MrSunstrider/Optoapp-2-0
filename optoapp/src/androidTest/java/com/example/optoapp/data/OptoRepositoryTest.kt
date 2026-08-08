@@ -23,7 +23,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.robolectric.RobolectricTestRunner
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import java.io.IOException
 import java.time.LocalDate
 
@@ -33,7 +33,7 @@ import java.time.LocalDate
  *
  * Verifica getMonturaById y restoreBackup.
  */
-@RunWith(RobolectricTestRunner::class)
+@RunWith(AndroidJUnit4::class)
 class OptoRepositoryTest {
 
     private lateinit var db: OptoDatabase
@@ -198,9 +198,9 @@ class OptoRepositoryTest {
         repo.restoreBackup(backup, "current_o")
 
         // Old data cleared
-        assertTrue(pacienteDao.getPacienteById("old_p") == null)
+        assertTrue(pacienteDao.getPacienteByIdScoped("old_p", "current_o") == null)
         // New data inserted with currentOpticaId
-        val inserted = pacienteDao.getPacienteById("p1")
+        val inserted = pacienteDao.getPacienteByIdScoped("p1", "current_o")
         assertNotNull(inserted)
         assertEquals("Restored", inserted!!.nombreCompleto)
         assertEquals("current_o", inserted.opticaId)
@@ -261,8 +261,8 @@ class OptoRepositoryTest {
         repo.restoreBackup(backup, "target_o")
 
         // Verify all entity types were inserted with currentOpticaId
-        assertEquals("target_o", pacienteDao.getPacienteById("p1")!!.opticaId)
-        assertEquals("target_o", evaluacionDao.getEvaluacionById("e1")!!.opticaId)
+        assertEquals("target_o", pacienteDao.getPacienteByIdScoped("p1", "target_o")!!.opticaId)
+        assertEquals("target_o", evaluacionDao.getEvaluacionById("e1", "target_o")!!.opticaId)
         assertEquals("target_o", dispensacionDao.getDispensacionById("d1")!!.opticaId)
         assertEquals("target_o", pagoDao.getPagoByIdForOptica("pg1", "target_o")!!.opticaId)
         assertEquals("target_o", servicioExtraDao.getServicioById("s1")!!.opticaId)
@@ -330,8 +330,8 @@ class OptoRepositoryTest {
         repo.restoreBackup(backup, "target_o")
 
         // Good data still inserted despite bad dispensacion
-        assertNotNull(pacienteDao.getPacienteById("p_good"))
-        assertNotNull(evaluacionDao.getEvaluacionById("e_good"))
+        assertNotNull(pacienteDao.getPacienteByIdScoped("p_good", "target_o"))
+        assertNotNull(evaluacionDao.getEvaluacionById("e_good", "target_o"))
         assertNotNull(pagoDao.getPagoByIdForOptica("pg_good", "target_o"))
     }
 
@@ -344,7 +344,7 @@ class OptoRepositoryTest {
         )
         repo.insertPaciente(paciente)
 
-        val saved = pacienteDao.getPacienteById("f3-optorepo")!!
+        val saved = pacienteDao.getPacienteByIdScoped("f3-optorepo", "o1")!!
         assertNotNull("OptoRepository debe estampar updatedAt en insertPaciente", saved.updatedAt)
         assertTrue("updatedAt debe ser un timestamp ISO reciente", saved.updatedAt!!.startsWith("202"))
     }
@@ -361,7 +361,7 @@ class OptoRepositoryTest {
 
         repo.updatePaciente(toUpdate)
 
-        val saved = pacienteDao.getPacienteById("f3-update")!!
+        val saved = pacienteDao.getPacienteByIdScoped("f3-update", "o1")!!
         assertNotNull("OptoRepository debe estampar updatedAt en updatePaciente", saved.updatedAt)
         assertTrue("updatedAt debe ser mas reciente que el original", saved.updatedAt!! > "2025-01-01T00:00:00Z")
     }

@@ -46,7 +46,7 @@ fun DispensacionesList(
         )
     } else {
         LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            items(dispensaciones) { disp ->
+            items(dispensaciones, key = { it.id }) { disp ->
                 val date = com.example.optoapp.util.DateUtils.formatLocalized(disp.fecha)
                 val montoPagado = pagosSumMap[disp.id] ?: 0.0
                 val saldo = disp.montoTotal - montoPagado

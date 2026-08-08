@@ -134,14 +134,14 @@ class PacienteViewModel @Inject constructor(
     fun loadLastEvaluacion(pacienteId: String) {
         viewModelScope.launch {
             _lastEvaluacion.value = Resource.Loading()
-            _lastEvaluacion.value = repository.getLastEvaluacionByPacienteId(pacienteId)
+            _lastEvaluacion.value = repository.getLastEvaluacionByPacienteId(pacienteId, sessionManager.opticaId.first())
         }
     }
 
     fun loadLastDispensacion(pacienteId: String) {
         viewModelScope.launch {
             _lastDispensacion.value = Resource.Loading()
-            _lastDispensacion.value = repository.getLastDispensacionByPacienteId(pacienteId)
+            _lastDispensacion.value = repository.getLastDispensacionByPacienteId(pacienteId, sessionManager.opticaId.first())
         }
     }
 
@@ -188,13 +188,12 @@ class PacienteViewModel @Inject constructor(
             }
         }
         repository.insertPaciente(toSave)
-        postSaveSyncScheduler.schedulePacientesSync(oid)
     }
 
-    suspend fun getPaciente(id: String): Paciente? {
+    suspend fun getPaciente(id: String): Resource<Paciente> {
         val oid = sessionManager.opticaId.first()
-        val result = repository.getPacienteByIdScoped(id, oid)
-        return if (result is Resource.Success) result.data else null
+        @Suppress("UNCHECKED_CAST")
+        return repository.getPacienteByIdScoped(id, oid) as Resource<Paciente>
     }
 
     suspend fun suggestHistoriaOptometrica(): String {
@@ -242,7 +241,6 @@ class PacienteViewModel @Inject constructor(
                 )
             }
             val used = sessionManager.incrementPacienteDeleteCountToday(oid)
-            postSaveSyncScheduler.schedulePacientesSync(oid)
             DeletePacienteResult.Success((DAILY_DELETE_LIMIT - used).coerceAtLeast(0))
         } catch (e: CancellationException) {
             throw e

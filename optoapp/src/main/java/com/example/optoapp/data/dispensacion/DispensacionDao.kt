@@ -6,8 +6,8 @@ import java.time.LocalDate
 
 @Dao
 interface DispensacionDao {
-    @Query("SELECT * FROM dispensaciones WHERE pacienteId = :pacienteId ORDER BY fecha DESC")
-    fun getDispensacionesByPaciente(pacienteId: String): Flow<List<DispensacionOptica>>
+    @Query("SELECT * FROM dispensaciones WHERE pacienteId = :pacienteId AND opticaId = :opticaId ORDER BY fecha DESC")
+    fun getDispensacionesByPaciente(pacienteId: String, opticaId: String): Flow<List<DispensacionOptica>>
 
     @Query("SELECT * FROM dispensaciones WHERE opticaId = :opticaId")
     fun getAllDispensacionesForOptica(opticaId: String): Flow<List<DispensacionOptica>>
@@ -42,8 +42,8 @@ interface DispensacionDao {
     @Query("DELETE FROM dispensaciones WHERE id = :id AND opticaId = :opticaId")
     suspend fun deleteById(id: String, opticaId: String): Int
 
-    @Query("SELECT * FROM dispensaciones WHERE pacienteId = :pacienteId ORDER BY fecha DESC LIMIT 1")
-    suspend fun getLastDispensacionByPacienteId(pacienteId: String): DispensacionOptica?
+    @Query("SELECT * FROM dispensaciones WHERE pacienteId = :pacienteId AND opticaId = :opticaId ORDER BY fecha DESC LIMIT 1")
+    suspend fun getLastDispensacionByPacienteId(pacienteId: String, opticaId: String): DispensacionOptica?
 
     @Query("SELECT * FROM dispensaciones WHERE id IN (:ids) AND opticaId = :opticaId")
     suspend fun getDispensacionesByIds(ids: List<String>, opticaId: String): List<DispensacionOptica>

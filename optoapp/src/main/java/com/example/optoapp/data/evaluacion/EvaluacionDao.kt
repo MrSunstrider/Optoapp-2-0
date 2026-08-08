@@ -6,11 +6,11 @@ import java.time.LocalDate
 
 @Dao
 interface EvaluacionDao {
-    @Query("SELECT * FROM evaluaciones WHERE pacienteId = :pacienteId ORDER BY fecha DESC")
-    fun getEvaluacionesByPaciente(pacienteId: String): Flow<List<EvaluacionClinica>>
+    @Query("SELECT * FROM evaluaciones WHERE pacienteId = :pacienteId AND opticaId = :opticaId ORDER BY fecha DESC")
+    fun getEvaluacionesByPaciente(pacienteId: String, opticaId: String): Flow<List<EvaluacionClinica>>
 
-    @Query("SELECT * FROM evaluaciones WHERE id = :id")
-    suspend fun getEvaluacionById(id: String): EvaluacionClinica?
+    @Query("SELECT * FROM evaluaciones WHERE id = :id AND opticaId = :opticaId")
+    suspend fun getEvaluacionById(id: String, opticaId: String): EvaluacionClinica?
 
     @Upsert
     suspend fun insertEvaluacion(evaluacion: EvaluacionClinica)
@@ -23,10 +23,6 @@ interface EvaluacionDao {
 
     @Query("UPDATE evaluaciones SET opticaId = :newOpticaId WHERE opticaId = 'mi_optica_base'")
     suspend fun reassignFromLegacyMiOpticaBase(newOpticaId: String): Int
-
-    // Legacy — prefer getEvaluacionesListByOptica for multi-tenant isolation
-    @Query("SELECT * FROM evaluaciones")
-    suspend fun getAllEvaluaciones(): List<EvaluacionClinica>
 
     @Query("SELECT * FROM evaluaciones WHERE opticaId = :opticaId")
     suspend fun getEvaluacionesListByOptica(opticaId: String): List<EvaluacionClinica>
@@ -50,6 +46,6 @@ interface EvaluacionDao {
     )
     fun getEvaluacionesConProximaCitaEnRango(opticaId: String, start: LocalDate, end: LocalDate): Flow<List<EvaluacionClinica>>
 
-    @Query("SELECT * FROM evaluaciones WHERE pacienteId = :pacienteId ORDER BY fecha DESC LIMIT 1")
-    suspend fun getLastEvaluacionByPacienteId(pacienteId: String): EvaluacionClinica?
+    @Query("SELECT * FROM evaluaciones WHERE pacienteId = :pacienteId AND opticaId = :opticaId ORDER BY fecha DESC LIMIT 1")
+    suspend fun getLastEvaluacionByPacienteId(pacienteId: String, opticaId: String): EvaluacionClinica?
 }

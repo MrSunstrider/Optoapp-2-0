@@ -14,8 +14,15 @@ import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.put
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Test
@@ -156,5 +163,147 @@ class UploadSyncCoordinatorTest {
         coordinator.uploadDispensacionItems("optica-test")
 
         assertEquals(listOf("individual", "batch"), callOrder)
+    }
+
+    // ── T2.1 RED: RPC parameter construction ───────────────────────────
+
+    @Test
+    fun `buildAdjustStockParams produces correct keys and values`() {
+        val params = UploadSyncCoordinator.buildAdjustStockParams(
+            monturaId = "M1",
+            opticaId = "O1",
+            delta = -1,
+            referenceId = "D1",
+            note = "venta_dispensacion",
+            tipo = "venta",
+            fecha = "2026-01-15",
+        )
+
+        assertEquals("M1", params["p_montura_id"]?.jsonPrimitive?.content)
+        assertEquals("O1", params["p_optica_id"]?.jsonPrimitive?.content)
+        assertEquals(-1, params["p_delta"]?.jsonPrimitive?.content?.toInt())
+        assertEquals("D1", params["p_reference_id"]?.jsonPrimitive?.content)
+        assertEquals("venta_dispensacion", params["p_note"]?.jsonPrimitive?.content)
+        assertEquals("venta", params["p_tipo"]?.jsonPrimitive?.content)
+        assertEquals("2026-01-15", params["p_fecha"]?.jsonPrimitive?.content)
+    }
+
+    @Test
+    fun `buildAdjustStockParams with different delta value`() {
+        val params = UploadSyncCoordinator.buildAdjustStockParams(
+            monturaId = "M2",
+            opticaId = "O2",
+            delta = 5,
+            referenceId = "ADJ-001",
+            note = "ajuste_inventario",
+            tipo = "ajuste",
+            fecha = "2026-06-30",
+        )
+
+        assertEquals(5, params["p_delta"]?.jsonPrimitive?.content?.toInt())
+        assertEquals("ADJ-001", params["p_reference_id"]?.jsonPrimitive?.content)
+        assertEquals("ajuste_inventario", params["p_note"]?.jsonPrimitive?.content)
+        assertEquals("ajuste", params["p_tipo"]?.jsonPrimitive?.content)
+    }
+
+    // ── T2.1 RED: RPC response parsing ─────────────────────────────────
+
+    @Test
+    fun `parseAdjustStockResult ok true extracts new_stock`() {
+        val response = buildJsonObject {
+            put("ok", true)
+            put("new_stock", 4)
+        }
+
+        val ok = UploadSyncCoordinator.parseAdjustStockOk(response)
+        val stock = UploadSyncCoordinator.parseAdjustStockNewStock(response)
+
+        assertTrue(ok)
+        assertEquals(4, stock)
+    }
+
+    @Test
+    fun `parseAdjustStockResult ok false extracts error`() {
+        val response = buildJsonObject {
+            put("ok", false)
+            put("error", "insufficient")
+        }
+
+        val ok = UploadSyncCoordinator.parseAdjustStockOk(response)
+        val error = UploadSyncCoordinator.parseAdjustStockError(response)
+
+        assertFalse(ok)
+        assertEquals("insufficient", error)
+    }
+
+    @Test
+    fun `parseAdjustStockResult not_found error`() {
+        val response = buildJsonObject {
+            put("ok", false)
+            put("error", "not_found")
+        }
+
+        val ok = UploadSyncCoordinator.parseAdjustStockOk(response)
+        val error = UploadSyncCoordinator.parseAdjustStockError(response)
+
+        assertFalse(ok)
+        assertEquals("not_found", error)
+    }
+
+    @Test
+    fun `parseAdjustStockResult ok true with zero stock`() {
+        val response = buildJsonObject {
+            put("ok", true)
+            put("new_stock", 0)
+        }
+
+        val ok = UploadSyncCoordinator.parseAdjustStockOk(response)
+        val stock = UploadSyncCoordinator.parseAdjustStockNewStock(response)
+
+        assertTrue(ok)
+        assertEquals(0, stock)
+    }
+
+    // ── T2.3 RED: failure handling edge cases ──────────────────────────
+
+    @Test
+    fun `parseAdjustStockOk returns false when ok field is missing`() {
+        val response = buildJsonObject {
+            put("new_stock", 3)
+        }
+
+        val ok = UploadSyncCoordinator.parseAdjustStockOk(response)
+        assertFalse(ok)
+    }
+
+    @Test
+    fun `parseAdjustStockError returns null when error field is missing`() {
+        val response = buildJsonObject {
+            put("ok", false)
+        }
+
+        val error = UploadSyncCoordinator.parseAdjustStockError(response)
+        assertEquals(null, error)
+    }
+
+    @Test
+    fun `parseAdjustStockNewStock returns null when new_stock is missing`() {
+        val response = buildJsonObject {
+            put("ok", true)
+        }
+
+        val stock = UploadSyncCoordinator.parseAdjustStockNewStock(response)
+        assertEquals(null, stock)
+    }
+
+    @Test
+    fun `parseAdjustStockOk returns false when ok is string false`() {
+        val response = buildJsonObject {
+            put("ok", "false")
+        }
+
+        // "false" as string !== "true" as string → parseAdjustStockOk returns false
+        val ok = UploadSyncCoordinator.parseAdjustStockOk(response)
+        assertFalse(ok)
     }
 }

@@ -12,7 +12,6 @@ import androidx.core.content.FileProvider
 import com.example.optoapp.BuildConfig
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
-import io.github.jan.supabase.postgrest.query.Order
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -25,16 +24,16 @@ import java.net.HttpURLConnection
 import java.net.URL
 
 /**
- * Checkea si hay una versión nueva usando una cadena de respaldo:
+ * Checks for new versions using a fallback chain:
  *
- * 1. [tryCheckGithub] — API pública de GitHub Releases (sin auth, pública).
- * 2. [tryCheckSupabase] — consulta la tabla `app_releases` en Supabase.
+ * 1. [tryCheckGitHub] — GitHub Releases public API (no auth).
+ * 2. [tryCheckSupabase] — queries `app_releases` in Supabase.
  *
- * Si el primario falla (rate limit, sin red), cae al secundario.
- * Si ambos fallan, retorna null silenciosamente.
+ * If the primary fails (rate limit, no network), it falls back to the secondary.
+ * If both fail, returns null silently.
  *
- * El CI (build-apk.yml) crea GitHub Releases y llama a la Edge Function
- * track-release que inserta en `app_releases`.
+ * CI (build-apk.yml) creates GitHub Releases and calls the track-release
+ * Edge Function which inserts into `app_releases`.
  */
 object UpdateChecker {
 
@@ -68,11 +67,11 @@ object UpdateChecker {
         val releaseUrl: String,
     )
 
-    /** Resultado de la operación de descarga/instalación. */
+    /** Result of the download/install operation. */
     sealed class DownloadResult {
         data object Success : DownloadResult()
         data class Error(val message: String) : DownloadResult()
-        /** El APK se descargó pero la app no tiene permiso para instalar paquetes. */
+        /** The APK was downloaded but the app lacks package install permission. */
         data object NeedsInstallPermission : DownloadResult()
     }
 
@@ -92,12 +91,11 @@ object UpdateChecker {
     }
 
     /**
-     * Consulta la API pública de GitHub Releases.
-     * No requiere autenticación (60 req/hora para IPs públicas).
+     * GitHub's public API with 60 req/hour for public IPs — no auth required.
      *
-     * SOLO retorna [UpdateInfo] si el release tiene un asset APK real.
-     * Si el release existe pero sin asset APK ([) -> retorna null para que
-     * la cadena de respaldo (Supabase) pueda tomar el control.
+     * ONLY returns [UpdateInfo] if the release has a real APK asset.
+     * If the release exists but has no APK asset, returns null so the
+     * fallback chain (Supabase) can take over.
      */
     private suspend fun tryCheckGitHub(): UpdateInfo? {
         return try {
@@ -114,8 +112,7 @@ object UpdateChecker {
                 .firstOrNull { it.browserDownloadUrl.isNotBlank() && it.browserDownloadUrl.endsWith(".apk") }
                 ?.browserDownloadUrl
 
-            // NO caer a release.htmlUrl — eso es HTML, no APK.
-            // Si no hay asset APK, que lo resuelva Supabase.
+            // release.htmlUrl is HTML, not APK — let Supabase handle it.
             if (apkUrl == null) return null
 
             UpdateInfo(
@@ -129,7 +126,6 @@ object UpdateChecker {
         }
     }
 
-    /** Lee el body de una URL con timeout de 8s y garantiza disconnect. */
     private fun URL.readTextWithTimeout(): String {
         val conn = openConnection() as HttpURLConnection
         try {
@@ -142,19 +138,15 @@ object UpdateChecker {
     }
 
     /**
-     * Consulta la tabla `app_releases` en Supabase.
-     * El CI inserta aquí via Edge Function track-release.
+     * CI inserts here via the track-release Edge Function.
      */
     private suspend fun tryCheckSupabase(supabase: SupabaseClient): UpdateInfo? {
         return try {
             val releases = supabase.postgrest["app_releases"]
-                .select {
-                    order("version", Order.DESCENDING)
-                    limit(1)
-                }
+                .select()
                 .decodeList<AppRelease>()
 
-            val latestRelease = releases.firstOrNull() ?: return null
+            val latestRelease = findLatestByVersion(releases) ?: return null
             val current = BuildConfig.VERSION_NAME
             val latest = latestRelease.version
 
@@ -172,23 +164,20 @@ object UpdateChecker {
     }
 
     /**
-     * Descarga el APK en segundo plano, lo valida e instala si tiene permiso.
+     * The UI decides how to handle each error case — never open the browser from here.
+     * Use [openDownloadInBrowser] as a manual fallback from the UI.
      *
-     * NO abre el navegador ante errores — la UI decide cómo manejar cada caso.
-     * Usar [openDownloadInBrowser] como fallback manual desde la UI.
-     *
-     * @return [DownloadResult.NeedsInstallPermission] si el APK se descargó bien
-     *   pero falta el permiso REQUEST_INSTALL_PACKAGES.
+     * @return [DownloadResult.NeedsInstallPermission] if the APK was downloaded
+     *   but REQUEST_INSTALL_PACKAGES is not granted.
      */
     suspend fun downloadAndInstall(
         context: Context,
         url: String,
     ): DownloadResult {
-        // Usar applicationContext para evitar leaks si la Activity muere durante la descarga
+        // Use applicationContext to avoid leaks if the Activity dies during download
         val appContext = context.applicationContext
         return withContext(Dispatchers.IO) {
             try {
-                // Verificar conectividad antes de intentar la descarga
                 if (!isOnline(appContext)) {
                     return@withContext DownloadResult.Error("No hay conexión a Internet")
                 }
@@ -196,7 +185,6 @@ object UpdateChecker {
                 val dir = File(appContext.cacheDir, "updates").apply { mkdirs() }
                 val apk = File(dir, "optoapp-update.apk")
 
-                // Limpiar descarga previa fallida
                 if (apk.exists()) apk.delete()
 
                 val conn = URL(url).openConnection() as HttpURLConnection
@@ -207,7 +195,6 @@ object UpdateChecker {
                     conn.setInstanceFollowRedirects(true)
                     conn.connect()
 
-                    // Obtener tamaño esperado antes de descargar
                     expectedSize = conn.contentLengthLong
 
                     conn.inputStream.use { input ->
@@ -219,20 +206,18 @@ object UpdateChecker {
                     conn.disconnect()
                 }
 
-                // Validar el APK descargado
                 val validationError = verifyApk(apk, expectedSize)
                 if (validationError != null) {
                     apk.delete()
                     AppLogger.w(TAG, "APK validation failed: $validationError")
                     return@withContext DownloadResult.Error("Descarga corrupta: $validationError")
                 }
-
-                // Verificar permiso de instalación antes de lanzar el intent
+                // Android < 8 does not require this permission
                 val canInstall = withContext(Dispatchers.Main) {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                         appContext.packageManager.canRequestPackageInstalls()
                     } else {
-                        true // Android < 8 no necesita este permiso
+                        true
                     }
                 }
 
@@ -247,12 +232,12 @@ object UpdateChecker {
 
                 DownloadResult.Success
             } catch (e: CancellationException) {
-                // Corrutina cancelada — limpiar y propagar
+                // Clean up partial download and propagate cancellation
                 val apk = File(appContext.cacheDir, "updates/optoapp-update.apk")
                 if (apk.exists()) apk.delete()
                 throw e
             } catch (e: Exception) {
-                // Limpiar descarga parcial
+                // Clean up partial download on failure
                 val apk = File(appContext.cacheDir, "updates/optoapp-update.apk")
                 if (apk.exists()) apk.delete()
                 val msg = e.localizedMessage ?: "Error al descargar la actualización"
@@ -262,7 +247,6 @@ object UpdateChecker {
         }
     }
 
-    /** Verifica conectividad de red usando [ConnectivityManager]. */
     private fun isOnline(context: Context): Boolean {
         val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager ?: return true
         val network = cm.activeNetwork ?: return false
@@ -271,9 +255,9 @@ object UpdateChecker {
     }
 
     /**
-     * Abre la URL de descarga en el navegador como fallback.
-     * Usar solo cuando [downloadAndInstall] falló y el usuario quiere intentar manualmente.
-     * Solo permite esquemas https por seguridad.
+     * Opens the download URL in the browser as a manual fallback.
+     * Only use when [downloadAndInstall] failed and the user wants to retry manually.
+     * Only https URLs are allowed for security.
      */
     fun openDownloadInBrowser(context: Context, url: String) {
         val uri = Uri.parse(url)
@@ -297,10 +281,6 @@ object UpdateChecker {
         }
     }
 
-    /**
-     * Abre la pantalla de Settings para que el usuario otorgue
-     * el permiso "Instalar apps desconocidas" a esta app.
-     */
     fun openInstallPermissionSettings(context: Context) {
         try {
             val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -320,16 +300,6 @@ object UpdateChecker {
         }
     }
 
-    /**
-     * Verifica que el archivo descargado sea un APK válido.
-     *
-     * Checks:
-     * - Existe y no está vacío
-     * - Tiene los bytes mágicos de un ZIP (PK) — todo APK es un ZIP
-     * - Si sabíamos el tamaño esperado, verifica que coincida
-     *
-     * @return null si es válido, o un mensaje de error si no.
-     */
     private fun verifyApk(file: File, expectedSize: Long): String? {
         if (!file.exists()) return "archivo no encontrado"
         if (file.length() == 0L) return "archivo vacío"
@@ -352,7 +322,6 @@ object UpdateChecker {
         return null
     }
 
-    /** Lanza el intent de instalación del APK descargado. */
     private fun launchInstallIntent(context: Context, apk: File, fallbackUrl: String) {
         val uri: Uri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             FileProvider.getUriForFile(
@@ -377,7 +346,6 @@ object UpdateChecker {
         }
     }
 
-    /** Compara versiones semánticas (ej: "1.2.3" > "1.1.9"). */
     fun isNewer(latest: String, current: String): Boolean {
         val l = latest.split(".").map { it.toIntOrNull() ?: 0 }
         val c = current.split(".").map { it.toIntOrNull() ?: 0 }
@@ -389,7 +357,24 @@ object UpdateChecker {
         }
         return false
     }
+
+    /**
+     * PostgREST ORDER BY version DESC uses lexicographic ordering, so "1.9.0"
+     * ranks above "1.15.8". We compare segments numerically to avoid this.
+     */
+    fun findLatestByVersion(releases: List<AppRelease>): AppRelease? {
+        return releases.maxWithOrNull(Comparator { a, b ->
+            val segsA = a.version.split(".").map { it.toIntOrNull() ?: 0 }
+            val segsB = b.version.split(".").map { it.toIntOrNull() ?: 0 }
+            for (i in 0 until maxOf(segsA.size, segsB.size)) {
+                val av = segsA.getOrElse(i) { 0 }
+                val bv = segsB.getOrElse(i) { 0 }
+                if (av != bv) return@Comparator av - bv
+            }
+            0
+        })
+    }
 }
 
-/** Singleton Json con ignoreUnknownKeys para tolerar campos extra de la API de GitHub. */
+/** Singleton Json with ignoreUnknownKeys to tolerate extra fields from the GitHub API. */
 private val jsonParser = Json { ignoreUnknownKeys = true }

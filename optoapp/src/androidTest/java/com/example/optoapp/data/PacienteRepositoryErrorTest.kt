@@ -10,10 +10,10 @@ import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.robolectric.RobolectricTestRunner
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import java.io.IOException
 
-@RunWith(RobolectricTestRunner::class)
+@RunWith(AndroidJUnit4::class)
 class PacienteRepositoryErrorTest {
 
     private lateinit var pacienteDao: PacienteDao
@@ -67,9 +67,9 @@ class PacienteRepositoryErrorTest {
 
     @Test
     fun `getEvaluacionById dao throws IOException returns Error`() = runTest {
-        coEvery { evaluacionDao.getEvaluacionById("e1") } throws IOException("Network error")
+        coEvery { evaluacionDao.getEvaluacionById("e1", any()) } throws IOException("Network error")
 
-        val result = repo.getEvaluacionById("e1")
+        val result = repo.getEvaluacionById("e1", "o1")
 
         assertTrue("Expected Resource.Error but got $result", result is Resource.Error)
         assertNotNull((result as Resource.Error).message)
@@ -77,11 +77,11 @@ class PacienteRepositoryErrorTest {
 
     @Test
     fun `getEvaluacionById dao throws CancellationException rethrows`() = runTest {
-        coEvery { evaluacionDao.getEvaluacionById("e1") } throws CancellationException("Cancelled")
+        coEvery { evaluacionDao.getEvaluacionById("e1", any()) } throws CancellationException("Cancelled")
 
         var caught = false
         try {
-            repo.getEvaluacionById("e1")
+            repo.getEvaluacionById("e1", "o1")
         } catch (e: CancellationException) {
             caught = true
         }
@@ -89,10 +89,10 @@ class PacienteRepositoryErrorTest {
     }
 
     @Test
-    fun `getEvaluacionById dao throws generic Exception returns Error`() = runTest {
-        coEvery { evaluacionDao.getEvaluacionById("e1") } throws RuntimeException("DB corrupt")
+    fun `getEvaluacionById dao throws Exception returns Error`() = runTest {
+        coEvery { evaluacionDao.getEvaluacionById("e1", any()) } throws RuntimeException("DB corrupt")
 
-        val result = repo.getEvaluacionById("e1")
+        val result = repo.getEvaluacionById("e1", "o1")
 
         assertTrue("Expected Resource.Error but got $result", result is Resource.Error)
         assertEquals("DB corrupt", (result as Resource.Error).message)

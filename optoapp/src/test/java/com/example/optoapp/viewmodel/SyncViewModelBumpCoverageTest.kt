@@ -259,7 +259,7 @@ class SyncViewModelBumpCoverageTest {
     fun bumpEvaluacion_callsUpdateEvaluacion() = runTest(testDispatcher) {
         val conflict = makeConflict("eval-bump", "evaluacion")
         val entity = evaluacion("eval-bump")
-        coEvery { repository.getEvaluacionById("eval-bump") } returns Resource.Success(entity)
+        coEvery { repository.getEvaluacionById("eval-bump", any()) } returns Resource.Success(entity)
         coEvery { repository.updateEvaluacion(any()) } just Runs
 
         viewModel.resolveKeepMine(conflict)

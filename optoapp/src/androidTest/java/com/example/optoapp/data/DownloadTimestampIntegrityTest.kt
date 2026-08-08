@@ -18,7 +18,7 @@ import org.junit.Assert.assertNotNull
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.robolectric.RobolectricTestRunner
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import java.io.IOException
 import java.time.LocalDate
 
@@ -30,7 +30,7 @@ import java.time.LocalDate
  * Invariant under test: stored.updatedAt == entity.updatedAt for all 4 entity types.
  * Idempotency under test: re-downloading the same record does not duplicate rows.
  */
-@RunWith(RobolectricTestRunner::class)
+@RunWith(AndroidJUnit4::class)
 class DownloadTimestampIntegrityTest {
 
     private val T_REMOTE = "2026-06-15T10:00:00Z"
@@ -219,7 +219,7 @@ class DownloadTimestampIntegrityTest {
 
         repo.upsertEvaluacionFromRemote(entity)
 
-        val stored = evaluacionDao.getEvaluacionById("ev1")
+        val stored = evaluacionDao.getEvaluacionById("ev1", opticaId)
         assertNotNull("Record should exist in DB", stored)
         assertEquals(
             "Stored updatedAt must equal the remote timestamp",

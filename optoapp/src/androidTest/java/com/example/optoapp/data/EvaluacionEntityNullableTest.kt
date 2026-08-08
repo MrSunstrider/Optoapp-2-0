@@ -9,7 +9,7 @@ import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.robolectric.RobolectricTestRunner
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import java.io.IOException
 import java.time.LocalDate
 
@@ -21,7 +21,7 @@ import java.time.LocalDate
  * Supabase schema where these columns may be NULL. Room must not throw when
  * writing or reading nulls for these columns.
  */
-@RunWith(RobolectricTestRunner::class)
+@RunWith(AndroidJUnit4::class)
 class EvaluacionEntityNullableTest {
 
     private lateinit var db: OptoDatabase
@@ -68,7 +68,7 @@ class EvaluacionEntityNullableTest {
         )
 
         dao.insertEvaluacion(ev)
-        val loaded = dao.getEvaluacionById("e1")
+        val loaded = dao.getEvaluacionById("e1", "optica-1")
 
         assertNotNull("Entity must be retrievable after insert", loaded)
     }
@@ -83,7 +83,7 @@ class EvaluacionEntityNullableTest {
         )
 
         dao.insertEvaluacion(ev)
-        val loaded = dao.getEvaluacionById("e2")
+        val loaded = dao.getEvaluacionById("e2", "optica-1")
 
         assertNotNull(loaded)
         assertNull("motivoConsulta must be null when not provided", loaded?.motivoConsulta)
@@ -103,7 +103,7 @@ class EvaluacionEntityNullableTest {
         )
 
         dao.insertEvaluacion(ev)
-        val loaded = dao.getEvaluacionById("e3")
+        val loaded = dao.getEvaluacionById("e3", "optica-1")
 
         assertNotNull(loaded)
         assertNull("balanceOd must be null when not provided", loaded?.balanceOd)
@@ -126,7 +126,7 @@ class EvaluacionEntityNullableTest {
         )
 
         dao.insertEvaluacion(ev)
-        val loaded = dao.getEvaluacionById("e4")
+        val loaded = dao.getEvaluacionById("e4", "optica-1")
 
         assertNotNull(loaded)
         assertNull("necesidadVisual must be null when not provided", loaded?.necesidadVisual)
@@ -153,7 +153,7 @@ class EvaluacionEntityNullableTest {
         )
 
         dao.insertEvaluacion(ev)
-        val loaded = dao.getEvaluacionById("e5")
+        val loaded = dao.getEvaluacionById("e5", "optica-1")
 
         assertNotNull(loaded)
         assertNotNull("motivoConsulta should not be null when provided", loaded?.motivoConsulta)

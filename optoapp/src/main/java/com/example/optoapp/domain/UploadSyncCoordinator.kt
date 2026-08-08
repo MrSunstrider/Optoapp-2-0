@@ -11,6 +11,11 @@ import androidx.room.withTransaction
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.CancellationException
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.put
 import java.io.IOException
 import java.time.Instant
 import javax.inject.Inject
@@ -40,6 +45,39 @@ open class UploadSyncCoordinator @Inject constructor(
         private const val TABLE_COSTOS_PRODUCTOS = "costos_productos"
         private const val TABLE_COSTOS_BISELADO = "costos_biselado"
         private const val UPSERT_BATCH_SIZE = 80
+
+        // ── RPC helpers (T2.2) ─────────────────────────────────────────
+
+        /** Build the JsonObject parameters for rpc_adjust_montura_stock. */
+        internal fun buildAdjustStockParams(
+            monturaId: String,
+            opticaId: String,
+            delta: Int,
+            referenceId: String,
+            note: String,
+            tipo: String,
+            fecha: String,
+        ): JsonObject = buildJsonObject {
+            put("p_montura_id", monturaId)
+            put("p_optica_id", opticaId)
+            put("p_delta", delta)
+            put("p_reference_id", referenceId)
+            put("p_note", note)
+            put("p_tipo", tipo)
+            put("p_fecha", fecha)
+        }
+
+        /** Extract the [ok] boolean from an RPC jsonb response. */
+        internal fun parseAdjustStockOk(response: JsonObject): Boolean =
+            response["ok"]?.jsonPrimitive?.let { it.content == "true" } ?: false
+
+        /** Extract [new_stock] from a successful RPC response. */
+        internal fun parseAdjustStockNewStock(response: JsonObject): Int? =
+            response["new_stock"]?.jsonPrimitive?.content?.toIntOrNull()
+
+        /** Extract the [error] string from a failed RPC response. */
+        internal fun parseAdjustStockError(response: JsonObject): String? =
+            response["error"]?.jsonPrimitive?.content
     }
 
     class UploadPreCheckFailedException(
@@ -104,6 +142,8 @@ open class UploadSyncCoordinator @Inject constructor(
             syncStateTracker.markSynced(opticaId, "upload_dispensaciones", "batch")
             return 0
         }
+        // Snapshot of items used for RPC stock adjustment after upsert.
+        val items = repository.getDispensacionItemsSnapshotForOptica(opticaId)
         val allPagos = repository.getPagosSnapshotForOptica(opticaId)
         val pagosSumByDisp = allPagos
             .filter { it.tipo != "Anulación" && it.dispensacionId != null }
@@ -181,6 +221,37 @@ open class UploadSyncCoordinator @Inject constructor(
                     supabase.postgrest[TABLE_DISPENSACIONES].upsert(chunk)
                 }
                 uploadedCount += chunk.size
+
+                // After chunk upsert, adjust stock via RPC for each
+                // dispensacion item that has a non-blank monturaId.
+                val chunkDispIds = chunk.map { it.id }.toSet()
+                items.filter { it.dispensacionId in chunkDispIds && it.monturaId.isNotBlank() }
+                    .forEach { item ->
+                        try {
+                            val params = buildAdjustStockParams(
+                                monturaId = item.monturaId,
+                                opticaId = item.opticaId,
+                                delta = -1,
+                                referenceId = item.dispensacionId,
+                                note = "venta_dispensacion",
+                                tipo = "venta",
+                                fecha = localById[item.dispensacionId]?.fecha?.toString() ?: "",
+                            )
+                            val result = supabase.postgrest.rpc(
+                                "rpc_adjust_montura_stock",
+                                params,
+                            ).decodeAs<JsonObject>()
+                            val ok = parseAdjustStockOk(result)
+                            if (!ok) {
+                                val error = parseAdjustStockError(result) ?: "unknown"
+                                AppLogger.w(TAG, "RPC adjust stock failed: $error (disp=${item.dispensacionId}, montura=${item.monturaId})")
+                            }
+                        } catch (e: CancellationException) {
+                            throw e
+                        } catch (e: Exception) {
+                            AppLogger.e(TAG, "RPC adjust stock exception: ${e.message} (disp=${item.dispensacionId}, montura=${item.monturaId})", e)
+                        }
+                    }
             }
         } catch (e: CancellationException) {
             throw e

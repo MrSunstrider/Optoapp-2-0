@@ -4,7 +4,6 @@ import android.util.Log
 import androidx.room.withTransaction
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
-import java.io.IOException
 import java.time.LocalDate
 
 // Extracted from OptoRepository to keep the god class manageable as patient operations grew.
@@ -35,25 +34,8 @@ class PacienteRepository(
         }
     } catch (e: CancellationException) {
         throw e
-    } catch (e: IOException) {
-        Log.e(TAG, "getPacienteById: id=$id", e)
-        Resource.Error("Error de red al obtener paciente")
     } catch (e: Exception) {
         Log.e(TAG, "getPacienteById: id=$id", e)
-        Resource.Error(e.message ?: "Error al obtener paciente")
-    }
-
-    @Deprecated("Use getPacienteById(id, opticaId) for multi-tenant safety")
-    suspend fun getPacienteByIdLegacy(id: String): Resource<Paciente> = try {
-        val paciente = pacienteDao.getPacienteById(id)
-        if (paciente != null) Resource.Success(paciente) else Resource.Error("Paciente no encontrado")
-    } catch (e: CancellationException) {
-        throw e
-    } catch (e: IOException) {
-        Log.e(TAG, "getPacienteByIdLegacy: id=$id", e)
-        Resource.Error("Error de red al obtener paciente")
-    } catch (e: Exception) {
-        Log.e(TAG, "getPacienteByIdLegacy: id=$id", e)
         Resource.Error(e.message ?: "Error al obtener paciente")
     }
 
@@ -87,7 +69,7 @@ class PacienteRepository(
         return pacienteDao.countPacientesByHistoriaOptometrica(opticaId, n, ex) > 0
     }
 
-    fun getEvaluacionesByPaciente(pacienteId: String): Flow<List<EvaluacionClinica>> = evaluacionDao.getEvaluacionesByPaciente(pacienteId)
+    fun getEvaluacionesByPaciente(pacienteId: String, opticaId: String): Flow<List<EvaluacionClinica>> = evaluacionDao.getEvaluacionesByPaciente(pacienteId, opticaId)
 
     fun getEvaluacionesProximaCitaEnRango(opticaId: String, start: LocalDate, end: LocalDate): Flow<List<EvaluacionClinica>> = evaluacionDao.getEvaluacionesConProximaCitaEnRango(opticaId, start, end)
 
@@ -100,8 +82,8 @@ class PacienteRepository(
 
     fun countEvaluacionesInRangeForOptica(start: LocalDate, end: LocalDate, opticaId: String): Flow<Int> = evaluacionDao.countEvaluacionesInRangeForOptica(start, end, opticaId)
 
-    suspend fun getEvaluacionById(id: String): Resource<EvaluacionClinica> = try {
-        val evaluacion = evaluacionDao.getEvaluacionById(id)
+    suspend fun getEvaluacionById(id: String, opticaId: String): Resource<EvaluacionClinica> = try {
+        val evaluacion = evaluacionDao.getEvaluacionById(id, opticaId)
         if (evaluacion != null) {
             Resource.Success(evaluacion)
         } else {
@@ -109,16 +91,13 @@ class PacienteRepository(
         }
     } catch (e: CancellationException) {
         throw e
-    } catch (e: IOException) {
-        Log.e(TAG, "getEvaluacionById: id=$id", e)
-        Resource.Error("Error de red al obtener evaluación")
     } catch (e: Exception) {
         Log.e(TAG, "getEvaluacionById: id=$id", e)
         Resource.Error(e.message ?: "Error al obtener evaluación")
     }
 
-    suspend fun getLastEvaluacionByPacienteId(pacienteId: String): Resource<EvaluacionClinica> = try {
-        val eval = evaluacionDao.getLastEvaluacionByPacienteId(pacienteId)
+    suspend fun getLastEvaluacionByPacienteId(pacienteId: String, opticaId: String): Resource<EvaluacionClinica> = try {
+        val eval = evaluacionDao.getLastEvaluacionByPacienteId(pacienteId, opticaId)
         if (eval != null) {
             Resource.Success(eval)
         } else {
@@ -126,9 +105,6 @@ class PacienteRepository(
         }
     } catch (e: CancellationException) {
         throw e
-    } catch (e: IOException) {
-        Log.e(TAG, "getLastEvaluacionByPacienteId: pacienteId=$pacienteId", e)
-        Resource.Error("Error de red al obtener evaluación")
     } catch (e: Exception) {
         Log.e(TAG, "getLastEvaluacionByPacienteId: pacienteId=$pacienteId", e)
         Resource.Error(e.message ?: "Error al obtener evaluación")

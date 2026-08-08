@@ -25,7 +25,7 @@ fun ServiciosExtraList(servicios: List<ServicioExtra>, onEdit: (String) -> Unit,
         )
     } else {
         LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            items(servicios) { serv ->
+            items(servicios, key = { it.id }) { serv ->
                 val date = com.example.optoapp.util.DateUtils.formatLocalized(serv.fecha)
                 val aCuenta = aCuentaSumMap[serv.id] ?: 0.0
                 val saldo = serv.montoTotal - aCuenta

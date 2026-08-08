@@ -99,7 +99,7 @@ class AgendaViewModel @Inject constructor(
 
     fun actualizarEstado(evalId: String, nuevoEstado: String) {
         viewModelScope.launch {
-            val res = repository.getEvaluacionById(evalId)
+            val res = repository.getEvaluacionById(evalId, sessionManager.opticaId.first())
             if (res !is Resource.Success) return@launch
             val ev = res.data ?: return@launch
             repository.updateEvaluacion(ev.copy(citaEstado = nuevoEstado.trim().ifBlank { "programada" }))
@@ -109,7 +109,7 @@ class AgendaViewModel @Inject constructor(
 
     fun reprogramar(evalId: String, nuevaFecha: LocalDate) {
         viewModelScope.launch {
-            val res = repository.getEvaluacionById(evalId)
+            val res = repository.getEvaluacionById(evalId, sessionManager.opticaId.first())
             if (res !is Resource.Success) return@launch
             val ev = res.data ?: return@launch
             repository.updateEvaluacion(

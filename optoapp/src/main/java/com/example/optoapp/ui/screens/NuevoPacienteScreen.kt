@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.optoapp.data.Paciente
+import com.example.optoapp.data.Resource
 import com.example.optoapp.testing.TestTags
 import com.example.optoapp.ui.components.OptoDatePickerDialog
 import com.example.optoapp.ui.components.OptoTopAppBar
@@ -49,25 +50,32 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
     var fechaCreacion by remember { mutableStateOf(DateUtils.today()) }
 
     var saving by remember { mutableStateOf(false) }
+    var pacienteLoadError by remember { mutableStateOf(false) }
 
     LaunchedEffect(pacienteId) {
         if (pacienteId != null) {
-            val p = viewModel.getPaciente(pacienteId)
-            p?.let {
-                nombreCompleto = it.nombreCompleto
-                edad = it.edad.toString()
-                telefono = it.telefono.filter { c -> c.isDigit() }
-                dni = it.dni ?: ""
-                historiaOptometrica = it.historiaOptometrica ?: ""
-                fechaNacimiento = it.fechaNacimiento?.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))?.filter { c -> c.isDigit() } ?: ""
-                sexo = it.sexo ?: "Masculino"
-                email = it.email ?: ""
-                direccion = it.direccion ?: ""
-                distrito = it.distrito ?: ""
-                ocupacion = it.ocupacion ?: ""
-                acompanante = it.acompanante ?: ""
-                hobbies = it.hobbies ?: ""
-                fechaCreacion = it.fechaCreacion
+            when (val result = viewModel.getPaciente(pacienteId)) {
+                is Resource.Success -> result.data?.let { it ->
+                    nombreCompleto = it.nombreCompleto
+                    edad = it.edad.toString()
+                    telefono = it.telefono.filter { c -> c.isDigit() }
+                    dni = it.dni ?: ""
+                    historiaOptometrica = it.historiaOptometrica ?: ""
+                    fechaNacimiento = it.fechaNacimiento?.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))?.filter { c -> c.isDigit() } ?: ""
+                    sexo = it.sexo ?: "Masculino"
+                    email = it.email ?: ""
+                    direccion = it.direccion ?: ""
+                    distrito = it.distrito ?: ""
+                    ocupacion = it.ocupacion ?: ""
+                    acompanante = it.acompanante ?: ""
+                    hobbies = it.hobbies ?: ""
+                    fechaCreacion = it.fechaCreacion
+                }
+                is Resource.Error -> {
+                    Toast.makeText(ctx, "No se pudo cargar el paciente: ${result.message}", Toast.LENGTH_LONG).show()
+                    pacienteLoadError = true
+                }
+                is Resource.Loading -> { }
             }
         }
     }
@@ -183,6 +191,10 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
                 Button(
                     onClick = {
                         if (saving) return@Button
+                        if (pacienteLoadError && pacienteId != null) {
+                            Toast.makeText(ctx, "No se pudo cargar el paciente para editar", Toast.LENGTH_LONG).show()
+                            return@Button
+                        }
                         if (nombreCompleto.isNotBlank() && edad.isNotBlank() && telefono.isNotBlank()) {
                             val p = Paciente(
                                 id = pacienteId ?: UUID.randomUUID().toString(),

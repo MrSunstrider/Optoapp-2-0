@@ -67,8 +67,8 @@ class BumpEntityStrategy(
         "paciente" to { id, opticaId ->
             bumpWithResource(id, "paciente", { repository.getPacienteByIdScoped(id, opticaId) }, { repository.updatePaciente(it) })
         },
-        "evaluacion" to { id, _ ->
-            bumpWithResource(id, "evaluacion", { repository.getEvaluacionById(id) }, { repository.updateEvaluacion(it) })
+        "evaluacion" to { id, opticaId ->
+            bumpWithResource(id, "evaluacion", { repository.getEvaluacionById(id, opticaId) }, { repository.updateEvaluacion(it) })
         },
         "montura" to { id, opticaId ->
             bumpWithResource(id, "montura", { repository.getMonturaById(id, opticaId) }, { repository.updateMontura(it) })

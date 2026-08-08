@@ -53,7 +53,7 @@ class OfflineSyncTest {
         )
 
         // Assert: data persisted in Room despite being offline.
-        val stored = pacienteDao.getPacienteById(paciente.id)
+        val stored = pacienteDao.getPacienteByIdScoped(paciente.id, paciente.opticaId)
         assertNotNull("Patient must be stored in Room even when offline", stored)
         assertEquals("Offline Patient", stored?.nombreCompleto)
         assertEquals(testOpticaId, stored?.opticaId)
@@ -92,7 +92,7 @@ class OfflineSyncTest {
         )
 
         // Verify the data is still in Room and marked synced.
-        val stored = pacienteDao.getPacienteById(paciente.id)
+        val stored = pacienteDao.getPacienteByIdScoped(paciente.id, paciente.opticaId)
         assertNotNull("Patient should still exist in Room after sync", stored)
         assertEquals("Queued Sync Patient", stored?.nombreCompleto)
     }
@@ -131,7 +131,7 @@ class OfflineSyncTest {
         )
 
         // Assert: local version is preserved.
-        val stored = pacienteDao.getPacienteById(paciente.id)
+        val stored = pacienteDao.getPacienteByIdScoped(paciente.id, paciente.opticaId)
         assertNotNull(stored)
         assertEquals(
             "Local version must be preserved after sync conflict",
@@ -182,7 +182,7 @@ class OfflineSyncTest {
         )
         assertNotNull(
             "Evaluation should be in Room",
-            evaluacionDao.getEvaluacionById(evaluacion.id),
+            evaluacionDao.getEvaluacionById(evaluacion.id, evaluacion.opticaId),
         )
 
         // Verify pending markers exist.

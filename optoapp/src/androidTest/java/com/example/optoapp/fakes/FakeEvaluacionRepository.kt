@@ -19,11 +19,11 @@ class FakeEvaluacionRepository {
     private val evaluaciones = mutableListOf<EvaluacionClinica>()
     private val _flow = MutableStateFlow<List<EvaluacionClinica>>(emptyList())
 
-    fun getEvaluacionesByPaciente(pacienteId: String): Flow<List<EvaluacionClinica>> = _flow.map { list ->
-        list.filter { it.pacienteId == pacienteId }.sortedByDescending { it.fecha }
+    fun getEvaluacionesByPaciente(pacienteId: String, opticaId: String): Flow<List<EvaluacionClinica>> = _flow.map { list ->
+        list.filter { it.pacienteId == pacienteId && it.opticaId == opticaId }.sortedByDescending { it.fecha }
     }
 
-    suspend fun getEvaluacionById(id: String): Resource<EvaluacionClinica> {
+    suspend fun getEvaluacionById(id: String, opticaId: String): Resource<EvaluacionClinica> {
         val ev = evaluaciones.find { it.id == id }
         return if (ev != null) {
             Resource.Success(ev)

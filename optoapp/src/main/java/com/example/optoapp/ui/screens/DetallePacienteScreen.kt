@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.optoapp.data.Paciente
+import com.example.optoapp.data.Resource
 import com.example.optoapp.ui.components.OptoTopAppBar
 import com.example.optoapp.ui.navigation.Route
 import com.example.optoapp.ui.components.common.EmptyState
@@ -38,7 +39,6 @@ import com.example.optoapp.viewmodel.EvaluacionViewModel
 import com.example.optoapp.viewmodel.OpticaHeaderViewModel
 import com.example.optoapp.viewmodel.PacienteViewModel
 import com.example.optoapp.viewmodel.ServiciosViewModel
-import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
@@ -55,7 +55,7 @@ fun DetallePacienteScreen(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    var paciente by remember { mutableStateOf<Paciente?>(null) }
+    var pacienteState by remember { mutableStateOf<Resource<Paciente>>(Resource.Loading()) }
     val evaluaciones by evaluacionViewModel.getEvaluacionesByPaciente(id).collectAsState(initial = emptyList())
     val dispensaciones by dispensacionViewModel.getDispensacionesByPaciente(id).collectAsState(initial = emptyList())
     val servicios by remember(serviciosViewModel.allServicios, id) {
@@ -63,19 +63,10 @@ fun DetallePacienteScreen(
     }.collectAsState(initial = emptyList())
 
     var retryTrigger by remember { mutableIntStateOf(0) }
-    var showError by remember { mutableStateOf(false) }
     val loadKey = "$id-${retryTrigger}"
 
     LaunchedEffect(loadKey) {
-        showError = false
-        val result = withTimeoutOrNull(5_000L) {
-            pacienteViewModel.getPaciente(id)
-        }
-        if (result != null) {
-            paciente = result
-        } else {
-            showError = true
-        }
+        pacienteState = pacienteViewModel.getPaciente(id)
     }
 
     var selectedTab by remember { mutableIntStateOf(0) }
@@ -107,7 +98,7 @@ fun DetallePacienteScreen(
                         IconButton(onClick = { showWhatsAppMenu = true }) {
                             Icon(Icons.AutoMirrored.Filled.Chat, contentDescription = "WhatsApp")
                         }
-                        paciente?.let { p ->
+                        pacienteState.data?.let { p ->
                             PacienteWhatsAppMenu(
                                 expanded = showWhatsAppMenu,
                                 paciente = p,
@@ -123,7 +114,7 @@ fun DetallePacienteScreen(
                     }
                     IconButton(
                         onClick = {
-                            val p = paciente
+                            val p = pacienteState.data
                             if (p == null) {
                                 Toast.makeText(context, "Esperando datos del paciente…", Toast.LENGTH_SHORT).show()
                                 return@IconButton
@@ -174,8 +165,8 @@ fun DetallePacienteScreen(
         },
     ) { padding ->
         when {
-            paciente != null -> {
-                val p = paciente!!
+            pacienteState is Resource.Success && pacienteState.data != null -> {
+                val p = pacienteState.data!!
                 if (showDeletePacienteDialog) {
                     DeletePacienteDialog(
                         deleting = deletingPaciente,
@@ -265,7 +256,7 @@ fun DetallePacienteScreen(
                     }
                 }
             }
-            showError -> {
+            pacienteState is Resource.Error -> {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()

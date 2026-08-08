@@ -87,7 +87,7 @@ open class OptoRepository(
         }
     }
 
-    fun getEvaluacionesByPaciente(pacienteId: String) = pacienteRepo.getEvaluacionesByPaciente(pacienteId)
+    fun getEvaluacionesByPaciente(pacienteId: String, opticaId: String) = pacienteRepo.getEvaluacionesByPaciente(pacienteId, opticaId)
     fun getEvaluacionesProximaCitaEnRango(opticaId: String, start: LocalDate, end: LocalDate) = pacienteRepo.getEvaluacionesProximaCitaEnRango(opticaId, start, end)
 
     @Suppress("DEPRECATION")
@@ -97,8 +97,8 @@ open class OptoRepository(
     )
     fun countEvaluacionesInRange(start: LocalDate, end: LocalDate) = pacienteRepo.countEvaluacionesInRange(start, end)
     fun countEvaluacionesInRangeForOptica(start: LocalDate, end: LocalDate, opticaId: String) = pacienteRepo.countEvaluacionesInRangeForOptica(start, end, opticaId)
-    suspend fun getEvaluacionById(id: String) = pacienteRepo.getEvaluacionById(id)
-    suspend fun getLastEvaluacionByPacienteId(pacienteId: String) = pacienteRepo.getLastEvaluacionByPacienteId(pacienteId)
+    suspend fun getEvaluacionById(id: String, opticaId: String) = pacienteRepo.getEvaluacionById(id, opticaId)
+    suspend fun getLastEvaluacionByPacienteId(pacienteId: String, opticaId: String) = pacienteRepo.getLastEvaluacionByPacienteId(pacienteId, opticaId)
     suspend fun deleteEvaluacion(evaluacion: EvaluacionClinica) = pacienteRepo.deleteEvaluacion(evaluacion)
     suspend fun insertEvaluacion(evaluacion: EvaluacionClinica) {
         val stamped = evaluacion.copy(updatedAt = Instant.now().toString())
@@ -111,13 +111,13 @@ open class OptoRepository(
         postSaveSyncScheduler.get().scheduleHistorialSync(stamped.opticaId)
     }
 
-    fun getDispensacionesByPaciente(pacienteId: String) = dispensacionRepo.getDispensacionesByPaciente(pacienteId)
+    fun getDispensacionesByPaciente(pacienteId: String, opticaId: String) = dispensacionRepo.getDispensacionesByPaciente(pacienteId, opticaId)
     fun getAllDispensacionesForOptica(opticaId: String) = dispensacionRepo.getAllDispensacionesForOptica(opticaId)
     fun getTotalVendidoForOptica(opticaId: String) = dispensacionRepo.getTotalVendidoForOptica(opticaId)
     fun getTotalPagadoForOptica(opticaId: String) = dispensacionRepo.getTotalPagadoForOptica(opticaId)
     fun getDispensacionesByDateRangeForOptica(start: LocalDate, end: LocalDate, opticaId: String) = dispensacionRepo.getDispensacionesByDateRangeForOptica(start, end, opticaId)
     suspend fun getDispensacionById(id: String) = dispensacionRepo.getDispensacionById(id)
-    suspend fun getLastDispensacionByPacienteId(pacienteId: String) = dispensacionRepo.getLastDispensacionByPacienteId(pacienteId)
+    suspend fun getLastDispensacionByPacienteId(pacienteId: String, opticaId: String) = dispensacionRepo.getLastDispensacionByPacienteId(pacienteId, opticaId)
     suspend fun insertDispensacion(dispensacion: DispensacionOptica) {
         val stamped = dispensacion.copy(updatedAt = Instant.now().toString())
         dispensacionRepo.insertDispensacion(stamped)
@@ -183,7 +183,6 @@ open class OptoRepository(
     fun getServiciosByDateRangeForOptica(start: LocalDate, end: LocalDate, opticaId: String) = dispensacionRepo.getServiciosByDateRangeForOptica(start, end, opticaId)
     suspend fun getServiciosByIds(ids: List<String>, opticaId: String) = dispensacionRepo.getServiciosByIds(ids, opticaId)
     suspend fun getDispensacionesByIds(ids: List<String>, opticaId: String) = dispensacionRepo.getDispensacionesByIds(ids, opticaId)
-    fun getServiciosByPaciente(pacienteId: String) = dispensacionRepo.getServiciosByPaciente(pacienteId)
     suspend fun getServicioById(id: String) = dispensacionRepo.getServicioById(id)
     suspend fun insertServicio(servicio: ServicioExtra) {
         val stamped = servicio.copy(updatedAt = Instant.now().toString())

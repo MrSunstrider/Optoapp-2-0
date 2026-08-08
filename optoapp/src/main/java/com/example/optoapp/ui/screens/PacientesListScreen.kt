@@ -229,7 +229,7 @@ fun PacientesListScreen(
                         is Resource.Loading -> Unit
                         is Resource.Success -> {
                             resource.data?.let { eval ->
-                                val paciente = pacientes.find { it.id == eval.pacienteId } ?: pacientes.firstOrNull()
+                                val paciente = pacientes.find { it.id == eval.pacienteId }
                                 if (paciente != null) {
                                     ResumenEvaluacionDialog(eval = eval, paciente = paciente, onDismiss = closeAndResetEval, onEdit = {})
                                 } else {
@@ -247,7 +247,7 @@ fun PacientesListScreen(
                         is Resource.Loading -> Unit
                         is Resource.Success -> {
                             resource.data?.let { disp ->
-                                val paciente = pacientes.find { it.id == disp.pacienteId } ?: pacientes.firstOrNull()
+                                val paciente = pacientes.find { it.id == disp.pacienteId }
                                 if (paciente != null) {
                                     ResumenDispensacionDialog(
                                         disp = disp,

@@ -195,7 +195,7 @@ class SyncViewModelConflictResolutionTest {
     @Test
     fun resolveKeepMine_uploadsLocalEntity_beforeDeletingConflict() = runTest(testDispatcher) {
         // The new paciente bump branch calls getPacienteById — mock it to avoid NPE from relaxed sealed-class mock
-        coEvery { repository.getPacienteById(pacienteConflict.entityId) } returns Resource.Error("not found in test")
+        coEvery { repository.getPacienteByIdScoped(pacienteConflict.entityId, testOpticaId) } returns Resource.Error("not found in test")
 
         viewModel.resolveKeepMine(pacienteConflict)
         testDispatcher.scheduler.advanceUntilIdle()
@@ -208,7 +208,7 @@ class SyncViewModelConflictResolutionTest {
 
     @Test
     fun resolveKeepMine_writesServerTimestampToRoom() = runTest(testDispatcher) {
-        coEvery { repository.getPacienteById(pacienteConflict.entityId) } returns Resource.Error("not found in test")
+        coEvery { repository.getPacienteByIdScoped(pacienteConflict.entityId, testOpticaId) } returns Resource.Error("not found in test")
 
         viewModel.resolveKeepMine(pacienteConflict)
         testDispatcher.scheduler.advanceUntilIdle()
@@ -225,7 +225,7 @@ class SyncViewModelConflictResolutionTest {
     @Test
     fun resolveKeepMine_doesNotRegenerateConflictOnNextSync() = runTest(testDispatcher) {
         coEvery { conflictDao.getConflicts(testOpticaId) } returns emptyList()
-        coEvery { repository.getPacienteById(pacienteConflict.entityId) } returns Resource.Error("not found in test")
+        coEvery { repository.getPacienteByIdScoped(pacienteConflict.entityId, testOpticaId) } returns Resource.Error("not found in test")
 
         viewModel.resolveKeepMine(pacienteConflict)
         testDispatcher.scheduler.advanceUntilIdle()
