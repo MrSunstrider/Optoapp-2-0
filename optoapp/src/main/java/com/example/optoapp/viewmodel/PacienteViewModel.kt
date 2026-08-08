@@ -188,13 +188,12 @@ class PacienteViewModel @Inject constructor(
             }
         }
         repository.insertPaciente(toSave)
-        postSaveSyncScheduler.schedulePacientesSync(oid)
     }
 
-    suspend fun getPaciente(id: String): Paciente? {
+    suspend fun getPaciente(id: String): Resource<Paciente> {
         val oid = sessionManager.opticaId.first()
-        val result = repository.getPacienteByIdScoped(id, oid)
-        return if (result is Resource.Success) result.data else null
+        @Suppress("UNCHECKED_CAST")
+        return repository.getPacienteByIdScoped(id, oid) as Resource<Paciente>
     }
 
     suspend fun suggestHistoriaOptometrica(): String {

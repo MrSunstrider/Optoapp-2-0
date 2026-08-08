@@ -2,6 +2,7 @@ package com.example.optoapp.viewmodel
 
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Paciente
+import com.example.optoapp.data.Resource
 import com.example.optoapp.data.SessionManager
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import io.github.jan.supabase.SupabaseClient
@@ -197,5 +198,52 @@ class PacienteViewModelTest {
         val r1 = DeletePacienteResult.Error("msg1")
         val r2 = DeletePacienteResult.Error("msg2")
         assertNotEquals(r1, r2)
+    }
+
+    // T2: RED — getPaciente return type changed to Resource<Paciente>
+
+    @Test
+    fun `getPaciente returns Resource Error on DB failure`() = runBlocking {
+        val pacienteId = "p-fail"
+        coEvery { repository.getPacienteByIdScoped(pacienteId, "test-optica") } returns
+            Resource.Error("DB connection failed")
+
+        val result = viewModel.getPaciente(pacienteId)
+
+        assertTrue("Expected Resource.Error but got $result", result is Resource.Error)
+        val err = result as Resource.Error
+        assertEquals("DB connection failed", err.message)
+    }
+
+    @Test
+    fun `getPaciente returns Resource Success with patient data`() = runBlocking {
+        val pacienteId = "p-success"
+        val expected = Paciente(
+            id = pacienteId, nombreCompleto = "Test Success", edad = 30,
+            telefono = "111", fechaCreacion = LocalDate.parse("2026-01-01"),
+            opticaId = "test-optica",
+        )
+        coEvery { repository.getPacienteByIdScoped(pacienteId, "test-optica") } returns
+            Resource.Success(expected)
+
+        val result = viewModel.getPaciente(pacienteId)
+
+        assertTrue("Expected Resource.Success but got $result", result is Resource.Success)
+        val success = result as Resource.Success
+        assertEquals(expected, success.data)
+    }
+
+    @Test
+    fun `savePaciente does not schedule PacientesSync`() = runBlocking {
+        val paciente = Paciente(
+            id = "save-no-sync", nombreCompleto = "No Sync", edad = 30,
+            telefono = "111", fechaCreacion = LocalDate.parse("2026-01-01"),
+            opticaId = "test-optica",
+        )
+        coEvery { repository.existsDuplicateHistoriaOptometrica(any(), any(), any()) } returns false
+
+        viewModel.savePaciente(paciente)
+
+        coVerify(exactly = 0) { postSaveSyncScheduler.schedulePacientesSync(any()) }
     }
 }
