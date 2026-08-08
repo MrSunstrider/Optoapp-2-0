@@ -12,12 +12,12 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.robolectric.RobolectricTestRunner
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import java.io.IOException
 import java.time.Instant
 import java.time.LocalDate
 
-@RunWith(RobolectricTestRunner::class)
+@RunWith(AndroidJUnit4::class)
 class PacienteRepositoryTest {
 
     private lateinit var db: OptoDatabase

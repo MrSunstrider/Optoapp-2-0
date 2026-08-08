@@ -9,7 +9,7 @@ import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.robolectric.RobolectricTestRunner
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import java.io.IOException
 import java.time.LocalDate
 
@@ -21,7 +21,7 @@ import java.time.LocalDate
  * Supabase schema where these columns may be NULL. Room must not throw when
  * writing or reading nulls for these columns.
  */
-@RunWith(RobolectricTestRunner::class)
+@RunWith(AndroidJUnit4::class)
 class EvaluacionEntityNullableTest {
 
     private lateinit var db: OptoDatabase

@@ -25,12 +25,9 @@ import org.junit.After
 import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.robolectric.RobolectricTestRunner
 import java.time.LocalDate
 
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
-@RunWith(RobolectricTestRunner::class)
 class PacienteViewModelTest {
 
     private lateinit var viewModel: PacienteViewModel
