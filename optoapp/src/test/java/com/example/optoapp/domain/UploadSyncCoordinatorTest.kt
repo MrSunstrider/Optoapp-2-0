@@ -383,22 +383,50 @@ class UploadSyncCoordinatorTest {
     }
 
     @Test
-    fun `pagos reconciliation - null dispensacionId skips lookup`() = runTest {
+    fun `pagos reconciliation - null dispensacionId reconciles with remote null`() = runTest {
         val opticaId = "optica-test"
         var fetchCalled = false
         val testCoordinator = createPagoCoordinator { _ ->
             fetchCalled = true
             listOf(
                 PagoRemotoLookup(
-                    id = "remote-1", dispensacionId = "some-disp",
-                    tipo = "Pago", monto = 100.0, metodoPago = "Efectivo", fecha = "2026-01-01",
+                    id = "remote-null", dispensacionId = null,
+                    tipo = "Abono", monto = 50.0, metodoPago = "Efectivo", fecha = "2026-01-01",
                 ),
             )
         }
 
         coEvery { repository.getPagosSnapshotForOptica(opticaId) } returns listOf(
             com.example.optoapp.data.Pago(
-                id = "local-null", dispensacionId = null, tipo = "Anulación", monto = 50.0,
+                id = "local-null", dispensacionId = null, tipo = "Abono", monto = 50.0,
+                metodoPago = "Efectivo", fecha = LocalDate.parse("2026-01-01"), opticaId = opticaId,
+            ),
+        )
+        coEvery { networkRetryHelper.retryNetwork(any(), any()) } returns Unit
+
+        testCoordinator.uploadPagos(opticaId)
+
+        assertTrue("fetch is called for reconciliation", fetchCalled)
+        coVerify { syncStateTracker.markSynced(opticaId, "pago", "remote-null") }
+    }
+
+    @Test
+    fun `pagos reconciliation - null dispensacionId no remote match keeps local ID`() = runTest {
+        val opticaId = "optica-test"
+        var fetchCalled = false
+        val testCoordinator = createPagoCoordinator { _ ->
+            fetchCalled = true
+            listOf(
+                PagoRemotoLookup(
+                    id = "remote-1", dispensacionId = "other-disp",
+                    tipo = "Pago", monto = 200.0, metodoPago = "Tarjeta", fecha = "2026-01-02",
+                ),
+            )
+        }
+
+        coEvery { repository.getPagosSnapshotForOptica(opticaId) } returns listOf(
+            com.example.optoapp.data.Pago(
+                id = "local-null", dispensacionId = null, tipo = "Abono", monto = 50.0,
                 metodoPago = "Efectivo", fecha = LocalDate.parse("2026-01-01"), opticaId = opticaId,
             ),
         )

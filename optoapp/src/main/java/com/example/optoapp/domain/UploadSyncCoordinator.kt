@@ -404,7 +404,7 @@ open class UploadSyncCoordinator @Inject constructor(
     // ── Pagos business-key reconciliation ─────────────────────────────
 
     internal data class PagoKey(
-        val dispensacionId: String,
+        val dispensacionId: String?,
         val tipo: String,
         val monto: Double,
         val metodoPago: String,
@@ -430,16 +430,12 @@ open class UploadSyncCoordinator @Inject constructor(
             AppLogger.e(TAG, "FATAL: Cannot reconcile pagos with remote. Aborting to prevent duplicates.", e)
             throw UploadPreCheckFailedException("Reconciliation fetch failed for $TABLE_PAGOS", e)
         }
-        val remoteIdByKey = remotos.mapNotNull { r ->
-            r.dispensacionId?.let { dispId ->
-                PagoKey(dispId, r.tipo, r.monto, r.metodoPago, r.fecha) to r.id
-            }
+        val remoteIdByKey = remotos.map { r ->
+            PagoKey(r.dispensacionId ?: "", r.tipo, r.monto, r.metodoPago, r.fecha) to r.id
         }.toMap()
         val reconciled = rows.map { row ->
-            val key = row.dispensacionId?.let { dispId ->
-                PagoKey(dispId, row.tipo, row.monto, row.metodoPago, row.fecha)
-            }
-            val remoteId = key?.let { remoteIdByKey[it] }
+            val key = PagoKey(row.dispensacionId ?: "", row.tipo, row.monto, row.metodoPago, row.fecha)
+            val remoteId = remoteIdByKey[key]
             if (remoteId != null && remoteId != row.id) row.copy(id = remoteId) else row
         }
 
