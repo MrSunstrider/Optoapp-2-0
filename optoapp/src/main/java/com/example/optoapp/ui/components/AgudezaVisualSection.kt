@@ -58,10 +58,10 @@ private fun VisionBinocularCard(
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("Visión Binocular y Percepción", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-            DropdownField(label = "Estereopsis", selected = uiState.estereopsisValor, options = com.example.optoapp.ui.screens.estereopsisOptions, onSelected = { onUpdate(uiState.copy(estereopsisValor = it)) })
+            OptoDropdownMenuField(label = "Estereopsis", selected = uiState.estereopsisValor, options = com.example.optoapp.ui.screens.estereopsisOptions, onSelected = { onUpdate(uiState.copy(estereopsisValor = it)) })
             OptoTextField(value = uiState.estereopsisSegundos, onValueChange = { onUpdate(uiState.copy(estereopsisSegundos = it)) }, label = "Segundos de arco (opcional)")
-            DropdownField(label = "Test de Lang", selected = uiState.lang, options = com.example.optoapp.ui.screens.langOptions, onSelected = { onUpdate(uiState.copy(lang = it)) })
-            DropdownField(label = "Test de Worth", selected = uiState.worth, options = com.example.optoapp.ui.screens.worthOptions, onSelected = { onUpdate(uiState.copy(worth = it)) })
+            OptoDropdownMenuField(label = "Test de Lang", selected = uiState.lang, options = com.example.optoapp.ui.screens.langOptions, onSelected = { onUpdate(uiState.copy(lang = it)) })
+            OptoDropdownMenuField(label = "Test de Worth", selected = uiState.worth, options = com.example.optoapp.ui.screens.worthOptions, onSelected = { onUpdate(uiState.copy(worth = it)) })
         }
     }
 }
@@ -78,7 +78,7 @@ private fun ColorPerceptionCard(
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("Percepción del Color", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
             OptoTextField(value = uiState.ishihara, onValueChange = { onUpdate(uiState.copy(ishihara = it)) }, label = "Test de Ishihara")
-            DropdownField(label = "Test de Farnsworth", selected = uiState.farnsworth, options = com.example.optoapp.ui.screens.farnsworthOptions, onSelected = { onUpdate(uiState.copy(farnsworth = it)) })
+            OptoDropdownMenuField(label = "Test de Farnsworth", selected = uiState.farnsworth, options = com.example.optoapp.ui.screens.farnsworthOptions, onSelected = { onUpdate(uiState.copy(farnsworth = it)) })
         }
     }
 }
@@ -111,7 +111,7 @@ private fun SaludOcularCard(
                 }
             }
 
-            DropdownField(label = "Sensibilidad al contraste", selected = uiState.sensibilidadContraste, options = com.example.optoapp.ui.screens.sensibilidadOptions, onSelected = { onUpdate(uiState.copy(sensibilidadContraste = it)) })
+            OptoDropdownMenuField(label = "Sensibilidad al contraste", selected = uiState.sensibilidadContraste, options = com.example.optoapp.ui.screens.sensibilidadOptions, onSelected = { onUpdate(uiState.copy(sensibilidadContraste = it)) })
             OptoTextField(value = uiState.sensibilidadFrecuencia, onValueChange = { onUpdate(uiState.copy(sensibilidadFrecuencia = it)) }, label = "Frecuencia espacial (opcional)")
         }
     }
@@ -129,7 +129,7 @@ private fun OtrasPruebasCard(
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("Otras Pruebas y Exámenes Previos", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
             OptoTextField(value = uiState.amsler, onValueChange = { onUpdate(uiState.copy(amsler = it)) }, label = "Test de Amsler")
-            DropdownField(label = "Campo visual por confrontación", selected = uiState.campoVisual, options = com.example.optoapp.ui.screens.campoVisualOptions, onSelected = { onUpdate(uiState.copy(campoVisual = it)) })
+            OptoDropdownMenuField(label = "Campo visual por confrontación", selected = uiState.campoVisual, options = com.example.optoapp.ui.screens.campoVisualOptions, onSelected = { onUpdate(uiState.copy(campoVisual = it)) })
             if (uiState.campoVisual == "Anomalía detectada") {
                 OptoTextField(value = uiState.campoVisualDescripcion, onValueChange = { onUpdate(uiState.copy(campoVisualDescripcion = it)) }, label = "Descripción de anomalía (Campo Visual)")
             }

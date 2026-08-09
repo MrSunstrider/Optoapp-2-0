@@ -21,8 +21,8 @@ import com.example.optoapp.ui.navigation.Route
 import com.example.optoapp.ui.components.OptoDatePickerDialog
 import com.example.optoapp.ui.components.OptoKpiCard
 import com.example.optoapp.ui.components.OptoTopAppBar
-import com.example.optoapp.ui.theme.AlertRed
-import com.example.optoapp.ui.theme.PositiveGreen
+import com.example.optoapp.ui.theme.alertRed
+import com.example.optoapp.ui.theme.positiveGreen
 import com.example.optoapp.ui.theme.warningAmber
 import com.example.optoapp.util.DateUtils
 import com.example.optoapp.viewmodel.ServiciosViewModel
@@ -131,7 +131,7 @@ fun ServiciosExtraScreen(navController: NavController, drawerState: DrawerState,
             item {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OptoKpiCard("Facturado", "s/. ${fmt(totalFacturado)}", MaterialTheme.colorScheme.primary, Icons.Default.Receipt, Modifier.weight(1f))
-                    OptoKpiCard("Pendiente", "s/. ${fmt(totalPendiente)}", if (totalPendiente > 0) AlertRed else PositiveGreen, Icons.Default.Schedule, Modifier.weight(1f))
+                    OptoKpiCard("Pendiente", "s/. ${fmt(totalPendiente)}", if (totalPendiente > 0) MaterialTheme.colorScheme.alertRed else MaterialTheme.colorScheme.positiveGreen, Icons.Default.Schedule, Modifier.weight(1f))
                     OptoKpiCard("Cantidad", "$pendientesCount", MaterialTheme.colorScheme.warningAmber, Icons.Default.Handyman, Modifier.weight(1f))
                 }
             }
@@ -157,8 +157,8 @@ fun ServiciosExtraScreen(navController: NavController, drawerState: DrawerState,
                             label = { Text(estado, fontSize = 12.sp) },
                             colors = FilterChipDefaults.filterChipColors(
                                 selectedContainerColor = when (estado) {
-                                    "Pendiente" -> AlertRed.copy(alpha = 0.15f)
-                                    "Entregado" -> PositiveGreen.copy(alpha = 0.15f)
+                                    "Pendiente" -> MaterialTheme.colorScheme.alertRed.copy(alpha = 0.15f)
+                                    "Entregado" -> MaterialTheme.colorScheme.positiveGreen.copy(alpha = 0.15f)
                                     else -> MaterialTheme.colorScheme.primaryContainer
                                 },
                             ),
@@ -210,8 +210,8 @@ fun ServiciosExtraScreen(navController: NavController, drawerState: DrawerState,
 private fun ServicioCard(servicio: ServicioExtra, aCuenta: Double = 0.0, onEdit: () -> Unit, onDelete: () -> Unit) {
     val saldo = servicio.montoTotal - aCuenta
     val estadoColor = when (servicio.estado) {
-        "Entregado" -> PositiveGreen
-        "Pendiente" -> if (saldo > 0) AlertRed else MaterialTheme.colorScheme.warningAmber
+        "Entregado" -> MaterialTheme.colorScheme.positiveGreen
+        "Pendiente" -> if (saldo > 0) MaterialTheme.colorScheme.alertRed else MaterialTheme.colorScheme.warningAmber
         else -> MaterialTheme.colorScheme.onSurfaceVariant
     }
 
@@ -261,22 +261,22 @@ private fun ServicioCard(servicio: ServicioExtra, aCuenta: Double = 0.0, onEdit:
                 Column {
                     Text("Total: s/. ${fmt(servicio.montoTotal)}", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
                     if (saldo > 0) {
-                        Text("Saldo: s/. ${fmt(saldo)}", fontSize = 13.sp, color = AlertRed, fontWeight = FontWeight.Medium)
+                        Text("Saldo: s/. ${fmt(saldo)}", fontSize = 13.sp, color = MaterialTheme.colorScheme.alertRed, fontWeight = FontWeight.Medium)
                     } else {
-                        Text("Pagado", fontSize = 13.sp, color = PositiveGreen, fontWeight = FontWeight.Medium)
+                        Text("Pagado", fontSize = 13.sp, color = MaterialTheme.colorScheme.positiveGreen, fontWeight = FontWeight.Medium)
                     }
                 }
                 Column(horizontalAlignment = Alignment.End) {
                     Text(DateUtils.formatLocalized(servicio.fecha), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     if (servicio.fechaEntrega != null) {
-                        Text("Entregado: ${DateUtils.formatLocalized(servicio.fechaEntrega)}", fontSize = 10.sp, color = PositiveGreen)
+                        Text("Entregado: ${DateUtils.formatLocalized(servicio.fechaEntrega)}", fontSize = 10.sp, color = MaterialTheme.colorScheme.positiveGreen)
                     }
                     Row {
                         IconButton(onClick = onEdit, modifier = Modifier.size(48.dp)) {
                             Icon(Icons.Default.Edit, contentDescription = "Editar", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
                         }
                         IconButton(onClick = onDelete, modifier = Modifier.size(48.dp)) {
-                            Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = AlertRed, modifier = Modifier.size(18.dp))
+                            Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = MaterialTheme.colorScheme.alertRed, modifier = Modifier.size(18.dp))
                         }
                     }
                 }

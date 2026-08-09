@@ -25,8 +25,8 @@ import com.example.optoapp.data.costoproducto.CostoProductoEntity
 import com.example.optoapp.data.gastooperativo.GastoOperativoEntity
 import com.example.optoapp.ui.components.OptoDatePickerDialog
 import com.example.optoapp.ui.components.OptoTopAppBar
-import com.example.optoapp.ui.theme.AlertRed
-import com.example.optoapp.ui.theme.PositiveGreen
+import com.example.optoapp.ui.theme.alertRed
+import com.example.optoapp.ui.theme.positiveGreen
 import com.example.optoapp.util.DateUtils
 import com.example.optoapp.viewmodel.COST_BLOCKS
 import com.example.optoapp.viewmodel.CostosYGastosViewModel
@@ -373,7 +373,7 @@ private fun MatrizDeCostosTab(
                 confirmButton = {
                     Button(
                         onClick = { viewModel.deleteCosto() },
-                        colors = ButtonDefaults.buttonColors(containerColor = AlertRed),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.alertRed),
                     ) { Text("Eliminar") }
                 },
                 dismissButton = { TextButton(onClick = { viewModel.dismissDeleteDialog() }) { Text("Cancelar") } },
@@ -533,13 +533,13 @@ private fun GastoOperativoCard(gasto: GastoOperativoEntity, onEdit: () -> Unit, 
                 }
                 Text(DateUtils.formatLocalized(gasto.fecha), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f))
             }
-            Text("s/. ${fmt(gasto.monto.toDouble())}", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = AlertRed, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text("s/. ${fmt(gasto.monto.toDouble())}", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.alertRed, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Spacer(Modifier.width(8.dp))
             IconButton(modifier = Modifier.size(48.dp), onClick = onEdit) {
                 Icon(Icons.Default.Edit, contentDescription = "Editar", modifier = Modifier.size(18.dp))
             }
             IconButton(modifier = Modifier.size(48.dp), onClick = onDelete) {
-                Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = AlertRed, modifier = Modifier.size(18.dp))
+                Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = MaterialTheme.colorScheme.alertRed, modifier = Modifier.size(18.dp))
             }
         }
     }
@@ -581,11 +581,11 @@ private fun CostoProductoRow(costo: CostoProductoEntity, onClick: () -> Unit = {
                 "s/. ${fmt(costo.costoUnitario)}",
                 fontWeight = FontWeight.Bold,
                 fontSize = 14.sp,
-                color = PositiveGreen,
+                color = MaterialTheme.colorScheme.positiveGreen,
             )
             Spacer(Modifier.width(4.dp))
             IconButton(modifier = Modifier.size(40.dp), onClick = onDelete) {
-                Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = AlertRed, modifier = Modifier.size(18.dp))
+                Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = MaterialTheme.colorScheme.alertRed, modifier = Modifier.size(18.dp))
             }
         }
     }

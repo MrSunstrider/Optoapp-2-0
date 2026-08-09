@@ -26,8 +26,8 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.navigation.NavController
 import com.example.optoapp.domain.AnalisisMensual
 import com.example.optoapp.ui.components.OptoTopAppBar
-import com.example.optoapp.ui.theme.AlertRed
-import com.example.optoapp.ui.theme.PositiveGreen
+import com.example.optoapp.ui.theme.alertRed
+import com.example.optoapp.ui.theme.positiveGreen
 import com.example.optoapp.ui.theme.warningAmber
 import com.example.optoapp.viewmodel.AnalisisNegocioViewModel
 
@@ -236,12 +236,12 @@ private fun BarraIngresosEgresos(analisis: AnalisisMensual) {
     val maxValor = maxOf(analisis.ventasMes, analisis.cobrosMes, analisis.costoDeVentas(), analisis.gastosMes, ganancia, 1.0)
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        BarItem(label = "Ventas", value = analisis.ventasMes, max = maxValor, color = PositiveGreen)
+        BarItem(label = "Ventas", value = analisis.ventasMes, max = maxValor, color = MaterialTheme.colorScheme.positiveGreen)
         BarItem(label = "Cobros", value = analisis.cobrosMes, max = maxValor, color = MaterialTheme.colorScheme.primary)
         BarItem(label = "Costos", value = analisis.costoDeVentas(), max = maxValor, color = MaterialTheme.colorScheme.warningAmber)
-        BarItem(label = "Gastos", value = analisis.gastosMes, max = maxValor, color = AlertRed)
+        BarItem(label = "Gastos", value = analisis.gastosMes, max = maxValor, color = MaterialTheme.colorScheme.alertRed)
         HorizontalDivider()
-        BarItem(label = "Ganancia", value = ganancia, max = maxValor, color = if (ganancia >= 0) PositiveGreen else AlertRed)
+        BarItem(label = "Ganancia", value = ganancia, max = maxValor, color = if (ganancia >= 0) MaterialTheme.colorScheme.positiveGreen else MaterialTheme.colorScheme.alertRed)
     }
 }
 
@@ -270,7 +270,7 @@ private fun CategoriaRankingRow(nombre: String, ventas: Double, costos: Double, 
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text(nombre, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
-            Text("${formatNumber(pct)}%", style = MaterialTheme.typography.bodyMedium, color = if (pct >= 25) PositiveGreen else MaterialTheme.colorScheme.warningAmber)
+            Text("${formatNumber(pct)}%", style = MaterialTheme.typography.bodyMedium, color = if (pct >= 25) MaterialTheme.colorScheme.positiveGreen else MaterialTheme.colorScheme.warningAmber)
         }
         Text(
             "S/ ${formatNumber(ventas)} ventas · S/ ${formatNumber(margen)} margen",
@@ -295,7 +295,7 @@ private fun DeudorRow(nombre: String, telefono: String, saldo: Double, diasDeuda
         Spacer(Modifier.height(2.dp))
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text(telefono, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text("S/ ${formatNumber(saldo)}", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold, color = AlertRed)
+            Text("S/ ${formatNumber(saldo)}", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.alertRed)
         }
         Text("$diasDeuda días de deuda", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.warningAmber)
     }
@@ -307,7 +307,7 @@ private fun StockRow(modelo: String, sku: String, stock: Int, diasSinVenta: Int,
         Text(modelo, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text("SKU: $sku · Stock: $stock", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text("${diasSinVenta}d sin vender", style = MaterialTheme.typography.bodySmall, color = AlertRed)
+            Text("${diasSinVenta}d sin vender", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.alertRed)
         }
         Text("Costo: S/ ${formatNumber(costo)} c/u", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
@@ -318,16 +318,16 @@ private fun ProyeccionCard(proyeccion: com.example.optoapp.domain.ProyeccionCaja
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text("Ingresos esperados", style = MaterialTheme.typography.bodyMedium)
-            Text("S/ ${formatNumber(proyeccion.ingresosEsperados)}", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = PositiveGreen)
+            Text("S/ ${formatNumber(proyeccion.ingresosEsperados)}", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.positiveGreen)
         }
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text("Egresos programados", style = MaterialTheme.typography.bodyMedium)
-            Text("S/ ${formatNumber(proyeccion.egresosProgramados)}", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = AlertRed)
+            Text("S/ ${formatNumber(proyeccion.egresosProgramados)}", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.alertRed)
         }
         HorizontalDivider()
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text("Saldo neto proyectado", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
-            Text("S/ ${formatNumber(proyeccion.saldoNeto)}", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = if (proyeccion.saldoNeto >= 0) PositiveGreen else AlertRed)
+            Text("S/ ${formatNumber(proyeccion.saldoNeto)}", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = if (proyeccion.saldoNeto >= 0) MaterialTheme.colorScheme.positiveGreen else MaterialTheme.colorScheme.alertRed)
         }
 
         // Data-depth warning when fewer than 3 months of historical data

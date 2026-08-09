@@ -269,13 +269,13 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
                             label = "Monto Total",
                             keyboardType = KeyboardType.Decimal,
                         )
-                        DropdownField(label = "Estado de Entrega", selected = uiState.estadoEntrega, options = listOf("Pendiente", "Entregado")) { newEstado ->
+                        com.example.optoapp.ui.components.OptoDropdownMenuField(label = "Estado de Entrega", selected = uiState.estadoEntrega, options = listOf("Pendiente", "Entregado"), onSelected = { newEstado ->
                             val newFecha = when (newEstado) {
                                 "Entregado" -> LocalDate.now()
                                 else -> null
                             }
                             viewModel.updateUiState { it.copy(estadoEntrega = newEstado, fechaEntrega = newFecha) }
-                        }
+                        })
                         if (uiState.fechaEntrega != null) {
                             FechaEntregaEditButton(fechaEntrega = uiState.fechaEntrega, onFechaChanged = { nueva -> viewModel.updateUiState { it.copy(fechaEntrega = nueva) } })
                         }

@@ -26,8 +26,8 @@ import com.example.optoapp.domain.Prioridad
 import com.example.optoapp.domain.Recomendacion
 import com.example.optoapp.ui.components.OptoTopAppBar
 import com.example.optoapp.ui.navigation.Route
-import com.example.optoapp.ui.theme.AlertRed
-import com.example.optoapp.ui.theme.PositiveGreen
+import com.example.optoapp.ui.theme.alertRed
+import com.example.optoapp.ui.theme.positiveGreen
 import com.example.optoapp.ui.theme.warningAmber
 import com.example.optoapp.viewmodel.AnalisisNegocioViewModel
 import com.example.optoapp.viewmodel.AuthViewModel
@@ -108,13 +108,13 @@ fun AnalisisNegocioScreen(
 
             uiState.error?.let { error ->
                 Card(
-                    colors = CardDefaults.cardColors(containerColor = AlertRed.copy(alpha = 0.1f)),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.alertRed.copy(alpha = 0.1f)),
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Column(modifier = Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(Icons.Default.Error, contentDescription = "Error", tint = AlertRed, modifier = Modifier.size(32.dp))
+                        Icon(Icons.Default.Error, contentDescription = "Error", tint = MaterialTheme.colorScheme.alertRed, modifier = Modifier.size(32.dp))
                         Spacer(Modifier.height(8.dp))
-                        Text(error, color = AlertRed, style = MaterialTheme.typography.bodyMedium)
+                        Text(error, color = MaterialTheme.colorScheme.alertRed, style = MaterialTheme.typography.bodyMedium)
                         Spacer(Modifier.height(8.dp))
                         OutlinedButton(onClick = { viewModel.refresh() }) {
                             Text("Reintentar")
@@ -210,7 +210,7 @@ fun AnalisisNegocioScreen(
                 Column(modifier = Modifier.padding(14.dp)) {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.MoneyOff, contentDescription = "Sin costo", tint = AlertRed, modifier = Modifier.size(20.dp))
+                            Icon(Icons.Default.MoneyOff, contentDescription = "Sin costo", tint = MaterialTheme.colorScheme.alertRed, modifier = Modifier.size(20.dp))
                             Spacer(Modifier.width(8.dp))
                             Text("Gastos del mes", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                             IconButton(
@@ -220,7 +220,7 @@ fun AnalisisNegocioScreen(
                                 Icon(Icons.Default.Refresh, contentDescription = "Actualizar gastos", modifier = Modifier.size(16.dp))
                             }
                         }
-                        Text("S/ ${formatNumber(totalGastos)}", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = AlertRed)
+                        Text("S/ ${formatNumber(totalGastos)}", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.alertRed)
                     }
                     if (gastos.isNotEmpty()) {
                         Spacer(Modifier.height(6.dp))
@@ -252,7 +252,7 @@ fun AnalisisNegocioScreen(
                                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                                     )
                                 }
-                                Text("S/ ${formatNumber(g.monto.toDouble())}", fontSize = 12.sp, color = AlertRed, fontWeight = FontWeight.Medium)
+                                Text("S/ ${formatNumber(g.monto.toDouble())}", fontSize = 12.sp, color = MaterialTheme.colorScheme.alertRed, fontWeight = FontWeight.Medium)
                                 IconButton(
                                     modifier = Modifier.size(28.dp),
                                     onClick = { gastosViewModel.editGasto(g) },
@@ -263,7 +263,7 @@ fun AnalisisNegocioScreen(
                                     modifier = Modifier.size(28.dp),
                                     onClick = { deleteTarget = g.id },
                                 ) {
-                                    Icon(Icons.Default.Delete, contentDescription = "Eliminar", modifier = Modifier.size(14.dp), tint = AlertRed)
+                                    Icon(Icons.Default.Delete, contentDescription = "Eliminar", modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.alertRed)
                                 }
                             }
                         }
@@ -301,7 +301,7 @@ fun AnalisisNegocioScreen(
                                 Button(onClick = {
                                     gastosViewModel.delete(target)
                                     deleteTarget = null
-                                }, colors = ButtonDefaults.buttonColors(containerColor = AlertRed)) {
+                                }, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.alertRed)) {
                                     Text("Eliminar")
                                 }
                             },
@@ -435,7 +435,7 @@ private fun ResumenCard(analisis: AnalisisMensual) {
                     modifier = Modifier.weight(1f),
                     label = "Vendiste",
                     value = "S/ ${formatNumber(analisis.ventasMes)}",
-                    color = PositiveGreen,
+                    color = MaterialTheme.colorScheme.positiveGreen,
                 )
                 MetricItem(
                     modifier = Modifier.weight(1f),
@@ -448,7 +448,7 @@ private fun ResumenCard(analisis: AnalisisMensual) {
                 modifier = Modifier.fillMaxWidth(),
                 label = "Saldo pendiente",
                 value = "S/ ${formatNumber(saldo)}",
-                color = if (saldo > 0) AlertRed else PositiveGreen,
+                color = if (saldo > 0) MaterialTheme.colorScheme.alertRed else MaterialTheme.colorScheme.positiveGreen,
             )
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -462,7 +462,7 @@ private fun ResumenCard(analisis: AnalisisMensual) {
                         "De cada S/ 100 que vendés, te quedan S/ ${Math.round(analisis.margenNetoPct)} (margen neto)",
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.SemiBold,
-                        color = if (analisis.margenNetoPct >= 25) PositiveGreen else MaterialTheme.colorScheme.warningAmber,
+                        color =                         if (analisis.margenNetoPct >= 25) MaterialTheme.colorScheme.positiveGreen else MaterialTheme.colorScheme.warningAmber,
                     )
                 }
             }
@@ -516,12 +516,12 @@ internal fun RecomendacionCard(
     val hasError = feedbackErrorRecId == rec.id
 
     val bgColor = when (rec.prioridad) {
-        Prioridad.ALTA -> AlertRed.copy(alpha = 0.08f)
+        Prioridad.ALTA -> MaterialTheme.colorScheme.alertRed.copy(alpha = 0.08f)
         Prioridad.MEDIA -> MaterialTheme.colorScheme.warningAmber.copy(alpha = 0.08f)
         Prioridad.BAJA -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
     }
     val accentColor = when (rec.prioridad) {
-        Prioridad.ALTA -> AlertRed
+        Prioridad.ALTA -> MaterialTheme.colorScheme.alertRed
         Prioridad.MEDIA -> MaterialTheme.colorScheme.warningAmber
         Prioridad.BAJA -> MaterialTheme.colorScheme.onSurfaceVariant
     }
@@ -535,7 +535,7 @@ internal fun RecomendacionCard(
                 Icon(
                     if (feedbackSent) Icons.Default.CheckCircle else Icons.Default.Info,
                     contentDescription = "Retroalimentacion",
-                    tint = if (feedbackSent) PositiveGreen else accentColor,
+                    tint = if (feedbackSent) MaterialTheme.colorScheme.positiveGreen else accentColor,
                     modifier = Modifier.size(20.dp),
                 )
                 Spacer(Modifier.width(8.dp))
@@ -585,14 +585,14 @@ internal fun RecomendacionCard(
                     Icon(
                         Icons.Default.CheckCircle,
                         contentDescription = "Completado",
-                        tint = PositiveGreen,
+                        tint = MaterialTheme.colorScheme.positiveGreen,
                         modifier = Modifier.size(16.dp),
                     )
                     Spacer(Modifier.width(6.dp))
                     Text(
                         "Gracias por tu valoración",
                         style = MaterialTheme.typography.bodySmall,
-                        color = PositiveGreen,
+                        color = MaterialTheme.colorScheme.positiveGreen,
                         fontWeight = FontWeight.Medium,
                     )
                 }
@@ -625,7 +625,7 @@ internal fun RecomendacionCard(
                 Text(
                     "No se pudo enviar tu valoración. Intentalo de nuevo.",
                     style = MaterialTheme.typography.bodySmall,
-                    color = AlertRed,
+                    color = MaterialTheme.colorScheme.alertRed,
                 )
             }
         }

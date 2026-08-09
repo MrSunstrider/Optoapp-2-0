@@ -34,9 +34,9 @@ import com.example.optoapp.ui.components.OptoTopAppBar
 import com.example.optoapp.ui.navigation.Route
 import com.example.optoapp.ui.components.paciente.ResumenDispensacionDialog
 import com.example.optoapp.ui.components.paciente.ResumenEvaluacionDialog
-import com.example.optoapp.ui.theme.AlertRed
+import com.example.optoapp.ui.theme.alertRed
 import com.example.optoapp.ui.theme.OptoTokens
-import com.example.optoapp.ui.theme.PositiveGreen
+import com.example.optoapp.ui.theme.positiveGreen
 import com.example.optoapp.util.DateUtils
 import com.example.optoapp.viewmodel.AuthViewModel
 import com.example.optoapp.viewmodel.PacienteViewModel
@@ -167,16 +167,16 @@ fun PacientesListScreen(
 
             error?.let { errMsg ->
                 Card(
-                    colors = CardDefaults.cardColors(containerColor = AlertRed.copy(alpha = 0.1f)),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.alertRed.copy(alpha = 0.1f)),
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Column(
                         modifier = Modifier.padding(16.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
-                        Icon(Icons.Default.Error, contentDescription = "Error", tint = AlertRed, modifier = Modifier.size(32.dp))
+                        Icon(Icons.Default.Error, contentDescription = "Error", tint = MaterialTheme.colorScheme.alertRed, modifier = Modifier.size(32.dp))
                         Spacer(Modifier.height(8.dp))
-                        Text(errMsg, color = AlertRed, style = MaterialTheme.typography.bodyMedium)
+                        Text(errMsg, color = MaterialTheme.colorScheme.alertRed, style = MaterialTheme.typography.bodyMedium)
                         Spacer(Modifier.height(8.dp))
                         OutlinedButton(onClick = { viewModel.refresh() }) {
                             Text("Reintentar")
@@ -316,7 +316,7 @@ private fun PacienteCard(
                     }
                     if (paciente.telefono.isNotBlank()) {
                         IconButton(onClick = onCall, modifier = Modifier.size(36.dp)) {
-                            Icon(Icons.Default.Call, contentDescription = "Llamar", modifier = Modifier.size(16.dp), tint = PositiveGreen)
+                            Icon(Icons.Default.Call, contentDescription = "Llamar", modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.positiveGreen)
                         }
                     }
                 }

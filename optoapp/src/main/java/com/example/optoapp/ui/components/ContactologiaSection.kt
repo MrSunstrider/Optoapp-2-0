@@ -66,8 +66,8 @@ fun ContactologiaSection(
             }
 
             OptoTextField(value = uiState.lcLaboratorio, onValueChange = { onUpdate(uiState.copy(lcLaboratorio = it)) }, label = "Laboratorio / Marca")
-            DropdownField(label = "Tipo de Lente", selected = uiState.lcTipoLente, options = com.example.optoapp.ui.screens.tiposLC, onSelected = { onUpdate(uiState.copy(lcTipoLente = it)) })
-            DropdownField(label = "Material", selected = uiState.lcMaterial, options = com.example.optoapp.ui.screens.materialesLC, onSelected = { onUpdate(uiState.copy(lcMaterial = it)) })
+            OptoDropdownMenuField(label = "Tipo de Lente", selected = uiState.lcTipoLente, options = com.example.optoapp.ui.screens.tiposLC, onSelected = { onUpdate(uiState.copy(lcTipoLente = it)) })
+            OptoDropdownMenuField(label = "Material", selected = uiState.lcMaterial, options = com.example.optoapp.ui.screens.materialesLC, onSelected = { onUpdate(uiState.copy(lcMaterial = it)) })
 
             OutlinedButton(onClick = onShowLcDatePicker, modifier = Modifier.fillMaxWidth()) {
                 val dText = uiState.lcFechaAdaptacion?.let { DateUtils.formatLocalized(it) } ?: "Seleccionar Fecha"

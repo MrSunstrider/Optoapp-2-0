@@ -40,13 +40,13 @@ fun MonturaInfoSection(
     Card {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("Información de Montura", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-            DropdownField(label = "Origen", selected = uiState.origenMontura, options = listOf("Tienda", "Paciente")) {
+            com.example.optoapp.ui.components.OptoDropdownMenuField(label = "Origen", selected = uiState.origenMontura, options = listOf("Tienda", "Paciente"), onSelected = {
                 if (it == "Tienda") {
                     onUpdate(uiState.copy(origenMontura = it))
                 } else {
                     onUpdate(uiState.copy(origenMontura = it, monturaId = ""))
                 }
-            }
+            })
             if (uiState.origenMontura == "Tienda" || uiState.origenMontura == "Nueva de Tienda") {
                 val monturaSeleccionada = monturasActivas.firstOrNull { it.id == uiState.monturaId }
                 var monturaQuery by remember { mutableStateOf("") }
@@ -130,12 +130,12 @@ fun MonturaInfoSection(
                     }
                 }
             }
-            DropdownField(label = "Tipo de Aro", selected = uiState.tipoAro, options = listOf("Aro Completo", "Semi al aire", "Al aire")) {
+            com.example.optoapp.ui.components.OptoDropdownMenuField(label = "Tipo de Aro", selected = uiState.tipoAro, options = listOf("Aro Completo", "Semi al aire", "Al aire"), onSelected = {
                 onUpdate(uiState.copy(tipoAro = it))
-            }
-            DropdownField(label = "Material", selected = uiState.materialMontura, options = listOf("Acetato", "Metal", "Carey", "TR-90", "Econ")) {
+            })
+            com.example.optoapp.ui.components.OptoDropdownMenuField(label = "Material", selected = uiState.materialMontura, options = listOf("Acetato", "Metal", "Carey", "TR-90", "Econ"), onSelected = {
                 onUpdate(uiState.copy(materialMontura = it))
-            }
+            })
             OptoTextField(value = uiState.descripcionMontura, onValueChange = { onUpdate(uiState.copy(descripcionMontura = it)) }, label = "Descripción (Marca, Modelo)")
         }
     }
@@ -261,13 +261,13 @@ fun FinancieraInfoSection(
                 )
             }
 
-            DropdownField(label = "Estado de Entrega", selected = uiState.estadoEntrega, options = listOf("Pendiente", "Entregado")) { newEstado ->
+            com.example.optoapp.ui.components.OptoDropdownMenuField(label = "Estado de Entrega", selected = uiState.estadoEntrega, options = listOf("Pendiente", "Entregado"), onSelected = { newEstado ->
                 val newFechaEntrega = when (newEstado) {
                     "Entregado" -> uiState.fechaEntrega ?: LocalDate.now()
                     else -> null
                 }
                 onUpdate(uiState.copy(estadoEntrega = newEstado, fechaEntrega = newFechaEntrega))
-            }
+            })
             if (uiState.fechaEntrega != null) {
                 FechaEntregaEditButton(
                     fechaEntrega = uiState.fechaEntrega,

@@ -21,7 +21,7 @@ import androidx.navigation.NavController
 import com.example.optoapp.data.gastooperativo.GastoOperativoEntity
 import com.example.optoapp.ui.components.OptoDatePickerDialog
 import com.example.optoapp.ui.components.OptoTopAppBar
-import com.example.optoapp.ui.theme.AlertRed
+import com.example.optoapp.ui.theme.alertRed
 import com.example.optoapp.util.DateUtils
 import com.example.optoapp.viewmodel.GastosViewModel
 import kotlinx.coroutines.launch
@@ -188,13 +188,13 @@ private fun GastoCard(gasto: GastoOperativoEntity, onEdit: () -> Unit, onDelete:
                 }
                 Text(DateUtils.formatLocalized(gasto.fecha), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f))
             }
-            Text("s/. ${fmt(gasto.monto.toDouble())}", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = AlertRed, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text("s/. ${fmt(gasto.monto.toDouble())}", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.alertRed, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Spacer(Modifier.width(8.dp))
             IconButton(modifier = Modifier.size(48.dp), onClick = onEdit) {
                 Icon(Icons.Default.Edit, contentDescription = "Editar", modifier = Modifier.size(18.dp))
             }
             IconButton(modifier = Modifier.size(48.dp), onClick = onDelete) {
-                Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = AlertRed, modifier = Modifier.size(18.dp))
+                Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = MaterialTheme.colorScheme.alertRed, modifier = Modifier.size(18.dp))
             }
         }
     }

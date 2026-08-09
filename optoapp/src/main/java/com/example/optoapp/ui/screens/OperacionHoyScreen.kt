@@ -25,8 +25,8 @@ import androidx.navigation.NavController
 import com.example.optoapp.data.AppRoles
 import com.example.optoapp.ui.components.OptoTopAppBar
 import com.example.optoapp.ui.navigation.Route
-import com.example.optoapp.ui.theme.AlertRed
-import com.example.optoapp.ui.theme.PositiveGreen
+import com.example.optoapp.ui.theme.alertRed
+import com.example.optoapp.ui.theme.positiveGreen
 import com.example.optoapp.ui.theme.warningAmber
 import com.example.optoapp.util.DateUtils
 import com.example.optoapp.util.FileShareUtils
@@ -177,7 +177,7 @@ fun OperacionHoyScreen(
                         icon = Icons.Default.Payments,
                         label = "Cobros hoy",
                         value = "s/. ${fmt(uiState.cobrosHoy)}",
-                        color = PositiveGreen,
+                        color = MaterialTheme.colorScheme.positiveGreen,
                     )
                     DashboardKpi(
                         modifier = Modifier.weight(1f),
@@ -198,7 +198,7 @@ fun OperacionHoyScreen(
                         icon = Icons.Default.Inventory2,
                         label = "Entregas pendientes",
                         value = "${uiState.entregasPendientes}",
-                        color = if (uiState.entregasPendientes > 0) AlertRed else PositiveGreen,
+                        color = if (uiState.entregasPendientes > 0) MaterialTheme.colorScheme.alertRed else MaterialTheme.colorScheme.positiveGreen,
                         highlight = uiState.entregasPendientes > 0,
                     )
                     DashboardKpi(
@@ -206,7 +206,7 @@ fun OperacionHoyScreen(
                         icon = Icons.Default.Warning,
                         label = "Stock crítico",
                         value = "${uiState.stockCritico}",
-                        color = if (uiState.stockCritico > 0) AlertRed else PositiveGreen,
+                        color = if (uiState.stockCritico > 0) MaterialTheme.colorScheme.alertRed else MaterialTheme.colorScheme.positiveGreen,
                         highlight = uiState.stockCritico > 0,
                         onClick = if (uiState.stockCritico > 0) {
                             { navController.navigate(Route.Monturas.route) }
@@ -232,7 +232,7 @@ fun OperacionHoyScreen(
                         }
                         uiState.alertas.take(5).forEach { alerta ->
                             Row(verticalAlignment = Alignment.Top) {
-                                Text("•", color = AlertRed, fontSize = 12.sp)
+                                Text("•", color = MaterialTheme.colorScheme.alertRed, fontSize = 12.sp)
                                 Spacer(Modifier.width(6.dp))
                                 Text(alerta, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
                             }
@@ -243,15 +243,15 @@ fun OperacionHoyScreen(
                 Card(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                     shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = PositiveGreen.copy(alpha = 0.06f)),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.positiveGreen.copy(alpha = 0.06f)),
                 ) {
                     Row(
                         modifier = Modifier.padding(14.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Icon(Icons.Default.CheckCircle, contentDescription = "Completado", tint = PositiveGreen, modifier = Modifier.size(18.dp))
+                        Icon(Icons.Default.CheckCircle, contentDescription = "Completado", tint = MaterialTheme.colorScheme.positiveGreen, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(8.dp))
-                        Text("Todo al día — sin alertas", fontSize = 13.sp, color = PositiveGreen)
+                        Text("Todo al día — sin alertas", fontSize = 13.sp, color = MaterialTheme.colorScheme.positiveGreen)
                     }
                 }
             }
@@ -277,14 +277,14 @@ fun OperacionHoyScreen(
                             modifier = Modifier.padding(12.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Icon(Icons.Default.Inventory2, contentDescription = "Inventario", tint = AlertRed, modifier = Modifier.size(18.dp))
+                            Icon(Icons.Default.Inventory2, contentDescription = "Inventario", tint = MaterialTheme.colorScheme.alertRed, modifier = Modifier.size(18.dp))
                             Spacer(Modifier.width(10.dp))
                             Column(modifier = Modifier.weight(1f)) {
                                 Text("OT ${disp.ot.ifBlank { "-" }}", fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
                                 Text(
                                     DateUtils.formatLocalized(disp.fecha) + if (disp.fecha.isBefore(uiState.fecha)) " · Atrasada" else "",
                                     fontSize = 11.sp,
-                                    color = if (disp.fecha.isBefore(uiState.fecha)) AlertRed else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    color = if (disp.fecha.isBefore(uiState.fecha)) MaterialTheme.colorScheme.alertRed else MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
                             Text("s/. ${fmt(disp.montoTotal)}", fontWeight = FontWeight.Bold, fontSize = 13.sp)
@@ -303,11 +303,11 @@ fun OperacionHoyScreen(
                             modifier = Modifier.padding(12.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Icon(Icons.Default.Handyman, contentDescription = "Servicios", tint = AlertRed, modifier = Modifier.size(18.dp))
+                            Icon(Icons.Default.Handyman, contentDescription = "Servicios", tint = MaterialTheme.colorScheme.alertRed, modifier = Modifier.size(18.dp))
                             Spacer(Modifier.width(10.dp))
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(serv.descripcion.ifBlank { "Servicio Extra" }, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
-                                Text("Servicio · Pendiente", fontSize = 11.sp, color = AlertRed)
+                                Text("Servicio · Pendiente", fontSize = 11.sp, color = MaterialTheme.colorScheme.alertRed)
                             }
                             Text("s/. ${fmt(serv.montoTotal)}", fontWeight = FontWeight.Bold, fontSize = 13.sp)
                         }
@@ -387,8 +387,8 @@ private fun DashboardKpi(
                 Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 if (highlight) {
                     Box(modifier = Modifier.weight(1f))
-                    Surface(shape = RoundedCornerShape(4.dp), color = AlertRed.copy(alpha = 0.2f)) {
-                        Text("!", modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp), fontSize = 9.sp, color = AlertRed, fontWeight = FontWeight.Bold)
+                    Surface(shape = RoundedCornerShape(4.dp), color = MaterialTheme.colorScheme.alertRed.copy(alpha = 0.2f)) {
+                        Text("!", modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp), fontSize = 9.sp, color = MaterialTheme.colorScheme.alertRed, fontWeight = FontWeight.Bold)
                     }
                 }
             }

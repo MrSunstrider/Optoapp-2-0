@@ -26,8 +26,8 @@ import com.example.optoapp.ui.components.DropdownField
 import com.example.optoapp.ui.components.OptoDatePickerDialog
 import com.example.optoapp.ui.components.OptoKpiCard
 import com.example.optoapp.ui.components.OptoTopAppBar
-import com.example.optoapp.ui.theme.AlertRed
-import com.example.optoapp.ui.theme.PositiveGreen
+import com.example.optoapp.ui.theme.alertRed
+import com.example.optoapp.ui.theme.positiveGreen
 import com.example.optoapp.ui.theme.warningAmber
 import com.example.optoapp.util.DateUtils
 import com.example.optoapp.util.FileShareUtils
@@ -139,7 +139,7 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
                 ) {
                     Column(modifier = Modifier.padding(12.dp)) {
-                        DropdownField(
+                        com.example.optoapp.ui.components.OptoDropdownMenuField(
                             label = "Período",
                             selected = periodo,
                             options = listOf("Diario", "Semanal", "Mensual", "Anual", "Total"),
@@ -179,12 +179,12 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
             item {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OptoKpiCard("Vendido", "s/. ${totalVendido.fmt()}", MaterialTheme.colorScheme.primary, Icons.AutoMirrored.Filled.TrendingUp, Modifier.weight(1f))
-                    OptoKpiCard("Cobrado", "s/. ${totalCobrado.fmt()}", PositiveGreen, Icons.Default.Payments, Modifier.weight(1f))
+                    OptoKpiCard("Cobrado", "s/. ${totalCobrado.fmt()}", MaterialTheme.colorScheme.positiveGreen, Icons.Default.Payments, Modifier.weight(1f))
                 }
             }
             item {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OptoKpiCard("Por Cobrar", "s/. ${porCobrar.fmt()}", if (porCobrar > 0) AlertRed else PositiveGreen, Icons.Default.AccountBalanceWallet, Modifier.weight(1f))
+                    OptoKpiCard("Por Cobrar", "s/. ${porCobrar.fmt()}", if (porCobrar > 0) MaterialTheme.colorScheme.alertRed else MaterialTheme.colorScheme.positiveGreen, Icons.Default.AccountBalanceWallet, Modifier.weight(1f))
                     OptoKpiCard("Ticket Prom.", "s/. ${ticketPromedio.fmt()}", MaterialTheme.colorScheme.secondary, Icons.Default.Receipt, Modifier.weight(1f))
                 }
             }
@@ -258,7 +258,7 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                             Text(
                                 if (saldo > 0) "Saldo: s/. ${saldo.fmt()}" else "Pagado",
                                 fontSize = 11.sp,
-                                color = if (saldo > 0) AlertRed else PositiveGreen,
+                                color = if (saldo > 0) MaterialTheme.colorScheme.alertRed else MaterialTheme.colorScheme.positiveGreen,
                             )
                         }
                     }
@@ -280,7 +280,7 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                             Text(
                                 if (saldo > 0) "Saldo: s/. ${saldo.fmt()}" else "Pagado",
                                 fontSize = 11.sp,
-                                color = if (saldo > 0) AlertRed else PositiveGreen,
+                                color = if (saldo > 0) MaterialTheme.colorScheme.alertRed else MaterialTheme.colorScheme.positiveGreen,
                             )
                         }
                     }

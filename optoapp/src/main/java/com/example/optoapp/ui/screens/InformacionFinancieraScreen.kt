@@ -214,13 +214,13 @@ fun InformacionFinancieraScreen(
                 )
             }
 
-            DropdownField(
+            com.example.optoapp.ui.components.OptoDropdownMenuField(
                 label = "Estado de Entrega",
                 selected = uiState.estadoEntrega,
                 options = listOf("Pendiente", "Entregado"),
-            ) { newEstado ->
+                onSelected = { newEstado ->
                 viewModel.updateEstado(newEstado)
-            }
+            })
 
             if (uiState.fechaEntrega != null) {
                 FechaEntregaEditButton(

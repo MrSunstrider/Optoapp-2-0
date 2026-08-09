@@ -182,7 +182,7 @@ fun AgendaScreen(
                                     "Cita: ${e.proximaCita?.let { DateUtils.formatLocalized(it) } ?: "—"}",
                                     style = MaterialTheme.typography.bodyMedium,
                                 )
-                                DropdownField(
+                                com.example.optoapp.ui.components.OptoDropdownMenuField(
                                     label = "Estado",
                                     selected = etiquetaEstadoCita(e.citaEstado.orEmpty().ifBlank { "programada" }),
                                     options = estadosCitaInternas.map(::etiquetaEstadoCita),

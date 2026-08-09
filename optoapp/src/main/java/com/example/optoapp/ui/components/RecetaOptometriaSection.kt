@@ -158,7 +158,7 @@ private fun PrismasSection(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiSt
                     trailingIcon = { if (uiState.prismaOdValor.isNotBlank()) PrismaSuffix() },
                 )
                 Box(modifier = Modifier.weight(1f)) {
-                    DropdownField(label = "Base", selected = uiState.prismaOdBase, options = com.example.optoapp.ui.screens.basesPrisma, onSelected = { onUpdate(uiState.copy(prismaOdBase = it)) })
+                    OptoDropdownMenuField(label = "Base", selected = uiState.prismaOdBase, options = com.example.optoapp.ui.screens.basesPrisma, onSelected = { onUpdate(uiState.copy(prismaOdBase = it)) })
                 }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -170,7 +170,7 @@ private fun PrismasSection(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiSt
                     trailingIcon = { if (uiState.prismaOiValor.isNotBlank()) PrismaSuffix() },
                 )
                 Box(modifier = Modifier.weight(1f)) {
-                    DropdownField(label = "Base", selected = uiState.prismaOiBase, options = com.example.optoapp.ui.screens.basesPrisma, onSelected = { onUpdate(uiState.copy(prismaOiBase = it)) })
+                    OptoDropdownMenuField(label = "Base", selected = uiState.prismaOiBase, options = com.example.optoapp.ui.screens.basesPrisma, onSelected = { onUpdate(uiState.copy(prismaOiBase = it)) })
                 }
             }
         }

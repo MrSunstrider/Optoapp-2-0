@@ -85,7 +85,7 @@ fun AbonoDialog(
                     label = "Monto",
                     keyboardType = KeyboardType.Decimal,
                 )
-                DropdownField(
+                OptoDropdownMenuField(
                     label = "Método de Pago",
                     selected = metodo,
                     options = listOf("Efectivo", "Tarjeta", "Transferencia"),

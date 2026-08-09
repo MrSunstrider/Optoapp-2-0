@@ -51,7 +51,7 @@ private fun DiagnosticoCard(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiS
 
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(modifier = Modifier.weight(1f)) {
-                    DropdownField(
+                    OptoDropdownMenuField(
                         label = "Diagnóstico OD",
                         selected = uiState.diagnosticoOd.firstOrNull() ?: "",
                         options = com.example.optoapp.ui.screens.diagnosticosRefraccion,
@@ -67,7 +67,7 @@ private fun DiagnosticoCard(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiS
 
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(modifier = Modifier.weight(1f)) {
-                    DropdownField(
+                    OptoDropdownMenuField(
                         label = "Diagnóstico OI",
                         selected = uiState.diagnosticoOi.firstOrNull() ?: "",
                         options = com.example.optoapp.ui.screens.diagnosticosRefraccion,
@@ -136,7 +136,7 @@ private fun CitaCard(
             .find { it.first == uiState.citaEstado.ifBlank { "programada" } }
             ?.second
             ?: estadosCitaOpciones.first().second
-        DropdownField(
+        OptoDropdownMenuField(
             label = "Estado de la cita",
             selected = labelSeleccionado,
             options = estadosCitaOpciones.map { it.second },
