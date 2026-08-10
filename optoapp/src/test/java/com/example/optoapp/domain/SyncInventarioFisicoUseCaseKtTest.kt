@@ -2,16 +2,66 @@
 
 import com.example.optoapp.data.InventarioFisico
 import com.example.optoapp.data.InventarioFisicoDetalle
+import com.example.optoapp.data.InventarioFisicoRepository
+import com.example.optoapp.data.OptoDatabase
+import com.example.optoapp.data.SyncStateTracker
+import com.example.optoapp.domain.sync.ConflictHelper
+import com.example.optoapp.domain.sync.LocalEntity
+import io.github.jan.supabase.SupabaseClient
+import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.mockk
+import io.mockk.mockkStatic
+import io.mockk.unmockkAll
+import kotlinx.coroutines.test.runTest
+import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Before
 import org.junit.Test
 import java.time.LocalDate
 
 /**
- * SyncInventarioFisicoUseCase DTO and logic tests.
- * Tests entity-to-Remoto roundtrip and sync result data.
+ * SyncInventarioFisicoUseCase DTO, reconciliation dedup, and local ID tracking tests.
  */
 class SyncInventarioFisicoUseCaseKtTest {
 
+    // ── MockK dependencies ────────────────────────────────────────────
+    private val repository = mockk<InventarioFisicoRepository>(relaxed = true)
+    private val supabase = mockk<SupabaseClient>(relaxed = true)
+    private val database = mockk<OptoDatabase>(relaxed = true)
+    private val syncStateTracker = mockk<SyncStateTracker>(relaxed = true)
+    private val conflictHelper = mockk<ConflictHelper>(relaxed = true)
+
+    @Before
+    fun setUp() {
+        mockkStatic("android.util.Log")
+        // filterConflicts passes through all local entities
+        coEvery { conflictHelper.filterConflicts(any(), any(), any(), any(), any()) } answers {
+            @Suppress("UNCHECKED_CAST")
+            val entities = args[3] as List<LocalEntity>
+            entities
+        }
+    }
+
+    @After
+    fun tearDown() {
+        unmockkAll()
+    }
+
+    // ── Test use case factory ─────────────────────────────────────────
+    private fun createUseCase(
+        fetchDetalles: suspend (String) -> List<IFDetalleRemotoLookup> = { emptyList() },
+    ): SyncInventarioFisicoUseCase = object : SyncInventarioFisicoUseCase(
+        repository, supabase, database, syncStateTracker, conflictHelper,
+    ) {
+        override suspend fun <T> runInTransaction(block: suspend () -> T): T = block()
+        override suspend fun upsertSessionsBatch(chunk: List<IFRemoto>) { /* no-op for test */ }
+        override suspend fun upsertDetallesBatch(chunk: List<IFDetalleRemoto>) { /* no-op for test */ }
+        override suspend fun fetchRemoteDetallesForLookup(opticaId: String): List<IFDetalleRemotoLookup> =
+            fetchDetalles(opticaId)
+    }
+
+    // ── Existing DTO tests (unchanged) ─────────────────────────────────
     @Test
     fun inventarioFisicoEntity_allFieldsAreAccessible() {
         val session = InventarioFisico(
@@ -156,5 +206,76 @@ class SyncInventarioFisicoUseCaseKtTest {
         assertEquals(12, remoto.stockContado)
         assertEquals(-3, remoto.diferencia)
         assertEquals("o3", remoto.opticaId)
+    }
+
+    // ── Phase 2 RED: uploadDetalles dedup + local ID tracking ─────────
+
+    @Test
+    fun `uploadDetalles two composite keys reconciling to same remote ID produce duplicate PKs without distinctBy`() = runTest {
+        val opticaId = "optica-test"
+        val sessionId = "session-IF1"
+        val useCase = createUseCase(
+            fetchDetalles = { _ ->
+                listOf(IFDetalleRemotoLookup(id = "remote-D1", inventarioId = sessionId, monturaId = "mont-1"))
+            }
+        )
+
+        // One session with two detalles that share the same composite key (inventarioId + monturaId)
+        coEvery { repository.getListByOptica(opticaId) } returns listOf(
+            InventarioFisico(id = sessionId, fecha = LocalDate.now(), opticaId = opticaId, userId = "u1"),
+        )
+        coEvery { repository.getDetalles(sessionId) } returns listOf(
+            InventarioFisicoDetalle(id = "local-DA", inventarioId = sessionId, monturaId = "mont-1", stockSistema = 10),
+            InventarioFisicoDetalle(id = "local-DB", inventarioId = sessionId, monturaId = "mont-1", stockSistema = 15),
+        )
+
+        useCase.uploadDetalles(opticaId)
+
+        // CORRECT behavior after fix: only local-DA (first-wins) is marked synced
+        coVerify(exactly = 1) { syncStateTracker.markSynced(opticaId, "inventario_fisico_detalle", "local-DA") }
+        coVerify(exactly = 0) { syncStateTracker.markSynced(opticaId, "inventario_fisico_detalle", "local-DB") }
+    }
+
+    @Test
+    fun `uploadDetalles markSynced uses local IDs not reconciled remote IDs`() = runTest {
+        val opticaId = "optica-test"
+        val sessionId = "session-IF2"
+        val useCase = createUseCase(
+            fetchDetalles = { _ ->
+                listOf(IFDetalleRemotoLookup(id = "remote-D99", inventarioId = sessionId, monturaId = "mont-X"))
+            }
+        )
+
+        coEvery { repository.getListByOptica(opticaId) } returns listOf(
+            InventarioFisico(id = sessionId, fecha = LocalDate.now(), opticaId = opticaId, userId = "u1"),
+        )
+        coEvery { repository.getDetalles(sessionId) } returns listOf(
+            InventarioFisicoDetalle(id = "local-DX", inventarioId = sessionId, monturaId = "mont-X", stockSistema = 5),
+        )
+
+        useCase.uploadDetalles(opticaId)
+
+        // Must use original local ID "local-DX", not reconciled remote-D99
+        coVerify { syncStateTracker.markSynced(opticaId, "inventario_fisico_detalle", "local-DX") }
+    }
+
+    @Test
+    fun `uploadDetalles no remote match keeps local ID`() = runTest {
+        val opticaId = "optica-test"
+        val sessionId = "session-IF3"
+        val useCase = createUseCase(
+            fetchDetalles = { _ -> emptyList() }
+        )
+
+        coEvery { repository.getListByOptica(opticaId) } returns listOf(
+            InventarioFisico(id = sessionId, fecha = LocalDate.now(), opticaId = opticaId, userId = "u1"),
+        )
+        coEvery { repository.getDetalles(sessionId) } returns listOf(
+            InventarioFisicoDetalle(id = "local-only", inventarioId = sessionId, monturaId = "mont-Z", stockSistema = 3),
+        )
+
+        useCase.uploadDetalles(opticaId)
+
+        coVerify { syncStateTracker.markSynced(opticaId, "inventario_fisico_detalle", "local-only") }
     }
 }

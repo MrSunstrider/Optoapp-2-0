@@ -27,12 +27,25 @@ open class SyncProveedoresUseCase @Inject constructor(
     private val syncStateTracker: SyncStateTracker,
     private val conflictHelper: ConflictHelper,
     private val conflictDao: ConflictDao,
+    private val networkRetryHelper: NetworkRetryHelper,
 ) {
     companion object {
         private const val TAG = "SyncProveedores"
         private const val TABLE_PROVEEDORES = "proveedores"
         private const val TABLE_CATEGORIAS = "categorias_montura"
         private const val UPSERT_BATCH_SIZE = 200
+    }
+
+    // Testability seam: override in tests to run blocks inline without a real DB transaction
+    internal open suspend fun <T> runInTransaction(block: suspend () -> T): T = database.withTransaction(block)
+
+    // Testability seam: override in tests to bypass Supabase PostgREST plugin requirement
+    internal open suspend fun upsertProveedoresBatch(chunk: List<ProveedorRemoto>) {
+        supabase.postgrest[TABLE_PROVEEDORES].upsert(chunk)
+    }
+
+    internal open suspend fun upsertCategoriasBatch(chunk: List<CategoriaRemota>) {
+        supabase.postgrest[TABLE_CATEGORIAS].upsert(chunk)
     }
 
     suspend operator fun invoke(
@@ -77,7 +90,7 @@ open class SyncProveedoresUseCase @Inject constructor(
             .select { filter { eq("optica_id", opticaId) } }
             .decodeList<ProveedorRemotoLookup>()
 
-    private suspend fun uploadProveedores(opticaId: String): Int {
+    internal suspend fun uploadProveedores(opticaId: String): Int {
         val rows = repository.getListByOptica(opticaId)
             .map { it.toRemoto() }
             .distinctBy { it.id }
@@ -94,16 +107,20 @@ open class SyncProveedoresUseCase @Inject constructor(
 
         // Reconcile IDs with remote: two devices may create the same proveedor
         // with different UUIDs. The UNIQUE constraint is on (ruc, optica_id).
-        try {
+        // Track original local ID → reconciled ID for correct markSynced (JD fix).
+        val localIdToReconciled = mutableMapOf<String, String>()
+        safeRows = try {
             val remotos = fetchRemoteProveedoresForLookup(opticaId)
             val remoteIdByRuc = remotos
                 .filter { it.ruc.isNotBlank() }
                 .associateBy { it.ruc.trim() }
-            safeRows = safeRows.map { row ->
+            safeRows.map { row ->
                 val key = row.ruc.trim()
                 val remoteId = if (key.isNotBlank()) remoteIdByRuc[key]?.id else null
+                val reconciledId = if (remoteId != null && remoteId != row.id) remoteId else row.id
+                localIdToReconciled[row.id] = reconciledId
                 if (remoteId != null && remoteId != row.id) row.copy(id = remoteId) else row
-            }
+            }.distinctBy { it.id }
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -111,11 +128,25 @@ open class SyncProveedoresUseCase @Inject constructor(
             return 0
         }
 
-        safeRows.chunked(UPSERT_BATCH_SIZE).forEach { chunk ->
-            supabase.postgrest[TABLE_PROVEEDORES].upsert(chunk)
+        val finalReconciledIds = safeRows.map { it.id }.toSet()
+        safeRows.chunked(UPSERT_BATCH_SIZE).forEachIndexed { index, chunk ->
+            networkRetryHelper.retryNetwork("upsert:$TABLE_PROVEEDORES:chunk${index + 1}") {
+                upsertProveedoresBatch(chunk)
+            }
         }
-        database.withTransaction {
-            safeRows.forEach { r -> syncStateTracker.markSynced(opticaId, "proveedor", r.id) }
+        // markSynced: first-wins — only the first local ID for each reconciled ID
+        val claimed = mutableSetOf<String>()
+        val syncedLocalIds = mutableListOf<String>()
+        for ((localId, reconciledId) in localIdToReconciled) {
+            if (reconciledId !in claimed) {
+                claimed.add(reconciledId)
+                syncedLocalIds.add(localId)
+            }
+        }
+        runInTransaction {
+            syncedLocalIds.forEach { localId ->
+                syncStateTracker.markSynced(opticaId, "proveedor", localId)
+            }
         }
         return safeRows.size
     }
@@ -125,7 +156,7 @@ open class SyncProveedoresUseCase @Inject constructor(
             .select { filter { eq("optica_id", opticaId) } }
             .decodeList<CategoriaRemotaLookup>()
 
-    private suspend fun uploadCategorias(opticaId: String): Int {
+    internal suspend fun uploadCategorias(opticaId: String): Int {
         val rows = repository.getCategoriaListByOptica(opticaId)
             .map { it.toRemoto() }
             .distinctBy { it.id }
@@ -133,6 +164,8 @@ open class SyncProveedoresUseCase @Inject constructor(
 
         // Reconcile IDs with remote: two devices may create the same category
         // with different UUIDs. The UNIQUE constraint is on (nombre, optica_id).
+        // Track original local ID → reconciled ID for correct markSynced (JD fix).
+        val localIdToReconciledC = mutableMapOf<String, String>()
         val reconciledRows = try {
             val remotos = fetchRemoteCategoriasForLookup(opticaId)
             val remoteIdByNombre = remotos
@@ -141,8 +174,10 @@ open class SyncProveedoresUseCase @Inject constructor(
             rows.map { row ->
                 val key = row.nombre.trim().lowercase()
                 val remoteId = if (key.isNotBlank()) remoteIdByNombre[key]?.id else null
+                val reconciledId = if (remoteId != null && remoteId != row.id) remoteId else row.id
+                localIdToReconciledC[row.id] = reconciledId
                 if (remoteId != null && remoteId != row.id) row.copy(id = remoteId) else row
-            }
+            }.distinctBy { it.id }
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -150,11 +185,25 @@ open class SyncProveedoresUseCase @Inject constructor(
             return 0
         }
 
-        reconciledRows.chunked(UPSERT_BATCH_SIZE).forEach { chunk ->
-            supabase.postgrest[TABLE_CATEGORIAS].upsert(chunk)
+        val finalReconciledIdsC = reconciledRows.map { it.id }.toSet()
+        reconciledRows.chunked(UPSERT_BATCH_SIZE).forEachIndexed { index, chunk ->
+            networkRetryHelper.retryNetwork("upsert:$TABLE_CATEGORIAS:chunk${index + 1}") {
+                upsertCategoriasBatch(chunk)
+            }
         }
-        database.withTransaction {
-            reconciledRows.forEach { r -> syncStateTracker.markSynced(opticaId, "categoria_montura", r.id) }
+        // markSynced: first-wins — only the first local ID for each reconciled ID
+        val claimedC = mutableSetOf<String>()
+        val syncedLocalIdsC = mutableListOf<String>()
+        for ((localId, reconciledId) in localIdToReconciledC) {
+            if (reconciledId !in claimedC) {
+                claimedC.add(reconciledId)
+                syncedLocalIdsC.add(localId)
+            }
+        }
+        runInTransaction {
+            syncedLocalIdsC.forEach { localId ->
+                syncStateTracker.markSynced(opticaId, "categoria_montura", localId)
+            }
         }
         return reconciledRows.size
     }
@@ -237,7 +286,7 @@ internal data class ProveedorRemoto(
 }
 
 @Serializable
-private data class CategoriaRemota(
+internal data class CategoriaRemota(
     val id: String,
     val nombre: String,
     val descripcion: String = "",

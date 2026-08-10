@@ -4,6 +4,7 @@ import com.example.optoapp.data.DispensacionItem
 import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.OptoDatabase
 import com.example.optoapp.data.OptoRepository
+import com.example.optoapp.data.ServicioExtra
 import com.example.optoapp.data.SyncStateTracker
 import com.example.optoapp.data.costobiselado.CostoBiseladoDao
 import com.example.optoapp.data.costoproducto.CostoProductoDao
@@ -351,7 +352,7 @@ class UploadSyncCoordinatorTest {
         testCoordinator.uploadPagos(opticaId)
 
         assertTrue("fetch should be called for reconciliation", fetchCalled)
-        coVerify { syncStateTracker.markSynced(opticaId, "pago", "remote-1") }
+        coVerify { syncStateTracker.markSynced(opticaId, "pago", "local-1") }
     }
 
     @Test
@@ -407,7 +408,7 @@ class UploadSyncCoordinatorTest {
         testCoordinator.uploadPagos(opticaId)
 
         assertTrue("fetch is called for reconciliation", fetchCalled)
-        coVerify { syncStateTracker.markSynced(opticaId, "pago", "remote-null") }
+        coVerify { syncStateTracker.markSynced(opticaId, "pago", "local-null") }
     }
 
     @Test
@@ -475,5 +476,143 @@ class UploadSyncCoordinatorTest {
 
         assertEquals(0, result)
         assertFalse("fetch should not be called for empty local list", fetchCalled)
+    }
+
+    // ── Servicios testability seam ───────────────────────────────────
+
+    private fun createServicioCoordinator(
+        fetchServicios: suspend (String) -> List<ServicioRemotoLookup>,
+    ): UploadSyncCoordinator = object : UploadSyncCoordinator(
+        repository = repository,
+        supabase = supabase,
+        database = database,
+        syncStateTracker = syncStateTracker,
+        mergeHandler = mergeHandler,
+        networkRetryHelper = networkRetryHelper,
+        costoProductoDao = costoProductoDao,
+        costoBiseladoDao = costoBiseladoDao,
+    ) {
+        override suspend fun <T> runInTransaction(block: suspend () -> T): T = block()
+        override suspend fun fetchRemoteServiciosForLookup(opticaId: String): List<ServicioRemotoLookup> =
+            fetchServicios(opticaId)
+    }
+
+    // ── C1+C2: uploadPagos dedup + local ID tracking ─────────────────
+
+    @Test
+    fun `uploadPagos deduplicatesById after reconciliation`() = runTest {
+        val opticaId = "optica-test"
+        val testCoordinator = createPagoCoordinator { _ ->
+            listOf(
+                PagoRemotoLookup(
+                    id = "remote-1", dispensacionId = "disp-1",
+                    tipo = "Pago", monto = 100.0, metodoPago = "Efectivo", fecha = "2026-01-01",
+                ),
+            )
+        }
+
+        // Two local pagos with same PagoKey reconcile to same remote ID
+        coEvery { repository.getPagosSnapshotForOptica(opticaId) } returns listOf(
+            com.example.optoapp.data.Pago(
+                id = "local-A", dispensacionId = "disp-1", tipo = "Pago", monto = 100.0,
+                metodoPago = "Efectivo", fecha = LocalDate.parse("2026-01-01"), opticaId = opticaId,
+            ),
+            com.example.optoapp.data.Pago(
+                id = "local-B", dispensacionId = "disp-1", tipo = "Pago", monto = 100.0,
+                metodoPago = "Efectivo", fecha = LocalDate.parse("2026-01-01"), opticaId = opticaId,
+            ),
+        )
+        coEvery { networkRetryHelper.retryNetwork(any(), any()) } returns Unit
+
+        testCoordinator.uploadPagos(opticaId)
+
+        // Only 1 upserted (uniqueById dedup); first-wins → local-A marked synced
+        coVerify { syncStateTracker.markSynced(opticaId, "pago", "local-A") }
+        // Deduplicated local-B is NOT in uniqueById → NOT marked synced
+    }
+
+    @Test
+    fun `uploadPagos markSynced uses local IDs after reconciliation`() = runTest {
+        val opticaId = "optica-test"
+        val testCoordinator = createPagoCoordinator { _ ->
+            listOf(
+                PagoRemotoLookup(
+                    id = "remote-99", dispensacionId = "disp-X",
+                    tipo = "Abono", monto = 50.0, metodoPago = "Tarjeta", fecha = "2026-03-15",
+                ),
+            )
+        }
+
+        coEvery { repository.getPagosSnapshotForOptica(opticaId) } returns listOf(
+            com.example.optoapp.data.Pago(
+                id = "local-P1", dispensacionId = "disp-X", tipo = "Abono", monto = 50.0,
+                metodoPago = "Tarjeta", fecha = LocalDate.parse("2026-03-15"), opticaId = opticaId,
+            ),
+        )
+        coEvery { networkRetryHelper.retryNetwork(any(), any()) } returns Unit
+
+        testCoordinator.uploadPagos(opticaId)
+
+        // Must use original local ID, NOT the reconciled remote-99
+        coVerify { syncStateTracker.markSynced(opticaId, "pago", "local-P1") }
+    }
+
+    // ── C3+W1: uploadServicios dedup + local ID tracking ──────────────
+
+    @Test
+    fun `uploadServicios deduplicates by reconciled ID`() = runTest {
+        val opticaId = "optica-test"
+        val testCoordinator = createServicioCoordinator { _ ->
+            listOf(
+                ServicioRemotoLookup(id = "remote-S1", ot = "OT-001"),
+            )
+        }
+
+        // Two servicios with same OT reconcile to same remote ID
+        coEvery { repository.getServiciosSnapshotForOptica(opticaId) } returns listOf(
+            ServicioExtra(
+                id = "local-S1", ot = "OT-001", descripcion = "Servicio A",
+                montoTotal = 200.0, aCuenta = 0.0, estado = "Pendiente",
+                fecha = LocalDate.parse("2026-04-01"), opticaId = opticaId,
+            ),
+            ServicioExtra(
+                id = "local-S2", ot = "OT-001", descripcion = "Servicio B",
+                montoTotal = 300.0, aCuenta = 0.0, estado = "Pendiente",
+                fecha = LocalDate.parse("2026-04-01"), opticaId = opticaId,
+            ),
+        )
+        coEvery { repository.getPagosSnapshotForOptica(opticaId) } returns emptyList()
+        coEvery { networkRetryHelper.retryNetwork(any(), any()) } returns Unit
+
+        testCoordinator.uploadServicios(opticaId)
+
+        // Only 1 upserted (uniqueById dedup); first-wins → local-S1 marked synced
+        coVerify { syncStateTracker.markSynced(opticaId, "servicio_extra", "local-S1") }
+        // Deduplicated local-S2 is NOT in uniqueById → NOT marked synced
+    }
+
+    @Test
+    fun `uploadServicios markSynced uses local IDs`() = runTest {
+        val opticaId = "optica-test"
+        val testCoordinator = createServicioCoordinator { _ ->
+            listOf(
+                ServicioRemotoLookup(id = "remote-S99", ot = "OT-999"),
+            )
+        }
+
+        coEvery { repository.getServiciosSnapshotForOptica(opticaId) } returns listOf(
+            ServicioExtra(
+                id = "local-SV1", ot = "OT-999", descripcion = "Lente progresivo",
+                montoTotal = 500.0, aCuenta = 100.0, estado = "Pendiente",
+                fecha = LocalDate.parse("2026-05-10"), opticaId = opticaId,
+            ),
+        )
+        coEvery { repository.getPagosSnapshotForOptica(opticaId) } returns emptyList()
+        coEvery { networkRetryHelper.retryNetwork(any(), any()) } returns Unit
+
+        testCoordinator.uploadServicios(opticaId)
+
+        // Must use original local ID "local-SV1", not reconciled remote-S99
+        coVerify { syncStateTracker.markSynced(opticaId, "servicio_extra", "local-SV1") }
     }
 }

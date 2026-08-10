@@ -290,11 +290,7 @@ open class UploadSyncCoordinator @Inject constructor(
         require(opticaId.isNotBlank()) { "opticaId must not be blank for upload" }
         val opticaRemota = opticaId.trim()
         val remotosExistentes = try {
-            supabase.postgrest[TABLE_SERVICIOS]
-                .select {
-                    filter { eq("optica_id", opticaRemota) }
-                }
-                .decodeList<ServicioRemotoLookup>()
+            fetchRemoteServiciosForLookup(opticaRemota)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -307,8 +303,8 @@ open class UploadSyncCoordinator @Inject constructor(
             }
             .toMap()
 
-        val uniqueRows = LinkedHashMap<String, ServicioRemoto>()
-        for (row in servicios.map { servicio ->
+        val uniqueById = LinkedHashMap<String, Pair<String, ServicioRemoto>>()
+        servicios.forEach { servicio ->
             val aCuentaSum = aCuentaSumByServ[servicio.id] ?: 0.0
             val base = servicio.toRemoto(aCuentaSum = aCuentaSum).copy(opticaId = opticaRemota)
             val normalizedOt = normalizedOtForUnique(base.ot)
@@ -322,29 +318,10 @@ open class UploadSyncCoordinator @Inject constructor(
             } else {
                 base
             }
-            reconciled
-        }) {
-            val dedupeKey = row.ot?.trim()?.takeIf { it.isNotBlank() } ?: "id:${row.id}"
-            val existing = uniqueRows[dedupeKey]
-            if (existing != null && existing.id != row.id) {
-                val winner = try {
-                    val rowTime = row.updatedAt?.let { Instant.parse(it) }
-                    val existingTime = existing.updatedAt?.let { Instant.parse(it) }
-                    if (rowTime != null && existingTime != null) {
-                        if (rowTime > existingTime) row else existing
-                    } else {
-                        existing
-                    }
-                } catch (e: Exception) {
-                    AppLogger.w(TAG, "Failed to parse timestamp for servicio dedup, keeping existing", e)
-                    existing
-                }
-                uniqueRows[dedupeKey] = winner
-            } else {
-                uniqueRows[dedupeKey] = row
-            }
+            if (uniqueById.containsKey(reconciled.id)) return@forEach
+            uniqueById[reconciled.id] = servicio.id to reconciled
         }
-        val rows = uniqueRows.values.toList()
+        val rows = uniqueById.values.map { it.second }
         var uploadedCount = 0
         try {
             rows.chunked(UPSERT_BATCH_SIZE).forEachIndexed { index, chunk ->
@@ -365,8 +342,8 @@ open class UploadSyncCoordinator @Inject constructor(
             throw e
         }
         runInTransaction {
-            rows.forEach { r ->
-                syncStateTracker.markSynced(opticaId, "servicio_extra", r.id)
+            uniqueById.values.forEach { (localId, _) ->
+                syncStateTracker.markSynced(opticaId, "servicio_extra", localId)
             }
         }
         syncStateTracker.markSynced(opticaId, "upload_servicios_extra", "batch")
@@ -401,6 +378,13 @@ open class UploadSyncCoordinator @Inject constructor(
         return remotos
     }
 
+    // WHY: testability seam for servicios reconciliation (same pattern as pagos).
+    internal open suspend fun fetchRemoteServiciosForLookup(opticaId: String): List<ServicioRemotoLookup> {
+        return supabase.postgrest[TABLE_SERVICIOS]
+            .select { filter { eq("optica_id", opticaId) } }
+            .decodeList<ServicioRemotoLookup>()
+    }
+
     // ── Pagos business-key reconciliation ─────────────────────────────
 
     internal data class PagoKey(
@@ -433,20 +417,43 @@ open class UploadSyncCoordinator @Inject constructor(
         val remoteIdByKey = remotos.map { r ->
             PagoKey(r.dispensacionId ?: "", r.tipo, r.monto, r.metodoPago, r.fecha) to r.id
         }.toMap()
-        val reconciled = rows.map { row ->
+
+        // Build localId → reconciled row map with uniqueById dedup (C1 fix)
+        val uniqueById = LinkedHashMap<String, Pair<String, PagoRemoto>>()
+        rows.forEach { row ->
             val key = PagoKey(row.dispensacionId ?: "", row.tipo, row.monto, row.metodoPago, row.fecha)
             val remoteId = remoteIdByKey[key]
-            if (remoteId != null && remoteId != row.id) row.copy(id = remoteId) else row
+            val reconciled = if (remoteId != null && remoteId != row.id) row.copy(id = remoteId) else row
+            if (uniqueById.containsKey(reconciled.id)) return@forEach
+            uniqueById[reconciled.id] = row.id to reconciled
         }
-
-        return executeSimpleUpsert(
-            opticaId,
-            TABLE_PAGOS,
-            "pago",
-            "upload_pagos",
-            reconciled,
-            { it.id },
-        ) { supabase.postgrest[TABLE_PAGOS].upsert(it) }
+        val uniqueRows = uniqueById.values.map { it.second }
+        var uploadedCount = 0
+        try {
+            uniqueRows.chunked(UPSERT_BATCH_SIZE).forEachIndexed { index, chunk ->
+                networkRetryHelper.retryNetwork("upsert:$TABLE_PAGOS:chunk${index + 1}") {
+                    supabase.postgrest[TABLE_PAGOS].upsert(chunk)
+                }
+                uploadedCount += chunk.size
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: IOException) {
+            AppLogger.e(TAG, "Error en red subiendo pagos: ${e.message}", e)
+            syncStateTracker.markError(opticaId, "upload_pagos", "batch", e.message)
+            throw UploadPartialException(uploadedCount, e)
+        } catch (e: Exception) {
+            AppLogger.e(TAG, "Error inesperado subiendo pagos: ${e.message}", e)
+            syncStateTracker.markError(opticaId, "upload_pagos", "batch", e.message)
+            throw e
+        }
+        runInTransaction {
+            uniqueById.values.forEach { (localId, _) ->
+                syncStateTracker.markSynced(opticaId, "pago", localId)
+            }
+        }
+        syncStateTracker.markSynced(opticaId, "upload_pagos", "batch")
+        return uniqueRows.size
     }
 
     suspend fun uploadGastosOperativos(opticaId: String): Int {

@@ -33,6 +33,18 @@ open class SyncInventarioFisicoUseCase @Inject constructor(
         private const val UPSERT_BATCH_SIZE = 200
     }
 
+    // Testability seam: override in tests to run blocks inline without a real DB transaction
+    internal open suspend fun <T> runInTransaction(block: suspend () -> T): T = database.withTransaction(block)
+
+    // Testability seam: override in tests to bypass Supabase PostgREST plugin requirement
+    internal open suspend fun upsertSessionsBatch(chunk: List<IFRemoto>) {
+        supabase.postgrest[TABLE_SESSIONS].upsert(chunk)
+    }
+
+    internal open suspend fun upsertDetallesBatch(chunk: List<IFDetalleRemoto>) {
+        supabase.postgrest[TABLE_DETALLES].upsert(chunk)
+    }
+
     suspend operator fun invoke(
         opticaId: String,
         downloadAfterUpload: Boolean = true,
@@ -86,9 +98,9 @@ open class SyncInventarioFisicoUseCase @Inject constructor(
             if (safeRows.isEmpty()) return 0
 
             safeRows.chunked(UPSERT_BATCH_SIZE).forEach { chunk ->
-                supabase.postgrest[TABLE_SESSIONS].upsert(chunk)
+                upsertSessionsBatch(chunk)
             }
-            database.withTransaction {
+            runInTransaction {
                 safeRows.forEach { r -> syncStateTracker.markSynced(opticaId, "inventario_fisico", r.id) }
             }
             safeRows.size
@@ -100,7 +112,7 @@ open class SyncInventarioFisicoUseCase @Inject constructor(
         }
     }
 
-    private suspend fun uploadDetalles(opticaId: String): Int {
+    internal suspend fun uploadDetalles(opticaId: String): Int {
         return try {
             val sessions = repository.getListByOptica(opticaId)
             val allDetalles = sessions.flatMap { s -> repository.getDetalles(s.id) }
@@ -108,14 +120,18 @@ open class SyncInventarioFisicoUseCase @Inject constructor(
                 .distinctBy { it.id }
             if (allDetalles.isEmpty()) return 0
 
+            // Track original local ID → reconciled ID for correct markSynced (JD fix).
+            val localIdToReconciled = mutableMapOf<String, String>()
             val reconciled = try {
                 val remotos = fetchRemoteDetallesForLookup(opticaId)
                 val remoteIdByKey = remotos.associateBy { IFDetalleKey(it.inventarioId, it.monturaId) }
                 allDetalles.map { row ->
                     val key = IFDetalleKey(row.inventarioId, row.monturaId)
                     val remoteId = remoteIdByKey[key]?.id
+                    val reconciledId = if (remoteId != null && remoteId != row.id) remoteId else row.id
+                    localIdToReconciled[row.id] = reconciledId
                     if (remoteId != null && remoteId != row.id) row.copy(id = remoteId) else row
-                }
+                }.distinctBy { it.id }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -123,11 +139,23 @@ open class SyncInventarioFisicoUseCase @Inject constructor(
                 return 0
             }
 
+            val finalReconciledIds = reconciled.map { it.id }.toSet()
             reconciled.chunked(UPSERT_BATCH_SIZE).forEach { chunk ->
-                supabase.postgrest[TABLE_DETALLES].upsert(chunk)
+                upsertDetallesBatch(chunk)
             }
-            database.withTransaction {
-                reconciled.forEach { r -> syncStateTracker.markSynced(opticaId, "inventario_fisico_detalle", r.id) }
+            // markSynced: first-wins — only the first local ID for each reconciled ID
+            val claimed = mutableSetOf<String>()
+            val syncedLocalIds = mutableListOf<String>()
+            for ((localId, reconciledId) in localIdToReconciled) {
+                if (reconciledId !in claimed) {
+                    claimed.add(reconciledId)
+                    syncedLocalIds.add(localId)
+                }
+            }
+            runInTransaction {
+                syncedLocalIds.forEach { localId ->
+                    syncStateTracker.markSynced(opticaId, "inventario_fisico_detalle", localId)
+                }
             }
             reconciled.size
         } catch (e: CancellationException) {
@@ -188,7 +216,7 @@ data class InventarioFisicoSyncResult(
 )
 
 @Serializable
-private data class IFRemoto(
+internal data class IFRemoto(
     val id: String,
     val fecha: String? = null,
     val estado: String = "EN_PROGRESO",

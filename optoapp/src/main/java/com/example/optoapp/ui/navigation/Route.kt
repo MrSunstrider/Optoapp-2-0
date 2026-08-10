@@ -48,8 +48,5 @@ sealed class Route(val route: String) {
     data class CostosYGastosDisp(val dispensacionId: String) : Route("costos_y_gastos/$dispensacionId")
     data class InformacionFinanciera(val dispensacionId: String) : Route("informacion_financiera/$dispensacionId")
 
-    companion object {
-        // Bottom navigation tab routes for saveState/restoreState
-        val bottomNavTabs = listOf(OperacionHoy, InventarioFisico, CierreCaja, Configuracion)
-    }
+
 }

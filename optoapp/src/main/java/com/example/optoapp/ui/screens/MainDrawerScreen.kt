@@ -8,7 +8,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import com.example.optoapp.R
 import androidx.compose.ui.unit.dp
@@ -237,29 +236,7 @@ fun MainDrawerScreen(
                         )
                     }
 
-                    // Bottom navigation — 4 tabs coexistiendo con el drawer
-                    NavigationBar {
-                        val tabs = listOf(
-                            Triple(Route.OperacionHoy, stringResource(R.string.nav_operacion), Icons.Default.Home),
-                            Triple(Route.InventarioFisico, stringResource(R.string.nav_inventario), Icons.Default.Build),
-                            Triple(Route.CierreCaja, stringResource(R.string.nav_finanzas), Icons.Default.AccountBalanceWallet),
-                            Triple(Route.Configuracion, stringResource(R.string.nav_sistema), Icons.Default.Settings),
-                        )
-                        tabs.forEach { (route, label, icon) ->
-                            NavigationBarItem(
-                                selected = currentRoute == route.route,
-                                onClick = {
-                                    navController.navigate(route.route) {
-                                        popUpTo(navController.graph.startDestinationId) { saveState = true }
-                                        launchSingleTop = true
-                                        restoreState = true
-                                    }
-                                },
-                                icon = { Icon(icon, contentDescription = label) },
-                                label = { Text(label) },
-                            )
-                        }
-                    }
+                    // Bottom navigation removed — drawer provides all navigation
                 }
             }
         }
