@@ -32,9 +32,9 @@ fun OptoDropdownMenuField(
     label: String,
     selected: String,
     options: List<String>,
-    onSelected: (String) -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    onSelected: (String) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }

@@ -13,7 +13,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.optoapp.R
-import com.example.optoapp.ui.components.DropdownField
+import com.example.optoapp.ui.components.OptoDropdownMenuField
 import com.example.optoapp.ui.components.OptoTextField
 import com.example.optoapp.ui.theme.OptoTokens
 import com.example.optoapp.viewmodel.FiscalConfigUi
@@ -48,7 +48,7 @@ fun FiscalDataSection(
                 onValueChange = { onDraftChange(FiscalDraftUpdate(nombreComercial = it)) },
                 label = stringResource(R.string.config_fiscal_nombre_comercial_label),
             )
-            DropdownField(
+            OptoDropdownMenuField(
                 label = stringResource(R.string.config_fiscal_tipo_doc_label),
                 selected = fiscalUi.docTipo,
                 options = listOf("RUC", "RUS"),
@@ -159,7 +159,7 @@ fun UsuariosRolesSection(
                 onValueChange = onEmailChange,
                 label = stringResource(R.string.config_users_roles_email_label),
             )
-            DropdownField(
+            OptoDropdownMenuField(
                 label = stringResource(R.string.config_users_roles_role_label),
                 selected = roleUi.roleInput,
                 options = allowedRoles,

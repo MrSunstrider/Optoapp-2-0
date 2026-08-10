@@ -17,7 +17,7 @@ import androidx.compose.ui.unit.sp
 import com.example.optoapp.data.Pago
 import com.example.optoapp.testing.TestTags
 import com.example.optoapp.ui.components.AbonoDialog
-import com.example.optoapp.ui.components.DropdownField
+import com.example.optoapp.ui.components.OptoDropdownMenuField
 import com.example.optoapp.ui.components.OptoTextField
 import com.example.optoapp.util.DateUtils
 import com.example.optoapp.viewmodel.DispensacionUiState
@@ -138,7 +138,7 @@ fun PagosSection(
                 )
             }
 
-            DropdownField(label = "Estado de Entrega", selected = uiState.estadoEntrega, options = listOf("Pendiente", "Entregado")) {
+            OptoDropdownMenuField(label = "Estado de Entrega", selected = uiState.estadoEntrega, options = listOf("Pendiente", "Entregado")) {
                 onUpdate(uiState.copy(estadoEntrega = it))
             }
         }

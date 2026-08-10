@@ -8,7 +8,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.optoapp.ui.components.CalculationCard
-import com.example.optoapp.ui.components.DropdownField
+import com.example.optoapp.ui.components.OptoDropdownMenuField
 import com.example.optoapp.ui.components.OptoTextField
 import com.example.optoapp.ui.components.SuggestionCard
 import com.example.optoapp.util.DateUtils
@@ -69,8 +69,8 @@ fun ContactologiaSection(
             }
 
             OptoTextField(value = uiState.lcLaboratorio, onValueChange = { onUpdate(uiState.copy(lcLaboratorio = it)) }, label = "Laboratorio / Marca")
-            DropdownField(label = "Tipo de Lente", selected = uiState.lcTipoLente, options = tiposLC, onSelected = { onUpdate(uiState.copy(lcTipoLente = it)) })
-            DropdownField(label = "Material", selected = uiState.lcMaterial, options = materialesLC, onSelected = { onUpdate(uiState.copy(lcMaterial = it)) })
+            OptoDropdownMenuField(label = "Tipo de Lente", selected = uiState.lcTipoLente, options = tiposLC, onSelected = { onUpdate(uiState.copy(lcTipoLente = it)) })
+            OptoDropdownMenuField(label = "Material", selected = uiState.lcMaterial, options = materialesLC, onSelected = { onUpdate(uiState.copy(lcMaterial = it)) })
 
             OutlinedButton(onClick = onShowLcDatePicker, modifier = Modifier.fillMaxWidth()) {
                 val dText = uiState.lcFechaAdaptacion?.let { DateUtils.formatLocalized(it) } ?: "Seleccionar Fecha"

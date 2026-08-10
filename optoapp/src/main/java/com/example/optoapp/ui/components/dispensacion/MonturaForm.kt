@@ -10,7 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.optoapp.data.Montura
-import com.example.optoapp.ui.components.DropdownField
+import com.example.optoapp.ui.components.OptoDropdownMenuField
 import com.example.optoapp.ui.components.OptoTextField
 import com.example.optoapp.viewmodel.DispensacionUiState
 
@@ -24,7 +24,7 @@ fun MonturaForm(
     Card {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("Información de Montura", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-            DropdownField(label = "Origen", selected = uiState.origenMontura, options = listOf("Tienda", "Paciente")) {
+            OptoDropdownMenuField(label = "Origen", selected = uiState.origenMontura, options = listOf("Tienda", "Paciente")) {
                 if (it == "Tienda") {
                     onUpdate(uiState.copy(origenMontura = it))
                 } else {
@@ -121,10 +121,10 @@ fun MonturaForm(
                     }
                 }
             }
-            DropdownField(label = "Tipo de Aro", selected = uiState.tipoAro, options = listOf("Aro Completo", "Semi al aire", "Al aire")) {
+            OptoDropdownMenuField(label = "Tipo de Aro", selected = uiState.tipoAro, options = listOf("Aro Completo", "Semi al aire", "Al aire")) {
                 onUpdate(uiState.copy(tipoAro = it))
             }
-            DropdownField(label = "Material", selected = uiState.materialMontura, options = listOf("Acetato", "Metal", "Carey", "TR-90", "Econ")) {
+            OptoDropdownMenuField(label = "Material", selected = uiState.materialMontura, options = listOf("Acetato", "Metal", "Carey", "TR-90", "Econ")) {
                 onUpdate(uiState.copy(materialMontura = it))
             }
             OptoTextField(value = uiState.descripcionMontura, onValueChange = { onUpdate(uiState.copy(descripcionMontura = it)) }, label = "Descripción (Marca, Modelo)")

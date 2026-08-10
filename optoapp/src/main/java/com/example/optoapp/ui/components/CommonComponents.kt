@@ -13,7 +13,7 @@ import androidx.compose.ui.unit.dp
 @Deprecated(
     message = "Use OptoDropdownMenuField instead for native ExposedDropdownMenuBox experience",
     replaceWith = ReplaceWith(
-        "OptoDropdownMenuField(label, selected, options, onSelected)",
+        "OptoDropdownMenuField(label, selected, options, modifier = Modifier, enabled = true, onSelected)",
         "com.example.optoapp.ui.components.OptoDropdownMenuField",
     ),
 )

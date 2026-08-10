@@ -13,7 +13,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.optoapp.R
-import com.example.optoapp.ui.components.DropdownField
+import com.example.optoapp.ui.components.OptoDropdownMenuField
 import com.example.optoapp.ui.theme.OptoTokens
 
 @Composable
@@ -27,7 +27,6 @@ fun SystemSection(
     onRemindersEnabledChanged: (Boolean) -> Unit,
     onSendTestNotification: () -> Unit,
 ) {
-    // Preferencias
     Card(
         shape = OptoTokens.shapes.medium,
         elevation = CardDefaults.cardElevation(defaultElevation = OptoTokens.elevation.level1),
@@ -35,11 +34,10 @@ fun SystemSection(
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(stringResource(R.string.config_general_section_title), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
 
-            // Selector de Zona Horaria
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text("Zona Horaria (SaaS)", fontSize = 14.sp, fontWeight = FontWeight.Bold)
                 Text("Ajusta esto si la hora del app no coincide con tu reloj local.", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                DropdownField(
+                OptoDropdownMenuField(
                     label = "Seleccionar Ciudad/Zona",
                     selected = userTimeZone ?: "Detectar automáticamente",
                     options = availableTimeZones,
@@ -67,7 +65,6 @@ fun SystemSection(
                     onCheckedChange = onRemindersEnabledChanged,
                 )
             }
-            // Reminders status badge inline
             val remindersStatusText = when {
                 !notificationPermissionGranted -> stringResource(R.string.config_general_reminders_state_no_permission)
                 !systemNotificationsEnabled -> stringResource(R.string.config_general_reminders_state_system_disabled)

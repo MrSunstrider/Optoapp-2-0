@@ -12,7 +12,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.optoapp.testing.TestTags
-import com.example.optoapp.ui.components.DropdownField
+import com.example.optoapp.ui.components.OptoDropdownMenuField
 import com.example.optoapp.ui.components.OptoTextField
 import com.example.optoapp.util.DateUtils
 import com.example.optoapp.viewmodel.EvaluacionUiState
@@ -54,7 +54,7 @@ private fun DiagnosticoCard(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiS
 
             Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                 Column(modifier = Modifier.weight(1f)) {
-                    DropdownField(
+                    OptoDropdownMenuField(
                         label = "Diagnóstico OD",
                         selected = uiState.diagnosticoOd.firstOrNull() ?: "",
                         options = diagnosticosRefraccion,
@@ -70,7 +70,7 @@ private fun DiagnosticoCard(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiS
 
             Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                 Column(modifier = Modifier.weight(1f)) {
-                    DropdownField(
+                    OptoDropdownMenuField(
                         label = "Diagnóstico OI",
                         selected = uiState.diagnosticoOi.firstOrNull() ?: "",
                         options = diagnosticosRefraccion,
@@ -139,7 +139,7 @@ private fun CitaCard(
             .find { it.first == uiState.citaEstado.ifBlank { "programada" } }
             ?.second
             ?: estadosCitaOpciones.first().second
-        DropdownField(
+        OptoDropdownMenuField(
             label = "Estado de la cita",
             selected = labelSeleccionado,
             options = estadosCitaOpciones.map { it.second },

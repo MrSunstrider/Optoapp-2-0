@@ -16,7 +16,7 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.optoapp.ui.components.DropdownField
+import com.example.optoapp.ui.components.OptoDropdownMenuField
 import com.example.optoapp.ui.components.OptoTextField
 import com.example.optoapp.viewmodel.EvaluacionUiState
 
@@ -74,10 +74,10 @@ fun ExamenVisualSection(
         expanded = showVisionBinocular,
         onToggle = { showVisionBinocular = it },
     ) {
-        DropdownField(label = "Estereopsis", selected = uiState.estereopsisValor, options = estereopsisOptions, onSelected = { onUpdate(uiState.copy(estereopsisValor = it)) })
+        OptoDropdownMenuField(label = "Estereopsis", selected = uiState.estereopsisValor, options = estereopsisOptions, onSelected = { onUpdate(uiState.copy(estereopsisValor = it)) })
         OptoTextField(value = uiState.estereopsisSegundos, onValueChange = { onUpdate(uiState.copy(estereopsisSegundos = it)) }, label = "Segundos de arco (opcional)")
-        DropdownField(label = "Test de Lang", selected = uiState.lang, options = langOptions, onSelected = { onUpdate(uiState.copy(lang = it)) })
-        DropdownField(label = "Test de Worth", selected = uiState.worth, options = worthOptions, onSelected = { onUpdate(uiState.copy(worth = it)) })
+        OptoDropdownMenuField(label = "Test de Lang", selected = uiState.lang, options = langOptions, onSelected = { onUpdate(uiState.copy(lang = it)) })
+        OptoDropdownMenuField(label = "Test de Worth", selected = uiState.worth, options = worthOptions, onSelected = { onUpdate(uiState.copy(worth = it)) })
     }
 
     CollapsibleExamenCard(
@@ -86,7 +86,7 @@ fun ExamenVisualSection(
         onToggle = { showColor = it },
     ) {
         OptoTextField(value = uiState.ishihara, onValueChange = { onUpdate(uiState.copy(ishihara = it)) }, label = "Test de Ishihara")
-        DropdownField(label = "Test de Farnsworth", selected = uiState.farnsworth, options = farnsworthOptions, onSelected = { onUpdate(uiState.copy(farnsworth = it)) })
+        OptoDropdownMenuField(label = "Test de Farnsworth", selected = uiState.farnsworth, options = farnsworthOptions, onSelected = { onUpdate(uiState.copy(farnsworth = it)) })
     }
 
     CollapsibleExamenCard(
@@ -110,7 +110,7 @@ fun ExamenVisualSection(
             }
         }
 
-        DropdownField(label = "Sensibilidad al contraste", selected = uiState.sensibilidadContraste, options = sensibilidadOptions, onSelected = { onUpdate(uiState.copy(sensibilidadContraste = it)) })
+        OptoDropdownMenuField(label = "Sensibilidad al contraste", selected = uiState.sensibilidadContraste, options = sensibilidadOptions, onSelected = { onUpdate(uiState.copy(sensibilidadContraste = it)) })
         OptoTextField(value = uiState.sensibilidadFrecuencia, onValueChange = { onUpdate(uiState.copy(sensibilidadFrecuencia = it)) }, label = "Frecuencia espacial (opcional)")
     }
 
@@ -120,7 +120,7 @@ fun ExamenVisualSection(
         onToggle = { showOtrasPruebas = it },
     ) {
         OptoTextField(value = uiState.amsler, onValueChange = { onUpdate(uiState.copy(amsler = it)) }, label = "Test de Amsler")
-        DropdownField(label = "Campo visual por confrontación", selected = uiState.campoVisual, options = campoVisualOptions, onSelected = { onUpdate(uiState.copy(campoVisual = it)) })
+        OptoDropdownMenuField(label = "Campo visual por confrontación", selected = uiState.campoVisual, options = campoVisualOptions, onSelected = { onUpdate(uiState.copy(campoVisual = it)) })
         if (uiState.campoVisual == "Anomalía detectada") {
             OptoTextField(value = uiState.campoVisualDescripcion, onValueChange = { onUpdate(uiState.copy(campoVisualDescripcion = it)) }, label = "Descripción de anomalía (Campo Visual)")
         }

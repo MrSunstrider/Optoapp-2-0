@@ -18,7 +18,7 @@ import com.example.optoapp.data.Montura
 import com.example.optoapp.data.Paciente
 import com.example.optoapp.data.Pago
 import com.example.optoapp.ui.components.AbonoDialog
-import com.example.optoapp.ui.components.DropdownField
+import com.example.optoapp.ui.components.OptoDropdownMenuField
 import com.example.optoapp.ui.components.FechaEntregaEditButton
 import com.example.optoapp.ui.components.OptoTextField
 import com.example.optoapp.util.DateUtils
@@ -196,7 +196,7 @@ fun ServicioForm(
         }
     }
 
-    DropdownField(
+    OptoDropdownMenuField(
         label = "Estado",
         selected = uiState.estado,
         options = listOf("Pendiente", "Entregado"),

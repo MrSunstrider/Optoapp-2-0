@@ -16,7 +16,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.optoapp.data.Montura
 import com.example.optoapp.domain.OpticalCatalog
-import com.example.optoapp.ui.components.DropdownField
+import com.example.optoapp.ui.components.OptoDropdownMenuField
 import com.example.optoapp.ui.components.OptoTextField
 import com.example.optoapp.viewmodel.DispensacionItemUi
 
@@ -39,7 +39,7 @@ fun LenteForm(
             }
         }
 
-        DropdownField(label = "Tipo de Lente", selected = item.tipoLente, options = OpticalCatalog.TIPO_LENTE) {
+        OptoDropdownMenuField(label = "Tipo de Lente", selected = item.tipoLente, options = OpticalCatalog.TIPO_LENTE) {
             val cleaned = when (it) {
                 "Bifocal" -> item.copy(tipoLente = it, distanciaLente = "", altura = "")
                 "Monofocal" -> item.copy(tipoLente = it, subTipoBifocal = "", altura = "")
@@ -50,24 +50,24 @@ fun LenteForm(
         }
 
         if (item.tipoLente == "Lentes de Contacto") {
-            DropdownField(label = "Tipo de LC", selected = item.materialLente, options = listOf("Cosmético", "Graduado", "Terapéutico")) {
+            OptoDropdownMenuField(label = "Tipo de LC", selected = item.materialLente, options = listOf("Cosmético", "Graduado", "Terapéutico")) {
                 onUpdate(item.copy(materialLente = it))
             }
-            DropdownField(label = "Material", selected = item.colorLente, options = listOf("HEMA", "Silicon Hydrogel", "Híbrido", "RGP")) {
+            OptoDropdownMenuField(label = "Material", selected = item.colorLente, options = listOf("HEMA", "Silicon Hydrogel", "Híbrido", "RGP")) {
                 onUpdate(item.copy(colorLente = it))
             }
-            DropdownField(label = "Modalidad", selected = item.notasDiseno, options = listOf("Diario", "Quincenal", "Mensual", "Anual")) {
+            OptoDropdownMenuField(label = "Modalidad", selected = item.notasDiseno, options = listOf("Diario", "Quincenal", "Mensual", "Anual")) {
                 onUpdate(item.copy(notasDiseno = it))
             }
         } else {
             if (item.tipoLente == "Bifocal") {
-                DropdownField(label = "Sub-tipo Bifocal", selected = item.subTipoBifocal, options = listOf("Flaptop", "Invisible")) {
+                OptoDropdownMenuField(label = "Sub-tipo Bifocal", selected = item.subTipoBifocal, options = listOf("Flaptop", "Invisible")) {
                     onUpdate(item.copy(subTipoBifocal = it))
                 }
             }
 
             if (item.tipoLente == "Monofocal") {
-                DropdownField(label = "Distancia", selected = item.distanciaLente, options = listOf("Lejos", "Intermedia", "Cerca")) {
+                OptoDropdownMenuField(label = "Distancia", selected = item.distanciaLente, options = listOf("Lejos", "Intermedia", "Cerca")) {
                     onUpdate(item.copy(distanciaLente = it))
                 }
             }
@@ -76,7 +76,7 @@ fun LenteForm(
                 OptoTextField(value = item.altura, onValueChange = { onUpdate(item.copy(altura = it)) }, label = "Altura (mm)", keyboardType = KeyboardType.Decimal)
             }
 
-            DropdownField(label = "Material del Lente", selected = item.materialLente, options = OpticalCatalog.MATERIALES) {
+            OptoDropdownMenuField(label = "Material del Lente", selected = item.materialLente, options = OpticalCatalog.MATERIALES) {
                 onUpdate(item.copy(materialLente = it))
             }
 
@@ -119,7 +119,7 @@ fun LenteForm(
 
             if (item.tratamientos.contains("Filtro Discromatopsia")) {
                 Text("Requiere evaluación previa: Ishihara + D-15 + prueba de filtro", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                DropdownField(
+                OptoDropdownMenuField(
                     label = "Tipo de Filtro Discromatopsia",
                     selected = item.filtroDiscromatopsiaTipo,
                     options = listOf(
@@ -135,7 +135,7 @@ fun LenteForm(
             HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
             Text("Montura", fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
-            DropdownField(label = "Origen", selected = item.origenMontura, options = listOf("Tienda", "Paciente")) {
+            OptoDropdownMenuField(label = "Origen", selected = item.origenMontura, options = listOf("Tienda", "Paciente")) {
                 if (it == "Tienda") {
                     onUpdate(item.copy(origenMontura = it))
                 } else {
@@ -201,10 +201,10 @@ fun LenteForm(
                 }
             }
 
-            DropdownField(label = "Tipo de Aro", selected = item.tipoAro, options = OpticalCatalog.TIPO_ARO.keys.toList()) {
+            OptoDropdownMenuField(label = "Tipo de Aro", selected = item.tipoAro, options = OpticalCatalog.TIPO_ARO.keys.toList()) {
                 onUpdate(item.copy(tipoAro = it))
             }
-            DropdownField(label = "Material de la Montura", selected = item.materialMontura, options = listOf("Acetato", "Metal", "Carey", "TR-90", "Econ")) {
+            OptoDropdownMenuField(label = "Material de la Montura", selected = item.materialMontura, options = listOf("Acetato", "Metal", "Carey", "TR-90", "Econ")) {
                 onUpdate(item.copy(materialMontura = it))
             }
             OptoTextField(value = item.descripcionMontura, onValueChange = { onUpdate(item.copy(descripcionMontura = it)) }, label = "Descripción (Marca, Modelo)")

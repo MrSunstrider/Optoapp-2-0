@@ -24,8 +24,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.optoapp.testing.TestTags
-import com.example.optoapp.ui.components.DropdownField
-import com.example.optoapp.ui.components.OptoTextField
+import com.example.optoapp.ui.components.OptoDropdownMenuField
 import com.example.optoapp.ui.components.OptoTextField
 import com.example.optoapp.viewmodel.EvaluacionUiState
 import com.example.optoapp.viewmodel.EvaluacionViewModel
@@ -222,7 +221,7 @@ private fun PrismasSection(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiSt
                             trailingIcon = { if (uiState.prismaOdValor.isNotBlank()) PrismaSuffix() },
                         )
                         Box(modifier = Modifier.weight(1f)) {
-                            DropdownField(label = "Base", selected = uiState.prismaOdBase, options = basesPrisma, onSelected = { onUpdate(uiState.copy(prismaOdBase = it)) })
+                            OptoDropdownMenuField(label = "Base", selected = uiState.prismaOdBase, options = basesPrisma, onSelected = { onUpdate(uiState.copy(prismaOdBase = it)) })
                         }
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -234,7 +233,7 @@ private fun PrismasSection(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiSt
                             trailingIcon = { if (uiState.prismaOiValor.isNotBlank()) PrismaSuffix() },
                         )
                         Box(modifier = Modifier.weight(1f)) {
-                            DropdownField(label = "Base", selected = uiState.prismaOiBase, options = basesPrisma, onSelected = { onUpdate(uiState.copy(prismaOiBase = it)) })
+                            OptoDropdownMenuField(label = "Base", selected = uiState.prismaOiBase, options = basesPrisma, onSelected = { onUpdate(uiState.copy(prismaOiBase = it)) })
                         }
                     }
                 }
