@@ -39,7 +39,7 @@ fun NuevaEvaluacionScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var currentStep by remember { mutableIntStateOf(0) }
-    val stepLabels = listOf("Anamnesis", "Examen", "Refracción", "LC", "Cierre")
+    val stepLabels = listOf("Anamnesis", "Examen Visual", "Refracción", "Contactología", "Cierre")
 
     var aplicarRecorteOd by remember { mutableStateOf(false) }
     var aplicarRecorteOi by remember { mutableStateOf(false) }

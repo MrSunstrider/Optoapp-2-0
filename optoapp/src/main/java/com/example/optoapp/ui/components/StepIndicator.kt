@@ -1,8 +1,11 @@
 package com.example.optoapp.ui.components
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
@@ -13,6 +16,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -28,41 +33,53 @@ fun StepIndicator(
 ) {
     Row(
         modifier = modifier,
-        horizontalArrangement = Arrangement.Center,
-        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceEvenly,
+        verticalAlignment = Alignment.Top,
     ) {
         labels.forEachIndexed { index, label ->
             val isActive = index == currentStep
             val isCompleted = index < currentStep
 
-            Surface(
-                shape = CircleShape,
-                color = when {
-                    isActive -> MaterialTheme.colorScheme.primary
-                    isCompleted -> MaterialTheme.colorScheme.primaryContainer
-                    else -> MaterialTheme.colorScheme.surfaceVariant
-                },
-                modifier = Modifier.size(32.dp),
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.weight(1f),
             ) {
-                androidx.compose.foundation.layout.Box(
-                    contentAlignment = Alignment.Center,
+                Surface(
+                    shape = CircleShape,
+                    color = when {
+                        isActive -> MaterialTheme.colorScheme.primary
+                        isCompleted -> MaterialTheme.colorScheme.primaryContainer
+                        else -> MaterialTheme.colorScheme.surfaceVariant
+                    },
                     modifier = Modifier.size(32.dp),
                 ) {
-                    Text(
-                        text = "${index + 1}",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = when {
-                            isActive -> MaterialTheme.colorScheme.onPrimary
-                            isCompleted -> MaterialTheme.colorScheme.onPrimaryContainer
-                            else -> MaterialTheme.colorScheme.onSurfaceVariant
-                        },
-                    )
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier.size(32.dp),
+                    ) {
+                        Text(
+                            text = "${index + 1}",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = when {
+                                isActive -> MaterialTheme.colorScheme.onPrimary
+                                isCompleted -> MaterialTheme.colorScheme.onPrimaryContainer
+                                else -> MaterialTheme.colorScheme.onSurfaceVariant
+                            },
+                        )
+                    }
                 }
-            }
-
-            if (index < totalSteps - 1) {
-                Spacer(modifier = Modifier.width(OptoTokens.spacing.md))
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = label,
+                    fontSize = 11.sp,
+                    fontWeight = if (isActive) FontWeight.SemiBold else FontWeight.Normal,
+                    color = if (isActive) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.Center,
+                )
             }
         }
     }
@@ -75,7 +92,7 @@ private fun StepIndicatorPreview() {
         StepIndicator(
             currentStep = 2,
             totalSteps = 5,
-            labels = listOf("Anamnesis", "Examen", "Refracción", "LC", "Cierre"),
+            labels = listOf("Anamnesis", "Examen Visual", "Refracción", "Contactología", "Cierre"),
             modifier = Modifier.width(300.dp),
         )
     }

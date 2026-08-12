@@ -278,17 +278,23 @@ class SyncViewModel @Inject constructor(
         viewModelScope.launch {
             val opticaId = sessionManager.opticaId.first()
             try {
+                // CRITICAL: clear conflict FIRST so the download guard does not block the entity.
+                // Previously conflict was cleared after download, but the download guard
+                // (conflictDao.getConflictEntityIds) skipped the entity because it was still
+                // in conflict_records. This caused an infinite re-detection cycle.
+                conflictDao.resolveConflict(entity.entityId, opticaId)
+                // Remove from in-memory state immediately so the UI reflects the resolution
+                // even if the download fails later (entity will be re-detected on next sync).
+                _conflicts.value = _conflicts.value.filter { it.entityId != entity.entityId }
+                _conflictCount.value = _conflicts.value.size
                 if (!SyncSessionHelper.refreshSessionBeforeSync(supabase)) return@launch
                 val syncResult = syncGate.mutex.withLock {
                     syncForEntityTypeWithResult(opticaId, entity.entityType, skipUpload = true)
                 }
                 if (syncResult !is Resource.Error) {
-                    conflictDao.resolveConflict(entity.entityId, opticaId)
-                    _conflicts.value = _conflicts.value.filter { it.entityId != entity.entityId }
-                    _conflictCount.value = _conflicts.value.size
                     Log.d(TAG, "Conflicto resuelto (accept theirs): ${entity.entityType}/${entity.entityId}")
                 } else {
-                    Log.w(TAG, "Accept theirs: download falló, conflicto retenido: ${entity.entityType}/${entity.entityId}")
+                    Log.w(TAG, "Accept theirs: download falló. La entidad se re-detectará en el próximo sync: ${entity.entityType}/${entity.entityId}")
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Error resolviendo conflicto: ${e.message}", e)
@@ -307,14 +313,26 @@ class SyncViewModel @Inject constructor(
 
     // RC-4: Both conflict_records AND sync_entity_state rows with status = 'conflicted'
     // are cleared so that the next sync cycle does not re-detect stale conflicts.
+    // CRITICAL: clear conflicts BEFORE the download so the download guard
+    // (conflictDao.getConflictEntityIds) does not block conflicted entities.
+    // Previously conflicts were cleared after download, causing an infinite
+    // re-detection cycle: entities were skipped during download → cleared →
+    // re-detected on next sync.
+    // If download fails, conflicts are already cleared from the DB and
+    // sync_entity_state; entities will be re-detected as conflicts on the
+    // next full sync (conflictHelper.filterConflicts runs during upload).
     fun acceptAllCloud() {
         viewModelScope.launch {
             val opticaId = sessionManager.opticaId.first()
-            performFullDownload()
             conflictDao.clearConflicts(opticaId)
             syncEntityStateDao.deleteConflictedForOptica(opticaId)
             _conflicts.value = emptyList()
             _conflictCount.value = 0
+            try {
+                performFullDownload()
+            } catch (e: Exception) {
+                Log.e(TAG, "acceptAllCloud: download falló. Conflictos se re-detectarán en próximo sync", e)
+            }
             refreshConflicts()
         }
     }

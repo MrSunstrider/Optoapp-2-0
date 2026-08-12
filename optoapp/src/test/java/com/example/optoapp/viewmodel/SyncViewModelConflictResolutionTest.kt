@@ -385,7 +385,7 @@ class SyncViewModelConflictResolutionTest {
         coVerify { syncEntityStateDao.deleteConflictedForOptica(testOpticaId) }
     }
 
-    // ── resolveAcceptTheirs: must NOT delete conflict before download succeeds ──
+    // ── resolveAcceptTheirs: clears conflict BEFORE download so guard doesn't block the entity ──
 
     @Test
     fun resolveAcceptTheirs_deletesConflictOnlyAfterDownloadSucceeds() = runTest(testDispatcher) {
@@ -396,13 +396,13 @@ class SyncViewModelConflictResolutionTest {
         testDispatcher.scheduler.advanceUntilIdle()
 
         coVerifyOrder {
-            syncPacientesUseCase(testOpticaId, skipUpload = true, downloadAfterUpload = true)
             conflictDao.resolveConflict(pacienteConflict.entityId, testOpticaId)
+            syncPacientesUseCase(testOpticaId, skipUpload = true, downloadAfterUpload = true)
         }
     }
 
     @Test
-    fun resolveAcceptTheirs_retainsConflict_whenDownloadFails() = runTest(testDispatcher) {
+    fun resolveAcceptTheirs_clearsConflictEvenWhenDownloadFails() = runTest(testDispatcher) {
         mockkObject(SyncSessionHelper)
         coEvery { SyncSessionHelper.refreshSessionBeforeSync(any()) } returns true
         coEvery {
@@ -412,18 +412,18 @@ class SyncViewModelConflictResolutionTest {
         viewModel.resolveAcceptTheirs(pacienteConflict)
         testDispatcher.scheduler.advanceUntilIdle()
 
-        coVerify(exactly = 0) { conflictDao.resolveConflict(pacienteConflict.entityId, testOpticaId) }
+        coVerify(exactly = 1) { conflictDao.resolveConflict(pacienteConflict.entityId, testOpticaId) }
     }
 
     @Test
-    fun resolveAcceptTheirs_retainsConflict_whenJwtRefreshFails() = runTest(testDispatcher) {
+    fun resolveAcceptTheirs_clearsConflictEvenWhenJwtRefreshFails() = runTest(testDispatcher) {
         mockkObject(SyncSessionHelper)
         coEvery { SyncSessionHelper.refreshSessionBeforeSync(any()) } returns false
 
         viewModel.resolveAcceptTheirs(pacienteConflict)
         testDispatcher.scheduler.advanceUntilIdle()
 
-        coVerify(exactly = 0) { conflictDao.resolveConflict(pacienteConflict.entityId, testOpticaId) }
+        coVerify(exactly = 1) { conflictDao.resolveConflict(pacienteConflict.entityId, testOpticaId) }
         coVerify(exactly = 0) { syncPacientesUseCase(any(), any(), any()) }
     }
 }

@@ -1,12 +1,15 @@
 package com.example.optoapp.ui.components
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -33,12 +36,18 @@ fun AbonoDialog(
     onDismiss: () -> Unit,
     onConfirm: (Pago) -> Unit,
 ) {
-    var monto by remember(pago?.id) { mutableStateOf(pago?.monto?.toString() ?: "") }
-    var metodo by remember(pago?.id) { mutableStateOf(pago?.metodoPago ?: "Efectivo") }
-    var nota by remember(pago?.id) { mutableStateOf(pago?.nota ?: "") }
-    var fechaAbono by remember(pago?.id) { mutableStateOf(pago?.fecha ?: defaultFecha) }
-    var showDatePicker by remember { mutableStateOf(false) }
-    var errorMsg by remember { mutableStateOf<String?>(null) }
+    // pago?.id is null for new abonos, causing all new-abono dialogs to share the same key
+    // and leak state from a previous dismissed dialog. Generate a stable per-invocation key.
+    val dialogKey = remember { pago?.id ?: UUID.randomUUID().toString() }
+
+    var monto by remember(dialogKey) { mutableStateOf(pago?.monto?.toString() ?: "") }
+    var metodo by remember(dialogKey) { mutableStateOf(pago?.metodoPago ?: "Efectivo") }
+    var nota by remember(dialogKey) { mutableStateOf(pago?.nota ?: "") }
+    var fechaAbono by remember(dialogKey) { mutableStateOf(pago?.fecha ?: defaultFecha) }
+    var showDatePicker by remember(dialogKey) { mutableStateOf(false) }
+    var showMetodoPicker by remember(dialogKey) { mutableStateOf(false) }
+    var errorMsg by remember(dialogKey) { mutableStateOf<String?>(null) }
+    val metodosPago = listOf("Efectivo", "Tarjeta", "Transferencia")
 
     val datePickerState = rememberDatePickerState(
         initialSelectedDateMillis = DateUtils.localDateToPickerMillis(fechaAbono),
@@ -85,12 +94,47 @@ fun AbonoDialog(
                     label = "Monto",
                     keyboardType = KeyboardType.Decimal,
                 )
-                OptoDropdownMenuField(
-                    label = "Método de Pago",
-                    selected = metodo,
-                    options = listOf("Efectivo", "Tarjeta", "Transferencia"),
-                    onSelected = { metodo = it },
-                )
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    OutlinedTextField(
+                        value = metodo,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Método de Pago") },
+                        trailingIcon = {
+                            IconButton(onClick = { showMetodoPicker = true }, modifier = Modifier.size(48.dp)) {
+                                Icon(Icons.Default.ArrowDropDown, contentDescription = "Desplegar")
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    DropdownMenu(
+                        expanded = showMetodoPicker,
+                        onDismissRequest = { showMetodoPicker = false },
+                    ) {
+                        metodosPago.forEach { opt ->
+                            val isSelected = opt == metodo
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        text = opt,
+                                        fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                                        color = if (isSelected) MaterialTheme.colorScheme.primary
+                                        else MaterialTheme.colorScheme.onSurface,
+                                    )
+                                },
+                                onClick = {
+                                    metodo = opt
+                                    showMetodoPicker = false
+                                },
+                                leadingIcon = if (isSelected) {
+                                    { Icon(Icons.Default.Check, contentDescription = "Seleccionado", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp)) }
+                                } else {
+                                    null
+                                },
+                            )
+                        }
+                    }
+                }
                 OptoTextField(
                     value = nota,
                     onValueChange = { nota = it },
