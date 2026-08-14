@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Cierre de caja screen: daily sales summary, payment classification, servicios extra breakdown, and totals by payment method.
+Cierre de caja screen: daily cash summary distinguishing money collected today (cobros) from orders registered today (ventas), payment classification by method, enriched transaction list, and entity-based pending balance.
 
 ## Requirements
 
@@ -28,39 +28,74 @@ Cierre de caja screen: daily sales summary, payment classification, servicios ex
 - WHEN `TransactionItem` renders
 - THEN the label MUST be "Dispensación"
 
-### Requirement: Servicios Extra Section in Cierre de Caja
+### Requirement: Hero COBRADO HOY vs Ventas Registradas
 
-The system SHALL render a servicios extra section in `CierreCajaScreen` showing today's servicios extra count, individual descriptions with amounts, and the servicios extra total. The section MUST update whenever `serviciosExtraHoy` changes.
+`CierreCajaScreen` hero MUST show **COBRADO HOY** as the sum of `pago.monto` for pagos where `pago.fecha` equals the selected date, excluding tipo Anulación. Sub-lines MUST distinguish **Ventas registradas** (`totalGeneral` from orders registered that day), **Cobros de ventas del día** (`ventasHoy`), **Cobros atrasados** (`cobrosAtrasados` when > 0), and **Pendiente (órdenes del día)** (`saldoPendiente` when > 0).
 
-#### Scenario: Today has servicios extra
+#### Scenario: Hero cobrado excludes anulaciones
 
-- GIVEN today has 2 servicios extra (montoTotal sum = 150.0)
-- WHEN `CierreCajaScreen` renders
-- THEN a servicios extra section MUST be visible
-- AND it MUST show count = 2
-- AND `totalServiciosExtra` MUST be 150.0
+- GIVEN pagos today: Efectivo S/100 and Anulación S/-100
+- WHEN COBRADO HOY renders
+- THEN the hero MUST show S/100.00
 
-#### Scenario: No servicios extra today
+### Requirement: Cobros Recibidos List
 
-- GIVEN today has 0 servicios extra
-- WHEN `CierreCajaScreen` renders
-- THEN the servicios extra section MUST show count = 0 and total = 0.0
+`CierreCajaScreen` MUST list pagos by `pago.fecha` in section **Cobros recibidos (N)** using `Column.forEach` (no nested LazyColumn). Each row MUST use `TransactionItem` with metadata from `PagoDisplayItem`.
+
+#### Scenario: Abono on old order appears in cobros
+
+- GIVEN a pago today linked to a dispensación registered on a prior day
+- WHEN the screen renders for today
+- THEN the pago MUST appear under Cobros recibidos
+- AND MUST NOT appear under Ventas registradas
+
+#### Scenario: Empty cobros section
+
+- GIVEN no pagos on the selected date
+- WHEN the screen renders with ventas that day
+- THEN the Cobros recibidos section MUST show count 0 and message "Sin cobros registrados"
+
+### Requirement: PagoDisplayItem
+
+`CierreCajaViewModel` SHALL expose `pagosDisplay: List<PagoDisplayItem>` resolving label (OT or descripción), `tipoEntidad`, `esCobroAtrasado` when linked entity fecha < selected date, and navigation IDs.
+
+#### Scenario: Cobro atrasado metadata
+
+- GIVEN pago today for dispensación with fecha yesterday and ot "2026-0040"
+- WHEN `pagosDisplay` is built
+- THEN label MUST be "OT 2026-0040" AND `esCobroAtrasado` MUST be true
+
+### Requirement: Ventas Registradas Section
+
+`CierreCajaScreen` MUST render **Ventas registradas (N)** separately from Cobros recibidos, with a `HorizontalDivider` between sections when the day has any cobros or ventas. Cards MUST show OT, product detail (tipo lente/material or descripción), estado chip (Pendiente/Entregado), and total/pagado/saldo from entity fields (`montoPagado` / `aCuenta`).
+
+#### Scenario: Empty ventas section
+
+- GIVEN pagos today and no orders registered today
+- WHEN the screen renders
+- THEN Ventas registradas (0) MUST show "Sin ventas registradas"
+
+#### Scenario: Dispensación card shows lente detail
+
+- GIVEN dispensación with tipoLente "Monofocal" and materialLente "CR-39"
+- WHEN the venta card renders
+- THEN subtitle MUST include "Monofocal · CR-39"
 
 ### Requirement: Servicios Extra in Cierre Totals
 
-`CierreCajaViewModel` SHALL compute `totalGeneral = totalVentasHoy + totalServiciosExtra` where `totalVentasHoy` is the sum of dispensación montoTotal and `totalServiciosExtra` is the sum of servicio extra montoTotal for today. `saldoPendiente` MUST equal `totalGeneral - ventasHoy`.
+`CierreCajaViewModel` SHALL compute `totalGeneral = totalVentasHoy + totalServiciosExtra` where totals are sums of entity `montoTotal` for orders registered on the selected date. `saldoPendiente` MUST equal `sum(montoTotal - montoPagado)` for dispensaciones plus `sum(montoTotal - aCuenta)` for servicios extra on that date, using entity cumulative payment fields regardless of payment date.
 
 #### Scenario: Mixed dispensaciones and servicios extra
 
-- GIVEN today: dispensaciones montoTotal sum = 300, servicios extra montoTotal sum = 150, pagos today = 200
+- GIVEN today: dispensaciones montoTotal sum = 300, servicios extra montoTotal sum = 150, montoPagado/aCuenta cover 200 total
 - WHEN `CierreCajaViewModel` emits
 - THEN `totalGeneral` MUST be 450.0 AND `saldoPendiente` MUST be 250.0
 
-#### Scenario: Only dispensaciones
+#### Scenario: Full historical payment yields zero pendiente
 
-- GIVEN today: dispensaciones montoTotal sum = 300, no servicios extra
-- WHEN `CierreCajaViewModel` emits
-- THEN `totalGeneral` MUST be 300.0 AND `saldoPendiente` MUST equal `300 - ventasHoy`
+- GIVEN dispensación S/300 with montoPagado=300
+- WHEN cierre emits for today
+- THEN `saldoPendiente` MUST be S/0.00 for that dispensación
 
 ### Requirement: Totals by Method Normalization
 

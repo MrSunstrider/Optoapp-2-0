@@ -115,6 +115,17 @@ class DispensacionFinancieraRepositoryTest {
     }
 
     @Test
+    fun `actualizarMontoPagado loads dispensacion updates montoPagado and persists`() = runTest {
+        coEvery { optoRepository.getDispensacionById("disp-1") } returns Resource.Success(testDispensacion)
+        coEvery { optoRepository.updateDispensacion(any()) } returns Unit
+
+        repository.actualizarMontoPagado("disp-1", 80.0, "optica-test")
+
+        coVerify { optoRepository.getDispensacionById("disp-1") }
+        coVerify { optoRepository.updateDispensacion(match { it.montoPagado == 80.0 && it.id == "disp-1" }) }
+    }
+
+    @Test
     fun `actualizarEstado updates estado and fechaEntrega`() = runTest {
         val fechaEntrega = LocalDate.of(2026, 7, 15)
         coEvery { optoRepository.getDispensacionById("disp-1") } returns Resource.Success(testDispensacion)

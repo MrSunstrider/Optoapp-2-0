@@ -3,10 +3,13 @@ package com.example.optoapp.ui.screens
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -23,9 +26,14 @@ import com.example.optoapp.ui.components.OptoDatePickerDialog
 import com.example.optoapp.ui.components.OptoTopAppBar
 import com.example.optoapp.ui.navigation.Route
 import com.example.optoapp.ui.components.cierre_caja.ResumenCard
+import com.example.optoapp.ui.components.cierre_caja.TransactionItem
+import com.example.optoapp.ui.theme.alertRed
+import com.example.optoapp.ui.theme.positiveGreen
+import com.example.optoapp.ui.theme.warningAmber
 import com.example.optoapp.util.DateUtils
 import com.example.optoapp.viewmodel.AuthViewModel
 import com.example.optoapp.viewmodel.CierreCajaViewModel
+import com.example.optoapp.viewmodel.PagoDisplayItem
 import java.util.Locale
 
 private fun formatSoles(monto: Double): String = "s/. ${String.format(Locale.getDefault(), "%,.2f", monto)}"
@@ -41,7 +49,11 @@ fun CierreCajaScreen(
     val opticaRol by authViewModel.opticaRol.collectAsState(initial = null)
     val canView = opticaRol != null && AppRoles.canViewCierreCaja(opticaRol!!)
     var showDatePicker by remember { mutableStateOf(false) }
+    var showSearch by remember { mutableStateOf(false) }
+    var searchQuery by remember { mutableStateOf("") }
     val scrollState = rememberScrollState()
+    val today = remember { DateUtils.today() }
+    val yesterday = remember(today) { today.minusDays(1) }
 
     if (showDatePicker) {
         OptoDatePickerDialog(
@@ -79,7 +91,6 @@ fun CierreCajaScreen(
                 .verticalScroll(scrollState)
                 .navigationBarsPadding(),
         ) {
-            // Wait for role resolution before rendering
             if (opticaRol == null) {
                 LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
                 return@Column
@@ -95,7 +106,6 @@ fun CierreCajaScreen(
                 return@Column
             }
 
-            // Error state
             if (uiState.errorMessage != null) {
                 OptoCard(
                     modifier = Modifier.fillMaxWidth(),
@@ -122,26 +132,106 @@ fun CierreCajaScreen(
                 color = MaterialTheme.colorScheme.primary,
             )
 
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                FilterChip(
+                    selected = uiState.fecha == yesterday,
+                    onClick = { viewModel.setFecha(yesterday) },
+                    label = { Text("Ayer", fontSize = 12.sp) },
+                )
+                FilterChip(
+                    selected = uiState.fecha == today,
+                    onClick = { viewModel.setFecha(today) },
+                    label = { Text("Hoy", fontSize = 12.sp) },
+                )
+                FilterChip(
+                    selected = showSearch || searchQuery.isNotBlank(),
+                    onClick = {
+                        showSearch = !showSearch
+                        if (!showSearch) searchQuery = ""
+                    },
+                    label = { Text("Buscar", fontSize = 12.sp) },
+                )
+            }
+
+            if (showSearch) {
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text("OT, paciente, descripción, método…") },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Buscar") },
+                    trailingIcon = {
+                        if (searchQuery.isNotBlank()) {
+                            IconButton(onClick = { searchQuery = "" }) {
+                                Icon(Icons.Default.Close, contentDescription = "Limpiar búsqueda")
+                            }
+                        }
+                    },
+                    shape = MaterialTheme.shapes.medium,
+                    singleLine = true,
+                )
+            }
+
+            val filteredPagosDisplay = remember(uiState.pagosDisplay, searchQuery, uiState.pacienteNombres) {
+                filterPagoDisplayItems(uiState.pagosDisplay, searchQuery, uiState.pacienteNombres)
+            }
+            val filteredDispensaciones = remember(uiState.dispensacionesHoy, searchQuery, uiState.pacienteNombres) {
+                filterDispensaciones(uiState.dispensacionesHoy, searchQuery, uiState.pacienteNombres)
+            }
+            val filteredServicios = remember(uiState.serviciosExtraHoy, searchQuery, uiState.pacienteNombres) {
+                filterServiciosExtra(uiState.serviciosExtraHoy, searchQuery, uiState.pacienteNombres)
+            }
+            val isSearchActive = searchQuery.isNotBlank()
+
             Spacer(modifier = Modifier.height(16.dp))
+
+            val cobradoHoy = remember(uiState.pagos) { viewModel.getCobradoHoy() }
 
             OptoCard(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
             ) {
-                Column(modifier = Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("TOTAL VENTAS DEL DÍA", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text(
-                        formatSoles(uiState.totalGeneral),
+                        heroCobradoLabel(uiState.fecha, today),
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Text(
+                        formatSoles(cobradoHoy),
                         fontSize = 32.sp,
                         fontWeight = FontWeight.ExtraBold,
                         color = MaterialTheme.colorScheme.onPrimaryContainer,
                     )
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                    MetricSubLine("Ventas registradas", uiState.totalGeneral)
+                    MetricSubLine("Cobros de ventas del día", uiState.ventasHoy)
+                    if (uiState.cobrosAtrasados > 0) {
+                        MetricSubLine(
+                            label = "Cobros atrasados",
+                            amount = uiState.cobrosAtrasados,
+                            valueColor = MaterialTheme.colorScheme.tertiary,
+                        )
+                    }
                     if (uiState.saldoPendiente > 0) {
-                        Spacer(modifier = Modifier.height(4.dp))
+                        MetricSubLine(
+                            label = "Pendiente (órdenes del día)",
+                            amount = uiState.saldoPendiente,
+                            valueColor = MaterialTheme.colorScheme.error,
+                        )
+                    }
+                    if (uiState.pagosFuturos != 0.0) {
                         Text(
-                            "Saldo pendiente: ${formatSoles(uiState.saldoPendiente)}",
-                            fontSize = 14.sp,
-                            color = MaterialTheme.colorScheme.error,
+                            "Incluye ${formatSoles(uiState.pagosFuturos)} de pagos con fecha futura",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.tertiary,
                             fontWeight = FontWeight.SemiBold,
                         )
                     }
@@ -151,7 +241,6 @@ fun CierreCajaScreen(
             Spacer(modifier = Modifier.height(12.dp))
 
             val totales = remember(uiState.pagos) { viewModel.getTotalesPorMetodo() }
-            val totalGeneral = remember(totales) { totales.values.sum() }
             val knownKeys = remember { setOf("Efectivo", "Transferencia", "Móvil", "Tarjeta") }
             val otros = remember(totales, knownKeys) {
                 totales.filterKeys { it !in knownKeys && totales[it] != 0.0 }
@@ -166,7 +255,6 @@ fun CierreCajaScreen(
                 ResumenCard("Tarjeta", totales["Tarjeta"] ?: 0.0, Modifier.weight(1f), MaterialTheme.colorScheme.primary)
             }
 
-            // Fallback cards for unnamed/other payment methods
             if (otros.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(
@@ -182,116 +270,290 @@ fun CierreCajaScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            OptoCard(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
-            ) {
-                Column(modifier = Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("TOTAL RECAUDADO", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            val hasPagos = filteredPagosDisplay.isNotEmpty()
+            val hasDispensaciones = filteredDispensaciones.isNotEmpty()
+            val hasServicios = filteredServicios.isNotEmpty()
+            val hasVentas = hasDispensaciones || hasServicios
+            val ventasCount = filteredDispensaciones.size + filteredServicios.size
+
+            if (!uiState.isLoading && !hasPagos && !hasVentas) {
+                OptoCard(modifier = Modifier.fillMaxWidth()) {
                     Text(
-                        formatSoles(totalGeneral),
-                        fontSize = 32.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        when {
+                            isSearchActive -> "Sin resultados para \"$searchQuery\""
+                            else -> "Sin movimientos este día"
+                        },
+                        modifier = Modifier.padding(12.dp),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    if (uiState.pagosFuturos != 0.0) {
-                        Spacer(modifier = Modifier.height(4.dp))
+                }
+            } else {
+                if (hasPagos || (isSearchActive && uiState.pagosDisplay.isNotEmpty())) {
+                    Text(
+                        "Cobros recibidos (${filteredPagosDisplay.size})",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp,
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    if (hasPagos) {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            filteredPagosDisplay.forEach { item ->
+                                TransactionItem(
+                                    pago = item.pago,
+                                    label = item.label,
+                                    tipoEntidad = item.tipoEntidad,
+                                    esCobroAtrasado = item.esCobroAtrasado,
+                                    onClick = pagoNavigationHandler(item, navController),
+                                )
+                            }
+                        }
+                    } else {
+                        OptoCard(modifier = Modifier.fillMaxWidth()) {
+                            Text(
+                                "Ningún cobro coincide con la búsqueda",
+                                modifier = Modifier.padding(12.dp),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+                } else if (!uiState.isLoading && !isSearchActive) {
+                    Text(
+                        "Cobros recibidos (0)",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp,
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OptoCard(modifier = Modifier.fillMaxWidth()) {
                         Text(
-                            "Incluye ${formatSoles(uiState.pagosFuturos)} de pagos con fecha futura",
-                            fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.tertiary,
-                            fontWeight = FontWeight.SemiBold,
+                            "Sin cobros registrados",
+                            modifier = Modifier.padding(12.dp),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
+
+                if (!uiState.isLoading) {
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
+
+                if (hasVentas || (isSearchActive && (uiState.dispensacionesHoy.isNotEmpty() || uiState.serviciosExtraHoy.isNotEmpty()))) {
+                    Text(
+                        "Ventas registradas ($ventasCount)",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp,
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    if (hasDispensaciones) {
+                        Text("Dispensaciones", fontWeight = FontWeight.SemiBold, fontSize = 14.sp, modifier = Modifier.padding(bottom = 4.dp))
+                        filteredDispensaciones.forEach { disp ->
+                            VentaDispensacionCard(disp, navController)
+                            Spacer(modifier = Modifier.height(8.dp))
+                        }
+                    }
+                    if (hasServicios) {
+                        Text("Servicios Extra", fontWeight = FontWeight.SemiBold, fontSize = 14.sp, modifier = Modifier.padding(bottom = 4.dp))
+                        filteredServicios.forEach { serv ->
+                            VentaServicioCard(serv, navController)
+                            Spacer(modifier = Modifier.height(8.dp))
+                        }
+                    }
+                    if (!hasDispensaciones && !hasServicios && isSearchActive) {
+                        OptoCard(modifier = Modifier.fillMaxWidth()) {
+                            Text(
+                                "Ninguna venta coincide con la búsqueda",
+                                modifier = Modifier.padding(12.dp),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                } else if (!uiState.isLoading && !isSearchActive) {
+                    Text(
+                        "Ventas registradas (0)",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp,
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OptoCard(modifier = Modifier.fillMaxWidth()) {
+                        Text(
+                            "Sin ventas registradas",
+                            modifier = Modifier.padding(12.dp),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
             }
+        }
+    }
+}
 
-            Spacer(modifier = Modifier.height(16.dp))
-            Text("Movimientos del día", fontWeight = FontWeight.Bold, fontSize = 18.sp)
-            Spacer(modifier = Modifier.height(8.dp))
+@Composable
+private fun MetricSubLine(
+    label: String,
+    amount: Double,
+    valueColor: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onPrimaryContainer,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Text(label, fontSize = 13.sp, color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f))
+        Text(formatSoles(amount), fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = valueColor)
+    }
+}
 
-            val hasDispensaciones = uiState.dispensacionesHoy.isNotEmpty()
-            val hasServicios = uiState.serviciosExtraHoy.isNotEmpty()
-            if (!uiState.isLoading && !hasDispensaciones && !hasServicios && uiState.pagos.isEmpty()) {
-                OptoCard(modifier = Modifier.fillMaxWidth()) {
-                    Text("Sin movimientos este día", color = MaterialTheme.colorScheme.onSurfaceVariant)
+private fun pagoNavigationHandler(
+    item: PagoDisplayItem,
+    navController: NavController,
+): (() -> Unit)? {
+    val dispensacionId = item.dispensacionId
+    val pacienteId = item.pacienteId
+    if (dispensacionId != null && !pacienteId.isNullOrBlank()) {
+        return {
+            navController.navigate(Route.EditarDispensacion(pacienteId, dispensacionId).route)
+        }
+    }
+    val servicioId = item.servicioExtraId
+    if (servicioId != null) {
+        return { navController.navigate(Route.EditarServicio(servicioId).route) }
+    }
+    return null
+}
+
+@Composable
+private fun VentaDispensacionCard(
+    disp: com.example.optoapp.data.DispensacionOptica,
+    navController: NavController,
+) {
+    val totalPagado = disp.montoPagado
+    val saldo = disp.montoTotal - totalPagado
+    val estadoColor = ventaEstadoColor(disp.estadoEntrega, saldo)
+
+    Card(
+        modifier = Modifier.fillMaxWidth()
+            .clickable {
+                if (disp.pacienteId.isNotBlank()) {
+                    navController.navigate(Route.EditarDispensacion(disp.pacienteId, disp.id).route)
                 }
-            } else {
-                if (hasDispensaciones) {
-                    Text("Dispensaciones", fontWeight = FontWeight.SemiBold, fontSize = 14.sp, modifier = Modifier.padding(bottom = 4.dp))
-                    uiState.dispensacionesHoy.forEach { disp ->
-                        val label = if (disp.ot.isNotBlank()) "OT ${disp.ot}" else "Dispensación ${disp.id.take(8)}"
-                        val totalPagado = disp.montoPagado
-                        val saldo = disp.montoTotal - totalPagado
-
-                        Card(
-                            modifier = Modifier.fillMaxWidth()
-                                .clickable {
-                                    if (disp.pacienteId.isNotBlank()) {
-                                        navController.navigate(Route.EditarDispensacion(disp.pacienteId, disp.id).route)
-                                    }
-                                },
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
-                        ) {
-                            Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                    Text(label, fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
-                                    Text(
-                                        formatSoles(disp.montoTotal),
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.primary,
-                                    )
-                                }
-                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                    Text("Pagado: ${formatSoles(totalPagado)}", fontSize = 12.sp)
-                                    Text(
-                                        "Saldo: ${formatSoles(saldo)}",
-                                        fontSize = 12.sp,
-                                        color = if (saldo > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary,
-                                    )
-                                }
-                            }
-                        }
-                        Spacer(modifier = Modifier.height(8.dp))
-                    }
+            },
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = estadoColor.copy(alpha = 0.04f)),
+    ) {
+        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        dispensacionVentaTitle(disp),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 15.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        dispensacionVentaSubtitle(disp),
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
                 }
-                if (hasServicios) {
-                    Text("Servicios Extra", fontWeight = FontWeight.SemiBold, fontSize = 14.sp, modifier = Modifier.padding(bottom = 4.dp))
-                    uiState.serviciosExtraHoy.forEach { serv ->
-                        val label = "Servicio: ${serv.descripcion.take(32)}"
-                        val totalPagado = serv.aCuenta
-                        val saldo = serv.montoTotal - totalPagado
-
-                        Card(
-                            modifier = Modifier.fillMaxWidth()
-                                .clickable {
-                                    navController.navigate(Route.EditarServicio(serv.id).route)
-                                },
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
-                        ) {
-                            Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                    Text(label, fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
-                                    Text(
-                                        formatSoles(serv.montoTotal),
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.primary,
-                                    )
-                                }
-                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                    Text("Pagado: ${formatSoles(totalPagado)}", fontSize = 12.sp)
-                                    Text(
-                                        "Saldo: ${formatSoles(saldo)}",
-                                        fontSize = 12.sp,
-                                        color = if (saldo > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary,
-                                    )
-                                }
-                            }
-                        }
-                        Spacer(modifier = Modifier.height(8.dp))
-                    }
+                VentaEstadoChip(disp.estadoEntrega, saldo)
+            }
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text("Total: ${formatSoles(disp.montoTotal)}", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                Column(horizontalAlignment = Alignment.End) {
+                    Text("Pagado: ${formatSoles(totalPagado)}", fontSize = 12.sp)
+                    Text(
+                        if (saldo > 0) "Saldo: ${formatSoles(saldo)}" else "Pagado",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = if (saldo > 0) MaterialTheme.colorScheme.alertRed else MaterialTheme.colorScheme.positiveGreen,
+                    )
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun VentaServicioCard(
+    serv: com.example.optoapp.data.ServicioExtra,
+    navController: NavController,
+) {
+    val totalPagado = serv.aCuenta
+    val saldo = serv.montoTotal - totalPagado
+    val estadoColor = ventaEstadoColor(serv.estado, saldo)
+    val otLine = servicioVentaOtLine(serv)
+
+    Card(
+        modifier = Modifier.fillMaxWidth()
+            .clickable {
+                navController.navigate(Route.EditarServicio(serv.id).route)
+            },
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = estadoColor.copy(alpha = 0.04f)),
+    ) {
+        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    if (otLine != null) {
+                        Text(otLine, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    Text(
+                        serv.descripcion.ifBlank { "Sin descripción" },
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 15.sp,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                VentaEstadoChip(serv.estado, saldo)
+            }
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text("Total: ${formatSoles(serv.montoTotal)}", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                Column(horizontalAlignment = Alignment.End) {
+                    Text("Pagado: ${formatSoles(totalPagado)}", fontSize = 12.sp)
+                    Text(
+                        if (saldo > 0) "Saldo: ${formatSoles(saldo)}" else "Pagado",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = if (saldo > 0) MaterialTheme.colorScheme.alertRed else MaterialTheme.colorScheme.positiveGreen,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ventaEstadoColor(estado: String, saldo: Double): androidx.compose.ui.graphics.Color =
+    when (estado) {
+        "Entregado" -> MaterialTheme.colorScheme.positiveGreen
+        "Pendiente" -> if (saldo > 0) MaterialTheme.colorScheme.alertRed else MaterialTheme.colorScheme.warningAmber
+        else -> MaterialTheme.colorScheme.onSurfaceVariant
+    }
+
+@Composable
+private fun VentaEstadoChip(estado: String, saldo: Double) {
+    val estadoColor = ventaEstadoColor(estado, saldo)
+    Surface(
+        shape = RoundedCornerShape(6.dp),
+        color = estadoColor.copy(alpha = 0.15f),
+    ) {
+        Text(
+            estado,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Bold,
+            color = estadoColor,
+        )
     }
 }

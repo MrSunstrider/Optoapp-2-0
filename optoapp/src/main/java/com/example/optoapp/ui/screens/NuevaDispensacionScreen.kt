@@ -314,23 +314,9 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
                             Spacer(Modifier.width(6.dp))
                             Text("Gestionar costos →")
                         }
-                        if (uiState.fechaEntrega != null) {
-                            FechaEntregaEditButton(fechaEntrega = uiState.fechaEntrega, onFechaChanged = { nueva -> viewModel.updateUiState { it.copy(fechaEntrega = nueva) } })
-                        } else {
-                            TextButton(onClick = { viewModel.updateUiState { it.copy(fechaEntrega = LocalDate.now()) } }) {
-                                Text("Asignar fecha de entrega", fontSize = 12.sp)
-                            }
-                        }
                     }
                 }
             }
-
-            RegalosSection(
-                uiState = uiState,
-                monturas = viewModel.monturasActivas.collectAsState().value,
-                onAddRegalo = viewModel::addRegalo,
-                onRemoveRegalo = viewModel::removeRegalo,
-            )
 
             Button(onClick = { saveAction() }, modifier = Modifier.fillMaxWidth().testTag(TestTags.DISPENSACION_GUARDAR_BTN)) {
                 Text(if (dispensacionId == null) "Confirmar Orden" else "Actualizar Orden")

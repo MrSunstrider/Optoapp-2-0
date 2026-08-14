@@ -38,6 +38,7 @@ fun InformacionFinancieraScreen(
     viewModel: InformacionFinancieraViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val monturas by viewModel.monturasActivas.collectAsState()
 
     LaunchedEffect(dispensacionId) {
         if (!dispensacionId.isNullOrBlank()) {
@@ -213,6 +214,13 @@ fun InformacionFinancieraScreen(
                     fontWeight = FontWeight.ExtraBold,
                 )
             }
+
+            RegalosSection(
+                regalos = uiState.regalos,
+                monturas = monturas,
+                onAddRegalo = viewModel::addRegalo,
+                onRemoveRegalo = viewModel::removeRegalo,
+            )
 
             com.example.optoapp.ui.components.OptoDropdownMenuField(
                 label = "Estado de Entrega",

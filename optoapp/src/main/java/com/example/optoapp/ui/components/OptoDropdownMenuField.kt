@@ -1,13 +1,10 @@
 package com.example.optoapp.ui.components
 
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -25,6 +22,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.optoapp.ui.theme.OptoTokens
+
+internal const val DROPDOWN_LAZY_LIST_THRESHOLD = 8
+
+internal fun shouldUseLazyColumnForDropdown(optionCount: Int): Boolean =
+    optionCount > DROPDOWN_LAZY_LIST_THRESHOLD
+
+private val dropdownLazyListMaxHeight = 300.dp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -64,7 +68,7 @@ fun OptoDropdownMenuField(
             expanded = expanded,
             onDismissRequest = { expanded = false; searchQuery = "" },
         ) {
-            if (options.size > 8) {
+            if (options.size > DROPDOWN_LAZY_LIST_THRESHOLD) {
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = { searchQuery = it },
@@ -83,29 +87,56 @@ fun OptoDropdownMenuField(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(OptoTokens.spacing.md),
                 )
-            } else {
+            } else if (shouldUseLazyColumnForDropdown(filteredOptions.size)) {
                 LazyColumn(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = dropdownLazyListMaxHeight),
                 ) {
                     items(filteredOptions) { option ->
-                        DropdownMenuItem(
-                            text = {
-                                Text(
-                                    text = option,
-                                    fontWeight = if (option == selected) FontWeight.SemiBold else FontWeight.Normal,
-                                    color = if (option == selected) MaterialTheme.colorScheme.primary
-                                    else MaterialTheme.colorScheme.onSurface,
-                                )
-                            },
-                            onClick = {
-                                onSelected(option)
+                        DropdownOptionItem(
+                            option = option,
+                            selected = selected,
+                            onSelected = {
+                                onSelected(it)
                                 expanded = false
                                 searchQuery = ""
                             },
                         )
                     }
                 }
+            } else {
+                filteredOptions.forEach { option ->
+                    DropdownOptionItem(
+                        option = option,
+                        selected = selected,
+                        onSelected = {
+                            onSelected(it)
+                            expanded = false
+                            searchQuery = ""
+                        },
+                    )
+                }
             }
         }
     }
+}
+
+@Composable
+private fun DropdownOptionItem(
+    option: String,
+    selected: String,
+    onSelected: (String) -> Unit,
+) {
+    DropdownMenuItem(
+        text = {
+            Text(
+                text = option,
+                fontWeight = if (option == selected) FontWeight.SemiBold else FontWeight.Normal,
+                color = if (option == selected) MaterialTheme.colorScheme.primary
+                else MaterialTheme.colorScheme.onSurface,
+            )
+        },
+        onClick = { onSelected(option) },
+    )
 }

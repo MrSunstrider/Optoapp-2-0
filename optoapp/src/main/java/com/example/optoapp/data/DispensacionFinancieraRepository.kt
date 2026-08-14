@@ -16,6 +16,7 @@ interface DispensacionFinancieraRepository {
     suspend fun obtenerContexto(dispensacionId: String): ContextoFinanciero
     suspend fun obtenerPagos(dispensacionId: String): List<Pago>
     suspend fun actualizarMontoTotal(dispensacionId: String, montoTotal: Double, opticaId: String)
+    suspend fun actualizarMontoPagado(dispensacionId: String, montoPagado: Double, opticaId: String)
     suspend fun actualizarEstado(dispensacionId: String, estado: String, fechaEntrega: LocalDate?, opticaId: String)
     suspend fun agregarPago(pago: Pago)
     suspend fun editarPago(pago: Pago)
@@ -68,6 +69,14 @@ class DispensacionFinancieraRepositoryImpl(
         val result = optoRepository.getDispensacionById(dispensacionId)
         if (result is Resource.Success && result.data != null) {
             val updated = result.data.copy(montoTotal = montoTotal)
+            optoRepository.updateDispensacion(updated)
+        }
+    }
+
+    override suspend fun actualizarMontoPagado(dispensacionId: String, montoPagado: Double, opticaId: String) {
+        val result = optoRepository.getDispensacionById(dispensacionId)
+        if (result is Resource.Success && result.data != null) {
+            val updated = result.data.copy(montoPagado = montoPagado)
             optoRepository.updateDispensacion(updated)
         }
     }

@@ -3,6 +3,8 @@ package com.example.optoapp.ui.components.cierre_caja
 import com.example.optoapp.data.Pago
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import com.example.optoapp.ui.components.cierre_caja.transactionDisplayLabel
+import com.example.optoapp.ui.components.cierre_caja.transactionLabel
 import java.time.LocalDate
 
 /**
@@ -83,5 +85,32 @@ class TransactionItemTest {
             opticaId = opticaId,
         )
         assertEquals("Servicio Extra", transactionLabel(pago))
+    }
+
+    @Test
+    fun displayLabel_prefersCustomLabelOverTipoEntidad() {
+        val pago = Pago(
+            id = "p6",
+            dispensacionId = "d1",
+            fecha = today,
+            tipo = "Efectivo",
+            monto = 100.0,
+            opticaId = opticaId,
+        )
+        assertEquals("OT 2026-0050", transactionDisplayLabel(pago, customLabel = "OT 2026-0050", tipoEntidad = "Dispensación"))
+    }
+
+    @Test
+    fun displayLabel_fallsBackToTipoEntidadWhenCustomBlank() {
+        val pago = Pago(
+            id = "p7",
+            dispensacionId = null,
+            servicioExtraId = null,
+            fecha = today,
+            tipo = "Efectivo",
+            monto = 50.0,
+            opticaId = opticaId,
+        )
+        assertEquals("Pago", transactionDisplayLabel(pago, customLabel = "", tipoEntidad = "Pago"))
     }
 }

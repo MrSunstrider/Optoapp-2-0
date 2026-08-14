@@ -11,7 +11,6 @@ import com.example.optoapp.data.Montura
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Pago
 import com.example.optoapp.data.Resource
-import com.example.optoapp.data.regalodispensacion.RegaloDispensacionEntity
 import com.example.optoapp.domain.CalcularMontoPagadoUseCase
 import com.example.optoapp.domain.auth.AuthorizationGuard
 import com.example.optoapp.sync.PostSaveSyncScheduler
@@ -523,49 +522,6 @@ class DispensacionViewModel @Inject constructor(
 
                             s.pagosToDelete.forEach { pago ->
                                 repository.deletePagoRegistrandoAnulacionEnCaja(pago, currentOpticaId)
-                            }
-
-                            val existingRegalos = if (dispensacionId != null && dispensacionId != "null") {
-                                repository.getRegalosByDispensacionId(finalId)
-                            } else {
-                                emptyList()
-                            }
-                            existingRegalos.forEach { regalo ->
-                                stockHelper.adjustStockAndRegistrarMovimiento(
-                                    regalo.productoId,
-                                    currentOpticaId,
-                                    regalo.cantidad,
-                                    "AJUSTE",
-                                    finalId,
-                                    "Reversión por edición de regalos",
-                                )
-                            }
-                            repository.deleteRegalosByDispensacionId(finalId, currentOpticaId)
-                            s.regalos.forEach { regaloUi ->
-                                val entity = RegaloDispensacionEntity(
-                                    id = regaloUi.id,
-                                    dispensacionId = finalId,
-                                    productoId = regaloUi.productoId,
-                                    cantidad = regaloUi.cantidad,
-                                    costoUnitario = regaloUi.costoUnitario,
-                                    descripcion = regaloUi.descripcion,
-                                    motivo = regaloUi.motivo,
-                                    opticaId = currentOpticaId,
-                                )
-                                repository.insertRegalo(entity)
-                                if (regaloUi.productoId.isNotBlank()) {
-                                    val stockResult = stockHelper.adjustStockAndRegistrarMovimiento(
-                                        regaloUi.productoId,
-                                        currentOpticaId,
-                                        -regaloUi.cantidad,
-                                        "SALIDA_VENTA",
-                                        finalId,
-                                        "Salida por regalo de dispensación",
-                                    )
-                                    if (stockResult.isFailure) {
-                                        throw RuntimeException("Stock insuficiente para regalo: ${regaloUi.descripcion}")
-                                    }
-                                }
                             }
                         }
                     }

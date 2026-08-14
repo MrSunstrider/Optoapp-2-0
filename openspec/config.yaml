@@ -8,6 +8,20 @@ context: |
   Style: Kotlin camelCase/PascalCase, snake_case in Postgres, no AI attributions, conventional commits, code only explains WHY not WHAT
 
 strict_tdd: true
+
+testing:
+  strict_tdd: true
+  unit_command: ./gradlew :optoapp:testDebugUnitTest --stacktrace
+  coverage_command: ./gradlew :optoapp:jacocoTestReport
+  build_command: ./gradlew :optoapp:assembleDebug
+  lint_command: ./gradlew :optoapp:lintDebug
+  format_command: ./gradlew :optoapp:spotlessApply
+  frameworks: [junit5, mockk, kotlinx-coroutines-test, room-inmemory]
+  notes:
+    - No Robolectric for new tests
+    - Instrumented tests via androidTest (CI on main push)
+    - JaCoCo minimum coverage 5%
+
 rules:
   proposal:
     - Include rollback plan for risky changes
