@@ -4,6 +4,7 @@ import android.util.Log
 import com.example.optoapp.data.montura.MonturaInventoryCoordinator
 import com.example.optoapp.data.ordencompra.OrdenCompraDao
 import com.example.optoapp.data.ordencompra.OrdenCompraItemDao
+import com.example.optoapp.domain.movimientoReferenciaForOrdenCompraItem
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import dagger.Lazy
 import kotlinx.coroutines.CancellationException
@@ -100,7 +101,7 @@ open class OrdenCompraRepository @Inject constructor(
                             cantidad = item.recibido,
                             stockPrevio = 0,
                             stockNuevo = 0,
-                            referenciaId = ocId,
+                            referenciaId = movimientoReferenciaForOrdenCompraItem(item.id),
                             nota = "Recepcion OC ${oc.numero}",
                             opticaId = oc.opticaId,
                             userId = oc.updatedBy ?: "",

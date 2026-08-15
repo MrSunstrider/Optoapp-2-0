@@ -36,7 +36,7 @@ interface PagoDao {
         servicioExtraId=:servicioExtraId, fecha=:fecha, tipo=:tipo,
         monto=:monto, metodoPago=:metodoPago, nota=:nota,
         opticaId=:opticaId, updatedAt=:updatedAt, updatedBy=:updatedBy,
-        ventaId=:ventaId
+        ventaId=:ventaId, reversaPagoId=:reversaPagoId
         WHERE id=:id AND opticaId=:opticaId
     """,
     )
@@ -53,7 +53,20 @@ interface PagoDao {
         updatedAt: String?,
         updatedBy: String?,
         ventaId: String?,
+        reversaPagoId: String?,
     ): Int
+
+    @Query("SELECT * FROM pagos WHERE reversaPagoId = :originalPagoId AND tipo = 'Reverso' LIMIT 1")
+    suspend fun getReversoByOriginalId(originalPagoId: String): Pago?
+
+    @Query(
+        """
+        SELECT * FROM pagos
+        WHERE (dispensacionId = :parentId OR servicioExtraId = :parentId)
+          AND tipo IN ('Abono', 'Pago completo')
+        """,
+    )
+    suspend fun getCreditPagosByParent(parentId: String): List<Pago>
 
     @Query("DELETE FROM pagos WHERE id = :id AND opticaId = :opticaId")
     suspend fun deletePago(id: String, opticaId: String): Int
@@ -78,9 +91,33 @@ interface PagoDao {
     @Query("UPDATE pagos SET dispensacionId = :newDispensacionId WHERE dispensacionId = :oldDispensacionId AND opticaId = :opticaId")
     suspend fun reassignDispensacionIdForOptica(oldDispensacionId: String, newDispensacionId: String, opticaId: String): Int
 
-    @Query("SELECT COALESCE(SUM(monto), 0) FROM pagos WHERE dispensacionId = :dispensacionId AND tipo != :excludeTipoAnulacion")
-    suspend fun sumMontoByDispensacion(dispensacionId: String, excludeTipoAnulacion: String): Double
+    @Query(
+        """
+        SELECT COALESCE(SUM(
+          CASE TRIM(tipo)
+            WHEN 'Abono' THEN monto
+            WHEN 'Pago completo' THEN monto
+            WHEN 'Reembolso' THEN -monto
+            WHEN 'Reverso' THEN -monto
+            ELSE 0
+          END
+        ), 0) FROM pagos WHERE dispensacionId = :dispensacionId
+        """,
+    )
+    suspend fun sumMontoByDispensacion(dispensacionId: String): Double
 
-    @Query("SELECT COALESCE(SUM(monto), 0) FROM pagos WHERE servicioExtraId = :servicioExtraId")
+    @Query(
+        """
+        SELECT COALESCE(SUM(
+          CASE TRIM(tipo)
+            WHEN 'Abono' THEN monto
+            WHEN 'Pago completo' THEN monto
+            WHEN 'Reembolso' THEN -monto
+            WHEN 'Reverso' THEN -monto
+            ELSE 0
+          END
+        ), 0) FROM pagos WHERE servicioExtraId = :servicioExtraId
+        """,
+    )
     suspend fun sumMontoByServicioExtra(servicioExtraId: String): Double
 }

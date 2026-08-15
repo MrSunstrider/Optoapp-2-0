@@ -30,8 +30,14 @@ import com.example.optoapp.data.BackgroundError
 import com.example.optoapp.data.SyncEntityState
 import com.example.optoapp.data.SyncTelemetryLogEntity
 import com.example.optoapp.ui.theme.OptoTokens
+import com.example.optoapp.util.SyncDiagnosticsReport
 import com.example.optoapp.viewmodel.SessionRepairState
 import com.example.optoapp.viewmodel.SyncDiagnosticsViewModel
+
+private fun copyToClipboard(ctx: Context, label: String, text: String) {
+    val clipboard = ctx.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+    clipboard.setPrimaryClip(ClipData.newPlainText(label, text))
+}
 
 @Composable
 fun SyncDiagnosticsCard(
@@ -262,11 +268,11 @@ fun SyncDiagnosticsCard(
 
                     OutlinedButton(
                         onClick = {
-                            val text = errorRows.joinToString("\n---\n") { row ->
-                                "[${row.entityType}] ${row.entityId}\n${row.lastError}"
-                            }
-                            val clipboard = ctx.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                            clipboard.setPrimaryClip(ClipData.newPlainText("sync_errors", text))
+                            copyToClipboard(
+                                ctx,
+                                "sync_errors",
+                                SyncDiagnosticsReport.build(errorRows, backgroundErrors),
+                            )
                         },
                         modifier = Modifier.weight(1f),
                     ) {
@@ -284,15 +290,21 @@ fun SyncDiagnosticsCard(
                 }
             }
 
-            if (backgroundErrors.isNotEmpty()) {
-                HorizontalDivider()
+            HorizontalDivider()
 
+            Text(
+                stringResource(R.string.config_sync_bg_errors_title),
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 13.sp,
+            )
+
+            if (backgroundErrors.isEmpty()) {
                 Text(
-                    stringResource(R.string.config_sync_bg_errors_title),
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 13.sp,
+                    stringResource(R.string.config_sync_bg_errors_empty),
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-
+            } else {
                 Card(
                     shape = MaterialTheme.shapes.small,
                     colors = CardDefaults.cardColors(
@@ -303,7 +315,7 @@ fun SyncDiagnosticsCard(
                         modifier = Modifier.padding(8.dp),
                         verticalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
-                        backgroundErrors.take(10).forEach { bgErr ->
+                        backgroundErrors.takeLast(10).reversed().forEach { bgErr ->
                             BackgroundErrorRow(bgErr)
                         }
                         if (backgroundErrors.size > 10) {
@@ -316,17 +328,44 @@ fun SyncDiagnosticsCard(
                     }
                 }
 
-                OutlinedButton(
-                    onClick = { syncDiagVm.clearBackgroundErrors() },
+                Row(
                     modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    Icon(
-                        Icons.Filled.DeleteSweep,
-                        contentDescription = "Limpiar",
-                        modifier = Modifier.size(16.dp),
-                    )
-                    Spacer(Modifier.width(4.dp))
-                    Text(stringResource(R.string.config_sync_bg_errors_clear), fontSize = 12.sp)
+                    OutlinedButton(
+                        onClick = { syncDiagVm.clearBackgroundErrors() },
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Icon(
+                            Icons.Filled.DeleteSweep,
+                            contentDescription = "Limpiar",
+                            modifier = Modifier.size(16.dp),
+                        )
+                        Spacer(Modifier.width(4.dp))
+                        Text(stringResource(R.string.config_sync_bg_errors_clear), fontSize = 12.sp)
+                    }
+
+                    OutlinedButton(
+                        onClick = {
+                            copyToClipboard(
+                                ctx,
+                                "sync_background_errors",
+                                SyncDiagnosticsReport.backgroundSection(backgroundErrors),
+                            )
+                        },
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Icon(
+                            Icons.Filled.ContentCopy,
+                            contentDescription = "Copiar",
+                            modifier = Modifier.size(16.dp),
+                        )
+                        Spacer(Modifier.width(4.dp))
+                        Text(
+                            stringResource(R.string.config_sync_bg_errors_copy, backgroundErrors.size),
+                            fontSize = 12.sp,
+                        )
+                    }
                 }
             }
 

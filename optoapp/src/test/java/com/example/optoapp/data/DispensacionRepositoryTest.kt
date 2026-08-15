@@ -230,7 +230,7 @@ class DispensacionRepositoryTest {
             id = "p1",
             dispensacionId = "d1",
             fecha = LocalDate.parse("2026-01-15"),
-            tipo = "CONTADO",
+            tipo = "Abono",
             monto = 100.0,
             metodoPago = "EFECTIVO",
             opticaId = "o1",
@@ -239,14 +239,13 @@ class DispensacionRepositoryTest {
 
         repo.deletePagoRegistrandoAnulacionEnCaja(pago, "o1")
 
-        // Original deleted
-        assertNull(pagoDao.getPagoById("p1"))
-        // Reversal created
+        // Original kept; linked Reverso inserted
+        assertEquals(pago.id, pagoDao.getPagoById("p1")!!.id)
         val allPagos = pagoDao.getAllPagos()
-        assertEquals(1, allPagos.size)
-        val reversal = allPagos[0]
-        assertEquals(-100.0, reversal.monto, 0.001)
-        assertEquals("Anulación", reversal.tipo)
+        assertEquals(2, allPagos.size)
+        val reversal = allPagos.first { it.tipo == "Reverso" }
+        assertEquals(100.0, reversal.monto, 0.001)
+        assertEquals("p1", reversal.reversaPagoId)
         assertEquals(LocalDate.parse("2026-01-15"), reversal.fecha)
     }
 
@@ -274,11 +273,9 @@ class DispensacionRepositoryTest {
 
         repo.deletePagoRegistrandoAnulacionEnCaja(pago, "o1")
 
-        // Original deleted
-        assertNull(pagoDao.getPagoById("p_zero"))
-        // No reversal inserted
-        val allPagos = pagoDao.getAllPagos()
-        assertEquals(0, allPagos.size)
+        // Zero monto: keep original, no Reverso
+        assertEquals("p_zero", pagoDao.getPagoById("p_zero")!!.id)
+        assertEquals(1, pagoDao.getAllPagos().size)
     }
 
     @Test

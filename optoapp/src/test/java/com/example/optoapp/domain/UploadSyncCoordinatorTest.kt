@@ -15,11 +15,6 @@ import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
-import kotlinx.serialization.json.put
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -46,6 +41,7 @@ class UploadSyncCoordinatorTest {
     @Before
     fun setUp() {
         mockkStatic("android.util.Log")
+        coEvery { syncStateTracker.quarantinedEntityIds(any(), any()) } returns emptySet()
         // Override runInTransaction to run blocks inline without a real DB transaction
         coordinator = object : UploadSyncCoordinator(
             repository = repository,
@@ -166,151 +162,11 @@ class UploadSyncCoordinatorTest {
         assertEquals(listOf("individual", "batch"), callOrder)
     }
 
-    // ── T2.1 RED: RPC parameter construction ───────────────────────────
-
-    @Test
-    fun `buildAdjustStockParams produces correct keys and values`() {
-        val params = UploadSyncCoordinator.buildAdjustStockParams(
-            monturaId = "M1",
-            opticaId = "O1",
-            delta = -1,
-            referenceId = "D1",
-            note = "venta_dispensacion",
-            tipo = "venta",
-            fecha = "2026-01-15",
-        )
-
-        assertEquals("M1", params["p_montura_id"]?.jsonPrimitive?.content)
-        assertEquals("O1", params["p_optica_id"]?.jsonPrimitive?.content)
-        assertEquals(-1, params["p_delta"]?.jsonPrimitive?.content?.toInt())
-        assertEquals("D1", params["p_reference_id"]?.jsonPrimitive?.content)
-        assertEquals("venta_dispensacion", params["p_note"]?.jsonPrimitive?.content)
-        assertEquals("venta", params["p_tipo"]?.jsonPrimitive?.content)
-        assertEquals("2026-01-15", params["p_fecha"]?.jsonPrimitive?.content)
-    }
-
-    @Test
-    fun `buildAdjustStockParams with different delta value`() {
-        val params = UploadSyncCoordinator.buildAdjustStockParams(
-            monturaId = "M2",
-            opticaId = "O2",
-            delta = 5,
-            referenceId = "ADJ-001",
-            note = "ajuste_inventario",
-            tipo = "ajuste",
-            fecha = "2026-06-30",
-        )
-
-        assertEquals(5, params["p_delta"]?.jsonPrimitive?.content?.toInt())
-        assertEquals("ADJ-001", params["p_reference_id"]?.jsonPrimitive?.content)
-        assertEquals("ajuste_inventario", params["p_note"]?.jsonPrimitive?.content)
-        assertEquals("ajuste", params["p_tipo"]?.jsonPrimitive?.content)
-    }
-
-    // ── T2.1 RED: RPC response parsing ─────────────────────────────────
-
-    @Test
-    fun `parseAdjustStockResult ok true extracts new_stock`() {
-        val response = buildJsonObject {
-            put("ok", true)
-            put("new_stock", 4)
-        }
-
-        val ok = UploadSyncCoordinator.parseAdjustStockOk(response)
-        val stock = UploadSyncCoordinator.parseAdjustStockNewStock(response)
-
-        assertTrue(ok)
-        assertEquals(4, stock)
-    }
-
-    @Test
-    fun `parseAdjustStockResult ok false extracts error`() {
-        val response = buildJsonObject {
-            put("ok", false)
-            put("error", "insufficient")
-        }
-
-        val ok = UploadSyncCoordinator.parseAdjustStockOk(response)
-        val error = UploadSyncCoordinator.parseAdjustStockError(response)
-
-        assertFalse(ok)
-        assertEquals("insufficient", error)
-    }
-
-    @Test
-    fun `parseAdjustStockResult not_found error`() {
-        val response = buildJsonObject {
-            put("ok", false)
-            put("error", "not_found")
-        }
-
-        val ok = UploadSyncCoordinator.parseAdjustStockOk(response)
-        val error = UploadSyncCoordinator.parseAdjustStockError(response)
-
-        assertFalse(ok)
-        assertEquals("not_found", error)
-    }
-
-    @Test
-    fun `parseAdjustStockResult ok true with zero stock`() {
-        val response = buildJsonObject {
-            put("ok", true)
-            put("new_stock", 0)
-        }
-
-        val ok = UploadSyncCoordinator.parseAdjustStockOk(response)
-        val stock = UploadSyncCoordinator.parseAdjustStockNewStock(response)
-
-        assertTrue(ok)
-        assertEquals(0, stock)
-    }
-
-    // ── T2.3 RED: failure handling edge cases ──────────────────────────
-
-    @Test
-    fun `parseAdjustStockOk returns false when ok field is missing`() {
-        val response = buildJsonObject {
-            put("new_stock", 3)
-        }
-
-        val ok = UploadSyncCoordinator.parseAdjustStockOk(response)
-        assertFalse(ok)
-    }
-
-    @Test
-    fun `parseAdjustStockError returns null when error field is missing`() {
-        val response = buildJsonObject {
-            put("ok", false)
-        }
-
-        val error = UploadSyncCoordinator.parseAdjustStockError(response)
-        assertEquals(null, error)
-    }
-
-    @Test
-    fun `parseAdjustStockNewStock returns null when new_stock is missing`() {
-        val response = buildJsonObject {
-            put("ok", true)
-        }
-
-        val stock = UploadSyncCoordinator.parseAdjustStockNewStock(response)
-        assertEquals(null, stock)
-    }
-
-    @Test
-    fun `parseAdjustStockOk returns false when ok is string false`() {
-        val response = buildJsonObject {
-            put("ok", "false")
-        }
-
-        // "false" as string !== "true" as string → parseAdjustStockOk returns false
-        val ok = UploadSyncCoordinator.parseAdjustStockOk(response)
-        assertFalse(ok)
-    }
-
     // ── T2.1 RED: Pagos reconciliation tests ──────────────────────────
 
     private fun createPagoCoordinator(
+        parentDispIds: Set<String> = setOf("disp-1", "disp-2", "other-disp", "disp-X"),
+        parentServIds: Set<String> = emptySet(),
         fetchPagos: suspend (String) -> List<PagoRemotoLookup>,
     ): UploadSyncCoordinator = object : UploadSyncCoordinator(
         repository = repository,
@@ -325,6 +181,9 @@ class UploadSyncCoordinatorTest {
         override suspend fun <T> runInTransaction(block: suspend () -> T): T = block()
         override suspend fun fetchRemotePagosForLookup(opticaId: String): List<PagoRemotoLookup> =
             fetchPagos(opticaId)
+        override suspend fun fetchRemoteParentIds(opticaId: String): Pair<Set<String>, Set<String>> =
+            parentDispIds to parentServIds
+        override suspend fun upsertPagosChunk(chunk: List<PagoRemoto>) { /* no-op */ }
     }
 
     @Test
@@ -336,14 +195,14 @@ class UploadSyncCoordinatorTest {
             listOf(
                 PagoRemotoLookup(
                     id = "remote-1", dispensacionId = "disp-1",
-                    tipo = "Pago", monto = 100.0, metodoPago = "Efectivo", fecha = "2026-01-01",
+                    tipo = "Abono", monto = 100.0, metodoPago = "Efectivo", fecha = "2026-01-01",
                 ),
             )
         }
 
         coEvery { repository.getPagosSnapshotForOptica(opticaId) } returns listOf(
             com.example.optoapp.data.Pago(
-                id = "local-1", dispensacionId = "disp-1", tipo = "Pago", monto = 100.0,
+                id = "local-1", dispensacionId = "disp-1", tipo = "Abono", monto = 100.0,
                 metodoPago = "Efectivo", fecha = LocalDate.parse("2026-01-01"), opticaId = opticaId,
             ),
         )
@@ -364,14 +223,14 @@ class UploadSyncCoordinatorTest {
             listOf(
                 PagoRemotoLookup(
                     id = "remote-999", dispensacionId = "other-disp",
-                    tipo = "Pago", monto = 200.0, metodoPago = "Tarjeta", fecha = "2026-01-02",
+                    tipo = "Abono", monto = 200.0, metodoPago = "Tarjeta", fecha = "2026-01-02",
                 ),
             )
         }
 
         coEvery { repository.getPagosSnapshotForOptica(opticaId) } returns listOf(
             com.example.optoapp.data.Pago(
-                id = "local-1", dispensacionId = "disp-1", tipo = "Pago", monto = 100.0,
+                id = "local-1", dispensacionId = "disp-1", tipo = "Abono", monto = 100.0,
                 metodoPago = "Efectivo", fecha = LocalDate.parse("2026-01-01"), opticaId = opticaId,
             ),
         )
@@ -387,19 +246,21 @@ class UploadSyncCoordinatorTest {
     fun `pagos reconciliation - null dispensacionId reconciles with remote null`() = runTest {
         val opticaId = "optica-test"
         var fetchCalled = false
-        val testCoordinator = createPagoCoordinator { _ ->
-            fetchCalled = true
-            listOf(
-                PagoRemotoLookup(
-                    id = "remote-null", dispensacionId = null,
-                    tipo = "Abono", monto = 50.0, metodoPago = "Efectivo", fecha = "2026-01-01",
-                ),
-            )
-        }
+        val testCoordinator = createPagoCoordinator(
+            parentServIds = setOf("s1"),
+        ) { _ ->
+                fetchCalled = true
+                listOf(
+                    PagoRemotoLookup(
+                        id = "remote-null", dispensacionId = null,
+                        tipo = "Abono", monto = 50.0, metodoPago = "Efectivo", fecha = "2026-01-01",
+                    ),
+                )
+            }
 
         coEvery { repository.getPagosSnapshotForOptica(opticaId) } returns listOf(
             com.example.optoapp.data.Pago(
-                id = "local-null", dispensacionId = null, tipo = "Abono", monto = 50.0,
+                id = "local-null", dispensacionId = null, servicioExtraId = "s1", tipo = "Abono", monto = 50.0,
                 metodoPago = "Efectivo", fecha = LocalDate.parse("2026-01-01"), opticaId = opticaId,
             ),
         )
@@ -415,19 +276,21 @@ class UploadSyncCoordinatorTest {
     fun `pagos reconciliation - null dispensacionId no remote match keeps local ID`() = runTest {
         val opticaId = "optica-test"
         var fetchCalled = false
-        val testCoordinator = createPagoCoordinator { _ ->
-            fetchCalled = true
-            listOf(
-                PagoRemotoLookup(
-                    id = "remote-1", dispensacionId = "other-disp",
-                    tipo = "Pago", monto = 200.0, metodoPago = "Tarjeta", fecha = "2026-01-02",
-                ),
-            )
-        }
+        val testCoordinator = createPagoCoordinator(
+            parentServIds = setOf("s1"),
+        ) { _ ->
+                fetchCalled = true
+                listOf(
+                    PagoRemotoLookup(
+                        id = "remote-1", dispensacionId = "other-disp",
+                        tipo = "Abono", monto = 200.0, metodoPago = "Tarjeta", fecha = "2026-01-02",
+                    ),
+                )
+            }
 
         coEvery { repository.getPagosSnapshotForOptica(opticaId) } returns listOf(
             com.example.optoapp.data.Pago(
-                id = "local-null", dispensacionId = null, tipo = "Abono", monto = 50.0,
+                id = "local-null", dispensacionId = null, servicioExtraId = "s1", tipo = "Abono", monto = 50.0,
                 metodoPago = "Efectivo", fecha = LocalDate.parse("2026-01-01"), opticaId = opticaId,
             ),
         )
@@ -448,7 +311,7 @@ class UploadSyncCoordinatorTest {
 
         coEvery { repository.getPagosSnapshotForOptica(opticaId) } returns listOf(
             com.example.optoapp.data.Pago(
-                id = "local-1", dispensacionId = "disp-1", tipo = "Pago", monto = 100.0,
+                id = "local-1", dispensacionId = "disp-1", tipo = "Abono", monto = 100.0,
                 metodoPago = "Efectivo", fecha = LocalDate.parse("2026-01-01"), opticaId = opticaId,
             ),
         )
@@ -506,7 +369,7 @@ class UploadSyncCoordinatorTest {
             listOf(
                 PagoRemotoLookup(
                     id = "remote-1", dispensacionId = "disp-1",
-                    tipo = "Pago", monto = 100.0, metodoPago = "Efectivo", fecha = "2026-01-01",
+                    tipo = "Abono", monto = 100.0, metodoPago = "Efectivo", fecha = "2026-01-01",
                 ),
             )
         }
@@ -514,11 +377,11 @@ class UploadSyncCoordinatorTest {
         // Two local pagos with same PagoKey reconcile to same remote ID
         coEvery { repository.getPagosSnapshotForOptica(opticaId) } returns listOf(
             com.example.optoapp.data.Pago(
-                id = "local-A", dispensacionId = "disp-1", tipo = "Pago", monto = 100.0,
+                id = "local-A", dispensacionId = "disp-1", tipo = "Abono", monto = 100.0,
                 metodoPago = "Efectivo", fecha = LocalDate.parse("2026-01-01"), opticaId = opticaId,
             ),
             com.example.optoapp.data.Pago(
-                id = "local-B", dispensacionId = "disp-1", tipo = "Pago", monto = 100.0,
+                id = "local-B", dispensacionId = "disp-1", tipo = "Abono", monto = 100.0,
                 metodoPago = "Efectivo", fecha = LocalDate.parse("2026-01-01"), opticaId = opticaId,
             ),
         )
@@ -614,5 +477,63 @@ class UploadSyncCoordinatorTest {
 
         // Must use original local ID "local-SV1", not reconciled remote-S99
         coVerify { syncStateTracker.markSynced(opticaId, "servicio_extra", "local-SV1") }
+    }
+
+    @Test
+    fun `79 plus 1 poison quarantines one and syncs seventy nine`() = runTest {
+        val opticaId = "optica-test"
+        val parentIds = (1..80).map { "d$it" }.toSet()
+        val testCoordinator = createPagoCoordinator(
+            parentDispIds = parentIds,
+        ) { emptyList() }
+        val pagos = (1..79).map { i ->
+            com.example.optoapp.data.Pago(
+                id = "ok-$i", dispensacionId = "d$i", tipo = "Abono", monto = 10.0,
+                metodoPago = "Efectivo", fecha = LocalDate.parse("2026-01-01"), opticaId = opticaId,
+            )
+        } + com.example.optoapp.data.Pago(
+            id = "poison", dispensacionId = "d80", tipo = "Abono", monto = -1.0,
+            metodoPago = "Efectivo", fecha = LocalDate.parse("2026-01-01"), opticaId = opticaId,
+        )
+        coEvery { repository.getPagosSnapshotForOptica(opticaId) } returns pagos
+        coEvery { networkRetryHelper.retryNetwork(any(), any()) } returns Unit
+
+        try {
+            testCoordinator.uploadPagos(opticaId)
+            fail("Expected UploadPartialException for quarantine partial")
+        } catch (e: UploadPartialException) {
+            assertEquals(79, e.uploadedCount)
+        }
+
+        coVerify { syncStateTracker.markError(opticaId, "pago", "poison", "quarantine:negative_monto") }
+        coVerify(exactly = 0) { syncStateTracker.markSynced(opticaId, "pago", "poison") }
+        coVerify { syncStateTracker.markSynced(opticaId, "pago", "ok-1") }
+        coVerify { syncStateTracker.markError(opticaId, "upload_pagos", "batch", match { it.startsWith("quarantine:") }) }
+        coVerify(exactly = 0) { syncStateTracker.markSynced(opticaId, "upload_pagos", "batch") }
+    }
+
+    @Test
+    fun `parent missing gates child pago upload`() = runTest {
+        val opticaId = "optica-test"
+        val testCoordinator = createPagoCoordinator(
+            parentDispIds = emptySet(),
+        ) { emptyList() }
+        coEvery { repository.getPagosSnapshotForOptica(opticaId) } returns listOf(
+            com.example.optoapp.data.Pago(
+                id = "orphan", dispensacionId = "missing-d", tipo = "Abono", monto = 10.0,
+                metodoPago = "Efectivo", fecha = LocalDate.parse("2026-01-01"), opticaId = opticaId,
+            ),
+        )
+        try {
+            testCoordinator.uploadPagos(opticaId)
+            fail("Expected UploadPartialException")
+        } catch (_: UploadPartialException) { }
+        coVerify {
+            syncStateTracker.markError(
+                opticaId, "pago", "orphan",
+                "quarantine:parent_missing:dispensacion:missing-d",
+            )
+        }
+        coVerify(exactly = 0) { syncStateTracker.markSynced(opticaId, "pago", "orphan") }
     }
 }

@@ -7,6 +7,7 @@ import com.example.optoapp.data.DispensacionFinancieraRepository
 import com.example.optoapp.data.Pago
 import com.example.optoapp.data.Resource
 import com.example.optoapp.data.SessionManager
+import com.example.optoapp.domain.PagoEffect
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -32,7 +33,7 @@ data class FinancieraUiState(
     val saldoRestante: Double
         get() {
             val total = montoTotal.toDoubleOrNull() ?: 0.0
-            val pagado = pagos.sumOf { it.monto }
+            val pagado = pagos.sumOf { PagoEffect.signedAmount(it.tipo, it.monto) }
             return total - pagado
         }
 }
@@ -54,7 +55,7 @@ class InformacionFinancieraViewModel @Inject constructor(
             _uiState.update { it.copy(isLoading = true, dispensacionId = dispensacionId) }
 
             val contexto = repository.obtenerContexto(dispensacionId)
-            val pagos = repository.obtenerPagos(dispensacionId).filter { it.tipo != "Anulación" }
+            val pagos = repository.obtenerPagos(dispensacionId)
             initialPagoIds = pagos.map { it.id }.toSet()
 
             when (val result = repository.obtenerDispensacion(dispensacionId)) {

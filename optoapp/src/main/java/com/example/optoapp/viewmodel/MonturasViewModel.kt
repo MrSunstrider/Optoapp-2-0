@@ -23,6 +23,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.io.IOException
+import com.example.optoapp.domain.movimientoReferenciaForManual
 import java.util.UUID
 import javax.inject.Inject
 
@@ -306,15 +307,16 @@ class MonturasViewModel @Inject constructor(
             val opticaId = sessionManager.opticaId.first()
             val updated = repository.adjustMonturaStock(montura.id, opticaId, -cantidad)
             if (updated > 0) {
+                val movimientoId = UUID.randomUUID().toString()
                 repository.insertMonturaMovimiento(
                     MonturaMovimiento(
-                        id = UUID.randomUUID().toString(),
+                        id = movimientoId,
                         monturaId = montura.id,
                         tipo = "SALIDA",
                         cantidad = cantidad,
                         stockPrevio = montura.stockActual,
                         stockNuevo = montura.stockActual - cantidad,
-                        referenciaId = "",
+                        referenciaId = movimientoReferenciaForManual(movimientoId),
                         nota = "Salida manual desde inventario",
                         opticaId = opticaId,
                     ),
@@ -330,15 +332,16 @@ class MonturasViewModel @Inject constructor(
             val opticaId = sessionManager.opticaId.first()
             val updated = repository.adjustMonturaStock(montura.id, opticaId, cantidad)
             if (updated > 0) {
+                val movimientoId = UUID.randomUUID().toString()
                 repository.insertMonturaMovimiento(
                     MonturaMovimiento(
-                        id = UUID.randomUUID().toString(),
+                        id = movimientoId,
                         monturaId = montura.id,
                         tipo = "ENTRADA",
                         cantidad = cantidad,
                         stockPrevio = montura.stockActual,
                         stockNuevo = montura.stockActual + cantidad,
-                        referenciaId = "",
+                        referenciaId = movimientoReferenciaForManual(movimientoId),
                         nota = "Ingreso manual desde inventario",
                         opticaId = opticaId,
                     ),

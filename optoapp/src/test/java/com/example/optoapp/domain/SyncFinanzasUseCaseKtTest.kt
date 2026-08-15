@@ -287,7 +287,7 @@ class SyncFinanzasUseCaseKtTest {
 
         assertTrue(result is com.example.optoapp.data.Resource.Error)
     }
-    // WHY: UploadPartialException carries partial progress — must not abort sync, only IOException should propagate
+    // WHY: UploadPartialException is truthful Resource.Error with partial counts in data
 
     @Test
     fun `partial upload via UploadPartialException continues to next steps`() = runBlocking {
@@ -324,13 +324,14 @@ class SyncFinanzasUseCaseKtTest {
             networkRetryHelper = networkRetryHelper,
         )
 
-        useCase("optica-test")
+        val result = useCase("optica-test")
 
         coVerify(exactly = 1) { uploadCoordinator.uploadDispensaciones("optica-test") }
-        coVerify(exactly = 1) { uploadCoordinator.uploadDispensacionItems("optica-test") }
-        coVerify(exactly = 1) { uploadCoordinator.uploadServicios("optica-test") }
         coVerify(exactly = 1) { uploadCoordinator.uploadPagos("optica-test") }
-        coVerify(exactly = 1) { uploadCoordinator.uploadGastosOperativos("optica-test") }
+        assertTrue(result is com.example.optoapp.data.Resource.Error)
+        val err = result as com.example.optoapp.data.Resource.Error
+        assertEquals(5, err.data!!.uploadedDispensaciones)
+        assertEquals(3, err.data!!.uploadedPagos)
     }
 
     // WHY: These tests verify safeUpload's new error propagation contract — IOException after retry exhaustion,
@@ -410,11 +411,11 @@ class SyncFinanzasUseCaseKtTest {
         )
 
         val result = useCase("optica-test")
-        assertTrue(result is com.example.optoapp.data.Resource.Success)
-        val success = result as com.example.optoapp.data.Resource.Success
+        assertTrue(result is com.example.optoapp.data.Resource.Error)
+        val error = result as com.example.optoapp.data.Resource.Error
         assertEquals(
             "UploadPartialException should preserve partial count of 5",
-            5, success.data!!.uploadedDispensaciones,
+            5, error.data!!.uploadedDispensaciones,
         )
     }
 

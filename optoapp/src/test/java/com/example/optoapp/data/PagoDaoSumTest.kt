@@ -41,8 +41,7 @@ class PagoDaoSumTest {
         db.close()
     }
 
-    @Test
-    fun sumMontoByDispensacion_excludesAnulacion() = runBlocking {
+    private suspend fun seedDisp(id: String) {
         pacienteDao.insertPaciente(
             Paciente(
                 id = "p_dummy",
@@ -55,86 +54,38 @@ class PagoDaoSumTest {
         )
         dispensacionDao.insertDispensacion(
             DispensacionOptica(
-                id = "disp1",
+                id = id,
                 pacienteId = "p_dummy",
                 fecha = LocalDate.parse("2026-01-15"),
                 opticaId = "o1",
             ),
         )
-        dao.insertPago(
-            Pago(
-                id = "p1",
-                dispensacionId = "disp1",
-                fecha = LocalDate.parse("2026-01-15"),
-                tipo = "Pago",
-                monto = 100.0,
-                metodoPago = "EFECTIVO",
-                opticaId = "o1",
-            ),
-        )
-        dao.insertPago(
-            Pago(
-                id = "p2",
-                dispensacionId = "disp1",
-                fecha = LocalDate.parse("2026-01-20"),
-                tipo = "Pago",
-                monto = 50.0,
-                metodoPago = "TARJETA",
-                opticaId = "o1",
-            ),
-        )
-        dao.insertPago(
-            Pago(
-                id = "p3",
-                dispensacionId = "disp1",
-                fecha = LocalDate.parse("2026-01-25"),
-                tipo = "Anulación",
-                monto = -150.0,
-                metodoPago = "EFECTIVO",
-                opticaId = "o1",
-            ),
-        )
+    }
 
-        val total = dao.sumMontoByDispensacion("disp1", "Anulación")
+    @Test
+    fun sumMontoByDispensacion_pagoEffectMatrix() = runBlocking {
+        seedDisp("disp1")
+        dao.insertPago(Pago(id = "p1", dispensacionId = "disp1", fecha = LocalDate.parse("2026-01-15"), tipo = "Abono", monto = 100.0, metodoPago = "EFECTIVO", opticaId = "o1"))
+        dao.insertPago(Pago(id = "p2", dispensacionId = "disp1", fecha = LocalDate.parse("2026-01-20"), tipo = "Pago completo", monto = 50.0, metodoPago = "TARJETA", opticaId = "o1"))
+        dao.insertPago(Pago(id = "p3", dispensacionId = "disp1", fecha = LocalDate.parse("2026-01-25"), tipo = "Reverso", monto = 40.0, metodoPago = "EFECTIVO", opticaId = "o1", reversaPagoId = "p1"))
+        dao.insertPago(Pago(id = "p4", dispensacionId = "disp1", fecha = LocalDate.parse("2026-01-26"), tipo = "Anulación", monto = 999.0, metodoPago = "EFECTIVO", opticaId = "o1"))
 
-        assertEquals(150.0, total, 0.001)
+        assertEquals(110.0, dao.sumMontoByDispensacion("disp1"), 0.001)
     }
 
     @Test
     fun sumMontoByDispensacion_noPagos_returnsZero() = runBlocking {
-        pacienteDao.insertPaciente(
-            Paciente(
-                id = "p_dummy",
-                nombreCompleto = "Dummy",
-                edad = 0,
-                telefono = "000",
-                fechaCreacion = LocalDate.parse("2026-01-15"),
-                opticaId = "o1",
-            ),
-        )
-        dispensacionDao.insertDispensacion(
-            DispensacionOptica(
-                id = "dispEmpty",
-                pacienteId = "p_dummy",
-                fecha = LocalDate.parse("2026-01-15"),
-                opticaId = "o1",
-            ),
-        )
-
-        val total = dao.sumMontoByDispensacion("dispEmpty", "Anulación")
-
-        assertEquals(0.0, total, 0.001)
+        seedDisp("dispEmpty")
+        assertEquals(0.0, dao.sumMontoByDispensacion("dispEmpty"), 0.001)
     }
 
     @Test
     fun sumMontoByDispensacion_unknownDispensacion_returnsZero() = runBlocking {
-        val total = dao.sumMontoByDispensacion("nonexistent", "Anulación")
-
-        assertEquals(0.0, total, 0.001)
+        assertEquals(0.0, dao.sumMontoByDispensacion("nonexistent"), 0.001)
     }
 
     @Test
-    fun sumMontoByServicioExtra_returnsCorrectSum() = runBlocking {
+    fun sumMontoByServicioExtra_pagoEffectWithReembolso() = runBlocking {
         servicioExtraDao.insertServicio(
             ServicioExtra(
                 id = "se1",
@@ -146,38 +97,14 @@ class PagoDaoSumTest {
                 opticaId = "o1",
             ),
         )
-        dao.insertPago(
-            Pago(
-                id = "p1",
-                servicioExtraId = "se1",
-                fecha = LocalDate.parse("2026-02-01"),
-                tipo = "Pago",
-                monto = 80.0,
-                metodoPago = "EFECTIVO",
-                opticaId = "o1",
-            ),
-        )
-        dao.insertPago(
-            Pago(
-                id = "p2",
-                servicioExtraId = "se1",
-                fecha = LocalDate.parse("2026-02-10"),
-                tipo = "Pago",
-                monto = 20.0,
-                metodoPago = "TARJETA",
-                opticaId = "o1",
-            ),
-        )
+        dao.insertPago(Pago(id = "p1", servicioExtraId = "se1", fecha = LocalDate.parse("2026-02-01"), tipo = "Abono", monto = 80.0, metodoPago = "EFECTIVO", opticaId = "o1"))
+        dao.insertPago(Pago(id = "p2", servicioExtraId = "se1", fecha = LocalDate.parse("2026-02-10"), tipo = "Reembolso", monto = 20.0, metodoPago = "TARJETA", opticaId = "o1"))
 
-        val total = dao.sumMontoByServicioExtra("se1")
-
-        assertEquals(100.0, total, 0.001)
+        assertEquals(60.0, dao.sumMontoByServicioExtra("se1"), 0.001)
     }
 
     @Test
     fun sumMontoByServicioExtra_noPagos_returnsZero() = runBlocking {
-        val total = dao.sumMontoByServicioExtra("nonexistent")
-
-        assertEquals(0.0, total, 0.001)
+        assertEquals(0.0, dao.sumMontoByServicioExtra("nonexistent"), 0.001)
     }
 }

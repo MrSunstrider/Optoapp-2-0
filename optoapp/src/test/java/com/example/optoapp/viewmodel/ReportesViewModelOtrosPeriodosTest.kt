@@ -166,9 +166,9 @@ class ReportesViewModelOtrosPeriodosTest {
         )
         val pagos = listOf(
             // Pago for in-week dispensation → venta del período
-            Pago(id = "p1", fecha = currentMonday, tipo = "Efectivo", monto = 100.0, opticaId = opticaId, dispensacionId = "in"),
+            Pago(id = "p1", fecha = currentMonday, tipo = "Abono", monto = 100.0, opticaId = opticaId, dispensacionId = "in"),
             // Pago for out-of-week dispensation → cobro atrasado
-            Pago(id = "p2", fecha = currentMonday, tipo = "Efectivo", monto = 50.0, opticaId = opticaId, dispensacionId = "out"),
+            Pago(id = "p2", fecha = currentMonday, tipo = "Abono", monto = 50.0, opticaId = opticaId, dispensacionId = "out"),
         )
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(todasLasDispensaciones)
         every { repository.getPagosByDateRangeForOptica(any(), any(), opticaId) } returns flowOf(pagos)
@@ -368,8 +368,8 @@ class ReportesViewModelOtrosPeriodosTest {
             ServicioExtra(id = "s1", descripcion = "Servicio", montoTotal = 50.0, aCuenta = 25.0, estado = "Entregado", fecha = currentMonday, opticaId = opticaId),
         )
         val pagos = listOf(
-            Pago(id = "pg1", fecha = currentMonday, tipo = "Efectivo", monto = 60.0, opticaId = opticaId, dispensacionId = "d1"),
-            Pago(id = "pg2", fecha = currentMonday, tipo = "Efectivo", monto = 25.0, opticaId = opticaId, servicioExtraId = "s1"),
+            Pago(id = "pg1", fecha = currentMonday, tipo = "Abono", monto = 60.0, opticaId = opticaId, dispensacionId = "d1"),
+            Pago(id = "pg2", fecha = currentMonday, tipo = "Abono", monto = 25.0, opticaId = opticaId, servicioExtraId = "s1"),
         )
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
         every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(servicios)
@@ -394,8 +394,8 @@ class ReportesViewModelOtrosPeriodosTest {
             ServicioExtra(id = "s1", descripcion = "Servicio", montoTotal = 50.0, aCuenta = 25.0, estado = "Entregado", fecha = now, opticaId = opticaId),
         )
         val pagos = listOf(
-            Pago(id = "pg1", fecha = now, tipo = "Efectivo", monto = 60.0, opticaId = opticaId, dispensacionId = "d1"),
-            Pago(id = "pg2", fecha = now, tipo = "Efectivo", monto = 25.0, opticaId = opticaId, servicioExtraId = "s1"),
+            Pago(id = "pg1", fecha = now, tipo = "Abono", monto = 60.0, opticaId = opticaId, dispensacionId = "d1"),
+            Pago(id = "pg2", fecha = now, tipo = "Abono", monto = 25.0, opticaId = opticaId, servicioExtraId = "s1"),
         )
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
         every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(servicios)
@@ -420,8 +420,8 @@ class ReportesViewModelOtrosPeriodosTest {
             ServicioExtra(id = "s1", descripcion = "Servicio", montoTotal = 50.0, aCuenta = 25.0, estado = "Entregado", fecha = now, opticaId = opticaId),
         )
         val pagos = listOf(
-            Pago(id = "pg1", fecha = now, tipo = "Efectivo", monto = 60.0, opticaId = opticaId, dispensacionId = "d1"),
-            Pago(id = "pg2", fecha = now, tipo = "Efectivo", monto = 25.0, opticaId = opticaId, servicioExtraId = "s1"),
+            Pago(id = "pg1", fecha = now, tipo = "Abono", monto = 60.0, opticaId = opticaId, dispensacionId = "d1"),
+            Pago(id = "pg2", fecha = now, tipo = "Abono", monto = 25.0, opticaId = opticaId, servicioExtraId = "s1"),
         )
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
         every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(servicios)
@@ -447,8 +447,8 @@ class ReportesViewModelOtrosPeriodosTest {
             ServicioExtra(id = "s1", descripcion = "Servicio", montoTotal = 50.0, aCuenta = 25.0, estado = "Entregado", fecha = yearDate, opticaId = opticaId),
         )
         val pagos = listOf(
-            Pago(id = "pg1", fecha = yearDate, tipo = "Efectivo", monto = 60.0, opticaId = opticaId, dispensacionId = "d1"),
-            Pago(id = "pg2", fecha = yearDate, tipo = "Efectivo", monto = 25.0, opticaId = opticaId, servicioExtraId = "s1"),
+            Pago(id = "pg1", fecha = yearDate, tipo = "Abono", monto = 60.0, opticaId = opticaId, dispensacionId = "d1"),
+            Pago(id = "pg2", fecha = yearDate, tipo = "Abono", monto = 25.0, opticaId = opticaId, servicioExtraId = "s1"),
         )
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
         every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(servicios)
@@ -473,8 +473,8 @@ class ReportesViewModelOtrosPeriodosTest {
             ServicioExtra(id = "s1", descripcion = "Servicio", montoTotal = 50.0, aCuenta = 25.0, estado = "Entregado", fecha = LocalDate.of(2020, 1, 1), opticaId = opticaId),
         )
         val pagos = listOf(
-            Pago(id = "pg1", fecha = LocalDate.of(2020, 1, 1), tipo = "Efectivo", monto = 60.0, opticaId = opticaId, dispensacionId = "d1"),
-            Pago(id = "pg2", fecha = LocalDate.of(2020, 1, 1), tipo = "Efectivo", monto = 25.0, opticaId = opticaId, servicioExtraId = "s1"),
+            Pago(id = "pg1", fecha = LocalDate.of(2020, 1, 1), tipo = "Abono", monto = 60.0, opticaId = opticaId, dispensacionId = "d1"),
+            Pago(id = "pg2", fecha = LocalDate.of(2020, 1, 1), tipo = "Abono", monto = 25.0, opticaId = opticaId, servicioExtraId = "s1"),
         )
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
         every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(servicios)
@@ -496,8 +496,8 @@ class ReportesViewModelOtrosPeriodosTest {
             DispensacionOptica(id = "d2", pacienteId = "p", fecha = LocalDate.now(), montoTotal = 200.0, opticaId = opticaId),
         )
         val pagos = listOf(
-            Pago(id = "p1", fecha = LocalDate.now(), tipo = "Efectivo", monto = 50.0, opticaId = opticaId, dispensacionId = "d1"),
-            Pago(id = "p2", fecha = LocalDate.now(), tipo = "Efectivo", monto = 100.0, opticaId = opticaId, dispensacionId = "d2"),
+            Pago(id = "p1", fecha = LocalDate.now(), tipo = "Abono", monto = 50.0, opticaId = opticaId, dispensacionId = "d1"),
+            Pago(id = "p2", fecha = LocalDate.now(), tipo = "Abono", monto = 100.0, opticaId = opticaId, dispensacionId = "d2"),
         )
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(todasLasDispensaciones)
         every { repository.getPagosByDateRangeForOptica(any(), any(), opticaId) } returns flowOf(pagos)

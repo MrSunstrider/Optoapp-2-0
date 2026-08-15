@@ -54,6 +54,7 @@ class DownloadSyncCoordinator @Inject constructor(
         crossinline upsert: suspend (T) -> Unit,
     ): Int {
         val skipIds = if (skipDeletions) deletionSyncHelper.deletedIds(opticaId) else emptySet()
+        val quarantineIds = syncStateTracker.quarantinedEntityIds(opticaId, entityType)
         val remotos: List<T>
         try {
             var result: List<T> = emptyList()
@@ -76,21 +77,24 @@ class DownloadSyncCoordinator @Inject constructor(
         }
         var persisted = 0
         remotos.forEach { r ->
-            if (skipDeletions && getId(r) in skipIds) return@forEach
+            val id = getId(r)
+            if (skipDeletions && id in skipIds) return@forEach
+            // Narrow skip: only quarantine: errors — PRD LWW otherwise.
+            if (id in quarantineIds) return@forEach
             try {
                 repository.withTransaction {
                     upsert(r)
-                    syncStateTracker.markSynced(opticaId, entityType, getId(r))
+                    syncStateTracker.markSynced(opticaId, entityType, id)
                 }
                 persisted++
             } catch (e: CancellationException) {
                 throw e
             } catch (e: IOException) {
-                AppLogger.e(TAG, "Error de red descargando item $entityType ${getId(r)}: ${e.message}", e)
-                syncStateTracker.markError(opticaId, entityType, getId(r), e.message)
+                AppLogger.e(TAG, "Error de red descargando item $entityType $id: ${e.message}", e)
+                syncStateTracker.markError(opticaId, entityType, id, e.message)
             } catch (e: Exception) {
-                AppLogger.e(TAG, "Error inesperado descargando item $entityType ${getId(r)}: ${e.message}", e)
-                syncStateTracker.markError(opticaId, entityType, getId(r), e.message)
+                AppLogger.e(TAG, "Error inesperado descargando item $entityType $id: ${e.message}", e)
+                syncStateTracker.markError(opticaId, entityType, id, e.message)
             }
         }
         return persisted

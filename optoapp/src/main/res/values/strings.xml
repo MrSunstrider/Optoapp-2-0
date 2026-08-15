@@ -105,6 +105,7 @@
     <string name="config_sync_bg_errors_title">Errores en segundo plano</string>
     <string name="config_sync_bg_errors_empty">Sin errores en segundo plano.</string>
     <string name="config_sync_bg_errors_clear">Limpiar errores</string>
+    <string name="config_sync_bg_errors_copy">Copiar (%1$d)</string>
     <string name="config_sync_repair_session">Reparar sesión</string>
     <string name="config_sync_repair_working">Reparando…</string>
     <string name="config_sync_repair_desc">El ID de óptica no es válido. Revisá la sesión contra el servidor para corregirlo.</string>

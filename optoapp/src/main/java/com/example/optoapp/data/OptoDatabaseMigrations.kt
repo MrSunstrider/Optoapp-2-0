@@ -1240,3 +1240,56 @@ val MIGRATION_42_43 = object : Migration(42, 43) {
         )
     }
 }
+
+val MIGRATION_43_44 = object : Migration(43, 44) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE pagos ADD COLUMN reversaPagoId TEXT")
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_pagos_reversaPagoId ON pagos(reversaPagoId)")
+        // Legacy negative Anulación magnitudes → non-negative; effect stays 0 via PagoEffect.
+        db.execSQL(
+            """
+            UPDATE pagos
+            SET monto = ABS(monto),
+                updatedAt = COALESCE(updatedAt, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+            WHERE tipo = 'Anulación' AND monto < 0
+            """.trimIndent(),
+        )
+    }
+}
+
+val MIGRATION_44_45 = object : Migration(44, 45) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        // Phantom rows from the retired sync-time stock writer. Correlating on a surviving
+        // SALIDA_VENTA twin keeps any legitimate 'venta' movement untouched; stockActual is
+        // already consistent with the SALIDA_VENTA ledger, so no stock column is rewritten.
+        db.execSQL(
+            """
+            DELETE FROM montura_movimientos
+            WHERE tipo = 'venta'
+              AND nota = 'venta_dispensacion'
+              AND EXISTS (
+                SELECT 1 FROM montura_movimientos twin
+                WHERE twin.tipo = 'SALIDA_VENTA'
+                  AND twin.referenciaId = montura_movimientos.referenciaId
+                  AND twin.monturaId = montura_movimientos.monturaId
+                  AND twin.opticaId = montura_movimientos.opticaId
+              )
+            """.trimIndent(),
+        )
+    }
+}
+
+val MIGRATION_45_46 = object : Migration(45, 46) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        // Manual entrada/salida used referenciaId=''. The unique index
+        // (referenciaId, tipo, monturaId) then rejects a second manual move on
+        // the same montura. The row's own id is a unique fact identifier.
+        db.execSQL(
+            """
+            UPDATE montura_movimientos
+            SET referenciaId = id
+            WHERE referenciaId IS NULL OR referenciaId = ''
+            """.trimIndent(),
+        )
+    }
+}

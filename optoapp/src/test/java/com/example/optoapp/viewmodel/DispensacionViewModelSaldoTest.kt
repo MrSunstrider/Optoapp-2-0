@@ -69,88 +69,79 @@ class DispensacionViewModelSaldoTest {
     }
 
     @Test
-    fun `pagosSumByDispensacion includes Anulacion tipo netting to zero`() = runTest(testDispatcher) {
+    fun `pagosSumByDispensacion nets Abono with Reverso via PagoEffect`() = runTest(testDispatcher) {
         val pagos = listOf(
             Pago(id = "p1", dispensacionId = "d1", tipo = "Abono", monto = 100.0, opticaId = "optica-test", fecha = testDate),
-            Pago(id = "p2", dispensacionId = "d1", tipo = "Anulación", monto = -100.0, opticaId = "optica-test", fecha = testDate),
+            Pago(id = "p2", dispensacionId = "d1", tipo = "Reverso", monto = 100.0, opticaId = "optica-test", fecha = testDate, reversaPagoId = "p1"),
+            Pago(id = "p3", dispensacionId = "d1", tipo = "Anulación", monto = 100.0, opticaId = "optica-test", fecha = testDate),
         )
         every { repository.getAllPagosFlowForOptica("optica-test") } returns flowOf(pagos)
 
         val viewModel = DispensacionViewModel(
             repository, sessionManager, postSaveSyncScheduler, stockHelper,
-            calcularMontoPagadoUseCase, costoProductoDao, costoBiseladoDao,
+            calcularMontoPagadoUseCase, mockk<com.example.optoapp.domain.CancelDispensacionUseCase>(relaxed = true), mockk<com.example.optoapp.domain.ReclaimDispensacionUseCase>(relaxed = true), costoProductoDao, costoBiseladoDao,
         )
         advanceUntilIdle()
 
         val result = viewModel.pagosSumByDispensacion.first()
-        assertEquals(
-            "Anulaciones are INCLUDED so Abono 100 + Anulación -100 nets to 0",
-            0.0,
-            result["d1"] ?: 0.0,
-            0.001,
-        )
+        assertEquals("Abono 100 + Reverso 100 + Anulación 0 = 0", 0.0, result["d1"] ?: 0.0, 0.001)
     }
 
     @Test
-    fun `pagosSumByDispensacion handles multiple dispensaciones with anulaciones`() = runTest(testDispatcher) {
+    fun `pagosSumByDispensacion handles multiple dispensaciones with Reverso`() = runTest(testDispatcher) {
         val pagos = listOf(
             Pago(id = "p1", dispensacionId = "d1", tipo = "Abono", monto = 100.0, opticaId = "optica-test", fecha = testDate),
             Pago(id = "p2", dispensacionId = "d2", tipo = "Abono", monto = 200.0, opticaId = "optica-test", fecha = testDate),
-            Pago(id = "p3", dispensacionId = "d1", tipo = "Anulación", monto = -100.0, opticaId = "optica-test", fecha = testDate),
+            Pago(id = "p3", dispensacionId = "d1", tipo = "Reverso", monto = 100.0, opticaId = "optica-test", fecha = testDate, reversaPagoId = "p1"),
         )
         every { repository.getAllPagosFlowForOptica("optica-test") } returns flowOf(pagos)
 
         val viewModel = DispensacionViewModel(
             repository, sessionManager, postSaveSyncScheduler, stockHelper,
-            calcularMontoPagadoUseCase, costoProductoDao, costoBiseladoDao,
+            calcularMontoPagadoUseCase, mockk<com.example.optoapp.domain.CancelDispensacionUseCase>(relaxed = true), mockk<com.example.optoapp.domain.ReclaimDispensacionUseCase>(relaxed = true), costoProductoDao, costoBiseladoDao,
         )
         advanceUntilIdle()
 
         val result = viewModel.pagosSumByDispensacion.first()
-        assertEquals("d1 includes anulacion → 100 + (-100) = 0", 0.0, result["d1"] ?: 0.0, 0.001)
+        assertEquals("d1 nets to 0", 0.0, result["d1"] ?: 0.0, 0.001)
         assertEquals("d2 sum stays 200.0", 200.0, result["d2"] ?: 0.0, 0.001)
     }
 
     @Test
-    fun `aCuentaSumByServicio includes Anulacion tipo netting to zero`() = runTest(testDispatcher) {
+    fun `aCuentaSumByServicio nets Abono with Reverso via PagoEffect`() = runTest(testDispatcher) {
         val pagos = listOf(
             Pago(id = "p1", servicioExtraId = "s1", tipo = "Abono", monto = 100.0, opticaId = "optica-test", fecha = testDate),
-            Pago(id = "p2", servicioExtraId = "s1", tipo = "Anulación", monto = -100.0, opticaId = "optica-test", fecha = testDate),
+            Pago(id = "p2", servicioExtraId = "s1", tipo = "Reverso", monto = 100.0, opticaId = "optica-test", fecha = testDate, reversaPagoId = "p1"),
         )
         every { repository.getAllPagosFlowForOptica("optica-test") } returns flowOf(pagos)
 
         val viewModel = DispensacionViewModel(
             repository, sessionManager, postSaveSyncScheduler, stockHelper,
-            calcularMontoPagadoUseCase, costoProductoDao, costoBiseladoDao,
+            calcularMontoPagadoUseCase, mockk<com.example.optoapp.domain.CancelDispensacionUseCase>(relaxed = true), mockk<com.example.optoapp.domain.ReclaimDispensacionUseCase>(relaxed = true), costoProductoDao, costoBiseladoDao,
         )
         advanceUntilIdle()
 
         val result = viewModel.aCuentaSumByServicio.first()
-        assertEquals(
-            "Anulaciones are INCLUDED so Abono 100 + Anulación -100 nets to 0",
-            0.0,
-            result["s1"] ?: 0.0,
-            0.001,
-        )
+        assertEquals("Abono + Reverso nets to 0", 0.0, result["s1"] ?: 0.0, 0.001)
     }
 
     @Test
-    fun `aCuentaSumByServicio handles multiple servicios with anulaciones`() = runTest(testDispatcher) {
+    fun `aCuentaSumByServicio handles multiple servicios with Reembolso`() = runTest(testDispatcher) {
         val pagos = listOf(
             Pago(id = "p1", servicioExtraId = "s1", tipo = "Abono", monto = 50.0, opticaId = "optica-test", fecha = testDate),
             Pago(id = "p2", servicioExtraId = "s2", tipo = "Abono", monto = 75.0, opticaId = "optica-test", fecha = testDate),
-            Pago(id = "p3", servicioExtraId = "s1", tipo = "Anulación", monto = -50.0, opticaId = "optica-test", fecha = testDate),
+            Pago(id = "p3", servicioExtraId = "s1", tipo = "Reembolso", monto = 50.0, opticaId = "optica-test", fecha = testDate),
         )
         every { repository.getAllPagosFlowForOptica("optica-test") } returns flowOf(pagos)
 
         val viewModel = DispensacionViewModel(
             repository, sessionManager, postSaveSyncScheduler, stockHelper,
-            calcularMontoPagadoUseCase, costoProductoDao, costoBiseladoDao,
+            calcularMontoPagadoUseCase, mockk<com.example.optoapp.domain.CancelDispensacionUseCase>(relaxed = true), mockk<com.example.optoapp.domain.ReclaimDispensacionUseCase>(relaxed = true), costoProductoDao, costoBiseladoDao,
         )
         advanceUntilIdle()
 
         val result = viewModel.aCuentaSumByServicio.first()
-        assertEquals("s1 includes anulacion → 50 + (-50) = 0", 0.0, result["s1"] ?: 0.0, 0.001)
+        assertEquals("s1 Abono+Reembolso → 0", 0.0, result["s1"] ?: 0.0, 0.001)
         assertEquals("s2 sum stays 75.0", 75.0, result["s2"] ?: 0.0, 0.001)
     }
 }

@@ -300,6 +300,7 @@ class PagoDaoTest {
             metodoPago = updated.metodoPago, nota = updated.nota,
             updatedAt = updated.updatedAt, updatedBy = updated.updatedBy,
             ventaId = updated.ventaId,
+            reversaPagoId = updated.reversaPagoId,
         )
         assertEquals(1, rows)
 

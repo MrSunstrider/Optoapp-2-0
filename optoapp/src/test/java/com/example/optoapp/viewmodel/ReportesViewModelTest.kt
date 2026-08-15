@@ -124,16 +124,15 @@ class ReportesViewModelTest {
         )
     }
     @Test
-    fun `cobrosPeriodo excludes anulacion pagos cross period`() = runTest(testDispatcher) {
+    fun `cobrosPeriodo uses PagoEffect excluding Anulacion contributing zero`() = runTest(testDispatcher) {
         val yesterday = today.minusDays(1)
         val dispensaciones = listOf(
             DispensacionOptica(id = "d1", pacienteId = "p1", fecha = yesterday, montoTotal = 100.0, opticaId = opticaId),
         )
-        // Pago today for yesterday's disp (cobro atrasado)
         val pagosEnPeriodo = listOf(
-            Pago(id = "p1", fecha = today, tipo = "Efectivo", monto = 100.0, opticaId = opticaId, dispensacionId = "d1"),
-            // Anulación today for the same disp (negative)
-            Pago(id = "p2", fecha = today, tipo = "Anulación", monto = -100.0, opticaId = opticaId, dispensacionId = "d1"),
+            Pago(id = "p1", fecha = today, tipo = "Abono", monto = 100.0, opticaId = opticaId, dispensacionId = "d1"),
+            Pago(id = "p2", fecha = today, tipo = "Anulación", monto = 100.0, opticaId = opticaId, dispensacionId = "d1"),
+            Pago(id = "p3", fecha = today, tipo = "Reverso", monto = 25.0, opticaId = opticaId, dispensacionId = "d1", reversaPagoId = "p1"),
         )
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
         every { repository.getPagosByDateRangeForOptica(any(), any(), opticaId) } returns flowOf(pagosEnPeriodo)
@@ -143,10 +142,9 @@ class ReportesViewModelTest {
         viewModel.setFechaDiario(today)
         advanceUntilIdle()
 
-        // cobrosPeriodo should only count the Efectivo (100), not the Anulación (-100)
         assertEquals(
-            "cobrosPeriodo must exclude anulacion pagos",
-            100.0,
+            "cobrosPeriodo = Abono 100 + Reverso -25 + Anulación 0 = 75",
+            75.0,
             viewModel.cobrosPeriodo.first(),
             0.001,
         )
@@ -165,7 +163,7 @@ class ReportesViewModelTest {
             Pago(
                 id = "p1",
                 fecha = today,
-                tipo = "Efectivo",
+                tipo = "Abono",
                 monto = 75.0,
                 opticaId = opticaId,
                 dispensacionId = "d1",
@@ -214,13 +212,14 @@ class ReportesViewModelTest {
         )
     }
 
-    // ── pagosSumByDispensacion: reactive sum (abonos only, exclude Anulaci�n) ──
+    // ── pagosSumByDispensacion: reactive sum (abonos only, exclude Anulación) ──
 
     @Test
-    fun `pagosSumByDispensacion includes Anulacion tipo netting to zero`() = runTest(testDispatcher) {
+    fun `pagosSumByDispensacion nets via PagoEffect Reverso`() = runTest(testDispatcher) {
         val pagos = listOf(
             Pago(id = "p1", dispensacionId = "d1", tipo = "Abono", monto = 100.0, opticaId = opticaId, fecha = today),
-            Pago(id = "p2", dispensacionId = "d1", tipo = "Anulación", monto = -100.0, opticaId = opticaId, fecha = today),
+            Pago(id = "p2", dispensacionId = "d1", tipo = "Reverso", monto = 100.0, opticaId = opticaId, fecha = today, reversaPagoId = "p1"),
+            Pago(id = "p3", dispensacionId = "d1", tipo = "Anulación", monto = 50.0, opticaId = opticaId, fecha = today),
         )
         every { repository.getAllPagosFlowForOptica(opticaId) } returns flowOf(pagos)
 
@@ -228,7 +227,7 @@ class ReportesViewModelTest {
         advanceUntilIdle()
 
         val result = viewModel.pagosSumByDispensacion.first()
-        assertEquals("Anulaciones are INCLUDED: 100 + (-100) = 0", 0.0, result["d1"] ?: 0.0, 0.001)
+        assertEquals("Abono+Reverso+Anulación effect = 0", 0.0, result["d1"] ?: 0.0, 0.001)
     }
 
     @Test
@@ -245,13 +244,13 @@ class ReportesViewModelTest {
         assertEquals("d1 sum should be 100", 100.0, result["d1"] ?: 0.0, 0.001)
     }
 
-    // ── aCuentaSumByServicio: reactive sum (abonos only, exclude Anulaci�n) ──
+    // ── aCuentaSumByServicio: reactive sum (abonos only, exclude Anulación) ──
 
     @Test
-    fun `aCuentaSumByServicio includes Anulacion tipo netting to zero`() = runTest(testDispatcher) {
+    fun `aCuentaSumByServicio nets via PagoEffect Reverso`() = runTest(testDispatcher) {
         val pagos = listOf(
             Pago(id = "p1", servicioExtraId = "s1", tipo = "Abono", monto = 100.0, opticaId = opticaId, fecha = today),
-            Pago(id = "p2", servicioExtraId = "s1", tipo = "Anulación", monto = -100.0, opticaId = opticaId, fecha = today),
+            Pago(id = "p2", servicioExtraId = "s1", tipo = "Reverso", monto = 100.0, opticaId = opticaId, fecha = today, reversaPagoId = "p1"),
         )
         every { repository.getAllPagosFlowForOptica(opticaId) } returns flowOf(pagos)
 
@@ -259,7 +258,7 @@ class ReportesViewModelTest {
         advanceUntilIdle()
 
         val result = viewModel.aCuentaSumByServicio.first()
-        assertEquals("Anulaciones are INCLUDED: 100 + (-100) = 0", 0.0, result["s1"] ?: 0.0, 0.001)
+        assertEquals("Abono+Reverso effect = 0", 0.0, result["s1"] ?: 0.0, 0.001)
     }
 
     @Test

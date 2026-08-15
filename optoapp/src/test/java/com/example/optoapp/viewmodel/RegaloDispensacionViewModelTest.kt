@@ -85,7 +85,7 @@ class RegaloDispensacionViewModelTest {
                 opticaId,
                 -2,
                 "SALIDA_VENTA",
-                dispId,
+                "reg-1",
                 "Salida por regalo",
             )
         }
@@ -121,7 +121,7 @@ class RegaloDispensacionViewModelTest {
                 opticaId,
                 2,
                 "AJUSTE",
-                dispId,
+                "reg-1",
                 "Reversión por eliminación de regalo",
             )
         }
