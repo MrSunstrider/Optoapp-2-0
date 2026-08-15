@@ -190,7 +190,7 @@ class ServiciosViewModel @Inject constructor(
                 _uiState.update { it.copy(error = FinanzasRemoteDefaults.Messages.ABONO_MAYOR_A_CERO) }
                 return@launch
             }
-            val totalAbonos = state.pagos.sumOf { it.monto }
+            val totalAbonos = state.pagos.sumOf { PagoEffect.signedAmount(it.tipo, it.monto) }
             if (totalAbonos > montoParsed) {
                 _uiState.update { it.copy(error = FinanzasRemoteDefaults.Messages.ABONO_MAYOR_QUE_TOTAL) }
                 return@launch

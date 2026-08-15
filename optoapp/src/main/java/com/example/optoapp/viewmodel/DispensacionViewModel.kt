@@ -388,7 +388,7 @@ class DispensacionViewModel @Inject constructor(
                 _uiState.update { it.copy(error = FinanzasRemoteDefaults.Messages.ABONO_MAYOR_A_CERO) }
                 return@launch
             }
-            val totalAbonos = s.pagos.sumOf { it.monto }
+            val totalAbonos = s.pagos.sumOf { PagoEffect.signedAmount(it.tipo, it.monto) }
             if (totalAbonos > montoTotal) {
                 _uiState.update { it.copy(error = FinanzasRemoteDefaults.Messages.ABONO_MAYOR_QUE_TOTAL) }
                 return@launch
