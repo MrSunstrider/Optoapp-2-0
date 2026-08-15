@@ -1,0 +1,79 @@
+08-14 21:14:10.985 I/System.out(10554): DEBUG/SyncSession: Token válido por 3455s más; no se requiere refresh
+08-14 21:14:12.347 I/System.out(10554): DEBUG/SyncPacientes: Pacientes: inicio sync (opticaId=25af5a92-4a2d-4e7a-957f-61bec87a07d8, download=true, skipUpload=false)
+08-14 21:14:13.255 I/System.out(10554): DEBUG/SyncPacientes: Upload pacientes: 293/293 filas tras prevalidación de HO, optica_id=25af5a92-4a2d-4e7a-957f-61bec87a07d8
+08-14 21:14:14.575 I/System.out(10554): DEBUG/SyncPacientes: Subidos 293 pacientes a Supabase (optica_id=25af5a92-4a2d-4e7a-957f-61bec87a07d8).
+08-14 21:14:16.091 I/System.out(10554): DEBUG/SyncPacientes: Descargados 293 pacientes desde Supabase.
+08-14 21:14:16.091 I/System.out(10554): DEBUG/SyncPacientes: Pacientes: fin OK (subidos=293, bajados=293)
+08-14 21:14:16.091 I/System.out(10554): DEBUG/SyncHistorial: Evaluaciones: inicio sync (opticaId=25af5a92-4a2d-4e7a-957f-61bec87a07d8, download=true, skipUpload=false)
+08-14 21:14:20.780 I/System.out(10554): DEBUG/SyncHistorial: Subidas 293 evaluaciones a Supabase (forzando ID: 25af5a92-4a2d-4e7a-957f-61bec87a07d8).
+08-14 21:14:22.926 I/System.out(10554): DEBUG/SyncHistorial: Descargadas 293 evaluaciones desde Supabase.
+08-14 21:14:22.926 I/System.out(10554): DEBUG/SyncHistorial: Evaluaciones: fin OK (subidas=293, bajadas=293)
+08-14 21:14:22.926 I/System.out(10554): DEBUG/SyncFinanzas: Finanzas: inicio (opticaId=25af5a92-4a2d-4e7a-957f-61bec87a07d8, download=true, skipUpload=false)
+08-14 21:14:25.542 W/System.err(10554): ERROR/SyncFinanzas: RPC adjust stock exception: duplicate key value violates unique constraint "idx_movimientos_conflict"
+08-14 21:14:25.955 W/System.err(10554): ERROR/SyncFinanzas: RPC adjust stock exception: duplicate key value violates unique constraint "idx_movimientos_conflict"
+08-14 21:14:26.467 W/System.err(10554): ERROR/SyncFinanzas: RPC adjust stock exception: duplicate key value violates unique constraint "idx_movimientos_conflict"
+08-14 21:14:27.074 W/System.err(10554): ERROR/SyncFinanzas: RPC adjust stock exception: duplicate key value violates unique constraint "idx_movimientos_conflict"
+08-14 21:14:27.508 W/System.err(10554): ERROR/SyncFinanzas: RPC adjust stock exception: duplicate key value violates unique constraint "idx_movimientos_conflict"
+08-14 21:14:27.997 W/System.err(10554): ERROR/SyncFinanzas: RPC adjust stock exception: duplicate key value violates unique constraint "idx_movimientos_conflict"
+08-14 21:14:28.509 W/System.err(10554): ERROR/SyncFinanzas: RPC adjust stock exception: duplicate key value violates unique constraint "idx_movimientos_conflict"
+08-14 21:14:29.878 W/System.err(10554): ERROR/SyncFinanzas: RPC adjust stock exception: duplicate key value violates unique constraint "idx_movimientos_conflict"
+08-14 21:14:30.234 W/System.err(10554): ERROR/SyncFinanzas: RPC adjust stock exception: duplicate key value violates unique constraint "idx_movimientos_conflict"
+08-14 21:14:30.699 W/System.err(10554): ERROR/SyncFinanzas: RPC adjust stock exception: duplicate key value violates unique constraint "idx_movimientos_conflict"
+08-14 21:14:31.068 W/System.err(10554): ERROR/SyncFinanzas: RPC adjust stock exception: duplicate key value violates unique constraint "idx_movimientos_conflict"
+08-14 21:14:31.470 W/System.err(10554): ERROR/SyncFinanzas: RPC adjust stock exception: duplicate key value violates unique constraint "idx_movimientos_conflict"
+08-14 21:14:32.464 W/System.err(10554): ERROR/SyncFinanzas: RPC adjust stock exception: duplicate key value violates unique constraint "idx_movimientos_conflict"
+08-14 21:14:32.910 W/System.err(10554): ERROR/SyncFinanzas: RPC adjust stock exception: duplicate key value violates unique constraint "idx_movimientos_conflict"
+08-14 21:14:33.287 W/System.err(10554): ERROR/SyncFinanzas: RPC adjust stock exception: duplicate key value violates unique constraint "idx_movimientos_conflict"
+08-14 21:14:33.684 W/System.err(10554): ERROR/SyncFinanzas: RPC adjust stock exception: duplicate key value violates unique constraint "idx_movimientos_conflict"
+08-14 21:14:34.071 W/System.err(10554): ERROR/SyncFinanzas: RPC adjust stock exception: duplicate key value violates unique constraint "idx_movimientos_conflict"
+08-14 21:14:34.756 W/System.err(10554): ERROR/SyncFinanzas: RPC adjust stock exception: duplicate key value violates unique constraint "idx_movimientos_conflict"
+08-14 21:14:36.055 W/System.err(10554): ERROR/SyncFinanzas: RPC adjust stock exception: duplicate key value violates unique constraint "idx_movimientos_conflict"
+08-14 21:14:36.455 W/System.err(10554): ERROR/SyncFinanzas: RPC adjust stock exception: duplicate key value violates unique constraint "idx_movimientos_conflict"
+08-14 21:14:36.852 W/System.err(10554): ERROR/SyncFinanzas: RPC adjust stock exception: duplicate key value violates unique constraint "idx_movimientos_conflict"
+08-14 21:14:37.310 W/System.err(10554): ERROR/SyncFinanzas: RPC adjust stock exception: duplicate key value violates unique constraint "idx_movimientos_conflict"
+08-14 21:14:37.827 W/System.err(10554): ERROR/SyncFinanzas: RPC adjust stock exception: duplicate key value violates unique constraint "idx_movimientos_conflict"
+08-14 21:14:38.238 W/System.err(10554): ERROR/SyncFinanzas: RPC adjust stock exception: duplicate key value violates unique constraint "idx_movimientos_conflict"
+08-14 21:14:38.370 I/System.out(10554): DEBUG/SyncFinanzas: Finanzas: upload dispensaciones=300
+08-14 21:14:40.820 I/System.out(10554): DEBUG/SyncFinanzas: Finanzas: upload dispensacion_items=311
+08-14 21:14:42.442 I/System.out(10554): DEBUG/SyncFinanzas: Finanzas: upload servicios_extra=143
+08-14 21:14:42.845 I/System.out(10554): DEBUG/SyncFinanzas: Finanzas: upload costos_productos=7
+08-14 21:14:42.849 I/System.out(10554): DEBUG/SyncFinanzas: Finanzas: upload costos_biselado=0
+08-14 21:14:47.795 E/SyncFinanzas(10554): Error REST en upsert:pagos:chunk8 (400): new row for relation "pagos" violates check constraint "pagos_monto_chk"
+08-14 21:14:47.795 E/SyncFinanzas(10554): Code: 23514
+08-14 21:14:47.795 E/SyncFinanzas(10554): Hint: null
+08-14 21:14:47.795 E/SyncFinanzas(10554): Details: null
+08-14 21:14:47.795 E/SyncFinanzas(10554): URL: https://sf.../rest/v1/pagos?columns=id%2Cdispensacion_id%2Cservicio_extra_id%2Cfecha%2Ctipo%2Cmonto%2Cmetodo_pago%2Cnota%2Coptica_id%2Cupdated_at%2Cupdated_by%2Cventa_id
+08-14 21:14:47.795 E/SyncFinanzas(10554): Headers: {Authorization=[Bearer ey... (len=1560)], Content-Profile=[public], Accept=[application/json], Prefer=[resolution=merge-duplicates,return=minimal], apikey=[ey... (len=208)], X-Client-Info=[supabase-kt/3.6.0], X-Supabase-Client-Platform=[Android], X-Supabase-Client-Platform-Version=[14]}
+08-14 21:14:47.795 E/SyncFinanzas(10554): Http Method: POST
+08-14 21:14:47.795 E/SyncFinanzas(10554): Code: 23514
+08-14 21:14:47.795 E/SyncFinanzas(10554): Hint: null
+08-14 21:14:47.795 E/SyncFinanzas(10554): Details: null
+08-14 21:14:47.795 E/SyncFinanzas(10554): URL: https://sf.../rest/v1/pagos?columns=id%2Cdispensacion_id%2Cservicio_extra_id%2Cfecha%2Ctipo%2Cmonto%2Cmetodo_pago%2Cnota%2Coptica_id%2Cupdated_at%2Cupdated_by%2Cventa_id
+08-14 21:14:47.795 E/SyncFinanzas(10554): Headers: {Authorization=[Bearer ey... (len=1560)], Content-Profile=[public], Accept=[application/json], Prefer=[resolution=merge-duplicates,return=minimal], apikey=[ey... (len=208)], X-Client-Info=[supabase-kt/3.6.0], X-Supabase-Client-Platform=[Android], X-Supabase-Client-Platform-Version=[14]}
+08-14 21:14:47.795 E/SyncFinanzas(10554): Http Method: POST
+08-14 21:14:47.795 E/SyncFinanzas(10554): 	at io.github.jan.supabase.auth.api.AuthenticatedApiExtensionsKt$authenticatedSupabaseApi$5.invoke(r8-map-id-16b849bc500b8b64d90b069114489f4217c1287865d38bd97b11edae40aaea8f:5)
+08-14 21:14:47.795 E/SyncFinanzas(10554): 	at io.github.jan.supabase.auth.api.AuthenticatedApiExtensionsKt$authenticatedSupabaseApi$5.invoke(r8-map-id-16b849bc500b8b64d90b069114489f4217c1287865d38bd97b11edae40aaea8f:10)
+08-14 21:14:47.795 E/SyncFinanzas(10554): 	at io.github.jan.supabase.network.SupabaseApi.rawRequest$suspendImpl(r8-map-id-16b849bc500b8b64d90b069114489f4217c1287865d38bd97b11edae40aaea8f:132)
+08-14 21:14:47.795 E/SyncFinanzas(10554): 	at io.github.jan.supabase.network.SupabaseApi$rawRequest$1.invokeSuspend(r8-map-id-16b849bc500b8b64d90b069114489f4217c1287865d38bd97b11edae40aaea8f:13)
+08-14 21:14:47.795 E/SyncFinanzas(10554): 	at bi.resumeWith(r8-map-id-16b849bc500b8b64d90b069114489f4217c1287865d38bd97b11edae40aaea8f:8)
+08-14 21:14:47.795 E/SyncFinanzas(10554): 	at me0.run(r8-map-id-16b849bc500b8b64d90b069114489f4217c1287865d38bd97b11edae40aaea8f:114)
+08-14 21:14:47.795 E/SyncFinanzas(10554): 	at android.os.Handler.handleCallback(Handler.java:996)
+08-14 21:14:47.795 E/SyncFinanzas(10554): 	at android.os.Handler.dispatchMessage(Handler.java:110)
+08-14 21:14:47.795 E/SyncFinanzas(10554): 	at android.os.Looper.loopOnce(Looper.java:210)
+08-14 21:14:47.795 E/SyncFinanzas(10554): 	at android.os.Looper.loop(Looper.java:302)
+08-14 21:14:47.795 E/SyncFinanzas(10554): 	at android.app.ActivityThread.main(ActivityThread.java:9713)
+08-14 21:14:47.795 E/SyncFinanzas(10554): 	at java.lang.reflect.Method.invoke(Native Method)
+08-14 21:14:47.795 E/SyncFinanzas(10554): 	at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:601)
+08-14 21:14:47.795 E/SyncFinanzas(10554): 	at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:1062)
+08-14 21:14:47.795 W/System.err(10554): ERROR/SyncFinanzas: Error inesperado subiendo pagos: new row for relation "pagos" violates check constraint "pagos_monto_chk"
+08-14 21:14:47.806 W/System.err(10554): ERROR/SyncFinanzas: Error REST subiendo pagos (400): new row for relation "pagos" violates check constraint "pagos_monto_chk"
+08-14 21:14:47.807 W/System.err(10554): ERROR/SyncFinanzas: Error inesperado sincronizando finanzas: new row for relation "pagos" violates check constraint "pagos_monto_chk"
+08-14 21:14:47.808 I/System.out(10554): DEBUG/SyncProveedores: Proveedores: inicio (opticaId=25af5a92-4a2d-4e7a-957f-61bec87a07d8, download=true, skipUpload=false)
+08-14 21:14:48.592 I/System.out(10554): DEBUG/SyncProveedores: Proveedores: fin OK (proveedores=0 categorias=0)
+08-14 21:14:48.592 I/System.out(10554): DEBUG/SyncOrdenesCompra: OrdenesCompra: inicio (opticaId=25af5a92-4a2d-4e7a-957f-61bec87a07d8, download=true, skipUpload=false)
+08-14 21:14:49.427 I/System.out(10554): DEBUG/SyncOrdenesCompra: OrdenesCompra: fin OK (oc=0 items=0)
+08-14 21:14:49.445 I/System.out(10554): DEBUG/SyncInventoryKpis: KPI sync completado para óptica 25af5a92-4a2d-4e7a-957f-61bec87a07d8: 30 modelos, 8 stock bajo
+08-14 21:14:49.445 I/System.out(10554): DEBUG/SyncInventario: Inventario: inicio (opticaId=25af5a92-4a2d-4e7a-957f-61bec87a07d8, download=true, skipUpload=false)
+08-14 21:14:52.904 I/System.out(10554): DEBUG/SyncInventario: Inventario: fin OK (monturas=30 movimientos=61)
+08-14 21:14:52.904 I/System.out(10554): DEBUG/SyncInventarioFisico: InventarioFisico: inicio (opticaId=25af5a92-4a2d-4e7a-957f-61bec87a07d8, download=true, skipUpload=false)
+08-14 21:14:53.902 I/System.out(10554): DEBUG/SyncInventarioFisico: InventarioFisico: fin OK (sessions=0 detalles=0)
