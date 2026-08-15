@@ -84,4 +84,29 @@ class TransactionItemTest {
         )
         assertEquals("Servicio Extra", transactionLabel(pago))
     }
+
+    @Test
+    fun displayAmount_reembolsoIsNegative() {
+        val pago = Pago(
+            id = "p6",
+            fecha = today,
+            tipo = "Reembolso",
+            monto = 40.0,
+            opticaId = opticaId,
+        )
+        assertEquals(-40.0, transactionDisplayAmount(pago), 0.001)
+        assertEquals("s/. -40.00", formatTransactionAmount(transactionDisplayAmount(pago)))
+    }
+
+    @Test
+    fun displayAmount_anulacionIsZero() {
+        val pago = Pago(
+            id = "p7",
+            fecha = today,
+            tipo = "Anulación",
+            monto = 100.0,
+            opticaId = opticaId,
+        )
+        assertEquals(0.0, transactionDisplayAmount(pago), 0.001)
+    }
 }

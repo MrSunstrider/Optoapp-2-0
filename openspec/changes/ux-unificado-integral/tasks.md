@@ -26,11 +26,11 @@
 
 ## Phase 2 — Cierre caja v2 (PR-U2) ← was ux-cierre-caja-v2
 
-- [ ] P2.1 Port `PagoDisplayItem`, `buildPagosDisplay`, `pagosDisplay` (from PR #51 ref)
-- [ ] P2.2 VM: hero, ventasHoy, cobrosAtrasados, getTotalesPorMetodo, getCobradoHoy — all **PagoEffect**
-- [ ] P2.3 UI: hero dinámico, method cards, cobros/ventas sections, empty states
-- [ ] P2.4 `CierreCajaVentaDisplay.kt` + search (Ayer/Hoy/Buscar)
-- [ ] P2.5 Enriched `TransactionItem` + navigation
+- [x] P2.1 Port `PagoDisplayItem`, `buildPagosDisplay`, `pagosDisplay` (from PR #51 ref)
+- [x] P2.2 VM: hero, ventasHoy, cobrosAtrasados, getTotalesPorMetodo, getCobradoHoy — all **PagoEffect**
+- [x] P2.3 UI: hero dinámico, method cards, cobros/ventas sections, empty states
+- [x] P2.4 `CierreCajaVentaDisplay.kt` + search (Ayer/Hoy/Buscar)
+- [x] P2.5 Enriched `TransactionItem` + navigation
 - [ ] P2.6 Merge spec `cierre-caja` (UX + ledger scenarios)
 - [ ] P2.7 Tests + installRelease R8 smoke CLK-LX3
 
