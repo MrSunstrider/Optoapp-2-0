@@ -17,10 +17,13 @@ import androidx.compose.ui.unit.sp
 import com.example.optoapp.data.Montura
 import com.example.optoapp.data.Paciente
 import com.example.optoapp.data.Pago
-import com.example.optoapp.ui.components.AbonoDialog
 import com.example.optoapp.ui.components.OptoDropdownMenuField
 import com.example.optoapp.ui.components.FechaEntregaEditButton
 import com.example.optoapp.ui.components.OptoTextField
+import com.example.optoapp.ui.components.PatientContextCard
+import com.example.optoapp.ui.components.financiera.FinancieraPagosSection
+import com.example.optoapp.ui.components.financiera.PagosSectionState
+import com.example.optoapp.ui.components.financiera.SaldoDisplayStyle
 import com.example.optoapp.util.DateUtils
 import com.example.optoapp.viewmodel.ServiciosUiState
 import java.util.*
@@ -37,6 +40,38 @@ fun ServicioForm(
     onUpdatePago: (Pago) -> Unit,
     onRemovePago: (Pago) -> Unit,
     onShowDatePicker: () -> Unit,
+    step: Int = 0,
+    isPacienteLocked: Boolean = false,
+) {
+    when (step) {
+        0 -> StepDatos(
+            uiState = uiState,
+            onUpdate = onUpdate,
+            monturas = monturas,
+            pacientes = pacientes,
+            onShowDatePicker = onShowDatePicker,
+            isPacienteLocked = isPacienteLocked,
+        )
+        1 -> StepPagos(
+            uiState = uiState,
+            onUpdate = onUpdate,
+            onUpdateEstado = onUpdateEstado,
+            onAddPago = onAddPago,
+            onUpdatePago = onUpdatePago,
+            onRemovePago = onRemovePago,
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun StepDatos(
+    uiState: ServiciosUiState,
+    onUpdate: (ServiciosUiState) -> Unit,
+    monturas: List<Montura>,
+    pacientes: List<Paciente>,
+    onShowDatePicker: () -> Unit,
+    isPacienteLocked: Boolean,
 ) {
     OutlinedButton(onClick = onShowDatePicker, modifier = Modifier.fillMaxWidth()) {
         Text("Fecha: ${DateUtils.formatLocalized(uiState.fecha)}")
@@ -103,115 +138,21 @@ fun ServicioForm(
 
     HorizontalDivider()
 
-    Text("Historial de Abonos", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-
-    val total = uiState.montoTotal.toDoubleOrNull() ?: 0.0
-    val pagado = uiState.pagos.sumOf { it.monto }
-    val saldo = total - pagado
-
-    uiState.pagos.forEach { pago ->
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
-        ) {
-            Row(
-                modifier = Modifier.padding(12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text("${pago.metodoPago}: s/. ${String.format(Locale.getDefault(), "%.2f", pago.monto)}", fontWeight = FontWeight.Bold)
-                    if (pago.nota.isNotEmpty()) {
-                        Text(pago.nota, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                    Text(DateUtils.formatLocalized(pago.fecha), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                Row {
-                    var showEditDialog by remember { mutableStateOf(false) }
-                    if (showEditDialog) {
-                        val otrosAbonos = uiState.pagos
-                            .filter { it.id != pago.id }
-                            .sumOf { it.monto }
-                        val maximo = (total - otrosAbonos).coerceAtLeast(0.0)
-                        AbonoDialog(
-                            pago = pago,
-                            montoMaximo = maximo,
-                            onDismiss = { showEditDialog = false },
-                            onConfirm = { updatedPago: Pago ->
-                                onUpdatePago(updatedPago)
-                                showEditDialog = false
-                            },
-                        )
-                    }
-                    IconButton(onClick = { showEditDialog = true }, modifier = Modifier.size(48.dp)) {
-                        Icon(Icons.Default.Edit, contentDescription = "Editar", tint = MaterialTheme.colorScheme.primary)
-                    }
-                    IconButton(onClick = { onRemovePago(pago) }, modifier = Modifier.size(48.dp)) {
-                        Icon(Icons.Default.Delete, contentDescription = "Borrar", tint = MaterialTheme.colorScheme.error)
-                    }
-                }
-            }
-        }
+    if (isPacienteLocked) {
+        val pacienteName = pacientes.find { it.id == uiState.pacienteId }?.nombreCompleto ?: "Paciente"
+        PatientContextCard(pacienteNombre = pacienteName)
+    } else {
+        PacienteSelector(uiState = uiState, onUpdate = onUpdate, pacientes = pacientes)
     }
+}
 
-    var showAddDialog by remember { mutableStateOf(false) }
-    if (showAddDialog) {
-        val pagadoActual = uiState.pagos.sumOf { it.monto }
-        val maximo = (total - pagadoActual).coerceAtLeast(0.0)
-        AbonoDialog(
-            defaultFecha = DateUtils.today(),
-            montoMaximo = maximo,
-            onDismiss = { showAddDialog = false },
-            onConfirm = { nuevoPago: Pago ->
-                onAddPago(nuevoPago)
-                showAddDialog = false
-            },
-        )
-    }
-
-    OutlinedButton(
-        onClick = { showAddDialog = true },
-        modifier = Modifier.fillMaxWidth(),
-        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary),
-    ) {
-        Icon(Icons.Default.Add, contentDescription = "Agregar")
-        Spacer(Modifier.width(8.dp))
-        Text("Agregar Abono")
-    }
-
-    HorizontalDivider()
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text("Saldo Restante:", fontWeight = FontWeight.Bold)
-            Text(
-                text = "s/. ${String.format(Locale.getDefault(), "%.2f", saldo)}",
-                fontSize = 24.sp,
-                fontWeight = FontWeight.ExtraBold,
-                color = if (saldo > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary,
-            )
-        }
-    }
-
-    OptoDropdownMenuField(
-        label = "Estado",
-        selected = uiState.estado,
-        options = listOf("Pendiente", "Entregado"),
-        onSelected = { onUpdateEstado(it) },
-    )
-
-    if (uiState.fechaEntrega != null) {
-        FechaEntregaEditButton(
-            fechaEntrega = uiState.fechaEntrega,
-            onFechaChanged = { nuevaFecha ->
-                onUpdate(uiState.copy(fechaEntrega = nuevaFecha))
-            },
-        )
-    }
-
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PacienteSelector(
+    uiState: ServiciosUiState,
+    onUpdate: (ServiciosUiState) -> Unit,
+    pacientes: List<Paciente>,
+) {
     Text("Asociar a Paciente (Opcional)", fontWeight = FontWeight.Bold)
     var pExpanded by remember { mutableStateOf(false) }
     var pSearchQuery by remember { mutableStateOf("") }
@@ -246,5 +187,44 @@ fun ServicioForm(
                 })
             }
         }
+    }
+}
+
+@Composable
+private fun StepPagos(
+    uiState: ServiciosUiState,
+    onUpdate: (ServiciosUiState) -> Unit,
+    onUpdateEstado: (String) -> Unit,
+    onAddPago: (Pago) -> Unit,
+    onUpdatePago: (Pago) -> Unit,
+    onRemovePago: (Pago) -> Unit,
+) {
+    FinancieraPagosSection(
+        state = PagosSectionState(
+            montoTotal = uiState.montoTotal.toDoubleOrNull() ?: 0.0,
+            pagos = uiState.pagos,
+        ),
+        onAddPago = onAddPago,
+        onUpdatePago = onUpdatePago,
+        onRemovePago = onRemovePago,
+        saldoStyle = SaldoDisplayStyle.Card,
+    )
+
+    HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+
+    OptoDropdownMenuField(
+        label = "Estado",
+        selected = uiState.estado,
+        options = listOf("Pendiente", "Entregado"),
+        onSelected = { onUpdateEstado(it) },
+    )
+
+    if (uiState.fechaEntrega != null) {
+        FechaEntregaEditButton(
+            fechaEntrega = uiState.fechaEntrega,
+            onFechaChanged = { nuevaFecha ->
+                onUpdate(uiState.copy(fechaEntrega = nuevaFecha))
+            },
+        )
     }
 }

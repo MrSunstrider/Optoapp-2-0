@@ -29,9 +29,20 @@ import kotlinx.coroutines.flow.update
 import java.time.LocalDate
 import javax.inject.Inject
 
+data class PagoDisplayItem(
+    val pago: Pago,
+    val label: String,
+    val tipoEntidad: String,
+    val esCobroAtrasado: Boolean,
+    val dispensacionId: String?,
+    val servicioExtraId: String?,
+    val pacienteId: String?,
+)
+
 data class CierreCajaUiState(
     val fecha: LocalDate = DateUtils.today(),
     val pagos: List<Pago> = emptyList(),
+    val pagosDisplay: List<PagoDisplayItem> = emptyList(),
     val totalDispensacionesHoy: Double = 0.0,
     val dispensacionesHoy: List<DispensacionOptica> = emptyList(),
     val serviciosExtraHoy: List<ServicioExtra> = emptyList(),
@@ -43,6 +54,7 @@ data class CierreCajaUiState(
     val isLoading: Boolean = true,
     val errorMessage: String? = null,
     val pagosFuturos: Double = 0.0,
+    val pacienteNombres: Map<String, String> = emptyMap(),
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -83,7 +95,10 @@ class CierreCajaViewModel @Inject constructor(
                     repository.getPagosByDateRangeForOptica(fecha, fecha, opticaId),
                     repository.getDispensacionesByDateRangeForOptica(fecha, fecha, opticaId),
                     repository.getServiciosByDateRangeForOptica(fecha, fecha, opticaId),
-                ) { pagos, dispensaciones, servicios ->
+                    repository.pacientesFlowForOptica(opticaId).map { pacientes ->
+                        pacientes.associate { it.id to it.nombreCompleto }
+                    },
+                ) { pagos, dispensaciones, servicios, pacienteNombres ->
                     val dispMap = dispensaciones.associateBy { it.id }.toMutableMap()
                     val servMap = servicios.associateBy { it.id }.toMutableMap()
                     val missingDispIds = pagos.mapNotNull { it.dispensacionId }
@@ -133,9 +148,11 @@ class CierreCajaViewModel @Inject constructor(
                     val totalGeneral = totalDispensacionesHoy + totalServiciosExtra
                     val saldoPendiente = dispensacionesHoy.sumOf { it.montoTotal - it.montoPagado } +
                         serviciosExtraHoy.sumOf { it.montoTotal - it.aCuenta }
+                    val pagosDisplay = buildPagosDisplay(pagos, dispMap, servMap, fecha)
                     CierreCajaUiState(
                         fecha = fecha,
                         pagos = pagos,
+                        pagosDisplay = pagosDisplay,
                         totalDispensacionesHoy = totalDispensacionesHoy,
                         dispensacionesHoy = dispensacionesHoy,
                         serviciosExtraHoy = serviciosExtraHoy,
@@ -146,6 +163,7 @@ class CierreCajaViewModel @Inject constructor(
                         saldoPendiente = saldoPendiente,
                         isLoading = false,
                         pagosFuturos = pagosFuturos,
+                        pacienteNombres = pacienteNombres,
                     )
                 }.catch { e ->
                     Log.e(TAG, "observePagos inner flow failed", e)
@@ -171,9 +189,50 @@ class CierreCajaViewModel @Inject constructor(
         }.mapValues { entry -> entry.value.sumOf { PagoEffect.signedAmount(it.tipo, it.monto) } }
     }
 
+    fun getCobradoHoy(): Double =
+        _uiState.value.pagos.sumOf { PagoEffect.signedAmount(it.tipo, it.monto) }
+
     companion object {
         private const val TAG = "CierreCajaVM"
         private const val ESTADO_ANULADO = "Anulado"
         private const val ESTADO_RECLAMADA = "Reclamada"
+
+        internal fun buildPagosDisplay(
+            pagos: List<Pago>,
+            dispMap: Map<String, DispensacionOptica>,
+            servMap: Map<String, ServicioExtra>,
+            fecha: LocalDate,
+        ): List<PagoDisplayItem> = pagos.map { pago ->
+            val disp = pago.dispensacionId?.let { dispMap[it] }
+            val serv = pago.servicioExtraId?.let { servMap[it] }
+            val dispFecha = disp?.fecha
+            val servFecha = serv?.fecha
+            val esCobroAtrasado = when {
+                dispFecha != null -> dispFecha < fecha
+                servFecha != null -> servFecha < fecha
+                else -> false
+            }
+            val (label, tipoEntidad, pacienteId) = when {
+                disp != null -> {
+                    val otLabel = if (disp.ot.isNotBlank()) "OT ${disp.ot}" else "Dispensación ${disp.id.take(8)}"
+                    Triple(otLabel, "Dispensación", disp.pacienteId.takeIf { it.isNotBlank() })
+                }
+                serv != null -> Triple(
+                    serv.descripcion.take(32),
+                    "Servicio Extra",
+                    serv.pacienteId?.takeIf { it.isNotBlank() },
+                )
+                else -> Triple("Pago", "Pago", null)
+            }
+            PagoDisplayItem(
+                pago = pago,
+                label = label,
+                tipoEntidad = tipoEntidad,
+                esCobroAtrasado = esCobroAtrasado,
+                dispensacionId = pago.dispensacionId,
+                servicioExtraId = pago.servicioExtraId,
+                pacienteId = pacienteId,
+            )
+        }
     }
 }

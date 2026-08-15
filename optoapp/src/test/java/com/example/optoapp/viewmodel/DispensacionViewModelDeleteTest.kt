@@ -146,7 +146,7 @@ class DispensacionViewModelDeleteTest {
                 "optica-test",
                 2,
                 "AJUSTE",
-                dispId,
+                "reg-del-1",
                 "Devolución por borrado de dispensación",
             )
         }

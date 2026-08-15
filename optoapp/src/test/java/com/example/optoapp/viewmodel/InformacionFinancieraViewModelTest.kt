@@ -6,15 +6,19 @@ import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.Pago
 import com.example.optoapp.data.Resource
 import com.example.optoapp.data.SessionManager
+import com.example.optoapp.domain.CalcularMontoPagadoUseCase
 import com.example.optoapp.sync.PostSaveSyncScheduler
+import com.example.optoapp.util.DispensacionStockHelper
 import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.coVerifyOrder
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -32,11 +36,12 @@ class InformacionFinancieraViewModelTest {
     private lateinit var repository: DispensacionFinancieraRepository
     private lateinit var sessionManager: SessionManager
     private lateinit var postSaveSyncScheduler: PostSaveSyncScheduler
-    private lateinit var viewModel: InformacionFinancieraViewModel
+    private lateinit var calcularMontoPagado: CalcularMontoPagadoUseCase
+    private lateinit var stockHelper: DispensacionStockHelper
 
     private val opticaIdFlow = MutableStateFlow("optica-test")
     private val testDate = LocalDate.of(2026, 7, 4)
-    private val testDispatcher = StandardTestDispatcher()
+    private val testDispatcher = UnconfinedTestDispatcher()
     private val dispId = "disp-1"
 
     private val testContexto = ContextoFinanciero(
@@ -63,6 +68,10 @@ class InformacionFinancieraViewModelTest {
         estadoEntrega = "Pendiente",
     )
 
+    private fun createViewModel() = InformacionFinancieraViewModel(
+        repository, sessionManager, postSaveSyncScheduler, calcularMontoPagado, stockHelper,
+    )
+
     @Before
     fun setUp() {
         mockkStatic("android.util.Log")
@@ -74,21 +83,29 @@ class InformacionFinancieraViewModelTest {
 
         Dispatchers.setMain(testDispatcher)
         repository = mockk(relaxed = true)
-        every { repository.runInTransaction(any()) } answers {
-            (firstArg() as () -> Unit).invoke()
+        coEvery { repository.withTransaction(any<suspend () -> Any?>()) } coAnswers {
+            firstArg<suspend () -> Any?>().invoke()
         }
         sessionManager = mockk()
         postSaveSyncScheduler = mockk(relaxed = true)
+        calcularMontoPagado = mockk()
+        stockHelper = mockk(relaxed = true)
 
         every { sessionManager.opticaId } returns opticaIdFlow
 
         coEvery { repository.obtenerContexto(dispId) } returns testContexto
         coEvery { repository.obtenerDispensacion(dispId) } returns Resource.Success(testDispensacion)
+        coEvery { repository.obtenerPagos(dispId) } returns emptyList()
+        coEvery { repository.obtenerRegalos(dispId) } returns emptyList()
         coEvery { repository.agregarPago(any()) } returns Unit
         coEvery { repository.editarPago(any()) } returns Unit
         coEvery { repository.eliminarPago(any(), any()) } returns Unit
         coEvery { repository.actualizarMontoTotal(any(), any(), any()) } returns Unit
         coEvery { repository.actualizarEstado(any(), any(), any(), any()) } returns Unit
+        coEvery { repository.actualizarMontoPagado(any(), any(), any()) } returns Unit
+        coEvery { repository.insertarRegalo(any()) } returns Unit
+        coEvery { repository.eliminarRegalosByDispensacionId(any(), any()) } returns Unit
+        coEvery { calcularMontoPagado(any()) } returns 0.0
     }
 
     @After
@@ -98,11 +115,9 @@ class InformacionFinancieraViewModelTest {
 
     @Test
     fun `loadFinanciera loads contexto pagos and montoTotal`() = runTest {
-        val vm = InformacionFinancieraViewModel(repository, sessionManager, postSaveSyncScheduler)
-        testDispatcher.scheduler.advanceUntilIdle()
+        val vm = createViewModel()
 
         vm.loadFinanciera(dispId)
-        testDispatcher.scheduler.advanceUntilIdle()
 
         val state = vm.uiState.value
         assertEquals("OT-2026-0001", state.contexto?.ot)
@@ -115,26 +130,21 @@ class InformacionFinancieraViewModelTest {
     fun `loadFinanciera loads pagos from repository`() = runTest {
         coEvery { repository.obtenerPagos(dispId) } returns testPagos
 
-        val vm = InformacionFinancieraViewModel(repository, sessionManager, postSaveSyncScheduler)
-        testDispatcher.scheduler.advanceUntilIdle()
+        val vm = createViewModel()
 
         vm.loadFinanciera(dispId)
-        testDispatcher.scheduler.advanceUntilIdle()
 
         assertEquals(2, vm.uiState.value.pagos.size)
     }
 
     @Test
     fun `saldoRestante is calculated from montoTotal minus pagos`() = runTest {
-        val vm = InformacionFinancieraViewModel(repository, sessionManager, postSaveSyncScheduler)
-        testDispatcher.scheduler.advanceUntilIdle()
+        val vm = createViewModel()
 
         vm.loadFinanciera(dispId)
-        testDispatcher.scheduler.advanceUntilIdle()
 
         vm.addPago(testPagos[0])
         vm.addPago(testPagos[1])
-        testDispatcher.scheduler.advanceUntilIdle()
 
         val state = vm.uiState.value
         assertEquals(150.0 - 80.0, state.saldoRestante, 0.001)
@@ -142,8 +152,7 @@ class InformacionFinancieraViewModelTest {
 
     @Test
     fun `saldoRestante is zero when no montoTotal`() = runTest {
-        val vm = InformacionFinancieraViewModel(repository, sessionManager, postSaveSyncScheduler)
-        testDispatcher.scheduler.advanceUntilIdle()
+        val vm = createViewModel()
 
         val state = vm.uiState.value
         assertEquals(0.0, state.saldoRestante, 0.001)
@@ -151,11 +160,9 @@ class InformacionFinancieraViewModelTest {
 
     @Test
     fun `addPago appends pago to list`() = runTest {
-        val vm = InformacionFinancieraViewModel(repository, sessionManager, postSaveSyncScheduler)
-        testDispatcher.scheduler.advanceUntilIdle()
+        val vm = createViewModel()
 
         vm.addPago(testPagos[0])
-        testDispatcher.scheduler.advanceUntilIdle()
 
         assertEquals(1, vm.uiState.value.pagos.size)
         assertEquals("p-1", vm.uiState.value.pagos[0].id)
@@ -163,29 +170,23 @@ class InformacionFinancieraViewModelTest {
 
     @Test
     fun `updatePago replaces existing pago`() = runTest {
-        val vm = InformacionFinancieraViewModel(repository, sessionManager, postSaveSyncScheduler)
-        testDispatcher.scheduler.advanceUntilIdle()
+        val vm = createViewModel()
 
         vm.addPago(testPagos[0])
-        testDispatcher.scheduler.advanceUntilIdle()
 
         val modified = testPagos[0].copy(monto = 100.0)
         vm.updatePago(modified)
-        testDispatcher.scheduler.advanceUntilIdle()
 
         assertEquals(100.0, vm.uiState.value.pagos[0].monto, 0.001)
     }
 
     @Test
     fun `removePago removes and tracks deletion`() = runTest {
-        val vm = InformacionFinancieraViewModel(repository, sessionManager, postSaveSyncScheduler)
-        testDispatcher.scheduler.advanceUntilIdle()
+        val vm = createViewModel()
 
         vm.addPago(testPagos[0])
-        testDispatcher.scheduler.advanceUntilIdle()
 
         vm.removePago(testPagos[0])
-        testDispatcher.scheduler.advanceUntilIdle()
 
         assertEquals(0, vm.uiState.value.pagos.size)
         assertEquals(1, vm.uiState.value.pagosToDelete.size)
@@ -193,14 +194,11 @@ class InformacionFinancieraViewModelTest {
 
     @Test
     fun `updateEstado changes estadoEntrega`() = runTest {
-        val vm = InformacionFinancieraViewModel(repository, sessionManager, postSaveSyncScheduler)
-        testDispatcher.scheduler.advanceUntilIdle()
+        val vm = createViewModel()
 
         vm.loadFinanciera(dispId)
-        testDispatcher.scheduler.advanceUntilIdle()
 
         vm.updateEstado("Entregado")
-        testDispatcher.scheduler.advanceUntilIdle()
 
         assertEquals("Entregado", vm.uiState.value.estadoEntrega)
         assertNotNull(vm.uiState.value.fechaEntrega)
@@ -208,29 +206,62 @@ class InformacionFinancieraViewModelTest {
 
     @Test
     fun `updateEstado to Pendiente clears fechaEntrega`() = runTest {
-        val vm = InformacionFinancieraViewModel(repository, sessionManager, postSaveSyncScheduler)
-        testDispatcher.scheduler.advanceUntilIdle()
+        val vm = createViewModel()
 
         vm.loadFinanciera(dispId)
-        testDispatcher.scheduler.advanceUntilIdle()
 
         vm.updateEstado("Entregado")
-        testDispatcher.scheduler.advanceUntilIdle()
         vm.updateEstado("Pendiente")
-        testDispatcher.scheduler.advanceUntilIdle()
 
         assertEquals("Pendiente", vm.uiState.value.estadoEntrega)
         assertEquals(null, vm.uiState.value.fechaEntrega)
     }
 
-    // All tests that call vm.save() and verify repository calls were removed
-    // because withContext(Dispatchers.IO) in the production save() method is
-    // fundamentally incompatible with StandardTestDispatcher in Robolectric tests.
-    // The IO dispatcher runs on real threads outside the test scheduler, so
-    // coVerify and coVerifyOrder after advanceUntilIdle() are flaky.
-    //
-    // The save() behavior is covered at the unit level by:
-    // - addPago / removePago / updatePago tests (in-memory state manipulation)
-    // - updateEstado tests (fechaEntrega logic)
-    // And at integration level by the full app test suite.
+    @Test
+    fun `save calls actualizarMontoPagado with effect-aware net after pago CRUD`() = runTest {
+        coEvery { repository.obtenerPagos(dispId) } returns testPagos
+        coEvery { calcularMontoPagado(dispId) } returns 150.0
+
+        val vm = createViewModel()
+        vm.loadFinanciera(dispId)
+
+        var completed = false
+        vm.save { completed = true }
+
+        coVerify { repository.actualizarMontoPagado(dispId, 150.0, "optica-test") }
+        assertEquals(true, completed)
+    }
+
+    @Test
+    fun `save persists montoPagado AFTER pago insertions`() = runTest {
+        coEvery { calcularMontoPagado(dispId) } returns 200.0
+
+        val vm = createViewModel()
+        vm.loadFinanciera(dispId)
+        val newPago = Pago(id = "p-new", dispensacionId = dispId, fecha = testDate, tipo = "Abono", monto = 200.0, metodoPago = "Efectivo", opticaId = "optica-test")
+        vm.addPago(newPago)
+
+        vm.save {}
+
+        coVerifyOrder {
+            repository.agregarPago(any())
+            calcularMontoPagado(dispId)
+            repository.actualizarMontoPagado(dispId, 200.0, "optica-test")
+        }
+    }
+
+    @Test
+    fun `save with abono and reembolso updates montoPagado correctly`() = runTest {
+        val abono = Pago(id = "p-a", dispensacionId = dispId, fecha = testDate, tipo = "Abono", monto = 200.0, metodoPago = "Efectivo", opticaId = "optica-test")
+        val reembolso = Pago(id = "p-r", dispensacionId = dispId, fecha = testDate, tipo = "Reembolso", monto = 50.0, metodoPago = "Efectivo", opticaId = "optica-test")
+        coEvery { repository.obtenerPagos(dispId) } returns listOf(abono, reembolso)
+        coEvery { calcularMontoPagado(dispId) } returns 150.0
+
+        val vm = createViewModel()
+        vm.loadFinanciera(dispId)
+
+        vm.save {}
+
+        coVerify { repository.actualizarMontoPagado(dispId, 150.0, "optica-test") }
+    }
 }

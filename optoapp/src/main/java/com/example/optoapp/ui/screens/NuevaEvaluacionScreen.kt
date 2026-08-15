@@ -20,6 +20,7 @@ import com.example.optoapp.testing.TestTags
 import com.example.optoapp.ui.components.OSDIDialog
 import com.example.optoapp.ui.components.OptoDatePickerDialog
 import com.example.optoapp.ui.components.OptoTopAppBar
+import com.example.optoapp.ui.components.PatientContextCard
 import com.example.optoapp.ui.components.StepIndicator
 import com.example.optoapp.ui.components.evaluacion.AnamnesisSection
 import com.example.optoapp.ui.components.evaluacion.CierreSection
@@ -210,6 +211,14 @@ fun NuevaEvaluacionScreen(
                 .padding(padding)
                 .fillMaxSize(),
         ) {
+            if (uiState.pacienteNombre.isNotBlank()) {
+                PatientContextCard(
+                    pacienteNombre = uiState.pacienteNombre,
+                    fecha = uiState.fecha,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                )
+            }
+
             StepIndicator(
                 currentStep = currentStep,
                 totalSteps = 5,

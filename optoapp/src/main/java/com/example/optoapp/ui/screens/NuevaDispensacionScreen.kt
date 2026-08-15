@@ -28,17 +28,20 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.optoapp.testing.TestTags
-import com.example.optoapp.ui.components.DropdownField
 import com.example.optoapp.ui.components.FechaEntregaEditButton
 import com.example.optoapp.ui.components.OptoDatePickerDialog
 import com.example.optoapp.ui.components.OptoTextField
 import com.example.optoapp.ui.components.OptoTopAppBar
+import com.example.optoapp.ui.components.PatientContextCard
+import com.example.optoapp.ui.components.StepIndicator
 import com.example.optoapp.ui.navigation.Route
 import com.example.optoapp.ui.components.dispensacion.LenteForm
 import com.example.optoapp.util.DateUtils
 import com.example.optoapp.viewmodel.DispensacionItemUi
 import com.example.optoapp.viewmodel.DispensacionViewModel
 import java.time.LocalDate
+
+private val WIZARD_STEPS = listOf("Orden", "Productos", "Confirmar")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -48,6 +51,7 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
     val expandedItems = remember { mutableStateMapOf<Int, Boolean>() }
     var showDatePicker by remember { mutableStateOf(false) }
     var evaluacionExpanded by remember { mutableStateOf(false) }
+    var currentStep by remember { mutableStateOf(0) }
 
     LaunchedEffect(dispensacionId) {
         if (dispensacionId != null) {
@@ -60,12 +64,8 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
         viewModel.loadUltimaEvaluacionParaTicket(pacienteId)
     }
 
-    // Find selected evaluacion for prisma display
     val selectedEvaluacion = remember(uiState.evaluacionId, uiState.evaluacionesDisponibles) {
         uiState.evaluacionesDisponibles.find { it.id == uiState.evaluacionId }
-    }
-    val ultimaEvaluacion = remember {
-        uiState.evaluacionesDisponibles.maxByOrNull { it.fecha }
     }
 
     if (showDatePicker) {
@@ -102,16 +102,49 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
             OptoTopAppBar(
                 title = if (dispensacionId == null) "Nueva Dispensación" else "Editar Dispensación",
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
+                    IconButton(onClick = {
+                        if (currentStep > 0) currentStep-- else navController.popBackStack()
+                    }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
                     }
                 },
                 actions = {
-                    IconButton(onClick = { saveAction() }) {
-                        Icon(Icons.Default.Check, contentDescription = "Guardar")
+                    if (currentStep == WIZARD_STEPS.lastIndex) {
+                        IconButton(onClick = { saveAction() }) {
+                            Icon(Icons.Default.Check, contentDescription = "Guardar")
+                        }
                     }
                 },
             )
+        },
+        bottomBar = {
+            Surface(tonalElevation = 2.dp) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .navigationBarsPadding()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    if (currentStep > 0) {
+                        OutlinedButton(
+                            onClick = { currentStep-- },
+                            modifier = Modifier.weight(1f),
+                        ) { Text("Anterior") }
+                    }
+                    if (currentStep < WIZARD_STEPS.lastIndex) {
+                        Button(
+                            onClick = { currentStep++ },
+                            modifier = Modifier.weight(1f),
+                        ) { Text("Siguiente") }
+                    } else {
+                        Button(
+                            onClick = { saveAction() },
+                            modifier = Modifier.weight(1f).testTag(TestTags.DISPENSACION_GUARDAR_BTN),
+                        ) { Text(if (dispensacionId == null) "Confirmar Orden" else "Actualizar Orden") }
+                    }
+                }
+            }
         },
     ) { padding ->
         Column(
@@ -119,236 +152,55 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
                 .fillMaxSize()
                 .padding(padding)
                 .padding(horizontal = 16.dp)
-                .verticalScroll(rememberScrollState())
-                .navigationBarsPadding(),
+                .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             if (uiState.isLoading) {
                 LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
             }
 
-            OutlinedButton(onClick = { showDatePicker = true }, modifier = Modifier.fillMaxWidth()) {
-                Text("Fecha: ${DateUtils.formatLocalized(uiState.fecha)}")
-            }
-            Row(
+            Spacer(modifier = Modifier.height(4.dp))
+
+            StepIndicator(
+                currentStep = currentStep,
+                totalSteps = WIZARD_STEPS.size,
+                labels = WIZARD_STEPS,
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                OptoTextField(
-                    value = uiState.ot,
-                    onValueChange = { viewModel.updateUiState { s -> s.copy(ot = it) } },
-                    label = "N° OT (OT-AAAA-####)",
-                    modifier = Modifier.weight(1f).testTag(TestTags.DISPENSACION_OT_FIELD),
-                )
-                TextButton(onClick = { viewModel.suggestOt() }) {
-                    Text("Sugerir OT", fontSize = 13.sp)
-                }
-            }
-
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
-                shape = RoundedCornerShape(12.dp),
-            ) {
-                Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Evaluación Vinculada", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.primary)
-
-                    if (uiState.evaluacionesDisponibles.isNotEmpty()) {
-                        ExposedDropdownMenuBox(
-                            expanded = evaluacionExpanded,
-                            onExpandedChange = { evaluacionExpanded = !evaluacionExpanded },
-                        ) {
-                            OutlinedTextField(
-                                value = if (uiState.evaluacionId != null) {
-                                    val eval = uiState.evaluacionesDisponibles.find { it.id == uiState.evaluacionId }
-                                    if (eval != null) DateUtils.formatLocalized(eval.fecha) else "Seleccionar evaluación"
-                                } else {
-                                    "Sin evaluación"
-                                },
-                                onValueChange = {},
-                                readOnly = true,
-                                label = { Text("Evaluación") },
-                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = evaluacionExpanded) },
-                                modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true),
-                            )
-                            ExposedDropdownMenu(
-                                expanded = evaluacionExpanded,
-                                onDismissRequest = { evaluacionExpanded = false },
-                            ) {
-                                DropdownMenuItem(
-                                    text = { Text("Sin evaluación", color = MaterialTheme.colorScheme.onSurfaceVariant) },
-                                    onClick = {
-                                        viewModel.setEvaluacionId(null)
-                                        evaluacionExpanded = false
-                                    },
-                                )
-                                uiState.evaluacionesDisponibles.sortedByDescending { it.fecha }.forEach { eval ->
-                                    DropdownMenuItem(
-                                        text = { Text(DateUtils.formatLocalized(eval.fecha)) },
-                                        onClick = {
-                                            viewModel.setEvaluacionId(eval.id)
-                                            evaluacionExpanded = false
-                                        },
-                                    )
-                                }
-                            }
-                        }
-                    } else {
-                        Text("No hay evaluaciones para este paciente.", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-
-                    // Prisma read-only display from linked evaluation — only if values exist
-                    if (selectedEvaluacion != null &&
-                        (selectedEvaluacion.prismaOdValor.orEmpty().isNotBlank() || selectedEvaluacion.prismaOiValor.orEmpty().isNotBlank())
-                    ) {
-                        HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
-                        Text("Prisma (solo lectura)", fontWeight = FontWeight.SemiBold, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text("OD:", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Text(
-                                buildPrismaDisplay(selectedEvaluacion.prismaOdValor.orEmpty(), selectedEvaluacion.prismaOdBase.orEmpty()),
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Medium,
-                            )
-                        }
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text("OI:", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Text(
-                                buildPrismaDisplay(selectedEvaluacion.prismaOiValor.orEmpty(), selectedEvaluacion.prismaOiBase.orEmpty()),
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Medium,
-                            )
-                        }
-                    }
-                }
-            }
-
-            Text(
-                "Productos",
-                fontWeight = FontWeight.Bold,
-                fontSize = 16.sp,
-                color = MaterialTheme.colorScheme.primary,
             )
 
-            uiState.items.forEachIndexed { index, item ->
-                val isExpanded = expandedItems[index] ?: (uiState.items.size <= 1)
-                CollapsibleItemCard(
-                    item = item,
-                    index = index,
-                    isExpanded = isExpanded,
-                    isOnlyItem = uiState.items.size <= 1,
+            Spacer(modifier = Modifier.height(8.dp))
+
+            if (uiState.pacienteNombre.isNotBlank()) {
+                PatientContextCard(
+                    pacienteNombre = uiState.pacienteNombre,
+                    ot = uiState.ot.ifBlank { null },
+                    fecha = uiState.fecha,
+                )
+            }
+
+            when (currentStep) {
+                0 -> StepOrden(
+                    uiState = uiState,
+                    viewModel = viewModel,
+                    selectedEvaluacion = selectedEvaluacion,
+                    evaluacionExpanded = evaluacionExpanded,
+                    onEvaluacionExpandedChange = { evaluacionExpanded = it },
+                    onShowDatePicker = { showDatePicker = true },
+                )
+                1 -> StepProductos(
+                    uiState = uiState,
+                    viewModel = viewModel,
                     monturasActivas = monturasActivas,
-                    onToggle = { expandedItems[index] = !isExpanded },
-                    onUpdate = { updated -> viewModel.updateItem(index, updated) },
-                    onRemove = { viewModel.removeItem(index) },
-                    onCalculateCosts = { viewModel.calculateCosts(index) },
+                    expandedItems = expandedItems,
+                )
+                2 -> StepConfirmar(
+                    uiState = uiState,
+                    viewModel = viewModel,
+                    dispensacionId = dispensacionId,
+                    navController = navController,
                 )
             }
 
-            OutlinedButton(
-                onClick = { viewModel.addItem() },
-                modifier = Modifier.fillMaxWidth().testTag(TestTags.DISPENSACION_AGREGAR_ITEM_BTN),
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Agregar")
-                Spacer(Modifier.width(8.dp))
-                Text("Agregar otro producto (lente + montura)")
-            }
-
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
-            ) {
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Información Financiera", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-
-                    if (dispensacionId == null) {
-                        OptoTextField(
-                            value = uiState.montoTotal,
-                            onValueChange = { value -> viewModel.updateUiState { it.copy(montoTotal = value.replace(',', '.')) } },
-                            label = "Monto Total",
-                            keyboardType = KeyboardType.Decimal,
-                        )
-                        com.example.optoapp.ui.components.OptoDropdownMenuField(label = "Estado de Entrega", selected = uiState.estadoEntrega, options = listOf("Pendiente", "Entregado"), onSelected = { newEstado ->
-                            val newFecha = when (newEstado) {
-                                "Entregado" -> LocalDate.now()
-                                else -> null
-                            }
-                            viewModel.updateUiState { it.copy(estadoEntrega = newEstado, fechaEntrega = newFecha) }
-                        })
-                        if (uiState.fechaEntrega != null) {
-                            FechaEntregaEditButton(fechaEntrega = uiState.fechaEntrega, onFechaChanged = { nueva -> viewModel.updateUiState { it.copy(fechaEntrega = nueva) } })
-                        }
-                    } else {
-                        val monto = uiState.montoTotal.toDoubleOrNull() ?: 0.0
-                        val pagado = uiState.pagos.sumOf { it.monto }
-                        val saldo = monto - pagado
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text("Monto Total:", fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            Text("s/. ${"%.2f".format(monto)}", fontWeight = FontWeight.Bold)
-                        }
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text("Saldo:", fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            Text(
-                                "s/. ${"%.2f".format(saldo)}",
-                                fontWeight = FontWeight.Bold,
-                                color = if (saldo > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary,
-                            )
-                        }
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text("Estado:", fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            Text(uiState.estadoEntrega, fontWeight = FontWeight.Bold)
-                        }
-                        OutlinedButton(
-                            onClick = { navController.navigate(Route.InformacionFinanciera(dispensacionId).route) },
-                            modifier = Modifier.fillMaxWidth(),
-                        ) {
-                            Text("Gestionar Pagos")
-                        }
-                        // Gestionar costos button (only for existing dispensaciones)
-                        OutlinedButton(
-                            onClick = { navController.navigate(Route.CostosYGastosDisp(dispensacionId).route) },
-                            modifier = Modifier.fillMaxWidth(),
-                        ) {
-                            Icon(Icons.Default.Receipt, contentDescription = "Recibo", modifier = Modifier.size(16.dp))
-                            Spacer(Modifier.width(6.dp))
-                            Text("Gestionar costos →")
-                        }
-                        if (uiState.fechaEntrega != null) {
-                            FechaEntregaEditButton(fechaEntrega = uiState.fechaEntrega, onFechaChanged = { nueva -> viewModel.updateUiState { it.copy(fechaEntrega = nueva) } })
-                        } else {
-                            TextButton(onClick = { viewModel.updateUiState { it.copy(fechaEntrega = LocalDate.now()) } }) {
-                                Text("Asignar fecha de entrega", fontSize = 12.sp)
-                            }
-                        }
-                    }
-                }
-            }
-
-            RegalosSection(
-                uiState = uiState,
-                monturas = viewModel.monturasActivas.collectAsState().value,
-                onAddRegalo = viewModel::addRegalo,
-                onRemoveRegalo = viewModel::removeRegalo,
-            )
-
-            Button(onClick = { saveAction() }, modifier = Modifier.fillMaxWidth().testTag(TestTags.DISPENSACION_GUARDAR_BTN)) {
-                Text(if (dispensacionId == null) "Confirmar Orden" else "Actualizar Orden")
-            }
-            if (dispensacionId != null) {
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedButton(
-                    onClick = {
-                        viewModel.deleteDispensacion(dispensacionId) {
-                            navController.popBackStack()
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
-                ) {
-                    Text("Eliminar Orden")
-                }
-            }
             if (!uiState.error.isNullOrBlank()) {
                 Text(
                     text = uiState.error ?: "",
@@ -357,6 +209,253 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
                 )
             }
             Spacer(modifier = Modifier.height(12.dp))
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun StepOrden(
+    uiState: com.example.optoapp.viewmodel.DispensacionUiState,
+    viewModel: DispensacionViewModel,
+    selectedEvaluacion: com.example.optoapp.data.EvaluacionClinica?,
+    evaluacionExpanded: Boolean,
+    onEvaluacionExpandedChange: (Boolean) -> Unit,
+    onShowDatePicker: () -> Unit,
+) {
+    OutlinedButton(onClick = onShowDatePicker, modifier = Modifier.fillMaxWidth()) {
+        Text("Fecha: ${DateUtils.formatLocalized(uiState.fecha)}")
+    }
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        OptoTextField(
+            value = uiState.ot,
+            onValueChange = { viewModel.updateUiState { s -> s.copy(ot = it) } },
+            label = "N° OT (OT-AAAA-####)",
+            modifier = Modifier.weight(1f).testTag(TestTags.DISPENSACION_OT_FIELD),
+        )
+        TextButton(onClick = { viewModel.suggestOt() }) {
+            Text("Sugerir OT", fontSize = 13.sp)
+        }
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
+        shape = RoundedCornerShape(12.dp),
+    ) {
+        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Evaluación Vinculada", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.primary)
+
+            if (uiState.evaluacionesDisponibles.isNotEmpty()) {
+                ExposedDropdownMenuBox(
+                    expanded = evaluacionExpanded,
+                    onExpandedChange = { onEvaluacionExpandedChange(!evaluacionExpanded) },
+                ) {
+                    OutlinedTextField(
+                        value = if (uiState.evaluacionId != null) {
+                            val eval = uiState.evaluacionesDisponibles.find { it.id == uiState.evaluacionId }
+                            if (eval != null) DateUtils.formatLocalized(eval.fecha) else "Seleccionar evaluación"
+                        } else {
+                            "Sin evaluación"
+                        },
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Evaluación") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = evaluacionExpanded) },
+                        modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true),
+                    )
+                    ExposedDropdownMenu(
+                        expanded = evaluacionExpanded,
+                        onDismissRequest = { onEvaluacionExpandedChange(false) },
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Sin evaluación", color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                            onClick = {
+                                viewModel.setEvaluacionId(null)
+                                onEvaluacionExpandedChange(false)
+                            },
+                        )
+                        uiState.evaluacionesDisponibles.sortedByDescending { it.fecha }.forEach { eval ->
+                            DropdownMenuItem(
+                                text = { Text(DateUtils.formatLocalized(eval.fecha)) },
+                                onClick = {
+                                    viewModel.setEvaluacionId(eval.id)
+                                    onEvaluacionExpandedChange(false)
+                                },
+                            )
+                        }
+                    }
+                }
+            } else {
+                Text("No hay evaluaciones para este paciente.", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+
+            if (selectedEvaluacion != null &&
+                (selectedEvaluacion.prismaOdValor.orEmpty().isNotBlank() || selectedEvaluacion.prismaOiValor.orEmpty().isNotBlank())
+            ) {
+                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                Text("Prisma (solo lectura)", fontWeight = FontWeight.SemiBold, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text("OD:", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        buildPrismaDisplay(selectedEvaluacion.prismaOdValor.orEmpty(), selectedEvaluacion.prismaOdBase.orEmpty()),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                    )
+                }
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text("OI:", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        buildPrismaDisplay(selectedEvaluacion.prismaOiValor.orEmpty(), selectedEvaluacion.prismaOiBase.orEmpty()),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun StepProductos(
+    uiState: com.example.optoapp.viewmodel.DispensacionUiState,
+    viewModel: DispensacionViewModel,
+    monturasActivas: List<com.example.optoapp.data.Montura>,
+    expandedItems: MutableMap<Int, Boolean>,
+) {
+    Text(
+        "Productos",
+        fontWeight = FontWeight.Bold,
+        fontSize = 16.sp,
+        color = MaterialTheme.colorScheme.primary,
+    )
+
+    uiState.items.forEachIndexed { index, item ->
+        val isExpanded = expandedItems[index] ?: (uiState.items.size <= 1)
+        CollapsibleItemCard(
+            item = item,
+            index = index,
+            isExpanded = isExpanded,
+            isOnlyItem = uiState.items.size <= 1,
+            monturasActivas = monturasActivas,
+            onToggle = { expandedItems[index] = !isExpanded },
+            onUpdate = { updated -> viewModel.updateItem(index, updated) },
+            onRemove = { viewModel.removeItem(index) },
+            onCalculateCosts = { viewModel.calculateCosts(index) },
+        )
+    }
+
+    OutlinedButton(
+        onClick = { viewModel.addItem() },
+        modifier = Modifier.fillMaxWidth().testTag(TestTags.DISPENSACION_AGREGAR_ITEM_BTN),
+    ) {
+        Icon(Icons.Default.Add, contentDescription = "Agregar")
+        Spacer(Modifier.width(8.dp))
+        Text("Agregar otro producto (lente + montura)")
+    }
+}
+
+@Composable
+private fun StepConfirmar(
+    uiState: com.example.optoapp.viewmodel.DispensacionUiState,
+    viewModel: DispensacionViewModel,
+    dispensacionId: String?,
+    navController: NavController,
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
+    ) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Información Financiera", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+
+            if (dispensacionId == null) {
+                OptoTextField(
+                    value = uiState.montoTotal,
+                    onValueChange = { value -> viewModel.updateUiState { it.copy(montoTotal = value.replace(',', '.')) } },
+                    label = "Monto Total",
+                    keyboardType = KeyboardType.Decimal,
+                )
+                com.example.optoapp.ui.components.OptoDropdownMenuField(
+                    label = "Estado de Entrega",
+                    selected = uiState.estadoEntrega,
+                    options = listOf("Pendiente", "Entregado"),
+                    onSelected = { newEstado ->
+                        val newFecha = when (newEstado) {
+                            "Entregado" -> LocalDate.now()
+                            else -> null
+                        }
+                        viewModel.updateUiState { it.copy(estadoEntrega = newEstado, fechaEntrega = newFecha) }
+                    },
+                )
+                if (uiState.fechaEntrega != null) {
+                    FechaEntregaEditButton(
+                        fechaEntrega = uiState.fechaEntrega,
+                        onFechaChanged = { nueva -> viewModel.updateUiState { it.copy(fechaEntrega = nueva) } },
+                    )
+                }
+            } else {
+                val monto = uiState.montoTotal.toDoubleOrNull() ?: 0.0
+                val pagado = uiState.pagos.sumOf { it.monto }
+                val saldo = monto - pagado
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text("Monto Total:", fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text("s/. ${"%.2f".format(monto)}", fontWeight = FontWeight.Bold)
+                }
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text("Saldo:", fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(
+                        "s/. ${"%.2f".format(saldo)}",
+                        fontWeight = FontWeight.Bold,
+                        color = if (saldo > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary,
+                    )
+                }
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text("Estado:", fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(uiState.estadoEntrega, fontWeight = FontWeight.Bold)
+                }
+                OutlinedButton(
+                    onClick = { navController.navigate(Route.InformacionFinanciera(dispensacionId).route) },
+                    modifier = Modifier.fillMaxWidth(),
+                ) { Text("Gestionar Pagos") }
+                OutlinedButton(
+                    onClick = { navController.navigate(Route.CostosYGastosDisp(dispensacionId).route) },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Icon(Icons.Default.Receipt, contentDescription = "Recibo", modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text("Gestionar costos →")
+                }
+                if (uiState.fechaEntrega != null) {
+                    FechaEntregaEditButton(
+                        fechaEntrega = uiState.fechaEntrega,
+                        onFechaChanged = { nueva -> viewModel.updateUiState { it.copy(fechaEntrega = nueva) } },
+                    )
+                } else {
+                    TextButton(onClick = { viewModel.updateUiState { it.copy(fechaEntrega = LocalDate.now()) } }) {
+                        Text("Asignar fecha de entrega", fontSize = 12.sp)
+                    }
+                }
+            }
+        }
+    }
+
+    if (dispensacionId != null) {
+        Spacer(modifier = Modifier.height(8.dp))
+        OutlinedButton(
+            onClick = {
+                viewModel.deleteDispensacion(dispensacionId) {
+                    navController.popBackStack()
+                }
+            },
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
+        ) {
+            Text("Eliminar Orden")
         }
     }
 }

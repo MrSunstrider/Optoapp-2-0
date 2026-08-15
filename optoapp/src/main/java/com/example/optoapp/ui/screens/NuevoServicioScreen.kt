@@ -14,14 +14,25 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.optoapp.ui.components.OptoDatePickerDialog
 import com.example.optoapp.ui.components.OptoTopAppBar
+import com.example.optoapp.ui.components.StepIndicator
 import com.example.optoapp.ui.components.servicio.ServicioForm
+
+private val WIZARD_STEPS = listOf("Datos", "Pagos")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NuevoServicioScreen(navController: NavController, pacienteId: String? = null, servicioId: String? = null, viewModel: com.example.optoapp.viewmodel.ServiciosViewModel = hiltViewModel()) {
+fun NuevoServicioScreen(
+    navController: NavController,
+    pacienteId: String? = null,
+    servicioId: String? = null,
+    viewModel: com.example.optoapp.viewmodel.ServiciosViewModel = hiltViewModel(),
+) {
     val uiState by viewModel.uiState.collectAsState()
     val pacientes by viewModel.pacientes.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    var currentStep by remember { mutableIntStateOf(0) }
+
+    val isPacienteLocked = pacienteId != null && pacienteId != "null" && (servicioId == null || servicioId == "null")
 
     LaunchedEffect(uiState.error) {
         val msg = uiState.error ?: return@LaunchedEffect
@@ -50,6 +61,13 @@ fun NuevoServicioScreen(navController: NavController, pacienteId: String? = null
     }
 
     val monturas by viewModel.monturas.collectAsState()
+    val isEdit = servicioId != null && servicioId != "null"
+
+    val saveAction = {
+        viewModel.saveServicio {
+            navController.popBackStack()
+        }
+    }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.surface,
@@ -57,22 +75,51 @@ fun NuevoServicioScreen(navController: NavController, pacienteId: String? = null
         snackbarHost = { SnackbarHost(snackbarHostState, modifier = Modifier.navigationBarsPadding()) },
         topBar = {
             OptoTopAppBar(
-                title = if (servicioId == null || servicioId == "null") "Nuevo Servicio" else "Editar Servicio",
+                title = if (!isEdit) "Nuevo Servicio" else "Editar Servicio",
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
+                    IconButton(onClick = {
+                        if (currentStep > 0) currentStep-- else navController.popBackStack()
+                    }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
                     }
                 },
                 actions = {
-                    IconButton(onClick = {
-                        viewModel.saveServicio {
-                            navController.popBackStack()
+                    if (currentStep == WIZARD_STEPS.lastIndex) {
+                        IconButton(onClick = { saveAction() }) {
+                            Icon(Icons.Default.Check, contentDescription = "Guardar")
                         }
-                    }) {
-                        Icon(Icons.Default.Check, contentDescription = "Guardar")
                     }
                 },
             )
+        },
+        bottomBar = {
+            Surface(tonalElevation = 2.dp) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .navigationBarsPadding()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    if (currentStep > 0) {
+                        OutlinedButton(
+                            onClick = { currentStep-- },
+                            modifier = Modifier.weight(1f),
+                        ) { Text("Anterior") }
+                    }
+                    if (currentStep < WIZARD_STEPS.lastIndex) {
+                        Button(
+                            onClick = { currentStep++ },
+                            modifier = Modifier.weight(1f),
+                        ) { Text("Siguiente") }
+                    } else {
+                        Button(
+                            onClick = { saveAction() },
+                            modifier = Modifier.weight(1f),
+                        ) { Text(if (!isEdit) "Guardar Servicio" else "Actualizar Servicio") }
+                    }
+                }
+            }
         },
     ) { padding ->
         Column(
@@ -84,6 +131,17 @@ fun NuevoServicioScreen(navController: NavController, pacienteId: String? = null
                 .navigationBarsPadding(),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
+            Spacer(modifier = Modifier.height(4.dp))
+
+            StepIndicator(
+                currentStep = currentStep,
+                totalSteps = WIZARD_STEPS.size,
+                labels = WIZARD_STEPS,
+                modifier = Modifier.fillMaxWidth(),
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
             ServicioForm(
                 uiState = uiState,
                 onUpdate = { s -> viewModel.updateUiState { s } },
@@ -94,7 +152,11 @@ fun NuevoServicioScreen(navController: NavController, pacienteId: String? = null
                 onUpdatePago = { viewModel.updatePagoLocal(it) },
                 onRemovePago = { viewModel.removePagoLocal(it) },
                 onShowDatePicker = { showDatePicker = true },
+                step = currentStep,
+                isPacienteLocked = isPacienteLocked,
             )
+
+            Spacer(modifier = Modifier.height(12.dp))
         }
     }
 }

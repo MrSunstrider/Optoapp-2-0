@@ -102,6 +102,21 @@ private object PhoneSpaceTransformation : VisualTransformation {
     }
 }
 
+internal const val SECTION_IDENTIDAD = "Identidad"
+internal const val SECTION_CONTACTO = "Contacto"
+internal const val SECTION_CLINICA = "Clínica / contexto"
+
+@Composable
+private fun SectionHeader(title: String) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.titleMedium,
+        fontWeight = FontWeight.SemiBold,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
+    )
+}
+
 @Composable
 fun PacienteFormSections(
     nombreCompleto: String,
@@ -137,31 +152,8 @@ fun PacienteFormSections(
     var showSexoDialog by remember { mutableStateOf(false) }
     val sexos = listOf("Masculino", "Femenino")
 
-    OutlinedButton(
-        onClick = onShowDatePicker,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Text("Fecha de Registro: ${DateUtils.formatLocalized(fechaCreacion)}")
-    }
-
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
-    ) {
-        OutlinedTextField(
-            value = historiaOptometrica,
-            onValueChange = onHistoriaOptometricaChange,
-            label = { Text("N° Historia Optométrica") },
-            modifier = Modifier.weight(1f),
-        )
-        TextButton(
-            onClick = onSuggestHo,
-            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
-        ) {
-            Text("Sugerir HO", maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-        }
-    }
+    // --- Section 1: Identidad ---
+    SectionHeader(SECTION_IDENTIDAD)
 
     OutlinedTextField(
         value = nombreCompleto,
@@ -169,6 +161,28 @@ fun PacienteFormSections(
         label = { Text("Nombre Completo *") },
         modifier = Modifier.fillMaxWidth().testTag(TestTags.PACIENTE_NOMBRE_FIELD),
     )
+
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        OutlinedTextField(
+            value = dni,
+            onValueChange = onDniChange,
+            label = { Text("DNI / Cédula") },
+            modifier = Modifier.weight(1f),
+        )
+        OutlinedTextField(
+            value = sexo,
+            onValueChange = {},
+            readOnly = true,
+            label = { Text("Sexo") },
+            trailingIcon = {
+                IconButton(onClick = { showSexoDialog = true }) {
+                    Icon(Icons.Default.ArrowDropDown, contentDescription = "Desplegar")
+                }
+            },
+            modifier = Modifier.weight(1f),
+        )
+    }
+
     val fechaNacError: String? = remember(fechaNacimiento) {
         validateFechaNacimiento(fechaNacimiento)
     }
@@ -205,35 +219,6 @@ fun PacienteFormSections(
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
         )
     }
-    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        OutlinedTextField(
-            value = telefono,
-            onValueChange = { onTelefonoChange(it.filter { c -> c.isDigit() }.take(9)) },
-            label = { Text("Teléfono *") },
-            modifier = Modifier.weight(1f).testTag(TestTags.PACIENTE_TELEFONO_FIELD),
-            visualTransformation = PhoneSpaceTransformation,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-        )
-        OutlinedTextField(
-            value = dni,
-            onValueChange = onDniChange,
-            label = { Text("DNI / Cédula") },
-            modifier = Modifier.weight(1f),
-        )
-    }
-
-    OutlinedTextField(
-        value = sexo,
-        onValueChange = {},
-        readOnly = true,
-        label = { Text("Sexo") },
-        trailingIcon = {
-            IconButton(onClick = { showSexoDialog = true }) {
-                Icon(Icons.Default.ArrowDropDown, contentDescription = "Desplegar")
-            }
-        },
-        modifier = Modifier.fillMaxWidth(),
-    )
 
     if (showSexoDialog) {
         AlertDialog(
@@ -283,13 +268,26 @@ fun PacienteFormSections(
         )
     }
 
-    OutlinedTextField(
-        value = email,
-        onValueChange = onEmailChange,
-        label = { Text("Correo Electrónico") },
-        modifier = Modifier.fillMaxWidth().testTag(TestTags.PACIENTE_EMAIL_FIELD),
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-    )
+    // --- Section 2: Contacto ---
+    SectionHeader(SECTION_CONTACTO)
+
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        OutlinedTextField(
+            value = telefono,
+            onValueChange = { onTelefonoChange(it.filter { c -> c.isDigit() }.take(9)) },
+            label = { Text("Teléfono *") },
+            modifier = Modifier.weight(1f).testTag(TestTags.PACIENTE_TELEFONO_FIELD),
+            visualTransformation = PhoneSpaceTransformation,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+        )
+        OutlinedTextField(
+            value = email,
+            onValueChange = onEmailChange,
+            label = { Text("Correo Electrónico") },
+            modifier = Modifier.weight(1f).testTag(TestTags.PACIENTE_EMAIL_FIELD),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+        )
+    }
     OutlinedTextField(
         value = direccion,
         onValueChange = onDireccionChange,
@@ -302,6 +300,10 @@ fun PacienteFormSections(
         label = { Text("Distrito") },
         modifier = Modifier.fillMaxWidth(),
     )
+
+    // --- Section 3: Clínica / contexto ---
+    SectionHeader(SECTION_CLINICA)
+
     OutlinedTextField(
         value = ocupacion,
         onValueChange = onOcupacionChange,
@@ -321,4 +323,30 @@ fun PacienteFormSections(
         modifier = Modifier.fillMaxWidth(),
         minLines = 2,
     )
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        OutlinedTextField(
+            value = historiaOptometrica,
+            onValueChange = onHistoriaOptometricaChange,
+            label = { Text("N° Historia Optométrica") },
+            modifier = Modifier.weight(1f),
+        )
+        TextButton(
+            onClick = onSuggestHo,
+            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
+        ) {
+            Text("Sugerir HO", maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+        }
+    }
+
+    OutlinedButton(
+        onClick = onShowDatePicker,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Text("Fecha de Registro: ${DateUtils.formatLocalized(fechaCreacion)}")
+    }
 }

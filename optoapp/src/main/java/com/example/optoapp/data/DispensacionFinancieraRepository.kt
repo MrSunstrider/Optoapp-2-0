@@ -1,5 +1,6 @@
 package com.example.optoapp.data
 
+import com.example.optoapp.data.regalodispensacion.RegaloDispensacionEntity
 import kotlinx.coroutines.flow.first
 import java.time.LocalDate
 
@@ -15,11 +16,16 @@ interface DispensacionFinancieraRepository {
     suspend fun obtenerDispensacion(dispensacionId: String): Resource<DispensacionOptica>
     suspend fun obtenerContexto(dispensacionId: String): ContextoFinanciero
     suspend fun obtenerPagos(dispensacionId: String): List<Pago>
+    suspend fun obtenerRegalos(dispensacionId: String): List<RegaloDispensacionEntity>
     suspend fun actualizarMontoTotal(dispensacionId: String, montoTotal: Double, opticaId: String)
+    suspend fun actualizarMontoPagado(dispensacionId: String, montoPagado: Double, opticaId: String)
     suspend fun actualizarEstado(dispensacionId: String, estado: String, fechaEntrega: LocalDate?, opticaId: String)
     suspend fun agregarPago(pago: Pago)
     suspend fun editarPago(pago: Pago)
     suspend fun eliminarPago(pago: Pago, opticaId: String)
+    suspend fun insertarRegalo(regalo: RegaloDispensacionEntity)
+    suspend fun eliminarRegalosByDispensacionId(dispensacionId: String, opticaId: String)
+    suspend fun obtenerMonturas(opticaId: String): List<Montura>
     fun runInTransaction(block: () -> Unit)
     suspend fun <T> withTransaction(block: suspend () -> T): T
 }
@@ -72,6 +78,14 @@ class DispensacionFinancieraRepositoryImpl(
         }
     }
 
+    override suspend fun actualizarMontoPagado(dispensacionId: String, montoPagado: Double, opticaId: String) {
+        val result = optoRepository.getDispensacionById(dispensacionId)
+        if (result is Resource.Success && result.data != null) {
+            val updated = result.data.copy(montoPagado = montoPagado)
+            optoRepository.updateDispensacion(updated)
+        }
+    }
+
     override suspend fun actualizarEstado(dispensacionId: String, estado: String, fechaEntrega: LocalDate?, opticaId: String) {
         val result = optoRepository.getDispensacionById(dispensacionId)
         if (result is Resource.Success && result.data != null) {
@@ -91,4 +105,18 @@ class DispensacionFinancieraRepositoryImpl(
     override suspend fun eliminarPago(pago: Pago, opticaId: String) {
         optoRepository.deletePagoRegistrandoAnulacionEnCaja(pago, opticaId)
     }
+
+    override suspend fun obtenerRegalos(dispensacionId: String): List<RegaloDispensacionEntity> =
+        optoRepository.getRegalosByDispensacionId(dispensacionId)
+
+    override suspend fun insertarRegalo(regalo: RegaloDispensacionEntity) {
+        optoRepository.insertRegalo(regalo)
+    }
+
+    override suspend fun eliminarRegalosByDispensacionId(dispensacionId: String, opticaId: String) {
+        optoRepository.deleteRegalosByDispensacionId(dispensacionId, opticaId)
+    }
+
+    override suspend fun obtenerMonturas(opticaId: String): List<Montura> =
+        optoRepository.getMonturasByOptica(opticaId).first()
 }

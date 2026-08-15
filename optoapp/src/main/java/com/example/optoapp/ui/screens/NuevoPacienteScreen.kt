@@ -2,10 +2,6 @@ package com.example.optoapp.ui.screens
 
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -17,8 +13,9 @@ import androidx.navigation.NavController
 import com.example.optoapp.data.Paciente
 import com.example.optoapp.data.Resource
 import com.example.optoapp.testing.TestTags
+import com.example.optoapp.ui.components.FormActions
 import com.example.optoapp.ui.components.OptoDatePickerDialog
-import com.example.optoapp.ui.components.OptoTopAppBar
+import com.example.optoapp.ui.components.OptoFormShell
 import com.example.optoapp.ui.navigation.Route
 import com.example.optoapp.ui.components.paciente.PacienteFormSections
 import com.example.optoapp.util.DateUtils
@@ -28,7 +25,6 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.UUID
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null, viewModel: PacienteViewModel = hiltViewModel()) {
     val scope = rememberCoroutineScope()
@@ -90,155 +86,129 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
         )
     }
 
-    Scaffold(
-        modifier = Modifier.testTag(TestTags.PACIENTE_SCREEN_ROOT),
-        containerColor = MaterialTheme.colorScheme.surface,
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        topBar = {
-            OptoTopAppBar(
-                title = if (pacienteId == null) "Nuevo Paciente" else "Editar Paciente",
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
-                    }
-                },
-            )
-        },
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(16.dp)
-                .navigationBarsPadding()
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            PacienteFormSections(
-                nombreCompleto = nombreCompleto,
-                onNombreCompletoChange = { nombreCompleto = it },
-                edad = edad,
-                onEdadChange = {
-                    edad = it
-                    fechaNacimiento = ""
-                },
-                telefono = telefono,
-                onTelefonoChange = { telefono = it },
-                dni = dni,
-                onDniChange = { dni = it },
-                historiaOptometrica = historiaOptometrica,
-                onHistoriaOptometricaChange = { historiaOptometrica = it },
-                fechaNacimiento = fechaNacimiento,
-                onFechaNacimientoChange = { digits ->
-                    fechaNacimiento = digits
-                    val formatted = DateUtils.formatDateInput(digits)
-                    edad = try {
-                        val parts = formatted.split("/")
-                        if (parts.size == 3) {
-                            val d = parts[0].toIntOrNull() ?: 0
-                            val m = parts[1].toIntOrNull() ?: 0
-                            val y = parts[2].toIntOrNull() ?: 0
-                            if (d in 1..31 && m in 1..12 && y in 1900..2100) {
-                                val nac = LocalDate.of(y, m, d)
-                                val hoy = DateUtils.today()
-                                (hoy.year - nac.year - if (hoy.dayOfYear < nac.dayOfYear) 1 else 0).toString()
-                            } else {
-                                edad
+    val saveAction: () -> Unit = {
+        if (!saving) {
+            if (pacienteLoadError && pacienteId != null) {
+                Toast.makeText(ctx, "No se pudo cargar el paciente para editar", Toast.LENGTH_LONG).show()
+            } else if (nombreCompleto.isNotBlank() && edad.isNotBlank() && telefono.isNotBlank()) {
+                val p = Paciente(
+                    id = pacienteId ?: UUID.randomUUID().toString(),
+                    nombreCompleto = nombreCompleto,
+                    edad = edad.toIntOrNull() ?: 0,
+                    telefono = telefono,
+                    fechaCreacion = fechaCreacion,
+                    dni = dni,
+                    historiaOptometrica = historiaOptometrica,
+                    fechaNacimiento = fechaNacimiento.takeIf { it.isNotBlank() }?.let { DateUtils.fromDisplayFormat(DateUtils.formatDateInput(it)) },
+                    sexo = sexo,
+                    email = email,
+                    direccion = direccion,
+                    distrito = distrito,
+                    ocupacion = ocupacion,
+                    acompanante = acompanante,
+                    hobbies = hobbies,
+                )
+                scope.launch {
+                    saving = true
+                    try {
+                        viewModel.savePaciente(p)
+                        val currentRoute = navController.currentBackStackEntry?.destination?.route
+                        navController.navigate(Route.DetallePaciente(p.id).route) {
+                            if (currentRoute != null) {
+                                popUpTo(currentRoute) { inclusive = true }
                             }
+                        }
+                    } catch (e: Exception) {
+                        if (e is kotlinx.coroutines.CancellationException) throw e
+                        Toast.makeText(ctx, "Error al guardar: ${e.message}", Toast.LENGTH_LONG).show()
+                    } finally {
+                        saving = false
+                    }
+                }
+            }
+        }
+    }
+
+    OptoFormShell(
+        title = if (pacienteId == null) "Nuevo Paciente" else "Editar Paciente",
+        onNavigateBack = { navController.popBackStack() },
+        modifier = Modifier.testTag(TestTags.PACIENTE_SCREEN_ROOT),
+        onSave = saveAction,
+        bottomBar = {
+            Surface(tonalElevation = 3.dp) {
+                FormActions(
+                    onSave = saveAction,
+                    onCancel = { navController.popBackStack() },
+                    saveEnabled = !saving,
+                    cancelEnabled = !saving,
+                    saveLoading = saving,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .navigationBarsPadding()
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                )
+            }
+        },
+    ) {
+        PacienteFormSections(
+            nombreCompleto = nombreCompleto,
+            onNombreCompletoChange = { nombreCompleto = it },
+            edad = edad,
+            onEdadChange = {
+                edad = it
+                fechaNacimiento = ""
+            },
+            telefono = telefono,
+            onTelefonoChange = { telefono = it },
+            dni = dni,
+            onDniChange = { dni = it },
+            historiaOptometrica = historiaOptometrica,
+            onHistoriaOptometricaChange = { historiaOptometrica = it },
+            fechaNacimiento = fechaNacimiento,
+            onFechaNacimientoChange = { digits ->
+                fechaNacimiento = digits
+                val formatted = DateUtils.formatDateInput(digits)
+                edad = try {
+                    val parts = formatted.split("/")
+                    if (parts.size == 3) {
+                        val d = parts[0].toIntOrNull() ?: 0
+                        val m = parts[1].toIntOrNull() ?: 0
+                        val y = parts[2].toIntOrNull() ?: 0
+                        if (d in 1..31 && m in 1..12 && y in 1900..2100) {
+                            val nac = LocalDate.of(y, m, d)
+                            val hoy = DateUtils.today()
+                            (hoy.year - nac.year - if (hoy.dayOfYear < nac.dayOfYear) 1 else 0).toString()
                         } else {
                             edad
                         }
-                    } catch (_: Exception) {
+                    } else {
                         edad
                     }
-                },
-                sexo = sexo,
-                onSexoChange = { sexo = it },
-                email = email,
-                onEmailChange = { email = it },
-                direccion = direccion,
-                onDireccionChange = { direccion = it },
-                distrito = distrito,
-                onDistritoChange = { distrito = it },
-                ocupacion = ocupacion,
-                onOcupacionChange = { ocupacion = it },
-                acompanante = acompanante,
-                onAcompananteChange = { acompanante = it },
-                hobbies = hobbies,
-                onHobbiesChange = { hobbies = it },
-                fechaCreacion = fechaCreacion,
-                onShowDatePicker = { showDatePicker = true },
-                onSuggestHo = {
-                    scope.launch {
-                        historiaOptometrica = viewModel.suggestHistoriaOptometrica()
-                    }
-                },
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                OutlinedButton(
-                    onClick = { navController.popBackStack() },
-                    enabled = !saving,
-                    modifier = Modifier.weight(1f),
-                ) {
-                    Text("Cancelar")
+                } catch (_: Exception) {
+                    edad
                 }
-                Button(
-                    onClick = {
-                        if (saving) return@Button
-                        if (pacienteLoadError && pacienteId != null) {
-                            Toast.makeText(ctx, "No se pudo cargar el paciente para editar", Toast.LENGTH_LONG).show()
-                            return@Button
-                        }
-                        if (nombreCompleto.isNotBlank() && edad.isNotBlank() && telefono.isNotBlank()) {
-                            val p = Paciente(
-                                id = pacienteId ?: UUID.randomUUID().toString(),
-                                nombreCompleto = nombreCompleto,
-                                edad = edad.toIntOrNull() ?: 0,
-                                telefono = telefono,
-                                fechaCreacion = fechaCreacion,
-                                dni = dni,
-                                historiaOptometrica = historiaOptometrica,
-                                fechaNacimiento = fechaNacimiento.takeIf { it.isNotBlank() }?.let { DateUtils.fromDisplayFormat(DateUtils.formatDateInput(it)) },
-                                sexo = sexo,
-                                email = email,
-                                direccion = direccion,
-                                distrito = distrito,
-                                ocupacion = ocupacion,
-                                acompanante = acompanante,
-                                hobbies = hobbies,
-                            )
-                            scope.launch {
-                                saving = true
-                                try {
-                                    viewModel.savePaciente(p)
-                                    val currentRoute = navController.currentBackStackEntry?.destination?.route
-                                    navController.navigate(Route.DetallePaciente(p.id).route) {
-                                        if (currentRoute != null) {
-                                            popUpTo(currentRoute) { inclusive = true }
-                                        }
-                                    }
-                                } catch (e: Exception) {
-                                    if (e is kotlinx.coroutines.CancellationException) throw e
-                                    Toast.makeText(ctx, "Error al guardar: ${e.message}", Toast.LENGTH_LONG).show()
-                                } finally {
-                                    saving = false
-                                }
-                            }
-                        }
-                    },
-                    enabled = !saving,
-                    modifier = Modifier.weight(1f).testTag(TestTags.PACIENTE_GUARDAR_BTN),
-                ) {
-                    Text(if (saving) "Guardando…" else "Guardar")
+            },
+            sexo = sexo,
+            onSexoChange = { sexo = it },
+            email = email,
+            onEmailChange = { email = it },
+            direccion = direccion,
+            onDireccionChange = { direccion = it },
+            distrito = distrito,
+            onDistritoChange = { distrito = it },
+            ocupacion = ocupacion,
+            onOcupacionChange = { ocupacion = it },
+            acompanante = acompanante,
+            onAcompananteChange = { acompanante = it },
+            hobbies = hobbies,
+            onHobbiesChange = { hobbies = it },
+            fechaCreacion = fechaCreacion,
+            onShowDatePicker = { showDatePicker = true },
+            onSuggestHo = {
+                scope.launch {
+                    historiaOptometrica = viewModel.suggestHistoriaOptometrica()
                 }
-            }
-            Spacer(modifier = Modifier.height(12.dp))
-        }
+            },
+        )
     }
 }

@@ -180,12 +180,17 @@ fun ServiciosExtraScreen(navController: NavController, drawerState: DrawerState,
                     Card(
                         modifier = Modifier.fillMaxWidth().padding(top = 24.dp),
                         shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                        ),
                     ) {
                         Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Icon(Icons.Default.Handyman, contentDescription = "Sin servicios", modifier = Modifier.size(40.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f))
-                                Spacer(Modifier.height(8.dp))
-                                Text("Sin servicios", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Icon(Icons.Default.Handyman, contentDescription = "Sin servicios", modifier = Modifier.size(48.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f))
+                                Spacer(Modifier.height(12.dp))
+                                Text("No hay servicios", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Spacer(Modifier.height(4.dp))
+                                Text("Toca + para agregar un servicio extra", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f))
                             }
                         }
                     }
@@ -220,7 +225,7 @@ private fun ServicioCard(servicio: ServicioExtra, aCuenta: Double = 0.0, onEdit:
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = estadoColor.copy(alpha = 0.04f)),
     ) {
-        Column(modifier = Modifier.padding(14.dp)) {
+        Column(modifier = Modifier.padding(16.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,

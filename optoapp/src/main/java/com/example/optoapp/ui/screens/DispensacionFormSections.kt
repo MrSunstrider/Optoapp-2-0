@@ -289,7 +289,7 @@ fun FinancieraInfoSection(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegalosSection(
-    uiState: DispensacionUiState,
+    regalos: List<RegaloDispensacionUi>,
     monturas: List<Montura>,
     onAddRegalo: (RegaloDispensacionUi) -> Unit,
     onRemoveRegalo: (Int) -> Unit,
@@ -304,7 +304,7 @@ fun RegalosSection(
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("Regalos", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
 
-            uiState.regalos.forEachIndexed { index, regalo ->
+            regalos.forEachIndexed { index, regalo ->
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(
