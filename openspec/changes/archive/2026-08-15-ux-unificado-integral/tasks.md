@@ -48,10 +48,10 @@
 
 ## Phase 5 — Servicios + pulido (PR-U5)
 
-- [ ] P5.1 Servicio wizard 2 pasos; paciente bloqueado si from tab
-- [ ] P5.2 `FinancieraPagosSection` in ServicioForm; Snackbar errors
-- [ ] P5.3 ServiciosExtraScreen list/card consistency
-- [ ] P5.4 Cross-screen polish (spacing, empty states)
+- [x] P5.1 Servicio wizard 2 pasos; paciente bloqueado si from tab
+- [x] P5.2 `FinancieraPagosSection` in ServicioForm; Snackbar errors
+- [x] P5.3 ServiciosExtraScreen list/card consistency
+- [x] P5.4 Cross-screen polish (spacing, empty states)
 
 ## Phase 6 — Verify + archive
 

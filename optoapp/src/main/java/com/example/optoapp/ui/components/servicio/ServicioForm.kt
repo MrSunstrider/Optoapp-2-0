@@ -20,6 +20,7 @@ import com.example.optoapp.data.Pago
 import com.example.optoapp.ui.components.OptoDropdownMenuField
 import com.example.optoapp.ui.components.FechaEntregaEditButton
 import com.example.optoapp.ui.components.OptoTextField
+import com.example.optoapp.ui.components.PatientContextCard
 import com.example.optoapp.ui.components.financiera.FinancieraPagosSection
 import com.example.optoapp.ui.components.financiera.PagosSectionState
 import com.example.optoapp.ui.components.financiera.SaldoDisplayStyle
@@ -39,6 +40,38 @@ fun ServicioForm(
     onUpdatePago: (Pago) -> Unit,
     onRemovePago: (Pago) -> Unit,
     onShowDatePicker: () -> Unit,
+    step: Int = 0,
+    isPacienteLocked: Boolean = false,
+) {
+    when (step) {
+        0 -> StepDatos(
+            uiState = uiState,
+            onUpdate = onUpdate,
+            monturas = monturas,
+            pacientes = pacientes,
+            onShowDatePicker = onShowDatePicker,
+            isPacienteLocked = isPacienteLocked,
+        )
+        1 -> StepPagos(
+            uiState = uiState,
+            onUpdate = onUpdate,
+            onUpdateEstado = onUpdateEstado,
+            onAddPago = onAddPago,
+            onUpdatePago = onUpdatePago,
+            onRemovePago = onRemovePago,
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun StepDatos(
+    uiState: ServiciosUiState,
+    onUpdate: (ServiciosUiState) -> Unit,
+    monturas: List<Montura>,
+    pacientes: List<Paciente>,
+    onShowDatePicker: () -> Unit,
+    isPacienteLocked: Boolean,
 ) {
     OutlinedButton(onClick = onShowDatePicker, modifier = Modifier.fillMaxWidth()) {
         Text("Fecha: ${DateUtils.formatLocalized(uiState.fecha)}")
@@ -105,33 +138,21 @@ fun ServicioForm(
 
     HorizontalDivider()
 
-    FinancieraPagosSection(
-        state = PagosSectionState(
-            montoTotal = uiState.montoTotal.toDoubleOrNull() ?: 0.0,
-            pagos = uiState.pagos,
-        ),
-        onAddPago = onAddPago,
-        onUpdatePago = onUpdatePago,
-        onRemovePago = onRemovePago,
-        saldoStyle = SaldoDisplayStyle.Card,
-    )
-
-    OptoDropdownMenuField(
-        label = "Estado",
-        selected = uiState.estado,
-        options = listOf("Pendiente", "Entregado"),
-        onSelected = { onUpdateEstado(it) },
-    )
-
-    if (uiState.fechaEntrega != null) {
-        FechaEntregaEditButton(
-            fechaEntrega = uiState.fechaEntrega,
-            onFechaChanged = { nuevaFecha ->
-                onUpdate(uiState.copy(fechaEntrega = nuevaFecha))
-            },
-        )
+    if (isPacienteLocked) {
+        val pacienteName = pacientes.find { it.id == uiState.pacienteId }?.nombreCompleto ?: "Paciente"
+        PatientContextCard(pacienteNombre = pacienteName)
+    } else {
+        PacienteSelector(uiState = uiState, onUpdate = onUpdate, pacientes = pacientes)
     }
+}
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PacienteSelector(
+    uiState: ServiciosUiState,
+    onUpdate: (ServiciosUiState) -> Unit,
+    pacientes: List<Paciente>,
+) {
     Text("Asociar a Paciente (Opcional)", fontWeight = FontWeight.Bold)
     var pExpanded by remember { mutableStateOf(false) }
     var pSearchQuery by remember { mutableStateOf("") }
@@ -166,5 +187,44 @@ fun ServicioForm(
                 })
             }
         }
+    }
+}
+
+@Composable
+private fun StepPagos(
+    uiState: ServiciosUiState,
+    onUpdate: (ServiciosUiState) -> Unit,
+    onUpdateEstado: (String) -> Unit,
+    onAddPago: (Pago) -> Unit,
+    onUpdatePago: (Pago) -> Unit,
+    onRemovePago: (Pago) -> Unit,
+) {
+    FinancieraPagosSection(
+        state = PagosSectionState(
+            montoTotal = uiState.montoTotal.toDoubleOrNull() ?: 0.0,
+            pagos = uiState.pagos,
+        ),
+        onAddPago = onAddPago,
+        onUpdatePago = onUpdatePago,
+        onRemovePago = onRemovePago,
+        saldoStyle = SaldoDisplayStyle.Card,
+    )
+
+    HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+
+    OptoDropdownMenuField(
+        label = "Estado",
+        selected = uiState.estado,
+        options = listOf("Pendiente", "Entregado"),
+        onSelected = { onUpdateEstado(it) },
+    )
+
+    if (uiState.fechaEntrega != null) {
+        FechaEntregaEditButton(
+            fechaEntrega = uiState.fechaEntrega,
+            onFechaChanged = { nuevaFecha ->
+                onUpdate(uiState.copy(fechaEntrega = nuevaFecha))
+            },
+        )
     }
 }
