@@ -34,10 +34,12 @@ fun InformacionFinancieraScreen(
     viewModel: InformacionFinancieraViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val monturas by viewModel.monturas.collectAsState()
 
     LaunchedEffect(dispensacionId) {
         if (!dispensacionId.isNullOrBlank()) {
             viewModel.loadFinanciera(dispensacionId)
+            viewModel.loadMonturas()
         }
     }
 
@@ -75,6 +77,15 @@ fun InformacionFinancieraScreen(
             onAddPago = { viewModel.addPago(it) },
             onUpdatePago = { viewModel.updatePago(it) },
             onRemovePago = { viewModel.removePago(it) },
+        )
+
+        HorizontalDivider()
+
+        RegalosSection(
+            regalos = uiState.regalos,
+            monturas = monturas,
+            onAddRegalo = { viewModel.addRegalo(it) },
+            onRemoveRegalo = { viewModel.removeRegalo(it) },
         )
 
         OptoDropdownMenuField(

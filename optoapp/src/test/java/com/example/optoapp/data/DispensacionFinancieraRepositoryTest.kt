@@ -196,4 +196,24 @@ class DispensacionFinancieraRepositoryTest {
 
         coVerify { optoRepository.deletePagoRegistrandoAnulacionEnCaja(pago, "optica-test") }
     }
+
+    @Test
+    fun `actualizarMontoPagado loads dispensacion updates montoPagado and persists`() = runTest {
+        coEvery { optoRepository.getDispensacionById("disp-1") } returns Resource.Success(testDispensacion)
+        coEvery { optoRepository.updateDispensacion(any()) } returns Unit
+
+        repository.actualizarMontoPagado("disp-1", 80.0, "optica-test")
+
+        coVerify { optoRepository.getDispensacionById("disp-1") }
+        coVerify { optoRepository.updateDispensacion(match { it.montoPagado == 80.0 && it.id == "disp-1" }) }
+    }
+
+    @Test
+    fun `actualizarMontoPagado skips persist when dispensacion not found`() = runTest {
+        coEvery { optoRepository.getDispensacionById("bad-id") } returns Resource.Error("Not found")
+
+        repository.actualizarMontoPagado("bad-id", 80.0, "optica-test")
+
+        coVerify(exactly = 0) { optoRepository.updateDispensacion(any()) }
+    }
 }

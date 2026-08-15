@@ -15,6 +15,7 @@ import com.example.optoapp.data.regalodispensacion.RegaloDispensacionEntity
 import com.example.optoapp.domain.CalcularMontoPagadoUseCase
 import com.example.optoapp.domain.PagoEffect
 import com.example.optoapp.domain.auth.AuthorizationGuard
+import com.example.optoapp.domain.movimientoReferenciaForRegalo
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import com.example.optoapp.util.DateUtils
 import com.example.optoapp.util.DispensacionStockHelper
@@ -527,48 +528,9 @@ class DispensacionViewModel @Inject constructor(
                                 repository.deletePagoRegistrandoAnulacionEnCaja(pago, currentOpticaId)
                             }
 
-                            val existingRegalos = if (dispensacionId != null && dispensacionId != "null") {
-                                repository.getRegalosByDispensacionId(finalId)
-                            } else {
-                                emptyList()
-                            }
-                            existingRegalos.forEach { regalo ->
-                                stockHelper.adjustStockAndRegistrarMovimiento(
-                                    regalo.productoId,
-                                    currentOpticaId,
-                                    regalo.cantidad,
-                                    "AJUSTE",
-                                    finalId,
-                                    "Reversión por edición de regalos",
-                                )
-                            }
-                            repository.deleteRegalosByDispensacionId(finalId, currentOpticaId)
-                            s.regalos.forEach { regaloUi ->
-                                val entity = RegaloDispensacionEntity(
-                                    id = regaloUi.id,
-                                    dispensacionId = finalId,
-                                    productoId = regaloUi.productoId,
-                                    cantidad = regaloUi.cantidad,
-                                    costoUnitario = regaloUi.costoUnitario,
-                                    descripcion = regaloUi.descripcion,
-                                    motivo = regaloUi.motivo,
-                                    opticaId = currentOpticaId,
-                                )
-                                repository.insertRegalo(entity)
-                                if (regaloUi.productoId.isNotBlank()) {
-                                    val stockResult = stockHelper.adjustStockAndRegistrarMovimiento(
-                                        regaloUi.productoId,
-                                        currentOpticaId,
-                                        -regaloUi.cantidad,
-                                        "SALIDA_VENTA",
-                                        finalId,
-                                        "Salida por regalo de dispensación",
-                                    )
-                                    if (stockResult.isFailure) {
-                                        throw RuntimeException("Stock insuficiente para regalo: ${regaloUi.descripcion}")
-                                    }
-                                }
-                            }
+                            // Prefer DAO effect-aware net over wizard in-memory pagos (IF may have newer rows).
+                            val montoPagadoNeto = calcularMontoPagadoUseCase(finalId)
+                            repository.updateDispensacion(disp.copy(montoPagado = montoPagadoNeto))
                         }
                     }
                 }
@@ -600,7 +562,7 @@ class DispensacionViewModel @Inject constructor(
                     opticaId,
                     regalo.cantidad,
                     "AJUSTE",
-                    dispensacionId,
+                    movimientoReferenciaForRegalo(regalo.id),
                     "Devolución por borrado de dispensación",
                 )
             }
@@ -666,7 +628,7 @@ class DispensacionViewModel @Inject constructor(
                     opticaId,
                     regalo.cantidad,
                     "AJUSTE",
-                    dispensacionId,
+                    movimientoReferenciaForRegalo(regalo.id),
                     "Reversión por anulación de dispensación",
                 )
             }

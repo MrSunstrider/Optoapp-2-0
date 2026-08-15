@@ -41,10 +41,10 @@
 
 ## Phase 4 — Dispensación + IF hub (PR-U4)
 
-- [ ] P4.1 Wizard dispensación 3 pasos (Orden/Productos/Confirmar)
-- [ ] P4.2 IF hub: pagos (`FinancieraPagosSection`) + **regalos** + entrega
-- [ ] P4.3 Remove regalos from `NuevaDispensacionScreen` / `DispensacionViewModel.save`
-- [ ] P4.4 Stock regalos via ledger writers only
+- [x] P4.1 Wizard dispensación 3 pasos (Orden/Productos/Confirmar)
+- [x] P4.2 IF hub: pagos (`FinancieraPagosSection`) + **regalos** + entrega
+- [x] P4.3 Remove regalos from `NuevaDispensacionScreen` / `DispensacionViewModel.save`
+- [x] P4.4 Stock regalos via ledger writers only
 
 ## Phase 5 — Servicios + pulido (PR-U5)
 

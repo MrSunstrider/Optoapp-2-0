@@ -180,7 +180,7 @@ class DispensacionViewModelAnulacionTest {
                 "optica-test",
                 2,
                 "AJUSTE",
-                dispId,
+                "reg-1",
                 "Reversión por anulación de dispensación",
             )
             stockHelper.adjustStockAndRegistrarMovimiento(
@@ -188,7 +188,7 @@ class DispensacionViewModelAnulacionTest {
                 "optica-test",
                 1,
                 "AJUSTE",
-                dispId,
+                "reg-2",
                 "Reversión por anulación de dispensación",
             )
         }
