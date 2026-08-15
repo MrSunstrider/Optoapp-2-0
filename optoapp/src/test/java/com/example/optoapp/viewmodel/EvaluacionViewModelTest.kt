@@ -63,6 +63,19 @@ class EvaluacionViewModelTest {
     }
 
     @Test
+    fun evaluacionUiState_pacienteNombre_defaultEmpty() {
+        val state = EvaluacionUiState(fecha = LocalDate.of(2024, 1, 1))
+        assertEquals("", state.pacienteNombre)
+    }
+
+    @Test
+    fun evaluacionUiState_pacienteNombre_copyPreserves() {
+        val state = EvaluacionUiState(fecha = LocalDate.of(2024, 1, 1))
+            .copy(pacienteNombre = "Juan Pérez")
+        assertEquals("Juan Pérez", state.pacienteNombre)
+    }
+
+    @Test
     fun shouldShowCercaIntermedio_noAdd_youngPatient_hidden() {
         val state = EvaluacionUiState(fecha = LocalDate.of(2024, 1, 1), hasAdd = false, pacienteEdad = 30)
         assertFalse(state.shouldShowCercaIntermedio)

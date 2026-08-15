@@ -18,6 +18,7 @@ fun FormActions(
     onSave: () -> Unit,
     onCancel: (() -> Unit)? = null,
     saveEnabled: Boolean = true,
+    cancelEnabled: Boolean = true,
     saveLoading: Boolean = false,
     saveText: String = stringResource(R.string.common_save),
     cancelText: String = stringResource(R.string.common_cancel),
@@ -32,6 +33,7 @@ fun FormActions(
                 text = cancelText,
                 onClick = onCancel,
                 variant = OptoButtonVariant.Outlined,
+                enabled = cancelEnabled,
                 modifier = Modifier.weight(1f),
             )
             Spacer(modifier = Modifier.width(OptoTokens.spacing.sm))

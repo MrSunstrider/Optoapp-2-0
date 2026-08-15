@@ -36,8 +36,8 @@
 
 ## Phase 3 — Paciente + Evaluación (PR-U3)
 
-- [ ] P3.1 Paciente: scroll 3 secciones + OptoFormShell
-- [ ] P3.2 Evaluación: context card + CTAs unificados (wizard 5 pasos intacto)
+- [x] P3.1 Paciente: scroll 3 secciones + OptoFormShell
+- [x] P3.2 Evaluación: context card + CTAs unificados (wizard 5 pasos intacto)
 
 ## Phase 4 — Dispensación + IF hub (PR-U4)
 

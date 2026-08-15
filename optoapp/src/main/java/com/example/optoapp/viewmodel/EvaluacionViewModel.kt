@@ -36,12 +36,15 @@ class EvaluacionViewModel @Inject constructor(
     fun loadEvaluacion(evaluacionId: String) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
-            when (val result = repository.getEvaluacionById(evaluacionId, sessionManager.opticaId.first())) {
+            val opticaId = sessionManager.opticaId.first()
+            when (val result = repository.getEvaluacionById(evaluacionId, opticaId)) {
                 is Resource.Success -> {
                     val e = result.data ?: return@launch
                     val dipFormatted = DipParser.formatDipForUi(e.dipLejos.orEmpty(), e.dipTotalMm, e.dnpOdMm, e.dnpOiMm)
+                    val pResult = repository.getPacienteByIdScoped(e.pacienteId, opticaId)
+                    val nombre = if (pResult is Resource.Success) pResult.data?.nombreCompleto ?: "" else ""
                     _uiState.update {
-                        e.toEvaluacionUiState().copy(dipLejos = dipFormatted)
+                        e.toEvaluacionUiState().copy(dipLejos = dipFormatted, pacienteNombre = nombre)
                     }
                 }
                 is Resource.Error -> {
@@ -125,9 +128,10 @@ class EvaluacionViewModel @Inject constructor(
                 val p = repository.getPacienteByIdScoped(pacienteId, sessionManager.opticaId.first())
                 if (p is Resource.Success) {
                     val edad = p.data?.edad ?: 0
+                    val nombre = p.data?.nombreCompleto ?: ""
                     val add = com.example.optoapp.util.calcularAddPorEdad(edad)
                     _uiState.update { state ->
-                        val withEdad = state.copy(pacienteEdad = edad)
+                        val withEdad = state.copy(pacienteEdad = edad, pacienteNombre = nombre)
                         if (add.isNotBlank()) {
                             withEdad.copy(hasAdd = true, addCercaOd = add, addCercaOi = add)
                         } else {

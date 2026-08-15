@@ -169,6 +169,7 @@ data class EvaluacionUiState(
     val hasAdd: Boolean = false,
     val isAddAo: Boolean = false,
     val pacienteEdad: Int? = null,
+    val pacienteNombre: String = "",
     val isLoading: Boolean = false,
     val error: String? = null,
 ) {

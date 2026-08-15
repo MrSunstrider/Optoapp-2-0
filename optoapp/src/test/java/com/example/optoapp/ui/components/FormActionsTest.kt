@@ -45,6 +45,14 @@ class FormActionsTest {
     }
 
     @Test
+    fun cancelButtonIsDisabledWhenCancelEnabledFalse() {
+        composeTestRule.setContent {
+            FormActions(onSave = {}, onCancel = {}, cancelEnabled = false)
+        }
+        composeTestRule.onNodeWithText("Cancelar").assertIsNotEnabled()
+    }
+
+    @Test
     fun saveButtonIsEnabledByDefault() {
         composeTestRule.setContent {
             FormActions(onSave = {}, onCancel = {})
