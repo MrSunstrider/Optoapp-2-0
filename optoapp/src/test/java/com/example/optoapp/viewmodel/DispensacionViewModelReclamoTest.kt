@@ -84,12 +84,15 @@ class DispensacionViewModelReclamoTest {
     @Test
     fun `crearReclamo marks original as Reclamada`() = runTest {
         coEvery { calcularMontoPagadoUseCase(originalId) } returns 200.0
+        val reclaim = mockk<com.example.optoapp.domain.ReclaimDispensacionUseCase>(relaxed = true)
         viewModel = DispensacionViewModel(
             repository,
             sessionManager,
             postSaveSyncScheduler,
             stockHelper,
             calcularMontoPagadoUseCase,
+            mockk(relaxed = true),
+            reclaim,
             costoProductoDao,
             costoBiseladoDao,
         )
@@ -99,7 +102,15 @@ class DispensacionViewModelReclamoTest {
         viewModel.crearReclamo(originalId, 250.0) { completed = true }
         testDispatcher.scheduler.advanceUntilIdle()
 
-        coVerify { repository.updateDispensacion(match { it.estadoEntrega == "Reclamada" }) }
+        coVerify {
+            reclaim(
+                dispensacionId = originalId,
+                opticaId = "optica-test",
+                refundMonto = 0.0,
+                metodoPago = "Efectivo",
+                ot = "OT-2026-0001",
+            )
+        }
         assertTrue(completed)
     }
 
@@ -112,6 +123,8 @@ class DispensacionViewModelReclamoTest {
             postSaveSyncScheduler,
             stockHelper,
             calcularMontoPagadoUseCase,
+            mockk<com.example.optoapp.domain.CancelDispensacionUseCase>(relaxed = true),
+            mockk<com.example.optoapp.domain.ReclaimDispensacionUseCase>(relaxed = true),
             costoProductoDao,
             costoBiseladoDao,
         )
@@ -138,6 +151,8 @@ class DispensacionViewModelReclamoTest {
             postSaveSyncScheduler,
             stockHelper,
             calcularMontoPagadoUseCase,
+            mockk<com.example.optoapp.domain.CancelDispensacionUseCase>(relaxed = true),
+            mockk<com.example.optoapp.domain.ReclaimDispensacionUseCase>(relaxed = true),
             costoProductoDao,
             costoBiseladoDao,
         )
@@ -156,29 +171,35 @@ class DispensacionViewModelReclamoTest {
     @Test
     fun `crearReclamo diff less than zero creates refund Pago with negative monto`() = runTest {
         coEvery { calcularMontoPagadoUseCase(originalId) } returns 200.0
+        val reclaim = mockk<com.example.optoapp.domain.ReclaimDispensacionUseCase>(relaxed = true)
         viewModel = DispensacionViewModel(
             repository,
             sessionManager,
             postSaveSyncScheduler,
             stockHelper,
             calcularMontoPagadoUseCase,
+            mockk(relaxed = true),
+            reclaim,
             costoProductoDao,
             costoBiseladoDao,
         )
         testDispatcher.scheduler.advanceUntilIdle()
 
-        val pagoSlot = slot<Pago>()
-        coEvery { repository.insertPago(capture(pagoSlot)) } returns Unit
-
         var completed = false
-        // nuevoMontoTotal = 150, totalPagado = 200, diff = -50 < 0
+        // nuevoMontoTotal = 150, totalPagado = 200 → refund 50
         viewModel.crearReclamo(originalId, 150.0) { completed = true }
         testDispatcher.scheduler.advanceUntilIdle()
 
-        assertEquals(-50.0, pagoSlot.captured.monto, 0.001)
-        assertEquals("Anulación", pagoSlot.captured.tipo)
-        assertEquals(originalId, pagoSlot.captured.dispensacionId)
-        assertTrue(pagoSlot.captured.nota.contains("Reembolso"))
+        coVerify {
+            reclaim(
+                dispensacionId = originalId,
+                opticaId = "optica-test",
+                refundMonto = 50.0,
+                metodoPago = "Efectivo",
+                ot = "OT-2026-0001",
+            )
+        }
+        coVerify(exactly = 0) { repository.insertPago(match { it.tipo == "Anulación" }) }
         assertTrue(completed)
     }
 
@@ -191,6 +212,8 @@ class DispensacionViewModelReclamoTest {
             postSaveSyncScheduler,
             stockHelper,
             calcularMontoPagadoUseCase,
+            mockk<com.example.optoapp.domain.CancelDispensacionUseCase>(relaxed = true),
+            mockk<com.example.optoapp.domain.ReclaimDispensacionUseCase>(relaxed = true),
             costoProductoDao,
             costoBiseladoDao,
         )

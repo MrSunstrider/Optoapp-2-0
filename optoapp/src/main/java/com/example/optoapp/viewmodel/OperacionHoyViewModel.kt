@@ -9,6 +9,7 @@ import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Pago
 import com.example.optoapp.data.ServicioExtra
 import com.example.optoapp.data.SessionManager
+import com.example.optoapp.domain.PagoEffect
 import com.example.optoapp.util.DateUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
@@ -121,7 +122,7 @@ class OperacionHoyViewModel @Inject constructor(
                         fecha = today,
                         citasHoy = citas.size,
                         entregasPendientes = dispPendientes.size + servPendientes.size,
-                        cobrosHoy = pagosHoy.filter { it.tipo != "Anulación" }.sumOf { it.monto },
+                        cobrosHoy = pagosHoy.sumOf { PagoEffect.signedAmount(it.tipo, it.monto) },
                         stockCritico = stockCritico,
                         monturasStockCritico = monturasCriticas,
                         alertas = alertas,

@@ -130,6 +130,7 @@ class DispensacionRepository(
             metodoPago = pago.metodoPago, nota = pago.nota,
             updatedAt = pago.updatedAt, updatedBy = pago.updatedBy,
             ventaId = pago.ventaId,
+            reversaPagoId = pago.reversaPagoId,
         )
     }
 
@@ -143,23 +144,25 @@ class DispensacionRepository(
         pago: Pago,
         opticaId: String,
     ) {
-        val existing = pagoDao.getPagoByIdForOptica(pago.id, opticaId)
-        if (existing != null && existing.monto != 0.0) {
-            val reversal = Pago(
-                id = UUID.randomUUID().toString(),
-                dispensacionId = existing.dispensacionId,
-                servicioExtraId = existing.servicioExtraId,
-                ventaId = existing.ventaId,
-                fecha = existing.fecha,
-                tipo = "Anulación",
-                monto = -existing.monto,
-                metodoPago = existing.metodoPago,
-                nota = "Anula abono ${existing.id.take(8)}… (${DateUtils.formatLocalized(existing.fecha)})",
-                opticaId = opticaId,
-            )
-            pagoDao.insertPago(reversal)
-        }
-        pagoDao.deletePago(pago.id, pago.opticaId)
+        val existing = pagoDao.getPagoByIdForOptica(pago.id, opticaId) ?: return
+        if (existing.monto == 0.0) return
+        if (existing.tipo !in setOf("Abono", "Pago completo")) return
+        if (pagoDao.getReversoByOriginalId(existing.id) != null) return
+        val reversal = Pago(
+            id = UUID.randomUUID().toString(),
+            dispensacionId = existing.dispensacionId,
+            servicioExtraId = existing.servicioExtraId,
+            ventaId = existing.ventaId,
+            fecha = existing.fecha,
+            tipo = "Reverso",
+            monto = existing.monto,
+            metodoPago = existing.metodoPago,
+            nota = "Reverso abono ${existing.id.take(8)}… (${DateUtils.formatLocalized(existing.fecha)})",
+            opticaId = opticaId,
+            reversaPagoId = existing.id,
+            updatedAt = java.time.Instant.now().toString(),
+        )
+        pagoDao.insertPago(reversal)
     }
 
     suspend fun deletePago(pago: Pago) = pagoDao.deletePago(pago.id, pago.opticaId)

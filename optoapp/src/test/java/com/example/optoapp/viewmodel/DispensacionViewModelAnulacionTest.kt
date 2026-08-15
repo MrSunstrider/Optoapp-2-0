@@ -109,12 +109,15 @@ class DispensacionViewModelAnulacionTest {
 
     @Test
     fun `anularDispensacion flips estado to Anulado`() = runTest {
+        val cancel = mockk<com.example.optoapp.domain.CancelDispensacionUseCase>(relaxed = true)
         viewModel = DispensacionViewModel(
             repository,
             sessionManager,
             postSaveSyncScheduler,
             stockHelper,
             calcularMontoPagadoUseCase,
+            cancel,
+            mockk(relaxed = true),
             costoProductoDao,
             costoBiseladoDao,
         )
@@ -124,32 +127,31 @@ class DispensacionViewModelAnulacionTest {
         viewModel.anularDispensacion(dispId) { completed = true }
         testDispatcher.scheduler.advanceUntilIdle()
 
-        coVerify { repository.updateDispensacion(match { it.estadoEntrega == "Anulado" }) }
+        coVerify { cancel(dispId, "optica-test") }
     }
 
     @Test
     fun `anularDispensacion creates inverse Pago with negative monto`() = runTest {
+        val cancel = mockk<com.example.optoapp.domain.CancelDispensacionUseCase>(relaxed = true)
         viewModel = DispensacionViewModel(
             repository,
             sessionManager,
             postSaveSyncScheduler,
             stockHelper,
             calcularMontoPagadoUseCase,
+            cancel,
+            mockk(relaxed = true),
             costoProductoDao,
             costoBiseladoDao,
         )
         testDispatcher.scheduler.advanceUntilIdle()
 
-        val pagoSlot = slot<Pago>()
-        coEvery { repository.insertPago(capture(pagoSlot)) } returns Unit
-
         var completed = false
         viewModel.anularDispensacion(dispId) { completed = true }
         testDispatcher.scheduler.advanceUntilIdle()
 
-        assertEquals(-150.0, pagoSlot.captured.monto, 0.001)
-        assertEquals("Anulación", pagoSlot.captured.tipo)
-        assertEquals(dispId, pagoSlot.captured.dispensacionId)
+        coVerify { cancel(dispId, "optica-test") }
+        coVerify(exactly = 0) { repository.insertPago(match { it.tipo == "Anulación" }) }
     }
 
     @Test
@@ -160,6 +162,8 @@ class DispensacionViewModelAnulacionTest {
             postSaveSyncScheduler,
             stockHelper,
             calcularMontoPagadoUseCase,
+            mockk<com.example.optoapp.domain.CancelDispensacionUseCase>(relaxed = true),
+            mockk<com.example.optoapp.domain.ReclaimDispensacionUseCase>(relaxed = true),
             costoProductoDao,
             costoBiseladoDao,
         )
@@ -198,6 +202,8 @@ class DispensacionViewModelAnulacionTest {
             postSaveSyncScheduler,
             stockHelper,
             calcularMontoPagadoUseCase,
+            mockk<com.example.optoapp.domain.CancelDispensacionUseCase>(relaxed = true),
+            mockk<com.example.optoapp.domain.ReclaimDispensacionUseCase>(relaxed = true),
             costoProductoDao,
             costoBiseladoDao,
         )

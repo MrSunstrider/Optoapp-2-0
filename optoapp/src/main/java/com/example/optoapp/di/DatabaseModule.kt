@@ -28,6 +28,8 @@ import com.example.optoapp.data.servicio.ServicioExtraDao
 import com.example.optoapp.data.sync.SyncSnapshotCoordinator
 import com.example.optoapp.domain.SyncLogger
 import com.example.optoapp.sync.PostSaveSyncScheduler
+import com.example.optoapp.util.BackgroundErrorStore
+import com.example.optoapp.util.SharedPrefsBackgroundErrorStore
 import com.example.optoapp.viewmodel.auth.AuthDelegate
 import com.example.optoapp.viewmodel.auth.BackupDelegate
 import com.example.optoapp.viewmodel.auth.PinDelegate
@@ -146,6 +148,11 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun provideSessionManager(@ApplicationContext context: Context): SessionManager = SessionManager(context)
+
+    @Provides
+    @Singleton
+    fun provideBackgroundErrorStore(@ApplicationContext context: Context): BackgroundErrorStore =
+        SharedPrefsBackgroundErrorStore(context)
 
     @Provides
     fun providePacienteRepository(

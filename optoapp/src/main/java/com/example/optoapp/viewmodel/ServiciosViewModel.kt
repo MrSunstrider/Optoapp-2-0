@@ -10,6 +10,7 @@ import com.example.optoapp.data.Paciente
 import com.example.optoapp.data.Pago
 import com.example.optoapp.data.Resource
 import com.example.optoapp.data.ServicioExtra
+import com.example.optoapp.domain.PagoEffect
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import com.example.optoapp.util.DateUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -45,6 +46,7 @@ class ServiciosViewModel @Inject constructor(
     private val repository: com.example.optoapp.data.OptoRepository,
     private val sessionManager: com.example.optoapp.data.SessionManager,
     private val postSaveSyncScheduler: PostSaveSyncScheduler,
+    private val cancelServicioExtraUseCase: com.example.optoapp.domain.CancelServicioExtraUseCase,
 ) : ViewModel() {
 
     companion object {
@@ -93,9 +95,9 @@ class ServiciosViewModel @Inject constructor(
         .flatMapLatest { opticaId ->
             repository.getAllPagosFlowForOptica(opticaId)
                 .map { pagos ->
-                    pagos.filter { it.tipo != "Anulación" && it.servicioExtraId != null }
+                    pagos.filter { it.servicioExtraId != null }
                         .groupBy { it.servicioExtraId!! }
-                        .mapValues { (_, pags) -> pags.sumOf { it.monto } }
+                        .mapValues { (_, pags) -> pags.sumOf { PagoEffect.signedAmount(it.tipo, it.monto) } }
                 }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
 
@@ -205,7 +207,7 @@ class ServiciosViewModel @Inject constructor(
                     ot = state.ot.trim(),
                     descripcion = state.descripcion.trim(),
                     montoTotal = montoParsed,
-                    aCuenta = state.pagos.filter { it.tipo != "Anulación" }.sumOf { it.monto },
+                    aCuenta = state.pagos.sumOf { PagoEffect.signedAmount(it.tipo, it.monto) },
                     estado = state.estado,
                     fecha = state.fecha,
                     fechaEntrega = state.fechaEntrega,
@@ -275,22 +277,8 @@ class ServiciosViewModel @Inject constructor(
         val servicio = _servicioToDelete.value ?: return
         viewModelScope.launch {
             try {
-                // Anular: crear pagos inversos para cada abono existente
-                val existingPagos = repository.getPagosByServicioExtra(servicio.id).first()
-                    .filter { it.tipo != "Anulación" }
-                existingPagos.forEach { pago ->
-                    val anulacionPago = pago.copy(
-                        id = UUID.randomUUID().toString(),
-                        tipo = "Anulación",
-                        monto = -pago.monto,
-                        nota = "Anulación de servicio ${servicio.descripcion.take(24)}",
-                        ventaId = "v_serv_${servicio.id}",
-                    )
-                    repository.insertPago(anulacionPago)
-                }
-                // Marcar como Anulado en vez de hard-delete
-                repository.updateServicio(servicio.copy(estado = "Anulado"))
-
+                val opticaId = sessionManager.opticaId.first()
+                cancelServicioExtraUseCase(servicio.id, opticaId)
                 _showDeleteDialog.value = false
                 _servicioToDelete.value = null
             } catch (e: CancellationException) {

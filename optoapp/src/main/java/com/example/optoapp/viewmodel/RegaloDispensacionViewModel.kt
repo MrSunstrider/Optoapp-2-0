@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.regalodispensacion.RegaloDispensacionEntity
+import com.example.optoapp.domain.movimientoReferenciaForRegalo
 import com.example.optoapp.util.DispensacionStockHelper
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
@@ -31,7 +32,7 @@ class RegaloDispensacionViewModel @Inject constructor(
                     opticaId,
                     -regalo.cantidad,
                     "SALIDA_VENTA",
-                    regalo.dispensacionId,
+                    movimientoReferenciaForRegalo(regalo.id),
                     "Salida por regalo",
                 )
                 if (result.isFailure) {
@@ -56,7 +57,7 @@ class RegaloDispensacionViewModel @Inject constructor(
                     opticaId,
                     regalo.cantidad,
                     "AJUSTE",
-                    regalo.dispensacionId,
+                    movimientoReferenciaForRegalo(regalo.id),
                     "Reversión por eliminación de regalo",
                 )
             }

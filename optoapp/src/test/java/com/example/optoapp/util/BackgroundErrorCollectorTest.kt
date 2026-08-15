@@ -11,7 +11,25 @@ import org.robolectric.RobolectricTestRunner
 @RunWith(RobolectricTestRunner::class)
 class BackgroundErrorCollectorTest {
 
-    private val collector = BackgroundErrorCollector()
+    private val collector = BackgroundErrorCollector(BackgroundErrorStore.NoOp)
+
+    @Test
+    fun `record persists sanitized history to the store`() = runTest {
+        val saved = mutableListOf<com.example.optoapp.data.BackgroundError>()
+        val store = object : BackgroundErrorStore {
+            override fun load() = saved.toList()
+            override fun save(errors: List<com.example.optoapp.data.BackgroundError>) {
+                saved.clear()
+                saved.addAll(errors)
+            }
+        }
+        val durable = BackgroundErrorCollector(store)
+        durable.record("sync:finanzas", "HTTP 400 Bearer eyJleak.sig code=23514")
+
+        assertEquals(1, saved.size)
+        assertTrue("PG code must survive", saved[0].message.contains("23514"))
+        assertTrue("token must not be persisted", !saved[0].message.contains("eyJleak.sig"))
+    }
 
     @Test
     fun `starts with empty errors list`() = runTest {

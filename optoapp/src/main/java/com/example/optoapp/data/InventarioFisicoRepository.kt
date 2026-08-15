@@ -4,6 +4,7 @@ import android.util.Log
 import com.example.optoapp.data.inventariofisico.InventarioFisicoDao
 import com.example.optoapp.data.montura.MonturaDao
 import com.example.optoapp.data.montura.MonturaInventoryCoordinator
+import com.example.optoapp.domain.movimientoReferenciaForInventarioDetalle
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import java.time.LocalDate
@@ -71,6 +72,7 @@ open class InventarioFisicoRepository @Inject constructor(
 
     open suspend fun closeSession(sessionId: String) {
         val session = ifDao.getById(sessionId) ?: return
+        if (session.estado == "COMPLETADO") return
         val detalles = ifDao.getDetalles(sessionId)
         for (d in detalles) {
             val diff = d.diferencia ?: 0
@@ -89,7 +91,7 @@ open class InventarioFisicoRepository @Inject constructor(
                 cantidad = cantidadAbs,
                 stockPrevio = stockPrevio,
                 stockNuevo = stockNuevo,
-                referenciaId = sessionId,
+                referenciaId = movimientoReferenciaForInventarioDetalle(d.id),
                 nota = "Ajuste inventario fisico: $sessionId",
                 opticaId = session.opticaId,
                 userId = session.userId,

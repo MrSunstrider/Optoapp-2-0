@@ -10,6 +10,7 @@ import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Pago
 import com.example.optoapp.data.ServicioExtra
 import com.example.optoapp.data.SessionManager
+import com.example.optoapp.domain.PagoEffect
 import com.example.optoapp.util.DateUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -101,28 +102,31 @@ class CierreCajaViewModel @Inject constructor(
                     var cobrosAtrasados = 0.0
                     var pagosFuturos = 0.0
                     pagos.forEach { pago ->
+                        val effect = PagoEffect.signedAmount(pago.tipo, pago.monto)
                         val dispFecha = pago.dispensacionId?.let { id -> dispMap[id]?.fecha }
                         val servFecha = pago.servicioExtraId?.let { id -> servMap[id]?.fecha }
                         when {
-                            dispFecha != null && dispFecha == fecha -> ventasHoy += pago.monto
-                            dispFecha != null && dispFecha < fecha -> cobrosAtrasados += pago.monto
+                            dispFecha != null && dispFecha == fecha -> ventasHoy += effect
+                            dispFecha != null && dispFecha < fecha -> cobrosAtrasados += effect
                             dispFecha != null && dispFecha > fecha -> {
                                 Log.w(TAG, "Future-dated disp ${pago.dispensacionId} for pago ${pago.id}")
-                                pagosFuturos += pago.monto
+                                pagosFuturos += effect
                             }
-                            servFecha != null && servFecha == fecha -> ventasHoy += pago.monto
-                            servFecha != null && servFecha < fecha -> cobrosAtrasados += pago.monto
+                            servFecha != null && servFecha == fecha -> ventasHoy += effect
+                            servFecha != null && servFecha < fecha -> cobrosAtrasados += effect
                             servFecha != null && servFecha > fecha -> {
                                 Log.w(TAG, "Future-dated serv ${pago.servicioExtraId} for pago ${pago.id}")
-                                pagosFuturos += pago.monto
+                                pagosFuturos += effect
                             }
                             else -> {
                                 Log.w(TAG, "Orphan pago ${pago.id}: disp=${pago.dispensacionId} serv=${pago.servicioExtraId} not resolvable")
-                                ventasHoy += pago.monto
+                                ventasHoy += effect
                             }
                         }
                     }
-                    val dispensacionesHoy = dispensaciones.filter { it.estadoEntrega != ESTADO_ANULADO }
+                    val dispensacionesHoy = dispensaciones.filter {
+                        it.estadoEntrega != ESTADO_ANULADO && it.estadoEntrega != ESTADO_RECLAMADA
+                    }
                     val serviciosExtraHoy = servicios.filter { it.estado != ESTADO_ANULADO }
                     val totalDispensacionesHoy = dispensacionesHoy.sumOf { it.montoTotal }
                     val totalServiciosExtra = serviciosExtraHoy.sumOf { it.montoTotal }
@@ -164,11 +168,12 @@ class CierreCajaViewModel @Inject constructor(
         val defaultLabel = FinanzasRemoteDefaults.ServicioExtra.METODO_PAGO_ROW
         return _uiState.value.pagos.groupBy {
             if (it.metodoPago == defaultLabel) "" else it.metodoPago
-        }.mapValues { entry -> entry.value.sumOf { it.monto } }
+        }.mapValues { entry -> entry.value.sumOf { PagoEffect.signedAmount(it.tipo, it.monto) } }
     }
 
     companion object {
         private const val TAG = "CierreCajaVM"
         private const val ESTADO_ANULADO = "Anulado"
+        private const val ESTADO_RECLAMADA = "Reclamada"
     }
 }

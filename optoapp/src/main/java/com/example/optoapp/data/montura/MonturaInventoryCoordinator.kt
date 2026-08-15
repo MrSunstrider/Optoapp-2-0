@@ -14,6 +14,18 @@ import java.time.LocalDate
 import java.util.UUID
 import javax.inject.Inject
 
+/**
+ * WHY: `fecha` is a date, so several movements of the same montura routinely tie. Falling back
+ * to `updatedAt` then `id` makes the reconstructed stock independent of DAO row order.
+ */
+internal fun latestStockByMontura(movimientos: List<MonturaMovimiento>): Map<String, Int> =
+    movimientos.groupBy { it.monturaId }
+        .mapValues { (_, movs) ->
+            movs.maxWithOrNull(
+                compareBy({ it.fecha }, { it.updatedAt.orEmpty() }, { it.id }),
+            )?.stockNuevo ?: 0
+        }
+
 class MonturaInventoryCoordinator @Inject constructor(
     private val monturaDao: MonturaDao,
     private val monturaMovimientoDao: MonturaMovimientoDao,
@@ -137,11 +149,7 @@ class MonturaInventoryCoordinator @Inject constructor(
         try {
             val monturas = monturaDao.getMonturasListByOptica(opticaId)
             val movimientos = monturaMovimientoDao.getMovimientosListByOptica(opticaId)
-            val stockByMontura = movimientos.groupBy { it.monturaId }
-                .mapValues { (_, movs) ->
-                    val sorted = movs.sortedBy { it.fecha }
-                    sorted.lastOrNull()?.stockNuevo ?: 0
-                }
+            val stockByMontura = latestStockByMontura(movimientos)
             var updated = 0
             for (montura in monturas) {
                 val calculatedStock = stockByMontura[montura.id] ?: montura.stockActual

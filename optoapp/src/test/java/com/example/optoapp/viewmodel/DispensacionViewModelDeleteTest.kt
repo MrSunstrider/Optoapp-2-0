@@ -105,6 +105,8 @@ class DispensacionViewModelDeleteTest {
             postSaveSyncScheduler,
             stockHelper,
             calcularMontoPagadoUseCase,
+            mockk<com.example.optoapp.domain.CancelDispensacionUseCase>(relaxed = true),
+            mockk<com.example.optoapp.domain.ReclaimDispensacionUseCase>(relaxed = true),
             costoProductoDao,
             costoBiseladoDao,
         )
@@ -127,6 +129,8 @@ class DispensacionViewModelDeleteTest {
             postSaveSyncScheduler,
             stockHelper,
             calcularMontoPagadoUseCase,
+            mockk<com.example.optoapp.domain.CancelDispensacionUseCase>(relaxed = true),
+            mockk<com.example.optoapp.domain.ReclaimDispensacionUseCase>(relaxed = true),
             costoProductoDao,
             costoBiseladoDao,
         )

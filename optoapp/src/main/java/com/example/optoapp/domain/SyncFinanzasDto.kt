@@ -120,6 +120,7 @@ data class PagoRemoto(
     @SerialName("updated_at") val updatedAt: String? = null,
     @SerialName("updated_by") val updatedBy: String? = null,
     @SerialName("venta_id") val ventaId: String? = null,
+    @SerialName("reversa_pago_id") val reversaPagoId: String? = null,
 ) {
     fun toEntity() = Pago(
         id = id,
@@ -134,6 +135,7 @@ data class PagoRemoto(
         updatedAt = updatedAt,
         updatedBy = updatedBy,
         ventaId = ventaId,
+        reversaPagoId = reversaPagoId.normalizeOptionalFk(),
     )
 }
 
@@ -460,6 +462,7 @@ fun Pago.toRemoto(): PagoRemoto = PagoRemoto(
     updatedAt = updatedAt,
     updatedBy = updatedBy,
     ventaId = ventaId,
+    reversaPagoId = reversaPagoId.normalizeOptionalFk(),
 )
 
 fun DispensacionItem.toRemoto(): DispensacionItemRemota = DispensacionItemRemota(

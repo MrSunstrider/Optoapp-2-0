@@ -89,6 +89,7 @@ data class DispensacionOptica(
         Index(value = ["dispensacionId"]),
         Index(value = ["servicioExtraId"]),
         Index(value = ["opticaId"]),
+        Index(value = ["reversaPagoId"]),
     ],
 )
 @Serializable
@@ -113,6 +114,8 @@ data class Pago(
     val updatedBy: String? = null,
     @SerialName("ventaId")
     val ventaId: String? = null,
+    @SerialName("reversaPagoId")
+    val reversaPagoId: String? = null,
 )
 
 @Entity(

@@ -11,11 +11,6 @@ import androidx.room.withTransaction
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.CancellationException
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
-import kotlinx.serialization.json.put
 import java.io.IOException
 import java.time.Instant
 import javax.inject.Inject
@@ -45,35 +40,6 @@ open class UploadSyncCoordinator @Inject constructor(
         private const val TABLE_COSTOS_PRODUCTOS = "costos_productos"
         private const val TABLE_COSTOS_BISELADO = "costos_biselado"
         private const val UPSERT_BATCH_SIZE = 80
-
-        // ── RPC helpers (T2.2) ─────────────────────────────────────────
-
-        internal fun buildAdjustStockParams(
-            monturaId: String,
-            opticaId: String,
-            delta: Int,
-            referenceId: String,
-            note: String,
-            tipo: String,
-            fecha: String,
-        ): JsonObject = buildJsonObject {
-            put("p_montura_id", monturaId)
-            put("p_optica_id", opticaId)
-            put("p_delta", delta)
-            put("p_reference_id", referenceId)
-            put("p_note", note)
-            put("p_tipo", tipo)
-            put("p_fecha", fecha)
-        }
-
-        internal fun parseAdjustStockOk(response: JsonObject): Boolean =
-            response["ok"]?.jsonPrimitive?.let { it.content == "true" } ?: false
-
-        internal fun parseAdjustStockNewStock(response: JsonObject): Int? =
-            response["new_stock"]?.jsonPrimitive?.content?.toIntOrNull()
-
-        internal fun parseAdjustStockError(response: JsonObject): String? =
-            response["error"]?.jsonPrimitive?.content
     }
 
     class UploadPreCheckFailedException(
@@ -138,13 +104,11 @@ open class UploadSyncCoordinator @Inject constructor(
             syncStateTracker.markSynced(opticaId, "upload_dispensaciones", "batch")
             return 0
         }
-        // Snapshot of items used for RPC stock adjustment after upsert.
-        val items = repository.getDispensacionItemsSnapshotForOptica(opticaId)
         val allPagos = repository.getPagosSnapshotForOptica(opticaId)
         val pagosSumByDisp = allPagos
-            .filter { it.tipo != "Anulación" && it.dispensacionId != null }
+            .filter { it.dispensacionId != null }
             .groupBy { it.dispensacionId!! }
-            .mapValues { (_, pags) -> pags.sumOf { it.monto } }
+            .mapValues { (_, pags) -> pags.sumOf { PagoEffect.signedAmount(it.tipo, it.monto) } }
         val localById = dispensaciones.associateBy { it.id }
         val opticaRemota = opticaId.trim()
         val remotosExistentes = try {
@@ -217,37 +181,6 @@ open class UploadSyncCoordinator @Inject constructor(
                     supabase.postgrest[TABLE_DISPENSACIONES].upsert(chunk)
                 }
                 uploadedCount += chunk.size
-
-                // After chunk upsert, adjust stock via RPC for each
-                // dispensacion item that has a non-blank monturaId.
-                val chunkDispIds = chunk.map { it.id }.toSet()
-                items.filter { it.dispensacionId in chunkDispIds && it.monturaId.isNotBlank() }
-                    .forEach { item ->
-                        try {
-                            val params = buildAdjustStockParams(
-                                monturaId = item.monturaId,
-                                opticaId = item.opticaId,
-                                delta = -1,
-                                referenceId = item.dispensacionId,
-                                note = "venta_dispensacion",
-                                tipo = "venta",
-                                fecha = localById[item.dispensacionId]?.fecha?.toString() ?: "",
-                            )
-                            val result = supabase.postgrest.rpc(
-                                "rpc_adjust_montura_stock",
-                                params,
-                            ).decodeAs<JsonObject>()
-                            val ok = parseAdjustStockOk(result)
-                            if (!ok) {
-                                val error = parseAdjustStockError(result) ?: "unknown"
-                                AppLogger.w(TAG, "RPC adjust stock failed: $error (disp=${item.dispensacionId}, montura=${item.monturaId})")
-                            }
-                        } catch (e: CancellationException) {
-                            throw e
-                        } catch (e: Exception) {
-                            AppLogger.e(TAG, "RPC adjust stock exception: ${e.message} (disp=${item.dispensacionId}, montura=${item.monturaId})", e)
-                        }
-                    }
             }
         } catch (e: CancellationException) {
             throw e
@@ -284,9 +217,9 @@ open class UploadSyncCoordinator @Inject constructor(
         }
         val allPagosServ = repository.getPagosSnapshotForOptica(opticaId)
         val aCuentaSumByServ = allPagosServ
-            .filter { it.tipo != "Anulación" && it.servicioExtraId != null }
+            .filter { it.servicioExtraId != null }
             .groupBy { it.servicioExtraId!! }
-            .mapValues { (_, pags) -> pags.sumOf { it.monto } }
+            .mapValues { (_, pags) -> pags.sumOf { PagoEffect.signedAmount(it.tipo, it.monto) } }
         require(opticaId.isNotBlank()) { "opticaId must not be blank for upload" }
         val opticaRemota = opticaId.trim()
         val remotosExistentes = try {
@@ -395,6 +328,53 @@ open class UploadSyncCoordinator @Inject constructor(
         val fecha: String,
     )
 
+    // WHY: testability seam — isolate PostgREST upsert from coordinator logic.
+    internal open suspend fun upsertPagosChunk(chunk: List<PagoRemoto>) {
+        supabase.postgrest[TABLE_PAGOS].upsert(chunk)
+    }
+
+    internal open suspend fun fetchRemoteParentIds(opticaId: String): Pair<Set<String>, Set<String>> {
+        val dispIds = supabase.postgrest[TABLE_DISPENSACIONES]
+            .select { filter { eq("optica_id", opticaId) } }
+            .decodeList<DispensacionRemotaLookup>()
+            .map { it.id }
+            .toSet()
+        val servIds = supabase.postgrest[TABLE_SERVICIOS]
+            .select { filter { eq("optica_id", opticaId) } }
+            .decodeList<ServicioRemotoLookup>()
+            .map { it.id }
+            .toSet()
+        return dispIds to servIds
+    }
+
+    /**
+     * Binary-split on CHECK/domain RestException so one poison row does not block siblings.
+     */
+    internal suspend fun <T> upsertIsolating(
+        chunk: List<T>,
+        upsert: suspend (List<T>) -> Unit,
+        onPoison: suspend (T, String) -> Unit,
+    ): Int {
+        if (chunk.isEmpty()) return 0
+        return try {
+            upsert(chunk)
+            chunk.size
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            val msg = e.message
+            if (chunk.size == 1) {
+                if (!FinanzasUploadValidator.isConstraintViolation(msg)) throw e
+                onPoison(chunk[0], "quarantine:constraint:${msg.orEmpty().take(120)}")
+                return 0
+            }
+            if (!FinanzasUploadValidator.isConstraintViolation(msg)) throw e
+            val mid = chunk.size / 2
+            upsertIsolating(chunk.subList(0, mid), upsert, onPoison) +
+                upsertIsolating(chunk.subList(mid, chunk.size), upsert, onPoison)
+        }
+    }
+
     suspend fun uploadPagos(opticaId: String): Int {
         val pagos = repository.getPagosSnapshotForOptica(opticaId)
         if (pagos.isEmpty()) {
@@ -403,9 +383,46 @@ open class UploadSyncCoordinator @Inject constructor(
         }
         require(opticaId.isNotBlank()) { "opticaId must not be blank for upload" }
         val opticaRemota = opticaId.trim()
-        val rows = pagos.map { it.toRemoto().copy(opticaId = opticaRemota) }.distinctBy { it.id }
 
-        // Reconcile by business key (dispensacion_id, tipo, monto, metodo_pago, fecha)
+        val remoteParents = try {
+            fetchRemoteParentIds(opticaRemota)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            AppLogger.e(TAG, "FATAL: Cannot fetch parent ids for pagos gate.", e)
+            throw UploadPreCheckFailedException("Parent lookup failed for $TABLE_PAGOS", e)
+        }
+        val (remoteDispIds, remoteServIds) = remoteParents
+        val quarantinedDisp = syncStateTracker.quarantinedEntityIds(opticaId, "dispensacion")
+        val quarantinedServ = syncStateTracker.quarantinedEntityIds(opticaId, "servicio_extra")
+
+        var quarantineCount = 0
+        val eligible = mutableListOf<com.example.optoapp.data.Pago>()
+        val poisonedLocalIds = mutableSetOf<String>()
+        for (pago in pagos) {
+            val reason = FinanzasUploadValidator.validatePago(
+                pago.tipo, pago.monto, pago.dispensacionId, pago.servicioExtraId, pago.reversaPagoId,
+            ) ?: run {
+                val dispId = pago.dispensacionId
+                val servId = pago.servicioExtraId
+                when {
+                    dispId != null && (dispId in quarantinedDisp || dispId !in remoteDispIds) ->
+                        FinanzasUploadValidator.parentMissingReason("dispensacion", dispId)
+                    servId != null && (servId in quarantinedServ || servId !in remoteServIds) ->
+                        FinanzasUploadValidator.parentMissingReason("servicio", servId)
+                    else -> null
+                }
+            }
+            if (reason != null) {
+                syncStateTracker.markError(opticaId, "pago", pago.id, reason)
+                quarantineCount++
+                poisonedLocalIds.add(pago.id)
+            } else {
+                eligible.add(pago)
+            }
+        }
+
+        val rows = eligible.map { it.toRemoto().copy(opticaId = opticaRemota) }.distinctBy { it.id }
         val remotos = try {
             fetchRemotePagosForLookup(opticaRemota)
         } catch (e: CancellationException) {
@@ -418,7 +435,6 @@ open class UploadSyncCoordinator @Inject constructor(
             PagoKey(r.dispensacionId ?: "", r.tipo, r.monto, r.metodoPago, r.fecha) to r.id
         }.toMap()
 
-        // Build localId → reconciled row map with uniqueById dedup (C1 fix)
         val uniqueById = LinkedHashMap<String, Pair<String, PagoRemoto>>()
         rows.forEach { row ->
             val key = PagoKey(row.dispensacionId ?: "", row.tipo, row.monto, row.metodoPago, row.fecha)
@@ -431,10 +447,20 @@ open class UploadSyncCoordinator @Inject constructor(
         var uploadedCount = 0
         try {
             uniqueRows.chunked(UPSERT_BATCH_SIZE).forEachIndexed { index, chunk ->
-                networkRetryHelper.retryNetwork("upsert:$TABLE_PAGOS:chunk${index + 1}") {
-                    supabase.postgrest[TABLE_PAGOS].upsert(chunk)
-                }
-                uploadedCount += chunk.size
+                uploadedCount += upsertIsolating(
+                    chunk,
+                    upsert = { c ->
+                        networkRetryHelper.retryNetwork("upsert:$TABLE_PAGOS:chunk${index + 1}") {
+                            upsertPagosChunk(c)
+                        }
+                    },
+                    onPoison = { row, reason ->
+                        quarantineCount++
+                        val localId = uniqueById[row.id]?.first ?: row.id
+                        poisonedLocalIds.add(localId)
+                        syncStateTracker.markError(opticaId, "pago", localId, reason)
+                    },
+                )
             }
         } catch (e: CancellationException) {
             throw e
@@ -447,13 +473,20 @@ open class UploadSyncCoordinator @Inject constructor(
             syncStateTracker.markError(opticaId, "upload_pagos", "batch", e.message)
             throw e
         }
+
         runInTransaction {
             uniqueById.values.forEach { (localId, _) ->
-                syncStateTracker.markSynced(opticaId, "pago", localId)
+                if (localId !in poisonedLocalIds) {
+                    syncStateTracker.markSynced(opticaId, "pago", localId)
+                }
             }
         }
+        if (quarantineCount > 0) {
+            syncStateTracker.markError(opticaId, "upload_pagos", "batch", "quarantine:partial:$quarantineCount")
+            throw UploadPartialException(uploadedCount, IOException("quarantine:partial:$quarantineCount"))
+        }
         syncStateTracker.markSynced(opticaId, "upload_pagos", "batch")
-        return uniqueRows.size
+        return uploadedCount
     }
 
     suspend fun uploadGastosOperativos(opticaId: String): Int {

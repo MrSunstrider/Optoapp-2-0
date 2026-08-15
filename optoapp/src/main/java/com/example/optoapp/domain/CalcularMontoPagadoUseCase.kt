@@ -6,5 +6,5 @@ import javax.inject.Inject
 class CalcularMontoPagadoUseCase @Inject constructor(
     private val pagoDao: PagoDao,
 ) {
-    suspend operator fun invoke(dispensacionId: String): Double = pagoDao.sumMontoByDispensacion(dispensacionId, "Anulación")
+    suspend operator fun invoke(dispensacionId: String): Double = pagoDao.sumMontoByDispensacion(dispensacionId)
 }

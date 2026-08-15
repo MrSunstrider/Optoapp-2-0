@@ -8,6 +8,7 @@ import com.example.optoapp.data.ServicioExtra
 import com.example.optoapp.data.SessionManager
 import com.example.optoapp.domain.MovimientoFinanciero
 import com.example.optoapp.domain.Origen
+import com.example.optoapp.domain.PagoEffect
 import com.example.optoapp.domain.TipoMovimiento
 import com.example.optoapp.util.DateUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -135,7 +136,11 @@ class ReportesViewModel @Inject constructor(
                 _fechaDiario,
             ) { list, p, a, fd ->
                 val now = LocalDate.now()
-                list.filter { disp -> disp.estadoEntrega != "Anulado" && dentroDelPeriodo(disp.fecha, p, a, fd, now) }
+                list.filter { disp ->
+                    disp.estadoEntrega != "Anulado" &&
+                        disp.estadoEntrega != "Reclamada" &&
+                        dentroDelPeriodo(disp.fecha, p, a, fd, now)
+                }
             }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
@@ -167,13 +172,13 @@ class ReportesViewModel @Inject constructor(
                     repository.getAllPagosFlowForOptica(opticaId),
                 ) { disps, servs, pagos ->
                     val pagosSumByDisp = pagos
-                        .filter { it.tipo != "Anulación" && it.dispensacionId != null }
+                        .filter { it.dispensacionId != null }
                         .groupBy { it.dispensacionId!! }
-                        .mapValues { (_, pags) -> pags.sumOf { it.monto } }
+                        .mapValues { (_, pags) -> pags.sumOf { PagoEffect.signedAmount(it.tipo, it.monto) } }
                     val aCuentaSumByServ = pagos
-                        .filter { it.tipo != "Anulación" && it.servicioExtraId != null }
+                        .filter { it.servicioExtraId != null }
                         .groupBy { it.servicioExtraId!! }
-                        .mapValues { (_, pags) -> pags.sumOf { it.monto } }
+                        .mapValues { (_, pags) -> pags.sumOf { PagoEffect.signedAmount(it.tipo, it.monto) } }
                     val dispMovs = disps
                         .filter { it.fecha >= start && it.fecha <= end }
                         .map { d ->
@@ -227,7 +232,7 @@ class ReportesViewModel @Inject constructor(
                 Triple(opticaId, start, end)
             }.flatMapLatest { (opticaId, start, end) ->
                 repository.getPagosByDateRangeForOptica(start, end, opticaId)
-                    .map { pagos -> pagos.filter { it.tipo != "Anulación" }.sumOf { it.monto } }
+                    .map { pagos -> pagos.sumOf { PagoEffect.signedAmount(it.tipo, it.monto) } }
             }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
 
@@ -243,8 +248,7 @@ class ReportesViewModel @Inject constructor(
         .map { it.size }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
-    // montoPagado/aCuenta are @Ignore in entity, compute from pagos sum
-    // Anulaciones (negative monto) are INCLUDED so they net out correctly.
+    // montoPagado/aCuenta are @Ignore in entity; cash net via PagoEffect.
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val pagosSumByDispensacion: StateFlow<Map<String, Double>> = sessionManager.opticaId
@@ -253,7 +257,7 @@ class ReportesViewModel @Inject constructor(
                 .map { pagos ->
                     pagos.filter { it.dispensacionId != null }
                         .groupBy { it.dispensacionId!! }
-                        .mapValues { (_, pags) -> pags.sumOf { it.monto } }
+                        .mapValues { (_, pags) -> pags.sumOf { PagoEffect.signedAmount(it.tipo, it.monto) } }
                 }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
 
@@ -264,7 +268,7 @@ class ReportesViewModel @Inject constructor(
                 .map { pagos ->
                     pagos.filter { it.servicioExtraId != null }
                         .groupBy { it.servicioExtraId!! }
-                        .mapValues { (_, pags) -> pags.sumOf { it.monto } }
+                        .mapValues { (_, pags) -> pags.sumOf { PagoEffect.signedAmount(it.tipo, it.monto) } }
                 }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
 
@@ -283,8 +287,8 @@ class ReportesViewModel @Inject constructor(
                 val now = LocalDate.now()
                 repository.getPagosByDateRangeForOptica(range.first, range.second, opticaId)
                     .map { pagos ->
-                        pagos.filter { pago -> pago.tipo != "Anulación" && dentroDelPeriodo(pago.fecha, p, a, fd, now) }
-                            .sumOf { it.monto }
+                        pagos.filter { pago -> dentroDelPeriodo(pago.fecha, p, a, fd, now) }
+                            .sumOf { PagoEffect.signedAmount(it.tipo, it.monto) }
                     }
             }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
@@ -304,14 +308,14 @@ class ReportesViewModel @Inject constructor(
                 ) { pagos, todasDisp, todasServ ->
                     val dispMap = todasDisp.associateBy { it.id }
                     val servMap = todasServ.associateBy { it.id }
-                    pagos.filter { it.tipo != "Anulación" }
+                    pagos
                         .filter { pago -> dentroDelPeriodo(pago.fecha, p, a, fd, now) }
                         .sumOf { pago ->
                             val dispFecha = pago.dispensacionId?.let { dispMap[it]?.fecha }
                             val servFecha = pago.servicioExtraId?.let { servMap[it]?.fecha }
                             val dispInPeriod = dispFecha != null && dentroDelPeriodo(dispFecha, p, a, fd, now)
                             val servInPeriod = servFecha != null && dentroDelPeriodo(servFecha, p, a, fd, now)
-                            if (dispInPeriod || servInPeriod) 0.0 else pago.monto
+                            if (dispInPeriod || servInPeriod) 0.0 else PagoEffect.signedAmount(pago.tipo, pago.monto)
                         }
                 }
             }

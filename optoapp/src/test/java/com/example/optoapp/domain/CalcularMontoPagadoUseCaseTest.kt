@@ -23,37 +23,34 @@ class CalcularMontoPagadoUseCaseTest {
     }
 
     @Test
-    fun `delegates to sumMontoByDispensacion with correct parameters`() = runBlocking {
+    fun `delegates to effect-aware sumMontoByDispensacion`() = runBlocking {
         val pagoDao = mockk<PagoDao>()
-        coEvery { pagoDao.sumMontoByDispensacion("disp1", "Anulación") } returns 250.0
+        coEvery { pagoDao.sumMontoByDispensacion("disp1") } returns 250.0
 
         val useCase = CalcularMontoPagadoUseCase(pagoDao)
         val result = useCase("disp1")
 
         assertEquals(250.0, result, 0.001)
-        coVerify(exactly = 1) { pagoDao.sumMontoByDispensacion("disp1", "Anulación") }
+        coVerify(exactly = 1) { pagoDao.sumMontoByDispensacion("disp1") }
     }
 
     @Test
     fun `returns zero when no pagos exist`() = runBlocking {
         val pagoDao = mockk<PagoDao>()
-        coEvery { pagoDao.sumMontoByDispensacion("dispEmpty", "Anulación") } returns 0.0
+        coEvery { pagoDao.sumMontoByDispensacion("dispEmpty") } returns 0.0
 
         val useCase = CalcularMontoPagadoUseCase(pagoDao)
-        val result = useCase("dispEmpty")
-
-        assertEquals(0.0, result, 0.001)
+        assertEquals(0.0, useCase("dispEmpty"), 0.001)
     }
 
     @Test
-    fun `excludes Anulacion from mixed tipos`() = runBlocking {
+    fun `returns PagoEffect net including Reverso`() = runBlocking {
         val pagoDao = mockk<PagoDao>()
-        coEvery { pagoDao.sumMontoByDispensacion("dispMixed", "Anulación") } returns 300.0
+        // Abono 200 + Reverso 50 + Anulación 100 → net 150
+        coEvery { pagoDao.sumMontoByDispensacion("dispMixed") } returns 150.0
 
         val useCase = CalcularMontoPagadoUseCase(pagoDao)
-        val result = useCase("dispMixed")
-
-        assertEquals(300.0, result, 0.001)
-        coVerify(exactly = 1) { pagoDao.sumMontoByDispensacion("dispMixed", "Anulación") }
+        assertEquals(150.0, useCase("dispMixed"), 0.001)
+        coVerify(exactly = 1) { pagoDao.sumMontoByDispensacion("dispMixed") }
     }
 }

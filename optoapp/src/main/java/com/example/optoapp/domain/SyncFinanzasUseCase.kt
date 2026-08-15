@@ -50,23 +50,32 @@ open class SyncFinanzasUseCase @Inject constructor(
         var pagosUp = 0
         var gastosUp = 0
         var regalosUp = 0
+        var hadPartialUpload = false
 
         if (!skipUpload) {
-            dispUp = safeUpload("dispensaciones") { uploadSyncCoordinator.uploadDispensaciones(opticaId) }
+            val r1 = safeUpload("dispensaciones") { uploadSyncCoordinator.uploadDispensaciones(opticaId) }
+            dispUp = r1.count; hadPartialUpload = hadPartialUpload || r1.partial
             AppLogger.d(TAG, "Finanzas: upload dispensaciones=$dispUp")
-            itemsUp = safeUpload("dispensacion_items") { uploadSyncCoordinator.uploadDispensacionItems(opticaId) }
+            val r2 = safeUpload("dispensacion_items") { uploadSyncCoordinator.uploadDispensacionItems(opticaId) }
+            itemsUp = r2.count; hadPartialUpload = hadPartialUpload || r2.partial
             AppLogger.d(TAG, "Finanzas: upload dispensacion_items=$itemsUp")
-            servUp = safeUpload("servicios_extra") { uploadSyncCoordinator.uploadServicios(opticaId) }
+            val r3 = safeUpload("servicios_extra") { uploadSyncCoordinator.uploadServicios(opticaId) }
+            servUp = r3.count; hadPartialUpload = hadPartialUpload || r3.partial
             AppLogger.d(TAG, "Finanzas: upload servicios_extra=$servUp")
-            costosUp = safeUpload("costos_productos") { uploadSyncCoordinator.uploadCostosProductos(opticaId) }
+            val r4 = safeUpload("costos_productos") { uploadSyncCoordinator.uploadCostosProductos(opticaId) }
+            costosUp = r4.count; hadPartialUpload = hadPartialUpload || r4.partial
             AppLogger.d(TAG, "Finanzas: upload costos_productos=$costosUp")
-            biseladoUp = safeUpload("costos_biselado") { uploadSyncCoordinator.uploadCostosBiselado(opticaId) }
+            val r5 = safeUpload("costos_biselado") { uploadSyncCoordinator.uploadCostosBiselado(opticaId) }
+            biseladoUp = r5.count; hadPartialUpload = hadPartialUpload || r5.partial
             AppLogger.d(TAG, "Finanzas: upload costos_biselado=$biseladoUp")
-            pagosUp = safeUpload("pagos") { uploadSyncCoordinator.uploadPagos(opticaId) }
+            val r6 = safeUpload("pagos") { uploadSyncCoordinator.uploadPagos(opticaId) }
+            pagosUp = r6.count; hadPartialUpload = hadPartialUpload || r6.partial
             AppLogger.d(TAG, "Finanzas: upload pagos=$pagosUp")
-            gastosUp = safeUpload("gastos_operativos") { uploadSyncCoordinator.uploadGastosOperativos(opticaId) }
+            val r7 = safeUpload("gastos_operativos") { uploadSyncCoordinator.uploadGastosOperativos(opticaId) }
+            gastosUp = r7.count; hadPartialUpload = hadPartialUpload || r7.partial
             AppLogger.d(TAG, "Finanzas: upload gastos_operativos=$gastosUp")
-            regalosUp = safeUpload("regalos") { uploadSyncCoordinator.uploadRegalos(opticaId) }
+            val r8 = safeUpload("regalos") { uploadSyncCoordinator.uploadRegalos(opticaId) }
+            regalosUp = r8.count; hadPartialUpload = hadPartialUpload || r8.partial
             AppLogger.d(TAG, "Finanzas: upload regalos=$regalosUp")
         }
 
@@ -115,28 +124,31 @@ open class SyncFinanzasUseCase @Inject constructor(
             AppLogger.d(TAG, "Finanzas: fin upload-only OK")
         }
 
-        Resource.Success(
-            FinanzasSyncResult(
-                uploadedDispensaciones = dispUp,
-                uploadedDispensacionItems = itemsUp,
-                uploadedServicios = servUp,
-                uploadedCostosProductos = costosUp,
-                uploadedCostosBiselado = biseladoUp,
-                uploadedPagos = pagosUp,
-                uploadedGastosOperativos = gastosUp,
-                uploadedRegalos = regalosUp,
-                downloadedDispensaciones = dispDown,
-                downloadedDispensacionItems = itemsDown,
-                downloadedServicios = servDown,
-                downloadedPagos = pagosDown,
-                downloadedRegalos = regalosDown,
-                downloadedCostosProductos = costosDown,
-                downloadedCostosBiselado = biseladoDown,
-                downloadedResumenesDiarios = resumenDown,
-                downloadedConfiguracionesFinancieras = configDown,
-                downloadedGastosOperativos = gastosDown,
-            ),
+        val result = FinanzasSyncResult(
+            uploadedDispensaciones = dispUp,
+            uploadedDispensacionItems = itemsUp,
+            uploadedServicios = servUp,
+            uploadedCostosProductos = costosUp,
+            uploadedCostosBiselado = biseladoUp,
+            uploadedPagos = pagosUp,
+            uploadedGastosOperativos = gastosUp,
+            uploadedRegalos = regalosUp,
+            downloadedDispensaciones = dispDown,
+            downloadedDispensacionItems = itemsDown,
+            downloadedServicios = servDown,
+            downloadedPagos = pagosDown,
+            downloadedRegalos = regalosDown,
+            downloadedCostosProductos = costosDown,
+            downloadedCostosBiselado = biseladoDown,
+            downloadedResumenesDiarios = resumenDown,
+            downloadedConfiguracionesFinancieras = configDown,
+            downloadedGastosOperativos = gastosDown,
         )
+        if (hadPartialUpload) {
+            Resource.Error("Error sincronizando finanzas: upload parcial / quarantine", result)
+        } else {
+            Resource.Success(result)
+        }
     } catch (e: CancellationException) {
         throw e
     } catch (e: IOException) {
@@ -157,29 +169,21 @@ open class SyncFinanzasUseCase @Inject constructor(
         0
     }
 
+    private data class UploadStep(val count: Int, val partial: Boolean)
+
     /**
-     * NOTE: counts may be 0 even when partial data was uploaded before the error.
-     * The per-chunk count is propagated via [UploadPartialException] for methods
-     * that use [UploadSyncCoordinator.executeSimpleUpsert].
-     *
-     * H7: Partial upload count limitation is accepted because:
-     * 1. Partial uploads are idempotent — unconfirmed rows are re-uploaded on the next sync cycle.
-     * 2. Marking partial state per chunk would require API changes to upload coordinator
-     *    return types (currently returns Int, not a per-chunk summary).
-     * When [executeSimpleUpsert] throws IOException, the exception propagates through the
-     * upload method and is caught here, so the chunk-level count is lost. This is acceptable
-     * as long as idempotency holds.
+     * UploadPartialException is truthful error: preserve partial counts but mark the module incomplete.
      */
     private suspend fun safeUpload(
         entityName: String,
         block: suspend () -> Int,
-    ): Int = try {
-        block()
+    ): UploadStep = try {
+        UploadStep(block(), partial = false)
     } catch (e: CancellationException) {
         throw e
     } catch (e: UploadPartialException) {
         AppLogger.w(TAG, "Upload parcial de $entityName: ${e.uploadedCount} subidos antes del error", e)
-        e.uploadedCount
+        UploadStep(e.uploadedCount, partial = true)
     } catch (e: IOException) {
         AppLogger.e(TAG, "Error en red subiendo $entityName: ${e.message}", e)
         var lastError = e
@@ -187,13 +191,12 @@ open class SyncFinanzasUseCase @Inject constructor(
             val backoffMs = 1000L * (1L shl attempt)
             delay(backoffMs)
             try {
-                val retryResult = block()
-                return retryResult
+                return UploadStep(block(), partial = false)
             } catch (e2: CancellationException) {
                 throw e2
             } catch (e2: UploadPartialException) {
                 AppLogger.w(TAG, "Upload parcial de $entityName en reintento: ${e2.uploadedCount} subidos antes del error", e2)
-                return e2.uploadedCount
+                return UploadStep(e2.uploadedCount, partial = true)
             } catch (e2: IOException) {
                 lastError = e2
                 AppLogger.e(TAG, "Error en red subiendo $entityName (intento ${attempt + 2}): ${e2.message}", e2)

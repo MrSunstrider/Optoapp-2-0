@@ -9,6 +9,7 @@ import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Paciente
 import com.example.optoapp.data.Resource
 import com.example.optoapp.data.SessionManager
+import com.example.optoapp.domain.PagoEffect
 import com.example.optoapp.domain.auth.AuthorizationGuard
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -152,8 +153,7 @@ class PacienteViewModel @Inject constructor(
         _lastDispensacion.value = null
     }
 
-    // Reactive pagos sum by dispensacion for ResumenDispensacionDialog balance
-    // Anulaciones (negative monto) are INCLUDED so they net out correctly.
+    // Reactive pagos sum by dispensacion for ResumenDispensacionDialog balance (PagoEffect).
     @OptIn(ExperimentalCoroutinesApi::class)
     val pagosSumByDispensacion: StateFlow<Map<String, Double>> = sessionManager.opticaId
         .flatMapLatest { opticaId ->
@@ -161,7 +161,7 @@ class PacienteViewModel @Inject constructor(
                 .map { pagos ->
                     pagos.filter { it.dispensacionId != null }
                         .groupBy { it.dispensacionId!! }
-                        .mapValues { (_, pags) -> pags.sumOf { it.monto } }
+                        .mapValues { (_, pags) -> pags.sumOf { PagoEffect.signedAmount(it.tipo, it.monto) } }
                 }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
 
