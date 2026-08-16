@@ -1,13 +1,7 @@
 package com.example.optoapp.ui.components
 
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -23,7 +17,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import com.example.optoapp.ui.theme.OptoTokens
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -84,26 +77,22 @@ fun OptoDropdownMenuField(
                     modifier = Modifier.padding(OptoTokens.spacing.md),
                 )
             } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    items(filteredOptions) { option ->
-                        DropdownMenuItem(
-                            text = {
-                                Text(
-                                    text = option,
-                                    fontWeight = if (option == selected) FontWeight.SemiBold else FontWeight.Normal,
-                                    color = if (option == selected) MaterialTheme.colorScheme.primary
-                                    else MaterialTheme.colorScheme.onSurface,
-                                )
-                            },
-                            onClick = {
-                                onSelected(option)
-                                expanded = false
-                                searchQuery = ""
-                            },
-                        )
-                    }
+                filteredOptions.forEach { option ->
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                text = option,
+                                fontWeight = if (option == selected) FontWeight.SemiBold else FontWeight.Normal,
+                                color = if (option == selected) MaterialTheme.colorScheme.primary
+                                else MaterialTheme.colorScheme.onSurface,
+                            )
+                        },
+                        onClick = {
+                            onSelected(option)
+                            expanded = false
+                            searchQuery = ""
+                        },
+                    )
                 }
             }
         }
