@@ -288,6 +288,73 @@ BEGIN
 END;
 $$;
 
+-- #############################################################################
+-- DOMAIN 6: Homogeneous sync timestamps (client preserve)
+-- #############################################################################
+DO $$
+DECLARE
+    v_bad TEXT[];
+    v_missing_audit TEXT[];
+    v_extra INT;
+    v_sync TEXT[] := ARRAY[
+        'pacientes', 'evaluaciones', 'dispensaciones', 'pagos', 'servicios_extra',
+        'monturas', 'montura_movimientos'
+    ];
+    v_tbl TEXT;
+BEGIN
+    SELECT array_agg(c.relname ORDER BY c.relname) INTO v_bad
+    FROM pg_trigger t
+    JOIN pg_class c ON c.oid = t.tgrelid
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    JOIN pg_proc p ON p.oid = t.tgfoid
+    WHERE NOT t.tgisinternal
+      AND n.nspname = 'public'
+      AND p.proname = 'update_updated_at'
+      AND c.relname = ANY (v_sync);
+
+    ASSERT v_bad IS NULL OR array_length(v_bad, 1) IS NULL,
+        'DOMAIN 6: sync tables still call update_updated_at: '
+        || COALESCE(array_to_string(v_bad, ', '), 'none');
+
+    v_missing_audit := ARRAY[]::TEXT[];
+    FOREACH v_tbl IN ARRAY v_sync
+    LOOP
+        IF NOT EXISTS (
+            SELECT 1
+            FROM pg_trigger t
+            JOIN pg_class c ON c.oid = t.tgrelid
+            JOIN pg_namespace n ON n.oid = c.relnamespace
+            JOIN pg_proc p ON p.oid = t.tgfoid
+            WHERE NOT t.tgisinternal
+              AND n.nspname = 'public'
+              AND c.relname = v_tbl
+              AND p.proname = 'set_updated_audit_fields'
+        ) THEN
+            v_missing_audit := array_append(v_missing_audit, v_tbl);
+        END IF;
+    END LOOP;
+
+    ASSERT array_length(v_missing_audit, 1) IS NULL,
+        'DOMAIN 6: sync tables missing set_updated_audit_fields: '
+        || COALESCE(array_to_string(v_missing_audit, ', '), 'none');
+
+    SELECT count(*) INTO v_extra
+    FROM pg_trigger t
+    JOIN pg_class c ON c.oid = t.tgrelid
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    JOIN pg_proc p ON p.oid = t.tgfoid
+    WHERE NOT t.tgisinternal
+      AND n.nspname = 'public'
+      AND p.proname = 'update_updated_at'
+      AND c.relname NOT IN ('cierres_caja', 'optica_settings');
+
+    ASSERT v_extra = 0,
+        'DOMAIN 6: update_updated_at must only attach to cierres_caja and optica_settings';
+
+    RAISE NOTICE 'DOMAIN 6 PASS: Homogeneous sync timestamp triggers';
+END;
+$$;
+
 -- =============================================================================
 -- Summary
 -- =============================================================================
