@@ -76,7 +76,9 @@ fun OptoFormShell(
                 .fillMaxSize()
                 .padding(padding)
                 .padding(16.dp)
-                .navigationBarsPadding()
+                // La bottomBar ya aplica navigationBarsPadding; aplicarlo aquí solo
+                // cuando no hay bottomBar evita el doble inset (gap muerto sobre los botones).
+                .then(if (bottomBar == null) Modifier.navigationBarsPadding() else Modifier)
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(12.dp),
             content = content,

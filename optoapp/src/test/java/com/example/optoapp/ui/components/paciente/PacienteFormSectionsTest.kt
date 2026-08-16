@@ -56,6 +56,7 @@ class PacienteFormSectionsTest {
 
     @Test
     fun `section headers have expected values`() {
+        assertEquals("Registro", SECTION_REGISTRO)
         assertEquals("Identidad", SECTION_IDENTIDAD)
         assertEquals("Contacto", SECTION_CONTACTO)
         assertEquals("Clínica / contexto", SECTION_CLINICA)
@@ -63,12 +64,13 @@ class PacienteFormSectionsTest {
 
     @Test
     fun `section headers are distinct`() {
-        val headers = listOf(SECTION_IDENTIDAD, SECTION_CONTACTO, SECTION_CLINICA)
-        assertEquals(3, headers.distinct().size)
+        val headers = listOf(SECTION_REGISTRO, SECTION_IDENTIDAD, SECTION_CONTACTO, SECTION_CLINICA)
+        assertEquals(4, headers.distinct().size)
     }
 
     @Test
     fun `section headers are non-blank`() {
+        assertTrue(SECTION_REGISTRO.isNotBlank())
         assertTrue(SECTION_IDENTIDAD.isNotBlank())
         assertTrue(SECTION_CONTACTO.isNotBlank())
         assertTrue(SECTION_CLINICA.isNotBlank())

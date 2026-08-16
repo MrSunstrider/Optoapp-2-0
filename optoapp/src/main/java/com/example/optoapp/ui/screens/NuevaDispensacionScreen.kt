@@ -33,7 +33,7 @@ import com.example.optoapp.ui.components.OptoDatePickerDialog
 import com.example.optoapp.ui.components.OptoTextField
 import com.example.optoapp.ui.components.OptoTopAppBar
 import com.example.optoapp.ui.components.PatientContextCard
-import com.example.optoapp.ui.components.StepIndicator
+import com.example.optoapp.ui.components.WizardStepHeader
 import com.example.optoapp.ui.navigation.Route
 import com.example.optoapp.ui.components.dispensacion.LenteForm
 import com.example.optoapp.util.DateUtils
@@ -118,31 +118,29 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
             )
         },
         bottomBar = {
-            Surface(tonalElevation = 2.dp) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .navigationBarsPadding()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    if (currentStep > 0) {
-                        OutlinedButton(
-                            onClick = { currentStep-- },
-                            modifier = Modifier.weight(1f),
-                        ) { Text("Anterior") }
-                    }
-                    if (currentStep < WIZARD_STEPS.lastIndex) {
-                        Button(
-                            onClick = { currentStep++ },
-                            modifier = Modifier.weight(1f),
-                        ) { Text("Siguiente") }
-                    } else {
-                        Button(
-                            onClick = { saveAction() },
-                            modifier = Modifier.weight(1f).testTag(TestTags.DISPENSACION_GUARDAR_BTN),
-                        ) { Text(if (dispensacionId == null) "Confirmar Orden" else "Actualizar Orden") }
-                    }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                if (currentStep > 0) {
+                    OutlinedButton(
+                        onClick = { currentStep-- },
+                        modifier = Modifier.weight(1f),
+                    ) { Text("Anterior") }
+                }
+                if (currentStep < WIZARD_STEPS.lastIndex) {
+                    Button(
+                        onClick = { currentStep++ },
+                        modifier = Modifier.weight(1f),
+                    ) { Text("Siguiente") }
+                } else {
+                    Button(
+                        onClick = { saveAction() },
+                        modifier = Modifier.weight(1f).testTag(TestTags.DISPENSACION_GUARDAR_BTN),
+                    ) { Text(if (dispensacionId == null) "Confirmar Orden" else "Actualizar Orden") }
                 }
             }
         },
@@ -161,10 +159,10 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
 
             Spacer(modifier = Modifier.height(4.dp))
 
-            StepIndicator(
+            WizardStepHeader(
+                labels = WIZARD_STEPS,
                 currentStep = currentStep,
                 totalSteps = WIZARD_STEPS.size,
-                labels = WIZARD_STEPS,
                 modifier = Modifier.fillMaxWidth(),
             )
 

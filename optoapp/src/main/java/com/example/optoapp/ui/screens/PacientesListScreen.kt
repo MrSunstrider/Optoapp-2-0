@@ -34,6 +34,8 @@ import com.example.optoapp.ui.components.OptoTopAppBar
 import com.example.optoapp.ui.navigation.Route
 import com.example.optoapp.ui.components.paciente.ResumenDispensacionDialog
 import com.example.optoapp.ui.components.paciente.ResumenEvaluacionDialog
+import com.example.optoapp.ui.components.paciente.SexoSymbol
+import com.example.optoapp.ui.components.paciente.sexoSymbolOf
 import com.example.optoapp.ui.theme.alertRed
 import com.example.optoapp.ui.theme.OptoTokens
 import com.example.optoapp.ui.theme.positiveGreen
@@ -231,7 +233,14 @@ fun PacientesListScreen(
                             resource.data?.let { eval ->
                                 val paciente = pacientes.find { it.id == eval.pacienteId }
                                 if (paciente != null) {
-                                    ResumenEvaluacionDialog(eval = eval, paciente = paciente, onDismiss = closeAndResetEval, onEdit = {})
+                                    ResumenEvaluacionDialog(
+                                        eval = eval,
+                                        paciente = paciente,
+                                        onDismiss = closeAndResetEval,
+                                        onEdit = {
+                                            navController.navigate(Route.EditarEvaluacion(eval.pacienteId, eval.id).route)
+                                        },
+                                    )
                                 } else {
                                     closeAndResetEval()
                                 }
@@ -253,7 +262,9 @@ fun PacientesListScreen(
                                         disp = disp,
                                         paciente = paciente,
                                         onDismiss = closeAndResetDisp,
-                                        onEdit = {},
+                                        onEdit = {
+                                            navController.navigate(Route.EditarDispensacion(disp.pacienteId, disp.id).route)
+                                        },
                                         pagosSum = pagosSumByDispensacion[disp.id] ?: 0.0,
                                         onGoToFinanciero = { target ->
                                         closeAndResetDisp()
@@ -283,6 +294,11 @@ private fun PacienteCard(
     onCall: () -> Unit,
 ) {
     val avatarColor = MaterialTheme.colorScheme.primary
+    val (avatarIcon, avatarDescription) = when (sexoSymbolOf(paciente.sexo)) {
+        SexoSymbol.MARTE -> Icons.Default.Male to "Paciente masculino"
+        SexoSymbol.VENUS -> Icons.Default.Female to "Paciente femenino"
+        SexoSymbol.DESCONOCIDO -> Icons.Default.Person to "Sexo no registrado"
+    }
 
     OptoCard(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
@@ -295,7 +311,7 @@ private fun PacienteCard(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Surface(modifier = Modifier.size(44.dp), shape = RoundedCornerShape(12.dp), color = avatarColor.copy(alpha = 0.12f)) {
-                Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.Person, contentDescription = "Foto de perfil", modifier = Modifier.size(24.dp), tint = avatarColor) }
+                Box(contentAlignment = Alignment.Center) { Icon(avatarIcon, contentDescription = avatarDescription, modifier = Modifier.size(24.dp), tint = avatarColor) }
             }
 
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -309,14 +325,14 @@ private fun PacienteCard(
                         modifier = Modifier.weight(1f),
                     )
                     IconButton(onClick = { onShowLastEvaluacion(paciente.id) }, modifier = Modifier.size(36.dp).testTag(TestTags.PACIENTE_CARD_LAST_EVAL_BTN)) {
-                        Icon(Icons.Default.Visibility, contentDescription = "Ver evaluación", modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary)
+                        Icon(Icons.Default.Visibility, contentDescription = "Ver evaluación", modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
                     }
                     IconButton(onClick = { onShowLastDispensacion(paciente.id) }, modifier = Modifier.size(36.dp).testTag(TestTags.PACIENTE_CARD_LAST_DISP_BTN)) {
-                        Icon(Icons.Default.Inventory2, contentDescription = "Ver dispensación", modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.tertiary)
+                        Icon(Icons.Default.Inventory2, contentDescription = "Ver dispensación", modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.tertiary)
                     }
                     if (paciente.telefono.isNotBlank()) {
                         IconButton(onClick = onCall, modifier = Modifier.size(36.dp)) {
-                            Icon(Icons.Default.Call, contentDescription = "Llamar", modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.positiveGreen)
+                            Icon(Icons.Default.Call, contentDescription = "Llamar", modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.positiveGreen)
                         }
                     }
                 }
