@@ -102,6 +102,7 @@ private object PhoneSpaceTransformation : VisualTransformation {
     }
 }
 
+internal const val SECTION_REGISTRO = "Registro"
 internal const val SECTION_IDENTIDAD = "Identidad"
 internal const val SECTION_CONTACTO = "Contacto"
 internal const val SECTION_CLINICA = "Clínica / contexto"
@@ -151,6 +152,35 @@ fun PacienteFormSections(
 ) {
     var showSexoDialog by remember { mutableStateOf(false) }
     val sexos = listOf("Masculino", "Femenino")
+
+    // --- Section 0: Registro ---
+    SectionHeader(SECTION_REGISTRO)
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        OutlinedTextField(
+            value = historiaOptometrica,
+            onValueChange = onHistoriaOptometricaChange,
+            label = { Text("N° Historia Optométrica") },
+            modifier = Modifier.weight(1f),
+        )
+        TextButton(
+            onClick = onSuggestHo,
+            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
+        ) {
+            Text("Sugerir HO", maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+        }
+    }
+
+    OutlinedButton(
+        onClick = onShowDatePicker,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Text("Fecha de Registro: ${DateUtils.formatLocalized(fechaCreacion)}")
+    }
 
     // --- Section 1: Identidad ---
     SectionHeader(SECTION_IDENTIDAD)
@@ -323,30 +353,4 @@ fun PacienteFormSections(
         modifier = Modifier.fillMaxWidth(),
         minLines = 2,
     )
-
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        OutlinedTextField(
-            value = historiaOptometrica,
-            onValueChange = onHistoriaOptometricaChange,
-            label = { Text("N° Historia Optométrica") },
-            modifier = Modifier.weight(1f),
-        )
-        TextButton(
-            onClick = onSuggestHo,
-            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
-        ) {
-            Text("Sugerir HO", maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-        }
-    }
-
-    OutlinedButton(
-        onClick = onShowDatePicker,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Text("Fecha de Registro: ${DateUtils.formatLocalized(fechaCreacion)}")
-    }
 }

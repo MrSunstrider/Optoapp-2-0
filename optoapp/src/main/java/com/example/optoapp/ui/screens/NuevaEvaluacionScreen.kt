@@ -21,7 +21,7 @@ import com.example.optoapp.ui.components.OSDIDialog
 import com.example.optoapp.ui.components.OptoDatePickerDialog
 import com.example.optoapp.ui.components.OptoTopAppBar
 import com.example.optoapp.ui.components.PatientContextCard
-import com.example.optoapp.ui.components.StepIndicator
+import com.example.optoapp.ui.components.WizardStepHeader
 import com.example.optoapp.ui.components.evaluacion.AnamnesisSection
 import com.example.optoapp.ui.components.evaluacion.CierreSection
 import com.example.optoapp.ui.components.evaluacion.ContactologiaSection
@@ -178,29 +178,27 @@ fun NuevaEvaluacionScreen(
             )
         },
         bottomBar = {
-            Surface(tonalElevation = 3.dp) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .navigationBarsPadding()
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
-                    if (currentStep > 0) {
-                        OutlinedButton(onClick = { currentStep-- }) {
-                            Text("Anterior")
-                        }
-                    } else {
-                        Spacer(Modifier.width(1.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                if (currentStep > 0) {
+                    OutlinedButton(onClick = { currentStep-- }) {
+                        Text("Anterior")
                     }
-                    if (currentStep < 4) {
-                        Button(onClick = { currentStep++ }) {
-                            Text("Siguiente")
-                        }
-                    } else {
-                        Button(onClick = { saveAction() }) {
-                            Text("Finalizar")
-                        }
+                } else {
+                    Spacer(Modifier.width(1.dp))
+                }
+                if (currentStep < 4) {
+                    Button(onClick = { currentStep++ }) {
+                        Text("Siguiente")
+                    }
+                } else {
+                    Button(onClick = { saveAction() }) {
+                        Text("Finalizar")
                     }
                 }
             }
@@ -219,10 +217,10 @@ fun NuevaEvaluacionScreen(
                 )
             }
 
-            StepIndicator(
+            WizardStepHeader(
+                labels = stepLabels,
                 currentStep = currentStep,
                 totalSteps = 5,
-                labels = stepLabels,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 12.dp),
