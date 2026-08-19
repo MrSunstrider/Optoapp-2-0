@@ -68,4 +68,4 @@ Threat RED: WU1 RPC ignore client id / admin iff INSERT / return S; RLS deny dir
 
 ## Cleanup
 
-- [ ] 8.1 Full `./gradlew :optoapp:testDebugUnitTest --stacktrace`. Leave createAdditionalOptica unwired.
+- [x] 8.1 Full `./gradlew :optoapp:testDebugUnitTest --stacktrace`. Leave createAdditionalOptica unwired.
