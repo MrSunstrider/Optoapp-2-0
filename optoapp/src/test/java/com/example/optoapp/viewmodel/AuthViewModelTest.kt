@@ -1,6 +1,8 @@
 package com.example.optoapp.viewmodel
 
 import com.example.optoapp.data.SecurityManager
+import com.example.optoapp.ui.navigation.Route
+import com.example.optoapp.viewmodel.auth.ColdStartNavigation
 import org.junit.Assert.*
 import org.junit.Test
 
@@ -70,5 +72,26 @@ class AuthViewModelTest {
     fun authStateSuccess_isNotError() {
         val success: AuthState = AuthState.Success
         assertFalse(success is AuthState.Error)
+    }
+
+    @Test
+    fun checkExistingSession_isDeclared() {
+        val methods = AuthViewModel::class.java.methods.map { it.name }
+        assertTrue("checkExistingSession debe existir", "checkExistingSession" in methods)
+    }
+
+    @Test
+    fun isAuthChecked_isDeclared() {
+        val members = AuthViewModel::class.java.declaredFields.map { it.name } +
+            AuthViewModel::class.java.methods.map { it.name }
+        assertTrue("isAuthChecked debe existir", "isAuthChecked" in members)
+    }
+
+    @Test
+    fun coldStart_doesNotRestoreBeforeAuthChecked() {
+        assertEquals(
+            Route.Login.route,
+            ColdStartNavigation.dest(false, true, true, Route.Pin.route),
+        )
     }
 }

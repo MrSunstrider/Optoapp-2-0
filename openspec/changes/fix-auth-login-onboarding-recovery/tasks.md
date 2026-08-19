@@ -48,7 +48,7 @@ Threat RED: WU1 RPC ignore client id / admin iff INSERT / return S; RLS deny dir
 
 ## Phase 3: WU3 A4 (~90)
 
-- [ ] 3.1 RED AuthViewModelTest/LoginScreenTest: no restore before isAuthChecked; session leaves Login; none stays. Confirm RED. GREEN MainActivity.kt gate isAuthChecked then resolvePostLogin. Re-run GREEN.
+- [x] 3.1 RED AuthViewModelTest/LoginScreenTest: no restore before isAuthChecked; session leaves Login; none stays. Confirm RED. GREEN MainActivity.kt gate isAuthChecked then resolvePostLogin. Re-run GREEN.
 
 ## Phase 4: WU4 A5 (~80)
 
