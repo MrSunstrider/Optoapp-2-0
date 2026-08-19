@@ -38,6 +38,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.optoapp.domain.observer.MembershipObserver
 import com.example.optoapp.viewmodel.AuthViewModel
+import com.example.optoapp.viewmodel.auth.SinOpticaUiState
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
 
@@ -49,8 +50,9 @@ fun SinOpticaScreen(
 ) {
     val userEmail by viewModel.userEmail.collectAsState(initial = "")
     val isPinRequired by viewModel.isPinRequired.collectAsState(initial = false)
-    var waitingMode by remember { mutableStateOf(false) }
-    var showOwnerForm by remember { mutableStateOf(false) }
+    var ui by remember { mutableStateOf(SinOpticaUiState()) }
+    val waitingMode = ui.waitingMode
+    val showOwnerForm = ui.showOwnerForm
     var nombreOptica by remember { mutableStateOf("") }
     var fiscalDocTipo by remember { mutableStateOf("") }
     var fiscalDocNumero by remember { mutableStateOf("") }
@@ -165,7 +167,7 @@ fun SinOpticaScreen(
                         Text("Crear óptica")
                     }
                 }
-                TextButton(onClick = { showOwnerForm = false }) { Text("Volver") }
+                TextButton(onClick = { ui = SinOpticaUiState() }) { Text("Volver") }
             } else if (!waitingMode) {
                 Text(
                     text = "¿Cómo vas a usar OptoApp?",
@@ -175,7 +177,7 @@ fun SinOpticaScreen(
                 )
                 Spacer(Modifier.height(32.dp))
                 OutlinedButton(
-                    onClick = { showOwnerForm = true },
+                    onClick = { ui = ui.onOwnerCreateAction() },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(72.dp),
@@ -189,7 +191,7 @@ fun SinOpticaScreen(
                 }
                 Spacer(Modifier.height(12.dp))
                 OutlinedButton(
-                    onClick = { waitingMode = true },
+                    onClick = { ui = ui.onEmployeeWaitAction() },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(72.dp),
@@ -258,7 +260,7 @@ fun SinOpticaScreen(
                 }
                 Spacer(Modifier.height(8.dp))
                 TextButton(onClick = {
-                    waitingMode = false
+                    ui = SinOpticaUiState()
                     noMembershipYet = false
                 }) {
                     Text("Volver")

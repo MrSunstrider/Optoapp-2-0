@@ -17,6 +17,18 @@ class GoTruePasswordPolicyTest {
 
         assertEquals("6", min.groupValues[1])
         assertEquals("lower_upper_letters_digits_symbols", req.groupValues[1])
+        assertEquals(GoTruePasswordPolicy.MIN_LENGTH.toString(), min.groupValues[1])
+        assertEquals(GoTruePasswordPolicy.REQUIREMENTS, req.groupValues[1])
+    }
+
+    @Test
+    fun weakLowercaseMin6_isRejectedByLocalPolicy() {
+        assertEquals(false, GoTruePasswordPolicy.meets("abcdef"))
+    }
+
+    @Test
+    fun strongMin6WithAllClasses_isAcceptedByLocalPolicy() {
+        assertEquals(true, GoTruePasswordPolicy.meets("aB1!xy"))
     }
 
     @Test

@@ -157,4 +157,13 @@ class AuthDelegateTest {
 
         assertTrue("Unexpected invitaciones refs: $hits", hits.isEmpty())
     }
+
+    @Test
+    fun sinOpticaScreen_ownerActionWiresCreateForm() {
+        val relative = "src/main/java/com/example/optoapp/ui/screens/SinOpticaScreen.kt"
+        val found = listOf(File(relative), File("optoapp/$relative")).first { it.exists() }
+        val text = found.readText()
+        assertTrue(text.contains("onOwnerCreateAction()"))
+        assertTrue(text.contains("SinOpticaUiState"))
+    }
 }

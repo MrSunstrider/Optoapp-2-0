@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.optoapp.ui.components.OptoTopAppBar
+import com.example.optoapp.data.GoTruePasswordPolicy
 import com.example.optoapp.viewmodel.AuthState
 import com.example.optoapp.viewmodel.AuthViewModel
 import com.example.optoapp.viewmodel.auth.PostLoginNavigation
@@ -184,10 +185,7 @@ fun RegisterScreen(
                             email.isBlank() -> "Ingresa un correo electrónico"
                             !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches() -> "Ingresa un correo electrónico válido"
                             password.length < 6 -> "La contraseña debe tener al menos 6 caracteres"
-                            !password.any { it.isLowerCase() } -> "Falta una minúscula en la contraseña"
-                            !password.any { it.isUpperCase() } -> "Falta una MAYÚSCULA en la contraseña"
-                            !password.any { it.isDigit() } -> "Falta un número en la contraseña"
-                            !password.any { !it.isLetterOrDigit() } -> "Falta un símbolo especial en la contraseña"
+                            !GoTruePasswordPolicy.meets(password) -> "Falta mayúscula, minúscula, número o símbolo en la contraseña"
                             password != confirmPassword -> "Las contraseñas no coinciden"
                             else -> null
                         }
@@ -216,10 +214,7 @@ fun RegisterScreen(
                         email.isBlank() -> "Ingresa un correo electrónico"
                         !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches() -> "Ingresa un correo electrónico válido"
                         password.length < 6 -> "La contraseña debe tener al menos 6 caracteres"
-                        !password.any { it.isLowerCase() } -> "Falta una minúscula en la contraseña"
-                        !password.any { it.isUpperCase() } -> "Falta una MAYÚSCULA en la contraseña"
-                        !password.any { it.isDigit() } -> "Falta un número en la contraseña"
-                        !password.any { !it.isLetterOrDigit() } -> "Falta un símbolo especial en la contraseña"
+                        !GoTruePasswordPolicy.meets(password) -> "Falta mayúscula, minúscula, número o símbolo en la contraseña"
                         password != confirmPassword -> "Las contraseñas no coinciden"
                         else -> null
                     }

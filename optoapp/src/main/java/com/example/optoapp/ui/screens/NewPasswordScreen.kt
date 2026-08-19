@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.optoapp.ui.components.OptoTopAppBar
+import com.example.optoapp.data.GoTruePasswordPolicy
 import com.example.optoapp.ui.navigation.Route
 import com.example.optoapp.viewmodel.AuthViewModel
 import com.example.optoapp.viewmodel.RecoveryState
@@ -58,11 +59,7 @@ fun NewPasswordScreen(
     }
 
     fun validatePassword(): String? = when {
-        newPassword.length < 6 -> WEAK_PASSWORD_ERROR
-        !newPassword.any { it.isLowerCase() } -> WEAK_PASSWORD_ERROR
-        !newPassword.any { it.isUpperCase() } -> WEAK_PASSWORD_ERROR
-        !newPassword.any { it.isDigit() } -> WEAK_PASSWORD_ERROR
-        !newPassword.any { !it.isLetterOrDigit() } -> WEAK_PASSWORD_ERROR
+        !GoTruePasswordPolicy.meets(newPassword) -> WEAK_PASSWORD_ERROR
         newPassword != confirmPassword -> "Las contraseñas no coinciden."
         else -> null
     }
