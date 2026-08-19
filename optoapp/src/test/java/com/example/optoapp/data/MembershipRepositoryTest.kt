@@ -49,7 +49,7 @@ class MembershipRepositoryTest {
 
         val result = repo.fetchMembershipsForCurrentUser()
 
-        assertTrue(result.isEmpty())
+        assertTrue(result is com.example.optoapp.data.membership.MembershipFetch.Empty)
     }
 
     @Test

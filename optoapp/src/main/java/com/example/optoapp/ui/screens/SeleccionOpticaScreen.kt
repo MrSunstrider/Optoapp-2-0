@@ -28,13 +28,14 @@ fun SeleccionOpticaScreen(
     viewModel: AuthViewModel = hiltViewModel(),
 ) {
     val memberships by viewModel.pendingMemberships.collectAsState()
+    val needsOnboarding by viewModel.needsOnboarding.collectAsState()
     val isPinRequired by viewModel.isPinRequired.collectAsState(initial = false)
     var busy by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
-    LaunchedEffect(memberships) {
-        if (memberships.isEmpty()) {
-            navController.navigate(if (isPinRequired) "pin" else "main") {
+    LaunchedEffect(memberships, needsOnboarding) {
+        if (memberships.isEmpty() && needsOnboarding) {
+            navController.navigate("sin_optica") {
                 popUpTo("seleccion_optica") { inclusive = true }
             }
         }
@@ -59,6 +60,15 @@ fun SeleccionOpticaScreen(
                     style = MaterialTheme.typography.bodyMedium,
                 )
                 Spacer(Modifier.height(16.dp))
+            }
+            if (memberships.isEmpty()) {
+                item {
+                    Text(
+                        "No hay ópticas para seleccionar.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
             items(memberships, key = { it.opticaId }) { m ->
                 OptoCard(

@@ -25,9 +25,9 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.optoapp.ui.components.OptoTopAppBar
-import com.example.optoapp.ui.navigation.Route
 import com.example.optoapp.viewmodel.AuthState
 import com.example.optoapp.viewmodel.AuthViewModel
+import com.example.optoapp.viewmodel.auth.PostLoginNavigation
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -50,20 +50,15 @@ fun RegisterScreen(
 
     LaunchedEffect(authState, pendingMemberships, isLoggedIn, needsOnboarding) {
         if (authState !is AuthState.Success) return@LaunchedEffect
-        if (needsOnboarding) {
-            navController.navigate(Route.SinOptica.route) {
-                popUpTo("register") { inclusive = true }
-            }
-            return@LaunchedEffect
-        }
-        if (pendingMemberships.isNotEmpty()) {
-            navController.navigate(Route.SeleccionOptica.route) {
-                popUpTo("register") { inclusive = true }
-            }
-            return@LaunchedEffect
-        }
-        if (!isLoggedIn) return@LaunchedEffect
-        val dest = if (isPinRequired == true) "pin" else "main"
+        if (!isLoggedIn && !needsOnboarding && pendingMemberships.isEmpty()) return@LaunchedEffect
+        val dest = PostLoginNavigation.dest(
+            count = pendingMemberships.size,
+            needsOnboarding = needsOnboarding,
+            fetchError = false,
+            isPinRequired = isPinRequired == true,
+            pinHasBeenSet = false,
+        )
+        if (dest.isEmpty()) return@LaunchedEffect
         navController.navigate(dest) {
             popUpTo("register") { inclusive = true }
         }

@@ -50,6 +50,10 @@ class SessionManagerTest {
             _isLoggedIn.value = true
         }
 
+        override suspend fun saveOnboardingSession(email: String, name: String) {
+            saveSession(opticaId = "", email = email, name = name, rol = "")
+        }
+
         override suspend fun clearSession() {
             _isLoggedIn.value = false
             _opticaId.value = SessionManager.LEGACY_OPTICA_ID
@@ -101,6 +105,16 @@ class SessionManagerTest {
 
         assertTrue(sm.isLoggedIn.first())
         assertEquals("optica_1", sm.opticaId.first())
+    }
+
+    @Test
+    fun `saveOnboardingSession sets logged in with blank opticaId not legacy`() = runTest {
+        val sm = EncryptedSessionManagerFake()
+        sm.saveOnboardingSession("a@b.com", "Ana")
+
+        assertTrue(sm.isLoggedIn.first())
+        assertEquals("", sm.opticaId.first())
+        assertNotEquals(SessionManager.LEGACY_OPTICA_ID, sm.opticaId.first())
     }
 
     @Test

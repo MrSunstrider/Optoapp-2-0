@@ -203,7 +203,7 @@ class SyncDiagnosticsViewModel @Inject constructor(
                 return@launch
             }
 
-            val memberships = membershipRepository.fetchMembershipsForCurrentUser()
+            val memberships = membershipRepository.fetchMembershipsForCurrentUser().asList()
             when {
                 memberships.isEmpty() -> {
                     _sessionRepairState.value = SessionRepairState.Error(

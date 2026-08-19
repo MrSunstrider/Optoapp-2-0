@@ -139,18 +139,25 @@ class AuthViewModel @Inject constructor(
         _recoveryState.value = RecoveryState.Idle
     }
 
+    private fun applyPostLogin(result: AuthDelegate.PostLoginResult) {
+        if (result.membershipFetchError) {
+            _authState.value = AuthState.Error("No se pudieron cargar las ópticas. Reintente más tarde.")
+            return
+        }
+        _pendingMemberships.value = result.memberships
+        if (result.requiresOnboarding) _needsOnboarding.value = true
+        _authState.value = AuthState.Success
+    }
+
     fun login(email: String, password: String) = viewModelScope.launch {
         _authState.value = AuthState.Loading
         _pendingMemberships.value = emptyList()
         try {
             authDelegate.login(email, password)
-            val result = authDelegate.resolvePostLogin(
+            applyPostLogin(authDelegate.resolvePostLogin(
                 emailFallback = email,
                 nameFallback = email.substringBefore("@"),
-            )
-            _pendingMemberships.value = result.memberships
-            if (result.requiresOnboarding) _needsOnboarding.value = true
-            _authState.value = AuthState.Success
+            ))
         } catch (e: CancellationException) {
             throw e
         } catch (e: IOException) {
@@ -195,10 +202,7 @@ class AuthViewModel @Inject constructor(
             return@launch
         }
         runCatching {
-            val r = authDelegate.resolvePostLogin()
-            _pendingMemberships.value = r.memberships
-            if (r.requiresOnboarding) _needsOnboarding.value = true
-            _authState.value = AuthState.Success
+            applyPostLogin(authDelegate.resolvePostLogin())
         }.onFailure { e ->
             Log.e(TAG, "Error cerrando OAuth Google", e)
             _authState.value = AuthState.Error("Error inesperado. Reintente más tarde.")
@@ -214,13 +218,10 @@ class AuthViewModel @Inject constructor(
             return@launch
         }
         try {
-            val r = authDelegate.resolvePostLogin(
+            applyPostLogin(authDelegate.resolvePostLogin(
                 emailFallback = email,
                 nameFallback = email.substringBefore("@"),
-            )
-            _pendingMemberships.value = r.memberships
-            if (r.requiresOnboarding) _needsOnboarding.value = true
-            _authState.value = AuthState.Success
+            ))
         } catch (e: Exception) {
             Log.e(TAG, "Error post-registro: ${e.message}", e)
             _authState.value = AuthState.Error("Cuenta creada. Inicia sesión para continuar.")

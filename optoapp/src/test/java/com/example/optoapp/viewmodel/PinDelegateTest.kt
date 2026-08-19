@@ -43,6 +43,7 @@ class PinDelegateTest {
         override val pinHasBeenSet: Flow<Boolean> = _pinHasBeenSet.asStateFlow()
         override val isPinRequired: Flow<Boolean> = _isPinRequired.asStateFlow()
         override suspend fun saveSession(opticaId: String, email: String, name: String, rol: String) {}
+        override suspend fun saveOnboardingSession(email: String, name: String) {}
         override suspend fun clearSession() {}
         override suspend fun setPinRequired(required: Boolean) {
             _isPinRequired.value = required

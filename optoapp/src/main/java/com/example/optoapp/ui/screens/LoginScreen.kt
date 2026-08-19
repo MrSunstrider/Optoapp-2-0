@@ -44,6 +44,7 @@ import com.example.optoapp.ui.components.OptoCard
 import com.example.optoapp.ui.navigation.Route
 import com.example.optoapp.viewmodel.AuthState
 import com.example.optoapp.viewmodel.AuthViewModel
+import com.example.optoapp.viewmodel.auth.PostLoginNavigation
 
 @Composable
 fun LoginScreen(
@@ -82,20 +83,15 @@ fun LoginScreen(
             viewModel.clearRememberedEmail()
         }
 
-        if (needsOnboarding) {
-            navController.navigate(Route.SinOptica.route) {
-                popUpTo("login") { inclusive = true }
-            }
-            return@LaunchedEffect
-        }
-        if (pendingMemberships.isNotEmpty()) {
-            navController.navigate(Route.SeleccionOptica.route) {
-                popUpTo("login") { inclusive = true }
-            }
-            return@LaunchedEffect
-        }
-        if (!isLoggedIn) return@LaunchedEffect
-        val dest = if (isPinRequired == true) "pin" else "main"
+        if (!isLoggedIn && !needsOnboarding && pendingMemberships.isEmpty()) return@LaunchedEffect
+        val dest = PostLoginNavigation.dest(
+            count = pendingMemberships.size,
+            needsOnboarding = needsOnboarding,
+            fetchError = false,
+            isPinRequired = isPinRequired == true,
+            pinHasBeenSet = false,
+        )
+        if (dest.isEmpty()) return@LaunchedEffect
         navController.navigate(dest) {
             popUpTo("login") { inclusive = true }
         }

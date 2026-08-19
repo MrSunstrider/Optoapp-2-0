@@ -17,6 +17,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -36,7 +37,6 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.optoapp.domain.observer.MembershipObserver
-import com.example.optoapp.ui.navigation.Route
 import com.example.optoapp.viewmodel.AuthViewModel
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
@@ -50,6 +50,14 @@ fun SinOpticaScreen(
     val userEmail by viewModel.userEmail.collectAsState(initial = "")
     val isPinRequired by viewModel.isPinRequired.collectAsState(initial = false)
     var waitingMode by remember { mutableStateOf(false) }
+    var showOwnerForm by remember { mutableStateOf(false) }
+    var nombreOptica by remember { mutableStateOf("") }
+    var fiscalDocTipo by remember { mutableStateOf("") }
+    var fiscalDocNumero by remember { mutableStateOf("") }
+    var razonSocial by remember { mutableStateOf("") }
+    var direccionFiscal by remember { mutableStateOf("") }
+    var submitting by remember { mutableStateOf(false) }
+    var formError by remember { mutableStateOf<String?>(null) }
     var checking by remember { mutableStateOf(false) }
     var noMembershipYet by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
@@ -74,7 +82,91 @@ fun SinOpticaScreen(
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            if (!waitingMode) {
+            if (showOwnerForm) {
+                Text(
+                    text = "Crear mi óptica",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                )
+                Spacer(Modifier.height(16.dp))
+                OutlinedTextField(
+                    value = nombreOptica,
+                    onValueChange = { nombreOptica = it },
+                    label = { Text("Nombre") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                )
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = fiscalDocTipo,
+                    onValueChange = { fiscalDocTipo = it },
+                    label = { Text("Documento fiscal (tipo)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                )
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = fiscalDocNumero,
+                    onValueChange = { fiscalDocNumero = it },
+                    label = { Text("Documento fiscal (número)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                )
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = razonSocial,
+                    onValueChange = { razonSocial = it },
+                    label = { Text("Razón social") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                )
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = direccionFiscal,
+                    onValueChange = { direccionFiscal = it },
+                    label = { Text("Dirección fiscal") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                )
+                if (formError != null) {
+                    Spacer(Modifier.height(8.dp))
+                    Text(formError!!, color = MaterialTheme.colorScheme.error)
+                }
+                Spacer(Modifier.height(16.dp))
+                Button(
+                    onClick = {
+                        submitting = true
+                        formError = null
+                        viewModel.completeOnboardingOptica(
+                            nombreOptica,
+                            fiscalDocTipo,
+                            fiscalDocNumero,
+                            razonSocial,
+                            direccionFiscal,
+                        ) { ok, msg ->
+                            submitting = false
+                            if (ok) {
+                                val dest = if (isPinRequired == true) "pin" else "main"
+                                navController.navigate(dest) {
+                                    popUpTo("sin_optica") { inclusive = true }
+                                }
+                            } else {
+                                formError = msg
+                            }
+                        }
+                    },
+                    enabled = !submitting && nombreOptica.isNotBlank(),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    if (submitting) {
+                        CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                    } else {
+                        Text("Crear óptica")
+                    }
+                }
+                TextButton(onClick = { showOwnerForm = false }) { Text("Volver") }
+            } else if (!waitingMode) {
                 Text(
                     text = "¿Cómo vas a usar OptoApp?",
                     style = MaterialTheme.typography.headlineSmall,
@@ -83,7 +175,7 @@ fun SinOpticaScreen(
                 )
                 Spacer(Modifier.height(32.dp))
                 OutlinedButton(
-                    onClick = { navController.navigate(Route.SeleccionOptica.route) },
+                    onClick = { showOwnerForm = true },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(72.dp),

@@ -43,8 +43,8 @@ Threat RED: WU1 RPC ignore client id / admin iff INSERT / return S; RLS deny dir
 
 ## Phase 2: WU2 A1+A3+A11+A12 (~380)
 
-- [ ] 2.1 RED `test/.../data/MembershipFetchTest.kt`: IOException→Error not Empty; empty→Empty; blank rol skipped; empleado kept. RED `test/.../viewmodel/auth/PostLoginNavigationTest.kt`: size==1 skip selector; >1 selector; empty→SinOptica. RED `AuthDelegateTest.kt`: empty no clearSession; saveOnboardingSession logged-in opticaId="" not mi_optica_base; owner calls completeOnboardingOptica; no Android invitaciones. Confirm RED.
-- [ ] 2.2 GREEN MembershipFetch.kt Ok/Empty/Error; MembershipDataSource.kt skip blank rol; MembershipRepository.kt sealed + asList() Error→empty. GREEN SessionManager.kt saveOnboardingSession; AuthDelegate.kt no clear on 0; PostLoginNavigation.kt; AuthViewModel.kt; SinOpticaScreen.kt owner form; SeleccionOpticaScreen.kt empty ≠ pin/main. Re-run 2.1.
+- [x] 2.1 RED `test/.../data/MembershipFetchTest.kt`: IOException→Error not Empty; empty→Empty; blank rol skipped; empleado kept. RED `test/.../viewmodel/auth/PostLoginNavigationTest.kt`: size==1 skip selector; >1 selector; empty→SinOptica. RED `AuthDelegateTest.kt`: empty no clearSession; saveOnboardingSession logged-in opticaId="" not mi_optica_base; owner calls completeOnboardingOptica; no Android invitaciones. Confirm RED.
+- [x] 2.2 GREEN MembershipFetch.kt Ok/Empty/Error; MembershipDataSource.kt skip blank rol; MembershipRepository.kt sealed + asList() Error→empty. GREEN SessionManager.kt saveOnboardingSession; AuthDelegate.kt no clear on 0; PostLoginNavigation.kt; AuthViewModel.kt; SinOpticaScreen.kt owner form; SeleccionOpticaScreen.kt empty ≠ pin/main. Re-run 2.1.
 
 ## Phase 3: WU3 A4 (~90)
 

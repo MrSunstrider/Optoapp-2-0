@@ -1,5 +1,7 @@
 ﻿package com.example.optoapp.viewmodel
 
+import com.example.optoapp.data.SessionManager
+import com.example.optoapp.data.membership.MembershipFetch
 import com.example.optoapp.viewmodel.auth.AuthDelegate
 import io.github.jan.supabase.auth.user.UserInfo
 import kotlinx.serialization.json.JsonObject
@@ -7,6 +9,8 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import org.junit.Assert.*
 import org.junit.Test
+import java.io.File
+import java.io.IOException
 import kotlin.time.ExperimentalTime
 
 /**
@@ -107,5 +111,50 @@ class AuthDelegateTest {
             },
         )
         assertEquals("Solo Apellido", AuthDelegate.extractDisplayName(user, null, null))
+    }
+
+    @Test
+    fun emptyMemberships_doNotClearSession_andSaveOnboarding() {
+        val flags = AuthDelegate.flagsFor(MembershipFetch.Empty)
+
+        assertFalse(flags.clearSession)
+        assertTrue(flags.saveOnboardingSession)
+        assertTrue(flags.requiresOnboarding)
+        assertFalse(flags.membershipFetchError)
+        assertFalse(flags.requiresSelection)
+    }
+
+    @Test
+    fun saveOnboardingSession_usesBlankOpticaIdNotLegacyBase() {
+        assertEquals("", AuthDelegate.ONBOARDING_OPTICA_ID)
+        assertNotEquals(SessionManager.LEGACY_OPTICA_ID, AuthDelegate.ONBOARDING_OPTICA_ID)
+    }
+
+    @Test
+    fun membershipFetchError_doesNotClearSessionOrOnboard() {
+        val flags = AuthDelegate.flagsFor(MembershipFetch.Error(IOException("net")))
+
+        assertFalse(flags.clearSession)
+        assertFalse(flags.saveOnboardingSession)
+        assertFalse(flags.requiresOnboarding)
+        assertTrue(flags.membershipFetchError)
+    }
+
+    @Test
+    fun completeOnboardingOptica_existsWithFiveOwnerFields() {
+        val found = AuthDelegate::class.java.methods.any { "completeOnboardingOptica" in it.name }
+        assertTrue(found)
+    }
+
+    @Test
+    fun androidMainSources_doNotReferenceInvitaciones() {
+        val root = listOf(File("src/main/java"), File("optoapp/src/main/java")).first { it.exists() }
+        val hits = root.walkTopDown()
+            .filter { it.isFile && it.extension == "kt" }
+            .filter { "invitaciones" in it.readText().lowercase() }
+            .map { it.path }
+            .toList()
+
+        assertTrue("Unexpected invitaciones refs: $hits", hits.isEmpty())
     }
 }

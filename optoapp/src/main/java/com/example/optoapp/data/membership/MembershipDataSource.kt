@@ -19,8 +19,8 @@ class MembershipDataSource @Inject internal constructor(
     private val supabase: SupabaseClient,
     private val opticaQueryHelper: OpticaQueryHelper,
 ) {
-    suspend fun fetchMembershipsForCurrentUser(): List<OpticaMembership> {
-        val uid = supabase.auth.currentUserOrNull()?.id ?: return emptyList()
+    suspend fun fetchMembershipsForCurrentUser(): MembershipFetch {
+        val uid = supabase.auth.currentUserOrNull()?.id ?: return MembershipFetch.Empty
         val rows = try {
             supabase.postgrest[TABLE_UO]
                 .select { filter { eq("user_id", uid) } }
@@ -29,24 +29,21 @@ class MembershipDataSource @Inject internal constructor(
             throw e
         } catch (e: IOException) {
             Log.e(TAG, "fetchMembershipsForCurrentUser failed", e)
-            emptyList()
+            return MembershipFetch.fromCaught(e)
         } catch (e: Exception) {
             Log.e(TAG, "fetchMembershipsForCurrentUser failed", e)
-            emptyList()
+            return MembershipFetch.fromCaught(e)
         }
-        if (rows.isEmpty()) return emptyList()
         val out = mutableListOf<OpticaMembership>()
         for (row in rows) {
-            val nombre = opticaQueryHelper.fetchOpticaNombre(row.opticaId)
-            out.add(
-                OpticaMembership(
-                    opticaId = row.opticaId,
-                    nombre = nombre.ifBlank { row.opticaId },
-                    rol = row.rol.ifBlank { "admin" },
-                ),
-            )
+            val mapped = MembershipFetch.mapRow(
+                opticaId = row.opticaId,
+                nombre = opticaQueryHelper.fetchOpticaNombre(row.opticaId).ifBlank { row.opticaId },
+                rol = row.rol,
+            ) ?: continue
+            out.add(mapped)
         }
-        return out
+        return MembershipFetch.fromMapped(out)
     }
 
     suspend fun fetchMembersForOptica(opticaId: String): List<OpticaMemberRow> {
