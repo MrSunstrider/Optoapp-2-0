@@ -65,4 +65,19 @@ class ColdStartNavigationTest {
 
         assertEquals(Route.Login.route, dest)
     }
+
+    @Test
+    fun pinStateReady_waitsUntilRequiredFlagKnown() {
+        assertEquals(false, ColdStartNavigation.pinStateReady(null, false))
+    }
+
+    @Test
+    fun pinStateReady_waitsUntilSetFlagKnownWhenRequired() {
+        assertEquals(false, ColdStartNavigation.pinStateReady(true, null))
+    }
+
+    @Test
+    fun pinStateReady_optionalPinDoesNotWaitForSetFlag() {
+        assertEquals(true, ColdStartNavigation.pinStateReady(false, null))
+    }
 }

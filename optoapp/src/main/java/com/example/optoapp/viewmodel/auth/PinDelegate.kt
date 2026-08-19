@@ -59,6 +59,8 @@ class PinDelegate @Inject constructor(
     suspend fun validatePin(): Boolean {
         val now = System.currentTimeMillis()
         if (now < cooldownUntil) return false
+        if (_pinInput.value.isEmpty()) return false
+        if (!securityManager.pinHasBeenSet.first()) return false
 
         val isValid = _pinInput.value == securityManager.userPin.first()
         if (isValid) {
