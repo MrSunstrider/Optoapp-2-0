@@ -11,6 +11,7 @@ import com.example.optoapp.data.OpticaFiscalSettings
 import com.example.optoapp.data.OpticaFiscalSettingsStore
 import com.example.optoapp.data.OpticaMembership
 import com.example.optoapp.data.OptoRepository
+import com.example.optoapp.data.membership.MembershipFetch
 import com.example.optoapp.notifications.NotificationHelper
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.github.jan.supabase.SupabaseClient
@@ -79,6 +80,40 @@ open class AuthDelegate @Inject constructor(
             if (lastLoginTimestamp == 0L) return false
             val diffHours = (System.currentTimeMillis() - lastLoginTimestamp) / (1000 * 60 * 60)
             return diffHours < 3
+        }
+
+        const val ONBOARDING_OPTICA_ID = ""
+
+        data class PostLoginFlags(
+            val requiresSelection: Boolean,
+            val requiresOnboarding: Boolean,
+            val membershipFetchError: Boolean,
+            val clearSession: Boolean,
+            val saveOnboardingSession: Boolean,
+        )
+
+        fun flagsFor(fetch: MembershipFetch): PostLoginFlags = when (fetch) {
+            is MembershipFetch.Error -> PostLoginFlags(
+                requiresSelection = false,
+                requiresOnboarding = false,
+                membershipFetchError = true,
+                clearSession = false,
+                saveOnboardingSession = false,
+            )
+            MembershipFetch.Empty -> PostLoginFlags(
+                requiresSelection = false,
+                requiresOnboarding = true,
+                membershipFetchError = false,
+                clearSession = false,
+                saveOnboardingSession = true,
+            )
+            is MembershipFetch.Ok -> PostLoginFlags(
+                requiresSelection = fetch.memberships.size > 1,
+                requiresOnboarding = false,
+                membershipFetchError = false,
+                clearSession = false,
+                saveOnboardingSession = false,
+            )
         }
     }
 
@@ -203,7 +238,8 @@ open class AuthDelegate @Inject constructor(
         }
     }
 
-    suspend fun prepareOpticaSelection(): List<OpticaMembership> = membershipRepository.fetchMembershipsForCurrentUser()
+    suspend fun prepareOpticaSelection(): List<OpticaMembership> =
+        membershipRepository.fetchMembershipsForCurrentUser().asList()
 
     // ── Post-login (private en ViewModel original) ────────────────────────────
 
@@ -213,6 +249,7 @@ open class AuthDelegate @Inject constructor(
         val memberships: List<OpticaMembership>,
         val requiresSelection: Boolean,
         val requiresOnboarding: Boolean,
+        val membershipFetchError: Boolean = false,
     )
 
     private var pendingLoginEmail: String = ""
@@ -246,10 +283,30 @@ open class AuthDelegate @Inject constructor(
             }.getOrNull().orEmpty()
         }
 
-        val memberships = membershipRepository.fetchMembershipsForCurrentUser()
+        val fetch = membershipRepository.fetchMembershipsForCurrentUser()
+        val flags = flagsFor(fetch)
+        val memberships = if (fetch is MembershipFetch.Ok) fetch.memberships else emptyList()
 
         return when {
-            memberships.size > 1 -> PostLoginResult(
+            flags.membershipFetchError -> PostLoginResult(
+                email = email,
+                name = nombre,
+                memberships = emptyList(),
+                requiresSelection = false,
+                requiresOnboarding = false,
+                membershipFetchError = true,
+            )
+            flags.saveOnboardingSession -> {
+                sessionManager.saveOnboardingSession(email, nombre)
+                PostLoginResult(
+                    email = email,
+                    name = nombre,
+                    memberships = emptyList(),
+                    requiresSelection = false,
+                    requiresOnboarding = true,
+                )
+            }
+            flags.requiresSelection -> PostLoginResult(
                 email = email,
                 name = nombre,
                 memberships = memberships,
@@ -274,7 +331,7 @@ open class AuthDelegate @Inject constructor(
                 )
             }
             else -> {
-                sessionManager.clearSession()
+                sessionManager.saveOnboardingSession(email, nombre)
                 PostLoginResult(
                     email = email,
                     name = nombre,

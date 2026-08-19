@@ -548,7 +548,7 @@ class SyncViewModel @Inject constructor(
             return "Debes seleccionar o crear una óptica antes de sincronizar."
         }
         val memberships = try {
-            membershipRepository.fetchMembershipsForCurrentUser()
+            membershipRepository.fetchMembershipsForCurrentUser().asList()
         } catch (e: Exception) {
             Log.w(TAG, "ensureSyncContext: error fetching memberships, allowCached=$allowCached", e)
             if (allowCached) {

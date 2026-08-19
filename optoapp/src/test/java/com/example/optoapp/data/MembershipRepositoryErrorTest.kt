@@ -92,7 +92,7 @@ class MembershipRepositoryErrorTest {
     fun `fetchMembershipsForCurrentUser no session returns empty`() = runTest {
         val result = repo.fetchMembershipsForCurrentUser()
 
-        assertTrue("Expected empty list but got $result", result.isEmpty())
+        assertTrue("Expected empty fetch but got $result", result is com.example.optoapp.data.membership.MembershipFetch.Empty)
     }
 
     @Test

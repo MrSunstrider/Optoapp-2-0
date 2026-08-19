@@ -1,6 +1,7 @@
 package com.example.optoapp.data
 
 import com.example.optoapp.data.membership.MembershipDataSource
+import com.example.optoapp.data.membership.MembershipFetch
 import com.example.optoapp.data.membership.OpticaSettingsDataSource
 import com.example.optoapp.data.opticasettings.OpticaSettingsDao
 import com.example.optoapp.data.opticasettings.OpticaSettingsEntity
@@ -14,7 +15,7 @@ open class MembershipRepository @Inject constructor(
     private val opticaSettingsDataSource: OpticaSettingsDataSource,
     private val opticaSettingsDao: OpticaSettingsDao,
 ) {
-    suspend fun fetchMembershipsForCurrentUser(): List<OpticaMembership> = membershipDataSource.fetchMembershipsForCurrentUser()
+    suspend fun fetchMembershipsForCurrentUser(): MembershipFetch = membershipDataSource.fetchMembershipsForCurrentUser()
 
     suspend fun fetchMembersForOptica(opticaId: String): List<OpticaMemberRow> = membershipDataSource.fetchMembersForOptica(opticaId)
 

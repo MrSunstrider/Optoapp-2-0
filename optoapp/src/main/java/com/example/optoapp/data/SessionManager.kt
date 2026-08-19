@@ -22,6 +22,7 @@ interface ISessionManager {
     val pinHasBeenSet: Flow<Boolean>
     val isPinRequired: Flow<Boolean>
     suspend fun saveSession(opticaId: String, email: String, name: String = "", rol: String = "admin")
+    suspend fun saveOnboardingSession(email: String, name: String)
     suspend fun clearSession()
     suspend fun setPinRequired(required: Boolean)
     suspend fun saveRememberedEmail(email: String)
@@ -113,6 +114,10 @@ class SessionManager(private val context: Context) : ISessionManager {
             prefs[USER_NAME] = name
             prefs[LAST_LOGIN_TS] = System.currentTimeMillis()
         }
+    }
+
+    override suspend fun saveOnboardingSession(email: String, name: String) {
+        saveSession(opticaId = "", email = email, name = name, rol = "")
     }
 
     suspend fun setPinHasBeenSet(value: Boolean) {
