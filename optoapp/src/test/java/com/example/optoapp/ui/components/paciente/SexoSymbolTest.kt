@@ -1,6 +1,8 @@
 package com.example.optoapp.ui.components.paciente
 
+import com.example.optoapp.ui.theme.OptoTokens
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
@@ -49,5 +51,27 @@ class SexoSymbolTest {
         assertEquals(SexoSymbol.DESCONOCIDO, sexoSymbolOf("   "))
         assertEquals(SexoSymbol.DESCONOCIDO, sexoSymbolOf("otro"))
         assertEquals(SexoSymbol.DESCONOCIDO, sexoSymbolOf("x"))
+    }
+
+    @Test
+    fun `mars uses blue and venus uses rose in light and dark`() {
+        val maleLight = sexoAvatarColor(SexoSymbol.MARTE, darkTheme = false)
+        val maleDark = sexoAvatarColor(SexoSymbol.MARTE, darkTheme = true)
+        val femaleLight = sexoAvatarColor(SexoSymbol.VENUS, darkTheme = false)
+        val femaleDark = sexoAvatarColor(SexoSymbol.VENUS, darkTheme = true)
+
+        assertEquals(OptoTokens.semantic.maleBlueLight, maleLight)
+        assertEquals(OptoTokens.semantic.maleBlueDark, maleDark)
+        assertEquals(OptoTokens.semantic.femaleRoseLight, femaleLight)
+        assertEquals(OptoTokens.semantic.femaleRoseDark, femaleDark)
+        assertTrue(maleLight != maleDark)
+        assertTrue(femaleLight != femaleDark)
+        assertTrue(maleLight != femaleLight)
+    }
+
+    @Test
+    fun `unknown sex has no dedicated avatar color`() {
+        assertEquals(null, sexoAvatarColor(SexoSymbol.DESCONOCIDO, darkTheme = false))
+        assertEquals(null, sexoAvatarColor(SexoSymbol.DESCONOCIDO, darkTheme = true))
     }
 }

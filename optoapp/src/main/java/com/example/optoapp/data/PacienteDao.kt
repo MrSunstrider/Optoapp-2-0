@@ -33,7 +33,20 @@ interface PacienteDao {
     @Query(
         """
         SELECT * FROM pacientes WHERE opticaId = :opticaId AND (
-            nombreCompleto LIKE '%' || :query || '%' OR id LIKE '%' || :query || '%' OR telefono LIKE '%' || :query || '%' OR ifnull(historiaOptometrica, '') LIKE '%' || :query || '%'
+            nombreCompleto LIKE '%' || :query || '%'
+            OR id LIKE '%' || :query || '%'
+            OR telefono LIKE '%' || :query || '%'
+            OR ifnull(historiaOptometrica, '') LIKE '%' || :query || '%'
+            OR id IN (
+                SELECT pacienteId FROM dispensaciones
+                WHERE opticaId = :opticaId AND ot LIKE '%' || :query || '%'
+            )
+            OR id IN (
+                SELECT pacienteId FROM servicios_extra
+                WHERE opticaId = :opticaId
+                  AND pacienteId IS NOT NULL
+                  AND ot LIKE '%' || :query || '%'
+            )
         )
     """,
     )
@@ -68,8 +81,43 @@ interface PacienteDao {
     @Query(
         """
         SELECT * FROM pacientes WHERE opticaId = :opticaId AND (
-        id IN (SELECT pacienteId FROM dispensaciones WHERE opticaId = :opticaId AND (montoTotal - montoPagado) > 0)
-        OR id IN (SELECT pacienteId FROM servicios_extra WHERE opticaId = :opticaId AND (montoTotal - aCuenta) > 0)
+        id IN (
+            SELECT d.pacienteId FROM dispensaciones d
+            WHERE d.opticaId = :opticaId
+              AND d.estadoEntrega NOT IN ('Anulado', 'Reclamada')
+              AND (
+                d.montoTotal - COALESCE((
+                    SELECT SUM(
+                        CASE
+                            WHEN p.tipo IN ('Abono', 'Pago completo') THEN p.monto
+                            WHEN p.tipo IN ('Reembolso', 'Reverso') THEN -p.monto
+                            ELSE 0
+                        END
+                    )
+                    FROM pagos p
+                    WHERE p.dispensacionId = d.id
+                ), d.montoPagado)
+              ) > 0
+        )
+        OR id IN (
+            SELECT s.pacienteId FROM servicios_extra s
+            WHERE s.opticaId = :opticaId
+              AND s.estado != 'Anulado'
+              AND s.pacienteId IS NOT NULL
+              AND (
+                s.montoTotal - COALESCE((
+                    SELECT SUM(
+                        CASE
+                            WHEN p.tipo IN ('Abono', 'Pago completo') THEN p.monto
+                            WHEN p.tipo IN ('Reembolso', 'Reverso') THEN -p.monto
+                            ELSE 0
+                        END
+                    )
+                    FROM pagos p
+                    WHERE p.servicioExtraId = s.id
+                ), s.aCuenta)
+              ) > 0
+        )
         ) ORDER BY nombreCompleto ASC
     """,
     )
@@ -78,8 +126,18 @@ interface PacienteDao {
     @Query(
         """
         SELECT * FROM pacientes WHERE opticaId = :opticaId AND (
-        id IN (SELECT pacienteId FROM dispensaciones WHERE opticaId = :opticaId AND estadoEntrega = 'Pendiente')
-        OR id IN (SELECT pacienteId FROM servicios_extra WHERE opticaId = :opticaId AND estado = 'Pendiente')
+        id IN (
+            SELECT pacienteId FROM dispensaciones
+            WHERE opticaId = :opticaId
+              AND estadoEntrega = 'Pendiente'
+              AND fechaEntrega IS NULL
+        )
+        OR id IN (
+            SELECT pacienteId FROM servicios_extra
+            WHERE opticaId = :opticaId
+              AND estado = 'Pendiente'
+              AND fecha_entrega IS NULL
+        )
         ) ORDER BY nombreCompleto ASC
     """,
     )

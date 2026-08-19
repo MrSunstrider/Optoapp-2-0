@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.optoapp.data.Montura
 import com.example.optoapp.data.Pago
+import com.example.optoapp.domain.estadoAfterFechaEntrega
 import com.example.optoapp.ui.components.AbonoDialog
 import com.example.optoapp.ui.components.DropdownField
 import com.example.optoapp.ui.components.FechaEntregaEditButton
@@ -272,12 +273,23 @@ fun FinancieraInfoSection(
                 FechaEntregaEditButton(
                     fechaEntrega = uiState.fechaEntrega,
                     onFechaChanged = { nuevaFecha ->
-                        onUpdate(uiState.copy(fechaEntrega = nuevaFecha))
+                        onUpdate(
+                            uiState.copy(
+                                fechaEntrega = nuevaFecha,
+                                estadoEntrega = estadoAfterFechaEntrega(uiState.estadoEntrega, nuevaFecha),
+                            ),
+                        )
                     },
                 )
             } else {
                 TextButton(onClick = {
-                    onUpdate(uiState.copy(fechaEntrega = LocalDate.now()))
+                    val fecha = LocalDate.now()
+                    onUpdate(
+                        uiState.copy(
+                            fechaEntrega = fecha,
+                            estadoEntrega = estadoAfterFechaEntrega(uiState.estadoEntrega, fecha),
+                        ),
+                    )
                 }) {
                     Text("Asignar fecha de entrega", fontSize = 12.sp)
                 }

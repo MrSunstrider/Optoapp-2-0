@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.sp
 import com.example.optoapp.data.Montura
 import com.example.optoapp.data.Paciente
 import com.example.optoapp.data.Pago
+import com.example.optoapp.domain.estadoAfterFechaEntrega
 import com.example.optoapp.ui.components.OptoDropdownMenuField
 import com.example.optoapp.ui.components.FechaEntregaEditButton
 import com.example.optoapp.ui.components.OptoTextField
@@ -223,7 +224,12 @@ private fun StepPagos(
         FechaEntregaEditButton(
             fechaEntrega = uiState.fechaEntrega,
             onFechaChanged = { nuevaFecha ->
-                onUpdate(uiState.copy(fechaEntrega = nuevaFecha))
+                onUpdate(
+                    uiState.copy(
+                        fechaEntrega = nuevaFecha,
+                        estado = estadoAfterFechaEntrega(uiState.estado, nuevaFecha),
+                    ),
+                )
             },
         )
     }

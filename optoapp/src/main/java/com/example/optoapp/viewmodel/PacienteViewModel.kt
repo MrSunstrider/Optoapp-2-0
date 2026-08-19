@@ -7,6 +7,7 @@ import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.EvaluacionClinica
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Paciente
+import com.example.optoapp.data.PacienteListFilters
 import com.example.optoapp.data.Resource
 import com.example.optoapp.data.SessionManager
 import com.example.optoapp.domain.PagoEffect
@@ -87,8 +88,8 @@ class PacienteViewModel @Inject constructor(
         arrayOf(query, filter ?: "", sort, opticaId)
     }.flatMapLatest { (query, filter, sort, opticaId) ->
         val baseFlow = when (filter) {
-            "Saldo Pendiente" -> repository.getPacientesWithPendingBalanceForOptica(opticaId)
-            "Estado de entrega" -> repository.getPacientesWithPendingDeliveryForOptica(opticaId)
+            PacienteListFilters.SALDO_PENDIENTE -> repository.getPacientesWithPendingBalanceForOptica(opticaId)
+            PacienteListFilters.ESTADO_ENTREGA -> repository.getPacientesWithPendingDeliveryForOptica(opticaId)
             else -> if (query.isEmpty()) {
                 repository.pacientesFlowForOptica(opticaId)
             } else {
@@ -96,18 +97,24 @@ class PacienteViewModel @Inject constructor(
             }
         }
 
-        baseFlow.map { list ->
-            if (query.isNotEmpty() && filter.isNotEmpty()) {
-                list.filter {
-                    it.nombreCompleto.contains(query, ignoreCase = true) ||
-                        it.id.contains(query, ignoreCase = true) ||
-                        it.telefono.contains(query) ||
-                        it.historiaOptometrica.orEmpty().contains(query, ignoreCase = true)
-                }
-            } else {
-                list
+        val searchFlow = if (query.isEmpty()) {
+            null
+        } else if (filter == PacienteListFilters.SALDO_PENDIENTE || filter == PacienteListFilters.ESTADO_ENTREGA) {
+            repository.searchPacientesForOptica(opticaId, query)
+        } else {
+            null
+        }
+
+        val filteredFlow = if (searchFlow == null) {
+            baseFlow
+        } else {
+            combine(baseFlow, searchFlow) { scoped, searched ->
+                val ids = searched.map { it.id }.toSet()
+                scoped.filter { it.id in ids }
             }
-        }.map { list ->
+        }
+
+        filteredFlow.map { list ->
             when (sort) {
                 "reciente" -> list.sortedByDescending { it.fechaCreacion }
                 "antiguo" -> list.sortedBy { it.fechaCreacion }
@@ -120,6 +127,11 @@ class PacienteViewModel @Inject constructor(
         _searchQuery.value = query
     }
     fun setFilter(filter: String?) {
+        if (filter.isNullOrBlank() || filter == PacienteListFilters.TODOS) {
+            _activeFilter.value = null
+            _searchQuery.value = ""
+            return
+        }
         _activeFilter.value = if (_activeFilter.value == filter) null else filter
     }
     fun setSort(sort: String) {

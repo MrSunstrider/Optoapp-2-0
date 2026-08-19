@@ -39,6 +39,10 @@ object OptoTokens {
         val warningAmberDark: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFF7DC6F)
         val textDarkLight: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF2C3E50)
         val textDarkDark: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFE0E3E3)
+        val maleBlueLight: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF1565C0)
+        val maleBlueDark: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF90CAF9)
+        val femaleRoseLight: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFC2185B)
+        val femaleRoseDark: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFF48FB1)
     }
 
     object elevation {

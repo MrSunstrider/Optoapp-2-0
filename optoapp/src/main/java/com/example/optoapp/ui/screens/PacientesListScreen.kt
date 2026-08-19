@@ -4,6 +4,7 @@ import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -27,6 +28,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.optoapp.data.AppRoles
 import com.example.optoapp.data.Paciente
+import com.example.optoapp.data.PacienteListFilters
 import com.example.optoapp.data.Resource
 import com.example.optoapp.testing.TestTags
 import com.example.optoapp.ui.components.OptoCard
@@ -35,6 +37,7 @@ import com.example.optoapp.ui.navigation.Route
 import com.example.optoapp.ui.components.paciente.ResumenDispensacionDialog
 import com.example.optoapp.ui.components.paciente.ResumenEvaluacionDialog
 import com.example.optoapp.ui.components.paciente.SexoSymbol
+import com.example.optoapp.ui.components.paciente.sexoAvatarColor
 import com.example.optoapp.ui.components.paciente.sexoSymbolOf
 import com.example.optoapp.ui.theme.alertRed
 import com.example.optoapp.ui.theme.OptoTokens
@@ -133,30 +136,27 @@ fun PacientesListScreen(
                 value = searchQuery,
                 onValueChange = { viewModel.onSearchQueryChange(it) },
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("Buscar por nombre, ID o teléfono...") },
+                placeholder = { Text("Buscar por nombre, ID, teléfono u OT...") },
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Buscar") },
                 shape = MaterialTheme.shapes.medium,
             )
             Spacer(modifier = Modifier.height(10.dp))
 
-            val filters = listOf("Todos", "Saldo Pendiente", "Estado de entrega")
+            val filters = listOf(
+                PacienteListFilters.TODOS,
+                PacienteListFilters.SALDO_PENDIENTE,
+                PacienteListFilters.ESTADO_ENTREGA,
+            )
             FlowRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 filters.forEach { filter ->
                     val isSelected = when (filter) {
-                        "Todos" -> activeFilter.isNullOrBlank() || activeFilter == "Todos"
-                        "Saldo Pendiente" -> activeFilter == "Saldo Pendiente"
-                        "Estado de entrega" -> activeFilter == "Estado de entrega"
+                        PacienteListFilters.TODOS -> activeFilter.isNullOrBlank()
+                        PacienteListFilters.SALDO_PENDIENTE -> activeFilter == PacienteListFilters.SALDO_PENDIENTE
+                        PacienteListFilters.ESTADO_ENTREGA -> activeFilter == PacienteListFilters.ESTADO_ENTREGA
                         else -> false
                     }
                     FilterChip(selected = isSelected, onClick = {
-                        viewModel.setFilter(
-                            when (filter) {
-                                "Todos" -> ""
-                                "Saldo Pendiente" -> "Saldo Pendiente"
-                                "Estado de entrega" -> "Estado de entrega"
-                                else -> ""
-                            },
-                        )
+                        viewModel.setFilter(filter)
                     }, label = { Text(filter, fontSize = 13.sp, fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal) })
                 }
             }
@@ -293,8 +293,9 @@ private fun PacienteCard(
     onShowLastDispensacion: (String) -> Unit,
     onCall: () -> Unit,
 ) {
-    val avatarColor = MaterialTheme.colorScheme.primary
-    val (avatarIcon, avatarDescription) = when (sexoSymbolOf(paciente.sexo)) {
+    val symbol = sexoSymbolOf(paciente.sexo)
+    val avatarColor = sexoAvatarColor(symbol, isSystemInDarkTheme()) ?: MaterialTheme.colorScheme.primary
+    val (avatarIcon, avatarDescription) = when (symbol) {
         SexoSymbol.MARTE -> Icons.Default.Male to "Paciente masculino"
         SexoSymbol.VENUS -> Icons.Default.Female to "Paciente femenino"
         SexoSymbol.DESCONOCIDO -> Icons.Default.Person to "Sexo no registrado"
