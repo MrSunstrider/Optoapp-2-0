@@ -47,6 +47,13 @@ object FinanzasUploadValidator {
         return m.contains("23514") || m.contains("check constraint", ignoreCase = true)
     }
 
+    fun isIsolatableUploadFailure(message: String?): Boolean {
+        val m = message.orEmpty()
+        return isConstraintViolation(m) ||
+            m.contains("42501") ||
+            m.contains("row-level security", ignoreCase = true)
+    }
+
     fun parentMissingReason(parentKind: String, parentId: String): String =
         "quarantine:parent_missing:$parentKind:$parentId"
 }

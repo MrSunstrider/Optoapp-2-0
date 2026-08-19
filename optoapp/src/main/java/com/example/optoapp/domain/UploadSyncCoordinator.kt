@@ -112,11 +112,7 @@ open class UploadSyncCoordinator @Inject constructor(
         val localById = dispensaciones.associateBy { it.id }
         val opticaRemota = opticaId.trim()
         val remotosExistentes = try {
-            supabase.postgrest[TABLE_DISPENSACIONES]
-                .select {
-                    filter { eq("optica_id", opticaRemota) }
-                }
-                .decodeList<DispensacionRemotaLookup>()
+            fetchRemoteDispensacionesForLookup(opticaRemota)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -174,13 +170,32 @@ open class UploadSyncCoordinator @Inject constructor(
             uniqueById[row.id] = localId to row
         }
         val rows = uniqueById.values.map { it.second }
+        val acceptedRemoteIds = mutableSetOf<String>()
         var uploadedCount = 0
         try {
             rows.chunked(UPSERT_BATCH_SIZE).forEachIndexed { index, chunk ->
-                networkRetryHelper.retryNetwork("upsert:$TABLE_DISPENSACIONES:chunk${index + 1}") {
-                    supabase.postgrest[TABLE_DISPENSACIONES].upsert(chunk)
-                }
-                uploadedCount += chunk.size
+                uploadedCount += upsertIsolating(
+                    chunk,
+                    upsert = { c ->
+                        networkRetryHelper.retryNetwork("upsert:$TABLE_DISPENSACIONES:chunk${index + 1}") {
+                            upsertDispensacionesChunk(c)
+                        }
+                        acceptedRemoteIds.addAll(c.map { it.id })
+                    },
+                    onPoison = { row, reason ->
+                        val localId = uniqueById[row.id]?.first ?: row.id
+                        if (remotosExistentes.isEmpty()) {
+                            // WHY: upsert ON CONFLICT id updates another tenant's row → RLS 42501.
+                            repository.deleteDispensacionById(localId, opticaId)
+                            AppLogger.w(
+                                TAG,
+                                "Descartada dispensación local $localId: RLS al subir a óptica vacía (PK de otra cuenta)",
+                            )
+                        } else {
+                            syncStateTracker.markError(opticaId, "dispensacion", localId, reason)
+                        }
+                    },
+                )
             }
         } catch (e: CancellationException) {
             throw e
@@ -201,12 +216,14 @@ open class UploadSyncCoordinator @Inject constructor(
             )
         }
         runInTransaction {
-            uniqueById.values.forEach { (localId, _) ->
-                syncStateTracker.markSynced(opticaId, "dispensacion", localId)
+            uniqueById.values.forEach { (localId, row) ->
+                if (row.id in acceptedRemoteIds) {
+                    syncStateTracker.markSynced(opticaId, "dispensacion", localId)
+                }
             }
         }
         syncStateTracker.markSynced(opticaId, "upload_dispensaciones", "batch")
-        return rows.size
+        return acceptedRemoteIds.size
     }
 
     suspend fun uploadServicios(opticaId: String): Int {
@@ -329,6 +346,15 @@ open class UploadSyncCoordinator @Inject constructor(
     )
 
     // WHY: testability seam — isolate PostgREST upsert from coordinator logic.
+    internal open suspend fun upsertDispensacionesChunk(chunk: List<DispensacionRemota>) {
+        supabase.postgrest[TABLE_DISPENSACIONES].upsert(chunk)
+    }
+
+    internal open suspend fun fetchRemoteDispensacionesForLookup(opticaId: String): List<DispensacionRemotaLookup> =
+        supabase.postgrest[TABLE_DISPENSACIONES]
+            .select { filter { eq("optica_id", opticaId) } }
+            .decodeList()
+
     internal open suspend fun upsertPagosChunk(chunk: List<PagoRemoto>) {
         supabase.postgrest[TABLE_PAGOS].upsert(chunk)
     }
@@ -364,11 +390,11 @@ open class UploadSyncCoordinator @Inject constructor(
         } catch (e: Exception) {
             val msg = e.message
             if (chunk.size == 1) {
-                if (!FinanzasUploadValidator.isConstraintViolation(msg)) throw e
+                if (!FinanzasUploadValidator.isIsolatableUploadFailure(msg)) throw e
                 onPoison(chunk[0], "quarantine:constraint:${msg.orEmpty().take(120)}")
                 return 0
             }
-            if (!FinanzasUploadValidator.isConstraintViolation(msg)) throw e
+            if (!FinanzasUploadValidator.isIsolatableUploadFailure(msg)) throw e
             val mid = chunk.size / 2
             upsertIsolating(chunk.subList(0, mid), upsert, onPoison) +
                 upsertIsolating(chunk.subList(mid, chunk.size), upsert, onPoison)
