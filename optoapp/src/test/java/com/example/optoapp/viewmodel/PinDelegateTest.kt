@@ -147,6 +147,16 @@ class PinDelegateTest {
     }
 
     @Test
+    fun `validatePin unset stored never matches nonEmpty input`() = runTest {
+        val sec = FakeSecurityManager()
+        val delegate = PinDelegate(sec, FakeSessionManager())
+        for (d in listOf("1", "2", "3", "4", "5", "6")) {
+            delegate.onPinDigit(d)
+        }
+        assertFalse(delegate.validatePin())
+    }
+
+    @Test
     fun `createPin valid pin saves`() = runTest {
         val sec = FakeSecurityManager()
         val delegate = PinDelegate(sec, FakeSessionManager())
