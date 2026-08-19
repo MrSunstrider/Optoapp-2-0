@@ -52,7 +52,7 @@ Threat RED: WU1 RPC ignore client id / admin iff INSERT / return S; RLS deny dir
 
 ## Phase 4: WU4 A5 (~80)
 
-- [ ] 4.1 RED AuthViewModelTest: cancel / no-session → Idle or Error, not Loading. Confirm RED. GREEN AuthViewModel.onGoogleAuthAbandoned; LoginScreen.kt ON_RESUME. Re-run GREEN.
+- [x] 4.1 RED AuthViewModelTest: cancel / no-session → Idle or Error, not Loading. Confirm RED. GREEN AuthViewModel.onGoogleAuthAbandoned; LoginScreen.kt ON_RESUME. Re-run GREEN.
 
 ## Phase 5: WU5 A6 (~180)
 
