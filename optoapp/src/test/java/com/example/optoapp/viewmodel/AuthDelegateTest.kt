@@ -299,4 +299,28 @@ class AuthDelegateTest {
 
         assertEquals(MembershipFetch.Empty, fetch)
     }
+
+    @Test
+    fun resetLocalStoreForNewAuthSession_wipesRoomCache() = runTest {
+        val sessionManager = mockk<ISessionManager>(relaxed = true)
+        val membershipRepo = mockk<MembershipRepository>(relaxed = true)
+        val fiscalStore = mockk<OpticaFiscalSettingsStore>(relaxed = true)
+        val securityManager = mockk<ISecurityManager>(relaxed = true)
+        val repository = mockk<OptoRepository>(relaxed = true)
+        val supabase = mockk<SupabaseClient>(relaxed = true)
+        val context = mockk<Context>(relaxed = true)
+        val delegate = AuthDelegate(
+            securityManager = securityManager,
+            sessionManager = sessionManager,
+            repository = repository,
+            membershipRepository = membershipRepo,
+            supabase = supabase,
+            fiscalStore = fiscalStore,
+            appContext = context,
+        )
+
+        delegate.resetLocalStoreForNewAuthSession()
+
+        coVerify { repository.wipeLocalAccountData() }
+    }
 }

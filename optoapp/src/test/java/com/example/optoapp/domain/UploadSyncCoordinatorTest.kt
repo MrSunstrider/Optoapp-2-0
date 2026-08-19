@@ -162,6 +162,49 @@ class UploadSyncCoordinatorTest {
         assertEquals(listOf("individual", "batch"), callOrder)
     }
 
+    @Test
+    fun `empty remote RLS on upsert deletes leftover local dispensacion`() = runTest {
+        val leftover = DispensacionOptica(
+            id = "stolen-from-other-account",
+            ot = "OT-2026-0099",
+            fecha = LocalDate.parse("2026-01-01"),
+            pacienteId = "p1",
+            opticaId = "opt_new",
+        )
+        coEvery { repository.getDispensacionesSnapshotForOptica("opt_new") } returns listOf(leftover)
+        coEvery { repository.getPagosSnapshotForOptica("opt_new") } returns emptyList()
+        coEvery { networkRetryHelper.retryNetwork(any(), any()) } coAnswers {
+            secondArg<suspend () -> Unit>().invoke()
+        }
+        val testCoordinator = object : UploadSyncCoordinator(
+            repository = repository,
+            supabase = supabase,
+            database = database,
+            syncStateTracker = syncStateTracker,
+            mergeHandler = mergeHandler,
+            networkRetryHelper = networkRetryHelper,
+            costoProductoDao = costoProductoDao,
+            costoBiseladoDao = costoBiseladoDao,
+        ) {
+            override suspend fun <T> runInTransaction(block: suspend () -> T): T = block()
+            override suspend fun fetchRemoteDispensacionesForLookup(opticaId: String) =
+                emptyList<DispensacionRemotaLookup>()
+            override suspend fun upsertDispensacionesChunk(chunk: List<DispensacionRemota>) {
+                throw RuntimeException(
+                    "new row violates row-level security policy for table \"dispensaciones\" Code: 42501",
+                )
+            }
+        }
+
+        val uploaded = testCoordinator.uploadDispensaciones("opt_new")
+
+        assertEquals(0, uploaded)
+        coVerify { repository.deleteDispensacionById("stolen-from-other-account", "opt_new") }
+        coVerify(exactly = 0) {
+            syncStateTracker.markSynced("opt_new", "dispensacion", "stolen-from-other-account")
+        }
+    }
+
     // ── T2.1 RED: Pagos reconciliation tests ──────────────────────────
 
     private fun createPagoCoordinator(

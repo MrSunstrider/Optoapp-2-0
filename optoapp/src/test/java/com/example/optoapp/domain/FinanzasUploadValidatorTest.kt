@@ -69,6 +69,14 @@ class FinanzasUploadValidatorTest {
     }
 
     @Test
+    fun `RLS 42501 is isolatable so leftover PKs do not fail the whole batch`() {
+        val rls = "new row violates row-level security policy for table \"dispensaciones\" Code: 42501"
+        assertTrue(FinanzasUploadValidator.isIsolatableUploadFailure(rls))
+        assertFalse(FinanzasUploadValidator.isIsolatableUploadFailure("network timeout"))
+        assertTrue(FinanzasUploadValidator.isIsolatableUploadFailure("ERROR: 23514 check"))
+    }
+
+    @Test
     fun `79 plus 1 partitions quarantine poison only`() {
         val valid = (1..79).map { i ->
             Triple("p$i", FinanzasUploadValidator.validatePago("Abono", 10.0, "d$i", null, null), i)

@@ -271,6 +271,7 @@ open class AuthDelegate @Inject constructor(
             }
         }
         val finalUser = user ?: throw IllegalStateException("No se encontró usuario autenticado")
+        resetLocalStoreForNewAuthSession()
         val email = finalUser.email?.trim().orEmpty().ifBlank { emailFallback.orEmpty() }
         val nombre = Companion.extractDisplayName(finalUser, emailFallback, nameFallback)
 
@@ -426,7 +427,16 @@ open class AuthDelegate @Inject constructor(
         } catch (e: Exception) {
             Log.w(TAG, "Error en signOut (ignorado): ${e.localizedMessage}", e)
         }
+        resetLocalStoreForNewAuthSession()
         sessionManager.clearSession()
+    }
+
+    // WHY: Room is not partitioned by auth uid. A second account on the same
+    // phone would otherwise sync leftover dispensaciones and hit RLS 42501.
+    internal suspend fun resetLocalStoreForNewAuthSession() {
+        withContext(Dispatchers.IO) {
+            repository.wipeLocalAccountData()
+        }
     }
 
     // ── Check session al inicio ───────────────────────────────────────────────

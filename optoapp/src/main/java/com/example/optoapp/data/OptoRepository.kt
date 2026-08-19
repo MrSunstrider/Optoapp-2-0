@@ -238,6 +238,13 @@ open class OptoRepository(
         }
     }
 
+    // WHY: one Room file is shared by every account on the device. Logout/login
+    // must drop leftover rows so the next user does not upsert another óptica's PKs.
+    open suspend fun wipeLocalAccountData() {
+        runCatching { postSaveSyncScheduler.get().cancelPending() }
+        database.clearAllTables()
+    }
+
     suspend fun getBackupDataForOptica(opticaId: String) = backupCoordinator.getBackupDataForOptica(opticaId)
     suspend fun restoreBackup(backupData: BackupData, currentOpticaId: String) = backupCoordinator.restoreBackup(backupData, currentOpticaId)
 
