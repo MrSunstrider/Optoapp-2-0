@@ -2,6 +2,7 @@ package com.example.optoapp.viewmodel
 
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Paciente
+import com.example.optoapp.data.PacienteListFilters
 import com.example.optoapp.data.Resource
 import com.example.optoapp.data.SessionManager
 import com.example.optoapp.sync.PostSaveSyncScheduler
@@ -15,6 +16,7 @@ import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -243,4 +245,98 @@ class PacienteViewModelTest {
 
         coVerify(exactly = 0) { postSaveSyncScheduler.schedulePacientesSync(any()) }
     }
+
+    @Test
+    fun `setFilter Saldo Pendiente uses pending-balance patients`() = runTest(testDispatcher) {
+        val debtor = samplePaciente("debtor")
+        every { repository.pacientesFlowForOptica(any()) } returns flowOf(listOf(samplePaciente("other")))
+        every { repository.getPacientesWithPendingBalanceForOptica(any()) } returns flowOf(listOf(debtor))
+        every { repository.getPacientesWithPendingDeliveryForOptica(any()) } returns flowOf(emptyList())
+        every { repository.searchPacientesForOptica(any(), any()) } returns flowOf(emptyList())
+        val vm = PacienteViewModel(repository, sessionManager, postSaveSyncScheduler)
+
+        vm.setFilter(PacienteListFilters.SALDO_PENDIENTE)
+
+        val list = vm.pacientes.first { it.any { p -> p.id == "debtor" } }
+        assertEquals(listOf("debtor"), list.map { it.id })
+    }
+
+    @Test
+    fun `setFilter Estado de entrega uses pending-delivery patients`() = runTest(testDispatcher) {
+        val waiting = samplePaciente("waiting")
+        every { repository.pacientesFlowForOptica(any()) } returns flowOf(emptyList())
+        every { repository.getPacientesWithPendingBalanceForOptica(any()) } returns flowOf(emptyList())
+        every { repository.getPacientesWithPendingDeliveryForOptica(any()) } returns flowOf(listOf(waiting))
+        every { repository.searchPacientesForOptica(any(), any()) } returns flowOf(emptyList())
+        val vm = PacienteViewModel(repository, sessionManager, postSaveSyncScheduler)
+
+        vm.setFilter(PacienteListFilters.ESTADO_ENTREGA)
+
+        val list = vm.pacientes.first { it.any { p -> p.id == "waiting" } }
+        assertEquals(listOf("waiting"), list.map { it.id })
+    }
+
+    @Test
+    fun `search query uses repository search including OT`() = runTest(testDispatcher) {
+        val ana = samplePaciente("ana")
+        every { repository.pacientesFlowForOptica(any()) } returns flowOf(emptyList())
+        every { repository.getPacientesWithPendingBalanceForOptica(any()) } returns flowOf(emptyList())
+        every { repository.getPacientesWithPendingDeliveryForOptica(any()) } returns flowOf(emptyList())
+        every { repository.searchPacientesForOptica(any(), "4582") } returns flowOf(listOf(ana))
+        val vm = PacienteViewModel(repository, sessionManager, postSaveSyncScheduler)
+
+        vm.onSearchQueryChange("4582")
+
+        val list = vm.pacientes.first { it.any { p -> p.id == "ana" } }
+        assertEquals(listOf("ana"), list.map { it.id })
+    }
+
+    @Test
+    fun `search plus Saldo Pendiente keeps intersection`() = runTest(testDispatcher) {
+        val both = samplePaciente("both")
+        val onlyDebt = samplePaciente("only-debt")
+        every { repository.pacientesFlowForOptica(any()) } returns flowOf(emptyList())
+        every { repository.getPacientesWithPendingBalanceForOptica(any()) } returns flowOf(listOf(both, onlyDebt))
+        every { repository.getPacientesWithPendingDeliveryForOptica(any()) } returns flowOf(emptyList())
+        every { repository.searchPacientesForOptica(any(), "4582") } returns flowOf(listOf(both))
+        val vm = PacienteViewModel(repository, sessionManager, postSaveSyncScheduler)
+
+        vm.setFilter(PacienteListFilters.SALDO_PENDIENTE)
+        vm.onSearchQueryChange("4582")
+
+        val list = vm.pacientes.first { it.size == 1 }
+        assertEquals(listOf("both"), list.map { it.id })
+    }
+
+    @Test
+    fun `Todos after another filter lists every optica patient and clears search`() = runTest(testDispatcher) {
+        val debtor = samplePaciente("debtor")
+        val other = samplePaciente("other")
+        val everyone = listOf(debtor, other)
+        every { repository.pacientesFlowForOptica(any()) } returns flowOf(everyone)
+        every { repository.getPacientesWithPendingBalanceForOptica(any()) } returns flowOf(listOf(debtor))
+        every { repository.getPacientesWithPendingDeliveryForOptica(any()) } returns flowOf(emptyList())
+        every { repository.searchPacientesForOptica(any(), any()) } returns flowOf(listOf(debtor))
+        val vm = PacienteViewModel(repository, sessionManager, postSaveSyncScheduler)
+
+        vm.setFilter(PacienteListFilters.SALDO_PENDIENTE)
+        vm.onSearchQueryChange("4582")
+        vm.pacientes.first { it.map { p -> p.id } == listOf("debtor") }
+
+        vm.setFilter(PacienteListFilters.TODOS)
+
+        val list = vm.pacientes.first { it.size == 2 }
+        assertEquals(setOf("debtor", "other"), list.map { it.id }.toSet())
+        assertEquals("", vm.searchQuery.value)
+        assertTrue(vm.activeFilter.value.isNullOrBlank())
+    }
+
+    private fun samplePaciente(id: String) = Paciente(
+        id = id,
+        nombreCompleto = id,
+        edad = 30,
+        telefono = "111",
+        fechaCreacion = LocalDate.parse("2026-01-01"),
+        opticaId = "test-optica",
+    )
 }

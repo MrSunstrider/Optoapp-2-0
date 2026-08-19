@@ -83,3 +83,9 @@ val ColorScheme.warningAmber: Color
 
 val ColorScheme.textDark: Color
     @Composable get() = if (isSystemInDarkTheme()) OptoTokens.semantic.textDarkDark else OptoTokens.semantic.textDarkLight
+
+val ColorScheme.maleBlue: Color
+    @Composable get() = if (isSystemInDarkTheme()) OptoTokens.semantic.maleBlueDark else OptoTokens.semantic.maleBlueLight
+
+val ColorScheme.femaleRose: Color
+    @Composable get() = if (isSystemInDarkTheme()) OptoTokens.semantic.femaleRoseDark else OptoTokens.semantic.femaleRoseLight

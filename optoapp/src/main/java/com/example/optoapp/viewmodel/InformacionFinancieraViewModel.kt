@@ -10,6 +10,7 @@ import com.example.optoapp.data.Resource
 import com.example.optoapp.data.SessionManager
 import com.example.optoapp.data.regalodispensacion.RegaloDispensacionEntity
 import com.example.optoapp.domain.CalcularMontoPagadoUseCase
+import com.example.optoapp.domain.estadoAfterFechaEntrega
 import com.example.optoapp.domain.PagoEffect
 import com.example.optoapp.domain.movimientoReferenciaForRegalo
 import com.example.optoapp.sync.PostSaveSyncScheduler
@@ -133,7 +134,12 @@ class InformacionFinancieraViewModel @Inject constructor(
     }
 
     fun updateFechaEntrega(fecha: LocalDate?) {
-        _uiState.update { it.copy(fechaEntrega = fecha) }
+        _uiState.update { s ->
+            s.copy(
+                fechaEntrega = fecha,
+                estadoEntrega = estadoAfterFechaEntrega(s.estadoEntrega, fecha),
+            )
+        }
     }
 
     fun addPago(pago: Pago) {

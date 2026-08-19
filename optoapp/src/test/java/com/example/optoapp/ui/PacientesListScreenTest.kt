@@ -16,20 +16,20 @@ class PacientesListScreenTest {
 
     @Test
     fun filters_containsThreeDefaults() {
-        val filters = listOf("Todos", "Saldo Pendiente", "Entrega")
+        val filters = listOf("Todos", "Saldo Pendiente", "Estado de entrega")
         assertEquals(3, filters.size)
         assertEquals("Todos", filters[0])
         assertEquals("Saldo Pendiente", filters[1])
-        assertEquals("Entrega", filters[2])
+        assertEquals("Estado de entrega", filters[2])
     }
 
     @Test
     fun filters_areHardcodedInScreen() {
         // These are the filter labels used in FilterChip components
-        val filters = listOf("Todos", "Saldo Pendiente", "Entrega")
+        val filters = listOf("Todos", "Saldo Pendiente", "Estado de entrega")
         assertTrue(filters.contains("Todos"))
         assertTrue(filters.contains("Saldo Pendiente"))
-        assertTrue(filters.contains("Entrega"))
+        assertTrue(filters.contains("Estado de entrega"))
     }
 
     @Test

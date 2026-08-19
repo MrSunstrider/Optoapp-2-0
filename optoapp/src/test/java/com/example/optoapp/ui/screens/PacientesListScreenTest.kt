@@ -74,13 +74,13 @@ class PacientesListScreenTest {
 
     @Test
     fun filters_includeEntrega() {
-        val entrega = "Entrega"
-        assertEquals("Entrega", entrega)
+        val entrega = "Estado de entrega"
+        assertEquals("Estado de entrega", entrega)
     }
 
     @Test
     fun filterCount_isThree() {
-        val filters = listOf("Todos", "Saldo Pendiente", "Entrega")
+        val filters = listOf("Todos", "Saldo Pendiente", "Estado de entrega")
         assertEquals(3, filters.size)
     }
 

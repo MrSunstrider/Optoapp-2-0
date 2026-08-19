@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.optoapp.testing.TestTags
+import com.example.optoapp.domain.estadoAfterFechaEntrega
 import com.example.optoapp.ui.components.FechaEntregaEditButton
 import com.example.optoapp.ui.components.OptoDatePickerDialog
 import com.example.optoapp.ui.components.OptoTextField
@@ -393,7 +394,14 @@ private fun StepConfirmar(
                 if (uiState.fechaEntrega != null) {
                     FechaEntregaEditButton(
                         fechaEntrega = uiState.fechaEntrega,
-                        onFechaChanged = { nueva -> viewModel.updateUiState { it.copy(fechaEntrega = nueva) } },
+                        onFechaChanged = { nueva ->
+                            viewModel.updateUiState {
+                                it.copy(
+                                    fechaEntrega = nueva,
+                                    estadoEntrega = estadoAfterFechaEntrega(it.estadoEntrega, nueva),
+                                )
+                            }
+                        },
                     )
                 }
             } else {
@@ -431,10 +439,25 @@ private fun StepConfirmar(
                 if (uiState.fechaEntrega != null) {
                     FechaEntregaEditButton(
                         fechaEntrega = uiState.fechaEntrega,
-                        onFechaChanged = { nueva -> viewModel.updateUiState { it.copy(fechaEntrega = nueva) } },
+                        onFechaChanged = { nueva ->
+                            viewModel.updateUiState {
+                                it.copy(
+                                    fechaEntrega = nueva,
+                                    estadoEntrega = estadoAfterFechaEntrega(it.estadoEntrega, nueva),
+                                )
+                            }
+                        },
                     )
                 } else {
-                    TextButton(onClick = { viewModel.updateUiState { it.copy(fechaEntrega = LocalDate.now()) } }) {
+                    TextButton(onClick = {
+                        val fecha = LocalDate.now()
+                        viewModel.updateUiState {
+                            it.copy(
+                                fechaEntrega = fecha,
+                                estadoEntrega = estadoAfterFechaEntrega(it.estadoEntrega, fecha),
+                            )
+                        }
+                    }) {
                         Text("Asignar fecha de entrega", fontSize = 12.sp)
                     }
                 }
