@@ -11,6 +11,9 @@ import com.example.optoapp.data.Pago
 import com.example.optoapp.data.ServicioExtra
 import com.example.optoapp.data.SessionManager
 import com.example.optoapp.domain.PagoEffect
+import com.example.optoapp.ui.screens.cierreVentaPagado
+import com.example.optoapp.ui.screens.pagosEffectByDispensacion
+import com.example.optoapp.ui.screens.pagosEffectByServicio
 import com.example.optoapp.util.DateUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -51,6 +54,8 @@ data class CierreCajaUiState(
     val ventasHoy: Double = 0.0,
     val cobrosAtrasados: Double = 0.0,
     val saldoPendiente: Double = 0.0,
+    val pagadoLedgerByDispensacion: Map<String, Double> = emptyMap(),
+    val pagadoLedgerByServicio: Map<String, Double> = emptyMap(),
     val isLoading: Boolean = true,
     val errorMessage: String? = null,
     val pagosFuturos: Double = 0.0,
@@ -146,8 +151,13 @@ class CierreCajaViewModel @Inject constructor(
                     val totalDispensacionesHoy = dispensacionesHoy.sumOf { it.montoTotal }
                     val totalServiciosExtra = serviciosExtraHoy.sumOf { it.montoTotal }
                     val totalGeneral = totalDispensacionesHoy + totalServiciosExtra
-                    val saldoPendiente = dispensacionesHoy.sumOf { it.montoTotal - it.montoPagado } +
-                        serviciosExtraHoy.sumOf { it.montoTotal - it.aCuenta }
+                    val pagadoLedgerByDispensacion = pagosEffectByDispensacion(pagos)
+                    val pagadoLedgerByServicio = pagosEffectByServicio(pagos)
+                    val saldoPendiente = dispensacionesHoy.sumOf {
+                        it.montoTotal - cierreVentaPagado(it.montoPagado, it.id, pagadoLedgerByDispensacion)
+                    } + serviciosExtraHoy.sumOf {
+                        it.montoTotal - cierreVentaPagado(it.aCuenta, it.id, pagadoLedgerByServicio)
+                    }
                     val pagosDisplay = buildPagosDisplay(pagos, dispMap, servMap, fecha)
                     CierreCajaUiState(
                         fecha = fecha,
@@ -161,6 +171,8 @@ class CierreCajaViewModel @Inject constructor(
                         ventasHoy = ventasHoy,
                         cobrosAtrasados = cobrosAtrasados,
                         saldoPendiente = saldoPendiente,
+                        pagadoLedgerByDispensacion = pagadoLedgerByDispensacion,
+                        pagadoLedgerByServicio = pagadoLedgerByServicio,
                         isLoading = false,
                         pagosFuturos = pagosFuturos,
                         pacienteNombres = pacienteNombres,
