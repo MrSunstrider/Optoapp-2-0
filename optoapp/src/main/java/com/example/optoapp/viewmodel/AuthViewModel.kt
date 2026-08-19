@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.optoapp.data.OpticaMembership
 import com.example.optoapp.viewmodel.auth.AuthDelegate
 import com.example.optoapp.viewmodel.auth.BackupDelegate
+import com.example.optoapp.viewmodel.auth.GoogleAuthAbandon
 import com.example.optoapp.viewmodel.auth.PinDelegate
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
@@ -191,6 +192,10 @@ class AuthViewModel @Inject constructor(
             Log.e(TAG, "Error inesperado iniciando login con Google: ${e.message}", e)
             _authState.value = AuthState.Error("Error inesperado. Reintente más tarde.")
         }
+    }
+
+    fun onGoogleAuthAbandoned() {
+        _authState.value = GoogleAuthAbandon.nextState(_authState.value)
     }
 
     fun handleAuthDeepLinkIntent(intent: Intent?) = viewModelScope.launch {

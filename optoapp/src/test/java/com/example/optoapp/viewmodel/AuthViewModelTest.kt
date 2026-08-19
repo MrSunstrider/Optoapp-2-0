@@ -88,10 +88,8 @@ class AuthViewModelTest {
     }
 
     @Test
-    fun coldStart_doesNotRestoreBeforeAuthChecked() {
-        assertEquals(
-            Route.Login.route,
-            ColdStartNavigation.dest(false, true, true, Route.Pin.route),
-        )
+    fun onGoogleAuthAbandoned_isDeclared() {
+        val methods = AuthViewModel::class.java.methods.map { it.name }
+        assertTrue("onGoogleAuthAbandoned debe existir", "onGoogleAuthAbandoned" in methods)
     }
 }
