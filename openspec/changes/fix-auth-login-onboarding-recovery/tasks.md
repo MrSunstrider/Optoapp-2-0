@@ -64,7 +64,7 @@ Threat RED: WU1 RPC ignore client id / admin iff INSERT / return S; RLS deny dir
 
 ## Phase 7: WU7 A8 (~70)
 
-- [ ] 7.1 RED `test/.../data/GoTruePasswordPolicyTest.kt`: toml min 6 + lower_upper_letters_digits_symbols; `docs/gotrue-hosted-password-policy.md` greps string, 6, dashboard/Management API. Confirm RED. GREEN set toml; write note. Re-run. Human hosted Auth.
+- [x] 7.1 RED `test/.../data/GoTruePasswordPolicyTest.kt`: toml min 6 + lower_upper_letters_digits_symbols; `docs/gotrue-hosted-password-policy.md` greps string, 6, dashboard/Management API. Confirm RED. GREEN set toml; write note. Re-run. Human hosted Auth.
 
 ## Cleanup
 
