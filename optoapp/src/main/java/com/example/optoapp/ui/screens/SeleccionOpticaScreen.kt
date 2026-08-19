@@ -16,6 +16,7 @@ import androidx.navigation.NavController
 import com.example.optoapp.ui.components.OptoCard
 import com.example.optoapp.ui.components.OptoTopAppBar
 import com.example.optoapp.viewmodel.AuthViewModel
+import com.example.optoapp.viewmodel.auth.PostLoginNavigation
 import kotlinx.coroutines.launch
 
 /**
@@ -30,6 +31,7 @@ fun SeleccionOpticaScreen(
     val memberships by viewModel.pendingMemberships.collectAsState()
     val needsOnboarding by viewModel.needsOnboarding.collectAsState()
     val isPinRequired by viewModel.isPinRequired.collectAsState(initial = false)
+    val pinHasBeenSet by viewModel.pinHasBeenSet.collectAsState(initial = false)
     var busy by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
@@ -78,7 +80,13 @@ fun SeleccionOpticaScreen(
                             scope.launch {
                                 busy = true
                                 viewModel.selectOptica(m)
-                                val dest = if (isPinRequired) "pin" else "main"
+                                val dest = PostLoginNavigation.dest(
+                                    count = 1,
+                                    needsOnboarding = false,
+                                    fetchError = false,
+                                    isPinRequired = isPinRequired,
+                                    pinHasBeenSet = pinHasBeenSet,
+                                )
                                 navController.navigate(dest) {
                                     popUpTo("seleccion_optica") { inclusive = true }
                                 }

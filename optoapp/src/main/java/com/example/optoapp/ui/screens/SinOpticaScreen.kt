@@ -37,8 +37,12 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.optoapp.domain.observer.MembershipObserver
+import com.example.optoapp.ui.navigation.Route
 import com.example.optoapp.viewmodel.AuthViewModel
+import com.example.optoapp.viewmodel.auth.PostLoginNavigation
 import com.example.optoapp.viewmodel.auth.SinOpticaUiState
+import com.example.optoapp.viewmodel.auth.WaitMembershipPoll
+import com.example.optoapp.viewmodel.auth.waitMembershipPoll
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
 
@@ -50,6 +54,7 @@ fun SinOpticaScreen(
 ) {
     val userEmail by viewModel.userEmail.collectAsState(initial = "")
     val isPinRequired by viewModel.isPinRequired.collectAsState(initial = false)
+    val pinHasBeenSet by viewModel.pinHasBeenSet.collectAsState(initial = false)
     var ui by remember { mutableStateOf(SinOpticaUiState()) }
     val waitingMode = ui.waitingMode
     val showOwnerForm = ui.showOwnerForm
@@ -62,6 +67,7 @@ fun SinOpticaScreen(
     var formError by remember { mutableStateOf<String?>(null) }
     var checking by remember { mutableStateOf(false) }
     var noMembershipYet by remember { mutableStateOf(false) }
+    var membershipFetchError by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
     if (waitingMode) {
@@ -70,7 +76,16 @@ fun SinOpticaScreen(
                 .catch { /* realtime unavailable — user can still verify manually */ }
                 .collect {
                     val count = viewModel.refreshMembershipsForWaitScreen()
-                    navigateAfterMembership(navController, count, isPinRequired ?: false)
+                    when (waitMembershipPoll(count)) {
+                        WaitMembershipPoll.FetchError -> membershipFetchError = true
+                        WaitMembershipPoll.StillEmpty -> Unit
+                        WaitMembershipPoll.Navigate -> navigateAfterMembership(
+                            navController,
+                            count,
+                            isPinRequired ?: false,
+                            pinHasBeenSet,
+                        )
+                    }
                 }
         }
     }
@@ -149,9 +164,15 @@ fun SinOpticaScreen(
                         ) { ok, msg ->
                             submitting = false
                             if (ok) {
-                                val dest = if (isPinRequired == true) "pin" else "main"
+                                val dest = PostLoginNavigation.dest(
+                                    count = 1,
+                                    needsOnboarding = false,
+                                    fetchError = false,
+                                    isPinRequired = isPinRequired == true,
+                                    pinHasBeenSet = pinHasBeenSet,
+                                )
                                 navController.navigate(dest) {
-                                    popUpTo("sin_optica") { inclusive = true }
+                                    popUpTo(Route.SinOptica.route) { inclusive = true }
                                 }
                             } else {
                                 formError = msg
@@ -235,16 +256,31 @@ fun SinOpticaScreen(
                     )
                     Spacer(Modifier.height(12.dp))
                 }
+                if (membershipFetchError) {
+                    Text(
+                        text = "Error de conexión. Verificá tu internet e intentá de nuevo.",
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                        textAlign = TextAlign.Center,
+                    )
+                    Spacer(Modifier.height(12.dp))
+                }
                 Button(
                     onClick = {
                         checking = true
                         noMembershipYet = false
+                        membershipFetchError = false
                         scope.launch {
                             val count = viewModel.refreshMembershipsForWaitScreen()
-                            if (count == 0) {
-                                noMembershipYet = true
-                            } else {
-                                navigateAfterMembership(navController, count, isPinRequired ?: false)
+                            when (waitMembershipPoll(count)) {
+                                WaitMembershipPoll.FetchError -> membershipFetchError = true
+                                WaitMembershipPoll.StillEmpty -> noMembershipYet = true
+                                WaitMembershipPoll.Navigate -> navigateAfterMembership(
+                                    navController,
+                                    count,
+                                    isPinRequired ?: false,
+                                    pinHasBeenSet,
+                                )
                             }
                             checking = false
                         }
@@ -262,6 +298,7 @@ fun SinOpticaScreen(
                 TextButton(onClick = {
                     ui = SinOpticaUiState()
                     noMembershipYet = false
+                    membershipFetchError = false
                 }) {
                     Text("Volver")
                 }
@@ -270,13 +307,22 @@ fun SinOpticaScreen(
     }
 }
 
-private fun navigateAfterMembership(navController: NavController, count: Int, isPinRequired: Boolean) {
-    when {
-        count == 1 -> navController.navigate(if (isPinRequired) "pin" else "main") {
-            popUpTo("sin_optica") { inclusive = true }
-        }
-        count > 1 -> navController.navigate("seleccion_optica") {
-            popUpTo("sin_optica") { inclusive = true }
-        }
+private fun navigateAfterMembership(
+    navController: NavController,
+    count: Int,
+    isPinRequired: Boolean,
+    pinHasBeenSet: Boolean,
+) {
+    if (count < 1) return
+    navController.navigate(
+        PostLoginNavigation.dest(
+            count = count,
+            needsOnboarding = false,
+            fetchError = false,
+            isPinRequired = isPinRequired,
+            pinHasBeenSet = pinHasBeenSet,
+        ),
+    ) {
+        popUpTo(Route.SinOptica.route) { inclusive = true }
     }
 }

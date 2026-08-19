@@ -238,8 +238,8 @@ open class AuthDelegate @Inject constructor(
         }
     }
 
-    suspend fun prepareOpticaSelection(): List<OpticaMembership> =
-        membershipRepository.fetchMembershipsForCurrentUser().asList()
+    suspend fun prepareOpticaSelection(): MembershipFetch =
+        membershipRepository.fetchMembershipsForCurrentUser()
 
     // ── Post-login (private en ViewModel original) ────────────────────────────
 
@@ -382,25 +382,28 @@ open class AuthDelegate @Inject constructor(
             try {
                 val url = java.net.URL("${BuildConfig.SUPABASE_URL}/auth/v1/user")
                 val conn = url.openConnection() as java.net.HttpURLConnection
-                conn.requestMethod = "PUT"
-                conn.setRequestProperty("Authorization", "Bearer $token")
-                conn.setRequestProperty("apikey", BuildConfig.SUPABASE_ANON_KEY)
-                conn.setRequestProperty("Content-Type", "application/json")
-                conn.doOutput = true
-                val json = buildJsonObject { put("password", newPassword) }.toString()
-                conn.outputStream.write(json.toByteArray(Charsets.UTF_8))
-                val code = conn.responseCode
-                conn.disconnect()
-                if (code in 200..299) {
-                    null
-                } else {
-                    val errorBody = try {
-                        conn.errorStream?.bufferedReader()?.readText() ?: ""
-                    } catch (_: Exception) {
-                        ""
+                try {
+                    conn.requestMethod = "PUT"
+                    conn.setRequestProperty("Authorization", "Bearer $token")
+                    conn.setRequestProperty("apikey", BuildConfig.SUPABASE_ANON_KEY)
+                    conn.setRequestProperty("Content-Type", "application/json")
+                    conn.doOutput = true
+                    val json = buildJsonObject { put("password", newPassword) }.toString()
+                    conn.outputStream.write(json.toByteArray(Charsets.UTF_8))
+                    val code = conn.responseCode
+                    if (code in 200..299) {
+                        null
+                    } else {
+                        val errorBody = try {
+                            conn.errorStream?.bufferedReader()?.readText() ?: ""
+                        } catch (_: Exception) {
+                            ""
+                        }
+                        Log.e(TAG, "Error actualizando contraseña via REST: HTTP $code $errorBody")
+                        "No se pudo actualizar la contraseña. (código $code)"
                     }
-                    Log.e(TAG, "Error actualizando contraseña via REST: HTTP $code $errorBody")
-                    "No se pudo actualizar la contraseña. (código $code)"
+                } finally {
+                    conn.disconnect()
                 }
             } catch (e: CancellationException) {
                 throw e
