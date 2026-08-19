@@ -22,4 +22,11 @@ class SinOpticaUiStateTest {
         assertFalse(next.presentsOwnerCreateForm())
         assertTrue(next.waitingMode)
     }
+
+    @Test
+    fun waitPoll_negativeIsFetchError_notEmpty() {
+        assertEquals(WaitMembershipPoll.FetchError, waitMembershipPoll(-1))
+        assertEquals(WaitMembershipPoll.StillEmpty, waitMembershipPoll(0))
+        assertEquals(WaitMembershipPoll.Navigate, waitMembershipPoll(1))
+    }
 }

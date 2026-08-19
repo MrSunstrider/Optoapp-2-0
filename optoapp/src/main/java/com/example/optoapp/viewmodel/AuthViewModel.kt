@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.optoapp.data.OpticaMembership
+import com.example.optoapp.data.membership.MembershipFetch
 import com.example.optoapp.viewmodel.auth.AuthDelegate
 import com.example.optoapp.viewmodel.auth.BackupDelegate
 import com.example.optoapp.viewmodel.auth.GoogleAuthAbandon
@@ -241,27 +242,41 @@ class AuthViewModel @Inject constructor(
     }
 
     suspend fun prepareOpticaSelection(): Boolean {
-        val memberships = authDelegate.prepareOpticaSelection()
+        val fetch = authDelegate.prepareOpticaSelection()
+        val memberships = if (fetch is MembershipFetch.Ok) fetch.memberships else emptyList()
         _pendingMemberships.value = memberships
         return memberships.size > 1
     }
 
+    /**
+     * Returns the membership count after refresh, or -1 if a network error occurred.
+     * Callers must treat -1 as a fetch error (distinct from 0 = not yet added).
+     */
     suspend fun refreshMembershipsForWaitScreen(): Int {
-        val memberships = authDelegate.prepareOpticaSelection()
-        _pendingMemberships.value = memberships
-        return when {
-            memberships.size == 1 -> {
-                authDelegate.selectOptica(memberships.first())
-                _needsOnboarding.value = false
+        return when (val fetch = authDelegate.prepareOpticaSelection()) {
+            is MembershipFetch.Error -> -1
+            MembershipFetch.Empty -> {
                 _pendingMemberships.value = emptyList()
-                _authState.value = AuthState.Success
-                1
+                0
             }
-            memberships.size > 1 -> {
-                _needsOnboarding.value = false
-                memberships.size
+            is MembershipFetch.Ok -> {
+                val memberships = fetch.memberships
+                _pendingMemberships.value = memberships
+                when {
+                    memberships.size == 1 -> {
+                        authDelegate.selectOptica(memberships.first())
+                        _needsOnboarding.value = false
+                        _pendingMemberships.value = emptyList()
+                        _authState.value = AuthState.Success
+                        1
+                    }
+                    memberships.size > 1 -> {
+                        _needsOnboarding.value = false
+                        memberships.size
+                    }
+                    else -> 0
+                }
             }
-            else -> 0
         }
     }
 
@@ -285,7 +300,10 @@ class AuthViewModel @Inject constructor(
         try {
             val valid = authDelegate.checkExistingSession()
             if (!valid) {
-                logout()
+                // authDelegate.checkExistingSession already called logout() internally.
+                // Only clean up ViewModel-owned state here to avoid a second GLOBAL signOut.
+                _pendingMemberships.value = emptyList()
+                _authState.value = AuthState.Idle
             }
         } catch (e: CancellationException) {
             throw e
