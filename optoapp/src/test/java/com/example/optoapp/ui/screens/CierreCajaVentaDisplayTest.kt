@@ -143,4 +143,26 @@ class CierreCajaVentaDisplayTest {
         )
         assertEquals(1, filterServiciosExtra(listOf(serv), "bisel", emptyMap()).size)
     }
+
+    @Test
+    fun `cierreVentaPagado prefers same-day ledger over doubled cache`() {
+        val ledger = mapOf("d1" to 100.0)
+        assertEquals(100.0, cierreVentaPagado(200.0, "d1", ledger), 0.001)
+    }
+
+    @Test
+    fun `cierreVentaPagado falls back to cache when entity has no same-day cobro`() {
+        assertEquals(200.0, cierreVentaPagado(200.0, "d1", emptyMap()), 0.001)
+    }
+
+    @Test
+    fun `pagosEffectByDispensacion nets Abono and ignores Anulacion`() {
+        val pagos = listOf(
+            Pago(id = "p1", fecha = today, tipo = "Abono", monto = 100.0, dispensacionId = "d1"),
+            Pago(id = "p2", fecha = today, tipo = "Anulación", monto = 50.0, dispensacionId = "d1"),
+            Pago(id = "p3", fecha = today, tipo = "Abono", monto = 4.0, servicioExtraId = "s1"),
+        )
+        assertEquals(100.0, pagosEffectByDispensacion(pagos)["d1"] ?: 0.0, 0.001)
+        assertEquals(4.0, pagosEffectByServicio(pagos)["s1"] ?: 0.0, 0.001)
+    }
 }

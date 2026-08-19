@@ -1051,4 +1051,69 @@ class CierreCajaViewModelTest {
 
         assertEquals("María García", vm.uiState.value.pacienteNombres["pac1"])
     }
+
+    @Test
+    fun `saldoPendiente prefers same-day PagoEffect over doubled montoPagado cache`() = runTest(testDispatcher) {
+        val dispensaciones = listOf(
+            DispensacionOptica(
+                id = "d1",
+                pacienteId = "pac1",
+                fecha = today,
+                montoTotal = 170.0,
+                montoPagado = 200.0,
+                opticaId = opticaId,
+            ),
+        )
+        val pagos = listOf(
+            Pago(
+                id = "p1",
+                fecha = today,
+                tipo = "Abono",
+                monto = 100.0,
+                metodoPago = "Efectivo",
+                opticaId = opticaId,
+                dispensacionId = "d1",
+            ),
+        )
+        every { repository.getDispensacionesByDateRangeForOptica(today, today, opticaId) } returns flowOf(dispensaciones)
+        every { repository.getPagosByDateRangeForOptica(today, today, opticaId) } returns flowOf(pagos)
+
+        val vm = createViewModel()
+
+        assertEquals(70.0, vm.uiState.value.saldoPendiente, 0.001)
+        assertEquals(100.0, vm.uiState.value.pagadoLedgerByDispensacion["d1"] ?: 0.0, 0.001)
+    }
+
+    @Test
+    fun `saldoPendiente prefers same-day PagoEffect over doubled aCuenta cache`() = runTest(testDispatcher) {
+        val servicios = listOf(
+            ServicioExtra(
+                id = "s1",
+                descripcion = "Brazos",
+                montoTotal = 25.0,
+                aCuenta = 50.0,
+                estado = "Entregado",
+                fecha = today,
+                opticaId = opticaId,
+            ),
+        )
+        val pagos = listOf(
+            Pago(
+                id = "p1",
+                fecha = today,
+                tipo = "Abono",
+                monto = 25.0,
+                metodoPago = "Transferencia",
+                opticaId = opticaId,
+                servicioExtraId = "s1",
+            ),
+        )
+        every { repository.getServiciosByDateRangeForOptica(today, today, opticaId) } returns flowOf(servicios)
+        every { repository.getPagosByDateRangeForOptica(today, today, opticaId) } returns flowOf(pagos)
+
+        val vm = createViewModel()
+
+        assertEquals(0.0, vm.uiState.value.saldoPendiente, 0.001)
+        assertEquals(25.0, vm.uiState.value.pagadoLedgerByServicio["s1"] ?: 0.0, 0.001)
+    }
 }

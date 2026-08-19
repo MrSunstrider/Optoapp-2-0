@@ -293,28 +293,27 @@ BEGIN
 END;
 $$;
 
--- I. Trigger contract: an UPDATE that MOVES a pago between parents must debit
---    the OLD parent and credit the NEW one. Resolving the parent with
---    COALESCE(NEW.x, OLD.x) alone silently strands the old balance, so the
---    origin-change branch must be present. Behavior is proven in
---    supabase/tests/test_ledger_write_path_rollback.sql.
+-- I. Trigger contract: parent cache is SUM(pago_effect), never cache += delta.
+--    Origin moves recompute OLD and NEW parents. Incremental += doubled the
+--    cache when the client already uploaded the parent with that sum.
+--    Behavior is proven in test_ledger_write_path_rollback.sql and
+--    test_parent_balance_single_writer.sql.
 DO $$
 DECLARE v_src TEXT;
 BEGIN
     SELECT p.prosrc INTO v_src FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
     WHERE n.nspname = 'public' AND p.proname = 'trg_pagos_update_monto_pagado';
     ASSERT v_src IS NOT NULL, 'I0 FAIL: trg_pagos_update_monto_pagado must exist';
-    ASSERT v_src LIKE '%public.pago_effect(NEW.tipo, NEW.monto)%'
-       AND v_src LIKE '%public.pago_effect(OLD.tipo, OLD.monto)%',
-       'I1 FAIL: both sides of the delta must come from public.pago_effect';
-    ASSERT v_src ~ 'NEW\.dispensacion_id\s+IS DISTINCT FROM\s+OLD\.dispensacion_id'
-       AND v_src ~ 'NEW\.servicio_extra_id\s+IS DISTINCT FROM\s+OLD\.servicio_extra_id',
-       'I2 FAIL: the trigger must detect an origin change on both parent columns';
+    ASSERT v_src LIKE '%SUM(public.pago_effect(p.tipo, p.monto))%',
+       'I1 FAIL: parent cache must be recomputed from SUM(public.pago_effect)';
+    ASSERT v_src NOT LIKE '%monto_pagado +%'
+       AND v_src NOT LIKE '%a_cuenta +%',
+       'I2 FAIL: trigger must not increment a pre-seeded parent cache';
     ASSERT v_src ~ 'WHERE\s+id\s*=\s*OLD\.dispensacion_id'
        AND v_src ~ 'WHERE\s+id\s*=\s*NEW\.dispensacion_id'
        AND v_src ~ 'WHERE\s+id\s*=\s*OLD\.servicio_extra_id'
        AND v_src ~ 'WHERE\s+id\s*=\s*NEW\.servicio_extra_id',
-       'I3 FAIL: origin moves must update the OLD and the NEW parent explicitly';
-    RAISE NOTICE 'I PASS: trigger handles origin moves, not just net deltas';
+       'I3 FAIL: origin moves must recompute the OLD and the NEW parent explicitly';
+    RAISE NOTICE 'I PASS: trigger recomputes SUM(pago_effect) for both parents';
 END;
 $$;

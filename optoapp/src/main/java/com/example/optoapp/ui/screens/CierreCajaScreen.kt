@@ -348,14 +348,22 @@ fun CierreCajaScreen(
                     if (hasDispensaciones) {
                         Text("Dispensaciones", fontWeight = FontWeight.SemiBold, fontSize = 14.sp, modifier = Modifier.padding(bottom = 4.dp))
                         filteredDispensaciones.forEach { disp ->
-                            VentaDispensacionCard(disp, navController)
+                            VentaDispensacionCard(
+                                disp = disp,
+                                navController = navController,
+                                pagadoLedgerByDispensacion = uiState.pagadoLedgerByDispensacion,
+                            )
                             Spacer(modifier = Modifier.height(8.dp))
                         }
                     }
                     if (hasServicios) {
                         Text("Servicios Extra", fontWeight = FontWeight.SemiBold, fontSize = 14.sp, modifier = Modifier.padding(bottom = 4.dp))
                         filteredServicios.forEach { serv ->
-                            VentaServicioCard(serv, navController)
+                            VentaServicioCard(
+                                serv = serv,
+                                navController = navController,
+                                pagadoLedgerByServicio = uiState.pagadoLedgerByServicio,
+                            )
                             Spacer(modifier = Modifier.height(8.dp))
                         }
                     }
@@ -425,8 +433,9 @@ private fun pagoNavigationHandler(
 private fun VentaDispensacionCard(
     disp: com.example.optoapp.data.DispensacionOptica,
     navController: NavController,
+    pagadoLedgerByDispensacion: Map<String, Double>,
 ) {
-    val totalPagado = disp.montoPagado
+    val totalPagado = cierreVentaPagado(disp.montoPagado, disp.id, pagadoLedgerByDispensacion)
     val saldo = disp.montoTotal - totalPagado
     val estadoColor = ventaEstadoColor(disp.estadoEntrega, saldo)
 
@@ -483,8 +492,9 @@ private fun VentaDispensacionCard(
 private fun VentaServicioCard(
     serv: com.example.optoapp.data.ServicioExtra,
     navController: NavController,
+    pagadoLedgerByServicio: Map<String, Double>,
 ) {
-    val totalPagado = serv.aCuenta
+    val totalPagado = cierreVentaPagado(serv.aCuenta, serv.id, pagadoLedgerByServicio)
     val saldo = serv.montoTotal - totalPagado
     val estadoColor = ventaEstadoColor(serv.estado, saldo)
     val otLine = servicioVentaOtLine(serv)

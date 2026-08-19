@@ -1,7 +1,9 @@
 package com.example.optoapp.ui.screens
 
 import com.example.optoapp.data.DispensacionOptica
+import com.example.optoapp.data.Pago
 import com.example.optoapp.data.ServicioExtra
+import com.example.optoapp.domain.PagoEffect
 import com.example.optoapp.viewmodel.PagoDisplayItem
 import java.time.LocalDate
 
@@ -82,6 +84,20 @@ fun filterDispensaciones(
     val nombre = pacienteNombres[disp.pacienteId].orEmpty()
     matchesCierreCajaSearch(dispensacionSearchHaystack(disp, nombre), query)
 }
+
+fun pagosEffectByDispensacion(pagos: List<Pago>): Map<String, Double> =
+    pagos.mapNotNull { pago -> pago.dispensacionId?.let { it to pago } }
+        .groupBy({ it.first }, { it.second })
+        .mapValues { (_, rows) -> rows.sumOf { PagoEffect.signedAmount(it.tipo, it.monto) } }
+
+fun pagosEffectByServicio(pagos: List<Pago>): Map<String, Double> =
+    pagos.mapNotNull { pago -> pago.servicioExtraId?.let { it to pago } }
+        .groupBy({ it.first }, { it.second })
+        .mapValues { (_, rows) -> rows.sumOf { PagoEffect.signedAmount(it.tipo, it.monto) } }
+
+/** Same-day ledger wins over a downloaded/stale parent cache (OT 4582 dual-writer). */
+fun cierreVentaPagado(cachePagado: Double, entityId: String, ledgerById: Map<String, Double>): Double =
+    ledgerById[entityId] ?: cachePagado
 
 fun filterServiciosExtra(
     items: List<ServicioExtra>,
