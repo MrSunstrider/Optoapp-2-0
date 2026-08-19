@@ -17,7 +17,7 @@ BEGIN
     JOIN pg_namespace n ON n.oid = p.pronamespace
     WHERE n.nspname = 'public'
       AND p.proname = 'create_optica_for_current_user'
-      AND pg_get_function_identity_arguments(p.oid) = 'text, text, text, text, text, text';
+      AND pg_get_function_identity_arguments(p.oid) LIKE 'p_optica_id text%';
 
     IF v_rettype IS DISTINCT FROM 'text'::regtype THEN
         RAISE EXCEPTION 'create_optica_for_current_user prorettype is not text';
