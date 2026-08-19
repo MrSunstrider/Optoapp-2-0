@@ -17,7 +17,6 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import java.io.IOException
-import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -49,20 +48,21 @@ open class OpticaSettingsDataSource @Inject constructor(
         }
         val nombre = nombreOptica.trim()
         if (nombre.isBlank()) return Result.failure(IllegalArgumentException("Nombre de óptica requerido"))
-        val opticaId = "opt_" + UUID.randomUUID().toString().replace("-", "").take(16)
         return try {
-            supabase.postgrest.rpc(
+            val returned = supabase.postgrest.rpc(
                 "create_optica_for_current_user",
                 buildJsonObject {
-                    put("p_optica_id", opticaId)
+                    put("p_optica_id", "")
                     put("p_nombre", nombre)
                     put("p_fiscal_doc_tipo", fiscalDocTipo.trim().uppercase())
                     put("p_fiscal_doc_numero", fiscalDocNumero.trim())
                     put("p_razon_social", razonSocial.trim())
                     put("p_direccion_fiscal", direccionFiscal.trim())
                 },
-            )
-            Result.success(OpticaMembership(opticaId = opticaId, nombre = nombre, rol = "admin"))
+            ).decodeAs<String>()
+            CreateOpticaReturnedId.persistableId(returned).map { id ->
+                OpticaMembership(opticaId = id, nombre = nombre, rol = "admin")
+            }
         } catch (e: CancellationException) {
             throw e
         } catch (e: IOException) {
