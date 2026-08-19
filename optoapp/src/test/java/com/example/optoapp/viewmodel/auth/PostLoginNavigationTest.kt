@@ -17,8 +17,21 @@ class PostLoginNavigationTest {
             pinHasBeenSet = false,
         )
 
-        assertEquals(Route.Pin.route, dest)
+        assertEquals(Route.CreatePin.route, dest)
         assertNotEquals(Route.SeleccionOptica.route, dest)
+    }
+
+    @Test
+    fun requiredAndPinSet_goesPin() {
+        val dest = PostLoginNavigation.dest(
+            count = 1,
+            needsOnboarding = false,
+            fetchError = false,
+            isPinRequired = true,
+            pinHasBeenSet = true,
+        )
+
+        assertEquals(Route.Pin.route, dest)
     }
 
     @Test

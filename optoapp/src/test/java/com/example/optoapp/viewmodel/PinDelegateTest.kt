@@ -140,12 +140,10 @@ class PinDelegateTest {
     }
 
     @Test
-    fun `validatePin both empty returns true`() = runTest {
+    fun `validatePin both empty returns false`() = runTest {
         val sec = FakeSecurityManager()
-        // userPin is "" by default
         val delegate = PinDelegate(sec, FakeSessionManager())
-        // pinInput is "" by default
-        assertTrue(delegate.validatePin())
+        assertFalse(delegate.validatePin())
     }
 
     @Test

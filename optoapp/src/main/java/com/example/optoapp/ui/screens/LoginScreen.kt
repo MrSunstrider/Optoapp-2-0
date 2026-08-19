@@ -68,6 +68,7 @@ fun LoginScreen(
 
     val isPinRequired by viewModel.isPinRequired.collectAsState(initial = false)
     val isLoggedIn by viewModel.isLoggedIn.collectAsState(initial = false)
+    val pinHasBeenSet by viewModel.pinHasBeenSet.collectAsState(initial = false)
     val lifecycleOwner = LocalLifecycleOwner.current
 
     DisposableEffect(lifecycleOwner) {
@@ -88,7 +89,7 @@ fun LoginScreen(
         }
     }
 
-    LaunchedEffect(authState, pendingMemberships, isLoggedIn, needsOnboarding) {
+    LaunchedEffect(authState, pendingMemberships, isLoggedIn, needsOnboarding, isPinRequired, pinHasBeenSet) {
         if (authState !is AuthState.Success) return@LaunchedEffect
 
         if (rememberAccount) {
@@ -103,7 +104,7 @@ fun LoginScreen(
             needsOnboarding = needsOnboarding,
             fetchError = false,
             isPinRequired = isPinRequired == true,
-            pinHasBeenSet = false,
+            pinHasBeenSet = pinHasBeenSet == true,
         )
         if (dest.isEmpty()) return@LaunchedEffect
         navController.navigate(dest) {

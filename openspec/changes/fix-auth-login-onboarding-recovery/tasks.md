@@ -60,7 +60,7 @@ Threat RED: WU1 RPC ignore client id / admin iff INSERT / return S; RLS deny dir
 
 ## Phase 6: WU6 A7 (~120)
 
-- [ ] 6.1 RED PinDelegateTest: both-empty false; unset never matches. RED PostLoginNavigationTest: CreatePin iff required&&unset; set→Pin; !required→Main. No C3. Confirm RED. GREEN PinDelegate.kt; dest helper; LoginScreen.kt/RegisterScreen.kt. Re-run GREEN.
+- [x] 6.1 RED PinDelegateTest: both-empty false; unset never matches. RED PostLoginNavigationTest: CreatePin iff required&&unset; set→Pin; !required→Main. No C3. Confirm RED. GREEN PinDelegate.kt; dest helper; LoginScreen.kt/RegisterScreen.kt. Re-run GREEN.
 
 ## Phase 7: WU7 A8 (~70)
 

@@ -138,8 +138,11 @@ fun OptoAppNavigation(
 
     LaunchedEffect(isAuthChecked, isLoggedIn, opticaId, isPinRequired, needsOnboarding, pinHasBeenSet) {
         if (!isAuthChecked || isLoggedIn == null || coldStartHandled) return@LaunchedEffect
-        coldStartHandled = true
         val loggedIn = isLoggedIn == true
+        if (loggedIn && !ColdStartNavigation.pinStateReady(isPinRequired, pinHasBeenSet)) {
+            return@LaunchedEffect
+        }
+        coldStartHandled = true
         val postLoginDest = PostLoginNavigation.dest(
             count = if (opticaId.isBlank()) 0 else 1,
             needsOnboarding = needsOnboarding || (loggedIn && opticaId.isBlank()),

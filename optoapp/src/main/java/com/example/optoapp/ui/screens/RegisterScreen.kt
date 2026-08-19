@@ -40,6 +40,7 @@ fun RegisterScreen(
     val needsOnboarding by viewModel.needsOnboarding.collectAsState()
     val isLoggedIn by viewModel.isLoggedIn.collectAsState(initial = false)
     val isPinRequired by viewModel.isPinRequired.collectAsState(initial = false)
+    val pinHasBeenSet by viewModel.pinHasBeenSet.collectAsState(initial = false)
     val focusManager = LocalFocusManager.current
 
     var email by remember { mutableStateOf("") }
@@ -48,7 +49,7 @@ fun RegisterScreen(
     var showPassword by remember { mutableStateOf(false) }
     var localError by remember { mutableStateOf<String?>(null) }
 
-    LaunchedEffect(authState, pendingMemberships, isLoggedIn, needsOnboarding) {
+    LaunchedEffect(authState, pendingMemberships, isLoggedIn, needsOnboarding, isPinRequired, pinHasBeenSet) {
         if (authState !is AuthState.Success) return@LaunchedEffect
         if (!isLoggedIn && !needsOnboarding && pendingMemberships.isEmpty()) return@LaunchedEffect
         val dest = PostLoginNavigation.dest(
@@ -56,7 +57,7 @@ fun RegisterScreen(
             needsOnboarding = needsOnboarding,
             fetchError = false,
             isPinRequired = isPinRequired == true,
-            pinHasBeenSet = false,
+            pinHasBeenSet = pinHasBeenSet == true,
         )
         if (dest.isEmpty()) return@LaunchedEffect
         navController.navigate(dest) {
