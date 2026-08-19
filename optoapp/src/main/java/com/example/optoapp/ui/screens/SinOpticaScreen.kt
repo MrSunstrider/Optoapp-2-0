@@ -78,7 +78,7 @@ fun SinOpticaScreen(
                     val count = viewModel.refreshMembershipsForWaitScreen()
                     when (waitMembershipPoll(count)) {
                         WaitMembershipPoll.FetchError -> membershipFetchError = true
-                        WaitMembershipPoll.StillEmpty -> Unit
+                        WaitMembershipPoll.StillEmpty -> membershipFetchError = false
                         WaitMembershipPoll.Navigate -> navigateAfterMembership(
                             navController,
                             count,
