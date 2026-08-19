@@ -56,7 +56,7 @@ Threat RED: WU1 RPC ignore client id / admin iff INSERT / return S; RLS deny dir
 
 ## Phase 5: WU5 A6 (~180)
 
-- [ ] 5.1 RED `supabase/tests/verify_user_profiles_select_rls.sql`: own visible; anon empty; same-óptica admin peer visible; other hidden; empleado own-only. Confirm RED. GREEN `supabase/migrations/20260819120100_user_profiles_select_scoped.sql`. Re-run. GGA before remote.
+- [x] 5.1 RED `supabase/tests/verify_user_profiles_select_rls.sql`: own visible; anon empty; same-óptica admin peer visible; other hidden; empleado own-only. Confirm RED. GREEN `supabase/migrations/20260819120100_user_profiles_select_scoped.sql`. Re-run. GGA before remote.
 
 ## Phase 6: WU6 A7 (~120)
 
