@@ -27,6 +27,8 @@ import com.example.optoapp.ui.theme.OptoAppTheme
 import com.example.optoapp.util.UpdateChecker
 import com.example.optoapp.viewmodel.AuthViewModel
 import com.example.optoapp.viewmodel.RecoveryState
+import com.example.optoapp.viewmodel.auth.ColdStartNavigation
+import com.example.optoapp.viewmodel.auth.PostLoginNavigation
 import dagger.hilt.android.AndroidEntryPoint
 import io.github.jan.supabase.SupabaseClient
 import kotlinx.coroutines.Dispatchers
@@ -118,7 +120,11 @@ fun OptoAppNavigation(
     val isLoggedIn by authViewModel.isLoggedIn.collectAsState(initial = null)
     val pinHasBeenSet by authViewModel.pinHasBeenSet.collectAsState(initial = null)
     val isPinRequired by authViewModel.isPinRequired.collectAsState(initial = null)
+    val isAuthChecked by authViewModel.isAuthChecked.collectAsState()
+    val opticaId by authViewModel.opticaId.collectAsState(initial = "")
+    val needsOnboarding by authViewModel.needsOnboarding.collectAsState()
     val recoveryState by authViewModel.recoveryState.collectAsState()
+    var coldStartHandled by remember { mutableStateOf(false) }
 
     var updateInfo by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<UpdateChecker.UpdateInfo?>(null) }
     LaunchedEffect(isLoggedIn) {
@@ -127,6 +133,29 @@ fun OptoAppNavigation(
                 UpdateChecker.check(supabaseClient)
             }
             updateInfo = info
+        }
+    }
+
+    LaunchedEffect(isAuthChecked, isLoggedIn, opticaId, isPinRequired, needsOnboarding, pinHasBeenSet) {
+        if (!isAuthChecked || isLoggedIn == null || coldStartHandled) return@LaunchedEffect
+        coldStartHandled = true
+        val loggedIn = isLoggedIn == true
+        val postLoginDest = PostLoginNavigation.dest(
+            count = if (opticaId.isBlank()) 0 else 1,
+            needsOnboarding = needsOnboarding || (loggedIn && opticaId.isBlank()),
+            fetchError = false,
+            isPinRequired = isPinRequired == true,
+            pinHasBeenSet = pinHasBeenSet == true,
+        )
+        val dest = ColdStartNavigation.dest(
+            isAuthChecked = true,
+            sessionValid = loggedIn,
+            isLoggedIn = loggedIn,
+            postLoginDest = postLoginDest,
+        )
+        if (dest == Route.Login.route) return@LaunchedEffect
+        navController.navigate(dest) {
+            popUpTo(navController.graph.id) { inclusive = true }
         }
     }
 

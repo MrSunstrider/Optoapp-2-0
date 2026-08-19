@@ -1,9 +1,11 @@
 ﻿package com.example.optoapp.ui.screens
 
 import com.example.optoapp.testing.TestTags
+import com.example.optoapp.ui.navigation.Route
 import com.example.optoapp.viewmodel.AuthState
 import com.example.optoapp.viewmodel.AuthViewModel
 import com.example.optoapp.viewmodel.auth.AuthDelegate
+import com.example.optoapp.viewmodel.auth.ColdStartNavigation
 import org.junit.Assert.*
 import org.junit.Test
 
@@ -292,5 +294,28 @@ class LoginScreenTest {
     fun initialScreen_hasRegisterButton() {
         val buttonText = "Crear cuenta con correo electrónico"
         assertTrue(buttonText.isNotBlank())
+    }
+
+    @Test
+    fun coldStart_validSession_leavesLogin() {
+        val dest = ColdStartNavigation.dest(
+            isAuthChecked = true,
+            sessionValid = true,
+            isLoggedIn = true,
+            postLoginDest = Route.Main.route,
+        )
+        assertEquals(Route.Main.route, dest)
+        assertNotEquals(Route.Login.route, dest)
+    }
+
+    @Test
+    fun coldStart_noSession_staysLogin() {
+        val dest = ColdStartNavigation.dest(
+            isAuthChecked = true,
+            sessionValid = false,
+            isLoggedIn = false,
+            postLoginDest = Route.Pin.route,
+        )
+        assertEquals(Route.Login.route, dest)
     }
 }
