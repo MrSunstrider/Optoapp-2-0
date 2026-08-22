@@ -48,11 +48,27 @@ class InventarioFisicoDaoTest {
         )
         dao.insertSession(session)
 
-        val retrieved = dao.getById("if1")
+        val retrieved = dao.getById("if1", "o1")
         assertNotNull(retrieved)
         assertEquals("if1", retrieved!!.id)
         assertEquals("EN_PROGRESO", retrieved.estado)
         assertEquals("u1", retrieved.userId)
+    }
+
+    @Test
+    fun getById_returnsNull_forForeignOptica() = runBlocking {
+        val dao = db.inventarioFisicoDao()
+        dao.insertSession(
+            InventarioFisico(
+                id = "if1",
+                fecha = LocalDate.now(),
+                estado = "EN_PROGRESO",
+                opticaId = "o1",
+                userId = "u1",
+            ),
+        )
+        assertNull(dao.getById("if1", "o-other"))
+        assertNotNull(dao.getById("if1", "o1"))
     }
 
     @Test
@@ -145,7 +161,7 @@ class InventarioFisicoDaoTest {
             ),
         )
 
-        assertEquals("COMPLETADO", dao.getById("if1")!!.estado)
+        assertEquals("COMPLETADO", dao.getById("if1", "o1")!!.estado)
     }
 
     @Test

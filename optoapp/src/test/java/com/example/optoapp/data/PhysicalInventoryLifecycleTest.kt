@@ -121,9 +121,9 @@ class PhysicalInventoryLifecycleTest {
         assertEquals(2, updatedDetalles.find { it.monturaId == "m2" }!!.diferencia)
         assertEquals(0, updatedDetalles.find { it.monturaId == "m3" }!!.diferencia)
 
-        repo.closeSession(session.id)
+        repo.closeSession(session.id, session.opticaId)
 
-        assertEquals("COMPLETADO", dao.getById(session.id)!!.estado)
+        assertEquals("COMPLETADO", dao.getById(session.id, session.opticaId)!!.estado)
 
         assertEquals(8, db.monturaDao().getMonturaByIdForOptica("m1", "o1")!!.stockActual)
         assertEquals(7, db.monturaDao().getMonturaByIdForOptica("m2", "o1")!!.stockActual)

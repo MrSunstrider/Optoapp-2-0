@@ -27,7 +27,7 @@ open class InventarioFisicoRepository @Inject constructor(
 
     fun getByOptica(opticaId: String): Flow<List<InventarioFisico>> = ifDao.getByOptica(opticaId)
 
-    suspend fun getById(id: String): InventarioFisico? = ifDao.getById(id)
+    suspend fun getById(id: String, opticaId: String): InventarioFisico? = ifDao.getById(id, opticaId)
 
     suspend fun getListByOptica(opticaId: String): List<InventarioFisico> = ifDao.getListByOptica(opticaId)
 
@@ -70,8 +70,8 @@ open class InventarioFisicoRepository @Inject constructor(
         }
     }
 
-    open suspend fun closeSession(sessionId: String) {
-        val session = ifDao.getById(sessionId) ?: return
+    open suspend fun closeSession(sessionId: String, opticaId: String) {
+        val session = ifDao.getById(sessionId, opticaId) ?: return
         if (session.estado == "COMPLETADO") return
         val detalles = ifDao.getDetalles(sessionId)
         for (d in detalles) {
@@ -104,7 +104,7 @@ open class InventarioFisicoRepository @Inject constructor(
     }
 
     open suspend fun upsertSession(session: InventarioFisico) {
-        val existing = ifDao.getById(session.id)
+        val existing = ifDao.getById(session.id, session.opticaId)
         if (existing != null) {
             ifDao.updateSession(session)
         } else {

@@ -100,7 +100,7 @@ class BulkStockAdjustmentTest {
         dao.updateDetalle(detalles.find { it.monturaId == "m2" }!!.copy(stockContado = 25, diferencia = 5))
         // m3: no change (diferencia = null → treated as 0)
 
-        repo.closeSession(s.id)
+        repo.closeSession(s.id, s.opticaId)
 
         val movimientos = db.monturaMovimientoDao().getMovimientosListByOptica("o1")
         assertEquals(2, movimientos.size)
@@ -149,7 +149,7 @@ class BulkStockAdjustmentTest {
         dao.updateDetalle(detalles.find { it.monturaId == "m1" }!!.copy(stockContado = 7, diferencia = -3))
         dao.updateDetalle(detalles.find { it.monturaId == "m2" }!!.copy(stockContado = 22, diferencia = 2))
 
-        repo.closeSession(s.id)
+        repo.closeSession(s.id, s.opticaId)
 
         assertEquals(7, db.monturaDao().getMonturaByIdForOptica("m1", "o1")!!.stockActual)
         assertEquals(22, db.monturaDao().getMonturaByIdForOptica("m2", "o1")!!.stockActual)
@@ -170,9 +170,9 @@ class BulkStockAdjustmentTest {
             ),
         )
         val s = repo.createSession("o1", "u1")
-        repo.closeSession(s!!.id)
+        repo.closeSession(s!!.id, s!!.opticaId)
 
-        assertEquals("COMPLETADO", db.inventarioFisicoDao().getById(s.id)!!.estado)
+        assertEquals("COMPLETADO", db.inventarioFisicoDao().getById(s.id, "o1")!!.estado)
     }
 
     @Test
@@ -194,7 +194,7 @@ class BulkStockAdjustmentTest {
         val detalles = dao.getDetalles(s!!.id)
         dao.updateDetalle(detalles.find { it.monturaId == "m1" }!!.copy(stockContado = 10, diferencia = 0))
 
-        repo.closeSession(s.id)
+        repo.closeSession(s.id, s.opticaId)
 
         val movimientos = db.monturaMovimientoDao().getMovimientosListByOptica("o1")
         assertEquals(0, movimientos.size)
