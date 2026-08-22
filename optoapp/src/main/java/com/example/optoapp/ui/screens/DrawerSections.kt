@@ -197,14 +197,40 @@ fun DrawerContent(
             icon = { Icon(Icons.Default.CalendarMonth, contentDescription = "Agenda") },
             modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
         )
+        Text(
+            text = "INVENTARIO ÓPTICO",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+            modifier = Modifier.padding(start = 24.dp, top = 16.dp, bottom = 4.dp),
+        )
         NavigationDrawerItem(
-            label = { Text("Inventario", fontWeight = FontWeight.SemiBold) },
+            label = { Text("Monturas", fontWeight = FontWeight.SemiBold) },
             selected = currentRoute == "monturas",
             onClick = {
                 scope.launch { drawerState.close() }
                 navController.navigateDrawer("monturas")
             },
-            icon = { Icon(Icons.Default.Inventory2, contentDescription = "Inventario") },
+            icon = { Icon(Icons.Default.Inventory2, contentDescription = "Monturas") },
+            modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
+        )
+        NavigationDrawerItem(
+            label = { Text("Conteo físico", fontWeight = FontWeight.SemiBold) },
+            selected = currentRoute == "inventario_fisico",
+            onClick = {
+                scope.launch { drawerState.close() }
+                navController.navigateDrawer("inventario_fisico")
+            },
+            icon = { Icon(Icons.Default.FactCheck, contentDescription = "Conteo físico") },
+            modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
+        )
+        NavigationDrawerItem(
+            label = { Text("Pedidos a proveedor", fontWeight = FontWeight.SemiBold) },
+            selected = currentRoute == "ordenes_compra",
+            onClick = {
+                scope.launch { drawerState.close() }
+                navController.navigateDrawer("ordenes_compra")
+            },
+            icon = { Icon(Icons.Default.LocalShipping, contentDescription = "Pedidos a proveedor") },
             modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
         )
         NavigationDrawerItem(

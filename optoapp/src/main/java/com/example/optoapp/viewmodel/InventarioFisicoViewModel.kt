@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.optoapp.data.InventarioFisico
 import com.example.optoapp.data.InventarioFisicoDetalle
 import com.example.optoapp.data.InventarioFisicoRepository
+import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.SessionManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -13,12 +14,18 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+data class MonturaConteoLabel(
+    val titulo: String,
+    val subtitulo: String,
+)
+
 sealed class InventarioFisicoUiState {
     object Loading : InventarioFisicoUiState()
-    data class SessionList(val sessions: kotlin.collections.List<InventarioFisico>) : InventarioFisicoUiState()
+    data class SessionList(val sessions: List<InventarioFisico>) : InventarioFisicoUiState()
     data class Detail(
         val session: InventarioFisico,
-        val detalles: kotlin.collections.List<InventarioFisicoDetalle>,
+        val detalles: List<InventarioFisicoDetalle>,
+        val labelsByMonturaId: Map<String, MonturaConteoLabel> = emptyMap(),
         val progressMessage: String? = null,
     ) : InventarioFisicoUiState()
     data class Error(val message: String) : InventarioFisicoUiState()
@@ -27,6 +34,7 @@ sealed class InventarioFisicoUiState {
 @HiltViewModel
 class InventarioFisicoViewModel @Inject constructor(
     private val repository: InventarioFisicoRepository,
+    private val optoRepository: OptoRepository,
     private val sessionManager: SessionManager,
 ) : ViewModel() {
 
@@ -50,7 +58,7 @@ class InventarioFisicoViewModel @Inject constructor(
             val session = repository.createSession(opticaId, userId)
             if (session == null) {
                 _uiState.value = InventarioFisicoUiState.Error(
-                    "Ya existe un conteo en progreso. Completa el actual antes de iniciar uno nuevo.",
+                    "Ya hay un conteo de monturas en progreso. Completalo antes de iniciar otro.",
                 )
             } else {
                 loadSessionDetail(session.id)
@@ -62,15 +70,35 @@ class InventarioFisicoViewModel @Inject constructor(
         viewModelScope.launch {
             val session = repository.getById(sessionId)
             if (session == null) {
-                _uiState.value = InventarioFisicoUiState.Error("Sesion no encontrada")
+                _uiState.value = InventarioFisicoUiState.Error("Conteo no encontrado")
                 return@launch
             }
             val detalles = repository.getDetalles(sessionId)
+            val opticaId = sessionManager.opticaId.first()
+            val monturas = optoRepository.getMonturasSnapshotForOptica(opticaId)
+            val labels = monturas.associate { m ->
+                val specs = listOfNotNull(
+                    m.color.takeIf { it.isNotBlank() },
+                    m.talla.takeIf { it.isNotBlank() }?.let { "Talla $it" },
+                ).joinToString(" · ")
+                m.id to MonturaConteoLabel(
+                    titulo = "${m.marca} ${m.modelo}".trim().ifBlank { m.sku },
+                    subtitulo = buildString {
+                        append("SKU ${m.sku}")
+                        if (specs.isNotBlank()) append(" · ").append(specs)
+                    },
+                )
+            }
             val counted = detalles.count { it.stockContado != null }
             _uiState.value = InventarioFisicoUiState.Detail(
                 session = session,
                 detalles = detalles,
-                progressMessage = if (detalles.isNotEmpty()) "$counted de ${detalles.size} contados" else null,
+                labelsByMonturaId = labels,
+                progressMessage = if (detalles.isNotEmpty()) {
+                    "$counted de ${detalles.size} monturas contadas"
+                } else {
+                    null
+                },
             )
         }
     }

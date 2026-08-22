@@ -34,7 +34,7 @@ fun InventarioFisicoScreen(
     Scaffold(
         topBar = {
             OptoTopAppBar(
-                title = "Inventario Físico",
+                title = "Conteo de monturas",
                 navigationIcon = { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Volver") },
                 onNavigationClick = { navController.popBackStack() },
             )
@@ -66,7 +66,15 @@ fun InventarioFisicoScreen(
                 if (state.sessions.isEmpty()) {
                     Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("Sin conteos registrados", style = MaterialTheme.typography.bodyLarge)
+                            Text(
+                                "Sin conteos de monturas",
+                                style = MaterialTheme.typography.bodyLarge,
+                            )
+                            Text(
+                                "Úsalo para cuadrar vitrina y almacén con el sistema",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
                             Spacer(Modifier.height(8.dp))
                             OutlinedButton(onClick = { viewModel.createSession() }) {
                                 Text("Iniciar primer conteo")
@@ -91,6 +99,7 @@ fun InventarioFisicoScreen(
                 MonturaScanScreen(
                     session = state.session,
                     detalles = state.detalles,
+                    labelsByMonturaId = state.labelsByMonturaId,
                     progressMessage = state.progressMessage,
                     onUpdateStock = { id, stock -> viewModel.updateStockContado(id, stock) },
                     onClose = { viewModel.closeSession() },
@@ -119,15 +128,24 @@ private fun SessionCard(session: InventarioFisico, onClick: () -> Unit) {
                     fontWeight = FontWeight.SemiBold,
                 )
                 Text(
-                    text = "Usuario: ${session.userId}",
+                    text = when (session.estado) {
+                        "EN_PROGRESO" -> "En progreso"
+                        "COMPLETADO" -> "Completado"
+                        else -> session.estado
+                    },
                     style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
             AssistChip(
                 onClick = {},
                 label = {
                     Text(
-                        session.estado,
+                        when (session.estado) {
+                            "EN_PROGRESO" -> "Contando"
+                            "COMPLETADO" -> "Cerrado"
+                            else -> session.estado
+                        },
                         style = MaterialTheme.typography.labelSmall,
                     )
                 },
