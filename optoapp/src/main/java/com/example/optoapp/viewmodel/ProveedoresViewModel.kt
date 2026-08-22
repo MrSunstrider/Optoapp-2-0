@@ -151,7 +151,8 @@ class ProveedoresViewModel @Inject constructor(
 
     fun delete(proveedor: Proveedor) {
         viewModelScope.launch {
-            repository.softDelete(proveedor.id)
+            val opticaId = sessionManager.opticaId.first()
+            repository.softDelete(proveedor.id, opticaId)
             _uiState.update { it.copy(success = "Proveedor desactivado", error = null) }
         }
     }

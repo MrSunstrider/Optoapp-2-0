@@ -22,7 +22,7 @@ open class ProveedorRepository @Inject constructor(
 
     suspend fun getListByOptica(opticaId: String): List<Proveedor> = proveedorDao.getListByOptica(opticaId)
 
-    suspend fun getById(id: String): Proveedor? = proveedorDao.getById(id)
+    suspend fun getById(id: String, opticaId: String): Proveedor? = proveedorDao.getById(id, opticaId)
 
     open suspend fun insert(proveedor: Proveedor) = proveedorDao.insert(proveedor)
 
@@ -38,8 +38,8 @@ open class ProveedorRepository @Inject constructor(
         )
     }
 
-    open suspend fun softDelete(id: String) {
-        val existing = proveedorDao.getById(id) ?: return
+    open suspend fun softDelete(id: String, opticaId: String) {
+        val existing = proveedorDao.getById(id, opticaId) ?: return
         val stamped = existing.copy(activo = false, updatedAt = Instant.now().toString())
         proveedorDao.update(
             id = stamped.id, opticaId = stamped.opticaId,
@@ -80,7 +80,7 @@ open class ProveedorRepository @Inject constructor(
     )
 
     open suspend fun upsertProveedor(proveedor: Proveedor) {
-        val existing = proveedorDao.getById(proveedor.id)
+        val existing = proveedorDao.getById(proveedor.id, proveedor.opticaId)
         if (existing != null) {
             proveedorDao.update(
                 id = proveedor.id, opticaId = proveedor.opticaId,

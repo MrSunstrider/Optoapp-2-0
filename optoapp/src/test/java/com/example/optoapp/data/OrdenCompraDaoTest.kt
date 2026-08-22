@@ -7,6 +7,7 @@ import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -51,12 +52,31 @@ class OrdenCompraDaoTest {
         )
         ocDao.insert(oc)
 
-        val retrieved = ocDao.getById("oc1")
+        val retrieved = ocDao.getById("oc1", "o1")
         assertNotNull(retrieved)
         assertEquals("oc1", retrieved!!.id)
         assertEquals("OC-20260617-001", retrieved.numero)
         assertEquals("PENDIENTE", retrieved.estado)
         assertEquals(1500.0, retrieved.total, 0.001)
+    }
+
+    @Test
+    fun getById_returnsNull_forForeignOptica() = runBlocking {
+        db.proveedorDao().insert(Proveedor(id = "p1", nombre = "Proveedor A", ruc = "111", opticaId = "o1"))
+        val ocDao = db.ordenCompraDao()
+        ocDao.insert(
+            OrdenCompra(
+                id = "oc1",
+                numero = "OC-20260617-001",
+                proveedorId = "p1",
+                fecha = LocalDate.of(2026, 6, 17),
+                estado = "PENDIENTE",
+                total = 1500.0,
+                opticaId = "o1",
+            ),
+        )
+        assertNull(ocDao.getById("oc1", "o-other"))
+        assertNotNull(ocDao.getById("oc1", "o1"))
     }
 
     @Test
@@ -143,7 +163,7 @@ class OrdenCompraDaoTest {
             ),
         )
 
-        assertEquals("APROBADA", ocDao.getById("oc1")!!.estado)
+        assertEquals("APROBADA", ocDao.getById("oc1", "o1")!!.estado)
     }
 
     @Test

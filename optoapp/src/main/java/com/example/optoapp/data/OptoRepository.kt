@@ -210,7 +210,8 @@ open class OptoRepository(
     suspend fun adjustMonturaStock(monturaId: String, opticaId: String, delta: Int) = monturaCoordinator.adjustMonturaStock(monturaId, opticaId, delta)
     fun getMovimientosMonturaByOptica(opticaId: String) = monturaCoordinator.getMovimientosMonturaByOptica(opticaId)
     fun getMovimientosByMontura(monturaId: String) = monturaCoordinator.getMovimientosByMontura(monturaId)
-    suspend fun getMovimientoMonturaById(id: String) = monturaCoordinator.getMovimientoMonturaById(id)
+    suspend fun getMovimientoMonturaById(id: String, opticaId: String) =
+        monturaCoordinator.getMovimientoMonturaById(id, opticaId)
     suspend fun insertMonturaMovimiento(movimiento: MonturaMovimiento) = monturaCoordinator.insertMonturaMovimiento(movimiento)
 
     suspend fun upsertPaciente(paciente: Paciente) = snapshotCoordinator.upsertPaciente(paciente)

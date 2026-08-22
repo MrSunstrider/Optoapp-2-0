@@ -73,14 +73,14 @@ class BumpEntityStrategy(
         "montura" to { id, opticaId ->
             bumpWithResource(id, "montura", { repository.getMonturaById(id, opticaId) }, { repository.updateMontura(it) })
         },
-        "proveedor" to { id, _ ->
-            bumpWithNullable(id, "proveedor", { proveedorRepository.getById(id) }, { proveedorRepository.update(it) })
+        "proveedor" to { id, opticaId ->
+            bumpWithNullable(id, "proveedor", { proveedorRepository.getById(id, opticaId) }, { proveedorRepository.update(it) })
         },
-        "orden_compra" to { id, _ ->
-            bumpWithNullable(id, "orden_compra", { ordenCompraRepository.getById(id) }, { ordenCompraRepository.update(it) })
+        "orden_compra" to { id, opticaId ->
+            bumpWithNullable(id, "orden_compra", { ordenCompraRepository.getById(id, opticaId) }, { ordenCompraRepository.update(it) })
         },
         "montura_movimiento" to { id, opticaId ->
-            val mov = repository.getMovimientoMonturaById(id)
+            val mov = repository.getMovimientoMonturaById(id, opticaId)
             if (mov != null) {
                 bumpWithResource(
                     mov.monturaId,
@@ -92,10 +92,10 @@ class BumpEntityStrategy(
                 AppLogger.w(TAG, "bumpEntityUpdatedAt: montura_movimiento no encontrado id=$id")
             }
         },
-        "orden_compra_item" to { id, _ ->
+        "orden_compra_item" to { id, opticaId ->
             val item = ordenCompraRepository.getOrdenItemById(id)
             if (item != null) {
-                val oc = ordenCompraRepository.getById(item.ordenId)
+                val oc = ordenCompraRepository.getById(item.ordenId, opticaId)
                 if (oc != null) {
                     ordenCompraRepository.update(oc)
                 } else {

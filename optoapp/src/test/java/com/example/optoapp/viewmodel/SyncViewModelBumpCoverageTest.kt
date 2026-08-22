@@ -291,7 +291,7 @@ class SyncViewModelBumpCoverageTest {
     fun bumpProveedor_callsProveedorRepositoryUpdate() = runTest(testDispatcher) {
         val conflict = makeConflict("prov-bump", "proveedor")
         val entity = proveedor("prov-bump")
-        coEvery { proveedorRepository.getById("prov-bump") } returns entity
+        coEvery { proveedorRepository.getById("prov-bump", any()) } returns entity
         coEvery { proveedorRepository.update(any()) } just Runs
 
         viewModel.resolveKeepMine(conflict)
@@ -307,7 +307,7 @@ class SyncViewModelBumpCoverageTest {
     fun bumpOrdenCompra_callsOrdenCompraRepositoryUpdate() = runTest(testDispatcher) {
         val conflict = makeConflict("oc-bump", "orden_compra")
         val entity = ordenCompra("oc-bump")
-        coEvery { ordenCompraRepository.getById("oc-bump") } returns entity
+        coEvery { ordenCompraRepository.getById("oc-bump", any()) } returns entity
         coEvery { ordenCompraRepository.update(any()) } just Runs
 
         viewModel.resolveKeepMine(conflict)
