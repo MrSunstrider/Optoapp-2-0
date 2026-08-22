@@ -2,8 +2,8 @@
 
 | PR | Suite | GGA-eq | Notes |
 |----|-------|--------|-------|
-| B1 | pending | pending | #91 Costo lookup |
-| B2 | pending | pending | #92 Pago helpers |
-| B3 | pending | pending | #93 Parent FK / reassign |
+| B1 | PASS | pending CI merge | #91 / merged #95 |
+| B2 | PASS | pending | #92 / PR #98 |
+| B3 | PASS | pending | #93 / PR #99 |
 
-No remote migrations.
+No remote migrations. Threat: Room residual after account switch.
