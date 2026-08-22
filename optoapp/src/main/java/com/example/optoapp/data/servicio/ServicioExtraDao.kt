@@ -10,8 +10,8 @@ interface ServicioExtraDao {
     @Query("SELECT * FROM servicios_extra WHERE opticaId = :opticaId ORDER BY fecha DESC")
     fun getAllServiciosForOptica(opticaId: String): Flow<List<ServicioExtra>>
 
-    @Query("SELECT * FROM servicios_extra WHERE id = :id")
-    suspend fun getServicioById(id: String): ServicioExtra?
+    @Query("SELECT * FROM servicios_extra WHERE id = :id AND opticaId = :opticaId")
+    suspend fun getServicioById(id: String, opticaId: String): ServicioExtra?
 
     @Upsert
     suspend fun insertServicio(servicio: ServicioExtra)

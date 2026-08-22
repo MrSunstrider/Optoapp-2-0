@@ -87,9 +87,9 @@ class DispensacionViewModelDeleteTest {
         every { sessionManager.opticaId } returns opticaIdFlow
         every { sessionManager.opticaRol } returns opticaRolFlow
 
-        coEvery { repository.getDispensacionById(dispId) } returns Resource.Success(testDispensacion)
+        coEvery { repository.getDispensacionById(dispId, any()) } returns Resource.Success(testDispensacion)
         coEvery { calcularMontoPagadoUseCase(dispId) } returns 150.0
-        coEvery { repository.getRegalosByDispensacionId(dispId) } returns testRegalos
+        coEvery { repository.getRegalosByDispensacionId(dispId, any()) } returns testRegalos
     }
 
     @After

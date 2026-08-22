@@ -36,11 +36,11 @@ class DispensacionFinancieraRepositoryTest {
 
     @Test
     fun `obtenerDispensacion delegates to OptoRepository getDispensacionById`() = runTest {
-        coEvery { optoRepository.getDispensacionById("disp-1") } returns Resource.Success(testDispensacion)
+        coEvery { optoRepository.getDispensacionById("disp-1", any()) } returns Resource.Success(testDispensacion)
 
-        val result = repository.obtenerDispensacion("disp-1")
+        val result = repository.obtenerDispensacion("disp-1", "optica-test")
 
-        coVerify { optoRepository.getDispensacionById("disp-1") }
+        coVerify { optoRepository.getDispensacionById("disp-1", any()) }
         assertTrue(result is Resource.Success)
         assertEquals("disp-1", (result as Resource.Success).data!!.id)
     }
@@ -61,7 +61,7 @@ class DispensacionFinancieraRepositoryTest {
 
     @Test
     fun `obtenerContexto builds ContextoFinanciero from dispensacion and paciente`() = runTest {
-        coEvery { optoRepository.getDispensacionById("disp-1") } returns Resource.Success(testDispensacion)
+        coEvery { optoRepository.getDispensacionById("disp-1", any()) } returns Resource.Success(testDispensacion)
         coEvery { optoRepository.getPacienteByIdScoped("pac-1", any()) } returns Resource.Success(
             Paciente(
                 id = "pac-1",
@@ -73,21 +73,21 @@ class DispensacionFinancieraRepositoryTest {
             ),
         )
 
-        val result = repository.obtenerContexto("disp-1")
+        val result = repository.obtenerContexto("disp-1", "optica-test")
 
         assertEquals("OT-2026-0001", result.ot)
         assertEquals("Juan Perez", result.pacienteNombre)
         assertEquals(testDate, result.fecha)
         assertTrue(result.descripcion.contains("Monofocal"))
-        coVerify { optoRepository.getDispensacionById("disp-1") }
+        coVerify { optoRepository.getDispensacionById("disp-1", any()) }
         coVerify { optoRepository.getPacienteByIdScoped("pac-1", any()) }
     }
 
     @Test
     fun `obtenerContexto returns fallback when dispensacion not found`() = runTest {
-        coEvery { optoRepository.getDispensacionById("bad-id") } returns Resource.Error("Not found")
+        coEvery { optoRepository.getDispensacionById("bad-id", any()) } returns Resource.Error("Not found")
 
-        val result = repository.obtenerContexto("bad-id")
+        val result = repository.obtenerContexto("bad-id", "optica-test")
 
         assertEquals("", result.ot)
         assertEquals("", result.pacienteNombre)
@@ -96,18 +96,18 @@ class DispensacionFinancieraRepositoryTest {
 
     @Test
     fun `actualizarMontoTotal loads dispensacion updates montoTotal and persists`() = runTest {
-        coEvery { optoRepository.getDispensacionById("disp-1") } returns Resource.Success(testDispensacion)
+        coEvery { optoRepository.getDispensacionById("disp-1", any()) } returns Resource.Success(testDispensacion)
         coEvery { optoRepository.updateDispensacion(any()) } returns Unit
 
         repository.actualizarMontoTotal("disp-1", 200.0, "optica-test")
 
-        coVerify { optoRepository.getDispensacionById("disp-1") }
+        coVerify { optoRepository.getDispensacionById("disp-1", any()) }
         coVerify { optoRepository.updateDispensacion(match { it.montoTotal == 200.0 && it.id == "disp-1" }) }
     }
 
     @Test
     fun `actualizarMontoTotal skips persist when dispensacion not found`() = runTest {
-        coEvery { optoRepository.getDispensacionById("bad-id") } returns Resource.Error("Not found")
+        coEvery { optoRepository.getDispensacionById("bad-id", any()) } returns Resource.Error("Not found")
 
         repository.actualizarMontoTotal("bad-id", 200.0, "optica-test")
 
@@ -117,7 +117,7 @@ class DispensacionFinancieraRepositoryTest {
     @Test
     fun `actualizarEstado updates estado and fechaEntrega`() = runTest {
         val fechaEntrega = LocalDate.of(2026, 7, 15)
-        coEvery { optoRepository.getDispensacionById("disp-1") } returns Resource.Success(testDispensacion)
+        coEvery { optoRepository.getDispensacionById("disp-1", any()) } returns Resource.Success(testDispensacion)
 
         repository.actualizarEstado("disp-1", "Entregado", fechaEntrega, "optica-test")
 
@@ -132,7 +132,7 @@ class DispensacionFinancieraRepositoryTest {
 
     @Test
     fun `actualizarEstado sets fechaEntrega null when Pendiente`() = runTest {
-        coEvery { optoRepository.getDispensacionById("disp-1") } returns Resource.Success(
+        coEvery { optoRepository.getDispensacionById("disp-1", any()) } returns Resource.Success(
             testDispensacion.copy(estadoEntrega = "Entregado", fechaEntrega = LocalDate.of(2026, 7, 10)),
         )
 
@@ -199,18 +199,18 @@ class DispensacionFinancieraRepositoryTest {
 
     @Test
     fun `actualizarMontoPagado loads dispensacion updates montoPagado and persists`() = runTest {
-        coEvery { optoRepository.getDispensacionById("disp-1") } returns Resource.Success(testDispensacion)
+        coEvery { optoRepository.getDispensacionById("disp-1", any()) } returns Resource.Success(testDispensacion)
         coEvery { optoRepository.updateDispensacion(any()) } returns Unit
 
         repository.actualizarMontoPagado("disp-1", 80.0, "optica-test")
 
-        coVerify { optoRepository.getDispensacionById("disp-1") }
+        coVerify { optoRepository.getDispensacionById("disp-1", any()) }
         coVerify { optoRepository.updateDispensacion(match { it.montoPagado == 80.0 && it.id == "disp-1" }) }
     }
 
     @Test
     fun `actualizarMontoPagado skips persist when dispensacion not found`() = runTest {
-        coEvery { optoRepository.getDispensacionById("bad-id") } returns Resource.Error("Not found")
+        coEvery { optoRepository.getDispensacionById("bad-id", any()) } returns Resource.Error("Not found")
 
         repository.actualizarMontoPagado("bad-id", 80.0, "optica-test")
 

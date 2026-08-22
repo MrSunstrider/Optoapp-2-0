@@ -48,7 +48,7 @@ class RegaloDispensacionDaoTest {
         val regalo = createTestRegalo("r1", "d1")
         dao.insert(regalo)
 
-        val result = dao.getByDispensacionId("d1")
+        val result = dao.getByDispensacionId("d1", "optica1")
         assertEquals(1, result.size)
         assertEquals("r1", result[0].id)
         assertEquals("d1", result[0].dispensacionId)
@@ -70,16 +70,16 @@ class RegaloDispensacionDaoTest {
         dao.insert(createTestRegalo("r2", "d1", productoId = "prod2", cantidad = 1, costoUnitario = 30.0, descripcion = "Funda"))
         dao.insert(createTestRegalo("r3", "d2"))
 
-        val result = dao.getByDispensacionId("d1")
+        val result = dao.getByDispensacionId("d1", "optica1")
         assertEquals(2, result.size)
 
-        val resultD2 = dao.getByDispensacionId("d2")
+        val resultD2 = dao.getByDispensacionId("d2", "optica1")
         assertEquals(1, resultD2.size)
     }
 
     @Test
     fun getByDispensacionId_unknownId_returnsEmpty() = runBlocking {
-        val result = dao.getByDispensacionId("nonexistent")
+        val result = dao.getByDispensacionId("nonexistent", "optica1")
         assertTrue(result.isEmpty())
     }
 
@@ -96,11 +96,11 @@ class RegaloDispensacionDaoTest {
 
         dao.deleteByDispensacionId("d1", "optica1")
 
-        val result = dao.getByDispensacionId("d1")
+        val result = dao.getByDispensacionId("d1", "optica1")
         assertTrue(result.isEmpty())
 
         // d2 regalos should still exist
-        val resultD2 = dao.getByDispensacionId("d2")
+        val resultD2 = dao.getByDispensacionId("d2", "optica1")
         assertEquals(1, resultD2.size)
     }
 
@@ -126,11 +126,11 @@ class RegaloDispensacionDaoTest {
         // Then: only optica1 regalo was reassigned
         assertEquals(1, moved)
 
-        assertEquals(1, dao.getByDispensacionId("dtgt1").size)
-        assertTrue(dao.getByDispensacionId("dsrc1").isEmpty())
+        assertEquals(1, dao.getByDispensacionId("dtgt1", "optica1").size)
+        assertTrue(dao.getByDispensacionId("dsrc1", "optica1").isEmpty())
 
-        assertEquals(1, dao.getByDispensacionId("dsrc2").size)
-        assertEquals("r-o2", dao.getByDispensacionId("dsrc2")[0].id)
+        assertEquals(1, dao.getByDispensacionId("dsrc2", "optica2").size)
+        assertEquals("r-o2", dao.getByDispensacionId("dsrc2", "optica2")[0].id)
     }
 
     @Test
@@ -156,8 +156,8 @@ class RegaloDispensacionDaoTest {
         assertEquals(0, moved)
 
         // optica2 regalo still in source
-        assertEquals(1, dao.getByDispensacionId("s2").size)
-        assertEquals("r2", dao.getByDispensacionId("s2")[0].id)
+        assertEquals(1, dao.getByDispensacionId("s2", "optica2").size)
+        assertEquals("r2", dao.getByDispensacionId("s2", "optica2")[0].id)
     }
 
     @Test
@@ -171,13 +171,13 @@ class RegaloDispensacionDaoTest {
         dao.insert(regalo)
 
         // Verify regalo exists
-        assertEquals(1, dao.getByDispensacionId("d1").size)
+        assertEquals(1, dao.getByDispensacionId("d1", "optica1").size)
 
         // When: dispensacion is deleted (CASCADE)
         db.dispensacionDao().deleteById("d1", "optica1")
 
         // Then: regalo should be auto-deleted
-        val result = dao.getByDispensacionId("d1")
+        val result = dao.getByDispensacionId("d1", "optica1")
         assertTrue("Regalos should be cascade-deleted when dispensacion is deleted", result.isEmpty())
     }
 

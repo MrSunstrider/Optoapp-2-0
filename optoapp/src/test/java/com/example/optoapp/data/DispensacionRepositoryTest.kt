@@ -1,4 +1,4 @@
-﻿package com.example.optoapp.data
+package com.example.optoapp.data
 
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
@@ -81,7 +81,7 @@ class DispensacionRepositoryTest {
             ),
         )
 
-        val result = repo.getDispensacionById("d1")
+        val result = repo.getDispensacionById("d1", "o1")
 
         assertTrue(result is Resource.Success)
         assertEquals(200.0, (result as Resource.Success).data!!.montoTotal, 0.001)
@@ -89,9 +89,25 @@ class DispensacionRepositoryTest {
 
     @Test
     fun getDispensacionById_withUnknownId_returnsError() = runBlocking {
-        val result = repo.getDispensacionById("nonexistent")
+        val result = repo.getDispensacionById("nonexistent", "o1")
 
         assertTrue(result is Resource.Error)
+    }
+
+    @Test
+    fun getDispensacionById_returnsNull_forForeignOptica() = runBlocking {
+        insertDummyPaciente()
+        dispensacionDao.insertDispensacion(
+            DispensacionOptica(
+                id = "d1",
+                pacienteId = "p_dummy",
+                fecha = LocalDate.parse("2026-01-15"),
+                opticaId = "o1",
+                montoTotal = 200.0,
+            ),
+        )
+        assertTrue(repo.getDispensacionById("d1", "o-other") is Resource.Error)
+        assertTrue(repo.getDispensacionById("d1", "o1") is Resource.Success)
     }
 
     @Test
@@ -107,7 +123,7 @@ class DispensacionRepositoryTest {
 
         repo.insertDispensacion(disp)
 
-        val retrieved = dispensacionDao.getDispensacionById("d_new")
+        val retrieved = dispensacionDao.getDispensacionById("d_new", "o1")
         assertNotNull(retrieved)
         assertEquals(350.0, retrieved!!.montoTotal, 0.001)
     }
@@ -136,7 +152,7 @@ class DispensacionRepositoryTest {
 
         repo.updateDispensacion(updated)
 
-        val retrieved = dispensacionDao.getDispensacionById("d1")
+        val retrieved = dispensacionDao.getDispensacionById("d1", "o1")
         assertEquals(250.0, retrieved!!.montoTotal, 0.001)
         assertEquals("Entregado", retrieved.estadoEntrega)
     }
@@ -156,7 +172,7 @@ class DispensacionRepositoryTest {
         val rows = repo.deleteDispensacionById("d_del", "o1")
 
         assertEquals(1, rows)
-        assertNull(dispensacionDao.getDispensacionById("d_del"))
+        assertNull(dispensacionDao.getDispensacionById("d_del", "o1"))
     }
 
     @Test
@@ -240,7 +256,7 @@ class DispensacionRepositoryTest {
         repo.deletePagoRegistrandoAnulacionEnCaja(pago, "o1")
 
         // Original kept; linked Reverso inserted
-        assertEquals(pago.id, pagoDao.getPagoById("p1")!!.id)
+        assertEquals(pago.id, pagoDao.getPagoByIdForOptica("p1", "o1")!!.id)
         val allPagos = pagoDao.getAllPagos()
         assertEquals(2, allPagos.size)
         val reversal = allPagos.first { it.tipo == "Reverso" }
@@ -274,7 +290,7 @@ class DispensacionRepositoryTest {
         repo.deletePagoRegistrandoAnulacionEnCaja(pago, "o1")
 
         // Zero monto: keep original, no Reverso
-        assertEquals("p_zero", pagoDao.getPagoById("p_zero")!!.id)
+        assertEquals("p_zero", pagoDao.getPagoByIdForOptica("p_zero", "o1")!!.id)
         assertEquals(1, pagoDao.getAllPagos().size)
     }
 

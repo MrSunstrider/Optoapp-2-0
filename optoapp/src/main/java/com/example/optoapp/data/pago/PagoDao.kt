@@ -7,10 +7,6 @@ import java.time.LocalDate
 
 @Dao
 interface PagoDao {
-    // Legacy — prefer getPagoByIdForOptica for multi-tenant isolation
-    @Query("SELECT * FROM pagos WHERE id = :id")
-    suspend fun getPagoById(id: String): Pago?
-
     @Query("SELECT * FROM pagos WHERE id = :id AND opticaId = :opticaId")
     suspend fun getPagoByIdForOptica(id: String, opticaId: String): Pago?
 

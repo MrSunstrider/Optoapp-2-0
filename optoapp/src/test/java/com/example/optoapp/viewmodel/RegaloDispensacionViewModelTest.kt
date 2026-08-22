@@ -107,7 +107,7 @@ class RegaloDispensacionViewModelTest {
         viewModel.removeRegaloAndRestoreStock(testRegalo, opticaId)
         testDispatcher.scheduler.advanceUntilIdle()
 
-        coVerify { repository.deleteRegaloById(testRegalo.id) }
+        coVerify { repository.deleteRegaloById(testRegalo.id, any()) }
     }
 
     @Test
