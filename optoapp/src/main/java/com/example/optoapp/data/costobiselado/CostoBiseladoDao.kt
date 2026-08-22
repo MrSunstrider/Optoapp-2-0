@@ -9,7 +9,8 @@ interface CostoBiseladoDao {
     @Query(
         """
         SELECT * FROM costos_biselado
-        WHERE material = :material
+        WHERE optica_id = :opticaId
+          AND material = :material
           AND tipo_aro = :tipoAro
           AND stock_o_fabricacion = :stockOFabricacion
           AND (serie IS NULL AND :serie IS NULL OR serie = :serie)
@@ -19,6 +20,7 @@ interface CostoBiseladoDao {
     """,
     )
     suspend fun lookup(
+        opticaId: String,
         material: String,
         tipoAro: String,
         stockOFabricacion: String,

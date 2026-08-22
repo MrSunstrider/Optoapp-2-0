@@ -10,7 +10,8 @@ interface CostoProductoDao {
     @Query(
         """
         SELECT * FROM costos_productos
-        WHERE material = :material
+        WHERE optica_id = :opticaId
+          AND material = :material
           AND tipo_lente = :tipoLente
           AND stock_o_fabricacion = :stockOFabricacion
           AND (tratamiento IS NULL AND :tratamiento IS NULL OR tratamiento = :tratamiento)
@@ -20,6 +21,7 @@ interface CostoProductoDao {
     """,
     )
     suspend fun lookup(
+        opticaId: String,
         material: String,
         tipoLente: String,
         stockOFabricacion: String,
@@ -54,7 +56,8 @@ interface CostoProductoDao {
     @Query(
         """
         SELECT * FROM costos_productos
-        WHERE material = :material
+        WHERE optica_id = :opticaId
+          AND material = :material
           AND tipo_lente = :tipoLente
           AND stock_o_fabricacion = :stockOFabricacion
           AND (laboratorio_id IS NULL OR laboratorio_id = :laboratorioId)
@@ -63,6 +66,7 @@ interface CostoProductoDao {
     """,
     )
     suspend fun lookupLc(
+        opticaId: String,
         material: String,
         tipoLente: String,
         stockOFabricacion: String,
