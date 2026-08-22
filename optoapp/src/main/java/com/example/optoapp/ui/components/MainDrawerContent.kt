@@ -157,33 +157,33 @@ fun MainDrawerContent(
                 modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding).testTag(TestTags.NAV_BOTTOM_AGENDA),
             )
             NavigationDrawerItem(
-                label = { Text("Inventario", fontWeight = FontWeight.SemiBold) },
+                label = { Text("Monturas", fontWeight = FontWeight.SemiBold) },
                 selected = currentRoute == "monturas",
                 onClick = {
                     scope.launch { drawerState.close() }
                     navController.navigate(Route.Monturas.route)
                 },
-                icon = { Icon(Icons.Default.Inventory2, contentDescription = "Inventario") },
+                icon = { Icon(Icons.Default.Inventory2, contentDescription = "Monturas") },
                 modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
             )
             NavigationDrawerItem(
-                label = { Text("Órdenes de Compra", fontWeight = FontWeight.SemiBold) },
-                selected = currentRoute == "ordenes_compra",
-                onClick = {
-                    scope.launch { drawerState.close() }
-                    navController.navigate(Route.OrdenesCompra.route)
-                },
-                icon = { Icon(Icons.Default.Receipt, contentDescription = "Órdenes de Compra") },
-                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
-            )
-            NavigationDrawerItem(
-                label = { Text("Inventario Físico", fontWeight = FontWeight.SemiBold) },
+                label = { Text("Conteo físico", fontWeight = FontWeight.SemiBold) },
                 selected = currentRoute == "inventario_fisico",
                 onClick = {
                     scope.launch { drawerState.close() }
                     navController.navigate(Route.InventarioFisico.route)
                 },
-                icon = { Icon(Icons.Default.Inventory, contentDescription = "Inventario Físico") },
+                icon = { Icon(Icons.Default.FactCheck, contentDescription = "Conteo físico") },
+                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
+            )
+            NavigationDrawerItem(
+                label = { Text("Pedidos a proveedor", fontWeight = FontWeight.SemiBold) },
+                selected = currentRoute == "ordenes_compra",
+                onClick = {
+                    scope.launch { drawerState.close() }
+                    navController.navigate(Route.OrdenesCompra.route)
+                },
+                icon = { Icon(Icons.Default.LocalShipping, contentDescription = "Pedidos a proveedor") },
                 modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
             )
 
