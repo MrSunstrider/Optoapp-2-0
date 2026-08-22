@@ -67,7 +67,7 @@ fun OrdenesCompraScreen(
         containerColor = MaterialTheme.colorScheme.surface,
         topBar = {
             OptoTopAppBar(
-                title = "Órdenes de Compra",
+                title = "Pedidos a proveedor",
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")

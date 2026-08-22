@@ -10,14 +10,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.optoapp.data.InventarioFisico
 import com.example.optoapp.data.InventarioFisicoDetalle
+import com.example.optoapp.viewmodel.MonturaConteoLabel
 
 @Composable
 fun MonturaScanScreen(
     session: InventarioFisico,
     detalles: List<InventarioFisicoDetalle>,
+    labelsByMonturaId: Map<String, MonturaConteoLabel>,
     progressMessage: String?,
     onUpdateStock: (String, Int) -> Unit,
     onClose: () -> Unit,
@@ -25,17 +28,26 @@ fun MonturaScanScreen(
 ) {
     val canClose = session.estado == "EN_PROGRESO"
 
-    Column(Modifier.fillMaxSize().padding(16.dp)) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+    ) {
         Row(
             Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Column {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Conteo: ${session.fecha}",
+                    text = "Conteo de monturas · ${session.fecha}",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    text = "Anota las unidades físicas en vitrina / almacén",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 if (progressMessage != null) {
                     Text(
@@ -63,10 +75,12 @@ fun MonturaScanScreen(
             verticalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.weight(1f),
         ) {
-            itemsIndexed(detalles) { _, detalle ->
-                DetalleRow(detalle) { stock ->
-                    onUpdateStock(detalle.id, stock)
-                }
+            itemsIndexed(detalles, key = { _, d -> d.id }) { _, detalle ->
+                DetalleRow(
+                    detalle = detalle,
+                    label = labelsByMonturaId[detalle.monturaId],
+                    onUpdate = { stock -> onUpdateStock(detalle.id, stock) },
+                )
             }
         }
 
@@ -87,7 +101,7 @@ fun MonturaScanScreen(
                 ),
             ) {
                 Text(
-                    text = "Conteo completado — solo lectura",
+                    text = "Conteo cerrado — solo consulta",
                     modifier = Modifier.padding(16.dp),
                     style = MaterialTheme.typography.bodyMedium,
                 )
@@ -97,26 +111,41 @@ fun MonturaScanScreen(
 }
 
 @Composable
-private fun DetalleRow(detalle: InventarioFisicoDetalle, onUpdate: (Int) -> Unit) {
+private fun DetalleRow(
+    detalle: InventarioFisicoDetalle,
+    label: MonturaConteoLabel?,
+    onUpdate: (Int) -> Unit,
+) {
     var stockText by remember(detalle.id, detalle.stockContado) {
         mutableStateOf(detalle.stockContado?.toString() ?: "")
     }
+    val titulo = label?.titulo ?: "Montura"
+    val subtitulo = label?.subtitulo ?: "SKU no encontrado · ${detalle.monturaId.take(8)}…"
 
-    Card(Modifier.fillMaxWidth()) {
+    Card(modifier = Modifier.fillMaxWidth()) {
         Row(
             Modifier.padding(12.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Column(Modifier.weight(1f)) {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = detalle.monturaId,
+                    text = titulo,
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = subtitulo,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
                 Text(
                     text = "Sistema: ${detalle.stockSistema}",
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 detalle.diferencia?.let { diff ->
@@ -126,9 +155,10 @@ private fun DetalleRow(detalle: InventarioFisicoDetalle, onUpdate: (Int) -> Unit
                         else -> MaterialTheme.colorScheme.onSurfaceVariant
                     }
                     Text(
-                        text = "Dif: ${if (diff > 0) "+$diff" else "$diff"}",
+                        text = "Diferencia: ${if (diff > 0) "+$diff" else "$diff"}",
                         style = MaterialTheme.typography.labelSmall,
                         color = color,
+                        fontWeight = FontWeight.SemiBold,
                     )
                 }
             }
@@ -138,10 +168,10 @@ private fun DetalleRow(detalle: InventarioFisicoDetalle, onUpdate: (Int) -> Unit
                     stockText = v
                     v.toIntOrNull()?.let { onUpdate(it) }
                 },
-                modifier = Modifier.width(80.dp),
+                modifier = Modifier.width(88.dp),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 singleLine = true,
-                label = { Text("Contado") },
+                label = { Text("Físico") },
                 enabled = detalle.stockContado == null || stockText == detalle.stockContado.toString(),
             )
         }
