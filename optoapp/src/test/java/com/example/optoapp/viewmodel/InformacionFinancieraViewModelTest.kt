@@ -95,7 +95,7 @@ class InformacionFinancieraViewModelTest {
 
         coEvery { repository.obtenerContexto(dispId, any()) } returns testContexto
         coEvery { repository.obtenerDispensacion(dispId, any()) } returns Resource.Success(testDispensacion)
-        coEvery { repository.obtenerPagos(dispId) } returns emptyList()
+        coEvery { repository.obtenerPagos(dispId, any()) } returns emptyList()
         coEvery { repository.obtenerRegalos(dispId, any()) } returns emptyList()
         coEvery { repository.agregarPago(any()) } returns Unit
         coEvery { repository.editarPago(any()) } returns Unit
@@ -105,7 +105,7 @@ class InformacionFinancieraViewModelTest {
         coEvery { repository.actualizarMontoPagado(any(), any(), any()) } returns Unit
         coEvery { repository.insertarRegalo(any()) } returns Unit
         coEvery { repository.eliminarRegalosByDispensacionId(any(), any()) } returns Unit
-        coEvery { calcularMontoPagado(any()) } returns 0.0
+        coEvery { calcularMontoPagado(any(), any()) } returns 0.0
     }
 
     @After
@@ -128,7 +128,7 @@ class InformacionFinancieraViewModelTest {
 
     @Test
     fun `loadFinanciera loads pagos from repository`() = runTest {
-        coEvery { repository.obtenerPagos(dispId) } returns testPagos
+        coEvery { repository.obtenerPagos(dispId, any()) } returns testPagos
 
         val vm = createViewModel()
 
@@ -219,8 +219,8 @@ class InformacionFinancieraViewModelTest {
 
     @Test
     fun `save calls actualizarMontoPagado with effect-aware net after pago CRUD`() = runTest {
-        coEvery { repository.obtenerPagos(dispId) } returns testPagos
-        coEvery { calcularMontoPagado(dispId) } returns 150.0
+        coEvery { repository.obtenerPagos(dispId, any()) } returns testPagos
+        coEvery { calcularMontoPagado(dispId, any()) } returns 150.0
 
         val vm = createViewModel()
         vm.loadFinanciera(dispId)
@@ -234,7 +234,7 @@ class InformacionFinancieraViewModelTest {
 
     @Test
     fun `save persists montoPagado AFTER pago insertions`() = runTest {
-        coEvery { calcularMontoPagado(dispId) } returns 200.0
+        coEvery { calcularMontoPagado(dispId, any()) } returns 200.0
 
         val vm = createViewModel()
         vm.loadFinanciera(dispId)
@@ -245,7 +245,7 @@ class InformacionFinancieraViewModelTest {
 
         coVerifyOrder {
             repository.agregarPago(any())
-            calcularMontoPagado(dispId)
+            calcularMontoPagado(dispId, any())
             repository.actualizarMontoPagado(dispId, 200.0, "optica-test")
         }
     }
@@ -254,8 +254,8 @@ class InformacionFinancieraViewModelTest {
     fun `save with abono and reembolso updates montoPagado correctly`() = runTest {
         val abono = Pago(id = "p-a", dispensacionId = dispId, fecha = testDate, tipo = "Abono", monto = 200.0, metodoPago = "Efectivo", opticaId = "optica-test")
         val reembolso = Pago(id = "p-r", dispensacionId = dispId, fecha = testDate, tipo = "Reembolso", monto = 50.0, metodoPago = "Efectivo", opticaId = "optica-test")
-        coEvery { repository.obtenerPagos(dispId) } returns listOf(abono, reembolso)
-        coEvery { calcularMontoPagado(dispId) } returns 150.0
+        coEvery { repository.obtenerPagos(dispId, any()) } returns listOf(abono, reembolso)
+        coEvery { calcularMontoPagado(dispId, any()) } returns 150.0
 
         val vm = createViewModel()
         vm.loadFinanciera(dispId)

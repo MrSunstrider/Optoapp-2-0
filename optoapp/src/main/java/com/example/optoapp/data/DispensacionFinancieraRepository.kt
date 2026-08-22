@@ -15,7 +15,7 @@ data class ContextoFinanciero(
 interface DispensacionFinancieraRepository {
     suspend fun obtenerDispensacion(dispensacionId: String, opticaId: String): Resource<DispensacionOptica>
     suspend fun obtenerContexto(dispensacionId: String, opticaId: String): ContextoFinanciero
-    suspend fun obtenerPagos(dispensacionId: String): List<Pago>
+    suspend fun obtenerPagos(dispensacionId: String, opticaId: String): List<Pago>
     suspend fun obtenerRegalos(dispensacionId: String, opticaId: String): List<RegaloDispensacionEntity>
     suspend fun actualizarMontoTotal(dispensacionId: String, montoTotal: Double, opticaId: String)
     suspend fun actualizarMontoPagado(dispensacionId: String, montoPagado: Double, opticaId: String)
@@ -43,8 +43,8 @@ class DispensacionFinancieraRepositoryImpl(
     override suspend fun obtenerDispensacion(dispensacionId: String, opticaId: String): Resource<DispensacionOptica> =
         optoRepository.getDispensacionById(dispensacionId, opticaId)
 
-    override suspend fun obtenerPagos(dispensacionId: String): List<Pago> =
-        optoRepository.getPagosByDispensacion(dispensacionId).first()
+    override suspend fun obtenerPagos(dispensacionId: String, opticaId: String): List<Pago> =
+        optoRepository.getPagosByDispensacion(dispensacionId, opticaId).first()
 
     override suspend fun obtenerContexto(dispensacionId: String, opticaId: String): ContextoFinanciero {
         val dispResult = optoRepository.getDispensacionById(dispensacionId, opticaId)

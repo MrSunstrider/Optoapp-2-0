@@ -193,9 +193,9 @@ class DispensacionViewModel @Inject constructor(
             when (val result = repository.getDispensacionById(dispensacionId, opticaId)) {
                 is Resource.Success -> {
                     val d = result.data ?: return@launch
-                    val loadedPagos = repository.getPagosByDispensacion(dispensacionId).first()
+                    val loadedPagos = repository.getPagosByDispensacion(dispensacionId, opticaId).first()
                         .filter { it.tipo != "Anulación" }
-                    val computedMontoPagado = calcularMontoPagadoUseCase(dispensacionId)
+                    val computedMontoPagado = calcularMontoPagadoUseCase(dispensacionId, opticaId)
                     val loadedItems = repository.getDispensacionItemsByDispensacion(dispensacionId)
                     val itemsUi = if (loadedItems.isNotEmpty()) {
                         loadedItems.map { it.toUi() }
@@ -533,7 +533,7 @@ class DispensacionViewModel @Inject constructor(
                             }
 
                             // Prefer DAO effect-aware net over wizard in-memory pagos (IF may have newer rows).
-                            val montoPagadoNeto = calcularMontoPagadoUseCase(finalId)
+                            val montoPagadoNeto = calcularMontoPagadoUseCase(finalId, currentOpticaId)
                             repository.updateDispensacion(disp.copy(montoPagado = montoPagadoNeto))
                         }
                     }
@@ -588,7 +588,7 @@ class DispensacionViewModel @Inject constructor(
             val result = repository.getDispensacionById(originalDispensacionId, opticaId)
             if (result is Resource.Success && result.data != null) {
                 val original = result.data
-                val totalPagadoOriginal = calcularMontoPagadoUseCase(originalDispensacionId)
+                val totalPagadoOriginal = calcularMontoPagadoUseCase(originalDispensacionId, opticaId)
 
                 if (totalPagadoOriginal <= 0.0) {
                     _uiState.update { it.copy(error = "No se puede crear un reclamo porque no hay pagos registrados para esta dispensación.") }

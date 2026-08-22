@@ -123,7 +123,7 @@ class ServiciosViewModel @Inject constructor(
             when (val result = repository.getServicioById(id, opticaId)) {
                 is Resource.Success -> {
                     val s = result.data ?: return@launch
-                    val loadedPagos = repository.getPagosByServicioExtra(id).first()
+                    val loadedPagos = repository.getPagosByServicioExtra(id, opticaId).first()
                     _uiState.value = ServiciosUiState(
                         id = s.id,
                         ot = s.ot,

@@ -70,18 +70,18 @@ class PagoDaoSumTest {
         dao.insertPago(Pago(id = "p3", dispensacionId = "disp1", fecha = LocalDate.parse("2026-01-25"), tipo = "Reverso", monto = 40.0, metodoPago = "EFECTIVO", opticaId = "o1", reversaPagoId = "p1"))
         dao.insertPago(Pago(id = "p4", dispensacionId = "disp1", fecha = LocalDate.parse("2026-01-26"), tipo = "Anulación", monto = 999.0, metodoPago = "EFECTIVO", opticaId = "o1"))
 
-        assertEquals(110.0, dao.sumMontoByDispensacion("disp1"), 0.001)
+        assertEquals(110.0, dao.sumMontoByDispensacion("disp1", "o1"), 0.001)
     }
 
     @Test
     fun sumMontoByDispensacion_noPagos_returnsZero() = runBlocking {
         seedDisp("dispEmpty")
-        assertEquals(0.0, dao.sumMontoByDispensacion("dispEmpty"), 0.001)
+        assertEquals(0.0, dao.sumMontoByDispensacion("dispEmpty", "o1"), 0.001)
     }
 
     @Test
     fun sumMontoByDispensacion_unknownDispensacion_returnsZero() = runBlocking {
-        assertEquals(0.0, dao.sumMontoByDispensacion("nonexistent"), 0.001)
+        assertEquals(0.0, dao.sumMontoByDispensacion("nonexistent", "o1"), 0.001)
     }
 
     @Test
@@ -100,11 +100,20 @@ class PagoDaoSumTest {
         dao.insertPago(Pago(id = "p1", servicioExtraId = "se1", fecha = LocalDate.parse("2026-02-01"), tipo = "Abono", monto = 80.0, metodoPago = "EFECTIVO", opticaId = "o1"))
         dao.insertPago(Pago(id = "p2", servicioExtraId = "se1", fecha = LocalDate.parse("2026-02-10"), tipo = "Reembolso", monto = 20.0, metodoPago = "TARJETA", opticaId = "o1"))
 
-        assertEquals(60.0, dao.sumMontoByServicioExtra("se1"), 0.001)
+        assertEquals(60.0, dao.sumMontoByServicioExtra("se1", "o1"), 0.001)
     }
 
     @Test
     fun sumMontoByServicioExtra_noPagos_returnsZero() = runBlocking {
-        assertEquals(0.0, dao.sumMontoByServicioExtra("nonexistent"), 0.001)
+        assertEquals(0.0, dao.sumMontoByServicioExtra("nonexistent", "o1"), 0.001)
+    }
+
+    @Test
+    fun sumMontoByDispensacion_ignoresForeignOptica() = runBlocking {
+        seedDisp("disp1")
+        dao.insertPago(Pago(id = "pA", dispensacionId = "disp1", fecha = LocalDate.parse("2026-01-15"), tipo = "Abono", monto = 100.0, metodoPago = "EFECTIVO", opticaId = "o1"))
+        dao.insertPago(Pago(id = "pB", dispensacionId = "disp1", fecha = LocalDate.parse("2026-01-15"), tipo = "Abono", monto = 50.0, metodoPago = "EFECTIVO", opticaId = "o-other"))
+        assertEquals(100.0, dao.sumMontoByDispensacion("disp1", "o1"), 0.001)
+        assertEquals(50.0, dao.sumMontoByDispensacion("disp1", "o-other"), 0.001)
     }
 }
