@@ -81,7 +81,7 @@ class PagoDaoTest {
         )
         dao.insertPago(pago)
 
-        val retrieved = dao.getPagoById("pago1")
+        val retrieved = dao.getPagoByIdForOptica("pago1", "optica1")
         assertNotNull(retrieved)
         assertEquals("pago1", retrieved!!.id)
         assertEquals(150.0, retrieved.monto, 0.001)
@@ -91,7 +91,7 @@ class PagoDaoTest {
 
     @Test
     fun getPagoById_withUnknownId_returnsNull() = runBlocking {
-        val retrieved = dao.getPagoById("nonexistent")
+        val retrieved = dao.getPagoByIdForOptica("nonexistent", "optica1")
         assertNull(retrieved)
     }
 
@@ -304,7 +304,7 @@ class PagoDaoTest {
         )
         assertEquals(1, rows)
 
-        val retrieved = dao.getPagoById("p1")
+        val retrieved = dao.getPagoByIdForOptica("p1", "o1")
         assertEquals(150.0, retrieved!!.monto, 0.001)
         assertEquals("TARJETA", retrieved.metodoPago)
     }
@@ -322,7 +322,7 @@ class PagoDaoTest {
         dao.insertPago(pago)
         dao.deletePago(pago.id, pago.opticaId)
 
-        val retrieved = dao.getPagoById("p1")
+        val retrieved = dao.getPagoByIdForOptica("p1", "o1")
         assertNull(retrieved)
     }
 
@@ -412,7 +412,7 @@ class PagoDaoTest {
         val updatedCount = dao.reassignFromLegacyMiOpticaBase("newOpticaId")
         assertEquals(1, updatedCount)
 
-        val retrieved = dao.getPagoById("p1")
+        val retrieved = dao.getPagoByIdForOptica("p1", "newOpticaId")
         assertEquals("newOpticaId", retrieved!!.opticaId)
     }
 
@@ -458,7 +458,7 @@ class PagoDaoTest {
         val updatedCount = dao.reassignDispensacionId("oldDisp", "newDisp")
         assertEquals(1, updatedCount)
 
-        val retrieved = dao.getPagoById("p1")
+        val retrieved = dao.getPagoByIdForOptica("p1", "o1")
         assertEquals("newDisp", retrieved!!.dispensacionId)
     }
 }

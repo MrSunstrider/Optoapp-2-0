@@ -68,12 +68,13 @@ class InformacionFinancieraViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, loadFailed = false, dispensacionId = dispensacionId, error = null) }
 
-            val contexto = repository.obtenerContexto(dispensacionId)
+            val opticaId = sessionManager.opticaId.first()
+            val contexto = repository.obtenerContexto(dispensacionId, opticaId)
             val pagos = repository.obtenerPagos(dispensacionId)
-            val regalosEntities = repository.obtenerRegalos(dispensacionId)
+            val regalosEntities = repository.obtenerRegalos(dispensacionId, opticaId)
             val regalosUi = regalosEntities.map { it.toUi() }
 
-            when (val result = repository.obtenerDispensacion(dispensacionId)) {
+            when (val result = repository.obtenerDispensacion(dispensacionId, opticaId)) {
                 is Resource.Success -> {
                     val d = result.data
                     if (d == null) {

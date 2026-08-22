@@ -1,4 +1,4 @@
-﻿package com.example.optoapp.data
+package com.example.optoapp.data
 
 import com.example.optoapp.data.pago.PagoDao
 import com.example.optoapp.data.servicio.ServicioExtraDao
@@ -48,9 +48,9 @@ class DispensacionRepositoryErrorTest {
 
     @Test
     fun `getDispensacionById dao throws IOException returns Error`() = runTest {
-        coEvery { dispensacionDao.getDispensacionById("d1") } throws IOException("Network error")
+        coEvery { dispensacionDao.getDispensacionById("d1", any()) } throws IOException("Network error")
 
-        val result = repo.getDispensacionById("d1")
+        val result = repo.getDispensacionById("d1", "o1")
 
         assertTrue("Expected Resource.Error but got $result", result is Resource.Error)
         assertNotNull((result as Resource.Error).message)
@@ -58,11 +58,11 @@ class DispensacionRepositoryErrorTest {
 
     @Test
     fun `getDispensacionById dao throws CancellationException rethrows`() = runTest {
-        coEvery { dispensacionDao.getDispensacionById("d1") } throws CancellationException("Cancelled")
+        coEvery { dispensacionDao.getDispensacionById("d1", any()) } throws CancellationException("Cancelled")
 
         var caught = false
         try {
-            repo.getDispensacionById("d1")
+            repo.getDispensacionById("d1", "o1")
         } catch (e: CancellationException) {
             caught = true
         }
@@ -71,9 +71,9 @@ class DispensacionRepositoryErrorTest {
 
     @Test
     fun `getDispensacionById dao throws generic Exception returns Error`() = runTest {
-        coEvery { dispensacionDao.getDispensacionById("d1") } throws RuntimeException("DB corrupt")
+        coEvery { dispensacionDao.getDispensacionById("d1", any()) } throws RuntimeException("DB corrupt")
 
-        val result = repo.getDispensacionById("d1")
+        val result = repo.getDispensacionById("d1", "o1")
 
         assertTrue("Expected Resource.Error but got $result", result is Resource.Error)
         assertEquals("DB corrupt", (result as Resource.Error).message)
@@ -81,9 +81,9 @@ class DispensacionRepositoryErrorTest {
 
     @Test
     fun `getServicioById dao throws IOException returns Error`() = runTest {
-        coEvery { servicioExtraDao.getServicioById("s1") } throws IOException("Network error")
+        coEvery { servicioExtraDao.getServicioById("s1", any()) } throws IOException("Network error")
 
-        val result = repo.getServicioById("s1")
+        val result = repo.getServicioById("s1", "o1")
 
         assertTrue("Expected Resource.Error but got $result", result is Resource.Error)
         assertNotNull((result as Resource.Error).message)
@@ -91,11 +91,11 @@ class DispensacionRepositoryErrorTest {
 
     @Test
     fun `getServicioById dao throws CancellationException rethrows`() = runTest {
-        coEvery { servicioExtraDao.getServicioById("s1") } throws CancellationException("Cancelled")
+        coEvery { servicioExtraDao.getServicioById("s1", any()) } throws CancellationException("Cancelled")
 
         var caught = false
         try {
-            repo.getServicioById("s1")
+            repo.getServicioById("s1", "o1")
         } catch (e: CancellationException) {
             caught = true
         }
@@ -104,9 +104,9 @@ class DispensacionRepositoryErrorTest {
 
     @Test
     fun `getServicioById dao throws generic Exception returns Error`() = runTest {
-        coEvery { servicioExtraDao.getServicioById("s1") } throws RuntimeException("DB corrupt")
+        coEvery { servicioExtraDao.getServicioById("s1", any()) } throws RuntimeException("DB corrupt")
 
-        val result = repo.getServicioById("s1")
+        val result = repo.getServicioById("s1", "o1")
 
         assertTrue("Expected Resource.Error but got $result", result is Resource.Error)
         assertEquals("DB corrupt", (result as Resource.Error).message)

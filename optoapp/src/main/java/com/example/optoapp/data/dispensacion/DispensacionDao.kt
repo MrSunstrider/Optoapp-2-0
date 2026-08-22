@@ -12,8 +12,8 @@ interface DispensacionDao {
     @Query("SELECT * FROM dispensaciones WHERE opticaId = :opticaId")
     fun getAllDispensacionesForOptica(opticaId: String): Flow<List<DispensacionOptica>>
 
-    @Query("SELECT * FROM dispensaciones WHERE id = :id")
-    suspend fun getDispensacionById(id: String): DispensacionOptica?
+    @Query("SELECT * FROM dispensaciones WHERE id = :id AND opticaId = :opticaId")
+    suspend fun getDispensacionById(id: String, opticaId: String): DispensacionOptica?
 
     @Upsert
     suspend fun insertDispensacion(dispensacion: DispensacionOptica)

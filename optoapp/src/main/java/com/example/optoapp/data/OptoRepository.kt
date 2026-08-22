@@ -116,7 +116,7 @@ open class OptoRepository(
     fun getTotalVendidoForOptica(opticaId: String) = dispensacionRepo.getTotalVendidoForOptica(opticaId)
     fun getTotalPagadoForOptica(opticaId: String) = dispensacionRepo.getTotalPagadoForOptica(opticaId)
     fun getDispensacionesByDateRangeForOptica(start: LocalDate, end: LocalDate, opticaId: String) = dispensacionRepo.getDispensacionesByDateRangeForOptica(start, end, opticaId)
-    suspend fun getDispensacionById(id: String) = dispensacionRepo.getDispensacionById(id)
+    suspend fun getDispensacionById(id: String, opticaId: String) = dispensacionRepo.getDispensacionById(id, opticaId)
     suspend fun getLastDispensacionByPacienteId(pacienteId: String, opticaId: String) = dispensacionRepo.getLastDispensacionByPacienteId(pacienteId, opticaId)
     suspend fun insertDispensacion(dispensacion: DispensacionOptica) {
         val stamped = dispensacion.copy(updatedAt = Instant.now().toString())
@@ -145,7 +145,7 @@ open class OptoRepository(
         syncStateTracker.markDeleted(opticaId, "dispensacion_item", id)
     }
     suspend fun deleteItemsByDispensacionId(dispensacionId: String, opticaId: String) = dispensacionRepo.deleteItemsByDispensacionId(dispensacionId, opticaId)
-    suspend fun getDispensacionItemById(id: String) = dispensacionRepo.getDispensacionItemById(id)
+    suspend fun getDispensacionItemById(id: String, opticaId: String) = dispensacionRepo.getDispensacionItemById(id, opticaId)
     suspend fun getDispensacionItemsByDispensacion(dispensacionId: String) = dispensacionRepo.getItemsListByDispensacion(dispensacionId)
     suspend fun suggestNextOt(opticaId: String, fecha: LocalDate) = dispensacionRepo.suggestNextOt(opticaId, fecha)
     suspend fun suggestNextHistoriaOptometrica(opticaId: String) = pacienteRepo.suggestNextHistoriaOptometrica(opticaId)
@@ -183,7 +183,7 @@ open class OptoRepository(
     fun getServiciosByDateRangeForOptica(start: LocalDate, end: LocalDate, opticaId: String) = dispensacionRepo.getServiciosByDateRangeForOptica(start, end, opticaId)
     suspend fun getServiciosByIds(ids: List<String>, opticaId: String) = dispensacionRepo.getServiciosByIds(ids, opticaId)
     suspend fun getDispensacionesByIds(ids: List<String>, opticaId: String) = dispensacionRepo.getDispensacionesByIds(ids, opticaId)
-    suspend fun getServicioById(id: String) = dispensacionRepo.getServicioById(id)
+    suspend fun getServicioById(id: String, opticaId: String) = dispensacionRepo.getServicioById(id, opticaId)
     suspend fun insertServicio(servicio: ServicioExtra) {
         val stamped = servicio.copy(updatedAt = Instant.now().toString())
         dispensacionRepo.insertServicio(stamped)
@@ -291,11 +291,12 @@ open class OptoRepository(
 
     suspend fun upsertRegaloFromRemote(regalo: RegaloDispensacionEntity) = database.regaloDispensacionDao().upsert(regalo)
 
-    suspend fun getRegalosByDispensacionId(dispId: String) = database.regaloDispensacionDao().getByDispensacionId(dispId)
+    suspend fun getRegalosByDispensacionId(dispId: String, opticaId: String) =
+        database.regaloDispensacionDao().getByDispensacionId(dispId, opticaId)
 
     suspend fun insertRegalo(regalo: RegaloDispensacionEntity) = database.regaloDispensacionDao().insert(regalo)
 
-    suspend fun deleteRegaloById(id: String) = database.regaloDispensacionDao().deleteById(id)
+    suspend fun deleteRegaloById(id: String, opticaId: String) = database.regaloDispensacionDao().deleteById(id, opticaId)
 
     suspend fun deleteRegalosByDispensacionId(dispId: String, opticaId: String) = database.regaloDispensacionDao().deleteByDispensacionId(dispId, opticaId)
 }

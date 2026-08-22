@@ -189,7 +189,8 @@ class DispensacionViewModel @Inject constructor(
     fun loadDispensacion(dispensacionId: String) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, generatedId = dispensacionId) }
-            when (val result = repository.getDispensacionById(dispensacionId)) {
+            val opticaId = sessionManager.opticaId.first()
+            when (val result = repository.getDispensacionById(dispensacionId, opticaId)) {
                 is Resource.Success -> {
                     val d = result.data ?: return@launch
                     val loadedPagos = repository.getPagosByDispensacion(dispensacionId).first()
@@ -212,7 +213,7 @@ class DispensacionViewModel @Inject constructor(
                             ),
                         )
                     }
-                    val loadedRegalos = repository.getRegalosByDispensacionId(dispensacionId)
+                    val loadedRegalos = repository.getRegalosByDispensacionId(dispensacionId, opticaId)
                     val regalosUi = loadedRegalos.map { entity ->
                         RegaloDispensacionUi(
                             id = entity.id,
@@ -558,7 +559,7 @@ class DispensacionViewModel @Inject constructor(
             val role = sessionManager.opticaRol.first()
             AuthorizationGuard.requireRole(role, setOf("admin", "gerente"), "eliminar dispensación")
             val opticaId = sessionManager.opticaId.first()
-            val regalos = repository.getRegalosByDispensacionId(dispensacionId)
+            val regalos = repository.getRegalosByDispensacionId(dispensacionId, opticaId)
             regalos.forEach { regalo ->
                 stockHelper.adjustStockAndRegistrarMovimiento(
                     regalo.productoId,
@@ -569,7 +570,7 @@ class DispensacionViewModel @Inject constructor(
                     "Devolución por borrado de dispensación",
                 )
             }
-            val result = repository.getDispensacionById(dispensacionId)
+            val result = repository.getDispensacionById(dispensacionId, opticaId)
             if (result is Resource.Success && result.data != null) {
                 repository.deleteDispensacion(result.data)
             }
@@ -584,7 +585,7 @@ class DispensacionViewModel @Inject constructor(
     ) {
         viewModelScope.launch {
             val opticaId = sessionManager.opticaId.first()
-            val result = repository.getDispensacionById(originalDispensacionId)
+            val result = repository.getDispensacionById(originalDispensacionId, opticaId)
             if (result is Resource.Success && result.data != null) {
                 val original = result.data
                 val totalPagadoOriginal = calcularMontoPagadoUseCase(originalDispensacionId)
@@ -624,7 +625,7 @@ class DispensacionViewModel @Inject constructor(
             val opticaId = sessionManager.opticaId.first()
             cancelDispensacionUseCase(dispensacionId, opticaId)
 
-            val regalos = repository.getRegalosByDispensacionId(dispensacionId)
+            val regalos = repository.getRegalosByDispensacionId(dispensacionId, opticaId)
             regalos.forEach { regalo ->
                 stockHelper.adjustStockAndRegistrarMovimiento(
                     regalo.productoId,
