@@ -117,7 +117,8 @@ class ServiciosViewModel @Inject constructor(
     fun loadServicio(id: String) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, generatedId = id)
-            when (val result = repository.getServicioById(id)) {
+            val opticaId = sessionManager.opticaId.first()
+            when (val result = repository.getServicioById(id, opticaId)) {
                 is Resource.Success -> {
                     val s = result.data ?: return@launch
                     val loadedPagos = repository.getPagosByServicioExtra(id).first()

@@ -110,6 +110,6 @@ class DispensacionViewModelRegalosRemovedTest {
         viewModel.saveDispensacion("pac-1", "disp-existing") { completed = true }
         advanceUntilIdle()
 
-        coVerify(exactly = 0) { repository.getRegalosByDispensacionId(any()) }
+        coVerify(exactly = 0) { repository.getRegalosByDispensacionId(any(), any()) }
     }
 }

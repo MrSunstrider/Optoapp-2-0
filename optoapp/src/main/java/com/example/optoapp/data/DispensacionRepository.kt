@@ -27,8 +27,8 @@ class DispensacionRepository(
 
     fun getTotalPagadoForOptica(opticaId: String): Flow<Double?> = dispensacionDao.getTotalPagadoForOptica(opticaId)
 
-    suspend fun getDispensacionById(id: String): Resource<DispensacionOptica> = try {
-        val dispensacion = dispensacionDao.getDispensacionById(id)
+    suspend fun getDispensacionById(id: String, opticaId: String): Resource<DispensacionOptica> = try {
+        val dispensacion = dispensacionDao.getDispensacionById(id, opticaId)
         if (dispensacion != null) {
             Resource.Success(dispensacion)
         } else {
@@ -98,7 +98,8 @@ class DispensacionRepository(
 
     suspend fun getItemsListByOptica(opticaId: String): List<DispensacionItem> = dispensacionItemDao.getItemsListByOptica(opticaId)
 
-    suspend fun getDispensacionItemById(id: String): DispensacionItem? = dispensacionItemDao.getById(id)
+    suspend fun getDispensacionItemById(id: String, opticaId: String): DispensacionItem? =
+        dispensacionItemDao.getById(id, opticaId)
 
     suspend fun insertDispensacionItem(item: DispensacionItem) {
         dispensacionItemDao.insertItem(item)
@@ -190,8 +191,8 @@ class DispensacionRepository(
 
     suspend fun getDispensacionesByIds(ids: List<String>, opticaId: String): List<DispensacionOptica> = dispensacionDao.getDispensacionesByIds(ids, opticaId)
 
-    suspend fun getServicioById(id: String): Resource<ServicioExtra> = try {
-        val servicio = servicioExtraDao.getServicioById(id)
+    suspend fun getServicioById(id: String, opticaId: String): Resource<ServicioExtra> = try {
+        val servicio = servicioExtraDao.getServicioById(id, opticaId)
         if (servicio != null) {
             Resource.Success(servicio)
         } else {

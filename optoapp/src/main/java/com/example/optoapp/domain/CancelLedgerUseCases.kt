@@ -44,7 +44,7 @@ class CancelServicioExtraUseCase @Inject constructor(
     private val postSaveSyncScheduler: PostSaveSyncScheduler,
 ) {
     suspend operator fun invoke(servicioId: String, opticaId: String) {
-        val servicio = (repository.getServicioById(servicioId) as? Resource.Success)?.data ?: return
+        val servicio = (repository.getServicioById(servicioId, opticaId) as? Resource.Success)?.data ?: return
         if (servicio.estado == "Anulado") return
         insertMissingReversos(repository, pagoDao, servicioId, opticaId, forDispensacion = false)
         repository.updateServicio(servicio.copy(estado = "Anulado", updatedAt = Instant.now().toString()))
@@ -58,7 +58,7 @@ class CancelDispensacionUseCase @Inject constructor(
     private val postSaveSyncScheduler: PostSaveSyncScheduler,
 ) {
     suspend operator fun invoke(dispensacionId: String, opticaId: String) {
-        val disp = (repository.getDispensacionById(dispensacionId) as? Resource.Success)?.data ?: return
+        val disp = (repository.getDispensacionById(dispensacionId, opticaId) as? Resource.Success)?.data ?: return
         if (disp.estadoEntrega == "Anulado") return
         insertMissingReversos(repository, pagoDao, dispensacionId, opticaId, forDispensacion = true)
         repository.updateDispensacion(disp.copy(estadoEntrega = "Anulado", updatedAt = Instant.now().toString()))
@@ -78,7 +78,7 @@ class ReclaimDispensacionUseCase @Inject constructor(
         ot: String,
     ) {
         require(refundMonto >= 0.0) { "Reembolso monto must be >= 0" }
-        val disp = (repository.getDispensacionById(dispensacionId) as? Resource.Success)?.data ?: return
+        val disp = (repository.getDispensacionById(dispensacionId, opticaId) as? Resource.Success)?.data ?: return
         repository.updateDispensacion(disp.copy(estadoEntrega = "Reclamada", updatedAt = Instant.now().toString()))
         if (refundMonto > 0.0) {
             repository.insertPago(

@@ -55,11 +55,11 @@ class BumpEntityStrategy(
     }
 
     private val bumpHandlers: Map<String, suspend (entityId: String, opticaId: String) -> Unit> = mapOf(
-        "servicio_extra" to { id, _ ->
-            bumpWithResource(id, "servicio", { repository.getServicioById(id) }, { repository.updateServicio(it) })
+        "servicio_extra" to { id, opticaId ->
+            bumpWithResource(id, "servicio", { repository.getServicioById(id, opticaId) }, { repository.updateServicio(it) })
         },
-        "dispensacion" to { id, _ ->
-            bumpWithResource(id, "dispensacion", { repository.getDispensacionById(id) }, { repository.updateDispensacion(it) })
+        "dispensacion" to { id, opticaId ->
+            bumpWithResource(id, "dispensacion", { repository.getDispensacionById(id, opticaId) }, { repository.updateDispensacion(it) })
         },
         "pago" to { id, opticaId ->
             bumpWithNullable(id, "pago", { repository.getPagoById(id, opticaId) }, { repository.updatePago(it) })
@@ -105,13 +105,13 @@ class BumpEntityStrategy(
                 AppLogger.w(TAG, "bumpEntityUpdatedAt: orden_compra_item no encontrado id=$id")
             }
         },
-        "dispensacion_item" to { id, _ ->
-            val item = repository.getDispensacionItemById(id)
+        "dispensacion_item" to { id, opticaId ->
+            val item = repository.getDispensacionItemById(id, opticaId)
             if (item != null) {
                 bumpWithResource(
                     item.dispensacionId,
                     "parent dispensacion",
-                    { repository.getDispensacionById(item.dispensacionId) },
+                    { repository.getDispensacionById(item.dispensacionId, opticaId) },
                     { repository.updateDispensacion(it) },
                 )
                 repository.insertDispensacionItem(item)

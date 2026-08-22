@@ -73,7 +73,7 @@ class DispensacionViewModelReclamoTest {
         costoBiseladoDao = mockk(relaxed = true)
 
         every { sessionManager.opticaId } returns opticaIdFlow
-        coEvery { repository.getDispensacionById(originalId) } returns Resource.Success(originalDispensacion)
+        coEvery { repository.getDispensacionById(originalId, any()) } returns Resource.Success(originalDispensacion)
     }
 
     @After

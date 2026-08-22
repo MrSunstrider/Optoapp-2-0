@@ -29,7 +29,7 @@ class CancelLedgerUseCasesTest {
             id = "p1", servicioExtraId = "s1", fecha = date,
             tipo = "Abono", monto = 80.0, metodoPago = "Efectivo", opticaId = "o1",
         )
-        coEvery { repository.getServicioById("s1") } returns Resource.Success(
+        coEvery { repository.getServicioById("s1", any()) } returns Resource.Success(
             ServicioExtra(id = "s1", descripcion = "x", montoTotal = 100.0, estado = "Pendiente", fecha = date),
         )
         coEvery { pagoDao.getCreditPagosByParent("s1") } returns listOf(credit)
@@ -48,7 +48,7 @@ class CancelLedgerUseCasesTest {
 
     @Test
     fun cancelServicio_idempotentWhenAlreadyAnulado() = runBlocking {
-        coEvery { repository.getServicioById("s1") } returns Resource.Success(
+        coEvery { repository.getServicioById("s1", any()) } returns Resource.Success(
             ServicioExtra(id = "s1", descripcion = "x", montoTotal = 1.0, estado = "Anulado", fecha = date),
         )
         CancelServicioExtraUseCase(repository, pagoDao, scheduler)("s1", "o1")
@@ -61,7 +61,7 @@ class CancelLedgerUseCasesTest {
             id = "p1", dispensacionId = "d1", fecha = date,
             tipo = "Pago completo", monto = 150.0, metodoPago = "Efectivo", opticaId = "o1",
         )
-        coEvery { repository.getDispensacionById("d1") } returns Resource.Success(
+        coEvery { repository.getDispensacionById("d1", any()) } returns Resource.Success(
             DispensacionOptica(
                 id = "d1", pacienteId = "pac", fecha = date, opticaId = "o1",
                 estadoEntrega = "Pendiente", metodoPago = "Efectivo",
@@ -81,7 +81,7 @@ class CancelLedgerUseCasesTest {
 
     @Test
     fun reclaim_positiveReembolsoWithoutReversaLink() = runBlocking {
-        coEvery { repository.getDispensacionById("d1") } returns Resource.Success(
+        coEvery { repository.getDispensacionById("d1", any()) } returns Resource.Success(
             DispensacionOptica(
                 id = "d1", pacienteId = "pac", fecha = date, opticaId = "o1",
                 estadoEntrega = "Pendiente", metodoPago = "Efectivo", ot = "OT-1",

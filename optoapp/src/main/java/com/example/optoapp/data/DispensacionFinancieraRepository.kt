@@ -13,10 +13,10 @@ data class ContextoFinanciero(
 )
 
 interface DispensacionFinancieraRepository {
-    suspend fun obtenerDispensacion(dispensacionId: String): Resource<DispensacionOptica>
-    suspend fun obtenerContexto(dispensacionId: String): ContextoFinanciero
+    suspend fun obtenerDispensacion(dispensacionId: String, opticaId: String): Resource<DispensacionOptica>
+    suspend fun obtenerContexto(dispensacionId: String, opticaId: String): ContextoFinanciero
     suspend fun obtenerPagos(dispensacionId: String): List<Pago>
-    suspend fun obtenerRegalos(dispensacionId: String): List<RegaloDispensacionEntity>
+    suspend fun obtenerRegalos(dispensacionId: String, opticaId: String): List<RegaloDispensacionEntity>
     suspend fun actualizarMontoTotal(dispensacionId: String, montoTotal: Double, opticaId: String)
     suspend fun actualizarMontoPagado(dispensacionId: String, montoPagado: Double, opticaId: String)
     suspend fun actualizarEstado(dispensacionId: String, estado: String, fechaEntrega: LocalDate?, opticaId: String)
@@ -40,12 +40,14 @@ class DispensacionFinancieraRepositoryImpl(
 
     override suspend fun <T> withTransaction(block: suspend () -> T): T = optoRepository.withTransaction(block)
 
-    override suspend fun obtenerDispensacion(dispensacionId: String): Resource<DispensacionOptica> = optoRepository.getDispensacionById(dispensacionId)
+    override suspend fun obtenerDispensacion(dispensacionId: String, opticaId: String): Resource<DispensacionOptica> =
+        optoRepository.getDispensacionById(dispensacionId, opticaId)
 
-    override suspend fun obtenerPagos(dispensacionId: String): List<Pago> = optoRepository.getPagosByDispensacion(dispensacionId).first()
+    override suspend fun obtenerPagos(dispensacionId: String): List<Pago> =
+        optoRepository.getPagosByDispensacion(dispensacionId).first()
 
-    override suspend fun obtenerContexto(dispensacionId: String): ContextoFinanciero {
-        val dispResult = optoRepository.getDispensacionById(dispensacionId)
+    override suspend fun obtenerContexto(dispensacionId: String, opticaId: String): ContextoFinanciero {
+        val dispResult = optoRepository.getDispensacionById(dispensacionId, opticaId)
         if (dispResult is Resource.Success && dispResult.data != null) {
             val d = dispResult.data
             val pacienteNombre = when (val pResult = optoRepository.getPacienteByIdScoped(d.pacienteId, d.opticaId)) {
@@ -71,7 +73,7 @@ class DispensacionFinancieraRepositoryImpl(
     }
 
     override suspend fun actualizarMontoTotal(dispensacionId: String, montoTotal: Double, opticaId: String) {
-        val result = optoRepository.getDispensacionById(dispensacionId)
+        val result = optoRepository.getDispensacionById(dispensacionId, opticaId)
         if (result is Resource.Success && result.data != null) {
             val updated = result.data.copy(montoTotal = montoTotal)
             optoRepository.updateDispensacion(updated)
@@ -79,7 +81,7 @@ class DispensacionFinancieraRepositoryImpl(
     }
 
     override suspend fun actualizarMontoPagado(dispensacionId: String, montoPagado: Double, opticaId: String) {
-        val result = optoRepository.getDispensacionById(dispensacionId)
+        val result = optoRepository.getDispensacionById(dispensacionId, opticaId)
         if (result is Resource.Success && result.data != null) {
             val updated = result.data.copy(montoPagado = montoPagado)
             optoRepository.updateDispensacion(updated)
@@ -87,7 +89,7 @@ class DispensacionFinancieraRepositoryImpl(
     }
 
     override suspend fun actualizarEstado(dispensacionId: String, estado: String, fechaEntrega: LocalDate?, opticaId: String) {
-        val result = optoRepository.getDispensacionById(dispensacionId)
+        val result = optoRepository.getDispensacionById(dispensacionId, opticaId)
         if (result is Resource.Success && result.data != null) {
             val updated = result.data.copy(estadoEntrega = estado, fechaEntrega = fechaEntrega)
             optoRepository.updateDispensacion(updated)
@@ -106,8 +108,8 @@ class DispensacionFinancieraRepositoryImpl(
         optoRepository.deletePagoRegistrandoAnulacionEnCaja(pago, opticaId)
     }
 
-    override suspend fun obtenerRegalos(dispensacionId: String): List<RegaloDispensacionEntity> =
-        optoRepository.getRegalosByDispensacionId(dispensacionId)
+    override suspend fun obtenerRegalos(dispensacionId: String, opticaId: String): List<RegaloDispensacionEntity> =
+        optoRepository.getRegalosByDispensacionId(dispensacionId, opticaId)
 
     override suspend fun insertarRegalo(regalo: RegaloDispensacionEntity) {
         optoRepository.insertRegalo(regalo)

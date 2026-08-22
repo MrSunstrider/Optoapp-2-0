@@ -1,4 +1,4 @@
-﻿package com.example.optoapp.viewmodel
+package com.example.optoapp.viewmodel
 
 import android.content.Context
 import android.net.ConnectivityManager
@@ -305,7 +305,7 @@ class SyncViewModelConflictResolutionTest {
     fun resolveKeepMine_forServicio_callsUpdateServicioBeforeSync() = runTest(testDispatcher) {
         val conflict = makeServicioConflict("srv-001")
         val entity = servicio("srv-001")
-        coEvery { repository.getServicioById("srv-001") } returns Resource.Success(entity)
+        coEvery { repository.getServicioById("srv-001", any()) } returns Resource.Success(entity)
         coEvery { repository.updateServicio(any()) } just Runs
 
         viewModel.resolveKeepMine(conflict)
@@ -321,7 +321,7 @@ class SyncViewModelConflictResolutionTest {
     fun resolveKeepMine_forDispensacion_callsUpdateDispensacionBeforeSync() = runTest(testDispatcher) {
         val conflict = makeDispensacionConflict("disp-001")
         val entity = dispensacion("disp-001")
-        coEvery { repository.getDispensacionById("disp-001") } returns Resource.Success(entity)
+        coEvery { repository.getDispensacionById("disp-001", any()) } returns Resource.Success(entity)
         coEvery { repository.updateDispensacion(any()) } just Runs
 
         viewModel.resolveKeepMine(conflict)
@@ -353,7 +353,7 @@ class SyncViewModelConflictResolutionTest {
     fun resolveKeepMine_retainsConflictRecord_whenSyncFails() = runTest(testDispatcher) {
         val conflict = makeServicioConflict("srv-fail")
         val entity = servicio("srv-fail")
-        coEvery { repository.getServicioById("srv-fail") } returns Resource.Success(entity)
+        coEvery { repository.getServicioById("srv-fail", any()) } returns Resource.Success(entity)
         coEvery { repository.updateServicio(any()) } just Runs
         coEvery {
             syncFinanzasUseCase(testOpticaId, skipUpload = false, downloadAfterUpload = true)
@@ -370,7 +370,7 @@ class SyncViewModelConflictResolutionTest {
         val srvConflict = makeServicioConflict("srv-bulk")
         val pagConflict = makePagoConflict("pago-bulk")
         coEvery { conflictDao.getConflicts(testOpticaId) } returns listOf(srvConflict, pagConflict)
-        coEvery { repository.getServicioById("srv-bulk") } returns Resource.Success(servicio("srv-bulk"))
+        coEvery { repository.getServicioById("srv-bulk", any()) } returns Resource.Success(servicio("srv-bulk"))
         coEvery { repository.updateServicio(any()) } just Runs
         coEvery { repository.getPagoById("pago-bulk", testOpticaId) } returns pago("pago-bulk")
         coEvery { repository.updatePago(any()) } just Runs

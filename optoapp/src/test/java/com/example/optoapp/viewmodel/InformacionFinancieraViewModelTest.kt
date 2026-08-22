@@ -1,4 +1,4 @@
-﻿package com.example.optoapp.viewmodel
+package com.example.optoapp.viewmodel
 
 import com.example.optoapp.data.ContextoFinanciero
 import com.example.optoapp.data.DispensacionFinancieraRepository
@@ -93,10 +93,10 @@ class InformacionFinancieraViewModelTest {
 
         every { sessionManager.opticaId } returns opticaIdFlow
 
-        coEvery { repository.obtenerContexto(dispId) } returns testContexto
-        coEvery { repository.obtenerDispensacion(dispId) } returns Resource.Success(testDispensacion)
+        coEvery { repository.obtenerContexto(dispId, any()) } returns testContexto
+        coEvery { repository.obtenerDispensacion(dispId, any()) } returns Resource.Success(testDispensacion)
         coEvery { repository.obtenerPagos(dispId) } returns emptyList()
-        coEvery { repository.obtenerRegalos(dispId) } returns emptyList()
+        coEvery { repository.obtenerRegalos(dispId, any()) } returns emptyList()
         coEvery { repository.agregarPago(any()) } returns Unit
         coEvery { repository.editarPago(any()) } returns Unit
         coEvery { repository.eliminarPago(any(), any()) } returns Unit

@@ -1,4 +1,4 @@
-﻿package com.example.optoapp.viewmodel
+package com.example.optoapp.viewmodel
 
 import android.content.Context
 import android.net.ConnectivityManager
@@ -293,8 +293,8 @@ class SyncViewModelChildBumpTest {
         val item = dispensacionItem("di-001", "disp-parent")
         val parentDisp = dispensacion("disp-parent")
 
-        coEvery { repository.getDispensacionItemById("di-001") } returns item
-        coEvery { repository.getDispensacionById("disp-parent") } returns Resource.Success(parentDisp)
+        coEvery { repository.getDispensacionItemById("di-001", any()) } returns item
+        coEvery { repository.getDispensacionById("disp-parent", any()) } returns Resource.Success(parentDisp)
         coEvery { repository.updateDispensacion(any()) } just Runs
 
         viewModel.resolveKeepMine(conflict)
