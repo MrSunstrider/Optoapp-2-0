@@ -16,8 +16,8 @@ interface OrdenCompraDao {
     @Query("SELECT * FROM ordenes_compra WHERE opticaId = :opticaId")
     suspend fun getListByOptica(opticaId: String): List<OrdenCompra>
 
-    @Query("SELECT * FROM ordenes_compra WHERE id = :id")
-    suspend fun getById(id: String): OrdenCompra?
+    @Query("SELECT * FROM ordenes_compra WHERE id = :id AND opticaId = :opticaId")
+    suspend fun getById(id: String, opticaId: String): OrdenCompra?
 
     @Query("SELECT MAX(numero) FROM ordenes_compra WHERE opticaId = :opticaId AND numero LIKE :prefix")
     suspend fun getLastNumero(opticaId: String, prefix: String): String?

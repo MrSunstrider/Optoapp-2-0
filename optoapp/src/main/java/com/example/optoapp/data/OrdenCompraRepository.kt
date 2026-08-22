@@ -32,7 +32,7 @@ open class OrdenCompraRepository @Inject constructor(
 
     suspend fun getListByOptica(opticaId: String): List<OrdenCompra> = ocDao.getListByOptica(opticaId)
 
-    suspend fun getById(id: String): OrdenCompra? = ocDao.getById(id)
+    suspend fun getById(id: String, opticaId: String): OrdenCompra? = ocDao.getById(id, opticaId)
 
     suspend fun getItems(ordenId: String): List<OrdenCompraItem> = itemDao.getByOrden(ordenId)
 
@@ -51,8 +51,8 @@ open class OrdenCompraRepository @Inject constructor(
         ocDao.update(stamped)
     }
 
-    open suspend fun updateEstado(ocId: String, newEstado: String) {
-        val existing = ocDao.getById(ocId) ?: return
+    open suspend fun updateEstado(ocId: String, newEstado: String, opticaId: String) {
+        val existing = ocDao.getById(ocId, opticaId) ?: return
         ocDao.update(existing.copy(estado = newEstado, updatedAt = Instant.now().toString()))
         postSaveSyncScheduler.get().scheduleOrdenCompraSync(existing.opticaId)
     }
@@ -61,7 +61,9 @@ open class OrdenCompraRepository @Inject constructor(
      * Updates recibido for individual items. If all items are fully received,
      * transition estado to COMPLETADA and create ENTRADA movements.
      */
-    open suspend fun receiveItems(ocId: String, receivedQuantities: Map<String, Int>) {
+    open suspend fun receiveItems(ocId: String, opticaId: String, receivedQuantities: Map<String, Int>) {
+        val oc = ocDao.getById(ocId, opticaId) ?: return
+
         var allFullyReceived = true
         val items = itemDao.getByOrden(ocId)
         val updatedItems = items.map { item ->
@@ -73,7 +75,6 @@ open class OrdenCompraRepository @Inject constructor(
 
         updatedItems.forEach { itemDao.update(it) }
 
-        val oc = ocDao.getById(ocId) ?: return
         val total = updatedItems.sumOf { it.recibido.toDouble() * it.costoUnitario }
 
         if (allFullyReceived && updatedItems.isNotEmpty()) {
@@ -130,15 +131,15 @@ open class OrdenCompraRepository @Inject constructor(
         postSaveSyncScheduler.get().scheduleOrdenCompraSync(oc.opticaId)
     }
 
-    open suspend fun delete(ocId: String) {
-        val oc = ocDao.getById(ocId) ?: return
+    open suspend fun delete(ocId: String, opticaId: String) {
+        val oc = ocDao.getById(ocId, opticaId) ?: return
         itemDao.deleteByOrden(ocId, oc.opticaId)
         ocDao.update(oc.copy(estado = "CANCELADA", updatedAt = Instant.now().toString()))
         postSaveSyncScheduler.get().scheduleOrdenCompraSync(oc.opticaId)
     }
 
     open suspend fun upsertOrdenCompra(oc: OrdenCompra) {
-        val existing = ocDao.getById(oc.id)
+        val existing = ocDao.getById(oc.id, oc.opticaId)
         if (existing != null) {
             ocDao.update(oc)
         } else {

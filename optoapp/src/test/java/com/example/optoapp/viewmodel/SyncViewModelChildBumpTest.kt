@@ -255,7 +255,7 @@ class SyncViewModelChildBumpTest {
         val movimiento = movimientoMontura("mov-001", "mont-parent")
         val parentMontura = montura("mont-parent")
 
-        coEvery { repository.getMovimientoMonturaById("mov-001") } returns movimiento
+        coEvery { repository.getMovimientoMonturaById("mov-001", any()) } returns movimiento
         coEvery { repository.getMonturaById("mont-parent", any()) } returns Resource.Success(parentMontura)
         coEvery { repository.updateMontura(any()) } just Runs
 
@@ -275,7 +275,7 @@ class SyncViewModelChildBumpTest {
         val parentOC = ordenCompra("oc-parent")
 
         coEvery { ordenCompraRepository.getOrdenItemById("oci-001") } returns item
-        coEvery { ordenCompraRepository.getById("oc-parent") } returns parentOC
+        coEvery { ordenCompraRepository.getById("oc-parent", any()) } returns parentOC
         coEvery { ordenCompraRepository.update(any()) } just Runs
 
         viewModel.resolveKeepMine(conflict)
@@ -326,7 +326,7 @@ class SyncViewModelChildBumpTest {
         val conflict = makeConflict("mov-404", "montura_movimiento")
         val movimiento = movimientoMontura("mov-404", "mont-missing")
 
-        coEvery { repository.getMovimientoMonturaById("mov-404") } returns movimiento
+        coEvery { repository.getMovimientoMonturaById("mov-404", any()) } returns movimiento
         coEvery { repository.getMonturaById("mont-missing", any()) } returns Resource.Error("Not found")
         coEvery { repository.updateMontura(any()) } just Runs
 
