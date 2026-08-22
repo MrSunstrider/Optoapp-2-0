@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.optoapp.data.InventarioFisico
 import com.example.optoapp.data.InventarioFisicoDetalle
 import com.example.optoapp.data.InventarioFisicoRepository
+import com.example.optoapp.data.Montura
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.SessionManager
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -18,6 +19,21 @@ data class MonturaConteoLabel(
     val titulo: String,
     val subtitulo: String,
 )
+
+internal fun buildMonturaConteoLabels(monturas: List<Montura>): Map<String, MonturaConteoLabel> =
+    monturas.associate { m ->
+        val specs = listOfNotNull(
+            m.color.takeIf { it.isNotBlank() },
+            m.talla.takeIf { it.isNotBlank() }?.let { "Talla $it" },
+        ).joinToString(" · ")
+        m.id to MonturaConteoLabel(
+            titulo = "${m.marca} ${m.modelo}".trim().ifBlank { m.sku.ifBlank { "Sin datos" } },
+            subtitulo = buildString {
+                append("SKU ${m.sku.ifBlank { "—" }}")
+                if (specs.isNotBlank()) append(" · ").append(specs)
+            },
+        )
+    }
 
 sealed class InventarioFisicoUiState {
     object Loading : InventarioFisicoUiState()
@@ -75,20 +91,12 @@ class InventarioFisicoViewModel @Inject constructor(
                 return@launch
             }
             val detalles = repository.getDetalles(sessionId)
-            val opticaId = sessionManager.opticaId.first()
-            val monturas = optoRepository.getMonturasSnapshotForOptica(opticaId)
-            val labels = monturas.associate { m ->
-                val specs = listOfNotNull(
-                    m.color.takeIf { it.isNotBlank() },
-                    m.talla.takeIf { it.isNotBlank() }?.let { "Talla $it" },
-                ).joinToString(" · ")
-                m.id to MonturaConteoLabel(
-                    titulo = "${m.marca} ${m.modelo}".trim().ifBlank { m.sku },
-                    subtitulo = buildString {
-                        append("SKU ${m.sku}")
-                        if (specs.isNotBlank()) append(" · ").append(specs)
-                    },
+            val labels = try {
+                buildMonturaConteoLabels(
+                    optoRepository.getMonturasSnapshotForOptica(session.opticaId),
                 )
+            } catch (_: Exception) {
+                emptyMap()
             }
             val counted = detalles.count { it.stockContado != null }
             _uiState.value = InventarioFisicoUiState.Detail(
