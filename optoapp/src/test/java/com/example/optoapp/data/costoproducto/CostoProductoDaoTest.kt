@@ -59,6 +59,7 @@ class CostoProductoDaoTest {
         dao.upsertAll(listOf(entity))
 
         val result = dao.lookup(
+            opticaId = "optica1",
             material = "Resina",
             tipoLente = "Monofocal",
             stockOFabricacion = "stock",
@@ -74,6 +75,7 @@ class CostoProductoDaoTest {
     @Test
     fun lookup_noMatchingEntity_returnsNull() = runBlocking {
         val result = dao.lookup(
+            opticaId = "optica1",
             material = "Resina",
             tipoLente = "Monofocal",
             stockOFabricacion = "stock",
@@ -113,6 +115,7 @@ class CostoProductoDaoTest {
         dao.upsertAll(listOf(active, expired))
 
         val result = dao.lookup(
+            opticaId = "optica1",
             material = "Resina",
             tipoLente = "Monofocal",
             stockOFabricacion = "stock",
@@ -161,6 +164,7 @@ class CostoProductoDaoTest {
         dao.upsertAll(listOf(updated))
 
         val result = dao.lookup(
+            opticaId = "optica1",
             material = "Resina",
             tipoLente = "Monofocal",
             stockOFabricacion = "stock",
@@ -169,5 +173,38 @@ class CostoProductoDaoTest {
         )
         assertTrue(result != null)
         assertEquals(6.0, result!!.costoUnitario, 0.001)
+    }
+
+    @Test
+    fun lookup_returnsNull_forForeignOptica() = runBlocking {
+        val entity = CostoProductoEntity(
+            id = "cp1",
+            opticaId = "optica1",
+            material = "Resina",
+            tipoLente = "Monofocal",
+            stockOFabricacion = "stock",
+            tratamiento = "Antireflex",
+            serie = 2,
+            costoUnitario = 18.0,
+            vigenteDesde = "2026-01-01",
+            vigenteHasta = null,
+        )
+        dao.upsertAll(listOf(entity))
+        assertNull(dao.lookup(
+            opticaId = "optica-other",
+            material = "Resina",
+            tipoLente = "Monofocal",
+            stockOFabricacion = "stock",
+            tratamiento = "Antireflex",
+            serie = 2,
+        ))
+        assertEquals("cp1", dao.lookup(
+            opticaId = "optica1",
+            material = "Resina",
+            tipoLente = "Monofocal",
+            stockOFabricacion = "stock",
+            tratamiento = "Antireflex",
+            serie = 2,
+        )!!.id)
     }
 }

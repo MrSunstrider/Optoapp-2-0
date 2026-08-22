@@ -699,6 +699,7 @@ class DispensacionViewModel @Inject constructor(
                         val lcMaterial = evaluacion.lcMaterial?.ifBlank { item.materialLente } ?: item.materialLente
                         val lcLab = evaluacion.lcLaboratorio?.ifBlank { null }
                         val lcLookup = costoProductoDao.lookupLc(
+                            opticaId = opticaId,
                             material = lcMaterial,
                             tipoLente = lcTipo,
                             stockOFabricacion = "stock",
@@ -715,6 +716,7 @@ class DispensacionViewModel @Inject constructor(
                             val tipo = determineTipoLente(odEsf, odCil)
                             val serie = determineSeriePorCilindro(odCil)
                             val lookupResult = costoProductoDao.lookup(
+                                opticaId = opticaId,
                                 material = material,
                                 tipoLente = tipoLente,
                                 stockOFabricacion = tipo,
@@ -728,6 +730,7 @@ class DispensacionViewModel @Inject constructor(
                             val tipo = determineTipoLente(oiEsf, oiCil)
                             val serie = determineSeriePorCilindro(oiCil)
                             val lookupResult = costoProductoDao.lookup(
+                                opticaId = opticaId,
                                 material = material,
                                 tipoLente = tipoLente,
                                 stockOFabricacion = tipo,
@@ -740,6 +743,7 @@ class DispensacionViewModel @Inject constructor(
                         // Montura cost lookup: try costos_productos where stockOFabricacion='montura', fallback to monturas.costo
                         if (item.origenMontura == "Tienda" && item.monturaId.isNotBlank()) {
                             val monturaLookup = costoProductoDao.lookup(
+                                opticaId = opticaId,
                                 material = material,
                                 tipoLente = "montura",
                                 stockOFabricacion = "montura",
@@ -762,6 +766,7 @@ class DispensacionViewModel @Inject constructor(
                                 else -> "stock"
                             }
                             val biseladoLookup = costoBiseladoDao.lookup(
+                                opticaId = opticaId,
                                 material = item.materialMontura.ifBlank { "Resina" },
                                 tipoAro = tipoAro,
                                 stockOFabricacion = biseladoTipo,
