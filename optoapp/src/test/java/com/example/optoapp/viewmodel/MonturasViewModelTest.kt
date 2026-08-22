@@ -2,10 +2,15 @@ package com.example.optoapp.viewmodel
 
 import com.example.optoapp.data.Montura
 import com.example.optoapp.data.OptoRepository
+import com.example.optoapp.data.Resource
 import com.example.optoapp.data.SessionManager
+import com.example.optoapp.domain.inventario.InventarioItemKind
+import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
+import io.mockk.slot
 import io.mockk.unmockkAll
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -18,6 +23,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -32,6 +38,7 @@ class MonturasViewModelTest {
 
     private val opticaId = "optica-test"
     private val opticaIdFlow = MutableStateFlow(opticaId)
+    private val opticaRolFlow = MutableStateFlow("admin")
 
     @Before
     fun setUp() {
@@ -45,6 +52,11 @@ class MonturasViewModelTest {
         sessionManager = mockk(relaxed = true)
 
         every { sessionManager.opticaId } returns opticaIdFlow
+        every { sessionManager.opticaRol } returns opticaRolFlow
+        every { repository.getMonturasByOptica(opticaId) } returns flowOf(emptyList())
+        coEvery { repository.getMonturaById(any(), any()) } returns Resource.Error("missing")
+        coEvery { repository.insertMontura(any()) } returns Unit
+        coEvery { repository.updateMontura(any()) } returns Unit
     }
 
     @After
@@ -53,19 +65,22 @@ class MonturasViewModelTest {
         unmockkAll()
     }
 
+    private fun createVm() {
+        viewModel = MonturasViewModel(repository, sessionManager)
+    }
+
     @Test
     fun `sortedMonturas sorts by name when sortBy is name`() = runTest(testDispatcher) {
         val monturaA = Montura(id = "a", sku = "SKU-A", marca = "Zeiss", modelo = "Alpha", stockActual = 5, stockMinimo = 3)
         val monturaB = Montura(id = "b", sku = "SKU-B", marca = "Nikon", modelo = "Beta", stockActual = 10, stockMinimo = 5)
         every { repository.getMonturasByOptica(opticaId) } returns flowOf(listOf(monturaA, monturaB))
 
-        viewModel = MonturasViewModel(repository, sessionManager)
+        createVm()
         viewModel.setSortBy("name")
         advanceUntilIdle()
 
         val sorted = viewModel.sortedMonturas.value
         assertEquals(2, sorted.size)
-        // Sorted by marca then modelo: Nikon < Zeiss
         assertEquals("Nikon", sorted[0].marca)
         assertEquals("Zeiss", sorted[1].marca)
     }
@@ -76,13 +91,12 @@ class MonturasViewModelTest {
         val highStock = Montura(id = "d", sku = "SKU-D", marca = "B", modelo = "Y", stockActual = 20, stockMinimo = 5)
         every { repository.getMonturasByOptica(opticaId) } returns flowOf(listOf(lowStock, highStock))
 
-        viewModel = MonturasViewModel(repository, sessionManager)
+        createVm()
         viewModel.setSortBy("stock_desc")
         advanceUntilIdle()
 
         val sorted = viewModel.sortedMonturas.value
         assertEquals(2, sorted.size)
-        // High stock first
         assertEquals("d", sorted[0].id)
         assertEquals("c", sorted[1].id)
     }
@@ -93,13 +107,12 @@ class MonturasViewModelTest {
         val expensive = Montura(id = "f", sku = "SKU-F", marca = "B", modelo = "Y", precio = 200.0, stockActual = 1, stockMinimo = 1)
         every { repository.getMonturasByOptica(opticaId) } returns flowOf(listOf(cheap, expensive))
 
-        viewModel = MonturasViewModel(repository, sessionManager)
+        createVm()
         viewModel.setSortBy("precio_desc")
         advanceUntilIdle()
 
         val sorted = viewModel.sortedMonturas.value
         assertEquals(2, sorted.size)
-        // Expensive first
         assertEquals("f", sorted[0].id)
         assertEquals("e", sorted[1].id)
     }
@@ -111,7 +124,7 @@ class MonturasViewModelTest {
         val activeOk = Montura(id = "i", sku = "SKU-I", marca = "C", modelo = "Z", stockActual = 10, stockMinimo = 5, activo = true)
         every { repository.getMonturasByOptica(opticaId) } returns flowOf(listOf(activeLow, inactiveLow, activeOk))
 
-        viewModel = MonturasViewModel(repository, sessionManager)
+        createVm()
         advanceUntilIdle()
 
         val porReponer = viewModel.porReponerMonturas.value
@@ -126,7 +139,7 @@ class MonturasViewModelTest {
         val zeissB = Montura(id = "z2", sku = "ZE-2", marca = "Zeiss", modelo = "B", stockActual = 8, stockMinimo = 3)
         every { repository.getMonturasByOptica(opticaId) } returns flowOf(listOf(zeissA, nikonB, zeissB))
 
-        viewModel = MonturasViewModel(repository, sessionManager)
+        createVm()
         viewModel.onQueryChange("Zeiss")
         viewModel.setSortBy("name")
         advanceUntilIdle()
@@ -134,8 +147,73 @@ class MonturasViewModelTest {
         val sorted = viewModel.sortedMonturas.value
         assertEquals(2, sorted.size)
         assertTrue(sorted.all { it.marca == "Zeiss" })
-        // Sorted by marca then modelo: Zeiss A < Zeiss B
         assertEquals("A", sorted[0].modelo)
         assertEquals("B", sorted[1].modelo)
+    }
+
+    @Test
+    fun `sortedMonturas matches color in query`() = runTest(testDispatcher) {
+        val black = Montura(id = "1", sku = "S1", marca = "X", modelo = "M", color = "Negro", stockActual = 1, stockMinimo = 0)
+        val red = Montura(id = "2", sku = "S2", marca = "Y", modelo = "N", color = "Rojo", stockActual = 1, stockMinimo = 0)
+        every { repository.getMonturasByOptica(opticaId) } returns flowOf(listOf(black, red))
+
+        createVm()
+        viewModel.onQueryChange("rojo")
+        advanceUntilIdle()
+
+        assertEquals(listOf("2"), viewModel.sortedMonturas.value.map { it.id })
+    }
+
+    @Test
+    fun `save montura without tipoAro sets error and does not insert`() = runTest(testDispatcher) {
+        createVm()
+        viewModel.startCreate()
+        viewModel.updateForm {
+            it.copy(
+                tipoItem = InventarioItemKind.MONTURA,
+                sku = "SKU-1",
+                marca = "Ray",
+                modelo = "Ban",
+                tipoAro = "",
+                materialMontura = "Acetato",
+                stockActual = "1",
+                stockMinimo = "0",
+            )
+        }
+        viewModel.save()
+        advanceUntilIdle()
+
+        assertEquals("Tipo de aro es obligatorio.", viewModel.uiState.value.error)
+        coVerify(exactly = 0) { repository.insertMontura(any()) }
+    }
+
+    @Test
+    fun `save accesorio without aro inserts with categoria ACCESORIO`() = runTest(testDispatcher) {
+        createVm()
+        viewModel.startCreate()
+        viewModel.updateForm {
+            it.copy(
+                tipoItem = InventarioItemKind.ACCESORIO,
+                sku = "LIQ-1",
+                marca = "Liq1",
+                modelo = "Liquido Limpiador",
+                tipoAro = "",
+                materialMontura = "",
+                costo = "3.75",
+                precio = "10",
+                stockActual = "5",
+                stockMinimo = "1",
+            )
+        }
+        viewModel.save()
+        advanceUntilIdle()
+
+        assertNull(viewModel.uiState.value.error)
+        assertEquals("Accesorio guardado", viewModel.uiState.value.success)
+        val slot = slot<Montura>()
+        coVerify(exactly = 1) { repository.insertMontura(capture(slot)) }
+        assertEquals(InventarioItemKind.ACCESORIO, slot.captured.categoria)
+        assertEquals("", slot.captured.tipoAro)
+        assertEquals("", slot.captured.materialMontura)
     }
 }

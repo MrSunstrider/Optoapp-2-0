@@ -15,6 +15,7 @@ import com.example.optoapp.data.regalodispensacion.RegaloDispensacionEntity
 import com.example.optoapp.domain.CalcularMontoPagadoUseCase
 import com.example.optoapp.domain.PagoEffect
 import com.example.optoapp.domain.auth.AuthorizationGuard
+import com.example.optoapp.domain.inventario.InventarioItemKind
 import com.example.optoapp.domain.movimientoReferenciaForRegalo
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import com.example.optoapp.util.DateUtils
@@ -129,7 +130,9 @@ class DispensacionViewModel @Inject constructor(
         viewModelScope.launch {
             sessionManager.opticaId.collect { opticaId ->
                 repository.getMonturasByOptica(opticaId).collect { items ->
-                    _monturasActivas.value = items.filter { it.activo }
+                    _monturasActivas.value = items.filter {
+                        it.activo && InventarioItemKind.isArmazon(it.categoria)
+                    }
                 }
             }
         }

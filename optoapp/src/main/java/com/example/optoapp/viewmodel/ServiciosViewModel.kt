@@ -11,6 +11,7 @@ import com.example.optoapp.data.Pago
 import com.example.optoapp.data.Resource
 import com.example.optoapp.data.ServicioExtra
 import com.example.optoapp.domain.PagoEffect
+import com.example.optoapp.domain.inventario.InventarioItemKind
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import com.example.optoapp.util.DateUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -87,6 +88,7 @@ class ServiciosViewModel @Inject constructor(
     @OptIn(ExperimentalCoroutinesApi::class)
     val monturas: StateFlow<List<com.example.optoapp.data.Montura>> = sessionManager.opticaId
         .flatMapLatest { repository.getMonturasByOptica(it) }
+        .map { list -> list.filter { InventarioItemKind.isArmazon(it.categoria) && it.activo && it.stockActual > 0 } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     // Reactive aCuenta sum map for dynamic saldo computation (aCuenta is @Ignore in entity)
