@@ -196,7 +196,7 @@ class DispensacionViewModel @Inject constructor(
                     val loadedPagos = repository.getPagosByDispensacion(dispensacionId, opticaId).first()
                         .filter { it.tipo != "Anulación" }
                     val computedMontoPagado = calcularMontoPagadoUseCase(dispensacionId, opticaId)
-                    val loadedItems = repository.getDispensacionItemsByDispensacion(dispensacionId)
+                    val loadedItems = repository.getDispensacionItemsByDispensacion(dispensacionId, opticaId)
                     val itemsUi = if (loadedItems.isNotEmpty()) {
                         loadedItems.map { it.toUi() }
                     } else {
@@ -410,7 +410,7 @@ class DispensacionViewModel @Inject constructor(
             _uiState.update { it.copy(error = null) }
 
             val itemsAnteriores = if (dispensacionId != null && dispensacionId != "null") {
-                repository.getDispensacionItemsByDispensacion(dispensacionId)
+                repository.getDispensacionItemsByDispensacion(dispensacionId, currentOpticaId)
             } else {
                 emptyList()
             }

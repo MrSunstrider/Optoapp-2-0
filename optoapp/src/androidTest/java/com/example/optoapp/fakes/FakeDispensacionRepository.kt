@@ -66,7 +66,7 @@ class FakeDispensacionRepository {
 
     // ── Items ────────────────────────────────────────────────────────────────
 
-    fun getItemsByDispensacion(dispensacionId: String): Flow<List<DispensacionItem>> = _itemsFlow.map { list -> list.filter { it.dispensacionId == dispensacionId } }
+    fun getItemsByDispensacion(dispensacionId: String, opticaId: String): Flow<List<DispensacionItem>> = _itemsFlow.map { list -> list.filter { it.dispensacionId == dispensacionId && it.opticaId == opticaId } }
 
     suspend fun insertDispensacionItem(item: DispensacionItem) {
         items.add(item)

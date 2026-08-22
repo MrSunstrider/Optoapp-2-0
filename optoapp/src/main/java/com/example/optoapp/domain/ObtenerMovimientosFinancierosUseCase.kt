@@ -31,7 +31,7 @@ class ObtenerMovimientosFinancierosUseCase @Inject constructor(
 
         val dispIds = dispensaciones.map { it.id }.toSet()
         val costosByDisp = if (dispIds.isNotEmpty()) {
-            dispensacionItemDao.getCostosByDispensacionIds(dispIds)
+            dispensacionItemDao.getCostosByDispensacionIds(dispIds, opticaId)
         } else {
             emptyMap()
         }

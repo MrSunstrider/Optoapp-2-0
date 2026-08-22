@@ -9,8 +9,8 @@ interface MonturaMovimientoDao {
     @Query("SELECT * FROM montura_movimientos WHERE opticaId = :opticaId ORDER BY fecha DESC")
     fun getMovimientosByOptica(opticaId: String): Flow<List<MonturaMovimiento>>
 
-    @Query("SELECT * FROM montura_movimientos WHERE monturaId = :monturaId ORDER BY fecha DESC")
-    fun getMovimientosByMontura(monturaId: String): Flow<List<MonturaMovimiento>>
+    @Query("SELECT * FROM montura_movimientos WHERE monturaId = :monturaId AND opticaId = :opticaId ORDER BY fecha DESC")
+    fun getMovimientosByMontura(monturaId: String, opticaId: String): Flow<List<MonturaMovimiento>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertMovimiento(movimiento: MonturaMovimiento)
