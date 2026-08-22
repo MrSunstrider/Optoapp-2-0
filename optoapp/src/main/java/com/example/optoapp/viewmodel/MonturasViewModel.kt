@@ -23,12 +23,14 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.io.IOException
+import com.example.optoapp.domain.inventario.InventarioItemKind
 import com.example.optoapp.domain.movimientoReferenciaForManual
 import java.util.UUID
 import javax.inject.Inject
 
 data class MonturaFormState(
     val id: String? = null,
+    val tipoItem: String = InventarioItemKind.MONTURA,
     val sku: String = "",
     val marca: String = "",
     val modelo: String = "",
@@ -94,7 +96,8 @@ class MonturasViewModel @Inject constructor(
             (state.query.isBlank() ||
                 m.sku.contains(state.query, ignoreCase = true) ||
                 m.marca.contains(state.query, ignoreCase = true) ||
-                m.modelo.contains(state.query, ignoreCase = true)) &&
+                m.modelo.contains(state.query, ignoreCase = true) ||
+                m.color.contains(state.query, ignoreCase = true)) &&
                 (state.filterMarca == null || m.marca == state.filterMarca) &&
                 (state.filterMaterial == null || m.materialMontura == state.filterMaterial) &&
                 (!state.filterStockBajo || m.stockActual <= m.stockMinimo)
@@ -133,6 +136,7 @@ class MonturasViewModel @Inject constructor(
                 success = null,
                 form = MonturaFormState(
                     id = montura.id,
+                    tipoItem = InventarioItemKind.tipoItemFromCategoria(montura.categoria),
                     sku = montura.sku,
                     marca = montura.marca,
                     modelo = montura.modelo,
@@ -149,7 +153,11 @@ class MonturasViewModel @Inject constructor(
                     puenteMm = if (montura.puenteMm == null) "" else montura.puenteMm.toString(),
                     alturaMm = if (montura.alturaMm == null) "" else montura.alturaMm.toString(),
                     imagenUri = montura.imagenUri ?: "",
-                    categoria = montura.categoria,
+                    categoria = if (InventarioItemKind.isAccesorio(montura.categoria)) {
+                        ""
+                    } else {
+                        montura.categoria
+                    },
                     coleccion = montura.coleccion,
                     temporada = montura.temporada,
                     estadoComercial = montura.estadoComercial,
@@ -179,13 +187,16 @@ class MonturasViewModel @Inject constructor(
                 _uiState.update { it.copy(error = "Modelo / Nombre del producto es obligatorio.") }
                 return@launch
             }
-            if (form.tipoAro.isBlank()) {
-                _uiState.update { it.copy(error = "Tipo de aro es obligatorio.") }
-                return@launch
-            }
-            if (form.materialMontura.isBlank()) {
-                _uiState.update { it.copy(error = "Material de la montura es obligatorio.") }
-                return@launch
+            val esAccesorio = form.tipoItem.equals(InventarioItemKind.ACCESORIO, ignoreCase = true)
+            if (!esAccesorio) {
+                if (form.tipoAro.isBlank()) {
+                    _uiState.update { it.copy(error = "Tipo de aro es obligatorio.") }
+                    return@launch
+                }
+                if (form.materialMontura.isBlank()) {
+                    _uiState.update { it.copy(error = "Material de la montura es obligatorio.") }
+                    return@launch
+                }
             }
             val costo = form.costo.replace(",", ".").toDoubleOrNull() ?: 0.0
             val precio = form.precio.replace(",", ".").toDoubleOrNull() ?: 0.0
@@ -201,6 +212,7 @@ class MonturasViewModel @Inject constructor(
                 if (form.id != null) {
                     AuthorizationGuard.requireRole(role, setOf("admin", "gerente"), "editar montura")
                 }
+                val categoriaGuardada = InventarioItemKind.categoriaForSave(form.tipoItem, form.categoria)
                 val montura = Montura(
                     id = form.id ?: UUID.randomUUID().toString(),
                     sku = form.sku.trim(),
@@ -213,13 +225,13 @@ class MonturasViewModel @Inject constructor(
                     stockActual = stockActual,
                     stockMinimo = stockMinimo,
                     activo = form.activo,
-                    tipoAro = form.tipoAro.trim(),
-                    materialMontura = form.materialMontura.trim(),
-                    anchoMm = form.anchoMm.replace(",", ".").toDoubleOrNull(),
-                    puenteMm = form.puenteMm.replace(",", ".").toDoubleOrNull(),
-                    alturaMm = form.alturaMm.replace(",", ".").toDoubleOrNull(),
+                    tipoAro = if (esAccesorio) "" else form.tipoAro.trim(),
+                    materialMontura = if (esAccesorio) "" else form.materialMontura.trim(),
+                    anchoMm = if (esAccesorio) null else form.anchoMm.replace(",", ".").toDoubleOrNull(),
+                    puenteMm = if (esAccesorio) null else form.puenteMm.replace(",", ".").toDoubleOrNull(),
+                    alturaMm = if (esAccesorio) null else form.alturaMm.replace(",", ".").toDoubleOrNull(),
                     imagenUri = form.imagenUri.trim().ifEmpty { null },
-                    categoria = form.categoria.trim(),
+                    categoria = categoriaGuardada,
                     coleccion = form.coleccion.trim(),
                     temporada = form.temporada.trim(),
                     estadoComercial = form.estadoComercial.trim(),
@@ -235,7 +247,7 @@ class MonturasViewModel @Inject constructor(
                         editing = false,
                         form = MonturaFormState(),
                         error = null,
-                        success = "Producto guardado",
+                        success = if (esAccesorio) "Accesorio guardado" else "Montura guardada",
                     )
                 }
             } catch (e: CancellationException) {
