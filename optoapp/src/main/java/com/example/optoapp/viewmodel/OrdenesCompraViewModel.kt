@@ -211,7 +211,8 @@ class OrdenesCompraViewModel @Inject constructor(
     fun updateEstado(ocId: String, newEstado: String) {
         viewModelScope.launch {
             try {
-                repository.updateEstado(ocId, newEstado)
+                val opticaId = sessionManager.opticaId.first()
+                repository.updateEstado(ocId, newEstado, opticaId)
                 _uiState.update { it.copy(success = "Estado actualizado a $newEstado") }
             } catch (e: Exception) {
                 Log.e(TAG, "updateEstado failed", e)
@@ -223,7 +224,8 @@ class OrdenesCompraViewModel @Inject constructor(
     fun delete(ocId: String) {
         viewModelScope.launch {
             try {
-                repository.delete(ocId)
+                val opticaId = sessionManager.opticaId.first()
+                repository.delete(ocId, opticaId)
                 _uiState.update { it.copy(success = "Orden cancelada") }
             } catch (e: Exception) {
                 Log.e(TAG, "delete failed", e)

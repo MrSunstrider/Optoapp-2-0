@@ -8,6 +8,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -74,6 +76,31 @@ class MonturaMovimientoDaoTest {
         assertEquals("mov1", movimientos[0].id)
         assertEquals("ENTRADA", movimientos[0].tipo)
         assertEquals(5, movimientos[0].cantidad)
+    }
+
+    @Test
+    fun getMovimientoById_returnsNull_forForeignOptica() = runBlocking {
+        monturaDao.insertMontura(
+            Montura(
+                id = "m1", sku = "S001", marca = "Marca", modelo = "Mod1",
+                color = "Negro", talla = "M", costo = 50.0, precio = 100.0,
+                stockActual = 10, stockMinimo = 2, activo = true, opticaId = "o1",
+            ),
+        )
+        dao.insertMovimiento(
+            MonturaMovimiento(
+                id = "mov1",
+                monturaId = "m1",
+                fecha = LocalDate.parse("2026-01-15"),
+                tipo = "ENTRADA",
+                cantidad = 5,
+                stockPrevio = 5,
+                stockNuevo = 10,
+                opticaId = "o1",
+            ),
+        )
+        assertNull(dao.getMovimientoById("mov1", "o-other"))
+        assertNotNull(dao.getMovimientoById("mov1", "o1"))
     }
 
     @Test

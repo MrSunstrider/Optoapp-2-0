@@ -48,7 +48,7 @@ class ProveedorDaoTest {
         )
         dao.insert(p)
 
-        val retrieved = dao.getById("p1")
+        val retrieved = dao.getById("p1", "o1")
         assertNotNull(retrieved)
         assertEquals("p1", retrieved!!.id)
         assertEquals("Optical Corp", retrieved.nombre)
@@ -59,7 +59,15 @@ class ProveedorDaoTest {
     @Test
     fun getById_unknownId_returnsNull() = runBlocking {
         val dao = db.proveedorDao()
-        assertNull(dao.getById("nonexistent"))
+        assertNull(dao.getById("nonexistent", "o1"))
+    }
+
+    @Test
+    fun getById_returnsNull_forForeignOptica() = runBlocking {
+        val dao = db.proveedorDao()
+        dao.insert(Proveedor(id = "p1", nombre = "Optical Corp", ruc = "20123456789", opticaId = "o1"))
+        assertNull(dao.getById("p1", "o-other"))
+        assertNotNull(dao.getById("p1", "o1"))
     }
 
     @Test
@@ -111,7 +119,7 @@ class ProveedorDaoTest {
         )
         assertEquals(1, rows)
 
-        val retrieved = dao.getById("p1")
+        val retrieved = dao.getById("p1", "o1")
         assertEquals("Updated", retrieved!!.nombre)
         assertEquals("123", retrieved.telefono)
         assertEquals(false, retrieved.activo)
@@ -164,7 +172,7 @@ class ProveedorDaoTest {
         val before = dao.getActivosByOptica("o1").first()
         assertEquals(2, before.size)
 
-        val p2 = dao.getById("p2")!!
+        val p2 = dao.getById("p2", "o1")!!
         dao.update(
             id = p2.id, opticaId = p2.opticaId, nombre = p2.nombre,
             ruc = p2.ruc, telefono = p2.telefono, email = p2.email,
@@ -176,7 +184,7 @@ class ProveedorDaoTest {
         assertEquals(1, after.size)
         assertEquals("Active Corp", after[0].nombre)
 
-        val retrieved = dao.getById("p2")
+        val retrieved = dao.getById("p2", "o1")
         assertNotNull(retrieved)
         assertEquals(false, retrieved!!.activo)
 

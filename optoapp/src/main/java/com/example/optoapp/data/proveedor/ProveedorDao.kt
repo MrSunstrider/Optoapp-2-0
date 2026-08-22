@@ -15,8 +15,8 @@ interface ProveedorDao {
     @Query("SELECT * FROM proveedores WHERE opticaId = :opticaId")
     suspend fun getListByOptica(opticaId: String): List<Proveedor>
 
-    @Query("SELECT * FROM proveedores WHERE id = :id")
-    suspend fun getById(id: String): Proveedor?
+    @Query("SELECT * FROM proveedores WHERE id = :id AND opticaId = :opticaId")
+    suspend fun getById(id: String, opticaId: String): Proveedor?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(proveedor: Proveedor)

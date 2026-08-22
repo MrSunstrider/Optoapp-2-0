@@ -140,7 +140,7 @@ class OrdenCompraRepositoryTest {
             items,
         )
 
-        val oc = db.ordenCompraDao().getById("oc1")
+        val oc = db.ordenCompraDao().getById("oc1", "o1")
         assertNotNull(oc)
         assertEquals(1600.0, oc!!.total, 0.001)
         val savedItems = db.ordenCompraItemDao().getByOrden("oc1")
@@ -171,8 +171,8 @@ class OrdenCompraRepositoryTest {
             ),
         )
 
-        repository.updateEstado("oc1", "PARCIAL")
-        val oc = db.ordenCompraDao().getById("oc1")
+        repository.updateEstado("oc1", "PARCIAL", "o1")
+        val oc = db.ordenCompraDao().getById("oc1", "o1")
         assertEquals("PARCIAL", oc!!.estado)
     }
 
@@ -201,10 +201,40 @@ class OrdenCompraRepositoryTest {
 
         // Mark all items as fully received and complete
         val received = mapOf("i1" to 10)
-        repository.receiveItems("oc1", received)
-        val oc = db.ordenCompraDao().getById("oc1")
+        repository.receiveItems("oc1", "o1", received)
+        val oc = db.ordenCompraDao().getById("oc1", "o1")
         assertEquals("COMPLETADA", oc!!.estado)
         assertEquals(1000.0, oc.total, 0.001)
+    }
+
+    @Test
+    fun receiveItems_foreignOptica_doesNotMutateItems() = runBlocking {
+        seedProveedor()
+        seedMontura("m1")
+        repository.create(
+            OrdenCompra(
+                id = "oc1",
+                numero = "OC-001",
+                proveedorId = "p1",
+                fecha = LocalDate.now(),
+                opticaId = "o1",
+            ),
+            listOf(
+                OrdenCompraItem(
+                    id = "i1",
+                    ordenId = "oc1",
+                    monturaId = "m1",
+                    cantidad = 10,
+                    costoUnitario = 100.0,
+                ),
+            ),
+        )
+
+        repository.receiveItems("oc1", "o-other", mapOf("i1" to 10))
+
+        val item = db.ordenCompraItemDao().getByOrden("oc1").single()
+        assertEquals(0, item.recibido)
+        assertEquals("PENDIENTE", db.ordenCompraDao().getById("oc1", "o1")!!.estado)
     }
 
     @Test
@@ -230,7 +260,7 @@ class OrdenCompraRepositoryTest {
             ),
         )
 
-        val oc = repository.getById("oc1")
+        val oc = repository.getById("oc1", "o1")
         assertNotNull(oc)
         assertEquals("oc1", oc!!.id)
         val items = repository.getItems("oc1")
@@ -261,8 +291,8 @@ class OrdenCompraRepositoryTest {
             ),
         )
 
-        repository.delete("oc1")
-        val cancelled = db.ordenCompraDao().getById("oc1")
+        repository.delete("oc1", "o1")
+        val cancelled = db.ordenCompraDao().getById("oc1", "o1")
         assertNotNull(cancelled)
         assertEquals("CANCELADA", cancelled!!.estado)
         assertTrue(db.ordenCompraItemDao().getByOrden("oc1").isEmpty())
@@ -299,7 +329,7 @@ class OrdenCompraRepositoryTest {
             ),
         )
 
-        repository.receiveItems("oc1", mapOf("i1" to 7))
+        repository.receiveItems("oc1", "o1", mapOf("i1" to 7))
 
         val items = db.ordenCompraItemDao().getByOrden("oc1")
         val i1 = items.find { it.id == "i1" }!!
@@ -307,7 +337,7 @@ class OrdenCompraRepositoryTest {
         val i2 = items.find { it.id == "i2" }!!
         assertEquals(0, i2.recibido)
 
-        val oc = db.ordenCompraDao().getById("oc1")!!
+        val oc = db.ordenCompraDao().getById("oc1", "o1")!!
         assertEquals(700.0, oc.total, 0.001)
     }
 
@@ -334,11 +364,11 @@ class OrdenCompraRepositoryTest {
             ),
         )
 
-        assertEquals("PENDIENTE", db.ordenCompraDao().getById("oc1")!!.estado)
-        repository.updateEstado("oc1", "APROBADA")
-        assertEquals("APROBADA", db.ordenCompraDao().getById("oc1")!!.estado)
-        repository.receiveItems("oc1", mapOf("i1" to 5))
-        assertEquals("PARCIAL", db.ordenCompraDao().getById("oc1")!!.estado)
+        assertEquals("PENDIENTE", db.ordenCompraDao().getById("oc1", "o1")!!.estado)
+        repository.updateEstado("oc1", "APROBADA", "o1")
+        assertEquals("APROBADA", db.ordenCompraDao().getById("oc1", "o1")!!.estado)
+        repository.receiveItems("oc1", "o1", mapOf("i1" to 5))
+        assertEquals("PARCIAL", db.ordenCompraDao().getById("oc1", "o1")!!.estado)
     }
 
     @Test
@@ -366,8 +396,8 @@ class OrdenCompraRepositoryTest {
             ),
         )
 
-        repository.receiveItems("oc1", mapOf("i1" to 10))
-        val oc = db.ordenCompraDao().getById("oc1")!!
+        repository.receiveItems("oc1", "o1", mapOf("i1" to 10))
+        val oc = db.ordenCompraDao().getById("oc1", "o1")!!
         assertEquals("COMPLETADA", oc.estado)
         // Stock should have increased by 10
         val montura = db.monturaDao().getMonturaByIdForOptica("m1", "o1")
@@ -399,8 +429,8 @@ class OrdenCompraRepositoryTest {
             ),
         )
 
-        repository.delete("oc1")
-        val oc = db.ordenCompraDao().getById("oc1")!!
+        repository.delete("oc1", "o1")
+        val oc = db.ordenCompraDao().getById("oc1", "o1")!!
         assertEquals("CANCELADA", oc.estado)
         // Stock should not change on cancel
         val montura = db.monturaDao().getMonturaByIdForOptica("m1", "o1")

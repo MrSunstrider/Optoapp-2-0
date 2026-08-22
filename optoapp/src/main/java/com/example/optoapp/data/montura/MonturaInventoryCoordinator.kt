@@ -94,7 +94,8 @@ class MonturaInventoryCoordinator @Inject constructor(
 
     fun getMovimientosByMontura(monturaId: String): Flow<List<MonturaMovimiento>> = monturaMovimientoDao.getMovimientosByMontura(monturaId)
 
-    suspend fun getMovimientoMonturaById(id: String): MonturaMovimiento? = monturaMovimientoDao.getMovimientoById(id)
+    suspend fun getMovimientoMonturaById(id: String, opticaId: String): MonturaMovimiento? =
+        monturaMovimientoDao.getMovimientoById(id, opticaId)
 
     suspend fun insertMonturaMovimiento(movimiento: MonturaMovimiento) {
         monturaMovimientoDao.insertMovimiento(movimiento)

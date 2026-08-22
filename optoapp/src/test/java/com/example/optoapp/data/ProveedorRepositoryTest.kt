@@ -50,29 +50,29 @@ class ProveedorRepositoryTest {
     fun insert_and_getById_returnsProveedor() = runBlocking {
         val p = Proveedor(id = "p1", nombre = "Test Optics", ruc = "123", opticaId = "o1")
         repository.insert(p)
-        val retrieved = repository.getById("p1")
+        val retrieved = repository.getById("p1", "o1")
         assertNotNull(retrieved)
         assertEquals("Test Optics", retrieved!!.nombre)
     }
 
     @Test
     fun getById_unknownId_returnsNull() = runBlocking {
-        assertNull(repository.getById("nonexistent"))
+        assertNull(repository.getById("nonexistent", "o1"))
     }
 
     @Test
     fun update_modifiesExisting() = runBlocking {
         repository.insert(Proveedor(id = "p1", nombre = "Old", ruc = "111", opticaId = "o1"))
         repository.update(Proveedor(id = "p1", nombre = "New", ruc = "111", opticaId = "o1"))
-        val retrieved = repository.getById("p1")
+        val retrieved = repository.getById("p1", "o1")
         assertEquals("New", retrieved!!.nombre)
     }
 
     @Test
     fun softDelete_setsActivoFalse() = runBlocking {
         repository.insert(Proveedor(id = "p1", nombre = "To Delete", ruc = "111", opticaId = "o1"))
-        repository.softDelete("p1")
-        val retrieved = repository.getById("p1")
+        repository.softDelete("p1", "o1")
+        val retrieved = repository.getById("p1", "o1")
         assertNotNull(retrieved)
         assertFalse(retrieved!!.activo)
     }
@@ -81,7 +81,7 @@ class ProveedorRepositoryTest {
     fun softDelete_excludesFromActivos() = runBlocking {
         repository.insert(Proveedor(id = "p1", nombre = "Active", ruc = "111", opticaId = "o1"))
         repository.insert(Proveedor(id = "p2", nombre = "Deactivated", ruc = "222", opticaId = "o1"))
-        repository.softDelete("p2")
+        repository.softDelete("p2", "o1")
 
         val activos = repository.getActivosByOptica("o1").first()
         assertEquals(1, activos.size)
