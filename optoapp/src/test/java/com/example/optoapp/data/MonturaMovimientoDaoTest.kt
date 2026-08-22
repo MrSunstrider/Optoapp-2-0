@@ -190,7 +190,7 @@ class MonturaMovimientoDaoTest {
         dao.insertMovimiento(mov2)
         dao.insertMovimiento(mov3)
 
-        val m1Movimientos = dao.getMovimientosByMontura("m1").first()
+        val m1Movimientos = dao.getMovimientosByMontura("m1", "o1").first()
 
         assertEquals(2, m1Movimientos.size)
         assertTrue(m1Movimientos.all { it.monturaId == "m1" })
@@ -242,7 +242,7 @@ class MonturaMovimientoDaoTest {
 
     @Test
     fun getMovimientosByMontura_whenNoMovimientos_returnsEmpty() = runBlocking {
-        val movimientos = dao.getMovimientosByMontura("nonexistent").first()
+        val movimientos = dao.getMovimientosByMontura("nonexistent", "o1").first()
 
         assertTrue(movimientos.isEmpty())
     }

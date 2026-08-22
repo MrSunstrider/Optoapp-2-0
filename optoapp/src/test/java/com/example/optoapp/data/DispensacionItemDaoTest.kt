@@ -58,14 +58,14 @@ class DispensacionItemDaoTest {
         // Then: only optica1 item was reassigned
         assertEquals(1, moved)
 
-        val target1Items = dao.getItemsListByDispensacion("target-o1")
+        val target1Items = dao.getItemsListByDispensacion("target-o1", "optica1")
         assertEquals(1, target1Items.size)
         assertEquals("item-o1", target1Items[0].id)
 
-        val source1Items = dao.getItemsListByDispensacion("source-o1")
+        val source1Items = dao.getItemsListByDispensacion("source-o1", "optica1")
         assertTrue(source1Items.isEmpty())
 
-        val source2Items = dao.getItemsListByDispensacion("source-o2")
+        val source2Items = dao.getItemsListByDispensacion("source-o2", "optica2")
         assertEquals(1, source2Items.size)
         assertEquals("item-o2", source2Items[0].id)
     }
@@ -93,12 +93,12 @@ class DispensacionItemDaoTest {
         assertEquals(0, moved)
 
         // optica2 items are untouched
-        val s2Items = dao.getItemsListByDispensacion("s2")
+        val s2Items = dao.getItemsListByDispensacion("s2", "optica2")
         assertEquals(1, s2Items.size)
         assertEquals("i2", s2Items[0].id)
 
         // optica1 items are also untouched
-        val s1Items = dao.getItemsListByDispensacion("s1")
+        val s1Items = dao.getItemsListByDispensacion("s1", "optica1")
         assertEquals(1, s1Items.size)
         assertEquals("i1", s1Items[0].id)
     }

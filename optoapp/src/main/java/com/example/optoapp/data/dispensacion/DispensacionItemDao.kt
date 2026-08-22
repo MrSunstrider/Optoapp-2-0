@@ -13,17 +13,18 @@ interface DispensacionItemDao {
         SELECT dispensacion_id AS dispensacionId,
         COALESCE(SUM(COALESCE(costo_real_od, 0) + COALESCE(costo_real_oi, 0) + COALESCE(costo_real_montura, 0) + COALESCE(costo_real_biselado, 0) + COALESCE(costo_real_lc, 0)), 0) AS costoTotal
         FROM dispensacion_items 
-        WHERE dispensacion_id IN (:ids) 
+        WHERE dispensacion_id IN (:ids)
+          AND optica_id = :opticaId
         GROUP BY dispensacion_id
     """,
     )
-    suspend fun getCostosByDispensacionIds(ids: Set<String>): Map<String, Double>
+    suspend fun getCostosByDispensacionIds(ids: Set<String>, opticaId: String): Map<String, Double>
 
-    @Query("SELECT * FROM dispensacion_items WHERE dispensacion_id = :dispensacionId ORDER BY rowid")
-    fun getItemsByDispensacion(dispensacionId: String): Flow<List<DispensacionItem>>
+    @Query("SELECT * FROM dispensacion_items WHERE dispensacion_id = :dispensacionId AND optica_id = :opticaId ORDER BY rowid")
+    fun getItemsByDispensacion(dispensacionId: String, opticaId: String): Flow<List<DispensacionItem>>
 
-    @Query("SELECT * FROM dispensacion_items WHERE dispensacion_id = :dispensacionId ORDER BY rowid")
-    suspend fun getItemsListByDispensacion(dispensacionId: String): List<DispensacionItem>
+    @Query("SELECT * FROM dispensacion_items WHERE dispensacion_id = :dispensacionId AND optica_id = :opticaId ORDER BY rowid")
+    suspend fun getItemsListByDispensacion(dispensacionId: String, opticaId: String): List<DispensacionItem>
 
     @Query("SELECT * FROM dispensacion_items WHERE id = :id AND optica_id = :opticaId")
     suspend fun getById(id: String, opticaId: String): DispensacionItem?

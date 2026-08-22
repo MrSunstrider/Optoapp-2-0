@@ -146,7 +146,8 @@ open class OptoRepository(
     }
     suspend fun deleteItemsByDispensacionId(dispensacionId: String, opticaId: String) = dispensacionRepo.deleteItemsByDispensacionId(dispensacionId, opticaId)
     suspend fun getDispensacionItemById(id: String, opticaId: String) = dispensacionRepo.getDispensacionItemById(id, opticaId)
-    suspend fun getDispensacionItemsByDispensacion(dispensacionId: String) = dispensacionRepo.getItemsListByDispensacion(dispensacionId)
+    suspend fun getDispensacionItemsByDispensacion(dispensacionId: String, opticaId: String) =
+        dispensacionRepo.getItemsListByDispensacion(dispensacionId, opticaId)
     suspend fun suggestNextOt(opticaId: String, fecha: LocalDate) = dispensacionRepo.suggestNextOt(opticaId, fecha)
     suspend fun suggestNextHistoriaOptometrica(opticaId: String) = pacienteRepo.suggestNextHistoriaOptometrica(opticaId)
     suspend fun existsDuplicateHistoriaOptometrica(opticaId: String, historia: String, excludePacienteId: String?) = pacienteRepo.existsDuplicateHistoriaOptometrica(opticaId, historia, excludePacienteId)
@@ -206,7 +207,8 @@ open class OptoRepository(
     suspend fun deleteMontura(montura: Montura) = monturaCoordinator.deleteMontura(montura)
     suspend fun adjustMonturaStock(monturaId: String, opticaId: String, delta: Int) = monturaCoordinator.adjustMonturaStock(monturaId, opticaId, delta)
     fun getMovimientosMonturaByOptica(opticaId: String) = monturaCoordinator.getMovimientosMonturaByOptica(opticaId)
-    fun getMovimientosByMontura(monturaId: String) = monturaCoordinator.getMovimientosByMontura(monturaId)
+    fun getMovimientosByMontura(monturaId: String, opticaId: String) =
+        monturaCoordinator.getMovimientosByMontura(monturaId, opticaId)
     suspend fun getMovimientoMonturaById(id: String, opticaId: String) =
         monturaCoordinator.getMovimientoMonturaById(id, opticaId)
     suspend fun insertMonturaMovimiento(movimiento: MonturaMovimiento) = monturaCoordinator.insertMonturaMovimiento(movimiento)
