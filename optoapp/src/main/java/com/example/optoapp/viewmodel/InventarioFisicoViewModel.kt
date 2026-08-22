@@ -60,7 +60,8 @@ class InventarioFisicoViewModel @Inject constructor(
 
     fun loadSessionDetail(sessionId: String) {
         viewModelScope.launch {
-            val session = repository.getById(sessionId)
+            val opticaId = sessionManager.opticaId.first()
+            val session = repository.getById(sessionId, opticaId)
             if (session == null) {
                 _uiState.value = InventarioFisicoUiState.Error("Sesion no encontrada")
                 return@launch
@@ -93,7 +94,7 @@ class InventarioFisicoViewModel @Inject constructor(
         viewModelScope.launch {
             val current = _uiState.value
             if (current !is InventarioFisicoUiState.Detail) return@launch
-            repository.closeSession(current.session.id)
+            repository.closeSession(current.session.id, current.session.opticaId)
             loadSessions()
         }
     }

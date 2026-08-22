@@ -127,8 +127,8 @@ class InventarioFisicoRepositoryTest {
         val s = repo.createSession("o1", "u1")
         assertNotNull(s)
 
-        repo.closeSession(s!!.id)
-        val closed = db.inventarioFisicoDao().getById(s.id)
+        repo.closeSession(s!!.id, s!!.opticaId)
+        val closed = db.inventarioFisicoDao().getById(s.id, "o1")
         assertEquals("COMPLETADO", closed!!.estado)
     }
 
@@ -153,7 +153,7 @@ class InventarioFisicoRepositoryTest {
         val detalle = dao.getDetalles(s!!.id).first()
         dao.updateDetalle(detalle.copy(stockContado = 7, diferencia = -3))
 
-        repo.closeSession(s.id)
+        repo.closeSession(s.id, s.opticaId)
         val movimientos = db.monturaMovimientoDao().getMovimientosListByOptica("o1")
         assertEquals(1, movimientos.size)
         assertEquals("AJUSTE_INVENTARIO", movimientos[0].tipo)
@@ -182,7 +182,7 @@ class InventarioFisicoRepositoryTest {
         val detalle = dao.getDetalles(s!!.id).first()
         dao.updateDetalle(detalle.copy(stockContado = 10, diferencia = 0))
 
-        repo.closeSession(s.id)
+        repo.closeSession(s.id, s.opticaId)
         val movimientos = db.monturaMovimientoDao().getMovimientosListByOptica("o1")
         assertEquals(0, movimientos.size)
     }
@@ -221,7 +221,7 @@ class InventarioFisicoRepositoryTest {
         dao.updateDetalle(detalles.find { it.monturaId == "m1" }!!.copy(stockContado = 7, diferencia = -3))
         dao.updateDetalle(detalles.find { it.monturaId == "m2" }!!.copy(stockContado = 8, diferencia = 3))
 
-        repo.closeSession(s.id)
+        repo.closeSession(s.id, s.opticaId)
 
         val m1 = db.monturaDao().getMonturaByIdForOptica("m1", "o1")
         val m2 = db.monturaDao().getMonturaByIdForOptica("m2", "o1")
@@ -243,7 +243,7 @@ class InventarioFisicoRepositoryTest {
             ),
         )
         repo.createSession("o1", "u1")
-        repo.createSession("o1", "u1")?.let { repo.closeSession(it.id) }
+        repo.createSession("o1", "u1")?.let { repo.closeSession(it.id, it.opticaId) }
         repo.createSession("o1", "u1")
 
         val list = db.inventarioFisicoDao().getByOptica("o1").first()

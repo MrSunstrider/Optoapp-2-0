@@ -20,8 +20,8 @@ interface InventarioFisicoDao {
     @Query("SELECT * FROM inventario_fisico WHERE opticaId = :opticaId AND estado = 'EN_PROGRESO'")
     suspend fun getActiveByOptica(opticaId: String): InventarioFisico?
 
-    @Query("SELECT * FROM inventario_fisico WHERE id = :id")
-    suspend fun getById(id: String): InventarioFisico?
+    @Query("SELECT * FROM inventario_fisico WHERE id = :id AND opticaId = :opticaId")
+    suspend fun getById(id: String, opticaId: String): InventarioFisico?
 
     @Query("SELECT * FROM inventario_fisico_detalle WHERE inventarioId = :inventarioId")
     suspend fun getDetalles(inventarioId: String): List<InventarioFisicoDetalle>
