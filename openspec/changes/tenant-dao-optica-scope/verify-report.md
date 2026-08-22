@@ -2,7 +2,7 @@
 
 | PR | Suite | GGA-eq | Notes |
 |----|-------|--------|-------|
-| PR1 | pending run | pending | IF getById scoped; #84 |
+| PR1 | PASS testDebugUnitTest | APPROVED | IF getById scoped; #84 |
 | PR2 | pending | pending | |
 | PR3 | pending | pending | Archive after green |
 
