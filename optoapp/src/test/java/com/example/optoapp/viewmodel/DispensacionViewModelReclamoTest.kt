@@ -83,7 +83,7 @@ class DispensacionViewModelReclamoTest {
 
     @Test
     fun `crearReclamo marks original as Reclamada`() = runTest {
-        coEvery { calcularMontoPagadoUseCase(originalId) } returns 200.0
+        coEvery { calcularMontoPagadoUseCase(originalId, any()) } returns 200.0
         val reclaim = mockk<com.example.optoapp.domain.ReclaimDispensacionUseCase>(relaxed = true)
         viewModel = DispensacionViewModel(
             repository,
@@ -116,7 +116,7 @@ class DispensacionViewModelReclamoTest {
 
     @Test
     fun `crearReclamo creates new dispensacion with reclamoOrigenId`() = runTest {
-        coEvery { calcularMontoPagadoUseCase(originalId) } returns 200.0
+        coEvery { calcularMontoPagadoUseCase(originalId, any()) } returns 200.0
         viewModel = DispensacionViewModel(
             repository,
             sessionManager,
@@ -144,7 +144,7 @@ class DispensacionViewModelReclamoTest {
 
     @Test
     fun `crearReclamo diff greater than zero does not create refund Pago`() = runTest {
-        coEvery { calcularMontoPagadoUseCase(originalId) } returns 200.0
+        coEvery { calcularMontoPagadoUseCase(originalId, any()) } returns 200.0
         viewModel = DispensacionViewModel(
             repository,
             sessionManager,
@@ -170,7 +170,7 @@ class DispensacionViewModelReclamoTest {
 
     @Test
     fun `crearReclamo diff less than zero creates refund Pago with negative monto`() = runTest {
-        coEvery { calcularMontoPagadoUseCase(originalId) } returns 200.0
+        coEvery { calcularMontoPagadoUseCase(originalId, any()) } returns 200.0
         val reclaim = mockk<com.example.optoapp.domain.ReclaimDispensacionUseCase>(relaxed = true)
         viewModel = DispensacionViewModel(
             repository,
@@ -205,7 +205,7 @@ class DispensacionViewModelReclamoTest {
 
     @Test
     fun `crearReclamo diff equals zero does not create any Pago`() = runTest {
-        coEvery { calcularMontoPagadoUseCase(originalId) } returns 200.0
+        coEvery { calcularMontoPagadoUseCase(originalId, any()) } returns 200.0
         viewModel = DispensacionViewModel(
             repository,
             sessionManager,

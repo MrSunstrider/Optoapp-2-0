@@ -151,7 +151,8 @@ open class OptoRepository(
     suspend fun suggestNextHistoriaOptometrica(opticaId: String) = pacienteRepo.suggestNextHistoriaOptometrica(opticaId)
     suspend fun existsDuplicateHistoriaOptometrica(opticaId: String, historia: String, excludePacienteId: String?) = pacienteRepo.existsDuplicateHistoriaOptometrica(opticaId, historia, excludePacienteId)
 
-    fun getPagosByDispensacion(dispensacionId: String) = dispensacionRepo.getPagosByDispensacion(dispensacionId)
+    fun getPagosByDispensacion(dispensacionId: String, opticaId: String) =
+        dispensacionRepo.getPagosByDispensacion(dispensacionId, opticaId)
     suspend fun insertPago(pago: Pago) {
         val stamped = pago.copy(updatedAt = Instant.now().toString())
         dispensacionRepo.insertPago(stamped)
@@ -168,15 +169,11 @@ open class OptoRepository(
     suspend fun reassignRegalosDispensacion(sourceId: String, targetId: String, opticaId: String) = database.regaloDispensacionDao().reassignRegalosDispensacion(sourceId, targetId, opticaId)
     suspend fun deletePagoRegistrandoAnulacionEnCaja(pago: Pago, opticaId: String) = dispensacionRepo.deletePagoRegistrandoAnulacionEnCaja(pago, opticaId)
     suspend fun deletePago(pago: Pago) = dispensacionRepo.deletePago(pago)
-    fun getPagosByServicioExtra(servicioExtraId: String) = dispensacionRepo.getPagosByServicioExtra(servicioExtraId)
+    fun getPagosByServicioExtra(servicioExtraId: String, opticaId: String) =
+        dispensacionRepo.getPagosByServicioExtra(servicioExtraId, opticaId)
 
-    @Suppress("DEPRECATION")
-    @Deprecated(
-        message = "Use getPagosByDateRangeForOptica to enforce multi-tenant isolation",
-        replaceWith = ReplaceWith("getPagosByDateRangeForOptica(start, end, opticaId)"),
-    )
-    fun getPagosByDateRange(start: LocalDate, end: LocalDate) = dispensacionRepo.getPagosByDateRange(start, end)
-    fun getPagosByDateRangeForOptica(start: LocalDate, end: LocalDate, opticaId: String) = dispensacionRepo.getPagosByDateRangeForOptica(start, end, opticaId)
+    fun getPagosByDateRangeForOptica(start: LocalDate, end: LocalDate, opticaId: String) =
+        dispensacionRepo.getPagosByDateRangeForOptica(start, end, opticaId)
     fun getAllPagosFlowForOptica(opticaId: String) = dispensacionRepo.getPagosFlowForOptica(opticaId)
 
     fun getAllServiciosForOptica(opticaId: String) = dispensacionRepo.getAllServiciosForOptica(opticaId)

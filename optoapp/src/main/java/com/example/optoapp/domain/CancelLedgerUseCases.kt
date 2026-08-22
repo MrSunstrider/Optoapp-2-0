@@ -17,8 +17,8 @@ internal suspend fun insertMissingReversos(
     opticaId: String,
     forDispensacion: Boolean,
 ) {
-    for (credit in pagoDao.getCreditPagosByParent(parentId)) {
-        if (pagoDao.getReversoByOriginalId(credit.id) != null) continue
+    for (credit in pagoDao.getCreditPagosByParent(parentId, opticaId)) {
+        if (pagoDao.getReversoByOriginalId(credit.id, opticaId) != null) continue
         repository.insertPago(
             Pago(
                 id = UUID.randomUUID().toString(),

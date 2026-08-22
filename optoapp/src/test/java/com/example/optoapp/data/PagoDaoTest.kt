@@ -154,7 +154,7 @@ class PagoDaoTest {
         dao.insertPago(pago2)
         dao.insertPago(pago3)
 
-        val pagosDispX = dao.getPagosByDispensacion("dispX").first()
+        val pagosDispX = dao.getPagosByDispensacion("dispX", "o1").first()
 
         assertEquals(2, pagosDispX.size)
         assertEquals("p1", pagosDispX[1].id)
@@ -195,7 +195,7 @@ class PagoDaoTest {
         dao.insertPago(pago1)
         dao.insertPago(pago2)
 
-        val pagosSe1 = dao.getPagosByServicioExtra("se1").first()
+        val pagosSe1 = dao.getPagosByServicioExtra("se1", "o1").first()
 
         assertEquals(2, pagosSe1.size)
         assertEquals(80.0, pagosSe1[1].monto, 0.001)
@@ -232,9 +232,10 @@ class PagoDaoTest {
         dao.insertPago(pago2)
         dao.insertPago(pago3)
 
-        val range = dao.getPagosByDateRange(
+        val range = dao.getPagosByDateRangeForOptica(
             LocalDate.parse("2026-03-01"),
             LocalDate.parse("2026-03-31"),
+            "o1",
         ).first()
 
         assertEquals(2, range.size)
@@ -252,9 +253,10 @@ class PagoDaoTest {
         )
         dao.insertPago(pago)
 
-        val range = dao.getPagosByDateRange(
+        val range = dao.getPagosByDateRangeForOptica(
             LocalDate.parse("2026-06-01"),
             LocalDate.parse("2026-06-30"),
+            "o1",
         ).first()
 
         assertEquals(0, range.size)
@@ -348,7 +350,7 @@ class PagoDaoTest {
         dao.insertPago(p2)
         db.openHelper.writableDatabase.execSQL("DELETE FROM pagos WHERE opticaId = 'o1'")
 
-        val all = dao.getAllPagos()
+        val all = dao.getPagosListByOptica("o1")
         assertEquals(0, all.size)
     }
 
@@ -455,7 +457,7 @@ class PagoDaoTest {
         )
         dao.insertPago(pago)
 
-        val updatedCount = dao.reassignDispensacionId("oldDisp", "newDisp")
+        val updatedCount = dao.reassignDispensacionIdForOptica("oldDisp", "newDisp", "o1")
         assertEquals(1, updatedCount)
 
         val retrieved = dao.getPagoByIdForOptica("p1", "o1")

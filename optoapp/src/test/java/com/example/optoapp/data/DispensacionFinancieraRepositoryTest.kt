@@ -50,13 +50,13 @@ class DispensacionFinancieraRepositoryTest {
         val pagos = listOf(
             Pago(id = "p-1", dispensacionId = "disp-1", fecha = testDate, tipo = "Abono", monto = 50.0, opticaId = "optica-test"),
         )
-        coEvery { optoRepository.getPagosByDispensacion("disp-1") } returns flowOf(pagos)
+        coEvery { optoRepository.getPagosByDispensacion("disp-1", any()) } returns flowOf(pagos)
 
-        val result = repository.obtenerPagos("disp-1")
+        val result = repository.obtenerPagos("disp-1", "o1")
 
         assertEquals(1, result.size)
         assertEquals("p-1", result[0].id)
-        coVerify { optoRepository.getPagosByDispensacion("disp-1") }
+        coVerify { optoRepository.getPagosByDispensacion("disp-1", any()) }
     }
 
     @Test

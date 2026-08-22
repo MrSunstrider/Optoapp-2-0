@@ -226,7 +226,7 @@ class DispensacionRepositoryTest {
 
         repo.insertPago(pago)
 
-        val pagos = repo.getPagosByDispensacion("d1").first()
+        val pagos = repo.getPagosByDispensacion("d1", "o1").first()
         assertEquals(1, pagos.size)
         assertEquals(150.0, pagos[0].monto, 0.001)
     }
@@ -257,7 +257,7 @@ class DispensacionRepositoryTest {
 
         // Original kept; linked Reverso inserted
         assertEquals(pago.id, pagoDao.getPagoByIdForOptica("p1", "o1")!!.id)
-        val allPagos = pagoDao.getAllPagos()
+        val allPagos = pagoDao.getPagosListByOptica("o1")
         assertEquals(2, allPagos.size)
         val reversal = allPagos.first { it.tipo == "Reverso" }
         assertEquals(100.0, reversal.monto, 0.001)
@@ -291,7 +291,7 @@ class DispensacionRepositoryTest {
 
         // Zero monto: keep original, no Reverso
         assertEquals("p_zero", pagoDao.getPagoByIdForOptica("p_zero", "o1")!!.id)
-        assertEquals(1, pagoDao.getAllPagos().size)
+        assertEquals(1, pagoDao.getPagosListByOptica("o1").size)
     }
 
     @Test
@@ -308,7 +308,7 @@ class DispensacionRepositoryTest {
         // pago not inserted — should not throw and should not insert reversal
         repo.deletePagoRegistrandoAnulacionEnCaja(pago, "o1")
 
-        val allPagos = pagoDao.getAllPagos()
+        val allPagos = pagoDao.getPagosListByOptica("o1")
         assertEquals(0, allPagos.size)
     }
 

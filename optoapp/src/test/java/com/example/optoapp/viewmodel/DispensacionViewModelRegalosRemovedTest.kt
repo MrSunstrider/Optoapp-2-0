@@ -57,7 +57,7 @@ class DispensacionViewModelRegalosRemovedTest {
 
         every { sessionManager.opticaId } returns opticaIdFlow
         every { sessionManager.opticaRol } returns MutableStateFlow("admin")
-        coEvery { calcularMontoPagadoUseCase(any()) } returns 0.0
+        coEvery { calcularMontoPagadoUseCase(any(), any()) } returns 0.0
     }
 
     @After
