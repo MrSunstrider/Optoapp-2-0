@@ -92,9 +92,11 @@ class DispensacionRepository(
         return d + s + pg
     }
 
-    fun getItemsByDispensacion(dispensacionId: String): Flow<List<DispensacionItem>> = dispensacionItemDao.getItemsByDispensacion(dispensacionId)
+    fun getItemsByDispensacion(dispensacionId: String, opticaId: String): Flow<List<DispensacionItem>> =
+        dispensacionItemDao.getItemsByDispensacion(dispensacionId, opticaId)
 
-    suspend fun getItemsListByDispensacion(dispensacionId: String): List<DispensacionItem> = dispensacionItemDao.getItemsListByDispensacion(dispensacionId)
+    suspend fun getItemsListByDispensacion(dispensacionId: String, opticaId: String): List<DispensacionItem> =
+        dispensacionItemDao.getItemsListByDispensacion(dispensacionId, opticaId)
 
     suspend fun getItemsListByOptica(opticaId: String): List<DispensacionItem> = dispensacionItemDao.getItemsListByOptica(opticaId)
 

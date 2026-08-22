@@ -153,9 +153,9 @@ class PacienteRepository(
                     val mergedCanonical = mergePacienteData(canonical, duplicate)
                     canonical = mergedCanonical
                     pacienteDao.upsertPaciente(mergedCanonical)
-                    movedEvaluaciones += pacienteDao.reassignEvaluacionesPaciente(duplicate.id, canonical.id)
-                    movedDispensaciones += pacienteDao.reassignDispensacionesPaciente(duplicate.id, canonical.id)
-                    movedServicios += pacienteDao.reassignServiciosPaciente(duplicate.id, canonical.id)
+                    movedEvaluaciones += pacienteDao.reassignEvaluacionesPaciente(duplicate.id, canonical.id, opticaId)
+                    movedDispensaciones += pacienteDao.reassignDispensacionesPaciente(duplicate.id, canonical.id, opticaId)
+                    movedServicios += pacienteDao.reassignServiciosPaciente(duplicate.id, canonical.id, opticaId)
                     pacienteDao.deletePacienteById(duplicate.id, opticaId)
                     mergedPacientes++
                 }

@@ -65,14 +65,14 @@ interface PacienteDao {
     @Query("UPDATE pacientes SET opticaId = :newOpticaId WHERE opticaId = 'mi_optica_base'")
     suspend fun reassignFromLegacyMiOpticaBase(newOpticaId: String): Int
 
-    @Query("UPDATE evaluaciones SET pacienteId = :targetPacienteId WHERE pacienteId = :sourcePacienteId")
-    suspend fun reassignEvaluacionesPaciente(sourcePacienteId: String, targetPacienteId: String): Int
+    @Query("UPDATE evaluaciones SET pacienteId = :targetPacienteId WHERE pacienteId = :sourcePacienteId AND opticaId = :opticaId")
+    suspend fun reassignEvaluacionesPaciente(sourcePacienteId: String, targetPacienteId: String, opticaId: String): Int
 
-    @Query("UPDATE dispensaciones SET pacienteId = :targetPacienteId WHERE pacienteId = :sourcePacienteId")
-    suspend fun reassignDispensacionesPaciente(sourcePacienteId: String, targetPacienteId: String): Int
+    @Query("UPDATE dispensaciones SET pacienteId = :targetPacienteId WHERE pacienteId = :sourcePacienteId AND opticaId = :opticaId")
+    suspend fun reassignDispensacionesPaciente(sourcePacienteId: String, targetPacienteId: String, opticaId: String): Int
 
-    @Query("UPDATE servicios_extra SET pacienteId = :targetPacienteId WHERE pacienteId = :sourcePacienteId")
-    suspend fun reassignServiciosPaciente(sourcePacienteId: String, targetPacienteId: String): Int
+    @Query("UPDATE servicios_extra SET pacienteId = :targetPacienteId WHERE pacienteId = :sourcePacienteId AND opticaId = :opticaId")
+    suspend fun reassignServiciosPaciente(sourcePacienteId: String, targetPacienteId: String, opticaId: String): Int
 
     // Alias for deletePaciente — kept for callers that expect the ById suffix.
     @Query("DELETE FROM pacientes WHERE id = :id AND opticaId = :opticaId")
