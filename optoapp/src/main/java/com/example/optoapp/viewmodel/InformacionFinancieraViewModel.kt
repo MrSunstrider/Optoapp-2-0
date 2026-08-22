@@ -70,7 +70,7 @@ class InformacionFinancieraViewModel @Inject constructor(
 
             val opticaId = sessionManager.opticaId.first()
             val contexto = repository.obtenerContexto(dispensacionId, opticaId)
-            val pagos = repository.obtenerPagos(dispensacionId)
+            val pagos = repository.obtenerPagos(dispensacionId, opticaId)
             val regalosEntities = repository.obtenerRegalos(dispensacionId, opticaId)
             val regalosUi = regalosEntities.map { it.toUi() }
 
@@ -200,7 +200,7 @@ class InformacionFinancieraViewModel @Inject constructor(
                         repository.eliminarPago(pago, opticaId)
                     }
 
-                    val montoPagado = calcularMontoPagadoUseCase(dispId)
+                    val montoPagado = calcularMontoPagadoUseCase(dispId, opticaId)
                     repository.actualizarMontoPagado(dispId, montoPagado, opticaId)
 
                     initialRegalos.forEach { regalo ->

@@ -75,7 +75,8 @@ class FakeDispensacionRepository {
 
     // ── Pagos ────────────────────────────────────────────────────────────────
 
-    fun getPagosByDispensacion(dispensacionId: String): Flow<List<Pago>> = _pagosFlow.map { list -> list.filter { it.dispensacionId == dispensacionId } }
+    fun getPagosByDispensacion(dispensacionId: String, opticaId: String): Flow<List<Pago>> =
+        _pagosFlow.map { list -> list.filter { it.dispensacionId == dispensacionId && it.opticaId == opticaId } }
 
     suspend fun insertPago(pago: Pago) {
         pagos.add(pago)

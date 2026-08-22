@@ -116,7 +116,8 @@ class DispensacionRepository(
     )
     suspend fun getAllDispensacionItems(): List<DispensacionItem> = dispensacionItemDao.getAllItems()
 
-    fun getPagosByDispensacion(dispensacionId: String): Flow<List<Pago>> = pagoDao.getPagosByDispensacion(dispensacionId)
+    fun getPagosByDispensacion(dispensacionId: String, opticaId: String): Flow<List<Pago>> =
+        pagoDao.getPagosByDispensacion(dispensacionId, opticaId)
 
     suspend fun insertPago(pago: Pago) {
         pagoDao.insertPago(pago)
@@ -148,7 +149,7 @@ class DispensacionRepository(
         val existing = pagoDao.getPagoByIdForOptica(pago.id, opticaId) ?: return
         if (existing.monto == 0.0) return
         if (existing.tipo !in setOf("Abono", "Pago completo")) return
-        if (pagoDao.getReversoByOriginalId(existing.id) != null) return
+        if (pagoDao.getReversoByOriginalId(existing.id, opticaId) != null) return
         val reversal = Pago(
             id = UUID.randomUUID().toString(),
             dispensacionId = existing.dispensacionId,
@@ -168,16 +169,11 @@ class DispensacionRepository(
 
     suspend fun deletePago(pago: Pago) = pagoDao.deletePago(pago.id, pago.opticaId)
 
-    fun getPagosByServicioExtra(servicioExtraId: String): Flow<List<Pago>> = pagoDao.getPagosByServicioExtra(servicioExtraId)
+    fun getPagosByServicioExtra(servicioExtraId: String, opticaId: String): Flow<List<Pago>> =
+        pagoDao.getPagosByServicioExtra(servicioExtraId, opticaId)
 
-    @Suppress("DEPRECATION")
-    @Deprecated(
-        message = "Use getPagosByDateRangeForOptica to enforce multi-tenant isolation",
-        replaceWith = ReplaceWith("getPagosByDateRangeForOptica(start, end, opticaId)"),
-    )
-    fun getPagosByDateRange(start: LocalDate, end: LocalDate): Flow<List<Pago>> = pagoDao.getPagosByDateRange(start, end)
-
-    fun getPagosByDateRangeForOptica(start: LocalDate, end: LocalDate, opticaId: String): Flow<List<Pago>> = pagoDao.getPagosByDateRangeForOptica(start, end, opticaId)
+    fun getPagosByDateRangeForOptica(start: LocalDate, end: LocalDate, opticaId: String): Flow<List<Pago>> =
+        pagoDao.getPagosByDateRangeForOptica(start, end, opticaId)
 
     suspend fun getPagosSnapshotForOptica(opticaId: String): List<Pago> = pagoDao.getPagosListByOptica(opticaId)
 

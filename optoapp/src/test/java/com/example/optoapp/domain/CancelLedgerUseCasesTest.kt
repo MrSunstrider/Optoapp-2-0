@@ -32,8 +32,8 @@ class CancelLedgerUseCasesTest {
         coEvery { repository.getServicioById("s1", any()) } returns Resource.Success(
             ServicioExtra(id = "s1", descripcion = "x", montoTotal = 100.0, estado = "Pendiente", fecha = date),
         )
-        coEvery { pagoDao.getCreditPagosByParent("s1") } returns listOf(credit)
-        coEvery { pagoDao.getReversoByOriginalId("p1") } returns null
+        coEvery { pagoDao.getCreditPagosByParent("s1", any()) } returns listOf(credit)
+        coEvery { pagoDao.getReversoByOriginalId("p1", any()) } returns null
         val slot = slot<Pago>()
         coEvery { repository.insertPago(capture(slot)) } returns Unit
 
@@ -67,8 +67,8 @@ class CancelLedgerUseCasesTest {
                 estadoEntrega = "Pendiente", metodoPago = "Efectivo",
             ),
         )
-        coEvery { pagoDao.getCreditPagosByParent("d1") } returns listOf(credit)
-        coEvery { pagoDao.getReversoByOriginalId("p1") } returns null
+        coEvery { pagoDao.getCreditPagosByParent("d1", any()) } returns listOf(credit)
+        coEvery { pagoDao.getReversoByOriginalId("p1", any()) } returns null
         val slot = slot<Pago>()
         coEvery { repository.insertPago(capture(slot)) } returns Unit
 

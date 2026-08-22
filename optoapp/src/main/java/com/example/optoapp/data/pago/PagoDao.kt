@@ -10,15 +10,11 @@ interface PagoDao {
     @Query("SELECT * FROM pagos WHERE id = :id AND opticaId = :opticaId")
     suspend fun getPagoByIdForOptica(id: String, opticaId: String): Pago?
 
-    @Query("SELECT * FROM pagos WHERE dispensacionId = :dispensacionId ORDER BY fecha DESC")
-    fun getPagosByDispensacion(dispensacionId: String): Flow<List<Pago>>
+    @Query("SELECT * FROM pagos WHERE dispensacionId = :dispensacionId AND opticaId = :opticaId ORDER BY fecha DESC")
+    fun getPagosByDispensacion(dispensacionId: String, opticaId: String): Flow<List<Pago>>
 
-    @Query("SELECT * FROM pagos WHERE servicioExtraId = :servicioExtraId ORDER BY fecha DESC")
-    fun getPagosByServicioExtra(servicioExtraId: String): Flow<List<Pago>>
-
-    // Legacy — prefer getPagosByDateRangeForOptica for multi-tenant isolation
-    @Query("SELECT * FROM pagos WHERE fecha >= :start AND fecha <= :end ORDER BY fecha DESC")
-    fun getPagosByDateRange(start: LocalDate, end: LocalDate): Flow<List<Pago>>
+    @Query("SELECT * FROM pagos WHERE servicioExtraId = :servicioExtraId AND opticaId = :opticaId ORDER BY fecha DESC")
+    fun getPagosByServicioExtra(servicioExtraId: String, opticaId: String): Flow<List<Pago>>
 
     @Query("SELECT * FROM pagos WHERE fecha >= :start AND fecha <= :end AND opticaId = :opticaId ORDER BY fecha DESC")
     fun getPagosByDateRangeForOptica(start: LocalDate, end: LocalDate, opticaId: String): Flow<List<Pago>>
@@ -52,17 +48,18 @@ interface PagoDao {
         reversaPagoId: String?,
     ): Int
 
-    @Query("SELECT * FROM pagos WHERE reversaPagoId = :originalPagoId AND tipo = 'Reverso' LIMIT 1")
-    suspend fun getReversoByOriginalId(originalPagoId: String): Pago?
+    @Query("SELECT * FROM pagos WHERE reversaPagoId = :originalPagoId AND tipo = 'Reverso' AND opticaId = :opticaId LIMIT 1")
+    suspend fun getReversoByOriginalId(originalPagoId: String, opticaId: String): Pago?
 
     @Query(
         """
         SELECT * FROM pagos
         WHERE (dispensacionId = :parentId OR servicioExtraId = :parentId)
           AND tipo IN ('Abono', 'Pago completo')
+          AND opticaId = :opticaId
         """,
     )
-    suspend fun getCreditPagosByParent(parentId: String): List<Pago>
+    suspend fun getCreditPagosByParent(parentId: String, opticaId: String): List<Pago>
 
     @Query("DELETE FROM pagos WHERE id = :id AND opticaId = :opticaId")
     suspend fun deletePago(id: String, opticaId: String): Int
@@ -70,19 +67,11 @@ interface PagoDao {
     @Query("UPDATE pagos SET opticaId = :newOpticaId WHERE opticaId = 'mi_optica_base'")
     suspend fun reassignFromLegacyMiOpticaBase(newOpticaId: String): Int
 
-    // Legacy — prefer getPagosListByOptica for multi-tenant isolation
-    @Query("SELECT * FROM pagos")
-    suspend fun getAllPagos(): List<Pago>
-
     @Query("SELECT * FROM pagos WHERE opticaId = :opticaId")
     suspend fun getPagosListByOptica(opticaId: String): List<Pago>
 
     @Query("SELECT * FROM pagos WHERE opticaId = :opticaId")
     fun getPagosFlowByOptica(opticaId: String): Flow<List<Pago>>
-
-    // Legacy — prefer reassignDispensacionIdForOptica for multi-tenant isolation
-    @Query("UPDATE pagos SET dispensacionId = :newDispensacionId WHERE dispensacionId = :oldDispensacionId")
-    suspend fun reassignDispensacionId(oldDispensacionId: String, newDispensacionId: String): Int
 
     @Query("UPDATE pagos SET dispensacionId = :newDispensacionId WHERE dispensacionId = :oldDispensacionId AND opticaId = :opticaId")
     suspend fun reassignDispensacionIdForOptica(oldDispensacionId: String, newDispensacionId: String, opticaId: String): Int
@@ -97,10 +86,10 @@ interface PagoDao {
             WHEN 'Reverso' THEN -monto
             ELSE 0
           END
-        ), 0) FROM pagos WHERE dispensacionId = :dispensacionId
+        ), 0) FROM pagos WHERE dispensacionId = :dispensacionId AND opticaId = :opticaId
         """,
     )
-    suspend fun sumMontoByDispensacion(dispensacionId: String): Double
+    suspend fun sumMontoByDispensacion(dispensacionId: String, opticaId: String): Double
 
     @Query(
         """
@@ -112,8 +101,8 @@ interface PagoDao {
             WHEN 'Reverso' THEN -monto
             ELSE 0
           END
-        ), 0) FROM pagos WHERE servicioExtraId = :servicioExtraId
+        ), 0) FROM pagos WHERE servicioExtraId = :servicioExtraId AND opticaId = :opticaId
         """,
     )
-    suspend fun sumMontoByServicioExtra(servicioExtraId: String): Double
+    suspend fun sumMontoByServicioExtra(servicioExtraId: String, opticaId: String): Double
 }
