@@ -20,6 +20,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.optoapp.data.AppRoles
 import com.example.optoapp.domain.AnalisisMensual
+import com.example.optoapp.domain.AnalisisPnLCalculator
 import com.example.optoapp.domain.Prioridad
 import com.example.optoapp.domain.Recomendacion
 import com.example.optoapp.ui.components.OptoTopAppBar
@@ -140,6 +141,7 @@ fun AnalisisNegocioScreen(
 
             uiState.analisis?.let { analisis ->
                 ResumenCard(analisis = analisis)
+                PnLCard(analisis = analisis)
             }
 
             if (uiState.isSeasonalityWarning) {
@@ -362,6 +364,60 @@ private fun ResumenCard(analisis: AnalisisMensual) {
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun PnLCard(analisis: AnalisisMensual) {
+    val pnl = AnalisisPnLCalculator.fromAnalisis(analisis)
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        shape = RoundedCornerShape(16.dp),
+    ) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(
+                if (analisis.esOffline) "P&L del mes (parcial / offline)" else "P&L del mes",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+            )
+            if (analisis.esOffline) {
+                Text(
+                    "Calculado desde resumen diario y gastos locales.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.warningAmber,
+                )
+            }
+            PnLLine(label = "Ventas", value = pnl.ventas)
+            PnLLine(label = "COGS (costo de ventas)", value = -pnl.cogs)
+            PnLLine(label = "Gastos operativos", value = -pnl.gastos)
+            HorizontalDivider()
+            PnLLine(label = "Utilidad", value = pnl.utilidad, bold = true)
+        }
+    }
+}
+
+@Composable
+private fun PnLLine(label: String, value: Double, bold: Boolean = false) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Text(
+            label,
+            fontWeight = if (bold) FontWeight.Bold else FontWeight.Normal,
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        Text(
+            "S/ ${formatNumber(value)}",
+            fontWeight = if (bold) FontWeight.Bold else FontWeight.SemiBold,
+            color = when {
+                bold && value >= 0 -> MaterialTheme.colorScheme.positiveGreen
+                bold && value < 0 -> MaterialTheme.colorScheme.alertRed
+                else -> MaterialTheme.colorScheme.onSurface
+            },
+        )
     }
 }
 

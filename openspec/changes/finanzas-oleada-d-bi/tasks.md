@@ -49,10 +49,10 @@ Chain strategy: feature-branch-chain
 
 ## Phase 3 — WU3 PnL (≤400)
 
-- [ ] 3.1 RED: online P&L lines from AnalisisMensual; offline label + compose costo/gastos.
-- [ ] 3.2 GREEN: optional `costoMes`; offline fallback in `ObtenerAnalisisMensualUseCase`.
-- [ ] 3.3 GREEN: AnalisisNegocio P&L block UI.
-- [ ] 3.4 Focused verify + GGA; PR3.
+- [x] 3.1 RED: online P&L lines from AnalisisMensual; offline label + compose costo/gastos.
+- [x] 3.2 GREEN: optional `costoMes`; offline fallback in `ObtenerAnalisisMensualUseCase`.
+- [x] 3.3 GREEN: AnalisisNegocio P&L block UI.
+- [x] 3.4 Focused verify + GGA; PR3.
 
 ## Phase 4 — WU4 Resumen (≤400)
 

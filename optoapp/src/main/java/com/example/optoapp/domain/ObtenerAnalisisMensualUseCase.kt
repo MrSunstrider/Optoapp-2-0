@@ -1,6 +1,7 @@
 package com.example.optoapp.domain
 
 import com.example.optoapp.data.Resource
+import com.example.optoapp.data.gastooperativo.GastoOperativoDao
 import com.example.optoapp.data.resumendiario.ResumenDiarioDao
 import com.example.optoapp.util.AppLogger
 import io.github.jan.supabase.postgrest.Postgrest
@@ -15,6 +16,7 @@ import javax.inject.Inject
 open class ObtenerAnalisisMensualUseCase @Inject constructor(
     private val postgrest: Postgrest,
     private val resumenDiarioDao: ResumenDiarioDao,
+    private val gastoOperativoDao: GastoOperativoDao,
 ) {
     companion object {
         private const val TAG = "ObtenerAnalisisMensual"
@@ -37,7 +39,8 @@ open class ObtenerAnalisisMensualUseCase @Inject constructor(
         Resource.Error("No se pudieron cargar los datos del mes")
     }
 
-    internal open suspend fun callRpc(function: String, params: JsonObject): JsonObject = postgrest.rpc(function, params).decodeAs<JsonObject>()
+    internal open suspend fun callRpc(function: String, params: JsonObject): JsonObject =
+        postgrest.rpc(function, params).decodeAs<JsonObject>()
 
     private suspend fun fallbackToRoom(opticaId: String, mes: LocalDate): Resource<AnalisisMensual> {
         val yearMonth = String.format("%04d-%02d", mes.year, mes.monthValue)
@@ -45,7 +48,14 @@ open class ObtenerAnalisisMensualUseCase @Inject constructor(
 
         val ventasMes = rows.sumOf { it.ventasMontoTotal }
         val cobrosMes = rows.sumOf { it.cobrosMontoTotal }
+        val costoMes = rows.sumOf { it.ventasCostoTotal }
         val valorInventario = rows.lastOrNull()?.inventarioValor ?: 0.0
+
+        val monthStart = mes.withDayOfMonth(1)
+        val monthEnd = mes.withDayOfMonth(mes.lengthOfMonth())
+        val gastosMes = gastoOperativoDao.getByOpticaIdList(opticaId)
+            .filter { !it.fecha.isBefore(monthStart) && !it.fecha.isAfter(monthEnd) }
+            .sumOf { it.monto.toDouble() }
 
         return Resource.Success(
             AnalisisMensual(
@@ -59,6 +69,8 @@ open class ObtenerAnalisisMensualUseCase @Inject constructor(
                 valorInventario = valorInventario,
                 ventasMesAnterior = 0.0,
                 variacionVentasPct = null,
+                gastosMes = gastosMes,
+                costoMes = costoMes,
                 esOffline = true,
             ),
         )
