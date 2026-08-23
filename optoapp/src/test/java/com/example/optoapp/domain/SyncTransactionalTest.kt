@@ -4,6 +4,7 @@ import com.example.optoapp.data.DispensacionItem
 import com.example.optoapp.data.OptoDatabase
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.SyncStateTracker
+import com.example.optoapp.data.configuracionfinanciera.ConfiguracionFinancieraDao
 import com.example.optoapp.data.costobiselado.CostoBiseladoDao
 import com.example.optoapp.data.costoproducto.CostoProductoDao
 import io.github.jan.supabase.SupabaseClient
@@ -31,6 +32,7 @@ class SyncTransactionalTest {
     private val networkRetryHelper = mockk<NetworkRetryHelper>(relaxed = true)
     private val costoProductoDao = mockk<CostoProductoDao>(relaxed = true)
     private val costoBiseladoDao = mockk<CostoBiseladoDao>(relaxed = true)
+    private val configuracionFinancieraDao = mockk<ConfiguracionFinancieraDao>(relaxed = true)
     private lateinit var coordinator: UploadSyncCoordinator
 
     @Before
@@ -47,6 +49,7 @@ class SyncTransactionalTest {
             networkRetryHelper = networkRetryHelper,
             costoProductoDao = costoProductoDao,
             costoBiseladoDao = costoBiseladoDao,
+            configuracionFinancieraDao = configuracionFinancieraDao,
         ) {
             override suspend fun <T> runInTransaction(block: suspend () -> T): T = block()
         }

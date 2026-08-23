@@ -4,6 +4,7 @@ import com.example.optoapp.data.OptoDatabase
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.SyncStateTracker
 import com.example.optoapp.data.DispensacionOptica
+import com.example.optoapp.data.configuracionfinanciera.ConfiguracionFinancieraDao
 import com.example.optoapp.data.costobiselado.CostoBiseladoDao
 import com.example.optoapp.data.costoproducto.CostoProductoDao
 import com.example.optoapp.util.AppLogger
@@ -28,6 +29,7 @@ open class UploadSyncCoordinator @Inject constructor(
     private val networkRetryHelper: NetworkRetryHelper,
     private val costoProductoDao: CostoProductoDao,
     private val costoBiseladoDao: CostoBiseladoDao,
+    private val configuracionFinancieraDao: ConfiguracionFinancieraDao,
 ) {
     companion object {
         private const val TAG = "SyncFinanzas"
@@ -39,6 +41,7 @@ open class UploadSyncCoordinator @Inject constructor(
         private const val TABLE_REGALOS = "regalos_dispensacion"
         private const val TABLE_COSTOS_PRODUCTOS = "costos_productos"
         private const val TABLE_COSTOS_BISELADO = "costos_biselado"
+        private const val TABLE_CONFIGURACION_FINANCIERA = "configuracion_financiera"
         private const val UPSERT_BATCH_SIZE = 80
     }
 
@@ -589,5 +592,24 @@ open class UploadSyncCoordinator @Inject constructor(
             rows,
             { it.id },
         ) { supabase.postgrest[TABLE_COSTOS_BISELADO].upsert(it) }
+    }
+
+    suspend fun uploadConfiguracionFinanciera(opticaId: String): Int {
+        val local = configuracionFinancieraDao.getByOpticaIdOnce(opticaId)
+        if (local == null) {
+            syncStateTracker.markSynced(opticaId, "upload_configuracion_financiera", "batch")
+            return 0
+        }
+        require(opticaId.isNotBlank()) { "opticaId must not be blank for upload" }
+        val opticaRemota = opticaId.trim()
+        val rows = listOf(local.toRemoto().copy(opticaId = opticaRemota))
+        return executeSimpleUpsert(
+            opticaId,
+            TABLE_CONFIGURACION_FINANCIERA,
+            "configuracion_financiera",
+            "upload_configuracion_financiera",
+            rows,
+            { it.opticaId },
+        ) { supabase.postgrest[TABLE_CONFIGURACION_FINANCIERA].upsert(it) }
     }
 }

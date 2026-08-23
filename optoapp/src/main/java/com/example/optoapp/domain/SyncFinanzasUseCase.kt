@@ -50,6 +50,7 @@ open class SyncFinanzasUseCase @Inject constructor(
         var pagosUp = 0
         var gastosUp = 0
         var regalosUp = 0
+        var configUp = 0
         var hadPartialUpload = false
 
         if (!skipUpload) {
@@ -77,6 +78,9 @@ open class SyncFinanzasUseCase @Inject constructor(
             val r8 = safeUpload("regalos") { uploadSyncCoordinator.uploadRegalos(opticaId) }
             regalosUp = r8.count; hadPartialUpload = hadPartialUpload || r8.partial
             AppLogger.d(TAG, "Finanzas: upload regalos=$regalosUp")
+            val r9 = safeUpload("configuracion_financiera") { uploadSyncCoordinator.uploadConfiguracionFinanciera(opticaId) }
+            configUp = r9.count; hadPartialUpload = hadPartialUpload || r9.partial
+            AppLogger.d(TAG, "Finanzas: upload configuracion_financiera=$configUp")
         }
 
         val dispDown: Int
@@ -133,6 +137,7 @@ open class SyncFinanzasUseCase @Inject constructor(
             uploadedPagos = pagosUp,
             uploadedGastosOperativos = gastosUp,
             uploadedRegalos = regalosUp,
+            uploadedConfiguracionesFinancieras = configUp,
             downloadedDispensaciones = dispDown,
             downloadedDispensacionItems = itemsDown,
             downloadedServicios = servDown,

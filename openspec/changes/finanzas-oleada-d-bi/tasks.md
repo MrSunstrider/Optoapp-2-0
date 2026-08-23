@@ -42,10 +42,10 @@ Chain strategy: feature-branch-chain
 
 ## Phase 2 — WU2 Config (≤400)
 
-- [ ] 2.1 RED: `toRemoto` round-trip; upload after upsert; upload-before-download; empty→0; admin/gerente gate.
-- [ ] 2.2 GREEN: DTO mapper + `uploadConfiguracionFinanciera` + UseCase wire + counter.
-- [ ] 2.3 GREEN: Config VM/UI editors + Dao upsert + scheduleFinanzasSync.
-- [ ] 2.4 Focused verify + GGA; PR2 (UI+upload together).
+- [x] 2.1 RED: `toRemoto` round-trip; upload after upsert; upload-before-download; empty→0; admin/gerente gate.
+- [x] 2.2 GREEN: DTO mapper + `uploadConfiguracionFinanciera` + UseCase wire + counter.
+- [x] 2.3 GREEN: Config VM/UI editors + Dao upsert + scheduleFinanzasSync.
+- [x] 2.4 Focused verify + GGA; PR2 (UI+upload together).
 
 ## Phase 3 — WU3 PnL (≤400)
 

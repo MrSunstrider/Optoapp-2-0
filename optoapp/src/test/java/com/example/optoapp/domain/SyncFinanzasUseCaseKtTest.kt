@@ -198,6 +198,34 @@ class SyncFinanzasUseCaseKtTest {
     }
 
     @Test
+    fun syncFinanzas_uploads_configuracionFinanciera_before_download() = runBlocking {
+        val uploadCoordinator = mockk<UploadSyncCoordinator>(relaxed = true)
+        val downloadCoordinator = mockk<DownloadSyncCoordinator>(relaxed = true)
+        val deletionSyncHelper = mockk<DeletionSyncHelper>()
+        val networkRetryHelper = mockk<NetworkRetryHelper>()
+
+        coEvery { deletionSyncHelper.pushPendingDeletions(any()) } just Runs
+        coEvery { uploadCoordinator.uploadConfiguracionFinanciera(any()) } returns 1
+        coEvery { downloadCoordinator.downloadConfiguracionFinanciera(any()) } returns 1
+
+        val useCase = SyncFinanzasUseCase(
+            deletionSyncHelper = deletionSyncHelper,
+            uploadSyncCoordinator = uploadCoordinator,
+            downloadSyncCoordinator = downloadCoordinator,
+            networkRetryHelper = networkRetryHelper,
+        )
+
+        val result = useCase("optica-test")
+        assertTrue(result is com.example.optoapp.data.Resource.Success)
+        assertEquals(1, (result as com.example.optoapp.data.Resource.Success).data!!.uploadedConfiguracionesFinancieras)
+
+        coVerifyOrder {
+            uploadCoordinator.uploadConfiguracionFinanciera("optica-test")
+            downloadCoordinator.downloadConfiguracionFinanciera("optica-test")
+        }
+    }
+
+    @Test
     fun syncFinanzas_download_sequence_includes_finanzas_entities() = runBlocking {
         val uploadCoordinator = mockk<UploadSyncCoordinator>()
         val downloadCoordinator = mockk<DownloadSyncCoordinator>()
@@ -223,6 +251,7 @@ class SyncFinanzasUseCaseKtTest {
         coEvery { uploadCoordinator.uploadCostosProductos(any()) } returns 0
         coEvery { uploadCoordinator.uploadCostosBiselado(any()) } returns 0
         coEvery { uploadCoordinator.uploadRegalos(any()) } returns 0
+        coEvery { uploadCoordinator.uploadConfiguracionFinanciera(any()) } returns 0
 
         val useCase = SyncFinanzasUseCase(
             deletionSyncHelper = deletionSyncHelper,

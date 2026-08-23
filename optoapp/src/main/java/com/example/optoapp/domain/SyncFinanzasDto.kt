@@ -327,6 +327,19 @@ data class ConfiguracionFinancieraRemoto(
     )
 }
 
+fun ConfiguracionFinancieraEntity.toRemoto(): ConfiguracionFinancieraRemoto = ConfiguracionFinancieraRemoto(
+    opticaId = opticaId,
+    margenNetoObjetivo = margenNetoObjetivo,
+    ticketPromedioObjetivo = ticketPromedioObjetivo,
+    caidaVentasAlertaPct = caidaVentasAlertaPct,
+    deudaViejaAlertaDias = deudaViejaAlertaDias,
+    deudaTotalAlertaMonto = deudaTotalAlertaMonto,
+    stockEstancadoAlertaDias = stockEstancadoAlertaDias,
+    stockBajoAlertaUnidades = stockBajoAlertaUnidades,
+    minVentasParaRecomendar = minVentasParaRecomendar,
+    frecuenciaRecalculoDias = frecuenciaRecalculoDias,
+)
+
 @Serializable
 data class CostoProductoRemoto(
     val id: String,
@@ -398,6 +411,7 @@ data class FinanzasSyncResult(
     val uploadedRegalos: Int = 0,
     val uploadedCostosProductos: Int = 0,
     val uploadedCostosBiselado: Int = 0,
+    val uploadedConfiguracionesFinancieras: Int = 0,
     val downloadedDispensaciones: Int,
     val downloadedDispensacionItems: Int = 0,
     val downloadedServicios: Int,

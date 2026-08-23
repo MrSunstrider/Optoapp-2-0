@@ -27,6 +27,7 @@ import com.example.optoapp.data.AppRoles
 import com.example.optoapp.ui.components.OptoTopAppBar
 import com.example.optoapp.ui.components.config.ClinicalIntegritySection
 import com.example.optoapp.ui.components.config.ConfigProfileSection
+import com.example.optoapp.ui.components.config.ConfiguracionFinancieraSection
 import com.example.optoapp.ui.components.config.DataManagementCard
 import com.example.optoapp.ui.components.config.FiscalDataSection
 import com.example.optoapp.ui.components.config.LaboratorySection
@@ -38,6 +39,7 @@ import com.example.optoapp.ui.components.config.SystemSection
 import com.example.optoapp.ui.components.config.UsuariosRolesSection
 import com.example.optoapp.ui.theme.OptoTokens
 import com.example.optoapp.viewmodel.AuthViewModel
+import com.example.optoapp.viewmodel.ConfiguracionFinancieraViewModel
 import com.example.optoapp.viewmodel.ConfiguracionViewModel
 import com.example.optoapp.viewmodel.FiscalConfigViewModel
 import com.example.optoapp.viewmodel.LaboratorioConfigViewModel
@@ -63,11 +65,13 @@ fun ConfiguracionScreen(
     syncDiagVm: SyncDiagnosticsViewModel = hiltViewModel(),
     roleVm: RoleManagementViewModel = hiltViewModel(),
     configVm: ConfiguracionViewModel = hiltViewModel(),
+    configFinancieraVm: ConfiguracionFinancieraViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val fiscalUi by fiscalVm.uiState.collectAsState()
     val labUi by laboratorioVm.uiState.collectAsState()
+    val configFinancieraUi by configFinancieraVm.uiState.collectAsState()
     val planCode by subscriptionVm.planCode.collectAsState()
     val devProOverride by subscriptionVm.devProOverride.collectAsState()
     val globalSyncState by syncVm.syncState.collectAsState()
@@ -108,6 +112,13 @@ fun ConfiguracionScreen(
         if (msg != null) {
             configVm.dialogMessage = msg
             fiscalVm.clearMessages()
+        }
+    }
+    LaunchedEffect(configFinancieraUi.message, configFinancieraUi.error) {
+        val msg = configFinancieraUi.message ?: configFinancieraUi.error
+        if (msg != null && configFinancieraUi.message != null) {
+            configVm.dialogMessage = msg
+            configFinancieraVm.clearMessages()
         }
     }
     LaunchedEffect(canManageUsers) { if (canManageUsers) roleVm.loadMembers() }
@@ -196,6 +207,11 @@ fun ConfiguracionScreen(
                         fiscalVm.clearMessages()
                     },
                     onSave = fiscalVm::save,
+                )
+                ConfiguracionFinancieraSection(
+                    uiState = configFinancieraUi,
+                    onDraftChange = configFinancieraVm::updateDraft,
+                    onSave = configFinancieraVm::save,
                 )
             }
             if (canManageUsers) {

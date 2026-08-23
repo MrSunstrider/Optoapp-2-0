@@ -6,6 +6,7 @@ import com.example.optoapp.data.OptoDatabase
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.ServicioExtra
 import com.example.optoapp.data.SyncStateTracker
+import com.example.optoapp.data.configuracionfinanciera.ConfiguracionFinancieraDao
 import com.example.optoapp.data.costobiselado.CostoBiseladoDao
 import com.example.optoapp.data.costoproducto.CostoProductoDao
 import io.github.jan.supabase.SupabaseClient
@@ -36,6 +37,7 @@ class UploadSyncCoordinatorTest {
     private val networkRetryHelper = mockk<NetworkRetryHelper>(relaxed = true)
     private val costoProductoDao = mockk<CostoProductoDao>(relaxed = true)
     private val costoBiseladoDao = mockk<CostoBiseladoDao>(relaxed = true)
+    private val configuracionFinancieraDao = mockk<ConfiguracionFinancieraDao>(relaxed = true)
     private lateinit var coordinator: UploadSyncCoordinator
 
     @Before
@@ -52,6 +54,7 @@ class UploadSyncCoordinatorTest {
             networkRetryHelper = networkRetryHelper,
             costoProductoDao = costoProductoDao,
             costoBiseladoDao = costoBiseladoDao,
+            configuracionFinancieraDao = configuracionFinancieraDao,
         ) {
             override suspend fun <T> runInTransaction(block: suspend () -> T): T = block()
         }
@@ -185,6 +188,7 @@ class UploadSyncCoordinatorTest {
             networkRetryHelper = networkRetryHelper,
             costoProductoDao = costoProductoDao,
             costoBiseladoDao = costoBiseladoDao,
+            configuracionFinancieraDao = configuracionFinancieraDao,
         ) {
             override suspend fun <T> runInTransaction(block: suspend () -> T): T = block()
             override suspend fun fetchRemoteDispensacionesForLookup(opticaId: String) =
@@ -220,6 +224,7 @@ class UploadSyncCoordinatorTest {
         networkRetryHelper = networkRetryHelper,
         costoProductoDao = costoProductoDao,
         costoBiseladoDao = costoBiseladoDao,
+        configuracionFinancieraDao = configuracionFinancieraDao,
     ) {
         override suspend fun <T> runInTransaction(block: suspend () -> T): T = block()
         override suspend fun fetchRemotePagosForLookup(opticaId: String): List<PagoRemotoLookup> =
@@ -397,6 +402,7 @@ class UploadSyncCoordinatorTest {
         networkRetryHelper = networkRetryHelper,
         costoProductoDao = costoProductoDao,
         costoBiseladoDao = costoBiseladoDao,
+        configuracionFinancieraDao = configuracionFinancieraDao,
     ) {
         override suspend fun <T> runInTransaction(block: suspend () -> T): T = block()
         override suspend fun fetchRemoteServiciosForLookup(opticaId: String): List<ServicioRemotoLookup> =
@@ -578,5 +584,13 @@ class UploadSyncCoordinatorTest {
             )
         }
         coVerify(exactly = 0) { syncStateTracker.markSynced(opticaId, "pago", "orphan") }
+    }
+
+    @Test
+    fun uploadConfiguracionFinanciera_emptyLocal_returnsZero() = runTest {
+        coEvery { configuracionFinancieraDao.getByOpticaIdOnce("optica-test") } returns null
+        val count = coordinator.uploadConfiguracionFinanciera("optica-test")
+        assertEquals(0, count)
+        coVerify { syncStateTracker.markSynced("optica-test", "upload_configuracion_financiera", "batch") }
     }
 }
