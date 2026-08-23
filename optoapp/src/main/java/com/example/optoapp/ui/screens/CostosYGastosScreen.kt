@@ -31,6 +31,7 @@ import com.example.optoapp.util.DateUtils
 import com.example.optoapp.viewmodel.COST_BLOCKS
 import com.example.optoapp.viewmodel.CostosGastosUiPolicy
 import com.example.optoapp.viewmodel.CostosYGastosViewModel
+import com.example.optoapp.viewmodel.AuthViewModel
 import kotlinx.coroutines.launch
 import java.util.Locale
 
@@ -42,11 +43,15 @@ fun CostosYGastosScreen(
     dispensacionId: String? = null,
     initialTab: Int = 0,
     viewModel: CostosYGastosViewModel = hiltViewModel(),
+    authViewModel: AuthViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val scope = rememberCoroutineScope()
     val tabs = listOf("Lentes", "Biselado", "Lentes Contacto", "Gastos Operativos")
     var showDatePicker by remember { mutableStateOf(false) }
+    val opticaRol by authViewModel.opticaRol.collectAsState(initial = null)
+    val access = CostosGastosUiPolicy.resolveAccess(opticaRol)
+    val canView = !access.isRestricted
 
     LaunchedEffect(initialTab) {
         viewModel.selectTab(initialTab)
@@ -80,6 +85,27 @@ fun CostosYGastosScreen(
             )
         },
     ) { padding ->
+        if (opticaRol == null) {
+            Column(modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp)) {
+                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+            }
+            return@Scaffold
+        }
+
+        if (!canView) {
+            Column(
+                modifier = Modifier.fillMaxSize().padding(padding).padding(24.dp),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Icon(Icons.Default.Lock, contentDescription = "Bloqueado", modifier = Modifier.size(48.dp), tint = MaterialTheme.colorScheme.error)
+                Spacer(modifier = Modifier.height(16.dp))
+                Text("Acceso restringido", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error)
+                Text("Tu rol no tiene permiso para ver esta sección.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            return@Scaffold
+        }
+
         Column(
             modifier = Modifier
                 .fillMaxSize()

@@ -45,11 +45,11 @@ fun MainDrawerScreen(
     val syncState by syncViewModel.syncState.collectAsState()
     val isSilentSyncing by syncViewModel.isSilentSyncing.collectAsState()
     val opticaHeader by opticaHeaderViewModel.uiState.collectAsState()
-    val opticaRol by authViewModel.opticaRol.collectAsState(initial = "admin")
-    val showCierreCaja = AppRoles.canViewCierreCaja(opticaRol)
-    val showBiYReportes = AppRoles.canViewBiAndReports(opticaRol)
-    val showOperacionHoy = AppRoles.canViewOperacionHoy(opticaRol)
-    val showConfiguracion = AppRoles.canManageUsers(opticaRol)
+    val opticaRol by authViewModel.opticaRol.collectAsState(initial = null)
+    val showCierreCaja = opticaRol != null && AppRoles.canViewCierreCaja(opticaRol!!)
+    val showBiYReportes = opticaRol != null && AppRoles.canViewBiAndReports(opticaRol!!)
+    val showOperacionHoy = opticaRol != null && AppRoles.canViewOperacionHoy(opticaRol!!)
+    val showConfiguracion = opticaRol != null && AppRoles.canManageUsers(opticaRol!!)
 
     // Refresh cloud data so the user always sees the latest shared state on entry
     LaunchedEffect(Unit) {

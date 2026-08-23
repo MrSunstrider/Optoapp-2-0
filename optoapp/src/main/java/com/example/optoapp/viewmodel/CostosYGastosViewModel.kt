@@ -82,7 +82,14 @@ data class GastosTabTriad(
     val showsRetry: Boolean,
 )
 
+data class CostosAccess(val isRestricted: Boolean)
+
 object CostosGastosUiPolicy {
+    fun resolveAccess(rol: String?): CostosAccess {
+        val allowed = rol != null && com.example.optoapp.data.AppRoles.canViewBiAndReports(rol)
+        return CostosAccess(isRestricted = !allowed)
+    }
+
     fun resolveGastosTriad(
         isLoading: Boolean,
         gastosCount: Int,

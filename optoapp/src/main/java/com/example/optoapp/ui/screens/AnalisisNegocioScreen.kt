@@ -48,8 +48,8 @@ fun AnalisisNegocioScreen(
     authViewModel: AuthViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val opticaRol by authViewModel.opticaRol.collectAsState(initial = "admin")
-    val canView = AppRoles.canViewBiAndReports(opticaRol)
+    val opticaRol by authViewModel.opticaRol.collectAsState(initial = null)
+    val canView = opticaRol != null && AppRoles.canViewBiAndReports(opticaRol!!)
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.surface,
@@ -65,6 +65,13 @@ fun AnalisisNegocioScreen(
             )
         },
     ) { padding ->
+        if (opticaRol == null) {
+            Column(modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp)) {
+                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+            }
+            return@Scaffold
+        }
+
         if (!canView) {
             Column(
                 modifier = Modifier.fillMaxSize().padding(padding).padding(24.dp),

@@ -507,6 +507,36 @@ class CostosYGastosViewModelTest {
     }
 
     @Test
+    fun costosAccess_nullRol_isRestricted() {
+        val access = CostosGastosUiPolicy.resolveAccess(null)
+        assertTrue(access.isRestricted)
+    }
+
+    @Test
+    fun costosAccess_adminRol_isNotRestricted() {
+        val access = CostosGastosUiPolicy.resolveAccess("admin")
+        assertFalse(access.isRestricted)
+    }
+
+    @Test
+    fun costosAccess_gerenteRol_isNotRestricted() {
+        val access = CostosGastosUiPolicy.resolveAccess("gerente")
+        assertFalse(access.isRestricted)
+    }
+
+    @Test
+    fun costosAccess_asesorRol_isRestricted() {
+        val access = CostosGastosUiPolicy.resolveAccess("asesor")
+        assertTrue(access.isRestricted)
+    }
+
+    @Test
+    fun costosAccess_especialistaRol_isRestricted() {
+        val access = CostosGastosUiPolicy.resolveAccess("especialista")
+        assertTrue(access.isRestricted)
+    }
+
+    @Test
     fun gastosLoading_staysTrueUntilFirstEmission() = runTest(testDispatcher) {
         val neverEmits = kotlinx.coroutines.flow.MutableSharedFlow<List<GastoOperativoEntity>>()
         every { repository.getGastosOperativos(opticaId) } returns neverEmits

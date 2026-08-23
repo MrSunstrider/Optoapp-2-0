@@ -20,7 +20,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.example.optoapp.data.AppRoles
 import com.example.optoapp.ui.components.OptoCard
 import com.example.optoapp.ui.components.OptoDatePickerDialog
 import com.example.optoapp.ui.components.OptoTopAppBar
@@ -32,6 +31,7 @@ import com.example.optoapp.ui.theme.positiveGreen
 import com.example.optoapp.ui.theme.warningAmber
 import com.example.optoapp.util.DateUtils
 import com.example.optoapp.viewmodel.AuthViewModel
+import com.example.optoapp.viewmodel.CierreCajaUiPolicy
 import com.example.optoapp.viewmodel.CierreCajaViewModel
 import com.example.optoapp.viewmodel.PagoDisplayItem
 import java.util.Locale
@@ -47,7 +47,8 @@ fun CierreCajaScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val opticaRol by authViewModel.opticaRol.collectAsState(initial = null)
-    val canView = opticaRol != null && AppRoles.canViewCierreCaja(opticaRol!!)
+    val access = CierreCajaUiPolicy.resolveAccess(opticaRol)
+    val canView = !access.isRestricted
     var showDatePicker by remember { mutableStateOf(false) }
     var showSearch by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
@@ -106,7 +107,16 @@ fun CierreCajaScreen(
                 return@Column
             }
 
-            if (uiState.errorMessage != null) {
+            val hasMovements = uiState.pagosDisplay.isNotEmpty() ||
+                uiState.dispensacionesHoy.isNotEmpty() ||
+                uiState.serviciosExtraHoy.isNotEmpty()
+            val triad = CierreCajaUiPolicy.resolveTriad(
+                isLoading = uiState.isLoading,
+                hasMovements = hasMovements,
+                errorMessage = uiState.errorMessage,
+            )
+
+            if (triad.showsError) {
                 OptoCard(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
@@ -116,20 +126,22 @@ fun CierreCajaScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         Text(
-                            uiState.errorMessage!!,
+                            uiState.errorMessage.orEmpty(),
                             color = MaterialTheme.colorScheme.onErrorContainer,
                             fontSize = 13.sp,
                         )
                         Spacer(modifier = Modifier.height(8.dp))
-                        OutlinedButton(onClick = { viewModel.retry() }) {
-                            Text("Reintentar")
+                        if (triad.showsRetry) {
+                            OutlinedButton(onClick = { viewModel.retry() }) {
+                                Text("Reintentar")
+                            }
                         }
                     }
                 }
                 Spacer(modifier = Modifier.height(8.dp))
             }
 
-            if (uiState.isLoading) {
+            if (triad.showsLoading) {
                 LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
                 Spacer(modifier = Modifier.height(8.dp))
             }
@@ -284,7 +296,7 @@ fun CierreCajaScreen(
             val hasVentas = hasDispensaciones || hasServicios
             val ventasCount = filteredDispensaciones.size + filteredServicios.size
 
-            if (!uiState.isLoading && !hasPagos && !hasVentas) {
+            if (!triad.showsLoading && !triad.showsError && !hasPagos && !hasVentas) {
                 OptoCard(modifier = Modifier.fillMaxWidth()) {
                     Text(
                         when {
@@ -324,7 +336,7 @@ fun CierreCajaScreen(
                         }
                     }
                     Spacer(modifier = Modifier.height(16.dp))
-                } else if (!uiState.isLoading && !isSearchActive) {
+                } else if (!triad.showsLoading && !triad.showsError && !isSearchActive) {
                     Text(
                         "Cobros recibidos (0)",
                         fontWeight = FontWeight.Bold,
@@ -341,7 +353,7 @@ fun CierreCajaScreen(
                     Spacer(modifier = Modifier.height(16.dp))
                 }
 
-                if (!uiState.isLoading) {
+                if (!triad.showsLoading && !triad.showsError) {
                     HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
                     Spacer(modifier = Modifier.height(12.dp))
                 }
@@ -384,7 +396,7 @@ fun CierreCajaScreen(
                             )
                         }
                     }
-                } else if (!uiState.isLoading && !isSearchActive) {
+                } else if (!triad.showsLoading && !triad.showsError && !isSearchActive) {
                     Text(
                         "Ventas registradas (0)",
                         fontWeight = FontWeight.Bold,
