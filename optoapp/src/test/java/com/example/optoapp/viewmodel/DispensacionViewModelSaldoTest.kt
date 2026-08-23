@@ -4,6 +4,7 @@ import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Pago
 import com.example.optoapp.data.SessionManager
 import com.example.optoapp.data.costobiselado.CostoBiseladoDao
+import com.example.optoapp.data.costolc.CostoLcDao
 import com.example.optoapp.data.costoproducto.CostoProductoDao
 import com.example.optoapp.domain.CalcularMontoPagadoUseCase
 import com.example.optoapp.sync.PostSaveSyncScheduler
@@ -37,6 +38,7 @@ class DispensacionViewModelSaldoTest {
     private lateinit var calcularMontoPagadoUseCase: CalcularMontoPagadoUseCase
     private lateinit var costoProductoDao: CostoProductoDao
     private lateinit var costoBiseladoDao: CostoBiseladoDao
+    private lateinit var costoLcDao: CostoLcDao
 
     private val opticaIdFlow = MutableStateFlow("optica-test")
     private val testDispatcher = UnconfinedTestDispatcher()
@@ -59,6 +61,7 @@ class DispensacionViewModelSaldoTest {
         calcularMontoPagadoUseCase = mockk()
         costoProductoDao = mockk(relaxed = true)
         costoBiseladoDao = mockk(relaxed = true)
+        costoLcDao = mockk(relaxed = true)
 
         every { sessionManager.opticaId } returns opticaIdFlow
     }
@@ -79,7 +82,7 @@ class DispensacionViewModelSaldoTest {
 
         val viewModel = DispensacionViewModel(
             repository, sessionManager, postSaveSyncScheduler, stockHelper,
-            calcularMontoPagadoUseCase, mockk<com.example.optoapp.domain.CancelDispensacionUseCase>(relaxed = true), mockk<com.example.optoapp.domain.ReclaimDispensacionUseCase>(relaxed = true), costoProductoDao, costoBiseladoDao,
+            calcularMontoPagadoUseCase, mockk<com.example.optoapp.domain.CancelDispensacionUseCase>(relaxed = true), mockk<com.example.optoapp.domain.ReclaimDispensacionUseCase>(relaxed = true), costoProductoDao, costoBiseladoDao, costoLcDao,
         )
         advanceUntilIdle()
 
@@ -98,7 +101,7 @@ class DispensacionViewModelSaldoTest {
 
         val viewModel = DispensacionViewModel(
             repository, sessionManager, postSaveSyncScheduler, stockHelper,
-            calcularMontoPagadoUseCase, mockk<com.example.optoapp.domain.CancelDispensacionUseCase>(relaxed = true), mockk<com.example.optoapp.domain.ReclaimDispensacionUseCase>(relaxed = true), costoProductoDao, costoBiseladoDao,
+            calcularMontoPagadoUseCase, mockk<com.example.optoapp.domain.CancelDispensacionUseCase>(relaxed = true), mockk<com.example.optoapp.domain.ReclaimDispensacionUseCase>(relaxed = true), costoProductoDao, costoBiseladoDao, costoLcDao,
         )
         advanceUntilIdle()
 
@@ -117,7 +120,7 @@ class DispensacionViewModelSaldoTest {
 
         val viewModel = DispensacionViewModel(
             repository, sessionManager, postSaveSyncScheduler, stockHelper,
-            calcularMontoPagadoUseCase, mockk<com.example.optoapp.domain.CancelDispensacionUseCase>(relaxed = true), mockk<com.example.optoapp.domain.ReclaimDispensacionUseCase>(relaxed = true), costoProductoDao, costoBiseladoDao,
+            calcularMontoPagadoUseCase, mockk<com.example.optoapp.domain.CancelDispensacionUseCase>(relaxed = true), mockk<com.example.optoapp.domain.ReclaimDispensacionUseCase>(relaxed = true), costoProductoDao, costoBiseladoDao, costoLcDao,
         )
         advanceUntilIdle()
 
@@ -136,7 +139,7 @@ class DispensacionViewModelSaldoTest {
 
         val viewModel = DispensacionViewModel(
             repository, sessionManager, postSaveSyncScheduler, stockHelper,
-            calcularMontoPagadoUseCase, mockk<com.example.optoapp.domain.CancelDispensacionUseCase>(relaxed = true), mockk<com.example.optoapp.domain.ReclaimDispensacionUseCase>(relaxed = true), costoProductoDao, costoBiseladoDao,
+            calcularMontoPagadoUseCase, mockk<com.example.optoapp.domain.CancelDispensacionUseCase>(relaxed = true), mockk<com.example.optoapp.domain.ReclaimDispensacionUseCase>(relaxed = true), costoProductoDao, costoBiseladoDao, costoLcDao,
         )
         advanceUntilIdle()
 

@@ -37,6 +37,15 @@ import java.time.LocalDate
 import java.util.UUID
 import javax.inject.Inject
 
+/** Maps dispensacion LC tipoLente labels onto costos_lc.tipo_lc CHECK values. */
+fun mapTipoLc(tipoLente: String): String = when {
+    tipoLente.contains("Cosmét", ignoreCase = true) -> "cosmetico"
+    tipoLente.contains("Medida", ignoreCase = true) ||
+        tipoLente.contains("Graduado", ignoreCase = true) -> "graduado"
+    tipoLente.contains("Terap", ignoreCase = true) -> "terapeutico"
+    else -> tipoLente
+}
+
 data class DispensacionUiState(
     val pacienteNombre: String = "",
     val ot: String = "",
@@ -116,6 +125,7 @@ class DispensacionViewModel @Inject constructor(
     private val reclaimDispensacionUseCase: com.example.optoapp.domain.ReclaimDispensacionUseCase,
     private val costoProductoDao: com.example.optoapp.data.costoproducto.CostoProductoDao,
     private val costoBiseladoDao: com.example.optoapp.data.costobiselado.CostoBiseladoDao,
+    private val costoLcDao: com.example.optoapp.data.costolc.CostoLcDao,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(DispensacionUiState(generatedId = UUID.randomUUID().toString()))
     val uiState: StateFlow<DispensacionUiState> = _uiState.asStateFlow()
@@ -688,21 +698,17 @@ class DispensacionViewModel @Inject constructor(
                     var costoBiselado: Double? = null
                     var costoLc: Double? = null
 
-                    // LC branch: lookup by tipo_lente + material + laboratorio (R5)
+                    // LC branch: lookup costos_lc by tipo_lc / material_lc / modalidad
                     val isLc = item.tipoLente.contains("Contacto", ignoreCase = true)
                     if (isLc) {
-                        val lcTipo = when {
-                            item.tipoLente.contains("Cosmét", ignoreCase = true) -> "lente_contacto_cosmetico"
-                            item.tipoLente.contains("Medida", ignoreCase = true) -> "lente_contacto_medida"
-                            else -> item.tipoLente // pass through as-is
-                        }
+                        val lcTipo = mapTipoLc(item.tipoLente)
                         val lcMaterial = evaluacion.lcMaterial?.ifBlank { item.materialLente } ?: item.materialLente
                         val lcLab = evaluacion.lcLaboratorio?.ifBlank { null }
-                        val lcLookup = costoProductoDao.lookupLc(
+                        val lcLookup = costoLcDao.lookup(
                             opticaId = opticaId,
-                            material = lcMaterial,
-                            tipoLente = lcTipo,
-                            stockOFabricacion = "stock",
+                            tipoLc = lcTipo,
+                            materialLc = lcMaterial,
+                            modalidad = "mensual",
                             laboratorioId = lcLab,
                         )
                         costoLc = lcLookup?.costoUnitario

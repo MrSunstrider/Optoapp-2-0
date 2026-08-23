@@ -62,6 +62,6 @@ Chain strategy: feature-branch-chain
 
 ## Phase 4 — WU4 Snapshot (≤400)
 
-- [ ] 4.1 RED Disp VM: LC item null `costoRealLc` → `CostoLcDao.lookup` (map Cosmét→cosmetico, Medida→graduado; modalidad default `mensual`); non-null preserved; no `lookupLc`.
-- [ ] 4.2 GREEN inject `CostoLcDao`; retarget LC branch; leave `lookupLc` unused.
-- [ ] 4.3 Full `testDebugUnitTest`; INV check (PagoEffect untouched); GGA R1–R4; PR4 Closes #106.
+- [x] 4.1 RED Disp VM: LC item null `costoRealLc` → `CostoLcDao.lookup` (map Cosmét→cosmetico, Medida→graduado; modalidad default `mensual`); non-null preserved; no `lookupLc`.
+- [x] 4.2 GREEN inject `CostoLcDao`; retarget LC branch; leave `lookupLc` unused.
+- [x] 4.3 Full `testDebugUnitTest`; INV check (PagoEffect untouched); GGA R1–R4; PR4 Closes #106.

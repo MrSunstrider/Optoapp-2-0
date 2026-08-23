@@ -6,6 +6,7 @@ import com.example.optoapp.data.Pago
 import com.example.optoapp.data.Resource
 import com.example.optoapp.data.SessionManager
 import com.example.optoapp.data.costobiselado.CostoBiseladoDao
+import com.example.optoapp.data.costolc.CostoLcDao
 import com.example.optoapp.data.costoproducto.CostoProductoDao
 import com.example.optoapp.domain.CalcularMontoPagadoUseCase
 import com.example.optoapp.sync.PostSaveSyncScheduler
@@ -41,6 +42,7 @@ class DispensacionViewModelReclamoTest {
     private lateinit var calcularMontoPagadoUseCase: CalcularMontoPagadoUseCase
     private lateinit var costoProductoDao: CostoProductoDao
     private lateinit var costoBiseladoDao: CostoBiseladoDao
+    private lateinit var costoLcDao: CostoLcDao
     private lateinit var viewModel: DispensacionViewModel
 
     private val opticaIdFlow = MutableStateFlow("optica-test")
@@ -71,6 +73,7 @@ class DispensacionViewModelReclamoTest {
         calcularMontoPagadoUseCase = mockk()
         costoProductoDao = mockk(relaxed = true)
         costoBiseladoDao = mockk(relaxed = true)
+        costoLcDao = mockk(relaxed = true)
 
         every { sessionManager.opticaId } returns opticaIdFlow
         coEvery { repository.getDispensacionById(originalId, any()) } returns Resource.Success(originalDispensacion)
@@ -95,6 +98,7 @@ class DispensacionViewModelReclamoTest {
             reclaim,
             costoProductoDao,
             costoBiseladoDao,
+            costoLcDao,
         )
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -127,6 +131,7 @@ class DispensacionViewModelReclamoTest {
             mockk<com.example.optoapp.domain.ReclaimDispensacionUseCase>(relaxed = true),
             costoProductoDao,
             costoBiseladoDao,
+            costoLcDao,
         )
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -155,6 +160,7 @@ class DispensacionViewModelReclamoTest {
             mockk<com.example.optoapp.domain.ReclaimDispensacionUseCase>(relaxed = true),
             costoProductoDao,
             costoBiseladoDao,
+            costoLcDao,
         )
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -182,6 +188,7 @@ class DispensacionViewModelReclamoTest {
             reclaim,
             costoProductoDao,
             costoBiseladoDao,
+            costoLcDao,
         )
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -216,6 +223,7 @@ class DispensacionViewModelReclamoTest {
             mockk<com.example.optoapp.domain.ReclaimDispensacionUseCase>(relaxed = true),
             costoProductoDao,
             costoBiseladoDao,
+            costoLcDao,
         )
         testDispatcher.scheduler.advanceUntilIdle()
 

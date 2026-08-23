@@ -3,6 +3,7 @@ package com.example.optoapp.viewmodel
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.SessionManager
 import com.example.optoapp.data.costobiselado.CostoBiseladoDao
+import com.example.optoapp.data.costolc.CostoLcDao
 import com.example.optoapp.data.costoproducto.CostoProductoDao
 import com.example.optoapp.domain.CalcularMontoPagadoUseCase
 import com.example.optoapp.domain.CancelDispensacionUseCase
@@ -72,6 +73,7 @@ class DispensacionViewModelRegalosRemovedTest {
         mockk<ReclaimDispensacionUseCase>(relaxed = true),
         mockk<CostoProductoDao>(relaxed = true),
         mockk<CostoBiseladoDao>(relaxed = true),
+        mockk<CostoLcDao>(relaxed = true),
     )
 
     @Test
