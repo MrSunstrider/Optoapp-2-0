@@ -646,7 +646,7 @@ class ReportesViewModelOtrosPeriodosTest {
     }
 
     @Test
-    fun `Total period passes MIN MAX to DAO`() = runTest(testDispatcher) {
+    fun `Total period passes ISO-safe TOTAL_RANGE to DAO`() = runTest(testDispatcher) {
         val startSlot = slot<LocalDate>()
         val endSlot = slot<LocalDate>()
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(emptyList())
@@ -659,7 +659,7 @@ class ReportesViewModelOtrosPeriodosTest {
         viewModel.setPeriodo("Total")
         advanceUntilIdle()
 
-        assertEquals("Todo start must be MIN", LocalDate.MIN, startSlot.captured)
-        assertEquals("Todo end must be MAX", LocalDate.MAX, endSlot.captured)
+        assertEquals("Total start must be ISO-safe", ReportesUiPolicy.TOTAL_RANGE.first, startSlot.captured)
+        assertEquals("Total end must be ISO-safe", ReportesUiPolicy.TOTAL_RANGE.second, endSlot.captured)
     }
 }

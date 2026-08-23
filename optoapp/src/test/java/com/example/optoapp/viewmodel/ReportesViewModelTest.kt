@@ -283,13 +283,7 @@ class ReportesViewModelTest {
 
     @Test
     fun `headline KPIs include porCobrar exactly once without Pendiente`() {
-        val kpis = ReportesUiPolicy.headlineKpiIds(
-            totalVendido = 350.0,
-            totalCobrado = 200.0,
-            porCobrar = 150.0,
-            ticketPromedio = 116.67,
-            totalTransacciones = 3,
-        )
+        val kpis = ReportesUiPolicy.headlineKpiIds
         assertEquals("porCobrar must appear once", 1, kpis.count { it == "porCobrar" })
         assertFalse("Pendiente duplicate must be removed", "pendiente" in kpis)
         assertTrue("vendido required", "vendido" in kpis)
@@ -298,15 +292,17 @@ class ReportesViewModelTest {
 
     @Test
     fun `headline KPIs stay unique when porCobrar is zero`() {
-        val kpis = ReportesUiPolicy.headlineKpiIds(
-            totalVendido = 100.0,
-            totalCobrado = 100.0,
-            porCobrar = 0.0,
-            ticketPromedio = 100.0,
-            totalTransacciones = 1,
-        )
+        val kpis = ReportesUiPolicy.headlineKpiIds
         assertEquals(1, kpis.count { it == "porCobrar" })
         assertFalse("pendiente" in kpis)
+    }
+
+    @Test
+    fun `TOTAL_RANGE uses ISO-safe bounds not LocalDate MAX`() {
+        val (start, end) = ReportesUiPolicy.TOTAL_RANGE
+        assertEquals(LocalDate.of(1900, 1, 1), start)
+        assertEquals(LocalDate.of(9999, 12, 31), end)
+        assertTrue("end year must be 4-digit ISO-safe", end.year in 1..9999)
     }
 
     @Test

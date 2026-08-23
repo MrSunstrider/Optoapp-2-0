@@ -34,18 +34,13 @@ data class ReportesAccess(
 )
 
 object ReportesUiPolicy {
-    fun headlineKpiIds(
-        totalVendido: Double,
-        totalCobrado: Double,
-        porCobrar: Double,
-        ticketPromedio: Double,
-        totalTransacciones: Int,
-    ): List<String> {
-        // Values are inputs so callers bind real totals; ids define unique headline slots.
-        require(totalVendido.isFinite() && totalCobrado.isFinite() && porCobrar.isFinite())
-        require(ticketPromedio.isFinite() && totalTransacciones >= 0)
-        return listOf("vendido", "cobrado", "porCobrar", "ticketPromedio", "transacciones")
-    }
+    /** Unique headline KPI slots — Por Cobrar appears once (no duplicate Pendiente). */
+    val headlineKpiIds: List<String> =
+        listOf("vendido", "cobrado", "porCobrar", "ticketPromedio", "transacciones")
+
+    /** Room stores fechas as ISO TEXT; avoid LocalDate.MAX (+999999999-…) which fails TEXT range compares. */
+    val TOTAL_RANGE: Pair<LocalDate, LocalDate> =
+        LocalDate.of(1900, 1, 1) to LocalDate.of(9999, 12, 31)
 
     fun showsPeriodChrome(periodo: String): Boolean = periodo != "Total"
 
@@ -155,7 +150,7 @@ class ReportesViewModel @Inject constructor(
         "Mensual" -> fd.withDayOfMonth(1) to fd.withDayOfMonth(fd.lengthOfMonth())
         "Este año" -> fd.withDayOfYear(1) to fd.withDayOfYear(fd.lengthOfYear())
         "Anual" -> LocalDate.of(a.toInt(), 1, 1) to LocalDate.of(a.toInt(), 12, 31)
-        else -> LocalDate.MIN to LocalDate.MAX
+        else -> ReportesUiPolicy.TOTAL_RANGE
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)

@@ -80,13 +80,7 @@ fun ReportesScreen(
     val ventasPeriodo = totalCobrado - cobrosPeriodo
     val porCobrar = totalVendido - ventasPeriodo
     val ticketPromedio = if (totalTransacciones > 0) totalVendido / totalTransacciones else 0.0
-    val headlineKpiIds = ReportesUiPolicy.headlineKpiIds(
-        totalVendido = totalVendido,
-        totalCobrado = totalCobrado,
-        porCobrar = porCobrar,
-        ticketPromedio = ticketPromedio,
-        totalTransacciones = totalTransacciones,
-    )
+    val headlineKpiIds = ReportesUiPolicy.headlineKpiIds
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.surface,
