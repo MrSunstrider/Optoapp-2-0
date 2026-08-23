@@ -189,6 +189,51 @@ class ReportesViewModelDiarioTest {
     }
 
     @Test
+    fun `totalCobrado uses PagoEffect Abono Reverso Anulacion nets to 60`() = runTest(testDispatcher) {
+        val pagos = listOf(
+            Pago(id = "p1", fecha = today, tipo = "Abono", monto = 100.0, opticaId = opticaId, dispensacionId = "d1"),
+            Pago(id = "p2", fecha = today, tipo = "Reverso", monto = 40.0, opticaId = opticaId, dispensacionId = "d1", reversaPagoId = "p1"),
+            Pago(id = "p3", fecha = today, tipo = "Anulación", monto = 50.0, opticaId = opticaId, dispensacionId = "d1"),
+        )
+        every { repository.getPagosByDateRangeForOptica(any(), any(), opticaId) } returns flowOf(pagos)
+
+        viewModel = ReportesViewModel(repository, sessionManager)
+        activateFlows()
+        viewModel.setPeriodo("Diario")
+        viewModel.setFechaDiario(today)
+        advanceUntilIdle()
+
+        assertEquals(
+            "Abono 100 + Reverso -40 + Anulación 0 = 60 (not raw 190 or exclude-only 150)",
+            60.0,
+            viewModel.totalCobrado.value,
+            0.001,
+        )
+    }
+
+    @Test
+    fun `cobrosPeriodo orphan Reverso contributes negative signed amount`() = runTest(testDispatcher) {
+        val pagos = listOf(
+            Pago(id = "p1", fecha = today, tipo = "Reverso", monto = 40.0, opticaId = opticaId, dispensacionId = null),
+        )
+        every { repository.getPagosByDateRangeForOptica(any(), any(), opticaId) } returns flowOf(pagos)
+
+        viewModel = ReportesViewModel(repository, sessionManager)
+        activateFlows()
+        viewModel.setPeriodo("Diario")
+        viewModel.setFechaDiario(today)
+        advanceUntilIdle()
+
+        assertEquals(
+            "orphan Reverso must contribute -40 to cobrosPeriodo",
+            -40.0,
+            viewModel.cobrosPeriodo.value,
+            0.001,
+        )
+        assertEquals(-40.0, viewModel.totalCobrado.value, 0.001)
+    }
+
+    @Test
     fun `cobrosPeriodo counts payments for dispensaciones from other dates`() = runTest(testDispatcher) {
         val todasLasDispensaciones = listOf(
             DispensacionOptica(id = "d1", pacienteId = "p1", fecha = today, montoTotal = 100.0, opticaId = opticaId),
