@@ -313,7 +313,13 @@ fun AnalisisNegocioScreen(
 
             if (uiState.analisis != null) {
                 Button(
-                    onClick = { navController.navigate(Route.AnalisisDetalle.route) },
+                    onClick = {
+                        val yearMonth = "%04d-%02d".format(
+                            uiState.mesSeleccionado.year,
+                            uiState.mesSeleccionado.monthValue,
+                        )
+                        navController.navigate(Route.AnalisisDetalle(yearMonth).route)
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                 ) {

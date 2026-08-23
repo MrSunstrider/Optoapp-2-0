@@ -41,10 +41,10 @@ Chain strategy: feature-branch-chain
 
 ## Phase 2 — WU4 yearMonth (≤400)
 
-- [ ] 2.1 RED `AnalisisNegocioViewModelTest`: SSH `2026-03`→March; invalid→current month (threat).
-- [ ] 2.2 GREEN `Route.kt` + VM/Detalle SSH `AnalisisDetalle(yearMonth)`.
-- [ ] 2.3 GREEN Analisis/MainDrawer → `analisis_detalle/{yyyy-MM}`.
-- [ ] 2.4 Focused verify + GGA R1–R4; PR2.
+- [x] 2.1 RED `AnalisisNegocioViewModelTest`: SSH `2026-03`→March; invalid→current month (threat).
+- [x] 2.2 GREEN `Route.kt` + VM/Detalle SSH `AnalisisDetalle(yearMonth)`.
+- [x] 2.3 GREEN Analisis/MainDrawer → `analisis_detalle/{yyyy-MM}`.
+- [x] 2.4 Focused verify + GGA R1–R4; PR2.
 
 ## Phase 3 — WU3a recurring (≤400)
 

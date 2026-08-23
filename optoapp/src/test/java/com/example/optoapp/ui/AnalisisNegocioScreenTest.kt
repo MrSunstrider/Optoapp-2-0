@@ -3,6 +3,7 @@ package com.example.optoapp.ui.screens
 import com.example.optoapp.data.AppRoles
 import com.example.optoapp.domain.Prioridad
 import com.example.optoapp.domain.Recomendacion
+import com.example.optoapp.ui.navigation.Route
 import com.example.optoapp.viewmodel.AnalisisNegocioUiState
 import com.example.optoapp.viewmodel.AnalisisNegocioViewModel
 import org.junit.Assert.*
@@ -81,9 +82,8 @@ class AnalisisNegocioScreenTest {
     }
 
     @Test
-    fun screen_detalleRoute_isAnalisisDetalle() {
-        val route = "analisis_detalle"
-        assertEquals("analisis_detalle", route)
+    fun screen_detalleRoute_isAnalisisDetalleWithYearMonth() {
+        assertEquals("analisis_detalle/2026-03", Route.AnalisisDetalle("2026-03").route)
     }
 
     @Test

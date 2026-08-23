@@ -1,6 +1,7 @@
 package com.example.optoapp.viewmodel
 
 import android.util.Log
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.optoapp.data.Resource
@@ -23,6 +24,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.time.LocalDate
+import java.time.YearMonth
+import java.time.format.DateTimeParseException
 import javax.inject.Inject
 
 data class AnalisisNegocioUiState(
@@ -45,13 +48,32 @@ class AnalisisNegocioViewModel @Inject constructor(
     private val generarRecomendaciones: GenerarRecomendacionesUseCase,
     private val feedbackRecomendacion: FeedbackRecomendacionUseCase,
     private val sessionManager: SessionManager,
+    savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
     companion object {
         private const val TAG = "AnalisisNegocioVM"
+        const val YEAR_MONTH_ARG = "yearMonth"
+
+        fun resolveInitialMonth(
+            yearMonth: String?,
+            fallback: LocalDate = DateUtils.today().withDayOfMonth(1),
+        ): LocalDate {
+            if (yearMonth.isNullOrBlank()) return fallback
+            return try {
+                YearMonth.parse(yearMonth).atDay(1)
+            } catch (e: DateTimeParseException) {
+                Log.w(TAG, "Invalid yearMonth='$yearMonth', falling back to current month")
+                fallback
+            }
+        }
     }
 
-    private val _uiState = MutableStateFlow(AnalisisNegocioUiState())
+    private val _uiState = MutableStateFlow(
+        AnalisisNegocioUiState(
+            mesSeleccionado = resolveInitialMonth(savedStateHandle.get<String>(YEAR_MONTH_ARG)),
+        ),
+    )
     val uiState: StateFlow<AnalisisNegocioUiState> = _uiState.asStateFlow()
 
     private var loadJob: Job? = null

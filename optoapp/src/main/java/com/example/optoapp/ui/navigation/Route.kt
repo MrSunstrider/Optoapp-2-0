@@ -32,7 +32,6 @@ sealed class Route(val route: String) {
     data object Reportes : Route("reportes")
     data object CostosYGastos : Route("costos_y_gastos")
     data object EstadisticasBI : Route("estadisticas_bi")
-    data object AnalisisDetalle : Route("analisis_detalle")
     data object Configuracion : Route("configuracion")
     data object Conflictos : Route("conflictos")
 
@@ -47,6 +46,5 @@ sealed class Route(val route: String) {
     data class EditarServicio(val id: String) : Route("editar_servicio/$id")
     data class CostosYGastosDisp(val dispensacionId: String) : Route("costos_y_gastos/$dispensacionId")
     data class InformacionFinanciera(val dispensacionId: String) : Route("informacion_financiera/$dispensacionId")
-
-
+    data class AnalisisDetalle(val yearMonth: String) : Route("analisis_detalle/$yearMonth")
 }

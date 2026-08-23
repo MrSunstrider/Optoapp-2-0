@@ -1,5 +1,6 @@
 package com.example.optoapp.ui.components
 
+import com.example.optoapp.ui.navigation.Route
 import com.example.optoapp.viewmodel.AuthViewModel
 import com.example.optoapp.viewmodel.OpticaHeaderUi
 import com.example.optoapp.viewmodel.SyncState
@@ -223,8 +224,7 @@ class MainDrawerContentTest {
 
     @Test
     fun navigationRoutes_analisisDetalleExists() {
-        val route = "analisis_detalle"
-        assertEquals("analisis_detalle", route)
+        assertEquals("analisis_detalle/{yearMonth}", Route.AnalisisDetalle("{yearMonth}").route)
     }
 
     @Test

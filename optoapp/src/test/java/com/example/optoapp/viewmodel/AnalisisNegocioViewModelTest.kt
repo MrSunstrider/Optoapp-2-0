@@ -1,5 +1,6 @@
 package com.example.optoapp.viewmodel
 
+import androidx.lifecycle.SavedStateHandle
 import com.example.optoapp.data.Resource
 import com.example.optoapp.data.SessionManager
 import com.example.optoapp.domain.AnalisisMensual
@@ -13,6 +14,7 @@ import com.example.optoapp.domain.Prioridad
 import com.example.optoapp.domain.Recomendacion
 import com.example.optoapp.domain.RecomendacionTipo
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
@@ -142,17 +144,78 @@ class AnalisisNegocioViewModelTest {
 
     private val saldoEsperado = 10000.0 - 8000.0
 
+    private fun createViewModel(
+        savedStateHandle: SavedStateHandle = SavedStateHandle(),
+    ): AnalisisNegocioViewModel = AnalisisNegocioViewModel(
+        obtenerAnalisisMensual,
+        obtenerDeudores,
+        generarRecomendaciones,
+        feedbackRecomendacion,
+        sessionManager,
+        savedStateHandle,
+    )
+
+    @Test
+    fun `SavedStateHandle yearMonth 2026-03 initializes mesSeleccionado to March`() = runTest(testDispatcher) {
+        primeUseCases()
+        val march = LocalDate.of(2026, 3, 1)
+
+        viewModel = createViewModel(SavedStateHandle(mapOf("yearMonth" to "2026-03")))
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.first()
+        assertEquals("mesSeleccionado should be March 2026", march, state.mesSeleccionado)
+        coVerify { obtenerAnalisisMensual(opticaId, march) }
+    }
+
+    @Test
+    fun `SavedStateHandle yearMonth 2025-12 initializes December`() = runTest(testDispatcher) {
+        primeUseCases()
+        val december = LocalDate.of(2025, 12, 1)
+
+        viewModel = createViewModel(SavedStateHandle(mapOf("yearMonth" to "2025-12")))
+        advanceUntilIdle()
+
+        assertEquals(december, viewModel.uiState.first().mesSeleccionado)
+        coVerify { obtenerAnalisisMensual(opticaId, december) }
+    }
+
+    @Test
+    fun `invalid SavedStateHandle yearMonth falls back to current month`() = runTest(testDispatcher) {
+        primeUseCases()
+
+        viewModel = createViewModel(SavedStateHandle(mapOf("yearMonth" to "not-a-month")))
+        advanceUntilIdle()
+
+        assertEquals(currentMonth, viewModel.uiState.first().mesSeleccionado)
+        coVerify { obtenerAnalisisMensual(opticaId, currentMonth) }
+    }
+
+    @Test
+    fun `missing yearMonth arg falls back to current month`() = runTest(testDispatcher) {
+        primeUseCases()
+
+        viewModel = createViewModel(SavedStateHandle())
+        advanceUntilIdle()
+
+        assertEquals(currentMonth, viewModel.uiState.first().mesSeleccionado)
+        coVerify { obtenerAnalisisMensual(opticaId, currentMonth) }
+    }
+
+    @Test
+    fun `resolveInitialMonth parses valid and rejects invalid`() {
+        assertEquals(LocalDate.of(2026, 3, 1), AnalisisNegocioViewModel.resolveInitialMonth("2026-03"))
+        assertEquals(LocalDate.of(2025, 12, 1), AnalisisNegocioViewModel.resolveInitialMonth("2025-12"))
+        assertEquals(currentMonth, AnalisisNegocioViewModel.resolveInitialMonth("2026-13", currentMonth))
+        assertEquals(currentMonth, AnalisisNegocioViewModel.resolveInitialMonth("", currentMonth))
+        assertEquals(currentMonth, AnalisisNegocioViewModel.resolveInitialMonth(null, currentMonth))
+    }
+
     @Test
     fun `init loads data from all 3 use cases and populates state`() = runTest(testDispatcher) {
         primeUseCases()
 
-        viewModel = AnalisisNegocioViewModel(
-            obtenerAnalisisMensual,
-            obtenerDeudores,
-            generarRecomendaciones,
-            feedbackRecomendacion,
-            sessionManager,
-        )
+        viewModel = createViewModel()
         advanceUntilIdle()
 
         val state = viewModel.uiState.first()
@@ -169,13 +232,7 @@ class AnalisisNegocioViewModelTest {
     fun `navigateMonth plusOne updates mesSeleccionado and reloads`() = runTest(testDispatcher) {
         primeUseCases()
 
-        viewModel = AnalisisNegocioViewModel(
-            obtenerAnalisisMensual,
-            obtenerDeudores,
-            generarRecomendaciones,
-            feedbackRecomendacion,
-            sessionManager,
-        )
+        viewModel = createViewModel()
         advanceUntilIdle()
 
         viewModel.navigateMonth(1)
@@ -190,13 +247,7 @@ class AnalisisNegocioViewModelTest {
     fun `navigateMonth minusOne updates mesSeleccionado and reloads`() = runTest(testDispatcher) {
         primeUseCases()
 
-        viewModel = AnalisisNegocioViewModel(
-            obtenerAnalisisMensual,
-            obtenerDeudores,
-            generarRecomendaciones,
-            feedbackRecomendacion,
-            sessionManager,
-        )
+        viewModel = createViewModel()
         advanceUntilIdle()
 
         viewModel.navigateMonth(-1)
@@ -210,13 +261,7 @@ class AnalisisNegocioViewModelTest {
     fun `isLoading is false after successful load completion`() = runTest(testDispatcher) {
         primeUseCases()
 
-        viewModel = AnalisisNegocioViewModel(
-            obtenerAnalisisMensual,
-            obtenerDeudores,
-            generarRecomendaciones,
-            feedbackRecomendacion,
-            sessionManager,
-        )
+        viewModel = createViewModel()
         advanceUntilIdle()
 
         val state = viewModel.uiState.first()
@@ -231,13 +276,7 @@ class AnalisisNegocioViewModelTest {
             recomendaciones = Resource.Error("No hay datos de analisis para generar recomendaciones"),
         )
 
-        viewModel = AnalisisNegocioViewModel(
-            obtenerAnalisisMensual,
-            obtenerDeudores,
-            generarRecomendaciones,
-            feedbackRecomendacion,
-            sessionManager,
-        )
+        viewModel = createViewModel()
         advanceUntilIdle()
 
         val state = viewModel.uiState.first()
@@ -254,13 +293,7 @@ class AnalisisNegocioViewModelTest {
             analisis = Resource.Success(createAnalisis(esOffline = true)),
         )
 
-        viewModel = AnalisisNegocioViewModel(
-            obtenerAnalisisMensual,
-            obtenerDeudores,
-            generarRecomendaciones,
-            feedbackRecomendacion,
-            sessionManager,
-        )
+        viewModel = createViewModel()
         advanceUntilIdle()
 
         val state = viewModel.uiState.first()
@@ -277,13 +310,7 @@ class AnalisisNegocioViewModelTest {
             recomendaciones = Resource.Error("Datos insuficientes para generar recomendaciones"),
         )
 
-        viewModel = AnalisisNegocioViewModel(
-            obtenerAnalisisMensual,
-            obtenerDeudores,
-            generarRecomendaciones,
-            feedbackRecomendacion,
-            sessionManager,
-        )
+        viewModel = createViewModel()
         advanceUntilIdle()
 
         val state = viewModel.uiState.first()
@@ -297,13 +324,7 @@ class AnalisisNegocioViewModelTest {
         primeUseCases()
         coEvery { feedbackRecomendacion.marcarUtil("r1", opticaId) } returns Unit
 
-        viewModel = AnalisisNegocioViewModel(
-            obtenerAnalisisMensual,
-            obtenerDeudores,
-            generarRecomendaciones,
-            feedbackRecomendacion,
-            sessionManager,
-        )
+        viewModel = createViewModel()
         advanceUntilIdle()
 
         viewModel.onFeedback("r1", fueUtil = true)
@@ -318,13 +339,7 @@ class AnalisisNegocioViewModelTest {
         primeUseCases()
         coEvery { feedbackRecomendacion.marcarNoUtil("r2", opticaId) } returns Unit
 
-        viewModel = AnalisisNegocioViewModel(
-            obtenerAnalisisMensual,
-            obtenerDeudores,
-            generarRecomendaciones,
-            feedbackRecomendacion,
-            sessionManager,
-        )
+        viewModel = createViewModel()
         advanceUntilIdle()
 
         viewModel.onFeedback("r2", fueUtil = false)
@@ -336,13 +351,7 @@ class AnalisisNegocioViewModelTest {
     fun `isSeasonalityWarning is false when online`() = runTest(testDispatcher) {
         primeUseCases(analisis = Resource.Success(createAnalisis(esOffline = false)))
 
-        viewModel = AnalisisNegocioViewModel(
-            obtenerAnalisisMensual,
-            obtenerDeudores,
-            generarRecomendaciones,
-            feedbackRecomendacion,
-            sessionManager,
-        )
+        viewModel = createViewModel()
         advanceUntilIdle()
 
         val state = viewModel.uiState.first()
@@ -356,13 +365,7 @@ class AnalisisNegocioViewModelTest {
         coEvery { generarRecomendaciones(any(), any<List<Deudor>>(), any()) } returns Resource.Success(createRecomendaciones())
 
         try {
-            viewModel = AnalisisNegocioViewModel(
-                obtenerAnalisisMensual,
-                obtenerDeudores,
-                generarRecomendaciones,
-                feedbackRecomendacion,
-                sessionManager,
-            )
+            viewModel = createViewModel()
         } catch (_: CancellationException) {
             // Expected — cancellation should propagate, not be swallowed
         }
