@@ -42,6 +42,7 @@ class CierreCajaViewModelTest {
     private val testDispatcher = UnconfinedTestDispatcher()
     private lateinit var repository: OptoRepository
     private lateinit var sessionManager: SessionManager
+    private lateinit var appContext: android.content.Context
 
     private val today = LocalDate.of(2026, 6, 17)
     private val yesterday = LocalDate.of(2026, 6, 16)
@@ -61,6 +62,14 @@ class CierreCajaViewModelTest {
         every { sessionManager.opticaId } returns flowOf(opticaId)
         every { sessionManager.opticaRol } returns flowOf("admin")
         every { sessionManager.userTimeZone } returns flowOf(null)
+        val prefs = mockk<android.content.SharedPreferences>(relaxed = true)
+        val editor = mockk<android.content.SharedPreferences.Editor>(relaxed = true)
+        every { prefs.edit() } returns editor
+        every { editor.putString(any(), any()) } returns editor
+        every { editor.remove(any()) } returns editor
+        every { prefs.getString(any(), any()) } returns null
+        appContext = mockk(relaxed = true)
+        every { appContext.getSharedPreferences("optoapp_prefs", android.content.Context.MODE_PRIVATE) } returns prefs
         // Default: empty data for all queries
         every { repository.getPagosByDateRangeForOptica(any(), any(), any()) } returns flowOf(emptyList())
         every { repository.getDispensacionesByDateRangeForOptica(any(), any(), any()) } returns flowOf(emptyList())
@@ -78,7 +87,7 @@ class CierreCajaViewModelTest {
      * Creates the ViewModel, sets fecha to today, and waits for first non-loading emission.
      */
     private suspend fun createViewModel(): CierreCajaViewModel {
-        val vm = CierreCajaViewModel(repository, sessionManager, androidx.lifecycle.SavedStateHandle())
+        val vm = CierreCajaViewModel(repository, sessionManager, androidx.lifecycle.SavedStateHandle(), appContext)
         vm.setFecha(today)
         vm.uiState.first { !it.isLoading }
         return vm
@@ -585,7 +594,7 @@ class CierreCajaViewModelTest {
         // Switch session to other optica
         every { sessionManager.opticaId } returns flowOf(otherOpticaId)
 
-        val vm = CierreCajaViewModel(repository, sessionManager, androidx.lifecycle.SavedStateHandle())
+        val vm = CierreCajaViewModel(repository, sessionManager, androidx.lifecycle.SavedStateHandle(), appContext)
         vm.setFecha(today)
         vm.uiState.first { !it.isLoading }
 
@@ -710,7 +719,7 @@ class CierreCajaViewModelTest {
         every { repository.getServiciosByDateRangeForOptica(today, today, opticaId) } returns flowOf(emptyList())
         coEvery { repository.getDispensacionesByIds(any(), any()) } throws RuntimeException("DB corrupted")
 
-        val vm = CierreCajaViewModel(repository, sessionManager, androidx.lifecycle.SavedStateHandle())
+        val vm = CierreCajaViewModel(repository, sessionManager, androidx.lifecycle.SavedStateHandle(), appContext)
         vm.setFecha(today)
         vm.uiState.first { !it.isLoading }
 
@@ -1187,7 +1196,7 @@ class CierreCajaViewModelTest {
             }
         }
 
-        val vm = CierreCajaViewModel(repository, sessionManager, androidx.lifecycle.SavedStateHandle())
+        val vm = CierreCajaViewModel(repository, sessionManager, androidx.lifecycle.SavedStateHandle(), appContext)
         vm.setFecha(today)
         vm.uiState.first { !it.isLoading && it.errorMessage != null }
         assertNotNull(vm.uiState.value.errorMessage)

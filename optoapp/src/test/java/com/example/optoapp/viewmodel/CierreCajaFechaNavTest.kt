@@ -29,6 +29,7 @@ class CierreCajaFechaNavTest {
     private val testDispatcher = UnconfinedTestDispatcher()
     private lateinit var repository: OptoRepository
     private lateinit var sessionManager: SessionManager
+    private lateinit var appContext: android.content.Context
     private val today = LocalDate.of(2026, 8, 23)
     private val yesterday = LocalDate.of(2026, 8, 22)
     private val opticaId = "optica-1"
@@ -50,6 +51,14 @@ class CierreCajaFechaNavTest {
         every { repository.getDispensacionesByDateRangeForOptica(any(), any(), any()) } returns flowOf(emptyList())
         every { repository.getServiciosByDateRangeForOptica(any(), any(), any()) } returns flowOf(emptyList())
         every { repository.pacientesFlowForOptica(any()) } returns flowOf(emptyList())
+        val prefs = mockk<android.content.SharedPreferences>(relaxed = true)
+        val editor = mockk<android.content.SharedPreferences.Editor>(relaxed = true)
+        every { prefs.edit() } returns editor
+        every { editor.putString(any(), any()) } returns editor
+        every { editor.remove(any()) } returns editor
+        every { prefs.getString(any(), any()) } returns null
+        appContext = mockk(relaxed = true)
+        every { appContext.getSharedPreferences("optoapp_prefs", android.content.Context.MODE_PRIVATE) } returns prefs
     }
 
     @After
@@ -77,18 +86,14 @@ class CierreCajaFechaNavTest {
 
     @Test
     fun viewModel_appliesSavedStateHandleFecha() = runTest(testDispatcher) {
-        val vm = CierreCajaViewModel(
-            repository,
-            sessionManager,
-            SavedStateHandle(mapOf(CierreCajaViewModel.FECHA_ARG to "2026-08-22")),
-        )
+        val vm = CierreCajaViewModel(repository, sessionManager, SavedStateHandle(mapOf(CierreCajaViewModel.FECHA_ARG to "2026-08-22")), appContext)
         val state = vm.uiState.first { !it.isLoading || it.fecha == yesterday }
         assertEquals(yesterday, state.fecha)
     }
 
     @Test
     fun viewModel_missingFechaArg_defaultsToToday() = runTest(testDispatcher) {
-        val vm = CierreCajaViewModel(repository, sessionManager, SavedStateHandle())
+        val vm = CierreCajaViewModel(repository, sessionManager, SavedStateHandle(), appContext)
         assertEquals(today, vm.uiState.value.fecha)
     }
 

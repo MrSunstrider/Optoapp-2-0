@@ -210,7 +210,8 @@ class DrawerContentContractsTest {
 
     @Test
     fun navigationRoutes_cierreCajaExists() {
-        assertEquals("cierre_caja", Route.CierreCaja.route)
+        assertEquals("cierre_caja?fecha={fecha}", Route.CierreCaja.route)
+        assertEquals("cierre_caja", Route.CierreCaja.routeWithoutFecha())
     }
 
     @Test

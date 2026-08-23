@@ -49,13 +49,13 @@ Chain strategy: feature-branch-chain
 
 ## Phase 3 — WU3 Date (≤400)
 
-- [ ] 3.1 RED: VM applies SavedStateHandle fecha; missing → today.
-- [ ] 3.2 GREEN: `Route.CierreCaja` optional `fecha`; NavHost arg.
-- [ ] 3.3 GREEN: `OperacionHoyScreen` navigate with `uiState.fecha`.
-- [ ] 3.4 Focused verify + GGA; PR3.
+- [x] 3.1 RED: VM applies SavedStateHandle fecha; missing → today.
+- [x] 3.2 GREEN: `Route.CierreCaja` optional `fecha`; NavHost arg.
+- [x] 3.3 GREEN: `OperacionHoyScreen` navigate with `uiState.fecha`.
+- [x] 3.4 Focused verify + GGA; PR3.
 
 ## Phase 4 — WU4 Cash (≤400)
 
-- [ ] 4.1 RED: diferencia = contado − Efectivo PagoEffect net; empty contado hides delta; no arqueo writes.
-- [ ] 4.2 GREEN: VM/prefs `(opticaId,fecha)`; Screen field.
-- [ ] 4.3 Full `testDebugUnitTest`; INV PagoEffect untouched; GGA; PR4 Closes #107.
+- [x] 4.1 RED: diferencia = contado − Efectivo PagoEffect net; empty contado hides delta; no arqueo writes.
+- [x] 4.2 GREEN: VM/prefs `(opticaId,fecha)`; Screen field.
+- [x] 4.3 Full `testDebugUnitTest`; INV PagoEffect untouched; GGA; PR4 Closes #107.

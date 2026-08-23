@@ -1,5 +1,6 @@
 package com.example.optoapp.viewmodel
 
+import android.content.Context
 import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -17,6 +18,7 @@ import com.example.optoapp.ui.screens.pagosEffectByDispensacion
 import com.example.optoapp.ui.screens.pagosEffectByServicio
 import com.example.optoapp.util.DateUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -62,6 +64,8 @@ data class CierreCajaUiState(
     val errorMessage: String? = null,
     val pagosFuturos: Double = 0.0,
     val pacienteNombres: Map<String, String> = emptyMap(),
+    val contadoEfectivo: Double? = null,
+    val diferenciaEfectivo: Double? = null,
 )
 
 data class CierreTriad(
@@ -104,7 +108,10 @@ class CierreCajaViewModel @Inject constructor(
     private val repository: OptoRepository,
     private val sessionManager: SessionManager,
     savedStateHandle: SavedStateHandle,
+    @ApplicationContext private val appContext: Context,
 ) : ViewModel() {
+
+    private val prefs = appContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
     private val _uiState = MutableStateFlow(
         CierreCajaUiState(
@@ -115,6 +122,7 @@ class CierreCajaViewModel @Inject constructor(
     val uiState: StateFlow<CierreCajaUiState> = _uiState.asStateFlow()
 
     private val _retryTick = MutableStateFlow(0)
+    private var currentOpticaId: String = ""
 
     init {
         observePagos()
@@ -126,9 +134,43 @@ class CierreCajaViewModel @Inject constructor(
         }
     }
 
+    fun setContado(contado: Double?) {
+        val fecha = _uiState.value.fecha
+        val opticaId = currentOpticaId
+        if (opticaId.isNotBlank()) {
+            persistContado(opticaId, fecha, contado)
+        }
+        val efectivoNet = getTotalesPorMetodo()["Efectivo"] ?: 0.0
+        _uiState.update {
+            it.copy(
+                contadoEfectivo = contado,
+                diferenciaEfectivo = CierreCajaCashMath.diferencia(contado, efectivoNet),
+            )
+        }
+    }
+
     fun retry() {
         _uiState.update { it.copy(isLoading = true, errorMessage = null) }
         _retryTick.update { it + 1 }
+    }
+
+    private fun loadContado(opticaId: String, fecha: LocalDate): Double? {
+        if (opticaId.isBlank()) return null
+        return CierreCajaCashMath.parseContado(
+            prefs.getString(CierreCajaCashMath.prefsKey(opticaId, fecha), null),
+        )
+    }
+
+    private fun persistContado(opticaId: String, fecha: LocalDate, contado: Double?) {
+        val key = CierreCajaCashMath.prefsKey(opticaId, fecha)
+        val editor = prefs.edit()
+        val serialized = CierreCajaCashMath.serializeContado(contado)
+        if (serialized == null) {
+            editor.remove(key)
+        } else {
+            editor.putString(key, serialized)
+        }
+        editor.apply()
     }
 
     private fun observePagos() {
@@ -141,6 +183,7 @@ class CierreCajaViewModel @Inject constructor(
             .distinctUntilChanged()
             .flatMapLatest { (key, _) ->
                 val (fecha, opticaId, rol) = key
+                currentOpticaId = opticaId
                 if (!AppRoles.canViewCierreCaja(rol)) {
                     _uiState.update {
                         CierreCajaUiState(fecha = fecha, isLoading = false)
@@ -210,6 +253,11 @@ class CierreCajaViewModel @Inject constructor(
                         it.montoTotal - cierreVentaPagado(it.aCuenta, it.id, pagadoLedgerByServicio)
                     }
                     val pagosDisplay = buildPagosDisplay(pagos, dispMap, servMap, fecha)
+                    val defaultLabel = FinanzasRemoteDefaults.ServicioExtra.METODO_PAGO_ROW
+                    val efectivoNet = pagos
+                        .filter { (if (it.metodoPago == defaultLabel) "" else it.metodoPago) == "Efectivo" }
+                        .sumOf { PagoEffect.signedAmount(it.tipo, it.monto) }
+                    val contado = loadContado(opticaId, fecha)
                     CierreCajaUiState(
                         fecha = fecha,
                         pagos = pagos,
@@ -227,6 +275,8 @@ class CierreCajaViewModel @Inject constructor(
                         isLoading = false,
                         pagosFuturos = pagosFuturos,
                         pacienteNombres = pacienteNombres,
+                        contadoEfectivo = contado,
+                        diferenciaEfectivo = CierreCajaCashMath.diferencia(contado, efectivoNet),
                     )
                 }.catch { e ->
                     Log.e(TAG, "observePagos inner flow failed", e)
@@ -259,6 +309,7 @@ class CierreCajaViewModel @Inject constructor(
         private const val TAG = "CierreCajaVM"
         private const val ESTADO_ANULADO = "Anulado"
         private const val ESTADO_RECLAMADA = "Reclamada"
+        private const val PREFS_NAME = "optoapp_prefs"
         const val FECHA_ARG = "fecha"
 
         fun resolveInitialFecha(

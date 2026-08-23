@@ -68,13 +68,14 @@ fun CierreCajaScreen(
         // Wire to current uiState aggregates only — do not re-query pagos.
         val cobradoHoy = viewModel.getCobradoHoy()
         val totales = viewModel.getTotalesPorMetodo()
+        val contado = uiState.contadoEfectivo
         if (asPdf) {
             val file = CierreCajaPdfGenerator.generate(
                 context = context,
                 state = uiState,
                 cobradoHoy = cobradoHoy,
                 totalesPorMetodo = totales,
-                contado = null,
+                contado = contado,
             )
             FileShareUtils.sharePdf(context, file, "Compartir cierre PDF")
         } else {
@@ -83,7 +84,7 @@ fun CierreCajaScreen(
                 state = uiState,
                 cobradoHoy = cobradoHoy,
                 totalesPorMetodo = totales,
-                contado = null,
+                contado = contado,
             )
             FileShareUtils.shareCsv(context, file, "Compartir cierre CSV")
         }
@@ -347,6 +348,13 @@ fun CierreCajaScreen(
                 }
             }
 
+            Spacer(modifier = Modifier.height(12.dp))
+            ContadoEfectivoSection(
+                contado = uiState.contadoEfectivo,
+                diferencia = uiState.diferenciaEfectivo,
+                onContadoChange = { viewModel.setContado(it) },
+            )
+
             Spacer(modifier = Modifier.height(16.dp))
 
             val hasPagos = filteredPagosDisplay.isNotEmpty()
@@ -487,6 +495,48 @@ private fun MetricSubLine(
     ) {
         Text(label, fontSize = 13.sp, color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f))
         Text(formatSoles(amount), fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = valueColor)
+    }
+}
+
+@Composable
+private fun ContadoEfectivoSection(
+    contado: Double?,
+    diferencia: Double?,
+    onContadoChange: (Double?) -> Unit,
+) {
+    var text by remember(contado) {
+        mutableStateOf(contado?.let { String.format(Locale.US, "%.2f", it) }.orEmpty())
+    }
+    OptoCard(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Efectivo contado", fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
+            OutlinedTextField(
+                value = text,
+                onValueChange = { raw ->
+                    text = raw
+                    val parsed = raw.trim().replace(',', '.').toDoubleOrNull()
+                    onContadoChange(parsed)
+                },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("Monto contado") },
+                placeholder = { Text("Opcional") },
+                singleLine = true,
+                suffix = { Text("S/") },
+            )
+            if (diferencia != null) {
+                val color = when {
+                    diferencia < 0 -> MaterialTheme.colorScheme.alertRed
+                    diferencia > 0 -> MaterialTheme.colorScheme.positiveGreen
+                    else -> MaterialTheme.colorScheme.onSurfaceVariant
+                }
+                Text(
+                    "Diferencia: ${formatSoles(diferencia)}",
+                    fontWeight = FontWeight.SemiBold,
+                    color = color,
+                    fontSize = 14.sp,
+                )
+            }
+        }
     }
 }
 
