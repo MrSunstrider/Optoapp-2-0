@@ -20,11 +20,11 @@ class DownloadSyncCoordinatorTest {
     }
 
     @Test
-    fun constructor_takesFiveDependencies() {
+    fun constructor_takesTenDependencies() {
         val constructors = DownloadSyncCoordinator::class.java.declaredConstructors
         assertEquals(1, constructors.size)
         val params = constructors[0].parameterTypes
-        assertEquals(9, params.size)
+        assertEquals(10, params.size)
     }
 
     @Test
