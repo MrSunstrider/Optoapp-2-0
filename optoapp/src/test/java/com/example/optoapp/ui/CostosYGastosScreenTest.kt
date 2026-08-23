@@ -124,4 +124,11 @@ class CostosYGastosScreenTest {
         assertEquals(3, CostosYGastosViewModel.TAB_GASTOS)
         assertEquals(3, CostosYGastosViewModel.clampTab(CostosYGastosViewModel.TAB_GASTOS))
     }
+
+    @Test
+    fun uiState_defaults_gastosLoadingIsTrue() {
+        val state = CostosYGastosUiState()
+        assertTrue(state.gastosLoading)
+        assertNull(state.gastosError)
+    }
 }

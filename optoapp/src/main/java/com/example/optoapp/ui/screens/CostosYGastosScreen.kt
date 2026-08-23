@@ -29,6 +29,7 @@ import com.example.optoapp.ui.theme.alertRed
 import com.example.optoapp.ui.theme.positiveGreen
 import com.example.optoapp.util.DateUtils
 import com.example.optoapp.viewmodel.COST_BLOCKS
+import com.example.optoapp.viewmodel.CostosGastosUiPolicy
 import com.example.optoapp.viewmodel.CostosYGastosViewModel
 import kotlinx.coroutines.launch
 import java.util.Locale
@@ -396,6 +397,11 @@ private fun GastosOperativosTab(
 ) {
     val scope = rememberCoroutineScope()
     val gastos = uiState.gastosOperativos
+    val triad = CostosGastosUiPolicy.resolveGastosTriad(
+        isLoading = uiState.gastosLoading,
+        gastosCount = gastos.size,
+        errorMessage = uiState.gastosError,
+    )
     val totalMes = gastos
         .filter { it.fecha.month == java.time.LocalDate.now().month && it.fecha.year == java.time.LocalDate.now().year }
         .sumOf { it.monto }
@@ -438,7 +444,39 @@ private fun GastosOperativosTab(
                 }
             }
 
-            if (gastos.isEmpty()) {
+            if (triad.showsLoading) {
+                item {
+                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp))
+                }
+            }
+
+            if (triad.showsError) {
+                item {
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(16.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                        ) {
+                            Text(
+                                uiState.gastosError.orEmpty(),
+                                color = MaterialTheme.colorScheme.onErrorContainer,
+                                fontSize = 13.sp,
+                            )
+                            if (triad.showsRetry) {
+                                Spacer(Modifier.height(8.dp))
+                                OutlinedButton(onClick = { viewModel.retryGastos() }) {
+                                    Text("Reintentar")
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (triad.showsEmpty) {
                 item {
                     Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -450,12 +488,14 @@ private fun GastosOperativosTab(
                 }
             }
 
-            items(gastos.sortedByDescending { it.fecha }) { gasto ->
-                GastoOperativoCard(
-                    gasto = gasto,
-                    onEdit = { viewModel.editGasto(gasto) },
-                    onDelete = { viewModel.deleteGasto(gasto) },
-                )
+            if (!triad.showsLoading && !triad.showsError) {
+                items(gastos.sortedByDescending { it.fecha }) { gasto ->
+                    GastoOperativoCard(
+                        gasto = gasto,
+                        onEdit = { viewModel.editGasto(gasto) },
+                        onDelete = { viewModel.deleteGasto(gasto) },
+                    )
+                }
             }
 
             item { Spacer(Modifier.height(80.dp)) }

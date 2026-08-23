@@ -51,6 +51,8 @@ data class CostosYGastosUiState(
     val gastosOperativos: List<GastoOperativoEntity> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null,
+    val gastosLoading: Boolean = true,
+    val gastosError: String? = null,
     // Dialog state for gastos operativos CRUD
     val isDialogVisible: Boolean = false,
     val editingGasto: GastoOperativoEntity? = null,
@@ -73,6 +75,29 @@ data class CostosYGastosUiState(
     val deletingCosto: CostoProductoEntity? = null,
 )
 
+data class GastosTabTriad(
+    val showsLoading: Boolean,
+    val showsEmpty: Boolean,
+    val showsError: Boolean,
+    val showsRetry: Boolean,
+)
+
+object CostosGastosUiPolicy {
+    fun resolveGastosTriad(
+        isLoading: Boolean,
+        gastosCount: Int,
+        errorMessage: String?,
+    ): GastosTabTriad {
+        val hasError = !errorMessage.isNullOrBlank()
+        return GastosTabTriad(
+            showsLoading = isLoading && !hasError,
+            showsEmpty = !isLoading && !hasError && gastosCount == 0,
+            showsError = hasError,
+            showsRetry = hasError,
+        )
+    }
+}
+
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class CostosYGastosViewModel @Inject constructor(
@@ -88,6 +113,7 @@ class CostosYGastosViewModel @Inject constructor(
     val uiState: StateFlow<CostosYGastosUiState> = _uiState.asStateFlow()
 
     private var syncTriggered = false
+    private val _gastosRetryTick = MutableStateFlow(0)
 
     companion object {
         private const val TAG = "CostosYGastosVM"
@@ -126,19 +152,37 @@ class CostosYGastosViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            sessionManager.opticaId.flatMapLatest { repository.getGastosOperativos(it) }
-                .catch { e ->
-                    Log.e(TAG, "Gastos flow crashed, restarting", e)
-                    emit(emptyList())
+            combine(sessionManager.opticaId, _gastosRetryTick) { opticaId, _ -> opticaId }
+                .flatMapLatest { opticaId ->
+                    _uiState.update { it.copy(gastosLoading = true, gastosError = null) }
+                    repository.getGastosOperativos(opticaId)
+                        .catch { e ->
+                            Log.e(TAG, "Gastos flow crashed", e)
+                            _uiState.update {
+                                it.copy(
+                                    gastosLoading = false,
+                                    gastosError = "Error al cargar gastos: ${e.message}",
+                                    gastosOperativos = emptyList(),
+                                )
+                            }
+                            emit(emptyList())
+                        }
                 }
                 .collect { gastos ->
+                    if (_uiState.value.gastosError != null) return@collect
                     val resolved = try {
                         autoGenerarSiFalta(gastos)
                     } catch (e: Exception) {
                         Log.e(TAG, "autoGenerarSiFalta failed, showing raw gastos", e)
                         gastos
                     }
-                    _uiState.update { it.copy(gastosOperativos = resolved) }
+                    _uiState.update {
+                        it.copy(
+                            gastosOperativos = resolved,
+                            gastosLoading = false,
+                            gastosError = null,
+                        )
+                    }
                     if (!syncTriggered && gastos.isEmpty()) {
                         syncTriggered = true
                         val opticaId = sessionManager.opticaId.first()
@@ -149,6 +193,10 @@ class CostosYGastosViewModel @Inject constructor(
                     }
                 }
         }
+    }
+
+    fun retryGastos() {
+        _gastosRetryTick.update { it + 1 }
     }
 
     private suspend fun autoGenerarSiFalta(gastos: List<GastoOperativoEntity>): List<GastoOperativoEntity> {

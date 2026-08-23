@@ -111,12 +111,20 @@ fun CierreCajaScreen(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
                 ) {
-                    Text(
-                        uiState.errorMessage!!,
+                    Column(
                         modifier = Modifier.padding(12.dp),
-                        color = MaterialTheme.colorScheme.onErrorContainer,
-                        fontSize = 13.sp,
-                    )
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Text(
+                            uiState.errorMessage!!,
+                            color = MaterialTheme.colorScheme.onErrorContainer,
+                            fontSize = 13.sp,
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        OutlinedButton(onClick = { viewModel.retry() }) {
+                            Text("Reintentar")
+                        }
+                    }
                 }
                 Spacer(modifier = Modifier.height(8.dp))
             }

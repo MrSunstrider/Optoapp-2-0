@@ -60,6 +60,7 @@ class CostosYGastosViewModelTest {
         mockkStatic("android.util.Log")
         every { android.util.Log.d(any(), any()) } returns 0
         every { android.util.Log.e(any(), any()) } returns 0
+        every { android.util.Log.e(any(), any(), any<Throwable>()) } returns 0
         every { android.util.Log.w(any(), any<String>()) } returns 0
 
         mockkObject(DateUtils)
@@ -471,5 +472,103 @@ class CostosYGastosViewModelTest {
         assertEquals(0, viewModel.uiState.value.selectedTab)
         viewModel.selectTab(10)
         assertEquals(3, viewModel.uiState.value.selectedTab)
+    }
+
+    // ── WU2: Gastos tab loading/empty/error triad ──
+
+    @Test
+    fun gastosTriad_loading_hidesEmpty() {
+        val t = CostosGastosUiPolicy.resolveGastosTriad(true, 0, null)
+        assertTrue(t.showsLoading)
+        assertFalse(t.showsEmpty)
+        assertFalse(t.showsError)
+    }
+
+    @Test
+    fun gastosTriad_emptyAfterLoad_showsEmptyHidesLoading() {
+        val t = CostosGastosUiPolicy.resolveGastosTriad(false, 0, null)
+        assertFalse(t.showsLoading)
+        assertTrue(t.showsEmpty)
+        assertFalse(t.showsError)
+    }
+
+    @Test
+    fun gastosTriad_error_showsErrorAndRetry() {
+        val t = CostosGastosUiPolicy.resolveGastosTriad(false, 0, "Error al cargar gastos")
+        assertFalse(t.showsEmpty)
+        assertTrue(t.showsError && t.showsRetry)
+        assertFalse(t.showsLoading)
+    }
+
+    @Test
+    fun gastosTriad_withData_hidesEmptyAndLoading() {
+        val t = CostosGastosUiPolicy.resolveGastosTriad(false, 2, null)
+        assertFalse(t.showsLoading || t.showsEmpty || t.showsError)
+    }
+
+    @Test
+    fun gastosLoading_staysTrueUntilFirstEmission() = runTest(testDispatcher) {
+        val neverEmits = kotlinx.coroutines.flow.MutableSharedFlow<List<GastoOperativoEntity>>()
+        every { repository.getGastosOperativos(opticaId) } returns neverEmits
+
+        viewModel = CostosYGastosViewModel(
+            repository,
+            costoProductoDao,
+            costoBiseladoDao,
+            sessionManager,
+            scheduler,
+            syncFinanzas,
+        )
+        advanceUntilIdle()
+
+        assertTrue(
+            "gastosLoading must stay true until first Flow emission",
+            viewModel.uiState.value.gastosLoading,
+        )
+        assertNull(viewModel.uiState.value.gastosError)
+    }
+
+    @Test
+    fun gastosLoading_falseAfterEmptyEmission() = runTest(testDispatcher) {
+        every { repository.getGastosOperativos(opticaId) } returns flowOf(emptyList())
+
+        viewModel = CostosYGastosViewModel(
+            repository,
+            costoProductoDao,
+            costoBiseladoDao,
+            sessionManager,
+            scheduler,
+            syncFinanzas,
+        )
+        advanceUntilIdle()
+
+        assertFalse(
+            "empty after load: gastosLoading off once flow emits",
+            viewModel.uiState.value.gastosLoading,
+        )
+        assertNull(viewModel.uiState.value.gastosError)
+    }
+
+    @Test
+    fun gastosFlowFailure_setsGastosErrorAndClearsLoading() = runTest(testDispatcher) {
+        every { repository.getGastosOperativos(opticaId) } returns kotlinx.coroutines.flow.flow {
+            throw IOException("gastos db down")
+        }
+
+        viewModel = CostosYGastosViewModel(
+            repository,
+            costoProductoDao,
+            costoBiseladoDao,
+            sessionManager,
+            scheduler,
+            syncFinanzas,
+        )
+        advanceUntilIdle()
+
+        assertFalse(viewModel.uiState.value.gastosLoading)
+        assertNotNull(viewModel.uiState.value.gastosError)
+        assertTrue(
+            viewModel.uiState.value.gastosError!!.contains("gastos db down"),
+        )
     }
 }

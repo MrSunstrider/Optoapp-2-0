@@ -1,5 +1,6 @@
 package com.example.optoapp.viewmodel
 
+import com.example.optoapp.data.AppRoles
 import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Pago
@@ -22,10 +23,12 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import java.time.LocalDate
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * Tests para [CierreCajaViewModel] usando mockk puro (sin Robolectric ni Room).
@@ -1115,5 +1118,84 @@ class CierreCajaViewModelTest {
 
         assertEquals(0.0, vm.uiState.value.saldoPendiente, 0.001)
         assertEquals(25.0, vm.uiState.value.pagadoLedgerByServicio["s1"] ?: 0.0, 0.001)
+    }
+
+    // ── WU2: Cierre loading/empty/error triad polish (PagoEffect/role unchanged) ──
+
+    @Test
+    fun cierreTriad_loading_hidesEmpty() {
+        val t = CierreCajaUiPolicy.resolveTriad(true, false, null)
+        assertTrue(t.showsLoading)
+        assertFalse(t.showsEmpty || t.showsError || t.showsRetry)
+    }
+
+    @Test
+    fun cierreTriad_emptyAfterLoad_showsEmptyHidesLoading() {
+        val t = CierreCajaUiPolicy.resolveTriad(false, false, null)
+        assertFalse(t.showsLoading)
+        assertTrue(t.showsEmpty)
+        assertFalse(t.showsError)
+    }
+
+    @Test
+    fun cierreTriad_errorMessage_showsErrorAndRetry() {
+        val t = CierreCajaUiPolicy.resolveTriad(false, false, "Error al cargar datos: boom")
+        assertTrue(t.showsError && t.showsRetry)
+        assertFalse(t.showsEmpty || t.showsLoading)
+    }
+
+    @Test
+    fun cierreTriad_withMovements_hidesEmpty() {
+        val t = CierreCajaUiPolicy.resolveTriad(false, true, null)
+        assertFalse(t.showsEmpty || t.showsLoading || t.showsError)
+    }
+
+    @Test
+    fun failCanViewCierreCaja_yieldsRestrictedAccess() {
+        assertFalse(AppRoles.canViewCierreCaja("asesor"))
+        assertTrue(CierreCajaUiPolicy.resolveAccess("asesor").isRestricted)
+    }
+
+    @Test
+    fun passingCanViewCierreCaja_allowsAccess() {
+        assertTrue(AppRoles.canViewCierreCaja("admin"))
+        assertFalse(CierreCajaUiPolicy.resolveAccess("admin").isRestricted)
+    }
+
+    @Test
+    fun retry_reloadsCurrentFechaClearingError() = runTest(testDispatcher) {
+        val attempts = AtomicInteger(0)
+        every { repository.getPagosByDateRangeForOptica(today, today, opticaId) } returns flowOf(
+            listOf(
+                Pago(
+                    id = "p1",
+                    fecha = today,
+                    tipo = "Abono",
+                    monto = 50.0,
+                    opticaId = opticaId,
+                    dispensacionId = "missing-d1",
+                ),
+            ),
+        )
+        every { repository.getDispensacionesByDateRangeForOptica(today, today, opticaId) } returns flowOf(emptyList())
+        every { repository.getServiciosByDateRangeForOptica(today, today, opticaId) } returns flowOf(emptyList())
+        coEvery { repository.getDispensacionesByIds(any(), any()) } answers {
+            if (attempts.getAndIncrement() == 0) {
+                throw RuntimeException("transient failure")
+            } else {
+                emptyList()
+            }
+        }
+
+        val vm = CierreCajaViewModel(repository, sessionManager)
+        vm.setFecha(today)
+        vm.uiState.first { !it.isLoading && it.errorMessage != null }
+        assertNotNull(vm.uiState.value.errorMessage)
+
+        vm.retry()
+        vm.uiState.first { !it.isLoading && it.errorMessage == null }
+
+        assertNull("retry must clear error on successful reload", vm.uiState.value.errorMessage)
+        assertFalse(vm.uiState.value.isLoading)
     }
 }

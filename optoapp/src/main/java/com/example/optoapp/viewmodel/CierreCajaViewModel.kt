@@ -62,6 +62,38 @@ data class CierreCajaUiState(
     val pacienteNombres: Map<String, String> = emptyMap(),
 )
 
+data class CierreTriad(
+    val showsLoading: Boolean,
+    val showsEmpty: Boolean,
+    val showsError: Boolean,
+    val showsRetry: Boolean,
+)
+
+data class CierreAccess(
+    val isRestricted: Boolean,
+)
+
+object CierreCajaUiPolicy {
+    fun resolveTriad(
+        isLoading: Boolean,
+        hasMovements: Boolean,
+        errorMessage: String?,
+    ): CierreTriad {
+        val hasError = !errorMessage.isNullOrBlank()
+        return CierreTriad(
+            showsLoading = isLoading && !hasError,
+            showsEmpty = !isLoading && !hasError && !hasMovements,
+            showsError = hasError,
+            showsRetry = hasError,
+        )
+    }
+
+    fun resolveAccess(rol: String?): CierreAccess {
+        val allowed = rol != null && AppRoles.canViewCierreCaja(rol)
+        return CierreAccess(isRestricted = !allowed)
+    }
+}
+
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class CierreCajaViewModel @Inject constructor(
@@ -71,6 +103,8 @@ class CierreCajaViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(CierreCajaUiState())
     val uiState: StateFlow<CierreCajaUiState> = _uiState.asStateFlow()
+
+    private val _retryTick = MutableStateFlow(0)
 
     init {
         observePagos()
@@ -82,14 +116,21 @@ class CierreCajaViewModel @Inject constructor(
         }
     }
 
+    fun retry() {
+        _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+        _retryTick.update { it + 1 }
+    }
+
     private fun observePagos() {
         combine(
             _uiState.map { it.fecha }.distinctUntilChanged(),
             sessionManager.opticaId,
             sessionManager.opticaRol,
-        ) { fecha, opticaId, rol -> Triple(fecha, opticaId, rol) }
+            _retryTick,
+        ) { fecha, opticaId, rol, tick -> Triple(fecha, opticaId, rol) to tick }
             .distinctUntilChanged()
-            .flatMapLatest { (fecha, opticaId, rol) ->
+            .flatMapLatest { (key, _) ->
+                val (fecha, opticaId, rol) = key
                 if (!AppRoles.canViewCierreCaja(rol)) {
                     _uiState.update {
                         CierreCajaUiState(fecha = fecha, isLoading = false)

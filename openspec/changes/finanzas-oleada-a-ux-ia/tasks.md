@@ -62,10 +62,10 @@ Chain strategy: feature-branch-chain
 
 ## Phase 5 — WU2 triad (≤400)
 
-- [ ] 5.1 RED Costos tab3: loading≠empty; empty after; error+retry.
-- [ ] 5.2 RED Cierre: loading≠empty; `errorMessage`; PagoEffect/role unchanged.
-- [ ] 5.3 GREEN Costos/Cierre triad polish.
-- [ ] 5.4 Focused verify + GGA R1–R4; PR5.
+- [x] 5.1 RED Costos tab3: loading≠empty; empty after; error+retry.
+- [x] 5.2 RED Cierre: loading≠empty; `errorMessage`; PagoEffect/role unchanged.
+- [x] 5.3 GREEN Costos/Cierre triad polish.
+- [x] 5.4 Focused verify + GGA R1–R4; PR5.
 
 ## Phase 6 — WU5 dead UI (≤400)
 
