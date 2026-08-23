@@ -68,8 +68,8 @@ class GastosRecurrentesTest {
     }
 
     @Test
-    fun `GastosUiState default categoria is alquiler`() {
-        assertEquals("alquiler", GastosUiState().categoria)
+    fun `CostosYGastosUiState default categoria is alquiler`() {
+        assertEquals("alquiler", CostosYGastosUiState().categoria)
     }
 
     @Test

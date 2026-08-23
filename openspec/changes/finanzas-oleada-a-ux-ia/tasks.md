@@ -69,6 +69,6 @@ Chain strategy: feature-branch-chain
 
 ## Phase 6 — WU5 dead UI (≤400)
 
-- [ ] 6.1 Delete/retarget `MainDrawerContentTest`; no NavHost `GastosScreen`.
-- [ ] 6.2 Delete `MainDrawerContent.kt`, `GastosScreen.kt`; drop unused `GastosViewModel`.
-- [ ] 6.3 Full `testDebugUnitTest`; INV check; GGA R1–R4; PR6 Closes #105.
+- [x] 6.1 Delete/retarget `MainDrawerContentTest`; no NavHost `GastosScreen`.
+- [x] 6.2 Delete `MainDrawerContent.kt`, `GastosScreen.kt`; drop unused `GastosViewModel`.
+- [x] 6.3 Full `testDebugUnitTest`; INV check; GGA R1–R4; PR6 Closes #105.

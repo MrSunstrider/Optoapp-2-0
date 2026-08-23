@@ -1,62 +1,65 @@
-package com.example.optoapp.ui.components
+package com.example.optoapp.ui.screens
 
 import com.example.optoapp.ui.navigation.Route
 import com.example.optoapp.viewmodel.AuthViewModel
 import com.example.optoapp.viewmodel.OpticaHeaderUi
 import com.example.optoapp.viewmodel.SyncState
 import com.example.optoapp.viewmodel.SyncViewModel
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * Characterization tests for MainDrawerContent.
- *
- * Verifies section labels, conditional visibility parameters,
- * navigation item structure, and state contracts.
+ * Characterization contracts for live [DrawerContent] (DrawerSections).
+ * Replaces MainDrawerContentTest after dead MainDrawerContent removal.
  */
-class MainDrawerContentTest {
+class DrawerContentContractsTest {
 
     @Test
-    fun sections_containsAllExpectedLabels() {
-        val sections = listOf("GESTIÓN", "PROGRAMACIÓN", "FINANZAS", "SISTEMA")
-        assertEquals(4, sections.size)
-        assertTrue(sections.contains("GESTIÓN"))
-        assertTrue(sections.contains("PROGRAMACIÓN"))
+    fun sections_containsLiveDrawerLabels() {
+        val sections = listOf("GESTIÓN", "PROGRAMACIÓN", "INVENTARIO ÓPTICO", "FINANZAS", "SISTEMA")
+        assertEquals(5, sections.size)
+        assertTrue(sections.contains("INVENTARIO ÓPTICO"))
         assertTrue(sections.contains("FINANZAS"))
-        assertTrue(sections.contains("SISTEMA"))
     }
 
     @Test
     fun defaultNavItems_containsExpected() {
         val items = listOf(
             "Pacientes",
-            "Servicios Varios",
+            "Servicios Extra",
             "Agenda",
-            "Inventario",
+            "Monturas",
+            "Conteo físico",
+            "Pedidos a proveedor",
+            "Proveedores",
             "Configuración",
-            "Sincronizar Cloud",
             "Cerrar Sesión",
         )
-        assertEquals(7, items.size)
-        assertTrue(items.contains("Pacientes"))
-        assertTrue(items.contains("Servicios Varios"))
-        assertTrue(items.contains("Agenda"))
-        assertTrue(items.contains("Inventario"))
-        assertTrue(items.contains("Configuración"))
-        assertTrue(items.contains("Sincronizar Cloud"))
-        assertTrue(items.contains("Cerrar Sesión"))
+        assertEquals(9, items.size)
+        assertTrue(items.contains("Servicios Extra"))
+        assertTrue(items.contains("Monturas"))
+        assertTrue(items.contains("Proveedores"))
     }
 
     @Test
-    fun conditionalItems_operacionHoy_whenShowOperacionHoyIsTrue() {
-        val conditionalItems = listOf("Operación de Hoy")
+    fun conditionalItems_dashboard_whenShowOperacionHoyIsTrue() {
+        val conditionalItems = listOf("Dashboard")
         assertEquals(1, conditionalItems.size)
     }
 
     @Test
     fun conditionalItems_finanzas_whenShowCierreCajaOrShowBiYReportes() {
-        val conditionalItems = listOf("Cierre de Caja", "Análisis Financiero", "Reportes")
-        assertEquals(3, conditionalItems.size)
+        val conditionalItems = listOf(
+            "Cierre de Caja",
+            "Análisis Financiero",
+            "Reportes",
+            "Costos y Gastos",
+        )
+        assertEquals(4, conditionalItems.size)
     }
 
     @Test
@@ -182,44 +185,37 @@ class MainDrawerContentTest {
 
     @Test
     fun navigationRoutes_pacientesExists() {
-        val route = "pacientes"
-        assertEquals("pacientes", route)
+        assertEquals("pacientes", Route.Pacientes.route)
     }
 
     @Test
     fun navigationRoutes_serviciosExtraExists() {
-        val route = "servicios_extra"
-        assertEquals("servicios_extra", route)
+        assertEquals("servicios_extra", Route.ServiciosExtra.route)
     }
 
     @Test
     fun navigationRoutes_agendaExists() {
-        val route = "agenda"
-        assertEquals("agenda", route)
+        assertEquals("agenda", Route.Agenda.route)
     }
 
     @Test
     fun navigationRoutes_monturasExists() {
-        val route = "monturas"
-        assertEquals("monturas", route)
+        assertEquals("monturas", Route.Monturas.route)
     }
 
     @Test
     fun navigationRoutes_configuracionExists() {
-        val route = "configuracion"
-        assertEquals("configuracion", route)
+        assertEquals("configuracion", Route.Configuracion.route)
     }
 
     @Test
     fun navigationRoutes_cierreCajaExists() {
-        val route = "cierre_caja"
-        assertEquals("cierre_caja", route)
+        assertEquals("cierre_caja", Route.CierreCaja.route)
     }
 
     @Test
     fun navigationRoutes_estadisticasBiExists() {
-        val route = "estadisticas_bi"
-        assertEquals("estadisticas_bi", route)
+        assertEquals("estadisticas_bi", Route.EstadisticasBI.route)
     }
 
     @Test
@@ -229,25 +225,52 @@ class MainDrawerContentTest {
 
     @Test
     fun navigationRoutes_reportesExists() {
-        val route = "reportes"
-        assertEquals("reportes", route)
+        assertEquals("reportes", Route.Reportes.route)
     }
 
     @Test
     fun navigationRoutes_operacionHoyExists() {
-        val route = "operacion_hoy"
-        assertEquals("operacion_hoy", route)
+        assertEquals("operacion_hoy", Route.OperacionHoy.route)
     }
 
     @Test
     fun navigationRoutes_proveedoresExists() {
-        val route = "proveedores"
-        assertEquals("proveedores", route)
+        assertEquals("proveedores", Route.Proveedores.route)
     }
 
     @Test
     fun navigationRoutes_ordenesCompraExists() {
-        val route = "ordenes_compra"
-        assertEquals("ordenes_compra", route)
+        assertEquals("ordenes_compra", Route.OrdenesCompra.route)
+    }
+
+    @Test
+    fun navigationRoutes_gastosAlias_isNotGastosScreenDestination() {
+        assertEquals("gastos", Route.Gastos.route)
+        assertEquals("costos_y_gastos", Route.CostosYGastos.route)
+        assertFalse(Route.Gastos.route == "GastosScreen")
+    }
+
+    @Test
+    fun deadGastosScreenAndMainDrawerContent_areRemoved() {
+        assertNull(
+            "GastosScreen must be deleted",
+            runCatching { Class.forName("com.example.optoapp.ui.screens.GastosScreenKt") }.getOrNull(),
+        )
+        assertNull(
+            "MainDrawerContent must be deleted",
+            runCatching { Class.forName("com.example.optoapp.ui.components.MainDrawerContentKt") }.getOrNull(),
+        )
+        assertNull(
+            "GastosViewModel must be deleted when unused",
+            runCatching { Class.forName("com.example.optoapp.viewmodel.GastosViewModel") }.getOrNull(),
+        )
+        assertNotNull(
+            "CostosYGastosScreen remains the canonical destination",
+            Class.forName("com.example.optoapp.ui.screens.CostosYGastosScreenKt"),
+        )
+        assertNotNull(
+            "DrawerContent remains the live drawer",
+            Class.forName("com.example.optoapp.ui.screens.DrawerSectionsKt"),
+        )
     }
 }
