@@ -39,12 +39,17 @@ fun CostosYGastosScreen(
     navController: NavController,
     drawerState: DrawerState,
     dispensacionId: String? = null,
+    initialTab: Int = 0,
     viewModel: CostosYGastosViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val scope = rememberCoroutineScope()
     val tabs = listOf("Lentes", "Biselado", "Lentes Contacto", "Gastos Operativos")
     var showDatePicker by remember { mutableStateOf(false) }
+
+    LaunchedEffect(initialTab) {
+        viewModel.selectTab(initialTab)
+    }
 
     if (showDatePicker) {
         OptoDatePickerDialog(

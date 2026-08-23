@@ -225,4 +225,21 @@ class AnalisisNegocioScreenTest {
         val fields = Recomendacion::class.java.declaredFields.map { it.name }
         assertTrue("Recomendacion debe tener detalle", "detalle" in fields)
     }
+
+    @Test
+    fun gastosSummary_isReadOnly_noWrites() {
+        assertFalse(AnalisisGastosPolicy.allowsWrites)
+    }
+
+    @Test
+    fun verTodosCta_deepLinksToGastosTab3() {
+        assertEquals(3, AnalisisGastosPolicy.verTodosInitialTab)
+        assertEquals(Route.Gastos.route, AnalisisGastosPolicy.verTodosRoute)
+    }
+
+    @Test
+    fun gastosAlias_opensCostosYGastosTab3() {
+        assertEquals(3, AnalisisGastosPolicy.verTodosInitialTab)
+        assertEquals("gastos", Route.Gastos.route)
+    }
 }

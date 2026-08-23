@@ -22,6 +22,7 @@ import com.example.optoapp.ui.components.OfflineBanner
 import com.example.optoapp.ui.navigation.Route
 import com.example.optoapp.ui.screens.ordenescompra.OrdenesCompraScreen
 import com.example.optoapp.viewmodel.AuthViewModel
+import com.example.optoapp.viewmodel.CostosYGastosViewModel
 import com.example.optoapp.viewmodel.OpticaHeaderViewModel
 import kotlinx.coroutines.launch
 
@@ -198,7 +199,13 @@ fun MainDrawerScreen(
                             composable(Route.Proveedores.route) { ProveedoresScreen(navController) }
                             composable(Route.OrdenesCompra.route) { OrdenesCompraScreen(navController) }
                             composable(Route.InventarioFisico.route) { com.example.optoapp.ui.screens.inventariofisico.InventarioFisicoScreen(navController) }
-                            composable(Route.Gastos.route) { CostosYGastosScreen(navController, drawerState) }
+                            composable(Route.Gastos.route) {
+                                CostosYGastosScreen(
+                                    navController,
+                                    drawerState,
+                                    initialTab = CostosYGastosViewModel.TAB_GASTOS,
+                                )
+                            }
                             composable(Route.OperacionHoy.route) { OperacionHoyScreen(navController, drawerState) }
                             composable(Route.NuevoServicio.route) {
                                 NuevoServicioScreen(navController, pacienteId = null)

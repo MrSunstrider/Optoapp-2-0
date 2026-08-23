@@ -118,4 +118,10 @@ class CostosYGastosScreenTest {
             "selectTab" in methods,
         )
     }
+
+    @Test
+    fun initialTab_gastosAlias_isTab3() {
+        assertEquals(3, CostosYGastosViewModel.TAB_GASTOS)
+        assertEquals(3, CostosYGastosViewModel.clampTab(CostosYGastosViewModel.TAB_GASTOS))
+    }
 }

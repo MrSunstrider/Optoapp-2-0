@@ -427,4 +427,49 @@ class CostosYGastosViewModelTest {
         coVerify(exactly = 0) { repository.upsertGastoOperativo(any()) }
         assertEquals(2, viewModel.uiState.value.gastosOperativos.size)
     }
+
+    @Test
+    fun clampTab_initialTab3_isGastosOperativos() {
+        assertEquals(3, CostosYGastosViewModel.TAB_GASTOS)
+        assertEquals(3, CostosYGastosViewModel.clampTab(3))
+    }
+
+    @Test
+    fun clampTab_outOfRange_clampsTo0Through3() {
+        assertEquals(0, CostosYGastosViewModel.clampTab(-1))
+        assertEquals(0, CostosYGastosViewModel.clampTab(0))
+        assertEquals(2, CostosYGastosViewModel.clampTab(2))
+        assertEquals(3, CostosYGastosViewModel.clampTab(3))
+        assertEquals(3, CostosYGastosViewModel.clampTab(99))
+    }
+
+    @Test
+    fun selectTab_initialTab3_setsGastosSelected() = runTest(testDispatcher) {
+        viewModel = CostosYGastosViewModel(
+            repository,
+            costoProductoDao,
+            costoBiseladoDao,
+            sessionManager,
+            scheduler,
+            syncFinanzas,
+        )
+        viewModel.selectTab(3)
+        assertEquals(3, viewModel.uiState.value.selectedTab)
+    }
+
+    @Test
+    fun selectTab_clampsOutOfRange() = runTest(testDispatcher) {
+        viewModel = CostosYGastosViewModel(
+            repository,
+            costoProductoDao,
+            costoBiseladoDao,
+            sessionManager,
+            scheduler,
+            syncFinanzas,
+        )
+        viewModel.selectTab(-5)
+        assertEquals(0, viewModel.uiState.value.selectedTab)
+        viewModel.selectTab(10)
+        assertEquals(3, viewModel.uiState.value.selectedTab)
+    }
 }

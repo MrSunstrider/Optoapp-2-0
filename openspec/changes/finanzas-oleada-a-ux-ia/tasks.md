@@ -54,11 +54,11 @@ Chain strategy: feature-branch-chain
 
 ## Phase 4 — WU3b unify+deep-link (≤400)
 
-- [ ] 4.1 RED `CostosYGastosViewModelTest`: `initialTab=3`→gastos; clamp 0–3 (threat).
-- [ ] 4.2 RED `AnalisisNegocioScreenTest`: no gastos writes; CTA→tab3.
-- [ ] 4.3 GREEN `CostosYGastosScreen(initialTab)`; Gastos alias→tab3.
-- [ ] 4.4 GREEN strip Analisis CRUD; CTA tab3; read-only `gastosMes`.
-- [ ] 4.5 Focused verify + GGA R1–R4; PR4.
+- [x] 4.1 RED `CostosYGastosViewModelTest`: `initialTab=3`→gastos; clamp 0–3 (threat).
+- [x] 4.2 RED `AnalisisNegocioScreenTest`: no gastos writes; CTA→tab3.
+- [x] 4.3 GREEN `CostosYGastosScreen(initialTab)`; Gastos alias→tab3.
+- [x] 4.4 GREEN strip Analisis CRUD; CTA tab3; read-only `gastosMes`.
+- [x] 4.5 Focused verify + GGA R1–R4; PR4.
 
 ## Phase 5 — WU2 triad (≤400)
 

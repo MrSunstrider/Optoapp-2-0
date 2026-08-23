@@ -91,7 +91,11 @@ class CostosYGastosViewModel @Inject constructor(
 
     companion object {
         private const val TAG = "CostosYGastosVM"
+        const val TAB_GASTOS = 3
+        private const val TAB_MAX = 3
         val CATEGORIAS = listOf("alquiler", "servicios", "personal", "proveedores", "insumos", "marketing", "impuestos", "otro")
+
+        fun clampTab(index: Int): Int = index.coerceIn(0, TAB_MAX)
 
         fun autoGenerarRecurrentes(
             templates: List<GastoOperativoEntity>,
@@ -162,7 +166,7 @@ class CostosYGastosViewModel @Inject constructor(
     }
 
     fun selectTab(index: Int) {
-        _uiState.update { it.copy(selectedTab = index) }
+        _uiState.update { it.copy(selectedTab = clampTab(index)) }
     }
 
     fun loadBlock(block: String) {
