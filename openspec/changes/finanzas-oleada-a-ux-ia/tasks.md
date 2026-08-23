@@ -48,9 +48,9 @@ Chain strategy: feature-branch-chain
 
 ## Phase 3 — WU3a recurring (≤400)
 
-- [ ] 3.1 RED retarget `GastosRecurrentesTest` → Costos companion.
-- [ ] 3.2 GREEN move `autoGenerarSiFalta` → `CostosYGastosViewModel` (keep GastosVM).
-- [ ] 3.3 Focused verify + GGA R1–R4; PR3.
+- [x] 3.1 RED retarget `GastosRecurrentesTest` → Costos companion.
+- [x] 3.2 GREEN move `autoGenerarSiFalta` → `CostosYGastosViewModel` (keep GastosVM).
+- [x] 3.3 Focused verify + GGA R1–R4; PR3.
 
 ## Phase 4 — WU3b unify+deep-link (≤400)
 

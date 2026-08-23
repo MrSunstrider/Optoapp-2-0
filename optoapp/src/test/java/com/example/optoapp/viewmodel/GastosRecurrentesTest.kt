@@ -8,7 +8,8 @@ import java.time.LocalDate
 
 class GastosRecurrentesTest {
 
-    private fun autoGenerar(templates: List<GastoOperativoEntity>, existentes: List<GastoOperativoEntity>, mes: LocalDate) = GastosViewModel.autoGenerarRecurrentes(templates, existentes, mes)
+    private fun autoGenerar(templates: List<GastoOperativoEntity>, existentes: List<GastoOperativoEntity>, mes: LocalDate) =
+        CostosYGastosViewModel.autoGenerarRecurrentes(templates, existentes, mes)
 
     @Test
     fun `nuevo gasto tiene isRecurring false por defecto`() {
@@ -83,7 +84,7 @@ class GastosRecurrentesTest {
             "impuestos",
             "otro",
         )
-        assertEquals(expected, GastosViewModel.CATEGORIAS.toSet())
-        assertEquals(8, GastosViewModel.CATEGORIAS.size)
+        assertEquals(expected, CostosYGastosViewModel.CATEGORIAS.toSet())
+        assertEquals(8, CostosYGastosViewModel.CATEGORIAS.size)
     }
 }

@@ -78,8 +78,7 @@ class GastosViewModel @Inject constructor(
 
     private suspend fun autoGenerarSiFalta(gastos: List<GastoOperativoEntity>): List<GastoOperativoEntity> {
         val hoy = DateUtils.today()
-        val mesInicio = hoy.withDayOfMonth(1)
-        val nuevos = autoGenerarRecurrentes(
+        val nuevos = CostosYGastosViewModel.autoGenerarRecurrentes(
             templates = gastos.filter { it.isRecurring },
             existentes = gastos,
             mesActual = hoy,
@@ -93,33 +92,7 @@ class GastosViewModel @Inject constructor(
 
     companion object {
         private const val TAG = "GastosVM"
-        val CATEGORIAS = listOf("alquiler", "servicios", "personal", "proveedores", "insumos", "marketing", "impuestos", "otro")
-
-        fun autoGenerarRecurrentes(
-            templates: List<GastoOperativoEntity>,
-            existentes: List<GastoOperativoEntity>,
-            mesActual: LocalDate,
-        ): List<GastoOperativoEntity> {
-            val mesInicio = mesActual.withDayOfMonth(1)
-            val mesFin = mesActual.withDayOfMonth(mesActual.lengthOfMonth())
-            return templates
-                .filter { it.isRecurring }
-                .filter { template ->
-                    existentes.none { existente ->
-                        existente.categoria == template.categoria &&
-                            !existente.fecha.isBefore(mesInicio) &&
-                            !existente.fecha.isAfter(mesFin)
-                    }
-                }
-                .map { template ->
-                    template.copy(
-                        id = UUID.randomUUID().toString(),
-                        fecha = mesInicio,
-                        isRecurring = false,
-                        nota = "Auto-generado de ${template.categoria}",
-                    )
-                }
-        }
+        val CATEGORIAS = CostosYGastosViewModel.CATEGORIAS
     }
 
     val categorias = CATEGORIAS

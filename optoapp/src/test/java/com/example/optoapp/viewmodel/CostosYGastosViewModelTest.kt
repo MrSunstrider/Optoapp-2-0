@@ -5,6 +5,7 @@ import com.example.optoapp.data.SessionManager
 import com.example.optoapp.data.costobiselado.CostoBiseladoDao
 import com.example.optoapp.data.costoproducto.CostoProductoDao
 import com.example.optoapp.data.costoproducto.CostoProductoEntity
+import com.example.optoapp.data.gastooperativo.GastoOperativoEntity
 import com.example.optoapp.domain.SyncFinanzasUseCase
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import com.example.optoapp.util.DateUtils
@@ -33,6 +34,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import java.io.IOException
+import java.math.BigDecimal
 import java.time.LocalDate
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -353,5 +355,76 @@ class CostosYGastosViewModelTest {
         val error = viewModel.uiState.value.costoSaveError
         assertNotNull("Error must be set after delete failure", error)
         assertTrue("Error must mention the problem", error!!.contains("eliminar", ignoreCase = true))
+    }
+
+    @Test
+    fun autoGenerarSiFalta_whenDueTemplateMissing_upsertsAndShowsMaterialized() = runTest(testDispatcher) {
+        val template = GastoOperativoEntity(
+            id = "tpl-1",
+            opticaId = opticaId,
+            categoria = "alquiler",
+            monto = BigDecimal.valueOf(800.0),
+            fecha = LocalDate.of(2026, 6, 1),
+            isRecurring = true,
+        )
+        every { repository.getGastosOperativos(opticaId) } returns flowOf(listOf(template))
+        coEvery { repository.upsertGastoOperativo(any()) } returns Unit
+
+        viewModel = CostosYGastosViewModel(
+            repository,
+            costoProductoDao,
+            costoBiseladoDao,
+            sessionManager,
+            scheduler,
+            syncFinanzas,
+        )
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { repository.upsertGastoOperativo(any()) }
+        coVerify { scheduler.scheduleFinanzasSync(opticaId) }
+        val gastos = viewModel.uiState.value.gastosOperativos
+        assertEquals(2, gastos.size)
+        assertTrue(gastos.any { it.id == "tpl-1" })
+        assertTrue(
+            gastos.any {
+                !it.isRecurring &&
+                    it.categoria == "alquiler" &&
+                    it.fecha == LocalDate.of(2026, 7, 1)
+            },
+        )
+    }
+
+    @Test
+    fun autoGenerarSiFalta_whenCopyAlreadyExists_doesNotUpsert() = runTest(testDispatcher) {
+        val template = GastoOperativoEntity(
+            id = "tpl-1",
+            opticaId = opticaId,
+            categoria = "personal",
+            monto = BigDecimal.valueOf(2500.0),
+            fecha = LocalDate.of(2026, 6, 1),
+            isRecurring = true,
+        )
+        val copia = GastoOperativoEntity(
+            id = "cop-1",
+            opticaId = opticaId,
+            categoria = "personal",
+            monto = BigDecimal.valueOf(2500.0),
+            fecha = LocalDate.of(2026, 7, 1),
+            isRecurring = false,
+        )
+        every { repository.getGastosOperativos(opticaId) } returns flowOf(listOf(template, copia))
+
+        viewModel = CostosYGastosViewModel(
+            repository,
+            costoProductoDao,
+            costoBiseladoDao,
+            sessionManager,
+            scheduler,
+            syncFinanzas,
+        )
+        advanceUntilIdle()
+
+        coVerify(exactly = 0) { repository.upsertGastoOperativo(any()) }
+        assertEquals(2, viewModel.uiState.value.gastosOperativos.size)
     }
 }
