@@ -23,6 +23,16 @@ interface ResumenDiarioDao {
     @Query(
         """
         SELECT * FROM resumen_diario
+        WHERE opticaId = :opticaId
+          AND strftime('%Y-%m', fecha) = :yearMonth
+        ORDER BY fecha ASC
+    """,
+    )
+    fun observeByOpticaAndMonth(opticaId: String, yearMonth: String): Flow<List<ResumenDiarioEntity>>
+
+    @Query(
+        """
+        SELECT * FROM resumen_diario
         WHERE opticaId = :opticaId AND fecha = :fecha
         LIMIT 1
     """,

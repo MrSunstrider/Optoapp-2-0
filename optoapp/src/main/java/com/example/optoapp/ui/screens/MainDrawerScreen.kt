@@ -224,6 +224,7 @@ fun MainDrawerScreen(
                             }
                             composable(Route.CierreCaja.route) { CierreCajaScreen(navController) }
                             composable(Route.EstadisticasBI.route) { AnalisisNegocioScreen(navController) }
+                            composable(Route.ResumenDiario.route) { ResumenDiarioScreen(navController) }
                             composable(Route.AnalisisDetalle("{yearMonth}").route) { AnalisisDetalleScreen(navController) }
                             composable(Route.Configuracion.route) { ConfiguracionScreen(navController, drawerState, syncViewModel) }
                             composable(Route.Conflictos.route) { ConflictosScreen(navController, syncViewModel) }

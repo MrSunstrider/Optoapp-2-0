@@ -274,6 +274,16 @@ fun DrawerContent(
                     modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
                 )
                 NavigationDrawerItem(
+                    label = { Text("Resumen diario", fontWeight = FontWeight.SemiBold) },
+                    selected = currentRoute == "resumen_diario",
+                    onClick = {
+                        scope.launch { drawerState.close() }
+                        navController.navigateDrawer("resumen_diario")
+                    },
+                    icon = { Icon(Icons.Default.Description, contentDescription = "Resumen diario") },
+                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
+                )
+                NavigationDrawerItem(
                     label = { Text("Reportes", fontWeight = FontWeight.SemiBold) },
                     selected = currentRoute == "reportes",
                     onClick = {

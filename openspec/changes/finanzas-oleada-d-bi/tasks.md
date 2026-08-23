@@ -56,6 +56,6 @@ Chain strategy: feature-branch-chain
 
 ## Phase 4 — WU4 Resumen (≤400)
 
-- [ ] 4.1 RED: month list from Dao Flow; refresh schedules finanzas sync; no upload.
-- [ ] 4.2 GREEN: Resumen screen/subsection + nav entry.
-- [ ] 4.3 Full `testDebugUnitTest`; INV checks; GGA; PR4 Closes #108.
+- [x] 4.1 RED: month list from Dao Flow; refresh schedules finanzas sync; no upload.
+- [x] 4.2 GREEN: Resumen screen/subsection + nav entry.
+- [x] 4.3 Full `testDebugUnitTest`; INV checks; GGA; PR4 Closes #108.

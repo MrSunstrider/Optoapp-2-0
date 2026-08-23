@@ -32,6 +32,7 @@ sealed class Route(val route: String) {
     data object Reportes : Route("reportes")
     data object CostosYGastos : Route("costos_y_gastos")
     data object EstadisticasBI : Route("estadisticas_bi")
+    data object ResumenDiario : Route("resumen_diario")
     data object Configuracion : Route("configuracion")
     data object Conflictos : Route("conflictos")
 

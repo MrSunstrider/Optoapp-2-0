@@ -247,6 +247,14 @@ fun AnalisisNegocioScreen(
             }
 
             if (uiState.analisis != null) {
+                OutlinedButton(
+                    onClick = { navController.navigate(Route.ResumenDiario.route) },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Lista", modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Ver resumen diario", fontSize = 12.sp)
+                }
                 Button(
                     onClick = {
                         val yearMonth = "%04d-%02d".format(
