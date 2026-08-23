@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.SessionManager
 import com.example.optoapp.data.costobiselado.CostoBiseladoDao
+import com.example.optoapp.data.costobiselado.CostoBiseladoEntity
 import com.example.optoapp.data.costoproducto.CostoProductoDao
 import com.example.optoapp.data.costoproducto.CostoProductoEntity
 import com.example.optoapp.data.gastooperativo.GastoOperativoEntity
@@ -91,6 +92,19 @@ data class CostosYGastosUiState(
     val costoCostoUnitario: String = "",
     val costoSaveError: String? = null,
     val deletingCosto: CostoProductoEntity? = null,
+    // Tab 1 — Biselado
+    val costosBiselado: List<CostoBiseladoEntity> = emptyList(),
+    val isBiseladoDialogVisible: Boolean = false,
+    val editingBiselado: CostoBiseladoEntity? = null,
+    val biseladoMaterial: String = "",
+    val biseladoTipoAro: String = "",
+    val biseladoStockOFabricacion: String = "stock",
+    val biseladoSerie: String = "",
+    val biseladoAltoIndice: String = "",
+    val biseladoCostoPorPar: String = "",
+    val biseladoProveedor: String = "",
+    val biseladoSaveError: String? = null,
+    val deletingBiselado: CostoBiseladoEntity? = null,
 )
 
 data class GastosTabTriad(
@@ -223,6 +237,17 @@ class CostosYGastosViewModel @Inject constructor(
                             }
                         }
                     }
+                }
+        }
+        viewModelScope.launch {
+            sessionManager.opticaId
+                .flatMapLatest { opticaId -> costoBiseladoDao.getByOpticaId(opticaId) }
+                .catch { e ->
+                    Log.e(TAG, "Biselado flow crashed", e)
+                    emit(emptyList())
+                }
+                .collect { rows ->
+                    _uiState.update { it.copy(costosBiselado = rows) }
                 }
         }
     }
@@ -522,6 +547,138 @@ class CostosYGastosViewModel @Inject constructor(
                 throw e
             } catch (e: Exception) {
                 _uiState.update { it.copy(costoSaveError = "Error al eliminar: ${e.message}") }
+            }
+        }
+    }
+
+    val tiposAro = OpticalCatalog.TIPO_ARO
+    val stockOFabricacionOptions = listOf("stock", "fabricacion")
+
+    fun showNewBiselado() {
+        _uiState.update {
+            it.copy(
+                isBiseladoDialogVisible = true,
+                editingBiselado = null,
+                biseladoMaterial = "",
+                biseladoTipoAro = "",
+                biseladoStockOFabricacion = "stock",
+                biseladoSerie = "",
+                biseladoAltoIndice = "",
+                biseladoCostoPorPar = "",
+                biseladoProveedor = "",
+                biseladoSaveError = null,
+            )
+        }
+    }
+
+    fun editBiselado(entity: CostoBiseladoEntity) {
+        _uiState.update {
+            it.copy(
+                isBiseladoDialogVisible = true,
+                editingBiselado = entity,
+                biseladoMaterial = entity.material,
+                biseladoTipoAro = entity.tipoAro,
+                biseladoStockOFabricacion = entity.stockOFabricacion,
+                biseladoSerie = entity.serie?.toString().orEmpty(),
+                biseladoAltoIndice = entity.altoIndice.orEmpty(),
+                biseladoCostoPorPar = entity.costoPorPar.toString(),
+                biseladoProveedor = entity.proveedor.orEmpty(),
+                biseladoSaveError = null,
+            )
+        }
+    }
+
+    fun dismissBiseladoDialog() {
+        _uiState.update {
+            it.copy(isBiseladoDialogVisible = false, editingBiselado = null, biseladoSaveError = null)
+        }
+    }
+
+    fun updateBiseladoMaterial(value: String) {
+        _uiState.update { it.copy(biseladoMaterial = value) }
+    }
+    fun updateBiseladoTipoAro(value: String) {
+        _uiState.update { it.copy(biseladoTipoAro = value) }
+    }
+    fun updateBiseladoStockOFabricacion(value: String) {
+        _uiState.update { it.copy(biseladoStockOFabricacion = value) }
+    }
+    fun updateBiseladoSerie(value: String) {
+        _uiState.update { it.copy(biseladoSerie = value) }
+    }
+    fun updateBiseladoAltoIndice(value: String) {
+        _uiState.update { it.copy(biseladoAltoIndice = value) }
+    }
+    fun updateBiseladoCostoPorPar(value: String) {
+        _uiState.update { it.copy(biseladoCostoPorPar = value) }
+    }
+    fun updateBiseladoProveedor(value: String) {
+        _uiState.update { it.copy(biseladoProveedor = value) }
+    }
+
+    fun saveBiselado() {
+        val s = _uiState.value
+        if (s.biseladoMaterial.isBlank()) {
+            _uiState.update { it.copy(biseladoSaveError = "Selecciona un material") }
+            return
+        }
+        if (s.biseladoTipoAro.isBlank()) {
+            _uiState.update { it.copy(biseladoSaveError = "Selecciona un tipo de aro") }
+            return
+        }
+        val costoPorPar = s.biseladoCostoPorPar.toDoubleOrNull()
+        if (costoPorPar == null || costoPorPar <= 0) {
+            _uiState.update { it.copy(biseladoSaveError = "Ingresa un costo por par válido") }
+            return
+        }
+        viewModelScope.launch {
+            try {
+                val opticaId = sessionManager.opticaId.first()
+                val entity = CostoBiseladoEntity(
+                    id = s.editingBiselado?.id ?: UUID.randomUUID().toString(),
+                    opticaId = opticaId,
+                    material = s.biseladoMaterial,
+                    tipoAro = s.biseladoTipoAro,
+                    stockOFabricacion = s.biseladoStockOFabricacion,
+                    serie = s.biseladoSerie.toIntOrNull(),
+                    altoIndice = s.biseladoAltoIndice.ifBlank { null },
+                    costoPorPar = costoPorPar,
+                    proveedor = s.biseladoProveedor.ifBlank { null },
+                    vigenteDesde = s.editingBiselado?.vigenteDesde ?: DateUtils.toIso(DateUtils.today()),
+                    vigenteHasta = s.editingBiselado?.vigenteHasta,
+                )
+                costoBiseladoDao.upsertAll(listOf(entity))
+                _uiState.update {
+                    it.copy(isBiseladoDialogVisible = false, editingBiselado = null, biseladoSaveError = null)
+                }
+                postSaveSyncScheduler.scheduleFinanzasSync(opticaId)
+            } catch (e: Exception) {
+                _uiState.update { it.copy(biseladoSaveError = "Error al guardar: ${e.message}") }
+            }
+        }
+    }
+
+    fun confirmDeleteBiselado(entity: CostoBiseladoEntity) {
+        _uiState.update { it.copy(deletingBiselado = entity) }
+    }
+
+    fun dismissDeleteBiselado() {
+        _uiState.update { it.copy(deletingBiselado = null) }
+    }
+
+    fun deleteBiselado() {
+        val entity = _uiState.value.deletingBiselado ?: return
+        viewModelScope.launch {
+            try {
+                val updated = entity.copy(vigenteHasta = DateUtils.toIso(DateUtils.today()))
+                costoBiseladoDao.upsertAll(listOf(updated))
+                val opticaId = sessionManager.opticaId.first()
+                _uiState.update { it.copy(deletingBiselado = null) }
+                postSaveSyncScheduler.scheduleFinanzasSync(opticaId)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _uiState.update { it.copy(biseladoSaveError = "Error al eliminar: ${e.message}") }
             }
         }
     }

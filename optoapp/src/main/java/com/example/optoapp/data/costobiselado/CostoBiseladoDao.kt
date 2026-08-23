@@ -3,6 +3,7 @@ package com.example.optoapp.data.costobiselado
 import androidx.room.Dao
 import androidx.room.Query
 import androidx.room.Upsert
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface CostoBiseladoDao {
@@ -27,6 +28,16 @@ interface CostoBiseladoDao {
         serie: Int?,
         altoIndice: String?,
     ): CostoBiseladoEntity?
+
+    @Query(
+        """
+        SELECT * FROM costos_biselado
+        WHERE optica_id = :opticaId
+          AND vigente_hasta IS NULL
+        ORDER BY material, tipo_aro
+    """,
+    )
+    fun getByOpticaId(opticaId: String): Flow<List<CostoBiseladoEntity>>
 
     @Query(
         """

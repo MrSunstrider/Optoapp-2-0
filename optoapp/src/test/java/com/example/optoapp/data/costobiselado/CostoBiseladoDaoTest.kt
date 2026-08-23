@@ -4,6 +4,7 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.example.optoapp.data.OptoDatabase
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.flow.first
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -174,5 +175,33 @@ class CostoBiseladoDaoTest {
             serie = 2,
             altoIndice = "1.50",
         )!!.id)
+    }
+
+    @Test
+    fun getByOpticaId_flow_emitsVigenteRowsOnly() = runBlocking {
+        val vigente = CostoBiseladoEntity(
+            id = "cb-v",
+            opticaId = "optica1",
+            material = "Resina",
+            tipoAro = "aro_completo",
+            stockOFabricacion = "stock",
+            serie = 1,
+            altoIndice = "1.50",
+            costoPorPar = 10.0,
+            vigenteDesde = "2026-01-01",
+            vigenteHasta = null,
+        )
+        val softDeleted = vigente.copy(id = "cb-d", vigenteHasta = "2026-07-16")
+        dao.upsertAll(listOf(vigente, softDeleted))
+
+        val emitted = dao.getByOpticaId("optica1").first()
+
+        assertEquals(1, emitted.size)
+        assertEquals("cb-v", emitted.single().id)
+    }
+
+    @Test
+    fun getByOpticaId_flow_emptyForUnknownOptica() = runBlocking {
+        assertTrue(dao.getByOpticaId("optica-missing").first().isEmpty())
     }
 }

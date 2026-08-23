@@ -3,6 +3,7 @@
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.SessionManager
 import com.example.optoapp.data.costobiselado.CostoBiseladoDao
+import com.example.optoapp.data.costobiselado.CostoBiseladoEntity
 import com.example.optoapp.data.costoproducto.CostoProductoDao
 import com.example.optoapp.data.costoproducto.CostoProductoEntity
 import com.example.optoapp.data.gastooperativo.GastoOperativoEntity
@@ -78,6 +79,7 @@ class CostosYGastosViewModelTest {
         every { repository.getGastosOperativos(opticaId) } returns emptyFlow()
         // Default: getByBloque returns empty so loadBlock doesn't crash
         coEvery { costoProductoDao.getByBloque(any(), any()) } returns flowOf(emptyList())
+        every { costoBiseladoDao.getByOpticaId(any()) } returns flowOf(emptyList())
     }
 
     @After
@@ -633,5 +635,116 @@ class CostosYGastosViewModelTest {
         assertTrue(
             viewModel.uiState.value.gastosError!!.contains("gastos db down"),
         )
+    }
+
+    // ── WU2: Biselado tab CRUD ──
+
+    private fun createVm() = CostosYGastosViewModel(
+        repository,
+        costoProductoDao,
+        costoBiseladoDao,
+        sessionManager,
+        scheduler,
+        syncFinanzas,
+    )
+
+    @Test
+    fun collectBiselado_updatesCostosBiseladoFromFlow() = runTest(testDispatcher) {
+        val row = CostoBiseladoEntity(
+            id = "b1",
+            opticaId = opticaId,
+            material = "Resina",
+            tipoAro = "aro_completo",
+            stockOFabricacion = "stock",
+            serie = 1,
+            altoIndice = "1.50",
+            costoPorPar = 12.0,
+            vigenteDesde = "2026-01-01",
+        )
+        every { costoBiseladoDao.getByOpticaId(opticaId) } returns flowOf(listOf(row))
+
+        viewModel = createVm()
+        advanceUntilIdle()
+
+        assertEquals(1, viewModel.uiState.value.costosBiselado.size)
+        assertEquals("b1", viewModel.uiState.value.costosBiselado.single().id)
+    }
+
+    @Test
+    fun saveBiselado_createsEntity_andSchedulesSync() = runTest(testDispatcher) {
+        coEvery { costoBiseladoDao.upsertAll(any()) } returns Unit
+        viewModel = createVm()
+        advanceUntilIdle()
+
+        viewModel.showNewBiselado()
+        viewModel.updateBiseladoMaterial("Resina")
+        viewModel.updateBiseladoTipoAro("aro_completo")
+        viewModel.updateBiseladoStockOFabricacion("stock")
+        viewModel.updateBiseladoCostoPorPar("18.5")
+        viewModel.saveBiselado()
+        advanceUntilIdle()
+
+        coVerify {
+            costoBiseladoDao.upsertAll(
+                withArg { entities ->
+                    assertEquals(1, entities.size)
+                    assertEquals("Resina", entities[0].material)
+                    assertEquals("aro_completo", entities[0].tipoAro)
+                    assertEquals(18.5, entities[0].costoPorPar, 0.001)
+                    assertNull(entities[0].vigenteHasta)
+                },
+            )
+        }
+        coVerify { scheduler.scheduleFinanzasSync(opticaId) }
+        assertFalse(viewModel.uiState.value.isBiseladoDialogVisible)
+    }
+
+    @Test
+    fun saveBiselado_rejectsInvalidCosto() = runTest(testDispatcher) {
+        viewModel = createVm()
+        viewModel.showNewBiselado()
+        viewModel.updateBiseladoMaterial("Resina")
+        viewModel.updateBiseladoTipoAro("aro_completo")
+        viewModel.updateBiseladoStockOFabricacion("stock")
+        viewModel.updateBiseladoCostoPorPar("0")
+        viewModel.saveBiselado()
+        advanceUntilIdle()
+
+        assertEquals("Ingresa un costo por par válido", viewModel.uiState.value.biseladoSaveError)
+        coVerify(exactly = 0) { costoBiseladoDao.upsertAll(any()) }
+    }
+
+    @Test
+    fun deleteBiselado_softDeletes_andSchedulesSync() = runTest(testDispatcher) {
+        val existing = CostoBiseladoEntity(
+            id = "b-del",
+            opticaId = opticaId,
+            material = "Cristal",
+            tipoAro = "ranurado",
+            stockOFabricacion = "fabricacion",
+            serie = null,
+            altoIndice = "1.67",
+            costoPorPar = 30.0,
+            vigenteDesde = "2026-01-01",
+        )
+        every { costoBiseladoDao.getByOpticaId(opticaId) } returns flowOf(listOf(existing))
+        coEvery { costoBiseladoDao.upsertAll(any()) } returns Unit
+
+        viewModel = createVm()
+        advanceUntilIdle()
+        viewModel.confirmDeleteBiselado(existing)
+        viewModel.deleteBiselado()
+        advanceUntilIdle()
+
+        coVerify {
+            costoBiseladoDao.upsertAll(
+                withArg { entities ->
+                    assertEquals("b-del", entities[0].id)
+                    assertEquals("2026-07-16", entities[0].vigenteHasta)
+                },
+            )
+        }
+        coVerify { scheduler.scheduleFinanzasSync(opticaId) }
+        assertNull(viewModel.uiState.value.deletingBiselado)
     }
 }

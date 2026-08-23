@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.example.optoapp.data.costobiselado.CostoBiseladoEntity
 import com.example.optoapp.data.costoproducto.CostoProductoEntity
 import com.example.optoapp.data.gastooperativo.GastoOperativoEntity
 import com.example.optoapp.ui.components.OptoDatePickerDialog
@@ -124,7 +125,7 @@ fun CostosYGastosScreen(
 
             when (uiState.selectedTab) {
                 0 -> MatrizDeCostosTab(uiState = uiState, viewModel = viewModel, dispensacionId = dispensacionId)
-                1 -> Text("Biselado — próximamente", modifier = Modifier.padding(16.dp))
+                1 -> BiseladoTab(uiState = uiState, viewModel = viewModel)
                 2 -> Text("Lentes de Contacto — próximamente", modifier = Modifier.padding(16.dp))
                 3 -> GastosOperativosTab(
                     uiState = uiState,
@@ -655,6 +656,210 @@ private fun CostoProductoRow(costo: CostoProductoEntity, onClick: () -> Unit = {
                 color = MaterialTheme.colorScheme.positiveGreen,
             )
             Spacer(Modifier.width(4.dp))
+            IconButton(modifier = Modifier.size(40.dp), onClick = onDelete) {
+                Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = MaterialTheme.colorScheme.alertRed, modifier = Modifier.size(18.dp))
+            }
+        }
+    }
+    HorizontalDivider()
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun BiseladoTab(
+    uiState: com.example.optoapp.viewmodel.CostosYGastosUiState,
+    viewModel: CostosYGastosViewModel,
+) {
+    Box(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+            contentPadding = PaddingValues(bottom = 88.dp),
+        ) {
+            if (uiState.costosBiselado.isEmpty()) {
+                item {
+                    Text(
+                        "No hay costos de biselado registrados.",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            } else {
+                items(uiState.costosBiselado, key = { it.id }) { row ->
+                    BiseladoRow(
+                        entity = row,
+                        onClick = { viewModel.editBiselado(row) },
+                        onDelete = { viewModel.confirmDeleteBiselado(row) },
+                    )
+                }
+            }
+        }
+
+        FloatingActionButton(
+            onClick = { viewModel.showNewBiselado() },
+            modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp).navigationBarsPadding(),
+        ) {
+            Icon(Icons.Default.Add, contentDescription = "Añadir biselado")
+        }
+
+        if (uiState.isBiseladoDialogVisible) {
+            AlertDialog(
+                onDismissRequest = { viewModel.dismissBiseladoDialog() },
+                title = {
+                    Text(
+                        if (uiState.editingBiselado == null) "Nuevo Biselado" else "Editar Biselado",
+                        fontWeight = FontWeight.Bold,
+                    )
+                },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        var materialExpanded by remember { mutableStateOf(false) }
+                        ExposedDropdownMenuBox(expanded = materialExpanded, onExpandedChange = { materialExpanded = !materialExpanded }) {
+                            OutlinedTextField(
+                                value = uiState.biseladoMaterial,
+                                onValueChange = {},
+                                readOnly = true,
+                                label = { Text("Material *") },
+                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = materialExpanded) },
+                                modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true),
+                            )
+                            ExposedDropdownMenu(expanded = materialExpanded, onDismissRequest = { materialExpanded = false }) {
+                                viewModel.materialesOpticos.forEach { mat ->
+                                    DropdownMenuItem(text = { Text(mat) }, onClick = {
+                                        viewModel.updateBiseladoMaterial(mat)
+                                        materialExpanded = false
+                                    })
+                                }
+                            }
+                        }
+
+                        var tipoExpanded by remember { mutableStateOf(false) }
+                        ExposedDropdownMenuBox(expanded = tipoExpanded, onExpandedChange = { tipoExpanded = !tipoExpanded }) {
+                            val label = viewModel.tiposAro.entries
+                                .firstOrNull { it.value == uiState.biseladoTipoAro }?.key
+                                ?: uiState.biseladoTipoAro
+                            OutlinedTextField(
+                                value = label,
+                                onValueChange = {},
+                                readOnly = true,
+                                label = { Text("Tipo de aro *") },
+                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = tipoExpanded) },
+                                modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true),
+                            )
+                            ExposedDropdownMenu(expanded = tipoExpanded, onDismissRequest = { tipoExpanded = false }) {
+                                viewModel.tiposAro.forEach { (display, code) ->
+                                    DropdownMenuItem(text = { Text(display) }, onClick = {
+                                        viewModel.updateBiseladoTipoAro(code)
+                                        tipoExpanded = false
+                                    })
+                                }
+                            }
+                        }
+
+                        var stockExpanded by remember { mutableStateOf(false) }
+                        ExposedDropdownMenuBox(expanded = stockExpanded, onExpandedChange = { stockExpanded = !stockExpanded }) {
+                            OutlinedTextField(
+                                value = uiState.biseladoStockOFabricacion,
+                                onValueChange = {},
+                                readOnly = true,
+                                label = { Text("Stock o fabricación") },
+                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = stockExpanded) },
+                                modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true),
+                            )
+                            ExposedDropdownMenu(expanded = stockExpanded, onDismissRequest = { stockExpanded = false }) {
+                                viewModel.stockOFabricacionOptions.forEach { opt ->
+                                    DropdownMenuItem(text = { Text(opt) }, onClick = {
+                                        viewModel.updateBiseladoStockOFabricacion(opt)
+                                        stockExpanded = false
+                                    })
+                                }
+                            }
+                        }
+
+                        OutlinedTextField(
+                            value = uiState.biseladoCostoPorPar,
+                            onValueChange = { viewModel.updateBiseladoCostoPorPar(it) },
+                            label = { Text("Costo por par *") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        OutlinedTextField(
+                            value = uiState.biseladoSerie,
+                            onValueChange = { viewModel.updateBiseladoSerie(it) },
+                            label = { Text("Serie") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        OutlinedTextField(
+                            value = uiState.biseladoAltoIndice,
+                            onValueChange = { viewModel.updateBiseladoAltoIndice(it) },
+                            label = { Text("Alto índice") },
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        OutlinedTextField(
+                            value = uiState.biseladoProveedor,
+                            onValueChange = { viewModel.updateBiseladoProveedor(it) },
+                            label = { Text("Proveedor") },
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        uiState.biseladoSaveError?.let { err ->
+                            Text(err, color = MaterialTheme.colorScheme.error, fontSize = 12.sp)
+                        }
+                    }
+                },
+                confirmButton = { Button(onClick = { viewModel.saveBiselado() }) { Text("Guardar") } },
+                dismissButton = { TextButton(onClick = { viewModel.dismissBiseladoDialog() }) { Text("Cancelar") } },
+            )
+        }
+
+        uiState.deletingBiselado?.let {
+            AlertDialog(
+                onDismissRequest = { viewModel.dismissDeleteBiselado() },
+                title = { Text("Eliminar biselado") },
+                text = { Text("¿Soft-delete ${it.material} / ${it.tipoAro}?") },
+                confirmButton = {
+                    Button(onClick = { viewModel.deleteBiselado() }) { Text("Eliminar") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { viewModel.dismissDeleteBiselado() }) { Text("Cancelar") }
+                },
+            )
+        }
+    }
+}
+
+@Composable
+private fun BiseladoRow(
+    entity: CostoBiseladoEntity,
+    onClick: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f).clickable(onClick = onClick)) {
+            Text(
+                "${entity.material} · ${entity.tipoAro}",
+                fontWeight = FontWeight.Medium,
+                fontSize = 13.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                "${entity.stockOFabricacion}${entity.serie?.let { " · Serie $it" }.orEmpty()}",
+                fontSize = 11.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                "s/. ${"%.2f".format(Locale.US, entity.costoPorPar)}",
+                fontWeight = FontWeight.Bold,
+                fontSize = 14.sp,
+                color = MaterialTheme.colorScheme.positiveGreen,
+            )
             IconButton(modifier = Modifier.size(40.dp), onClick = onDelete) {
                 Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = MaterialTheme.colorScheme.alertRed, modifier = Modifier.size(18.dp))
             }

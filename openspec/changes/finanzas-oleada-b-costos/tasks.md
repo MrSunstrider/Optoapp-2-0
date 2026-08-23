@@ -46,11 +46,11 @@ Chain strategy: feature-branch-chain
 
 ## Phase 2 — WU2 UI-Biselado (≤400)
 
-- [ ] 2.1 RED `CostoBiseladoDao` Flow list (Room in-memory) + VM: create/edit/soft-delete (`vigenteHasta=today`) + post-save sync scheduled.
-- [ ] 2.2 GREEN `CostoBiseladoDao.getByOpticaId(): Flow`.
-- [ ] 2.3 GREEN `CostosYGastosViewModel` tab1 state/CRUD (reuse productos soft-delete pattern).
-- [ ] 2.4 GREEN `CostosYGastosScreen` replace tab1 stub with list+FAB+dialogs (private composable).
-- [ ] 2.5 Focused verify + GGA R1–R4; PR2.
+- [x] 2.1 RED `CostoBiseladoDao` Flow list (Room in-memory) + VM: create/edit/soft-delete (`vigenteHasta=today`) + post-save sync scheduled.
+- [x] 2.2 GREEN `CostoBiseladoDao.getByOpticaId(): Flow`.
+- [x] 2.3 GREEN `CostosYGastosViewModel` tab1 state/CRUD (reuse productos soft-delete pattern).
+- [x] 2.4 GREEN `CostosYGastosScreen` replace tab1 stub with list+FAB+dialogs (private composable).
+- [x] 2.5 Focused verify + GGA R1–R4; PR2.
 
 ## Phase 3 — WU3 UI-LC (≤400)
 
