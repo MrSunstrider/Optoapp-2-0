@@ -33,4 +33,12 @@ object OpticalCatalog {
         "3ra serie (cil -4.25 a -6.00)" to 3,
         "Fabricación (sin serie)" to null,
     )
+
+    /** Postgres CHECK on costos_lc.tipo_lc */
+    val TIPOS_LC = listOf("cosmetico", "graduado", "terapeutico")
+
+    /** Postgres CHECK on costos_lc.modalidad */
+    val MODALIDADES_LC = listOf("diario", "quincenal", "mensual", "anual")
+
+    val MATERIALES_LC = listOf("hidrogel", "silicona", "hibrido", "rgp")
 }

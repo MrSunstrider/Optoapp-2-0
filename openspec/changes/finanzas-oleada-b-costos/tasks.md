@@ -54,11 +54,11 @@ Chain strategy: feature-branch-chain
 
 ## Phase 3 — WU3 UI-LC (≤400)
 
-- [ ] 3.1 RED `CostoLcDaoTest` lookup/list/upsert; VM tab2 CRUD validation (tipo/modalidad CHECK + costo>0).
-- [ ] 3.2 GREEN `OpticalCatalog` TIPOS_LC + MODALIDADES_LC (+ materials as needed).
-- [ ] 3.3 GREEN inject `CostoLcDao`; tab2 CRUD + soft-delete + post-save sync.
-- [ ] 3.4 GREEN Screen tab2 list+dialogs (private composable); keep role gate.
-- [ ] 3.5 Focused verify + GGA R1–R4; PR3.
+- [x] 3.1 RED `CostoLcDaoTest` lookup/list/upsert; VM tab2 CRUD validation (tipo/modalidad CHECK + costo>0).
+- [x] 3.2 GREEN `OpticalCatalog` TIPOS_LC + MODALIDADES_LC (+ materials as needed).
+- [x] 3.3 GREEN inject `CostoLcDao`; tab2 CRUD + soft-delete + post-save sync.
+- [x] 3.4 GREEN Screen tab2 list+dialogs (private composable); keep role gate.
+- [x] 3.5 Focused verify + GGA R1–R4; PR3.
 
 ## Phase 4 — WU4 Snapshot (≤400)
 

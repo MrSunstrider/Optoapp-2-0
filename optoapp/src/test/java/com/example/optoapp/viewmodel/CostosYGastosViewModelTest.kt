@@ -1,9 +1,11 @@
-﻿package com.example.optoapp.viewmodel
+package com.example.optoapp.viewmodel
 
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.SessionManager
 import com.example.optoapp.data.costobiselado.CostoBiseladoDao
 import com.example.optoapp.data.costobiselado.CostoBiseladoEntity
+import com.example.optoapp.data.costolc.CostoLcDao
+import com.example.optoapp.data.costolc.CostoLcEntity
 import com.example.optoapp.data.costoproducto.CostoProductoDao
 import com.example.optoapp.data.costoproducto.CostoProductoEntity
 import com.example.optoapp.data.gastooperativo.GastoOperativoEntity
@@ -45,6 +47,7 @@ class CostosYGastosViewModelTest {
     private lateinit var repository: OptoRepository
     private lateinit var costoProductoDao: CostoProductoDao
     private lateinit var costoBiseladoDao: CostoBiseladoDao
+    private lateinit var costoLcDao: CostoLcDao
     private lateinit var sessionManager: SessionManager
     private lateinit var scheduler: PostSaveSyncScheduler
     private lateinit var syncFinanzas: SyncFinanzasUseCase
@@ -71,6 +74,7 @@ class CostosYGastosViewModelTest {
         repository = mockk(relaxed = true)
         costoProductoDao = mockk(relaxed = true)
         costoBiseladoDao = mockk(relaxed = true)
+        costoLcDao = mockk(relaxed = true)
         sessionManager = mockk(relaxed = true)
         scheduler = mockk(relaxed = true)
         syncFinanzas = mockk(relaxed = true)
@@ -80,6 +84,7 @@ class CostosYGastosViewModelTest {
         // Default: getByBloque returns empty so loadBlock doesn't crash
         coEvery { costoProductoDao.getByBloque(any(), any()) } returns flowOf(emptyList())
         every { costoBiseladoDao.getByOpticaId(any()) } returns flowOf(emptyList())
+        every { costoLcDao.getByOpticaId(any()) } returns flowOf(emptyList())
     }
 
     @After
@@ -97,6 +102,7 @@ class CostosYGastosViewModelTest {
             repository,
             costoProductoDao,
             costoBiseladoDao,
+            costoLcDao,
             sessionManager,
             scheduler,
             syncFinanzas,
@@ -147,6 +153,7 @@ class CostosYGastosViewModelTest {
             repository,
             costoProductoDao,
             costoBiseladoDao,
+            costoLcDao,
             sessionManager,
             scheduler,
             syncFinanzas,
@@ -172,6 +179,7 @@ class CostosYGastosViewModelTest {
             repository,
             costoProductoDao,
             costoBiseladoDao,
+            costoLcDao,
             sessionManager,
             scheduler,
             syncFinanzas,
@@ -197,6 +205,7 @@ class CostosYGastosViewModelTest {
             repository,
             costoProductoDao,
             costoBiseladoDao,
+            costoLcDao,
             sessionManager,
             scheduler,
             syncFinanzas,
@@ -222,6 +231,7 @@ class CostosYGastosViewModelTest {
             repository,
             costoProductoDao,
             costoBiseladoDao,
+            costoLcDao,
             sessionManager,
             scheduler,
             syncFinanzas,
@@ -246,6 +256,7 @@ class CostosYGastosViewModelTest {
             repository,
             costoProductoDao,
             costoBiseladoDao,
+            costoLcDao,
             sessionManager,
             scheduler,
             syncFinanzas,
@@ -283,6 +294,7 @@ class CostosYGastosViewModelTest {
             repository,
             costoProductoDao,
             costoBiseladoDao,
+            costoLcDao,
             sessionManager,
             scheduler,
             syncFinanzas,
@@ -343,6 +355,7 @@ class CostosYGastosViewModelTest {
             repository,
             costoProductoDao,
             costoBiseladoDao,
+            costoLcDao,
             sessionManager,
             scheduler,
             syncFinanzas,
@@ -377,6 +390,7 @@ class CostosYGastosViewModelTest {
             repository,
             costoProductoDao,
             costoBiseladoDao,
+            costoLcDao,
             sessionManager,
             scheduler,
             syncFinanzas,
@@ -421,6 +435,7 @@ class CostosYGastosViewModelTest {
             repository,
             costoProductoDao,
             costoBiseladoDao,
+            costoLcDao,
             sessionManager,
             scheduler,
             syncFinanzas,
@@ -452,6 +467,7 @@ class CostosYGastosViewModelTest {
             repository,
             costoProductoDao,
             costoBiseladoDao,
+            costoLcDao,
             sessionManager,
             scheduler,
             syncFinanzas,
@@ -466,6 +482,7 @@ class CostosYGastosViewModelTest {
             repository,
             costoProductoDao,
             costoBiseladoDao,
+            costoLcDao,
             sessionManager,
             scheduler,
             syncFinanzas,
@@ -547,6 +564,7 @@ class CostosYGastosViewModelTest {
             repository,
             costoProductoDao,
             costoBiseladoDao,
+            costoLcDao,
             sessionManager,
             scheduler,
             syncFinanzas,
@@ -568,6 +586,7 @@ class CostosYGastosViewModelTest {
             repository,
             costoProductoDao,
             costoBiseladoDao,
+            costoLcDao,
             sessionManager,
             scheduler,
             syncFinanzas,
@@ -624,6 +643,7 @@ class CostosYGastosViewModelTest {
             repository,
             costoProductoDao,
             costoBiseladoDao,
+            costoLcDao,
             sessionManager,
             scheduler,
             syncFinanzas,
@@ -643,6 +663,7 @@ class CostosYGastosViewModelTest {
         repository,
         costoProductoDao,
         costoBiseladoDao,
+            costoLcDao,
         sessionManager,
         scheduler,
         syncFinanzas,
@@ -746,5 +767,98 @@ class CostosYGastosViewModelTest {
         }
         coVerify { scheduler.scheduleFinanzasSync(opticaId) }
         assertNull(viewModel.uiState.value.deletingBiselado)
+    }
+
+    // ── WU3: LC tab CRUD ──
+
+    @Test
+    fun collectLc_updatesCostosLcFromFlow() = runTest(testDispatcher) {
+        val row = CostoLcEntity(
+            id = "lc1",
+            opticaId = opticaId,
+            tipoLc = "cosmetico",
+            materialLc = "hidrogel",
+            modalidad = "mensual",
+            costoUnitario = 15.0,
+            vigenteDesde = "2026-01-01",
+        )
+        every { costoLcDao.getByOpticaId(opticaId) } returns flowOf(listOf(row))
+
+        viewModel = createVm()
+        advanceUntilIdle()
+
+        assertEquals(1, viewModel.uiState.value.costosLc.size)
+        assertEquals("lc1", viewModel.uiState.value.costosLc.single().id)
+    }
+
+    @Test
+    fun saveLc_validatesTipoModalidadAndCosto_thenUpserts() = runTest(testDispatcher) {
+        coEvery { costoLcDao.upsertAll(any()) } returns Unit
+        viewModel = createVm()
+        advanceUntilIdle()
+
+        viewModel.showNewLc()
+        viewModel.updateLcTipo("bad")
+        viewModel.updateLcMaterial("hidrogel")
+        viewModel.updateLcModalidad("mensual")
+        viewModel.updateLcCostoUnitario("12")
+        viewModel.saveLc()
+        assertEquals("Selecciona un tipo de LC válido", viewModel.uiState.value.lcSaveError)
+
+        viewModel.updateLcTipo("graduado")
+        viewModel.updateLcModalidad("semanal")
+        viewModel.saveLc()
+        assertEquals("Selecciona una modalidad válida", viewModel.uiState.value.lcSaveError)
+
+        viewModel.updateLcModalidad("mensual")
+        viewModel.updateLcCostoUnitario("0")
+        viewModel.saveLc()
+        assertEquals("Ingresa un costo unitario válido", viewModel.uiState.value.lcSaveError)
+
+        viewModel.updateLcCostoUnitario("12.5")
+        viewModel.saveLc()
+        advanceUntilIdle()
+
+        coVerify {
+            costoLcDao.upsertAll(
+                withArg { entities ->
+                    assertEquals("graduado", entities[0].tipoLc)
+                    assertEquals("mensual", entities[0].modalidad)
+                    assertEquals(12.5, entities[0].costoUnitario, 0.001)
+                },
+            )
+        }
+        coVerify { scheduler.scheduleFinanzasSync(opticaId) }
+    }
+
+    @Test
+    fun deleteLc_softDeletes_andSchedulesSync() = runTest(testDispatcher) {
+        val existing = CostoLcEntity(
+            id = "lc-del",
+            opticaId = opticaId,
+            tipoLc = "terapeutico",
+            materialLc = "silicona",
+            modalidad = "diario",
+            costoUnitario = 40.0,
+            vigenteDesde = "2026-01-01",
+        )
+        every { costoLcDao.getByOpticaId(opticaId) } returns flowOf(listOf(existing))
+        coEvery { costoLcDao.upsertAll(any()) } returns Unit
+
+        viewModel = createVm()
+        advanceUntilIdle()
+        viewModel.confirmDeleteLc(existing)
+        viewModel.deleteLc()
+        advanceUntilIdle()
+
+        coVerify {
+            costoLcDao.upsertAll(
+                withArg { entities ->
+                    assertEquals("lc-del", entities[0].id)
+                    assertEquals("2026-07-16", entities[0].vigenteHasta)
+                },
+            )
+        }
+        coVerify { scheduler.scheduleFinanzasSync(opticaId) }
     }
 }

@@ -7,6 +7,8 @@ import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.SessionManager
 import com.example.optoapp.data.costobiselado.CostoBiseladoDao
 import com.example.optoapp.data.costobiselado.CostoBiseladoEntity
+import com.example.optoapp.data.costolc.CostoLcDao
+import com.example.optoapp.data.costolc.CostoLcEntity
 import com.example.optoapp.data.costoproducto.CostoProductoDao
 import com.example.optoapp.data.costoproducto.CostoProductoEntity
 import com.example.optoapp.data.gastooperativo.GastoOperativoEntity
@@ -105,6 +107,16 @@ data class CostosYGastosUiState(
     val biseladoProveedor: String = "",
     val biseladoSaveError: String? = null,
     val deletingBiselado: CostoBiseladoEntity? = null,
+    // Tab 2 — Lentes de Contacto
+    val costosLc: List<CostoLcEntity> = emptyList(),
+    val isLcDialogVisible: Boolean = false,
+    val editingLc: CostoLcEntity? = null,
+    val lcTipo: String = "",
+    val lcMaterial: String = "",
+    val lcModalidad: String = "mensual",
+    val lcCostoUnitario: String = "",
+    val lcSaveError: String? = null,
+    val deletingLc: CostoLcEntity? = null,
 )
 
 data class GastosTabTriad(
@@ -143,6 +155,7 @@ class CostosYGastosViewModel @Inject constructor(
     private val repository: OptoRepository,
     private val costoProductoDao: CostoProductoDao,
     private val costoBiseladoDao: CostoBiseladoDao,
+    private val costoLcDao: CostoLcDao,
     private val sessionManager: SessionManager,
     private val postSaveSyncScheduler: PostSaveSyncScheduler,
     private val syncFinanzasUseCase: SyncFinanzasUseCase,
@@ -248,6 +261,17 @@ class CostosYGastosViewModel @Inject constructor(
                 }
                 .collect { rows ->
                     _uiState.update { it.copy(costosBiselado = rows) }
+                }
+        }
+        viewModelScope.launch {
+            sessionManager.opticaId
+                .flatMapLatest { opticaId -> costoLcDao.getByOpticaId(opticaId) }
+                .catch { e ->
+                    Log.e(TAG, "LC flow crashed", e)
+                    emit(emptyList())
+                }
+                .collect { rows ->
+                    _uiState.update { it.copy(costosLc = rows) }
                 }
         }
     }
@@ -679,6 +703,123 @@ class CostosYGastosViewModel @Inject constructor(
                 throw e
             } catch (e: Exception) {
                 _uiState.update { it.copy(biseladoSaveError = "Error al eliminar: ${e.message}") }
+            }
+        }
+    }
+
+    val tiposLc = OpticalCatalog.TIPOS_LC
+    val modalidadesLc = OpticalCatalog.MODALIDADES_LC
+    val materialesLc = OpticalCatalog.MATERIALES_LC
+
+    fun showNewLc() {
+        _uiState.update {
+            it.copy(
+                isLcDialogVisible = true,
+                editingLc = null,
+                lcTipo = "",
+                lcMaterial = "",
+                lcModalidad = "mensual",
+                lcCostoUnitario = "",
+                lcSaveError = null,
+            )
+        }
+    }
+
+    fun editLc(entity: CostoLcEntity) {
+        _uiState.update {
+            it.copy(
+                isLcDialogVisible = true,
+                editingLc = entity,
+                lcTipo = entity.tipoLc,
+                lcMaterial = entity.materialLc,
+                lcModalidad = entity.modalidad,
+                lcCostoUnitario = entity.costoUnitario.toString(),
+                lcSaveError = null,
+            )
+        }
+    }
+
+    fun dismissLcDialog() {
+        _uiState.update { it.copy(isLcDialogVisible = false, editingLc = null, lcSaveError = null) }
+    }
+
+    fun updateLcTipo(value: String) {
+        _uiState.update { it.copy(lcTipo = value) }
+    }
+    fun updateLcMaterial(value: String) {
+        _uiState.update { it.copy(lcMaterial = value) }
+    }
+    fun updateLcModalidad(value: String) {
+        _uiState.update { it.copy(lcModalidad = value) }
+    }
+    fun updateLcCostoUnitario(value: String) {
+        _uiState.update { it.copy(lcCostoUnitario = value) }
+    }
+
+    fun saveLc() {
+        val s = _uiState.value
+        if (s.lcTipo !in OpticalCatalog.TIPOS_LC) {
+            _uiState.update { it.copy(lcSaveError = "Selecciona un tipo de LC válido") }
+            return
+        }
+        if (s.lcMaterial.isBlank()) {
+            _uiState.update { it.copy(lcSaveError = "Selecciona un material") }
+            return
+        }
+        if (s.lcModalidad !in OpticalCatalog.MODALIDADES_LC) {
+            _uiState.update { it.copy(lcSaveError = "Selecciona una modalidad válida") }
+            return
+        }
+        val costo = s.lcCostoUnitario.toDoubleOrNull()
+        if (costo == null || costo <= 0) {
+            _uiState.update { it.copy(lcSaveError = "Ingresa un costo unitario válido") }
+            return
+        }
+        viewModelScope.launch {
+            try {
+                val opticaId = sessionManager.opticaId.first()
+                val entity = CostoLcEntity(
+                    id = s.editingLc?.id ?: UUID.randomUUID().toString(),
+                    opticaId = opticaId,
+                    tipoLc = s.lcTipo,
+                    materialLc = s.lcMaterial,
+                    modalidad = s.lcModalidad,
+                    radioBase = s.editingLc?.radioBase,
+                    diametro = s.editingLc?.diametro,
+                    laboratorioId = s.editingLc?.laboratorioId,
+                    costoUnitario = costo,
+                    vigenteDesde = s.editingLc?.vigenteDesde ?: DateUtils.toIso(DateUtils.today()),
+                    vigenteHasta = s.editingLc?.vigenteHasta,
+                )
+                costoLcDao.upsertAll(listOf(entity))
+                _uiState.update { it.copy(isLcDialogVisible = false, editingLc = null, lcSaveError = null) }
+                postSaveSyncScheduler.scheduleFinanzasSync(opticaId)
+            } catch (e: Exception) {
+                _uiState.update { it.copy(lcSaveError = "Error al guardar: ${e.message}") }
+            }
+        }
+    }
+
+    fun confirmDeleteLc(entity: CostoLcEntity) {
+        _uiState.update { it.copy(deletingLc = entity) }
+    }
+
+    fun dismissDeleteLc() {
+        _uiState.update { it.copy(deletingLc = null) }
+    }
+
+    fun deleteLc() {
+        val entity = _uiState.value.deletingLc ?: return
+        viewModelScope.launch {
+            try {
+                costoLcDao.upsertAll(listOf(entity.copy(vigenteHasta = DateUtils.toIso(DateUtils.today()))))
+                val opticaId = sessionManager.opticaId.first()
+                _uiState.update { it.copy(deletingLc = null) }
+                postSaveSyncScheduler.scheduleFinanzasSync(opticaId)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _uiState.update { it.copy(lcSaveError = "Error al eliminar: ${e.message}") }
             }
         }
     }

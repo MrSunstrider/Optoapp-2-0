@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.optoapp.data.costobiselado.CostoBiseladoEntity
+import com.example.optoapp.data.costolc.CostoLcEntity
 import com.example.optoapp.data.costoproducto.CostoProductoEntity
 import com.example.optoapp.data.gastooperativo.GastoOperativoEntity
 import com.example.optoapp.ui.components.OptoDatePickerDialog
@@ -126,7 +127,7 @@ fun CostosYGastosScreen(
             when (uiState.selectedTab) {
                 0 -> MatrizDeCostosTab(uiState = uiState, viewModel = viewModel, dispensacionId = dispensacionId)
                 1 -> BiseladoTab(uiState = uiState, viewModel = viewModel)
-                2 -> Text("Lentes de Contacto — próximamente", modifier = Modifier.padding(16.dp))
+                2 -> LcTab(uiState = uiState, viewModel = viewModel)
                 3 -> GastosOperativosTab(
                     uiState = uiState,
                     viewModel = viewModel,
@@ -867,3 +868,182 @@ private fun BiseladoRow(
     }
     HorizontalDivider()
 }
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun LcTab(
+    uiState: com.example.optoapp.viewmodel.CostosYGastosUiState,
+    viewModel: CostosYGastosViewModel,
+) {
+    Box(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+            contentPadding = PaddingValues(bottom = 88.dp),
+        ) {
+            if (uiState.costosLc.isEmpty()) {
+                item {
+                    Text(
+                        "No hay costos de lentes de contacto registrados.",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            } else {
+                items(uiState.costosLc, key = { it.id }) { row ->
+                    LcRow(
+                        entity = row,
+                        onClick = { viewModel.editLc(row) },
+                        onDelete = { viewModel.confirmDeleteLc(row) },
+                    )
+                }
+            }
+        }
+
+        FloatingActionButton(
+            onClick = { viewModel.showNewLc() },
+            modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp).navigationBarsPadding(),
+        ) {
+            Icon(Icons.Default.Add, contentDescription = "Añadir LC")
+        }
+
+        if (uiState.isLcDialogVisible) {
+            AlertDialog(
+                onDismissRequest = { viewModel.dismissLcDialog() },
+                title = {
+                    Text(
+                        if (uiState.editingLc == null) "Nuevo LC" else "Editar LC",
+                        fontWeight = FontWeight.Bold,
+                    )
+                },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        var tipoExpanded by remember { mutableStateOf(false) }
+                        ExposedDropdownMenuBox(expanded = tipoExpanded, onExpandedChange = { tipoExpanded = !tipoExpanded }) {
+                            OutlinedTextField(
+                                value = uiState.lcTipo,
+                                onValueChange = {},
+                                readOnly = true,
+                                label = { Text("Tipo LC *") },
+                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = tipoExpanded) },
+                                modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true),
+                            )
+                            ExposedDropdownMenu(expanded = tipoExpanded, onDismissRequest = { tipoExpanded = false }) {
+                                viewModel.tiposLc.forEach { t ->
+                                    DropdownMenuItem(text = { Text(t) }, onClick = {
+                                        viewModel.updateLcTipo(t)
+                                        tipoExpanded = false
+                                    })
+                                }
+                            }
+                        }
+
+                        var matExpanded by remember { mutableStateOf(false) }
+                        ExposedDropdownMenuBox(expanded = matExpanded, onExpandedChange = { matExpanded = !matExpanded }) {
+                            OutlinedTextField(
+                                value = uiState.lcMaterial,
+                                onValueChange = {},
+                                readOnly = true,
+                                label = { Text("Material *") },
+                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = matExpanded) },
+                                modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true),
+                            )
+                            ExposedDropdownMenu(expanded = matExpanded, onDismissRequest = { matExpanded = false }) {
+                                viewModel.materialesLc.forEach { m ->
+                                    DropdownMenuItem(text = { Text(m) }, onClick = {
+                                        viewModel.updateLcMaterial(m)
+                                        matExpanded = false
+                                    })
+                                }
+                            }
+                        }
+
+                        var modExpanded by remember { mutableStateOf(false) }
+                        ExposedDropdownMenuBox(expanded = modExpanded, onExpandedChange = { modExpanded = !modExpanded }) {
+                            OutlinedTextField(
+                                value = uiState.lcModalidad,
+                                onValueChange = {},
+                                readOnly = true,
+                                label = { Text("Modalidad *") },
+                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = modExpanded) },
+                                modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true),
+                            )
+                            ExposedDropdownMenu(expanded = modExpanded, onDismissRequest = { modExpanded = false }) {
+                                viewModel.modalidadesLc.forEach { m ->
+                                    DropdownMenuItem(text = { Text(m) }, onClick = {
+                                        viewModel.updateLcModalidad(m)
+                                        modExpanded = false
+                                    })
+                                }
+                            }
+                        }
+
+                        OutlinedTextField(
+                            value = uiState.lcCostoUnitario,
+                            onValueChange = { viewModel.updateLcCostoUnitario(it) },
+                            label = { Text("Costo unitario *") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        uiState.lcSaveError?.let { err ->
+                            Text(err, color = MaterialTheme.colorScheme.error, fontSize = 12.sp)
+                        }
+                    }
+                },
+                confirmButton = { Button(onClick = { viewModel.saveLc() }) { Text("Guardar") } },
+                dismissButton = { TextButton(onClick = { viewModel.dismissLcDialog() }) { Text("Cancelar") } },
+            )
+        }
+
+        uiState.deletingLc?.let {
+            AlertDialog(
+                onDismissRequest = { viewModel.dismissDeleteLc() },
+                title = { Text("Eliminar LC") },
+                text = { Text("¿Soft-delete ${it.tipoLc} / ${it.materialLc} / ${it.modalidad}?") },
+                confirmButton = { Button(onClick = { viewModel.deleteLc() }) { Text("Eliminar") } },
+                dismissButton = { TextButton(onClick = { viewModel.dismissDeleteLc() }) { Text("Cancelar") } },
+            )
+        }
+    }
+}
+
+@Composable
+private fun LcRow(
+    entity: CostoLcEntity,
+    onClick: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f).clickable(onClick = onClick)) {
+            Text(
+                "${entity.tipoLc} · ${entity.materialLc}",
+                fontWeight = FontWeight.Medium,
+                fontSize = 13.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                entity.modalidad,
+                fontSize = 11.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                "s/. ${"%.2f".format(Locale.US, entity.costoUnitario)}",
+                fontWeight = FontWeight.Bold,
+                fontSize = 14.sp,
+                color = MaterialTheme.colorScheme.positiveGreen,
+            )
+            IconButton(modifier = Modifier.size(40.dp), onClick = onDelete) {
+                Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = MaterialTheme.colorScheme.alertRed, modifier = Modifier.size(18.dp))
+            }
+        }
+    }
+    HorizontalDivider()
+}
+
