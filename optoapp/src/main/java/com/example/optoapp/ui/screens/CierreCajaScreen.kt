@@ -9,11 +9,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -29,7 +31,10 @@ import com.example.optoapp.ui.navigation.Route
 import com.example.optoapp.ui.theme.alertRed
 import com.example.optoapp.ui.theme.positiveGreen
 import com.example.optoapp.ui.theme.warningAmber
+import com.example.optoapp.util.CierreCajaCsvExporter
+import com.example.optoapp.util.CierreCajaPdfGenerator
 import com.example.optoapp.util.DateUtils
+import com.example.optoapp.util.FileShareUtils
 import com.example.optoapp.viewmodel.AuthViewModel
 import com.example.optoapp.viewmodel.CierreCajaUiPolicy
 import com.example.optoapp.viewmodel.CierreCajaViewModel
@@ -49,12 +54,40 @@ fun CierreCajaScreen(
     val opticaRol by authViewModel.opticaRol.collectAsState(initial = null)
     val access = CierreCajaUiPolicy.resolveAccess(opticaRol)
     val canView = !access.isRestricted
+    val canExport = access.canExport
+    val context = LocalContext.current
     var showDatePicker by remember { mutableStateOf(false) }
     var showSearch by remember { mutableStateOf(false) }
+    var showExportMenu by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
     val scrollState = rememberScrollState()
     val today = remember { DateUtils.today() }
     val yesterday = remember(today) { today.minusDays(1) }
+
+    fun exportWithCurrentState(asPdf: Boolean) {
+        // Wire to current uiState aggregates only — do not re-query pagos.
+        val cobradoHoy = viewModel.getCobradoHoy()
+        val totales = viewModel.getTotalesPorMetodo()
+        if (asPdf) {
+            val file = CierreCajaPdfGenerator.generate(
+                context = context,
+                state = uiState,
+                cobradoHoy = cobradoHoy,
+                totalesPorMetodo = totales,
+                contado = null,
+            )
+            FileShareUtils.sharePdf(context, file, "Compartir cierre PDF")
+        } else {
+            val file = CierreCajaCsvExporter.writeToCache(
+                context = context,
+                state = uiState,
+                cobradoHoy = cobradoHoy,
+                totalesPorMetodo = totales,
+                contado = null,
+            )
+            FileShareUtils.shareCsv(context, file, "Compartir cierre CSV")
+        }
+    }
 
     if (showDatePicker) {
         OptoDatePickerDialog(
@@ -78,6 +111,32 @@ fun CierreCajaScreen(
                     if (canView) {
                         IconButton(onClick = { showDatePicker = true }) {
                             Icon(Icons.Default.DateRange, contentDescription = "Cambiar Fecha")
+                        }
+                    }
+                    if (canExport) {
+                        Box {
+                            IconButton(onClick = { showExportMenu = true }) {
+                                Icon(Icons.Default.MoreVert, contentDescription = "Exportar cierre")
+                            }
+                            DropdownMenu(
+                                expanded = showExportMenu,
+                                onDismissRequest = { showExportMenu = false },
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text("Exportar PDF") },
+                                    onClick = {
+                                        showExportMenu = false
+                                        exportWithCurrentState(asPdf = true)
+                                    },
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Exportar CSV") },
+                                    onClick = {
+                                        showExportMenu = false
+                                        exportWithCurrentState(asPdf = false)
+                                    },
+                                )
+                            }
                         }
                     }
                 },

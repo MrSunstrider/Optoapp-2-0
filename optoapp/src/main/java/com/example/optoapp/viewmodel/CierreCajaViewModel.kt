@@ -71,6 +71,7 @@ data class CierreTriad(
 
 data class CierreAccess(
     val isRestricted: Boolean,
+    val canExport: Boolean = false,
 )
 
 object CierreCajaUiPolicy {
@@ -90,7 +91,8 @@ object CierreCajaUiPolicy {
 
     fun resolveAccess(rol: String?): CierreAccess {
         val allowed = rol != null && AppRoles.canViewCierreCaja(rol)
-        return CierreAccess(isRestricted = !allowed)
+        val canExport = rol != null && AppRoles.canExportCierreCaja(rol)
+        return CierreAccess(isRestricted = !allowed, canExport = canExport)
     }
 }
 

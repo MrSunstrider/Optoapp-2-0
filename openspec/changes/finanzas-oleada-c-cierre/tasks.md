@@ -31,21 +31,21 @@ Chain strategy: feature-branch-chain
 
 ## Phase 0 — Preconditions
 
-- [ ] 0.1 Create `feat/finanzas-oleada-c-cierre` from agreed base (after #105 preferred).
+- [x] 0.1 Create `feat/finanzas-oleada-c-cierre` from agreed base (after #105 preferred).
 
 ## Phase 1 — WU1 Export (≤400)
 
-- [ ] 1.1 RED: CSV/PDF from fixture `CierreCajaUiState` — hero/methods equal inputs (PagoEffect numbers), not raw sum.
-- [ ] 1.2 GREEN: `CierreCajaCsvExporter` (UTF-8 BOM, invariant decimals).
-- [ ] 1.3 GREEN: `CierreCajaPdfGenerator` day-close layout from state.
-- [ ] 1.4 Focused verify + GGA; PR1.
+- [x] 1.1 RED: CSV/PDF from fixture `CierreCajaUiState` — hero/methods equal inputs (PagoEffect numbers), not raw sum.
+- [x] 1.2 GREEN: `CierreCajaCsvExporter` (UTF-8 BOM, invariant decimals).
+- [x] 1.3 GREEN: `CierreCajaPdfGenerator` day-close layout from state.
+- [x] 1.4 Focused verify + GGA; PR1.
 
 ## Phase 2 — WU2 UI-Export (≤400)
 
-- [ ] 2.1 RED: export hidden when rol null / unauthorized; visible for admin/gerente/especialista.
-- [ ] 2.2 GREEN: Cierre overflow/menu → generate + `FileShareUtils` (optional `shareCsv`).
-- [ ] 2.3 GREEN: wire generators to current `uiState` only (no re-aggregate).
-- [ ] 2.4 Focused verify + GGA; PR2.
+- [x] 2.1 RED: export hidden when rol null / unauthorized; visible for admin/gerente/especialista.
+- [x] 2.2 GREEN: Cierre overflow/menu → generate + `FileShareUtils` (optional `shareCsv`).
+- [x] 2.3 GREEN: wire generators to current `uiState` only (no re-aggregate).
+- [x] 2.4 Focused verify + GGA; PR2.
 
 ## Phase 3 — WU3 Date (≤400)
 

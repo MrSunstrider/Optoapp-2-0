@@ -1,6 +1,9 @@
 package com.example.optoapp.util
 
+import android.content.Context
 import com.example.optoapp.viewmodel.CierreCajaUiState
+import java.io.File
+import java.nio.charset.StandardCharsets
 import java.util.Locale
 
 /**
@@ -9,6 +12,19 @@ import java.util.Locale
  */
 object CierreCajaCsvExporter {
     private const val BOM = "\uFEFF"
+
+    fun writeToCache(
+        context: Context,
+        state: CierreCajaUiState,
+        cobradoHoy: Double,
+        totalesPorMetodo: Map<String, Double>,
+        contado: Double? = null,
+    ): File {
+        val dir = File(context.cacheDir, "cierre_caja").apply { mkdirs() }
+        val file = File(dir, "cierre-${state.fecha}-${System.currentTimeMillis()}.csv")
+        file.writeText(toCsv(state, cobradoHoy, totalesPorMetodo, contado), StandardCharsets.UTF_8)
+        return file
+    }
 
     fun toCsv(
         state: CierreCajaUiState,

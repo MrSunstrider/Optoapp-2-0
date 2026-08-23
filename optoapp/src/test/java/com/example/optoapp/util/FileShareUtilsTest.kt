@@ -94,6 +94,13 @@ class FileShareUtilsTest {
     }
 
     @Test
+    fun `shareCsv delegates to shareFile`() {
+        val csvFile = File("/data/test/file.csv")
+        FileShareUtils.shareCsv(context, csvFile, "Compartir CSV")
+        verify(exactly = 1) { context.startActivity(any<Intent>()) }
+    }
+
+    @Test
     fun `shareFile handles ActivityNotFoundException`() {
         every { context.startActivity(any<Intent>()) } throws ActivityNotFoundException()
         // Should not crash

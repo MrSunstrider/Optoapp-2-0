@@ -30,6 +30,10 @@ object FileShareUtils {
         shareFile(context, file, "application/pdf", chooserTitle)
     }
 
+    fun shareCsv(context: Context, file: File, chooserTitle: String = "Compartir CSV") {
+        shareFile(context, file, "text/csv", chooserTitle)
+    }
+
     fun sendWhatsAppMessage(
         context: Context,
         phoneNumber: String,
