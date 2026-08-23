@@ -32,17 +32,17 @@ Chain strategy: feature-branch-chain
 
 ## Phase 0 — Preconditions
 
-- [ ] 0.1 Verify remote `costos_lc` exists; if missing apply repo migration only (no new SQL).
-- [ ] 0.2 Create `feat/finanzas-oleada-b-costos` from agreed base.
+- [x] 0.1 Verify remote `costos_lc` exists; if missing apply repo migration only (no new SQL).
+- [x] 0.2 Create `feat/finanzas-oleada-b-costos` from agreed base.
 
 ## Phase 1 — WU1 Sync (≤400)
 
-- [ ] 1.1 RED `SyncFinanzasCostosTest`: `CostoLcRemoto` ↔ entity round-trip (`@SerialName` columns).
-- [ ] 1.2 RED Upload/Download/UseCaseKt: `uploadCostosLc`/`downloadCostosLc` after biselado; empty→0; counters on `FinanzasSyncResult`.
-- [ ] 1.3 GREEN `SyncFinanzasDto.kt`: DTO + mappers + result fields.
-- [ ] 1.4 GREEN inject `CostoLcDao` into Upload/Download coordinators; implement up/down (`skipDeletions=true`).
-- [ ] 1.5 GREEN `SyncFinanzasUseCase.kt`: safeUpload/Download after biselado; update all mocks.
-- [ ] 1.6 Focused verify + GGA R1–R4; PR1.
+- [x] 1.1 RED `SyncFinanzasCostosTest`: `CostoLcRemoto` ↔ entity round-trip (`@SerialName` columns).
+- [x] 1.2 RED Upload/Download/UseCaseKt: `uploadCostosLc`/`downloadCostosLc` after biselado; empty→0; counters on `FinanzasSyncResult`.
+- [x] 1.3 GREEN `SyncFinanzasDto.kt`: DTO + mappers + result fields.
+- [x] 1.4 GREEN inject `CostoLcDao` into Upload/Download coordinators; implement up/down (`skipDeletions=true`).
+- [x] 1.5 GREEN `SyncFinanzasUseCase.kt`: safeUpload/Download after biselado; update all mocks.
+- [x] 1.6 Focused verify + GGA R1–R4; PR1.
 
 ## Phase 2 — WU2 UI-Biselado (≤400)
 

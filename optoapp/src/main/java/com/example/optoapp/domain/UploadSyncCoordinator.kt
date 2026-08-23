@@ -5,6 +5,7 @@ import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.SyncStateTracker
 import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.costobiselado.CostoBiseladoDao
+import com.example.optoapp.data.costolc.CostoLcDao
 import com.example.optoapp.data.costoproducto.CostoProductoDao
 import com.example.optoapp.util.AppLogger
 import androidx.room.withTransaction
@@ -28,6 +29,7 @@ open class UploadSyncCoordinator @Inject constructor(
     private val networkRetryHelper: NetworkRetryHelper,
     private val costoProductoDao: CostoProductoDao,
     private val costoBiseladoDao: CostoBiseladoDao,
+    private val costoLcDao: CostoLcDao,
 ) {
     companion object {
         private const val TAG = "SyncFinanzas"
@@ -39,6 +41,7 @@ open class UploadSyncCoordinator @Inject constructor(
         private const val TABLE_REGALOS = "regalos_dispensacion"
         private const val TABLE_COSTOS_PRODUCTOS = "costos_productos"
         private const val TABLE_COSTOS_BISELADO = "costos_biselado"
+        private const val TABLE_COSTOS_LC = "costos_lc"
         private const val UPSERT_BATCH_SIZE = 80
     }
 
@@ -589,5 +592,24 @@ open class UploadSyncCoordinator @Inject constructor(
             rows,
             { it.id },
         ) { supabase.postgrest[TABLE_COSTOS_BISELADO].upsert(it) }
+    }
+
+    suspend fun uploadCostosLc(opticaId: String): Int {
+        val localLc = costoLcDao.getByOpticaIdList(opticaId)
+        if (localLc.isEmpty()) {
+            syncStateTracker.markSynced(opticaId, "upload_costos_lc", "batch")
+            return 0
+        }
+        require(opticaId.isNotBlank()) { "opticaId must not be blank for upload" }
+        val opticaRemota = opticaId.trim()
+        val rows = localLc.map { it.toRemoto().copy(opticaId = opticaRemota) }.distinctBy { it.id }
+        return executeSimpleUpsert(
+            opticaId,
+            TABLE_COSTOS_LC,
+            "costo_lc",
+            "upload_costos_lc",
+            rows,
+            { it.id },
+        ) { supabase.postgrest[TABLE_COSTOS_LC].upsert(it) }
     }
 }

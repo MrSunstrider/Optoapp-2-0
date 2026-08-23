@@ -180,11 +180,15 @@ class SyncFinanzasCostosTest {
             uploadedCostosProductos = 7,
             downloadedCostosProductos = 12,
             downloadedCostosBiselado = 8,
+            uploadedCostosLc = 4,
+            downloadedCostosLc = 6,
         )
 
         assertEquals(7, result.uploadedCostosProductos)
         assertEquals(12, result.downloadedCostosProductos)
         assertEquals(8, result.downloadedCostosBiselado)
+        assertEquals(4, result.uploadedCostosLc)
+        assertEquals(6, result.downloadedCostosLc)
     }
 
     @Test
@@ -201,5 +205,93 @@ class SyncFinanzasCostosTest {
         assertEquals(0, result.uploadedCostosProductos)
         assertEquals(0, result.downloadedCostosProductos)
         assertEquals(0, result.downloadedCostosBiselado)
+        assertEquals(0, result.uploadedCostosLc)
+        assertEquals(0, result.downloadedCostosLc)
+    }
+
+    @Test
+    fun costoLcRemoto_serialization_roundTrip() {
+        val original = CostoLcRemoto(
+            id = "cl-1",
+            opticaId = "optica1",
+            tipoLc = "cosmetico",
+            materialLc = "hidrogel",
+            modalidad = "mensual",
+            radioBase = "8.6",
+            diametro = "14.2",
+            laboratorioId = "lab1",
+            costoUnitario = 25.0,
+            vigenteDesde = "2026-07-01",
+            vigenteHasta = null,
+        )
+
+        val encoded = json.encodeToString(original)
+        val decoded = json.decodeFromString<CostoLcRemoto>(encoded)
+
+        assertEquals(original.id, decoded.id)
+        assertEquals(original.opticaId, decoded.opticaId)
+        assertEquals(original.tipoLc, decoded.tipoLc)
+        assertEquals(original.materialLc, decoded.materialLc)
+        assertEquals(original.modalidad, decoded.modalidad)
+        assertEquals(original.radioBase, decoded.radioBase)
+        assertEquals(original.diametro, decoded.diametro)
+        assertEquals(original.laboratorioId, decoded.laboratorioId)
+        assertEquals(original.costoUnitario, decoded.costoUnitario, 0.001)
+        assertEquals(original.vigenteDesde, decoded.vigenteDesde)
+        assertNull(decoded.vigenteHasta)
+    }
+
+    @Test
+    fun costoLcRemoto_serialName_mapsSnakeCase() {
+        val jsonStr = """
+            {
+                "id": "cl-2",
+                "optica_id": "optica1",
+                "tipo_lc": "graduado",
+                "material_lc": "silicona",
+                "modalidad": "diario",
+                "radio_base": null,
+                "diametro": null,
+                "laboratorio_id": null,
+                "costo_unitario": 12.5,
+                "vigente_desde": "2026-07-01",
+                "vigente_hasta": null
+            }
+        """.trimIndent()
+
+        val decoded = json.decodeFromString<CostoLcRemoto>(jsonStr)
+
+        assertEquals("graduado", decoded.tipoLc)
+        assertEquals("silicona", decoded.materialLc)
+        assertEquals("diario", decoded.modalidad)
+        assertEquals(12.5, decoded.costoUnitario, 0.001)
+        assertNull(decoded.radioBase)
+        assertNull(decoded.laboratorioId)
+    }
+
+    @Test
+    fun costoLcRemoto_toEntity_roundTrip() {
+        val remoto = CostoLcRemoto(
+            id = "cl-3",
+            opticaId = "optica1",
+            tipoLc = "terapeutico",
+            materialLc = "hidrogel",
+            modalidad = "anual",
+            radioBase = "8.4",
+            diametro = "14.0",
+            laboratorioId = "lab2",
+            costoUnitario = 40.0,
+            vigenteDesde = "2026-01-01",
+            vigenteHasta = "2026-12-31",
+        )
+        val entity = remoto.toEntity()
+        val back = entity.toRemoto()
+
+        assertEquals(remoto.id, back.id)
+        assertEquals(remoto.tipoLc, back.tipoLc)
+        assertEquals(remoto.materialLc, back.materialLc)
+        assertEquals(remoto.modalidad, back.modalidad)
+        assertEquals(remoto.costoUnitario, back.costoUnitario, 0.001)
+        assertEquals(remoto.vigenteHasta, back.vigenteHasta)
     }
 }

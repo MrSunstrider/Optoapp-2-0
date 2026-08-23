@@ -4,6 +4,7 @@ import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.SyncStateTracker
 import com.example.optoapp.data.configuracionfinanciera.ConfiguracionFinancieraDao
 import com.example.optoapp.data.costobiselado.CostoBiseladoDao
+import com.example.optoapp.data.costolc.CostoLcDao
 import com.example.optoapp.data.costoproducto.CostoProductoDao
 import com.example.optoapp.data.resumendiario.ResumenDiarioDao
 import com.example.optoapp.util.AppLogger
@@ -30,6 +31,7 @@ class DownloadSyncCoordinator @Inject constructor(
     private val configuracionFinancieraDao: ConfiguracionFinancieraDao,
     private val costoProductoDao: CostoProductoDao,
     private val costoBiseladoDao: CostoBiseladoDao,
+    private val costoLcDao: CostoLcDao,
 ) {
     companion object {
         private const val TAG = "SyncFinanzas"
@@ -43,6 +45,7 @@ class DownloadSyncCoordinator @Inject constructor(
         private const val TABLE_GASTOS_OPERATIVOS = "gastos_operativos"
         private const val TABLE_COSTOS_PRODUCTOS = "costos_productos"
         private const val TABLE_COSTOS_BISELADO = "costos_biselado"
+        private const val TABLE_COSTOS_LC = "costos_lc"
     }
 
     private suspend inline fun <reified T : Any> downloadTable(
@@ -246,5 +249,15 @@ class DownloadSyncCoordinator @Inject constructor(
         getId = { it.id },
     ) { r ->
         costoBiseladoDao.upsertAll(listOf(r.toEntity()))
+    }
+
+    suspend fun downloadCostosLc(opticaId: String): Int = downloadTable<CostoLcRemoto>(
+        opticaId,
+        TABLE_COSTOS_LC,
+        "costo_lc",
+        skipDeletions = true,
+        getId = { it.id },
+    ) { r ->
+        costoLcDao.upsertAll(listOf(r.toEntity()))
     }
 }

@@ -181,6 +181,7 @@ class SyncFinanzasUseCaseKtTest {
         coEvery { downloadCoordinator.downloadConfiguracionFinanciera(any()) } returns 1
         coEvery { downloadCoordinator.downloadCostosProductos(any()) } returns 0
         coEvery { downloadCoordinator.downloadCostosBiselado(any()) } returns 0
+        coEvery { downloadCoordinator.downloadCostosLc(any()) } returns 0
         coEvery { downloadCoordinator.downloadPagos(any()) } returns 0
         coEvery { downloadCoordinator.downloadRegalos(any()) } returns 0
         coEvery { downloadCoordinator.downloadGastosOperativos(any()) } returns 0
@@ -217,11 +218,13 @@ class SyncFinanzasUseCaseKtTest {
         coEvery { downloadCoordinator.downloadConfiguracionFinanciera(any()) } returns 1
         coEvery { downloadCoordinator.downloadCostosProductos(any()) } returns 0
         coEvery { downloadCoordinator.downloadCostosBiselado(any()) } returns 0
+        coEvery { downloadCoordinator.downloadCostosLc(any()) } returns 0
         coEvery { downloadCoordinator.downloadPagos(any()) } returns 0
         coEvery { downloadCoordinator.downloadRegalos(any()) } returns 0
         coEvery { downloadCoordinator.downloadGastosOperativos(any()) } returns 0
         coEvery { uploadCoordinator.uploadCostosProductos(any()) } returns 0
         coEvery { uploadCoordinator.uploadCostosBiselado(any()) } returns 0
+        coEvery { uploadCoordinator.uploadCostosLc(any()) } returns 0
         coEvery { uploadCoordinator.uploadRegalos(any()) } returns 0
 
         val useCase = SyncFinanzasUseCase(
@@ -238,6 +241,61 @@ class SyncFinanzasUseCaseKtTest {
             downloadCoordinator.downloadConfiguracionFinanciera("optica-test")
             downloadCoordinator.downloadCostosProductos("optica-test")
             downloadCoordinator.downloadCostosBiselado("optica-test")
+            downloadCoordinator.downloadCostosLc("optica-test")
+            downloadCoordinator.downloadPagos("optica-test")
+        }
+    }
+
+    @Test
+    fun syncFinanzas_upload_and_download_costosLc_after_biselado() = runBlocking {
+        val uploadCoordinator = mockk<UploadSyncCoordinator>(relaxed = true)
+        val downloadCoordinator = mockk<DownloadSyncCoordinator>()
+        val deletionSyncHelper = mockk<DeletionSyncHelper>()
+        val networkRetryHelper = mockk<NetworkRetryHelper>()
+
+        coEvery { deletionSyncHelper.pushPendingDeletions(any()) } just Runs
+        coEvery { uploadCoordinator.uploadDispensaciones(any()) } returns 0
+        coEvery { uploadCoordinator.uploadDispensacionItems(any()) } returns 0
+        coEvery { uploadCoordinator.uploadServicios(any()) } returns 0
+        coEvery { uploadCoordinator.uploadCostosProductos(any()) } returns 0
+        coEvery { uploadCoordinator.uploadCostosBiselado(any()) } returns 2
+        coEvery { uploadCoordinator.uploadCostosLc(any()) } returns 3
+        coEvery { uploadCoordinator.uploadPagos(any()) } returns 0
+        coEvery { uploadCoordinator.uploadGastosOperativos(any()) } returns 0
+        coEvery { uploadCoordinator.uploadRegalos(any()) } returns 0
+        coEvery { downloadCoordinator.downloadDispensaciones(any()) } returns 0
+        coEvery { downloadCoordinator.downloadDispensacionItems(any()) } returns 0
+        coEvery { downloadCoordinator.downloadServicios(any()) } returns 0
+        coEvery { downloadCoordinator.downloadResumenDiario(any()) } returns 0
+        coEvery { downloadCoordinator.downloadConfiguracionFinanciera(any()) } returns 0
+        coEvery { downloadCoordinator.downloadCostosProductos(any()) } returns 0
+        coEvery { downloadCoordinator.downloadCostosBiselado(any()) } returns 1
+        coEvery { downloadCoordinator.downloadCostosLc(any()) } returns 5
+        coEvery { downloadCoordinator.downloadPagos(any()) } returns 0
+        coEvery { downloadCoordinator.downloadRegalos(any()) } returns 0
+        coEvery { downloadCoordinator.downloadGastosOperativos(any()) } returns 0
+
+        val useCase = SyncFinanzasUseCase(
+            deletionSyncHelper = deletionSyncHelper,
+            uploadSyncCoordinator = uploadCoordinator,
+            downloadSyncCoordinator = downloadCoordinator,
+            networkRetryHelper = networkRetryHelper,
+        )
+
+        val result = useCase("optica-test")
+
+        assertTrue(result is com.example.optoapp.data.Resource.Success)
+        val data = (result as com.example.optoapp.data.Resource.Success).data!!
+        assertEquals(3, data.uploadedCostosLc)
+        assertEquals(5, data.downloadedCostosLc)
+        coVerifyOrder {
+            uploadCoordinator.uploadCostosBiselado("optica-test")
+            uploadCoordinator.uploadCostosLc("optica-test")
+            uploadCoordinator.uploadPagos("optica-test")
+        }
+        coVerifyOrder {
+            downloadCoordinator.downloadCostosBiselado("optica-test")
+            downloadCoordinator.downloadCostosLc("optica-test")
             downloadCoordinator.downloadPagos("optica-test")
         }
     }
@@ -303,6 +361,7 @@ class SyncFinanzasUseCaseKtTest {
         coEvery { uploadCoordinator.uploadServicios(any()) } returns 1
         coEvery { uploadCoordinator.uploadCostosProductos(any()) } returns 0
         coEvery { uploadCoordinator.uploadCostosBiselado(any()) } returns 0
+        coEvery { uploadCoordinator.uploadCostosLc(any()) } returns 0
         coEvery { uploadCoordinator.uploadPagos(any()) } returns 3
         coEvery { uploadCoordinator.uploadGastosOperativos(any()) } returns 0
         coEvery { uploadCoordinator.uploadRegalos(any()) } returns 0
@@ -314,6 +373,7 @@ class SyncFinanzasUseCaseKtTest {
         coEvery { downloadCoordinator.downloadConfiguracionFinanciera(any()) } returns 0
         coEvery { downloadCoordinator.downloadCostosProductos(any()) } returns 0
         coEvery { downloadCoordinator.downloadCostosBiselado(any()) } returns 0
+        coEvery { downloadCoordinator.downloadCostosLc(any()) } returns 0
         coEvery { downloadCoordinator.downloadRegalos(any()) } returns 0
         coEvery { downloadCoordinator.downloadGastosOperativos(any()) } returns 0
 
@@ -350,6 +410,7 @@ class SyncFinanzasUseCaseKtTest {
         coEvery { uploadCoordinator.uploadServicios(any()) } throws IOException("Network failure")
         coEvery { uploadCoordinator.uploadCostosProductos(any()) } throws IOException("Network failure")
         coEvery { uploadCoordinator.uploadCostosBiselado(any()) } throws IOException("Network failure")
+        coEvery { uploadCoordinator.uploadCostosLc(any()) } throws IOException("Network failure")
         coEvery { uploadCoordinator.uploadPagos(any()) } throws IOException("Network failure")
         coEvery { uploadCoordinator.uploadGastosOperativos(any()) } throws IOException("Network failure")
         coEvery { uploadCoordinator.uploadRegalos(any()) } throws IOException("Network failure")
@@ -359,6 +420,7 @@ class SyncFinanzasUseCaseKtTest {
         coEvery { downloadCoordinator.downloadServicios(any()) } returns 0
         coEvery { downloadCoordinator.downloadCostosProductos(any()) } returns 0
         coEvery { downloadCoordinator.downloadCostosBiselado(any()) } returns 0
+        coEvery { downloadCoordinator.downloadCostosLc(any()) } returns 0
         coEvery { downloadCoordinator.downloadPagos(any()) } returns 0
         coEvery { downloadCoordinator.downloadResumenDiario(any()) } returns 0
         coEvery { downloadCoordinator.downloadConfiguracionFinanciera(any()) } returns 0
@@ -389,6 +451,7 @@ class SyncFinanzasUseCaseKtTest {
         coEvery { uploadCoordinator.uploadServicios(any()) } returns 2
         coEvery { uploadCoordinator.uploadCostosProductos(any()) } returns 0
         coEvery { uploadCoordinator.uploadCostosBiselado(any()) } returns 0
+        coEvery { uploadCoordinator.uploadCostosLc(any()) } returns 0
         coEvery { uploadCoordinator.uploadPagos(any()) } returns 4
         coEvery { uploadCoordinator.uploadGastosOperativos(any()) } returns 0
         coEvery { uploadCoordinator.uploadRegalos(any()) } returns 0
@@ -399,6 +462,7 @@ class SyncFinanzasUseCaseKtTest {
         coEvery { downloadCoordinator.downloadConfiguracionFinanciera(any()) } returns 0
         coEvery { downloadCoordinator.downloadCostosProductos(any()) } returns 0
         coEvery { downloadCoordinator.downloadCostosBiselado(any()) } returns 0
+        coEvery { downloadCoordinator.downloadCostosLc(any()) } returns 0
         coEvery { downloadCoordinator.downloadPagos(any()) } returns 0
         coEvery { downloadCoordinator.downloadRegalos(any()) } returns 0
         coEvery { downloadCoordinator.downloadGastosOperativos(any()) } returns 0
@@ -461,6 +525,7 @@ class SyncFinanzasUseCaseKtTest {
         coEvery { downloadCoordinator.downloadServicios(any()) } returns 0
         coEvery { downloadCoordinator.downloadCostosProductos(any()) } returns 0
         coEvery { downloadCoordinator.downloadCostosBiselado(any()) } returns 0
+        coEvery { downloadCoordinator.downloadCostosLc(any()) } returns 0
         coEvery { downloadCoordinator.downloadPagos(any()) } returns 0
         coEvery { downloadCoordinator.downloadResumenDiario(any()) } returns 0
         coEvery { downloadCoordinator.downloadConfiguracionFinanciera(any()) } returns 0
@@ -493,6 +558,7 @@ class SyncFinanzasUseCaseKtTest {
         coEvery { downloadCoordinator.downloadServicios(any()) } returns 0
         coEvery { downloadCoordinator.downloadCostosProductos(any()) } returns 0
         coEvery { downloadCoordinator.downloadCostosBiselado(any()) } returns 0
+        coEvery { downloadCoordinator.downloadCostosLc(any()) } returns 0
         coEvery { downloadCoordinator.downloadPagos(any()) } returns 0
         coEvery { downloadCoordinator.downloadResumenDiario(any()) } returns 0
         coEvery { downloadCoordinator.downloadConfiguracionFinanciera(any()) } returns 0
@@ -525,6 +591,7 @@ class SyncFinanzasUseCaseKtTest {
         coEvery { uploadCoordinator.uploadServicios(any()) } returns 0
         coEvery { uploadCoordinator.uploadCostosProductos(any()) } returns 0
         coEvery { uploadCoordinator.uploadCostosBiselado(any()) } returns 0
+        coEvery { uploadCoordinator.uploadCostosLc(any()) } returns 0
         coEvery { uploadCoordinator.uploadGastosOperativos(any()) } returns 0
         coEvery { uploadCoordinator.uploadRegalos(any()) } returns 0
 
