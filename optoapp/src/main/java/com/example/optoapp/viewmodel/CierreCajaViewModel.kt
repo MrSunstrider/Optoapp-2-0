@@ -1,6 +1,7 @@
 package com.example.optoapp.viewmodel
 
 import android.util.Log
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.optoapp.data.AppRoles
@@ -30,6 +31,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import java.time.LocalDate
+import java.time.format.DateTimeParseException
 import javax.inject.Inject
 
 data class PagoDisplayItem(
@@ -101,9 +103,15 @@ object CierreCajaUiPolicy {
 class CierreCajaViewModel @Inject constructor(
     private val repository: OptoRepository,
     private val sessionManager: SessionManager,
+    savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(CierreCajaUiState())
+    private val _uiState = MutableStateFlow(
+        CierreCajaUiState(
+            fecha = resolveInitialFecha(savedStateHandle.get<String>(FECHA_ARG)),
+            isLoading = true,
+        ),
+    )
     val uiState: StateFlow<CierreCajaUiState> = _uiState.asStateFlow()
 
     private val _retryTick = MutableStateFlow(0)
@@ -251,6 +259,20 @@ class CierreCajaViewModel @Inject constructor(
         private const val TAG = "CierreCajaVM"
         private const val ESTADO_ANULADO = "Anulado"
         private const val ESTADO_RECLAMADA = "Reclamada"
+        const val FECHA_ARG = "fecha"
+
+        fun resolveInitialFecha(
+            fechaArg: String?,
+            fallback: LocalDate = DateUtils.today(),
+        ): LocalDate {
+            if (fechaArg.isNullOrBlank()) return fallback
+            return try {
+                LocalDate.parse(fechaArg.trim())
+            } catch (_: DateTimeParseException) {
+                Log.w(TAG, "Invalid fecha='$fechaArg', falling back to today")
+                fallback
+            }
+        }
 
         internal fun buildPagosDisplay(
             pagos: List<Pago>,

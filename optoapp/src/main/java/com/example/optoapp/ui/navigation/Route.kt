@@ -28,7 +28,11 @@ sealed class Route(val route: String) {
     data object OrdenesCompra : Route("ordenes_compra")
     data object InventarioFisico : Route("inventario_fisico")
     data object Gastos : Route("gastos")
-    data object CierreCaja : Route("cierre_caja")
+    data object CierreCaja : Route("cierre_caja?fecha={fecha}") {
+        const val FECHA_ARG = "fecha"
+        fun withFecha(fecha: java.time.LocalDate): String = "cierre_caja?fecha=$fecha"
+        fun routeWithoutFecha(): String = "cierre_caja"
+    }
     data object Reportes : Route("reportes")
     data object CostosYGastos : Route("costos_y_gastos")
     data object EstadisticasBI : Route("estadisticas_bi")

@@ -13,15 +13,18 @@ import com.example.optoapp.R
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.example.optoapp.data.AppRoles
 import com.example.optoapp.ui.components.OfflineBanner
 import com.example.optoapp.ui.navigation.Route
 import com.example.optoapp.ui.screens.ordenescompra.OrdenesCompraScreen
 import com.example.optoapp.viewmodel.AuthViewModel
+import com.example.optoapp.viewmodel.CierreCajaViewModel
 import com.example.optoapp.viewmodel.CostosYGastosViewModel
 import com.example.optoapp.viewmodel.OpticaHeaderViewModel
 import kotlinx.coroutines.launch
@@ -56,7 +59,12 @@ fun MainDrawerScreen(
         syncViewModel.performSilentSync()
     }
 
-    val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
+    val rawRoute = navController.currentBackStackEntryAsState().value?.destination?.route
+    // Keep drawer matching on "cierre_caja" while route pattern includes optional ?fecha=
+    val currentRoute = when {
+        rawRoute?.startsWith("cierre_caja") == true -> "cierre_caja"
+        else -> rawRoute
+    }
     val snackbarHostState = remember { SnackbarHostState() }
     val isOnline by syncViewModel.isOnline.collectAsState()
     val snackbarScope = rememberCoroutineScope()
@@ -222,7 +230,16 @@ fun MainDrawerScreen(
                                 val dispId = backStackEntry.arguments?.getString("dispensacionId")
                                 CostosYGastosScreen(navController, drawerState, dispensacionId = dispId)
                             }
-                            composable(Route.CierreCaja.route) { CierreCajaScreen(navController) }
+                            composable(
+                                route = Route.CierreCaja.route,
+                                arguments = listOf(
+                                    navArgument(CierreCajaViewModel.FECHA_ARG) {
+                                        type = NavType.StringType
+                                        nullable = true
+                                        defaultValue = null
+                                    },
+                                ),
+                            ) { CierreCajaScreen(navController) }
                             composable(Route.EstadisticasBI.route) { AnalisisNegocioScreen(navController) }
                             composable(Route.AnalisisDetalle("{yearMonth}").route) { AnalisisDetalleScreen(navController) }
                             composable(Route.Configuracion.route) { ConfiguracionScreen(navController, drawerState, syncViewModel) }

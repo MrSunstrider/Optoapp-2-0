@@ -162,7 +162,7 @@ fun OperacionHoyScreen(
                     navController.navigate(Route.NuevoServicio.route)
                 }
                 QuickAction("Caja", Icons.Default.PointOfSale, MaterialTheme.colorScheme.secondary, Modifier.weight(1f)) {
-                    navController.navigate(Route.CierreCaja.route)
+                    navController.navigate(Route.CierreCaja.withFecha(uiState.fecha))
                 }
             }
 
