@@ -22,33 +22,40 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import com.example.optoapp.ui.components.DropdownField
 import com.example.optoapp.ui.components.OptoDatePickerDialog
 import com.example.optoapp.ui.components.OptoKpiCard
 import com.example.optoapp.ui.components.OptoTopAppBar
 import com.example.optoapp.ui.theme.alertRed
 import com.example.optoapp.ui.theme.positiveGreen
-import com.example.optoapp.ui.theme.warningAmber
 import com.example.optoapp.util.DateUtils
 import com.example.optoapp.util.FileShareUtils
 import com.example.optoapp.util.ReporteFinancieroPdfGenerator
 import com.example.optoapp.util.fmt
+import com.example.optoapp.viewmodel.AuthViewModel
+import com.example.optoapp.viewmodel.ReportesUiPolicy
 import com.example.optoapp.viewmodel.ReportesViewModel
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hiltViewModel()) {
+fun ReportesScreen(
+    drawerState: DrawerState,
+    viewModel: ReportesViewModel = hiltViewModel(),
+    authViewModel: AuthViewModel = hiltViewModel(),
+) {
     val context = LocalContext.current
     val dispensaciones by viewModel.allDispensaciones.collectAsState()
     val serviciosExtra by viewModel.allServiciosDelPeriodo.collectAsState()
     val pagosSumByDispensacion by viewModel.pagosSumByDispensacion.collectAsState()
     val aCuentaSumByServicio by viewModel.aCuentaSumByServicio.collectAsState()
     val scope = rememberCoroutineScope()
+    val opticaRol by authViewModel.opticaRol.collectAsState(initial = null)
+    val access = ReportesUiPolicy.resolveAccess(opticaRol)
+    val canView = !access.isRestricted && access.showTotals
 
     val periodo by viewModel.periodo.collectAsState()
-    val anio by viewModel.anio.collectAsState()
     val fechaDiario by viewModel.fechaDiario.collectAsState()
+    val showsPeriodChrome by viewModel.showsPeriodChrome.collectAsState()
     var showDatePicker by remember { mutableStateOf(false) }
 
     if (showDatePicker) {
@@ -62,7 +69,6 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
     val periodoLabel by viewModel.periodoLabel.collectAsState()
 
     val totalVendido by viewModel.totalVendido.collectAsState()
-    val totalPagado by viewModel.totalPagado.collectAsState()
     val totalCobrado by viewModel.totalCobrado.collectAsState()
     val cobrosPeriodo by viewModel.cobrosPeriodo.collectAsState()
     val totalTransacciones by viewModel.totalTransacciones.collectAsState()
@@ -74,6 +80,13 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
     val ventasPeriodo = totalCobrado - cobrosPeriodo
     val porCobrar = totalVendido - ventasPeriodo
     val ticketPromedio = if (totalTransacciones > 0) totalVendido / totalTransacciones else 0.0
+    val headlineKpiIds = ReportesUiPolicy.headlineKpiIds(
+        totalVendido = totalVendido,
+        totalCobrado = totalCobrado,
+        porCobrar = porCobrar,
+        ticketPromedio = ticketPromedio,
+        totalTransacciones = totalTransacciones,
+    )
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.surface,
@@ -87,39 +100,64 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                     }
                 },
                 actions = {
-                    IconButton(onClick = {
-                        scope.launch {
-                            isPdfLoading = true
-                            try {
-                                val pdf = ReporteFinancieroPdfGenerator.generate(
-                                    context = context,
-                                    dispensaciones = dispensaciones,
-                                    serviciosExtra = serviciosExtra,
-                                    periodo = periodo,
-                                    totalVendido = totalVendido,
-                                    porCobrar = porCobrar,
-                                    ticketPromedio = ticketPromedio,
-                                    pagosSumByDispensacion = pagosSumByDispensacion,
-                                    aCuentaSumByServicio = aCuentaSumByServicio,
-                                )
-                                FileShareUtils.openPdf(context, pdf, "Abrir reporte financiero")
-                            } catch (e: Exception) {
-                                android.widget.Toast.makeText(context, "Error al generar PDF", android.widget.Toast.LENGTH_SHORT).show()
-                            } finally {
-                                isPdfLoading = false
+                    if (canView) {
+                        IconButton(onClick = {
+                            scope.launch {
+                                isPdfLoading = true
+                                try {
+                                    val pdf = ReporteFinancieroPdfGenerator.generate(
+                                        context = context,
+                                        dispensaciones = dispensaciones,
+                                        serviciosExtra = serviciosExtra,
+                                        periodo = periodo,
+                                        totalVendido = totalVendido,
+                                        porCobrar = porCobrar,
+                                        ticketPromedio = ticketPromedio,
+                                        pagosSumByDispensacion = pagosSumByDispensacion,
+                                        aCuentaSumByServicio = aCuentaSumByServicio,
+                                    )
+                                    FileShareUtils.openPdf(context, pdf, "Abrir reporte financiero")
+                                } catch (e: Exception) {
+                                    android.widget.Toast.makeText(context, "Error al generar PDF", android.widget.Toast.LENGTH_SHORT).show()
+                                } finally {
+                                    isPdfLoading = false
+                                }
                             }
-                        }
-                    }) {
-                        if (isPdfLoading) {
-                            CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                        } else {
-                            Icon(Icons.Default.PictureAsPdf, contentDescription = "Generar PDF")
+                        }) {
+                            if (isPdfLoading) {
+                                CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                            } else {
+                                Icon(Icons.Default.PictureAsPdf, contentDescription = "Generar PDF")
+                            }
                         }
                     }
                 },
             )
         },
     ) { padding ->
+        if (opticaRol == null) {
+            Column(
+                modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp),
+            ) {
+                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+            }
+            return@Scaffold
+        }
+
+        if (!canView) {
+            Column(
+                modifier = Modifier.fillMaxSize().padding(padding).padding(24.dp),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Icon(Icons.Default.Lock, contentDescription = "Bloqueado", modifier = Modifier.size(48.dp), tint = MaterialTheme.colorScheme.error)
+                Spacer(modifier = Modifier.height(16.dp))
+                Text("Acceso restringido", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error)
+                Text("Tu rol no tiene permiso para ver esta sección.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            return@Scaffold
+        }
+
         LazyColumn(
             modifier = Modifier
                 .padding(padding)
@@ -145,8 +183,8 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                             options = listOf("Diario", "Semanal", "Mensual", "Anual", "Total"),
                             onSelected = { viewModel.setPeriodo(it) },
                         )
-                        Spacer(Modifier.height(8.dp))
-                        if (periodo != "Todo") {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        if (showsPeriodChrome) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 verticalAlignment = Alignment.CenterVertically,
@@ -163,8 +201,10 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                                     modifier = Modifier.weight(1f),
                                 )
                                 Row {
-                                    IconButton(onClick = { showDatePicker = true }) {
-                                        Icon(Icons.Default.DateRange, contentDescription = "Seleccionar fecha", modifier = Modifier.size(20.dp))
+                                    if (periodo == "Diario" || periodo == "Semanal") {
+                                        IconButton(onClick = { showDatePicker = true }) {
+                                            Icon(Icons.Default.DateRange, contentDescription = "Seleccionar fecha", modifier = Modifier.size(20.dp))
+                                        }
                                     }
                                     IconButton(onClick = { viewModel.next() }) {
                                         Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = "Siguiente")
@@ -178,20 +218,29 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
 
             item {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OptoKpiCard("Vendido", "s/. ${totalVendido.fmt()}", MaterialTheme.colorScheme.primary, Icons.AutoMirrored.Filled.TrendingUp, Modifier.weight(1f))
-                    OptoKpiCard("Cobrado", "s/. ${totalCobrado.fmt()}", MaterialTheme.colorScheme.positiveGreen, Icons.Default.Payments, Modifier.weight(1f))
+                    if ("vendido" in headlineKpiIds) {
+                        OptoKpiCard("Vendido", "s/. ${totalVendido.fmt()}", MaterialTheme.colorScheme.primary, Icons.AutoMirrored.Filled.TrendingUp, Modifier.weight(1f))
+                    }
+                    if ("cobrado" in headlineKpiIds) {
+                        OptoKpiCard("Cobrado", "s/. ${totalCobrado.fmt()}", MaterialTheme.colorScheme.positiveGreen, Icons.Default.Payments, Modifier.weight(1f))
+                    }
                 }
             }
             item {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OptoKpiCard("Por Cobrar", "s/. ${porCobrar.fmt()}", if (porCobrar > 0) MaterialTheme.colorScheme.alertRed else MaterialTheme.colorScheme.positiveGreen, Icons.Default.AccountBalanceWallet, Modifier.weight(1f))
-                    OptoKpiCard("Ticket Prom.", "s/. ${ticketPromedio.fmt()}", MaterialTheme.colorScheme.secondary, Icons.Default.Receipt, Modifier.weight(1f))
+                    if ("porCobrar" in headlineKpiIds) {
+                        OptoKpiCard("Por Cobrar", "s/. ${porCobrar.fmt()}", if (porCobrar > 0) MaterialTheme.colorScheme.alertRed else MaterialTheme.colorScheme.positiveGreen, Icons.Default.AccountBalanceWallet, Modifier.weight(1f))
+                    }
+                    if ("ticketPromedio" in headlineKpiIds) {
+                        OptoKpiCard("Ticket Prom.", "s/. ${ticketPromedio.fmt()}", MaterialTheme.colorScheme.secondary, Icons.Default.Receipt, Modifier.weight(1f))
+                    }
                 }
             }
             item {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OptoKpiCard("Transacciones", "$totalTransacciones", MaterialTheme.colorScheme.tertiary, Icons.Default.ShoppingCart, Modifier.weight(1f))
-                    OptoKpiCard("Pendiente", "s/. ${porCobrar.fmt()}", MaterialTheme.colorScheme.warningAmber, Icons.Default.Schedule, Modifier.weight(1f))
+                    if ("transacciones" in headlineKpiIds) {
+                        OptoKpiCard("Transacciones", "$totalTransacciones", MaterialTheme.colorScheme.tertiary, Icons.Default.ShoppingCart, Modifier.weight(1f))
+                    }
                 }
             }
 
@@ -219,10 +268,10 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                     ) {
                         Column(modifier = Modifier.padding(14.dp)) {
                             Text("Composición", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                            Spacer(Modifier.height(8.dp))
+                            Spacer(modifier = Modifier.height(8.dp))
                             val maxVal = maxOf(dispensacionesCount, serviciosCount, 1).toFloat()
                             BarRow("Dispensaciones", dispensacionesCount, maxVal, MaterialTheme.colorScheme.primary)
-                            Spacer(Modifier.height(6.dp))
+                            Spacer(modifier = Modifier.height(6.dp))
                             BarRow("Servicios Extra", serviciosCount, maxVal, MaterialTheme.colorScheme.tertiary)
                         }
                     }
@@ -287,14 +336,14 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                 }
             }
 
-            item { Spacer(Modifier.height(16.dp)) }
+            item { Spacer(modifier = Modifier.height(16.dp)) }
         }
     }
 }
 
 @Composable
 private fun CobroRow(label: String, amount: Double, color: Color, bold: Boolean = false) {
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
         Text(label, fontSize = 13.sp, fontWeight = if (bold) FontWeight.Bold else FontWeight.Normal, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
         Text("s/. ${amount.fmt()}", fontWeight = if (bold) FontWeight.Bold else FontWeight.Medium, color = color, fontSize = 13.sp)
     }
@@ -302,7 +351,7 @@ private fun CobroRow(label: String, amount: Double, color: Color, bold: Boolean 
 
 @Composable
 private fun BarRow(label: String, count: Int, maxVal: Float, color: Color) {
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Text(label, fontSize = 11.sp, modifier = Modifier.width(100.dp), color = MaterialTheme.colorScheme.onSurfaceVariant)
         Box(
             modifier = Modifier

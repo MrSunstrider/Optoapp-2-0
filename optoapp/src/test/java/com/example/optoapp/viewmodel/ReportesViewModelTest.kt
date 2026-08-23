@@ -9,8 +9,10 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
+import com.example.optoapp.data.AppRoles
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -20,6 +22,8 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import java.time.LocalDate
@@ -273,5 +277,90 @@ class ReportesViewModelTest {
 
         val result = viewModel.aCuentaSumByServicio.first()
         assertEquals("s1 sum should be 100", 100.0, result["s1"] ?: 0.0, 0.001)
+    }
+
+    // ── WU1: unique porCobrar KPI, Total chrome, honest loading, role gate ──
+
+    @Test
+    fun `headline KPIs include porCobrar exactly once without Pendiente`() {
+        val kpis = ReportesUiPolicy.headlineKpiIds(
+            totalVendido = 350.0,
+            totalCobrado = 200.0,
+            porCobrar = 150.0,
+            ticketPromedio = 116.67,
+            totalTransacciones = 3,
+        )
+        assertEquals("porCobrar must appear once", 1, kpis.count { it == "porCobrar" })
+        assertFalse("Pendiente duplicate must be removed", "pendiente" in kpis)
+        assertTrue("vendido required", "vendido" in kpis)
+        assertTrue("cobrado required", "cobrado" in kpis)
+    }
+
+    @Test
+    fun `headline KPIs stay unique when porCobrar is zero`() {
+        val kpis = ReportesUiPolicy.headlineKpiIds(
+            totalVendido = 100.0,
+            totalCobrado = 100.0,
+            porCobrar = 0.0,
+            ticketPromedio = 100.0,
+            totalTransacciones = 1,
+        )
+        assertEquals(1, kpis.count { it == "porCobrar" })
+        assertFalse("pendiente" in kpis)
+    }
+
+    @Test
+    fun `Total hides period chrome Diario shows it`() = runTest(testDispatcher) {
+        viewModel = ReportesViewModel(repository, sessionManager)
+        advanceUntilIdle()
+
+        viewModel.setPeriodo("Total")
+        advanceUntilIdle()
+        assertFalse("Total must hide prev/next/picker chrome", viewModel.showsPeriodChrome.value)
+
+        viewModel.setPeriodo("Diario")
+        advanceUntilIdle()
+        assertTrue("Diario must show period chrome", viewModel.showsPeriodChrome.value)
+    }
+
+    @Test
+    fun `isLoading stays true until first data emission not delay alone`() = runTest(testDispatcher) {
+        val neverEmits = MutableSharedFlow<List<DispensacionOptica>>()
+        every { repository.getAllDispensacionesForOptica(opticaId) } returns neverEmits
+
+        viewModel = ReportesViewModel(repository, sessionManager)
+        advanceUntilIdle()
+
+        assertTrue(
+            "isLoading must stay true until first Flow emission (not delay-only clear)",
+            viewModel.isLoading.value,
+        )
+    }
+
+    @Test
+    fun `isLoading false after first empty emission`() = runTest(testDispatcher) {
+        viewModel = ReportesViewModel(repository, sessionManager)
+        advanceUntilIdle()
+
+        assertFalse(
+            "empty after load: isLoading off once flows emit",
+            viewModel.isLoading.value,
+        )
+    }
+
+    @Test
+    fun `failing canViewBiAndReports yields restricted without totals`() {
+        assertFalse(AppRoles.canViewBiAndReports("asesor"))
+        val access = ReportesUiPolicy.resolveAccess("asesor")
+        assertTrue("unauthorized must be restricted", access.isRestricted)
+        assertFalse("unauthorized must not show totals", access.showTotals)
+    }
+
+    @Test
+    fun `passing canViewBiAndReports allows totals`() {
+        assertTrue(AppRoles.canViewBiAndReports("admin"))
+        val access = ReportesUiPolicy.resolveAccess("admin")
+        assertFalse(access.isRestricted)
+        assertTrue(access.showTotals)
     }
 }

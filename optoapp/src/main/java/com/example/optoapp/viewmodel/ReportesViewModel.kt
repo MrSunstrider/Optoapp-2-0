@@ -2,6 +2,7 @@ package com.example.optoapp.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.optoapp.data.AppRoles
 import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.ServicioExtra
@@ -13,7 +14,6 @@ import com.example.optoapp.domain.TipoMovimiento
 import com.example.optoapp.util.DateUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -28,6 +28,33 @@ import java.time.LocalDate
 import java.time.Year
 import javax.inject.Inject
 
+data class ReportesAccess(
+    val isRestricted: Boolean,
+    val showTotals: Boolean,
+)
+
+object ReportesUiPolicy {
+    fun headlineKpiIds(
+        totalVendido: Double,
+        totalCobrado: Double,
+        porCobrar: Double,
+        ticketPromedio: Double,
+        totalTransacciones: Int,
+    ): List<String> {
+        // Values are inputs so callers bind real totals; ids define unique headline slots.
+        require(totalVendido.isFinite() && totalCobrado.isFinite() && porCobrar.isFinite())
+        require(ticketPromedio.isFinite() && totalTransacciones >= 0)
+        return listOf("vendido", "cobrado", "porCobrar", "ticketPromedio", "transacciones")
+    }
+
+    fun showsPeriodChrome(periodo: String): Boolean = periodo != "Total"
+
+    fun resolveAccess(rol: String?): ReportesAccess {
+        val allowed = rol != null && AppRoles.canViewBiAndReports(rol)
+        return ReportesAccess(isRestricted = !allowed, showTotals = allowed)
+    }
+}
+
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class ReportesViewModel @Inject constructor(
@@ -40,8 +67,9 @@ class ReportesViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            sessionManager.opticaId.first { it.isNotBlank() }
-            delay(200)
+            val opticaId = sessionManager.opticaId.first { it.isNotBlank() }
+            // First real Flow emission — not a timed delay — clears loading.
+            repository.getAllDispensacionesForOptica(opticaId).first()
             _isLoading.value = false
         }
     }
@@ -54,6 +82,10 @@ class ReportesViewModel @Inject constructor(
 
     private val _fechaDiario = MutableStateFlow(LocalDate.now())
     val fechaDiario: StateFlow<LocalDate> = _fechaDiario
+
+    val showsPeriodChrome: StateFlow<Boolean> = _periodo
+        .map { ReportesUiPolicy.showsPeriodChrome(it) }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, ReportesUiPolicy.showsPeriodChrome(_periodo.value))
 
     fun setPeriodo(p: String) {
         _periodo.value = p
