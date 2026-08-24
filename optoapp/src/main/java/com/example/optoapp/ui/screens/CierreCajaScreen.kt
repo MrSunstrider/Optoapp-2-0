@@ -39,6 +39,9 @@ import com.example.optoapp.viewmodel.AuthViewModel
 import com.example.optoapp.viewmodel.CierreCajaUiPolicy
 import com.example.optoapp.viewmodel.CierreCajaViewModel
 import com.example.optoapp.viewmodel.PagoDisplayItem
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.Locale
 
 private fun formatSoles(monto: Double): String = "s/. ${String.format(Locale.getDefault(), "%,.2f", monto)}"
@@ -63,30 +66,46 @@ fun CierreCajaScreen(
     val scrollState = rememberScrollState()
     val today = remember { DateUtils.today() }
     val yesterday = remember(today) { today.minusDays(1) }
+    val exportScope = rememberCoroutineScope()
+    var isExporting by remember { mutableStateOf(false) }
 
     fun exportWithCurrentState(asPdf: Boolean) {
+        if (isExporting) return
         // Wire to current uiState aggregates only — do not re-query pagos.
         val cobradoHoy = viewModel.getCobradoHoy()
         val totales = viewModel.getTotalesPorMetodo()
         val contado = uiState.contadoEfectivo
-        if (asPdf) {
-            val file = CierreCajaPdfGenerator.generate(
-                context = context,
-                state = uiState,
-                cobradoHoy = cobradoHoy,
-                totalesPorMetodo = totales,
-                contado = contado,
-            )
-            FileShareUtils.sharePdf(context, file, "Compartir cierre PDF")
-        } else {
-            val file = CierreCajaCsvExporter.writeToCache(
-                context = context,
-                state = uiState,
-                cobradoHoy = cobradoHoy,
-                totalesPorMetodo = totales,
-                contado = contado,
-            )
-            FileShareUtils.shareCsv(context, file, "Compartir cierre CSV")
+        val snapshot = uiState
+        exportScope.launch {
+            isExporting = true
+            try {
+                val file = withContext(Dispatchers.IO) {
+                    if (asPdf) {
+                        CierreCajaPdfGenerator.generate(
+                            context = context,
+                            state = snapshot,
+                            cobradoHoy = cobradoHoy,
+                            totalesPorMetodo = totales,
+                            contado = contado,
+                        )
+                    } else {
+                        CierreCajaCsvExporter.writeToCache(
+                            context = context,
+                            state = snapshot,
+                            cobradoHoy = cobradoHoy,
+                            totalesPorMetodo = totales,
+                            contado = contado,
+                        )
+                    }
+                }
+                if (asPdf) {
+                    FileShareUtils.sharePdf(context, file, "Compartir cierre PDF")
+                } else {
+                    FileShareUtils.shareCsv(context, file, "Compartir cierre CSV")
+                }
+            } finally {
+                isExporting = false
+            }
         }
     }
 
@@ -116,8 +135,18 @@ fun CierreCajaScreen(
                     }
                     if (canExport) {
                         Box {
-                            IconButton(onClick = { showExportMenu = true }) {
-                                Icon(Icons.Default.MoreVert, contentDescription = "Exportar cierre")
+                            IconButton(
+                                onClick = { showExportMenu = true },
+                                enabled = !isExporting,
+                            ) {
+                                if (isExporting) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(24.dp),
+                                        strokeWidth = 2.dp,
+                                    )
+                                } else {
+                                    Icon(Icons.Default.MoreVert, contentDescription = "Exportar cierre")
+                                }
                             }
                             DropdownMenu(
                                 expanded = showExportMenu,
