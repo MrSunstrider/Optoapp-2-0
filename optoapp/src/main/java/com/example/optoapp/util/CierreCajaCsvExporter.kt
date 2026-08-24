@@ -1,6 +1,7 @@
 package com.example.optoapp.util
 
 import android.content.Context
+import com.example.optoapp.domain.PagoEffect
 import com.example.optoapp.viewmodel.CierreCajaUiState
 import java.io.File
 import java.nio.charset.StandardCharsets
@@ -65,7 +66,7 @@ object CierreCajaCsvExporter {
             sb.append(p.fecha).append(',')
             sb.append(escape(p.tipo)).append(',')
             sb.append(escape(p.metodoPago)).append(',')
-            sb.append(money(p.monto)).append(',')
+            sb.append(money(PagoEffect.signedAmount(p.tipo, p.monto))).append(',')
             sb.append(escape(item.label)).append(',')
             sb.append(item.esCobroAtrasado).appendLine()
         }

@@ -105,6 +105,30 @@ class CierreCajaCsvExporterTest {
     }
 
     @Test
+    fun csv_detailRows_reversoAndReembolso_appearSignedNegative() {
+        val (state, totales) = fixtureState()
+        val csv = CierreCajaCsvExporter.toCsv(
+            state = state,
+            cobradoHoy = 60.0,
+            totalesPorMetodo = totales,
+            contado = null,
+        )
+
+        val cobroLines = csv.lineSequence()
+            .dropWhile { !it.startsWith("Fecha,Tipo") }
+            .drop(1)
+            .filter { it.isNotBlank() }
+            .toList()
+
+        val reembolsoLine = cobroLines.firstOrNull { it.contains("Reembolso") }
+        assertFalse("Reembolso detail must not appear as raw positive", reembolsoLine?.contains(",40.00") == true)
+        assertTrue("Reembolso detail must appear as negative signed amount", reembolsoLine?.contains("-40.00") == true)
+
+        val abonoLine = cobroLines.firstOrNull { it.contains("Abono") }
+        assertTrue("Abono detail must appear as positive signed amount", abonoLine?.contains(",100.00") == true)
+    }
+
+    @Test
     fun csv_includesContadoAndDiferencia_whenContadoProvided() {
         val (state, totales) = fixtureState()
         val csv = CierreCajaCsvExporter.toCsv(

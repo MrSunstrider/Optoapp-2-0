@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Paint
 import android.graphics.Typeface
 import android.graphics.pdf.PdfDocument
+import com.example.optoapp.domain.PagoEffect
 import com.example.optoapp.viewmodel.CierreCajaUiState
 import java.io.File
 import java.io.FileOutputStream
@@ -46,7 +47,7 @@ object CierreCajaPdfGenerator {
         if (state.pagosDisplay.isNotEmpty()) {
             lines += "Cobros recibidos (${state.pagosDisplay.size})"
             state.pagosDisplay.forEach { item ->
-                lines += "${item.label} | ${item.pago.tipo} | ${item.pago.metodoPago} | S/ ${money(item.pago.monto)}"
+                lines += "${item.label} | ${item.pago.tipo} | ${item.pago.metodoPago} | S/ ${money(PagoEffect.signedAmount(item.pago.tipo, item.pago.monto))}"
             }
         }
         return lines

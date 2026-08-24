@@ -72,6 +72,24 @@ class CierreCajaPdfGeneratorTest {
     }
 
     @Test
+    fun dayCloseLines_detailRows_reversoAndReembolso_appearSignedNegative() {
+        val (state, totales) = fixtureState()
+        val lines = CierreCajaPdfGenerator.dayCloseLines(
+            state = state,
+            cobradoHoy = 60.0,
+            totalesPorMetodo = totales,
+            contado = null,
+        )
+
+        val reembolsoLine = lines.firstOrNull { it.contains("Reembolso") }
+        assertFalse("Reembolso detail must not appear as raw positive", reembolsoLine?.contains("40.00") == true && reembolsoLine.contains("-40.00").not())
+        assertTrue("Reembolso detail must appear as negative signed amount", reembolsoLine?.contains("-40.00") == true)
+
+        val abonoLine = lines.firstOrNull { it.contains("Abono") }
+        assertTrue("Abono detail must appear as positive signed amount", abonoLine?.contains("100.00") == true)
+    }
+
+    @Test
     fun dayCloseLines_includesFechaAndMethodBreakdown() {
         val state = CierreCajaUiState(
             fecha = fecha,
