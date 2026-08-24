@@ -55,8 +55,8 @@ class SubscriptionManagerTest {
     }
 
     @Test
-    fun `maxPacientes FREE returns 50`() {
-        assertEquals(50, subscriptionManager.maxPacientes(SubscriptionTier.FREE))
+    fun `maxPacientes FREE is unlimited`() {
+        assertEquals(Int.MAX_VALUE, subscriptionManager.maxPacientes(SubscriptionTier.FREE))
     }
 
     @Test
@@ -65,8 +65,20 @@ class SubscriptionManagerTest {
     }
 
     @Test
-    fun `maxOpticas FREE returns unlimited`() {
-        assertNull(subscriptionManager.maxOpticas(PlanCode.FREE))
+    fun `canAddPaciente FREE always allows`() {
+        assertTrue(subscriptionManager.canAddPaciente(SubscriptionTier.FREE, 0))
+        assertTrue(subscriptionManager.canAddPaciente(SubscriptionTier.FREE, 10_000))
+    }
+
+    @Test
+    fun `maxOpticas FREE returns 1`() {
+        assertEquals(1, subscriptionManager.maxOpticas(PlanCode.FREE))
+    }
+
+    @Test
+    fun `canAddOptica FREE blocks second óptica`() {
+        assertTrue(subscriptionManager.canAddOptica(PlanCode.FREE, 0))
+        assertTrue(!subscriptionManager.canAddOptica(PlanCode.FREE, 1))
     }
 
     @Test

@@ -1,53 +1,27 @@
 ﻿package com.example.optoapp.viewmodel
 
 import com.example.optoapp.subscription.PlanCode
-import com.example.optoapp.subscription.SubscriptionManager
 import com.example.optoapp.subscription.SubscriptionTier
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
  * Tests for SubscriptionViewModel pure logic and contracts.
- *
- * Full ViewModel construction requires OptoRepository, SessionManager, PlayBillingManager
- * concrete classes with complex dependency graphs (Room, DataStore, BillingClient).
- * We test the pure logic extracted here and the data contracts.
- *
- * See: SubscriptionManagerTest for tier/planCode flow testing.
+ * Paciente caps removed — FREE product limit is ópticas only.
  */
 class SubscriptionViewModelTest {
-    // Logic: combine(tier, pacienteCount) { t, count -> count < maxPacientes(t) }
 
     @Test
-    fun `canAddPaciente returns true when count below limit`() {
-        assertTrue(canAddPaciente(SubscriptionTier.FREE, 5) { maxPacientes(it) })
+    fun `canAddPaciente always true for FREE regardless of count`() {
+        assertTrue(canAddPaciente(SubscriptionTier.FREE, 0))
+        assertTrue(canAddPaciente(SubscriptionTier.FREE, 50))
+        assertTrue(canAddPaciente(SubscriptionTier.FREE, 10_000))
     }
 
     @Test
-    fun `canAddPaciente returns true when count within FREE limit`() {
-        assertTrue(canAddPaciente(SubscriptionTier.FREE, 20) { maxPacientes(it) })
-        assertTrue(canAddPaciente(SubscriptionTier.FREE, 49) { maxPacientes(it) })
-    }
-
-    @Test
-    fun `canAddPaciente returns false when count reaches FREE limit`() {
-        assertFalse(canAddPaciente(SubscriptionTier.FREE, 50) { maxPacientes(it) })
-        assertFalse(canAddPaciente(SubscriptionTier.FREE, 100) { maxPacientes(it) })
-    }
-
-    @Test
-    fun `canAddPaciente returns true when count exceeds FREE limit but tier is PRO`() {
-        assertTrue(canAddPaciente(SubscriptionTier.PRO, 999) { maxPacientes(it) })
-    }
-
-    @Test
-    fun `canAddPaciente uses maxPacientes result directly`() {
-        // Custom maxFn simulating a hypothetical 5-paciente limit
-        val customMax: (SubscriptionTier) -> Int = { if (it == SubscriptionTier.FREE) 5 else Int.MAX_VALUE }
-        assertTrue("4 < 5", canAddPaciente(SubscriptionTier.FREE, 4, customMax))
-        assertFalse("5 >= 5", canAddPaciente(SubscriptionTier.FREE, 5, customMax))
+    fun `canAddPaciente always true for PRO`() {
+        assertTrue(canAddPaciente(SubscriptionTier.PRO, 999))
     }
 
     @Test
@@ -71,21 +45,13 @@ class SubscriptionViewModelTest {
     private fun canAddPaciente(
         tier: SubscriptionTier,
         count: Int,
-        maxPacientes: (SubscriptionTier) -> Int,
-    ): Boolean = count < maxPacientes(tier)
+    ): Boolean = true
 
     private fun launchProPurchase(
         planCode: PlanCode,
         onSuccess: () -> Unit,
         onError: (String) -> Unit,
     ) {
-        // Alpha: activate PRO directly via setProFromLocalCache()
         onSuccess()
-    }
-
-    // Same maxPacientes logic as SubscriptionManager
-    private fun maxPacientes(tier: SubscriptionTier): Int = when (tier) {
-        SubscriptionTier.FREE -> SubscriptionManager.FREE_MAX_PACIENTES
-        SubscriptionTier.PRO -> Int.MAX_VALUE
     }
 }

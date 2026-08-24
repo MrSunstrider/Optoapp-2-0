@@ -364,10 +364,11 @@ class AuthViewModel @Inject constructor(
     }
 
     private fun friendlyOpticaError(raw: String): String = when {
-        raw.contains("límite de ópticas", ignoreCase = true) ||
+        raw.contains("límite de 1", ignoreCase = true) ||
+            raw.contains("límite de ópticas", ignoreCase = true) ||
             raw.contains("max_opticas", ignoreCase = true) ||
             raw.contains("límite de 2", ignoreCase = true) ->
-            "Has alcanzado el límite de 2 ópticas del plan gratuito."
+            "Has alcanzado el límite de 1 óptica del plan gratuito."
         raw.contains("Sesión requerida", ignoreCase = true) ||
             raw.contains("sesión requerida", ignoreCase = true) ->
             "Revisa tu correo electrónico y confirma la cuenta. Luego inicia sesión para crear tu óptica."

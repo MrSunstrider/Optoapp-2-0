@@ -592,6 +592,23 @@ open class AuthDelegate @Inject constructor(
         if (role !in setOf("admin", "gerente")) {
             return Result.failure(IllegalStateException("Solo admin o gerente pueden crear sucursales."))
         }
+        when (val fetch = membershipRepository.fetchMembershipsForCurrentUser()) {
+            is MembershipFetch.Ok -> {
+                if (fetch.memberships.size >= 1) {
+                    return Result.failure(
+                        IllegalStateException("Has alcanzado el límite de 1 óptica del plan gratuito."),
+                    )
+                }
+            }
+            is MembershipFetch.Empty -> Unit
+            is MembershipFetch.Error -> {
+                return Result.failure(
+                    IllegalStateException(
+                        fetch.cause.message ?: "No se pudo verificar el límite de ópticas.",
+                    ),
+                )
+            }
+        }
         return membershipRepository.createOpticaForCurrentUser(nombreOptica)
     }
 

@@ -301,6 +301,27 @@ class AuthDelegateTest {
     }
 
     @Test
+    fun createAdditionalOptica_blocksWhenUserAlreadyHasMembership() = runTest {
+        val sessionManager = mockk<ISessionManager>(relaxed = true)
+        val membershipRepo = mockk<MembershipRepository>(relaxed = true)
+        val fiscalStore = mockk<OpticaFiscalSettingsStore>(relaxed = true)
+
+        every { sessionManager.opticaRol } returns flowOf("admin")
+        coEvery { membershipRepo.fetchMembershipsForCurrentUser() } returns MembershipFetch.Ok(
+            listOf(OpticaMembership(opticaId = "o1", nombre = "Una", rol = "admin")),
+        )
+
+        val delegate = buildDelegate(sessionManager, membershipRepo, fiscalStore)
+        val result = delegate.createAdditionalOptica("Segunda")
+
+        assertTrue(result.isFailure)
+        assertTrue(
+            result.exceptionOrNull()?.message?.contains("1 óptica") == true,
+        )
+        coVerify(exactly = 0) { membershipRepo.createOpticaForCurrentUser(any()) }
+    }
+
+    @Test
     fun resetLocalStoreForNewAuthSession_wipesRoomCache() = runTest {
         val sessionManager = mockk<ISessionManager>(relaxed = true)
         val membershipRepo = mockk<MembershipRepository>(relaxed = true)
