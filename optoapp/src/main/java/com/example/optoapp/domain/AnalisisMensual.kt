@@ -33,7 +33,7 @@ data class AnalisisMensual(
     val ticketPromedio: Double = 0.0,
     val cantidadVentas: Int = 0,
     val esOffline: Boolean = false,
-    val costoMes: Double = 0.0,
+    val costoMes: Double? = null,
 ) {
     companion object {
         fun fromJson(json: JsonElement): AnalisisMensual {
@@ -54,7 +54,7 @@ data class AnalisisMensual(
                 saldoPendiente = obj.optDouble("saldo_pendiente"),
                 ticketPromedio = obj.optDouble("ticket_promedio"),
                 cantidadVentas = obj.optInt("cantidad_ventas"),
-                costoMes = obj.optDouble("costo_mes"),
+                costoMes = obj.optDoubleNullable("costo_mes"),
             )
         }
 
@@ -113,7 +113,7 @@ data class AnalisisMensual(
     }
 
     fun costoDeVentas(): Double =
-        if (costoMes != 0.0) costoMes else margenPorCategoria.sumOf { it.costos }
+        costoMes ?: margenPorCategoria.sumOf { it.costos }
 }
 
 data class MargenCategoria(

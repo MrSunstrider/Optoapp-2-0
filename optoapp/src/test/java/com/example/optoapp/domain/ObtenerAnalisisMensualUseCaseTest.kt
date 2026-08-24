@@ -6,6 +6,7 @@ import com.example.optoapp.data.gastooperativo.GastoOperativoDao
 import com.example.optoapp.data.gastooperativo.GastoOperativoEntity
 import com.example.optoapp.data.resumendiario.ResumenDiarioDao
 import com.example.optoapp.data.resumendiario.ResumenDiarioEntity
+import io.github.jan.supabase.exceptions.RestException
 import io.github.jan.supabase.postgrest.Postgrest
 import io.mockk.coEvery
 import io.mockk.every
@@ -86,7 +87,7 @@ class ObtenerAnalisisMensualUseCaseTest {
         assertEquals(25.5, analisis.margenNetoPct, 0.001)
         assertEquals(5, analisis.deudores.cantidad)
         assertEquals(5000.0, analisis.proyeccionCaja!!.ingresosEsperados, 0.001)
-        assertEquals(5000.0, analisis.costoMes, 0.001)
+        assertEquals(5000.0, analisis.costoMes!!, 0.001)
         assertEquals(false, analisis.esOffline)
     }
 
@@ -122,7 +123,7 @@ class ObtenerAnalisisMensualUseCaseTest {
         assertEquals(true, analisis.esOffline)
         assertEquals(12000.0, analisis.ventasMes, 0.001)
         assertEquals(9000.0, analisis.cobrosMes, 0.001)
-        assertEquals(5000.0, analisis.costoMes, 0.001)
+        assertEquals(5000.0, analisis.costoMes!!, 0.001)
         assertEquals(0.0, analisis.gastosMes, 0.001)
         assertEquals(0.0, analisis.margenNetoPct, 0.001)
         assertEquals(0, analisis.deudores.cantidad)
@@ -170,7 +171,7 @@ class ObtenerAnalisisMensualUseCaseTest {
 
         val analisis = (useCase("optica1", LocalDate.of(2026, 7, 1)) as Resource.Success).data!!
         assertTrue(analisis.esOffline)
-        assertEquals(300.0, analisis.costoMes, 0.001)
+        assertEquals(300.0, analisis.costoMes!!, 0.001)
         assertEquals(100.0, analisis.gastosMes, 0.001)
     }
 
@@ -184,5 +185,21 @@ class ObtenerAnalisisMensualUseCaseTest {
         val result = useCase("optica1", LocalDate.of(2026, 7, 1))
         assertTrue(result is Resource.Error)
         assertEquals("No se pudieron cargar los datos del mes", (result as Resource.Error).message)
+    }
+
+    @Test
+    fun restException_fallsBackToRoom() = runBlocking {
+        val dao = mockk<ResumenDiarioDao>()
+        coEvery { dao.getByOpticaAndMonth("optica1", "2026-07") } returns emptyList()
+        val restEx = mockk<RestException>(relaxed = true)
+
+        val useCase = object : ObtenerAnalisisMensualUseCase(mockk<Postgrest>(), dao, gastoDao) {
+            override suspend fun callRpc(function: String, params: JsonObject): JsonObject = throw restEx
+        }
+
+        val result = useCase("optica1", LocalDate.of(2026, 7, 1))
+        assertTrue(result is Resource.Success)
+        val analisis = (result as Resource.Success).data!!
+        assertTrue(analisis.esOffline)
     }
 }

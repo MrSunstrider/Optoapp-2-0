@@ -68,19 +68,14 @@ class ResumenDiarioViewModel @Inject constructor(
 
     fun refresh() {
         viewModelScope.launch {
-            refreshing.value = true
             message.value = null
-            try {
-                val opticaId = sessionManager.opticaId.first()
-                if (opticaId.isNotBlank()) {
-                    // Finances sync download recalcs resumen_diario remotely; never uploads it.
-                    postSaveSyncScheduler.scheduleFinanzasSync(opticaId)
-                    message.value = "Actualización de resumen programada"
-                } else {
-                    message.value = "Óptica no disponible"
-                }
-            } finally {
-                refreshing.value = false
+            val opticaId = sessionManager.opticaId.first()
+            if (opticaId.isNotBlank()) {
+                // Finances sync download recalcs resumen_diario remotely; never uploads it.
+                postSaveSyncScheduler.scheduleFinanzasSync(opticaId)
+                message.value = "Actualización de resumen programada"
+            } else {
+                message.value = "Óptica no disponible"
             }
         }
     }

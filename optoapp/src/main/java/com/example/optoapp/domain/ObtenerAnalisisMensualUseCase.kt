@@ -4,6 +4,7 @@ import com.example.optoapp.data.Resource
 import com.example.optoapp.data.gastooperativo.GastoOperativoDao
 import com.example.optoapp.data.resumendiario.ResumenDiarioDao
 import com.example.optoapp.util.AppLogger
+import io.github.jan.supabase.exceptions.RestException
 import io.github.jan.supabase.postgrest.Postgrest
 import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.json.JsonObject
@@ -33,6 +34,9 @@ open class ObtenerAnalisisMensualUseCase @Inject constructor(
         throw e
     } catch (e: IOException) {
         AppLogger.w(TAG, "Offline — falling back to Room", e)
+        fallbackToRoom(opticaId, mes)
+    } catch (e: RestException) {
+        AppLogger.w(TAG, "RestException — falling back to Room", e)
         fallbackToRoom(opticaId, mes)
     } catch (e: Exception) {
         AppLogger.e(TAG, "Error obteniendo analisis mensual", e)
