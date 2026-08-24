@@ -44,7 +44,7 @@ fun MainDrawerScreen(
     val syncState by syncViewModel.syncState.collectAsState()
     val isSilentSyncing by syncViewModel.isSilentSyncing.collectAsState()
     val opticaHeader by opticaHeaderViewModel.uiState.collectAsState()
-    val opticaRol by authViewModel.opticaRol.collectAsState(initial = "admin")
+    val opticaRol by authViewModel.opticaRol.collectAsState(initial = "")
     val showCierreCaja = AppRoles.canViewCierreCaja(opticaRol)
     val showBiYReportes = AppRoles.canViewBiAndReports(opticaRol)
     val showOperacionHoy = AppRoles.canViewOperacionHoy(opticaRol)
@@ -218,7 +218,14 @@ fun MainDrawerScreen(
                             composable(Route.CierreCaja.route) { CierreCajaScreen(navController) }
                             composable(Route.EstadisticasBI.route) { AnalisisNegocioScreen(navController) }
                             composable(Route.AnalisisDetalle.route) { AnalisisDetalleScreen(navController) }
-                            composable(Route.Configuracion.route) { ConfiguracionScreen(navController, drawerState, syncViewModel) }
+                            composable(Route.Configuracion.route) {
+                                if (!showConfiguracion) {
+                                    LaunchedEffect(Unit) { navController.popBackStack() }
+                                    Box(Modifier.fillMaxSize())
+                                } else {
+                                    ConfiguracionScreen(navController, drawerState, syncViewModel)
+                                }
+                            }
                             composable(Route.Conflictos.route) { ConflictosScreen(navController, syncViewModel) }
                             composable(Route.InformacionFinanciera("{dispensacionId}").route) { backStackEntry ->
                                 val dispId = backStackEntry.arguments?.getString("dispensacionId")

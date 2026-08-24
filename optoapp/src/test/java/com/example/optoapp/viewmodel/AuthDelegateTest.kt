@@ -301,6 +301,66 @@ class AuthDelegateTest {
     }
 
     @Test
+    fun createAdditionalOptica_blocksWhenUserAlreadyHasAdminMembership() = runTest {
+        val sessionManager = mockk<ISessionManager>(relaxed = true)
+        val membershipRepo = mockk<MembershipRepository>(relaxed = true)
+        val fiscalStore = mockk<OpticaFiscalSettingsStore>(relaxed = true)
+
+        every { sessionManager.opticaRol } returns flowOf("admin")
+        coEvery { membershipRepo.fetchMembershipsForCurrentUser() } returns MembershipFetch.Ok(
+            listOf(OpticaMembership(opticaId = "o1", nombre = "Una", rol = "admin")),
+        )
+
+        val delegate = buildDelegate(sessionManager, membershipRepo, fiscalStore)
+        val result = delegate.createAdditionalOptica("Segunda")
+
+        assertTrue(result.isFailure)
+        assertTrue(
+            result.exceptionOrNull()?.message?.contains("1 óptica") == true,
+        )
+        coVerify(exactly = 0) { membershipRepo.createOpticaForCurrentUser(any()) }
+    }
+
+    @Test
+    fun createAdditionalOptica_blocksWhenUserAlreadyHasGerenteMembership() = runTest {
+        val sessionManager = mockk<ISessionManager>(relaxed = true)
+        val membershipRepo = mockk<MembershipRepository>(relaxed = true)
+        val fiscalStore = mockk<OpticaFiscalSettingsStore>(relaxed = true)
+
+        every { sessionManager.opticaRol } returns flowOf("gerente")
+        coEvery { membershipRepo.fetchMembershipsForCurrentUser() } returns MembershipFetch.Ok(
+            listOf(OpticaMembership(opticaId = "o1", nombre = "Una", rol = "gerente")),
+        )
+
+        val delegate = buildDelegate(sessionManager, membershipRepo, fiscalStore)
+        val result = delegate.createAdditionalOptica("Segunda")
+
+        assertTrue(result.isFailure)
+        coVerify(exactly = 0) { membershipRepo.createOpticaForCurrentUser(any()) }
+    }
+
+    @Test
+    fun createAdditionalOptica_allowsWhenOnlyNonAdminMemberships() = runTest {
+        val sessionManager = mockk<ISessionManager>(relaxed = true)
+        val membershipRepo = mockk<MembershipRepository>(relaxed = true)
+        val fiscalStore = mockk<OpticaFiscalSettingsStore>(relaxed = true)
+        val created = OpticaMembership(opticaId = "o2", nombre = "Propia", rol = "admin")
+
+        every { sessionManager.opticaRol } returns flowOf("admin")
+        coEvery { membershipRepo.fetchMembershipsForCurrentUser() } returns MembershipFetch.Ok(
+            listOf(OpticaMembership(opticaId = "o1", nombre = "Invitada", rol = "asesor")),
+        )
+        coEvery { membershipRepo.createOpticaForCurrentUser("Propia") } returns Result.success(created)
+
+        val delegate = buildDelegate(sessionManager, membershipRepo, fiscalStore)
+        val result = delegate.createAdditionalOptica("Propia")
+
+        assertTrue(result.isSuccess)
+        assertEquals(created, result.getOrNull())
+        coVerify(exactly = 1) { membershipRepo.createOpticaForCurrentUser("Propia") }
+    }
+
+    @Test
     fun resetLocalStoreForNewAuthSession_wipesRoomCache() = runTest {
         val sessionManager = mockk<ISessionManager>(relaxed = true)
         val membershipRepo = mockk<MembershipRepository>(relaxed = true)

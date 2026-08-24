@@ -72,22 +72,22 @@ open class SubscriptionManager @Inject constructor(
         dataStore.edit { prefs -> prefs[keyCachedPlan] = plan.lowercase().trim() }
     }
 
-    fun maxPacientes(tier: SubscriptionTier): Int = when (tier) {
-        SubscriptionTier.FREE -> FREE_MAX_PACIENTES
-        SubscriptionTier.PRO -> Int.MAX_VALUE
-    }
+    /** FREE product is unlimited pacientes; only óptica/sucursal count is capped. */
+    fun maxPacientes(tier: SubscriptionTier): Int = Int.MAX_VALUE
 
-    fun canAddPaciente(tier: SubscriptionTier, currentPacienteCount: Int): Boolean = when (tier) {
-        SubscriptionTier.FREE -> currentPacienteCount < FREE_MAX_PACIENTES
-        SubscriptionTier.PRO -> true
-    }
+    fun canAddPaciente(tier: SubscriptionTier, currentPacienteCount: Int): Boolean = true
 
     fun maxOpticas(planCode: PlanCode): Int? = when (planCode) {
-        PlanCode.FREE -> null
+        PlanCode.FREE -> FREE_MAX_OPTICAS
         PlanCode.PRO_INDIVIDUAL -> 1
         PlanCode.PRO_MULTISITE_15 -> 15
         PlanCode.ENTERPRISE -> null
         PlanCode.DEV_OWNER -> null
+    }
+
+    fun canAddOptica(planCode: PlanCode, currentOpticaCount: Int): Boolean {
+        val max = maxOpticas(planCode) ?: return true
+        return currentOpticaCount < max
     }
 
     suspend fun setDevProOverride(enabled: Boolean) {
@@ -117,8 +117,6 @@ open class SubscriptionManager @Inject constructor(
     }
 
     companion object {
-        const val FREE_MAX_PACIENTES = 50
-        const val FREE_MAX_DISPENSACIONES_MENSUALES = 20
-        const val FREE_MAX_USUARIOS = 2
+        const val FREE_MAX_OPTICAS = 1
     }
 }
