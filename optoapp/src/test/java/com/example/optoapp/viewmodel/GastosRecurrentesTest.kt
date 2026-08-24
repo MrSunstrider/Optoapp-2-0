@@ -87,4 +87,22 @@ class GastosRecurrentesTest {
         assertEquals(expected, CostosYGastosViewModel.CATEGORIAS.toSet())
         assertEquals(8, CostosYGastosViewModel.CATEGORIAS.size)
     }
+
+    @Test
+    fun `autoGenerarRecurrentes generates instance when template fecha is in current month`() {
+        val currentMonth = LocalDate.of(2026, 8, 1)
+        val template = GastoOperativoEntity(
+            id = "tpl-aug",
+            opticaId = "o1",
+            categoria = "alquiler",
+            monto = BigDecimal.valueOf(800.0),
+            fecha = LocalDate.of(2026, 8, 15),
+            isRecurring = true,
+        )
+        // autoGenerarSiFalta passes gastos as both templates and existentes
+        val nuevos = autoGenerar(listOf(template), listOf(template), currentMonth)
+        assertEquals("template in current month should still generate a new instance", 1, nuevos.size)
+        assertFalse("generated instance must not be recurring", nuevos[0].isRecurring)
+        assertEquals(LocalDate.of(2026, 8, 1), nuevos[0].fecha)
+    }
 }

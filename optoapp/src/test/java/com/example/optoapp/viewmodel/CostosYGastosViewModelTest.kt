@@ -580,6 +580,39 @@ class CostosYGastosViewModelTest {
     }
 
     @Test
+    fun loadBlock_stockMonofocal_doesNotIncludeBifocalRows() = runTest(testDispatcher) {
+        val monofocalRow = CostoProductoEntity(
+            id = "c-mono",
+            opticaId = opticaId,
+            material = "Resina",
+            tipoLente = "Monofocal",
+            stockOFabricacion = "stock",
+            costoUnitario = 100.0,
+            vigenteDesde = "2026-01-01",
+        )
+        val bifocalRow = CostoProductoEntity(
+            id = "c-bi",
+            opticaId = opticaId,
+            material = "Resina",
+            tipoLente = "Bifocal",
+            stockOFabricacion = "stock",
+            costoUnitario = 150.0,
+            vigenteDesde = "2026-01-01",
+        )
+        // DAO returns both "stock" rows – filter must narrow to Monofocal only
+        coEvery { costoProductoDao.getByBloque(opticaId, "stock") } returns flowOf(listOf(monofocalRow, bifocalRow))
+
+        viewModel = CostosYGastosViewModel(repository, costoProductoDao, costoBiseladoDao, sessionManager, scheduler, syncFinanzas)
+        viewModel.loadBlock("Stock Monofocal")
+        advanceUntilIdle()
+
+        val costos = viewModel.uiState.value.costosDelBloque
+        assertEquals("only Monofocal rows expected", 1, costos.size)
+        assertEquals("Monofocal", costos[0].tipoLente)
+        assertFalse("Bifocal must not be present", costos.any { it.tipoLente == "Bifocal" })
+    }
+
+    @Test
     fun gastosFlowFailure_setsGastosErrorAndClearsLoading() = runTest(testDispatcher) {
         every { repository.getGastosOperativos(opticaId) } returns kotlinx.coroutines.flow.flow {
             throw IOException("gastos db down")

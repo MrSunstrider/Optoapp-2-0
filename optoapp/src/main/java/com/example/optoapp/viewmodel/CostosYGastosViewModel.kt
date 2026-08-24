@@ -16,6 +16,7 @@ import com.example.optoapp.util.DateUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.math.BigDecimal
@@ -32,12 +33,29 @@ val COST_BLOCKS = listOf(
     "Fabricación Cristal",
 )
 
-/** Maps display block name to stock_o_fabricacion filter value. */
-fun blockToFilter(block: String): String = when (block) {
-    "Stock Monofocal", "Stock Bifocal", "Stock Multifocal" -> "stock"
-    "Fabricación Resina", "Fabricación Cristal" -> "fabricacion"
-    else -> block
+/** Fine-grained filter derived from the selected display block. */
+data class BlockFilter(
+    val stockOFab: String,
+    val tipoLente: String? = null,
+    val material: String? = null,
+)
+
+/** Maps display block name to a BlockFilter that narrows by stockOFab + optional tipoLente/material. */
+fun blockFilter(block: String): BlockFilter = when (block) {
+    "Stock Monofocal" -> BlockFilter("stock", tipoLente = "Monofocal")
+    "Stock Bifocal" -> BlockFilter("stock", tipoLente = "Bifocal")
+    "Stock Multifocal" -> BlockFilter("stock", tipoLente = "Multifocal")
+    "Fabricación Resina" -> BlockFilter("fabricacion", material = "Resina")
+    "Fabricación Cristal" -> BlockFilter("fabricacion", material = "Cristal")
+    else -> BlockFilter(block)
 }
+
+/** In-memory secondary filter applied after getByBloque. */
+fun List<com.example.optoapp.data.costoproducto.CostoProductoEntity>.filteredBy(
+    f: BlockFilter,
+): List<com.example.optoapp.data.costoproducto.CostoProductoEntity> =
+    filter { e -> f.tipoLente == null || e.tipoLente == f.tipoLente }
+        .filter { e -> f.material == null || e.material == f.material }
 
 data class CostosYGastosUiState(
     val selectedTab: Int = 0,
@@ -121,6 +139,7 @@ class CostosYGastosViewModel @Inject constructor(
 
     private var syncTriggered = false
     private val _gastosRetryTick = MutableStateFlow(0)
+    private var loadBlockJob: Job? = null
 
     companion object {
         private const val TAG = "CostosYGastosVM"
@@ -141,7 +160,8 @@ class CostosYGastosViewModel @Inject constructor(
                 .filter { it.isRecurring }
                 .filter { template ->
                     existentes.none { existente ->
-                        existente.categoria == template.categoria &&
+                        existente.id != template.id &&
+                            existente.categoria == template.categoria &&
                             !existente.fecha.isBefore(mesInicio) &&
                             !existente.fecha.isAfter(mesFin)
                     }
@@ -195,7 +215,12 @@ class CostosYGastosViewModel @Inject constructor(
                         val opticaId = sessionManager.opticaId.first()
                         Log.d(TAG, "Triggering finanzas download for gastos (opticaId=$opticaId)")
                         viewModelScope.launch {
-                            syncFinanzasUseCase(opticaId, downloadAfterUpload = true, skipUpload = true)
+                            try {
+                                syncFinanzasUseCase(opticaId, downloadAfterUpload = true, skipUpload = true)
+                            } catch (e: Exception) {
+                                Log.e(TAG, "One-shot finanzas sync failed", e)
+                                syncTriggered = false
+                            }
                         }
                     }
                 }
@@ -225,13 +250,19 @@ class CostosYGastosViewModel @Inject constructor(
     }
 
     fun loadBlock(block: String) {
+        loadBlockJob?.cancel()
         _uiState.update { it.copy(selectedBlock = block, isLoading = true) }
-        viewModelScope.launch {
+        loadBlockJob = viewModelScope.launch {
             try {
                 val opticaId = sessionManager.opticaId.first()
-                val bloqueFilter = blockToFilter(block)
-                val costos = costoProductoDao.getByBloque(opticaId, bloqueFilter).first()
-                _uiState.update { it.copy(isLoading = false, costosDelBloque = costos) }
+                val filter = blockFilter(block)
+                costoProductoDao.getByBloque(opticaId, filter.stockOFab)
+                    .map { it.filteredBy(filter) }
+                    .collect { costos ->
+                        _uiState.update { it.copy(isLoading = false, costosDelBloque = costos) }
+                    }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Log.e(TAG, "Error loading block $block", e)
                 _uiState.update { it.copy(isLoading = false, error = "Error al cargar bloque: ${e.message}") }
@@ -266,8 +297,8 @@ class CostosYGastosViewModel @Inject constructor(
                 val updated = costo.copy(costoUnitario = nuevoValor)
                 costoProductoDao.upsertAll(listOf(updated))
                                 val opticaId = sessionManager.opticaId.first()
-                val bloqueFilter = blockToFilter(s.selectedBlock ?: return@launch)
-                val refreshed = costoProductoDao.getByBloque(opticaId, bloqueFilter).first()
+                val filter = blockFilter(s.selectedBlock ?: return@launch)
+                val refreshed = costoProductoDao.getByBloque(opticaId, filter.stockOFab).first().filteredBy(filter)
                 _uiState.update { it.copy(editingCosto = null, nuevoCostoUnitario = "", costosDelBloque = refreshed, error = null) }
             } catch (e: Exception) {
                 _uiState.update { it.copy(error = "Error al guardar: ${e.message}") }
@@ -374,7 +405,7 @@ class CostosYGastosViewModel @Inject constructor(
                 creatingCosto = true,
                 costoMaterial = "",
                 costoTipoLente = "",
-                costoStockOFabricacion = block?.let { blockToFilter(it) } ?: "",
+                costoStockOFabricacion = block?.let { blockFilter(it).stockOFab } ?: "",
                 costoTratamiento = "",
                 costoSerie = "",
                 costoCostoUnitario = "",
@@ -440,8 +471,8 @@ class CostosYGastosViewModel @Inject constructor(
                     vigenteDesde = DateUtils.toIso(DateUtils.today()),
                 )
                 costoProductoDao.upsertAll(listOf(entity))
-                                val bloqueFilter = blockToFilter(s.selectedBlock ?: return@launch)
-                val refreshed = costoProductoDao.getByBloque(opticaId, bloqueFilter).first()
+                                val filter = blockFilter(s.selectedBlock ?: return@launch)
+                val refreshed = costoProductoDao.getByBloque(opticaId, filter.stockOFab).first().filteredBy(filter)
                 _uiState.update {
                     it.copy(
                         isCostoDialogVisible = false,
@@ -478,8 +509,8 @@ class CostosYGastosViewModel @Inject constructor(
                 val updated = costo.copy(vigenteHasta = DateUtils.toIso(DateUtils.today()))
                 costoProductoDao.upsertAll(listOf(updated))
                 val opticaId = sessionManager.opticaId.first()
-                val bloqueFilter = blockToFilter(_uiState.value.selectedBlock ?: return@launch)
-                val refreshed = costoProductoDao.getByBloque(opticaId, bloqueFilter).first()
+                val filter = blockFilter(_uiState.value.selectedBlock ?: return@launch)
+                val refreshed = costoProductoDao.getByBloque(opticaId, filter.stockOFab).first().filteredBy(filter)
                 _uiState.update {
                     it.copy(
                         deletingCosto = null,
