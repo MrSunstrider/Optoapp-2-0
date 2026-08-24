@@ -7,11 +7,12 @@
     <string name="config_pin_update_action">Actualizar PIN</string>
     <string name="config_test_notification_action">Probar notificación ahora</string>
     <string name="config_notification_test_sent">Prueba enviada. Si no aparece, revisa permisos/notificaciones del sistema.</string>
-    <string name="config_laboratory_section_title">Laboratorio (esta óptica)</string>
-    <string name="config_laboratory_section_description">Nombre y WhatsApp o teléfono del laboratorio. Se usa para enviar el ticket de orden con un toque.</string>
+    <string name="config_laboratory_section_title">Laboratorio (legado)</string>
+    <string name="config_laboratory_section_description">Contacto único de esta óptica. Preferible usar Proveedores en Inventario para monturas, lab de fabricación y técnico de biselado/montaje.</string>
     <string name="config_laboratory_name_label">Nombre del laboratorio (opcional)</string>
     <string name="config_laboratory_contact_label">WhatsApp / teléfono del laboratorio</string>
     <string name="config_laboratory_save_action">Guardar contacto de laboratorio</string>
+    <string name="config_laboratory_legacy_banner">Sección legada: la cadena de suministro irá en Proveedores (Inventario).</string>
     <string name="config_fiscal_section_title">Datos fiscales (esta óptica)</string>
     <string name="config_save_fiscal">Guardar datos fiscales</string>
     <string name="config_plan_reload">Recargar plan</string>
@@ -50,7 +51,10 @@
     <string name="config_branches_name_label">Nombre de la sucursal</string>
     <string name="config_branches_create_action">Crear sucursal</string>
     <string name="config_branches_creating_action">Creando...</string>
-    <string name="config_subscription_section_title">Suscripción y límites</string>
+    <string name="config_subscription_section_title">Suscripción</string>
+    <string name="config_subscription_free_label">Plan gratuito — 1 sucursal</string>
+    <string name="config_section_advanced">AVANZADO</string>
+    <string name="config_access_denied">Solo admin o gerente pueden abrir Configuración.</string>
     <string name="config_subscription_plan_label">Plan: %1$s</string>
     <string name="config_subscription_force_pro_debug">PRO forzado en esta compilación (local.properties: optoapp.dev.force_pro).</string>
     <string name="config_subscription_play_product">Producto Play: %1$s</string>

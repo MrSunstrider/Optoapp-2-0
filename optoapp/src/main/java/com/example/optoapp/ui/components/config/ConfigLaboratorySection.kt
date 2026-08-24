@@ -32,6 +32,11 @@ fun LaboratorySection(
                 color = MaterialTheme.colorScheme.primary,
             )
             Text(
+                stringResource(R.string.config_laboratory_legacy_banner),
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.tertiary,
+            )
+            Text(
                 stringResource(R.string.config_laboratory_section_description),
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,

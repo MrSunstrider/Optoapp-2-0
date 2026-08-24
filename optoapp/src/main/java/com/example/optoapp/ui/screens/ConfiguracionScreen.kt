@@ -89,6 +89,22 @@ fun ConfiguracionScreen(
             listOf("especialista", "asesor", "asesora", "ventas", "invitado", "gerente")
         }
     }
+    var advancedExpanded by remember { mutableStateOf(false) }
+
+    if (!canManageUsers) {
+        LaunchedEffect(Unit) { navController.popBackStack() }
+        Scaffold(containerColor = MaterialTheme.colorScheme.surface, topBar = {
+            OptoTopAppBar(
+                title = stringResource(R.string.config_title),
+                navigationIcon = { IconButton(onClick = { scope.launch { drawerState.open() } }) { Icon(Icons.Default.Menu, contentDescription = "Menu") } },
+            )
+        }) { padding ->
+            Box(modifier = Modifier.fillMaxSize().padding(padding).padding(OptoTokens.spacing.lg)) {
+                Text(stringResource(R.string.config_access_denied))
+            }
+        }
+        return
+    }
 
     val notificationPermissionGranted =
         Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
@@ -164,21 +180,6 @@ fun ConfiguracionScreen(
 
             ConfigProfileSection(email = userEmail, rol = opticaRol, opticaName = fiscalUi.nombreComercial)
 
-            SectionHeader(stringResource(R.string.config_section_system), icon = Icons.Default.Settings)
-            SystemSection(
-                userTimeZone = userTimeZone,
-                availableTimeZones = configVm.availableTimeZones,
-                remindersEnabled = remindersEnabled,
-                notificationPermissionGranted = notificationPermissionGranted,
-                systemNotificationsEnabled = systemNotificationsEnabled,
-                onUserTimeZoneSelected = { selected -> if (selected == "Detectar automáticamente") settingsVm.setUserTimeZone(null) else settingsVm.setUserTimeZone(selected) },
-                onRemindersEnabledChanged = settingsVm::setRemindersEnabled,
-                onSendTestNotification = {
-                    settingsVm.sendTestNotification()
-                    Toast.makeText(context, testNotificationSent, Toast.LENGTH_LONG).show()
-                },
-            )
-
             SectionHeader(stringResource(R.string.config_section_optica_data))
             LaboratorySection(
                 labNombre = configVm.labNombre,
@@ -188,31 +189,56 @@ fun ConfiguracionScreen(
                 onSave = { laboratorioVm.save(configVm.labNombre, configVm.labContacto) },
             )
 
-            if (canManageUsers) {
-                FiscalDataSection(
-                    fiscalUi = fiscalUi,
-                    onDraftChange = { update ->
-                        fiscalVm.updateDraft(nombreComercial = update.nombreComercial, docTipo = update.docTipo, docNumero = update.docNumero, razonSocial = update.razonSocial, direccionFiscal = update.direccionFiscal)
-                        fiscalVm.clearMessages()
-                    },
-                    onSave = fiscalVm::save,
-                )
-            }
-            if (canManageUsers) {
-                ClinicalIntegritySection(onResolveDuplicates = { viewModel.resolveDuplicateHistorias { msg -> configVm.dialogMessage = msg } })
-                UsuariosRolesSection(
-                    roleUi = roleUi,
-                    allowedRoles = allowedRoles,
-                    canAssignAdminRole = canAssignAdminRole,
-                    onEmailChange = roleVm::updateEmail,
-                    onRoleChange = roleVm::updateRole,
-                    onAssignRole = { roleVm.assignRole() },
-                    onRefresh = { roleVm.loadMembers() },
-                )
-            }
+            FiscalDataSection(
+                fiscalUi = fiscalUi,
+                onDraftChange = { update ->
+                    fiscalVm.updateDraft(nombreComercial = update.nombreComercial, docTipo = update.docTipo, docNumero = update.docNumero, razonSocial = update.razonSocial, direccionFiscal = update.direccionFiscal)
+                    fiscalVm.clearMessages()
+                },
+                onSave = fiscalVm::save,
+            )
+            ClinicalIntegritySection(onResolveDuplicates = { viewModel.resolveDuplicateHistorias { msg -> configVm.dialogMessage = msg } })
+            UsuariosRolesSection(
+                roleUi = roleUi,
+                allowedRoles = allowedRoles,
+                canAssignAdminRole = canAssignAdminRole,
+                onEmailChange = roleVm::updateEmail,
+                onRoleChange = roleVm::updateRole,
+                onAssignRole = { roleVm.assignRole() },
+                onRefresh = { roleVm.loadMembers() },
+            )
             SubscriptionCard(planCode = planCode, devProOverride = devProOverride, subscriptionVm = subscriptionVm, context = context)
-            SyncDiagnosticsCard(syncDiagVm = syncDiagVm)
             DataManagementCard(canManageBackups = canManageBackups, createBackupLauncher = createBackupLauncher, restoreBackupLauncher = restoreBackupLauncher)
+
+            OutlinedButton(
+                onClick = { advancedExpanded = !advancedExpanded },
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(
+                    if (advancedExpanded) {
+                        stringResource(R.string.config_section_advanced) + " ▲"
+                    } else {
+                        stringResource(R.string.config_section_advanced) + " ▼"
+                    },
+                )
+            }
+            if (advancedExpanded) {
+                SectionHeader(stringResource(R.string.config_section_system), icon = Icons.Default.Settings)
+                SystemSection(
+                    userTimeZone = userTimeZone,
+                    availableTimeZones = configVm.availableTimeZones,
+                    remindersEnabled = remindersEnabled,
+                    notificationPermissionGranted = notificationPermissionGranted,
+                    systemNotificationsEnabled = systemNotificationsEnabled,
+                    onUserTimeZoneSelected = { selected -> if (selected == "Detectar automáticamente") settingsVm.setUserTimeZone(null) else settingsVm.setUserTimeZone(selected) },
+                    onRemindersEnabledChanged = settingsVm::setRemindersEnabled,
+                    onSendTestNotification = {
+                        settingsVm.sendTestNotification()
+                        Toast.makeText(context, testNotificationSent, Toast.LENGTH_LONG).show()
+                    },
+                )
+                SyncDiagnosticsCard(syncDiagVm = syncDiagVm)
+            }
         }
     }
 

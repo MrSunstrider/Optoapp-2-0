@@ -30,7 +30,7 @@ fun SubscriptionCard(
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(stringResource(R.string.config_subscription_section_title), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
             val planLabel = when (planCode) {
-                PlanCode.FREE -> "Free (máx. ${com.example.optoapp.subscription.SubscriptionManager.FREE_MAX_PACIENTES} pacientes)"
+                PlanCode.FREE -> stringResource(R.string.config_subscription_free_label)
                 PlanCode.PRO_INDIVIDUAL -> "Pro Individual (1 óptica)"
                 PlanCode.PRO_MULTISITE_15 -> "Pro Multi-sede 15"
                 PlanCode.ENTERPRISE -> "Enterprise"
