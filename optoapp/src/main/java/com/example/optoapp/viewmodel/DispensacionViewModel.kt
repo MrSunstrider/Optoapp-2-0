@@ -46,6 +46,17 @@ fun mapTipoLc(tipoLente: String): String = when {
     else -> "graduado"
 }
 
+/**
+ * Returns the first OpticalCatalog.MODALIDADES_LC value contained in [raw]
+ * (case-insensitive), or null when there is no match.
+ */
+fun mapModalidadLcOrNull(raw: String): String? =
+    com.example.optoapp.domain.OpticalCatalog.MODALIDADES_LC
+        .firstOrNull { raw.contains(it, ignoreCase = true) }
+
+/** Returns the catalog match for [raw] or "mensual" as safe default. */
+fun mapModalidadLc(raw: String): String = mapModalidadLcOrNull(raw) ?: "mensual"
+
 data class DispensacionUiState(
     val pacienteNombre: String = "",
     val ot: String = "",
@@ -704,11 +715,17 @@ class DispensacionViewModel @Inject constructor(
                         val lcTipo = mapTipoLc(item.tipoLente)
                         val lcMaterial = evaluacion.lcMaterial?.ifBlank { item.materialLente } ?: item.materialLente
                         val lcLab = evaluacion.lcLaboratorio?.ifBlank { null }
+                        val lcModalidad = listOfNotNull(
+                            evaluacion.lcTipoLente,
+                            item.notasDiseno,
+                            item.distanciaLente,
+                            item.tipoLente,
+                        ).firstNotNullOfOrNull { mapModalidadLcOrNull(it) } ?: "mensual"
                         val lcLookup = costoLcDao.lookup(
                             opticaId = opticaId,
                             tipoLc = lcTipo,
                             materialLc = lcMaterial,
-                            modalidad = "mensual",
+                            modalidad = lcModalidad,
                             laboratorioId = lcLab,
                         )
                         costoLc = lcLookup?.costoUnitario
@@ -771,12 +788,15 @@ class DispensacionViewModel @Inject constructor(
                                 oiEsf != null -> determineTipoLente(oiEsf, oiCil)
                                 else -> "stock"
                             }
+                            // WHY: prefer odCil for serie, fall back to oiCil; null when no cyl data.
+                            val biseladoSerie = odCil?.let { determineSeriePorCilindro(it) }
+                                ?: oiCil?.let { determineSeriePorCilindro(it) }
                             val biseladoLookup = costoBiseladoDao.lookup(
                                 opticaId = opticaId,
                                 material = item.materialMontura.ifBlank { "Resina" },
                                 tipoAro = tipoAro,
                                 stockOFabricacion = biseladoTipo,
-                                serie = 1,
+                                serie = biseladoSerie,
                                 altoIndice = null,
                             )
                             costoBiselado = biseladoLookup?.costoPorPar

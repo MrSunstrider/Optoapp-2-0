@@ -1,10 +1,12 @@
 package com.example.optoapp.viewmodel
 
 import com.example.optoapp.data.EvaluacionClinica
+import com.example.optoapp.data.Montura
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Resource
 import com.example.optoapp.data.SessionManager
 import com.example.optoapp.data.costobiselado.CostoBiseladoDao
+import com.example.optoapp.data.costobiselado.CostoBiseladoEntity
 import com.example.optoapp.data.costolc.CostoLcDao
 import com.example.optoapp.data.costolc.CostoLcEntity
 import com.example.optoapp.data.costoproducto.CostoProductoDao
@@ -194,5 +196,162 @@ class DispensacionViewModelLcSnapshotTest {
         advanceUntilIdle()
 
         assertNull(vm.uiState.value.items[0].costoRealLc)
+    }
+
+    // ── S7: mapModalidadLcOrNull ─────────────────────────────────────────────
+
+    @Test
+    fun mapModalidadLcOrNull_returnsMatchForEachCatalogKeyword() {
+        assertEquals("diario", mapModalidadLcOrNull("diario"))
+        assertEquals("diario", mapModalidadLcOrNull("uso Diario"))
+        assertEquals("quincenal", mapModalidadLcOrNull("Quincenal reemplazo"))
+        assertEquals("mensual", mapModalidadLcOrNull("Mensual"))
+        assertEquals("anual", mapModalidadLcOrNull("lente anual"))
+    }
+
+    @Test
+    fun mapModalidadLcOrNull_returnsNullForUnknownStrings() {
+        assertNull(mapModalidadLcOrNull(""))
+        assertNull(mapModalidadLcOrNull("graduado"))
+        assertNull(mapModalidadLcOrNull("Cosmético"))
+        assertNull(mapModalidadLcOrNull("silicona"))
+    }
+
+    @Test
+    fun mapModalidadLc_defaultsToMensualWhenNoMatch() {
+        assertEquals("mensual", mapModalidadLc(""))
+        assertEquals("mensual", mapModalidadLc("Cosmético"))
+    }
+
+    @Test
+    fun calculateCosts_lcModalidadDerivedFromLcTipoLente() = runTest(testDispatcher) {
+        val eval = mockk<EvaluacionClinica>(relaxed = true)
+        every { eval.lcTipoLente } returns "lente diario"
+        every { eval.lcMaterial } returns "hidrogel"
+        every { eval.lcLaboratorio } returns null
+        every { eval.recetaOdEsf } returns null
+        every { eval.recetaOiEsf } returns null
+        coEvery { repository.getEvaluacionById("eval-s7", opticaId) } returns Resource.Success(eval)
+        coEvery {
+            costoLcDao.lookup(opticaId, any(), "hidrogel", "diario", null)
+        } returns CostoLcEntity(
+            id = "cl-s7",
+            opticaId = opticaId,
+            tipoLc = "graduado",
+            materialLc = "hidrogel",
+            modalidad = "diario",
+            costoUnitario = 15.0,
+            vigenteDesde = "2026-01-01",
+        )
+
+        val vm = createVm()
+        vm.setEvaluacionId("eval-s7")
+        vm.updateItem(
+            0,
+            vm.uiState.value.items[0].copy(
+                tipoLente = "Lentes de Contacto Graduado",
+                materialLente = "hidrogel",
+                costoRealLc = null,
+            ),
+        )
+        vm.calculateCosts(0)
+        advanceUntilIdle()
+
+        assertEquals(15.0, vm.uiState.value.items[0].costoRealLc!!, 0.001)
+        coVerify(exactly = 1) {
+            costoLcDao.lookup(opticaId, any(), "hidrogel", "diario", null)
+        }
+    }
+
+    // ── S8: biselado serie derived from cilindro ─────────────────────────────
+
+    @Test
+    fun calculateCosts_biseladoSerieDerivedFromOdCil() = runTest(testDispatcher) {
+        val eval = mockk<EvaluacionClinica>(relaxed = true)
+        every { eval.lcTipoLente } returns null
+        every { eval.recetaOdEsf } returns "-3.00"
+        every { eval.recetaOdCil } returns "-3.00"
+        every { eval.recetaOiEsf } returns null
+        every { eval.recetaOiCil } returns null
+        coEvery { repository.getEvaluacionById("eval-s8", opticaId) } returns Resource.Success(eval)
+        coEvery { costoProductoDao.lookup(any(), any(), any(), any(), any(), any()) } returns null
+        coEvery { repository.getMonturaById("mon-1", opticaId) } returns Resource.Success(
+            Montura(id = "mon-1"),
+        )
+        coEvery {
+            costoBiseladoDao.lookup(opticaId, any(), any(), any(), 2, null)
+        } returns CostoBiseladoEntity(
+            id = "bis-s8",
+            opticaId = opticaId,
+            material = "Resina",
+            tipoAro = "aro_completo",
+            stockOFabricacion = "stock",
+            serie = 2,
+            altoIndice = null,
+            costoPorPar = 22.0,
+            vigenteDesde = "2026-01-01",
+        )
+
+        val vm = createVm()
+        vm.setEvaluacionId("eval-s8")
+        vm.updateItem(
+            0,
+            vm.uiState.value.items[0].copy(
+                tipoLente = "Monofocal",
+                materialLente = "Resina",
+                origenMontura = "Tienda",
+                monturaId = "mon-1",
+                tipoAro = "Aro Completo",
+                materialMontura = "Resina",
+                costoRealBiselado = null,
+            ),
+        )
+        vm.calculateCosts(0)
+        advanceUntilIdle()
+
+        assertEquals(22.0, vm.uiState.value.items[0].costoRealBiselado!!, 0.001)
+        coVerify(exactly = 1) {
+            costoBiseladoDao.lookup(opticaId, any(), any(), any(), 2, null)
+        }
+    }
+
+    @Test
+    fun calculateCosts_biseladoSerieNullWhenNoCylData() = runTest(testDispatcher) {
+        val eval = mockk<EvaluacionClinica>(relaxed = true)
+        every { eval.lcTipoLente } returns null
+        every { eval.recetaOdEsf } returns "-2.00"
+        every { eval.recetaOdCil } returns null
+        every { eval.recetaOiEsf } returns null
+        every { eval.recetaOiCil } returns null
+        coEvery { repository.getEvaluacionById("eval-s8b", opticaId) } returns Resource.Success(eval)
+        coEvery { costoProductoDao.lookup(any(), any(), any(), any(), any(), any()) } returns null
+        coEvery { repository.getMonturaById("mon-2", opticaId) } returns Resource.Success(
+            Montura(id = "mon-2"),
+        )
+        coEvery {
+            costoBiseladoDao.lookup(opticaId, any(), any(), any(), null, null)
+        } returns null
+
+        val vm = createVm()
+        vm.setEvaluacionId("eval-s8b")
+        vm.updateItem(
+            0,
+            vm.uiState.value.items[0].copy(
+                tipoLente = "Monofocal",
+                materialLente = "Resina",
+                origenMontura = "Tienda",
+                monturaId = "mon-2",
+                tipoAro = "Aro Completo",
+                materialMontura = "Resina",
+                costoRealBiselado = null,
+            ),
+        )
+        vm.calculateCosts(0)
+        advanceUntilIdle()
+
+        assertNull(vm.uiState.value.items[0].costoRealBiselado)
+        coVerify(exactly = 1) {
+            costoBiseladoDao.lookup(opticaId, any(), any(), any(), null, null)
+        }
     }
 }

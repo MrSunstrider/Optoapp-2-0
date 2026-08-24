@@ -623,7 +623,7 @@ class CostosYGastosViewModelTest {
         // DAO returns both "stock" rows – filter must narrow to Monofocal only
         coEvery { costoProductoDao.getByBloque(opticaId, "stock") } returns flowOf(listOf(monofocalRow, bifocalRow))
 
-        viewModel = CostosYGastosViewModel(repository, costoProductoDao, costoBiseladoDao, sessionManager, scheduler, syncFinanzas)
+        viewModel = CostosYGastosViewModel(repository, costoProductoDao, costoBiseladoDao, costoLcDao, sessionManager, scheduler, syncFinanzas)
         viewModel.loadBlock("Stock Monofocal")
         advanceUntilIdle()
 
