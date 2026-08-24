@@ -359,4 +359,31 @@ class ReportesViewModelTest {
         assertFalse(access.isRestricted)
         assertTrue(access.showTotals)
     }
+
+    @Test
+    fun `porCobrar sums saldo pendiente coerced at least zero from allMovimientosDelPeriodo`() = runTest(testDispatcher) {
+        val dispensaciones = listOf(
+            DispensacionOptica(id = "d1", pacienteId = "p1", fecha = today, montoTotal = 100.0, opticaId = opticaId),
+            DispensacionOptica(id = "d2", pacienteId = "p2", fecha = today, montoTotal = 200.0, opticaId = opticaId),
+        )
+        // Pago covers 60 of d1; d2 has no payment
+        val pagos = listOf(
+            Pago(id = "pago1", dispensacionId = "d1", tipo = "Abono", monto = 60.0, opticaId = opticaId, fecha = today),
+        )
+        every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
+        every { repository.getAllPagosFlowForOptica(opticaId) } returns flowOf(pagos)
+
+        viewModel = ReportesViewModel(repository, sessionManager)
+        viewModel.setPeriodo("Diario")
+        viewModel.setFechaDiario(today)
+        advanceUntilIdle()
+
+        // d1: 100 - 60 = 40, d2: 200 - 0 = 200 → total 240
+        assertEquals(
+            "porCobrar must equal sum of (montoTotal - montoPagado).coerceAtLeast(0)",
+            240.0,
+            viewModel.porCobrar.first(),
+            0.001,
+        )
+    }
 }

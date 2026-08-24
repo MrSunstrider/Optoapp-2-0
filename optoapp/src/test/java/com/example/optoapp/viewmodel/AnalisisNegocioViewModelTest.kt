@@ -31,6 +31,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -356,6 +357,20 @@ class AnalisisNegocioViewModelTest {
 
         val state = viewModel.uiState.first()
         assertEquals("isSeasonalityWarning should be false when online", false, state.isSeasonalityWarning)
+    }
+
+    @Test
+    fun `sibling failure in loadData does not cancel deudores deferred`() = runTest(testDispatcher) {
+        coEvery { obtenerAnalisisMensual(opticaId, any()) } throws RuntimeException("analisis crashed")
+        coEvery { obtenerDeudores(opticaId) } returns Resource.Success(createDeudores())
+        coEvery { generarRecomendaciones(any(), any<List<Deudor>>(), any()) } returns Resource.Error("Datos insuficientes")
+
+        viewModel = createViewModel()
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.first()
+        assertEquals("deudores must still load despite analisis crash", 2, state.deudores.size)
+        assertFalse("isLoading should be false after load completes", state.isLoading)
     }
 
     @Test

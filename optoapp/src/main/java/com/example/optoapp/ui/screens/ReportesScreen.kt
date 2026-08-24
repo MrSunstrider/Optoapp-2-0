@@ -78,7 +78,7 @@ fun ReportesScreen(
     var isPdfLoading by remember { mutableStateOf(false) }
 
     val ventasPeriodo = totalCobrado - cobrosPeriodo
-    val porCobrar = totalVendido - ventasPeriodo
+    val porCobrar by viewModel.porCobrar.collectAsState()
     val ticketPromedio = if (totalTransacciones > 0) totalVendido / totalTransacciones else 0.0
     val headlineKpiIds = ReportesUiPolicy.headlineKpiIds
 

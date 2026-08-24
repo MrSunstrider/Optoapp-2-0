@@ -127,7 +127,7 @@ class ReportesViewModel @Inject constructor(
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
 
-    private fun dentroDelPeriodo(date: LocalDate, p: String, a: String, fechaDiario: LocalDate, now: LocalDate): Boolean = when (p) {
+    private fun dentroDelPeriodo(date: LocalDate, p: String, a: String, fechaDiario: LocalDate): Boolean = when (p) {
         "Diario" -> date.isEqual(fechaDiario)
         "Semanal" -> {
             val dayOfWeek = fechaDiario.dayOfWeek.value
@@ -141,7 +141,7 @@ class ReportesViewModel @Inject constructor(
         else -> true
     }
 
-    private fun periodDateRange(p: String, a: String, fd: LocalDate, now: LocalDate): Pair<LocalDate, LocalDate> = when (p) {
+    private fun periodDateRange(p: String, a: String, fd: LocalDate): Pair<LocalDate, LocalDate> = when (p) {
         "Diario" -> fd to fd
         "Semanal" -> {
             val startOfWeek = fd.minusDays((fd.dayOfWeek.value - 1).toLong())
@@ -162,11 +162,10 @@ class ReportesViewModel @Inject constructor(
                 _anio,
                 _fechaDiario,
             ) { list, p, a, fd ->
-                val now = LocalDate.now()
                 list.filter { disp ->
                     disp.estadoEntrega != "Anulado" &&
                         disp.estadoEntrega != "Reclamada" &&
-                        dentroDelPeriodo(disp.fecha, p, a, fd, now)
+                        dentroDelPeriodo(disp.fecha, p, a, fd)
                 }
             }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -180,8 +179,7 @@ class ReportesViewModel @Inject constructor(
                 _anio,
                 _fechaDiario,
             ) { list, p, a, fd ->
-                val now = LocalDate.now()
-                list.filter { servicio -> servicio.estado != "Anulado" && dentroDelPeriodo(servicio.fecha, p, a, fd, now) }
+                list.filter { servicio -> servicio.estado != "Anulado" && dentroDelPeriodo(servicio.fecha, p, a, fd) }
             }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
@@ -189,8 +187,7 @@ class ReportesViewModel @Inject constructor(
     val allMovimientosDelPeriodo: StateFlow<List<MovimientoFinanciero>> = sessionManager.opticaId
         .flatMapLatest { opticaId ->
             combine(_periodo, _anio, _fechaDiario) { p, a, fd ->
-                val now = LocalDate.now()
-                val (start, end) = periodDateRange(p, a, fd, now)
+                val (start, end) = periodDateRange(p, a, fd)
                 Triple(opticaId, start, end)
             }.flatMapLatest { (opticaId, start, end) ->
                 combine(
@@ -254,8 +251,7 @@ class ReportesViewModel @Inject constructor(
     val totalPagado: StateFlow<Double> = sessionManager.opticaId
         .flatMapLatest { opticaId ->
             combine(_periodo, _anio, _fechaDiario) { p, a, fd ->
-                val now = LocalDate.now()
-                val (start, end) = periodDateRange(p, a, fd, now)
+                val (start, end) = periodDateRange(p, a, fd)
                 Triple(opticaId, start, end)
             }.flatMapLatest { (opticaId, start, end) ->
                 repository.getPagosByDateRangeForOptica(start, end, opticaId)
@@ -306,19 +302,21 @@ class ReportesViewModel @Inject constructor(
                 _anio,
                 _fechaDiario,
             ) { p, a, fd ->
-                val now = LocalDate.now()
-                val (start, end) = periodDateRange(p, a, fd, now)
+                val (start, end) = periodDateRange(p, a, fd)
                 Triple(p, a, fd) to (start to end)
             }.flatMapLatest { (params, range) ->
                 val (p, a, fd) = params
-                val now = LocalDate.now()
                 repository.getPagosByDateRangeForOptica(range.first, range.second, opticaId)
                     .map { pagos ->
-                        pagos.filter { pago -> dentroDelPeriodo(pago.fecha, p, a, fd, now) }
+                        pagos.filter { pago -> dentroDelPeriodo(pago.fecha, p, a, fd) }
                             .sumOf { PagoEffect.signedAmount(it.tipo, it.monto) }
                     }
             }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
+
+    val porCobrar: StateFlow<Double> = allMovimientosDelPeriodo
+        .map { movs -> movs.sumOf { (it.montoTotal - it.montoPagado).coerceAtLeast(0.0) } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val cobrosPeriodo: StateFlow<Double> = sessionManager.opticaId
@@ -326,8 +324,7 @@ class ReportesViewModel @Inject constructor(
             combine(_periodo, _anio, _fechaDiario) { p, a, fd ->
                 Triple(p, a, fd)
             }.flatMapLatest { (p, a, fd) ->
-                val now = LocalDate.now()
-                val (start, end) = periodDateRange(p, a, fd, now)
+                val (start, end) = periodDateRange(p, a, fd)
                 combine(
                     repository.getPagosByDateRangeForOptica(start, end, opticaId),
                     repository.getAllDispensacionesForOptica(opticaId),
@@ -336,12 +333,12 @@ class ReportesViewModel @Inject constructor(
                     val dispMap = todasDisp.associateBy { it.id }
                     val servMap = todasServ.associateBy { it.id }
                     pagos
-                        .filter { pago -> dentroDelPeriodo(pago.fecha, p, a, fd, now) }
+                        .filter { pago -> dentroDelPeriodo(pago.fecha, p, a, fd) }
                         .sumOf { pago ->
                             val dispFecha = pago.dispensacionId?.let { dispMap[it]?.fecha }
                             val servFecha = pago.servicioExtraId?.let { servMap[it]?.fecha }
-                            val dispInPeriod = dispFecha != null && dentroDelPeriodo(dispFecha, p, a, fd, now)
-                            val servInPeriod = servFecha != null && dentroDelPeriodo(servFecha, p, a, fd, now)
+                            val dispInPeriod = dispFecha != null && dentroDelPeriodo(dispFecha, p, a, fd)
+                            val servInPeriod = servFecha != null && dentroDelPeriodo(servFecha, p, a, fd)
                             if (dispInPeriod || servInPeriod) 0.0 else PagoEffect.signedAmount(pago.tipo, pago.monto)
                         }
                 }

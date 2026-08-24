@@ -23,6 +23,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.supervisorScope
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.DateTimeParseException
@@ -122,11 +123,26 @@ class AnalisisNegocioViewModel @Inject constructor(
                 val opticaId = sessionManager.opticaId.first()
 
                 try {
+                    supervisorScope {
                     val analisisDeferred = async {
-                        obtenerAnalisisMensual(opticaId, mes)
+                        try {
+                            obtenerAnalisisMensual(opticaId, mes)
+                        } catch (e: CancellationException) {
+                            throw e
+                        } catch (e: Exception) {
+                            Log.e(TAG, "obtenerAnalisisMensual threw", e)
+                            Resource.Error(e.message ?: "Error en análisis")
+                        }
                     }
                     val deudoresDeferred = async {
-                        obtenerDeudores(opticaId)
+                        try {
+                            obtenerDeudores(opticaId)
+                        } catch (e: CancellationException) {
+                            throw e
+                        } catch (e: Exception) {
+                            Log.e(TAG, "obtenerDeudores threw", e)
+                            Resource.Error(e.message ?: "Error en deudores")
+                        }
                     }
 
                     val analisisResult = analisisDeferred.await()
@@ -158,6 +174,7 @@ class AnalisisNegocioViewModel @Inject constructor(
                         isSeasonalityWarning = analisis?.esOffline == true || (analisis != null && analisis.ventasMesAnterior == 0.0),
                         debtorsStale = debtorsStale,
                     )
+                    } // end supervisorScope
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
