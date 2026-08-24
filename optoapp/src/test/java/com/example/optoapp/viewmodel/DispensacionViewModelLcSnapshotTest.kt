@@ -87,6 +87,14 @@ class DispensacionViewModelLcSnapshotTest {
     }
 
     @Test
+    fun mapTipoLc_unknownLabel_defaultsToGraduado() {
+        assertEquals("graduado", mapTipoLc("Bifocal"))
+        assertEquals("graduado", mapTipoLc("Natural"))
+        assertEquals("graduado", mapTipoLc(""))
+        assertEquals("graduado", mapTipoLc("algún tipo desconocido"))
+    }
+
+    @Test
     fun calculateCosts_lcNullCost_looksUpCostoLcDao_notLookupLc() = runTest(testDispatcher) {
         val eval = mockk<EvaluacionClinica>(relaxed = true)
         every { eval.lcMaterial } returns "hidrogel"

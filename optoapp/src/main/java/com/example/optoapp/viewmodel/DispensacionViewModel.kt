@@ -43,7 +43,7 @@ fun mapTipoLc(tipoLente: String): String = when {
     tipoLente.contains("Medida", ignoreCase = true) ||
         tipoLente.contains("Graduado", ignoreCase = true) -> "graduado"
     tipoLente.contains("Terap", ignoreCase = true) -> "terapeutico"
-    else -> tipoLente
+    else -> "graduado"
 }
 
 data class DispensacionUiState(
