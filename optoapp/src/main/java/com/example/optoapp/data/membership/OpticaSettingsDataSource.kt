@@ -275,6 +275,36 @@ open class OpticaSettingsDataSource @Inject constructor(
         }
     }
 
+    /**
+     * PostgREST upsert into optica_settings (creates row when missing).
+     * Fiscal/lab still live on opticas; this is the JSON bag for business_hours etc.
+     */
+    open suspend fun upsertOpticaSettingsRemote(
+        opticaId: String,
+        configJson: String,
+    ): Result<Unit> {
+        if (supabase.auth.currentUserOrNull() == null) {
+            return Result.failure(IllegalStateException("Sin sesión"))
+        }
+        return try {
+            supabase.postgrest[TABLE_OPTICA_SETTINGS].upsert(
+                OpticaSettingsRow(
+                    optica_id = opticaId,
+                    config_json = configJson.ifBlank { "{}" },
+                ),
+            )
+            Result.success(Unit)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: IOException) {
+            Log.e(TAG, "upsertOpticaSettingsRemote: opticaId=$opticaId", e)
+            Result.failure(e)
+        } catch (e: Exception) {
+            Log.e(TAG, "upsertOpticaSettingsRemote: opticaId=$opticaId", e)
+            Result.failure(e)
+        }
+    }
+
     companion object {
         private const val TAG = "OpticaSettingsDataSource"
         private const val TABLE_OPTICAS = "opticas"

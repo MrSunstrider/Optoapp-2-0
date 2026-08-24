@@ -1293,3 +1293,11 @@ val MIGRATION_45_46 = object : Migration(45, 46) {
         )
     }
 }
+
+val MIGRATION_46_47 = object : Migration(46, 47) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "ALTER TABLE proveedores ADD COLUMN tipo TEXT NOT NULL DEFAULT 'monturas'",
+        )
+    }
+}

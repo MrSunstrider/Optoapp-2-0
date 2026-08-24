@@ -25,6 +25,7 @@ import androidx.navigation.NavController
 import com.example.optoapp.R
 import com.example.optoapp.data.AppRoles
 import com.example.optoapp.ui.components.OptoTopAppBar
+import com.example.optoapp.ui.components.config.BusinessHoursSection
 import com.example.optoapp.ui.components.config.ClinicalIntegritySection
 import com.example.optoapp.ui.components.config.ConfigProfileSection
 import com.example.optoapp.ui.components.config.DataManagementCard
@@ -38,6 +39,7 @@ import com.example.optoapp.ui.components.config.SystemSection
 import com.example.optoapp.ui.components.config.UsuariosRolesSection
 import com.example.optoapp.ui.theme.OptoTokens
 import com.example.optoapp.viewmodel.AuthViewModel
+import com.example.optoapp.viewmodel.BusinessHoursConfigViewModel
 import com.example.optoapp.viewmodel.ConfiguracionViewModel
 import com.example.optoapp.viewmodel.FiscalConfigViewModel
 import com.example.optoapp.viewmodel.LaboratorioConfigViewModel
@@ -58,6 +60,7 @@ fun ConfiguracionScreen(
     viewModel: AuthViewModel = hiltViewModel(),
     fiscalVm: FiscalConfigViewModel = hiltViewModel(),
     laboratorioVm: LaboratorioConfigViewModel = hiltViewModel(),
+    businessHoursVm: BusinessHoursConfigViewModel = hiltViewModel(),
     settingsVm: SettingsViewModel = hiltViewModel(),
     subscriptionVm: SubscriptionViewModel = hiltViewModel(),
     syncDiagVm: SyncDiagnosticsViewModel = hiltViewModel(),
@@ -68,6 +71,7 @@ fun ConfiguracionScreen(
     val scope = rememberCoroutineScope()
     val fiscalUi by fiscalVm.uiState.collectAsState()
     val labUi by laboratorioVm.uiState.collectAsState()
+    val businessHoursUi by businessHoursVm.uiState.collectAsState()
     val planCode by subscriptionVm.planCode.collectAsState()
     val devProOverride by subscriptionVm.devProOverride.collectAsState()
     val globalSyncState by syncVm.syncState.collectAsState()
@@ -134,6 +138,7 @@ fun ConfiguracionScreen(
     LaunchedEffect(Unit) {
         fiscalVm.syncFromServer()
         laboratorioVm.syncFromServer()
+        businessHoursVm.syncFromServer()
         subscriptionVm.refreshPlanFromServer()
     }
     LaunchedEffect(fiscalUi.message, fiscalUi.error) {
@@ -141,6 +146,13 @@ fun ConfiguracionScreen(
         if (msg != null) {
             configVm.dialogMessage = msg
             fiscalVm.clearMessages()
+        }
+    }
+    LaunchedEffect(businessHoursUi.message, businessHoursUi.error) {
+        val msg = businessHoursUi.message ?: businessHoursUi.error
+        if (msg != null) {
+            configVm.dialogMessage = msg
+            businessHoursVm.clearMessages()
         }
     }
     LaunchedEffect(canManageUsers) { if (canManageUsers) roleVm.loadMembers() }
@@ -198,6 +210,11 @@ fun ConfiguracionScreen(
             ConfigProfileSection(email = userEmail, rol = opticaRol, opticaName = fiscalUi.nombreComercial)
 
             SectionHeader(stringResource(R.string.config_section_optica_data))
+            BusinessHoursSection(
+                ui = businessHoursUi,
+                onHorarioChange = businessHoursVm::updateHorario,
+                onSave = businessHoursVm::save,
+            )
             LaboratorySection(
                 labNombre = configVm.labNombre,
                 labContacto = configVm.labContacto,

@@ -13,6 +13,10 @@
     <string name="config_laboratory_contact_label">WhatsApp / teléfono del laboratorio</string>
     <string name="config_laboratory_save_action">Guardar contacto de laboratorio</string>
     <string name="config_laboratory_legacy_banner">Sección legada: la cadena de suministro irá en Proveedores (Inventario).</string>
+    <string name="config_business_hours_section_title">Horario de atención</string>
+    <string name="config_business_hours_section_desc">Texto libre mostrado en el encabezado (ej. Lunes a Viernes de 9am a 7pm).</string>
+    <string name="config_business_hours_label">Horario</string>
+    <string name="config_business_hours_save_action">Guardar horario</string>
     <string name="config_fiscal_section_title">Datos fiscales (esta óptica)</string>
     <string name="config_save_fiscal">Guardar datos fiscales</string>
     <string name="config_plan_reload">Recargar plan</string>

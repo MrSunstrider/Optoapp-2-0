@@ -273,6 +273,7 @@ internal data class ProveedorRemoto(
     val email: String = "",
     val direccion: String = "",
     val contacto: String = "",
+    val tipo: String = "monturas",
     val activo: Boolean = true,
     @SerialName("optica_id") val opticaId: String = "",
     @SerialName("updated_at") val updatedAt: String? = null,
@@ -281,6 +282,7 @@ internal data class ProveedorRemoto(
     fun toEntity() = Proveedor(
         id = id, nombre = nombre, ruc = ruc, telefono = telefono,
         email = email, direccion = direccion, contacto = contacto,
+        tipo = tipo.ifBlank { "monturas" },
         activo = activo, opticaId = opticaId, updatedAt = updatedAt, updatedBy = updatedBy,
     )
 }
@@ -317,6 +319,7 @@ internal data class CategoriaRemotaLookup(
 private fun Proveedor.toRemoto(): ProveedorRemoto = ProveedorRemoto(
     id = id, nombre = nombre, ruc = ruc, telefono = telefono,
     email = email, direccion = direccion, contacto = contacto,
+    tipo = tipo.ifBlank { "monturas" },
     activo = activo, opticaId = opticaId, updatedAt = updatedAt, updatedBy = updatedBy,
 )
 

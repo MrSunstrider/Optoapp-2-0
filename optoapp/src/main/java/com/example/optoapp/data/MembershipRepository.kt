@@ -53,6 +53,18 @@ open class MembershipRepository @Inject constructor(
 
     suspend fun upsertOpticaSettings(settings: OpticaSettingsEntity) = opticaSettingsDao.upsert(settings)
 
+    /** Fetch remote optica_settings and upsert into Room (no-op when remote missing/unauth). */
+    open suspend fun syncOpticaSettingsFromRemote(opticaId: String) {
+        if (opticaId.isBlank()) return
+        val remote = opticaSettingsDataSource.fetchOpticaSettings(opticaId) ?: return
+        opticaSettingsDao.upsert(remote)
+    }
+
+    open suspend fun upsertOpticaSettingsRemote(
+        opticaId: String,
+        configJson: String,
+    ): Result<Unit> = opticaSettingsDataSource.upsertOpticaSettingsRemote(opticaId, configJson)
+
     suspend fun updateOpticaFiscalSettings(
         opticaId: String,
         nombreComercial: String,

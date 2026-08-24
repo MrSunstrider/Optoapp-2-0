@@ -30,6 +30,7 @@ data class ProveedorFormState(
     val email: String = "",
     val direccion: String = "",
     val contacto: String = "",
+    val tipo: String = "monturas",
     val activo: Boolean = true,
 )
 
@@ -50,6 +51,7 @@ class ProveedoresViewModel @Inject constructor(
 ) : ViewModel() {
     companion object {
         private const val TAG = "ProveedoresViewModel"
+        val TIPOS = listOf("monturas", "laboratorio", "tecnico")
     }
 
     private val _uiState = MutableStateFlow(ProveedoresUiState())
@@ -87,6 +89,7 @@ class ProveedoresViewModel @Inject constructor(
                     email = proveedor.email,
                     direccion = proveedor.direccion,
                     contacto = proveedor.contacto,
+                    tipo = proveedor.tipo.ifBlank { "monturas" },
                     activo = proveedor.activo,
                 ),
             )
@@ -110,6 +113,11 @@ class ProveedoresViewModel @Inject constructor(
                 return@launch
             }
             try {
+                val tipo = form.tipo.trim().lowercase().ifBlank { "monturas" }
+                if (tipo !in TIPOS) {
+                    _uiState.update { it.copy(error = "Tipo inválido. Usa monturas, laboratorio o tecnico.") }
+                    return@launch
+                }
                 val opticaId = sessionManager.opticaId.first()
                 val proveedor = Proveedor(
                     id = form.id ?: UUID.randomUUID().toString(),
@@ -119,6 +127,7 @@ class ProveedoresViewModel @Inject constructor(
                     email = form.email.trim(),
                     direccion = form.direccion.trim(),
                     contacto = form.contacto.trim(),
+                    tipo = tipo,
                     activo = form.activo,
                     opticaId = opticaId,
                 )
