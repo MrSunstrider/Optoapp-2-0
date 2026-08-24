@@ -16,6 +16,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.optoapp.data.AppRoles
 import com.example.optoapp.data.Proveedor
+import com.example.optoapp.ui.components.OptoDropdownMenuField
 import com.example.optoapp.ui.components.OptoTextField
 import com.example.optoapp.ui.components.OptoTopAppBar
 import com.example.optoapp.viewmodel.AuthViewModel
@@ -78,6 +79,12 @@ fun ProveedoresScreen(
                         value = uiState.form.contacto,
                         onValueChange = { v -> viewModel.updateForm { it.copy(contacto = v) } },
                         label = "Persona de contacto",
+                    )
+                    OptoDropdownMenuField(
+                        label = "Tipo",
+                        selected = uiState.form.tipo,
+                        options = ProveedoresViewModel.TIPOS,
+                        onSelected = { v -> viewModel.updateForm { it.copy(tipo = v) } },
                     )
                     if (uiState.error != null) {
                         Text(uiState.error ?: "", color = MaterialTheme.colorScheme.error)
@@ -191,6 +198,7 @@ private fun ProveedorCard(
                 }
             }
             Text("RUC: ${proveedor.ruc}", style = MaterialTheme.typography.bodyMedium)
+            Text("Tipo: ${proveedor.tipo}", style = MaterialTheme.typography.bodySmall)
             if (proveedor.telefono.isNotBlank()) {
                 Text("Tel: ${proveedor.telefono}", style = MaterialTheme.typography.bodySmall)
             }

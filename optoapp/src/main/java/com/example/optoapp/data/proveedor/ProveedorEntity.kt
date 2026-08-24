@@ -20,6 +20,8 @@ data class Proveedor(
     val email: String = "",
     val direccion: String = "",
     val contacto: String = "",
+    /** monturas | laboratorio | tecnico */
+    val tipo: String = "monturas",
     val activo: Boolean = true,
     val opticaId: String,
     val updatedAt: String? = null,
