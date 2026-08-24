@@ -91,8 +91,25 @@ fun ConfiguracionScreen(
     }
     var advancedExpanded by remember { mutableStateOf(false) }
 
+    if (opticaRol.isBlank()) {
+        Scaffold(containerColor = MaterialTheme.colorScheme.surface, topBar = {
+            OptoTopAppBar(
+                title = stringResource(R.string.config_title),
+                navigationIcon = { IconButton(onClick = { scope.launch { drawerState.open() } }) { Icon(Icons.Default.Menu, contentDescription = "Menu") } },
+            )
+        }) { padding ->
+            Box(
+                modifier = Modifier.fillMaxSize().padding(padding),
+                contentAlignment = androidx.compose.ui.Alignment.Center,
+            ) {
+                CircularProgressIndicator()
+            }
+        }
+        return
+    }
+
     if (!canManageUsers) {
-        LaunchedEffect(Unit) { navController.popBackStack() }
+        LaunchedEffect(opticaRol) { navController.popBackStack() }
         Scaffold(containerColor = MaterialTheme.colorScheme.surface, topBar = {
             OptoTopAppBar(
                 title = stringResource(R.string.config_title),

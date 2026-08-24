@@ -322,6 +322,24 @@ class AuthDelegateTest {
     }
 
     @Test
+    fun createAdditionalOptica_blocksWhenUserAlreadyHasGerenteMembership() = runTest {
+        val sessionManager = mockk<ISessionManager>(relaxed = true)
+        val membershipRepo = mockk<MembershipRepository>(relaxed = true)
+        val fiscalStore = mockk<OpticaFiscalSettingsStore>(relaxed = true)
+
+        every { sessionManager.opticaRol } returns flowOf("gerente")
+        coEvery { membershipRepo.fetchMembershipsForCurrentUser() } returns MembershipFetch.Ok(
+            listOf(OpticaMembership(opticaId = "o1", nombre = "Una", rol = "gerente")),
+        )
+
+        val delegate = buildDelegate(sessionManager, membershipRepo, fiscalStore)
+        val result = delegate.createAdditionalOptica("Segunda")
+
+        assertTrue(result.isFailure)
+        coVerify(exactly = 0) { membershipRepo.createOpticaForCurrentUser(any()) }
+    }
+
+    @Test
     fun createAdditionalOptica_allowsWhenOnlyNonAdminMemberships() = runTest {
         val sessionManager = mockk<ISessionManager>(relaxed = true)
         val membershipRepo = mockk<MembershipRepository>(relaxed = true)
