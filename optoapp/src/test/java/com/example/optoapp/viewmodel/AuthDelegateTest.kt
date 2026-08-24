@@ -301,7 +301,7 @@ class AuthDelegateTest {
     }
 
     @Test
-    fun createAdditionalOptica_blocksWhenUserAlreadyHasMembership() = runTest {
+    fun createAdditionalOptica_blocksWhenUserAlreadyHasAdminMembership() = runTest {
         val sessionManager = mockk<ISessionManager>(relaxed = true)
         val membershipRepo = mockk<MembershipRepository>(relaxed = true)
         val fiscalStore = mockk<OpticaFiscalSettingsStore>(relaxed = true)
@@ -319,6 +319,27 @@ class AuthDelegateTest {
             result.exceptionOrNull()?.message?.contains("1 óptica") == true,
         )
         coVerify(exactly = 0) { membershipRepo.createOpticaForCurrentUser(any()) }
+    }
+
+    @Test
+    fun createAdditionalOptica_allowsWhenOnlyNonAdminMemberships() = runTest {
+        val sessionManager = mockk<ISessionManager>(relaxed = true)
+        val membershipRepo = mockk<MembershipRepository>(relaxed = true)
+        val fiscalStore = mockk<OpticaFiscalSettingsStore>(relaxed = true)
+        val created = OpticaMembership(opticaId = "o2", nombre = "Propia", rol = "admin")
+
+        every { sessionManager.opticaRol } returns flowOf("admin")
+        coEvery { membershipRepo.fetchMembershipsForCurrentUser() } returns MembershipFetch.Ok(
+            listOf(OpticaMembership(opticaId = "o1", nombre = "Invitada", rol = "asesor")),
+        )
+        coEvery { membershipRepo.createOpticaForCurrentUser("Propia") } returns Result.success(created)
+
+        val delegate = buildDelegate(sessionManager, membershipRepo, fiscalStore)
+        val result = delegate.createAdditionalOptica("Propia")
+
+        assertTrue(result.isSuccess)
+        assertEquals(created, result.getOrNull())
+        coVerify(exactly = 1) { membershipRepo.createOpticaForCurrentUser("Propia") }
     }
 
     @Test

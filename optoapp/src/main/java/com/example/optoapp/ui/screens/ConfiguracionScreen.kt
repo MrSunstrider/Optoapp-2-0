@@ -74,7 +74,7 @@ fun ConfiguracionScreen(
     val userTimeZone by settingsVm.userTimeZone.collectAsState()
     val roleUi by roleVm.uiState.collectAsState()
     val userEmail by viewModel.userEmail.collectAsState(initial = "")
-    val opticaRol by viewModel.opticaRol.collectAsState(initial = "admin")
+    val opticaRol by viewModel.opticaRol.collectAsState(initial = "")
     val pinHasBeenSet by settingsVm.pinHasBeenSet.collectAsState(initial = true)
     val isPinRequired by settingsVm.isPinRequired.collectAsState(initial = true)
     val remindersEnabled by settingsVm.remindersEnabled.collectAsState()

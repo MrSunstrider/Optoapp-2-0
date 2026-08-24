@@ -594,7 +594,8 @@ open class AuthDelegate @Inject constructor(
         }
         when (val fetch = membershipRepository.fetchMembershipsForCurrentUser()) {
             is MembershipFetch.Ok -> {
-                if (fetch.memberships.size >= 1) {
+                val adminOwned = fetch.memberships.count { it.rol.equals("admin", ignoreCase = true) }
+                if (adminOwned >= 1) {
                     return Result.failure(
                         IllegalStateException("Has alcanzado el límite de 1 óptica del plan gratuito."),
                     )

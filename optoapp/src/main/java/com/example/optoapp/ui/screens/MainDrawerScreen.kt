@@ -44,7 +44,7 @@ fun MainDrawerScreen(
     val syncState by syncViewModel.syncState.collectAsState()
     val isSilentSyncing by syncViewModel.isSilentSyncing.collectAsState()
     val opticaHeader by opticaHeaderViewModel.uiState.collectAsState()
-    val opticaRol by authViewModel.opticaRol.collectAsState(initial = "admin")
+    val opticaRol by authViewModel.opticaRol.collectAsState(initial = "")
     val showCierreCaja = AppRoles.canViewCierreCaja(opticaRol)
     val showBiYReportes = AppRoles.canViewBiAndReports(opticaRol)
     val showOperacionHoy = AppRoles.canViewOperacionHoy(opticaRol)
