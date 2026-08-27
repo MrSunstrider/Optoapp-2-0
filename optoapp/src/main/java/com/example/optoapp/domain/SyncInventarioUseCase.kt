@@ -6,6 +6,7 @@ import com.example.optoapp.data.MonturaMovimiento
 import com.example.optoapp.data.OptoDatabase
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Resource
+import com.example.optoapp.domain.sync.ConflictHelper
 import com.example.optoapp.domain.sync.EntitySnapshotSerializer
 import com.example.optoapp.util.AppLogger
 import androidx.room.withTransaction
@@ -37,6 +38,9 @@ open class SyncInventarioUseCase @Inject constructor(
         private const val TABLE_MOVIMIENTOS = "montura_movimientos"
         private const val UPSERT_BATCH_SIZE = 200
     }
+
+    internal open suspend fun <T> runInTransaction(block: suspend () -> T): T =
+        database.withTransaction(block)
 
     suspend operator fun invoke(
         opticaId: String,
@@ -106,7 +110,7 @@ open class SyncInventarioUseCase @Inject constructor(
             syncStateTracker.markError(opticaId, "upload_monturas", "batch", e.message)
             throw e
         }
-        database.withTransaction {
+        runInTransaction {
             rows2.forEach { m -> syncStateTracker.markSynced(opticaId, "montura", m.id) }
         }
         syncStateTracker.markSynced(opticaId, "upload_monturas", "batch")
@@ -123,22 +127,38 @@ open class SyncInventarioUseCase @Inject constructor(
         // Supabase unique index idx_movimientos_conflict is on (referencia_id, tipo, montura_id),
         // not on PK — distinctBy PK would let edited movements slip through as duplicates.
         val deduped = localMovimientos
+            .sortedByDescending { it.updatedAt.orEmpty() }
             .distinctBy { Triple(it.referenciaId, it.tipo, it.monturaId) }
 
-        // Edited dispensations regenerate movimiento UUIDs while keeping the same composite key.
-        // Detect stockNuevo mismatch against remote to flag real conflicts before upsert.
-        val safeIds = conflictHelper.filterConflictMovimientos(opticaId, deduped).toSet()
+        val plan = conflictHelper.filterConflictMovimientos(opticaId, deduped)
+        if (!plan.remoteFetchSucceeded) {
+            syncStateTracker.markError(opticaId, "upload_montura_movimientos", "batch", "remote fetch failed")
+            throw IOException("No se pudo leer movimientos remotos para reconciliar")
+        }
+        val safeMovimientos = deduped.filter { it.id in plan.safeIds.toSet() }
+        val partition = ConflictHelper.partitionMovimientosForUpload(
+            safeMovimientos,
+            plan.remoteByKey,
+        )
 
-        val rows = deduped
-            .filter { it.id in safeIds }
+        for ((local, remoteId) in partition.toReconcileLocally) {
+            repository.upsertMonturaMovimiento(local.copy(id = remoteId))
+            if (local.id != remoteId) {
+                repository.deleteMonturaMovimiento(local.id, opticaId)
+            }
+        }
+
+        val rows = partition.toUpload
             .map { it.toRemoto().copy(opticaId = opticaId) }
-        if (rows.isEmpty()) {
+        if (rows.isEmpty() && partition.toReconcileLocally.isEmpty()) {
             syncStateTracker.markSynced(opticaId, "upload_montura_movimientos", "batch")
             return 0
         }
         try {
-            rows.chunked(UPSERT_BATCH_SIZE).forEach { chunk ->
-                supabase.postgrest[TABLE_MOVIMIENTOS].upsert(chunk)
+            if (rows.isNotEmpty()) {
+                rows.chunked(UPSERT_BATCH_SIZE).forEach { chunk ->
+                    upsertMovimientosBatch(chunk)
+                }
             }
         } catch (e: CancellationException) {
             throw e
@@ -151,11 +171,21 @@ open class SyncInventarioUseCase @Inject constructor(
             syncStateTracker.markError(opticaId, "upload_montura_movimientos", "batch", e.message)
             throw e
         }
-        database.withTransaction {
-            rows.forEach { r -> syncStateTracker.markSynced(opticaId, "montura_movimiento", r.id) }
+        runInTransaction {
+            partition.toUpload.forEach { r -> syncStateTracker.markSynced(opticaId, "montura_movimiento", r.id) }
+            partition.toReconcileLocally.forEach { (local, remoteId) ->
+                syncStateTracker.markSynced(opticaId, "montura_movimiento", remoteId)
+                if (local.id != remoteId) {
+                    syncStateTracker.markSynced(opticaId, "montura_movimiento", local.id)
+                }
+            }
         }
         syncStateTracker.markSynced(opticaId, "upload_montura_movimientos", "batch")
-        return rows.size
+        return partition.toUpload.size + partition.toReconcileLocally.size
+    }
+
+    internal open suspend fun upsertMovimientosBatch(chunk: List<MonturaMovimientoRemoto>) {
+        supabase.postgrest[TABLE_MOVIMIENTOS].upsert(chunk)
     }
 
     private suspend fun downloadMonturas(opticaId: String): Int {

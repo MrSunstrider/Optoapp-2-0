@@ -15,6 +15,9 @@ interface MonturaMovimientoDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertMovimiento(movimiento: MonturaMovimiento)
 
+    @Query("DELETE FROM montura_movimientos WHERE id = :id AND opticaId = :opticaId")
+    suspend fun deleteMovimiento(id: String, opticaId: String)
+
     @Query("SELECT * FROM montura_movimientos WHERE opticaId = :opticaId")
     suspend fun getMovimientosListByOptica(opticaId: String): List<MonturaMovimiento>
 

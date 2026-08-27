@@ -115,6 +115,33 @@ open class ConflictHelper @Inject constructor(
 
             return Pair(safe, conflicted)
         }
+
+        /**
+         * Splits safe movimientos into rows that need a remote upsert vs rows already
+         * present remotely under a different PK but the same composite key.
+         */
+        fun partitionMovimientosForUpload(
+            safeMovimientos: List<MonturaMovimiento>,
+            remoteByKey: Map<MovimientoCompositeKey, MonturaMovimiento>,
+        ): MovimientoUploadPartition {
+            val toUpload = mutableListOf<MonturaMovimiento>()
+            val toReconcileLocally = mutableListOf<Pair<MonturaMovimiento, String>>()
+
+            for (local in safeMovimientos) {
+                val key = MovimientoCompositeKey(local.referenciaId, local.tipo, local.monturaId)
+                val remote = remoteByKey[key]
+                when {
+                    remote == null -> toUpload.add(local)
+                    remote.id != local.id -> toReconcileLocally.add(local to remote.id)
+                    else -> toUpload.add(local)
+                }
+            }
+
+            return MovimientoUploadPartition(
+                toUpload = toUpload,
+                toReconcileLocally = toReconcileLocally,
+            )
+        }
     }
 
     /**
@@ -295,31 +322,45 @@ open class ConflictHelper @Inject constructor(
      * Fetches remote movimientos matching composite keys, detects conflicts,
      * flags conflicted movements in SyncStateTracker AND persists conflict_records.
      *
-     * @return IDs of local movimientos safe to upload
+     * @return upload plan with safe IDs, remote lookup by composite key, and conflicted IDs
      */
     suspend fun filterConflictMovimientos(
         opticaId: String,
         localMovimientos: List<MonturaMovimiento>,
-    ): List<String> {
-        if (localMovimientos.isEmpty()) return emptyList()
+    ): MovimientoUploadPlan {
+        if (localMovimientos.isEmpty()) {
+            return MovimientoUploadPlan(emptyList(), emptyMap(), emptyList())
+        }
 
         val remoteMovimientos = try {
             fetchRemoteMovimientos(opticaId)
         } catch (e: Exception) {
             AppLogger.e(TAG, "Error fetching remote movimientos for conflict detection: ${e.message}")
-            emptyList()
+            return MovimientoUploadPlan(
+                safeIds = emptyList(),
+                remoteByKey = emptyMap(),
+                conflictedIds = emptyList(),
+                remoteFetchSucceeded = false,
+            )
         }
 
+        val remoteByKey = remoteMovimientos.associateBy {
+            MovimientoCompositeKey(it.referenciaId, it.tipo, it.monturaId)
+        }
         val (safeIds, conflictedIds) = detectConflictMovimientos(localMovimientos, remoteMovimientos)
 
         for (id in conflictedIds) {
             AppLogger.w(TAG, "Conflicto en movimiento $id: stockNuevo difiere del remoto")
+            val localMov = localMovimientos.find { it.id == id }
+            val remoteMov = localMov?.let {
+                remoteByKey[MovimientoCompositeKey(it.referenciaId, it.tipo, it.monturaId)]
+            }
             conflictDao.upsertConflict(
                 entityId = id,
                 opticaId = opticaId,
                 entityType = "montura_movimiento",
-                localSnapshot = localMovimientos.find { it.id == id }?.let { EntitySnapshotSerializer.serialize(it) } ?: "{}",
-                remoteSnapshot = remoteMovimientos.find { it.id == id }?.let { EntitySnapshotSerializer.serialize(it) } ?: "{}",
+                localSnapshot = localMov?.let { EntitySnapshotSerializer.serialize(it) } ?: "{}",
+                remoteSnapshot = remoteMov?.let { EntitySnapshotSerializer.serialize(it) } ?: "{}",
             )
             syncStateTracker.markConflicted(opticaId, "montura_movimiento", id)
         }
@@ -329,7 +370,11 @@ open class ConflictHelper @Inject constructor(
             AppLogger.w(TAG, "$conflictedCount movimientos en conflicto, se omiten del upload")
         }
 
-        return safeIds
+        return MovimientoUploadPlan(
+            safeIds = safeIds,
+            remoteByKey = remoteByKey,
+            conflictedIds = conflictedIds,
+        )
     }
 
     /**
@@ -342,6 +387,20 @@ open class ConflictHelper @Inject constructor(
         .decodeList<MovimientoRemotoRow>()
         .mapNotNull { it.toEntityOrNull() }
 }
+
+typealias MovimientoCompositeKey = Triple<String, String, String>
+
+data class MovimientoUploadPlan(
+    val safeIds: List<String>,
+    val remoteByKey: Map<MovimientoCompositeKey, MonturaMovimiento>,
+    val conflictedIds: List<String>,
+    val remoteFetchSucceeded: Boolean = true,
+)
+
+data class MovimientoUploadPartition(
+    val toUpload: List<MonturaMovimiento>,
+    val toReconcileLocally: List<Pair<MonturaMovimiento, String>>,
+)
 
 /** Internal so test subclasses in the same Gradle module can reference the type without exposing it to consumers. */
 @Serializable

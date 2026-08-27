@@ -10,9 +10,11 @@ import io.mockk.coVerify
 import io.mockk.just
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import java.io.IOException
 import java.time.LocalDate
 
 /**
@@ -103,6 +105,23 @@ class ConflictHelperMovimientoPersistenceTest {
 
         helper.filterConflictMovimientos(opticaId, localData)
 
+        coVerify(exactly = 0) {
+            mockConflictDao.upsertConflict(any(), any(), any(), any(), any(), any())
+        }
+    }
+
+    @Test
+    fun filterConflictMovimientos_failClosedWhenRemoteFetchThrows() = runTest {
+        val helper = object : ConflictHelper(mockSupabase, mockTracker, mockConflictDao) {
+            override suspend fun fetchRemoteMovimientos(opticaId: String): List<MonturaMovimiento> {
+                throw IOException("network down")
+            }
+        }
+
+        val plan = helper.filterConflictMovimientos(opticaId, listOf(crearMovimiento(movIdSafe)))
+
+        assertTrue(!plan.remoteFetchSucceeded)
+        assertTrue(plan.safeIds.isEmpty())
         coVerify(exactly = 0) {
             mockConflictDao.upsertConflict(any(), any(), any(), any(), any(), any())
         }

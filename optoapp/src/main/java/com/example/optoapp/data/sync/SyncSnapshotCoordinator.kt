@@ -33,6 +33,8 @@ class SyncSnapshotCoordinator @Inject constructor(
 
     suspend fun upsertMonturaMovimiento(movimiento: MonturaMovimiento) = monturaMovimientoDao.insertMovimiento(movimiento)
 
+    suspend fun deleteMonturaMovimiento(id: String, opticaId: String) = monturaMovimientoDao.deleteMovimiento(id, opticaId)
+
     suspend fun getPacientesSnapshotForOptica(opticaId: String): List<Paciente> = pacienteRepo.getPacientesSnapshotForOptica(opticaId)
 
     suspend fun getEvaluacionesSnapshotForOptica(opticaId: String): List<EvaluacionClinica> = pacienteRepo.getEvaluacionesSnapshotForOptica(opticaId)

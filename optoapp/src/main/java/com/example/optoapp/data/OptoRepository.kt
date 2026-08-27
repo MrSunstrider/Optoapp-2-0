@@ -216,6 +216,7 @@ open class OptoRepository(
     suspend fun upsertPaciente(paciente: Paciente) = snapshotCoordinator.upsertPaciente(paciente)
     suspend fun upsertMontura(montura: Montura) = snapshotCoordinator.upsertMontura(montura)
     suspend fun upsertMonturaMovimiento(movimiento: MonturaMovimiento) = snapshotCoordinator.upsertMonturaMovimiento(movimiento)
+    suspend fun deleteMonturaMovimiento(id: String, opticaId: String) = snapshotCoordinator.deleteMonturaMovimiento(id, opticaId)
     suspend fun getPacientesSnapshotForOptica(opticaId: String) = snapshotCoordinator.getPacientesSnapshotForOptica(opticaId)
     suspend fun getEvaluacionesSnapshotForOptica(opticaId: String) = snapshotCoordinator.getEvaluacionesSnapshotForOptica(opticaId)
     suspend fun getDispensacionesSnapshotForOptica(opticaId: String) = snapshotCoordinator.getDispensacionesSnapshotForOptica(opticaId)
