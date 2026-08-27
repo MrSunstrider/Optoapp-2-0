@@ -1,25 +1,22 @@
 package com.example.optoapp.ui.components.servicio
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.optoapp.data.Montura
 import com.example.optoapp.data.Paciente
 import com.example.optoapp.data.Pago
 import com.example.optoapp.domain.estadoAfterFechaEntrega
 import com.example.optoapp.ui.components.OptoDropdownMenuField
 import com.example.optoapp.ui.components.FechaEntregaEditButton
+import com.example.optoapp.ui.components.MonturaSearchField
+import com.example.optoapp.domain.inventario.monturaLabel
 import com.example.optoapp.ui.components.OptoTextField
 import com.example.optoapp.ui.components.PatientContextCard
 import com.example.optoapp.ui.components.financiera.FinancieraPagosSection
@@ -80,42 +77,35 @@ private fun StepDatos(
 
     OptoTextField(value = uiState.ot, onValueChange = { onUpdate(uiState.copy(ot = it)) }, label = "OT (Opcional)")
 
-    var showMonturaDialog by remember { mutableStateOf(false) }
-
-    if (showMonturaDialog) {
-        AlertDialog(
-            onDismissRequest = { showMonturaDialog = false },
-            title = { Text("Seleccionar Producto") },
-            text = {
-                Column {
-                    if (monturas.isEmpty()) {
-                        Text("No hay monturas con stock en el inventario.", style = MaterialTheme.typography.bodySmall)
-                    } else {
-                        LazyColumn(modifier = Modifier.heightIn(max = 400.dp)) {
-                            items(monturas) { montura ->
-                                ListItem(
-                                    headlineContent = { Text("${montura.marca} ${montura.modelo}") },
-                                    supportingContent = { Text("Color: ${montura.color} | SKU: ${montura.sku}") },
-                                    trailingContent = { Text("s/. ${montura.precio}", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary) },
-                                    modifier = Modifier.clickable {
-                                        onUpdate(
-                                            uiState.copy(
-                                                descripcion = "${montura.marca} ${montura.modelo} (${montura.sku})",
-                                                montoTotal = montura.precio.toString(),
-                                            ),
-                                        )
-                                        showMonturaDialog = false
-                                    },
-                                )
-                                HorizontalDivider(thickness = 0.5.dp)
-                            }
-                        }
-                    }
-                }
+    if (monturas.none { it.stockActual > 0 }) {
+        Text(
+            "No hay monturas con stock en el inventario.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    } else {
+        MonturaSearchField(
+            monturas = monturas,
+            selectedMonturaId = uiState.monturaId,
+            onMonturaSelected = { montura ->
+                onUpdate(
+                    uiState.copy(
+                        monturaId = montura.id,
+                        descripcion = monturaLabel(montura),
+                        montoTotal = String.format(java.util.Locale.US, "%.2f", montura.precio),
+                    ),
+                )
             },
-            confirmButton = {
-                TextButton(onClick = { showMonturaDialog = false }) { Text("Cerrar") }
+            onClear = {
+                onUpdate(
+                    uiState.copy(
+                        monturaId = null,
+                        descripcion = "",
+                        montoTotal = "",
+                    ),
+                )
             },
+            modifier = Modifier.fillMaxWidth(),
         )
     }
 
@@ -123,11 +113,6 @@ private fun StepDatos(
         value = uiState.descripcion,
         onValueChange = { onUpdate(uiState.copy(descripcion = it)) },
         label = "Descripción",
-        trailingIcon = {
-            IconButton(onClick = { showMonturaDialog = true }) {
-                Icon(Icons.Default.Inventory2, contentDescription = "Vincular Inventario", tint = MaterialTheme.colorScheme.primary)
-            }
-        },
     )
 
     OptoTextField(

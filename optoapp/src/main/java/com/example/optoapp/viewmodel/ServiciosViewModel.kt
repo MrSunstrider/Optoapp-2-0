@@ -12,6 +12,7 @@ import com.example.optoapp.data.Resource
 import com.example.optoapp.data.ServicioExtra
 import com.example.optoapp.domain.PagoEffect
 import com.example.optoapp.domain.inventario.InventarioItemKind
+import com.example.optoapp.domain.inventario.monturaMatchesDescripcion
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import com.example.optoapp.util.DateUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -29,6 +30,7 @@ data class ServiciosUiState(
     val ot: String = "",
     val descripcion: String = "",
     val montoTotal: String = "",
+    val monturaId: String? = null,
     val estado: String = "Pendiente",
     val fecha: LocalDate = DateUtils.today(),
     val fechaEntrega: LocalDate? = null,
@@ -88,7 +90,7 @@ class ServiciosViewModel @Inject constructor(
     @OptIn(ExperimentalCoroutinesApi::class)
     val monturas: StateFlow<List<com.example.optoapp.data.Montura>> = sessionManager.opticaId
         .flatMapLatest { repository.getMonturasByOptica(it) }
-        .map { list -> list.filter { InventarioItemKind.isArmazon(it.categoria) && it.activo && it.stockActual > 0 } }
+        .map { list -> list.filter { InventarioItemKind.isArmazon(it.categoria) && it.activo } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     // Reactive aCuenta sum map for dynamic saldo computation (aCuenta is @Ignore in entity)
@@ -124,11 +126,15 @@ class ServiciosViewModel @Inject constructor(
                 is Resource.Success -> {
                     val s = result.data ?: return@launch
                     val loadedPagos = repository.getPagosByServicioExtra(id, opticaId).first()
+                    val resolvedMonturaId = repository.getMonturasSnapshotForOptica(opticaId)
+                        .firstOrNull { monturaMatchesDescripcion(it, s.descripcion) }
+                        ?.id
                     _uiState.value = ServiciosUiState(
                         id = s.id,
                         ot = s.ot,
                         descripcion = s.descripcion,
-                        montoTotal = s.montoTotal.toString(),
+                        montoTotal = String.format(java.util.Locale.US, "%.2f", s.montoTotal),
+                        monturaId = resolvedMonturaId,
                         estado = s.estado,
                         fecha = s.fecha,
                         fechaEntrega = s.fechaEntrega,
@@ -180,7 +186,7 @@ class ServiciosViewModel @Inject constructor(
                 }
                 return@launch
             }
-            val montoParsed = state.montoTotal.toDoubleOrNull()
+            val montoParsed = state.montoTotal.replace(",", ".").toDoubleOrNull()
             if (montoParsed == null) {
                 _uiState.update { it.copy(error = "El monto total no es un número válido.") }
                 return@launch

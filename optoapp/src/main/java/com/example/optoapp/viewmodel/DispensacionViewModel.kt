@@ -243,7 +243,7 @@ class DispensacionViewModel @Inject constructor(
                             pagos = loadedPagos,
                             montoPagado = computedMontoPagado,
                             regalos = regalosUi,
-                            evaluacionId = d.evaluacionId ?: "",
+                            evaluacionId = d.evaluacionId?.takeIf { it.isNotBlank() },
                         )
                     }
                 }
@@ -351,69 +351,84 @@ class DispensacionViewModel @Inject constructor(
 
     fun saveDispensacion(pacienteId: String, dispensacionId: String?, onComplete: () -> Unit) {
         viewModelScope.launch {
+            if (_uiState.value.isLoading) return@launch
+            _uiState.update { it.copy(isLoading = true, error = null) }
             val s = _uiState.value
 
+            fun fail(message: String) {
+                _uiState.update { it.copy(isLoading = false, error = message) }
+            }
+
             if (s.items.isEmpty()) {
-                _uiState.update { it.copy(error = "Agrega al menos un lente a la dispensación.") }
+                fail("Agrega al menos un lente a la dispensación.")
                 return@launch
             }
             val primerItem = s.items.first()
             val requiereAltura = primerItem.tipoLente == "Bifocal" || primerItem.tipoLente == "Multifocal" || primerItem.tipoLente == "Ocupacional"
             if (requiereAltura && primerItem.altura.isBlank()) {
-                _uiState.update { it.copy(error = "La altura es obligatoria para ${primerItem.tipoLente}.") }
+                fail("La altura es obligatoria para ${primerItem.tipoLente}.")
                 return@launch
             }
             val alturaValida = primerItem.altura.trim().replace(",", ".").toDoubleOrNull()
             if (requiereAltura && (alturaValida == null || alturaValida <= 0.0)) {
-                _uiState.update { it.copy(error = "Ingresa una altura válida en mm.") }
+                fail("Ingresa una altura válida en mm.")
                 return@launch
             }
             for (item in s.items.drop(1)) {
                 val requiereAlturaItem = item.tipoLente in setOf("Bifocal", "Multifocal", "Ocupacional")
                 if (requiereAlturaItem && item.altura.isBlank()) {
-                    _uiState.update { it.copy(error = "La altura es obligatoria para ${item.tipoLente}.") }
+                    fail("La altura es obligatoria para ${item.tipoLente}.")
                     return@launch
                 }
                 val itemAlturaValida = item.altura.trim().replace(",", ".").toDoubleOrNull()
                 if (requiereAlturaItem && (itemAlturaValida == null || itemAlturaValida <= 0.0)) {
-                    _uiState.update { it.copy(error = "Ingresa una altura válida en mm.") }
+                    fail("Ingresa una altura válida en mm.")
                     return@launch
                 }
             }
             if (s.ot.isBlank()) {
-                _uiState.update { it.copy(error = "La OT es obligatoria para guardar la dispensación.") }
+                fail("La OT es obligatoria para guardar la dispensación.")
                 return@launch
             }
-            val montoTotal = s.montoTotal.toDoubleOrNull()
-            if (montoTotal == null || montoTotal <= 0.0) {
-                _uiState.update { it.copy(error = FinanzasRemoteDefaults.Messages.MONTO_TOTAL_MAYOR_A_CERO) }
-                return@launch
+            val isNew = dispensacionId == null || dispensacionId == "null"
+            val montoTotal = if (isNew) {
+                s.montoTotal.replace(",", ".").toDoubleOrNull()?.takeIf { it > 0.0 } ?: 0.0
+            } else {
+                val parsed = s.montoTotal.replace(",", ".").toDoubleOrNull()
+                if (parsed == null || parsed <= 0.0) {
+                    fail(FinanzasRemoteDefaults.Messages.MONTO_TOTAL_MAYOR_A_CERO)
+                    return@launch
+                }
+                parsed
             }
             if (s.pagos.any { it.monto <= 0.0 }) {
-                _uiState.update { it.copy(error = FinanzasRemoteDefaults.Messages.ABONO_MAYOR_A_CERO) }
+                fail(FinanzasRemoteDefaults.Messages.ABONO_MAYOR_A_CERO)
                 return@launch
             }
             val totalAbonos = s.pagos.sumOf { PagoEffect.signedAmount(it.tipo, it.monto) }
             if (totalAbonos > montoTotal) {
-                _uiState.update { it.copy(error = FinanzasRemoteDefaults.Messages.ABONO_MAYOR_QUE_TOTAL) }
+                fail(FinanzasRemoteDefaults.Messages.ABONO_MAYOR_QUE_TOTAL)
                 return@launch
             }
 
-            val role = sessionManager.opticaRol.first()
-            if (dispensacionId != null && dispensacionId != "null") {
-                AuthorizationGuard.requireRole(role, setOf("admin", "gerente"), "editar dispensación")
+            val role: String
+            val currentOpticaId: String
+            val itemsAnteriores: List<com.example.optoapp.data.DispensacionItem>
+            try {
+                role = sessionManager.opticaRol.first()
+                currentOpticaId = sessionManager.opticaId.first()
+                itemsAnteriores = if (dispensacionId != null && dispensacionId != "null") {
+                    repository.getDispensacionItemsByDispensacion(dispensacionId, currentOpticaId)
+                } else {
+                    emptyList()
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "save prepare failed", e)
+                fail(e.message ?: "Error al preparar el guardado.")
+                return@launch
             }
 
-            val currentOpticaId = sessionManager.opticaId.first()
             val finalId = dispensacionId ?: s.generatedId
-
-            _uiState.update { it.copy(error = null) }
-
-            val itemsAnteriores = if (dispensacionId != null && dispensacionId != "null") {
-                repository.getDispensacionItemsByDispensacion(dispensacionId, currentOpticaId)
-            } else {
-                emptyList()
-            }
 
             val primerItemMonturaId = if (primerItem.origenMontura == "Tienda") primerItem.monturaId else ""
             val disp = DispensacionOptica(
@@ -437,8 +452,8 @@ class DispensacionViewModel @Inject constructor(
                 montoTotal = montoTotal,
                 montoPagado = s.pagos.sumOf { PagoEffect.signedAmount(it.tipo, it.monto) },
                 metodoPago = "",
-                estadoEntrega = s.estadoEntrega,
-                fechaEntrega = s.fechaEntrega,
+                estadoEntrega = if (isNew) "Pendiente" else s.estadoEntrega,
+                fechaEntrega = if (isNew) null else s.fechaEntrega,
                 fechaVencimientoGarantia = s.fechaVencimientoGarantia,
                 distanciaLente = if (primerItem.tipoLente == "Monofocal") primerItem.distanciaLente else "",
                 altura = if (requiereAltura) primerItem.altura.trim() else "",
@@ -455,6 +470,9 @@ class DispensacionViewModel @Inject constructor(
             val toRemoveStock = newTiendaMonturas.filter { id -> id !in oldTiendaMonturas }
 
             try {
+                if (dispensacionId != null && dispensacionId != "null") {
+                    AuthorizationGuard.requireRole(role, setOf("admin", "gerente"), "editar dispensación")
+                }
                 kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                     repository.runInTransaction {
                         kotlinx.coroutines.runBlocking {
@@ -538,16 +556,20 @@ class DispensacionViewModel @Inject constructor(
                         }
                     }
                 }
-                toAddStock.forEach { mid -> postSaveSyncScheduler.scheduleInventarioSync(currentOpticaId) }
-                toRemoveStock.forEach { mid -> postSaveSyncScheduler.scheduleInventarioSync(currentOpticaId) }
-            } catch (e: RuntimeException) {
+                if (toAddStock.isNotEmpty() || toRemoveStock.isNotEmpty()) {
+                    postSaveSyncScheduler.scheduleInventarioSync(currentOpticaId)
+                }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                _uiState.update { it.copy(isLoading = false) }
+                throw e
+            } catch (e: Exception) {
                 Log.e(TAG, "save failed", e)
-                _uiState.update { it.copy(error = e.message ?: "Error al guardar la dispensación.") }
+                _uiState.update { it.copy(isLoading = false, error = e.message ?: "Error al guardar la dispensación.") }
                 return@launch
             }
 
             postSaveSyncScheduler.scheduleFinanzasSync(currentOpticaId)
-
+            _uiState.update { it.copy(isLoading = false) }
             onComplete()
         }
     }
@@ -556,25 +578,56 @@ class DispensacionViewModel @Inject constructor(
         // Hard delete for mistakes: remove completely + revert stock
         // No inverse Pago, no financial trace — this never happened.
         viewModelScope.launch {
-            val role = sessionManager.opticaRol.first()
-            AuthorizationGuard.requireRole(role, setOf("admin", "gerente"), "eliminar dispensación")
-            val opticaId = sessionManager.opticaId.first()
-            val regalos = repository.getRegalosByDispensacionId(dispensacionId, opticaId)
-            regalos.forEach { regalo ->
-                stockHelper.adjustStockAndRegistrarMovimiento(
-                    regalo.productoId,
-                    opticaId,
-                    regalo.cantidad,
-                    "AJUSTE",
-                    movimientoReferenciaForRegalo(regalo.id),
-                    "Devolución por borrado de dispensación",
-                )
+            if (_uiState.value.isLoading) return@launch
+            _uiState.update { it.copy(isLoading = true, error = null) }
+            try {
+                val role = sessionManager.opticaRol.first()
+                AuthorizationGuard.requireRole(role, setOf("admin", "gerente"), "eliminar dispensación")
+                val opticaId = sessionManager.opticaId.first()
+                val result = repository.getDispensacionById(dispensacionId, opticaId)
+                if (result !is Resource.Success || result.data == null) {
+                    _uiState.update { it.copy(isLoading = false, error = "Dispensación no encontrada.") }
+                    return@launch
+                }
+                val items = repository.getDispensacionItemsByDispensacion(dispensacionId, opticaId)
+                repository.runInTransaction {
+                    kotlinx.coroutines.runBlocking {
+                        val regalos = repository.getRegalosByDispensacionId(dispensacionId, opticaId)
+                        regalos.forEach { regalo ->
+                            stockHelper.adjustStockAndRegistrarMovimiento(
+                                regalo.productoId,
+                                opticaId,
+                                regalo.cantidad,
+                                "AJUSTE",
+                                movimientoReferenciaForRegalo(regalo.id),
+                                "Devolución por borrado de dispensación",
+                            )
+                        }
+                        items.filter { it.origenMontura == "Tienda" && it.monturaId.isNotBlank() }
+                            .forEach { item ->
+                                stockHelper.adjustStockAndRegistrarMovimiento(
+                                    item.monturaId,
+                                    opticaId,
+                                    1,
+                                    "AJUSTE",
+                                    dispensacionId,
+                                    "Reversión por borrado de dispensación",
+                                )
+                            }
+                        repository.deleteDispensacion(result.data)
+                    }
+                }
+                _uiState.update { it.copy(isLoading = false) }
+                postSaveSyncScheduler.scheduleInventarioSync(opticaId)
+                postSaveSyncScheduler.scheduleFinanzasSync(opticaId)
+                onComplete()
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                _uiState.update { it.copy(isLoading = false) }
+                throw e
+            } catch (e: Exception) {
+                Log.e(TAG, "delete failed", e)
+                _uiState.update { it.copy(isLoading = false, error = e.message ?: "Error al eliminar la dispensación.") }
             }
-            val result = repository.getDispensacionById(dispensacionId, opticaId)
-            if (result is Resource.Success && result.data != null) {
-                repository.deleteDispensacion(result.data)
-            }
-            onComplete()
         }
     }
 
@@ -622,21 +675,28 @@ class DispensacionViewModel @Inject constructor(
 
     fun anularDispensacion(dispensacionId: String, onComplete: () -> Unit) {
         viewModelScope.launch {
-            val opticaId = sessionManager.opticaId.first()
-            cancelDispensacionUseCase(dispensacionId, opticaId)
+            try {
+                val opticaId = sessionManager.opticaId.first()
+                cancelDispensacionUseCase(dispensacionId, opticaId)
 
-            val regalos = repository.getRegalosByDispensacionId(dispensacionId, opticaId)
-            regalos.forEach { regalo ->
-                stockHelper.adjustStockAndRegistrarMovimiento(
-                    regalo.productoId,
-                    opticaId,
-                    regalo.cantidad,
-                    "AJUSTE",
-                    movimientoReferenciaForRegalo(regalo.id),
-                    "Reversión por anulación de dispensación",
-                )
+                val regalos = repository.getRegalosByDispensacionId(dispensacionId, opticaId)
+                regalos.forEach { regalo ->
+                    stockHelper.adjustStockAndRegistrarMovimiento(
+                        regalo.productoId,
+                        opticaId,
+                        regalo.cantidad,
+                        "AJUSTE",
+                        movimientoReferenciaForRegalo(regalo.id),
+                        "Reversión por anulación de dispensación",
+                    )
+                }
+                onComplete()
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.e(TAG, "anular failed", e)
+                _uiState.update { it.copy(error = e.message ?: "Error al anular la dispensación.") }
             }
-            onComplete()
         }
     }
 
@@ -652,10 +712,13 @@ class DispensacionViewModel @Inject constructor(
         viewModelScope.launch {
             val opticaId = sessionManager.opticaId.first()
             val list = repository.getEvaluacionesByPaciente(pacienteId, opticaId).first()
-            _uiState.update { it.copy(evaluacionesDisponibles = list) }
             val last = list.maxByOrNull { it.fecha }
-            if (last != null) {
-                _uiState.update { it.copy(evaluacionId = last.id) }
+            _uiState.update { state ->
+                val shouldAutoSelect = state.evaluacionId.isNullOrBlank()
+                state.copy(
+                    evaluacionesDisponibles = list,
+                    evaluacionId = if (shouldAutoSelect && last != null) last.id else state.evaluacionId,
+                )
             }
         }
     }
@@ -666,7 +729,7 @@ class DispensacionViewModel @Inject constructor(
 
     fun calculateCosts(itemIndex: Int) {
         val s = _uiState.value
-        val evalId = s.evaluacionId ?: return
+        val evalId = s.evaluacionId?.takeIf { it.isNotBlank() } ?: return
         viewModelScope.launch {
             when (val result = repository.getEvaluacionById(evalId, sessionManager.opticaId.first())) {
                 is Resource.Success -> {
