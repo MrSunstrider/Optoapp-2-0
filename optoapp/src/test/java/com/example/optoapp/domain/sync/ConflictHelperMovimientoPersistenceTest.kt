@@ -12,8 +12,6 @@ import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.robolectric.RobolectricTestRunner
 import java.io.IOException
 import java.time.LocalDate
 
@@ -24,7 +22,6 @@ import java.time.LocalDate
  * Uses a testable subclass that overrides the remote fetch seam
  * (fetchRemoteMovimientos — extracted in GREEN phase) to inject canned data.
  */
-@RunWith(RobolectricTestRunner::class)
 class ConflictHelperMovimientoPersistenceTest {
 
     private val opticaId = "optica-mov-persist"
@@ -52,7 +49,17 @@ class ConflictHelperMovimientoPersistenceTest {
     @Test
     fun filterConflictMovimientos_callsUpsertConflictForStockDiscrepancies() = runTest {
         coEvery {
-            mockConflictDao.upsertConflict(any(), any(), any(), any(), any(), any())
+            mockConflictDao.upsertConflict(
+                entityId = any(),
+                opticaId = any(),
+                entityType = any(),
+                localSnapshot = any(),
+                remoteSnapshot = any(),
+                detectedAt = any(),
+                baseSnapshot = any(),
+                localData = any(),
+                remoteData = any(),
+            )
         } just Runs
         coEvery {
             mockTracker.markConflicted(any(), any(), any())
@@ -79,6 +86,9 @@ class ConflictHelperMovimientoPersistenceTest {
                 localSnapshot = any(),
                 remoteSnapshot = any(),
                 detectedAt = any(),
+                baseSnapshot = any(),
+                localData = any(),
+                remoteData = any(),
             )
         }
     }
@@ -86,7 +96,17 @@ class ConflictHelperMovimientoPersistenceTest {
     @Test
     fun filterConflictMovimientos_doesNotUpsertForNonConflictedMovimientos() = runTest {
         coEvery {
-            mockConflictDao.upsertConflict(any(), any(), any(), any(), any(), any())
+            mockConflictDao.upsertConflict(
+                entityId = any(),
+                opticaId = any(),
+                entityType = any(),
+                localSnapshot = any(),
+                remoteSnapshot = any(),
+                detectedAt = any(),
+                baseSnapshot = any(),
+                localData = any(),
+                remoteData = any(),
+            )
         } just Runs
         coEvery {
             mockTracker.markConflicted(any(), any(), any())
@@ -106,7 +126,17 @@ class ConflictHelperMovimientoPersistenceTest {
         helper.filterConflictMovimientos(opticaId, localData)
 
         coVerify(exactly = 0) {
-            mockConflictDao.upsertConflict(any(), any(), any(), any(), any(), any())
+            mockConflictDao.upsertConflict(
+                entityId = any(),
+                opticaId = any(),
+                entityType = any(),
+                localSnapshot = any(),
+                remoteSnapshot = any(),
+                detectedAt = any(),
+                baseSnapshot = any(),
+                localData = any(),
+                remoteData = any(),
+            )
         }
     }
 
@@ -123,7 +153,17 @@ class ConflictHelperMovimientoPersistenceTest {
         assertTrue(!plan.remoteFetchSucceeded)
         assertTrue(plan.safeIds.isEmpty())
         coVerify(exactly = 0) {
-            mockConflictDao.upsertConflict(any(), any(), any(), any(), any(), any())
+            mockConflictDao.upsertConflict(
+                entityId = any(),
+                opticaId = any(),
+                entityType = any(),
+                localSnapshot = any(),
+                remoteSnapshot = any(),
+                detectedAt = any(),
+                baseSnapshot = any(),
+                localData = any(),
+                remoteData = any(),
+            )
         }
     }
 }

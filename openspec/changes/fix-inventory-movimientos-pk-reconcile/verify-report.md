@@ -35,14 +35,23 @@ Fixes: `deleteMonturaMovimiento`, `remoteFetchSucceeded=false` aborts upload, co
 
 `rdd_mode`: unmanaged. Causal invariant: one movement fact per `(referencia_id, tipo, montura_id)`. Rollback: revert the listed production files.
 
-## Judgment Day Round 2
+## Judgment Day Round 2 (post-fix)
 
 | Finding | Judge A | Judge B | Severity | Status |
 |---------|---------|---------|----------|--------|
-| PostgREST fetch truncates ~1000 | no | yes | WARNING (theoretical) | Suspect → INFO (prod ~37 rows; pre-existing fetch shape) |
-| Reconcile skips metadata upload | no | yes | WARNING (theoretical) | Suspect → INFO (ledger fact is stockNuevo; download is LWW) |
-| markSynced after reconcile skipped if upload throws | yes | no | WARNING (theoretical) | Suspect → INFO (recovers next cycle; monitoring only) |
-| Dead `local.id != remoteId` guard | yes | no | SUGGESTION | Suspect → INFO |
+| Reconcile non-transactional | — | — | CRITICAL | **Fixed** — `runInTransaction` wraps upsert+delete |
+| Robolectric in persistence test | — | — | WARNING | **Fixed** — pure JUnit + MockK |
+| Unbounded fetch (upload path) | — | — | WARNING | **Fixed** — paginated 500/page |
+| `safeIds.toSet()` in filter loop | — | — | SUGGESTION | **Fixed** — hoisted to `safeIdSet` |
+| Reconcile without `markError` | — | — | WARNING | **Fixed** — try/catch + markError |
+| Inflated `uploadedMovimientos` count | — | — | SUGGESTION | **Fixed** — `reconciledMovimientos` field |
+| Duplicate `associateBy` remote keys | — | — | WARNING | **Fixed** — `indexRemoteByCompositeKey` |
+| Incomplete `MovimientoRemotoRow` | — | — | WARNING | **Fixed** — full snapshot fields |
+| Download path unbounded | yes | yes | WARNING (theoretical) | **Fixed** — `fetchAllRemoteMovimientos` paginated |
+| Conflict records missing localData/remoteData | no | yes | WARNING (theoretical) | **Fixed** |
+| Double indexRemote pass | yes | no | SUGGESTION | **Fixed** — overload accepts `remoteByKey` |
+| `toRemoto` drops updatedAt | yes | no | WARNING (pre-existing) | **Fixed** |
+| Offset pagination snapshot isolation | no | yes | WARNING (theoretical) | INFO — acceptable for current scale |
 
 Confirmed CRITICAL: 0. Confirmed WARNING (real): 0.
 

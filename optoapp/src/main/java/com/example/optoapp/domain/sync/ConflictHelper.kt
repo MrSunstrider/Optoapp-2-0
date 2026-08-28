@@ -7,12 +7,14 @@ import com.example.optoapp.data.SyncStateTracker
 import com.example.optoapp.util.AppLogger
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.postgrest.query.Order
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import java.time.Instant
+import java.time.LocalDate
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -33,6 +35,7 @@ open class ConflictHelper @Inject constructor(
 ) {
     companion object {
         private const val TAG = "ConflictHelper"
+        private const val REMOTE_MOVIMIENTO_PAGE_SIZE = 500L
 
         /**
          * Compara dos timestamps como [Instant].
@@ -95,11 +98,15 @@ open class ConflictHelper @Inject constructor(
         fun detectConflictMovimientos(
             local: List<MonturaMovimiento>,
             remote: List<MonturaMovimiento>,
-        ): Pair<List<String>, List<String>> {
-            val remoteByKey = remote.associateBy {
-                Triple(it.referenciaId, it.tipo, it.monturaId)
-            }
+        ): Pair<List<String>, List<String>> = detectConflictMovimientos(
+            local,
+            indexRemoteByCompositeKey(remote),
+        )
 
+        fun detectConflictMovimientos(
+            local: List<MonturaMovimiento>,
+            remoteByKey: Map<MovimientoCompositeKey, MonturaMovimiento>,
+        ): Pair<List<String>, List<String>> {
             val safe = mutableListOf<String>()
             val conflicted = mutableListOf<String>()
 
@@ -142,6 +149,13 @@ open class ConflictHelper @Inject constructor(
                 toReconcileLocally = toReconcileLocally,
             )
         }
+
+        /**
+         * Collapses remote rows that share a composite key deterministically (smallest id wins).
+         */
+        fun indexRemoteByCompositeKey(remote: List<MonturaMovimiento>): Map<MovimientoCompositeKey, MonturaMovimiento> =
+            remote.groupBy { MovimientoCompositeKey(it.referenciaId, it.tipo, it.monturaId) }
+                .mapValues { (_, rows) -> rows.minBy { it.id } }
     }
 
     /**
@@ -344,10 +358,8 @@ open class ConflictHelper @Inject constructor(
             )
         }
 
-        val remoteByKey = remoteMovimientos.associateBy {
-            MovimientoCompositeKey(it.referenciaId, it.tipo, it.monturaId)
-        }
-        val (safeIds, conflictedIds) = detectConflictMovimientos(localMovimientos, remoteMovimientos)
+        val remoteByKey = buildRemoteByKey(remoteMovimientos)
+        val (safeIds, conflictedIds) = detectConflictMovimientos(localMovimientos, remoteByKey)
 
         for (id in conflictedIds) {
             AppLogger.w(TAG, "Conflicto en movimiento $id: stockNuevo difiere del remoto")
@@ -355,12 +367,16 @@ open class ConflictHelper @Inject constructor(
             val remoteMov = localMov?.let {
                 remoteByKey[MovimientoCompositeKey(it.referenciaId, it.tipo, it.monturaId)]
             }
+            val localJson = localMov?.let { EntitySnapshotSerializer.serialize(it) } ?: "{}"
+            val remoteJson = remoteMov?.let { EntitySnapshotSerializer.serialize(it) } ?: "{}"
             conflictDao.upsertConflict(
                 entityId = id,
                 opticaId = opticaId,
                 entityType = "montura_movimiento",
-                localSnapshot = localMov?.let { EntitySnapshotSerializer.serialize(it) } ?: "{}",
-                remoteSnapshot = remoteMov?.let { EntitySnapshotSerializer.serialize(it) } ?: "{}",
+                localSnapshot = localJson,
+                remoteSnapshot = remoteJson,
+                localData = localJson,
+                remoteData = remoteJson,
             )
             syncStateTracker.markConflicted(opticaId, "montura_movimiento", id)
         }
@@ -377,15 +393,49 @@ open class ConflictHelper @Inject constructor(
         )
     }
 
+    private fun buildRemoteByKey(remoteMovimientos: List<MonturaMovimiento>): Map<MovimientoCompositeKey, MonturaMovimiento> {
+        val grouped = remoteMovimientos.groupBy {
+            MovimientoCompositeKey(it.referenciaId, it.tipo, it.monturaId)
+        }
+        grouped.forEach { (key, rows) ->
+            if (rows.size > 1) {
+                AppLogger.w(TAG, "Duplicate remote composite key $key (${rows.size} rows); keeping smallest id")
+            }
+        }
+        return ConflictHelper.indexRemoteByCompositeKey(remoteMovimientos)
+    }
+
     /**
      * Fetches remote movimientos from Supabase for conflict detection.
      * Extracted as a testability seam — test subclasses override to inject canned data.
      */
     @VisibleForTesting
-    internal open suspend fun fetchRemoteMovimientos(opticaId: String): List<MonturaMovimiento> = supabase.postgrest["montura_movimientos"]
-        .select { filter { eq("optica_id", opticaId) } }
+    internal open suspend fun fetchRemoteMovimientos(opticaId: String): List<MonturaMovimiento> {
+        val pageSize = REMOTE_MOVIMIENTO_PAGE_SIZE
+        val all = mutableListOf<MonturaMovimiento>()
+        var offset = 0L
+        while (true) {
+            val page = fetchRemoteMovimientosPage(opticaId, offset, offset + pageSize - 1)
+            all.addAll(page)
+            if (page.size < pageSize) break
+            offset += pageSize
+        }
+        return all
+    }
+
+    @VisibleForTesting
+    internal open suspend fun fetchRemoteMovimientosPage(
+        opticaId: String,
+        from: Long,
+        to: Long,
+    ): List<MonturaMovimiento> = supabase.postgrest["montura_movimientos"]
+        .select {
+            filter { eq("optica_id", opticaId) }
+            order("id", Order.ASCENDING)
+            range(from..to)
+        }
         .decodeList<MovimientoRemotoRow>()
-        .mapNotNull { it.toEntityOrNull() }
+        .mapNotNull { it.toEntityOrNull(opticaId) }
 }
 
 typealias MovimientoCompositeKey = Triple<String, String, String>
@@ -431,21 +481,29 @@ data class LocalEntity(
 private data class MovimientoRemotoRow(
     val id: String,
     @SerialName("montura_id") val monturaId: String,
+    val fecha: String? = null,
     val tipo: String,
+    val cantidad: Int = 0,
+    @SerialName("stock_previo") val stockPrevio: Int = 0,
     @SerialName("stock_nuevo") val stockNuevo: Int,
     @SerialName("referencia_id") val referenciaId: String,
+    val nota: String = "",
+    @SerialName("optica_id") val opticaId: String = "",
+    @SerialName("updated_at") val updatedAt: String? = null,
 ) {
-    fun toEntityOrNull(): MonturaMovimiento? = try {
+    fun toEntityOrNull(fallbackOpticaId: String): MonturaMovimiento? = try {
         MonturaMovimiento(
             id = id,
             monturaId = monturaId,
+            fecha = fecha?.let { runCatching { LocalDate.parse(it) }.getOrNull() } ?: LocalDate.now(),
             tipo = tipo,
-            cantidad = 0,
-            stockPrevio = 0,
+            cantidad = cantidad,
+            stockPrevio = stockPrevio,
             stockNuevo = stockNuevo,
             referenciaId = referenciaId,
-            nota = "",
-            opticaId = "",
+            nota = nota,
+            opticaId = opticaId.ifBlank { fallbackOpticaId },
+            updatedAt = updatedAt,
         )
     } catch (_: Exception) {
         null

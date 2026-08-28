@@ -12,6 +12,7 @@ import com.example.optoapp.util.AppLogger
 import androidx.room.withTransaction
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.postgrest.query.Order
 import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -37,6 +38,7 @@ open class SyncInventarioUseCase @Inject constructor(
         private const val TABLE_MONTURAS = "monturas"
         private const val TABLE_MOVIMIENTOS = "montura_movimientos"
         private const val UPSERT_BATCH_SIZE = 200
+        private const val MOVIMIENTO_FETCH_PAGE_SIZE = 500L
     }
 
     internal open suspend fun <T> runInTransaction(block: suspend () -> T): T =
@@ -49,7 +51,7 @@ open class SyncInventarioUseCase @Inject constructor(
     ): Resource<InventarioSyncResult> = try {
         AppLogger.d(TAG, "Inventario: inicio (opticaId=$opticaId, download=$downloadAfterUpload, skipUpload=$skipUpload)")
         val montUp = if (skipUpload) 0 else uploadMonturas(opticaId)
-        val movUp = if (skipUpload) 0 else uploadMovimientos(opticaId)
+        val movOutcome = if (skipUpload) MovimientoUploadOutcome(0, 0) else uploadMovimientos(opticaId)
         val montDown: Int
         val movDown: Int
         if (downloadAfterUpload) {
@@ -65,9 +67,10 @@ open class SyncInventarioUseCase @Inject constructor(
         Resource.Success(
             InventarioSyncResult(
                 uploadedMonturas = montUp,
-                uploadedMovimientos = movUp,
+                uploadedMovimientos = movOutcome.uploaded,
                 downloadedMonturas = montDown,
                 downloadedMovimientos = movDown,
+                reconciledMovimientos = movOutcome.reconciled,
             ),
         )
     } catch (e: CancellationException) {
@@ -117,11 +120,11 @@ open class SyncInventarioUseCase @Inject constructor(
         return rows2.size
     }
 
-    private suspend fun uploadMovimientos(opticaId: String): Int {
+    private suspend fun uploadMovimientos(opticaId: String): MovimientoUploadOutcome {
         val localMovimientos = repository.getMovimientosMonturaSnapshotForOptica(opticaId)
         if (localMovimientos.isEmpty()) {
             syncStateTracker.markSynced(opticaId, "upload_montura_movimientos", "batch")
-            return 0
+            return MovimientoUploadOutcome(0, 0)
         }
 
         // Supabase unique index idx_movimientos_conflict is on (referencia_id, tipo, montura_id),
@@ -135,24 +138,35 @@ open class SyncInventarioUseCase @Inject constructor(
             syncStateTracker.markError(opticaId, "upload_montura_movimientos", "batch", "remote fetch failed")
             throw IOException("No se pudo leer movimientos remotos para reconciliar")
         }
-        val safeMovimientos = deduped.filter { it.id in plan.safeIds.toSet() }
+        val safeIdSet = plan.safeIds.toSet()
+        val safeMovimientos = deduped.filter { it.id in safeIdSet }
         val partition = ConflictHelper.partitionMovimientosForUpload(
             safeMovimientos,
             plan.remoteByKey,
         )
 
-        for ((local, remoteId) in partition.toReconcileLocally) {
-            repository.upsertMonturaMovimiento(local.copy(id = remoteId))
-            if (local.id != remoteId) {
-                repository.deleteMonturaMovimiento(local.id, opticaId)
+        try {
+            runInTransaction {
+                for ((local, remoteId) in partition.toReconcileLocally) {
+                    repository.upsertMonturaMovimiento(local.copy(id = remoteId))
+                    if (local.id != remoteId) {
+                        repository.deleteMonturaMovimiento(local.id, opticaId)
+                    }
+                }
             }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            System.err.println("[$TAG] ERROR: Error reconciliando movimientos localmente: ${e.message}")
+            syncStateTracker.markError(opticaId, "upload_montura_movimientos", "batch", e.message)
+            throw e
         }
 
         val rows = partition.toUpload
             .map { it.toRemoto().copy(opticaId = opticaId) }
         if (rows.isEmpty() && partition.toReconcileLocally.isEmpty()) {
             syncStateTracker.markSynced(opticaId, "upload_montura_movimientos", "batch")
-            return 0
+            return MovimientoUploadOutcome(0, 0)
         }
         try {
             if (rows.isNotEmpty()) {
@@ -181,7 +195,10 @@ open class SyncInventarioUseCase @Inject constructor(
             }
         }
         syncStateTracker.markSynced(opticaId, "upload_montura_movimientos", "batch")
-        return partition.toUpload.size + partition.toReconcileLocally.size
+        return MovimientoUploadOutcome(
+            uploaded = partition.toUpload.size,
+            reconciled = partition.toReconcileLocally.size,
+        )
     }
 
     internal open suspend fun upsertMovimientosBatch(chunk: List<MonturaMovimientoRemoto>) {
@@ -224,9 +241,7 @@ open class SyncInventarioUseCase @Inject constructor(
             emptySet()
         }
 
-        val remotos = supabase.postgrest[TABLE_MOVIMIENTOS]
-            .select { filter { eq("optica_id", opticaId) } }
-            .decodeList<MonturaMovimientoRemoto>()
+        val remotos = fetchAllRemoteMovimientos(opticaId)
         remotos.forEach { r ->
             if (r.id in conflictedIds) return@forEach
             try {
@@ -243,6 +258,24 @@ open class SyncInventarioUseCase @Inject constructor(
         }
         return remotos.size
     }
+
+    private suspend fun fetchAllRemoteMovimientos(opticaId: String): List<MonturaMovimientoRemoto> {
+        val all = mutableListOf<MonturaMovimientoRemoto>()
+        var offset = 0L
+        while (true) {
+            val page = supabase.postgrest[TABLE_MOVIMIENTOS]
+                .select {
+                    filter { eq("optica_id", opticaId) }
+                    order("id", Order.ASCENDING)
+                    range(offset..offset + MOVIMIENTO_FETCH_PAGE_SIZE - 1)
+                }
+                .decodeList<MonturaMovimientoRemoto>()
+            all.addAll(page)
+            if (page.size < MOVIMIENTO_FETCH_PAGE_SIZE) break
+            offset += MOVIMIENTO_FETCH_PAGE_SIZE
+        }
+        return all
+    }
 }
 
 data class InventarioSyncResult(
@@ -250,6 +283,12 @@ data class InventarioSyncResult(
     val uploadedMovimientos: Int,
     val downloadedMonturas: Int,
     val downloadedMovimientos: Int,
+    val reconciledMovimientos: Int = 0,
+)
+
+private data class MovimientoUploadOutcome(
+    val uploaded: Int,
+    val reconciled: Int,
 )
 
 @Serializable
@@ -315,6 +354,7 @@ internal data class MonturaMovimientoRemoto(
     @SerialName("costo_unitario") val costoUnitario: Double = 0.0,
     @SerialName("tipo_documento") val tipoDocumento: String = "",
     @SerialName("updated_by") val updatedBy: String? = null,
+    @SerialName("updated_at") val updatedAt: String? = null,
 ) {
     fun toEntity() = MonturaMovimiento(
         id = id,
@@ -331,6 +371,7 @@ internal data class MonturaMovimientoRemoto(
         costoUnitario = costoUnitario,
         tipoDocumento = tipoDocumento,
         updatedBy = updatedBy,
+        updatedAt = updatedAt,
     )
 }
 
@@ -372,4 +413,5 @@ internal fun MonturaMovimiento.toRemoto(): MonturaMovimientoRemoto = MonturaMovi
     costoUnitario = costoUnitario,
     tipoDocumento = tipoDocumento,
     updatedBy = updatedBy,
+    updatedAt = updatedAt,
 )

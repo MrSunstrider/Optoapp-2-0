@@ -21,6 +21,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.io.IOException
 import java.time.LocalDate
 
 class SyncInventarioUseCaseUploadTest {
@@ -102,7 +103,8 @@ class SyncInventarioUseCaseUploadTest {
         }
         coVerify { syncStateTracker.markSynced(opticaId, "montura_movimiento", "uuid-old") }
         coVerify { syncStateTracker.markSynced(opticaId, "montura_movimiento", "uuid-new") }
-        assertEquals(1, result.data?.uploadedMovimientos)
+        assertEquals(0, result.data?.uploadedMovimientos)
+        assertEquals(1, result.data?.reconciledMovimientos)
     }
 
     @Test
@@ -159,5 +161,68 @@ class SyncInventarioUseCaseUploadTest {
 
         assertTrue(uploadedBatches.isEmpty())
         assertEquals(0, result.data?.uploadedMovimientos)
+        assertEquals(0, result.data?.reconciledMovimientos)
+    }
+
+    @Test
+    fun uploadMovimientos_reconcileRunsInsideTransaction() = runTest {
+        stubMonturasUploadEmpty()
+        val local = mov(id = "uuid-new")
+        val remote = mov(id = "uuid-old")
+        val key = Triple(remote.referenciaId, remote.tipo, remote.monturaId)
+        var transactionDepth = 0
+
+        coEvery { repository.getMovimientosMonturaSnapshotForOptica(opticaId) } returns listOf(local)
+        coEvery { conflictHelper.filterConflictMovimientos(opticaId, any()) } returns MovimientoUploadPlan(
+            safeIds = listOf(local.id),
+            remoteByKey = mapOf(key to remote),
+            conflictedIds = emptyList(),
+        )
+        coEvery { repository.upsertMonturaMovimiento(any()) } coAnswers {
+            assertTrue("reconcile upsert must run inside transaction", transactionDepth > 0)
+        }
+        coEvery { repository.deleteMonturaMovimiento(any(), any()) } coAnswers {
+            assertTrue("reconcile delete must run inside transaction", transactionDepth > 0)
+        }
+
+        val useCase = object : SyncInventarioUseCase(
+            repository, supabase, database, syncStateTracker, conflictHelper, conflictDao,
+        ) {
+            override suspend fun <T> runInTransaction(block: suspend () -> T): T {
+                transactionDepth++
+                return try {
+                    block()
+                } finally {
+                    transactionDepth--
+                }
+            }
+
+            override suspend fun upsertMovimientosBatch(chunk: List<MonturaMovimientoRemoto>) {
+                uploadedBatches.add(chunk)
+            }
+        }
+
+        useCase.invoke(opticaId, downloadAfterUpload = false)
+    }
+
+    @Test
+    fun uploadMovimientos_marksErrorWhenReconcileFails() = runTest {
+        stubMonturasUploadEmpty()
+        val local = mov(id = "uuid-new")
+        val remote = mov(id = "uuid-old")
+        val key = Triple(remote.referenciaId, remote.tipo, remote.monturaId)
+
+        coEvery { repository.getMovimientosMonturaSnapshotForOptica(opticaId) } returns listOf(local)
+        coEvery { conflictHelper.filterConflictMovimientos(opticaId, any()) } returns MovimientoUploadPlan(
+            safeIds = listOf(local.id),
+            remoteByKey = mapOf(key to remote),
+            conflictedIds = emptyList(),
+        )
+        coEvery { repository.upsertMonturaMovimiento(any()) } throws IOException("room write failed")
+
+        val result = createUseCase().invoke(opticaId, downloadAfterUpload = false)
+
+        assertTrue(result is Resource.Error)
+        coVerify { syncStateTracker.markError(opticaId, "upload_montura_movimientos", "batch", any()) }
     }
 }

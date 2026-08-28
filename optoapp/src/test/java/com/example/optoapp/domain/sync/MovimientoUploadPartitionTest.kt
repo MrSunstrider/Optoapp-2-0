@@ -66,4 +66,14 @@ class MovimientoUploadPartitionTest {
         assertEquals(listOf(local), partition.toUpload)
         assertTrue(partition.toReconcileLocally.isEmpty())
     }
+
+    @Test
+    fun indexRemoteByCompositeKey_keepsSmallestIdOnDuplicateCompositeKey() {
+        val older = mov(id = "uuid-aaa", referenciaId = "disp-dup")
+        val newer = mov(id = "uuid-zzz", referenciaId = "disp-dup")
+
+        val indexed = ConflictHelper.indexRemoteByCompositeKey(listOf(newer, older))
+
+        assertEquals("uuid-aaa", indexed[Triple("disp-dup", "SALIDA_VENTA", "m1")]?.id)
+    }
 }
