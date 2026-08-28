@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.optoapp.data.ContextoFinanciero
 import com.example.optoapp.data.DispensacionFinancieraRepository
+import com.example.optoapp.data.FinanzasRemoteDefaults
 import com.example.optoapp.data.Montura
 import com.example.optoapp.data.Pago
 import com.example.optoapp.data.Resource
@@ -181,7 +182,13 @@ class InformacionFinancieraViewModel @Inject constructor(
                 val opticaId = sessionManager.opticaId.first()
                 val dispId = s.dispensacionId
 
-                val montoTotal = s.montoTotal.toDoubleOrNull() ?: 0.0
+                val montoTotal = s.montoTotal.replace(",", ".").toDoubleOrNull()
+                if (montoTotal == null || montoTotal <= 0.0) {
+                    _uiState.update {
+                        it.copy(isLoading = false, error = FinanzasRemoteDefaults.Messages.MONTO_TOTAL_MAYOR_A_CERO)
+                    }
+                    return@launch
+                }
 
                 repository.withTransaction {
                     repository.actualizarMontoTotal(dispId, montoTotal, opticaId)
@@ -243,6 +250,11 @@ class InformacionFinancieraViewModel @Inject constructor(
                 }
 
                 postSaveSyncScheduler.scheduleFinanzasSync(opticaId)
+                val stockChanged = initialRegalos.isNotEmpty() ||
+                    s.regalos.any { it.productoId.isNotBlank() }
+                if (stockChanged) {
+                    postSaveSyncScheduler.scheduleInventarioSync(opticaId)
+                }
 
                 _uiState.update { it.copy(isLoading = false, pagosToDelete = emptyList(), error = null) }
                 initialPagoIds = s.pagos.map { it.id }.toSet()

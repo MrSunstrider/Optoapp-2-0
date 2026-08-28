@@ -3,6 +3,7 @@ package com.example.optoapp.viewmodel
 import com.example.optoapp.data.ContextoFinanciero
 import com.example.optoapp.data.DispensacionFinancieraRepository
 import com.example.optoapp.data.DispensacionOptica
+import com.example.optoapp.data.FinanzasRemoteDefaults
 import com.example.optoapp.data.Pago
 import com.example.optoapp.data.Resource
 import com.example.optoapp.data.SessionManager
@@ -263,5 +264,27 @@ class InformacionFinancieraViewModelTest {
         vm.save {}
 
         coVerify { repository.actualizarMontoPagado(dispId, 150.0, "optica-test") }
+    }
+
+    @Test
+    fun `save rejects montoTotal zero or less`() = runTest {
+        val vm = createViewModel()
+        vm.loadFinanciera(dispId)
+        vm.updateMontoTotal("0")
+
+        vm.save {}
+
+        assertEquals(FinanzasRemoteDefaults.Messages.MONTO_TOTAL_MAYOR_A_CERO, vm.uiState.value.error)
+    }
+
+    @Test
+    fun `save rejects empty montoTotal`() = runTest {
+        val vm = createViewModel()
+        vm.loadFinanciera(dispId)
+        vm.updateMontoTotal("")
+
+        vm.save {}
+
+        assertEquals(FinanzasRemoteDefaults.Messages.MONTO_TOTAL_MAYOR_A_CERO, vm.uiState.value.error)
     }
 }
