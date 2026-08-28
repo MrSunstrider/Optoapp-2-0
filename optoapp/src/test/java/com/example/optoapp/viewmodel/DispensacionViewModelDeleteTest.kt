@@ -86,8 +86,12 @@ class DispensacionViewModelDeleteTest {
 
         every { sessionManager.opticaId } returns opticaIdFlow
         every { sessionManager.opticaRol } returns opticaRolFlow
+        every { repository.runInTransaction(any()) } answers {
+            firstArg<() -> Unit>().invoke()
+        }
 
         coEvery { repository.getDispensacionById(dispId, any()) } returns Resource.Success(testDispensacion)
+        coEvery { repository.getDispensacionItemsByDispensacion(dispId, any()) } returns emptyList()
         coEvery { calcularMontoPagadoUseCase(dispId, any()) } returns 150.0
         coEvery { repository.getRegalosByDispensacionId(dispId, any()) } returns testRegalos
     }
@@ -98,7 +102,7 @@ class DispensacionViewModelDeleteTest {
     }
 
     @Test
-    fun `deleteDispensacion hard-deletes without anulacion`() = runTest {
+    fun `deleteDispensacion hard-deletes without anulacion`() = runTest(testDispatcher) {
         viewModel = DispensacionViewModel(
             repository,
             sessionManager,
@@ -122,7 +126,7 @@ class DispensacionViewModelDeleteTest {
     }
 
     @Test
-    fun `deleteDispensacion reverts regalo stock`() = runTest {
+    fun `deleteDispensacion reverts regalo stock`() = runTest(testDispatcher) {
         viewModel = DispensacionViewModel(
             repository,
             sessionManager,
