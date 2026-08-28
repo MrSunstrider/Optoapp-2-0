@@ -77,6 +77,13 @@ class FinanzasUploadValidatorTest {
     }
 
     @Test
+    fun `safeParentBalanceForUpload floors negative net to zero`() {
+        assertEquals(0.0, FinanzasUploadValidator.safeParentBalanceForUpload(-50.0), 0.001)
+        assertEquals(150.0, FinanzasUploadValidator.safeParentBalanceForUpload(150.0), 0.001)
+        assertEquals(0.0, FinanzasUploadValidator.safeParentBalanceForUpload(-0.001), 0.001)
+    }
+
+    @Test
     fun `79 plus 1 partitions quarantine poison only`() {
         val valid = (1..79).map { i ->
             Triple("p$i", FinanzasUploadValidator.validatePago("Abono", 10.0, "d$i", null, null), i)

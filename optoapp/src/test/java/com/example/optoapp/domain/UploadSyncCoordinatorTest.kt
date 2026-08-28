@@ -579,4 +579,61 @@ class UploadSyncCoordinatorTest {
         }
         coVerify(exactly = 0) { syncStateTracker.markSynced(opticaId, "pago", "orphan") }
     }
+
+    @Test
+    fun `dispensacion with negative pagos net uploads monto_pagado zero not quarantined`() = runTest {
+        val opticaId = "optica-test"
+        val dispId = "fd4fbba4-7ff6-4165-bc58-05d8578da419"
+        val disp = DispensacionOptica(
+            id = dispId,
+            ot = "OT-2026-0042",
+            fecha = LocalDate.parse("2026-08-20"),
+            pacienteId = "p1",
+            opticaId = opticaId,
+            montoTotal = 500.0,
+            montoPagado = -50.0,
+        )
+        val abono = com.example.optoapp.data.Pago(
+            id = "p-abono", dispensacionId = dispId, tipo = "Abono", monto = 100.0,
+            metodoPago = "Efectivo", fecha = LocalDate.parse("2026-08-20"), opticaId = opticaId,
+        )
+        val reembolso = com.example.optoapp.data.Pago(
+            id = "p-reemb", dispensacionId = dispId, tipo = "Reembolso", monto = 150.0,
+            metodoPago = "Efectivo", fecha = LocalDate.parse("2026-08-21"), opticaId = opticaId,
+        )
+        coEvery { repository.getDispensacionesSnapshotForOptica(opticaId) } returns listOf(disp)
+        coEvery { repository.getPagosSnapshotForOptica(opticaId) } returns listOf(abono, reembolso)
+        coEvery { networkRetryHelper.retryNetwork(any(), any()) } coAnswers {
+            secondArg<suspend () -> Unit>().invoke()
+        }
+
+        val captured = mutableListOf<List<DispensacionRemota>>()
+        val testCoordinator = object : UploadSyncCoordinator(
+            repository = repository,
+            supabase = supabase,
+            database = database,
+            syncStateTracker = syncStateTracker,
+            mergeHandler = mergeHandler,
+            networkRetryHelper = networkRetryHelper,
+            costoProductoDao = costoProductoDao,
+            costoBiseladoDao = costoBiseladoDao,
+        ) {
+            override suspend fun <T> runInTransaction(block: suspend () -> T): T = block()
+            override suspend fun fetchRemoteDispensacionesForLookup(opticaId: String) =
+                emptyList<DispensacionRemotaLookup>()
+            override suspend fun upsertDispensacionesChunk(chunk: List<DispensacionRemota>) {
+                captured.add(chunk)
+            }
+        }
+
+        val uploaded = testCoordinator.uploadDispensaciones(opticaId)
+
+        assertEquals(1, uploaded)
+        assertEquals(1, captured.size)
+        assertEquals(0.0, captured.single().single().montoPagado, 0.001)
+        coVerify { syncStateTracker.markSynced(opticaId, "dispensacion", dispId) }
+        coVerify(exactly = 0) {
+            syncStateTracker.markError(opticaId, "dispensacion", dispId, match { it.contains("23514") })
+        }
+    }
 }

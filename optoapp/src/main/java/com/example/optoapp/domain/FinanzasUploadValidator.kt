@@ -42,6 +42,9 @@ object FinanzasUploadValidator {
         return null
     }
 
+    /** Remote CHECK requires parent cache >= 0; floor only on upload payload, not local ledger. */
+    fun safeParentBalanceForUpload(effectSum: Double): Double = effectSum.coerceAtLeast(0.0)
+
     fun isConstraintViolation(message: String?): Boolean {
         val m = message.orEmpty()
         return m.contains("23514") || m.contains("check constraint", ignoreCase = true)

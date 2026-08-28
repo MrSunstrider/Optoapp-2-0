@@ -128,7 +128,14 @@ open class UploadSyncCoordinator @Inject constructor(
         val uniqueRows = LinkedHashMap<String, Pair<String, DispensacionRemota>>()
         dispensaciones.forEach { dispensacion ->
             val pagosSum = pagosSumByDisp[dispensacion.id] ?: 0.0
-            val base = dispensacion.toRemoto(pagosSum = pagosSum).copy(opticaId = opticaRemota)
+            val safePagosSum = FinanzasUploadValidator.safeParentBalanceForUpload(pagosSum)
+            if (safePagosSum < pagosSum) {
+                AppLogger.w(
+                    TAG,
+                    "Dispensación ${dispensacion.id}: pagos net $pagosSum < 0; upload monto_pagado=0 (CHECK floor)",
+                )
+            }
+            val base = dispensacion.toRemoto(pagosSum = safePagosSum).copy(opticaId = opticaRemota)
             val normalizedOt = normalizedOtForUnique(base.ot)
             val reconciled = if (normalizedOt != null) {
                 val existingRemoteId = remoteIdByOt[normalizedOt]
@@ -256,7 +263,14 @@ open class UploadSyncCoordinator @Inject constructor(
         val uniqueById = LinkedHashMap<String, Pair<String, ServicioRemoto>>()
         servicios.forEach { servicio ->
             val aCuentaSum = aCuentaSumByServ[servicio.id] ?: 0.0
-            val base = servicio.toRemoto(aCuentaSum = aCuentaSum).copy(opticaId = opticaRemota)
+            val safeACuenta = FinanzasUploadValidator.safeParentBalanceForUpload(aCuentaSum)
+            if (safeACuenta < aCuentaSum) {
+                AppLogger.w(
+                    TAG,
+                    "Servicio ${servicio.id}: pagos net $aCuentaSum < 0; upload a_cuenta=0 (CHECK floor)",
+                )
+            }
+            val base = servicio.toRemoto(aCuentaSum = safeACuenta).copy(opticaId = opticaRemota)
             val normalizedOt = normalizedOtForUnique(base.ot)
             val reconciled = if (normalizedOt != null) {
                 val existingRemoteId = remoteIdByOt[normalizedOt]
