@@ -21,7 +21,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -29,6 +28,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.optoapp.testing.TestTags
 import com.example.optoapp.domain.estadoAfterFechaEntrega
+import com.example.optoapp.domain.PagoEffect
 import com.example.optoapp.ui.components.FechaEntregaEditButton
 import com.example.optoapp.ui.components.OptoDatePickerDialog
 import com.example.optoapp.ui.components.OptoTextField
@@ -42,7 +42,8 @@ import com.example.optoapp.viewmodel.DispensacionItemUi
 import com.example.optoapp.viewmodel.DispensacionViewModel
 import java.time.LocalDate
 
-private val WIZARD_STEPS = listOf("Orden", "Productos", "Confirmar")
+internal fun wizardStepsForMode(isEditMode: Boolean): List<String> =
+    if (isEditMode) listOf("Orden", "Productos", "Gestión") else listOf("Orden", "Productos")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -53,6 +54,9 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
     var showDatePicker by remember { mutableStateOf(false) }
     var evaluacionExpanded by remember { mutableStateOf(false) }
     var currentStep by remember { mutableStateOf(0) }
+    val isEditMode = dispensacionId != null
+    val wizardSteps = remember(isEditMode) { wizardStepsForMode(isEditMode) }
+    val lastStepIndex = wizardSteps.lastIndex
 
     LaunchedEffect(dispensacionId) {
         if (dispensacionId != null) {
@@ -80,18 +84,14 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
     }
 
     val saveAction = {
-        try {
-            viewModel.saveDispensacion(pacienteId, dispensacionId) {
-                if (dispensacionId == null) {
-                    navController.navigate(Route.InformacionFinanciera(viewModel.uiState.value.generatedId).route) {
-                        popUpTo("nuevaDispensacion/$pacienteId") { inclusive = true }
-                    }
-                } else {
-                    navController.popBackStack()
+        viewModel.saveDispensacion(pacienteId, dispensacionId) {
+            if (dispensacionId == null) {
+                navController.navigate(Route.InformacionFinanciera(viewModel.uiState.value.generatedId).route) {
+                    popUpTo(Route.NuevaDispensacion(pacienteId).route) { inclusive = true }
                 }
+            } else {
+                navController.popBackStack()
             }
-        } catch (e: Exception) {
-            android.util.Log.e("NuevaDispensacion", "Error al guardar dispensacion", e)
         }
     }
 
@@ -110,8 +110,11 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
                     }
                 },
                 actions = {
-                    if (currentStep == WIZARD_STEPS.lastIndex) {
-                        IconButton(onClick = { saveAction() }) {
+                    if (currentStep == lastStepIndex) {
+                        IconButton(
+                            onClick = { saveAction() },
+                            enabled = !uiState.isLoading,
+                        ) {
                             Icon(Icons.Default.Check, contentDescription = "Guardar")
                         }
                     }
@@ -132,7 +135,7 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
                         modifier = Modifier.weight(1f),
                     ) { Text("Anterior") }
                 }
-                if (currentStep < WIZARD_STEPS.lastIndex) {
+                if (currentStep < lastStepIndex) {
                     Button(
                         onClick = { currentStep++ },
                         modifier = Modifier.weight(1f),
@@ -140,8 +143,16 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
                 } else {
                     Button(
                         onClick = { saveAction() },
+                        enabled = !uiState.isLoading,
                         modifier = Modifier.weight(1f).testTag(TestTags.DISPENSACION_GUARDAR_BTN),
-                    ) { Text(if (dispensacionId == null) "Confirmar Orden" else "Actualizar Orden") }
+                    ) {
+                        Text(
+                            when {
+                                isEditMode -> "Actualizar Orden"
+                                else -> "Crear Orden"
+                            },
+                        )
+                    }
                 }
             }
         },
@@ -161,9 +172,9 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
             Spacer(modifier = Modifier.height(4.dp))
 
             WizardStepHeader(
-                labels = WIZARD_STEPS,
+                labels = wizardSteps,
                 currentStep = currentStep,
-                totalSteps = WIZARD_STEPS.size,
+                totalSteps = wizardSteps.size,
                 modifier = Modifier.fillMaxWidth(),
             )
 
@@ -192,12 +203,14 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
                     monturasActivas = monturasActivas,
                     expandedItems = expandedItems,
                 )
-                2 -> StepConfirmar(
-                    uiState = uiState,
-                    viewModel = viewModel,
-                    dispensacionId = dispensacionId,
-                    navController = navController,
-                )
+                2 -> if (isEditMode) {
+                    StepGestion(
+                        uiState = uiState,
+                        viewModel = viewModel,
+                        dispensacionId = dispensacionId!!,
+                        navController = navController,
+                    )
+                }
             }
 
             if (!uiState.error.isNullOrBlank()) {
@@ -359,10 +372,10 @@ private fun StepProductos(
 }
 
 @Composable
-private fun StepConfirmar(
+private fun StepGestion(
     uiState: com.example.optoapp.viewmodel.DispensacionUiState,
     viewModel: DispensacionViewModel,
-    dispensacionId: String?,
+    dispensacionId: String,
     navController: NavController,
 ) {
     Card(
@@ -372,112 +385,77 @@ private fun StepConfirmar(
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("Información Financiera", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
 
-            if (dispensacionId == null) {
-                OptoTextField(
-                    value = uiState.montoTotal,
-                    onValueChange = { value -> viewModel.updateUiState { it.copy(montoTotal = value.replace(',', '.')) } },
-                    label = "Monto Total",
-                    keyboardType = KeyboardType.Decimal,
+            val monto = uiState.montoTotal.toDoubleOrNull() ?: 0.0
+            val pagado = uiState.pagos.sumOf { PagoEffect.signedAmount(it.tipo, it.monto) }
+            val saldo = monto - pagado
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text("Monto Total:", fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text("s/. ${"%.2f".format(monto)}", fontWeight = FontWeight.Bold)
+            }
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text("Saldo:", fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(
+                    "s/. ${"%.2f".format(saldo)}",
+                    fontWeight = FontWeight.Bold,
+                    color = if (saldo > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary,
                 )
-                com.example.optoapp.ui.components.OptoDropdownMenuField(
-                    label = "Estado de Entrega",
-                    selected = uiState.estadoEntrega,
-                    options = listOf("Pendiente", "Entregado"),
-                    onSelected = { newEstado ->
-                        val newFecha = when (newEstado) {
-                            "Entregado" -> LocalDate.now()
-                            else -> null
-                        }
-                        viewModel.updateUiState { it.copy(estadoEntrega = newEstado, fechaEntrega = newFecha) }
-                    },
-                )
-                if (uiState.fechaEntrega != null) {
-                    FechaEntregaEditButton(
-                        fechaEntrega = uiState.fechaEntrega,
-                        onFechaChanged = { nueva ->
-                            viewModel.updateUiState {
-                                it.copy(
-                                    fechaEntrega = nueva,
-                                    estadoEntrega = estadoAfterFechaEntrega(it.estadoEntrega, nueva),
-                                )
-                            }
-                        },
-                    )
-                }
-            } else {
-                val monto = uiState.montoTotal.toDoubleOrNull() ?: 0.0
-                val pagado = uiState.pagos.sumOf { it.monto }
-                val saldo = monto - pagado
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text("Monto Total:", fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text("s/. ${"%.2f".format(monto)}", fontWeight = FontWeight.Bold)
-                }
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text("Saldo:", fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text(
-                        "s/. ${"%.2f".format(saldo)}",
-                        fontWeight = FontWeight.Bold,
-                        color = if (saldo > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary,
-                    )
-                }
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text("Estado:", fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text(uiState.estadoEntrega, fontWeight = FontWeight.Bold)
-                }
-                OutlinedButton(
-                    onClick = { navController.navigate(Route.InformacionFinanciera(dispensacionId).route) },
-                    modifier = Modifier.fillMaxWidth(),
-                ) { Text("Gestionar Pagos") }
-                OutlinedButton(
-                    onClick = { navController.navigate(Route.CostosYGastosDisp(dispensacionId).route) },
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Icon(Icons.Default.Receipt, contentDescription = "Recibo", modifier = Modifier.size(16.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text("Gestionar costos →")
-                }
-                if (uiState.fechaEntrega != null) {
-                    FechaEntregaEditButton(
-                        fechaEntrega = uiState.fechaEntrega,
-                        onFechaChanged = { nueva ->
-                            viewModel.updateUiState {
-                                it.copy(
-                                    fechaEntrega = nueva,
-                                    estadoEntrega = estadoAfterFechaEntrega(it.estadoEntrega, nueva),
-                                )
-                            }
-                        },
-                    )
-                } else {
-                    TextButton(onClick = {
-                        val fecha = LocalDate.now()
+            }
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text("Estado:", fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(uiState.estadoEntrega, fontWeight = FontWeight.Bold)
+            }
+            OutlinedButton(
+                onClick = { navController.navigate(Route.InformacionFinanciera(dispensacionId).route) },
+                modifier = Modifier.fillMaxWidth(),
+            ) { Text("Gestionar Pagos") }
+            OutlinedButton(
+                onClick = { navController.navigate(Route.CostosYGastosDisp(dispensacionId).route) },
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Icon(Icons.Default.Receipt, contentDescription = "Recibo", modifier = Modifier.size(16.dp))
+                Spacer(Modifier.width(6.dp))
+                Text("Gestionar costos →")
+            }
+            if (uiState.fechaEntrega != null) {
+                FechaEntregaEditButton(
+                    fechaEntrega = uiState.fechaEntrega,
+                    onFechaChanged = { nueva ->
                         viewModel.updateUiState {
                             it.copy(
-                                fechaEntrega = fecha,
-                                estadoEntrega = estadoAfterFechaEntrega(it.estadoEntrega, fecha),
+                                fechaEntrega = nueva,
+                                estadoEntrega = estadoAfterFechaEntrega(it.estadoEntrega, nueva),
                             )
                         }
-                    }) {
-                        Text("Asignar fecha de entrega", fontSize = 12.sp)
+                    },
+                )
+            } else {
+                TextButton(onClick = {
+                    val fecha = LocalDate.now()
+                    viewModel.updateUiState {
+                        it.copy(
+                            fechaEntrega = fecha,
+                            estadoEntrega = estadoAfterFechaEntrega(it.estadoEntrega, fecha),
+                        )
                     }
+                }) {
+                    Text("Asignar fecha de entrega", fontSize = 12.sp)
                 }
             }
         }
     }
 
-    if (dispensacionId != null) {
-        Spacer(modifier = Modifier.height(8.dp))
-        OutlinedButton(
-            onClick = {
-                viewModel.deleteDispensacion(dispensacionId) {
-                    navController.popBackStack()
-                }
-            },
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
-        ) {
-            Text("Eliminar Orden")
-        }
+    Spacer(modifier = Modifier.height(8.dp))
+    OutlinedButton(
+        onClick = {
+            viewModel.deleteDispensacion(dispensacionId) {
+                navController.popBackStack()
+            }
+        },
+        enabled = !uiState.isLoading,
+        modifier = Modifier.fillMaxWidth(),
+        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
+    ) {
+        Text("Eliminar Orden")
     }
 }
 

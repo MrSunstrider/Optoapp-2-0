@@ -99,9 +99,21 @@ class NuevaDispensacionScreenTest {
     }
 
     @Test
-    fun buttonLabels_confirmarOrdenForNew() {
-        val label = "Confirmar Orden"
-        assertEquals("Confirmar Orden", label)
+    fun buttonLabels_crearOrdenForNew() {
+        val label = "Crear Orden"
+        assertEquals("Crear Orden", label)
+    }
+
+    @Test
+    fun wizardSteps_newModeHasTwoSteps() {
+        val steps = wizardStepsForMode(isEditMode = false)
+        assertEquals(listOf("Orden", "Productos"), steps)
+    }
+
+    @Test
+    fun wizardSteps_editModeHasGestionStep() {
+        val steps = wizardStepsForMode(isEditMode = true)
+        assertEquals(listOf("Orden", "Productos", "Gestión"), steps)
     }
 
     @Test
