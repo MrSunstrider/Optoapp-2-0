@@ -8,7 +8,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.optoapp.ui.components.CalculationCard
-import com.example.optoapp.ui.theme.LocalOptoDensity
 import com.example.optoapp.ui.components.OptoDropdownMenuField
 import com.example.optoapp.ui.components.OptoTextField
 import com.example.optoapp.ui.components.SuggestionCard
@@ -25,11 +24,10 @@ fun ContactologiaSection(
     onRecorteOiChange: (Boolean) -> Unit,
     onShowLcDatePicker: () -> Unit,
 ) {
-    val density = LocalOptoDensity.current
     QueratometriaCard(uiState, onUpdate)
 
     ElevatedCard(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(density.cardPadding), verticalArrangement = Arrangement.spacedBy(density.sectionGap)) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text("Sugerencias y Cálculos", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
             SuggestionCard(uiState.k1Od, uiState.k2Od, uiState.k1Oi, uiState.k2Oi)
 
@@ -44,7 +42,7 @@ fun ContactologiaSection(
     }
 
     ElevatedCard(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(density.cardPadding), verticalArrangement = Arrangement.spacedBy(density.sectionGap)) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text("Prueba / Adaptación Final", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
 
             Text("Poder del Lente", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
@@ -85,12 +83,11 @@ fun ContactologiaSection(
 
 @Composable
 private fun QueratometriaCard(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiState) -> Unit) {
-    val density = LocalOptoDensity.current
     OutlinedCard(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
     ) {
-        Column(modifier = Modifier.padding(density.cardPadding), verticalArrangement = Arrangement.spacedBy(density.sectionGap)) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text("Queratometría", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
             Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("OD", fontWeight = FontWeight.Bold, modifier = Modifier.width(32.dp))

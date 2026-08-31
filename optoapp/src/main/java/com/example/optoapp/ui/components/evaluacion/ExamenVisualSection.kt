@@ -16,7 +16,6 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.optoapp.ui.theme.LocalOptoDensity
 import com.example.optoapp.ui.components.OptoDropdownMenuField
 import com.example.optoapp.ui.components.OptoTextField
 import com.example.optoapp.viewmodel.EvaluacionUiState
@@ -27,7 +26,6 @@ fun ExamenVisualSection(
     onUpdate: (EvaluacionUiState) -> Unit,
     onShowOsdiDialog: () -> Unit,
 ) {
-    val density = LocalOptoDensity.current
     var showAvSc by remember { mutableStateOf(false) }
     var showAvCc by remember { mutableStateOf(false) }
     var showVisionBinocular by remember { mutableStateOf(false) }
@@ -127,7 +125,7 @@ fun ExamenVisualSection(
             OptoTextField(value = uiState.campoVisualDescripcion, onValueChange = { onUpdate(uiState.copy(campoVisualDescripcion = it)) }, label = "Descripción de anomalía (Campo Visual)")
         }
 
-        HorizontalDivider(modifier = Modifier.padding(vertical = density.blockGap))
+        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
         Text("Exámenes Previos", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OptoTextField(value = uiState.kappaOd, onValueChange = { onUpdate(uiState.copy(kappaOd = it)) }, label = "Kappa OD", modifier = Modifier.weight(1f))
@@ -172,7 +170,6 @@ private fun CollapsibleExamenCard(
     onToggle: (Boolean) -> Unit,
     content: @Composable () -> Unit,
 ) {
-    val density = LocalOptoDensity.current
     val chevronRotation by animateFloatAsState(
         targetValue = if (expanded) 180f else 0f,
         label = "chevron",
@@ -181,7 +178,7 @@ private fun CollapsibleExamenCard(
     OutlinedCard(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(bottom = density.blockGap),
+            .padding(bottom = 8.dp),
         colors = CardDefaults.outlinedCardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
         ),
@@ -192,7 +189,7 @@ private fun CollapsibleExamenCard(
                     .fillMaxWidth()
                     .heightIn(min = 48.dp)
                     .clickable { onToggle(!expanded) }
-                    .padding(horizontal = density.cardPadding, vertical = density.wizardHeaderPadding),
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -216,12 +213,8 @@ private fun CollapsibleExamenCard(
                 exit = shrinkVertically(),
             ) {
                 Column(
-                    modifier = Modifier.padding(
-                        start = density.cardPadding,
-                        end = density.cardPadding,
-                        bottom = density.cardPadding,
-                    ),
-                    verticalArrangement = Arrangement.spacedBy(density.blockGap),
+                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     content()
                 }

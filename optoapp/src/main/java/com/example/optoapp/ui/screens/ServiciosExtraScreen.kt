@@ -23,7 +23,6 @@ import com.example.optoapp.ui.components.OptoKpiCard
 import com.example.optoapp.ui.components.OptoTopAppBar
 import com.example.optoapp.ui.theme.alertRed
 import com.example.optoapp.ui.theme.positiveGreen
-import com.example.optoapp.ui.theme.LocalOptoDensity
 import com.example.optoapp.ui.theme.warningAmber
 import com.example.optoapp.util.DateUtils
 import com.example.optoapp.viewmodel.ServiciosViewModel
@@ -41,7 +40,6 @@ fun ServiciosExtraScreen(navController: NavController, drawerState: DrawerState,
     var showDatePicker by remember { mutableStateOf(false) }
     var estadoFilter by remember { mutableStateOf("Todos") }
     val snackbarHostState = remember { SnackbarHostState() }
-    val density = LocalOptoDensity.current
 
     val showDeleteDialog by viewModel.showDeleteDialog.collectAsState()
     val servicioToDelete by viewModel.servicioToDelete.collectAsState()
@@ -127,8 +125,8 @@ fun ServiciosExtraScreen(navController: NavController, drawerState: DrawerState,
     ) { padding ->
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(padding).navigationBarsPadding(),
-            contentPadding = PaddingValues(horizontal = density.screenPadding, vertical = density.sectionGap),
-            verticalArrangement = Arrangement.spacedBy(density.sectionGap),
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             item {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -186,7 +184,7 @@ fun ServiciosExtraScreen(navController: NavController, drawerState: DrawerState,
                             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
                         ),
                     ) {
-                        Box(modifier = Modifier.fillMaxWidth().padding(density.emptyStatePadding), contentAlignment = Alignment.Center) {
+                        Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Icon(Icons.Default.Handyman, contentDescription = "Sin servicios", modifier = Modifier.size(48.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f))
                                 Spacer(Modifier.height(12.dp))
@@ -215,7 +213,6 @@ fun ServiciosExtraScreen(navController: NavController, drawerState: DrawerState,
 
 @Composable
 private fun ServicioCard(servicio: ServicioExtra, aCuenta: Double = 0.0, onEdit: () -> Unit, onDelete: () -> Unit) {
-    val density = LocalOptoDensity.current
     val saldo = servicio.montoTotal - aCuenta
     val estadoColor = when (servicio.estado) {
         "Entregado" -> MaterialTheme.colorScheme.positiveGreen
@@ -228,7 +225,7 @@ private fun ServicioCard(servicio: ServicioExtra, aCuenta: Double = 0.0, onEdit:
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = estadoColor.copy(alpha = 0.04f)),
     ) {
-        Column(modifier = Modifier.padding(density.cardPadding)) {
+        Column(modifier = Modifier.padding(16.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -259,7 +256,7 @@ private fun ServicioCard(servicio: ServicioExtra, aCuenta: Double = 0.0, onEdit:
                 }
             }
 
-            Spacer(Modifier.height(density.blockGap))
+            Spacer(Modifier.height(8.dp))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
