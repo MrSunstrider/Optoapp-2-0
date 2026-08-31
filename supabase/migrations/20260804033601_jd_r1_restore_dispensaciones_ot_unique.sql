@@ -1,0 +1,2 @@
+-- History sync stub: version already applied on production (sflhtihqdhrlryeyrzdo).
+-- Intentionally no-op; do not re-run DDL. Aligns local migration history with remote.
