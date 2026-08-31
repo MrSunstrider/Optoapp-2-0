@@ -3,6 +3,7 @@ package com.example.optoapp.domain
 import com.example.optoapp.data.MonturaMovimiento
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.LocalDate
 
@@ -115,6 +116,44 @@ class SyncInventarioUseCaseKtTest {
         )
         assertEquals(fixed, montura.toRemoto().updatedAt)
         assertNotNull(montura.toRemoto().updatedAt)
+    }
+
+    @Test
+    fun montura_toRemoto_coalescesNullUpdatedAt() {
+        val montura = com.example.optoapp.data.Montura(
+            id = "m1",
+            sku = "S1",
+            marca = "A",
+            modelo = "X",
+            color = "N",
+            talla = "M",
+            costo = 50.0,
+            precio = 100.0,
+            stockActual = 5,
+            stockMinimo = 2,
+            activo = true,
+            opticaId = "o1",
+            updatedAt = null,
+        )
+        assertNotNull(montura.toRemoto().updatedAt)
+        assertTrue(montura.toRemoto().updatedAt!!.isNotBlank())
+    }
+
+    @Test
+    fun monturaMovimiento_toRemoto_coalescesBlankUpdatedAt() {
+        val mov = MonturaMovimiento(
+            id = "mov-blank",
+            monturaId = "m1",
+            fecha = LocalDate.of(2026, 8, 29),
+            tipo = "ENTRADA",
+            cantidad = 1,
+            stockPrevio = 0,
+            stockNuevo = 1,
+            opticaId = "o1",
+            updatedAt = "   ",
+        )
+        assertNotNull(mov.toRemoto().updatedAt)
+        assertTrue(mov.toRemoto().updatedAt!!.isNotBlank())
     }
 
     @Test

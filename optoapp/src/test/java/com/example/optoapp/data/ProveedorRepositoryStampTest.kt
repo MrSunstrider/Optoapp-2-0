@@ -6,6 +6,7 @@ import io.mockk.mockk
 import io.mockk.slot
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
@@ -161,7 +162,7 @@ class ProveedorRepositoryStampTest {
                 nombre = "New",
                 ruc = "111",
                 opticaId = "o1",
-                tipo = "lentes",
+                tipo = "laboratorio",
                 updatedAt = "2026-08-31T12:00:00Z",
             ),
         )
@@ -177,10 +178,30 @@ class ProveedorRepositoryStampTest {
                 direccion = any(),
                 contacto = any(),
                 activo = true,
-                tipo = "lentes",
+                tipo = "laboratorio",
                 updatedAt = "2026-08-31T12:00:00Z",
                 updatedBy = any(),
             )
         }
+    }
+
+    @Test
+    fun upsertProveedor_nullUpdatedAt_stampsBeforePersist() = runTest {
+        coEvery { proveedorDao.getById("p1", "o1") } returns null
+        val slot = slot<Proveedor>()
+        coEvery { proveedorDao.insert(capture(slot)) } returns Unit
+
+        repository.upsertProveedor(
+            Proveedor(
+                id = "p1",
+                nombre = "New",
+                ruc = "111",
+                opticaId = "o1",
+                updatedAt = null,
+            ),
+        )
+
+        assertNotNull(slot.captured.updatedAt)
+        assertTrue(slot.captured.updatedAt!!.isNotBlank())
     }
 }

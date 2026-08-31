@@ -1307,8 +1307,11 @@ val MIGRATION_47_48 = object : Migration(47, 48) {
         db.execSQL(
             """
             UPDATE montura_movimientos
-            SET updatedAt = COALESCE(NULLIF(updatedAt, ''), strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
-            WHERE updatedAt IS NULL OR updatedAt = ''
+            SET updatedAt = COALESCE(
+                NULLIF(TRIM(COALESCE(updatedAt, '')), ''),
+                strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+            )
+            WHERE updatedAt IS NULL OR TRIM(COALESCE(updatedAt, '')) = ''
             """.trimIndent(),
         )
     }
@@ -1319,8 +1322,11 @@ val MIGRATION_48_49 = object : Migration(48, 49) {
         db.execSQL(
             """
             UPDATE monturas
-            SET updatedAt = COALESCE(NULLIF(updatedAt, ''), strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
-            WHERE updatedAt IS NULL OR updatedAt = ''
+            SET updatedAt = COALESCE(
+                NULLIF(TRIM(COALESCE(updatedAt, '')), ''),
+                strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+            )
+            WHERE updatedAt IS NULL OR TRIM(COALESCE(updatedAt, '')) = ''
             """.trimIndent(),
         )
     }
@@ -1331,8 +1337,11 @@ val MIGRATION_49_50 = object : Migration(49, 50) {
         db.execSQL(
             """
             UPDATE proveedores
-            SET updatedAt = COALESCE(NULLIF(updatedAt, ''), strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
-            WHERE updatedAt IS NULL OR updatedAt = ''
+            SET updatedAt = COALESCE(
+                NULLIF(TRIM(COALESCE(updatedAt, '')), ''),
+                strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+            )
+            WHERE updatedAt IS NULL OR TRIM(COALESCE(updatedAt, '')) = ''
             """.trimIndent(),
         )
     }

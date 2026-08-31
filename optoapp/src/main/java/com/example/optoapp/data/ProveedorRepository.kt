@@ -25,33 +25,16 @@ open class ProveedorRepository @Inject constructor(
     suspend fun getById(id: String, opticaId: String): Proveedor? = proveedorDao.getById(id, opticaId)
 
     open suspend fun insert(proveedor: Proveedor) {
-        val stamped = proveedor.copy(updatedAt = Instant.now().toString())
-        proveedorDao.insert(stamped)
+        proveedorDao.insert(proveedor.copy(updatedAt = Instant.now().toString()))
     }
 
     open suspend fun update(proveedor: Proveedor) {
-        val stamped = proveedor.copy(updatedAt = Instant.now().toString())
-        proveedorDao.update(
-            id = stamped.id, opticaId = stamped.opticaId,
-            nombre = stamped.nombre, ruc = stamped.ruc,
-            telefono = stamped.telefono, email = stamped.email,
-            direccion = stamped.direccion, contacto = stamped.contacto,
-            activo = stamped.activo, tipo = stamped.tipo,
-            updatedAt = stamped.updatedAt, updatedBy = stamped.updatedBy,
-        )
+        persistUpdate(proveedor.copy(updatedAt = Instant.now().toString()))
     }
 
     open suspend fun softDelete(id: String, opticaId: String) {
         val existing = proveedorDao.getById(id, opticaId) ?: return
-        val stamped = existing.copy(activo = false, updatedAt = Instant.now().toString())
-        proveedorDao.update(
-            id = stamped.id, opticaId = stamped.opticaId,
-            nombre = stamped.nombre, ruc = stamped.ruc,
-            telefono = stamped.telefono, email = stamped.email,
-            direccion = stamped.direccion, contacto = stamped.contacto,
-            activo = stamped.activo, tipo = stamped.tipo,
-            updatedAt = stamped.updatedAt, updatedBy = stamped.updatedBy,
-        )
+        persistUpdate(existing.copy(activo = false, updatedAt = Instant.now().toString()))
     }
 
     fun getProveedoresByMontura(monturaId: String): Flow<List<MonturaProveedor>> = monturaProveedorDao.getByMontura(monturaId)
@@ -83,18 +66,17 @@ open class ProveedorRepository @Inject constructor(
     )
 
     open suspend fun upsertProveedor(proveedor: Proveedor) {
-        val existing = proveedorDao.getById(proveedor.id, proveedor.opticaId)
-        if (existing != null) {
-            proveedorDao.update(
-                id = proveedor.id, opticaId = proveedor.opticaId,
-                nombre = proveedor.nombre, ruc = proveedor.ruc,
-                telefono = proveedor.telefono, email = proveedor.email,
-                direccion = proveedor.direccion, contacto = proveedor.contacto,
-                activo = proveedor.activo, tipo = proveedor.tipo,
-                updatedAt = proveedor.updatedAt, updatedBy = proveedor.updatedBy,
-            )
+        // WHY: download can carry null/blank updatedAt; Room must not re-store null after backfill.
+        val stamped = if (proveedor.updatedAt.isNullOrBlank()) {
+            proveedor.copy(updatedAt = Instant.now().toString())
         } else {
-            runCatching { proveedorDao.insert(proveedor) }
+            proveedor
+        }
+        val existing = proveedorDao.getById(stamped.id, stamped.opticaId)
+        if (existing != null) {
+            persistUpdate(stamped)
+        } else {
+            runCatching { proveedorDao.insert(stamped) }
         }
     }
 
@@ -107,5 +89,22 @@ open class ProveedorRepository @Inject constructor(
                 descripcion = categoria.descripcion,
             )
         }
+    }
+
+    private suspend fun persistUpdate(proveedor: Proveedor) {
+        proveedorDao.update(
+            id = proveedor.id,
+            opticaId = proveedor.opticaId,
+            nombre = proveedor.nombre,
+            ruc = proveedor.ruc,
+            telefono = proveedor.telefono,
+            email = proveedor.email,
+            direccion = proveedor.direccion,
+            contacto = proveedor.contacto,
+            activo = proveedor.activo,
+            tipo = proveedor.tipo,
+            updatedAt = proveedor.updatedAt,
+            updatedBy = proveedor.updatedBy,
+        )
     }
 }

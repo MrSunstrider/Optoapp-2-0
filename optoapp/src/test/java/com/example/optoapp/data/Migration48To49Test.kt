@@ -31,8 +31,8 @@ class Migration48To49Test {
         val joined = capturedSql()
         assertTrue(joined.contains("UPDATE monturas"))
         assertTrue(joined.contains("updatedAt"))
-        assertTrue(joined.contains("NULLIF(updatedAt, '')"))
-        assertTrue(joined.contains("updatedAt IS NULL OR updatedAt = ''"))
+        assertTrue(joined.contains("TRIM(COALESCE(updatedAt, ''))"))
+        assertTrue(joined.contains("updatedAt IS NULL OR TRIM(COALESCE(updatedAt, '')) = ''"))
     }
 
     @Test
