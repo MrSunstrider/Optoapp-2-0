@@ -12,6 +12,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.optoapp.testing.TestTags
+import com.example.optoapp.ui.theme.LocalOptoDensity
 import com.example.optoapp.ui.components.OptoDropdownMenuField
 import com.example.optoapp.ui.components.OptoTextField
 import com.example.optoapp.util.DateUtils
@@ -25,13 +26,14 @@ fun CierreSection(
     onSave: () -> Unit,
     evaluacionId: String?,
 ) {
+    val density = LocalOptoDensity.current
     Text("Diagnóstico y Plan", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
 
     DiagnosticoCard(uiState, onUpdate)
     TratamientoCard(uiState, onUpdate)
     CitaCard(uiState, onUpdate, onShowProximaDatePicker)
 
-    Spacer(modifier = Modifier.height(12.dp))
+    Spacer(modifier = Modifier.height(density.sectionGap))
     Button(
         onClick = onSave,
         modifier = Modifier.fillMaxWidth().height(56.dp).testTag(TestTags.EVALUACION_GUARDAR_BTN),
@@ -45,11 +47,12 @@ fun CierreSection(
 
 @Composable
 private fun DiagnosticoCard(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiState) -> Unit) {
+    val density = LocalOptoDensity.current
     OutlinedCard(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
     ) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(modifier = Modifier.padding(density.cardPadding), verticalArrangement = Arrangement.spacedBy(density.sectionGap)) {
             Text("Diagnóstico", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
 
             Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
@@ -107,8 +110,9 @@ private fun DiagnosticoCard(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiS
 
 @Composable
 private fun TratamientoCard(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiState) -> Unit) {
+    val density = LocalOptoDensity.current
     ElevatedCard(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(modifier = Modifier.padding(density.cardPadding), verticalArrangement = Arrangement.spacedBy(density.sectionGap)) {
             Text("Tratamiento", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
             OptoTextField(value = uiState.planTratamiento, onValueChange = { onUpdate(uiState.copy(planTratamiento = it)) }, label = "Plan de Tratamiento")
             OptoTextField(value = uiState.observaciones, onValueChange = { onUpdate(uiState.copy(observaciones = it)) }, label = "Observaciones Adicionales Generales")

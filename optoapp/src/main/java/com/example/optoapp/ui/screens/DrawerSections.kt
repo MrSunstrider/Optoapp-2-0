@@ -1,32 +1,41 @@
 package com.example.optoapp.ui.screens
 
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DrawerState
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.foundation.layout.Row
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.example.optoapp.BuildConfig
+import com.example.optoapp.testing.TestTags
+import com.example.optoapp.ui.components.drawer.DrawerFooter
+import com.example.optoapp.ui.components.drawer.DrawerHeader
+import com.example.optoapp.ui.components.drawer.DrawerNavEntry
+import com.example.optoapp.ui.components.drawer.DrawerNavSection
+import com.example.optoapp.ui.components.drawer.DrawerQuickAccess
+import com.example.optoapp.ui.components.drawer.DrawerQuickAccessEntry
+import com.example.optoapp.ui.components.drawer.DrawerSection
 import com.example.optoapp.ui.navigation.Route
 import com.example.optoapp.util.SyncErrorSanitizer
 import com.example.optoapp.viewmodel.AuthViewModel
@@ -43,12 +52,179 @@ private fun NavController.navigateDrawer(route: String) {
     }
 }
 
+internal fun buildQuickAccessEntries(showCierreCaja: Boolean): List<DrawerQuickAccessEntry> {
+    val entries = mutableListOf(
+        DrawerQuickAccessEntry(
+            route = "pacientes",
+            label = "Pacientes",
+            icon = Icons.Default.Person,
+            contentDescription = "Pacientes",
+        ),
+        DrawerQuickAccessEntry(
+            route = "servicios_extra",
+            label = "Servicios Extra",
+            icon = Icons.Default.AddShoppingCart,
+            contentDescription = "Servicios Extra",
+        ),
+    )
+    if (showCierreCaja) {
+        entries.add(
+            DrawerQuickAccessEntry(
+                route = "cierre_caja",
+                label = "Cierre de Caja",
+                icon = Icons.Default.AccountBalanceWallet,
+                contentDescription = "Cierre de Caja",
+                testTag = TestTags.NAV_DRAWER_CIERRE_CAJA,
+            ),
+        )
+    }
+    return entries
+}
+
+internal fun buildDrawerSections(
+    showOperacionHoy: Boolean,
+    showBiYReportes: Boolean,
+    showConfiguracion: Boolean,
+    showCierreCaja: Boolean,
+    conflictCount: Int,
+): List<DrawerNavSection> {
+    val operacionEntries = buildList {
+        if (showOperacionHoy) {
+            add(
+                DrawerNavEntry(
+                    route = "operacion_hoy",
+                    label = "Dashboard",
+                    icon = Icons.Default.Today,
+                    contentDescription = "Dashboard",
+                ),
+            )
+        }
+        add(
+            DrawerNavEntry(
+                route = "agenda",
+                label = "Agenda",
+                icon = Icons.Default.CalendarMonth,
+                contentDescription = "Agenda",
+                testTag = TestTags.NAV_BOTTOM_AGENDA,
+            ),
+        )
+    }
+
+    val inventarioEntries = listOf(
+        DrawerNavEntry(
+            route = "monturas",
+            label = "Monturas",
+            icon = Icons.Default.Inventory2,
+            contentDescription = "Monturas",
+        ),
+        DrawerNavEntry(
+            route = "inventario_fisico",
+            label = "Conteo físico",
+            icon = Icons.Default.FactCheck,
+            contentDescription = "Conteo físico",
+        ),
+        DrawerNavEntry(
+            route = "ordenes_compra",
+            label = "Pedidos a proveedor",
+            icon = Icons.Default.LocalShipping,
+            contentDescription = "Pedidos a proveedor",
+        ),
+        DrawerNavEntry(
+            route = "proveedores",
+            label = "Proveedores",
+            icon = Icons.Default.Business,
+            contentDescription = "Proveedores",
+        ),
+    )
+
+    val finanzasEntries = buildList {
+        if (showCierreCaja) {
+            add(
+                DrawerNavEntry(
+                    route = "cierre_caja",
+                    label = "Cierre de Caja",
+                    icon = Icons.Default.AccountBalanceWallet,
+                    contentDescription = "Cierre de Caja",
+                ),
+            )
+        }
+        if (showBiYReportes) {
+            add(
+                DrawerNavEntry(
+                    route = "estadisticas_bi",
+                    label = "Análisis Financiero",
+                    icon = Icons.AutoMirrored.Filled.TrendingUp,
+                    contentDescription = "Análisis Financiero",
+                ),
+            )
+            add(
+                DrawerNavEntry(
+                    route = "reportes",
+                    label = "Reportes",
+                    icon = Icons.Default.DateRange,
+                    contentDescription = "Reportes",
+                    testTag = TestTags.NAV_DRAWER_REPORTES,
+                ),
+            )
+            add(
+                DrawerNavEntry(
+                    route = "costos_y_gastos",
+                    label = "Costos y Gastos",
+                    icon = Icons.Default.AccountBalance,
+                    contentDescription = "Costos y Gastos",
+                    isSelected = { current ->
+                        current == "costos_y_gastos" || current?.startsWith("costos_y_gastos/") == true
+                    },
+                ),
+            )
+        }
+    }
+
+    val sistemaEntries = buildList {
+        if (showConfiguracion) {
+            add(
+                DrawerNavEntry(
+                    route = "configuracion",
+                    label = "Configuración",
+                    icon = Icons.Default.Settings,
+                    contentDescription = "Configuración",
+                    testTag = TestTags.NAV_DRAWER_CONFIGURACION,
+                ),
+            )
+        }
+        if (conflictCount > 0) {
+            add(
+                DrawerNavEntry(
+                    route = "conflictos",
+                    label = "Conflictos",
+                    icon = Icons.Default.Warning,
+                    contentDescription = "Conflictos",
+                    badgeCount = conflictCount,
+                    isDanger = true,
+                ),
+            )
+        }
+    }
+
+    return buildList {
+        add(DrawerNavSection(title = "OPERACIÓN", entries = operacionEntries))
+        add(DrawerNavSection(title = "INVENTARIO", entries = inventarioEntries))
+        if (finanzasEntries.isNotEmpty()) {
+            add(DrawerNavSection(title = "FINANZAS", entries = finanzasEntries))
+        }
+        if (sistemaEntries.isNotEmpty()) {
+            add(DrawerNavSection(title = "SISTEMA", entries = sistemaEntries))
+        }
+    }
+}
+
 @Composable
 fun DrawerContent(
     currentRoute: String?,
     drawerState: DrawerState,
     navController: NavController,
     opticaHeader: OpticaHeaderUi,
+    isOnline: Boolean,
     showCierreCaja: Boolean,
     showBiYReportes: Boolean,
     showOperacionHoy: Boolean,
@@ -57,12 +233,18 @@ fun DrawerContent(
     syncViewModel: SyncViewModel,
     authViewModel: AuthViewModel,
     parentNavController: NavController,
+    onChangeOptica: () -> Unit,
 ) {
     val scope = rememberCoroutineScope()
     var showErrorDialog by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
     val context = androidx.compose.ui.platform.LocalContext.current
     val conflictCount by syncViewModel.conflictCount.collectAsState()
+
+    val quickAccessEntries = remember(showCierreCaja) { buildQuickAccessEntries(showCierreCaja) }
+    val sections = remember(showOperacionHoy, showBiYReportes, showConfiguracion, showCierreCaja, conflictCount) {
+        buildDrawerSections(showOperacionHoy, showBiYReportes, showConfiguracion, showCierreCaja, conflictCount)
+    }
 
     LaunchedEffect(syncState) {
         when (syncState) {
@@ -111,270 +293,48 @@ fun DrawerContent(
         )
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxHeight()
-            .verticalScroll(rememberScrollState()),
-    ) {
+    LaunchedEffect(Unit) { syncViewModel.refreshConflicts() }
+
+    Column(modifier = Modifier.fillMaxHeight()) {
+        DrawerHeader(
+            opticaHeader = opticaHeader,
+            isOnline = isOnline,
+            onChangeOptica = onChangeOptica,
+        )
+
         Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 28.dp, horizontal = 24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
+                .weight(1f)
+                .verticalScroll(rememberScrollState()),
         ) {
-            Image(
-                painter = painterResource(com.example.optoapp.R.drawable.logo_login),
-                contentDescription = "OptoApp",
-                modifier = Modifier.fillMaxWidth(0.65f).clip(androidx.compose.foundation.shape.RoundedCornerShape(16.dp)),
-            )
-            Text(
-                text = opticaHeader.nombreOptica.ifBlank { "Sin óptica" },
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Text(
-                text = "v${BuildConfig.VERSION_NAME}",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-            )
-        }
-        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-
-        Text(
-            text = "GESTIÓN",
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-            modifier = Modifier.padding(start = 24.dp, top = 16.dp, bottom = 4.dp),
-        )
-        NavigationDrawerItem(
-            label = { Text("Pacientes", fontWeight = FontWeight.SemiBold) },
-            selected = currentRoute == "pacientes",
-            onClick = {
-                scope.launch { drawerState.close() }
-                navController.navigateDrawer("pacientes")
-            },
-            icon = { Icon(Icons.Default.Person, contentDescription = "Pacientes") },
-            modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
-        )
-        NavigationDrawerItem(
-            label = { Text("Servicios Extra", fontWeight = FontWeight.SemiBold) },
-            selected = currentRoute == "servicios_extra",
-            onClick = {
-                scope.launch { drawerState.close() }
-                navController.navigateDrawer("servicios_extra")
-            },
-            icon = { Icon(Icons.Default.AddShoppingCart, contentDescription = "Servicios Extra") },
-            modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
-        )
-        if (showOperacionHoy) {
-            NavigationDrawerItem(
-                label = { Text("Dashboard", fontWeight = FontWeight.SemiBold) },
-                selected = currentRoute == "operacion_hoy",
-                onClick = {
+            DrawerQuickAccess(
+                entries = quickAccessEntries,
+                currentRoute = currentRoute,
+                onEntryClick = { entry ->
                     scope.launch { drawerState.close() }
-                    navController.navigateDrawer("operacion_hoy")
+                    navController.navigateDrawer(entry.route)
                 },
-                icon = { Icon(Icons.Default.Today, contentDescription = "Dashboard") },
-                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
             )
-        }
-
-        Text(
-            text = "PROGRAMACIÓN",
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-            modifier = Modifier.padding(start = 24.dp, top = 16.dp, bottom = 4.dp),
-        )
-        NavigationDrawerItem(
-            label = { Text("Agenda", fontWeight = FontWeight.SemiBold) },
-            selected = currentRoute == "agenda",
-            onClick = {
-                scope.launch { drawerState.close() }
-                navController.navigateDrawer("agenda")
-            },
-            icon = { Icon(Icons.Default.CalendarMonth, contentDescription = "Agenda") },
-            modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
-        )
-        Text(
-            text = "INVENTARIO ÓPTICO",
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-            modifier = Modifier.padding(start = 24.dp, top = 16.dp, bottom = 4.dp),
-        )
-        NavigationDrawerItem(
-            label = { Text("Monturas", fontWeight = FontWeight.SemiBold) },
-            selected = currentRoute == "monturas",
-            onClick = {
-                scope.launch { drawerState.close() }
-                navController.navigateDrawer("monturas")
-            },
-            icon = { Icon(Icons.Default.Inventory2, contentDescription = "Monturas") },
-            modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
-        )
-        NavigationDrawerItem(
-            label = { Text("Conteo físico", fontWeight = FontWeight.SemiBold) },
-            selected = currentRoute == "inventario_fisico",
-            onClick = {
-                scope.launch { drawerState.close() }
-                navController.navigateDrawer("inventario_fisico")
-            },
-            icon = { Icon(Icons.Default.FactCheck, contentDescription = "Conteo físico") },
-            modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
-        )
-        NavigationDrawerItem(
-            label = { Text("Pedidos a proveedor", fontWeight = FontWeight.SemiBold) },
-            selected = currentRoute == "ordenes_compra",
-            onClick = {
-                scope.launch { drawerState.close() }
-                navController.navigateDrawer("ordenes_compra")
-            },
-            icon = { Icon(Icons.Default.LocalShipping, contentDescription = "Pedidos a proveedor") },
-            modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
-        )
-        NavigationDrawerItem(
-            label = { Text("Proveedores", fontWeight = FontWeight.SemiBold) },
-            selected = currentRoute == "proveedores",
-            onClick = {
-                scope.launch { drawerState.close() }
-                navController.navigateDrawer("proveedores")
-            },
-            icon = { Icon(Icons.Default.Business, contentDescription = "Proveedores") },
-            modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
-        )
-        if (showCierreCaja || showBiYReportes) {
-            Text(
-                text = "FINANZAS",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                modifier = Modifier.padding(start = 24.dp, top = 16.dp, bottom = 4.dp),
-            )
-            if (showCierreCaja) {
-                NavigationDrawerItem(
-                    label = { Text("Cierre de Caja", fontWeight = FontWeight.SemiBold) },
-                    selected = currentRoute == "cierre_caja",
-                    onClick = {
+            sections.forEach { section ->
+                DrawerSection(
+                    section = section,
+                    currentRoute = currentRoute,
+                    onEntryClick = { entry ->
                         scope.launch { drawerState.close() }
-                        navController.navigateDrawer("cierre_caja")
+                        navController.navigateDrawer(entry.route)
                     },
-                    icon = { Icon(Icons.Default.AccountBalanceWallet, contentDescription = "Cierre de Caja") },
-                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
-                )
-            }
-            if (showBiYReportes) {
-                NavigationDrawerItem(
-                    label = { Text("Análisis Financiero", fontWeight = FontWeight.SemiBold) },
-                    selected = currentRoute == "estadisticas_bi",
-                    onClick = {
-                        scope.launch { drawerState.close() }
-                        navController.navigateDrawer("estadisticas_bi")
-                    },
-                    icon = { Icon(Icons.AutoMirrored.Filled.TrendingUp, contentDescription = "Análisis Financiero") },
-                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
-                )
-                NavigationDrawerItem(
-                    label = { Text("Reportes", fontWeight = FontWeight.SemiBold) },
-                    selected = currentRoute == "reportes",
-                    onClick = {
-                        scope.launch { drawerState.close() }
-                        navController.navigateDrawer("reportes")
-                    },
-                    icon = { Icon(Icons.Default.DateRange, contentDescription = "Reportes") },
-                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
-                )
-                NavigationDrawerItem(
-                    label = { Text("Costos y Gastos", fontWeight = FontWeight.SemiBold) },
-                    selected = currentRoute == "costos_y_gastos" || (currentRoute?.startsWith("costos_y_gastos/") == true),
-                    onClick = {
-                        scope.launch { drawerState.close() }
-                        navController.navigateDrawer("costos_y_gastos")
-                    },
-                    icon = { Icon(Icons.Default.AccountBalance, contentDescription = "Costos y Gastos") },
-                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
                 )
             }
         }
 
-        LaunchedEffect(Unit) { syncViewModel.refreshConflicts() }
-
-        Text(
-            text = "SISTEMA",
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-            modifier = Modifier.padding(start = 24.dp, top = 16.dp, bottom = 4.dp),
-        )
-        if (showConfiguracion) {
-            NavigationDrawerItem(
-                label = { Text("Configuración", fontWeight = FontWeight.SemiBold) },
-                selected = currentRoute == "configuracion",
-                onClick = {
-                    scope.launch { drawerState.close() }
-                    navController.navigateDrawer("configuracion")
-                },
-                icon = { Icon(Icons.Default.Settings, contentDescription = "Configuración") },
-                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
-            )
-        }
-
-        if (conflictCount > 0) {
-            NavigationDrawerItem(
-                label = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("Conflictos", fontWeight = FontWeight.SemiBold)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Badge(containerColor = MaterialTheme.colorScheme.error) {
-                            Text(
-                                conflictCount.toString(),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onError,
-                            )
-                        }
-                    }
-                },
-                selected = currentRoute == "conflictos",
-                onClick = {
-                    scope.launch { drawerState.close() }
-                    navController.navigateDrawer("conflictos")
-                },
-                icon = {
-                    Icon(
-                        Icons.Default.Warning,
-                        contentDescription = "Conflictos",
-                        tint = MaterialTheme.colorScheme.error,
-                    )
-                },
-                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
-            )
-        }
-
-        NavigationDrawerItem(
-            label = {
-                Text(
-                    if (syncState is SyncState.Loading) "Sincronizando..." else "Sincronizar Cloud",
-                    fontWeight = FontWeight.SemiBold,
-                )
-            },
-            selected = false,
-            onClick = {
+        DrawerFooter(
+            syncState = syncState,
+            onSyncClick = {
                 if (syncState !is SyncState.Loading) {
                     syncViewModel.performFullSync()
                 }
             },
-            icon = {
-                if (syncState is SyncState.Loading) {
-                    CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
-                } else {
-                    Icon(Icons.Default.CloudSync, contentDescription = "Sincronizar")
-                }
-            },
-            modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
-        )
-        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp, horizontal = 16.dp))
-        NavigationDrawerItem(
-            label = { Text("Cerrar Sesión", color = MaterialTheme.colorScheme.error) },
-            selected = false,
-            onClick = {
+            onLogoutClick = {
                 scope.launch {
                     drawerState.close()
                     authViewModel.logout()
@@ -383,9 +343,6 @@ fun DrawerContent(
                     }
                 }
             },
-            icon = { Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Salir") },
-            modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
         )
-        Spacer(modifier = Modifier.height(16.dp))
     }
 }

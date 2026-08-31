@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.sp
 import com.example.optoapp.ui.components.OptoQuickAddChip
 import com.example.optoapp.ui.components.OptoSegmentedSelector
 import com.example.optoapp.ui.components.OptoTextField
+import com.example.optoapp.ui.theme.LocalOptoDensity
 import com.example.optoapp.ui.theme.SurfaceDark
 import com.example.optoapp.ui.theme.TextPrimaryDark
 import com.example.optoapp.viewmodel.EvaluacionUiState
@@ -25,15 +26,16 @@ import java.util.Locale
 
 @Composable
 internal fun AddSection(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiState) -> Unit) {
+    val density = LocalOptoDensity.current
     val currentAddOd = if (uiState.isVpCerca) uiState.addCercaOd else uiState.addIntermediaOd
     val currentAddOi = if (uiState.isVpCerca) uiState.addCercaOi else uiState.addIntermediaOi
 
     Surface(
         color = MaterialTheme.colorScheme.surfaceVariant,
         shape = RoundedCornerShape(20.dp),
-        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+        modifier = Modifier.fillMaxWidth().padding(bottom = density.blockGap),
     ) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(modifier = Modifier.padding(density.cardPadding), verticalArrangement = Arrangement.spacedBy(density.sectionGap)) {
             Text(
                 "Adición",
                 fontWeight = FontWeight.Bold,
@@ -72,7 +74,7 @@ internal fun AddSection(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiState
             }
 
             AnimatedVisibility(visible = uiState.hasAdd) {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(density.sectionGap)) {
                     NumericAddStepper(
                         value = currentAddOd,
                         onValueChange = { newVal ->

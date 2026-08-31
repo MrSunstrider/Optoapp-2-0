@@ -29,6 +29,7 @@ import com.example.optoapp.ui.components.cierre_caja.TransactionItem
 import com.example.optoapp.ui.navigation.Route
 import com.example.optoapp.ui.theme.alertRed
 import com.example.optoapp.ui.theme.positiveGreen
+import com.example.optoapp.ui.theme.LocalOptoDensity
 import com.example.optoapp.ui.theme.warningAmber
 import com.example.optoapp.util.DateUtils
 import com.example.optoapp.viewmodel.AuthViewModel
@@ -54,6 +55,7 @@ fun CierreCajaScreen(
     val scrollState = rememberScrollState()
     val today = remember { DateUtils.today() }
     val yesterday = remember(today) { today.minusDays(1) }
+    val density = LocalOptoDensity.current
 
     if (showDatePicker) {
         OptoDatePickerDialog(
@@ -87,7 +89,7 @@ fun CierreCajaScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 16.dp)
+                .padding(horizontal = density.screenPadding)
                 .verticalScroll(scrollState)
                 .navigationBarsPadding(),
         ) {
@@ -98,7 +100,7 @@ fun CierreCajaScreen(
 
             if (!canView) {
                 OptoCard(modifier = Modifier.fillMaxWidth()) {
-                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Column(modifier = Modifier.padding(density.cardPadding), verticalArrangement = Arrangement.spacedBy(density.blockGap)) {
                         Text("Acceso restringido", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error)
                         Text("Tu rol actual no tiene permiso para consultar cierre de caja.")
                     }
@@ -113,17 +115,17 @@ fun CierreCajaScreen(
                 ) {
                     Text(
                         uiState.errorMessage!!,
-                        modifier = Modifier.padding(12.dp),
+                        modifier = Modifier.padding(density.listItemPadding),
                         color = MaterialTheme.colorScheme.onErrorContainer,
                         fontSize = 13.sp,
                     )
                 }
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(density.blockGap))
             }
 
             if (uiState.isLoading) {
                 LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(density.blockGap))
             }
 
             Text(
@@ -132,7 +134,7 @@ fun CierreCajaScreen(
                 color = MaterialTheme.colorScheme.primary,
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(density.blockGap))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -160,7 +162,7 @@ fun CierreCajaScreen(
             }
 
             if (showSearch) {
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(density.blockGap))
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = { searchQuery = it },
@@ -190,7 +192,7 @@ fun CierreCajaScreen(
             }
             val isSearchActive = searchQuery.isNotBlank()
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(density.sectionGap))
 
             val cobradoHoy = remember(uiState.pagos) { viewModel.getCobradoHoy() }
 
@@ -198,7 +200,7 @@ fun CierreCajaScreen(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
             ) {
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Column(modifier = Modifier.padding(density.cardPadding), verticalArrangement = Arrangement.spacedBy(density.blockGap)) {
                     Text(
                         heroCobradoLabel(uiState.fecha, today),
                         style = MaterialTheme.typography.labelMedium,
@@ -238,7 +240,7 @@ fun CierreCajaScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(density.sectionGap))
 
             val totales = remember(uiState.pagos) { viewModel.getTotalesPorMetodo() }
             val knownKeys = remember { setOf("Efectivo", "Transferencia", "Móvil", "Tarjeta") }
@@ -256,7 +258,7 @@ fun CierreCajaScreen(
             }
 
             if (otros.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(density.blockGap))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -268,7 +270,7 @@ fun CierreCajaScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(density.sectionGap))
 
             val hasPagos = filteredPagosDisplay.isNotEmpty()
             val hasDispensaciones = filteredDispensaciones.isNotEmpty()
@@ -283,7 +285,7 @@ fun CierreCajaScreen(
                             isSearchActive -> "Sin resultados para \"$searchQuery\""
                             else -> "Sin movimientos este día"
                         },
-                        modifier = Modifier.padding(12.dp),
+                        modifier = Modifier.padding(density.listItemPadding),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
@@ -294,9 +296,9 @@ fun CierreCajaScreen(
                         fontWeight = FontWeight.Bold,
                         fontSize = 18.sp,
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(density.blockGap))
                     if (hasPagos) {
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Column(verticalArrangement = Arrangement.spacedBy(density.blockGap)) {
                             filteredPagosDisplay.forEach { item ->
                                 val pacNombre = item.pacienteId?.let { uiState.pacienteNombres[it] }.orEmpty()
                                 TransactionItem(
@@ -310,32 +312,32 @@ fun CierreCajaScreen(
                         OptoCard(modifier = Modifier.fillMaxWidth()) {
                             Text(
                                 "Ningún cobro coincide con la búsqueda",
-                                modifier = Modifier.padding(12.dp),
+                                modifier = Modifier.padding(density.listItemPadding),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     }
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(density.sectionGap))
                 } else if (!uiState.isLoading && !isSearchActive) {
                     Text(
                         "Cobros recibidos (0)",
                         fontWeight = FontWeight.Bold,
                         fontSize = 18.sp,
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(density.blockGap))
                     OptoCard(modifier = Modifier.fillMaxWidth()) {
                         Text(
                             "Sin cobros registrados",
-                            modifier = Modifier.padding(12.dp),
+                            modifier = Modifier.padding(density.listItemPadding),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(density.sectionGap))
                 }
 
                 if (!uiState.isLoading) {
                     HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(density.sectionGap))
                 }
 
                 if (hasVentas || (isSearchActive && (uiState.dispensacionesHoy.isNotEmpty() || uiState.serviciosExtraHoy.isNotEmpty()))) {
@@ -344,7 +346,7 @@ fun CierreCajaScreen(
                         fontWeight = FontWeight.Bold,
                         fontSize = 18.sp,
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(density.blockGap))
                     if (hasDispensaciones) {
                         Text("Dispensaciones", fontWeight = FontWeight.SemiBold, fontSize = 14.sp, modifier = Modifier.padding(bottom = 4.dp))
                         filteredDispensaciones.forEach { disp ->
@@ -353,7 +355,7 @@ fun CierreCajaScreen(
                                 navController = navController,
                                 pagadoLedgerByDispensacion = uiState.pagadoLedgerByDispensacion,
                             )
-                            Spacer(modifier = Modifier.height(8.dp))
+                            Spacer(modifier = Modifier.height(density.blockGap))
                         }
                     }
                     if (hasServicios) {
@@ -364,14 +366,14 @@ fun CierreCajaScreen(
                                 navController = navController,
                                 pagadoLedgerByServicio = uiState.pagadoLedgerByServicio,
                             )
-                            Spacer(modifier = Modifier.height(8.dp))
+                            Spacer(modifier = Modifier.height(density.blockGap))
                         }
                     }
                     if (!hasDispensaciones && !hasServicios && isSearchActive) {
                         OptoCard(modifier = Modifier.fillMaxWidth()) {
                             Text(
                                 "Ninguna venta coincide con la búsqueda",
-                                modifier = Modifier.padding(12.dp),
+                                modifier = Modifier.padding(density.listItemPadding),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
@@ -382,11 +384,11 @@ fun CierreCajaScreen(
                         fontWeight = FontWeight.Bold,
                         fontSize = 18.sp,
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(density.blockGap))
                     OptoCard(modifier = Modifier.fillMaxWidth()) {
                         Text(
                             "Sin ventas registradas",
-                            modifier = Modifier.padding(12.dp),
+                            modifier = Modifier.padding(density.listItemPadding),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
@@ -435,6 +437,7 @@ private fun VentaDispensacionCard(
     navController: NavController,
     pagadoLedgerByDispensacion: Map<String, Double>,
 ) {
+    val density = LocalOptoDensity.current
     val totalPagado = cierreVentaPagado(disp.montoPagado, disp.id, pagadoLedgerByDispensacion)
     val saldo = disp.montoTotal - totalPagado
     val estadoColor = ventaEstadoColor(disp.estadoEntrega, saldo)
@@ -449,7 +452,7 @@ private fun VentaDispensacionCard(
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = estadoColor.copy(alpha = 0.04f)),
     ) {
-        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Column(modifier = Modifier.padding(density.listItemPadding), verticalArrangement = Arrangement.spacedBy(density.blockGap)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -494,6 +497,7 @@ private fun VentaServicioCard(
     navController: NavController,
     pagadoLedgerByServicio: Map<String, Double>,
 ) {
+    val density = LocalOptoDensity.current
     val totalPagado = cierreVentaPagado(serv.aCuenta, serv.id, pagadoLedgerByServicio)
     val saldo = serv.montoTotal - totalPagado
     val estadoColor = ventaEstadoColor(serv.estado, saldo)
@@ -507,7 +511,7 @@ private fun VentaServicioCard(
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = estadoColor.copy(alpha = 0.04f)),
     ) {
-        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Column(modifier = Modifier.padding(density.listItemPadding), verticalArrangement = Arrangement.spacedBy(density.blockGap)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,

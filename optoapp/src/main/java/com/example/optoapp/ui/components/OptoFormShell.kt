@@ -25,6 +25,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.example.optoapp.ui.theme.LocalOptoDensity
 
 /**
  * Shell compartido de formularios: top bar, scroll, insets y bottom bar opcional.
@@ -42,6 +43,8 @@ fun OptoFormShell(
     bottomBar: @Composable (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
+    val density = LocalOptoDensity.current
+
     if (isLoading) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator()
@@ -75,12 +78,12 @@ fun OptoFormShell(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp)
+                .padding(density.screenPadding)
                 // La bottomBar ya aplica navigationBarsPadding; aplicarlo aquí solo
                 // cuando no hay bottomBar evita el doble inset (gap muerto sobre los botones).
                 .then(if (bottomBar == null) Modifier.navigationBarsPadding() else Modifier)
                 .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(density.sectionGap),
             content = content,
         )
     }

@@ -13,6 +13,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.optoapp.data.Pago
 import com.example.optoapp.domain.PagoEffect
+import com.example.optoapp.ui.theme.LocalOptoDensity
 import com.example.optoapp.viewmodel.PagoDisplayItem
 import java.util.Locale
 
@@ -35,6 +36,7 @@ fun TransactionItem(
     pacienteNombre: String = "",
     onClick: (() -> Unit)? = null,
 ) {
+    val density = LocalOptoDensity.current
     val pago = item.pago
     val signedAmount = PagoEffect.signedAmount(pago.tipo, pago.monto)
     Card(
@@ -45,7 +47,7 @@ fun TransactionItem(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
     ) {
         Row(
-            modifier = Modifier.padding(14.dp),
+            modifier = Modifier.padding(density.listItemPadding),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(modifier = Modifier.weight(1f)) {

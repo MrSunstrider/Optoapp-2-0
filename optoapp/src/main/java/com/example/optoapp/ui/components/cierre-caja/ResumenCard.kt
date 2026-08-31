@@ -7,17 +7,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
+import com.example.optoapp.ui.theme.LocalOptoDensity
 import androidx.compose.ui.unit.sp
 import java.util.Locale
 
 @Composable
 fun ResumenCard(label: String, monto: Double, modifier: Modifier = Modifier, color: Color) {
+    val density = LocalOptoDensity.current
     Card(
         modifier = modifier,
         colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.1f)),
     ) {
-        Column(modifier = Modifier.padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(modifier = Modifier.padding(density.listItemPadding), horizontalAlignment = Alignment.CenterHorizontally) {
             Text(label, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = color)
             Text(
                 "s/. ${String.format(Locale.getDefault(), "%,.2f", monto)}",
