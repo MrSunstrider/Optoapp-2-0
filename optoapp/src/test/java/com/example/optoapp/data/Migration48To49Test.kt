@@ -1,6 +1,7 @@
 package com.example.optoapp.data
 
 import androidx.sqlite.db.SupportSQLiteDatabase
+import com.example.optoapp.domain.sync.LEGACY_NULL_UPDATED_AT
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
@@ -33,6 +34,8 @@ class Migration48To49Test {
         assertTrue(joined.contains("updatedAt"))
         assertTrue(joined.contains("TRIM(COALESCE(updatedAt, ''))"))
         assertTrue(joined.contains("updatedAt IS NULL OR TRIM(COALESCE(updatedAt, '')) = ''"))
+        assertTrue(joined.contains(LEGACY_NULL_UPDATED_AT))
+        assertTrue(!joined.contains("strftime"))
     }
 
     @Test

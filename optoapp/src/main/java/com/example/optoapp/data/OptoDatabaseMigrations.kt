@@ -2,6 +2,7 @@ package com.example.optoapp.data
 
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
+import com.example.optoapp.domain.sync.LEGACY_NULL_UPDATED_AT
 import java.util.concurrent.TimeUnit
 
 val MIGRATION_6_7 = object : Migration(6, 7) {
@@ -1320,14 +1321,15 @@ val MIGRATION_49_50 = object : Migration(49, 50) {
     }
 }
 
-/** Shared Room backfill: stamp null/blank/whitespace-only updatedAt without clobbering valid ISO stamps. */
+/** Shared Room backfill: fill null/blank/whitespace updatedAt with LWW-safe sentinel (not wall-clock). */
 internal fun stampNullOrBlankUpdatedAtSql(table: String): String =
     """
     UPDATE $table
     SET updatedAt = COALESCE(
         NULLIF(TRIM(COALESCE(updatedAt, '')), ''),
-        strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+        '$LEGACY_NULL_UPDATED_AT'
     )
     WHERE updatedAt IS NULL OR TRIM(COALESCE(updatedAt, '')) = ''
     """.trimIndent()
+
 

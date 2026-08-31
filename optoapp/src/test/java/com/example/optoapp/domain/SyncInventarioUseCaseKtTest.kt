@@ -119,7 +119,7 @@ class SyncInventarioUseCaseKtTest {
     }
 
     @Test
-    fun montura_toRemoto_coalescesNullUpdatedAt() {
+    fun montura_toRemoto_preservesNullUpdatedAt() {
         val montura = com.example.optoapp.data.Montura(
             id = "m1",
             sku = "S1",
@@ -135,12 +135,11 @@ class SyncInventarioUseCaseKtTest {
             opticaId = "o1",
             updatedAt = null,
         )
-        assertNotNull(montura.toRemoto().updatedAt)
-        assertTrue(montura.toRemoto().updatedAt!!.isNotBlank())
+        assertEquals(null, montura.toRemoto().updatedAt)
     }
 
     @Test
-    fun monturaMovimiento_toRemoto_coalescesBlankUpdatedAt() {
+    fun monturaMovimiento_toRemoto_preservesBlankUpdatedAt() {
         val mov = MonturaMovimiento(
             id = "mov-blank",
             monturaId = "m1",
@@ -152,8 +151,7 @@ class SyncInventarioUseCaseKtTest {
             opticaId = "o1",
             updatedAt = "   ",
         )
-        assertNotNull(mov.toRemoto().updatedAt)
-        assertTrue(mov.toRemoto().updatedAt!!.isNotBlank())
+        assertEquals("   ", mov.toRemoto().updatedAt)
     }
 
     @Test

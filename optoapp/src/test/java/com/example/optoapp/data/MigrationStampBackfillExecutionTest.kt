@@ -5,10 +5,9 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import androidx.sqlite.db.SupportSQLiteOpenHelper
 import androidx.sqlite.db.framework.FrameworkSQLiteOpenHelperFactory
 import androidx.test.core.app.ApplicationProvider
+import com.example.optoapp.domain.sync.LEGACY_NULL_UPDATED_AT
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -63,12 +62,9 @@ class MigrationStampBackfillExecutionTest {
             while (cursor.moveToNext()) {
                 byId[cursor.getString(0)] = cursor.getString(1)
             }
-            assertNotNull(byId["row-null"])
-            assertTrue(byId["row-null"]!!.isNotBlank())
-            assertNotNull(byId["row-blank"])
-            assertTrue(byId["row-blank"]!!.isNotBlank())
-            assertNotNull(byId["row-ws"])
-            assertTrue(byId["row-ws"]!!.isNotBlank())
+            assertEquals(LEGACY_NULL_UPDATED_AT, byId["row-null"])
+            assertEquals(LEGACY_NULL_UPDATED_AT, byId["row-blank"])
+            assertEquals(LEGACY_NULL_UPDATED_AT, byId["row-ws"])
             assertEquals("2026-01-01T00:00:00Z", byId["row-keep"])
         }
     }

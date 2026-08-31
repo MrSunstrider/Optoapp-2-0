@@ -102,7 +102,9 @@ open class SyncProveedoresUseCase @Inject constructor(
             entityType = "proveedor",
             localEntities = rows.map { LocalEntity(it.id, it.updatedAt, EntitySnapshotSerializer.serialize(it)) },
         ).map { it.id }.toSet()
-        var safeRows = rows.filter { it.id in safeIds }
+        var safeRows = rows.filter { it.id in safeIds }.map { row ->
+            row.copy(updatedAt = com.example.optoapp.domain.sync.coalesceUpdatedAt(row.updatedAt))
+        }
         if (safeRows.isEmpty()) return 0
 
         // Reconcile IDs with remote: two devices may create the same proveedor
@@ -321,7 +323,7 @@ private fun Proveedor.toRemoto(): ProveedorRemoto = ProveedorRemoto(
     email = email, direccion = direccion, contacto = contacto,
     tipo = tipo.ifBlank { "monturas" },
     activo = activo, opticaId = opticaId,
-    updatedAt = com.example.optoapp.domain.sync.coalesceUpdatedAt(updatedAt),
+    updatedAt = updatedAt,
     updatedBy = updatedBy,
 )
 

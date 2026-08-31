@@ -93,7 +93,9 @@ open class SyncInventarioUseCase @Inject constructor(
             entityType = "montura",
             localEntities = rows.map { com.example.optoapp.domain.sync.LocalEntity(it.id, it.updatedAt, EntitySnapshotSerializer.serialize(it)) },
         ).map { it.id }.toSet()
-        val rows2 = rows.filter { it.id in safeIds }
+        val rows2 = rows.filter { it.id in safeIds }.map { row ->
+            row.copy(updatedAt = com.example.optoapp.domain.sync.coalesceUpdatedAt(row.updatedAt))
+        }
         if (rows2.isEmpty()) {
             syncStateTracker.markSynced(opticaId, "upload_monturas", "batch")
             return 0
@@ -163,7 +165,12 @@ open class SyncInventarioUseCase @Inject constructor(
         }
 
         val rows = partition.toUpload
-            .map { it.toRemoto().copy(opticaId = opticaId) }
+            .map {
+                it.toRemoto().copy(
+                    opticaId = opticaId,
+                    updatedAt = com.example.optoapp.domain.sync.coalesceUpdatedAt(it.updatedAt),
+                )
+            }
         if (rows.isEmpty() && partition.toReconcileLocally.isEmpty()) {
             syncStateTracker.markSynced(opticaId, "upload_montura_movimientos", "batch")
             return MovimientoUploadOutcome(0, 0)
@@ -395,7 +402,7 @@ internal fun Montura.toRemoto(): MonturaRemota = MonturaRemota(
     estadoComercial = estadoComercial.trim(),
     genero = genero.trim(),
     opticaId = opticaId,
-    updatedAt = com.example.optoapp.domain.sync.coalesceUpdatedAt(updatedAt),
+    updatedAt = updatedAt,
 )
 
 internal fun MonturaMovimiento.toRemoto(): MonturaMovimientoRemoto = MonturaMovimientoRemoto(
@@ -413,5 +420,5 @@ internal fun MonturaMovimiento.toRemoto(): MonturaMovimientoRemoto = MonturaMovi
     costoUnitario = costoUnitario,
     tipoDocumento = tipoDocumento,
     updatedBy = updatedBy,
-    updatedAt = com.example.optoapp.domain.sync.coalesceUpdatedAt(updatedAt),
+    updatedAt = updatedAt,
 )
