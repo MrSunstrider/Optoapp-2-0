@@ -12,8 +12,8 @@ interface MonturaDao {
     @Query("SELECT * FROM monturas WHERE id = :id AND opticaId = :opticaId")
     suspend fun getMonturaByIdForOptica(id: String, opticaId: String): Montura?
 
-    @Query("UPDATE monturas SET stockActual = stockActual + :delta WHERE id = :monturaId AND opticaId = :opticaId AND (stockActual + :delta) >= 0")
-    suspend fun adjustStock(monturaId: String, opticaId: String, delta: Int): Int
+    @Query("UPDATE monturas SET stockActual = stockActual + :delta, updatedAt = :updatedAt WHERE id = :monturaId AND opticaId = :opticaId AND (stockActual + :delta) >= 0")
+    suspend fun adjustStock(monturaId: String, opticaId: String, delta: Int, updatedAt: String): Int
 
     @Upsert
     suspend fun insertMontura(montura: Montura)

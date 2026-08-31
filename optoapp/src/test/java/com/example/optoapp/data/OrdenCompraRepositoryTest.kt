@@ -376,7 +376,7 @@ class OrdenCompraRepositoryTest {
         seedProveedor()
         seedMontura("m1")
         // Set initial stock
-        db.monturaDao().adjustStock("m1", "o1", 20)
+        db.monturaDao().adjustStock("m1", "o1", 20, "2026-08-31T10:00:00Z")
         repository.create(
             OrdenCompra(
                 id = "oc1",
@@ -409,7 +409,7 @@ class OrdenCompraRepositoryTest {
     fun estadoWorkflow_CANCELADA_doesNotUpdateStock() = runBlocking {
         seedProveedor()
         seedMontura("m1")
-        db.monturaDao().adjustStock("m1", "o1", 20)
+        db.monturaDao().adjustStock("m1", "o1", 20, "2026-08-31T10:00:00Z")
         repository.create(
             OrdenCompra(
                 id = "oc1",

@@ -25,7 +25,7 @@ interface ProveedorDao {
         """
         UPDATE proveedores SET nombre=:nombre, ruc=:ruc, telefono=:telefono,
         email=:email, direccion=:direccion, contacto=:contacto, activo=:activo,
-        opticaId=:opticaId, updatedAt=:updatedAt, updatedBy=:updatedBy
+        tipo=:tipo, opticaId=:opticaId, updatedAt=:updatedAt, updatedBy=:updatedBy
         WHERE id=:id AND opticaId=:opticaId
     """,
     )
@@ -39,6 +39,7 @@ interface ProveedorDao {
         direccion: String,
         contacto: String,
         activo: Boolean,
+        tipo: String,
         updatedAt: String?,
         updatedBy: String?,
     ): Int

@@ -13,6 +13,7 @@ import com.example.optoapp.data.PacienteDao
 import com.example.optoapp.data.PacienteRepository
 import com.example.optoapp.data.Pago
 import com.example.optoapp.data.ServicioExtra
+import com.example.optoapp.domain.sync.coalesceUpdatedAt
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import dagger.Lazy
 import kotlinx.coroutines.CancellationException
@@ -121,10 +122,18 @@ class BackupRestoreCoordinator @Inject constructor(
         ocupacion = ocupacion ?: "",
         acompanante = acompanante ?: "",
         hobbies = hobbies ?: "",
+        updatedAt = coalesceUpdatedAt(updatedAt),
     )
 
-    private fun EvaluacionClinica.withDefaults(): EvaluacionClinica = this
-    private fun DispensacionOptica.withDefaults(): DispensacionOptica = this
-    private fun Pago.withDefaults(): Pago = this
-    private fun ServicioExtra.withDefaults(): ServicioExtra = this
+    private fun EvaluacionClinica.withDefaults(): EvaluacionClinica =
+        copy(updatedAt = coalesceUpdatedAt(updatedAt))
+
+    private fun DispensacionOptica.withDefaults(): DispensacionOptica =
+        copy(updatedAt = coalesceUpdatedAt(updatedAt))
+
+    private fun Pago.withDefaults(): Pago =
+        copy(updatedAt = coalesceUpdatedAt(updatedAt))
+
+    private fun ServicioExtra.withDefaults(): ServicioExtra =
+        copy(updatedAt = coalesceUpdatedAt(updatedAt))
 }

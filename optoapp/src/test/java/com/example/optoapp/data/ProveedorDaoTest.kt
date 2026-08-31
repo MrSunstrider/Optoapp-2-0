@@ -115,7 +115,8 @@ class ProveedorDaoTest {
         val rows = dao.update(
             id = "p1", opticaId = "o1", nombre = "Updated", ruc = "111",
             telefono = "123", email = "", direccion = "",
-            contacto = "", activo = false, updatedAt = null, updatedBy = null,
+            contacto = "", activo = false, tipo = "monturas",
+            updatedAt = null, updatedBy = null,
         )
         assertEquals(1, rows)
 
@@ -123,6 +124,20 @@ class ProveedorDaoTest {
         assertEquals("Updated", retrieved!!.nombre)
         assertEquals("123", retrieved.telefono)
         assertEquals(false, retrieved.activo)
+        assertEquals("monturas", retrieved.tipo)
+    }
+
+    @Test
+    fun update_changesTipo() = runBlocking {
+        val dao = db.proveedorDao()
+        dao.insert(Proveedor(id = "p1", nombre = "Old", ruc = "111", opticaId = "o1", tipo = "monturas"))
+        dao.update(
+            id = "p1", opticaId = "o1", nombre = "Old", ruc = "111",
+            telefono = "", email = "", direccion = "",
+            contacto = "", activo = true, tipo = "laboratorio",
+            updatedAt = "2026-08-31T12:00:00Z", updatedBy = null,
+        )
+        assertEquals("laboratorio", dao.getById("p1", "o1")!!.tipo)
     }
 
     @Test
@@ -177,7 +192,8 @@ class ProveedorDaoTest {
             id = p2.id, opticaId = p2.opticaId, nombre = p2.nombre,
             ruc = p2.ruc, telefono = p2.telefono, email = p2.email,
             direccion = p2.direccion, contacto = p2.contacto,
-            activo = false, updatedAt = p2.updatedAt, updatedBy = p2.updatedBy,
+            activo = false, tipo = p2.tipo,
+            updatedAt = p2.updatedAt, updatedBy = p2.updatedBy,
         )
 
         val after = dao.getActivosByOptica("o1").first()

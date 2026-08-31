@@ -128,7 +128,7 @@ class MonturaDaoTest {
         )
         dao.insertMontura(montura)
 
-        val rowsAffected = dao.adjustStock("m1", "o1", 3)
+        val rowsAffected = dao.adjustStock("m1", "o1", 3, "2026-08-31T10:00:00Z")
         assertEquals(1, rowsAffected)
 
         val retrieved = dao.getMonturaByIdForOptica("m1", "o1")
@@ -144,7 +144,7 @@ class MonturaDaoTest {
         )
         dao.insertMontura(montura)
 
-        val rowsAffected = dao.adjustStock("m1", "o1", -4)
+        val rowsAffected = dao.adjustStock("m1", "o1", -4, "2026-08-31T10:00:00Z")
         assertEquals(1, rowsAffected)
 
         val retrieved = dao.getMonturaByIdForOptica("m1", "o1")
@@ -161,12 +161,13 @@ class MonturaDaoTest {
         dao.insertMontura(montura)
 
         // Intentar reducir más del stock disponible
-        val rowsAffected = dao.adjustStock("m1", "o1", -10)
+        val rowsAffected = dao.adjustStock("m1", "o1", -10, "2026-08-31T10:00:00Z")
         assertEquals(0, rowsAffected)
 
-        // Stock no cambió por la constraint en el WHERE
+        // Stock and stamp must not change when the WHERE guard rejects the delta
         val retrieved = dao.getMonturaByIdForOptica("m1", "o1")
         assertEquals(3, retrieved!!.stockActual)
+        assertNull(retrieved.updatedAt)
     }
 
     @Test

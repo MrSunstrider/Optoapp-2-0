@@ -2,6 +2,7 @@ package com.example.optoapp.data
 
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
+import com.example.optoapp.domain.sync.LEGACY_NULL_UPDATED_AT
 import java.util.concurrent.TimeUnit
 
 val MIGRATION_6_7 = object : Migration(6, 7) {
@@ -1301,3 +1302,34 @@ val MIGRATION_46_47 = object : Migration(46, 47) {
         )
     }
 }
+
+val MIGRATION_47_48 = object : Migration(47, 48) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(stampNullOrBlankUpdatedAtSql("montura_movimientos"))
+    }
+}
+
+val MIGRATION_48_49 = object : Migration(48, 49) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(stampNullOrBlankUpdatedAtSql("monturas"))
+    }
+}
+
+val MIGRATION_49_50 = object : Migration(49, 50) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(stampNullOrBlankUpdatedAtSql("proveedores"))
+    }
+}
+
+/** Shared Room backfill: fill null/blank/whitespace updatedAt with LWW-safe sentinel (not wall-clock). */
+internal fun stampNullOrBlankUpdatedAtSql(table: String): String =
+    """
+    UPDATE $table
+    SET updatedAt = COALESCE(
+        NULLIF(TRIM(COALESCE(updatedAt, '')), ''),
+        '$LEGACY_NULL_UPDATED_AT'
+    )
+    WHERE updatedAt IS NULL OR TRIM(COALESCE(updatedAt, '')) = ''
+    """.trimIndent()
+
+

@@ -18,6 +18,7 @@ import io.mockk.unmockkAll
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -143,6 +144,27 @@ class SyncInventarioUseCaseUploadTest {
 
         assertEquals(1, uploadedBatches.size)
         assertEquals("uuid-new", uploadedBatches.single().single().id)
+    }
+
+    @Test
+    fun uploadMovimientos_batchIncludesNonNullUpdatedAt() = runTest {
+        stubMonturasUploadEmpty()
+        val local = mov(id = "uuid-stamped", referenciaId = "disp-stamped").copy(
+            updatedAt = "2026-08-29T12:00:00Z",
+        )
+
+        coEvery { repository.getMovimientosMonturaSnapshotForOptica(opticaId) } returns listOf(local)
+        coEvery { conflictHelper.filterConflictMovimientos(opticaId, any()) } returns MovimientoUploadPlan(
+            safeIds = listOf(local.id),
+            remoteByKey = emptyMap(),
+            conflictedIds = emptyList(),
+        )
+
+        createUseCase().invoke(opticaId, downloadAfterUpload = false)
+
+        assertEquals(1, uploadedBatches.size)
+        assertNotNull(uploadedBatches.single().single().updatedAt)
+        assertEquals("2026-08-29T12:00:00Z", uploadedBatches.single().single().updatedAt)
     }
 
     @Test

@@ -2,6 +2,8 @@ package com.example.optoapp.domain
 
 import com.example.optoapp.data.MonturaMovimiento
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.LocalDate
 
@@ -75,6 +77,81 @@ class SyncInventarioUseCaseKtTest {
         assertEquals("usr-x", remoto.userId)
         assertEquals(75.0, remoto.costoUnitario, 0.001)
         assertEquals("GUIA", remoto.tipoDocumento)
+    }
+
+    @Test
+    fun monturaMovimiento_toRemoto_preservesUpdatedAt() {
+        val fixed = "2026-08-29T12:00:00Z"
+        val mov = MonturaMovimiento(
+            id = "mov-ts",
+            monturaId = "m1",
+            fecha = LocalDate.of(2026, 8, 29),
+            tipo = "ENTRADA",
+            cantidad = 1,
+            stockPrevio = 0,
+            stockNuevo = 1,
+            opticaId = "o1",
+            updatedAt = fixed,
+        )
+        assertEquals(fixed, mov.toRemoto().updatedAt)
+    }
+
+    @Test
+    fun montura_toRemoto_preservesUpdatedAt() {
+        val fixed = "2026-08-31T10:00:00Z"
+        val montura = com.example.optoapp.data.Montura(
+            id = "m1",
+            sku = "S1",
+            marca = "A",
+            modelo = "X",
+            color = "N",
+            talla = "M",
+            costo = 50.0,
+            precio = 100.0,
+            stockActual = 5,
+            stockMinimo = 2,
+            activo = true,
+            opticaId = "o1",
+            updatedAt = fixed,
+        )
+        assertEquals(fixed, montura.toRemoto().updatedAt)
+        assertNotNull(montura.toRemoto().updatedAt)
+    }
+
+    @Test
+    fun montura_toRemoto_preservesNullUpdatedAt() {
+        val montura = com.example.optoapp.data.Montura(
+            id = "m1",
+            sku = "S1",
+            marca = "A",
+            modelo = "X",
+            color = "N",
+            talla = "M",
+            costo = 50.0,
+            precio = 100.0,
+            stockActual = 5,
+            stockMinimo = 2,
+            activo = true,
+            opticaId = "o1",
+            updatedAt = null,
+        )
+        assertEquals(null, montura.toRemoto().updatedAt)
+    }
+
+    @Test
+    fun monturaMovimiento_toRemoto_preservesBlankUpdatedAt() {
+        val mov = MonturaMovimiento(
+            id = "mov-blank",
+            monturaId = "m1",
+            fecha = LocalDate.of(2026, 8, 29),
+            tipo = "ENTRADA",
+            cantidad = 1,
+            stockPrevio = 0,
+            stockNuevo = 1,
+            opticaId = "o1",
+            updatedAt = "   ",
+        )
+        assertEquals("   ", mov.toRemoto().updatedAt)
     }
 
     @Test
