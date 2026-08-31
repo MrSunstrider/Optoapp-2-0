@@ -1301,3 +1301,39 @@ val MIGRATION_46_47 = object : Migration(46, 47) {
         )
     }
 }
+
+val MIGRATION_47_48 = object : Migration(47, 48) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            """
+            UPDATE montura_movimientos
+            SET updatedAt = COALESCE(NULLIF(updatedAt, ''), strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+            WHERE updatedAt IS NULL OR updatedAt = ''
+            """.trimIndent(),
+        )
+    }
+}
+
+val MIGRATION_48_49 = object : Migration(48, 49) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            """
+            UPDATE monturas
+            SET updatedAt = COALESCE(NULLIF(updatedAt, ''), strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+            WHERE updatedAt IS NULL OR updatedAt = ''
+            """.trimIndent(),
+        )
+    }
+}
+
+val MIGRATION_49_50 = object : Migration(49, 50) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            """
+            UPDATE proveedores
+            SET updatedAt = COALESCE(NULLIF(updatedAt, ''), strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+            WHERE updatedAt IS NULL OR updatedAt = ''
+            """.trimIndent(),
+        )
+    }
+}

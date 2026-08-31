@@ -85,7 +85,7 @@ class MonturaInventoryCoordinator @Inject constructor(
     }
 
     suspend fun adjustMonturaStock(monturaId: String, opticaId: String, delta: Int): Int {
-        val changed = monturaDao.adjustStock(monturaId, opticaId, delta)
+        val changed = monturaDao.adjustStock(monturaId, opticaId, delta, Instant.now().toString())
         if (changed > 0) postSaveSyncScheduler.get().scheduleInventarioSync(opticaId)
         return changed
     }
@@ -99,8 +99,9 @@ class MonturaInventoryCoordinator @Inject constructor(
         monturaMovimientoDao.getMovimientoById(id, opticaId)
 
     suspend fun insertMonturaMovimiento(movimiento: MonturaMovimiento) {
-        monturaMovimientoDao.insertMovimiento(movimiento)
-        postSaveSyncScheduler.get().scheduleInventarioSync(movimiento.opticaId)
+        val stamped = movimiento.copy(updatedAt = Instant.now().toString())
+        monturaMovimientoDao.insertMovimiento(stamped)
+        postSaveSyncScheduler.get().scheduleInventarioSync(stamped.opticaId)
     }
 
     suspend fun registrarSalida(
@@ -136,8 +137,7 @@ class MonturaInventoryCoordinator @Inject constructor(
                 costoUnitario = costoUnitario,
                 tipoDocumento = tipoDocumento,
             )
-            monturaMovimientoDao.insertMovimiento(movimiento)
-            postSaveSyncScheduler.get().scheduleInventarioSync(opticaId)
+            insertMonturaMovimiento(movimiento)
             return Resource.Success(Unit)
         } catch (e: CancellationException) {
             throw e
@@ -157,7 +157,7 @@ class MonturaInventoryCoordinator @Inject constructor(
                 val calculatedStock = stockByMontura[montura.id] ?: montura.stockActual
                 if (montura.stockActual != calculatedStock) {
                     val delta = calculatedStock - montura.stockActual
-                    monturaDao.adjustStock(montura.id, opticaId, delta)
+                    monturaDao.adjustStock(montura.id, opticaId, delta, Instant.now().toString())
                     updated++
                 }
             }

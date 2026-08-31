@@ -375,7 +375,7 @@ internal data class MonturaMovimientoRemoto(
     )
 }
 
-private fun Montura.toRemoto(): MonturaRemota = MonturaRemota(
+internal fun Montura.toRemoto(): MonturaRemota = MonturaRemota(
     id = id,
     sku = sku.trim(),
     marca = marca.trim(),
