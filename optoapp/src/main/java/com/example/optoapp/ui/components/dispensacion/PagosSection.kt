@@ -19,6 +19,7 @@ import com.example.optoapp.testing.TestTags
 import com.example.optoapp.ui.components.AbonoDialog
 import com.example.optoapp.ui.components.OptoDropdownMenuField
 import com.example.optoapp.ui.components.OptoTextField
+import com.example.optoapp.ui.theme.LocalOptoDensity
 import com.example.optoapp.util.DateUtils
 import com.example.optoapp.viewmodel.DispensacionUiState
 import java.util.*
@@ -31,8 +32,9 @@ fun PagosSection(
     onUpdatePago: (Pago) -> Unit,
     onRemovePago: (Pago) -> Unit,
 ) {
+    val density = LocalOptoDensity.current
     Card {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(modifier = Modifier.padding(density.cardPadding), verticalArrangement = Arrangement.spacedBy(density.sectionGap)) {
             Text("Información Financiera", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
 
             OptoTextField(
@@ -57,7 +59,7 @@ fun PagosSection(
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
                 ) {
                     Row(
-                        modifier = Modifier.padding(12.dp),
+                        modifier = Modifier.padding(density.listItemPadding),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {

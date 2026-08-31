@@ -10,6 +10,7 @@ import com.example.optoapp.data.Montura
 import com.example.optoapp.ui.components.MonturaSearchField
 import com.example.optoapp.ui.components.OptoDropdownMenuField
 import com.example.optoapp.ui.components.OptoTextField
+import com.example.optoapp.ui.theme.LocalOptoDensity
 import com.example.optoapp.viewmodel.DispensacionUiState
 
 @Composable
@@ -18,8 +19,9 @@ fun MonturaForm(
     onUpdate: (DispensacionUiState) -> Unit,
     monturasActivas: List<Montura>,
 ) {
+    val density = LocalOptoDensity.current
     Card {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(modifier = Modifier.padding(density.cardPadding), verticalArrangement = Arrangement.spacedBy(density.blockGap)) {
             Text("Información de Montura", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
             OptoDropdownMenuField(label = "Origen", selected = uiState.origenMontura, options = listOf("Tienda", "Paciente")) {
                 if (it == "Tienda") {
