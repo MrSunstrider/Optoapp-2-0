@@ -27,7 +27,7 @@ class Migration49To50Test {
     }
 
     @Test
-    fun migration_49_50_backfills_null_and_blank_proveedores_updatedAt() {
+    fun migration_49_50_sql_contains_null_blank_proveedores_updatedAt_backfill() {
         val joined = capturedSql()
         assertTrue(joined.contains("UPDATE proveedores"))
         assertTrue(joined.contains("updatedAt"))

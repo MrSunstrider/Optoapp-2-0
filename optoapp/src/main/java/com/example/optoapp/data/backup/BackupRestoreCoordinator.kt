@@ -13,10 +13,10 @@ import com.example.optoapp.data.PacienteDao
 import com.example.optoapp.data.PacienteRepository
 import com.example.optoapp.data.Pago
 import com.example.optoapp.data.ServicioExtra
+import com.example.optoapp.domain.sync.coalesceUpdatedAt
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import dagger.Lazy
 import kotlinx.coroutines.CancellationException
-import java.time.Instant
 import javax.inject.Inject
 
 class BackupRestoreCoordinator @Inject constructor(
@@ -136,7 +136,4 @@ class BackupRestoreCoordinator @Inject constructor(
 
     private fun ServicioExtra.withDefaults(): ServicioExtra =
         copy(updatedAt = coalesceUpdatedAt(updatedAt))
-
-    private fun coalesceUpdatedAt(existing: String?): String =
-        if (existing.isNullOrBlank()) Instant.now().toString() else existing
 }

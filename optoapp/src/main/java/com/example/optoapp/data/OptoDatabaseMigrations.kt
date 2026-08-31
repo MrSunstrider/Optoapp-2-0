@@ -1304,45 +1304,30 @@ val MIGRATION_46_47 = object : Migration(46, 47) {
 
 val MIGRATION_47_48 = object : Migration(47, 48) {
     override fun migrate(db: SupportSQLiteDatabase) {
-        db.execSQL(
-            """
-            UPDATE montura_movimientos
-            SET updatedAt = COALESCE(
-                NULLIF(TRIM(COALESCE(updatedAt, '')), ''),
-                strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
-            )
-            WHERE updatedAt IS NULL OR TRIM(COALESCE(updatedAt, '')) = ''
-            """.trimIndent(),
-        )
+        db.execSQL(stampNullOrBlankUpdatedAtSql("montura_movimientos"))
     }
 }
 
 val MIGRATION_48_49 = object : Migration(48, 49) {
     override fun migrate(db: SupportSQLiteDatabase) {
-        db.execSQL(
-            """
-            UPDATE monturas
-            SET updatedAt = COALESCE(
-                NULLIF(TRIM(COALESCE(updatedAt, '')), ''),
-                strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
-            )
-            WHERE updatedAt IS NULL OR TRIM(COALESCE(updatedAt, '')) = ''
-            """.trimIndent(),
-        )
+        db.execSQL(stampNullOrBlankUpdatedAtSql("monturas"))
     }
 }
 
 val MIGRATION_49_50 = object : Migration(49, 50) {
     override fun migrate(db: SupportSQLiteDatabase) {
-        db.execSQL(
-            """
-            UPDATE proveedores
-            SET updatedAt = COALESCE(
-                NULLIF(TRIM(COALESCE(updatedAt, '')), ''),
-                strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
-            )
-            WHERE updatedAt IS NULL OR TRIM(COALESCE(updatedAt, '')) = ''
-            """.trimIndent(),
-        )
+        db.execSQL(stampNullOrBlankUpdatedAtSql("proveedores"))
     }
 }
+
+/** Shared Room backfill: stamp null/blank/whitespace-only updatedAt without clobbering valid ISO stamps. */
+internal fun stampNullOrBlankUpdatedAtSql(table: String): String =
+    """
+    UPDATE $table
+    SET updatedAt = COALESCE(
+        NULLIF(TRIM(COALESCE(updatedAt, '')), ''),
+        strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+    )
+    WHERE updatedAt IS NULL OR TRIM(COALESCE(updatedAt, '')) = ''
+    """.trimIndent()
+

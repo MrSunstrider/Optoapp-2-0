@@ -27,7 +27,7 @@ class Migration48To49Test {
     }
 
     @Test
-    fun migration_48_49_backfills_null_and_blank_monturas_updatedAt() {
+    fun migration_48_49_sql_contains_null_blank_monturas_updatedAt_backfill() {
         val joined = capturedSql()
         assertTrue(joined.contains("UPDATE monturas"))
         assertTrue(joined.contains("updatedAt"))

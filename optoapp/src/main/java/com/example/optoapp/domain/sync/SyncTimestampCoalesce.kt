@@ -3,8 +3,8 @@ package com.example.optoapp.domain.sync
 import java.time.Instant
 
 /**
- * WHY: PostgREST encodeDefaults sends explicit null; remote monturas/movimientos
- * updated_at is NOT NULL and INSERT triggers do not fill nulls (23502).
+ * WHY: Shared null/blank → now for upload (PostgREST encodeDefaults → 23502) and
+ * backup restore (stamp missing timestamps without clobbering valid ones).
  */
-internal fun coalesceUploadUpdatedAt(existing: String?): String =
+internal fun coalesceUpdatedAt(existing: String?): String =
     if (existing.isNullOrBlank()) Instant.now().toString() else existing

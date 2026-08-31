@@ -321,7 +321,7 @@ private fun Proveedor.toRemoto(): ProveedorRemoto = ProveedorRemoto(
     email = email, direccion = direccion, contacto = contacto,
     tipo = tipo.ifBlank { "monturas" },
     activo = activo, opticaId = opticaId,
-    updatedAt = com.example.optoapp.domain.sync.coalesceUploadUpdatedAt(updatedAt),
+    updatedAt = com.example.optoapp.domain.sync.coalesceUpdatedAt(updatedAt),
     updatedBy = updatedBy,
 )
 

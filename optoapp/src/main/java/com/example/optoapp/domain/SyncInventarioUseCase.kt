@@ -395,7 +395,7 @@ internal fun Montura.toRemoto(): MonturaRemota = MonturaRemota(
     estadoComercial = estadoComercial.trim(),
     genero = genero.trim(),
     opticaId = opticaId,
-    updatedAt = com.example.optoapp.domain.sync.coalesceUploadUpdatedAt(updatedAt),
+    updatedAt = com.example.optoapp.domain.sync.coalesceUpdatedAt(updatedAt),
 )
 
 internal fun MonturaMovimiento.toRemoto(): MonturaMovimientoRemoto = MonturaMovimientoRemoto(
@@ -413,5 +413,5 @@ internal fun MonturaMovimiento.toRemoto(): MonturaMovimientoRemoto = MonturaMovi
     costoUnitario = costoUnitario,
     tipoDocumento = tipoDocumento,
     updatedBy = updatedBy,
-    updatedAt = com.example.optoapp.domain.sync.coalesceUploadUpdatedAt(updatedAt),
+    updatedAt = com.example.optoapp.domain.sync.coalesceUpdatedAt(updatedAt),
 )
