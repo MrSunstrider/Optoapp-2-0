@@ -31,6 +31,7 @@ class OptoDensityTest {
         assertTrue(compact.listItemPadding < comfortable.listItemPadding)
         assertTrue(compact.sectionGap < comfortable.sectionGap)
         assertTrue(compact.blockGap < comfortable.blockGap)
+        assertTrue(compact.tightGap < comfortable.tightGap)
         assertTrue(compact.wizardHeaderPadding < comfortable.wizardHeaderPadding)
         assertTrue(compact.emptyStatePadding < comfortable.emptyStatePadding)
     }
@@ -43,10 +44,25 @@ class OptoDensityTest {
         assertEquals(10.dp, compact.listItemPadding)
         assertEquals(8.dp, compact.sectionGap)
         assertEquals(6.dp, compact.blockGap)
+        assertEquals(2.dp, compact.tightGap)
         assertEquals(8.dp, compact.wizardHeaderPadding)
         assertEquals(20.dp, compact.emptyStatePadding)
-        assertTrue(compact.isCompact)
-        assertFalse(OptoDensity.Comfortable.isCompact)
+        assertTrue(compact.isDense)
+        assertFalse(OptoDensity.Comfortable.isDense)
+    }
+
+    @Test
+    fun comfortable_preset_values_matchSpecification() {
+        val comfortable = OptoDensity.Comfortable
+        assertEquals(16.dp, comfortable.screenPadding)
+        assertEquals(16.dp, comfortable.cardPadding)
+        assertEquals(14.dp, comfortable.listItemPadding)
+        assertEquals(12.dp, comfortable.sectionGap)
+        assertEquals(8.dp, comfortable.blockGap)
+        assertEquals(4.dp, comfortable.tightGap)
+        assertEquals(12.dp, comfortable.wizardHeaderPadding)
+        assertEquals(32.dp, comfortable.emptyStatePadding)
+        assertFalse(comfortable.isDense)
     }
 
     @Test

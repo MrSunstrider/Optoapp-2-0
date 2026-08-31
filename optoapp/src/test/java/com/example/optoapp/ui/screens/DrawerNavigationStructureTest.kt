@@ -1,5 +1,6 @@
 package com.example.optoapp.ui.screens
 
+import com.example.optoapp.ui.navigation.Route
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -11,15 +12,15 @@ class DrawerNavigationStructureTest {
     fun quickAccess_alwaysIncludesPacientesAndServicios() {
         val entries = buildQuickAccessEntries(showCierreCaja = false)
         assertEquals(2, entries.size)
-        assertEquals("pacientes", entries[0].route)
-        assertEquals("servicios_extra", entries[1].route)
+        assertEquals(Route.Pacientes.route, entries[0].route)
+        assertEquals(Route.ServiciosExtra.route, entries[1].route)
     }
 
     @Test
     fun quickAccess_includesCierreCajaWhenPermitted() {
         val entries = buildQuickAccessEntries(showCierreCaja = true)
         assertEquals(3, entries.size)
-        assertTrue(entries.any { it.route == "cierre_caja" && it.label == "Cierre de Caja" })
+        assertTrue(entries.any { it.route == Route.CierreCaja.route && it.label == "Cierre de Caja" })
     }
 
     @Test
@@ -122,5 +123,42 @@ class DrawerNavigationStructureTest {
             conflictCount = 0,
         ).single { it.title == "SISTEMA" }
         assertFalse(withoutConflict.entries.any { it.label == "Conflictos" })
+    }
+
+    @Test
+    fun drawerSections_inventario_routes_are_fixed() {
+        val inventario = buildDrawerSections(
+            showOperacionHoy = false,
+            showBiYReportes = false,
+            showConfiguracion = false,
+            showCierreCaja = false,
+            conflictCount = 0,
+        ).single { it.title == "INVENTARIO" }
+        assertEquals(
+            listOf(
+                Route.Monturas.route,
+                Route.InventarioFisico.route,
+                Route.OrdenesCompra.route,
+                Route.Proveedores.route,
+            ),
+            inventario.entries.map { it.route },
+        )
+    }
+
+    @Test
+    fun costosYGastos_isSelected_matchesNestedRoutes() {
+        val costos = buildDrawerSections(
+            showOperacionHoy = false,
+            showBiYReportes = true,
+            showConfiguracion = false,
+            showCierreCaja = false,
+            conflictCount = 0,
+        ).single { it.title == "FINANZAS" }
+            .entries.single { it.label == "Costos y Gastos" }
+
+        assertTrue(costos.isSelected(Route.CostosYGastos.route))
+        assertTrue(costos.isSelected("${Route.CostosYGastos.route}/nuevo"))
+        assertFalse(costos.isSelected(Route.Reportes.route))
+        assertFalse(costos.isSelected(null))
     }
 }

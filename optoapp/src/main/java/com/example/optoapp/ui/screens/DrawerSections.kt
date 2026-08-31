@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.FactCheck
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.AlertDialog
@@ -55,13 +56,13 @@ private fun NavController.navigateDrawer(route: String) {
 internal fun buildQuickAccessEntries(showCierreCaja: Boolean): List<DrawerQuickAccessEntry> {
     val entries = mutableListOf(
         DrawerQuickAccessEntry(
-            route = "pacientes",
+            route = Route.Pacientes.route,
             label = "Pacientes",
             icon = Icons.Default.Person,
             contentDescription = "Pacientes",
         ),
         DrawerQuickAccessEntry(
-            route = "servicios_extra",
+            route = Route.ServiciosExtra.route,
             label = "Servicios Extra",
             icon = Icons.Default.AddShoppingCart,
             contentDescription = "Servicios Extra",
@@ -70,7 +71,7 @@ internal fun buildQuickAccessEntries(showCierreCaja: Boolean): List<DrawerQuickA
     if (showCierreCaja) {
         entries.add(
             DrawerQuickAccessEntry(
-                route = "cierre_caja",
+                route = Route.CierreCaja.route,
                 label = "Cierre de Caja",
                 icon = Icons.Default.AccountBalanceWallet,
                 contentDescription = "Cierre de Caja",
@@ -92,7 +93,7 @@ internal fun buildDrawerSections(
         if (showOperacionHoy) {
             add(
                 DrawerNavEntry(
-                    route = "operacion_hoy",
+                    route = Route.OperacionHoy.route,
                     label = "Dashboard",
                     icon = Icons.Default.Today,
                     contentDescription = "Dashboard",
@@ -101,7 +102,7 @@ internal fun buildDrawerSections(
         }
         add(
             DrawerNavEntry(
-                route = "agenda",
+                route = Route.Agenda.route,
                 label = "Agenda",
                 icon = Icons.Default.CalendarMonth,
                 contentDescription = "Agenda",
@@ -112,25 +113,25 @@ internal fun buildDrawerSections(
 
     val inventarioEntries = listOf(
         DrawerNavEntry(
-            route = "monturas",
+            route = Route.Monturas.route,
             label = "Monturas",
             icon = Icons.Default.Inventory2,
             contentDescription = "Monturas",
         ),
         DrawerNavEntry(
-            route = "inventario_fisico",
+            route = Route.InventarioFisico.route,
             label = "Conteo físico",
-            icon = Icons.Default.FactCheck,
+            icon = Icons.AutoMirrored.Filled.FactCheck,
             contentDescription = "Conteo físico",
         ),
         DrawerNavEntry(
-            route = "ordenes_compra",
+            route = Route.OrdenesCompra.route,
             label = "Pedidos a proveedor",
             icon = Icons.Default.LocalShipping,
             contentDescription = "Pedidos a proveedor",
         ),
         DrawerNavEntry(
-            route = "proveedores",
+            route = Route.Proveedores.route,
             label = "Proveedores",
             icon = Icons.Default.Business,
             contentDescription = "Proveedores",
@@ -141,7 +142,7 @@ internal fun buildDrawerSections(
         if (showCierreCaja) {
             add(
                 DrawerNavEntry(
-                    route = "cierre_caja",
+                    route = Route.CierreCaja.route,
                     label = "Cierre de Caja",
                     icon = Icons.Default.AccountBalanceWallet,
                     contentDescription = "Cierre de Caja",
@@ -151,7 +152,7 @@ internal fun buildDrawerSections(
         if (showBiYReportes) {
             add(
                 DrawerNavEntry(
-                    route = "estadisticas_bi",
+                    route = Route.EstadisticasBI.route,
                     label = "Análisis Financiero",
                     icon = Icons.AutoMirrored.Filled.TrendingUp,
                     contentDescription = "Análisis Financiero",
@@ -159,7 +160,7 @@ internal fun buildDrawerSections(
             )
             add(
                 DrawerNavEntry(
-                    route = "reportes",
+                    route = Route.Reportes.route,
                     label = "Reportes",
                     icon = Icons.Default.DateRange,
                     contentDescription = "Reportes",
@@ -168,12 +169,12 @@ internal fun buildDrawerSections(
             )
             add(
                 DrawerNavEntry(
-                    route = "costos_y_gastos",
+                    route = Route.CostosYGastos.route,
                     label = "Costos y Gastos",
                     icon = Icons.Default.AccountBalance,
                     contentDescription = "Costos y Gastos",
                     isSelected = { current ->
-                        current == "costos_y_gastos" || current?.startsWith("costos_y_gastos/") == true
+                        current == Route.CostosYGastos.route || current?.startsWith("${Route.CostosYGastos.route}/") == true
                     },
                 ),
             )
@@ -184,7 +185,7 @@ internal fun buildDrawerSections(
         if (showConfiguracion) {
             add(
                 DrawerNavEntry(
-                    route = "configuracion",
+                    route = Route.Configuracion.route,
                     label = "Configuración",
                     icon = Icons.Default.Settings,
                     contentDescription = "Configuración",
@@ -195,7 +196,7 @@ internal fun buildDrawerSections(
         if (conflictCount > 0) {
             add(
                 DrawerNavEntry(
-                    route = "conflictos",
+                    route = Route.Conflictos.route,
                     label = "Conflictos",
                     icon = Icons.Default.Warning,
                     contentDescription = "Conflictos",

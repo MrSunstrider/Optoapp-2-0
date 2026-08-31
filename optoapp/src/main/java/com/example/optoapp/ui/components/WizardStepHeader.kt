@@ -36,8 +36,8 @@ fun WizardStepHeader(
     modifier: Modifier = Modifier,
 ) {
     val density = LocalOptoDensity.current
-    val isCompact = density.isCompact
-    val titleStyle = if (isCompact) {
+    val isDense = density.isDense
+    val titleStyle = if (isDense) {
         MaterialTheme.typography.titleMedium
     } else {
         MaterialTheme.typography.headlineSmall

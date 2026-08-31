@@ -26,7 +26,7 @@ fun DrawerFooter(
         DrawerNavItem(
             label = if (syncState is SyncState.Loading) "Sincronizando..." else "Sincronizar Cloud",
             icon = Icons.Default.CloudSync,
-            contentDescription = "Sincronizar",
+            contentDescription = if (syncState is SyncState.Loading) "Sincronizando..." else "Sincronizar Cloud",
             selected = false,
             isLoading = syncState is SyncState.Loading,
             onClick = onSyncClick,
@@ -34,7 +34,7 @@ fun DrawerFooter(
         DrawerNavItem(
             label = "Cerrar Sesión",
             icon = Icons.AutoMirrored.Filled.ExitToApp,
-            contentDescription = "Salir",
+            contentDescription = "Cerrar Sesión",
             selected = false,
             isDanger = true,
             onClick = onLogoutClick,

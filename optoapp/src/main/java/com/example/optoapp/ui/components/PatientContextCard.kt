@@ -25,8 +25,8 @@ fun PatientContextCard(
     descripcion: String? = null,
 ) {
     val density = LocalOptoDensity.current
-    val isCompact = density.isCompact
-    val otFontSize = if (isCompact) 16.sp else 18.sp
+    val isDense = density.isDense
+    val otFontSize = if (isDense) 16.sp else 18.sp
 
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -36,7 +36,7 @@ fun PatientContextCard(
     ) {
         Column(
             modifier = Modifier.padding(density.cardPadding),
-            verticalArrangement = Arrangement.spacedBy(density.blockGap / 2),
+            verticalArrangement = Arrangement.spacedBy(density.tightGap),
         ) {
             if (!ot.isNullOrBlank()) {
                 Text("OT: $ot", fontWeight = FontWeight.Bold, fontSize = otFontSize)

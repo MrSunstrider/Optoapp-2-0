@@ -39,8 +39,8 @@ fun OptoKpiCard(
     iconContentDescription: String? = title,
 ) {
     val density = LocalOptoDensity.current
-    val isCompact = density.isCompact
-    val valueFontSize = if (isCompact) 18.sp else 20.sp
+    val isDense = density.isDense
+    val valueFontSize = if (isDense) 18.sp else 20.sp
 
     Card(
         modifier = modifier,
