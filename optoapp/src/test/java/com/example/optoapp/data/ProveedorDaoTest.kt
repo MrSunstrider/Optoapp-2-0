@@ -115,7 +115,8 @@ class ProveedorDaoTest {
         val rows = dao.update(
             id = "p1", opticaId = "o1", nombre = "Updated", ruc = "111",
             telefono = "123", email = "", direccion = "",
-            contacto = "", activo = false, updatedAt = null, updatedBy = null,
+            contacto = "", activo = false, tipo = "monturas",
+            updatedAt = null, updatedBy = null,
         )
         assertEquals(1, rows)
 
@@ -177,7 +178,8 @@ class ProveedorDaoTest {
             id = p2.id, opticaId = p2.opticaId, nombre = p2.nombre,
             ruc = p2.ruc, telefono = p2.telefono, email = p2.email,
             direccion = p2.direccion, contacto = p2.contacto,
-            activo = false, updatedAt = p2.updatedAt, updatedBy = p2.updatedBy,
+            activo = false, tipo = p2.tipo,
+            updatedAt = p2.updatedAt, updatedBy = p2.updatedBy,
         )
 
         val after = dao.getActivosByOptica("o1").first()

@@ -16,6 +16,7 @@ import com.example.optoapp.data.ServicioExtra
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import dagger.Lazy
 import kotlinx.coroutines.CancellationException
+import java.time.Instant
 import javax.inject.Inject
 
 class BackupRestoreCoordinator @Inject constructor(
@@ -121,10 +122,21 @@ class BackupRestoreCoordinator @Inject constructor(
         ocupacion = ocupacion ?: "",
         acompanante = acompanante ?: "",
         hobbies = hobbies ?: "",
+        updatedAt = coalesceUpdatedAt(updatedAt),
     )
 
-    private fun EvaluacionClinica.withDefaults(): EvaluacionClinica = this
-    private fun DispensacionOptica.withDefaults(): DispensacionOptica = this
-    private fun Pago.withDefaults(): Pago = this
-    private fun ServicioExtra.withDefaults(): ServicioExtra = this
+    private fun EvaluacionClinica.withDefaults(): EvaluacionClinica =
+        copy(updatedAt = coalesceUpdatedAt(updatedAt))
+
+    private fun DispensacionOptica.withDefaults(): DispensacionOptica =
+        copy(updatedAt = coalesceUpdatedAt(updatedAt))
+
+    private fun Pago.withDefaults(): Pago =
+        copy(updatedAt = coalesceUpdatedAt(updatedAt))
+
+    private fun ServicioExtra.withDefaults(): ServicioExtra =
+        copy(updatedAt = coalesceUpdatedAt(updatedAt))
+
+    private fun coalesceUpdatedAt(existing: String?): String =
+        if (existing.isNullOrBlank()) Instant.now().toString() else existing
 }
