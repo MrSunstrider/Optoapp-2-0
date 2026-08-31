@@ -1,16 +1,15 @@
 package com.example.optoapp.ui.screens
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextOverflow
+import com.example.optoapp.R
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
@@ -35,7 +34,7 @@ fun MainDrawerScreen(
     /** Misma instancia que [LoginScreen] / [PinScreen] en [MainActivity]; si no, logout no resetea el estado que lee el login. */
     authViewModel: AuthViewModel,
 ) {
-    val context = androidx.compose.ui.platform.LocalContext.current
+    val context = LocalContext.current
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     val navController = rememberNavController()
@@ -59,18 +58,18 @@ fun MainDrawerScreen(
     val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
     val snackbarHostState = remember { SnackbarHostState() }
     val isOnline by syncViewModel.isOnline.collectAsState()
+    val snackbarScope = rememberCoroutineScope()
 
     CompositionLocalProvider(LocalSnackbarHostState provides snackbarHostState) {
         ModalNavigationDrawer(
             drawerState = drawerState,
             drawerContent = {
-                ModalDrawerSheet(modifier = Modifier.width(300.dp)) {
+                ModalDrawerSheet(modifier = Modifier.width(280.dp)) {
                     DrawerContent(
                         currentRoute = currentRoute,
                         drawerState = drawerState,
                         navController = navController,
                         opticaHeader = opticaHeader,
-                        isOnline = isOnline,
                         showCierreCaja = showCierreCaja,
                         showBiYReportes = showBiYReportes,
                         showOperacionHoy = showOperacionHoy,
@@ -79,20 +78,6 @@ fun MainDrawerScreen(
                         syncViewModel = syncViewModel,
                         authViewModel = authViewModel,
                         parentNavController = parentNavController,
-                        onChangeOptica = {
-                            scope.launch {
-                                val hasMultiple = authViewModel.prepareOpticaSelection()
-                                if (hasMultiple) {
-                                    parentNavController.navigate(Route.SeleccionOptica.route)
-                                } else {
-                                    android.widget.Toast.makeText(
-                                        context,
-                                        "Solo tienes una óptica asociada.",
-                                        android.widget.Toast.LENGTH_SHORT,
-                                    ).show()
-                                }
-                            }
-                        },
                     )
                 }
             },
@@ -108,6 +93,40 @@ fun MainDrawerScreen(
                             color = MaterialTheme.colorScheme.secondary,
                             trackColor = MaterialTheme.colorScheme.surfaceVariant,
                         )
+                    }
+                    Surface(
+                        tonalElevation = 1.dp,
+                        color = MaterialTheme.colorScheme.surfaceVariant,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .statusBarsPadding(),
+                    ) {
+                        TextButton(
+                            onClick = {
+                                scope.launch {
+                                    val hasMultiple = authViewModel.prepareOpticaSelection()
+                                    if (hasMultiple) {
+                                        parentNavController.navigate(Route.SeleccionOptica.route)
+                                    } else {
+                                        android.widget.Toast.makeText(
+                                            context,
+                                            "Solo tienes una óptica asociada.",
+                                            android.widget.Toast.LENGTH_SHORT,
+                                        ).show()
+                                    }
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp),
+                        ) {
+                            Text(
+                                text = "Óptica activa: ${opticaHeader.nombreOptica} · ${opticaHeader.fiscalEtiqueta}",
+                                style = MaterialTheme.typography.labelSmall,
+                                modifier = Modifier.padding(vertical = 2.dp),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
                     }
                     OfflineBanner(isOnline = isOnline)
 

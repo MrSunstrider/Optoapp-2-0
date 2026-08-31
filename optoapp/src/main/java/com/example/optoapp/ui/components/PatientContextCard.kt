@@ -11,8 +11,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.optoapp.ui.theme.LocalOptoDensity
 import com.example.optoapp.util.DateUtils
 import java.time.LocalDate
 
@@ -24,22 +24,15 @@ fun PatientContextCard(
     fecha: LocalDate? = null,
     descripcion: String? = null,
 ) {
-    val density = LocalOptoDensity.current
-    val isDense = density.isDense
-    val otFontSize = if (isDense) 16.sp else 18.sp
-
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
         ),
     ) {
-        Column(
-            modifier = Modifier.padding(density.cardPadding),
-            verticalArrangement = Arrangement.spacedBy(density.tightGap),
-        ) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             if (!ot.isNullOrBlank()) {
-                Text("OT: $ot", fontWeight = FontWeight.Bold, fontSize = otFontSize)
+                Text("OT: $ot", fontWeight = FontWeight.Bold, fontSize = 18.sp)
             }
             Text("Paciente: $pacienteNombre", fontSize = 14.sp)
             if (fecha != null) {

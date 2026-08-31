@@ -24,7 +24,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.optoapp.testing.TestTags
-import com.example.optoapp.ui.theme.LocalOptoDensity
 import com.example.optoapp.ui.components.OptoDropdownMenuField
 import com.example.optoapp.ui.components.OptoTextField
 import com.example.optoapp.viewmodel.EvaluacionUiState
@@ -36,7 +35,6 @@ fun RefraccionSection(
     onUpdate: (EvaluacionUiState) -> Unit,
     viewModel: EvaluacionViewModel,
 ) {
-    val density = LocalOptoDensity.current
     var refObjetivaExpanded by remember { mutableStateOf(false) }
     val chevronRefObjRotation by animateFloatAsState(
         targetValue = if (refObjetivaExpanded) 180f else 0f,
@@ -55,7 +53,7 @@ fun RefraccionSection(
                     .fillMaxWidth()
                     .heightIn(min = 48.dp)
                     .clickable { refObjetivaExpanded = !refObjetivaExpanded }
-                    .padding(horizontal = density.cardPadding, vertical = density.wizardHeaderPadding),
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -73,8 +71,8 @@ fun RefraccionSection(
                 exit = shrinkVertically(),
             ) {
                 Column(
-                    modifier = Modifier.padding(start = density.cardPadding, end = density.cardPadding, bottom = density.cardPadding),
-                    verticalArrangement = Arrangement.spacedBy(density.blockGap),
+                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         OptoTextField(value = uiState.objOdEsf, onValueChange = { onUpdate(uiState.copy(objOdEsf = it)) }, label = "OD Esf", modifier = Modifier.weight(1f))
@@ -91,7 +89,7 @@ fun RefraccionSection(
         }
     }
 
-    HorizontalDivider(modifier = Modifier.padding(vertical = density.blockGap))
+    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
     Text("VL Fórmula Optométrica", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary)
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         OptoTextField(
@@ -147,12 +145,11 @@ fun RefraccionSection(
 
 @Composable
 private fun DipSection(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiState) -> Unit) {
-    val density = LocalOptoDensity.current
     OutlinedCard(
-        modifier = Modifier.fillMaxWidth().padding(bottom = density.blockGap),
+        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
         colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
     ) {
-        Column(modifier = Modifier.padding(density.cardPadding), verticalArrangement = Arrangement.spacedBy(density.sectionGap)) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text("DIP / DNP", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OptoTextField(value = uiState.dipLejos, onValueChange = { onUpdate(uiState.copy(dipLejos = it)) }, label = "DNP Lejos", keyboardType = KeyboardType.Decimal, modifier = Modifier.weight(1f).testTag(TestTags.EVALUACION_DIP_FIELD))
@@ -178,7 +175,6 @@ private fun DipSection(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiState)
 
 @Composable
 private fun PrismasSection(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiState) -> Unit) {
-    val density = LocalOptoDensity.current
     var prismasExpanded by remember { mutableStateOf(false) }
     val chevronPrismasRotation by animateFloatAsState(
         targetValue = if (prismasExpanded) 180f else 0f,
@@ -186,7 +182,7 @@ private fun PrismasSection(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiSt
     )
 
     OutlinedCard(
-        modifier = Modifier.fillMaxWidth().padding(bottom = density.blockGap),
+        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
         colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
     ) {
         Column {
@@ -195,7 +191,7 @@ private fun PrismasSection(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiSt
                     .fillMaxWidth()
                     .heightIn(min = 48.dp)
                     .clickable { prismasExpanded = !prismasExpanded }
-                    .padding(horizontal = density.cardPadding, vertical = density.wizardHeaderPadding),
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -213,12 +209,8 @@ private fun PrismasSection(uiState: EvaluacionUiState, onUpdate: (EvaluacionUiSt
                 exit = shrinkVertically(),
             ) {
                 Column(
-                    modifier = Modifier.padding(
-                        start = density.cardPadding,
-                        end = density.cardPadding,
-                        bottom = density.cardPadding,
-                    ),
-                    verticalArrangement = Arrangement.spacedBy(density.sectionGap),
+                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                         OptoTextField(

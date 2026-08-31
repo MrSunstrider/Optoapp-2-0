@@ -21,7 +21,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.optoapp.ui.theme.LocalOptoDensity
 
 /**
  * Reusable KPI card with icon, title, and large value text.
@@ -38,23 +37,19 @@ fun OptoKpiCard(
     modifier: Modifier = Modifier,
     iconContentDescription: String? = title,
 ) {
-    val density = LocalOptoDensity.current
-    val isDense = density.isDense
-    val valueFontSize = if (isDense) 18.sp else 20.sp
-
     Card(
         modifier = modifier,
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.08f)),
     ) {
-        Column(modifier = Modifier.padding(density.listItemPadding)) {
+        Column(modifier = Modifier.padding(14.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(icon, contentDescription = iconContentDescription, tint = color, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(6.dp))
                 Text(title, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Spacer(Modifier.height(4.dp))
-            Text(value, fontSize = valueFontSize, fontWeight = FontWeight.Bold, color = color)
+            Text(value, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = color)
         }
     }
 }
