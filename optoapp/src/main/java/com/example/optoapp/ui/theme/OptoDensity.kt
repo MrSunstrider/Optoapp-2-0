@@ -12,9 +12,10 @@ data class OptoDensity(
     val listItemPadding: Dp,
     val sectionGap: Dp,
     val blockGap: Dp,
+    val tightGap: Dp,
     val wizardHeaderPadding: Dp,
     val emptyStatePadding: Dp,
-    val isCompact: Boolean,
+    val isDense: Boolean,
 ) {
     companion object {
         val Comfortable = OptoDensity(
@@ -23,9 +24,10 @@ data class OptoDensity(
             listItemPadding = 14.dp,
             sectionGap = 12.dp,
             blockGap = 8.dp,
+            tightGap = 4.dp,
             wizardHeaderPadding = 12.dp,
             emptyStatePadding = 32.dp,
-            isCompact = false,
+            isDense = false,
         )
 
         val Compact = OptoDensity(
@@ -34,9 +36,10 @@ data class OptoDensity(
             listItemPadding = 10.dp,
             sectionGap = 8.dp,
             blockGap = 6.dp,
+            tightGap = 2.dp,
             wizardHeaderPadding = 8.dp,
             emptyStatePadding = 20.dp,
-            isCompact = true,
+            isDense = true,
         )
     }
 }

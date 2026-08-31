@@ -244,7 +244,7 @@ private fun StepOrden(
     }
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(density.blockGap),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         OptoTextField(

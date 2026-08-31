@@ -69,7 +69,7 @@ fun DrawerNavItem(
             .then(testTag?.let { Modifier.testTag(it) } ?: Modifier)
             .semantics(mergeDescendants = true) {
                 role = Role.Button
-                set(SemanticsProperties.ContentDescription, listOf(label))
+                set(SemanticsProperties.ContentDescription, listOf(contentDescription))
                 if (selected) {
                     set(SemanticsProperties.Selected, true)
                 }
@@ -80,14 +80,14 @@ fun DrawerNavItem(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = density.screenPadding, vertical = density.sectionGap),
+                .padding(horizontal = density.listItemPadding, vertical = density.sectionGap),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Start,
         ) {
             if (isLoading) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(24.dp).semantics {
-                        set(SemanticsProperties.ContentDescription, listOf(label))
+                        set(SemanticsProperties.ContentDescription, listOf(contentDescription))
                     },
                     strokeWidth = 2.dp,
                     color = textColor,

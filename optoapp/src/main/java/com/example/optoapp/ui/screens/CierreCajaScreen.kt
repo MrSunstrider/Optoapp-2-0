@@ -138,7 +138,7 @@ fun CierreCajaScreen(
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(density.blockGap),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 FilterChip(
@@ -250,7 +250,7 @@ fun CierreCajaScreen(
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(density.blockGap),
             ) {
                 ResumenCard("Efectivo", totales["Efectivo"] ?: 0.0, Modifier.weight(1f), MaterialTheme.colorScheme.tertiary)
                 ResumenCard("Móvil/Trans", (totales["Transferencia"] ?: 0.0) + (totales["Móvil"] ?: 0.0), Modifier.weight(1f), MaterialTheme.colorScheme.secondary)
@@ -261,7 +261,7 @@ fun CierreCajaScreen(
                 Spacer(modifier = Modifier.height(density.blockGap))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(density.blockGap),
                 ) {
                     otros.entries.forEach { (key, monto) ->
                         val label = key.ifBlank { "Sin espec." }

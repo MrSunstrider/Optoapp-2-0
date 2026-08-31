@@ -150,7 +150,7 @@ fun PacientesListScreen(
                 PacienteListFilters.SALDO_PENDIENTE,
                 PacienteListFilters.ESTADO_ENTREGA,
             )
-            FlowRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            FlowRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(density.blockGap), verticalArrangement = Arrangement.spacedBy(density.tightGap)) {
                 filters.forEach { filter ->
                     val isSelected = when (filter) {
                         PacienteListFilters.TODOS -> activeFilter.isNullOrBlank()
@@ -300,7 +300,7 @@ private fun PacienteCard(
     onCall: () -> Unit,
 ) {
     val density = LocalOptoDensity.current
-    val avatarSize = if (density.isCompact) 40.dp else 44.dp
+    val avatarSize = if (density.isDense) 40.dp else 44.dp
     val symbol = sexoSymbolOf(paciente.sexo)
     val avatarColor = sexoAvatarColor(symbol, isSystemInDarkTheme()) ?: MaterialTheme.colorScheme.primary
     val (avatarIcon, avatarDescription) = when (symbol) {
@@ -323,7 +323,7 @@ private fun PacienteCard(
                 Box(contentAlignment = Alignment.Center) { Icon(avatarIcon, contentDescription = avatarDescription, modifier = Modifier.size(24.dp), tint = avatarColor) }
             }
 
-            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(density.tightGap)) {
                 Text(paciente.nombreCompleto, fontWeight = FontWeight.Bold, fontSize = 15.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 Text("Edad: ${paciente.edad}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Row(verticalAlignment = Alignment.CenterVertically) {
