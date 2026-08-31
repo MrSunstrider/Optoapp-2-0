@@ -51,6 +51,7 @@ class MainActivity : ComponentActivity() {
         return fragment.contains("type=recovery")
     }
 
+    @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -85,7 +86,8 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
-            OptoAppTheme {
+            val windowSizeClass = calculateWindowSizeClass(this)
+            OptoAppTheme(windowSizeClass = windowSizeClass) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background,

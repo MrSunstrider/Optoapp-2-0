@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.optoapp.testing.TestTags
+import com.example.optoapp.ui.theme.LocalOptoDensity
 import com.example.optoapp.domain.estadoAfterFechaEntrega
 import com.example.optoapp.domain.PagoEffect
 import com.example.optoapp.ui.components.FechaEntregaEditButton
@@ -57,6 +58,8 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
     val isEditMode = dispensacionId != null
     val wizardSteps = remember(isEditMode) { wizardStepsForMode(isEditMode) }
     val lastStepIndex = wizardSteps.lastIndex
+
+    val density = LocalOptoDensity.current
 
     LaunchedEffect(dispensacionId) {
         if (dispensacionId != null) {
@@ -126,8 +129,8 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
                 modifier = Modifier
                     .fillMaxWidth()
                     .navigationBarsPadding()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    .padding(horizontal = density.screenPadding, vertical = density.blockGap),
+                horizontalArrangement = Arrangement.spacedBy(density.sectionGap),
             ) {
                 if (currentStep > 0) {
                     OutlinedButton(
@@ -161,15 +164,15 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 16.dp)
+                .padding(horizontal = density.screenPadding)
                 .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(density.blockGap),
         ) {
             if (uiState.isLoading) {
                 LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
             }
 
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(density.blockGap))
 
             WizardStepHeader(
                 labels = wizardSteps,
@@ -178,7 +181,7 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
                 modifier = Modifier.fillMaxWidth(),
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(density.blockGap))
 
             if (uiState.pacienteNombre.isNotBlank()) {
                 PatientContextCard(
@@ -220,7 +223,7 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
                     fontSize = 13.sp,
                 )
             }
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(density.sectionGap))
         }
     }
 }
@@ -235,12 +238,13 @@ private fun StepOrden(
     onEvaluacionExpandedChange: (Boolean) -> Unit,
     onShowDatePicker: () -> Unit,
 ) {
+    val density = LocalOptoDensity.current
     OutlinedButton(onClick = onShowDatePicker, modifier = Modifier.fillMaxWidth()) {
         Text("Fecha: ${DateUtils.formatLocalized(uiState.fecha)}")
     }
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(density.blockGap),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         OptoTextField(
@@ -259,7 +263,7 @@ private fun StepOrden(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
         shape = RoundedCornerShape(12.dp),
     ) {
-        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(modifier = Modifier.padding(density.cardPadding), verticalArrangement = Arrangement.spacedBy(density.blockGap)) {
             Text("Evaluación Vinculada", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.primary)
 
             if (uiState.evaluacionesDisponibles.isNotEmpty()) {
@@ -378,11 +382,12 @@ private fun StepGestion(
     dispensacionId: String,
     navController: NavController,
 ) {
+    val density = LocalOptoDensity.current
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
     ) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(modifier = Modifier.padding(density.cardPadding), verticalArrangement = Arrangement.spacedBy(density.blockGap)) {
             Text("Información Financiera", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
 
             val monto = uiState.montoTotal.toDoubleOrNull() ?: 0.0

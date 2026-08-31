@@ -30,6 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.optoapp.ui.theme.LocalOptoDensity
 import com.example.optoapp.ui.components.OptoTextField
 import com.example.optoapp.util.DateUtils
 import com.example.optoapp.viewmodel.EvaluacionUiState
@@ -40,13 +41,14 @@ fun AnamnesisSection(
     onUpdate: (EvaluacionUiState) -> Unit,
     onShowDatePicker: () -> Unit,
 ) {
+    val density = LocalOptoDensity.current
     OutlinedButton(onClick = onShowDatePicker, modifier = Modifier.fillMaxWidth()) {
         Text("Fecha Registro: ${DateUtils.formatLocalized(uiState.fecha)}")
     }
     OptoTextField(value = uiState.motivoConsulta, onValueChange = { onUpdate(uiState.copy(motivoConsulta = it)) }, label = "Motivo de consulta")
     OptoTextField(value = uiState.sintomas, onValueChange = { onUpdate(uiState.copy(sintomas = it)) }, label = "Síntomas y signos")
 
-    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+    HorizontalDivider(modifier = Modifier.padding(vertical = density.blockGap))
 
     var antecedentesExpanded by remember { mutableStateOf(false) }
     val chevronRotation by animateFloatAsState(
@@ -66,7 +68,7 @@ fun AnamnesisSection(
                     .fillMaxWidth()
                     .heightIn(min = 48.dp)
                     .clickable { antecedentesExpanded = !antecedentesExpanded }
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                    .padding(horizontal = density.cardPadding, vertical = density.wizardHeaderPadding),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -84,8 +86,12 @@ fun AnamnesisSection(
                 exit = shrinkVertically(),
             ) {
                 Column(
-                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.padding(
+                        start = density.cardPadding,
+                        end = density.cardPadding,
+                        bottom = density.cardPadding,
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(density.blockGap),
                 ) {
                     OptoTextField(value = uiState.antecedentesPersonalesOculares, onValueChange = { onUpdate(uiState.copy(antecedentesPersonalesOculares = it)) }, label = "Pers. Oculares")
                     OptoTextField(value = uiState.antecedentesPersonalesSistemicos, onValueChange = { onUpdate(uiState.copy(antecedentesPersonalesSistemicos = it)) }, label = "Pers. Sistémicos")

@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.optoapp.testing.TestTags
+import com.example.optoapp.ui.theme.LocalOptoDensity
 import com.example.optoapp.ui.components.OSDIDialog
 import com.example.optoapp.ui.components.OptoDatePickerDialog
 import com.example.optoapp.ui.components.OptoTopAppBar
@@ -158,6 +159,8 @@ fun NuevaEvaluacionScreen(
         }
     }
 
+    val density = LocalOptoDensity.current
+
     Scaffold(
         modifier = Modifier.testTag(TestTags.EVALUACION_SCREEN_ROOT),
         containerColor = MaterialTheme.colorScheme.surface,
@@ -182,7 +185,7 @@ fun NuevaEvaluacionScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .navigationBarsPadding()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                    .padding(horizontal = density.screenPadding, vertical = density.wizardHeaderPadding),
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 if (currentStep > 0) {
@@ -213,7 +216,7 @@ fun NuevaEvaluacionScreen(
                 PatientContextCard(
                     pacienteNombre = uiState.pacienteNombre,
                     fecha = uiState.fecha,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    modifier = Modifier.padding(horizontal = density.screenPadding, vertical = density.blockGap),
                 )
             }
 
@@ -223,7 +226,7 @@ fun NuevaEvaluacionScreen(
                 totalSteps = 5,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                    .padding(horizontal = density.screenPadding, vertical = density.wizardHeaderPadding),
             )
 
             HorizontalDivider()
@@ -237,8 +240,8 @@ fun NuevaEvaluacionScreen(
                     .fillMaxSize()
                     .weight(1f)
                     .verticalScroll(rememberScrollState())
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                    .padding(density.screenPadding),
+                verticalArrangement = Arrangement.spacedBy(density.blockGap),
             ) {
                 when (currentStep) {
                     0 -> AnamnesisSection(

@@ -16,6 +16,7 @@ import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.example.optoapp.testing.TestTags
+import com.example.optoapp.ui.theme.LocalOptoDensity
 import com.example.optoapp.util.DateUtils
 import java.time.LocalDate
 
@@ -109,12 +110,13 @@ internal const val SECTION_CLINICA = "Clínica / contexto"
 
 @Composable
 private fun SectionHeader(title: String) {
+    val density = LocalOptoDensity.current
     Text(
         text = title,
         style = MaterialTheme.typography.titleMedium,
         fontWeight = FontWeight.SemiBold,
         color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
+        modifier = Modifier.padding(top = density.blockGap, bottom = density.blockGap / 2),
     )
 }
 
@@ -154,11 +156,13 @@ fun PacienteFormSections(
     val sexos = listOf("Masculino", "Femenino")
 
     // --- Section 0: Registro ---
+    val density = LocalOptoDensity.current
+
     SectionHeader(SECTION_REGISTRO)
 
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(density.blockGap),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         OutlinedTextField(

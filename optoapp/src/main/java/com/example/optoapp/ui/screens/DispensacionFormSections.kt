@@ -25,6 +25,7 @@ import com.example.optoapp.ui.components.AbonoDialog
 import com.example.optoapp.ui.components.DropdownField
 import com.example.optoapp.ui.components.FechaEntregaEditButton
 import com.example.optoapp.ui.components.OptoTextField
+import com.example.optoapp.ui.theme.LocalOptoDensity
 import com.example.optoapp.util.DateUtils
 import com.example.optoapp.viewmodel.DispensacionUiState
 import com.example.optoapp.viewmodel.RegaloDispensacionUi
@@ -56,8 +57,9 @@ fun FinancieraInfoSection(
     onUpdatePago: (Pago) -> Unit,
     onRemovePago: (Pago) -> Unit,
 ) {
+    val density = LocalOptoDensity.current
     Card {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(modifier = Modifier.padding(density.cardPadding), verticalArrangement = Arrangement.spacedBy(density.sectionGap)) {
             Text("Información Financiera", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
 
             OptoTextField(
@@ -81,7 +83,7 @@ fun FinancieraInfoSection(
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
                 ) {
                     Row(
-                        modifier = Modifier.padding(12.dp),
+                        modifier = Modifier.padding(density.listItemPadding),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
@@ -208,6 +210,7 @@ fun RegalosSection(
     onAddRegalo: (RegaloDispensacionUi) -> Unit,
     onRemoveRegalo: (Int) -> Unit,
 ) {
+    val density = LocalOptoDensity.current
     var showDialog by remember { mutableStateOf(false) }
     var selectedMonturaId by remember { mutableStateOf("") }
     var cantidad by remember { mutableStateOf("1") }
@@ -215,7 +218,7 @@ fun RegalosSection(
     val selectedMontura = monturas.find { it.id == selectedMonturaId }
 
     Card {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(modifier = Modifier.padding(density.cardPadding), verticalArrangement = Arrangement.spacedBy(density.blockGap)) {
             Text("Regalos", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
 
             regalos.forEachIndexed { index, regalo ->
@@ -225,7 +228,7 @@ fun RegalosSection(
                         containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
                     ),
                 ) {
-                    Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Column(modifier = Modifier.padding(density.listItemPadding), verticalArrangement = Arrangement.spacedBy(density.blockGap)) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,

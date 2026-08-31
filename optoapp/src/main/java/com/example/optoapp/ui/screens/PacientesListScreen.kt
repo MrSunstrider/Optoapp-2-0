@@ -40,6 +40,7 @@ import com.example.optoapp.ui.components.paciente.SexoSymbol
 import com.example.optoapp.ui.components.paciente.sexoAvatarColor
 import com.example.optoapp.ui.components.paciente.sexoSymbolOf
 import com.example.optoapp.ui.theme.alertRed
+import com.example.optoapp.ui.theme.LocalOptoDensity
 import com.example.optoapp.ui.theme.OptoTokens
 import com.example.optoapp.ui.theme.positiveGreen
 import com.example.optoapp.util.DateUtils
@@ -79,6 +80,8 @@ fun PacientesListScreen(
         activeDialog = QuickSummaryDialog.NONE
         viewModel.resetLastDispensacion()
     }
+
+    val density = LocalOptoDensity.current
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.surface,
@@ -130,7 +133,7 @@ fun PacientesListScreen(
         },
     ) { padding ->
         Column(
-            modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp).navigationBarsPadding(),
+            modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = density.screenPadding).navigationBarsPadding(),
         ) {
             OutlinedTextField(
                 value = searchQuery,
@@ -140,14 +143,14 @@ fun PacientesListScreen(
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Buscar") },
                 shape = MaterialTheme.shapes.medium,
             )
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(density.sectionGap))
 
             val filters = listOf(
                 PacienteListFilters.TODOS,
                 PacienteListFilters.SALDO_PENDIENTE,
                 PacienteListFilters.ESTADO_ENTREGA,
             )
-            FlowRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            FlowRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(density.blockGap), verticalArrangement = Arrangement.spacedBy(density.tightGap)) {
                 filters.forEach { filter ->
                     val isSelected = when (filter) {
                         PacienteListFilters.TODOS -> activeFilter.isNullOrBlank()
@@ -160,11 +163,11 @@ fun PacientesListScreen(
                     }, label = { Text(filter, fontSize = 13.sp, fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal) })
                 }
             }
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(density.sectionGap))
 
             if (isLoading) {
                 LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(density.blockGap))
             }
 
             error?.let { errMsg ->
@@ -173,26 +176,29 @@ fun PacientesListScreen(
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Column(
-                        modifier = Modifier.padding(16.dp),
+                        modifier = Modifier.padding(density.cardPadding),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         Icon(Icons.Default.Error, contentDescription = "Error", tint = MaterialTheme.colorScheme.alertRed, modifier = Modifier.size(32.dp))
-                        Spacer(Modifier.height(8.dp))
+                        Spacer(Modifier.height(density.blockGap))
                         Text(errMsg, color = MaterialTheme.colorScheme.alertRed, style = MaterialTheme.typography.bodyMedium)
-                        Spacer(Modifier.height(8.dp))
+                        Spacer(Modifier.height(density.blockGap))
                         OutlinedButton(onClick = { viewModel.refresh() }) {
                             Text("Reintentar")
                         }
                     }
                 }
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(density.blockGap))
             }
 
             if (pacientes.isEmpty() && !isLoading) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Column(
+                        modifier = Modifier.padding(density.emptyStatePadding),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
                         Icon(Icons.Default.PersonOff, contentDescription = "Sin pacientes", modifier = Modifier.size(48.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f))
-                        Spacer(Modifier.height(8.dp))
+                        Spacer(Modifier.height(density.blockGap))
                         Text("No se encontraron pacientes", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
@@ -200,7 +206,7 @@ fun PacientesListScreen(
                 LazyColumn(
                     modifier = Modifier.fillMaxSize().testTag(TestTags.PACIENTE_LISTA),
                     contentPadding = PaddingValues(bottom = 88.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(density.blockGap),
                 ) {
                     items(pacientes, key = { it.id }) { paciente ->
                         PacienteCard(
@@ -293,6 +299,8 @@ private fun PacienteCard(
     onShowLastDispensacion: (String) -> Unit,
     onCall: () -> Unit,
 ) {
+    val density = LocalOptoDensity.current
+    val avatarSize = if (density.isDense) 40.dp else 44.dp
     val symbol = sexoSymbolOf(paciente.sexo)
     val avatarColor = sexoAvatarColor(symbol, isSystemInDarkTheme()) ?: MaterialTheme.colorScheme.primary
     val (avatarIcon, avatarDescription) = when (symbol) {
@@ -307,15 +315,15 @@ private fun PacienteCard(
         elevation = 1.dp,
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(12.dp),
+            modifier = Modifier.fillMaxWidth().padding(density.listItemPadding),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(density.blockGap),
         ) {
-            Surface(modifier = Modifier.size(44.dp), shape = RoundedCornerShape(12.dp), color = avatarColor.copy(alpha = 0.12f)) {
+            Surface(modifier = Modifier.size(avatarSize), shape = RoundedCornerShape(12.dp), color = avatarColor.copy(alpha = 0.12f)) {
                 Box(contentAlignment = Alignment.Center) { Icon(avatarIcon, contentDescription = avatarDescription, modifier = Modifier.size(24.dp), tint = avatarColor) }
             }
 
-            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(density.tightGap)) {
                 Text(paciente.nombreCompleto, fontWeight = FontWeight.Bold, fontSize = 15.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 Text("Edad: ${paciente.edad}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -325,14 +333,14 @@ private fun PacienteCard(
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                         modifier = Modifier.weight(1f),
                     )
-                    IconButton(onClick = { onShowLastEvaluacion(paciente.id) }, modifier = Modifier.size(36.dp).testTag(TestTags.PACIENTE_CARD_LAST_EVAL_BTN)) {
+                    IconButton(onClick = { onShowLastEvaluacion(paciente.id) }, modifier = Modifier.testTag(TestTags.PACIENTE_CARD_LAST_EVAL_BTN)) {
                         Icon(Icons.Default.Visibility, contentDescription = "Ver evaluación", modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
                     }
-                    IconButton(onClick = { onShowLastDispensacion(paciente.id) }, modifier = Modifier.size(36.dp).testTag(TestTags.PACIENTE_CARD_LAST_DISP_BTN)) {
+                    IconButton(onClick = { onShowLastDispensacion(paciente.id) }, modifier = Modifier.testTag(TestTags.PACIENTE_CARD_LAST_DISP_BTN)) {
                         Icon(Icons.Default.Inventory2, contentDescription = "Ver dispensación", modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.tertiary)
                     }
                     if (paciente.telefono.isNotBlank()) {
-                        IconButton(onClick = onCall, modifier = Modifier.size(36.dp)) {
+                        IconButton(onClick = onCall) {
                             Icon(Icons.Default.Call, contentDescription = "Llamar", modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.positiveGreen)
                         }
                     }

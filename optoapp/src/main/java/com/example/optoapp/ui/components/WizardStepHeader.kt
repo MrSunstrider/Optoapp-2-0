@@ -10,6 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.optoapp.ui.theme.LocalOptoDensity
 import com.example.optoapp.ui.theme.OptoAppTheme
 
 /** Title of the current wizard step, or "" when the index is out of range. */
@@ -34,13 +35,21 @@ fun WizardStepHeader(
     totalSteps: Int,
     modifier: Modifier = Modifier,
 ) {
+    val density = LocalOptoDensity.current
+    val isDense = density.isDense
+    val titleStyle = if (isDense) {
+        MaterialTheme.typography.titleMedium
+    } else {
+        MaterialTheme.typography.headlineSmall
+    }
+
     Column(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
         Text(
             text = wizardStepTitle(labels, currentStep),
-            style = MaterialTheme.typography.headlineSmall,
+            style = titleStyle,
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.primary,
         )
