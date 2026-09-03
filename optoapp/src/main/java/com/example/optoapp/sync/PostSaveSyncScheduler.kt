@@ -13,6 +13,7 @@ import com.example.optoapp.domain.SyncOrdenesCompraUseCase
 import com.example.optoapp.domain.SyncPacientesUseCase
 import com.example.optoapp.domain.SyncProveedoresUseCase
 import com.example.optoapp.domain.SyncSessionHelper
+import com.example.optoapp.domain.SessionPreflightResult
 import com.example.optoapp.util.BackgroundErrorCollector
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
@@ -295,10 +296,16 @@ open class PostSaveSyncScheduler @Inject constructor(
     }
 
     protected open suspend fun ensureSessionForPostSaveSync(stage: String): Boolean {
-        if (!SyncSessionHelper.refreshSessionBeforeSync(supabase)) {
-            Log.w(TAG, "Sync $stage post-guardado cancelada: no se pudo refrescar sesión")
-            bgErrorCollector?.record("auth", "Post-save sync $stage cancelada: refresh JWT falló")
-            return false
+        when (val preflight = SyncSessionHelper.evaluateSessionBeforeSync(supabase)) {
+            is SessionPreflightResult.Failed -> {
+                Log.w(TAG, "Sync $stage post-guardado cancelada: refresh JWT falló (${preflight.cause})")
+                bgErrorCollector?.record(
+                    "auth",
+                    "Post-save sync $stage cancelada: refresh JWT falló (${preflight.cause})",
+                )
+                return false
+            }
+            SessionPreflightResult.Ok -> Unit
         }
         val currentUser = runCatching { supabase.auth.currentUserOrNull() }.getOrNull()
         if (currentUser == null) {

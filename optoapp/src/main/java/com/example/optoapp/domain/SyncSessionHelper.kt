@@ -9,6 +9,15 @@ import kotlinx.coroutines.CancellationException
 import java.io.IOException
 
 /**
+ * Resultado del preflight de sesión antes de sync.
+ * [cause] es corto para diagnóstico: `red`, `sin sesión`, `sin usuario`, `token vacío`.
+ */
+sealed class SessionPreflightResult {
+    data object Ok : SessionPreflightResult()
+    data class Failed(val cause: String) : SessionPreflightResult()
+}
+
+/**
  * P0-T4: reduce fallos de sync por JWT cercano a expirar; no sustituye el auto-refresh del plugin Auth.
  *
  * [refreshSessionBeforeSync] retorna `true` si la sesión está OK (recién refrescada o aún válida),
@@ -30,11 +39,17 @@ object SyncSessionHelper {
      *
      * @return `true` si la sesión es válida para usar, `false` si debe abortarse la sync.
      */
-    suspend fun refreshSessionBeforeSync(supabase: SupabaseClient): Boolean {
+    suspend fun refreshSessionBeforeSync(supabase: SupabaseClient): Boolean =
+        evaluateSessionBeforeSync(supabase) is SessionPreflightResult.Ok
+
+    /**
+     * Igual que [refreshSessionBeforeSync] pero con causa corta para mensajes de diagnóstico.
+     */
+    suspend fun evaluateSessionBeforeSync(supabase: SupabaseClient): SessionPreflightResult {
         val session = runCatching { supabase.auth.currentSessionOrNull() }.getOrNull()
         if (session == null) {
             AppLogger.w(TAG, "Sin sesión Supabase; la sync debe abortarse")
-            return false
+            return SessionPreflightResult.Failed("sin sesión")
         }
 
         // REQ-JWT-001: check remaining token lifetime
@@ -54,41 +69,41 @@ object SyncSessionHelper {
             val refreshedSession = runCatching { supabase.auth.currentSessionOrNull() }.getOrNull()
             if (refreshedSession?.accessToken.isNullOrBlank()) {
                 AppLogger.w(TAG, "Sesión sin accessToken tras refresh; abortando sync")
-                return false
+                return SessionPreflightResult.Failed("token vacío")
             }
 
             // Server returns anon session instead of throwing when refresh token expired
             val currentUser = runCatching { supabase.auth.currentUserOrNull() }.getOrNull()
             if (currentUser == null) {
                 AppLogger.w(TAG, "Refresh devolvió sesión anónima (refresh token inválido/expirado); abortando sync")
-                return false
+                return SessionPreflightResult.Failed("sin usuario")
             }
 
-            true
+            SessionPreflightResult.Ok
         } catch (e: CancellationException) {
             throw e
         } catch (e: IOException) {
             AppLogger.w(TAG, "Error en red refrescando sesión: ${e.message}")
-            false
+            SessionPreflightResult.Failed("red")
         } catch (e: Exception) {
             AppLogger.w(TAG, "Error inesperado refrescando sesión: ${e.message}")
-            false
+            SessionPreflightResult.Failed("error")
         }
     }
 
     /** Validates that the current session is authenticated (non-anonymous) without refreshing. */
-    private suspend fun validateSession(supabase: SupabaseClient): Boolean {
+    private suspend fun validateSession(supabase: SupabaseClient): SessionPreflightResult {
         val currentUser = runCatching { supabase.auth.currentUserOrNull() }.getOrNull()
         if (currentUser == null) {
             AppLogger.w(TAG, "Sesión anónima detectada; abortando sync")
-            return false
+            return SessionPreflightResult.Failed("sin usuario")
         }
         val currentSession = runCatching { supabase.auth.currentSessionOrNull() }.getOrNull()
         if (currentSession?.accessToken.isNullOrBlank()) {
             AppLogger.w(TAG, "Sesión sin accessToken; abortando sync")
-            return false
+            return SessionPreflightResult.Failed("token vacío")
         }
-        return true
+        return SessionPreflightResult.Ok
     }
 
     fun looksLikeAuthError(message: String?): Boolean {

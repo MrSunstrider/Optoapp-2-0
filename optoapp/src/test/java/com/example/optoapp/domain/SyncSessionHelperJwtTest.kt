@@ -14,6 +14,7 @@ import io.mockk.mockk
 import io.mockk.mockkStatic
 import kotlinx.coroutines.test.runTest
 import kotlin.time.Instant
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -98,6 +99,41 @@ class SyncSessionHelperJwtTest {
         val result = SyncSessionHelper.refreshSessionBeforeSync(client)
 
         assertFalse(result)
+    }
+
+    @Test
+    fun `evaluateSessionBeforeSync reports red cause on IOException`() = runTest {
+        val session = mockSession("valid", Instant.fromEpochSeconds(epochNow() + 120))
+        val auth = mockAuth(sessionOrNull = session, refreshResult = { throw IOException("boom") })
+        val client = mockSupabase(auth)
+
+        val result = SyncSessionHelper.evaluateSessionBeforeSync(client)
+
+        assertTrue(result is SessionPreflightResult.Failed)
+        assertEquals("red", (result as SessionPreflightResult.Failed).cause)
+    }
+
+    @Test
+    fun `evaluateSessionBeforeSync reports sin sesion when missing`() = runTest {
+        val auth = mockAuth(sessionOrNull = null)
+        val client = mockSupabase(auth)
+
+        val result = SyncSessionHelper.evaluateSessionBeforeSync(client)
+
+        assertTrue(result is SessionPreflightResult.Failed)
+        assertEquals("sin sesión", (result as SessionPreflightResult.Failed).cause)
+    }
+
+    @Test
+    fun `evaluateSessionBeforeSync reports sin usuario for anonymous`() = runTest {
+        val session = mockSession("valid", Instant.fromEpochSeconds(epochNow() + 120))
+        val auth = mockAuth(sessionOrNull = session, userOrNull = null)
+        val client = mockSupabase(auth)
+
+        val result = SyncSessionHelper.evaluateSessionBeforeSync(client)
+
+        assertTrue(result is SessionPreflightResult.Failed)
+        assertEquals("sin usuario", (result as SessionPreflightResult.Failed).cause)
     }
 
     @Test

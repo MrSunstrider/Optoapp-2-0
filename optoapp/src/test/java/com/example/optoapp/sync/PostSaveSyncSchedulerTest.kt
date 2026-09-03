@@ -3,9 +3,18 @@
 import com.example.optoapp.domain.SyncFinanzasUseCase
 import com.example.optoapp.domain.SyncHistorialUseCase
 import com.example.optoapp.domain.SyncPacientesUseCase
+import com.example.optoapp.domain.SyncSessionHelper
+import com.example.optoapp.domain.SessionPreflightResult
+import com.example.optoapp.util.BackgroundErrorCollector
 import io.github.jan.supabase.createSupabaseClient
+import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
+import io.mockk.mockkStatic
+import io.mockk.unmockkObject
+import io.mockk.verify
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -207,6 +216,47 @@ class PostSaveSyncSchedulerTest {
         scheduler.scheduleFinanzasSync("optica-1")
 
         coVerify(exactly = 0) { mockSyncPacientes(any()) }
+    }
+
+    @Test
+    fun `ensureSession records auth bg error with cause from preflight`() = runTest(testDispatcher) {
+        mockkStatic(android.util.Log::class)
+        every { android.util.Log.w(any(), any<String>()) } returns 0
+        every { android.util.Log.d(any(), any<String>()) } returns 0
+        every { android.util.Log.e(any(), any<String>()) } returns 0
+        mockkObject(SyncSessionHelper)
+        try {
+            coEvery {
+                SyncSessionHelper.evaluateSessionBeforeSync(any())
+            } returns SessionPreflightResult.Failed("red")
+
+            val bgErrors = mockk<BackgroundErrorCollector>(relaxed = true)
+            val scheduler = object : PostSaveSyncScheduler(
+                applicationScope = testScope,
+                syncGate = SyncGate(),
+                supabase = fakeSupabase,
+                bgErrorCollector = bgErrors,
+            ) {
+                override fun scheduleDebounced(
+                    key: String,
+                    delayMs: Long,
+                    block: suspend () -> Unit,
+                ) {
+                    kotlinx.coroutines.runBlocking { block() }
+                }
+            }
+
+            scheduler.scheduleFinanzasSync("optica-1")
+
+            coVerify(exactly = 1) {
+                bgErrors.record(
+                    "auth",
+                    "Post-save sync finanzas cancelada: refresh JWT falló (red)",
+                )
+            }
+        } finally {
+            unmockkObject(SyncSessionHelper)
+        }
     }
 
     private fun createKeyRecorder(): Pair<PostSaveSyncScheduler, MutableList<String>> {

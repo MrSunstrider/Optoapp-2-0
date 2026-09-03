@@ -28,6 +28,7 @@ open class SyncPacientesUseCase @Inject constructor(
     private val syncStateTracker: com.example.optoapp.data.SyncStateTracker,
     private val conflictHelper: com.example.optoapp.domain.sync.ConflictHelper,
     private val conflictDao: com.example.optoapp.data.ConflictDao,
+    private val networkRetryHelper: NetworkRetryHelper,
 ) {
 
     companion object {
@@ -168,7 +169,9 @@ open class SyncPacientesUseCase @Inject constructor(
             "Upload pacientes: ${finalRows.size}/${pacientes.size} filas tras prevalidación de HO, optica_id=$opticaId",
         )
         try {
-            supabase.postgrest[TABLE].upsert(finalRows)
+            networkRetryHelper.retryNetwork("upsert:$TABLE") {
+                supabase.postgrest[TABLE].upsert(finalRows)
+            }
         } catch (e: CancellationException) {
             throw e
         } catch (e: IOException) {
@@ -199,10 +202,12 @@ open class SyncPacientesUseCase @Inject constructor(
                 .filter { it.entityType == "paciente" }
             for (tombstone in pendingPacienteDeletions) {
                 try {
-                    supabase.postgrest[TABLE].delete {
-                        filter {
-                            eq("id", tombstone.entityId)
-                            eq("optica_id", opticaId)
+                    networkRetryHelper.retryNetwork("delete:$TABLE:${tombstone.entityId}") {
+                        supabase.postgrest[TABLE].delete {
+                            filter {
+                                eq("id", tombstone.entityId)
+                                eq("optica_id", opticaId)
+                            }
                         }
                     }
                     syncStateTracker.dao.clearEntityState(opticaId, "paciente", tombstone.entityId)
@@ -275,11 +280,15 @@ open class SyncPacientesUseCase @Inject constructor(
 
     // Test seam — override in tests to return controlled data instead of hitting Supabase
     internal open suspend fun fetchRemotePacientesForDownload(opticaId: String): List<PacienteRemoto> {
-        return supabase.postgrest[TABLE]
-            .select {
-                filter { eq("optica_id", opticaId) }
-            }
-            .decodeList<PacienteRemoto>()
+        var remotos = emptyList<PacienteRemoto>()
+        networkRetryHelper.retryNetwork("download:$TABLE") {
+            remotos = supabase.postgrest[TABLE]
+                .select {
+                    filter { eq("optica_id", opticaId) }
+                }
+                .decodeList<PacienteRemoto>()
+        }
+        return remotos
     }
 
     /**
@@ -288,11 +297,15 @@ open class SyncPacientesUseCase @Inject constructor(
      */
     private suspend fun fetchAllRemotePacientes(opticaId: String): List<PacienteRemoto>? {
         return try {
-            supabase.postgrest[TABLE]
-                .select {
-                    filter { eq("optica_id", opticaId) }
-                }
-                .decodeList<PacienteRemoto>()
+            var remotos = emptyList<PacienteRemoto>()
+            networkRetryHelper.retryNetwork("fetch:$TABLE") {
+                remotos = supabase.postgrest[TABLE]
+                    .select {
+                        filter { eq("optica_id", opticaId) }
+                    }
+                    .decodeList<PacienteRemoto>()
+            }
+            remotos
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {

@@ -180,4 +180,30 @@ class NetworkRetryHelperTest {
         }
         assertEquals(1, attempts)
     }
+
+    @Test
+    fun `isRetryable returns true for prematurely closed connection message`() {
+        val helper = createHelper()
+        val ex = RuntimeException(
+            "HTTP request failed: Failed to parse HTTP response: the server prematurely closed the connection",
+        )
+        assertTrue(helper.isRetryable(ex))
+    }
+
+    @Test
+    fun `retryNetwork retries prematurely closed connection Exception`() = runTest {
+        var attempts = 0
+        val helper = createHelper()
+        try {
+            helper.retryNetwork("test") {
+                attempts++
+                throw RuntimeException(
+                    "Failed to parse HTTP response: the server prematurely closed the connection",
+                )
+            }
+        } catch (_: RuntimeException) {
+            // Expected after exhausting retries
+        }
+        assertEquals(3, attempts)
+    }
 }

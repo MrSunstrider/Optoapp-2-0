@@ -33,6 +33,7 @@ class SyncPacientesUseCaseDownloadGuardTest {
     private val conflictHelper = mockk<ConflictHelper>(relaxed = true)
     private val conflictDao = FakeConflictDao()
     private val syncStateDao = mockk<SyncEntityStateDao>(relaxed = true)
+    private val networkRetryHelper = mockk<NetworkRetryHelper>(relaxed = true)
 
     private val fakeSupabase = createSupabaseClient(
         supabaseUrl = "https://placeholder.supabase.co",
@@ -48,6 +49,11 @@ class SyncPacientesUseCaseDownloadGuardTest {
         coEvery { syncStateDao.getPendingDeletions(any()) } returns emptyList()
         coEvery { syncStateTracker.markSynced(any(), any(), any()) } just Runs
         coEvery { syncStateTracker.markError(any(), any(), any(), any()) } just Runs
+        // Simulate network failure so fetchAllRemotePacientes returns null (batchFetchFailed),
+        // matching the pre-retry helper behavior used by double-failure upload guards.
+        coEvery { networkRetryHelper.retryNetwork(any(), any()) } coAnswers {
+            throw java.io.IOException("simulated network failure")
+        }
         useCase = SyncPacientesUseCase(
             repository = repository,
             supabase = fakeSupabase,
@@ -55,12 +61,13 @@ class SyncPacientesUseCaseDownloadGuardTest {
             syncStateTracker = syncStateTracker,
             conflictHelper = conflictHelper,
             conflictDao = conflictDao,
+            networkRetryHelper = networkRetryHelper,
         )
     }
 
     @Test
-    fun constructor_takesSixDependencies() {
-        assertEquals(6, SyncPacientesUseCase::class.java.declaredConstructors[0].parameterTypes.size)
+    fun constructor_takesSevenDependencies() {
+        assertEquals(7, SyncPacientesUseCase::class.java.declaredConstructors[0].parameterTypes.size)
     }
 
     @Test
@@ -68,6 +75,13 @@ class SyncPacientesUseCaseDownloadGuardTest {
         val hasConflictDao = SyncPacientesUseCase::class.java.declaredConstructors[0].parameterTypes
             .any { it.simpleName == "ConflictDao" }
         assertTrue("ConflictDao must be a constructor parameter", hasConflictDao)
+    }
+
+    @Test
+    fun networkRetryHelper_isAcceptedAsConstructorParam() {
+        val hasRetry = SyncPacientesUseCase::class.java.declaredConstructors[0].parameterTypes
+            .any { it.simpleName == "NetworkRetryHelper" }
+        assertTrue("NetworkRetryHelper must be a constructor parameter", hasRetry)
     }
 
     @Test
@@ -201,6 +215,7 @@ class SyncPacientesUseCaseDownloadGuardTest {
             syncStateTracker = syncStateTracker,
             conflictHelper = conflictHelper,
             conflictDao = conflictDao,
+            networkRetryHelper = networkRetryHelper,
         )
         val remotoA = PacienteRemoto(
             id = "R1", nombreCompleto = "Alice", edad = 30, telefono = "111",
@@ -232,6 +247,7 @@ class SyncPacientesUseCaseDownloadGuardTest {
             syncStateTracker = syncStateTracker,
             conflictHelper = conflictHelper,
             conflictDao = conflictDao,
+            networkRetryHelper = networkRetryHelper,
         )
         val remotoA = PacienteRemoto(
             id = "R1", nombreCompleto = "Alice", edad = 30, telefono = "111",
@@ -253,7 +269,16 @@ class SyncPacientesUseCaseDownloadGuardTest {
         syncStateTracker: SyncStateTracker,
         conflictHelper: ConflictHelper,
         conflictDao: com.example.optoapp.data.ConflictDao,
-    ) : SyncPacientesUseCase(repository, supabase, database, syncStateTracker, conflictHelper, conflictDao) {
+        networkRetryHelper: NetworkRetryHelper,
+    ) : SyncPacientesUseCase(
+        repository,
+        supabase,
+        database,
+        syncStateTracker,
+        conflictHelper,
+        conflictDao,
+        networkRetryHelper,
+    ) {
         var remoteRows: List<PacienteRemoto> = emptyList()
 
         override suspend fun fetchRemotePacientesForDownload(opticaId: String): List<PacienteRemoto> {
