@@ -29,6 +29,7 @@ import com.example.optoapp.domain.SyncOrdenesCompraUseCase
 import com.example.optoapp.domain.SyncPacientesUseCase
 import com.example.optoapp.domain.SyncProveedoresUseCase
 import com.example.optoapp.domain.SyncSessionHelper
+import com.example.optoapp.domain.SessionPreflightResult
 import com.example.optoapp.domain.sync.BumpEntityStrategy
 import com.example.optoapp.domain.sync.SyncOrchestrator
 import com.example.optoapp.subscription.SubscriptionManager
@@ -352,10 +353,16 @@ class SyncViewModel @Inject constructor(
             return
         }
 
-        if (!SyncSessionHelper.refreshSessionBeforeSync(supabase)) {
-            bgErrorCollector.record("auth", "Full download cancelada: no se pudo refrescar el JWT")
-            _syncState.value = SyncState.Error("Tu sesión expiró. Vuelve a iniciar sesión.")
-            return
+        when (val preflight = SyncSessionHelper.evaluateSessionBeforeSync(supabase)) {
+            is SessionPreflightResult.Failed -> {
+                bgErrorCollector.record(
+                    "auth",
+                    "Full download cancelada: no se pudo refrescar el JWT (${preflight.cause})",
+                )
+                _syncState.value = SyncState.Error("Tu sesión expiró. Vuelve a iniciar sesión.")
+                return
+            }
+            SessionPreflightResult.Ok -> Unit
         }
         val contextCheck = ensureSyncContext(allowCached = true)
         if (contextCheck != null) {
@@ -397,10 +404,16 @@ class SyncViewModel @Inject constructor(
             return@launch
         }
 
-        if (!SyncSessionHelper.refreshSessionBeforeSync(supabase)) {
-            bgErrorCollector.record("auth", "Full sync cancelada: no se pudo refrescar el JWT")
-            _syncState.value = SyncState.Error("Tu sesión expiró. Vuelve a iniciar sesión.")
-            return@launch
+        when (val preflight = SyncSessionHelper.evaluateSessionBeforeSync(supabase)) {
+            is SessionPreflightResult.Failed -> {
+                bgErrorCollector.record(
+                    "auth",
+                    "Full sync cancelada: no se pudo refrescar el JWT (${preflight.cause})",
+                )
+                _syncState.value = SyncState.Error("Tu sesión expiró. Vuelve a iniciar sesión.")
+                return@launch
+            }
+            SessionPreflightResult.Ok -> Unit
         }
         val contextCheck = ensureSyncContext()
         if (contextCheck != null) {
@@ -438,10 +451,16 @@ class SyncViewModel @Inject constructor(
         if (_isSilentSyncing.value || !isNetworkAvailable()) return@launch
         _isSilentSyncing.value = true
         try {
-            if (!SyncSessionHelper.refreshSessionBeforeSync(supabase)) {
-                Log.w(TAG, "Sync silenciosa cancelada: sesión expirada")
-                bgErrorCollector.record("auth", "Silent sync cancelada: JWT expirado")
-                return@launch
+            when (val preflight = SyncSessionHelper.evaluateSessionBeforeSync(supabase)) {
+                is SessionPreflightResult.Failed -> {
+                    Log.w(TAG, "Sync silenciosa cancelada: sesión expirada (${preflight.cause})")
+                    bgErrorCollector.record(
+                        "auth",
+                        "Silent sync cancelada: JWT expirado (${preflight.cause})",
+                    )
+                    return@launch
+                }
+                SessionPreflightResult.Ok -> Unit
             }
             var hasErrors = false
             syncOrchestrator.executeSilentModules(opticaId) { module, result ->

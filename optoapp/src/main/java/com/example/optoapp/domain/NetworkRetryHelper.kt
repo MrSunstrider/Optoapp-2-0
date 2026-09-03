@@ -68,6 +68,15 @@ class NetworkRetryHelper @Inject constructor(
                 val backoffMs = (400L * (1 shl attempt)) + Random.nextLong(0, 200)
                 logger.w(TAG, "$opName fallo REST (intento ${attempt + 1}/$NETWORK_RETRY_ATTEMPTS). Reintentando en ${backoffMs}ms")
                 delay(backoffMs)
+            } catch (e: Exception) {
+                // Ktor/supabase may wrap blips (e.g. "prematurely closed the connection")
+                // as non-IOException — still retry when the message looks transient.
+                lastError = e
+                val shouldRetry = isRetryable(e)
+                if (!shouldRetry || attempt == NETWORK_RETRY_ATTEMPTS - 1) throw e
+                val backoffMs = (400L * (1 shl attempt)) + Random.nextLong(0, 200)
+                logger.w(TAG, "$opName fallo transitorio (intento ${attempt + 1}/$NETWORK_RETRY_ATTEMPTS). Reintentando en ${backoffMs}ms")
+                delay(backoffMs)
             }
         }
         lastError?.let { throw it }
@@ -77,7 +86,10 @@ class NetworkRetryHelper @Inject constructor(
         if (e is RestException) return e.statusCode in 429..599
         if (e is IOException) return true
         val msg = e.message?.lowercase() ?: ""
-        return msg.contains("timeout") || msg.contains("timed out") || msg.contains("connection")
+        return msg.contains("timeout") ||
+            msg.contains("timed out") ||
+            msg.contains("connection") ||
+            msg.contains("prematurely closed")
     }
 
     private fun isJwtExpired(e: RestException): Boolean {
