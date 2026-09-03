@@ -219,4 +219,38 @@ class OperacionHoyScreenTest {
         val backLabel = "Atrás"
         assertEquals("Atrás", backLabel)
     }
+
+    @Test
+    fun floatingActionButton_appliesNavigationBarsPadding() {
+        val source = readOperacionHoyScreenSource()
+        val fabStart = source.indexOf("floatingActionButton")
+        assertTrue("floatingActionButton block must exist", fabStart >= 0)
+        val afterFab = source.substring(fabStart)
+        // Bound the slot roughly: from floatingActionButton to topBar =
+        val topBarIdx = afterFab.indexOf("topBar =")
+        assertTrue("topBar must follow floatingActionButton", topBarIdx > 0)
+        val fabBlock = afterFab.substring(0, topBarIdx)
+        assertTrue(
+            "FAB speed dial MUST apply navigationBarsPadding() so it clears the system nav bar",
+            fabBlock.contains("navigationBarsPadding"),
+        )
+    }
+
+    private fun readOperacionHoyScreenSource(): String {
+        val candidates = listOf(
+            "optoapp/src/main/java/com/example/optoapp/ui/screens/OperacionHoyScreen.kt",
+            "src/main/java/com/example/optoapp/ui/screens/OperacionHoyScreen.kt",
+            "../optoapp/src/main/java/com/example/optoapp/ui/screens/OperacionHoyScreen.kt",
+        )
+        for (path in candidates) {
+            val file = java.io.File(path)
+            if (file.exists()) return file.readText()
+        }
+        // Fallback: walk from user.dir
+        val root = java.io.File(System.getProperty("user.dir") ?: ".")
+        val found = root.walkTopDown()
+            .firstOrNull { it.name == "OperacionHoyScreen.kt" && it.path.contains("main") }
+        requireNotNull(found) { "OperacionHoyScreen.kt not found from ${root.absolutePath}" }
+        return found.readText()
+    }
 }
