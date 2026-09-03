@@ -77,6 +77,7 @@ data class DispensacionRemota(
 data class ServicioRemoto(
     val id: String,
     val ot: String = "",
+    @SerialName("montura_id") val monturaId: String? = null,
     val descripcion: String = "",
     @SerialName("monto_total") val montoTotal: Double = 0.0,
     @SerialName("a_cuenta") val aCuenta: Double = 0.0,
@@ -92,6 +93,7 @@ data class ServicioRemoto(
     fun toEntity() = ServicioExtra(
         id = id,
         ot = ot.trim().remotoOtServicioExtraToLocal(),
+        monturaId = monturaId?.trim()?.takeIf { it.isNotBlank() },
         descripcion = descripcion.trim().ifBlank { FinanzasRemoteDefaults.ServicioExtra.DESCRIPCION_VACIA },
         montoTotal = montoTotal.coerceAtLeast(0.0),
         aCuenta = aCuenta.coerceAtLeast(0.0).coerceAtMost(montoTotal.coerceAtLeast(0.0)),
@@ -486,6 +488,7 @@ fun DispensacionItem.toRemoto(): DispensacionItemRemota = DispensacionItemRemota
 fun ServicioExtra.toRemoto(aCuentaSum: Double = aCuenta): ServicioRemoto = ServicioRemoto(
     id = id,
     ot = ot.trim(),
+    monturaId = monturaId?.trim()?.takeIf { it.isNotBlank() },
     descripcion = descripcion.trim().ifBlank { FinanzasRemoteDefaults.ServicioExtra.DESCRIPCION_VACIA },
     montoTotal = montoTotal.coerceAtLeast(0.0),
     aCuenta = aCuentaSum.coerceAtLeast(0.0).coerceAtMost(montoTotal.coerceAtLeast(0.0)),

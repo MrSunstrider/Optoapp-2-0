@@ -272,7 +272,7 @@ Each task is independently verifiable. Tests must pass before the next task begi
 ### E2 — JaCoCo coverage report
 
 - **Command**: `./gradlew :optoapp:jacocoTestReport`
-- **What**: Generate coverage report. Verify instruction coverage meets the 5% minimum threshold.
+- **What**: Generate coverage report. Verify instruction coverage meets the 30% minimum threshold.
 - **Acceptance**: Report generates successfully. Coverage threshold passes.
 
 ---

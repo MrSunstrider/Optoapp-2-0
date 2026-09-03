@@ -6,6 +6,7 @@ import com.example.optoapp.data.ServicioExtra
 import com.example.optoapp.data.SessionManager
 import com.example.optoapp.domain.CancelServicioExtraUseCase
 import com.example.optoapp.sync.PostSaveSyncScheduler
+import com.example.optoapp.util.DispensacionStockHelper
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -34,6 +35,7 @@ class ServiciosViewModelDeleteTest {
     private lateinit var sessionManager: SessionManager
     private lateinit var postSaveSyncScheduler: PostSaveSyncScheduler
     private lateinit var cancelServicioExtraUseCase: CancelServicioExtraUseCase
+    private lateinit var stockHelper: DispensacionStockHelper
     private lateinit var viewModel: ServiciosViewModel
 
     private val opticaIdFlow = MutableStateFlow("optica-test")
@@ -81,6 +83,7 @@ class ServiciosViewModelDeleteTest {
         sessionManager = mockk()
         postSaveSyncScheduler = mockk(relaxed = true)
         cancelServicioExtraUseCase = mockk(relaxed = true)
+        stockHelper = mockk(relaxed = true)
 
         every { sessionManager.opticaId } returns opticaIdFlow
         every { sessionManager.userTimeZone } returns flowOf(null)
@@ -95,7 +98,7 @@ class ServiciosViewModelDeleteTest {
 
     @Test
     fun `confirmDelete anula en vez de hard-delete`() = runTest {
-        viewModel = ServiciosViewModel(repository, sessionManager, postSaveSyncScheduler, cancelServicioExtraUseCase)
+        viewModel = ServiciosViewModel(repository, sessionManager, postSaveSyncScheduler, cancelServicioExtraUseCase, stockHelper)
         testDispatcher.scheduler.advanceUntilIdle()
 
         viewModel.showDeleteConfirmation(testServicio)
@@ -110,7 +113,7 @@ class ServiciosViewModelDeleteTest {
 
     @Test
     fun `confirmDelete creates inverse pagos for each existing pago`() = runTest {
-        viewModel = ServiciosViewModel(repository, sessionManager, postSaveSyncScheduler, cancelServicioExtraUseCase)
+        viewModel = ServiciosViewModel(repository, sessionManager, postSaveSyncScheduler, cancelServicioExtraUseCase, stockHelper)
         testDispatcher.scheduler.advanceUntilIdle()
 
         viewModel.showDeleteConfirmation(testServicio)

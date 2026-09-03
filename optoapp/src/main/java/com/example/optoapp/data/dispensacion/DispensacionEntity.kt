@@ -137,6 +137,8 @@ data class Pago(
 data class ServicioExtra(
     @PrimaryKey val id: String,
     val ot: String = "",
+    @SerialName("monturaId")
+    val monturaId: String? = null,
     val descripcion: String,
     @SerialName("montoTotal")
     val montoTotal: Double,

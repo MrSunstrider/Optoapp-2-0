@@ -4,7 +4,9 @@ import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Pago
 import com.example.optoapp.data.Resource
 import com.example.optoapp.data.pago.PagoDao
+import com.example.optoapp.domain.movimientoReferenciaForServicioExtraReverso
 import com.example.optoapp.sync.PostSaveSyncScheduler
+import com.example.optoapp.util.DispensacionStockHelper
 import com.example.optoapp.util.DateUtils
 import java.time.Instant
 import java.util.UUID
@@ -42,11 +44,22 @@ class CancelServicioExtraUseCase @Inject constructor(
     private val repository: OptoRepository,
     private val pagoDao: PagoDao,
     private val postSaveSyncScheduler: PostSaveSyncScheduler,
+    private val stockHelper: DispensacionStockHelper,
 ) {
     suspend operator fun invoke(servicioId: String, opticaId: String) {
         val servicio = (repository.getServicioById(servicioId, opticaId) as? Resource.Success)?.data ?: return
         if (servicio.estado == "Anulado") return
         insertMissingReversos(repository, pagoDao, servicioId, opticaId, forDispensacion = false)
+        servicio.monturaId?.takeIf { it.isNotBlank() }?.let { monturaId ->
+            stockHelper.adjustStockAndRegistrarMovimiento(
+                monturaId = monturaId,
+                opticaId = opticaId,
+                delta = 1,
+                tipo = "AJUSTE",
+                referenciaId = movimientoReferenciaForServicioExtraReverso(servicioId, monturaId),
+                nota = "Reversión por anulación de servicio extra",
+            )
+        }
         repository.updateServicio(servicio.copy(estado = "Anulado", updatedAt = Instant.now().toString()))
         postSaveSyncScheduler.scheduleFinanzasSync(opticaId)
     }

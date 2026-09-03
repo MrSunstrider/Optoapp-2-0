@@ -8,6 +8,27 @@ context: |
   Style: Kotlin camelCase/PascalCase, snake_case in Postgres, no AI attributions, conventional commits, code only explains WHY not WHAT
 
 strict_tdd: true
+
+testing:
+  runner:
+    command: ./gradlew :optoapp:testDebugUnitTest --stacktrace
+    framework: JUnit 4 + MockK + kotlinx-coroutines-test
+  layers:
+    unit: JUnit 4 + MockK + kotlinx-coroutines-test
+    integration: Room in-memory + DAO tests
+    instrumented: Espresso + Compose UI test + androidTest
+    e2e: connectedDebugAndroidTest on CI (emulator, main push only)
+  coverage:
+    command: ./gradlew :optoapp:jacocoTestReport
+    verification_command: ./gradlew :optoapp:jacocoCoverageVerification
+    threshold: 0.30
+  lint:
+    command: ./gradlew :optoapp:lintDebug
+  format:
+    command: ./gradlew :optoapp:spotlessApply
+  build:
+    command: ./gradlew :optoapp:assembleDebug
+
 rules:
   proposal:
     - Include rollback plan for risky changes
@@ -27,6 +48,6 @@ rules:
   verify:
     test_command: ./gradlew :optoapp:testDebugUnitTest --stacktrace
     build_command: ./gradlew :optoapp:assembleDebug
-    coverage_threshold: 0
+    coverage_threshold: 0.30
   archive:
     - Warn before merging destructive deltas

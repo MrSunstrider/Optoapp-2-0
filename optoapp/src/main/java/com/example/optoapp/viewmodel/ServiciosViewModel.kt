@@ -11,10 +11,12 @@ import com.example.optoapp.data.Pago
 import com.example.optoapp.data.Resource
 import com.example.optoapp.data.ServicioExtra
 import com.example.optoapp.domain.PagoEffect
-import com.example.optoapp.domain.inventario.InventarioItemKind
+import com.example.optoapp.domain.inventario.inventarioParaServicioExtra
 import com.example.optoapp.domain.inventario.monturaMatchesDescripcion
+import com.example.optoapp.domain.movimientoReferenciaForServicioExtraReverso
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import com.example.optoapp.util.DateUtils
+import com.example.optoapp.util.DispensacionStockHelper
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -50,6 +52,7 @@ class ServiciosViewModel @Inject constructor(
     private val sessionManager: com.example.optoapp.data.SessionManager,
     private val postSaveSyncScheduler: PostSaveSyncScheduler,
     private val cancelServicioExtraUseCase: com.example.optoapp.domain.CancelServicioExtraUseCase,
+    private val stockHelper: DispensacionStockHelper,
 ) : ViewModel() {
 
     companion object {
@@ -90,7 +93,7 @@ class ServiciosViewModel @Inject constructor(
     @OptIn(ExperimentalCoroutinesApi::class)
     val monturas: StateFlow<List<com.example.optoapp.data.Montura>> = sessionManager.opticaId
         .flatMapLatest { repository.getMonturasByOptica(it) }
-        .map { list -> list.filter { InventarioItemKind.isArmazon(it.categoria) && it.activo } }
+        .map { list -> inventarioParaServicioExtra(list) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     // Reactive aCuenta sum map for dynamic saldo computation (aCuenta is @Ignore in entity)
@@ -126,9 +129,10 @@ class ServiciosViewModel @Inject constructor(
                 is Resource.Success -> {
                     val s = result.data ?: return@launch
                     val loadedPagos = repository.getPagosByServicioExtra(id, opticaId).first()
-                    val resolvedMonturaId = repository.getMonturasSnapshotForOptica(opticaId)
-                        .firstOrNull { monturaMatchesDescripcion(it, s.descripcion) }
-                        ?.id
+                    val resolvedMonturaId = s.monturaId?.takeIf { it.isNotBlank() }
+                        ?: repository.getMonturasSnapshotForOptica(opticaId)
+                            .firstOrNull { monturaMatchesDescripcion(it, s.descripcion) }
+                            ?.id
                     _uiState.value = ServiciosUiState(
                         id = s.id,
                         ot = s.ot,
@@ -210,10 +214,20 @@ class ServiciosViewModel @Inject constructor(
                     com.example.optoapp.data.SessionManager.LEGACY_OPTICA_ID
                 }
                 val finalId = if (state.id.isNotBlank()) state.id else state.generatedId
+                val newMonturaId = state.monturaId?.takeIf { it.isNotBlank() }
+                val previousMonturaId = if (state.isEdit) {
+                    (repository.getServicioById(finalId, currentOpticaId) as? Resource.Success)
+                        ?.data
+                        ?.monturaId
+                        ?.takeIf { it.isNotBlank() }
+                } else {
+                    null
+                }
 
                 val servicio = ServicioExtra(
                     id = finalId,
                     ot = state.ot.trim(),
+                    monturaId = newMonturaId,
                     descripcion = state.descripcion.trim(),
                     montoTotal = montoParsed,
                     aCuenta = state.pagos.sumOf { PagoEffect.signedAmount(it.tipo, it.monto) },
@@ -226,6 +240,17 @@ class ServiciosViewModel @Inject constructor(
                 )
 
                 repository.withTransaction {
+                    val stockError = applyServicioExtraStockChanges(
+                        opticaId = currentOpticaId,
+                        servicioId = finalId,
+                        previousMonturaId = previousMonturaId,
+                        newMonturaId = newMonturaId,
+                        isEdit = state.isEdit,
+                    )
+                    if (stockError != null) {
+                        throw IllegalStateException(stockError)
+                    }
+
                     if (state.isEdit) {
                         repository.updateServicio(servicio)
                     } else {
@@ -258,6 +283,8 @@ class ServiciosViewModel @Inject constructor(
                         error = "No se pudo guardar: revisa el paciente asociado o deja el servicio sin paciente.",
                     )
                 }
+            } catch (e: IllegalStateException) {
+                _uiState.update { it.copy(error = e.message ?: "No se pudo ajustar el stock.") }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: IOException) {
@@ -301,5 +328,42 @@ class ServiciosViewModel @Inject constructor(
 
     fun clearDeleteError() {
         _deleteError.value = null
+    }
+
+    private suspend fun applyServicioExtraStockChanges(
+        opticaId: String,
+        servicioId: String,
+        previousMonturaId: String?,
+        newMonturaId: String?,
+        isEdit: Boolean,
+    ): String? {
+        if (isEdit && previousMonturaId != null && previousMonturaId != newMonturaId) {
+            val restock = stockHelper.adjustStockAndRegistrarMovimiento(
+                monturaId = previousMonturaId,
+                opticaId = opticaId,
+                delta = 1,
+                tipo = "AJUSTE",
+                referenciaId = movimientoReferenciaForServicioExtraReverso(servicioId, previousMonturaId),
+                nota = "Reversión por edición de servicio extra",
+            )
+            if (restock.isFailure) {
+                return restock.exceptionOrNull()?.message ?: "No se pudo reponer el stock del producto anterior."
+            }
+        }
+
+        if (newMonturaId != null && (!isEdit || previousMonturaId != newMonturaId)) {
+            val sale = stockHelper.adjustStockAndRegistrarMovimiento(
+                monturaId = newMonturaId,
+                opticaId = opticaId,
+                delta = -1,
+                tipo = "SALIDA_VENTA",
+                referenciaId = servicioId,
+                nota = "Salida por servicio extra",
+            )
+            if (sale.isFailure) {
+                return sale.exceptionOrNull()?.message ?: "Stock insuficiente para el producto seleccionado."
+            }
+        }
+        return null
     }
 }

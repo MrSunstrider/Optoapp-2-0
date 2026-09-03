@@ -68,7 +68,8 @@ fun MonturaSearchField(
             it.marca.contains(monturaQuery, ignoreCase = true) ||
                 it.modelo.contains(monturaQuery, ignoreCase = true) ||
                 it.sku.contains(monturaQuery, ignoreCase = true) ||
-                it.color.contains(monturaQuery, ignoreCase = true)
+                it.color.contains(monturaQuery, ignoreCase = true) ||
+                it.categoria.contains(monturaQuery, ignoreCase = true)
         }
     }
 

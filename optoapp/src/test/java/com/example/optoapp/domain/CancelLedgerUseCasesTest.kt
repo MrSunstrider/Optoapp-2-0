@@ -7,6 +7,7 @@ import com.example.optoapp.data.Resource
 import com.example.optoapp.data.ServicioExtra
 import com.example.optoapp.data.pago.PagoDao
 import com.example.optoapp.sync.PostSaveSyncScheduler
+import com.example.optoapp.util.DispensacionStockHelper
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -21,6 +22,7 @@ class CancelLedgerUseCasesTest {
     private val repository = mockk<OptoRepository>(relaxed = true)
     private val pagoDao = mockk<PagoDao>(relaxed = true)
     private val scheduler = mockk<PostSaveSyncScheduler>(relaxed = true)
+    private val stockHelper = mockk<DispensacionStockHelper>(relaxed = true)
     private val date = LocalDate.of(2026, 8, 14)
 
     @Test
@@ -37,7 +39,7 @@ class CancelLedgerUseCasesTest {
         val slot = slot<Pago>()
         coEvery { repository.insertPago(capture(slot)) } returns Unit
 
-        CancelServicioExtraUseCase(repository, pagoDao, scheduler)("s1", "o1")
+        CancelServicioExtraUseCase(repository, pagoDao, scheduler, stockHelper)("s1", "o1")
 
         assertEquals("Reverso", slot.captured.tipo)
         assertEquals("p1", slot.captured.reversaPagoId)
@@ -47,11 +49,63 @@ class CancelLedgerUseCasesTest {
     }
 
     @Test
+    fun cancelServicio_withMonturaId_restock() = runBlocking {
+        coEvery { repository.getServicioById("s1", any()) } returns Resource.Success(
+            ServicioExtra(
+                id = "s1",
+                monturaId = "m-liquido",
+                descripcion = "Líquido",
+                montoTotal = 20.0,
+                estado = "Pendiente",
+                fecha = date,
+            ),
+        )
+        coEvery { pagoDao.getCreditPagosByParent("s1", any()) } returns emptyList()
+        coEvery {
+            stockHelper.adjustStockAndRegistrarMovimiento(
+                monturaId = "m-liquido",
+                opticaId = "o1",
+                delta = 1,
+                tipo = "AJUSTE",
+                referenciaId = movimientoReferenciaForServicioExtraReverso("s1", "m-liquido"),
+                nota = any(),
+            )
+        } returns Result.success(1)
+
+        CancelServicioExtraUseCase(repository, pagoDao, scheduler, stockHelper)("s1", "o1")
+
+        coVerify(exactly = 1) {
+            stockHelper.adjustStockAndRegistrarMovimiento(
+                monturaId = "m-liquido",
+                opticaId = "o1",
+                delta = 1,
+                tipo = "AJUSTE",
+                referenciaId = movimientoReferenciaForServicioExtraReverso("s1", "m-liquido"),
+                nota = any(),
+            )
+        }
+    }
+
+    @Test
+    fun cancelServicio_withoutMonturaId_skips_restock() = runBlocking {
+        coEvery { repository.getServicioById("s1", any()) } returns Resource.Success(
+            ServicioExtra(id = "s1", descripcion = "x", montoTotal = 1.0, estado = "Pendiente", fecha = date),
+        )
+        coEvery { pagoDao.getCreditPagosByParent("s1", any()) } returns emptyList()
+
+        CancelServicioExtraUseCase(repository, pagoDao, scheduler, stockHelper)("s1", "o1")
+
+        coVerify(exactly = 0) {
+            stockHelper.adjustStockAndRegistrarMovimiento(any(), any(), any(), any(), any(), any())
+        }
+    }
+
+    @Test
     fun cancelServicio_idempotentWhenAlreadyAnulado() = runBlocking {
         coEvery { repository.getServicioById("s1", any()) } returns Resource.Success(
             ServicioExtra(id = "s1", descripcion = "x", montoTotal = 1.0, estado = "Anulado", fecha = date),
         )
-        CancelServicioExtraUseCase(repository, pagoDao, scheduler)("s1", "o1")
+        CancelServicioExtraUseCase(repository, pagoDao, scheduler, stockHelper)("s1", "o1")
         coVerify(exactly = 0) { repository.insertPago(any()) }
     }
 

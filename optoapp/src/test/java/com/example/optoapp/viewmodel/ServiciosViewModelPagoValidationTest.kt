@@ -6,6 +6,8 @@ import com.example.optoapp.data.Pago
 import com.example.optoapp.data.SessionManager
 import com.example.optoapp.domain.CancelServicioExtraUseCase
 import com.example.optoapp.sync.PostSaveSyncScheduler
+import com.example.optoapp.util.DispensacionStockHelper
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
@@ -32,6 +34,7 @@ class ServiciosViewModelPagoValidationTest {
     private lateinit var sessionManager: SessionManager
     private lateinit var postSaveSyncScheduler: PostSaveSyncScheduler
     private lateinit var cancelServicioExtraUseCase: CancelServicioExtraUseCase
+    private lateinit var stockHelper: DispensacionStockHelper
 
     private val opticaIdFlow = MutableStateFlow("optica-test")
     private val testDispatcher = UnconfinedTestDispatcher()
@@ -51,11 +54,15 @@ class ServiciosViewModelPagoValidationTest {
         sessionManager = mockk()
         postSaveSyncScheduler = mockk(relaxed = true)
         cancelServicioExtraUseCase = mockk(relaxed = true)
+        stockHelper = mockk(relaxed = true)
 
         every { sessionManager.opticaId } returns opticaIdFlow
         every { sessionManager.userTimeZone } returns flowOf(null)
         every { repository.getAllServiciosForOptica(any()) } returns flowOf(emptyList())
         every { repository.getAllPagosFlowForOptica(any()) } returns flowOf(emptyList())
+        coEvery { repository.withTransaction(any<suspend () -> Any>()) } coAnswers {
+            firstArg<suspend () -> Any>()()
+        }
     }
 
     @After
@@ -78,6 +85,7 @@ class ServiciosViewModelPagoValidationTest {
         sessionManager,
         postSaveSyncScheduler,
         cancelServicioExtraUseCase,
+        stockHelper,
     )
 
     @Test

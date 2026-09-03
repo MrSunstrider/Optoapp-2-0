@@ -24,3 +24,9 @@ fun movimientoReferenciaForInventarioDetalle(detalleId: String): String {
     require(detalleId.isNotBlank()) { "inventario detalle id must not be blank" }
     return detalleId
 }
+
+fun movimientoReferenciaForServicioExtraReverso(servicioId: String, monturaId: String): String {
+    require(servicioId.isNotBlank()) { "servicio id must not be blank" }
+    require(monturaId.isNotBlank()) { "montura id must not be blank" }
+    return "$servicioId:rev:$monturaId"
+}

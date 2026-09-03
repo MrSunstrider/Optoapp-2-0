@@ -19,6 +19,7 @@ interface ServicioExtraDao {
     @Query(
         """
         UPDATE servicios_extra SET ot=:ot, descripcion=:descripcion,
+        monturaId=:monturaId,
         montoTotal=:montoTotal, aCuenta=:aCuenta, estado=:estado,
         fecha=:fecha, pacienteId=:pacienteId, metodoPago=:metodoPago,
         opticaId=:opticaId, fecha_entrega=:fechaEntrega,
@@ -31,6 +32,7 @@ interface ServicioExtraDao {
         opticaId: String,
         ot: String,
         descripcion: String,
+        monturaId: String?,
         montoTotal: Double,
         aCuenta: Double,
         estado: String,

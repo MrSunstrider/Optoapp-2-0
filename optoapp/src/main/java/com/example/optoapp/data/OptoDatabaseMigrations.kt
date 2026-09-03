@@ -1321,6 +1321,12 @@ val MIGRATION_49_50 = object : Migration(49, 50) {
     }
 }
 
+val MIGRATION_50_51 = object : Migration(50, 51) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE servicios_extra ADD COLUMN monturaId TEXT")
+    }
+}
+
 /** Shared Room backfill: fill null/blank/whitespace updatedAt with LWW-safe sentinel (not wall-clock). */
 internal fun stampNullOrBlankUpdatedAtSql(table: String): String =
     """
