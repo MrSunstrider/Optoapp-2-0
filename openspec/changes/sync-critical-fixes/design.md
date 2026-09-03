@@ -58,7 +58,7 @@ filterConflicts → fetchRemoteUpdatedAt
 
 | Layer | What | Approach |
 |-------|------|----------|
-| Unit | EvaluacionClinica nullable construction + orEmpty fallback | JUnit 5 + kotlinx-coroutines-test. Create entity with null fields, verify `.toString()` doesn't crash. |
+| Unit | EvaluacionClinica nullable construction + orEmpty fallback | JUnit 4 + kotlinx-coroutines-test. Create entity with null fields, verify `.toString()` doesn't crash. |
 | Unit | DAO REPLACE idempotency | Room in-memory DB (as per existing test pattern). Insert same PK twice, verify no exception + last value wins. |
 | Unit | ConflictHelper.fetchRemoteUpdatedAt returns empty on all-chunk failure | Mock `selectRemoteRowsChunk` to always throw. Verify no RuntimeException, empty map returned, error logged. |
 | Unit | markSynced atomic via withTransaction on upload | Mock `SyncStateTracker`/database. Verify call order: entity markSynced inside transaction, batch markSynced after. |

@@ -356,7 +356,7 @@
 - **Description**:
   - Verify the project compiles: `./gradlew :optoapp:assembleDebug`
   - Verify all existing tests pass: `./gradlew :optoapp:testDebugUnitTest --stacktrace`
-  - Run JaCoCo to confirm no coverage regression below 5% threshold: `./gradlew :optoapp:jacocoTestReport`
+  - Run JaCoCo to confirm no coverage regression below 30% threshold: `./gradlew :optoapp:jacocoCoverageVerification`
   - Check that no existing call sites for `Pago(...)` lack the new `ventaId` parameter (compiler-enforced since it has a default)
   - Verify no imports broken by the entity change
 - **Acceptance Criteria**:

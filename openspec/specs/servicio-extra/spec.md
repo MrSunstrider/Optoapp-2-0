@@ -49,3 +49,35 @@ The system SHALL ship a Supabase migration that runs `ALTER TABLE public.servici
 
 - GIVEN the Supabase migration is applied to a project with existing `servicios_extra` rows
 - THEN `public.servicios_extra.fecha_entrega` MUST be of type `DATE` AND nullable AND every pre-existing row MUST have `NULL` in that column
+
+### Requirement: Servicio Extra Inventory Picker
+
+Servicios extra MUST list active inventory items (armazón and ACCESORIO) with stock > 0 in the product search picker.
+
+#### Scenario: accesorio activo con stock aparece
+
+- GIVEN a montura row with `categoria=ACCESORIO`, `activo=true`, `stockActual=5`
+- WHEN the user opens nuevo servicio extra picker
+- THEN the item MUST appear in search results
+
+### Requirement: ServicioExtra monturaId
+
+`ServicioExtra` MUST expose optional `monturaId`. Sync DTO MUST map `montura_id`.
+
+#### Scenario: servicio vinculado guarda monturaId
+
+- GIVEN user selects inventory item `m-liquido`
+- WHEN save succeeds
+- THEN `servicios_extra.monturaId = 'm-liquido'`
+
+### Requirement: Servicio Extra Stock on Sale
+
+WHEN save links `monturaId` and it is new or changed
+THEN the system MUST register `SALIDA_VENTA` qty 1 with `referenciaId = servicio.id`.
+
+WHEN cancel or edit removes/changes linked product
+THEN the system MUST register `AJUSTE` restock with distinct `:rev:` referencia.
+
+### Requirement: Dispensación Picker Unchanged
+
+Dispensación picker MUST continue excluding ACCESORIO (`isArmazon` only).

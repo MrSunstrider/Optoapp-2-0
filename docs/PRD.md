@@ -335,7 +335,7 @@ Ser la plataforma estándar de gestión optométrica en Latinoamérica, donde:
 
 | Capa | Herramienta | Cobertura mínima |
 |------|-------------|------------------|
-| Android unit tests | JUnit 4 + Robolectric + MockK | 5% instrucciones (JaCoCo) |
+| Android unit tests | JUnit 4 + MockK (no Robolectric for new tests) | 30% instrucciones (JaCoCo `jacocoCoverageVerification`) |
 | Web unit tests | Vitest 4 | 20% statements, 15% branches, 25% functions |
 | CI Android | GitHub Actions | `testDebugUnitTest` + `assembleDebug` |
 | CI Supabase | GitHub Actions | `supabase db lint` + `db diff` |
@@ -535,7 +535,7 @@ Ser la plataforma estándar de gestión optométrica en Latinoamérica, donde:
 
 | Métrica | Target |
 |---------|--------|
-| Cobertura de tests Android | > 5% (mínimo), escalando a > 30% |
+| Cobertura de tests Android | ≥ 30% instrucciones (JaCoCo, enforced) |
 | Cobertura de tests Web | > 20% statements |
 | Tiempo de CI Android | < 10 min |
 | Tiempo de build Web | < 3 min |
@@ -609,7 +609,7 @@ Ser la plataforma estándar de gestión optométrica en Latinoamérica, donde:
 | SDK target | 36 (Android 16) |
 | JDK | 17 |
 | Gradle | 8.x (configuration cache habilitado) |
-| JaCoCo mínimo | 5% instrucciones (piso bajo, escalando) |
+| JaCoCo mínimo | 30% instrucciones (`jacocoCoverageVerification`) |
 | No usar Fragments/ViewBinding para rutas nuevas | Solo Jetpack Compose |
 
 ### 14.2 Web

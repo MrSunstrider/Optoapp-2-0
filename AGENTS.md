@@ -28,7 +28,8 @@
 | Command | Purpose |
 |---------|---------|
 | `./gradlew :optoapp:testDebugUnitTest --stacktrace` | Unit tests |
-| `./gradlew :optoapp:jacocoTestReport` | Coverage (5% min) |
+| `./gradlew :optoapp:jacocoTestReport` | Coverage report |
+| `./gradlew :optoapp:jacocoCoverageVerification` | Coverage gate (30% instruction min) |
 | `./gradlew :optoapp:assembleDebug` | Debug APK |
 | `./gradlew :optoapp:assembleRelease` | Release APK (signed, R8) |
 
@@ -44,11 +45,11 @@ Never commit credentials. `sdk.dir` is auto-added by Android Studio. Use `JAVA_H
 
 ## Testing
 
-- **Pure JUnit + MockK** — no Robolectric for new tests
+- **JUnit 4 + MockK** — no Robolectric for new tests
 - `kotlinx-coroutines-test` (`runTest`) for coroutines
 - Room DAOs tested with `Room.inMemoryDatabaseBuilder(...).allowMainThreadQueries().build()`
 - Tests mirror main source in `optoapp/src/test/java/com/example/optoapp/`
-- JaCoCo minimum: 5%
+- JaCoCo minimum: **30% instruction coverage** (`jacocoCoverageVerification` in `optoapp/build.gradle.kts`)
 
 ## Sync Architecture
 
@@ -77,9 +78,10 @@ Never commit credentials. `sdk.dir` is auto-added by Android Studio. Use `JAVA_H
 ## SDD Workflow
 
 - **Spec-Driven Development** via Gentle AI / OpenCode
-- Artifacts: Engram (primary) + `openspec/`
-- **Strict TDD**: red → green, pure JUnit + MockK
+- Artifacts: Engram (primary) + `openspec/` (hybrid persistence)
+- **Strict TDD**: red → green, JUnit 4 + MockK
 - Phases: `explore → propose → spec → design → tasks → apply → verify → archive`
+- **openspec/ inventory** (do not recreate skeleton on `sdd-init`): `openspec/config.yaml`, **29** main specs in `openspec/specs/`, **56** active changes in `openspec/changes/`, completed changes in `openspec/changes/archive/`
 
 ## Mandatory Gates
 

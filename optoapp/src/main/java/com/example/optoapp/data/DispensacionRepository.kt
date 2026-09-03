@@ -214,6 +214,7 @@ class DispensacionRepository(
         servicioExtraDao.updateServicio(
             id = servicio.id, opticaId = servicio.opticaId,
             ot = servicio.ot, descripcion = servicio.descripcion,
+            monturaId = servicio.monturaId,
             montoTotal = servicio.montoTotal, aCuenta = servicio.aCuenta,
             estado = servicio.estado, fecha = servicio.fecha,
             pacienteId = servicio.pacienteId, metodoPago = servicio.metodoPago,

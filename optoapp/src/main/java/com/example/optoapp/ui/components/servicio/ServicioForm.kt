@@ -79,7 +79,7 @@ private fun StepDatos(
 
     if (monturas.none { it.stockActual > 0 }) {
         Text(
-            "No hay monturas con stock en el inventario.",
+            "No hay productos con stock en el inventario.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -106,6 +106,8 @@ private fun StepDatos(
                 )
             },
             modifier = Modifier.fillMaxWidth(),
+            label = "Buscar producto (marca, modelo o SKU)",
+            placeholder = "Ej: líquido, cofre, Ray-Ban...",
         )
     }
 
