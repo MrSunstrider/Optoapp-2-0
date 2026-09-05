@@ -203,6 +203,17 @@ open class OptoRepository(
     fun getMonturasByOptica(opticaId: String) = monturaCoordinator.getMonturasByOptica(opticaId)
     suspend fun getMonturaById(id: String, opticaId: String) = monturaCoordinator.getMonturaById(id, opticaId)
     suspend fun insertMontura(montura: Montura) = monturaCoordinator.insertMontura(montura)
+
+    /** All-or-nothing multi-variant create; schedules inventario sync once after commit. */
+    suspend fun insertMonturas(monturas: List<Montura>) {
+        if (monturas.isEmpty()) return
+        val opticaId = monturas.first().opticaId
+        database.withTransaction {
+            monturas.forEach { monturaCoordinator.insertMonturaLocal(it) }
+        }
+        monturaCoordinator.scheduleInventarioSync(opticaId)
+    }
+
     suspend fun updateMontura(montura: Montura) = monturaCoordinator.updateMontura(montura)
     suspend fun deleteMontura(montura: Montura) = monturaCoordinator.deleteMontura(montura)
     suspend fun adjustMonturaStock(monturaId: String, opticaId: String, delta: Int) = monturaCoordinator.adjustMonturaStock(monturaId, opticaId, delta)

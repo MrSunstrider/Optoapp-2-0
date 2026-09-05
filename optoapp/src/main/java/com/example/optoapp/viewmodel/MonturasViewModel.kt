@@ -42,6 +42,10 @@ data class MonturaFormState(
     val stockMinimo: String = "",
     val activo: Boolean = true,
     val tipoAro: String = "",
+    /** Create-only: selected rim types for multi-variant insert. */
+    val selectedTiposAro: Set<String> = emptySet(),
+    /** Create-only: initial stock string per selected rim type. */
+    val stockPorTipoAro: Map<String, String> = emptyMap(),
     val materialMontura: String = "",
     val anchoMm: String = "",
     val puenteMm: String = "",
@@ -188,8 +192,13 @@ class MonturasViewModel @Inject constructor(
                 return@launch
             }
             val esAccesorio = form.tipoItem.equals(InventarioItemKind.ACCESORIO, ignoreCase = true)
+            val isCreate = form.id == null
             if (!esAccesorio) {
-                if (form.tipoAro.isBlank()) {
+                if (isCreate && form.selectedTiposAro.isEmpty()) {
+                    _uiState.update { it.copy(error = "Tipo de aro es obligatorio.") }
+                    return@launch
+                }
+                if (!isCreate && form.tipoAro.isBlank()) {
                     _uiState.update { it.copy(error = "Tipo de aro es obligatorio.") }
                     return@launch
                 }
@@ -200,11 +209,32 @@ class MonturasViewModel @Inject constructor(
             }
             val costo = form.costo.replace(",", ".").toDoubleOrNull() ?: 0.0
             val precio = form.precio.replace(",", ".").toDoubleOrNull() ?: 0.0
-            val stockActual = form.stockActual.toIntOrNull() ?: 0
             val stockMinimo = form.stockMinimo.toIntOrNull() ?: 0
-            if (stockActual < 0 || stockMinimo < 0) {
+            if (stockMinimo < 0) {
                 _uiState.update { it.copy(error = "Stock actual y mínimo no pueden ser negativos.") }
                 return@launch
+            }
+            val variantStocks: List<Pair<String, Int>> = when {
+                esAccesorio || !isCreate -> {
+                    val stockActual = form.stockActual.toIntOrNull() ?: 0
+                    if (stockActual < 0) {
+                        _uiState.update { it.copy(error = "Stock actual y mínimo no pueden ser negativos.") }
+                        return@launch
+                    }
+                    listOf((if (esAccesorio) "" else form.tipoAro.trim()) to stockActual)
+                }
+                else -> {
+                    val parsed = mutableListOf<Pair<String, Int>>()
+                    for (tipo in form.selectedTiposAro) {
+                        val stock = form.stockPorTipoAro[tipo]?.toIntOrNull() ?: 0
+                        if (stock < 0) {
+                            _uiState.update { it.copy(error = "Stock actual y mínimo no pueden ser negativos.") }
+                            return@launch
+                        }
+                        parsed.add(tipo to stock)
+                    }
+                    parsed
+                }
             }
             try {
                 val opticaId = sessionManager.opticaId.first()
@@ -213,42 +243,91 @@ class MonturasViewModel @Inject constructor(
                     AuthorizationGuard.requireRole(role, setOf("admin", "gerente"), "editar montura")
                 }
                 val categoriaGuardada = InventarioItemKind.categoriaForSave(form.tipoItem, form.categoria)
-                val montura = Montura(
-                    id = form.id ?: UUID.randomUUID().toString(),
-                    sku = form.sku.trim(),
-                    marca = form.marca.trim(),
-                    modelo = form.modelo.trim(),
-                    color = form.color.trim(),
-                    talla = form.talla.trim(),
-                    costo = costo,
-                    precio = precio,
-                    stockActual = stockActual,
-                    stockMinimo = stockMinimo,
-                    activo = form.activo,
-                    tipoAro = if (esAccesorio) "" else form.tipoAro.trim(),
-                    materialMontura = if (esAccesorio) "" else form.materialMontura.trim(),
-                    anchoMm = if (esAccesorio) null else form.anchoMm.replace(",", ".").toDoubleOrNull(),
-                    puenteMm = if (esAccesorio) null else form.puenteMm.replace(",", ".").toDoubleOrNull(),
-                    alturaMm = if (esAccesorio) null else form.alturaMm.replace(",", ".").toDoubleOrNull(),
-                    imagenUri = form.imagenUri.trim().ifEmpty { null },
-                    categoria = categoriaGuardada,
-                    coleccion = form.coleccion.trim(),
-                    temporada = form.temporada.trim(),
-                    estadoComercial = form.estadoComercial.trim(),
-                    genero = form.genero.trim(),
-                    opticaId = opticaId,
-                )
-                when (repository.getMonturaById(montura.id, opticaId)) {
-                    is Resource.Success -> repository.updateMontura(montura)
-                    else -> repository.insertMontura(montura)
-                }
-                _uiState.update {
-                    it.copy(
-                        editing = false,
-                        form = MonturaFormState(),
-                        error = null,
-                        success = if (esAccesorio) "Accesorio guardado" else "Montura guardada",
+                if (!isCreate) {
+                    val (tipoAro, stockActual) = variantStocks.first()
+                    val montura = Montura(
+                        id = form.id!!,
+                        sku = form.sku.trim(),
+                        marca = form.marca.trim(),
+                        modelo = form.modelo.trim(),
+                        color = form.color.trim(),
+                        talla = form.talla.trim(),
+                        costo = costo,
+                        precio = precio,
+                        stockActual = stockActual,
+                        stockMinimo = stockMinimo,
+                        activo = form.activo,
+                        tipoAro = tipoAro,
+                        materialMontura = if (esAccesorio) "" else form.materialMontura.trim(),
+                        anchoMm = if (esAccesorio) null else form.anchoMm.replace(",", ".").toDoubleOrNull(),
+                        puenteMm = if (esAccesorio) null else form.puenteMm.replace(",", ".").toDoubleOrNull(),
+                        alturaMm = if (esAccesorio) null else form.alturaMm.replace(",", ".").toDoubleOrNull(),
+                        imagenUri = form.imagenUri.trim().ifEmpty { null },
+                        categoria = categoriaGuardada,
+                        coleccion = form.coleccion.trim(),
+                        temporada = form.temporada.trim(),
+                        estadoComercial = form.estadoComercial.trim(),
+                        genero = form.genero.trim(),
+                        opticaId = opticaId,
                     )
+                    when (repository.getMonturaById(montura.id, opticaId)) {
+                        is Resource.Success -> repository.updateMontura(montura)
+                        else -> repository.insertMontura(montura)
+                    }
+                    _uiState.update {
+                        it.copy(
+                            editing = false,
+                            form = MonturaFormState(),
+                            error = null,
+                            success = if (esAccesorio) "Accesorio guardado" else "Montura guardada",
+                        )
+                    }
+                } else {
+                    val toInsert = variantStocks.map { (tipoAro, stockActual) ->
+                        Montura(
+                            id = UUID.randomUUID().toString(),
+                            sku = form.sku.trim(),
+                            marca = form.marca.trim(),
+                            modelo = form.modelo.trim(),
+                            color = form.color.trim(),
+                            talla = form.talla.trim(),
+                            costo = costo,
+                            precio = precio,
+                            stockActual = stockActual,
+                            stockMinimo = stockMinimo,
+                            activo = form.activo,
+                            tipoAro = tipoAro,
+                            materialMontura = if (esAccesorio) "" else form.materialMontura.trim(),
+                            anchoMm = if (esAccesorio) null else form.anchoMm.replace(",", ".").toDoubleOrNull(),
+                            puenteMm = if (esAccesorio) null else form.puenteMm.replace(",", ".").toDoubleOrNull(),
+                            alturaMm = if (esAccesorio) null else form.alturaMm.replace(",", ".").toDoubleOrNull(),
+                            imagenUri = form.imagenUri.trim().ifEmpty { null },
+                            categoria = categoriaGuardada,
+                            coleccion = form.coleccion.trim(),
+                            temporada = form.temporada.trim(),
+                            estadoComercial = form.estadoComercial.trim(),
+                            genero = form.genero.trim(),
+                            opticaId = opticaId,
+                        )
+                    }
+                    if (toInsert.size == 1) {
+                        repository.insertMontura(toInsert.first())
+                    } else {
+                        repository.insertMonturas(toInsert)
+                    }
+                    val successMsg = when {
+                        esAccesorio -> "Accesorio guardado"
+                        toInsert.size > 1 -> "Se crearon ${toInsert.size} variantes"
+                        else -> "Montura guardada"
+                    }
+                    _uiState.update {
+                        it.copy(
+                            editing = false,
+                            form = MonturaFormState(),
+                            error = null,
+                            success = successMsg,
+                        )
+                    }
                 }
             } catch (e: CancellationException) {
                 throw e
@@ -257,7 +336,7 @@ class MonturasViewModel @Inject constructor(
                 _uiState.update { it.copy(error = "Error inesperado. Reintente más tarde.") }
             } catch (e: Exception) {
                 val msg = if (e.message?.contains("UNIQUE") == true) {
-                    "El SKU ya existe para otro producto."
+                    "El SKU ya existe para ese tipo de aro."
                 } else {
                     "Error inesperado. Reintente más tarde."
                 }

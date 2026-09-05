@@ -56,6 +56,7 @@ class MonturasViewModelTest {
         every { repository.getMonturasByOptica(opticaId) } returns flowOf(emptyList())
         coEvery { repository.getMonturaById(any(), any()) } returns Resource.Error("missing")
         coEvery { repository.insertMontura(any()) } returns Unit
+        coEvery { repository.insertMonturas(any()) } returns Unit
         coEvery { repository.updateMontura(any()) } returns Unit
     }
 
@@ -215,5 +216,65 @@ class MonturasViewModelTest {
         assertEquals(InventarioItemKind.ACCESORIO, slot.captured.categoria)
         assertEquals("", slot.captured.tipoAro)
         assertEquals("", slot.captured.materialMontura)
+    }
+
+    @Test
+    fun `save montura create with two tipos inserts two rows with per-type stock`() = runTest(testDispatcher) {
+        createVm()
+        viewModel.startCreate()
+        viewModel.updateForm {
+            it.copy(
+                tipoItem = InventarioItemKind.MONTURA,
+                sku = "RAY-2140",
+                marca = "Ray-Ban",
+                modelo = "Aviator",
+                materialMontura = "Metal",
+                selectedTiposAro = setOf("Aro Completo", "Semi al aire"),
+                stockPorTipoAro = mapOf(
+                    "Aro Completo" to "5",
+                    "Semi al aire" to "3",
+                ),
+                stockMinimo = "1",
+            )
+        }
+        viewModel.save()
+        advanceUntilIdle()
+
+        assertNull(viewModel.uiState.value.error)
+        assertEquals("Se crearon 2 variantes", viewModel.uiState.value.success)
+        val batch = slot<List<Montura>>()
+        coVerify(exactly = 1) { repository.insertMonturas(capture(batch)) }
+        coVerify(exactly = 0) { repository.insertMontura(any()) }
+        assertEquals(2, batch.captured.size)
+        assertEquals(setOf("Aro Completo", "Semi al aire"), batch.captured.map { it.tipoAro }.toSet())
+        assertEquals(5, batch.captured.first { it.tipoAro == "Aro Completo" }.stockActual)
+        assertEquals(3, batch.captured.first { it.tipoAro == "Semi al aire" }.stockActual)
+        assertTrue(batch.captured.all { it.sku == "RAY-2140" })
+        assertTrue(batch.captured.map { it.id }.distinct().size == 2)
+    }
+
+    @Test
+    fun `save montura create with Aluminio material persists material`() = runTest(testDispatcher) {
+        createVm()
+        viewModel.startCreate()
+        viewModel.updateForm {
+            it.copy(
+                tipoItem = InventarioItemKind.MONTURA,
+                sku = "ALU-1",
+                marca = "X",
+                modelo = "Y",
+                materialMontura = "Aluminio",
+                selectedTiposAro = setOf("Aro Completo"),
+                stockPorTipoAro = mapOf("Aro Completo" to "2"),
+            )
+        }
+        viewModel.save()
+        advanceUntilIdle()
+
+        assertNull(viewModel.uiState.value.error)
+        val slot = slot<Montura>()
+        coVerify(exactly = 1) { repository.insertMontura(capture(slot)) }
+        assertEquals("Aluminio", slot.captured.materialMontura)
+        assertEquals(2, slot.captured.stockActual)
     }
 }
