@@ -167,7 +167,7 @@ data class ServicioExtra(
     tableName = "monturas",
     indices = [
         Index(value = ["opticaId"]),
-        Index(value = ["sku", "opticaId"], unique = true),
+        Index(value = ["sku", "opticaId", "tipoAro"], unique = true),
         Index(value = ["estadoComercial"]),
         Index(value = ["categoria"]),
     ],

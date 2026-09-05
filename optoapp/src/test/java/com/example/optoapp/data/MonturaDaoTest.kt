@@ -248,4 +248,36 @@ class MonturaDaoTest {
         val list = dao.getMonturasListByOptica("o1")
         assertEquals(2, list.size)
     }
+
+    @Test
+    fun insertMontura_sameSkuDifferentTipoAro_bothPersist() = runBlocking {
+        val completo = Montura(
+            id = "m1",
+            sku = "RAY-2140",
+            marca = "Ray-Ban",
+            modelo = "Aviator",
+            stockActual = 5,
+            stockMinimo = 1,
+            tipoAro = "Aro Completo",
+            opticaId = "o1",
+        )
+        val semi = Montura(
+            id = "m2",
+            sku = "RAY-2140",
+            marca = "Ray-Ban",
+            modelo = "Aviator",
+            stockActual = 3,
+            stockMinimo = 1,
+            tipoAro = "Semi al aire",
+            opticaId = "o1",
+        )
+        dao.insertMontura(completo)
+        dao.insertMontura(semi)
+
+        val list = dao.getMonturasListByOptica("o1")
+        assertEquals(2, list.size)
+        assertEquals(setOf("Aro Completo", "Semi al aire"), list.map { it.tipoAro }.toSet())
+        assertEquals(5, list.first { it.tipoAro == "Aro Completo" }.stockActual)
+        assertEquals(3, list.first { it.tipoAro == "Semi al aire" }.stockActual)
+    }
 }

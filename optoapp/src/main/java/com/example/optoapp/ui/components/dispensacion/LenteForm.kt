@@ -173,7 +173,7 @@ fun LenteForm(
             OptoDropdownMenuField(label = "Tipo de Aro", selected = item.tipoAro, options = OpticalCatalog.TIPO_ARO.keys.toList()) {
                 onUpdate(item.copy(tipoAro = it))
             }
-            OptoDropdownMenuField(label = "Material de la Montura", selected = item.materialMontura, options = listOf("Acetato", "Metal", "Carey", "TR-90", "Econ")) {
+            OptoDropdownMenuField(label = "Material de la Montura", selected = item.materialMontura, options = OpticalCatalog.MATERIALES_MONTURA) {
                 onUpdate(item.copy(materialMontura = it))
             }
             OptoTextField(value = item.descripcionMontura, onValueChange = { onUpdate(item.copy(descripcionMontura = it)) }, label = "Descripción (Marca, Modelo)")

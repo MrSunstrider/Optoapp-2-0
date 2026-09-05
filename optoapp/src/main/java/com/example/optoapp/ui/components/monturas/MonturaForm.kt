@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -13,11 +15,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.example.optoapp.domain.OpticalCatalog
 import com.example.optoapp.domain.inventario.InventarioItemKind
 import com.example.optoapp.ui.components.DropdownField
 import com.example.optoapp.ui.components.OptoTextField
 import com.example.optoapp.viewmodel.MonturaFormState
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun MonturaEditForm(
     form: MonturaFormState,
@@ -25,6 +29,8 @@ fun MonturaEditForm(
     error: String?,
 ) {
     val esAccesorio = form.tipoItem.equals(InventarioItemKind.ACCESORIO, ignoreCase = true)
+    val isCreate = form.id == null
+    val tiposCatalogo = OpticalCatalog.TIPO_ARO.keys.toList()
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         if (!error.isNullOrBlank()) {
@@ -61,6 +67,8 @@ fun MonturaEditForm(
                         form.copy(
                             tipoItem = InventarioItemKind.ACCESORIO,
                             tipoAro = "",
+                            selectedTiposAro = emptySet(),
+                            stockPorTipoAro = emptyMap(),
                             materialMontura = "",
                             anchoMm = "",
                             puenteMm = "",
@@ -105,17 +113,69 @@ fun MonturaEditForm(
         )
         if (!esAccesorio) {
             OptoTextField(form.talla, { v -> onUpdate(form.copy(talla = v)) }, "Talla (calibre)")
-            DropdownField(
-                label = "Tipo de aro *",
-                selected = form.tipoAro,
-                options = listOf("Aro Completo", "Semi al aire", "Al aire"),
-            ) { opt ->
-                onUpdate(form.copy(tipoAro = opt))
+            if (isCreate) {
+                Text(
+                    "Tipo de aro *",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    "Puedes marcar varios tipos; cada uno lleva su propio stock inicial.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    tiposCatalogo.forEach { tipo ->
+                        val selected = tipo in form.selectedTiposAro
+                        FilterChip(
+                            selected = selected,
+                            onClick = {
+                                val next = form.selectedTiposAro.toMutableSet()
+                                val stocks = form.stockPorTipoAro.toMutableMap()
+                                if (selected) {
+                                    next.remove(tipo)
+                                    stocks.remove(tipo)
+                                } else {
+                                    next.add(tipo)
+                                    stocks.putIfAbsent(tipo, "")
+                                }
+                                onUpdate(
+                                    form.copy(
+                                        selectedTiposAro = next,
+                                        stockPorTipoAro = stocks,
+                                    ),
+                                )
+                            },
+                            label = { Text(tipo) },
+                        )
+                    }
+                }
+                form.selectedTiposAro.sorted().forEach { tipo ->
+                    OptoTextField(
+                        value = form.stockPorTipoAro[tipo].orEmpty(),
+                        onValueChange = { v ->
+                            onUpdate(form.copy(stockPorTipoAro = form.stockPorTipoAro + (tipo to v)))
+                        },
+                        label = "Stock inicial — $tipo",
+                        keyboardType = KeyboardType.Number,
+                    )
+                }
+            } else {
+                DropdownField(
+                    label = "Tipo de aro *",
+                    selected = form.tipoAro,
+                    options = tiposCatalogo,
+                ) { opt ->
+                    onUpdate(form.copy(tipoAro = opt))
+                }
             }
             DropdownField(
                 label = "Material *",
                 selected = form.materialMontura,
-                options = listOf("Acetato", "Metal", "Carey", "TR-90", "Econ"),
+                options = OpticalCatalog.MATERIALES_MONTURA,
             ) { opt ->
                 onUpdate(form.copy(materialMontura = opt))
             }
@@ -123,7 +183,9 @@ fun MonturaEditForm(
 
         OptoTextField(form.costo, { v -> onUpdate(form.copy(costo = v)) }, "Costo unitario", keyboardType = KeyboardType.Decimal)
         OptoTextField(form.precio, { v -> onUpdate(form.copy(precio = v)) }, "Precio de venta", keyboardType = KeyboardType.Decimal)
-        OptoTextField(form.stockActual, { v -> onUpdate(form.copy(stockActual = v)) }, "Stock inicial (unidades)", keyboardType = KeyboardType.Number)
+        if (esAccesorio || !isCreate) {
+            OptoTextField(form.stockActual, { v -> onUpdate(form.copy(stockActual = v)) }, "Stock inicial (unidades)", keyboardType = KeyboardType.Number)
+        }
         OptoTextField(form.stockMinimo, { v -> onUpdate(form.copy(stockMinimo = v)) }, "Stock mínimo para alerta", keyboardType = KeyboardType.Number)
 
         Text("* Campos obligatorios", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)

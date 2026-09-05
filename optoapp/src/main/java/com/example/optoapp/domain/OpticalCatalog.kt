@@ -3,6 +3,8 @@ package com.example.optoapp.domain
 object OpticalCatalog {
     val MATERIALES = listOf("Resina", "Cristal", "Policarbonato", "Trivex")
 
+    val MATERIALES_MONTURA = listOf("Acetato", "Metal", "Carey", "TR-90", "Econ", "Aluminio")
+
     val TIPO_LENTE = listOf("Monofocal", "Bifocal", "Multifocal", "Ocupacional", "Lentes de Contacto")
 
     val TRATAMIENTOS = listOf(

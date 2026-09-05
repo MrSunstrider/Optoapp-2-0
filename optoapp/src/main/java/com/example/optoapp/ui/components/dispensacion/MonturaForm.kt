@@ -55,10 +55,10 @@ fun MonturaForm(
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
-            OptoDropdownMenuField(label = "Tipo de Aro", selected = uiState.tipoAro, options = listOf("Aro Completo", "Semi al aire", "Al aire")) {
+            OptoDropdownMenuField(label = "Tipo de Aro", selected = uiState.tipoAro, options = com.example.optoapp.domain.OpticalCatalog.TIPO_ARO.keys.toList()) {
                 onUpdate(uiState.copy(tipoAro = it))
             }
-            OptoDropdownMenuField(label = "Material", selected = uiState.materialMontura, options = listOf("Acetato", "Metal", "Carey", "TR-90", "Econ")) {
+            OptoDropdownMenuField(label = "Material", selected = uiState.materialMontura, options = com.example.optoapp.domain.OpticalCatalog.MATERIALES_MONTURA) {
                 onUpdate(uiState.copy(materialMontura = it))
             }
             OptoTextField(value = uiState.descripcionMontura, onValueChange = { onUpdate(uiState.copy(descripcionMontura = it)) }, label = "Descripción (Marca, Modelo)")

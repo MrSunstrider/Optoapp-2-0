@@ -34,6 +34,14 @@ class OpticalCatalogTest {
     }
 
     @Test
+    fun materialesMontura_includesAluminio() {
+        assertEquals(6, OpticalCatalog.MATERIALES_MONTURA.size)
+        assertTrue(OpticalCatalog.MATERIALES_MONTURA.contains("Acetato"))
+        assertTrue(OpticalCatalog.MATERIALES_MONTURA.contains("Aluminio"))
+        assertEquals("Aluminio", OpticalCatalog.MATERIALES_MONTURA.last())
+    }
+
+    @Test
     fun tipoAro_threeKeys_correctInternalValues() {
         assertEquals(3, OpticalCatalog.TIPO_ARO.size)
         assertEquals("aro_completo", OpticalCatalog.TIPO_ARO["Aro Completo"])

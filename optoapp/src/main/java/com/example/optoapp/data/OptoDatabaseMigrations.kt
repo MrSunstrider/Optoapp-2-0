@@ -1327,6 +1327,17 @@ val MIGRATION_50_51 = object : Migration(50, 51) {
     }
 }
 
+val MIGRATION_51_52 = object : Migration(51, 52) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        // Allow same SKU with different tipoAro as independent stock rows.
+        db.execSQL("DROP INDEX IF EXISTS index_monturas_sku_opticaId")
+        db.execSQL(
+            "CREATE UNIQUE INDEX IF NOT EXISTS index_monturas_sku_opticaId_tipoAro " +
+                "ON monturas(sku, opticaId, tipoAro)",
+        )
+    }
+}
+
 /** Shared Room backfill: fill null/blank/whitespace updatedAt with LWW-safe sentinel (not wall-clock). */
 internal fun stampNullOrBlankUpdatedAtSql(table: String): String =
     """
