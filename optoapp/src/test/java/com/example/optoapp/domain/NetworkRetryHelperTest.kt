@@ -11,7 +11,9 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
+import io.mockk.unmockkAll
 import kotlinx.coroutines.test.runTest
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
@@ -46,12 +48,17 @@ class NetworkRetryHelperTest {
             }
         }
 
-        auth = mockk()
+        auth = mockk(relaxed = true)
         coEvery { auth.refreshCurrentSession() } returns Unit
         stubUsablePostRefreshSession()
 
-        supabase = mockk()
+        supabase = mockk(relaxed = true)
         every { supabase.auth } returns auth
+    }
+
+    @After
+    fun tearDown() {
+        unmockkAll()
     }
 
     private fun stubUsablePostRefreshSession(
@@ -59,12 +66,13 @@ class NetworkRetryHelperTest {
         accessToken: String? = "usable-access-token",
     ) {
         every { auth.currentUserOrNull() } returns user
-        val session = if (accessToken == null) {
-            null
+        if (accessToken == null) {
+            every { auth.currentSessionOrNull() } returns null
         } else {
-            mockk<UserSession>(relaxed = true).also { every { it.accessToken } returns accessToken }
+            val session = mockk<UserSession>(relaxed = true)
+            every { session.accessToken } returns accessToken
+            every { auth.currentSessionOrNull() } returns session
         }
-        every { auth.currentSessionOrNull() } returns session
     }
 
     private fun createHelper() = NetworkRetryHelper(logger, supabase)
