@@ -69,7 +69,8 @@ fun MonturaSearchField(
                 it.modelo.contains(monturaQuery, ignoreCase = true) ||
                 it.sku.contains(monturaQuery, ignoreCase = true) ||
                 it.color.contains(monturaQuery, ignoreCase = true) ||
-                it.categoria.contains(monturaQuery, ignoreCase = true)
+                it.categoria.contains(monturaQuery, ignoreCase = true) ||
+                it.tipoAro.contains(monturaQuery, ignoreCase = true)
         }
     }
 
@@ -111,8 +112,13 @@ fun MonturaSearchField(
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
                                 Text("${montura.marca} ${montura.modelo}", fontWeight = FontWeight.Bold)
+                                val meta = listOfNotNull(
+                                    "SKU: ${montura.sku}",
+                                    montura.tipoAro.takeIf { it.isNotBlank() },
+                                    montura.color.takeIf { it.isNotBlank() },
+                                ).joinToString(" | ")
                                 Text(
-                                    "SKU: ${montura.sku} | ${montura.color}",
+                                    meta,
                                     style = MaterialTheme.typography.bodySmall,
                                 )
                             }

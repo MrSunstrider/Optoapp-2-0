@@ -60,6 +60,16 @@ class MonturaInventoryCoordinator @Inject constructor(
         postSaveSyncScheduler.get().scheduleInventarioSync(stamped.opticaId)
     }
 
+    /** Persist rows only; caller owns transaction + sync scheduling. */
+    suspend fun insertMonturaLocal(montura: Montura) {
+        val stamped = montura.copy(updatedAt = Instant.now().toString())
+        monturaDao.insertMontura(stamped)
+    }
+
+    fun scheduleInventarioSync(opticaId: String) {
+        postSaveSyncScheduler.get().scheduleInventarioSync(opticaId)
+    }
+
     suspend fun updateMontura(montura: Montura) {
         val stamped = montura.copy(updatedAt = Instant.now().toString())
         monturaDao.updateMontura(
