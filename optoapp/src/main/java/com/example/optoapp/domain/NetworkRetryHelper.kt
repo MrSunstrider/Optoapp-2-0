@@ -101,7 +101,10 @@ class NetworkRetryHelper @Inject constructor(
     private suspend fun refreshSessionForRetry(): Boolean {
         return try {
             supabase.auth.refreshCurrentSession()
-            true
+            // Mirror SyncSessionHelper: null user or blank token must not retry as success.
+            supabase.auth.currentUserOrNull() ?: return false
+            val token = supabase.auth.currentSessionOrNull()?.accessToken
+            !token.isNullOrBlank()
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {

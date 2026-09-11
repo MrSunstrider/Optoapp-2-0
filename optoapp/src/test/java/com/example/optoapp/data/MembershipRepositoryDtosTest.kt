@@ -1,5 +1,7 @@
 ﻿package com.example.optoapp.data
 
+import com.example.optoapp.data.membership.MembershipFetch
+import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -11,6 +13,12 @@ import org.junit.Test
  * correctly after extraction to MembershipRepositoryDtos.kt.
  */
 class MembershipRepositoryDtosTest {
+
+    private val membershipJson = Json {
+        ignoreUnknownKeys = true
+        coerceInputValues = true
+        encodeDefaults = true
+    }
 
     @Test
     fun opticaDto_constructsWithMinimalParams() {
@@ -141,7 +149,40 @@ class MembershipRepositoryDtosTest {
     @Test
     fun usuarioOpticaDto_defaultRol() {
         val dto = UsuarioOpticaDto(userId = "u1", opticaId = "o1")
-        assertEquals("admin", dto.rol)
+        assertEquals("", dto.rol)
+    }
+
+    @Test
+    fun usuarioOpticaDto_missingRol_decodesBlankAndMapRowSkips() {
+        val dto = membershipJson.decodeFromString(
+            UsuarioOpticaDto.serializer(),
+            """{"user_id":"u1","optica_id":"o1"}""",
+        )
+        assertEquals("", dto.rol)
+        assertNull(MembershipFetch.mapRow(dto.opticaId, "Vista", dto.rol))
+    }
+
+    @Test
+    fun usuarioOpticaDto_nullRol_decodesBlankAndMapRowSkips() {
+        val dto = membershipJson.decodeFromString(
+            UsuarioOpticaDto.serializer(),
+            """{"user_id":"u1","optica_id":"o1","rol":null}""",
+        )
+        assertEquals("", dto.rol)
+        assertNull(MembershipFetch.mapRow(dto.opticaId, "Vista", dto.rol))
+    }
+
+    @Test
+    fun usuarioOpticaDto_empleadoRol_isPreservedByMapRow() {
+        val dto = membershipJson.decodeFromString(
+            UsuarioOpticaDto.serializer(),
+            """{"user_id":"u1","optica_id":"o1","rol":"empleado"}""",
+        )
+        assertEquals("empleado", dto.rol)
+        assertEquals(
+            OpticaMembership("o1", "Lentes", "empleado"),
+            MembershipFetch.mapRow(dto.opticaId, "Lentes", dto.rol),
+        )
     }
 
     @Test

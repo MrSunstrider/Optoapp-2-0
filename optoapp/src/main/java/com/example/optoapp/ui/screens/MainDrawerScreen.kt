@@ -104,15 +104,25 @@ fun MainDrawerScreen(
                         TextButton(
                             onClick = {
                                 scope.launch {
-                                    val hasMultiple = authViewModel.prepareOpticaSelection()
-                                    if (hasMultiple) {
-                                        parentNavController.navigate(Route.SeleccionOptica.route)
-                                    } else {
-                                        android.widget.Toast.makeText(
-                                            context,
-                                            "Solo tienes una óptica asociada.",
-                                            android.widget.Toast.LENGTH_SHORT,
-                                        ).show()
+                                    when (val prep = authViewModel.prepareOpticaSelection()) {
+                                        is com.example.optoapp.viewmodel.OpticaSelectionPrep.Error -> {
+                                            android.widget.Toast.makeText(
+                                                context,
+                                                prep.message.ifBlank { "Error al cargar ópticas" },
+                                                android.widget.Toast.LENGTH_SHORT,
+                                            ).show()
+                                        }
+                                        is com.example.optoapp.viewmodel.OpticaSelectionPrep.Ok -> {
+                                            if (prep.hasMultiple) {
+                                                parentNavController.navigate(Route.SeleccionOptica.route)
+                                            } else {
+                                                android.widget.Toast.makeText(
+                                                    context,
+                                                    "Solo tienes una óptica asociada.",
+                                                    android.widget.Toast.LENGTH_SHORT,
+                                                ).show()
+                                            }
+                                        }
                                     }
                                 }
                             },

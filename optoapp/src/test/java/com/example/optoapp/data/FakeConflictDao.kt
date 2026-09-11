@@ -29,6 +29,9 @@ class FakeConflictDao : ConflictDao {
     /** Return value for [getConflictEntityIds] */
     var returnEntityIds: List<String> = emptyList()
 
+    /** When set, [getConflictEntityIds] throws this exception before returning */
+    var throwOnGetConflictEntityIds: Exception? = null
+
     /** Captured snapshot params from the last [upsertConflict] call */
     @Volatile
     var lastUpsertBaseSnapshot: String = "{}"
@@ -43,6 +46,7 @@ class FakeConflictDao : ConflictDao {
     val upsertCalls = mutableListOf<UpsertConflictCall>()
 
     override suspend fun getConflictEntityIds(opticaId: String, entityType: String): List<String> {
+        throwOnGetConflictEntityIds?.let { throw it }
         lastOpticaId = opticaId
         lastEntityType = entityType
         getConflictEntityIdsCalled.set(true)

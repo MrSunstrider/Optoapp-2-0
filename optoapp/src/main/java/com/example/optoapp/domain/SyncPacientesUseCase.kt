@@ -143,21 +143,16 @@ open class SyncPacientesUseCase @Inject constructor(
         val conflictIds = conflictSafe.mapTo(mutableSetOf()) { it.id }
         val finalRows = deduplicated.filter { it.id in conflictIds }
 
-        // F5: Double-failure guard — batch fetch demonstrably failed AND per-entity
-        // fallback returned all entities as conflict-safe (also likely failed).
-        // Abort upload to prevent silent data loss. Only triggers when we have
-        // PROOF that the batch fetch failed (batchFetchFailed == true), not just
-        // when the remote dataset happens to be empty.
+        // F5: Double-failure guard — batch fetch demonstrably failed AND conflict
+        // filtering still marks every pending row safe (cannot verify remote timestamps).
+        // Abort even when all updatedAt are null — otherwise we upsert blind.
         if (batchFetchFailed && deduplicated.isNotEmpty() && finalRows.size == deduplicated.size) {
-            val hasCheckable = deduplicated.any { it.updatedAt != null }
-            if (hasCheckable) {
-                AppLogger.w(
-                    TAG,
-                    "upload: double fetch failure for optica_id=$opticaId — aborting upload",
-                )
-                syncStateTracker.markError(opticaId, "upload_pacientes", "batch", "Double fetch failure")
-                return 0
-            }
+            AppLogger.w(
+                TAG,
+                "upload: double fetch failure for optica_id=$opticaId — aborting upload",
+            )
+            syncStateTracker.markError(opticaId, "upload_pacientes", "batch", "Double fetch failure")
+            return 0
         }
 
         if (finalRows.isEmpty()) {
@@ -230,24 +225,7 @@ open class SyncPacientesUseCase @Inject constructor(
             AppLogger.e(TAG, "Error during Phase 1 pending-delete retry for paciente type: ${e.message}", e)
         }
 
-        val conflictedIds = try {
-            conflictDao.getConflictEntityIds(opticaId, "paciente").toSet()
-        } catch (e: Exception) {
-            AppLogger.e(TAG, "Error querying conflict IDs, proceeding without guard: ${e.message}", e)
-            emptySet()
-        }
-
-        val deletedIds = try {
-            syncStateTracker.dao.getPendingDeletions(opticaId)
-                .filter { it.entityType == "paciente" }
-                .map { it.entityId }
-                .toSet()
-        } catch (e: Exception) {
-            AppLogger.e(TAG, "Error querying deleted IDs, proceeding without guard: ${e.message}", e)
-            emptySet()
-        }
-
-        val skipIds = conflictedIds + deletedIds
+        val skipIds = buildPacienteSkipIds(opticaId) ?: return 0
 
         val remotos = fetchRemotePacientesForDownload(opticaId)
 
@@ -276,6 +254,43 @@ open class SyncPacientesUseCase @Inject constructor(
 
         AppLogger.d(TAG, "Descargados $upserted pacientes desde Supabase.")
         return upserted
+    }
+
+    private suspend fun buildPacienteSkipIds(opticaId: String): Set<String>? {
+        val conflictedIds = queryGuardWithRetry(opticaId, "conflict IDs") {
+            conflictDao.getConflictEntityIds(opticaId, "paciente").toSet()
+        } ?: return null
+
+        val deletedIds = queryGuardWithRetry(opticaId, "deleted IDs") {
+            syncStateTracker.dao.getPendingDeletions(opticaId)
+                .filter { it.entityType == "paciente" }
+                .map { it.entityId }
+                .toSet()
+        } ?: return null
+
+        return conflictedIds + deletedIds
+    }
+
+    private suspend fun <T> queryGuardWithRetry(
+        opticaId: String,
+        description: String,
+        block: suspend () -> T,
+    ): T? {
+        return try {
+            block()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (first: Exception) {
+            try {
+                block()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (second: Exception) {
+                AppLogger.e(TAG, "Error querying $description: ${second.message}", second)
+                syncStateTracker.markError(opticaId, "download_pacientes", "batch", second.message)
+                null
+            }
+        }
     }
 
     // Test seam — override in tests to return controlled data instead of hitting Supabase

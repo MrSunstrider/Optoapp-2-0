@@ -52,6 +52,8 @@ open class AuthDelegate @Inject constructor(
 ) {
     companion object {
         private const val TAG = "AuthDelegate"
+        internal const val RECOVERY_CONNECT_TIMEOUT_MS = 10_000
+        internal const val RECOVERY_READ_TIMEOUT_MS = 15_000
 
         /** Pure logic: extract display name from UserInfo metadata. */
         fun extractDisplayName(
@@ -149,8 +151,8 @@ open class AuthDelegate @Inject constructor(
     }
 
     suspend fun handleAuthDeepLinkIntent(intent: Intent?): String? {
-        val deepLink = intent?.data ?: return null
-        Log.d(TAG, "Recibido deeplink OAuth: $deepLink")
+        // WHY: null data must fail-closed (never treated as OAuth success)
+        if (intent?.data == null) return "Enlace inválido"
 
         val handleResult = runCatching { supabase.handleDeeplinks(intent) }
         handleResult.onFailure { e ->
@@ -349,6 +351,27 @@ open class AuthDelegate @Inject constructor(
     /** Token crudo del recovery link, para usarlo en la llamada REST directa */
     private var pendingRecoveryToken: String = ""
 
+    fun clearPendingRecoveryToken() {
+        pendingRecoveryToken = ""
+    }
+
+    internal fun hasPendingRecoveryToken(): Boolean = pendingRecoveryToken.isNotBlank()
+
+    /**
+     * HTTP seam for recovery password PUT — timeouts are unit-tested here.
+     * WHY: openConnection alone has no connect/read timeout and can hang Loading forever.
+     */
+    internal open fun openRecoveryPasswordConnection(url: java.net.URL): java.net.HttpURLConnection {
+        val conn = url.openConnection() as java.net.HttpURLConnection
+        conn.connectTimeout = RECOVERY_CONNECT_TIMEOUT_MS
+        conn.readTimeout = RECOVERY_READ_TIMEOUT_MS
+        return conn
+    }
+
+    /** Seam so unit tests do not depend on BuildConfig.SUPABASE_URL being set in CI. */
+    internal open fun recoveryUserUrl(): java.net.URL =
+        java.net.URL("${BuildConfig.SUPABASE_URL.trimEnd('/')}/auth/v1/user")
+
     suspend fun sendRecoveryEmail(email: String) {
         supabase.auth.resetPasswordForEmail(
             email = email,
@@ -358,7 +381,6 @@ open class AuthDelegate @Inject constructor(
 
     suspend fun handleRecoveryDeepLink(intent: Intent?): String? {
         val deepLink = intent?.data ?: return "Enlace inválido"
-        Log.d(TAG, "Recibido deeplink recovery: $deepLink")
         val fragment = deepLink.fragment ?: return "Enlace inválido"
         val params = fragment.split("&").mapNotNull { pair ->
             val parts = pair.split("=", limit = 2)
@@ -373,16 +395,17 @@ open class AuthDelegate @Inject constructor(
      * Actualiza la contraseña llamando DIRECTAMENTE a la REST API de Supabase
      * con el token crudo del recovery link, en vez de usar supabase-kt.
      * Esto evita el error "bad_jwt: missing sub claim" del token de sesión.
+     *
+     * Token cleared only on HTTP 2xx or terminal auth (401/403). Kept on
+     * IOException/timeout/5xx/other 4xx so the user can retry without a new link.
      */
     suspend fun updatePassword(newPassword: String): String? {
         val token = pendingRecoveryToken
-        pendingRecoveryToken = ""
         if (token.isBlank()) return "Sesión de recuperación no válida."
 
         return withContext(kotlinx.coroutines.Dispatchers.IO) {
             try {
-                val url = java.net.URL("${BuildConfig.SUPABASE_URL}/auth/v1/user")
-                val conn = url.openConnection() as java.net.HttpURLConnection
+                val conn = openRecoveryPasswordConnection(recoveryUserUrl())
                 try {
                     conn.requestMethod = "PUT"
                     conn.setRequestProperty("Authorization", "Bearer $token")
@@ -392,16 +415,23 @@ open class AuthDelegate @Inject constructor(
                     val json = buildJsonObject { put("password", newPassword) }.toString()
                     conn.outputStream.write(json.toByteArray(Charsets.UTF_8))
                     val code = conn.responseCode
-                    if (code in 200..299) {
-                        null
-                    } else {
-                        val errorBody = try {
-                            conn.errorStream?.bufferedReader()?.readText() ?: ""
-                        } catch (_: Exception) {
-                            ""
+                    when {
+                        code in 200..299 -> {
+                            pendingRecoveryToken = ""
+                            null
                         }
-                        Log.e(TAG, "Error actualizando contraseña via REST: HTTP $code $errorBody")
-                        "No se pudo actualizar la contraseña. (código $code)"
+                        code == 401 || code == 403 -> {
+                            pendingRecoveryToken = ""
+                            val errorBody = readHttpErrorBody(conn)
+                            // WHY: never log Bearer/token — code + sanitized body only
+                            Log.e(TAG, "Error actualizando contraseña via REST: HTTP $code $errorBody")
+                            "No se pudo actualizar la contraseña. (código $code)"
+                        }
+                        else -> {
+                            val errorBody = readHttpErrorBody(conn)
+                            Log.e(TAG, "Error actualizando contraseña via REST: HTTP $code $errorBody")
+                            "No se pudo actualizar la contraseña. (código $code)"
+                        }
                     }
                 } finally {
                     conn.disconnect()
@@ -409,11 +439,19 @@ open class AuthDelegate @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
+                // Keep token on IOException/timeout/unexpected — retryable
                 Log.e(TAG, "Error en llamada REST updatePassword", e)
                 "Error inesperado. Reintente más tarde."
             }
         }
     }
+
+    private fun readHttpErrorBody(conn: java.net.HttpURLConnection): String =
+        try {
+            conn.errorStream?.bufferedReader()?.readText() ?: ""
+        } catch (_: Exception) {
+            ""
+        }
 
     // ── Logout ────────────────────────────────────────────────────────────────
 
@@ -428,6 +466,7 @@ open class AuthDelegate @Inject constructor(
             Log.w(TAG, "Error en signOut (ignorado): ${e.localizedMessage}", e)
         }
         resetLocalStoreForNewAuthSession()
+        securityManager.clearStoredPin()
         sessionManager.clearSession()
     }
 

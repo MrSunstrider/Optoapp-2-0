@@ -24,6 +24,7 @@ import javax.inject.Inject
 
 sealed class DeletePacienteResult {
     data class Success(val remainingDeletesToday: Int) : DeletePacienteResult()
+    data class PendingRemoteSync(val remainingDeletesToday: Int) : DeletePacienteResult()
     data class Error(val message: String) : DeletePacienteResult()
 }
 
@@ -71,7 +72,9 @@ class PacienteViewModel @Inject constructor(
         _isLoading.value = true
         viewModelScope.launch {
             try {
-                pacientes.dropWhile { it.isEmpty() }.first()
+                withTimeout(5_000) {
+                    pacientes.dropWhile { it.isEmpty() }.first()
+                }
             } catch (_: Exception) { }
             _isLoading.value = false
         }
@@ -238,22 +241,21 @@ class PacienteViewModel @Inject constructor(
             // Room delete and tombstone must complete before the remote call.
             // If the remote delete succeeds but we crash before creating the
             // tombstone, download Phase 1 has nothing to retry against.
-            repository.deletePaciente(paciente)
+            val newlyPending = repository.deletePaciente(paciente)
+            val used = if (newlyPending) {
+                sessionManager.incrementPacienteDeleteCountToday(oid)
+            } else {
+                sessionManager.getPacienteDeleteCountToday(oid)
+            }
+            val remaining = (DAILY_DELETE_LIMIT - used).coerceAtLeast(0)
             try {
                 repository.deletePacienteRemoto(paciente.id, oid)
             } catch (e: IOException) {
-                // Local delete succeeded but remote delete failed. The patient will be
-                // re-downloaded from Supabase on the next sync cycle. Surface the error
-                // so the user knows the operation was incomplete.
+                // Local delete succeeded; remote will retry on sync.
                 Log.e(TAG, "deletePaciente: remote delete failed after local delete", e)
-                return DeletePacienteResult.Error(
-                    "El paciente se eliminó localmente pero no se pudo eliminar en " +
-                        "el servidor. Se reintentará automáticamente en la próxima " +
-                        "sincronización. Si el problema persiste, contacta al administrador.",
-                )
+                return DeletePacienteResult.PendingRemoteSync(remaining)
             }
-            val used = sessionManager.incrementPacienteDeleteCountToday(oid)
-            DeletePacienteResult.Success((DAILY_DELETE_LIMIT - used).coerceAtLeast(0))
+            DeletePacienteResult.Success(remaining)
         } catch (e: CancellationException) {
             throw e
         } catch (e: IOException) {

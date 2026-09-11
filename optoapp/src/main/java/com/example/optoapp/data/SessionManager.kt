@@ -8,8 +8,10 @@ import androidx.security.crypto.MasterKey
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
+import com.example.optoapp.util.DateUtils
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 interface ISessionManager {
     val isLoggedIn: Flow<Boolean>
@@ -56,6 +58,13 @@ class SessionManager(private val context: Context) : ISessionManager {
         private val IS_PIN_REQUIRED = booleanPreferencesKey("pref_is_pin_required")
         private val USER_TIMEZONE = stringPreferencesKey("pref_user_timezone")
         private val PIN_HAS_BEEN_SET = booleanPreferencesKey("pref_pin_has_been_set")
+
+        /** Preference key for local 10/day delete gate — per óptica, user email, UTC day. */
+        fun pacienteDeleteQuotaKey(opticaId: String, userEmail: String, utcDay: LocalDate): String {
+            val userKey = userEmail.trim().lowercase(Locale.ROOT).ifEmpty { "anonymous" }
+            val day = utcDay.format(DateTimeFormatter.BASIC_ISO_DATE)
+            return "paciente_delete_count_${opticaId}_${userKey}_$day"
+        }
     }
 
 
@@ -149,6 +158,7 @@ class SessionManager(private val context: Context) : ISessionManager {
             prefs[USER_NAME] = ""
             prefs[LAST_LOGIN_TS] = 0L
             prefs[IS_PIN_REQUIRED] = false
+            prefs.remove(PIN_HAS_BEEN_SET)
             prefs.remove(USER_TIMEZONE)
         }
     }
@@ -167,7 +177,7 @@ class SessionManager(private val context: Context) : ISessionManager {
     }
 
     private fun dailyPacienteDeleteKey(opticaId: String): String {
-        val day = LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE)
-        return "paciente_delete_count_${opticaId}_$day"
+        val email = encryptedPrefs.getString("saas_user_email", "") ?: ""
+        return pacienteDeleteQuotaKey(opticaId, email, DateUtils.utcToday())
     }
 }

@@ -14,6 +14,7 @@ import io.mockk.mockkStatic
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 
@@ -44,12 +45,19 @@ class MembershipRepositoryTest {
     }
 
     @Test
-    fun fetchMembershipsForCurrentUser_noSession_returnsEmptyList() = runBlocking {
+    fun fetchMembershipsForCurrentUser_noSession_returnsError() = runBlocking {
         every { auth.currentUserOrNull() } returns null
 
         val result = repo.fetchMembershipsForCurrentUser()
 
-        assertTrue(result is com.example.optoapp.data.membership.MembershipFetch.Empty)
+        assertTrue(result is com.example.optoapp.data.membership.MembershipFetch.Error)
+        val error = result as com.example.optoapp.data.membership.MembershipFetch.Error
+        assertTrue(error.cause is IllegalStateException)
+        assertEquals("Sin sesión", error.cause.message)
+        val flags = com.example.optoapp.viewmodel.auth.AuthDelegate.flagsFor(result)
+        assertTrue(!flags.requiresOnboarding)
+        assertTrue(!flags.clearSession)
+        assertTrue(flags.membershipFetchError)
     }
 
     @Test

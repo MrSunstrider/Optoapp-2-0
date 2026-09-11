@@ -184,9 +184,14 @@ fun CreatePinScreen(navController: NavController, viewModel: AuthViewModel = hil
                                                         }
                                                     } else {
                                                         if (secondPin == firstPin) {
-                                                            viewModel.createPin(firstPin)
-                                                            navController.navigate(Route.Main.route) {
-                                                                popUpTo("create_pin") { inclusive = true }
+                                                            val persisted = viewModel.createPinAwaitingSuccess(firstPin)
+                                                            if (persisted) {
+                                                                navController.navigate(Route.Main.route) {
+                                                                    popUpTo("create_pin") { inclusive = true }
+                                                                }
+                                                            } else {
+                                                                errorMessage = "No se pudo guardar el PIN. Intenta de nuevo."
+                                                                secondPin = ""
                                                             }
                                                         } else {
                                                             errorMessage = "Los PINs no coinciden"

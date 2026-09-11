@@ -23,6 +23,9 @@ import java.time.LocalDate
  * Validates a raw digits-only fechaNacimiento input.
  * @return null if valid, or an error message string.
  */
+internal fun canSavePacienteFecha(digits: String): Boolean =
+    digits.isBlank() || validateFechaNacimiento(digits) == null
+
 internal fun validateFechaNacimiento(digits: String): String? {
     return when (digits.length) {
         0 -> null
@@ -38,12 +41,8 @@ internal fun validateFechaNacimiento(digits: String): String? {
                     m !in 1..12 -> "Mes debe ser 1-12"
                     d !in 1..31 -> "Día debe ser 1-31"
                     y !in 1900..2100 -> "Año fuera de rango"
-                    else -> try {
-                        java.time.LocalDate.of(y, m, d)
-                        null
-                    } catch (_: Exception) {
-                        "Fecha inválida"
-                    }
+                    DateUtils.parseBirthDateFromDigits(digits) == null -> "Fecha inválida"
+                    else -> null
                 }
             }
         }

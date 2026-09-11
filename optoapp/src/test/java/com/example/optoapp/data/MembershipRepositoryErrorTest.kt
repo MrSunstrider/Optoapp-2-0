@@ -89,10 +89,16 @@ class MembershipRepositoryErrorTest {
     }
 
     @Test
-    fun `fetchMembershipsForCurrentUser no session returns empty`() = runTest {
+    fun `fetchMembershipsForCurrentUser no session returns Error Sin sesion`() = runTest {
         val result = repo.fetchMembershipsForCurrentUser()
 
-        assertTrue("Expected empty fetch but got $result", result is com.example.optoapp.data.membership.MembershipFetch.Empty)
+        assertTrue("Expected Error fetch but got $result", result is com.example.optoapp.data.membership.MembershipFetch.Error)
+        val error = result as com.example.optoapp.data.membership.MembershipFetch.Error
+        assertEquals("Sin sesión", (error.cause as? IllegalStateException)?.message)
+        val flags = com.example.optoapp.viewmodel.auth.AuthDelegate.flagsFor(result)
+        assertFalse(flags.requiresOnboarding)
+        assertFalse(flags.clearSession)
+        assertTrue(flags.membershipFetchError)
     }
 
     @Test

@@ -2,10 +2,15 @@
 
 import com.example.optoapp.util.DateUtils
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 import java.text.SimpleDateFormat
+import java.time.Instant
 import java.time.LocalDate
+import java.time.ZoneId
+import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
 import java.util.Date
 import java.util.TimeZone
 
@@ -116,6 +121,44 @@ class DateUtilsTest {
     fun formatDateInput_deletionPastSlash_removesSlash() {
         // Simulate backspace from "15/03" → "15/0" → "15/0"
         assertEquals("15/0", DateUtils.formatDateInput("15/0"))
+    }
+
+    @Test
+    fun parseBirthDateFromDigits_invalidFebruaryDay_returnsNull() {
+        assertNull(DateUtils.parseBirthDateFromDigits("31022020"))
+    }
+
+    @Test
+    fun parseBirthDateFromDigits_validDate_returnsLocalDate() {
+        assertEquals(LocalDate.of(1990, 6, 15), DateUtils.parseBirthDateFromDigits("15061990"))
+    }
+
+    @Test
+    fun parseBirthDateFromDigits_blank_returnsNull() {
+        assertNull(DateUtils.parseBirthDateFromDigits(""))
+    }
+
+    @Test
+    fun utcToday_usesUtcCalendarDayNotDeviceTimezone() {
+        val originalZone = TimeZone.getDefault()
+        try {
+            TimeZone.setDefault(TimeZone.getTimeZone("America/Lima"))
+            assertEquals(LocalDate.now(ZoneOffset.UTC), DateUtils.utcToday())
+        } finally {
+            TimeZone.setDefault(originalZone)
+        }
+    }
+
+    @Test
+    fun utcToday_boundary_localDateDiffersFromUtcAtSameInstant() {
+        val instant = Instant.parse("2026-09-11T04:00:00Z")
+        val localDate = instant.atZone(ZoneId.of("America/Lima")).toLocalDate()
+        val utcDate = instant.atZone(ZoneOffset.UTC).toLocalDate()
+
+        assertEquals(LocalDate.of(2026, 9, 10), localDate)
+        assertEquals(LocalDate.of(2026, 9, 11), utcDate)
+        assertNotEquals(localDate, utcDate)
+        assertEquals("20260911", utcDate.format(DateTimeFormatter.BASIC_ISO_DATE))
     }
 
     @Test

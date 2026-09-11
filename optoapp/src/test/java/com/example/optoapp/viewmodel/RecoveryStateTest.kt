@@ -35,6 +35,7 @@ class RecoveryStateTest {
         val error: RecoveryState = RecoveryState.Error("Test error")
         assertTrue(error is RecoveryState.Error)
         assertEquals("Test error", (error as RecoveryState.Error).message)
+        assertFalse(error.isRetryable)
     }
 
     @Test
@@ -50,6 +51,29 @@ class RecoveryStateTest {
         val e1 = RecoveryState.Error("msg1")
         val e2 = RecoveryState.Error("msg2")
         assertNotEquals(e1, e2)
+    }
+
+    @Test
+    fun recoveryStateError_defaultIsRetryableFalse() {
+        val error = RecoveryState.Error("msg")
+        assertFalse(error.isRetryable)
+    }
+
+    @Test
+    fun recoveryStateError_isRetryableTrue_differsFromDefault() {
+        val retryable = RecoveryState.Error("msg", isRetryable = true)
+        val terminal = RecoveryState.Error("msg")
+        assertTrue(retryable.isRetryable)
+        assertFalse(terminal.isRetryable)
+        assertNotEquals(retryable, terminal)
+    }
+
+    @Test
+    fun recoveryStateError_sameIsRetryable_equal() {
+        val e1 = RecoveryState.Error("msg", isRetryable = true)
+        val e2 = RecoveryState.Error("msg", isRetryable = true)
+        assertEquals(e1, e2)
+        assertEquals(e1.hashCode(), e2.hashCode())
     }
 
     @Test

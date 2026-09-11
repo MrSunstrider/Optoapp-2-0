@@ -61,16 +61,17 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        if (intent?.action == Intent.ACTION_VIEW) {
-            if (isRecoveryDeepLink(intent)) {
-                authViewModel.handleRecoveryDeepLink(intent)
-            } else {
-                authViewModel.handleAuthDeepLinkIntent(intent)
+        // WHY: await VIEW deep-link before session check so GLOBAL logout cannot race in-flight OAuth/recovery
+        lifecycleScope.launch {
+            if (intent?.action == Intent.ACTION_VIEW) {
+                if (isRecoveryDeepLink(intent)) {
+                    authViewModel.awaitHandleRecoveryDeepLink(intent)
+                } else {
+                    authViewModel.awaitHandleAuthDeepLinkIntent(intent)
+                }
             }
+            authViewModel.checkExistingSession()
         }
-
-        // P0-T4: validar sesión Supabase al arranque vs. confiar ciegamente en DataStore
-        authViewModel.checkExistingSession()
 
         lifecycleScope.launch {
             authViewModel.userTimeZone.collect { tz ->
@@ -99,10 +100,13 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
-        if (isRecoveryDeepLink(intent)) {
-            authViewModel.handleRecoveryDeepLink(intent)
-        } else {
-            authViewModel.handleAuthDeepLinkIntent(intent)
+        // WHY: non-VIEW / null-data must not be treated as OAuth success
+        if (intent.action == Intent.ACTION_VIEW && intent.data != null) {
+            if (isRecoveryDeepLink(intent)) {
+                authViewModel.handleRecoveryDeepLink(intent)
+            } else {
+                authViewModel.handleAuthDeepLinkIntent(intent)
+            }
         }
     }
 }
@@ -136,10 +140,24 @@ fun OptoAppNavigation(
         }
     }
 
-    LaunchedEffect(isAuthChecked, isLoggedIn, opticaId, isPinRequired, needsOnboarding, pinHasBeenSet) {
+    // WHY: JD3-S1 — recovery LinkReceived/PasswordUpdated must suppress authenticated restore
+    // so popUpTo(graph) cannot destroy NewPassword after serialized deep-link + session check.
+    LaunchedEffect(
+        isAuthChecked,
+        isLoggedIn,
+        opticaId,
+        isPinRequired,
+        needsOnboarding,
+        pinHasBeenSet,
+        recoveryState,
+    ) {
         if (!isAuthChecked || isLoggedIn == null || coldStartHandled) return@LaunchedEffect
         val loggedIn = isLoggedIn == true
         if (loggedIn && !ColdStartNavigation.pinStateReady(isPinRequired, pinHasBeenSet)) {
+            return@LaunchedEffect
+        }
+        if (ColdStartNavigation.recoveryBlocksColdStartRestore(recoveryState)) {
+            coldStartHandled = true
             return@LaunchedEffect
         }
         coldStartHandled = true
@@ -178,7 +196,9 @@ fun OptoAppNavigation(
     LaunchedEffect(recoveryState) {
         when (recoveryState) {
             is RecoveryState.LinkReceived -> {
-                navController.navigate(Route.NewPassword.route)
+                navController.navigate(Route.NewPassword.route) {
+                    popUpTo(Route.Recovery.route) { inclusive = true }
+                }
             }
             else -> {} // PasswordUpdated lo maneja NewPasswordScreen (mensaje + botón)
         }

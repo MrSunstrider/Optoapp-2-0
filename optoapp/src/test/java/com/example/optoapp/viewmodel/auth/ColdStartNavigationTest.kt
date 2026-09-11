@@ -1,10 +1,39 @@
 package com.example.optoapp.viewmodel.auth
 
 import com.example.optoapp.ui.navigation.Route
+import com.example.optoapp.viewmodel.RecoveryState
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ColdStartNavigationTest {
+
+    @Test
+    fun recoveryBlocksColdStart_linkReceived() {
+        assertTrue(ColdStartNavigation.recoveryBlocksColdStartRestore(RecoveryState.LinkReceived))
+    }
+
+    @Test
+    fun recoveryBlocksColdStart_passwordUpdated() {
+        assertTrue(ColdStartNavigation.recoveryBlocksColdStartRestore(RecoveryState.PasswordUpdated))
+    }
+
+    @Test
+    fun recoveryBlocksColdStart_idleAndEmailSent_doNotBlock() {
+        assertFalse(ColdStartNavigation.recoveryBlocksColdStartRestore(RecoveryState.Idle))
+        assertFalse(ColdStartNavigation.recoveryBlocksColdStartRestore(RecoveryState.EmailSent))
+    }
+
+    @Test
+    fun recoveryBlocksColdStart_loadingAndError_doNotBlock() {
+        assertFalse(ColdStartNavigation.recoveryBlocksColdStartRestore(RecoveryState.Loading))
+        assertFalse(
+            ColdStartNavigation.recoveryBlocksColdStartRestore(
+                RecoveryState.Error("fail", isRetryable = true),
+            ),
+        )
+    }
 
     @Test
     fun incompleteCheck_doesNotRestore_evenIfSessionLooksValid() {

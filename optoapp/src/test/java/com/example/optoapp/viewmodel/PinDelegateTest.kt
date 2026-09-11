@@ -28,6 +28,10 @@ class PinDelegateTest {
             _userPin.value = pin
             _pinHasBeenSet.value = pin.isNotEmpty()
         }
+        override suspend fun clearStoredPin() {
+            _userPin.value = ""
+            _pinHasBeenSet.value = false
+        }
     }
 
     private class FakeSessionManager : ISessionManager {
@@ -160,23 +164,28 @@ class PinDelegateTest {
     fun `createPin valid pin saves`() = runTest {
         val sec = FakeSecurityManager()
         val delegate = PinDelegate(sec, FakeSessionManager())
-        delegate.createPin("789123")
+        val ok = delegate.createPin("789123")
+        assertTrue(ok)
         assertEquals("789123", sec.userPin.first())
+        assertTrue(sec.pinHasBeenSet.first())
     }
 
     @Test
     fun `createPin invalid pin does not save`() = runTest {
         val sec = FakeSecurityManager()
         val delegate = PinDelegate(sec, FakeSessionManager())
-        delegate.createPin("12") // too short
+        val ok = delegate.createPin("12") // too short
+        assertFalse(ok)
         assertEquals("", sec.userPin.first())
+        assertFalse(sec.pinHasBeenSet.first())
     }
 
     @Test
     fun `createPin empty pin does not save`() = runTest {
         val sec = FakeSecurityManager()
         val delegate = PinDelegate(sec, FakeSessionManager())
-        delegate.createPin("")
+        val ok = delegate.createPin("")
+        assertFalse(ok)
         assertEquals("", sec.userPin.first())
     }
 
@@ -184,7 +193,17 @@ class PinDelegateTest {
     fun `createPin weak sequential pattern does not save`() = runTest {
         val sec = FakeSecurityManager()
         val delegate = PinDelegate(sec, FakeSessionManager())
-        delegate.createPin("123456") // weak pattern
+        val ok = delegate.createPin("123456") // weak pattern
+        assertFalse(ok)
+        assertEquals("", sec.userPin.first())
+        assertFalse(sec.pinHasBeenSet.first())
+    }
+
+    @Test
+    fun `createPin returns false for repeating weak pin`() = runTest {
+        val sec = FakeSecurityManager()
+        val delegate = PinDelegate(sec, FakeSessionManager())
+        assertFalse(delegate.createPin("111111"))
         assertEquals("", sec.userPin.first())
     }
 
