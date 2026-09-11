@@ -57,6 +57,15 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v6
 
+      # WHY: BuildConfig.SUPABASE_URL/ANON_KEY must be non-empty for AuthDelegate recovery PUT URL
+      - name: Configure Supabase credentials
+        run: |
+          echo "supabase.url=${{ secrets.SUPABASE_TEST_URL }}" >> local.properties
+          echo "supabase.anon.key=${{ secrets.SUPABASE_TEST_ANON_KEY }}" >> local.properties
+          echo "supabase.test.url=${{ secrets.SUPABASE_TEST_URL }}" >> local.properties
+          echo "supabase.test.anon.key=${{ secrets.SUPABASE_TEST_ANON_KEY }}" >> local.properties
+          echo "supabase.test.service.key=${{ secrets.SUPABASE_TEST_SERVICE_KEY }}" >> local.properties
+
       - name: Run unit tests
         run: ./gradlew testDebugUnitTest --stacktrace --scan -PforbidOnly=true
 

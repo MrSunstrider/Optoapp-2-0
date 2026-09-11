@@ -74,6 +74,8 @@ class AuthDelegateRecoveryTest {
             fiscalStore = mockk(relaxed = true),
             appContext = mockk(relaxed = true),
         ) {
+            override fun recoveryUserUrl(): URL = URL("https://example.invalid/auth/v1/user")
+
             override fun openRecoveryPasswordConnection(url: URL): HttpURLConnection =
                 connectionFactory(url)
         }

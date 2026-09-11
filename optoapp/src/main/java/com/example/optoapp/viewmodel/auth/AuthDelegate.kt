@@ -368,6 +368,10 @@ open class AuthDelegate @Inject constructor(
         return conn
     }
 
+    /** Seam so unit tests do not depend on BuildConfig.SUPABASE_URL being set in CI. */
+    internal open fun recoveryUserUrl(): java.net.URL =
+        java.net.URL("${BuildConfig.SUPABASE_URL.trimEnd('/')}/auth/v1/user")
+
     suspend fun sendRecoveryEmail(email: String) {
         supabase.auth.resetPasswordForEmail(
             email = email,
@@ -401,8 +405,7 @@ open class AuthDelegate @Inject constructor(
 
         return withContext(kotlinx.coroutines.Dispatchers.IO) {
             try {
-                val url = java.net.URL("${BuildConfig.SUPABASE_URL}/auth/v1/user")
-                val conn = openRecoveryPasswordConnection(url)
+                val conn = openRecoveryPasswordConnection(recoveryUserUrl())
                 try {
                     conn.requestMethod = "PUT"
                     conn.setRequestProperty("Authorization", "Bearer $token")
