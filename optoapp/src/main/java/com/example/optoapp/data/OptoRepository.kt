@@ -69,12 +69,16 @@ open class OptoRepository(
         pacienteRepo.upsertPaciente(stamped)
         postSaveSyncScheduler.get().schedulePacientesSync(stamped.opticaId)
     }
-    suspend fun deletePaciente(paciente: Paciente) {
+    /** @return true when a new deletion tombstone was created (not already pending). */
+    suspend fun deletePaciente(paciente: Paciente): Boolean {
+        val alreadyPending = syncStateTracker.dao.getPendingDeletions(paciente.opticaId)
+            .any { it.entityType == "paciente" && it.entityId == paciente.id }
         database.withTransaction {
             pacienteRepo.deletePaciente(paciente)
             syncStateTracker.markDeleted(paciente.opticaId, "paciente", paciente.id)
         }
         postSaveSyncScheduler.get().schedulePacientesSync(paciente.opticaId)
+        return !alreadyPending
     }
 
     /** Attempts the remote delete for a patient. Throws on network failure so callers can handle retry. */

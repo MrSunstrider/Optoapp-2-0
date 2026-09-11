@@ -45,6 +45,7 @@ class SyncPacientesUseCaseDownloadGuardTest {
     @Before
     fun setUp() {
         conflictDao.returnEntityIds = emptyList()
+        conflictDao.throwOnGetConflictEntityIds = null
         every { syncStateTracker.dao } returns syncStateDao
         coEvery { syncStateDao.getPendingDeletions(any()) } returns emptyList()
         coEvery { syncStateTracker.markSynced(any(), any(), any()) } just Runs
@@ -184,6 +185,26 @@ class SyncPacientesUseCaseDownloadGuardTest {
     }
 
     @Test
+    fun `upload double fetch failure aborts even when all updatedAt null`() = runBlocking {
+        val p1 = com.example.optoapp.data.Paciente(
+            id = "upload-null-at", nombreCompleto = "Legacy", edad = 30,
+            telefono = "111", fechaCreacion = java.time.LocalDate.parse("2026-01-01"),
+            opticaId = opticaId, updatedAt = null,
+        )
+        coEvery { repository.getPacientesSnapshotForOptica(opticaId) } returns listOf(p1)
+        val localEntity = com.example.optoapp.domain.sync.LocalEntity(
+            id = "upload-null-at", updatedAt = null,
+        )
+        coEvery { conflictHelper.filterConflicts(any(), any(), any(), any(), any()) } returns listOf(localEntity)
+
+        val result = useCase.invoke(opticaId, downloadAfterUpload = false, skipUpload = false)
+
+        assertTrue(result is Resource.Success)
+        assertEquals(0, (result as Resource.Success).data!!.uploaded)
+        coVerify { syncStateTracker.markError(opticaId, "upload_pacientes", "batch", "Double fetch failure") }
+    }
+
+    @Test
     fun `upload per-entity fallback succeeds batch guard does not trigger`() = runBlocking {
         // Batch fetch fails (fake Supabase → empty), but per-entity fallback filters
         // some entities as conflicts (returns subset, not all). The double-failure
@@ -239,6 +260,91 @@ class SyncPacientesUseCaseDownloadGuardTest {
     }
 
     @Test
+    fun `download conflict guard query failure is fail-closed`() = runBlocking {
+        val testUseCase = TestableDownloadUseCase(
+            repository = repository,
+            supabase = fakeSupabase,
+            database = database,
+            syncStateTracker = syncStateTracker,
+            conflictHelper = conflictHelper,
+            conflictDao = conflictDao,
+            networkRetryHelper = networkRetryHelper,
+        )
+        conflictDao.throwOnGetConflictEntityIds = RuntimeException("conflict query failed")
+        testUseCase.remoteRows = listOf(
+            PacienteRemoto(
+                id = "R1", nombreCompleto = "Alice", edad = 30, telefono = "111",
+                fechaCreacion = "2026-01-01", opticaId = opticaId,
+            ),
+        )
+
+        val result = testUseCase.invoke(opticaId, downloadAfterUpload = true, skipUpload = true)
+
+        assertTrue(result is Resource.Success)
+        assertEquals(0, (result as Resource.Success).data!!.downloaded)
+        assertFalse("fetch must not run when guard fails", testUseCase.fetchCalled)
+        coVerify(exactly = 0) { repository.upsertPaciente(any()) }
+        coVerify {
+            syncStateTracker.markError(opticaId, "download_pacientes", "batch", any())
+        }
+    }
+
+    @Test
+    fun `download phase2 pending deletions guard failure is fail-closed`() = runBlocking {
+        val testUseCase = TestableDownloadUseCase(
+            repository = repository,
+            supabase = fakeSupabase,
+            database = database,
+            syncStateTracker = syncStateTracker,
+            conflictHelper = conflictHelper,
+            conflictDao = conflictDao,
+            networkRetryHelper = networkRetryHelper,
+        )
+        var pendingDeletionsCalls = 0
+        coEvery { syncStateDao.getPendingDeletions(opticaId) } answers {
+            pendingDeletionsCalls++
+            if (pendingDeletionsCalls == 1) {
+                emptyList()
+            } else {
+                throw RuntimeException("phase 2 pending deletions failed")
+            }
+        }
+        testUseCase.remoteRows = listOf(
+            PacienteRemoto(
+                id = "R1", nombreCompleto = "Alice", edad = 30, telefono = "111",
+                fechaCreacion = "2026-01-01", opticaId = opticaId,
+            ),
+        )
+
+        val result = testUseCase.invoke(opticaId, downloadAfterUpload = true, skipUpload = true)
+
+        assertTrue(result is Resource.Success)
+        assertEquals(0, (result as Resource.Success).data!!.downloaded)
+        assertFalse("fetch must not run when guard fails", testUseCase.fetchCalled)
+        coVerify(exactly = 0) { repository.upsertPaciente(any()) }
+        coVerify {
+            syncStateTracker.markError(opticaId, "download_pacientes", "batch", any())
+        }
+    }
+
+    @Test
+    fun `download guard query cancellationException propagates`() = runBlocking {
+        coEvery { syncStateDao.getPendingDeletions(opticaId) } returns emptyList()
+        conflictDao.throwOnGetConflictEntityIds = CancellationException()
+
+        try {
+            useCase.invoke(opticaId, downloadAfterUpload = true, skipUpload = true)
+            fail("Expected CancellationException from guard query")
+        } catch (_: CancellationException) {
+            // Expected — must not be swallowed by fail-closed handling
+        }
+
+        coVerify(inverse = true) {
+            syncStateTracker.markError(opticaId, "download_pacientes", "batch", any())
+        }
+    }
+
+    @Test
     fun `download returns zero when all rows skipped`() = runBlocking {
         val testUseCase = TestableDownloadUseCase(
             repository = repository,
@@ -280,8 +386,10 @@ class SyncPacientesUseCaseDownloadGuardTest {
         networkRetryHelper,
     ) {
         var remoteRows: List<PacienteRemoto> = emptyList()
+        var fetchCalled = false
 
         override suspend fun fetchRemotePacientesForDownload(opticaId: String): List<PacienteRemoto> {
+            fetchCalled = true
             return remoteRows
         }
     }

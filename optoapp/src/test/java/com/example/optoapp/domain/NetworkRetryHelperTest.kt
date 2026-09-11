@@ -3,6 +3,8 @@ package com.example.optoapp.domain
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.auth.user.UserInfo
+import io.github.jan.supabase.auth.user.UserSession
 import io.github.jan.supabase.exceptions.RestException
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -46,9 +48,23 @@ class NetworkRetryHelperTest {
 
         auth = mockk()
         coEvery { auth.refreshCurrentSession() } returns Unit
+        stubUsablePostRefreshSession()
 
         supabase = mockk()
         every { supabase.auth } returns auth
+    }
+
+    private fun stubUsablePostRefreshSession(
+        user: UserInfo? = mockk(relaxed = true),
+        accessToken: String? = "usable-access-token",
+    ) {
+        every { auth.currentUserOrNull() } returns user
+        val session = if (accessToken == null) {
+            null
+        } else {
+            mockk<UserSession>(relaxed = true).also { every { it.accessToken } returns accessToken }
+        }
+        every { auth.currentSessionOrNull() } returns session
     }
 
     private fun createHelper() = NetworkRetryHelper(logger, supabase)
@@ -130,6 +146,69 @@ class NetworkRetryHelperTest {
             // expected — both attempts fail
         }
 
+        coVerify(exactly = 1) { auth.refreshCurrentSession() }
+    }
+
+    @Test
+    fun `JWT retry refresh with null user fails closed`() = runTest {
+        val jwtEx = mockJwtExpiredException()
+        stubUsablePostRefreshSession(user = null, accessToken = "token")
+        val helper = createHelper()
+        var attempts = 0
+
+        try {
+            helper.retryNetwork("test") {
+                attempts++
+                throw jwtEx
+            }
+            fail("Should have thrown")
+        } catch (e: RestException) {
+            // expected — refresh without usable user must not retry as success
+        }
+
+        assertEquals(1, attempts)
+        coVerify(exactly = 1) { auth.refreshCurrentSession() }
+    }
+
+    @Test
+    fun `JWT retry refresh with blank accessToken fails closed`() = runTest {
+        val jwtEx = mockJwtExpiredException()
+        stubUsablePostRefreshSession(user = mockk(relaxed = true), accessToken = "  ")
+        val helper = createHelper()
+        var attempts = 0
+
+        try {
+            helper.retryNetwork("test") {
+                attempts++
+                throw jwtEx
+            }
+            fail("Should have thrown")
+        } catch (e: RestException) {
+            // expected — blank token must not allow retry success
+        }
+
+        assertEquals(1, attempts)
+        coVerify(exactly = 1) { auth.refreshCurrentSession() }
+    }
+
+    @Test
+    fun `JWT retry refresh with missing accessToken fails closed`() = runTest {
+        val jwtEx = mockJwtExpiredException()
+        stubUsablePostRefreshSession(user = mockk(relaxed = true), accessToken = null)
+        val helper = createHelper()
+        var attempts = 0
+
+        try {
+            helper.retryNetwork("test") {
+                attempts++
+                throw jwtEx
+            }
+            fail("Should have thrown")
+        } catch (e: RestException) {
+            // expected — missing session/token must not allow retry success
+        }
+
+        assertEquals(1, attempts)
         coVerify(exactly = 1) { auth.refreshCurrentSession() }
     }
 

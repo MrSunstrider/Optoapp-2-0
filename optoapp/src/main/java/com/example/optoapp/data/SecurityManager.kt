@@ -22,6 +22,7 @@ interface ISecurityManager {
     val userPin: Flow<String>
     val pinHasBeenSet: Flow<Boolean>
     suspend fun savePin(pin: String)
+    suspend fun clearStoredPin()
 }
 
 class SecurityManager(
@@ -96,6 +97,14 @@ class SecurityManager(
         dataStore.edit { prefs ->
             prefs[prefPinHasBeenSet] = true
             prefs.remove(stringPreferencesKey("user_pin"))
+        }
+    }
+
+    override suspend fun clearStoredPin() {
+        encryptedPrefs.edit { remove("user_pin") }
+        _pinFlow.value = ""
+        dataStore.edit { prefs ->
+            prefs[prefPinHasBeenSet] = false
         }
     }
 }

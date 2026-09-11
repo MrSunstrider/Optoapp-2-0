@@ -84,9 +84,10 @@ class PinDelegate @Inject constructor(
         securityManager.savePin(newPin)
     }
 
-    suspend fun createPin(pin: String) {
-        if (!SecurityManager.isValidPin(pin)) return
+    suspend fun createPin(pin: String): Boolean {
+        if (!SecurityManager.isValidPin(pin)) return false
         securityManager.savePin(pin)
+        return true
     }
 
     suspend fun togglePinRequired(enabled: Boolean) {

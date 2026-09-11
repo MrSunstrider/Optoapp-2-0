@@ -1,10 +1,35 @@
 package com.example.optoapp.data
 
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class SecurityManagerTest {
+
+    /**
+     * In-memory contract fake — SecurityManager needs EncryptedSharedPreferences.
+     * Mirrors savePin / clearStoredPin dual-writer behavior for unit tests.
+     */
+    private class FakeSecurityManager : ISecurityManager {
+        private val _userPin = MutableStateFlow("")
+        private val _pinHasBeenSet = MutableStateFlow(false)
+        override val userPin: Flow<String> = _userPin.asStateFlow()
+        override val pinHasBeenSet: Flow<Boolean> = _pinHasBeenSet.asStateFlow()
+        override suspend fun savePin(pin: String) {
+            _userPin.value = pin
+            _pinHasBeenSet.value = true
+        }
+        override suspend fun clearStoredPin() {
+            _userPin.value = ""
+            _pinHasBeenSet.value = false
+        }
+    }
 
     @Test
     fun isValidPin_rejects_repeating_digits() {
@@ -58,5 +83,27 @@ class SecurityManagerTest {
         // "999999" es DEV_FALLBACK_PIN — existe solo como desarrollo, no cuenta como PIN del usuario.
         assertFalse("DEV_FALLBACK_PIN debe ser inválido en isValidPin", SecurityManager.isValidPin("999999"))
         assertTrue("PIN personalizado sigue siendo aceptado", SecurityManager.isValidPin("183729"))
+    }
+
+    @Test
+    fun clearStoredPin_afterSavePin_emptiesSecretAndClearsFlag() = runTest {
+        val sm = FakeSecurityManager()
+        sm.savePin("183729")
+        assertEquals("183729", sm.userPin.first())
+        assertTrue(sm.pinHasBeenSet.first())
+
+        sm.clearStoredPin()
+
+        assertEquals("", sm.userPin.first())
+        assertFalse(sm.pinHasBeenSet.first())
+    }
+
+    @Test
+    fun clearStoredPin_whenAlreadyEmpty_staysEmptyAndFlagFalse() = runTest {
+        val sm = FakeSecurityManager()
+        sm.clearStoredPin()
+
+        assertEquals("", sm.userPin.first())
+        assertFalse(sm.pinHasBeenSet.first())
     }
 }

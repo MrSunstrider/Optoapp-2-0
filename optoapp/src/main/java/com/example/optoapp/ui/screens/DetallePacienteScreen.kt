@@ -185,6 +185,17 @@ fun DetallePacienteScreen(
                                             showDeletePacienteDialog = false
                                             navController.popBackStack()
                                         }
+                                        is DeletePacienteResult.PendingRemoteSync -> {
+                                            Toast.makeText(
+                                                context,
+                                                "El paciente se eliminó localmente pero no se pudo eliminar en " +
+                                                    "el servidor. Se reintentará automáticamente en la próxima " +
+                                                    "sincronización. Si el problema persiste, contacta al administrador.",
+                                                Toast.LENGTH_LONG,
+                                            ).show()
+                                            showDeletePacienteDialog = false
+                                            navController.popBackStack()
+                                        }
                                         is DeletePacienteResult.Error -> {
                                             Toast.makeText(context, result.message, Toast.LENGTH_LONG).show()
                                         }

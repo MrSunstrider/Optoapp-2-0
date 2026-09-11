@@ -7,18 +7,23 @@ import com.example.optoapp.data.Resource
 import com.example.optoapp.data.SessionManager
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import io.github.jan.supabase.SupabaseClient
+import android.util.Log
 import io.mockk.Runs
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
+import io.mockk.mockkStatic
+import io.mockk.unmockkStatic
+import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -27,6 +32,7 @@ import org.junit.After
 import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
+import java.io.IOException
 import java.time.LocalDate
 
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
@@ -44,6 +50,9 @@ class PacienteViewModelTest {
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
+        mockkStatic(Log::class)
+        every { Log.e(any(), any<String>()) } returns 0
+        every { Log.e(any(), any<String>(), any()) } returns 0
         every { sessionManager.opticaId } returns opticaIdFlow
         every { sessionManager.opticaRol } returns opticaRolFlow
         coEvery { postSaveSyncScheduler.schedulePacientesSync(any()) } just Runs
@@ -57,6 +66,7 @@ class PacienteViewModelTest {
     @After
     fun tearDown() {
         Dispatchers.resetMain()
+        unmockkStatic(Log::class)
     }
 
     @Test
@@ -339,4 +349,76 @@ class PacienteViewModelTest {
         fechaCreacion = LocalDate.parse("2026-01-01"),
         opticaId = "test-optica",
     )
+
+    @Test
+    fun `deletePacienteGuarded returns PendingRemoteSync when remote fails with IOException`() = runBlocking {
+        val paciente = samplePaciente("del-remote-fail")
+        every { sessionManager.getPacienteDeleteCountToday("test-optica") } returns 0
+        coEvery { repository.deletePaciente(paciente) } returns true
+        coEvery { repository.deletePacienteRemoto(paciente.id, "test-optica") } throws IOException("offline")
+        every { sessionManager.incrementPacienteDeleteCountToday("test-optica") } returns 1
+
+        val result = viewModel.deletePacienteGuarded(paciente)
+
+        assertTrue(result is DeletePacienteResult.PendingRemoteSync)
+        assertEquals(9, (result as DeletePacienteResult.PendingRemoteSync).remainingDeletesToday)
+        verify(exactly = 1) { sessionManager.incrementPacienteDeleteCountToday("test-optica") }
+    }
+
+    @Test
+    fun `deletePacienteGuarded retry after remote fail does not increment again`() = runBlocking {
+        val paciente = samplePaciente("del-retry")
+        every { sessionManager.getPacienteDeleteCountToday("test-optica") } returns 1
+        coEvery { repository.deletePaciente(paciente) } returns false
+        coEvery { repository.deletePacienteRemoto(paciente.id, "test-optica") } throws IOException("offline")
+
+        val result = viewModel.deletePacienteGuarded(paciente)
+
+        assertTrue(result is DeletePacienteResult.PendingRemoteSync)
+        assertEquals(9, (result as DeletePacienteResult.PendingRemoteSync).remainingDeletesToday)
+        verify(exactly = 0) { sessionManager.incrementPacienteDeleteCountToday(any()) }
+        verify(exactly = 2) { sessionManager.getPacienteDeleteCountToday("test-optica") }
+    }
+
+    @Test
+    fun `deletePacienteGuarded blocks delete when daily limit reached`() = runBlocking {
+        val paciente = samplePaciente("del-limit")
+        every { sessionManager.getPacienteDeleteCountToday("test-optica") } returns 10
+
+        val result = viewModel.deletePacienteGuarded(paciente)
+
+        assertTrue(result is DeletePacienteResult.Error)
+        assertTrue((result as DeletePacienteResult.Error).message.contains("Límite diario"))
+        coVerify(exactly = 0) { repository.deletePaciente(any()) }
+        verify(exactly = 0) { sessionManager.incrementPacienteDeleteCountToday(any()) }
+    }
+
+    @Test
+    fun `deletePacienteGuarded returns Success with remaining when remote succeeds`() = runBlocking {
+        val paciente = samplePaciente("del-success")
+        every { sessionManager.getPacienteDeleteCountToday("test-optica") } returns 3
+        coEvery { repository.deletePaciente(paciente) } returns true
+        coEvery { repository.deletePacienteRemoto(paciente.id, "test-optica") } just Runs
+        every { sessionManager.incrementPacienteDeleteCountToday("test-optica") } returns 4
+
+        val result = viewModel.deletePacienteGuarded(paciente)
+
+        assertTrue(result is DeletePacienteResult.Success)
+        assertEquals(6, (result as DeletePacienteResult.Success).remainingDeletesToday)
+    }
+
+    @Test
+    fun `refresh sets isLoading false after timeout on empty flow`() = runTest(testDispatcher) {
+        every { repository.pacientesFlowForOptica(any()) } returns flowOf(emptyList())
+        val vm = PacienteViewModel(repository, sessionManager, postSaveSyncScheduler)
+        advanceUntilIdle()
+        assertFalse(vm.isLoading.value)
+
+        vm.refresh()
+        assertTrue(vm.isLoading.value)
+        advanceTimeBy(5_001)
+        advanceUntilIdle()
+
+        assertFalse("isLoading should clear after refresh timeout", vm.isLoading.value)
+    }
 }

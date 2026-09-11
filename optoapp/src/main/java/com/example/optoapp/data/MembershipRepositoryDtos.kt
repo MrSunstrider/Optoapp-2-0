@@ -37,7 +37,7 @@ data class OpticaHeaderSummary(
 internal data class UsuarioOpticaDto(
     @SerialName("user_id") val userId: String,
     @SerialName("optica_id") val opticaId: String,
-    val rol: String = "admin",
+    val rol: String = "",
 )
 
 @Serializable

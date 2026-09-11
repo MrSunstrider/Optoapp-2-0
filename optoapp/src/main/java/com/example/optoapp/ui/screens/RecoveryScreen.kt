@@ -33,12 +33,6 @@ fun RecoveryScreen(
     var email by remember { mutableStateOf("") }
     var localError by remember { mutableStateOf<String?>(null) }
 
-    DisposableEffect(Unit) {
-        onDispose {
-            viewModel.resetRecoveryState()
-        }
-    }
-
     Scaffold(
         topBar = {
             OptoTopAppBar(

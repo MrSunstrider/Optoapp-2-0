@@ -38,7 +38,15 @@ sealed class RecoveryState {
     data object EmailSent : RecoveryState()
     data object LinkReceived : RecoveryState()
     data object PasswordUpdated : RecoveryState()
-    data class Error(val message: String) : RecoveryState()
+    data class Error(
+        val message: String,
+        val isRetryable: Boolean = false,
+    ) : RecoveryState()
+}
+
+sealed class OpticaSelectionPrep {
+    data class Ok(val hasMultiple: Boolean) : OpticaSelectionPrep()
+    data class Error(val message: String) : OpticaSelectionPrep()
 }
 
 /**
@@ -72,6 +80,8 @@ class AuthViewModel @Inject constructor(
     fun createPin(pin: String) = viewModelScope.launch {
         pinDelegate.createPin(pin)
     }
+
+    suspend fun createPinAwaitingSuccess(pin: String): Boolean = pinDelegate.createPin(pin)
 
     fun togglePinRequired(enabled: Boolean) = viewModelScope.launch {
         pinDelegate.togglePinRequired(enabled)
@@ -118,11 +128,15 @@ class AuthViewModel @Inject constructor(
     }
 
     fun handleRecoveryDeepLink(intent: Intent?) = viewModelScope.launch {
+        awaitHandleRecoveryDeepLink(intent)
+    }
+
+    suspend fun awaitHandleRecoveryDeepLink(intent: Intent?) {
         _recoveryState.value = RecoveryState.Loading
         val error = authDelegate.handleRecoveryDeepLink(intent)
         if (error != null) {
             _recoveryState.value = RecoveryState.Error(error)
-            return@launch
+            return
         }
         _recoveryState.value = RecoveryState.LinkReceived
     }
@@ -131,7 +145,10 @@ class AuthViewModel @Inject constructor(
         _recoveryState.value = RecoveryState.Loading
         val error = authDelegate.updatePassword(newPassword)
         if (error != null) {
-            _recoveryState.value = RecoveryState.Error(error)
+            _recoveryState.value = RecoveryState.Error(
+                message = error,
+                isRetryable = authDelegate.hasPendingRecoveryToken(),
+            )
             return@launch
         }
         _recoveryState.value = RecoveryState.PasswordUpdated
@@ -139,6 +156,7 @@ class AuthViewModel @Inject constructor(
 
     fun resetRecoveryState() {
         _recoveryState.value = RecoveryState.Idle
+        authDelegate.clearPendingRecoveryToken()
     }
 
     private fun applyPostLogin(result: AuthDelegate.PostLoginResult) {
@@ -200,12 +218,16 @@ class AuthViewModel @Inject constructor(
     }
 
     fun handleAuthDeepLinkIntent(intent: Intent?) = viewModelScope.launch {
+        awaitHandleAuthDeepLinkIntent(intent)
+    }
+
+    suspend fun awaitHandleAuthDeepLinkIntent(intent: Intent?) {
         _authState.value = AuthState.Loading
         val error = authDelegate.handleAuthDeepLinkIntent(intent)
         if (error != null) {
             _authState.value = AuthState.Error(error)
             Log.w(TAG, "OAuth completado sin sesión activa.")
-            return@launch
+            return
         }
         runCatching {
             applyPostLogin(authDelegate.resolvePostLogin())
@@ -241,11 +263,21 @@ class AuthViewModel @Inject constructor(
         _authState.value = AuthState.Success
     }
 
-    suspend fun prepareOpticaSelection(): Boolean {
-        val fetch = authDelegate.prepareOpticaSelection()
-        val memberships = if (fetch is MembershipFetch.Ok) fetch.memberships else emptyList()
-        _pendingMemberships.value = memberships
-        return memberships.size > 1
+    suspend fun prepareOpticaSelection(): OpticaSelectionPrep {
+        return when (val fetch = authDelegate.prepareOpticaSelection()) {
+            is MembershipFetch.Error -> OpticaSelectionPrep.Error(
+                fetch.cause.message ?: "Error al cargar ópticas",
+            )
+            MembershipFetch.Empty -> {
+                _pendingMemberships.value = emptyList()
+                OpticaSelectionPrep.Ok(hasMultiple = false)
+            }
+            is MembershipFetch.Ok -> {
+                val memberships = fetch.memberships
+                _pendingMemberships.value = memberships
+                OpticaSelectionPrep.Ok(hasMultiple = memberships.size > 1)
+            }
+        }
     }
 
     /**

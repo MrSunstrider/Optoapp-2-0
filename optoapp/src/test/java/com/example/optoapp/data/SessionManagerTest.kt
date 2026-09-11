@@ -58,6 +58,12 @@ class SessionManagerTest {
             _isLoggedIn.value = false
             _opticaId.value = SessionManager.LEGACY_OPTICA_ID
             _opticaRol.value = "admin"
+            _pinHasBeenSet.value = false
+            _isPinRequired.value = false
+        }
+
+        fun setPinHasBeenSetForTest(value: Boolean) {
+            _pinHasBeenSet.value = value
         }
 
         override suspend fun setPinRequired(required: Boolean) {
@@ -134,5 +140,58 @@ class SessionManagerTest {
         sm.clearSession()
 
         assertEquals("admin", sm.opticaRol.first())
+    }
+
+    @Test
+    fun `clearSession clears pinHasBeenSet flag`() = runTest {
+        val sm = EncryptedSessionManagerFake()
+        sm.setPinHasBeenSetForTest(true)
+        assertTrue(sm.pinHasBeenSet.first())
+
+        sm.clearSession()
+
+        assertFalse(sm.pinHasBeenSet.first())
+    }
+
+    @Test
+    fun `clearSession keeps pinHasBeenSet false when already unset`() = runTest {
+        val sm = EncryptedSessionManagerFake()
+        assertFalse(sm.pinHasBeenSet.first())
+
+        sm.clearSession()
+
+        assertFalse(sm.pinHasBeenSet.first())
+    }
+
+    @Test
+    fun `clearSession also resets isPinRequired to false`() = runTest {
+        val sm = EncryptedSessionManagerFake()
+        sm.setPinRequired(true)
+        assertTrue(sm.isPinRequired.first())
+
+        sm.clearSession()
+
+        assertFalse(sm.isPinRequired.first())
+    }
+
+    @Test
+    fun `pacienteDeleteQuotaKey differs by user email for same optica and day`() {
+        val day = java.time.LocalDate.of(2026, 9, 11)
+        val a = SessionManager.pacienteDeleteQuotaKey("opt-1", "A@X.com", day)
+        val b = SessionManager.pacienteDeleteQuotaKey("opt-1", "b@y.com", day)
+        assertNotEquals(a, b)
+        assertEquals(
+            SessionManager.pacienteDeleteQuotaKey("opt-1", "a@x.com", day),
+            a,
+        )
+        assertTrue(a.contains("a@x.com"))
+        assertTrue(a.contains("20260911"))
+    }
+
+    @Test
+    fun `pacienteDeleteQuotaKey uses anonymous when email blank`() {
+        val day = java.time.LocalDate.of(2026, 9, 11)
+        val key = SessionManager.pacienteDeleteQuotaKey("opt-1", "  ", day)
+        assertTrue(key.contains("anonymous"))
     }
 }

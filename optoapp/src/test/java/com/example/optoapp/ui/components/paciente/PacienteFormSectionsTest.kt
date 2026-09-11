@@ -1,6 +1,7 @@
 package com.example.optoapp.ui.components.paciente
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -50,6 +51,26 @@ class PacienteFormSectionsTest {
     @Test
     fun `invalid date 31022020 returns error`() {
         assertEquals("Fecha inválida", validateFechaNacimiento("31022020"))
+    }
+
+    @Test
+    fun `canSavePacienteFecha blocks incomplete non-blank input`() {
+        assertFalse(canSavePacienteFecha("3102202"))
+    }
+
+    @Test
+    fun `canSavePacienteFecha blocks invalid calendar date`() {
+        assertFalse(canSavePacienteFecha("31022020"))
+    }
+
+    @Test
+    fun `canSavePacienteFecha allows blank input`() {
+        assertTrue(canSavePacienteFecha(""))
+    }
+
+    @Test
+    fun `canSavePacienteFecha allows valid date`() {
+        assertTrue(canSavePacienteFecha("15061990"))
     }
 
     // --- Section header constants (PR-U3) ---

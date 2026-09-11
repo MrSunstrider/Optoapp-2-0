@@ -11,11 +11,14 @@ import com.example.optoapp.data.SessionManager
 import com.example.optoapp.data.membership.MembershipFetch
 import com.example.optoapp.viewmodel.auth.AuthDelegate
 import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.user.UserInfo
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkStatic
+import io.mockk.unmockkStatic
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonObject
@@ -382,5 +385,77 @@ class AuthDelegateTest {
         delegate.resetLocalStoreForNewAuthSession()
 
         coVerify { repository.wipeLocalAccountData() }
+    }
+
+    @Test
+    fun logout_signOutIOException_stillClearsStoredPinAndSession() = runTest {
+        mockkStatic("io.github.jan.supabase.auth.AuthKt")
+        mockkStatic(android.util.Log::class)
+        every { android.util.Log.d(any(), any()) } returns 0
+        every { android.util.Log.w(any(), any<String>()) } returns 0
+        every { android.util.Log.w(any(), any<String>(), any()) } returns 0
+        every { android.util.Log.e(any(), any<String>()) } returns 0
+        every { android.util.Log.e(any(), any<String>(), any()) } returns 0
+
+        val securityManager = mockk<ISecurityManager>(relaxed = true)
+        val sessionManager = mockk<ISessionManager>(relaxed = true)
+        val repository = mockk<OptoRepository>(relaxed = true)
+        val auth = mockk<io.github.jan.supabase.auth.Auth>(relaxed = true)
+        coEvery { auth.signOut(any()) } throws IOException("network down")
+        val supabase = mockk<SupabaseClient>(relaxed = true)
+        every { supabase.auth } returns auth
+        val context = mockk<Context>(relaxed = true)
+        val delegate = AuthDelegate(
+            securityManager = securityManager,
+            sessionManager = sessionManager,
+            repository = repository,
+            membershipRepository = mockk(relaxed = true),
+            supabase = supabase,
+            fiscalStore = mockk(relaxed = true),
+            appContext = context,
+        )
+
+        delegate.logout()
+
+        coVerify { securityManager.clearStoredPin() }
+        coVerify { sessionManager.clearSession() }
+        coVerify { repository.wipeLocalAccountData() }
+
+        unmockkStatic("io.github.jan.supabase.auth.AuthKt")
+        unmockkStatic(android.util.Log::class)
+    }
+
+    @Test
+    fun logout_signOutSuccess_clearsStoredPinAndSession() = runTest {
+        mockkStatic("io.github.jan.supabase.auth.AuthKt")
+        mockkStatic(android.util.Log::class)
+        every { android.util.Log.d(any(), any()) } returns 0
+        every { android.util.Log.w(any(), any<String>()) } returns 0
+        every { android.util.Log.w(any(), any<String>(), any()) } returns 0
+
+        val securityManager = mockk<ISecurityManager>(relaxed = true)
+        val sessionManager = mockk<ISessionManager>(relaxed = true)
+        val repository = mockk<OptoRepository>(relaxed = true)
+        val auth = mockk<io.github.jan.supabase.auth.Auth>(relaxed = true)
+        coEvery { auth.signOut(any()) } returns Unit
+        val supabase = mockk<SupabaseClient>(relaxed = true)
+        every { supabase.auth } returns auth
+        val delegate = AuthDelegate(
+            securityManager = securityManager,
+            sessionManager = sessionManager,
+            repository = repository,
+            membershipRepository = mockk(relaxed = true),
+            supabase = supabase,
+            fiscalStore = mockk(relaxed = true),
+            appContext = mockk(relaxed = true),
+        )
+
+        delegate.logout()
+
+        coVerify { securityManager.clearStoredPin() }
+        coVerify { sessionManager.clearSession() }
+
+        unmockkStatic("io.github.jan.supabase.auth.AuthKt")
+        unmockkStatic(android.util.Log::class)
     }
 }

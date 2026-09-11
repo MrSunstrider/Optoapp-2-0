@@ -42,6 +42,22 @@ object DateUtils {
 
     fun fromDisplayFormat(value: String): LocalDate? = runCatching { LocalDate.parse(value, displayFormatter) }.getOrNull()
 
+    fun utcToday(): LocalDate = LocalDate.now(ZoneOffset.UTC)
+
+    /** 8-digit ddMMyyyy; null if blank, incomplete, or invalid calendar date */
+    fun parseBirthDateFromDigits(digits: String): LocalDate? {
+        val cleaned = digits.filter { it.isDigit() }
+        if (cleaned.length != 8) return null
+        val day = cleaned.substring(0, 2).toIntOrNull() ?: return null
+        val month = cleaned.substring(2, 4).toIntOrNull() ?: return null
+        val year = cleaned.substring(4, 8).toIntOrNull() ?: return null
+        return try {
+            LocalDate.of(year, month, day)
+        } catch (_: Exception) {
+            null
+        }
+    }
+
     /**
      * Auto-formatea input del usuario a dd/MM/yyyy.
      * Inserta '/' automáticamente después de 2 dígitos (día) y 4 dígitos (mes).

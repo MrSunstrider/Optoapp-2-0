@@ -125,6 +125,18 @@ class DetallePacienteScreenTest {
     }
 
     @Test
+    fun deletePacienteResultPendingRemoteSync_holdsRemainingDeletes() {
+        val result = DeletePacienteResult.PendingRemoteSync(remainingDeletesToday = 4)
+        assertEquals(4, (result as DeletePacienteResult.PendingRemoteSync).remainingDeletesToday)
+    }
+
+    @Test
+    fun deletePacienteResultPendingRemoteSync_isNotError() {
+        val result: DeletePacienteResult = DeletePacienteResult.PendingRemoteSync(3)
+        assertFalse(result is DeletePacienteResult.Error)
+    }
+
+    @Test
     fun deletePacienteResultSuccess_isDataClass() {
         val r1 = DeletePacienteResult.Success(3)
         val r2 = DeletePacienteResult.Success(3)

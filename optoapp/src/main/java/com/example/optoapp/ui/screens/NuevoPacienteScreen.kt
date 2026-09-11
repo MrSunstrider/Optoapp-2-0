@@ -18,6 +18,7 @@ import com.example.optoapp.ui.components.OptoDatePickerDialog
 import com.example.optoapp.ui.components.OptoFormShell
 import com.example.optoapp.ui.navigation.Route
 import com.example.optoapp.ui.components.paciente.PacienteFormSections
+import com.example.optoapp.ui.components.paciente.validateFechaNacimiento
 import com.example.optoapp.util.DateUtils
 import com.example.optoapp.viewmodel.PacienteViewModel
 import kotlinx.coroutines.launch
@@ -90,6 +91,8 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
         if (!saving) {
             if (pacienteLoadError && pacienteId != null) {
                 Toast.makeText(ctx, "No se pudo cargar el paciente para editar", Toast.LENGTH_LONG).show()
+            } else if (fechaNacimiento.isNotBlank() && validateFechaNacimiento(fechaNacimiento) != null) {
+                Toast.makeText(ctx, "Fecha de nacimiento inválida", Toast.LENGTH_LONG).show()
             } else if (nombreCompleto.isNotBlank() && edad.isNotBlank() && telefono.isNotBlank()) {
                 val p = Paciente(
                     id = pacienteId ?: UUID.randomUUID().toString(),
@@ -99,7 +102,7 @@ fun NuevoPacienteScreen(navController: NavController, pacienteId: String? = null
                     fechaCreacion = fechaCreacion,
                     dni = dni,
                     historiaOptometrica = historiaOptometrica,
-                    fechaNacimiento = fechaNacimiento.takeIf { it.isNotBlank() }?.let { DateUtils.fromDisplayFormat(DateUtils.formatDateInput(it)) },
+                    fechaNacimiento = DateUtils.parseBirthDateFromDigits(fechaNacimiento),
                     sexo = sexo,
                     email = email,
                     direccion = direccion,

@@ -52,12 +52,6 @@ fun NewPasswordScreen(
         }
     }
 
-    DisposableEffect(Unit) {
-        onDispose {
-            viewModel.resetRecoveryState()
-        }
-    }
-
     fun validatePassword(): String? = when {
         !GoTruePasswordPolicy.meets(newPassword) -> WEAK_PASSWORD_ERROR
         newPassword != confirmPassword -> "Las contraseñas no coinciden."
@@ -71,7 +65,9 @@ fun NewPasswordScreen(
                 navigationIcon = {
                     IconButton(onClick = {
                         viewModel.resetRecoveryState()
-                        navController.popBackStack()
+                        navController.navigate(Route.Login.route) {
+                            popUpTo(0) { inclusive = true }
+                        }
                     }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
                     }
@@ -84,7 +80,7 @@ fun NewPasswordScreen(
                 .fillMaxSize()
                 .padding(padding),
         ) {
-            when (recoveryState) {
+            when (val state = recoveryState) {
                 is RecoveryState.PasswordUpdated -> {
                     Column(
                         modifier = Modifier
@@ -109,7 +105,7 @@ fun NewPasswordScreen(
                         OutlinedButton(
                             onClick = {
                                 viewModel.resetRecoveryState()
-            navController.navigate(Route.Login.route) {
+                                navController.navigate(Route.Login.route) {
                                     popUpTo(0) { inclusive = true }
                                 }
                             },
@@ -120,7 +116,7 @@ fun NewPasswordScreen(
                         }
                     }
                 }
-                is RecoveryState.Error -> {
+                is RecoveryState.Error if !state.isRetryable -> {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -134,7 +130,7 @@ fun NewPasswordScreen(
                             shape = RoundedCornerShape(8.dp),
                         ) {
                             Text(
-                                text = (recoveryState as RecoveryState.Error).message,
+                                text = state.message,
                                 color = MaterialTheme.colorScheme.error,
                                 modifier = Modifier.padding(12.dp),
                                 fontSize = 13.sp,
@@ -142,7 +138,12 @@ fun NewPasswordScreen(
                             )
                         }
                         OutlinedButton(
-                            onClick = { viewModel.resetRecoveryState() },
+                            onClick = {
+                                viewModel.resetRecoveryState()
+                                navController.navigate(Route.Recovery.route) {
+                                    popUpTo(Route.NewPassword.route) { inclusive = true }
+                                }
+                            },
                             modifier = Modifier.fillMaxWidth().height(48.dp),
                             shape = RoundedCornerShape(12.dp),
                         ) {
@@ -244,6 +245,21 @@ fun NewPasswordScreen(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp),
                         )
+
+                        if (state is RecoveryState.Error && state.isRetryable) {
+                            Surface(
+                                color = MaterialTheme.colorScheme.error.copy(alpha = 0.12f),
+                                shape = RoundedCornerShape(8.dp),
+                            ) {
+                                Text(
+                                    text = state.message,
+                                    color = MaterialTheme.colorScheme.error,
+                                    modifier = Modifier.padding(12.dp),
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Medium,
+                                )
+                            }
+                        }
 
                         localError?.let { err ->
                             Surface(

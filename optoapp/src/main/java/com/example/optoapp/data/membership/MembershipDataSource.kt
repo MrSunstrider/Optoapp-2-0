@@ -20,7 +20,8 @@ class MembershipDataSource @Inject internal constructor(
     private val opticaQueryHelper: OpticaQueryHelper,
 ) {
     suspend fun fetchMembershipsForCurrentUser(): MembershipFetch {
-        val uid = supabase.auth.currentUserOrNull()?.id ?: return MembershipFetch.Empty
+        val uid = supabase.auth.currentUserOrNull()?.id
+            ?: return MembershipFetch.Error(IllegalStateException("Sin sesión"))
         val rows = try {
             supabase.postgrest[TABLE_UO]
                 .select { filter { eq("user_id", uid) } }
