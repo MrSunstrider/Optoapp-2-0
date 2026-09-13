@@ -9,3 +9,4 @@
 - [x] 3.2 GGA R3/R4 parent live analysis (native binding N/A; CLEAN on evidence)
 - [x] 4.1 Document intentional advisor WARNs must remain (exploration/design)
 - [x] 4.2 RDD note: disabled/unmanaged
+- [x] 5.1 CI fix: restore DDL in stub `20260802050843_create_admin_recalc_function.sql` so local `supabase start` creates admin RPC before harden grants
