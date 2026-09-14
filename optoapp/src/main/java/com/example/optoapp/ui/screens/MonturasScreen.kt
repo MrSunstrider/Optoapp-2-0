@@ -80,6 +80,7 @@ fun MonturasScreen(
     val porReponerMonturas by viewModel.porReponerMonturas.collectAsState()
     val opticaRol by authViewModel.opticaRol.collectAsState(initial = "admin")
     val canEdit = AppRoles.canEditInventory(opticaRol)
+    val canDelete = AppRoles.canDeleteRecords(opticaRol)
     var lastGeneratedPdf by remember { mutableStateOf<File?>(null) }
 
     val marcasDistintas = remember(monturas) {
@@ -99,7 +100,12 @@ fun MonturasScreen(
     }
 
     if (uiState.editing) {
-        MonturaEditFullScreen(viewModel = viewModel, uiState = uiState)
+        MonturaEditFullScreen(
+            viewModel = viewModel,
+            uiState = uiState,
+            monturas = monturas,
+            canEdit = canEdit,
+        )
     } else {
         Scaffold(
             containerColor = MaterialTheme.colorScheme.surface,
@@ -198,7 +204,7 @@ fun MonturasScreen(
                     }
                 }
 
-                monturaProductListing(porReponerMonturas, restantes, viewModel, canEdit)
+                monturaProductListing(porReponerMonturas, restantes, viewModel, canEdit, canDelete)
 
                 item { Spacer(modifier = Modifier.height(OptoTokens.spacing.xl)) }
             }
@@ -211,6 +217,7 @@ private fun LazyListScope.monturaProductListing(
     restantes: List<com.example.optoapp.data.Montura>,
     viewModel: MonturasViewModel,
     canEdit: Boolean,
+    canDelete: Boolean,
 ) {
     if (porReponer.isNotEmpty()) {
         item {
@@ -225,6 +232,7 @@ private fun LazyListScope.monturaProductListing(
             MonturaItem(
                 montura = m,
                 canEdit = canEdit,
+                canDelete = canDelete,
                 onEdit = { viewModel.startEdit(m) },
                 onDelete = { viewModel.delete(m) },
                 onEntrada = { viewModel.registrarEntrada(m, 1) },
@@ -244,6 +252,7 @@ private fun LazyListScope.monturaProductListing(
         MonturaItem(
             montura = m,
             canEdit = canEdit,
+            canDelete = canDelete,
             onEdit = { viewModel.startEdit(m) },
             onDelete = { viewModel.delete(m) },
             onEntrada = { viewModel.registrarEntrada(m, 1) },
@@ -257,9 +266,16 @@ private fun LazyListScope.monturaProductListing(
 private fun MonturaEditFullScreen(
     viewModel: MonturasViewModel,
     uiState: MonturasUiState,
+    monturas: List<com.example.optoapp.data.Montura>,
+    canEdit: Boolean,
 ) {
     val form = uiState.form
     val isNew = form.id == null
+    val existingTiposForSku = monturas
+        .filter { it.sku.equals(form.sku, ignoreCase = true) }
+        .map { it.tipoAro }
+        .filter { it.isNotBlank() }
+        .toSet()
 
     Scaffold(
         topBar = {
@@ -282,8 +298,10 @@ private fun MonturaEditFullScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { viewModel.save() }) {
-                        Icon(Icons.Default.Check, contentDescription = "Guardar")
+                    if (canEdit) {
+                        IconButton(onClick = { viewModel.save() }) {
+                            Icon(Icons.Default.Check, contentDescription = "Guardar")
+                        }
                     }
                 },
             )
@@ -301,22 +319,25 @@ private fun MonturaEditFullScreen(
                 form = form,
                 onUpdate = { newForm -> viewModel.updateForm { newForm } },
                 error = uiState.error,
+                existingTiposForSku = existingTiposForSku,
             )
             Spacer(Modifier.height(16.dp))
-            Button(
-                onClick = { viewModel.save() },
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(
-                    when {
-                        isNew && uiState.form.tipoItem.equals(
-                            com.example.optoapp.domain.inventario.InventarioItemKind.ACCESORIO,
-                            ignoreCase = true,
-                        ) -> "Registrar accesorio"
-                        isNew -> "Registrar montura"
-                        else -> "Guardar cambios"
-                    },
-                )
+            if (canEdit) {
+                Button(
+                    onClick = { viewModel.save() },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(
+                        when {
+                            isNew && uiState.form.tipoItem.equals(
+                                com.example.optoapp.domain.inventario.InventarioItemKind.ACCESORIO,
+                                ignoreCase = true,
+                            ) -> "Registrar accesorio"
+                            isNew -> "Registrar montura"
+                            else -> "Guardar cambios"
+                        },
+                    )
+                }
             }
         }
     }

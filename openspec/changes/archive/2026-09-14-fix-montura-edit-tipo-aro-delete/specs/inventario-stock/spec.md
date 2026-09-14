@@ -1,65 +1,7 @@
-# Spec: inventario-stock
+# Delta for inventario-stock
 
-## Purpose
+## ADDED Requirements
 
-Inventory stock rules for monturas and accesorios in OptoApp (Room + Supabase).
-
-## Requirements
-
-### Requirement: Montura SKU uniqueness includes rim type
-
-The system MUST enforce uniqueness of monturas per óptica on `(sku, tipo_aro)` (Room: `sku`, `opticaId`, `tipoAro`; Postgres: `optica_id`, `sku`, `tipo_aro`). The system MUST NOT enforce uniqueness on `(sku)` alone within an óptica.
-
-#### Scenario: Same SKU two rim types allowed
-
-- GIVEN óptica O and SKU `RAY-2140`
-- WHEN a montura row exists with `tipoAro = "Aro Completo"`
-- AND a second row is inserted with same SKU and `tipoAro = "Semi al aire"`
-- THEN both rows MUST persist with independent `stockActual`
-
-#### Scenario: Duplicate SKU and tipoAro rejected
-
-- GIVEN óptica O already has SKU `RAY-2140` with `tipoAro = "Aro Completo"`
-- WHEN insert attempts same SKU and tipoAro
-- THEN persistence MUST fail with a uniqueness conflict
-
-### Requirement: Multi rim-type create with per-type initial stock
-
-On montura create, the system MUST allow one or more catalog rim types with non-negative stock each, and MUST insert one row per type sharing sku/marca/modelo/costo/precio/stockMinimo/material and differing in `id`, `tipoAro`, `stockActual`. Edit-time rim types: Edit spawn sibling rim-type variant.
-(Previously: Create-only “(not edit)”; ADR-2 amended for edit sibling spawn.)
-
-#### Scenario: Create Completo and Semi with stocks
-
-- GIVEN create form with SKU/marca/modelo/material filled
-- AND tipos "Aro Completo" (5) and "Semi al aire" (3) selected
-- WHEN user saves
-- THEN two monturas MUST exist with those stocks
-
-#### Scenario: Create without tipo rejected
-
-- GIVEN non-accesorio create with no tipo selected
-- WHEN user saves
-- THEN save MUST fail with tipo de aro required
-- AND no insert MUST occur
-### Requirement: Search distinguishes rim-type variants
-
-`MonturaSearchField` and `monturaLabel` MUST include non-blank `tipoAro` so dispensación and servicios extra operators can pick the correct stock row.
-
-#### Scenario: Search list shows tipo and stock
-
-- GIVEN two monturas same SKU different tipoAro with stock > 0
-- WHEN operator opens product search
-- THEN each row MUST display tipoAro and stockActual
-
-### Requirement: Montura material includes Aluminio
-
-Montura material dropdowns MUST offer Aluminio alongside Acetato, Metal, Carey, TR-90, Econ from a shared catalog source.
-
-#### Scenario: Aluminio selectable
-
-- GIVEN montura create or dispensación montura material field
-- WHEN options are listed
-- THEN Aluminio MUST be present
 ### Requirement: Edit montura rim type and material controls
 
 On non-accesorio montura edit, the system MUST show exclusive catalog FilterChips and MUST persist selection in `form.tipoAro`. Material MUST use `OptoDropdownMenuField`. Accesorio edit MUST hide rim-type and material.
@@ -148,3 +90,23 @@ Room and Postgres FKs from `orden_compra_items` and `inventario_fisico_detalle` 
 - THEN montura MUST soft-delete (`activo=false`)
 - AND CASCADE MUST NOT run
 
+## MODIFIED Requirements
+
+### Requirement: Multi rim-type create with per-type initial stock
+
+On montura create, the system MUST allow one or more catalog rim types with non-negative stock each, and MUST insert one row per type sharing sku/marca/modelo/costo/precio/stockMinimo/material and differing in `id`, `tipoAro`, `stockActual`. Edit-time rim types: Edit spawn sibling rim-type variant.
+(Previously: Create-only “(not edit)”; ADR-2 amended for edit sibling spawn.)
+
+#### Scenario: Create Completo and Semi with stocks
+
+- GIVEN create form with SKU/marca/modelo/material filled
+- AND tipos "Aro Completo" (5) and "Semi al aire" (3) selected
+- WHEN user saves
+- THEN two monturas MUST exist with those stocks
+
+#### Scenario: Create without tipo rejected
+
+- GIVEN non-accesorio create with no tipo selected
+- WHEN user saves
+- THEN save MUST fail with tipo de aro required
+- AND no insert MUST occur

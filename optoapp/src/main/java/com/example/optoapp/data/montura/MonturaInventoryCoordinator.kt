@@ -70,7 +70,8 @@ class MonturaInventoryCoordinator @Inject constructor(
         postSaveSyncScheduler.get().scheduleInventarioSync(opticaId)
     }
 
-    suspend fun updateMontura(montura: Montura) {
+    /** Persist row only; caller owns transaction + sync scheduling. */
+    suspend fun updateMonturaLocal(montura: Montura) {
         val stamped = montura.copy(updatedAt = Instant.now().toString())
         monturaDao.updateMontura(
             id = stamped.id, opticaId = stamped.opticaId,
@@ -86,12 +87,23 @@ class MonturaInventoryCoordinator @Inject constructor(
             genero = stamped.genero, updatedAt = stamped.updatedAt,
             updatedBy = stamped.updatedBy,
         )
-        postSaveSyncScheduler.get().scheduleInventarioSync(stamped.opticaId)
+    }
+
+    suspend fun updateMontura(montura: Montura) {
+        updateMonturaLocal(montura)
+        postSaveSyncScheduler.get().scheduleInventarioSync(montura.opticaId)
     }
 
     suspend fun deleteMontura(montura: Montura) {
         monturaDao.deleteMontura(montura.id, montura.opticaId)
         postSaveSyncScheduler.get().scheduleInventarioSync(montura.opticaId)
+    }
+
+    /** Soft-delete: keep UNIQUE slot and sync activo=false (same pattern as proveedores). */
+    suspend fun softDeleteMontura(montura: Montura) {
+        // Reload by id so a stale list snapshot cannot clobber stock/prices on deactivate.
+        val fresh = monturaDao.getMonturaByIdForOptica(montura.id, montura.opticaId) ?: montura
+        updateMontura(fresh.copy(activo = false))
     }
 
     suspend fun adjustMonturaStock(monturaId: String, opticaId: String, delta: Int): Int {

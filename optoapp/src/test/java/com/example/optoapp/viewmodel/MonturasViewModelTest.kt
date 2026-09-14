@@ -27,6 +27,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.io.IOException
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class MonturasViewModelTest {
@@ -47,6 +48,7 @@ class MonturasViewModelTest {
         every { android.util.Log.d(any(), any()) } returns 0
         every { android.util.Log.w(any(), any<String>()) } returns 0
         every { android.util.Log.e(any(), any<String>()) } returns 0
+        every { android.util.Log.e(any(), any<String>(), any()) } returns 0
 
         repository = mockk(relaxed = true)
         sessionManager = mockk(relaxed = true)
@@ -58,6 +60,7 @@ class MonturasViewModelTest {
         coEvery { repository.insertMontura(any()) } returns Unit
         coEvery { repository.insertMonturas(any()) } returns Unit
         coEvery { repository.updateMontura(any()) } returns Unit
+        coEvery { repository.updateMonturaAndInsertSiblings(any(), any()) } returns Unit
     }
 
     @After
@@ -276,5 +279,268 @@ class MonturasViewModelTest {
         coVerify(exactly = 1) { repository.insertMontura(capture(slot)) }
         assertEquals("Aluminio", slot.captured.materialMontura)
         assertEquals(2, slot.captured.stockActual)
+    }
+
+    @Test
+    fun `edit save keeps selected tipoAro and Aluminio material`() = runTest(testDispatcher) {
+        val existing = Montura(
+            id = "edit-1",
+            sku = "RAY-2140",
+            marca = "Ray-Ban",
+            modelo = "Aviator",
+            tipoAro = "Aro Completo",
+            materialMontura = "Metal",
+            stockActual = 5,
+            stockMinimo = 1,
+            opticaId = opticaId,
+        )
+        coEvery { repository.getMonturaById("edit-1", opticaId) } returns Resource.Success(existing)
+
+        createVm()
+        viewModel.startEdit(existing)
+        viewModel.updateForm {
+            it.copy(
+                tipoAro = "Semi al aire",
+                materialMontura = "Aluminio",
+                stockActual = "5",
+                stockMinimo = "1",
+            )
+        }
+        viewModel.save()
+        advanceUntilIdle()
+
+        assertNull(viewModel.uiState.value.error)
+        val slot = slot<Montura>()
+        coVerify(exactly = 1) { repository.updateMontura(capture(slot)) }
+        assertEquals("Semi al aire", slot.captured.tipoAro)
+        assertEquals("Aluminio", slot.captured.materialMontura)
+    }
+
+    @Test
+    fun `edit save accesorio keeps empty tipoAro and material`() = runTest(testDispatcher) {
+        val existing = Montura(
+            id = "acc-1",
+            sku = "LIQ-1",
+            marca = "Opti",
+            modelo = "Limpiador",
+            categoria = InventarioItemKind.ACCESORIO,
+            tipoAro = "",
+            materialMontura = "",
+            stockActual = 3,
+            stockMinimo = 1,
+            opticaId = opticaId,
+        )
+        coEvery { repository.getMonturaById("acc-1", opticaId) } returns Resource.Success(existing)
+
+        createVm()
+        viewModel.startEdit(existing)
+        viewModel.updateForm {
+            it.copy(
+                tipoItem = InventarioItemKind.ACCESORIO,
+                modelo = "Limpiador Pro",
+                stockActual = "4",
+                stockMinimo = "1",
+            )
+        }
+        viewModel.save()
+        advanceUntilIdle()
+
+        val slot = slot<Montura>()
+        coVerify(exactly = 1) { repository.updateMontura(capture(slot)) }
+        assertEquals("", slot.captured.tipoAro)
+        assertEquals("", slot.captured.materialMontura)
+        assertEquals(InventarioItemKind.ACCESORIO, slot.captured.categoria)
+    }
+
+    @Test
+    fun `soft delete sets activo false via softDeleteMontura and shows desactivado`() = runTest(testDispatcher) {
+        val active = Montura(
+            id = "del-1",
+            sku = "SKU-D",
+            marca = "A",
+            modelo = "B",
+            activo = true,
+            opticaId = opticaId,
+        )
+        coEvery { repository.softDeleteMontura(any()) } returns Unit
+
+        createVm()
+        viewModel.delete(active)
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { repository.softDeleteMontura(active) }
+        coVerify(exactly = 0) { repository.deleteMontura(any()) }
+        assertEquals("Producto desactivado", viewModel.uiState.value.success)
+        assertNull(viewModel.uiState.value.error)
+    }
+
+    @Test
+    fun `soft delete unauthorized role surfaces Spanish error and does not call repo`() = runTest(testDispatcher) {
+        opticaRolFlow.value = "vendedor"
+        val active = Montura(id = "del-2", sku = "S", marca = "A", modelo = "B", opticaId = opticaId)
+
+        createVm()
+        viewModel.delete(active)
+        advanceUntilIdle()
+
+        coVerify(exactly = 0) { repository.softDeleteMontura(any()) }
+        coVerify(exactly = 0) { repository.deleteMontura(any()) }
+        assertTrue(viewModel.uiState.value.error!!.contains("permiso", ignoreCase = true))
+        assertNull(viewModel.uiState.value.success)
+    }
+
+    @Test
+    fun `soft delete persistence failure surfaces Spanish error`() = runTest(testDispatcher) {
+        coEvery { repository.softDeleteMontura(any()) } throws IOException("disk")
+
+        createVm()
+        viewModel.delete(Montura(id = "del-3", sku = "S", marca = "A", modelo = "B", opticaId = opticaId))
+        advanceUntilIdle()
+
+        assertEquals("Error inesperado. Reintente más tarde.", viewModel.uiState.value.error)
+        assertNull(viewModel.uiState.value.success)
+    }
+
+    @Test
+    fun `sortedMonturas hides inactive rows`() = runTest(testDispatcher) {
+        val active = Montura(id = "a1", sku = "A", marca = "Zeiss", modelo = "X", activo = true)
+        val inactive = Montura(id = "i1", sku = "I", marca = "Nikon", modelo = "Y", activo = false)
+        every { repository.getMonturasByOptica(opticaId) } returns flowOf(listOf(active, inactive))
+
+        createVm()
+        advanceUntilIdle()
+
+        val sorted = viewModel.sortedMonturas.value
+        assertEquals(listOf("a1"), sorted.map { it.id })
+    }
+
+    @Test
+    fun `edit sibling spawn inserts shared attrs with new tipo and stock`() = runTest(testDispatcher) {
+        val existing = Montura(
+            id = "sib-1",
+            sku = "RAY-2140",
+            marca = "Ray-Ban",
+            modelo = "Aviator",
+            color = "Negro",
+            talla = "58",
+            costo = 40.0,
+            precio = 120.0,
+            stockActual = 5,
+            stockMinimo = 1,
+            tipoAro = "Aro Completo",
+            materialMontura = "Metal",
+            opticaId = opticaId,
+        )
+        coEvery { repository.getMonturaById("sib-1", opticaId) } returns Resource.Success(existing)
+
+        createVm()
+        viewModel.startEdit(existing)
+        viewModel.updateForm {
+            it.copy(
+                stockActual = "5",
+                stockMinimo = "1",
+                siblingTiposAro = setOf("Al aire"),
+                siblingStockPorTipo = mapOf("Al aire" to "4"),
+            )
+        }
+        viewModel.save()
+        advanceUntilIdle()
+
+        assertNull(viewModel.uiState.value.error)
+        coVerify(exactly = 0) { repository.updateMontura(any()) }
+        coVerify(exactly = 0) { repository.insertMonturas(any()) }
+        val monturaSlot = slot<Montura>()
+        val batch = slot<List<Montura>>()
+        coVerify(exactly = 1) {
+            repository.updateMonturaAndInsertSiblings(capture(monturaSlot), capture(batch))
+        }
+        assertEquals("sib-1", monturaSlot.captured.id)
+        assertEquals(1, batch.captured.size)
+        val sibling = batch.captured.single()
+        assertEquals("RAY-2140", sibling.sku)
+        assertEquals("Ray-Ban", sibling.marca)
+        assertEquals("Aviator", sibling.modelo)
+        assertEquals("Negro", sibling.color)
+        assertEquals("58", sibling.talla)
+        assertEquals(40.0, sibling.costo, 0.0)
+        assertEquals(120.0, sibling.precio, 0.0)
+        assertEquals(1, sibling.stockMinimo)
+        assertEquals("Metal", sibling.materialMontura)
+        assertEquals("Al aire", sibling.tipoAro)
+        assertEquals(4, sibling.stockActual)
+        assertTrue(sibling.id != existing.id)
+        assertTrue(viewModel.uiState.value.success!!.contains("1"))
+    }
+
+    @Test
+    fun `edit sibling UNIQUE conflict shows sku tipo error`() = runTest(testDispatcher) {
+        val existing = Montura(
+            id = "sib-2",
+            sku = "RAY-2140",
+            marca = "Ray-Ban",
+            modelo = "Aviator",
+            stockActual = 5,
+            stockMinimo = 1,
+            tipoAro = "Aro Completo",
+            materialMontura = "Metal",
+            opticaId = opticaId,
+        )
+        coEvery { repository.getMonturaById("sib-2", opticaId) } returns Resource.Success(existing)
+        coEvery { repository.updateMonturaAndInsertSiblings(any(), any()) } throws
+            Exception("UNIQUE constraint failed")
+
+        createVm()
+        viewModel.startEdit(existing)
+        viewModel.updateForm {
+            it.copy(
+                stockActual = "5",
+                stockMinimo = "1",
+                siblingTiposAro = setOf("Semi al aire"),
+                siblingStockPorTipo = mapOf("Semi al aire" to "2"),
+            )
+        }
+        viewModel.save()
+        advanceUntilIdle()
+
+        assertEquals("El SKU ya existe para ese tipo de aro.", viewModel.uiState.value.error)
+        assertNull(viewModel.uiState.value.success)
+        coVerify(exactly = 0) { repository.updateMontura(any()) }
+        coVerify(exactly = 0) { repository.insertMonturas(any()) }
+        coVerify(exactly = 1) { repository.updateMonturaAndInsertSiblings(any(), any()) }
+    }
+
+    @Test
+    fun `edit sibling negative stock skips all repository writes`() = runTest(testDispatcher) {
+        val existing = Montura(
+            id = "sib-3",
+            sku = "RAY-2140",
+            marca = "Ray-Ban",
+            modelo = "Aviator",
+            stockActual = 5,
+            stockMinimo = 1,
+            tipoAro = "Aro Completo",
+            materialMontura = "Metal",
+            opticaId = opticaId,
+        )
+        coEvery { repository.getMonturaById("sib-3", opticaId) } returns Resource.Success(existing)
+
+        createVm()
+        viewModel.startEdit(existing)
+        viewModel.updateForm {
+            it.copy(
+                stockActual = "5",
+                stockMinimo = "1",
+                siblingTiposAro = setOf("Semi al aire"),
+                siblingStockPorTipo = mapOf("Semi al aire" to "-1"),
+            )
+        }
+        viewModel.save()
+        advanceUntilIdle()
+
+        assertEquals("Stock actual y mínimo no pueden ser negativos.", viewModel.uiState.value.error)
+        assertNull(viewModel.uiState.value.success)
+        coVerify(exactly = 0) { repository.updateMontura(any()) }
+        coVerify(exactly = 0) { repository.updateMonturaAndInsertSiblings(any(), any()) }
+        coVerify(exactly = 0) { repository.insertMonturas(any()) }
     }
 }
