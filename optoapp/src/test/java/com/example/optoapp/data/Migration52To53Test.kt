@@ -56,3 +56,4 @@ class Migration52To53Test {
         assertTrue(joined.contains("index_inventario_fisico_detalle_inventarioId_monturaId"))
     }
 }
+
