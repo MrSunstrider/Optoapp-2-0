@@ -1338,6 +1338,73 @@ val MIGRATION_51_52 = object : Migration(51, 52) {
     }
 }
 
+val MIGRATION_52_53 = object : Migration(52, 53) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        // SQLite cannot ALTER FK — rebuild child tables with ON DELETE CASCADE to monturas.
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS orden_compra_items_new (
+                id TEXT NOT NULL PRIMARY KEY,
+                ordenId TEXT NOT NULL,
+                monturaId TEXT NOT NULL,
+                cantidad INTEGER NOT NULL,
+                costoUnitario REAL NOT NULL,
+                recibido INTEGER NOT NULL,
+                FOREIGN KEY(ordenId) REFERENCES ordenes_compra(id) ON DELETE CASCADE,
+                FOREIGN KEY(monturaId) REFERENCES monturas(id) ON DELETE CASCADE
+            )
+            """.trimIndent(),
+        )
+        db.execSQL(
+            """
+            INSERT INTO orden_compra_items_new (id, ordenId, monturaId, cantidad, costoUnitario, recibido)
+            SELECT id, ordenId, monturaId, cantidad, costoUnitario, recibido FROM orden_compra_items
+            """.trimIndent(),
+        )
+        db.execSQL("DROP TABLE orden_compra_items")
+        db.execSQL("ALTER TABLE orden_compra_items_new RENAME TO orden_compra_items")
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_orden_compra_items_ordenId ON orden_compra_items(ordenId)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_orden_compra_items_monturaId ON orden_compra_items(monturaId)")
+
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS inventario_fisico_detalle_new (
+                id TEXT NOT NULL PRIMARY KEY,
+                inventarioId TEXT NOT NULL,
+                monturaId TEXT NOT NULL,
+                stockSistema INTEGER NOT NULL,
+                stockContado INTEGER,
+                diferencia INTEGER,
+                FOREIGN KEY(inventarioId) REFERENCES inventario_fisico(id) ON DELETE CASCADE,
+                FOREIGN KEY(monturaId) REFERENCES monturas(id) ON DELETE CASCADE
+            )
+            """.trimIndent(),
+        )
+        db.execSQL(
+            """
+            INSERT INTO inventario_fisico_detalle_new
+                (id, inventarioId, monturaId, stockSistema, stockContado, diferencia)
+            SELECT id, inventarioId, monturaId, stockSistema, stockContado, diferencia
+            FROM inventario_fisico_detalle
+            """.trimIndent(),
+        )
+        db.execSQL("DROP TABLE inventario_fisico_detalle")
+        db.execSQL("ALTER TABLE inventario_fisico_detalle_new RENAME TO inventario_fisico_detalle")
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS index_inventario_fisico_detalle_inventarioId " +
+                "ON inventario_fisico_detalle(inventarioId)",
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS index_inventario_fisico_detalle_monturaId " +
+                "ON inventario_fisico_detalle(monturaId)",
+        )
+        db.execSQL(
+            "CREATE UNIQUE INDEX IF NOT EXISTS index_inventario_fisico_detalle_inventarioId_monturaId " +
+                "ON inventario_fisico_detalle(inventarioId, monturaId)",
+        )
+    }
+}
+
 /** Shared Room backfill: fill null/blank/whitespace updatedAt with LWW-safe sentinel (not wall-clock). */
 internal fun stampNullOrBlankUpdatedAtSql(table: String): String =
     """
@@ -1348,5 +1415,6 @@ internal fun stampNullOrBlankUpdatedAtSql(table: String): String =
     )
     WHERE updatedAt IS NULL OR TRIM(COALESCE(updatedAt, '')) = ''
     """.trimIndent()
+
 
 

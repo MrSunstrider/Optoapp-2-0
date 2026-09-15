@@ -51,6 +51,7 @@ data class OrdenCompra(
             entity = Montura::class,
             parentColumns = ["id"],
             childColumns = ["monturaId"],
+            onDelete = ForeignKey.CASCADE,
         ),
     ],
 )

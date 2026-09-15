@@ -40,6 +40,7 @@ data class InventarioFisico(
             entity = Montura::class,
             parentColumns = ["id"],
             childColumns = ["monturaId"],
+            onDelete = ForeignKey.CASCADE,
         ),
     ],
 )
