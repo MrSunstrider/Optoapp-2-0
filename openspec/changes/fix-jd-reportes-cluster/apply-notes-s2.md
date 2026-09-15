@@ -18,6 +18,6 @@ Android Cierre de Caja does **not** call this RPC (Room/PagoEffect only).
 
 ## Mitigation shipped
 
-Migration `20260915033911_document_rpc_cierre_caja_resumen_exclusive.sql` documents the half-open contract via `COMMENT ON FUNCTION`.
+Migration `20260915085406_document_rpc_cierre_caja_resumen_exclusive.sql` documents the half-open contract via `COMMENT ON FUNCTION`.
 
 Same-day usage: `p_from = D`, `p_to = D + 1 day`.
