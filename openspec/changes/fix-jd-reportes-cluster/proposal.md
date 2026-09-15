@@ -11,7 +11,7 @@ Remediate all JD Round-1 SUSPECTS (S1–S6) and INFO (I1–I4) on the financial 
 - **S4/S6**: `AnalisisNegocioScreen` role `initial=null` + guard; list uses `gastosMes`
 - **I2/I1**: `ResumenDiarioDao.deleteAll()` + real DAO test; keep Robolectric; document harness debt
 - **I3**: Drop dead `"Este año"` VM branches; align `reportes-financieros` to UI labels
-- **S2/S5/I4**: New migrations — inclusive `rpc_cierre_caja_resumen`; restore R23 `stock_estancado`; NULL-safe `v_proyeccion`/egresos (prefer one REPLACE for S5+I4)
+- **S2/S5/I4**: New migrations — exclusive (documented) `rpc_cierre_caja_resumen`; restore R23 `stock_estancado`; NULL-safe `v_proyeccion`/egresos (prefer one REPLACE for S5+I4)
 
 ### Out of Scope
 - Shared non-Robolectric Room harness / all 18 DaoTests
@@ -23,7 +23,7 @@ Remediate all JD Round-1 SUSPECTS (S1–S6) and INFO (I1–I4) on the financial 
 - None
 
 ### Modified Capabilities
-- `cierre-caja`: Static load errors; inclusive `rpc_cierre_caja_resumen`
+- `cierre-caja`: Static load errors; exclusive (documented) `rpc_cierre_caja_resumen`
 - `analisis-negocio`: Role gate; gastosMes list; R13.1 deleteAll; R23 stock + NULL-safe proyeccion
 - `reportes-financieros`: Periods → `Diario|Semanal|Mensual|Anual|Total`
 - `sync`: SyncFinanzasUseCase static `Resource.Error`
@@ -50,7 +50,7 @@ Strict TDD WU order: (1) S1+S3 (2) S4+S6 (3) I2+I1 (4) I3 (5) S2+S5+I4 SQL + GGA
 
 | Risk | Likelihood | Mitigation |
 |------|------------|------------|
-| Inclusive S2 breaks exclusive callers | Med | Grep optoweb; COMMENT; SQL test |
+| Exclusive-documented S2 breaks exclusive callers | Med | Grep optoweb; COMMENT; SQL test |
 | REPLACE drops pago_effect | Med | Diff vs converge body |
 | >400-line review | High | Chain Android / SQL PRs |
 
@@ -60,7 +60,7 @@ Android: revert PR. SQL: reverse migration restoring bodies from `20260815005859
 
 ## Dependencies
 
-GGA CLEAN before remote push; confirm no exclusive-`p_to` callers before S2 done.
+GGA CLEAN before remote push; confirm exclusive contract documented for optoweb callers.
 
 ## Success Criteria
 

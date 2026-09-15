@@ -8,7 +8,7 @@ Strict TDD across five work units from exploration: static Android errors → An
 
 | Decision | Options | Choice | Rationale |
 |----------|---------|--------|-----------|
-| S2 date bound | Inclusive `<= p_to` vs keep exclusive | Inclusive | Matches cierre same-day; no Android callers; COMMENT + optoweb grep |
+| S2 date bound | Inclusive `<= p_to` vs keep exclusive | **Keep exclusive + COMMENT** | optoweb uses toExclusive; inclusive would double-count |
 | S5 stock | Restore `20260709000003` CTE vs rewrite | Restore CTE into current REPLACE | R23 already reviewed; preserve pago_effect body |
 | I4 proyeccion | COALESCE object vs split SELECT | COALESCE / scalar egresos | Survives zero unpaid `SELECT INTO` NULL |
 | S5+I4 packaging | One vs two migrations | Prefer one REPLACE for `rpc_analisis_mensual` + companion for `rpc_cierre_caja_resumen` | Shared review; cierre RPC separate file OK |
@@ -23,7 +23,7 @@ WU2: auth.opticaRol(null) ──progress──▶ role resolve ──▶ canView
      gastos ──filter──▶ gastosMes ──▶ "Gastos del mes" rows + total
 WU3: ResumenDiarioDao.deleteAll() ──▶ empty local resumen_diario
 WU4: periodo ∈ {Diario,Semanal,Mensual,Anual,Total} ──periodDateRange──▶ DAO
-WU5: rpc_cierre_caja_resumen(p_from,p_to inclusive)
+WU5: rpc_cierre_caja_resumen document exclusive + analisis stock/proyeccion
      rpc_analisis_mensual ──stock CTE + COALESCE proyeccion──▶ JSONB
 ```
 
@@ -41,7 +41,7 @@ WU5: rpc_cierre_caja_resumen(p_from,p_to inclusive)
 | `optoapp/.../data/resumendiario/ResumenDiarioDaoTest.kt` | Modify | Call `dao.deleteAll()`; keep Robolectric |
 | `optoapp/.../viewmodel/ReportesViewModel.kt` | Modify | Drop `"Este año"` branches |
 | `optoapp/.../viewmodel/ReportesViewModelOtrosPeriodosTest.kt` | Modify | Rename misleading Este año names |
-| `supabase/migrations/<ts>_fix_rpc_cierre_caja_resumen_inclusive.sql` | Create | `fecha <= p_to` + COMMENT |
+| `supabase/migrations/<ts>_document_rpc_cierre_caja_resumen_exclusive.sql` | Create | `COMMENT half-open [p_from, p_to) |
 | `supabase/migrations/<ts>_fix_rpc_analisis_mensual_stock_proyeccion.sql` | Create | R23 CTE + NULL-safe proyeccion |
 | `supabase/tests/test_ledger_aggregate_convergence.sql` | Modify | Optional same-day / proyeccion assertions |
 | `IMPROVEMENT-PLAN.md` or change note | Modify | Record Robolectric DAO harness debt (I1) |
@@ -93,5 +93,5 @@ N/A — no routing, shell, subprocess, VCS/PR automation, executable-file classi
 
 ## Open Questions
 
-- [x] Inclusive S2 default — confirmed by explore/user handoff
+- [x] Exclusive-documented S2 default — confirmed by explore/user handoff
 - [ ] Grep optoweb for exclusive `p_to` callers before remote apply (apply-time check, not blocking design)

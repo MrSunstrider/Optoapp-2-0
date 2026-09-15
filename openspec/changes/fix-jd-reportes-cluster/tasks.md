@@ -58,7 +58,7 @@ Chain strategy: pending
 ## Phase 5: Supabase RPCs (S2 + S5 + I4) — GGA required
 
 - [ ] 5.1 Grep optoweb / edge for `rpc_cierre_caja_resumen` exclusive `p_to` callers (sibling repo paths read-only); record findings in apply notes
-- [ ] 5.2 Create `supabase/migrations/<timestamp>_fix_rpc_cierre_caja_resumen_inclusive.sql` with `CREATE OR REPLACE` using `fecha >= p_from AND fecha <= p_to` plus `COMMENT ON FUNCTION` that `p_to` is inclusive
+- [ ] 5.2 Create `supabase/migrations/<timestamp>_document_rpc_cierre_caja_resumen_exclusive.sql` with `CREATE OR REPLACE` COMMENT documenting half-open `[p_from, p_to)` (keep body; optoweb exclusive callers)
 - [ ] 5.3 Create `supabase/migrations/<timestamp>_fix_rpc_analisis_mensual_stock_proyeccion.sql`: REPLACE `rpc_analisis_mensual` using body from `supabase/migrations/20260815010805_converge_readonly_rpc_pago_effect.sql` (read-only) and stock CTE from `supabase/migrations/20260709000003_fix_analisis_mensual_categorias.sql` (read-only); NULL-safe `v_proyeccion` with `egresos_programados`; preserve pago_effect paths
 - [ ] 5.4 Optionally extend `supabase/tests/test_ledger_aggregate_convergence.sql` with same-day inclusive cierre assertion and zero-unpaid proyeccion egresos assertion
 - [ ] 5.5 Run GGA R1/R3/R4 on the new migration(s); resolve ALL observations to CLEAN
@@ -68,4 +68,4 @@ Chain strategy: pending
 
 - [ ] 6.1 Run `./gradlew :optoapp:testDebugUnitTest --stacktrace` (full suite green before Android PR merge)
 - [ ] 6.2 Spot-check UX: Cierre error string static; Análisis no admin flash; Gastos del mes list; Reportes periods only Diario|Semanal|Mensual|Anual|Total
-- [ ] 6.3 After SQL apply: confirm remote function defs match inclusive bound + restored stock + COALESCE proyeccion
+- [ ] 6.3 After SQL apply: confirm remote function defs match exclusive COMMENT + restored stock + COALESCE proyeccion
