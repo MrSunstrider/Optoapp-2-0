@@ -71,7 +71,7 @@ class ResumenDiarioDaoTest {
             ventasMontoTotal = 1500.0,
         )
         dao.upsert(resumen)
-        db.openHelper.writableDatabase.execSQL("DELETE FROM resumen_diario WHERE opticaId = 'optica1'")
+        dao.deleteAll()
 
         val result = dao.getByOpticaId("optica1").first()
         assertTrue(result.isEmpty())

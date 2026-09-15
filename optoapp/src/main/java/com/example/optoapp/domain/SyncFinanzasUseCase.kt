@@ -153,10 +153,10 @@ open class SyncFinanzasUseCase @Inject constructor(
         throw e
     } catch (e: IOException) {
         AppLogger.e(TAG, "Error en red sincronizando finanzas: ${e.message}", e)
-        Resource.Error("Error sincronizando finanzas: ${e.localizedMessage}")
+        Resource.Error("Error de red al sincronizar finanzas. Intenta de nuevo.")
     } catch (e: Exception) {
         AppLogger.e(TAG, "Error inesperado sincronizando finanzas: ${e.message}", e)
-        Resource.Error("Error sincronizando finanzas: ${e.localizedMessage}")
+        Resource.Error("Error sincronizando finanzas. Intenta de nuevo.")
     }
 
     // Isolated try-catch so one entity's failure doesn't block other downloads

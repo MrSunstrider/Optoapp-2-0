@@ -712,8 +712,12 @@ class CierreCajaViewModelTest {
         vm.uiState.first { !it.isLoading }
 
         assertNotNull("errorMessage must be set on crash", vm.uiState.value.errorMessage)
-        assertTrue(
-            "errorMessage must contain error text",
+        assertEquals(
+            "Error al cargar datos. Intenta de nuevo.",
+            vm.uiState.value.errorMessage,
+        )
+        assertFalse(
+            "errorMessage must not embed raw exception text",
             vm.uiState.value.errorMessage!!.contains("DB corrupted"),
         )
         assertFalse("isLoading must be false after error", vm.uiState.value.isLoading)

@@ -154,6 +154,7 @@
 | L6 | MIGRATION_8_9 empty body without schema change trace | `OptoDatabaseMigrations.kt` |
 | L7 | Only 2 schema JSON files (v35, v36) — can't test older migrations | `optoapp/schemas/` |
 | L8 | No `forbidOnly` guard in CI | `.github/workflows/android-ci.yml` |
+| L9 | Room `*DaoTest` classes still use Robolectric despite AGENTS.md “no Robolectric for new tests” (ApplicationProvider dependency shared across ~18 DAO tests) | e.g. `ResumenDiarioDaoTest.kt` |
 
 ---
 
