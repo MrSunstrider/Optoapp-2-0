@@ -234,7 +234,7 @@ class ReportesViewModelOtrosPeriodosTest {
     }
 
     @Test
-    fun `Este año includes only dates in the current year`() = runTest(testDispatcher) {
+    fun `Anual period includes only dates in the selected year`() = runTest(testDispatcher) {
         val now = LocalDate.now()
         val firstOfYear = now.withDayOfYear(1)
         val lastOfYear = now.withDayOfYear(now.lengthOfYear())
@@ -411,7 +411,7 @@ class ReportesViewModelOtrosPeriodosTest {
     }
 
     @Test
-    fun `Este año totalVendido and totalPagado include servicios extra`() = runTest(testDispatcher) {
+    fun `Anual current-year totalVendido and totalPagado include servicios extra`() = runTest(testDispatcher) {
         val now = LocalDate.now()
         val dispensaciones = listOf(
             DispensacionOptica(id = "d1", pacienteId = "p", fecha = now, montoTotal = 100.0, montoPagado = 60.0, opticaId = opticaId),
@@ -604,7 +604,7 @@ class ReportesViewModelOtrosPeriodosTest {
     }
 
     @Test
-    fun `Este año period passes year range to DAO`() = runTest(testDispatcher) {
+    fun `Anual period passes year range to DAO`() = runTest(testDispatcher) {
         val now = LocalDate.now()
         val firstOfYear = now.withDayOfYear(1)
         val lastOfYear = now.withDayOfYear(now.lengthOfYear())

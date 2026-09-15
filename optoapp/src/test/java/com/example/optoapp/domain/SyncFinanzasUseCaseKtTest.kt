@@ -14,6 +14,7 @@ import io.mockk.mockk
 import io.mockk.mockkStatic
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -263,7 +264,8 @@ class SyncFinanzasUseCaseKtTest {
 
         assertTrue(result is com.example.optoapp.data.Resource.Error)
         val error = result as com.example.optoapp.data.Resource.Error
-        assertTrue(error.message.orEmpty().contains("sincronizando finanzas"))
+        assertEquals("Error de red al sincronizar finanzas. Intenta de nuevo.", error.message)
+        assertFalse(error.message.orEmpty().contains("Network failure"))
     }
 
     @Test
@@ -286,6 +288,9 @@ class SyncFinanzasUseCaseKtTest {
         val result = useCase("optica-test")
 
         assertTrue(result is com.example.optoapp.data.Resource.Error)
+        val error = result as com.example.optoapp.data.Resource.Error
+        assertEquals("Error sincronizando finanzas. Intenta de nuevo.", error.message)
+        assertFalse(error.message.orEmpty().contains("Unexpected deletion error"))
     }
     // WHY: UploadPartialException is truthful Resource.Error with partial counts in data
 
@@ -374,6 +379,8 @@ class SyncFinanzasUseCaseKtTest {
 
         val result = useCase("optica-test")
         assertTrue("IOException should propagate to Resource.Error", result is com.example.optoapp.data.Resource.Error)
+        val ioErr = result as com.example.optoapp.data.Resource.Error
+        assertEquals("Error de red al sincronizar finanzas. Intenta de nuevo.", ioErr.message)
     }
 
     @Test
@@ -508,6 +515,8 @@ class SyncFinanzasUseCaseKtTest {
 
         val result = useCase("optica-test")
         assertTrue("Generic Exception should propagate to Resource.Error", result is com.example.optoapp.data.Resource.Error)
+        val genErr = result as com.example.optoapp.data.Resource.Error
+        assertEquals("Error sincronizando finanzas. Intenta de nuevo.", genErr.message)
     }
 
     @Test
@@ -540,5 +549,8 @@ class SyncFinanzasUseCaseKtTest {
         // Initial call + 3 retries = 4 total
         coVerify(exactly = 4) { uploadCoordinator.uploadPagos("optica-test") }
         assertTrue("IOException should propagate to Resource.Error", result is com.example.optoapp.data.Resource.Error)
+        val ioErr2 = result as com.example.optoapp.data.Resource.Error
+        assertEquals("Error de red al sincronizar finanzas. Intenta de nuevo.", ioErr2.message)
+        assertFalse(ioErr2.message!!.contains("Pagos upload failed"))
     }
 }

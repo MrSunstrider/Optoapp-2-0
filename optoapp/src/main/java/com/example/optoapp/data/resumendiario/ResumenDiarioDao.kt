@@ -31,4 +31,7 @@ interface ResumenDiarioDao {
 
     @Upsert
     suspend fun upsert(resumen: ResumenDiarioEntity)
+
+    @Query("DELETE FROM resumen_diario")
+    suspend fun deleteAll()
 }

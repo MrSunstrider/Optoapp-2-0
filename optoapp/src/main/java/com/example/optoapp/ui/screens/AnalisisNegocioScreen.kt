@@ -46,8 +46,8 @@ fun AnalisisNegocioScreen(
     val uiState by viewModel.uiState.collectAsState()
     val gastos by gastosViewModel.allGastos.collectAsState()
     val gastosUiState by gastosViewModel.uiState.collectAsState()
-    val opticaRol by authViewModel.opticaRol.collectAsState(initial = "admin")
-    val canView = AppRoles.canViewBiAndReports(opticaRol)
+    val opticaRol by authViewModel.opticaRol.collectAsState(initial = null)
+    val canView = opticaRol != null && AppRoles.canViewBiAndReports(opticaRol!!)
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.surface,
@@ -63,6 +63,16 @@ fun AnalisisNegocioScreen(
             )
         },
     ) { padding ->
+        if (opticaRol == null) {
+            Box(
+                modifier = Modifier.fillMaxSize().padding(padding),
+                contentAlignment = Alignment.Center,
+            ) {
+                CircularProgressIndicator()
+            }
+            return@Scaffold
+        }
+
         if (!canView) {
             Column(
                 modifier = Modifier.fillMaxSize().padding(padding).padding(24.dp),
@@ -222,9 +232,9 @@ fun AnalisisNegocioScreen(
                         }
                         Text("S/ ${formatNumber(totalGastos)}", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.alertRed)
                     }
-                    if (gastos.isNotEmpty()) {
+                    if (gastosMes.isNotEmpty()) {
                         Spacer(Modifier.height(6.dp))
-                        gastos.sortedByDescending { it.fecha }.forEach { g ->
+                        gastosMes.sortedByDescending { it.fecha }.forEach { g ->
                             Row(
                                 Modifier
                                     .fillMaxWidth()

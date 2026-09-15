@@ -109,7 +109,6 @@ class ReportesViewModel @Inject constructor(
             !date.isBefore(startOfWeek) && !date.isAfter(endOfWeek)
         }
         "Mensual" -> date.year == fechaDiario.year && date.month == fechaDiario.month
-        "Este año" -> date.year == fechaDiario.year
         "Anual" -> date.year.toString() == a
         else -> true
     }
@@ -121,7 +120,6 @@ class ReportesViewModel @Inject constructor(
             startOfWeek to startOfWeek.plusDays(6)
         }
         "Mensual" -> fd.withDayOfMonth(1) to fd.withDayOfMonth(fd.lengthOfMonth())
-        "Este año" -> fd.withDayOfYear(1) to fd.withDayOfYear(fd.lengthOfYear())
         "Anual" -> LocalDate.of(a.toInt(), 1, 1) to LocalDate.of(a.toInt(), 12, 31)
         else -> LocalDate.MIN to LocalDate.MAX
     }

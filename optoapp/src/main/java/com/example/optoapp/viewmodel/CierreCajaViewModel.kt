@@ -183,7 +183,7 @@ class CierreCajaViewModel @Inject constructor(
                         CierreCajaUiState(
                             fecha = fecha,
                             isLoading = false,
-                            errorMessage = "Error al cargar datos: ${e.message}",
+                            errorMessage = "Error al cargar datos. Intenta de nuevo.",
                         ),
                     )
                 }
