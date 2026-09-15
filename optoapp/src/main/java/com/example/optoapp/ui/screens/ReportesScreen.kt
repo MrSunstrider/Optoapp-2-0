@@ -146,29 +146,29 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                             onSelected = { viewModel.setPeriodo(it) },
                         )
                         Spacer(Modifier.height(8.dp))
-                        if (periodo != "Todo") {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                            ) {
-                                IconButton(onClick = { viewModel.previous() }) {
-                                    Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = "Anterior")
-                                }
-                                Text(
-                                    periodoLabel,
-                                    fontWeight = FontWeight.SemiBold,
-                                    fontSize = 14.sp,
-                                    textAlign = TextAlign.Center,
-                                    modifier = Modifier.weight(1f),
-                                )
-                                Row {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                        ) {
+                            IconButton(onClick = { viewModel.previous() }) {
+                                Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = "Anterior")
+                            }
+                            Text(
+                                periodoLabel,
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 14.sp,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.weight(1f),
+                            )
+                            Row {
+                                if (reportesShowsDatePicker(periodo)) {
                                     IconButton(onClick = { showDatePicker = true }) {
                                         Icon(Icons.Default.DateRange, contentDescription = "Seleccionar fecha", modifier = Modifier.size(20.dp))
                                     }
-                                    IconButton(onClick = { viewModel.next() }) {
-                                        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = "Siguiente")
-                                    }
+                                }
+                                IconButton(onClick = { viewModel.next() }) {
+                                    Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = "Siguiente")
                                 }
                             }
                         }
