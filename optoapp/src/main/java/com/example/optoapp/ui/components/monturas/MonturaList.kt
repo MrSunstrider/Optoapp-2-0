@@ -29,6 +29,7 @@ fun MonturaListSection(
     onEntrada: (Montura) -> Unit,
     onSalida: (Montura) -> Unit,
     canEdit: Boolean = true,
+    canDelete: Boolean = canEdit,
 ) {
     LazyColumn(verticalArrangement = Arrangement.spacedBy(OptoTokens.spacing.sm)) {
         if (porReponer.isNotEmpty()) {
@@ -44,6 +45,7 @@ fun MonturaListSection(
                 MonturaItem(
                     montura = m,
                     canEdit = canEdit,
+                    canDelete = canDelete,
                     onEdit = { onEdit(m) },
                     onDelete = { onDelete(m) },
                     onEntrada = { onEntrada(m) },
@@ -64,6 +66,7 @@ fun MonturaListSection(
             MonturaItem(
                 montura = m,
                 canEdit = canEdit,
+                canDelete = canDelete,
                 onEdit = { onEdit(m) },
                 onDelete = { onDelete(m) },
                 onEntrada = { onEntrada(m) },
@@ -81,6 +84,7 @@ fun MonturaItem(
     onEntrada: () -> Unit,
     onSalida: () -> Unit,
     canEdit: Boolean = true,
+    canDelete: Boolean = canEdit,
 ) {
     var showDelete by remember { mutableStateOf(false) }
     val stockBajo = montura.stockActual <= montura.stockMinimo
@@ -207,23 +211,27 @@ fun MonturaItem(
                 )
             }
 
-            if (canEdit) {
+            if (canEdit || canDelete) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    IconButton(modifier = Modifier.size(48.dp), onClick = onSalida) {
-                        Icon(Icons.Default.Remove, contentDescription = "Salida de stock −1")
+                    if (canEdit) {
+                        IconButton(modifier = Modifier.size(48.dp), onClick = onSalida) {
+                            Icon(Icons.Default.Remove, contentDescription = "Salida de stock −1")
+                        }
+                        IconButton(modifier = Modifier.size(48.dp), onClick = onEntrada) {
+                            Icon(Icons.Default.Add, contentDescription = "Entrada de stock +1")
+                        }
+                        IconButton(modifier = Modifier.size(48.dp), onClick = onEdit) {
+                            Icon(Icons.Default.Edit, contentDescription = "Editar montura")
+                        }
                     }
-                    IconButton(modifier = Modifier.size(48.dp), onClick = onEntrada) {
-                        Icon(Icons.Default.Add, contentDescription = "Entrada de stock +1")
-                    }
-                    IconButton(modifier = Modifier.size(48.dp), onClick = onEdit) {
-                        Icon(Icons.Default.Edit, contentDescription = "Editar montura")
-                    }
-                    IconButton(modifier = Modifier.size(48.dp), onClick = { showDelete = true }) {
-                        Icon(Icons.Default.Delete, contentDescription = "Eliminar montura")
+                    if (canDelete) {
+                        IconButton(modifier = Modifier.size(48.dp), onClick = { showDelete = true }) {
+                            Icon(Icons.Default.Delete, contentDescription = "Desactivar montura")
+                        }
                     }
                 }
             }
@@ -232,18 +240,18 @@ fun MonturaItem(
     if (showDelete) {
         AlertDialog(
             onDismissRequest = { showDelete = false },
-            title = { Text("Eliminar montura") },
+            title = { Text("Desactivar producto") },
             text = {
                 Text(
-                    "¿Quitar ${montura.marca} ${montura.modelo} (SKU ${montura.sku}) del inventario? " +
-                        "No afecta historial de ventas ya registradas.",
+                    "¿Desactivar ${montura.marca} ${montura.modelo} (SKU ${montura.sku})? " +
+                        "Dejará de aparecer en el catálogo; no es un borrado permanente.",
                 )
             },
             confirmButton = {
                 Button(onClick = {
                     onDelete()
                     showDelete = false
-                }) { Text("Eliminar") }
+                }) { Text("Desactivar") }
             },
             dismissButton = {
                 OutlinedButton(onClick = { showDelete = false }) { Text("Cancelar") }

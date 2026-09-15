@@ -17,7 +17,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.example.optoapp.domain.OpticalCatalog
 import com.example.optoapp.domain.inventario.InventarioItemKind
-import com.example.optoapp.ui.components.DropdownField
+import com.example.optoapp.ui.components.OptoDropdownMenuField
 import com.example.optoapp.ui.components.OptoTextField
 import com.example.optoapp.viewmodel.MonturaFormState
 
@@ -27,10 +27,14 @@ fun MonturaEditForm(
     form: MonturaFormState,
     onUpdate: (MonturaFormState) -> Unit,
     error: String?,
+    existingTiposForSku: Set<String> = emptySet(),
 ) {
     val esAccesorio = form.tipoItem.equals(InventarioItemKind.ACCESORIO, ignoreCase = true)
     val isCreate = form.id == null
     val tiposCatalogo = OpticalCatalog.TIPO_ARO.keys.toList()
+    val siblingDisponibles = tiposCatalogo.filter { tipo ->
+        tipo != form.tipoAro && tipo !in existingTiposForSku
+    }
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         if (!error.isNullOrBlank()) {
@@ -69,6 +73,8 @@ fun MonturaEditForm(
                             tipoAro = "",
                             selectedTiposAro = emptySet(),
                             stockPorTipoAro = emptyMap(),
+                            siblingTiposAro = emptySet(),
+                            siblingStockPorTipo = emptyMap(),
                             materialMontura = "",
                             anchoMm = "",
                             puenteMm = "",
@@ -164,15 +170,81 @@ fun MonturaEditForm(
                     )
                 }
             } else {
-                DropdownField(
-                    label = "Tipo de aro *",
-                    selected = form.tipoAro,
-                    options = tiposCatalogo,
-                ) { opt ->
-                    onUpdate(form.copy(tipoAro = opt))
+                Text(
+                    "Tipo de aro *",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    tiposCatalogo.forEach { tipo ->
+                        FilterChip(
+                            selected = form.tipoAro == tipo,
+                            onClick = { onUpdate(form.copy(tipoAro = tipo)) },
+                            label = { Text(tipo) },
+                        )
+                    }
+                }
+                if (siblingDisponibles.isNotEmpty()) {
+                    Text(
+                        "Añadir variante (mismo SKU)",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(top = 8.dp),
+                    )
+                    Text(
+                        "Crea otra fila con el mismo SKU y un tipo de aro distinto.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        siblingDisponibles.forEach { tipo ->
+                            val selected = tipo in form.siblingTiposAro
+                            FilterChip(
+                                selected = selected,
+                                onClick = {
+                                    val next = form.siblingTiposAro.toMutableSet()
+                                    val stocks = form.siblingStockPorTipo.toMutableMap()
+                                    if (selected) {
+                                        next.remove(tipo)
+                                        stocks.remove(tipo)
+                                    } else {
+                                        next.add(tipo)
+                                        stocks.putIfAbsent(tipo, "")
+                                    }
+                                    onUpdate(
+                                        form.copy(
+                                            siblingTiposAro = next,
+                                            siblingStockPorTipo = stocks,
+                                        ),
+                                    )
+                                },
+                                label = { Text(tipo) },
+                            )
+                        }
+                    }
+                    form.siblingTiposAro.sorted().forEach { tipo ->
+                        OptoTextField(
+                            value = form.siblingStockPorTipo[tipo].orEmpty(),
+                            onValueChange = { v ->
+                                onUpdate(
+                                    form.copy(
+                                        siblingStockPorTipo = form.siblingStockPorTipo + (tipo to v),
+                                    ),
+                                )
+                            },
+                            label = "Stock inicial — $tipo",
+                            keyboardType = KeyboardType.Number,
+                        )
+                    }
                 }
             }
-            DropdownField(
+            OptoDropdownMenuField(
                 label = "Material *",
                 selected = form.materialMontura,
                 options = OpticalCatalog.MATERIALES_MONTURA,

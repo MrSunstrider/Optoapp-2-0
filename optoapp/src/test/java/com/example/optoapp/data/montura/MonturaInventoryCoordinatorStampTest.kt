@@ -149,4 +149,66 @@ class MonturaInventoryCoordinatorStampTest {
             )
         }
     }
+
+    @Test
+    fun softDeleteMontura_reloadsFreshRowBeforeDeactivating() = runTest {
+        val stale = Montura(
+            id = "m1",
+            sku = "S1",
+            marca = "A",
+            modelo = "X",
+            color = "N",
+            talla = "M",
+            costo = 50.0,
+            precio = 100.0,
+            stockActual = 1,
+            stockMinimo = 2,
+            activo = true,
+            opticaId = "optica-1",
+        )
+        val fresh = stale.copy(stockActual = 9, precio = 150.0)
+        coEvery { monturaDao.getMonturaByIdForOptica("m1", "optica-1") } returns fresh
+        coEvery {
+            monturaDao.updateMontura(
+                id = any(), opticaId = any(), sku = any(), marca = any(), modelo = any(),
+                color = any(), talla = any(), costo = any(), precio = any(),
+                stockActual = any(), stockMinimo = any(), activo = any(), tipoAro = any(),
+                materialMontura = any(), anchoMm = any(), puenteMm = any(), alturaMm = any(),
+                imagenUri = any(), categoria = any(), coleccion = any(), temporada = any(),
+                estadoComercial = any(), genero = any(), updatedAt = any(), updatedBy = any(),
+            )
+        } returns 1
+
+        coordinator.softDeleteMontura(stale)
+
+        coVerify {
+            monturaDao.updateMontura(
+                id = "m1",
+                opticaId = "optica-1",
+                sku = any(),
+                marca = any(),
+                modelo = any(),
+                color = any(),
+                talla = any(),
+                costo = any(),
+                precio = 150.0,
+                stockActual = 9,
+                stockMinimo = any(),
+                activo = false,
+                tipoAro = any(),
+                materialMontura = any(),
+                anchoMm = any(),
+                puenteMm = any(),
+                alturaMm = any(),
+                imagenUri = any(),
+                categoria = any(),
+                coleccion = any(),
+                temporada = any(),
+                estadoComercial = any(),
+                genero = any(),
+                updatedAt = match { it.isNotBlank() },
+                updatedBy = any(),
+            )
+        }
+    }
 }

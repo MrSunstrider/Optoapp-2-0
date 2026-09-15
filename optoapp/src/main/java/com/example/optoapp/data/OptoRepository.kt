@@ -219,7 +219,17 @@ open class OptoRepository(
     }
 
     suspend fun updateMontura(montura: Montura) = monturaCoordinator.updateMontura(montura)
+
+    /** Atomic edit + sibling spawn; schedules inventario sync once after commit. */
+    suspend fun updateMonturaAndInsertSiblings(montura: Montura, siblings: List<Montura>) {
+        database.withTransaction {
+            monturaCoordinator.updateMonturaLocal(montura)
+            siblings.forEach { monturaCoordinator.insertMonturaLocal(it) }
+        }
+        monturaCoordinator.scheduleInventarioSync(montura.opticaId)
+    }
     suspend fun deleteMontura(montura: Montura) = monturaCoordinator.deleteMontura(montura)
+    suspend fun softDeleteMontura(montura: Montura) = monturaCoordinator.softDeleteMontura(montura)
     suspend fun adjustMonturaStock(monturaId: String, opticaId: String, delta: Int) = monturaCoordinator.adjustMonturaStock(monturaId, opticaId, delta)
     fun getMovimientosMonturaByOptica(opticaId: String) = monturaCoordinator.getMovimientosMonturaByOptica(opticaId)
     fun getMovimientosByMontura(monturaId: String, opticaId: String) =

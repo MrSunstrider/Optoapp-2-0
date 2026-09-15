@@ -46,6 +46,10 @@ data class MonturaFormState(
     val selectedTiposAro: Set<String> = emptySet(),
     /** Create-only: initial stock string per selected rim type. */
     val stockPorTipoAro: Map<String, String> = emptyMap(),
+    /** Edit-only: sibling rim types to spawn on save (excludes current/existing). */
+    val siblingTiposAro: Set<String> = emptySet(),
+    /** Edit-only: initial stock string per sibling rim type. */
+    val siblingStockPorTipo: Map<String, String> = emptyMap(),
     val materialMontura: String = "",
     val anchoMm: String = "",
     val puenteMm: String = "",
@@ -97,11 +101,12 @@ class MonturasViewModel @Inject constructor(
 
     val sortedMonturas: StateFlow<List<Montura>> = combine(monturas, _uiState) { monturasList, state ->
         val filtradas = monturasList.filter { m ->
-            (state.query.isBlank() ||
-                m.sku.contains(state.query, ignoreCase = true) ||
-                m.marca.contains(state.query, ignoreCase = true) ||
-                m.modelo.contains(state.query, ignoreCase = true) ||
-                m.color.contains(state.query, ignoreCase = true)) &&
+            m.activo &&
+                (state.query.isBlank() ||
+                    m.sku.contains(state.query, ignoreCase = true) ||
+                    m.marca.contains(state.query, ignoreCase = true) ||
+                    m.modelo.contains(state.query, ignoreCase = true) ||
+                    m.color.contains(state.query, ignoreCase = true)) &&
                 (state.filterMarca == null || m.marca == state.filterMarca) &&
                 (state.filterMaterial == null || m.materialMontura == state.filterMaterial) &&
                 (!state.filterStockBajo || m.stockActual <= m.stockMinimo)
@@ -244,6 +249,46 @@ class MonturasViewModel @Inject constructor(
                 }
                 val categoriaGuardada = InventarioItemKind.categoriaForSave(form.tipoItem, form.categoria)
                 if (!isCreate) {
+                    val siblingRows = if (esAccesorio || form.siblingTiposAro.isEmpty()) {
+                        emptyList()
+                    } else {
+                        val rows = mutableListOf<Montura>()
+                        for (siblingTipo in form.siblingTiposAro) {
+                            val siblingStock = form.siblingStockPorTipo[siblingTipo]?.toIntOrNull() ?: 0
+                            if (siblingStock < 0) {
+                                _uiState.update { it.copy(error = "Stock actual y mínimo no pueden ser negativos.") }
+                                return@launch
+                            }
+                            rows.add(
+                                Montura(
+                                    id = UUID.randomUUID().toString(),
+                                    sku = form.sku.trim(),
+                                    marca = form.marca.trim(),
+                                    modelo = form.modelo.trim(),
+                                    color = form.color.trim(),
+                                    talla = form.talla.trim(),
+                                    costo = costo,
+                                    precio = precio,
+                                    stockActual = siblingStock,
+                                    stockMinimo = stockMinimo,
+                                    activo = true,
+                                    tipoAro = siblingTipo,
+                                    materialMontura = form.materialMontura.trim(),
+                                    anchoMm = form.anchoMm.replace(",", ".").toDoubleOrNull(),
+                                    puenteMm = form.puenteMm.replace(",", ".").toDoubleOrNull(),
+                                    alturaMm = form.alturaMm.replace(",", ".").toDoubleOrNull(),
+                                    imagenUri = form.imagenUri.trim().ifEmpty { null },
+                                    categoria = categoriaGuardada,
+                                    coleccion = form.coleccion.trim(),
+                                    temporada = form.temporada.trim(),
+                                    estadoComercial = form.estadoComercial.trim(),
+                                    genero = form.genero.trim(),
+                                    opticaId = opticaId,
+                                ),
+                            )
+                        }
+                        rows
+                    }
                     val (tipoAro, stockActual) = variantStocks.first()
                     val montura = Montura(
                         id = form.id!!,
@@ -271,15 +316,33 @@ class MonturasViewModel @Inject constructor(
                         opticaId = opticaId,
                     )
                     when (repository.getMonturaById(montura.id, opticaId)) {
-                        is Resource.Success -> repository.updateMontura(montura)
-                        else -> repository.insertMontura(montura)
+                        is Resource.Success -> {
+                            if (siblingRows.isNotEmpty()) {
+                                repository.updateMonturaAndInsertSiblings(montura, siblingRows)
+                            } else {
+                                repository.updateMontura(montura)
+                            }
+                        }
+                        else -> {
+                            if (siblingRows.isNotEmpty()) {
+                                repository.insertMonturas(listOf(montura) + siblingRows)
+                            } else {
+                                repository.insertMontura(montura)
+                            }
+                        }
+                    }
+                    val successMsg = when {
+                        esAccesorio -> "Accesorio guardado"
+                        siblingRows.isNotEmpty() ->
+                            "Montura guardada · ${siblingRows.size} variante(s) añadida(s)"
+                        else -> "Montura guardada"
                     }
                     _uiState.update {
                         it.copy(
                             editing = false,
                             form = MonturaFormState(),
                             error = null,
-                            success = if (esAccesorio) "Accesorio guardado" else "Montura guardada",
+                            success = successMsg,
                         )
                     }
                 } else {
@@ -348,10 +411,25 @@ class MonturasViewModel @Inject constructor(
 
     fun delete(montura: Montura) {
         viewModelScope.launch {
-            val role = sessionManager.opticaRol.first()
-            AuthorizationGuard.requireRole(role, setOf("admin", "gerente"), "eliminar montura")
-            repository.deleteMontura(montura)
-            _uiState.update { it.copy(success = "Producto eliminado", error = null) }
+            try {
+                val role = sessionManager.opticaRol.first()
+                AuthorizationGuard.requireRole(role, setOf("admin", "gerente"), "eliminar montura")
+                repository.softDeleteMontura(montura)
+                _uiState.update { it.copy(success = "Producto desactivado", error = null) }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: IllegalArgumentException) {
+                Log.e(TAG, "delete unauthorized", e)
+                _uiState.update {
+                    it.copy(error = "No tienes permiso para desactivar productos.", success = null)
+                }
+            } catch (e: IOException) {
+                Log.e(TAG, "delete failed: IO error", e)
+                _uiState.update { it.copy(error = "Error inesperado. Reintente más tarde.", success = null) }
+            } catch (e: Exception) {
+                Log.e(TAG, "delete failed", e)
+                _uiState.update { it.copy(error = "Error inesperado. Reintente más tarde.", success = null) }
+            }
         }
     }
 
