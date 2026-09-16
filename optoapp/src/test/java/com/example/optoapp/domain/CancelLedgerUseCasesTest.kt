@@ -25,6 +25,12 @@ class CancelLedgerUseCasesTest {
     private val stockHelper = mockk<DispensacionStockHelper>(relaxed = true)
     private val date = LocalDate.of(2026, 8, 14)
 
+    init {
+        coEvery { repository.withTransaction(any<suspend () -> Any?>()) } coAnswers {
+            firstArg<suspend () -> Any?>().invoke()
+        }
+    }
+
     @Test
     fun cancelServicio_insertsLinkedReverso() = runBlocking {
         val credit = Pago(
@@ -34,6 +40,8 @@ class CancelLedgerUseCasesTest {
         coEvery { repository.getServicioById("s1", any()) } returns Resource.Success(
             ServicioExtra(id = "s1", descripcion = "x", montoTotal = 100.0, estado = "Pendiente", fecha = date),
         )
+        coEvery { repository.getServicioExtraItems("s1", any()) } returns emptyList()
+        coEvery { repository.getRegalosByServicioExtraId("s1", any()) } returns emptyList()
         coEvery { pagoDao.getCreditPagosByParent("s1", any()) } returns listOf(credit)
         coEvery { pagoDao.getReversoByOriginalId("p1", any()) } returns null
         val slot = slot<Pago>()
@@ -60,6 +68,8 @@ class CancelLedgerUseCasesTest {
                 fecha = date,
             ),
         )
+        coEvery { repository.getServicioExtraItems("s1", any()) } returns emptyList()
+        coEvery { repository.getRegalosByServicioExtraId("s1", any()) } returns emptyList()
         coEvery { pagoDao.getCreditPagosByParent("s1", any()) } returns emptyList()
         coEvery {
             stockHelper.adjustStockAndRegistrarMovimiento(
@@ -87,10 +97,82 @@ class CancelLedgerUseCasesTest {
     }
 
     @Test
+    fun cancelServicio_withItems_restocks_item_ids_not_header() = runBlocking {
+        coEvery { repository.getServicioById("s1", any()) } returns Resource.Success(
+            ServicioExtra(
+                id = "s1",
+                monturaId = "m-header",
+                descripcion = "Multi",
+                montoTotal = 40.0,
+                estado = "Pendiente",
+                fecha = date,
+            ),
+        )
+        coEvery { repository.getServicioExtraItems("s1", any()) } returns listOf(
+            com.example.optoapp.data.servicio.ServicioExtraItem(
+                id = "item-a",
+                servicioExtraId = "s1",
+                monturaId = "m-a",
+                descripcion = "A",
+                monto = 20.0,
+                opticaId = "o1",
+            ),
+            com.example.optoapp.data.servicio.ServicioExtraItem(
+                id = "item-b",
+                servicioExtraId = "s1",
+                monturaId = "m-b",
+                descripcion = "B",
+                monto = 20.0,
+                opticaId = "o1",
+            ),
+        )
+        coEvery { repository.getRegalosByServicioExtraId("s1", any()) } returns emptyList()
+        coEvery { pagoDao.getCreditPagosByParent("s1", any()) } returns emptyList()
+        coEvery {
+            stockHelper.adjustStockAndRegistrarMovimiento(any(), any(), any(), any(), any(), any())
+        } returns Result.success(1)
+
+        CancelServicioExtraUseCase(repository, pagoDao, scheduler, stockHelper)("s1", "o1")
+
+        coVerify(exactly = 1) {
+            stockHelper.adjustStockAndRegistrarMovimiento(
+                monturaId = "m-a",
+                opticaId = "o1",
+                delta = 1,
+                tipo = "AJUSTE",
+                referenciaId = "item-a",
+                nota = any(),
+            )
+        }
+        coVerify(exactly = 1) {
+            stockHelper.adjustStockAndRegistrarMovimiento(
+                monturaId = "m-b",
+                opticaId = "o1",
+                delta = 1,
+                tipo = "AJUSTE",
+                referenciaId = "item-b",
+                nota = any(),
+            )
+        }
+        coVerify(exactly = 0) {
+            stockHelper.adjustStockAndRegistrarMovimiento(
+                monturaId = "m-header",
+                opticaId = any(),
+                delta = any(),
+                tipo = any(),
+                referenciaId = any(),
+                nota = any(),
+            )
+        }
+    }
+
+    @Test
     fun cancelServicio_withoutMonturaId_skips_restock() = runBlocking {
         coEvery { repository.getServicioById("s1", any()) } returns Resource.Success(
             ServicioExtra(id = "s1", descripcion = "x", montoTotal = 1.0, estado = "Pendiente", fecha = date),
         )
+        coEvery { repository.getServicioExtraItems("s1", any()) } returns emptyList()
+        coEvery { repository.getRegalosByServicioExtraId("s1", any()) } returns emptyList()
         coEvery { pagoDao.getCreditPagosByParent("s1", any()) } returns emptyList()
 
         CancelServicioExtraUseCase(repository, pagoDao, scheduler, stockHelper)("s1", "o1")
@@ -98,6 +180,49 @@ class CancelLedgerUseCasesTest {
         coVerify(exactly = 0) {
             stockHelper.adjustStockAndRegistrarMovimiento(any(), any(), any(), any(), any(), any())
         }
+    }
+
+    @Test
+    fun cancelServicio_stockFailure_does_not_mark_anulado() = runBlocking {
+        coEvery { repository.getServicioById("s1", any()) } returns Resource.Success(
+            ServicioExtra(
+                id = "s1",
+                monturaId = "m-1",
+                descripcion = "x",
+                montoTotal = 20.0,
+                estado = "Pendiente",
+                fecha = date,
+            ),
+        )
+        coEvery { repository.getServicioExtraItems("s1", any()) } returns listOf(
+            com.example.optoapp.data.servicio.ServicioExtraItem(
+                id = "item-1",
+                servicioExtraId = "s1",
+                monturaId = "m-1",
+                descripcion = "x",
+                monto = 20.0,
+                opticaId = "o1",
+            ),
+        )
+        coEvery { repository.getRegalosByServicioExtraId("s1", any()) } returns emptyList()
+        coEvery { pagoDao.getCreditPagosByParent("s1", any()) } returns emptyList()
+        coEvery {
+            stockHelper.adjustStockAndRegistrarMovimiento(
+                monturaId = "m-1",
+                opticaId = "o1",
+                delta = 1,
+                tipo = "AJUSTE",
+                referenciaId = "item-1",
+                nota = any(),
+            )
+        } returns Result.failure(IllegalStateException("restock failed"))
+
+        try {
+            CancelServicioExtraUseCase(repository, pagoDao, scheduler, stockHelper)("s1", "o1")
+        } catch (_: IllegalStateException) {
+        }
+
+        coVerify(exactly = 0) { repository.updateServicio(match { it.estado == "Anulado" }) }
     }
 
     @Test

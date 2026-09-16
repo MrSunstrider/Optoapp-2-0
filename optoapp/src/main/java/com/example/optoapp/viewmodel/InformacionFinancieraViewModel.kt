@@ -16,6 +16,7 @@ import com.example.optoapp.domain.PagoEffect
 import com.example.optoapp.domain.movimientoReferenciaForRegalo
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import com.example.optoapp.util.DispensacionStockHelper
+import com.example.optoapp.util.MontoDraftFormatting
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -93,7 +94,7 @@ class InformacionFinancieraViewModel @Inject constructor(
                             isLoading = false,
                             loadFailed = false,
                             contexto = contexto,
-                            montoTotal = d.montoTotal.toString(),
+                            montoTotal = MontoDraftFormatting.formatDraft(d.montoTotal),
                             pagos = pagos,
                             regalos = regalosUi,
                             estadoEntrega = d.estadoEntrega,

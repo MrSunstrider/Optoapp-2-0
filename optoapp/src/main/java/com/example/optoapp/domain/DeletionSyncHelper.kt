@@ -23,6 +23,8 @@ class DeletionSyncHelper @Inject constructor(
         private const val TABLE_SERVICIOS = "servicios_extra"
         private const val TABLE_GASTOS_OPERATIVOS = "gastos_operativos"
         private const val TABLE_DISPENSACION_ITEMS = "dispensacion_items"
+        private const val TABLE_SERVICIO_EXTRA_ITEMS = "servicio_extra_items"
+        private const val TABLE_REGALOS_SERVICIO = "regalos_servicio_extra"
     }
 
     suspend fun pushPendingDeletions(opticaId: String) {
@@ -36,6 +38,8 @@ class DeletionSyncHelper @Inject constructor(
                 "pago" -> TABLE_PAGOS
                 "gasto_operativo" -> TABLE_GASTOS_OPERATIVOS
                 "dispensacion_item" -> TABLE_DISPENSACION_ITEMS
+                "servicio_extra_item" -> TABLE_SERVICIO_EXTRA_ITEMS
+                "regalo_servicio_extra" -> TABLE_REGALOS_SERVICIO
                 else -> null
             }
             if (table == null) {

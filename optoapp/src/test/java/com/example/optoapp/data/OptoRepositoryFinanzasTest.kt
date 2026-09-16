@@ -86,6 +86,8 @@ class OptoRepositoryFinanzasTest {
             dispensacionRepo,
             syncRepo,
             regaloDispensacionDao,
+            db.servicioExtraItemDao(),
+            db.regaloServicioExtraDao(),
         )
         val backupCoordinator = com.example.optoapp.data.backup.BackupRestoreCoordinator(
             pacienteRepo,

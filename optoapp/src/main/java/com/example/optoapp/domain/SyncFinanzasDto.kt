@@ -270,6 +270,75 @@ fun RegaloDispensacionEntity.toRemoto(): RegaloDispensacionRemota = RegaloDispen
 )
 
 @Serializable
+data class ServicioExtraItemRemota(
+    val id: String,
+    @SerialName("servicio_extra_id") val servicioExtraId: String,
+    @SerialName("montura_id") val monturaId: String? = null,
+    val descripcion: String = "",
+    val monto: Double = 0.0,
+    @SerialName("optica_id") val opticaId: String,
+    @SerialName("updated_at") val updatedAt: String? = null,
+    @SerialName("updated_by") val updatedBy: String? = null,
+) {
+    fun toEntity() = com.example.optoapp.data.servicio.ServicioExtraItem(
+        id = id,
+        servicioExtraId = servicioExtraId,
+        monturaId = monturaId,
+        descripcion = descripcion,
+        monto = monto,
+        opticaId = opticaId,
+        updatedAt = updatedAt,
+        updatedBy = updatedBy,
+    )
+}
+
+fun com.example.optoapp.data.servicio.ServicioExtraItem.toRemoto(): ServicioExtraItemRemota = ServicioExtraItemRemota(
+    id = id,
+    servicioExtraId = servicioExtraId,
+    monturaId = monturaId,
+    descripcion = descripcion,
+    monto = monto,
+    opticaId = opticaId,
+    updatedAt = updatedAt,
+    updatedBy = updatedBy,
+)
+
+@Serializable
+data class RegaloServicioExtraRemota(
+    val id: String,
+    @SerialName("servicio_extra_id") val servicioExtraId: String,
+    @SerialName("producto_id") val productoId: String,
+    val cantidad: Int,
+    @SerialName("costo_unitario") val costoUnitario: Double,
+    val descripcion: String = "",
+    val motivo: String = "",
+    @SerialName("optica_id") val opticaId: String,
+) {
+    fun toEntity() = com.example.optoapp.data.regaloservicio.RegaloServicioExtraEntity(
+        id = id,
+        servicioExtraId = servicioExtraId,
+        productoId = productoId,
+        cantidad = cantidad,
+        costoUnitario = costoUnitario,
+        descripcion = descripcion,
+        motivo = motivo,
+        opticaId = opticaId,
+    )
+}
+
+fun com.example.optoapp.data.regaloservicio.RegaloServicioExtraEntity.toRemoto(): RegaloServicioExtraRemota =
+    RegaloServicioExtraRemota(
+        id = id,
+        servicioExtraId = servicioExtraId,
+        productoId = productoId,
+        cantidad = cantidad,
+        costoUnitario = costoUnitario,
+        descripcion = descripcion,
+        motivo = motivo,
+        opticaId = opticaId,
+    )
+
+@Serializable
 data class ResumenDiarioRemoto(
     val id: String,
     @SerialName("optica_id") val opticaId: String,

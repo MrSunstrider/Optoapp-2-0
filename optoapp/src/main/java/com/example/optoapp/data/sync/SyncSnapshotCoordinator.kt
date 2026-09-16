@@ -16,6 +16,10 @@ import com.example.optoapp.data.montura.MonturaDao
 import com.example.optoapp.data.montura.MonturaMovimientoDao
 import com.example.optoapp.data.regalodispensacion.RegaloDispensacionDao
 import com.example.optoapp.data.regalodispensacion.RegaloDispensacionEntity
+import com.example.optoapp.data.regaloservicio.RegaloServicioExtraDao
+import com.example.optoapp.data.regaloservicio.RegaloServicioExtraEntity
+import com.example.optoapp.data.servicio.ServicioExtraItem
+import com.example.optoapp.data.servicio.ServicioExtraItemDao
 import javax.inject.Inject
 
 class SyncSnapshotCoordinator @Inject constructor(
@@ -26,6 +30,8 @@ class SyncSnapshotCoordinator @Inject constructor(
     private val dispensacionRepo: DispensacionRepository,
     private val syncRepo: SyncRepository,
     private val regaloDispensacionDao: RegaloDispensacionDao,
+    private val servicioExtraItemDao: ServicioExtraItemDao,
+    private val regaloServicioExtraDao: RegaloServicioExtraDao,
 ) {
     suspend fun upsertPaciente(paciente: Paciente) = pacienteDao.insertPaciente(paciente)
 
@@ -48,6 +54,12 @@ class SyncSnapshotCoordinator @Inject constructor(
     suspend fun getServiciosSnapshotForOptica(opticaId: String): List<ServicioExtra> = dispensacionRepo.getServiciosSnapshotForOptica(opticaId)
 
     suspend fun getRegalosSnapshotForOptica(opticaId: String): List<RegaloDispensacionEntity> = regaloDispensacionDao.getByOpticaId(opticaId)
+
+    suspend fun getServicioExtraItemsSnapshotForOptica(opticaId: String): List<ServicioExtraItem> =
+        servicioExtraItemDao.getByOpticaId(opticaId)
+
+    suspend fun getRegalosServicioExtraSnapshotForOptica(opticaId: String): List<RegaloServicioExtraEntity> =
+        regaloServicioExtraDao.getByOpticaId(opticaId)
 
     suspend fun getMonturasSnapshotForOptica(opticaId: String): List<Montura> = syncRepo.getMonturasSnapshotForOptica(opticaId)
 

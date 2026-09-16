@@ -123,7 +123,7 @@ class InformacionFinancieraViewModelTest {
         val state = vm.uiState.value
         assertEquals("OT-2026-0001", state.contexto?.ot)
         assertEquals("Juan Perez", state.contexto?.pacienteNombre)
-        assertEquals("150.0", state.montoTotal)
+        assertEquals("150", state.montoTotal)
         assertEquals("Pendiente", state.estadoEntrega)
     }
 

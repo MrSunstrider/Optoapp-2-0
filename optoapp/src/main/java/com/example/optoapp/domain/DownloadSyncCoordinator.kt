@@ -40,6 +40,8 @@ class DownloadSyncCoordinator @Inject constructor(
         private const val TABLE_RESUMEN_DIARIO = "resumen_diario"
         private const val TABLE_CONFIGURACION_FINANCIERA = "configuracion_financiera"
         private const val TABLE_REGALOS = "regalos_dispensacion"
+        private const val TABLE_SERVICIO_EXTRA_ITEMS = "servicio_extra_items"
+        private const val TABLE_REGALOS_SERVICIO = "regalos_servicio_extra"
         private const val TABLE_GASTOS_OPERATIVOS = "gastos_operativos"
         private const val TABLE_COSTOS_PRODUCTOS = "costos_productos"
         private const val TABLE_COSTOS_BISELADO = "costos_biselado"
@@ -148,6 +150,26 @@ class DownloadSyncCoordinator @Inject constructor(
         getId = { it.id },
     ) { r ->
         repository.upsertRegaloFromRemote(r.toEntity())
+    }
+
+    suspend fun downloadServicioExtraItems(opticaId: String): Int = downloadTable<ServicioExtraItemRemota>(
+        opticaId,
+        TABLE_SERVICIO_EXTRA_ITEMS,
+        "servicio_extra_item",
+        skipDeletions = true,
+        getId = { it.id },
+    ) { r ->
+        repository.upsertServicioExtraItemFromRemote(r.toEntity())
+    }
+
+    suspend fun downloadRegalosServicioExtra(opticaId: String): Int = downloadTable<RegaloServicioExtraRemota>(
+        opticaId,
+        TABLE_REGALOS_SERVICIO,
+        "regalo_servicio_extra",
+        skipDeletions = true,
+        getId = { it.id },
+    ) { r ->
+        repository.upsertRegaloServicioExtraFromRemote(r.toEntity())
     }
 
     suspend fun downloadResumenDiario(opticaId: String): Int = try {

@@ -1405,6 +1405,78 @@ val MIGRATION_52_53 = object : Migration(52, 53) {
     }
 }
 
+val MIGRATION_53_54 = object : Migration(53, 54) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS servicio_extra_items (
+                id TEXT NOT NULL PRIMARY KEY,
+                servicio_extra_id TEXT NOT NULL,
+                montura_id TEXT,
+                descripcion TEXT NOT NULL,
+                monto REAL NOT NULL,
+                optica_id TEXT NOT NULL,
+                updated_at TEXT,
+                updated_by TEXT,
+                FOREIGN KEY(servicio_extra_id) REFERENCES servicios_extra(id) ON DELETE CASCADE
+            )
+            """.trimIndent(),
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS index_servicio_extra_items_servicio_extra_id " +
+                "ON servicio_extra_items(servicio_extra_id)",
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS index_servicio_extra_items_optica_id " +
+                "ON servicio_extra_items(optica_id)",
+        )
+
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS regalos_servicio_extra (
+                id TEXT NOT NULL PRIMARY KEY,
+                servicio_extra_id TEXT NOT NULL,
+                producto_id TEXT NOT NULL,
+                cantidad INTEGER NOT NULL,
+                costo_unitario REAL NOT NULL,
+                descripcion TEXT NOT NULL,
+                motivo TEXT NOT NULL,
+                optica_id TEXT NOT NULL,
+                FOREIGN KEY(servicio_extra_id) REFERENCES servicios_extra(id) ON DELETE CASCADE
+            )
+            """.trimIndent(),
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS index_regalos_servicio_extra_servicio_extra_id " +
+                "ON regalos_servicio_extra(servicio_extra_id)",
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS index_regalos_servicio_extra_optica_id " +
+                "ON regalos_servicio_extra(optica_id)",
+        )
+
+        // Legacy stock used referenciaId = servicio.id; keep item.id = servicio.id when montura linked.
+        db.execSQL(
+            """
+            INSERT INTO servicio_extra_items (id, servicio_extra_id, montura_id, descripcion, monto, optica_id, updated_at, updated_by)
+            SELECT
+                CASE
+                    WHEN monturaId IS NOT NULL AND TRIM(monturaId) != '' THEN id
+                    ELSE id || ':item'
+                END,
+                id,
+                NULLIF(TRIM(COALESCE(monturaId, '')), ''),
+                descripcion,
+                montoTotal,
+                opticaId,
+                updatedAt,
+                updatedBy
+            FROM servicios_extra
+            """.trimIndent(),
+        )
+    }
+}
+
 /** Shared Room backfill: fill null/blank/whitespace updatedAt with LWW-safe sentinel (not wall-clock). */
 internal fun stampNullOrBlankUpdatedAtSql(table: String): String =
     """

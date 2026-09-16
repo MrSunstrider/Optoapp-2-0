@@ -20,6 +20,7 @@ import com.example.optoapp.domain.movimientoReferenciaForRegalo
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import com.example.optoapp.util.DateUtils
 import com.example.optoapp.util.DispensacionStockHelper
+import com.example.optoapp.util.MontoDraftFormatting
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -235,7 +236,7 @@ class DispensacionViewModel @Inject constructor(
                             materialMontura = d.materialMontura,
                             descripcionMontura = d.descripcionMontura,
                             tipoMontura = d.tipoMontura,
-                            montoTotal = d.montoTotal.toString(),
+                            montoTotal = MontoDraftFormatting.formatDraft(d.montoTotal),
                             estadoEntrega = d.estadoEntrega,
                             fechaEntrega = d.fechaEntrega,
                             fecha = d.fecha,

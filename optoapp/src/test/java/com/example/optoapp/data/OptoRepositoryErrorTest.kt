@@ -76,6 +76,8 @@ class OptoRepositoryErrorTest {
             dispensacionRepo,
             syncRepo,
             regaloDispensacionDao,
+            database.servicioExtraItemDao(),
+            database.regaloServicioExtraDao(),
         )
         val backupCoordinator = mockk<BackupRestoreCoordinator>(relaxed = true)
         val monturaCoordinator = MonturaInventoryCoordinator(

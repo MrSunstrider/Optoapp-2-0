@@ -62,6 +62,12 @@ open class SyncFinanzasUseCase @Inject constructor(
             val r3 = safeUpload("servicios_extra") { uploadSyncCoordinator.uploadServicios(opticaId) }
             servUp = r3.count; hadPartialUpload = hadPartialUpload || r3.partial
             AppLogger.d(TAG, "Finanzas: upload servicios_extra=$servUp")
+            val r3b = safeUpload("servicio_extra_items") { uploadSyncCoordinator.uploadServicioExtraItems(opticaId) }
+            AppLogger.d(TAG, "Finanzas: upload servicio_extra_items=${r3b.count}")
+            hadPartialUpload = hadPartialUpload || r3b.partial
+            val r3c = safeUpload("regalos_servicio_extra") { uploadSyncCoordinator.uploadRegalosServicioExtra(opticaId) }
+            AppLogger.d(TAG, "Finanzas: upload regalos_servicio_extra=${r3c.count}")
+            hadPartialUpload = hadPartialUpload || r3c.partial
             val r4 = safeUpload("costos_productos") { uploadSyncCoordinator.uploadCostosProductos(opticaId) }
             costosUp = r4.count; hadPartialUpload = hadPartialUpload || r4.partial
             AppLogger.d(TAG, "Finanzas: upload costos_productos=$costosUp")
@@ -96,6 +102,8 @@ open class SyncFinanzasUseCase @Inject constructor(
             AppLogger.d(TAG, "Finanzas: download dispensacion_items=$itemsDown")
             servDown = safeDownload("servicios_extra") { downloadSyncCoordinator.downloadServicios(opticaId) }
             AppLogger.d(TAG, "Finanzas: download servicios_extra=$servDown")
+            safeDownload("servicio_extra_items") { downloadSyncCoordinator.downloadServicioExtraItems(opticaId) }
+            safeDownload("regalos_servicio_extra") { downloadSyncCoordinator.downloadRegalosServicioExtra(opticaId) }
             resumenDown = safeDownload("resumen_diario") { downloadSyncCoordinator.downloadResumenDiario(opticaId) }
             AppLogger.d(TAG, "Finanzas: download resumen_diario=$resumenDown")
             configDown = safeDownload("configuracion_financiera") { downloadSyncCoordinator.downloadConfiguracionFinanciera(opticaId) }

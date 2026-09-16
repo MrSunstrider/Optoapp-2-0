@@ -37,6 +37,8 @@ open class UploadSyncCoordinator @Inject constructor(
         private const val TABLE_SERVICIOS = "servicios_extra"
         private const val TABLE_GASTOS_OPERATIVOS = "gastos_operativos"
         private const val TABLE_REGALOS = "regalos_dispensacion"
+        private const val TABLE_SERVICIO_EXTRA_ITEMS = "servicio_extra_items"
+        private const val TABLE_REGALOS_SERVICIO = "regalos_servicio_extra"
         private const val TABLE_COSTOS_PRODUCTOS = "costos_productos"
         private const val TABLE_COSTOS_BISELADO = "costos_biselado"
         private const val UPSERT_BATCH_SIZE = 80
@@ -565,6 +567,44 @@ open class UploadSyncCoordinator @Inject constructor(
             rows,
             { it.id },
         ) { supabase.postgrest[TABLE_REGALOS].upsert(it) }
+    }
+
+    suspend fun uploadServicioExtraItems(opticaId: String): Int {
+        val items = repository.getServicioExtraItemsSnapshotForOptica(opticaId)
+        if (items.isEmpty()) {
+            syncStateTracker.markSynced(opticaId, "upload_servicio_extra_items", "batch")
+            return 0
+        }
+        require(opticaId.isNotBlank()) { "opticaId must not be blank for upload" }
+        val opticaRemota = opticaId.trim()
+        val rows = items.map { it.toRemoto().copy(opticaId = opticaRemota) }.distinctBy { it.id }
+        return executeSimpleUpsert(
+            opticaId,
+            TABLE_SERVICIO_EXTRA_ITEMS,
+            "servicio_extra_item",
+            "upload_servicio_extra_items",
+            rows,
+            { it.id },
+        ) { supabase.postgrest[TABLE_SERVICIO_EXTRA_ITEMS].upsert(it) }
+    }
+
+    suspend fun uploadRegalosServicioExtra(opticaId: String): Int {
+        val regalos = repository.getRegalosServicioExtraSnapshotForOptica(opticaId)
+        if (regalos.isEmpty()) {
+            syncStateTracker.markSynced(opticaId, "upload_regalos_servicio_extra", "batch")
+            return 0
+        }
+        require(opticaId.isNotBlank()) { "opticaId must not be blank for upload" }
+        val opticaRemota = opticaId.trim()
+        val rows = regalos.map { it.toRemoto().copy(opticaId = opticaRemota) }.distinctBy { it.id }
+        return executeSimpleUpsert(
+            opticaId,
+            TABLE_REGALOS_SERVICIO,
+            "regalo_servicio_extra",
+            "upload_regalos_servicio_extra",
+            rows,
+            { it.id },
+        ) { supabase.postgrest[TABLE_REGALOS_SERVICIO].upsert(it) }
     }
 
     suspend fun uploadCostosProductos(opticaId: String): Int {

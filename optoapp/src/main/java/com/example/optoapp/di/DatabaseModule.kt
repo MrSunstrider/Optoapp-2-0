@@ -23,6 +23,8 @@ import com.example.optoapp.data.proveedor.CategoriaMonturaDao
 import com.example.optoapp.data.proveedor.MonturaProveedorDao
 import com.example.optoapp.data.proveedor.ProveedorDao
 import com.example.optoapp.data.regalodispensacion.RegaloDispensacionDao
+import com.example.optoapp.data.regaloservicio.RegaloServicioExtraDao
+import com.example.optoapp.data.servicio.ServicioExtraItemDao
 import com.example.optoapp.data.resumendiario.ResumenDiarioDao
 import com.example.optoapp.data.servicio.ServicioExtraDao
 import com.example.optoapp.data.sync.SyncSnapshotCoordinator
@@ -136,6 +138,12 @@ object DatabaseModule {
     fun provideRegaloDispensacionDao(database: OptoDatabase): RegaloDispensacionDao = database.regaloDispensacionDao()
 
     @Provides
+    fun provideServicioExtraItemDao(database: OptoDatabase): ServicioExtraItemDao = database.servicioExtraItemDao()
+
+    @Provides
+    fun provideRegaloServicioExtraDao(database: OptoDatabase): RegaloServicioExtraDao = database.regaloServicioExtraDao()
+
+    @Provides
     fun provideOpticaSettingsDao(database: OptoDatabase): OpticaSettingsDao = database.opticaSettingsDao()
 
     @Provides
@@ -184,6 +192,8 @@ object DatabaseModule {
         dispensacionRepo: DispensacionRepository,
         syncRepo: SyncRepository,
         regaloDispensacionDao: RegaloDispensacionDao,
+        servicioExtraItemDao: ServicioExtraItemDao,
+        regaloServicioExtraDao: RegaloServicioExtraDao,
     ): SyncSnapshotCoordinator = SyncSnapshotCoordinator(
         pacienteDao,
         monturaDao,
@@ -192,6 +202,8 @@ object DatabaseModule {
         dispensacionRepo,
         syncRepo,
         regaloDispensacionDao,
+        servicioExtraItemDao,
+        regaloServicioExtraDao,
     )
 
     @Provides

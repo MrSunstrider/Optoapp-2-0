@@ -32,6 +32,16 @@ class SyncFinanzasUseCaseKtTest {
         every { Log.e(any(), any<String>(), any()) } returns 0
     }
 
+    private fun stubServicioExtraChildUploads(uploadCoordinator: UploadSyncCoordinator) {
+        coEvery { uploadCoordinator.uploadServicioExtraItems(any()) } returns 0
+        coEvery { uploadCoordinator.uploadRegalosServicioExtra(any()) } returns 0
+    }
+
+    private fun stubServicioExtraChildDownloads(downloadCoordinator: DownloadSyncCoordinator) {
+        coEvery { downloadCoordinator.downloadServicioExtraItems(any()) } returns 0
+        coEvery { downloadCoordinator.downloadRegalosServicioExtra(any()) } returns 0
+    }
+
     private fun makeServicioRemoto(
         id: String = "test-servicio-id",
         ot: String = "",
@@ -109,6 +119,7 @@ class SyncFinanzasUseCaseKtTest {
         coEvery { downloadCoordinator.downloadDispensaciones(any()) } returns 0
         coEvery { downloadCoordinator.downloadDispensacionItems(any()) } returns 0
         coEvery { downloadCoordinator.downloadServicios(any()) } returns 0
+        stubServicioExtraChildDownloads(downloadCoordinator)
         coEvery { downloadCoordinator.downloadPagos(any()) } returns 0
         coEvery { downloadCoordinator.downloadResumenDiario(any()) } returns 0
         coEvery { downloadCoordinator.downloadConfiguracionFinanciera(any()) } returns 0
@@ -144,6 +155,7 @@ class SyncFinanzasUseCaseKtTest {
         coEvery { downloadCoordinator.downloadDispensaciones(any()) } returns 0
         coEvery { downloadCoordinator.downloadDispensacionItems(any()) } returns 0
         coEvery { downloadCoordinator.downloadServicios(any()) } returns 0
+        stubServicioExtraChildDownloads(downloadCoordinator)
         coEvery { downloadCoordinator.downloadPagos(any()) } returns 0
         coEvery { downloadCoordinator.downloadResumenDiario(any()) } returns 2
         coEvery { downloadCoordinator.downloadConfiguracionFinanciera(any()) } returns 1
@@ -178,6 +190,7 @@ class SyncFinanzasUseCaseKtTest {
         coEvery { downloadCoordinator.downloadDispensaciones(any()) } returns 0
         coEvery { downloadCoordinator.downloadDispensacionItems(any()) } returns 0
         coEvery { downloadCoordinator.downloadServicios(any()) } returns 0
+        stubServicioExtraChildDownloads(downloadCoordinator)
         coEvery { downloadCoordinator.downloadResumenDiario(any()) } returns 2
         coEvery { downloadCoordinator.downloadConfiguracionFinanciera(any()) } returns 1
         coEvery { downloadCoordinator.downloadCostosProductos(any()) } returns 0
@@ -199,6 +212,41 @@ class SyncFinanzasUseCaseKtTest {
     }
 
     @Test
+    fun syncFinanzas_upload_order_places_servicio_children_after_header() = runBlocking {
+        val uploadCoordinator = mockk<UploadSyncCoordinator>()
+        val downloadCoordinator = mockk<DownloadSyncCoordinator>(relaxed = true)
+        val deletionSyncHelper = mockk<DeletionSyncHelper>()
+        val networkRetryHelper = mockk<NetworkRetryHelper>()
+
+        coEvery { deletionSyncHelper.pushPendingDeletions(any()) } just Runs
+        coEvery { uploadCoordinator.uploadDispensaciones(any()) } returns 0
+        coEvery { uploadCoordinator.uploadDispensacionItems(any()) } returns 0
+        coEvery { uploadCoordinator.uploadServicios(any()) } returns 1
+        stubServicioExtraChildUploads(uploadCoordinator)
+        coEvery { uploadCoordinator.uploadCostosProductos(any()) } returns 0
+        coEvery { uploadCoordinator.uploadCostosBiselado(any()) } returns 0
+        coEvery { uploadCoordinator.uploadPagos(any()) } returns 0
+        coEvery { uploadCoordinator.uploadGastosOperativos(any()) } returns 0
+        coEvery { uploadCoordinator.uploadRegalos(any()) } returns 0
+
+        val useCase = SyncFinanzasUseCase(
+            deletionSyncHelper = deletionSyncHelper,
+            uploadSyncCoordinator = uploadCoordinator,
+            downloadSyncCoordinator = downloadCoordinator,
+            networkRetryHelper = networkRetryHelper,
+        )
+
+        useCase("optica-test")
+
+        coVerifyOrder {
+            uploadCoordinator.uploadServicios("optica-test")
+            uploadCoordinator.uploadServicioExtraItems("optica-test")
+            uploadCoordinator.uploadRegalosServicioExtra("optica-test")
+            uploadCoordinator.uploadCostosProductos("optica-test")
+        }
+    }
+
+    @Test
     fun syncFinanzas_download_sequence_includes_finanzas_entities() = runBlocking {
         val uploadCoordinator = mockk<UploadSyncCoordinator>()
         val downloadCoordinator = mockk<DownloadSyncCoordinator>()
@@ -209,11 +257,13 @@ class SyncFinanzasUseCaseKtTest {
         coEvery { uploadCoordinator.uploadDispensaciones(any()) } returns 0
         coEvery { uploadCoordinator.uploadDispensacionItems(any()) } returns 0
         coEvery { uploadCoordinator.uploadServicios(any()) } returns 0
+        stubServicioExtraChildUploads(uploadCoordinator)
         coEvery { uploadCoordinator.uploadPagos(any()) } returns 0
         coEvery { uploadCoordinator.uploadGastosOperativos(any()) } returns 0
         coEvery { downloadCoordinator.downloadDispensaciones(any()) } returns 0
         coEvery { downloadCoordinator.downloadDispensacionItems(any()) } returns 0
         coEvery { downloadCoordinator.downloadServicios(any()) } returns 0
+        stubServicioExtraChildDownloads(downloadCoordinator)
         coEvery { downloadCoordinator.downloadResumenDiario(any()) } returns 2
         coEvery { downloadCoordinator.downloadConfiguracionFinanciera(any()) } returns 1
         coEvery { downloadCoordinator.downloadCostosProductos(any()) } returns 0
@@ -235,6 +285,9 @@ class SyncFinanzasUseCaseKtTest {
         useCase("optica-test")
 
         coVerifyOrder {
+            downloadCoordinator.downloadServicios("optica-test")
+            downloadCoordinator.downloadServicioExtraItems("optica-test")
+            downloadCoordinator.downloadRegalosServicioExtra("optica-test")
             downloadCoordinator.downloadResumenDiario("optica-test")
             downloadCoordinator.downloadConfiguracionFinanciera("optica-test")
             downloadCoordinator.downloadCostosProductos("optica-test")
@@ -314,6 +367,7 @@ class SyncFinanzasUseCaseKtTest {
         coEvery { downloadCoordinator.downloadDispensaciones(any()) } returns 0
         coEvery { downloadCoordinator.downloadDispensacionItems(any()) } returns 0
         coEvery { downloadCoordinator.downloadServicios(any()) } returns 0
+        stubServicioExtraChildDownloads(downloadCoordinator)
         coEvery { downloadCoordinator.downloadPagos(any()) } returns 0
         coEvery { downloadCoordinator.downloadResumenDiario(any()) } returns 0
         coEvery { downloadCoordinator.downloadConfiguracionFinanciera(any()) } returns 0
@@ -362,6 +416,7 @@ class SyncFinanzasUseCaseKtTest {
         coEvery { downloadCoordinator.downloadDispensaciones(any()) } returns 0
         coEvery { downloadCoordinator.downloadDispensacionItems(any()) } returns 0
         coEvery { downloadCoordinator.downloadServicios(any()) } returns 0
+        stubServicioExtraChildDownloads(downloadCoordinator)
         coEvery { downloadCoordinator.downloadCostosProductos(any()) } returns 0
         coEvery { downloadCoordinator.downloadCostosBiselado(any()) } returns 0
         coEvery { downloadCoordinator.downloadPagos(any()) } returns 0
@@ -402,6 +457,7 @@ class SyncFinanzasUseCaseKtTest {
         coEvery { downloadCoordinator.downloadDispensaciones(any()) } returns 0
         coEvery { downloadCoordinator.downloadDispensacionItems(any()) } returns 0
         coEvery { downloadCoordinator.downloadServicios(any()) } returns 0
+        stubServicioExtraChildDownloads(downloadCoordinator)
         coEvery { downloadCoordinator.downloadResumenDiario(any()) } returns 0
         coEvery { downloadCoordinator.downloadConfiguracionFinanciera(any()) } returns 0
         coEvery { downloadCoordinator.downloadCostosProductos(any()) } returns 0
@@ -466,6 +522,7 @@ class SyncFinanzasUseCaseKtTest {
         coEvery { downloadCoordinator.downloadDispensaciones(any()) } returns 0
         coEvery { downloadCoordinator.downloadDispensacionItems(any()) } returns 0
         coEvery { downloadCoordinator.downloadServicios(any()) } returns 0
+        stubServicioExtraChildDownloads(downloadCoordinator)
         coEvery { downloadCoordinator.downloadCostosProductos(any()) } returns 0
         coEvery { downloadCoordinator.downloadCostosBiselado(any()) } returns 0
         coEvery { downloadCoordinator.downloadPagos(any()) } returns 0
@@ -498,6 +555,7 @@ class SyncFinanzasUseCaseKtTest {
         coEvery { downloadCoordinator.downloadDispensaciones(any()) } returns 0
         coEvery { downloadCoordinator.downloadDispensacionItems(any()) } returns 0
         coEvery { downloadCoordinator.downloadServicios(any()) } returns 0
+        stubServicioExtraChildDownloads(downloadCoordinator)
         coEvery { downloadCoordinator.downloadCostosProductos(any()) } returns 0
         coEvery { downloadCoordinator.downloadCostosBiselado(any()) } returns 0
         coEvery { downloadCoordinator.downloadPagos(any()) } returns 0

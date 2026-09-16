@@ -7,6 +7,8 @@ import com.example.optoapp.data.gastooperativo.GastoOperativoDao
 import com.example.optoapp.data.gastooperativo.GastoOperativoEntity
 import com.example.optoapp.data.montura.MonturaInventoryCoordinator
 import com.example.optoapp.data.regalodispensacion.RegaloDispensacionEntity
+import com.example.optoapp.data.regaloservicio.RegaloServicioExtraEntity
+import com.example.optoapp.data.servicio.ServicioExtraItem
 import com.example.optoapp.data.sync.SyncSnapshotCoordinator
 import dagger.Lazy
 import io.github.jan.supabase.SupabaseClient
@@ -251,6 +253,10 @@ open class OptoRepository(
     suspend fun getMonturasSnapshotForOptica(opticaId: String) = snapshotCoordinator.getMonturasSnapshotForOptica(opticaId)
     suspend fun getMovimientosMonturaSnapshotForOptica(opticaId: String) = snapshotCoordinator.getMovimientosMonturaSnapshotForOptica(opticaId)
     suspend fun getRegalosSnapshotForOptica(opticaId: String) = snapshotCoordinator.getRegalosSnapshotForOptica(opticaId)
+    suspend fun getServicioExtraItemsSnapshotForOptica(opticaId: String) =
+        snapshotCoordinator.getServicioExtraItemsSnapshotForOptica(opticaId)
+    suspend fun getRegalosServicioExtraSnapshotForOptica(opticaId: String) =
+        snapshotCoordinator.getRegalosServicioExtraSnapshotForOptica(opticaId)
 
     suspend fun getPendingDeletions(opticaId: String) = syncRepo.getPendingDeletions(opticaId)
     suspend fun clearDeletionState(opticaId: String, type: String, id: String) = syncRepo.clearDeletionState(opticaId, type, id)
@@ -325,6 +331,40 @@ open class OptoRepository(
     suspend fun deleteRegaloById(id: String, opticaId: String) = database.regaloDispensacionDao().deleteById(id, opticaId)
 
     suspend fun deleteRegalosByDispensacionId(dispId: String, opticaId: String) = database.regaloDispensacionDao().deleteByDispensacionId(dispId, opticaId)
+
+    suspend fun getServicioExtraItems(servicioId: String, opticaId: String) =
+        database.servicioExtraItemDao().getByServicioId(servicioId, opticaId)
+
+    suspend fun insertServicioExtraItem(item: ServicioExtraItem) =
+        database.servicioExtraItemDao().insert(item)
+
+    suspend fun upsertServicioExtraItemFromRemote(item: ServicioExtraItem) =
+        database.servicioExtraItemDao().upsert(item)
+
+    suspend fun deleteServicioExtraItemById(id: String, opticaId: String) {
+        database.servicioExtraItemDao().deleteById(id, opticaId)
+        syncStateTracker.markDeleted(opticaId, "servicio_extra_item", id)
+    }
+
+    suspend fun deleteServicioExtraItemsByServicioId(servicioId: String, opticaId: String) =
+        database.servicioExtraItemDao().deleteByServicioId(servicioId, opticaId)
+
+    suspend fun getRegalosByServicioExtraId(servicioId: String, opticaId: String) =
+        database.regaloServicioExtraDao().getByServicioId(servicioId, opticaId)
+
+    suspend fun insertRegaloServicioExtra(regalo: RegaloServicioExtraEntity) =
+        database.regaloServicioExtraDao().insert(regalo)
+
+    suspend fun upsertRegaloServicioExtraFromRemote(regalo: RegaloServicioExtraEntity) =
+        database.regaloServicioExtraDao().upsert(regalo)
+
+    suspend fun deleteRegaloServicioExtraById(id: String, opticaId: String) {
+        database.regaloServicioExtraDao().deleteById(id, opticaId)
+        syncStateTracker.markDeleted(opticaId, "regalo_servicio_extra", id)
+    }
+
+    suspend fun deleteRegalosByServicioExtraId(servicioId: String, opticaId: String) =
+        database.regaloServicioExtraDao().deleteByServicioId(servicioId, opticaId)
 }
 
 data class DuplicateHoResolutionResult(

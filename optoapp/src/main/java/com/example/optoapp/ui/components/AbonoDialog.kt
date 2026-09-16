@@ -23,6 +23,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.example.optoapp.data.Pago
 import com.example.optoapp.util.DateUtils
+import com.example.optoapp.util.MontoDraftFormatting
 import java.time.LocalDate
 import java.util.UUID
 
@@ -40,7 +41,9 @@ fun AbonoDialog(
     // and leak state from a previous dismissed dialog. Generate a stable per-invocation key.
     val dialogKey = remember { pago?.id ?: UUID.randomUUID().toString() }
 
-    var monto by remember(dialogKey) { mutableStateOf(pago?.monto?.toString() ?: "") }
+    var monto by remember(dialogKey) {
+        mutableStateOf(pago?.monto?.let { MontoDraftFormatting.formatDraft(it) }.orEmpty())
+    }
     var metodo by remember(dialogKey) { mutableStateOf(pago?.metodoPago ?: "Efectivo") }
     var nota by remember(dialogKey) { mutableStateOf(pago?.nota ?: "") }
     var fechaAbono by remember(dialogKey) { mutableStateOf(pago?.fecha ?: defaultFecha) }

@@ -60,6 +60,9 @@ class ServiciosViewModelPagoValidationTest {
         every { sessionManager.userTimeZone } returns flowOf(null)
         every { repository.getAllServiciosForOptica(any()) } returns flowOf(emptyList())
         every { repository.getAllPagosFlowForOptica(any()) } returns flowOf(emptyList())
+        every { repository.pacientesFlowForOptica(any()) } returns flowOf(emptyList())
+        every { repository.getMonturasByOptica(any()) } returns flowOf(emptyList())
+        coEvery { repository.reassignLegacyMiOpticaBaseTo(any()) } returns Unit
         coEvery { repository.withTransaction(any<suspend () -> Any>()) } coAnswers {
             firstArg<suspend () -> Any>()()
         }
@@ -95,8 +98,12 @@ class ServiciosViewModelPagoValidationTest {
 
         viewModel.updateUiState {
             it.copy(
-                descripcion = "Limpieza",
-                montoTotal = "200",
+                items = listOf(
+                    ServicioExtraItemUi(
+                        descripcion = "Limpieza",
+                        montoDraft = "200",
+                    ),
+                ),
                 pagos = listOf(
                     pago("p1", "Abono", 200.0),
                     pago("p2", "Reembolso", 50.0),
@@ -121,8 +128,12 @@ class ServiciosViewModelPagoValidationTest {
 
         viewModel.updateUiState {
             it.copy(
-                descripcion = "Limpieza",
-                montoTotal = "200",
+                items = listOf(
+                    ServicioExtraItemUi(
+                        descripcion = "Limpieza",
+                        montoDraft = "200",
+                    ),
+                ),
                 pagos = listOf(pago("p1", "Abono", 150.0), pago("p2", "Abono", 120.0)),
             )
         }

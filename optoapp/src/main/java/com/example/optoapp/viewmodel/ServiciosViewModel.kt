@@ -5,18 +5,21 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.optoapp.data.FinanzasRemoteDefaults
-import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Paciente
 import com.example.optoapp.data.Pago
 import com.example.optoapp.data.Resource
 import com.example.optoapp.data.ServicioExtra
+import com.example.optoapp.data.regaloservicio.RegaloServicioExtraEntity
+import com.example.optoapp.data.servicio.ServicioExtraItem
 import com.example.optoapp.domain.PagoEffect
 import com.example.optoapp.domain.inventario.inventarioParaServicioExtra
 import com.example.optoapp.domain.inventario.monturaMatchesDescripcion
+import com.example.optoapp.domain.movimientoReferenciaForRegalo
 import com.example.optoapp.domain.movimientoReferenciaForServicioExtraReverso
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import com.example.optoapp.util.DateUtils
 import com.example.optoapp.util.DispensacionStockHelper
+import com.example.optoapp.util.MontoDraftFormatting
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -27,19 +30,27 @@ import java.time.LocalDate
 import java.util.UUID
 import javax.inject.Inject
 
+data class ServicioExtraItemUi(
+    val id: String = UUID.randomUUID().toString(),
+    val monturaId: String? = null,
+    val descripcion: String = "",
+    val montoDraft: String = "",
+)
+
 data class ServiciosUiState(
     val id: String = UUID.randomUUID().toString(),
     val ot: String = "",
     val descripcion: String = "",
     val montoTotal: String = "",
     val monturaId: String? = null,
+    val items: List<ServicioExtraItemUi> = listOf(ServicioExtraItemUi()),
+    val regalos: List<RegaloDispensacionUi> = emptyList(),
     val estado: String = "Pendiente",
     val fecha: LocalDate = DateUtils.today(),
     val fechaEntrega: LocalDate? = null,
     val pacienteId: String? = null,
     val isLoading: Boolean = false,
     val error: String? = null,
-
     val pagos: List<Pago> = emptyList(),
     val pagosToDelete: List<Pago> = emptyList(),
     val generatedId: String = UUID.randomUUID().toString(),
@@ -62,7 +73,8 @@ class ServiciosViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(ServiciosUiState())
     val uiState: StateFlow<ServiciosUiState> = _uiState.asStateFlow()
 
-    // -- Delete confirmation dialog state --
+    private var initialItems: List<ServicioExtraItem> = emptyList()
+    private var initialRegalos: List<RegaloServicioExtraEntity> = emptyList()
 
     private val _showDeleteDialog = MutableStateFlow(false)
     val showDeleteDialog: StateFlow<Boolean> = _showDeleteDialog.asStateFlow()
@@ -96,7 +108,6 @@ class ServiciosViewModel @Inject constructor(
         .map { list -> inventarioParaServicioExtra(list) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    // Reactive aCuenta sum map for dynamic saldo computation (aCuenta is @Ignore in entity)
     @OptIn(ExperimentalCoroutinesApi::class)
     val aCuentaSumByServicio: StateFlow<Map<String, Double>> = sessionManager.opticaId
         .flatMapLatest { opticaId ->
@@ -121,6 +132,40 @@ class ServiciosViewModel @Inject constructor(
         }
     }
 
+    fun addItem() {
+        _uiState.update { s ->
+            deriveHeader(s.copy(items = s.items + ServicioExtraItemUi()))
+        }
+    }
+
+    fun updateItem(index: Int, item: ServicioExtraItemUi) {
+        _uiState.update { s ->
+            val updated = s.items.toMutableList()
+            if (index in updated.indices) updated[index] = item
+            deriveHeader(s.copy(items = updated))
+        }
+    }
+
+    fun removeItem(index: Int) {
+        _uiState.update { s ->
+            if (s.items.size <= 1) return@update s
+            val updated = s.items.toMutableList().apply { removeAt(index) }
+            deriveHeader(s.copy(items = updated))
+        }
+    }
+
+    fun addRegalo(regalo: RegaloDispensacionUi) {
+        _uiState.update { it.copy(regalos = it.regalos + regalo) }
+    }
+
+    fun removeRegalo(index: Int) {
+        _uiState.update { s ->
+            val updated = s.regalos.toMutableList()
+            if (index in updated.indices) updated.removeAt(index)
+            s.copy(regalos = updated)
+        }
+    }
+
     fun loadServicio(id: String) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, generatedId = id)
@@ -129,26 +174,62 @@ class ServiciosViewModel @Inject constructor(
                 is Resource.Success -> {
                     val s = result.data ?: return@launch
                     val loadedPagos = repository.getPagosByServicioExtra(id, opticaId).first()
-                    val resolvedMonturaId = s.monturaId?.takeIf { it.isNotBlank() }
-                        ?: repository.getMonturasSnapshotForOptica(opticaId)
-                            .firstOrNull { monturaMatchesDescripcion(it, s.descripcion) }
-                            ?.id
-                    _uiState.value = ServiciosUiState(
+                    val loadedItems = repository.getServicioExtraItems(id, opticaId)
+                    val loadedRegalos = repository.getRegalosByServicioExtraId(id, opticaId)
+                    initialItems = loadedItems
+                    initialRegalos = loadedRegalos
+
+                    val itemsUi = if (loadedItems.isNotEmpty()) {
+                        loadedItems.map { entity ->
+                            ServicioExtraItemUi(
+                                id = entity.id,
+                                monturaId = entity.monturaId,
+                                descripcion = entity.descripcion,
+                                montoDraft = MontoDraftFormatting.formatDraft(entity.monto),
+                            )
+                        }
+                    } else {
+                        val resolvedMonturaId = s.monturaId?.takeIf { it.isNotBlank() }
+                            ?: repository.getMonturasSnapshotForOptica(opticaId)
+                                .firstOrNull { monturaMatchesDescripcion(it, s.descripcion) }
+                                ?.id
+                        listOf(
+                            ServicioExtraItemUi(
+                                id = if (resolvedMonturaId != null) s.id else UUID.randomUUID().toString(),
+                                monturaId = resolvedMonturaId,
+                                descripcion = s.descripcion,
+                                montoDraft = MontoDraftFormatting.formatDraft(s.montoTotal),
+                            ),
+                        )
+                    }
+
+                    val regalosUi = loadedRegalos.map { entity ->
+                        RegaloDispensacionUi(
+                            id = entity.id,
+                            productoId = entity.productoId,
+                            descripcion = entity.descripcion,
+                            cantidad = entity.cantidad,
+                            costoUnitario = entity.costoUnitario,
+                            motivo = entity.motivo,
+                        )
+                    }
+
+                    val base = ServiciosUiState(
                         id = s.id,
                         ot = s.ot,
-                        descripcion = s.descripcion,
-                        montoTotal = String.format(java.util.Locale.US, "%.2f", s.montoTotal),
-                        monturaId = resolvedMonturaId,
                         estado = s.estado,
                         fecha = s.fecha,
                         fechaEntrega = s.fechaEntrega,
                         pacienteId = s.pacienteId,
                         pagos = loadedPagos,
+                        regalos = regalosUi,
+                        items = itemsUi,
                         generatedId = id,
                         isEdit = true,
                         isLoading = false,
                         error = null,
                     )
+                    _uiState.value = deriveHeader(base)
                 }
                 is Resource.Error -> {
                     _uiState.value = _uiState.value.copy(isLoading = false, error = result.message)
@@ -183,18 +264,22 @@ class ServiciosViewModel @Inject constructor(
 
     fun saveServicio(onSuccess: () -> Unit) {
         viewModelScope.launch {
-            val state = _uiState.value
-            if (state.descripcion.isBlank() || state.montoTotal.isBlank()) {
-                _uiState.update {
-                    it.copy(error = "Completa la descripción y el monto total para guardar.")
-                }
+            val state = deriveHeader(_uiState.value)
+            _uiState.value = state
+
+            val validItems = state.items.filter { it.descripcion.isNotBlank() }
+            if (validItems.isEmpty()) {
+                _uiState.update { it.copy(error = "Agrega al menos un producto con descripción.") }
                 return@launch
             }
-            val montoParsed = state.montoTotal.replace(",", ".").toDoubleOrNull()
-            if (montoParsed == null) {
-                _uiState.update { it.copy(error = "El monto total no es un número válido.") }
+            val lineMontos = validItems.map { item ->
+                MontoDraftFormatting.parseDraft(item.montoDraft)
+            }
+            if (lineMontos.any { it == null }) {
+                _uiState.update { it.copy(error = "Cada producto debe tener un monto válido.") }
                 return@launch
             }
+            val montoParsed = lineMontos.sumOf { it!! }
             if (montoParsed <= 0.0) {
                 _uiState.update { it.copy(error = FinanzasRemoteDefaults.Messages.MONTO_TOTAL_MAYOR_A_CERO) }
                 return@launch
@@ -214,47 +299,107 @@ class ServiciosViewModel @Inject constructor(
                     com.example.optoapp.data.SessionManager.LEGACY_OPTICA_ID
                 }
                 val finalId = if (state.id.isNotBlank()) state.id else state.generatedId
-                val newMonturaId = state.monturaId?.takeIf { it.isNotBlank() }
-                val previousMonturaId = if (state.isEdit) {
-                    (repository.getServicioById(finalId, currentOpticaId) as? Resource.Success)
-                        ?.data
-                        ?.monturaId
-                        ?.takeIf { it.isNotBlank() }
+                val headerMonturaId = validItems.firstOrNull { !it.monturaId.isNullOrBlank() }?.monturaId
+                val headerDescripcion = validItems.joinToString(" + ") { it.descripcion.trim() }
+                    .ifBlank { validItems.first().descripcion.trim() }
+
+                val existingServicio = if (state.isEdit) {
+                    (repository.getServicioById(finalId, currentOpticaId) as? Resource.Success)?.data
                 } else {
                     null
+                }
+                val previousItems = if (state.isEdit) {
+                    initialItems.ifEmpty { repository.getServicioExtraItems(finalId, currentOpticaId) }
+                } else {
+                    emptyList()
+                }
+                val previousRegalos = if (state.isEdit) {
+                    initialRegalos.ifEmpty { repository.getRegalosByServicioExtraId(finalId, currentOpticaId) }
+                } else {
+                    emptyList()
                 }
 
                 val servicio = ServicioExtra(
                     id = finalId,
                     ot = state.ot.trim(),
-                    monturaId = newMonturaId,
-                    descripcion = state.descripcion.trim(),
+                    monturaId = headerMonturaId,
+                    descripcion = headerDescripcion,
                     montoTotal = montoParsed,
                     aCuenta = state.pagos.sumOf { PagoEffect.signedAmount(it.tipo, it.monto) },
                     estado = state.estado,
                     fecha = state.fecha,
                     fechaEntrega = state.fechaEntrega,
-                    pacienteId = state.pacienteId?.takeIf { !it.isBlank() },
+                    pacienteId = state.pacienteId?.takeIf { it.isNotBlank() },
                     metodoPago = FinanzasRemoteDefaults.ServicioExtra.METODO_PAGO_ROW,
                     opticaId = currentOpticaId,
                 )
 
-                repository.withTransaction {
-                    val stockError = applyServicioExtraStockChanges(
+                val persistedItems = validItems.map { ui ->
+                    ServicioExtraItem(
+                        id = ui.id.ifBlank { UUID.randomUUID().toString() },
+                        servicioExtraId = finalId,
+                        monturaId = ui.monturaId?.takeIf { it.isNotBlank() },
+                        descripcion = ui.descripcion.trim(),
+                        monto = MontoDraftFormatting.parseDraft(ui.montoDraft) ?: 0.0,
                         opticaId = currentOpticaId,
-                        servicioId = finalId,
-                        previousMonturaId = previousMonturaId,
-                        newMonturaId = newMonturaId,
-                        isEdit = state.isEdit,
                     )
-                    if (stockError != null) {
-                        throw IllegalStateException(stockError)
+                }
+
+                val regalosToPersist = state.regalos.map { regaloUi ->
+                    RegaloServicioExtraEntity(
+                        id = regaloUi.id.ifBlank { UUID.randomUUID().toString() },
+                        servicioExtraId = finalId,
+                        productoId = regaloUi.productoId,
+                        cantidad = regaloUi.cantidad,
+                        costoUnitario = regaloUi.costoUnitario,
+                        descripcion = regaloUi.descripcion,
+                        motivo = regaloUi.motivo,
+                        opticaId = currentOpticaId,
+                    )
+                }
+
+                repository.withTransaction {
+                    if (state.isEdit) {
+                        applyEditStockDiff(
+                            previousItems = previousItems,
+                            persistedItems = persistedItems,
+                            previousRegalos = previousRegalos,
+                            regalosToPersist = regalosToPersist,
+                            existingHeaderMonturaId = existingServicio?.monturaId,
+                            servicioId = finalId,
+                            opticaId = currentOpticaId,
+                        )
+                        val nextItemIds = persistedItems.map { it.id }.toSet()
+                        val nextRegaloIds = regalosToPersist.map { it.id }.toSet()
+                        for (removed in previousItems.filter { it.id !in nextItemIds }) {
+                            repository.deleteServicioExtraItemById(removed.id, currentOpticaId)
+                        }
+                        for (removed in previousRegalos.filter { it.id !in nextRegaloIds }) {
+                            repository.deleteRegaloServicioExtraById(removed.id, currentOpticaId)
+                        }
+                        repository.deleteServicioExtraItemsByServicioId(finalId, currentOpticaId)
+                        repository.deleteRegalosByServicioExtraId(finalId, currentOpticaId)
+                    } else {
+                        for (item in persistedItems) {
+                            applyItemSale(item, currentOpticaId)
+                        }
+                        for (entity in regalosToPersist) {
+                            applyRegaloSale(entity, currentOpticaId)
+                        }
                     }
 
                     if (state.isEdit) {
                         repository.updateServicio(servicio)
                     } else {
                         repository.insertServicio(servicio)
+                    }
+
+                    for (item in persistedItems) {
+                        repository.insertServicioExtraItem(item)
+                    }
+
+                    for (entity in regalosToPersist) {
+                        repository.insertRegaloServicioExtra(entity)
                     }
 
                     state.pagos.forEach { pago ->
@@ -271,9 +416,30 @@ class ServiciosViewModel @Inject constructor(
                     }
                 }
 
+                initialItems = persistedItems
+                initialRegalos = state.regalos.map { regaloUi ->
+                    RegaloServicioExtraEntity(
+                        id = regaloUi.id,
+                        servicioExtraId = finalId,
+                        productoId = regaloUi.productoId,
+                        cantidad = regaloUi.cantidad,
+                        costoUnitario = regaloUi.costoUnitario,
+                        descripcion = regaloUi.descripcion,
+                        motivo = regaloUi.motivo,
+                        opticaId = currentOpticaId,
+                    )
+                }
+
                 _uiState.update { it.copy(error = null) }
 
                 postSaveSyncScheduler.scheduleFinanzasSync(currentOpticaId)
+                val stockChanged = previousItems.any { !it.monturaId.isNullOrBlank() } ||
+                    previousRegalos.any { it.productoId.isNotBlank() } ||
+                    persistedItems.any { !it.monturaId.isNullOrBlank() } ||
+                    state.regalos.any { it.productoId.isNotBlank() }
+                if (stockChanged) {
+                    postSaveSyncScheduler.scheduleInventarioSync(currentOpticaId)
+                }
 
                 onSuccess()
             } catch (e: SQLiteConstraintException) {
@@ -330,40 +496,144 @@ class ServiciosViewModel @Inject constructor(
         _deleteError.value = null
     }
 
-    private suspend fun applyServicioExtraStockChanges(
-        opticaId: String,
+    private fun deriveHeader(state: ServiciosUiState): ServiciosUiState {
+        val nonBlank = state.items.filter { it.descripcion.isNotBlank() }
+        val source = nonBlank.ifEmpty { state.items }
+        val descripcion = source.map { it.descripcion.trim() }
+            .filter { it.isNotBlank() }
+            .joinToString(" + ")
+            .ifBlank { source.firstOrNull()?.descripcion.orEmpty() }
+        val montoSum = source.mapNotNull { MontoDraftFormatting.parseDraft(it.montoDraft) }.sum()
+        val montoTotal = MontoDraftFormatting.formatDraft(montoSum.takeIf { it > 0.0 })
+        val monturaId = source.firstOrNull { !it.monturaId.isNullOrBlank() }?.monturaId
+        return state.copy(
+            descripcion = descripcion,
+            montoTotal = montoTotal,
+            monturaId = monturaId,
+        )
+    }
+
+    private suspend fun applyEditStockDiff(
+        previousItems: List<ServicioExtraItem>,
+        persistedItems: List<ServicioExtraItem>,
+        previousRegalos: List<RegaloServicioExtraEntity>,
+        regalosToPersist: List<RegaloServicioExtraEntity>,
+        existingHeaderMonturaId: String?,
         servicioId: String,
-        previousMonturaId: String?,
-        newMonturaId: String?,
-        isEdit: Boolean,
-    ): String? {
-        if (isEdit && previousMonturaId != null && previousMonturaId != newMonturaId) {
-            val restock = stockHelper.adjustStockAndRegistrarMovimiento(
-                monturaId = previousMonturaId,
-                opticaId = opticaId,
-                delta = 1,
-                tipo = "AJUSTE",
-                referenciaId = movimientoReferenciaForServicioExtraReverso(servicioId, previousMonturaId),
-                nota = "Reversión por edición de servicio extra",
-            )
-            if (restock.isFailure) {
-                return restock.exceptionOrNull()?.message ?: "No se pudo reponer el stock del producto anterior."
+        opticaId: String,
+    ) {
+        if (previousItems.isEmpty()) {
+            existingHeaderMonturaId?.takeIf { it.isNotBlank() }?.let { headerMid ->
+                if (persistedItems.any { !it.monturaId.isNullOrBlank() }) {
+                    requireStockMovement(
+                        stockHelper.adjustStockAndRegistrarMovimiento(
+                            monturaId = headerMid,
+                            opticaId = opticaId,
+                            delta = 1,
+                            tipo = "AJUSTE",
+                            referenciaId = movimientoReferenciaForServicioExtraReverso(servicioId, headerMid),
+                            nota = "Reversión por edición de servicio extra",
+                        ),
+                        "No se pudo reponer el stock del producto anterior.",
+                    )
+                }
             }
         }
 
-        if (newMonturaId != null && (!isEdit || previousMonturaId != newMonturaId)) {
-            val sale = stockHelper.adjustStockAndRegistrarMovimiento(
-                monturaId = newMonturaId,
+        val nextItemsById = persistedItems.associateBy { it.id }
+        for (prev in previousItems) {
+            val next = nextItemsById[prev.id]
+            val prevMid = prev.monturaId?.takeIf { it.isNotBlank() } ?: continue
+            if (next == null || next.monturaId?.trim() != prev.monturaId?.trim()) {
+                requireStockMovement(
+                    stockHelper.adjustStockAndRegistrarMovimiento(
+                        monturaId = prevMid,
+                        opticaId = opticaId,
+                        delta = 1,
+                        tipo = "AJUSTE",
+                        referenciaId = prev.id,
+                        nota = "Reversión por edición de servicio extra",
+                    ),
+                    "No se pudo reponer el stock del producto anterior.",
+                )
+            }
+        }
+
+        val prevItemsById = previousItems.associateBy { it.id }
+        for (next in persistedItems) {
+            val prev = prevItemsById[next.id]
+            if (prev != null && itemStockUnchanged(prev, next)) continue
+            applyItemSale(next, opticaId)
+        }
+
+        val nextRegalosById = regalosToPersist.associateBy { it.id }
+        for (prev in previousRegalos) {
+            val next = nextRegalosById[prev.id]
+            if (prev.productoId.isBlank()) continue
+            if (next == null || !regaloStockUnchanged(prev, next)) {
+                requireStockMovement(
+                    stockHelper.adjustStockAndRegistrarMovimiento(
+                        monturaId = prev.productoId,
+                        opticaId = opticaId,
+                        delta = prev.cantidad,
+                        tipo = "AJUSTE",
+                        referenciaId = movimientoReferenciaForRegalo(prev.id),
+                        nota = "Reversión por edición de regalos de servicio",
+                    ),
+                    "No se pudo reponer el stock del regalo anterior.",
+                )
+            }
+        }
+
+        val prevRegalosById = previousRegalos.associateBy { it.id }
+        for (next in regalosToPersist) {
+            val prev = prevRegalosById[next.id]
+            if (prev != null && regaloStockUnchanged(prev, next)) continue
+            applyRegaloSale(next, opticaId)
+        }
+    }
+
+    private suspend fun applyItemSale(item: ServicioExtraItem, opticaId: String) {
+        val mid = item.monturaId?.takeIf { it.isNotBlank() } ?: return
+        requireStockMovement(
+            stockHelper.adjustStockAndRegistrarMovimiento(
+                monturaId = mid,
                 opticaId = opticaId,
                 delta = -1,
                 tipo = "SALIDA_VENTA",
-                referenciaId = servicioId,
+                referenciaId = item.id,
                 nota = "Salida por servicio extra",
-            )
-            if (sale.isFailure) {
-                return sale.exceptionOrNull()?.message ?: "Stock insuficiente para el producto seleccionado."
-            }
-        }
-        return null
+            ),
+            "Stock insuficiente para el producto seleccionado.",
+        )
     }
+
+    private suspend fun applyRegaloSale(entity: RegaloServicioExtraEntity, opticaId: String) {
+        if (entity.productoId.isBlank()) return
+        requireStockMovement(
+            stockHelper.adjustStockAndRegistrarMovimiento(
+                monturaId = entity.productoId,
+                opticaId = opticaId,
+                delta = -entity.cantidad,
+                tipo = "SALIDA_VENTA",
+                referenciaId = movimientoReferenciaForRegalo(entity.id),
+                nota = "Salida por regalo de servicio extra",
+            ),
+            "Stock insuficiente para regalo: ${entity.descripcion}",
+        )
+    }
+
+    private fun requireStockMovement(result: Result<Int>, fallbackMessage: String) {
+        if (result.isFailure) {
+            throw IllegalStateException(result.exceptionOrNull()?.message ?: fallbackMessage)
+        }
+    }
+
+    private fun itemStockUnchanged(prev: ServicioExtraItem, next: ServicioExtraItem): Boolean =
+        prev.monturaId?.trim() == next.monturaId?.trim()
+
+    private fun regaloStockUnchanged(
+        prev: RegaloServicioExtraEntity,
+        next: RegaloServicioExtraEntity,
+    ): Boolean = prev.productoId == next.productoId && prev.cantidad == next.cantidad
 }
