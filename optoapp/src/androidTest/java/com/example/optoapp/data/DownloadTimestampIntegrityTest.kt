@@ -79,6 +79,8 @@ class DownloadTimestampIntegrityTest {
             dispensacionRepo,
             syncRepo,
             regaloDispensacionDao,
+            db.servicioExtraItemDao(),
+            db.regaloServicioExtraDao(),
         )
         val backupCoordinator = BackupRestoreCoordinator(
             pacienteRepo,
@@ -131,7 +133,7 @@ class DownloadTimestampIntegrityTest {
 
         repo.upsertServicioFromRemote(entity)
 
-        val stored = servicioExtraDao.getServicioById("s1")
+        val stored = servicioExtraDao.getServicioById("s1", opticaId)
         assertNotNull("Record should exist in DB", stored)
         assertEquals(
             "Stored updatedAt must equal the remote timestamp",
@@ -163,7 +165,7 @@ class DownloadTimestampIntegrityTest {
 
         repo.upsertDispensacionFromRemote(entity)
 
-        val stored = dispensacionDao.getDispensacionById("d1")
+        val stored = dispensacionDao.getDispensacionById("d1", opticaId)
         assertNotNull("Record should exist in DB", stored)
         assertEquals(
             "Stored updatedAt must equal the remote timestamp",
@@ -187,7 +189,7 @@ class DownloadTimestampIntegrityTest {
 
         repo.upsertPagoFromRemote(entity)
 
-        val stored = pagoDao.getPagoById("pg1")
+        val stored = pagoDao.getPagoByIdForOptica("pg1", opticaId)
         assertNotNull("Record should exist in DB", stored)
         assertEquals(
             "Stored updatedAt must equal the remote timestamp",

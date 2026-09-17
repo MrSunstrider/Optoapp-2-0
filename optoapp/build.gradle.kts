@@ -218,6 +218,7 @@ dependencies {
     androidTestImplementation(libs.kotlinx.coroutines.test)
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.core)
+    androidTestImplementation(libs.mockk)
 
     androidTestImplementation(libs.espresso.idling.resource)
     androidTestImplementation(libs.androidx.test.rules)

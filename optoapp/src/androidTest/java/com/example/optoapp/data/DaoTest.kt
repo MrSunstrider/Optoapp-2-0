@@ -230,7 +230,7 @@ class DaoTest {
         )
         dispensacionDao.insertDispensacion(dispensacion)
 
-        val retrieved = dispensacionDao.getDispensacionById("d1")
+        val retrieved = dispensacionDao.getDispensacionById("d1", "o1")
         assertNotNull(retrieved)
         assertEquals("m1", retrieved?.monturaId)
         assertEquals(100.0, retrieved!!.montoTotal, 0.01)

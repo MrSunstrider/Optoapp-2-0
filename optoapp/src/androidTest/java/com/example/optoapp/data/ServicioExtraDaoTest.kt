@@ -60,7 +60,7 @@ class ServicioExtraDaoTest {
         )
         dao.insertServicio(servicio)
 
-        val retrieved = dao.getServicioById("se1")
+        val retrieved = dao.getServicioById("se1", "optica1")
         assertNotNull(retrieved)
         assertEquals("se1", retrieved!!.id)
         assertEquals("Lentes de contacto", retrieved.descripcion)
@@ -70,7 +70,7 @@ class ServicioExtraDaoTest {
 
     @Test
     fun getServicioById_withUnknownId_returnsNull() = runBlocking {
-        val retrieved = dao.getServicioById("nonexistent")
+        val retrieved = dao.getServicioById("nonexistent", "optica1")
 
         assertNull(retrieved)
     }
@@ -124,6 +124,7 @@ class ServicioExtraDaoTest {
         val rows = dao.updateServicio(
             id = updated.id, opticaId = updated.opticaId,
             ot = updated.ot, descripcion = updated.descripcion,
+            monturaId = updated.monturaId,
             montoTotal = updated.montoTotal, aCuenta = updated.aCuenta,
             estado = updated.estado, fecha = updated.fecha,
             pacienteId = updated.pacienteId, metodoPago = updated.metodoPago,
@@ -132,7 +133,7 @@ class ServicioExtraDaoTest {
         )
         assertEquals(1, rows)
 
-        val retrieved = dao.getServicioById("s1")
+        val retrieved = dao.getServicioById("s1", "o1")
         assertEquals("Modificado", retrieved!!.descripcion)
         assertEquals("Entregado", retrieved.estado)
     }
@@ -152,7 +153,7 @@ class ServicioExtraDaoTest {
         dao.insertServicio(servicio)
         dao.deleteServicio(servicio.id, servicio.opticaId)
 
-        val retrieved = dao.getServicioById("s1")
+        val retrieved = dao.getServicioById("s1", "o1")
         assertNull(retrieved)
     }
 
@@ -223,7 +224,7 @@ class ServicioExtraDaoTest {
         val updatedCount = dao.reassignFromLegacyMiOpticaBase("newOpticaId")
         assertEquals(1, updatedCount)
 
-        val retrieved = dao.getServicioById("s1")
+        val retrieved = dao.getServicioById("s1", "newOpticaId")
         assertEquals("newOpticaId", retrieved!!.opticaId)
     }
 }

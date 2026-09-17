@@ -80,6 +80,8 @@ class OptoRepositoryTest {
             dispensacionRepo,
             syncRepo,
             regaloDispensacionDao,
+            db.servicioExtraItemDao(),
+            db.regaloServicioExtraDao(),
         )
         val backupCoordinator = BackupRestoreCoordinator(
             pacienteRepo,
@@ -263,9 +265,9 @@ class OptoRepositoryTest {
         // Verify all entity types were inserted with currentOpticaId
         assertEquals("target_o", pacienteDao.getPacienteByIdScoped("p1", "target_o")!!.opticaId)
         assertEquals("target_o", evaluacionDao.getEvaluacionById("e1", "target_o")!!.opticaId)
-        assertEquals("target_o", dispensacionDao.getDispensacionById("d1")!!.opticaId)
+        assertEquals("target_o", dispensacionDao.getDispensacionById("d1", "target_o")!!.opticaId)
         assertEquals("target_o", pagoDao.getPagoByIdForOptica("pg1", "target_o")!!.opticaId)
-        assertEquals("target_o", servicioExtraDao.getServicioById("s1")!!.opticaId)
+        assertEquals("target_o", servicioExtraDao.getServicioById("s1", "target_o")!!.opticaId)
     }
 
     @Test

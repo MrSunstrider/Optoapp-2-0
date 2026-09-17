@@ -1,19 +1,21 @@
 package com.example.optoapp.data
 
+import android.util.Log
 import io.mockk.coEvery
+import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
 import org.junit.After
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import org.junit.runner.RunWith
-import androidx.test.ext.junit.runners.AndroidJUnit4
 import java.io.IOException
 
-@RunWith(AndroidJUnit4::class)
 class PacienteRepositoryErrorTest {
 
     private lateinit var pacienteDao: PacienteDao
@@ -22,6 +24,9 @@ class PacienteRepositoryErrorTest {
 
     @Before
     fun setUp() {
+        mockkStatic(Log::class)
+        every { Log.e(any(), any<String>()) } returns 0
+        every { Log.e(any(), any<String>(), any()) } returns 0
         pacienteDao = mockk()
         evaluacionDao = mockk()
         repo = PacienteRepository(pacienteDao, evaluacionDao)
