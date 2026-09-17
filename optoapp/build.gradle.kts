@@ -153,6 +153,8 @@ android {
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
+            excludes += "META-INF/LICENSE.md"
+            excludes += "META-INF/LICENSE-notice.md"
         }
         jniLibs {
             keepDebugSymbols += "**/libandroidx.graphics.path.so"
@@ -218,7 +220,7 @@ dependencies {
     androidTestImplementation(libs.kotlinx.coroutines.test)
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.core)
-    androidTestImplementation(libs.mockk)
+    androidTestImplementation(libs.mockk.android)
 
     androidTestImplementation(libs.espresso.idling.resource)
     androidTestImplementation(libs.androidx.test.rules)
