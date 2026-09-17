@@ -118,7 +118,7 @@ class DownloadTimestampIntegrityTest {
     }
 
     @Test
-    fun `upsertServicioFromRemote stores record with remote updatedAt`() = runBlocking {
+    fun upsertServicioFromRemote_storesRecordWithRemoteUpdatedAt() = runBlocking {
         // ServicioExtra has no FK dependency on paciente, so no parent row needed.
         val entity = ServicioExtra(
             id = "s1",
@@ -143,7 +143,7 @@ class DownloadTimestampIntegrityTest {
     }
 
     @Test
-    fun `upsertDispensacionFromRemote stores record with remote updatedAt`() = runBlocking {
+    fun upsertDispensacionFromRemote_storesRecordWithRemoteUpdatedAt() = runBlocking {
         // Insert parent paciente first to satisfy FK constraint.
         pacienteDao.insertPaciente(
             Paciente(
@@ -175,7 +175,7 @@ class DownloadTimestampIntegrityTest {
     }
 
     @Test
-    fun `upsertPagoFromRemote stores record with remote updatedAt`() = runBlocking {
+    fun upsertPagoFromRemote_storesRecordWithRemoteUpdatedAt() = runBlocking {
         // Pago has no strict FK to paciente/dispensacion when dispensacionId is null.
         val entity = Pago(
             id = "pg1",
@@ -199,7 +199,7 @@ class DownloadTimestampIntegrityTest {
     }
 
     @Test
-    fun `upsertEvaluacionFromRemote stores record with remote updatedAt`() = runBlocking {
+    fun upsertEvaluacionFromRemote_storesRecordWithRemoteUpdatedAt() = runBlocking {
         // Insert parent paciente first to satisfy FK constraint.
         pacienteDao.insertPaciente(
             Paciente(
@@ -231,7 +231,7 @@ class DownloadTimestampIntegrityTest {
     }
 
     @Test
-    fun `upsertServicioFromRemote called twice with same entity does not duplicate row`() = runBlocking {
+    fun upsertServicioFromRemote_calledTwice_doesNotDuplicateRow() = runBlocking {
         val entity = ServicioExtra(
             id = "s2",
             descripcion = "Exam",
