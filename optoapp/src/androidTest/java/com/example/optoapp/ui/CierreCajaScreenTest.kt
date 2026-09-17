@@ -66,10 +66,10 @@ class CierreCajaScreenTest {
             }
         }
 
-        composeTestRule.onNodeWithText("Efectivo").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Tarjeta").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Transferencia").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Móvil").assertIsDisplayed()
+        composeTestRule.onNodeWithText("· Efectivo").assertIsDisplayed()
+        composeTestRule.onNodeWithText("· Tarjeta").assertIsDisplayed()
+        composeTestRule.onNodeWithText("· Transferencia").assertIsDisplayed()
+        composeTestRule.onNodeWithText("· Móvil").assertIsDisplayed()
     }
 
     @Test

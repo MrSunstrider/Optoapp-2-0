@@ -57,11 +57,13 @@ fun TransactionItem(
                     overflow = TextOverflow.Ellipsis,
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text(
-                        text = item.tipoEntidad,
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
+                    if (item.tipoEntidad.isNotBlank()) {
+                        Text(
+                            text = item.tipoEntidad,
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    }
                     Text(
                         text = "· ${pago.metodoPago}",
                         fontSize = 12.sp,
@@ -122,7 +124,7 @@ fun TransactionItem(pago: Pago) {
     val item = PagoDisplayItem(
         pago = pago,
         label = transactionLabel(pago),
-        tipoEntidad = transactionLabel(pago),
+        tipoEntidad = "",
         esCobroAtrasado = false,
         dispensacionId = pago.dispensacionId,
         servicioExtraId = pago.servicioExtraId,
