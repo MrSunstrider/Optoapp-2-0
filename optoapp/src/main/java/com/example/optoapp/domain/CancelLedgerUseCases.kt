@@ -4,6 +4,7 @@ import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Pago
 import com.example.optoapp.data.Resource
+import com.example.optoapp.data.montura.MonturaInventoryCoordinator
 import com.example.optoapp.data.pago.PagoDao
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import com.example.optoapp.util.DispensacionStockHelper
@@ -272,6 +273,28 @@ class AnularDispensacionUseCase @Inject constructor(
     private suspend fun restock(monturaId: String, opticaId: String, delta: Int, referenciaId: String) {
         stockHelper.restockOnce(monturaId, opticaId, delta, referenciaId, "Reversión por anulación de dispensación")
             .getOrElse { throw IllegalStateException(it.message ?: "No se pudo reponer el stock.", it) }
+    }
+}
+
+/**
+ * Hard delete is only for orders that left no trace: with any pago or stock movement the order
+ * must be cancelled instead, so the ledger and stock audit stay intact.
+ */
+class EliminarDispensacionUseCase @Inject constructor(
+    private val repository: OptoRepository,
+    private val pagoDao: PagoDao,
+    private val inventoryCoordinator: MonturaInventoryCoordinator,
+) {
+    suspend operator fun invoke(dispensacionId: String, opticaId: String) {
+        repository.withTransaction {
+            val disp = (repository.getDispensacionById(dispensacionId, opticaId) as? Resource.Success)?.data
+                ?: throw IllegalStateException("Dispensación no encontrada.")
+            val regaloIds = repository.getRegalosByDispensacionId(dispensacionId, opticaId).map { it.id }
+            val hasTrace = pagoDao.countByDispensacion(dispensacionId, opticaId) > 0 ||
+                inventoryCoordinator.countMovimientosForDispensacion(dispensacionId, regaloIds, opticaId) > 0
+            check(!hasTrace) { "La orden tiene pagos o movimientos de stock. Usa Anular." }
+            repository.deleteDispensacion(disp)
+        }
     }
 }
 

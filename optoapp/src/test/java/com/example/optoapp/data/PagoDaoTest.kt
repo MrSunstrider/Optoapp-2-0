@@ -463,4 +463,26 @@ class PagoDaoTest {
         val retrieved = dao.getPagoByIdForOptica("p1", "o1")
         assertEquals("newDisp", retrieved!!.dispensacionId)
     }
+
+    @Test
+    fun countByDispensacion_countsEveryTipoOfThatOrderInThatOptica() = runBlocking {
+        pacienteDao.insertPaciente(
+            Paciente(id = "pac", nombreCompleto = "P", edad = 0, telefono = "0", fechaCreacion = LocalDate.parse("2026-01-15"), opticaId = "o1"),
+        )
+        listOf("d1", "d2").forEach {
+            dispensacionDao.insertDispensacion(DispensacionOptica(id = it, pacienteId = "pac", fecha = LocalDate.parse("2026-01-15"), opticaId = "o1"))
+        }
+        listOf("Abono" to "d1", "Reverso" to "d1", "Reembolso" to "d1", "Abono" to "d2").forEachIndexed { index, (tipo, dispId) ->
+            dao.insertPago(
+                Pago(
+                    id = "p$index", dispensacionId = dispId, fecha = LocalDate.parse("2026-01-15"),
+                    tipo = tipo, monto = 10.0, metodoPago = "Efectivo", opticaId = "o1",
+                ),
+            )
+        }
+
+        assertEquals(3, dao.countByDispensacion("d1", "o1"))
+        assertEquals(1, dao.countByDispensacion("d2", "o1"))
+        assertEquals(0, dao.countByDispensacion("d1", "o-other"))
+    }
 }

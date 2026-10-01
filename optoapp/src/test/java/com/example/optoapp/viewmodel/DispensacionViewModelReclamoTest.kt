@@ -95,6 +95,7 @@ class DispensacionViewModelReclamoTest {
             reclaim,
             costoProductoDao,
             costoBiseladoDao,
+            mockk(relaxed = true),
         )
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -127,6 +128,7 @@ class DispensacionViewModelReclamoTest {
             mockk<com.example.optoapp.domain.ReclaimDispensacionUseCase>(relaxed = true),
             costoProductoDao,
             costoBiseladoDao,
+            mockk(relaxed = true),
         )
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -155,6 +157,7 @@ class DispensacionViewModelReclamoTest {
             mockk<com.example.optoapp.domain.ReclaimDispensacionUseCase>(relaxed = true),
             costoProductoDao,
             costoBiseladoDao,
+            mockk(relaxed = true),
         )
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -180,6 +183,7 @@ class DispensacionViewModelReclamoTest {
             reclaim,
             costoProductoDao,
             costoBiseladoDao,
+            mockk(relaxed = true),
         )
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -213,6 +217,7 @@ class DispensacionViewModelReclamoTest {
             mockk<com.example.optoapp.domain.ReclaimDispensacionUseCase>(relaxed = true),
             costoProductoDao,
             costoBiseladoDao,
+            mockk(relaxed = true),
         )
         testDispatcher.scheduler.advanceUntilIdle()
 

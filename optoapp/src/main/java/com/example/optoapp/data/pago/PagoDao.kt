@@ -71,6 +71,9 @@ interface PagoDao {
     )
     suspend fun getPagosByParent(parentId: String, opticaId: String): List<Pago>
 
+    @Query("SELECT COUNT(*) FROM pagos WHERE dispensacionId = :dispensacionId AND opticaId = :opticaId")
+    suspend fun countByDispensacion(dispensacionId: String, opticaId: String): Int
+
     @Query("DELETE FROM pagos WHERE id = :id AND opticaId = :opticaId")
     suspend fun deletePago(id: String, opticaId: String): Int
 

@@ -320,4 +320,29 @@ class MonturaMovimientoDaoTest {
         assertEquals(0, dao.countByKey("d1", "AJUSTE", "m1", "o1"))
         assertEquals(0, dao.countByKey("d1:anul:i1", "AJUSTE", "m1", "o-other"))
     }
+
+    @Test
+    fun countForDispensacion_matchesOrderRefsReversalRefsAndRegaloRefsOnly() = runBlocking {
+        monturaDao.insertMontura(
+            Montura(
+                id = "m1", sku = "S001", marca = "M", modelo = "X",
+                color = "N", talla = "M", costo = 50.0, precio = 100.0,
+                stockActual = 10, stockMinimo = 2, activo = true, opticaId = "o1",
+            ),
+        )
+        listOf("d1" to "SALIDA_VENTA", "d1:anul:i1" to "AJUSTE", "r1" to "SALIDA_VENTA", "d10" to "SALIDA_VENTA")
+            .forEachIndexed { index, (referenciaId, tipo) ->
+                dao.insertMovimiento(
+                    MonturaMovimiento(
+                        id = "mov-$index", monturaId = "m1", fecha = LocalDate.parse("2026-06-18"), tipo = tipo,
+                        cantidad = 1, stockPrevio = 10, stockNuevo = 9, referenciaId = referenciaId, opticaId = "o1",
+                    ),
+                )
+            }
+
+        assertEquals(2, dao.countForDispensacion("d1", emptyList(), "o1"))
+        assertEquals(3, dao.countForDispensacion("d1", listOf("r1"), "o1"))
+        assertEquals(0, dao.countForDispensacion("d2", emptyList(), "o1"))
+        assertEquals(0, dao.countForDispensacion("d1", listOf("r1"), "o-other"))
+    }
 }

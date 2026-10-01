@@ -1,14 +1,12 @@
 package com.example.optoapp.viewmodel
 
-import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Pago
-import com.example.optoapp.data.Resource
 import com.example.optoapp.data.SessionManager
 import com.example.optoapp.data.costobiselado.CostoBiseladoDao
 import com.example.optoapp.data.costoproducto.CostoProductoDao
-import com.example.optoapp.data.regalodispensacion.RegaloDispensacionEntity
 import com.example.optoapp.domain.CalcularMontoPagadoUseCase
+import com.example.optoapp.domain.EliminarDispensacionUseCase
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import com.example.optoapp.util.DispensacionStockHelper
 import io.mockk.coEvery
@@ -20,14 +18,16 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import java.time.LocalDate
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DispensacionViewModelDeleteTest {
@@ -39,32 +39,13 @@ class DispensacionViewModelDeleteTest {
     private lateinit var calcularMontoPagadoUseCase: CalcularMontoPagadoUseCase
     private lateinit var costoProductoDao: CostoProductoDao
     private lateinit var costoBiseladoDao: CostoBiseladoDao
+    private lateinit var eliminar: EliminarDispensacionUseCase
     private lateinit var viewModel: DispensacionViewModel
 
     private val opticaIdFlow = MutableStateFlow("optica-test")
     private val opticaRolFlow = MutableStateFlow("admin")
     private val testDispatcher = StandardTestDispatcher()
     private val dispId = "disp-delete-1"
-    private val testDate = LocalDate.of(2026, 7, 10)
-
-    private val testDispensacion = DispensacionOptica(
-        id = dispId, ot = "OT-2026-0001", pacienteId = "pac-1", fecha = testDate,
-        opticaId = "optica-test", tipoLente = "Monofocal", montoTotal = 300.0,
-        montoPagado = 150.0, estadoEntrega = "Pendiente", metodoPago = "Efectivo",
-    )
-
-    private val testRegalos = listOf(
-        RegaloDispensacionEntity(
-            id = "reg-del-1",
-            dispensacionId = dispId,
-            productoId = "prod-1",
-            cantidad = 2,
-            costoUnitario = 10.0,
-            descripcion = "Estuche",
-            motivo = "Cortesia",
-            opticaId = "optica-test",
-        ),
-    )
 
     @Before
     fun setUp() {
@@ -83,17 +64,10 @@ class DispensacionViewModelDeleteTest {
         calcularMontoPagadoUseCase = mockk()
         costoProductoDao = mockk(relaxed = true)
         costoBiseladoDao = mockk(relaxed = true)
+        eliminar = mockk(relaxed = true)
 
         every { sessionManager.opticaId } returns opticaIdFlow
         every { sessionManager.opticaRol } returns opticaRolFlow
-        every { repository.runInTransaction(any()) } answers {
-            firstArg<() -> Unit>().invoke()
-        }
-
-        coEvery { repository.getDispensacionById(dispId, any()) } returns Resource.Success(testDispensacion)
-        coEvery { repository.getDispensacionItemsByDispensacion(dispId, any()) } returns emptyList()
-        coEvery { calcularMontoPagadoUseCase(dispId, any()) } returns 150.0
-        coEvery { repository.getRegalosByDispensacionId(dispId, any()) } returns testRegalos
     }
 
     @After
@@ -101,58 +75,61 @@ class DispensacionViewModelDeleteTest {
         Dispatchers.resetMain()
     }
 
+    private fun createViewModel() = DispensacionViewModel(
+        repository,
+        sessionManager,
+        postSaveSyncScheduler,
+        stockHelper,
+        calcularMontoPagadoUseCase,
+        mockk<com.example.optoapp.domain.AnularDispensacionUseCase>(relaxed = true),
+        mockk<com.example.optoapp.domain.ReclaimDispensacionUseCase>(relaxed = true),
+        costoProductoDao,
+        costoBiseladoDao,
+        eliminar,
+    ).also { testDispatcher.scheduler.advanceUntilIdle() }
+
     @Test
-    fun `deleteDispensacion hard-deletes without anulacion`() = runTest(testDispatcher) {
-        viewModel = DispensacionViewModel(
-            repository,
-            sessionManager,
-            postSaveSyncScheduler,
-            stockHelper,
-            calcularMontoPagadoUseCase,
-            mockk<com.example.optoapp.domain.AnularDispensacionUseCase>(relaxed = true),
-            mockk<com.example.optoapp.domain.ReclaimDispensacionUseCase>(relaxed = true),
-            costoProductoDao,
-            costoBiseladoDao,
-        )
-        testDispatcher.scheduler.advanceUntilIdle()
+    fun `deleteDispensacion delegates to the eliminar use case without restocking`() = runTest(testDispatcher) {
+        viewModel = createViewModel()
 
         var completed = false
         viewModel.deleteDispensacion(dispId) { completed = true }
         testDispatcher.scheduler.advanceUntilIdle()
 
-        coVerify { repository.deleteDispensacion(testDispensacion) }
-        coVerify(inverse = true) { repository.updateDispensacion(any()) }
-        coVerify(inverse = true) { repository.insertPago(any<Pago>()) }
+        coVerify(exactly = 1) { eliminar(dispId, "optica-test") }
+        assertTrue(completed)
+        assertNull(viewModel.uiState.value.error)
+        coVerify(exactly = 0) { stockHelper.adjustStockAndRegistrarMovimiento(any(), any(), any(), any(), any(), any()) }
+        coVerify(exactly = 0) { repository.deleteDispensacion(any()) }
+        coVerify(exactly = 0) { repository.insertPago(any<Pago>()) }
     }
 
     @Test
-    fun `deleteDispensacion reverts regalo stock`() = runTest(testDispatcher) {
-        viewModel = DispensacionViewModel(
-            repository,
-            sessionManager,
-            postSaveSyncScheduler,
-            stockHelper,
-            calcularMontoPagadoUseCase,
-            mockk<com.example.optoapp.domain.AnularDispensacionUseCase>(relaxed = true),
-            mockk<com.example.optoapp.domain.ReclaimDispensacionUseCase>(relaxed = true),
-            costoProductoDao,
-            costoBiseladoDao,
-        )
-        testDispatcher.scheduler.advanceUntilIdle()
+    fun `deleteDispensacion rejects asesor without invoking the use case`() = runTest(testDispatcher) {
+        opticaRolFlow.value = "asesor"
+        viewModel = createViewModel()
 
         var completed = false
         viewModel.deleteDispensacion(dispId) { completed = true }
         testDispatcher.scheduler.advanceUntilIdle()
 
-        coVerify {
-            stockHelper.adjustStockAndRegistrarMovimiento(
-                "prod-1",
-                "optica-test",
-                2,
-                "AJUSTE",
-                "reg-del-1",
-                "Devolución por borrado de dispensación",
-            )
-        }
+        coVerify(exactly = 0) { eliminar(any(), any()) }
+        assertFalse(completed)
+        assertTrue(viewModel.uiState.value.error!!.contains("eliminar dispensación"))
+        assertFalse(viewModel.uiState.value.isLoading)
+    }
+
+    @Test
+    fun `deleteDispensacion surfaces the use case rejection for orders with trace`() = runTest(testDispatcher) {
+        coEvery { eliminar(dispId, any()) } throws IllegalStateException("La orden tiene pagos o movimientos de stock. Usa Anular.")
+        viewModel = createViewModel()
+
+        var completed = false
+        viewModel.deleteDispensacion(dispId) { completed = true }
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertFalse(completed)
+        assertEquals("La orden tiene pagos o movimientos de stock. Usa Anular.", viewModel.uiState.value.error)
+        assertFalse(viewModel.uiState.value.isLoading)
     }
 }

@@ -13,12 +13,12 @@ import com.example.optoapp.data.Pago
 import com.example.optoapp.data.Resource
 import com.example.optoapp.data.regalodispensacion.RegaloDispensacionEntity
 import com.example.optoapp.domain.CalcularMontoPagadoUseCase
+import com.example.optoapp.domain.EliminarDispensacionUseCase
 import com.example.optoapp.domain.LifecycleOutcome
 import com.example.optoapp.domain.OrderStatusPolicy
 import com.example.optoapp.domain.PagoEffect
 import com.example.optoapp.domain.auth.AuthorizationGuard
 import com.example.optoapp.domain.inventario.InventarioItemKind
-import com.example.optoapp.domain.movimientoReferenciaForRegalo
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import com.example.optoapp.util.DateUtils
 import com.example.optoapp.util.DispensacionStockHelper
@@ -119,6 +119,7 @@ class DispensacionViewModel @Inject constructor(
     private val reclaimDispensacionUseCase: com.example.optoapp.domain.ReclaimDispensacionUseCase,
     private val costoProductoDao: com.example.optoapp.data.costoproducto.CostoProductoDao,
     private val costoBiseladoDao: com.example.optoapp.data.costobiselado.CostoBiseladoDao,
+    private val eliminarDispensacionUseCase: EliminarDispensacionUseCase,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(DispensacionUiState(generatedId = UUID.randomUUID().toString()))
     val uiState: StateFlow<DispensacionUiState> = _uiState.asStateFlow()
@@ -593,51 +594,14 @@ class DispensacionViewModel @Inject constructor(
     }
 
     fun deleteDispensacion(dispensacionId: String, onComplete: () -> Unit) {
-        // Hard delete for mistakes: remove completely + revert stock
-        // No inverse Pago, no financial trace — this never happened.
         viewModelScope.launch {
             if (_uiState.value.isLoading) return@launch
             _uiState.update { it.copy(isLoading = true, error = null) }
             try {
                 val role = sessionManager.opticaRol.first()
                 AuthorizationGuard.requireRole(role, setOf("admin", "gerente"), "eliminar dispensación")
-                val opticaId = sessionManager.opticaId.first()
-                val result = repository.getDispensacionById(dispensacionId, opticaId)
-                if (result !is Resource.Success || result.data == null) {
-                    _uiState.update { it.copy(isLoading = false, error = "Dispensación no encontrada.") }
-                    return@launch
-                }
-                val items = repository.getDispensacionItemsByDispensacion(dispensacionId, opticaId)
-                repository.runInTransaction {
-                    kotlinx.coroutines.runBlocking {
-                        val regalos = repository.getRegalosByDispensacionId(dispensacionId, opticaId)
-                        regalos.forEach { regalo ->
-                            stockHelper.adjustStockAndRegistrarMovimiento(
-                                regalo.productoId,
-                                opticaId,
-                                regalo.cantidad,
-                                "AJUSTE",
-                                movimientoReferenciaForRegalo(regalo.id),
-                                "Devolución por borrado de dispensación",
-                            )
-                        }
-                        items.filter { it.origenMontura == "Tienda" && it.monturaId.isNotBlank() }
-                            .forEach { item ->
-                                stockHelper.adjustStockAndRegistrarMovimiento(
-                                    item.monturaId,
-                                    opticaId,
-                                    1,
-                                    "AJUSTE",
-                                    dispensacionId,
-                                    "Reversión por borrado de dispensación",
-                                )
-                            }
-                        repository.deleteDispensacion(result.data)
-                    }
-                }
+                eliminarDispensacionUseCase(dispensacionId, sessionManager.opticaId.first())
                 _uiState.update { it.copy(isLoading = false) }
-                postSaveSyncScheduler.scheduleInventarioSync(opticaId)
-                postSaveSyncScheduler.scheduleFinanzasSync(opticaId)
                 onComplete()
             } catch (e: kotlinx.coroutines.CancellationException) {
                 _uiState.update { it.copy(isLoading = false) }
