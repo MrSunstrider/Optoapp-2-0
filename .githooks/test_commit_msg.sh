@@ -69,10 +69,23 @@ assert_eq "Message byte-identical" "$original" "$HOOK_RESULT"
 
 echo ""
 echo "=== SCENARIO 5: Non-UTF-8 body survives stripping under a UTF-8 locale ==="
-latin1=$'fix: correcci\xf3n\n\nL\xednea con acentos Latin-1.\nOtra l\xednea.\n\nCo-authored-by: Cursor <cursoragent@cursor.com>\n'
-LC_ALL=C.UTF-8 run_hook_on "$latin1"
-assert_eq "Exit code 0" "0" "$HOOK_EXIT"
-assert_eq "Every body line kept" $'fix: correcci\xf3n\n\nL\xednea con acentos Latin-1.\nOtra l\xednea.\n' "$HOOK_RESULT"
+# Only a locale where grep really flags invalid bytes as binary can expose the
+# regression; on hosts without one the scenario would pass vacuously.
+utf8_locale=""
+for candidate in C.UTF-8 en_US.UTF-8 C.utf8 en_US.utf8; do
+    if printf 'a\xf3\n' | LC_ALL="$candidate" grep a 2>/dev/null | grep -q '^Binary file'; then
+        utf8_locale="$candidate"
+        break
+    fi
+done
+if [ -z "$utf8_locale" ]; then
+    echo "  ⚠️  SKIP: no UTF-8 locale on this host makes grep treat invalid bytes as binary"
+else
+    latin1=$'fix: correcci\xf3n\n\nL\xednea con acentos Latin-1.\nOtra l\xednea.\n\nCo-authored-by: Cursor <cursoragent@cursor.com>\n'
+    LC_ALL="$utf8_locale" run_hook_on "$latin1"
+    assert_eq "Exit code 0 ($utf8_locale)" "0" "$HOOK_EXIT"
+    assert_eq "Every body line kept ($utf8_locale)" $'fix: correcci\xf3n\n\nL\xednea con acentos Latin-1.\nOtra l\xednea.\n' "$HOOK_RESULT"
+fi
 
 echo ""
 echo "=== SCENARIO 6: Attribution-only message becomes empty so git aborts it ==="
