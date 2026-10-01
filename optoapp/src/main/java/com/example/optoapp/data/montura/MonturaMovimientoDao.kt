@@ -27,6 +27,15 @@ interface MonturaMovimientoDao {
     @Query("SELECT * FROM montura_movimientos WHERE id = :id AND opticaId = :opticaId")
     suspend fun getMovimientoById(id: String, opticaId: String): MonturaMovimiento?
 
+    @Query(
+        """
+        SELECT COUNT(*) FROM montura_movimientos
+        WHERE referenciaId = :referenciaId AND tipo = :tipo
+          AND monturaId = :monturaId AND opticaId = :opticaId
+        """,
+    )
+    suspend fun countByKey(referenciaId: String, tipo: String, monturaId: String, opticaId: String): Int
+
     @Query("SELECT * FROM montura_movimientos WHERE opticaId = :opticaId AND fecha >= :since")
     suspend fun getMovimientosDesde(opticaId: String, since: java.time.LocalDate): List<MonturaMovimiento>
 }

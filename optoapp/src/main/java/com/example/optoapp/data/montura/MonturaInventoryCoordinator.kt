@@ -120,6 +120,9 @@ class MonturaInventoryCoordinator @Inject constructor(
     suspend fun getMovimientoMonturaById(id: String, opticaId: String): MonturaMovimiento? =
         monturaMovimientoDao.getMovimientoById(id, opticaId)
 
+    suspend fun hasMovimiento(referenciaId: String, tipo: String, monturaId: String, opticaId: String): Boolean =
+        monturaMovimientoDao.countByKey(referenciaId, tipo, monturaId, opticaId) > 0
+
     suspend fun insertMonturaMovimiento(movimiento: MonturaMovimiento) {
         val stamped = movimiento.copy(updatedAt = Instant.now().toString())
         monturaMovimientoDao.insertMovimiento(stamped)

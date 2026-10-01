@@ -116,4 +116,26 @@ class DispensacionStockHelper @Inject constructor(
         )
         return Result.success(affected)
     }
+
+    /**
+     * Returns `success(false)` when the AJUSTE for [referenciaId] already exists so a retried
+     * cancel never restocks twice; `success(true)` after restocking.
+     */
+    suspend fun restockOnce(
+        monturaId: String,
+        opticaId: String,
+        delta: Int,
+        referenciaId: String,
+        nota: String,
+    ): Result<Boolean> {
+        if (coordinator.hasMovimiento(referenciaId, TIPO_AJUSTE, monturaId, opticaId)) {
+            return Result.success(false)
+        }
+        return adjustStockAndRegistrarMovimiento(monturaId, opticaId, delta, TIPO_AJUSTE, referenciaId, nota)
+            .map { true }
+    }
+
+    private companion object {
+        const val TIPO_AJUSTE = "AJUSTE"
+    }
 }

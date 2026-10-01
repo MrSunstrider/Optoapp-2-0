@@ -291,4 +291,33 @@ class MonturaMovimientoDaoTest {
         assertEquals(1, result.size)
         assertEquals("mov-server", result[0].id)
     }
+
+    @Test
+    fun countByKey_matchesOnlyExactReferenciaTipoMonturaAndOptica() = runBlocking {
+        monturaDao.insertMontura(
+            Montura(
+                id = "m1", sku = "S001", marca = "M", modelo = "X",
+                color = "N", talla = "M", costo = 50.0, precio = 100.0,
+                stockActual = 10, stockMinimo = 2, activo = true, opticaId = "o1",
+            ),
+        )
+        dao.insertMovimiento(
+            MonturaMovimiento(
+                id = "mov-anul",
+                monturaId = "m1",
+                fecha = LocalDate.parse("2026-06-18"),
+                tipo = "AJUSTE",
+                cantidad = 1,
+                stockPrevio = 9,
+                stockNuevo = 10,
+                referenciaId = "d1:anul:i1",
+                opticaId = "o1",
+            ),
+        )
+
+        assertEquals(1, dao.countByKey("d1:anul:i1", "AJUSTE", "m1", "o1"))
+        assertEquals(0, dao.countByKey("d1:anul:i1", "SALIDA_VENTA", "m1", "o1"))
+        assertEquals(0, dao.countByKey("d1", "AJUSTE", "m1", "o1"))
+        assertEquals(0, dao.countByKey("d1:anul:i1", "AJUSTE", "m1", "o-other"))
+    }
 }

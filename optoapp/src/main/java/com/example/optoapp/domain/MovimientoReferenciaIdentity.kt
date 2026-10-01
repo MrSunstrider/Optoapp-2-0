@@ -30,3 +30,30 @@ fun movimientoReferenciaForServicioExtraReverso(servicioId: String, monturaId: S
     require(monturaId.isNotBlank()) { "montura id must not be blank" }
     return "$servicioId:rev:$monturaId"
 }
+
+/**
+ * WHY: cancel restocks reuse the montura of the sale/edit rows, so the `:anul` segment keeps the
+ * reversal outside their (referenciaId, tipo, monturaId) slot and makes a repeated cancel hit
+ * the same key instead of inserting a second restock.
+ */
+fun movimientoReferenciaForDispensacionItemAnulacion(dispensacionId: String, itemId: String): String {
+    require(dispensacionId.isNotBlank()) { "dispensacion id must not be blank" }
+    require(itemId.isNotBlank()) { "dispensacion item id must not be blank" }
+    return "$dispensacionId:anul:$itemId"
+}
+
+fun movimientoReferenciaForDispensacionHeaderAnulacion(dispensacionId: String, monturaId: String): String {
+    require(dispensacionId.isNotBlank()) { "dispensacion id must not be blank" }
+    require(monturaId.isNotBlank()) { "montura id must not be blank" }
+    return "$dispensacionId:anul:h:$monturaId"
+}
+
+fun movimientoReferenciaForRegaloAnulacion(regaloId: String): String {
+    require(regaloId.isNotBlank()) { "regalo id must not be blank" }
+    return "$regaloId:anul"
+}
+
+fun movimientoReferenciaForServicioItemAnulacion(itemId: String): String {
+    require(itemId.isNotBlank()) { "servicio item id must not be blank" }
+    return "$itemId:anul"
+}

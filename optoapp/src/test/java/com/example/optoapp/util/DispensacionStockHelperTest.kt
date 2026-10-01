@@ -167,6 +167,49 @@ class DispensacionStockHelperTest {
     }
 
     @Test
+    fun restockOnce_existingAjusteForReferencia_skipsWithoutTouchingStock() = runTest {
+        coEvery { coordinator.hasMovimiento("d1:anul:i1", "AJUSTE", "m1", "o1") } returns true
+
+        val result = helper.restockOnce("m1", "o1", 1, "d1:anul:i1", "Reposición por anulación")
+
+        assertEquals(false, result.getOrNull())
+        coVerify(exactly = 0) { coordinator.adjustMonturaStock(any(), any(), any()) }
+        coVerify(exactly = 0) { coordinator.insertMonturaMovimiento(any()) }
+    }
+
+    @Test
+    fun restockOnce_noPriorAjuste_restocksWithAjusteMovimiento() = runTest {
+        coEvery { coordinator.hasMovimiento("r1:anul", "AJUSTE", "m1", "o1") } returns false
+        coEvery { coordinator.getMonturaById("m1", "o1") } returns
+            Resource.Success(Montura(id = "m1", opticaId = "o1", stockActual = 4))
+        coEvery { coordinator.adjustMonturaStock("m1", "o1", 2) } returns 1
+
+        val result = helper.restockOnce("m1", "o1", 2, "r1:anul", "Reposición de regalo")
+
+        assertEquals(true, result.getOrNull())
+        coVerify(exactly = 1) { coordinator.adjustMonturaStock("m1", "o1", 2) }
+        coVerify(exactly = 1) {
+            coordinator.insertMonturaMovimiento(
+                match { mov ->
+                    mov.tipo == "AJUSTE" && mov.referenciaId == "r1:anul" &&
+                        mov.cantidad == 2 && mov.stockPrevio == 4 && mov.stockNuevo == 6
+                },
+            )
+        }
+    }
+
+    @Test
+    fun restockOnce_adjustFailure_propagatesFailure() = runTest {
+        coEvery { coordinator.hasMovimiento(any(), any(), any(), any()) } returns false
+        coEvery { coordinator.getMonturaById("m1", "o1") } returns Resource.Error("Montura no encontrada")
+
+        val result = helper.restockOnce("m1", "o1", 1, "d1:anul:i1", "Reposición por anulación")
+
+        assertTrue(result.isFailure)
+        coVerify(exactly = 0) { coordinator.insertMonturaMovimiento(any()) }
+    }
+
+    @Test
     fun adjustStock_loadingState_returnsFailure() = runTest {
         coEvery { coordinator.getMonturaById("m1", any()) } returns Resource.Loading()
 
