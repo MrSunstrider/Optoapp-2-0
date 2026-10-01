@@ -66,6 +66,28 @@ After the migration lint passes or is skipped, the pre-commit hook MUST run `gga
 - WHEN they run `git commit`
 - THEN the hook warns that GGA was not found AND the commit proceeds (CI remains the backstop)
 
+### Requirement: Commit Message Attribution Stripping
+
+The `commit-msg` hook MUST remove Cursor attribution trailers (`Co-authored-by: Cursor <cursoragent@cursor.com>` and `Made-with: Cursor`, case-insensitive) from the commit message, together with any blank lines they leave at the end. Human co-authors and messages without attribution MUST be left untouched.
+
+#### Scenario: Cursor trailer is stripped
+
+- GIVEN an agent commit whose message ends with `Co-authored-by: Cursor <cursoragent@cursor.com>`
+- WHEN the `commit-msg` hook runs
+- THEN the committed message ends with the original body and contains no Cursor attribution
+
+#### Scenario: Human co-author is preserved
+
+- GIVEN a message with both a human `Co-authored-by` trailer and the Cursor trailer
+- WHEN the `commit-msg` hook runs
+- THEN only the Cursor trailer is removed
+
+#### Scenario: Message without attribution is untouched
+
+- GIVEN a message with no attribution trailers
+- WHEN the `commit-msg` hook runs
+- THEN the message file is not rewritten
+
 ### Requirement: Hook Registration
 
 The project SHALL use `git config core.hooksPath .githooks` to register the hook directory. The `.githooks/pre-commit` file MUST be committed to the repository and executable on POSIX systems.

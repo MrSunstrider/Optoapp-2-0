@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# =============================================================================
+# commit-msg hook: strip Cursor attribution trailers
+#
+# Cursor tooling appends `Co-authored-by: Cursor <cursoragent@cursor.com>` (and
+# sometimes `Made-with: Cursor`) to agent commits before hooks run, and agent
+# rules cannot prevent it. The repo forbids AI attribution, so remove those
+# trailers here; human co-authors and prose mentions are left untouched.
+#
+# Register with: git config core.hooksPath .githooks
+# =============================================================================
+
+set -euo pipefail
+
+msg_file="$1"
+attribution='^[[:space:]]*(co-authored-by:[[:space:]]*cursor[[:space:]]*<cursoragent@cursor\.com>|made-with:[[:space:]]*cursor)[[:space:]]*$'
+
+if ! grep -Eqi "$attribution" "$msg_file"; then
+    exit 0
+fi
+
+stripped="$(grep -Eiv "$attribution" "$msg_file" || true)"
+printf '%s\n' "$stripped" | sed -e :a -e '/^[[:space:]]*$/{$d;N;ba' -e '}' > "$msg_file"
