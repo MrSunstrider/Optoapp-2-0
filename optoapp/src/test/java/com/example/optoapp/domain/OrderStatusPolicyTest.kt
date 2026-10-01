@@ -110,7 +110,15 @@ class OrderStatusPolicyTest {
         val error = runCatching { OrderStatusPolicy.requireEditable(" Anulado ", "modificar pagos") }.exceptionOrNull()
 
         assertTrue(error is IllegalStateException)
-        assertEquals("La orden está anulado y no se puede modificar pagos.", error?.message)
+        assertEquals("La orden está anulada y no se puede modificar pagos.", error?.message)
+    }
+
+    @Test
+    fun `requireEditable uses feminine wording for every terminal estado`() {
+        val message = runCatching { OrderStatusPolicy.requireEditable("Reclamada", "editar el servicio") }
+            .exceptionOrNull()?.message
+
+        assertEquals("La orden está reclamada y no se puede editar el servicio.", message)
     }
 
     @Test

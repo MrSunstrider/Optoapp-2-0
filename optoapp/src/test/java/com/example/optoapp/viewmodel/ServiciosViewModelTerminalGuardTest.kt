@@ -97,7 +97,7 @@ class ServiciosViewModelTerminalGuardTest {
         advanceUntilIdle()
 
         assertEquals(false, saved)
-        assertEquals("La orden está anulado y no se puede editar el servicio.", viewModel.uiState.value.error)
+        assertEquals("La orden está anulada y no se puede editar el servicio.", viewModel.uiState.value.error)
         coVerify(exactly = 0) { stockHelper.adjustStockAndRegistrarMovimiento(any(), any(), any(), any(), any(), any()) }
         coVerify(exactly = 0) { repository.updateServicio(any()) }
         coVerify(exactly = 0) { repository.deleteServicioExtraItemsByServicioId(any(), any()) }

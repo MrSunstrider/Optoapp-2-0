@@ -20,7 +20,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
-import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -294,7 +293,7 @@ class InformacionFinancieraViewModelTest {
         coVerify(exactly = 0) { repository.actualizarMontoPagado(any(), any(), any()) }
         coVerify(exactly = 0) { postSaveSyncScheduler.scheduleFinanzasSync(any()) }
         assertEquals(false, completed)
-        assertEquals("Error al guardar: La orden está anulado y no se puede modificar la información financiera.", vm.uiState.value.error)
+        assertEquals("Error al guardar: La orden está anulada y no se puede modificar la información financiera.", vm.uiState.value.error)
     }
 
     @Test
