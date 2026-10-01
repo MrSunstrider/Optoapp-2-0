@@ -478,6 +478,7 @@ class DispensacionViewModel @Inject constructor(
                 kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                     repository.runInTransaction {
                         kotlinx.coroutines.runBlocking {
+                            val row = if (isNew) disp else persistedEditableRow(disp, currentOpticaId)
                             // Stock adjustments MUST run inside the transaction for atomicity.
                             // If the transaction fails, stock is not modified.
                             toAddStock.forEach { mid ->
@@ -498,9 +499,9 @@ class DispensacionViewModel @Inject constructor(
                             }
 
                             if (dispensacionId != null && dispensacionId != "null") {
-                                repository.updateDispensacion(disp)
+                                repository.updateDispensacion(row)
                             } else {
-                                repository.insertDispensacion(disp)
+                                repository.insertDispensacion(row)
                             }
 
                             repository.deleteItemsByDispensacionId(finalId, currentOpticaId)
@@ -554,7 +555,7 @@ class DispensacionViewModel @Inject constructor(
 
                             // Prefer DAO effect-aware net over wizard in-memory pagos (IF may have newer rows).
                             val montoPagadoNeto = calcularMontoPagadoUseCase(finalId, currentOpticaId)
-                            repository.updateDispensacion(disp.copy(montoPagado = montoPagadoNeto))
+                            repository.updateDispensacion(row.copy(montoPagado = montoPagadoNeto))
                         }
                     }
                 }
@@ -574,6 +575,21 @@ class DispensacionViewModel @Inject constructor(
             _uiState.update { it.copy(isLoading = false) }
             onComplete()
         }
+    }
+
+    /**
+     * `updateDispensacion` replaces the whole row, so fields the wizard does not edit
+     * (claim linkage, cancellation metadata) are carried from the persisted row.
+     */
+    private suspend fun persistedEditableRow(edited: DispensacionOptica, opticaId: String): DispensacionOptica {
+        val persisted = (repository.getDispensacionById(edited.id, opticaId) as? Resource.Success)?.data
+            ?: throw IllegalStateException("Dispensación no encontrada.")
+        OrderStatusPolicy.requireEditable(persisted.estadoEntrega, "editar la dispensación")
+        return edited.copy(
+            reclamoOrigenId = persisted.reclamoOrigenId,
+            motivoAnulacion = persisted.motivoAnulacion,
+            fechaAnulacion = persisted.fechaAnulacion,
+        )
     }
 
     fun deleteDispensacion(dispensacionId: String, onComplete: () -> Unit) {
