@@ -37,6 +37,15 @@ class OrderStatusPolicyTest {
     }
 
     @Test
+    fun `only Pendiente and Entregado can be cancelled`() {
+        assertTrue(OrderStatusPolicy.canCancel("Pendiente"))
+        assertTrue(OrderStatusPolicy.canCancel(" Entregado "))
+        assertFalse(OrderStatusPolicy.canCancel("Anulado"))
+        assertFalse(OrderStatusPolicy.canCancel("Reclamada"))
+        assertFalse(OrderStatusPolicy.canCancel(""))
+    }
+
+    @Test
     fun `delivery date change keeps a whitespace-padded terminal estado`() {
         assertEquals(" Reclamada ", estadoAfterFechaEntrega(" Reclamada ", LocalDate.of(2026, 9, 30)))
     }

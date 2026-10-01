@@ -9,8 +9,11 @@ object OrderStatusPolicy {
     const val RECLAMADA = "Reclamada"
 
     private val TERMINAL = setOf(ANULADO, RECLAMADA)
+    private val CANCELABLE = setOf(PENDIENTE, ENTREGADO)
 
     fun isTerminal(estado: String): Boolean = estado.trim() in TERMINAL
+
+    fun canCancel(estado: String): Boolean = estado.trim() in CANCELABLE
 }
 
 /** Waiting for delivery: still Pendiente and no delivery date recorded. */

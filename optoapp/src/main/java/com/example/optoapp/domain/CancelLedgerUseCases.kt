@@ -1,5 +1,6 @@
 package com.example.optoapp.domain
 
+import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Pago
 import com.example.optoapp.data.Resource
@@ -187,6 +188,90 @@ class CancelServicioExtraUseCase @Inject constructor(
         if (result.isFailure) {
             throw IllegalStateException(result.exceptionOrNull()?.message ?: fallbackMessage)
         }
+    }
+}
+
+sealed interface LifecycleOutcome {
+    data object Applied : LifecycleOutcome
+    data class AlreadyTerminal(val estado: String) : LifecycleOutcome
+}
+
+private const val MOTIVO_MAX_LENGTH = 500
+private const val ORIGEN_TIENDA = "Tienda"
+
+internal fun normalizeMotivo(motivo: String): String {
+    val trimmed = motivo.trim()
+    require(trimmed.isNotEmpty()) { "El motivo es obligatorio." }
+    require(trimmed.length <= MOTIVO_MAX_LENGTH) { "El motivo no puede superar $MOTIVO_MAX_LENGTH caracteres." }
+    return trimmed
+}
+
+/**
+ * The estado check is the first statement of the transaction so a retried or overlapping
+ * cancel finds the order already terminal and writes nothing.
+ */
+class AnularDispensacionUseCase @Inject constructor(
+    private val repository: OptoRepository,
+    private val pagoDao: PagoDao,
+    private val stockHelper: DispensacionStockHelper,
+    private val postSaveSyncScheduler: PostSaveSyncScheduler,
+    private val calcularMontoPagado: CalcularMontoPagadoUseCase,
+) {
+    suspend operator fun invoke(dispensacionId: String, opticaId: String, motivo: String): LifecycleOutcome {
+        val reason = normalizeMotivo(motivo)
+        val outcome = repository.withTransaction {
+            val disp = (repository.getDispensacionById(dispensacionId, opticaId) as? Resource.Success)?.data
+                ?: throw IllegalStateException("Dispensación no encontrada.")
+            if (OrderStatusPolicy.isTerminal(disp.estadoEntrega)) {
+                return@withTransaction LifecycleOutcome.AlreadyTerminal(disp.estadoEntrega.trim())
+            }
+            check(OrderStatusPolicy.canCancel(disp.estadoEntrega)) {
+                "No se puede anular una orden en estado ${disp.estadoEntrega}."
+            }
+            reverseLedgerFully(repository, pagoDao, dispensacionId, opticaId, forDispensacion = true, contexto = "anulación")
+            restockFrames(disp, opticaId)
+            restockRegalos(dispensacionId, opticaId)
+            repository.updateDispensacion(
+                disp.copy(
+                    estadoEntrega = OrderStatusPolicy.ANULADO,
+                    motivoAnulacion = reason,
+                    fechaAnulacion = DateUtils.today(),
+                    montoPagado = calcularMontoPagado(dispensacionId, opticaId),
+                ),
+            )
+            LifecycleOutcome.Applied
+        }
+        if (outcome == LifecycleOutcome.Applied) {
+            postSaveSyncScheduler.scheduleFinanzasSync(opticaId)
+            postSaveSyncScheduler.scheduleInventarioSync(opticaId)
+        }
+        return outcome
+    }
+
+    private suspend fun restockFrames(disp: DispensacionOptica, opticaId: String) {
+        val items = repository.getDispensacionItemsByDispensacion(disp.id, opticaId)
+        if (items.isEmpty()) {
+            if (disp.origenMontura.trim() == ORIGEN_TIENDA && disp.monturaId.isNotBlank()) {
+                restock(disp.monturaId, opticaId, 1, movimientoReferenciaForDispensacionHeaderAnulacion(disp.id, disp.monturaId))
+            }
+            return
+        }
+        items.filter { it.origenMontura.trim() == ORIGEN_TIENDA && it.monturaId.isNotBlank() }.forEach { item ->
+            restock(item.monturaId, opticaId, 1, movimientoReferenciaForDispensacionItemAnulacion(disp.id, item.id))
+        }
+    }
+
+    private suspend fun restockRegalos(dispensacionId: String, opticaId: String) {
+        repository.getRegalosByDispensacionId(dispensacionId, opticaId)
+            .filter { it.productoId.isNotBlank() }
+            .forEach { regalo ->
+                restock(regalo.productoId, opticaId, regalo.cantidad, movimientoReferenciaForRegaloAnulacion(regalo.id))
+            }
+    }
+
+    private suspend fun restock(monturaId: String, opticaId: String, delta: Int, referenciaId: String) {
+        stockHelper.restockOnce(monturaId, opticaId, delta, referenciaId, "Reversión por anulación de dispensación")
+            .getOrElse { throw IllegalStateException(it.message ?: "No se pudo reponer el stock.", it) }
     }
 }
 
