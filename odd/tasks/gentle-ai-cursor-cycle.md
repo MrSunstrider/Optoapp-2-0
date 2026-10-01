@@ -39,6 +39,7 @@ An audit of the Cursor install (gentle-ai 3.7.0, engram 2.2.1, gga 2.10.1) found
 - [x] T5 `commit-msg` hook strips Cursor attribution trailers, with tests first (RED → GREEN). Route: inline (one hook + its test). Commit 383938f5; `test_commit_msg.sh` 8/8; the commit itself landed without the trailer.
 - [x] T6 Disable Cursor CLI commit/PR attribution; refresh skill registry. Route: inline. Evidence: `~/.cursor/cli-config.json` attribution false; `.cursor/skills` junction to `~/.cursor/skills` so the registry resolves Cursor paths (13 skills); Engram `skill-registry` mirror refreshed.
 - [x] T7 Verify end to end: hook tests, `review assess`, GGA, RDD on the new commits. Evidence: `gentle-ai doctor` healthy (7/7); `test_pre_commit.sh` 15/15 and `test_commit_msg.sh` 8/8 under Git Bash; GGA ran with provider `cursor` on ce241961, which landed without a trailer; RDD `review-4df030caf66aa05e` (bf43cd2d..ce241961, high risk) approved and acknowledged after human consent.
+- [x] T8 Close Claude leakage and RDD advisories: point the Optoapp section of `~/CLAUDE.md` (always loaded by Cursor, including `cursor-agent`) at `AGENTS.md` instead of stale `:app`/Retrofit facts; make `commit-msg` keep non-UTF-8 bodies (`LC_ALL=C`, `grep -a`) with byte-exact tests and the attribution-only case. Route: inline, TDD (scenario 5 RED showed the whole message replaced by "Binary file ... matches"). Commit 4b6a3b6d; RDD `review-85aa51e697a0b7f5` approved and acknowledged.
 
 ## Acceptance criteria
 
@@ -50,9 +51,9 @@ An audit of the Cursor install (gentle-ai 3.7.0, engram 2.2.1, gga 2.10.1) found
 
 ## Progress
 
-- T1-T7 done.
-- Advisory RDD findings left as follow-up: commit-msg grep is locale-dependent and can drop body lines on non-UTF-8 input (R4-001); hook tests compare via command substitution, so trailing blank lines go unasserted (R3-001); attribution-only messages become empty (R3-002); readability nits R2-001..003.
+- T1-T8 done. RDD advisories from the first review (locale-dependent grep, unasserted trailing blank lines, attribution-only message, readability nits) are fixed in 4b6a3b6d.
+- Open, optional: scenario 5 of `test_commit_msg.sh` only discriminates on hosts that honor `C.UTF-8` (true on this machine: it failed before the fix).
 
 ## Next step
 
-None; follow-ups above are separate work.
+User: turn off Cursor Settings > Agents > Third-Party Imports ("Include Third-Party Plugins, Skills, and Other Configs") so the IDE stops loading the Claude Code engram/vercel plugins and their hooks.
