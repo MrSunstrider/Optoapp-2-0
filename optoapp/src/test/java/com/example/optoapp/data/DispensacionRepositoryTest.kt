@@ -4,6 +4,7 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.example.optoapp.data.pago.PagoDao
 import com.example.optoapp.data.servicio.ServicioExtraDao
+import com.example.optoapp.util.DateUtils
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -262,7 +263,37 @@ class DispensacionRepositoryTest {
         val reversal = allPagos.first { it.tipo == "Reverso" }
         assertEquals(100.0, reversal.monto, 0.001)
         assertEquals("p1", reversal.reversaPagoId)
-        assertEquals(LocalDate.parse("2026-01-15"), reversal.fecha)
+        assertTrue(reversal.nota.contains(DateUtils.formatLocalized(LocalDate.parse("2026-01-15"))))
+    }
+
+    @Test
+    fun deletePagoRegistrandoAnulacionEnCaja_oldAbono_reversoIsDatedToday() = runBlocking {
+        insertDummyPaciente()
+        dispensacionDao.insertDispensacion(
+            DispensacionOptica(
+                id = "d1",
+                pacienteId = "p_dummy",
+                fecha = LocalDate.parse("2026-01-15"),
+                opticaId = "o1",
+            ),
+        )
+        val tenDaysAgo = DateUtils.today().minusDays(10)
+        val abono = Pago(
+            id = "p-old",
+            dispensacionId = "d1",
+            fecha = tenDaysAgo,
+            tipo = "Abono",
+            monto = 80.0,
+            metodoPago = "Efectivo",
+            opticaId = "o1",
+        )
+        pagoDao.insertPago(abono)
+
+        repo.deletePagoRegistrandoAnulacionEnCaja(abono, "o1")
+
+        val reverso = pagoDao.getReversoByOriginalId("p-old", "o1")!!
+        assertEquals(DateUtils.today(), reverso.fecha)
+        assertEquals(tenDaysAgo, pagoDao.getPagoByIdForOptica("p-old", "o1")!!.fecha)
     }
 
     @Test

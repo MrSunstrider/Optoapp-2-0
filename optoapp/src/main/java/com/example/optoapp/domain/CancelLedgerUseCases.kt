@@ -12,32 +12,105 @@ import java.time.Instant
 import java.util.UUID
 import javax.inject.Inject
 
+private val CREDIT_TIPOS = setOf("Abono", "Pago completo")
+private const val TIPO_REVERSO = "Reverso"
+private const val TIPO_REEMBOLSO = "Reembolso"
+
+/**
+ * Ledger of one parent with reversed credit/Reverso pairs removed. `legacyDebits` are Reembolsos
+ * and orphan Reversos: a Reverso may only reverse a credit, so they need compensating Abonos.
+ */
+internal data class LedgerSnapshot(
+    val unreversedCredits: List<Pago>,
+    val legacyDebits: List<Pago>,
+    val netByMetodo: Map<String, Double>,
+) {
+    val netPaid: Double get() = netByMetodo.values.sum()
+}
+
+internal fun ledgerSnapshot(pagos: List<Pago>): LedgerSnapshot {
+    val creditIds = pagos.filter { it.tipo.trim() in CREDIT_TIPOS }.map { it.id }.toSet()
+    val reversedCreditIds = pagos
+        .filter { it.tipo.trim() == TIPO_REVERSO && it.reversaPagoId in creditIds }
+        .mapNotNull { it.reversaPagoId }
+        .toSet()
+    val unreversedCredits = pagos.filter { it.tipo.trim() in CREDIT_TIPOS && it.id !in reversedCreditIds }
+    val legacyDebits = pagos.filter {
+        when (it.tipo.trim()) {
+            TIPO_REEMBOLSO -> true
+            TIPO_REVERSO -> it.reversaPagoId !in creditIds
+            else -> false
+        }
+    }
+    val netByMetodo = (unreversedCredits + legacyDebits)
+        .groupBy { it.metodoPago }
+        .mapValues { (_, rows) -> rows.sumOf { PagoEffect.signedAmount(it.tipo, it.monto) } }
+    return LedgerSnapshot(unreversedCredits, legacyDebits, netByMetodo)
+}
+
 internal suspend fun insertMissingReversos(
     repository: OptoRepository,
     pagoDao: PagoDao,
     parentId: String,
     opticaId: String,
     forDispensacion: Boolean,
-) {
+): List<Pago> {
+    val inserted = mutableListOf<Pago>()
     for (credit in pagoDao.getCreditPagosByParent(parentId, opticaId)) {
         if (pagoDao.getReversoByOriginalId(credit.id, opticaId) != null) continue
+        val reverso = Pago(
+            id = UUID.randomUUID().toString(),
+            dispensacionId = if (forDispensacion) parentId else null,
+            servicioExtraId = if (forDispensacion) null else parentId,
+            fecha = DateUtils.today(),
+            tipo = TIPO_REVERSO,
+            monto = credit.monto,
+            metodoPago = credit.metodoPago,
+            nota = "Reverso de ${credit.tipo} ${credit.id.take(8)}",
+            opticaId = opticaId,
+            ventaId = credit.ventaId,
+            reversaPagoId = credit.id,
+            updatedAt = Instant.now().toString(),
+        )
+        repository.insertPago(reverso)
+        inserted += reverso
+    }
+    return inserted
+}
+
+/**
+ * Leaves the parent at net 0 using only Reverso/Abono rows (server CHECK forbids reversing a
+ * debit). Reversos go first so the compensating Abonos are never themselves reversed.
+ * Must run inside the caller's transaction. Returns the ledger as it was before reversal.
+ */
+internal suspend fun reverseLedgerFully(
+    repository: OptoRepository,
+    pagoDao: PagoDao,
+    parentId: String,
+    opticaId: String,
+    forDispensacion: Boolean,
+    contexto: String,
+): LedgerSnapshot {
+    val snapshot = ledgerSnapshot(pagoDao.getPagosByParent(parentId, opticaId))
+    insertMissingReversos(repository, pagoDao, parentId, opticaId, forDispensacion)
+    for (debit in snapshot.legacyDebits) {
         repository.insertPago(
             Pago(
                 id = UUID.randomUUID().toString(),
                 dispensacionId = if (forDispensacion) parentId else null,
                 servicioExtraId = if (forDispensacion) null else parentId,
                 fecha = DateUtils.today(),
-                tipo = "Reverso",
-                monto = credit.monto,
-                metodoPago = credit.metodoPago,
-                nota = "Reverso de ${credit.tipo} ${credit.id.take(8)}",
+                tipo = "Abono",
+                monto = debit.monto,
+                metodoPago = debit.metodoPago,
+                nota = "Compensación de ${debit.tipo.trim()} ${debit.id.take(8)} por $contexto",
                 opticaId = opticaId,
-                ventaId = credit.ventaId,
-                reversaPagoId = credit.id,
+                ventaId = debit.ventaId,
                 updatedAt = Instant.now().toString(),
             ),
         )
     }
+    return snapshot
 }
 
 class CancelServicioExtraUseCase @Inject constructor(

@@ -61,6 +61,16 @@ interface PagoDao {
     )
     suspend fun getCreditPagosByParent(parentId: String, opticaId: String): List<Pago>
 
+    @Query(
+        """
+        SELECT * FROM pagos
+        WHERE (dispensacionId = :parentId OR servicioExtraId = :parentId)
+          AND opticaId = :opticaId
+        ORDER BY fecha, id
+        """,
+    )
+    suspend fun getPagosByParent(parentId: String, opticaId: String): List<Pago>
+
     @Query("DELETE FROM pagos WHERE id = :id AND opticaId = :opticaId")
     suspend fun deletePago(id: String, opticaId: String): Int
 

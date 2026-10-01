@@ -7,6 +7,7 @@ import com.example.optoapp.data.Resource
 import com.example.optoapp.data.ServicioExtra
 import com.example.optoapp.data.pago.PagoDao
 import com.example.optoapp.sync.PostSaveSyncScheduler
+import com.example.optoapp.util.DateUtils
 import com.example.optoapp.util.DispensacionStockHelper
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -280,5 +281,90 @@ class CancelLedgerUseCasesTest {
     @Test(expected = IllegalArgumentException::class)
     fun reclaim_rejectsNegativeMonto() = runBlocking {
         ReclaimDispensacionUseCase(repository, scheduler)("d1", "o1", -1.0, "Efectivo", "OT-1")
+    }
+
+    private fun ledgerPago(
+        id: String,
+        tipo: String,
+        monto: Double,
+        metodo: String,
+        reversaPagoId: String? = null,
+        ventaId: String? = null,
+    ) = Pago(
+        id = id, dispensacionId = "d1", fecha = date, tipo = tipo, monto = monto,
+        metodoPago = metodo, opticaId = "o1", reversaPagoId = reversaPagoId, ventaId = ventaId,
+    )
+
+    private fun stubLedger(pagos: List<Pago>): MutableList<Pago> {
+        val inserted = mutableListOf<Pago>()
+        coEvery { pagoDao.getPagosByParent("d1", "o1") } returns pagos
+        coEvery { pagoDao.getCreditPagosByParent("d1", "o1") } returns
+            pagos.filter { it.tipo == "Abono" || it.tipo == "Pago completo" }
+        coEvery { pagoDao.getReversoByOriginalId(any(), "o1") } answers {
+            pagos.firstOrNull { p -> p.tipo == "Reverso" && p.reversaPagoId == firstArg<String>() }
+        }
+        coEvery { repository.insertPago(capture(inserted)) } returns Unit
+        return inserted
+    }
+
+    @Test
+    fun insertMissingReversos_returnsOnlyNewReversosAndSkipsAlreadyReversedCredit() = runBlocking {
+        val inserted = stubLedger(
+            listOf(
+                ledgerPago("a1", "Abono", 100.0, "Efectivo"),
+                ledgerPago("r1", "Reverso", 100.0, "Efectivo", reversaPagoId = "a1"),
+                ledgerPago("a2", "Abono", 50.0, "Tarjeta"),
+            ),
+        )
+
+        val result = insertMissingReversos(repository, pagoDao, "d1", "o1", forDispensacion = true)
+
+        assertEquals(listOf("a2"), result.map { it.reversaPagoId })
+        assertEquals(inserted, result)
+        assertEquals(DateUtils.today(), result.single().fecha)
+    }
+
+    @Test
+    fun reverseLedgerFully_legacyReembolso_reversesCreditThenCompensatesDebitToNetZero() = runBlocking {
+        val original = listOf(
+            ledgerPago("abono-200", "Abono", 200.0, "Efectivo", ventaId = "v-1"),
+            ledgerPago("reembolso-50", "Reembolso", 50.0, "Efectivo", ventaId = "v-2"),
+        )
+        val inserted = stubLedger(original)
+
+        val snapshot = reverseLedgerFully(repository, pagoDao, "d1", "o1", forDispensacion = true, contexto = "anulación")
+
+        assertEquals(listOf("Reverso", "Abono"), inserted.map { it.tipo })
+        val reverso = inserted[0]
+        assertEquals("abono-200", reverso.reversaPagoId)
+        assertEquals(200.0, reverso.monto, 0.001)
+        val compensation = inserted[1]
+        assertEquals(50.0, compensation.monto, 0.001)
+        assertEquals("Efectivo", compensation.metodoPago)
+        assertEquals("v-2", compensation.ventaId)
+        assertEquals("d1", compensation.dispensacionId)
+        assertNull(compensation.reversaPagoId)
+        assertEquals("Compensación de Reembolso reembols por anulación", compensation.nota)
+        assertEquals(listOf(DateUtils.today(), DateUtils.today()), inserted.map { it.fecha })
+        assertEquals(0.0, (original + inserted).sumOf { PagoEffect.signedAmount(it.tipo, it.monto) }, 0.001)
+        assertEquals(150.0, snapshot.netPaid, 0.001)
+    }
+
+    @Test
+    fun reverseLedgerFully_servicioParent_alreadyReversedCreditGetsNoSecondReverso() = runBlocking {
+        val inserted = stubLedger(
+            listOf(
+                ledgerPago("a1", "Abono", 100.0, "Efectivo"),
+                ledgerPago("r1", "Reverso", 100.0, "Efectivo", reversaPagoId = "a1"),
+                ledgerPago("a2", "Pago completo", 30.0, "Yape"),
+            ),
+        )
+
+        val snapshot = reverseLedgerFully(repository, pagoDao, "d1", "o1", forDispensacion = false, contexto = "anulación")
+
+        assertEquals(listOf("a2"), inserted.map { it.reversaPagoId })
+        assertEquals("d1", inserted.single().servicioExtraId)
+        assertNull(inserted.single().dispensacionId)
+        assertEquals(mapOf("Yape" to 30.0), snapshot.netByMetodo)
     }
 }

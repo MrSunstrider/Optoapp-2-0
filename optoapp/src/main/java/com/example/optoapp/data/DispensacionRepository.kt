@@ -157,7 +157,7 @@ class DispensacionRepository(
             dispensacionId = existing.dispensacionId,
             servicioExtraId = existing.servicioExtraId,
             ventaId = existing.ventaId,
-            fecha = existing.fecha,
+            fecha = DateUtils.today(),
             tipo = "Reverso",
             monto = existing.monto,
             metodoPago = existing.metodoPago,
