@@ -431,36 +431,3 @@ class ReclamarDispensacionUseCase @Inject constructor(
         updatedAt = Instant.now().toString(),
     )
 }
-
-class ReclaimDispensacionUseCase @Inject constructor(
-    private val repository: OptoRepository,
-    private val postSaveSyncScheduler: PostSaveSyncScheduler,
-) {
-    suspend operator fun invoke(
-        dispensacionId: String,
-        opticaId: String,
-        refundMonto: Double,
-        metodoPago: String,
-        ot: String,
-    ) {
-        require(refundMonto >= 0.0) { "Reembolso monto must be >= 0" }
-        val disp = (repository.getDispensacionById(dispensacionId, opticaId) as? Resource.Success)?.data ?: return
-        repository.updateDispensacion(disp.copy(estadoEntrega = "Reclamada", updatedAt = Instant.now().toString()))
-        if (refundMonto > 0.0) {
-            repository.insertPago(
-                Pago(
-                    id = UUID.randomUUID().toString(),
-                    dispensacionId = dispensacionId,
-                    fecha = DateUtils.today(),
-                    tipo = "Reembolso",
-                    monto = refundMonto,
-                    metodoPago = metodoPago,
-                    nota = "Reembolso por reclamo de OT $ot",
-                    opticaId = opticaId,
-                    updatedAt = Instant.now().toString(),
-                ),
-            )
-        }
-        postSaveSyncScheduler.scheduleFinanzasSync(opticaId)
-    }
-}

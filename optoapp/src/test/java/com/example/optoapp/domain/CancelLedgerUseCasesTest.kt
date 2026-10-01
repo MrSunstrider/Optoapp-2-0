@@ -1,6 +1,5 @@
 package com.example.optoapp.domain
 
-import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Pago
 import com.example.optoapp.data.Resource
@@ -181,30 +180,6 @@ class CancelLedgerUseCasesTest {
         coVerify(exactly = 0) { repository.updateServicio(any()) }
         coVerify(exactly = 0) { stockHelper.restockOnce(any(), any(), any(), any(), any()) }
         coVerify(exactly = 0) { scheduler.scheduleFinanzasSync(any()) }
-    }
-
-    @Test
-    fun reclaim_positiveReembolsoWithoutReversaLink() = runTest {
-        coEvery { repository.getDispensacionById("d1", any()) } returns Resource.Success(
-            DispensacionOptica(
-                id = "d1", pacienteId = "pac", fecha = date, opticaId = "o1",
-                estadoEntrega = "Pendiente", metodoPago = "Efectivo", ot = "OT-1",
-            ),
-        )
-        val slot = slot<Pago>()
-        coEvery { repository.insertPago(capture(slot)) } returns Unit
-
-        ReclaimDispensacionUseCase(repository, scheduler)("d1", "o1", 50.0, "Efectivo", "OT-1")
-
-        assertEquals("Reembolso", slot.captured.tipo)
-        assertEquals(50.0, slot.captured.monto, 0.001)
-        assertNull(slot.captured.reversaPagoId)
-        coVerify { repository.updateDispensacion(match { it.estadoEntrega == "Reclamada" }) }
-    }
-
-    @Test(expected = IllegalArgumentException::class)
-    fun reclaim_rejectsNegativeMonto() = runTest {
-        ReclaimDispensacionUseCase(repository, scheduler)("d1", "o1", -1.0, "Efectivo", "OT-1")
     }
 
     private fun ledgerPago(
