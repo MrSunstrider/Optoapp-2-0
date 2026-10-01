@@ -4,7 +4,6 @@ import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Pago
 import com.example.optoapp.data.Resource
 import com.example.optoapp.data.pago.PagoDao
-import com.example.optoapp.domain.movimientoReferenciaForRegalo
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import com.example.optoapp.util.DispensacionStockHelper
 import com.example.optoapp.util.DateUtils
@@ -58,29 +57,33 @@ internal suspend fun insertMissingReversos(
     val inserted = mutableListOf<Pago>()
     for (credit in pagoDao.getCreditPagosByParent(parentId, opticaId)) {
         if (pagoDao.getReversoByOriginalId(credit.id, opticaId) != null) continue
-        val reverso = Pago(
-            id = UUID.randomUUID().toString(),
-            dispensacionId = if (forDispensacion) parentId else null,
-            servicioExtraId = if (forDispensacion) null else parentId,
-            fecha = DateUtils.today(),
-            tipo = TIPO_REVERSO,
-            monto = credit.monto,
-            metodoPago = credit.metodoPago,
-            nota = "Reverso de ${credit.tipo} ${credit.id.take(8)}",
-            opticaId = opticaId,
-            ventaId = credit.ventaId,
-            reversaPagoId = credit.id,
-            updatedAt = Instant.now().toString(),
-        )
+        val reverso = buildReverso(credit, parentId, opticaId, forDispensacion)
         repository.insertPago(reverso)
         inserted += reverso
     }
     return inserted
 }
 
+private fun buildReverso(credit: Pago, parentId: String, opticaId: String, forDispensacion: Boolean) = Pago(
+    id = UUID.randomUUID().toString(),
+    dispensacionId = if (forDispensacion) parentId else null,
+    servicioExtraId = if (forDispensacion) null else parentId,
+    fecha = DateUtils.today(),
+    tipo = TIPO_REVERSO,
+    monto = credit.monto,
+    metodoPago = credit.metodoPago,
+    nota = "Reverso de ${credit.tipo.trim()} ${credit.id.take(8)}",
+    opticaId = opticaId,
+    ventaId = credit.ventaId,
+    reversaPagoId = credit.id,
+    updatedAt = Instant.now().toString(),
+)
+
 /**
  * Leaves the parent at net 0 using only Reverso/Abono rows (server CHECK forbids reversing a
  * debit). Reversos go first so the compensating Abonos are never themselves reversed.
+ * Reversos come from the snapshot, not the exact-tipo SQL lookups, so legacy rows with padded
+ * `tipo` are neither skipped nor reversed twice.
  * Must run inside the caller's transaction. Returns the ledger as it was before reversal.
  */
 internal suspend fun reverseLedgerFully(
@@ -92,7 +95,9 @@ internal suspend fun reverseLedgerFully(
     contexto: String,
 ): LedgerSnapshot {
     val snapshot = ledgerSnapshot(pagoDao.getPagosByParent(parentId, opticaId))
-    insertMissingReversos(repository, pagoDao, parentId, opticaId, forDispensacion)
+    for (credit in snapshot.unreversedCredits) {
+        repository.insertPago(buildReverso(credit, parentId, opticaId, forDispensacion))
+    }
     for (debit in snapshot.legacyDebits) {
         repository.insertPago(
             Pago(

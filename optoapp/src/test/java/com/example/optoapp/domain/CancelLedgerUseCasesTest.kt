@@ -13,9 +13,10 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import io.mockk.slot
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.LocalDate
 
@@ -33,7 +34,7 @@ class CancelLedgerUseCasesTest {
     }
 
     @Test
-    fun cancelServicio_insertsLinkedReverso() = runBlocking {
+    fun cancelServicio_insertsLinkedReverso() = runTest {
         val credit = Pago(
             id = "p1", servicioExtraId = "s1", fecha = date,
             tipo = "Abono", monto = 80.0, metodoPago = "Efectivo", opticaId = "o1",
@@ -58,7 +59,7 @@ class CancelLedgerUseCasesTest {
     }
 
     @Test
-    fun cancelServicio_withMonturaId_restock() = runBlocking {
+    fun cancelServicio_withMonturaId_restock() = runTest {
         coEvery { repository.getServicioById("s1", any()) } returns Resource.Success(
             ServicioExtra(
                 id = "s1",
@@ -98,7 +99,7 @@ class CancelLedgerUseCasesTest {
     }
 
     @Test
-    fun cancelServicio_withItems_restocks_item_ids_not_header() = runBlocking {
+    fun cancelServicio_withItems_restocks_item_ids_not_header() = runTest {
         coEvery { repository.getServicioById("s1", any()) } returns Resource.Success(
             ServicioExtra(
                 id = "s1",
@@ -168,7 +169,7 @@ class CancelLedgerUseCasesTest {
     }
 
     @Test
-    fun cancelServicio_withoutMonturaId_skips_restock() = runBlocking {
+    fun cancelServicio_withoutMonturaId_skips_restock() = runTest {
         coEvery { repository.getServicioById("s1", any()) } returns Resource.Success(
             ServicioExtra(id = "s1", descripcion = "x", montoTotal = 1.0, estado = "Pendiente", fecha = date),
         )
@@ -184,7 +185,7 @@ class CancelLedgerUseCasesTest {
     }
 
     @Test
-    fun cancelServicio_stockFailure_does_not_mark_anulado() = runBlocking {
+    fun cancelServicio_stockFailure_does_not_mark_anulado() = runTest {
         coEvery { repository.getServicioById("s1", any()) } returns Resource.Success(
             ServicioExtra(
                 id = "s1",
@@ -218,16 +219,14 @@ class CancelLedgerUseCasesTest {
             )
         } returns Result.failure(IllegalStateException("restock failed"))
 
-        try {
-            CancelServicioExtraUseCase(repository, pagoDao, scheduler, stockHelper)("s1", "o1")
-        } catch (_: IllegalStateException) {
-        }
+        val result = runCatching { CancelServicioExtraUseCase(repository, pagoDao, scheduler, stockHelper)("s1", "o1") }
 
+        assertTrue(result.exceptionOrNull() is IllegalStateException)
         coVerify(exactly = 0) { repository.updateServicio(match { it.estado == "Anulado" }) }
     }
 
     @Test
-    fun cancelServicio_idempotentWhenAlreadyAnulado() = runBlocking {
+    fun cancelServicio_idempotentWhenAlreadyAnulado() = runTest {
         coEvery { repository.getServicioById("s1", any()) } returns Resource.Success(
             ServicioExtra(id = "s1", descripcion = "x", montoTotal = 1.0, estado = "Anulado", fecha = date),
         )
@@ -236,7 +235,7 @@ class CancelLedgerUseCasesTest {
     }
 
     @Test
-    fun cancelDispensacion_insertsLinkedReverso() = runBlocking {
+    fun cancelDispensacion_insertsLinkedReverso() = runTest {
         val credit = Pago(
             id = "p1", dispensacionId = "d1", fecha = date,
             tipo = "Pago completo", monto = 150.0, metodoPago = "Efectivo", opticaId = "o1",
@@ -260,7 +259,7 @@ class CancelLedgerUseCasesTest {
     }
 
     @Test
-    fun reclaim_positiveReembolsoWithoutReversaLink() = runBlocking {
+    fun reclaim_positiveReembolsoWithoutReversaLink() = runTest {
         coEvery { repository.getDispensacionById("d1", any()) } returns Resource.Success(
             DispensacionOptica(
                 id = "d1", pacienteId = "pac", fecha = date, opticaId = "o1",
@@ -279,7 +278,7 @@ class CancelLedgerUseCasesTest {
     }
 
     @Test(expected = IllegalArgumentException::class)
-    fun reclaim_rejectsNegativeMonto() = runBlocking {
+    fun reclaim_rejectsNegativeMonto() = runTest {
         ReclaimDispensacionUseCase(repository, scheduler)("d1", "o1", -1.0, "Efectivo", "OT-1")
     }
 
@@ -308,7 +307,7 @@ class CancelLedgerUseCasesTest {
     }
 
     @Test
-    fun insertMissingReversos_returnsOnlyNewReversosAndSkipsAlreadyReversedCredit() = runBlocking {
+    fun insertMissingReversos_returnsOnlyNewReversosAndSkipsAlreadyReversedCredit() = runTest {
         val inserted = stubLedger(
             listOf(
                 ledgerPago("a1", "Abono", 100.0, "Efectivo"),
@@ -325,7 +324,7 @@ class CancelLedgerUseCasesTest {
     }
 
     @Test
-    fun reverseLedgerFully_legacyReembolso_reversesCreditThenCompensatesDebitToNetZero() = runBlocking {
+    fun reverseLedgerFully_legacyReembolso_reversesCreditThenCompensatesDebitToNetZero() = runTest {
         val original = listOf(
             ledgerPago("abono-200", "Abono", 200.0, "Efectivo", ventaId = "v-1"),
             ledgerPago("reembolso-50", "Reembolso", 50.0, "Efectivo", ventaId = "v-2"),
@@ -351,7 +350,24 @@ class CancelLedgerUseCasesTest {
     }
 
     @Test
-    fun reverseLedgerFully_servicioParent_alreadyReversedCreditGetsNoSecondReverso() = runBlocking {
+    fun reverseLedgerFully_whitespacePaddedTipos_reversesEachUnreversedCreditOnceToNetZero() = runTest {
+        val original = listOf(
+            ledgerPago("padded-abono", " Abono", 100.0, "Efectivo"),
+            ledgerPago("abono-t", "Abono", 50.0, "Tarjeta"),
+            ledgerPago("padded-reverso", " Reverso ", 50.0, "Tarjeta", reversaPagoId = "abono-t"),
+        )
+        val inserted = stubLedger(original)
+
+        reverseLedgerFully(repository, pagoDao, "d1", "o1", forDispensacion = true, contexto = "anulación")
+
+        assertEquals(listOf("padded-abono"), inserted.map { it.reversaPagoId })
+        assertEquals("Reverso", inserted.single().tipo)
+        assertEquals(100.0, inserted.single().monto, 0.001)
+        assertEquals(0.0, (original + inserted).sumOf { PagoEffect.signedAmount(it.tipo, it.monto) }, 0.001)
+    }
+
+    @Test
+    fun reverseLedgerFully_servicioParent_alreadyReversedCreditGetsNoSecondReverso() = runTest {
         val inserted = stubLedger(
             listOf(
                 ledgerPago("a1", "Abono", 100.0, "Efectivo"),
