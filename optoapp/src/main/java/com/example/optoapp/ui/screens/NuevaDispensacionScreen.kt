@@ -251,6 +251,14 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
                     fontSize = 13.sp,
                 )
             }
+
+            if (!uiState.infoMessage.isNullOrBlank()) {
+                Text(
+                    text = uiState.infoMessage ?: "",
+                    color = MaterialTheme.colorScheme.primary,
+                    fontSize = 13.sp,
+                )
+            }
             Spacer(modifier = Modifier.height(12.dp))
         }
     }
@@ -432,8 +440,8 @@ private fun StepGestion(
     var metodoReembolsoSugerido by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
 
-    LaunchedEffect(uiState.error) {
-        if (uiState.error != null) {
+    LaunchedEffect(uiState.error, uiState.infoMessage) {
+        if (uiState.error != null || uiState.infoMessage != null) {
             showAnularDialog = false
             showDeleteDialog = false
             metodoReembolsoSugerido = null
