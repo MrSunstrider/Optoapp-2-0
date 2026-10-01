@@ -276,12 +276,15 @@ class EliminarDispensacionUseCase @Inject constructor(
         repository.withTransaction {
             val disp = (repository.getDispensacionById(dispensacionId, opticaId) as? Resource.Success)?.data
                 ?: throw IllegalStateException("Dispensación no encontrada.")
-            val regaloIds = repository.getRegalosByDispensacionId(dispensacionId, opticaId).map { it.id }
-            val hasTrace = pagoDao.countByDispensacion(dispensacionId, opticaId) > 0 ||
-                inventoryCoordinator.countMovimientosForDispensacion(dispensacionId, regaloIds, opticaId) > 0
-            check(!hasTrace) { "La orden tiene pagos o movimientos de stock. Usa Anular." }
+            check(!hasTrace(dispensacionId, opticaId)) { "La orden tiene pagos o movimientos de stock. Usa Anular." }
             repository.deleteDispensacion(disp)
         }
+    }
+
+    suspend fun hasTrace(dispensacionId: String, opticaId: String): Boolean {
+        val regaloIds = repository.getRegalosByDispensacionId(dispensacionId, opticaId).map { it.id }
+        return pagoDao.countByDispensacion(dispensacionId, opticaId) > 0 ||
+            inventoryCoordinator.countMovimientosForDispensacion(dispensacionId, regaloIds, opticaId) > 0
     }
 }
 

@@ -126,6 +126,8 @@ class DispensacionViewModel @Inject constructor(
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(DispensacionUiState(generatedId = UUID.randomUUID().toString()))
     val uiState: StateFlow<DispensacionUiState> = _uiState.asStateFlow()
+    private val _lifecycle = MutableStateFlow(OrderLifecycleState())
+    val lifecycle: StateFlow<OrderLifecycleState> = _lifecycle.asStateFlow()
     private val _monturasActivas = MutableStateFlow<List<com.example.optoapp.data.Montura>>(emptyList())
     val monturasActivas: StateFlow<List<com.example.optoapp.data.Montura>> = _monturasActivas.asStateFlow()
 
@@ -252,6 +254,11 @@ class DispensacionViewModel @Inject constructor(
                             evaluacionId = d.evaluacionId?.takeIf { it.isNotBlank() },
                         )
                     }
+                    _lifecycle.value = orderLifecycleState(
+                        estado = d.estadoEntrega,
+                        role = sessionManager.opticaRol.first(),
+                        hasTrace = eliminarDispensacionUseCase.hasTrace(dispensacionId, opticaId),
+                    )
                 }
                 is Resource.Error -> {
                     _uiState.update { it.copy(isLoading = false, error = result.message) }
