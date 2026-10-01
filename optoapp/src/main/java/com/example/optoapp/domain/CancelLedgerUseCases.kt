@@ -4,6 +4,7 @@ import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Pago
 import com.example.optoapp.data.Resource
+import com.example.optoapp.data.ServicioExtra
 import com.example.optoapp.data.montura.MonturaInventoryCoordinator
 import com.example.optoapp.data.pago.PagoDao
 import com.example.optoapp.sync.PostSaveSyncScheduler
@@ -47,23 +48,6 @@ internal fun ledgerSnapshot(pagos: List<Pago>): LedgerSnapshot {
         .groupBy { it.metodoPago }
         .mapValues { (_, rows) -> rows.sumOf { PagoEffect.signedAmount(it.tipo, it.monto) } }
     return LedgerSnapshot(unreversedCredits, legacyDebits, netByMetodo)
-}
-
-internal suspend fun insertMissingReversos(
-    repository: OptoRepository,
-    pagoDao: PagoDao,
-    parentId: String,
-    opticaId: String,
-    forDispensacion: Boolean,
-): List<Pago> {
-    val inserted = mutableListOf<Pago>()
-    for (credit in pagoDao.getCreditPagosByParent(parentId, opticaId)) {
-        if (pagoDao.getReversoByOriginalId(credit.id, opticaId) != null) continue
-        val reverso = buildReverso(credit, parentId, opticaId, forDispensacion)
-        repository.insertPago(reverso)
-        inserted += reverso
-    }
-    return inserted
 }
 
 private fun buildReverso(credit: Pago, parentId: String, opticaId: String, forDispensacion: Boolean) = Pago(
@@ -120,76 +104,79 @@ internal suspend fun reverseLedgerFully(
     return snapshot
 }
 
+/**
+ * Mirrors [AnularDispensacionUseCase]: the estado check is the first statement of the transaction
+ * so a retried cancel writes nothing. Legacy header frames keep their `:rev:` referencia so a
+ * servicio cancelled before this change is never restocked twice.
+ */
 class CancelServicioExtraUseCase @Inject constructor(
     private val repository: OptoRepository,
     private val pagoDao: PagoDao,
     private val postSaveSyncScheduler: PostSaveSyncScheduler,
     private val stockHelper: DispensacionStockHelper,
 ) {
-    suspend operator fun invoke(servicioId: String, opticaId: String) {
-        val servicio = (repository.getServicioById(servicioId, opticaId) as? Resource.Success)?.data ?: return
-        if (servicio.estado == "Anulado") return
-        insertMissingReversos(repository, pagoDao, servicioId, opticaId, forDispensacion = false)
-
-        repository.withTransaction {
-            val items = repository.getServicioExtraItems(servicioId, opticaId)
-            val itemsWithStock = items.filter { !it.monturaId.isNullOrBlank() }
-            if (itemsWithStock.isNotEmpty()) {
-                for (item in itemsWithStock) {
-                    requireStock(
-                        stockHelper.adjustStockAndRegistrarMovimiento(
-                            monturaId = item.monturaId!!,
-                            opticaId = opticaId,
-                            delta = 1,
-                            tipo = "AJUSTE",
-                            referenciaId = item.id,
-                            nota = "Reversión por anulación de servicio extra",
-                        ),
-                        "No se pudo reponer el stock del producto vendido.",
-                    )
-                }
-            } else {
-                servicio.monturaId?.takeIf { it.isNotBlank() }?.let { monturaId ->
-                    requireStock(
-                        stockHelper.adjustStockAndRegistrarMovimiento(
-                            monturaId = monturaId,
-                            opticaId = opticaId,
-                            delta = 1,
-                            tipo = "AJUSTE",
-                            referenciaId = movimientoReferenciaForServicioExtraReverso(servicioId, monturaId),
-                            nota = "Reversión por anulación de servicio extra",
-                        ),
-                        "No se pudo reponer el stock del producto vendido.",
-                    )
-                }
+    suspend operator fun invoke(servicioId: String, opticaId: String, motivo: String): LifecycleOutcome {
+        val reason = normalizeMotivo(motivo)
+        val outcome = repository.withTransaction {
+            val servicio = (repository.getServicioById(servicioId, opticaId) as? Resource.Success)?.data
+                ?: throw IllegalStateException("Servicio no encontrado.")
+            if (OrderStatusPolicy.isTerminal(servicio.estado)) {
+                return@withTransaction LifecycleOutcome.AlreadyTerminal(servicio.estado.trim())
             }
+            reverseLedgerFully(repository, pagoDao, servicioId, opticaId, forDispensacion = false, contexto = "anulación")
+            restockFrames(servicio, opticaId)
+            repository.getRegalosByServicioExtraId(servicioId, opticaId)
+                .filter { it.productoId.isNotBlank() }
+                .forEach { regalo ->
+                    stockHelper.restockOrThrow(
+                        regalo.productoId, opticaId, regalo.cantidad,
+                        movimientoReferenciaForRegaloAnulacion(regalo.id), "Reversión por anulación de regalo de servicio",
+                    )
+                }
+            repository.updateServicio(
+                servicio.copy(
+                    estado = OrderStatusPolicy.ANULADO,
+                    motivoAnulacion = reason,
+                    fechaAnulacion = DateUtils.today(),
+                    updatedAt = Instant.now().toString(),
+                ),
+            )
+            LifecycleOutcome.Applied
+        }
+        if (outcome == LifecycleOutcome.Applied) {
+            postSaveSyncScheduler.scheduleFinanzasSync(opticaId)
+            postSaveSyncScheduler.scheduleInventarioSync(opticaId)
+        }
+        return outcome
+    }
 
-            for (regalo in repository.getRegalosByServicioExtraId(servicioId, opticaId)) {
-                if (regalo.productoId.isBlank()) continue
-                requireStock(
-                    stockHelper.adjustStockAndRegistrarMovimiento(
-                        monturaId = regalo.productoId,
-                        opticaId = opticaId,
-                        delta = regalo.cantidad,
-                        tipo = "AJUSTE",
-                        referenciaId = movimientoReferenciaForRegalo(regalo.id),
-                        nota = "Reversión por anulación de regalo de servicio",
-                    ),
-                    "No se pudo reponer el stock del regalo.",
+    private suspend fun restockFrames(servicio: ServicioExtra, opticaId: String) {
+        val itemsWithStock = repository.getServicioExtraItems(servicio.id, opticaId).filter { !it.monturaId.isNullOrBlank() }
+        if (itemsWithStock.isEmpty()) {
+            servicio.monturaId?.takeIf { it.isNotBlank() }?.let { monturaId ->
+                stockHelper.restockOrThrow(
+                    monturaId, opticaId, 1, movimientoReferenciaForServicioExtraReverso(servicio.id, monturaId), NOTA_SERVICIO,
                 )
             }
-
-            repository.updateServicio(servicio.copy(estado = "Anulado", updatedAt = Instant.now().toString()))
+            return
         }
-        postSaveSyncScheduler.scheduleFinanzasSync(opticaId)
-        postSaveSyncScheduler.scheduleInventarioSync(opticaId)
-    }
-
-    private fun requireStock(result: Result<Int>, fallbackMessage: String) {
-        if (result.isFailure) {
-            throw IllegalStateException(result.exceptionOrNull()?.message ?: fallbackMessage)
+        itemsWithStock.forEach { item ->
+            stockHelper.restockOrThrow(item.monturaId!!, opticaId, 1, movimientoReferenciaForServicioItemAnulacion(item.id), NOTA_SERVICIO)
         }
     }
+}
+
+private const val NOTA_SERVICIO = "Reversión por anulación de servicio extra"
+
+private suspend fun DispensacionStockHelper.restockOrThrow(
+    monturaId: String,
+    opticaId: String,
+    delta: Int,
+    referenciaId: String,
+    nota: String,
+) {
+    restockOnce(monturaId, opticaId, delta, referenciaId, nota)
+        .getOrElse { throw IllegalStateException(it.message ?: "No se pudo reponer el stock.", it) }
 }
 
 sealed interface LifecycleOutcome {
@@ -271,8 +258,7 @@ class AnularDispensacionUseCase @Inject constructor(
     }
 
     private suspend fun restock(monturaId: String, opticaId: String, delta: Int, referenciaId: String) {
-        stockHelper.restockOnce(monturaId, opticaId, delta, referenciaId, "Reversión por anulación de dispensación")
-            .getOrElse { throw IllegalStateException(it.message ?: "No se pudo reponer el stock.", it) }
+        stockHelper.restockOrThrow(monturaId, opticaId, delta, referenciaId, "Reversión por anulación de dispensación")
     }
 }
 

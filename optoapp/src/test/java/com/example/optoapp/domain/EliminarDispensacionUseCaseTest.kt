@@ -44,7 +44,7 @@ class EliminarDispensacionUseCaseTest {
     private fun useCase() = EliminarDispensacionUseCase(repository, pagoDao, coordinator)
 
     @Test
-    fun noPagosAndNoMovimientos_deletesWithTombstone() = runTest {
+    fun noPagosAndNoMovimientos_deletesOrder() = runTest {
         stubCounts(pagos = 0, movimientos = 0)
 
         useCase()("d1", "o1")

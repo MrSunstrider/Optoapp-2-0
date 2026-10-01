@@ -13,10 +13,12 @@ import com.example.optoapp.data.regaloservicio.RegaloServicioExtraEntity
 import com.example.optoapp.data.servicio.ServicioExtraItem
 import com.example.optoapp.domain.OrderStatusPolicy
 import com.example.optoapp.domain.PagoEffect
+import com.example.optoapp.domain.auth.AuthorizationGuard
 import com.example.optoapp.domain.inventario.inventarioParaServicioExtra
 import com.example.optoapp.domain.inventario.monturaMatchesDescripcion
 import com.example.optoapp.domain.movimientoReferenciaForRegalo
 import com.example.optoapp.domain.movimientoReferenciaForServicioExtraReverso
+import com.example.optoapp.domain.normalizeMotivo
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import com.example.optoapp.util.DateUtils
 import com.example.optoapp.util.DispensacionStockHelper
@@ -473,18 +475,23 @@ class ServiciosViewModel @Inject constructor(
         _deleteError.value = null
     }
 
-    fun confirmDelete() {
+    fun confirmAnular(motivo: String) {
         val servicio = _servicioToDelete.value ?: return
         viewModelScope.launch {
             try {
-                val opticaId = sessionManager.opticaId.first()
-                cancelServicioExtraUseCase(servicio.id, opticaId)
+                AuthorizationGuard.requireRole(sessionManager.opticaRol.first(), setOf("admin", "gerente"), "anular servicio")
+                val reason = normalizeMotivo(motivo)
+                cancelServicioExtraUseCase(servicio.id, sessionManager.opticaId.first(), reason)
                 _showDeleteDialog.value = false
                 _servicioToDelete.value = null
             } catch (e: CancellationException) {
                 throw e
+            } catch (e: IllegalArgumentException) {
+                _deleteError.value = e.message
+            } catch (e: IllegalStateException) {
+                _deleteError.value = e.message ?: "No se pudo anular el servicio."
             } catch (e: Exception) {
-                Log.e(TAG, "Eliminar servicio", e)
+                Log.e(TAG, "Anular servicio", e)
                 _deleteError.value = "Error inesperado. Reintente más tarde."
             }
         }

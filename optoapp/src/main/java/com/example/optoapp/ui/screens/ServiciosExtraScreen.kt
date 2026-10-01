@@ -78,13 +78,19 @@ fun ServiciosExtraScreen(navController: NavController, drawerState: DrawerState,
     }
 
     if (showDeleteDialog && servicioToDelete != null) {
+        var motivo by remember(servicioToDelete) { mutableStateOf("") }
         AlertDialog(
             onDismissRequest = { viewModel.dismissDeleteDialog() },
-            title = { Text("¿Eliminar servicio?", fontWeight = FontWeight.Bold) },
-            text = { Text("¿Eliminar ${servicioToDelete!!.descripcion}?") },
+            title = { Text("¿Anular servicio?", fontWeight = FontWeight.Bold) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("¿Anular ${servicioToDelete!!.descripcion}?")
+                    OutlinedTextField(value = motivo, onValueChange = { motivo = it }, label = { Text("Motivo") })
+                }
+            },
             confirmButton = {
-                TextButton(onClick = { viewModel.confirmDelete() }) {
-                    Text("Eliminar", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
+                TextButton(onClick = { viewModel.confirmAnular(motivo) }, enabled = motivo.isNotBlank()) {
+                    Text("Anular", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = { TextButton(onClick = { viewModel.dismissDeleteDialog() }) { Text("Cancelar") } },

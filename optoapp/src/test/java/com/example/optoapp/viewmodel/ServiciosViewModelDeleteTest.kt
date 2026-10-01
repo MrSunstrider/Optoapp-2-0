@@ -1,10 +1,10 @@
 package com.example.optoapp.viewmodel
 
 import com.example.optoapp.data.OptoRepository
-import com.example.optoapp.data.Pago
 import com.example.optoapp.data.ServicioExtra
 import com.example.optoapp.data.SessionManager
 import com.example.optoapp.domain.CancelServicioExtraUseCase
+import com.example.optoapp.domain.LifecycleOutcome
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import com.example.optoapp.util.DispensacionStockHelper
 import io.mockk.coEvery
@@ -12,18 +12,19 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
-import io.mockk.slot
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import java.time.LocalDate
@@ -33,62 +34,43 @@ class ServiciosViewModelDeleteTest {
 
     private lateinit var repository: OptoRepository
     private lateinit var sessionManager: SessionManager
-    private lateinit var postSaveSyncScheduler: PostSaveSyncScheduler
     private lateinit var cancelServicioExtraUseCase: CancelServicioExtraUseCase
-    private lateinit var stockHelper: DispensacionStockHelper
     private lateinit var viewModel: ServiciosViewModel
 
-    private val opticaIdFlow = MutableStateFlow("optica-test")
+    private val opticaRolFlow = MutableStateFlow("gerente")
     private val testDispatcher = StandardTestDispatcher()
-    private val testDate = LocalDate.of(2026, 7, 10)
     private val servId = "serv-delete-1"
 
     private val testServicio = ServicioExtra(
         id = servId, ot = "SERV-001", descripcion = "Limpieza de lentes",
         montoTotal = 200.0, aCuenta = 100.0, estado = "Pendiente",
-        fecha = testDate, pacienteId = "pac-1",
+        fecha = LocalDate.of(2026, 7, 10), pacienteId = "pac-1",
         metodoPago = "", opticaId = "optica-test",
-    )
-
-    private val testPagos = listOf(
-        Pago(
-            id = "pago-serv-1",
-            fecha = testDate,
-            tipo = "Efectivo",
-            monto = 50.0,
-            opticaId = "optica-test",
-            servicioExtraId = servId,
-        ),
-        Pago(
-            id = "pago-serv-2",
-            fecha = testDate,
-            tipo = "Transferencia",
-            monto = 50.0,
-            opticaId = "optica-test",
-            servicioExtraId = servId,
-        ),
     )
 
     @Before
     fun setUp() {
         mockkStatic("android.util.Log")
-        every { android.util.Log.d(any(), any()) } returns 0
-        every { android.util.Log.w(any(), any<String>()) } returns 0
-        every { android.util.Log.w(any(), any<String>(), any()) } returns 0
-        every { android.util.Log.e(any(), any<String>()) } returns 0
         every { android.util.Log.e(any(), any<String>(), any()) } returns 0
 
         Dispatchers.setMain(testDispatcher)
         repository = mockk(relaxed = true)
         sessionManager = mockk()
-        postSaveSyncScheduler = mockk(relaxed = true)
-        cancelServicioExtraUseCase = mockk(relaxed = true)
-        stockHelper = mockk(relaxed = true)
+        cancelServicioExtraUseCase = mockk()
+        coEvery { cancelServicioExtraUseCase(any(), any(), any()) } returns LifecycleOutcome.Applied
 
-        every { sessionManager.opticaId } returns opticaIdFlow
+        every { sessionManager.opticaId } returns MutableStateFlow("optica-test")
+        every { sessionManager.opticaRol } returns opticaRolFlow
         every { sessionManager.userTimeZone } returns flowOf(null)
         every { repository.getAllServiciosForOptica(any()) } returns flowOf(listOf(testServicio))
-        every { repository.getAllPagosFlowForOptica(any()) } returns flowOf(testPagos)
+        every { repository.getAllPagosFlowForOptica(any()) } returns flowOf(emptyList())
+
+        viewModel = ServiciosViewModel(
+            repository, sessionManager, mockk<PostSaveSyncScheduler>(relaxed = true),
+            cancelServicioExtraUseCase, mockk<DispensacionStockHelper>(relaxed = true),
+        )
+        testDispatcher.scheduler.advanceUntilIdle()
+        viewModel.showDeleteConfirmation(testServicio)
     }
 
     @After
@@ -96,32 +78,70 @@ class ServiciosViewModelDeleteTest {
         Dispatchers.resetMain()
     }
 
-    @Test
-    fun `confirmDelete anula en vez de hard-delete`() = runTest {
-        viewModel = ServiciosViewModel(repository, sessionManager, postSaveSyncScheduler, cancelServicioExtraUseCase, stockHelper)
+    private fun confirm(motivo: String) {
+        viewModel.confirmAnular(motivo)
         testDispatcher.scheduler.advanceUntilIdle()
-
-        viewModel.showDeleteConfirmation(testServicio)
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        viewModel.confirmDelete()
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        coVerify { cancelServicioExtraUseCase(servId, "optica-test") }
-        coVerify(inverse = true) { repository.deleteServicio(any()) }
     }
 
     @Test
-    fun `confirmDelete creates inverse pagos for each existing pago`() = runTest {
-        viewModel = ServiciosViewModel(repository, sessionManager, postSaveSyncScheduler, cancelServicioExtraUseCase, stockHelper)
-        testDispatcher.scheduler.advanceUntilIdle()
+    fun `confirmAnular cancels with the reason and closes the dialog`() = runTest(testDispatcher) {
+        confirm("Error de registro")
 
-        viewModel.showDeleteConfirmation(testServicio)
-        testDispatcher.scheduler.advanceUntilIdle()
-        viewModel.confirmDelete()
-        testDispatcher.scheduler.advanceUntilIdle()
+        coVerify(exactly = 1) { cancelServicioExtraUseCase(servId, "optica-test", "Error de registro") }
+        coVerify(exactly = 0) { repository.deleteServicio(any()) }
+        assertFalse(viewModel.showDeleteDialog.value)
+        assertNull(viewModel.servicioToDelete.value)
+        assertNull(viewModel.deleteError.value)
+    }
 
-        coVerify { cancelServicioExtraUseCase(servId, "optica-test") }
-        coVerify(exactly = 0) { repository.insertPago(match { it.tipo == "Anulación" }) }
+    @Test
+    fun `confirmAnular rejects asesor without invoking the use case`() = runTest(testDispatcher) {
+        opticaRolFlow.value = "asesor"
+
+        confirm("Error de registro")
+
+        coVerify(exactly = 0) { cancelServicioExtraUseCase(any(), any(), any()) }
+        assertTrue(viewModel.deleteError.value!!.contains("anular servicio"))
+        assertTrue(viewModel.showDeleteDialog.value)
+    }
+
+    @Test
+    fun `confirmAnular rejects a blank reason without invoking the use case`() = runTest(testDispatcher) {
+        confirm("   ")
+
+        coVerify(exactly = 0) { cancelServicioExtraUseCase(any(), any(), any()) }
+        assertEquals("El motivo es obligatorio.", viewModel.deleteError.value)
+        assertTrue(viewModel.showDeleteDialog.value)
+    }
+
+    @Test
+    fun `confirmAnular on an already cancelled servicio is a silent no-op`() = runTest(testDispatcher) {
+        coEvery { cancelServicioExtraUseCase(any(), any(), any()) } returns LifecycleOutcome.AlreadyTerminal("Anulado")
+
+        confirm("Error de registro")
+
+        assertNull(viewModel.deleteError.value)
+        assertFalse(viewModel.showDeleteDialog.value)
+    }
+
+    @Test
+    fun `confirmAnular surfaces a restock failure and keeps the dialog open`() = runTest(testDispatcher) {
+        coEvery { cancelServicioExtraUseCase(any(), any(), any()) } throws IllegalStateException("Stock insuficiente")
+
+        confirm("Error de registro")
+
+        assertEquals("Stock insuficiente", viewModel.deleteError.value)
+        assertTrue(viewModel.showDeleteDialog.value)
+    }
+
+    @Test
+    fun `dismissDeleteDialog clears the pending servicio and error`() = runTest(testDispatcher) {
+        confirm("   ")
+
+        viewModel.dismissDeleteDialog()
+
+        assertFalse(viewModel.showDeleteDialog.value)
+        assertNull(viewModel.servicioToDelete.value)
+        assertNull(viewModel.deleteError.value)
     }
 }
