@@ -12,12 +12,17 @@
 
 set -euo pipefail
 
+# Messages may carry non-UTF-8 bytes (e.g. Latin-1 accents); under a UTF-8
+# locale grep treats them as binary and would replace the whole message.
+export LC_ALL=C
+
 msg_file="$1"
 attribution='^[[:space:]]*(co-authored-by:[[:space:]]*cursor[[:space:]]*<cursoragent@cursor\.com>|made-with:[[:space:]]*cursor)[[:space:]]*$'
 
-if ! grep -Eqi "$attribution" "$msg_file"; then
+if ! grep -aEqi "$attribution" "$msg_file"; then
     exit 0
 fi
 
-stripped="$(grep -Eiv "$attribution" "$msg_file" || true)"
+stripped="$(grep -aEiv "$attribution" "$msg_file" || true)"
+# Drop the blank lines the removed trailers leave at the end of the message.
 printf '%s\n' "$stripped" | sed -e :a -e '/^[[:space:]]*$/{$d;N;ba' -e '}' > "$msg_file"

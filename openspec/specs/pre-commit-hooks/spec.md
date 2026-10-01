@@ -88,6 +88,18 @@ The `commit-msg` hook MUST remove Cursor attribution trailers (`Co-authored-by: 
 - WHEN the `commit-msg` hook runs
 - THEN the message file is not rewritten
 
+#### Scenario: Non-UTF-8 body survives stripping
+
+- GIVEN a message with Latin-1 encoded accents and the Cursor trailer, under a UTF-8 locale
+- WHEN the `commit-msg` hook runs
+- THEN every body line is kept byte for byte and only the trailer is removed
+
+#### Scenario: Attribution-only message is aborted
+
+- GIVEN a message whose only content is a Cursor attribution trailer
+- WHEN the `commit-msg` hook runs
+- THEN the message file is emptied, so git aborts the commit for an empty message
+
 ### Requirement: Hook Registration
 
 The project SHALL use `git config core.hooksPath .githooks` to register the hook directory. The `.githooks/pre-commit` file MUST be committed to the repository and executable on POSIX systems.

@@ -58,11 +58,7 @@ _archive/
 # Vercel (optoweb deployment artifacts — not part of this repo)
 .vercel/
 
-# optoweb local files (moved to separate repo)
-optoweb/.env.local
-optoweb/.env.vercel
-optoweb/.next/
-optoweb/node_modules/
+# optoweb moved to its own repo (optoapp-web); a local checkout may still sit here
 /optoweb/
 
 # Isolated Gradle builds and local verification logs; untracked noise here makes
