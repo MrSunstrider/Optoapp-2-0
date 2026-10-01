@@ -225,10 +225,6 @@ class DispensacionRepository(
         )
     }
 
-    suspend fun deleteServicio(servicio: ServicioExtra) {
-        servicioExtraDao.deleteServicio(servicio.id, servicio.opticaId)
-    }
-
     suspend fun getServiciosSnapshotForOptica(opticaId: String): List<ServicioExtra> = servicioExtraDao.getServiciosListByOptica(opticaId)
 
     companion object {

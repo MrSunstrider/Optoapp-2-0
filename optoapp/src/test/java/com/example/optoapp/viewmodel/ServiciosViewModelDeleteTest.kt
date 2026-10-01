@@ -16,6 +16,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -62,7 +63,14 @@ class ServiciosViewModelDeleteTest {
         every { sessionManager.opticaId } returns MutableStateFlow("optica-test")
         every { sessionManager.opticaRol } returns opticaRolFlow
         every { sessionManager.userTimeZone } returns flowOf(null)
-        every { repository.getAllServiciosForOptica(any()) } returns flowOf(listOf(testServicio))
+        every { repository.getAllServiciosForOptica(any()) } returns flowOf(
+            listOf(
+                testServicio,
+                testServicio.copy(id = "serv-entregado", estado = "Entregado"),
+                testServicio.copy(id = "serv-anulado", estado = "Anulado"),
+                testServicio.copy(id = "serv-reclamado", estado = "Reclamada"),
+            ),
+        )
         every { repository.getAllPagosFlowForOptica(any()) } returns flowOf(emptyList())
 
         viewModel = ServiciosViewModel(
@@ -88,7 +96,6 @@ class ServiciosViewModelDeleteTest {
         confirm("Error de registro")
 
         coVerify(exactly = 1) { cancelServicioExtraUseCase(servId, "optica-test", "Error de registro") }
-        coVerify(exactly = 0) { repository.deleteServicio(any()) }
         assertFalse(viewModel.showDeleteDialog.value)
         assertNull(viewModel.servicioToDelete.value)
         assertNull(viewModel.deleteError.value)
@@ -132,6 +139,26 @@ class ServiciosViewModelDeleteTest {
 
         assertEquals("Stock insuficiente", viewModel.deleteError.value)
         assertTrue(viewModel.showDeleteDialog.value)
+    }
+
+    @Test
+    fun `cancelableServicioIds lists only active servicios for a gerente`() = runTest(testDispatcher) {
+        backgroundScope.launch { viewModel.cancelableServicioIds.collect {} }
+        testDispatcher.scheduler.runCurrent()
+
+        assertEquals(setOf(servId, "serv-entregado"), viewModel.cancelableServicioIds.value)
+    }
+
+    @Test
+    fun `cancelableServicioIds empties when the role cannot cancel`() = runTest(testDispatcher) {
+        backgroundScope.launch { viewModel.cancelableServicioIds.collect {} }
+        testDispatcher.scheduler.runCurrent()
+        assertEquals(2, viewModel.cancelableServicioIds.value.size)
+
+        opticaRolFlow.value = "asesor"
+        testDispatcher.scheduler.runCurrent()
+
+        assertEquals(emptySet<String>(), viewModel.cancelableServicioIds.value)
     }
 
     @Test

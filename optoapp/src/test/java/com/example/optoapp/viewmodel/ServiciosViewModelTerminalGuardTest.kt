@@ -74,6 +74,7 @@ class ServiciosViewModelTerminalGuardTest {
     private fun editWithNewMontura(): ServiciosViewModel {
         val sessionManager = mockk<SessionManager>()
         every { sessionManager.opticaId } returns MutableStateFlow(opticaId)
+        every { sessionManager.opticaRol } returns flowOf("asesor")
         val viewModel = ServiciosViewModel(
             repository, sessionManager, mockk<PostSaveSyncScheduler>(relaxed = true),
             mockk<CancelServicioExtraUseCase>(relaxed = true), stockHelper,

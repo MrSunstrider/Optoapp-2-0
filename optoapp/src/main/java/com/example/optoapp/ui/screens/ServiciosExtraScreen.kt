@@ -55,6 +55,7 @@ fun ServiciosExtraScreen(navController: NavController, drawerState: DrawerState,
     }
 
     val aCuentaSumByServicio by viewModel.aCuentaSumByServicio.collectAsState()
+    val cancelableServicioIds by viewModel.cancelableServicioIds.collectAsState()
     val totalFacturado = servicios.sumOf { it.montoTotal }
     val totalPendiente = servicios.filter { it.estado == "Pendiente" }.sumOf {
         it.montoTotal - (aCuentaSumByServicio[it.id] ?: 0.0)
@@ -207,7 +208,11 @@ fun ServiciosExtraScreen(navController: NavController, drawerState: DrawerState,
                         servicio = servicio,
                         aCuenta = aCuentaSumByServicio[servicio.id] ?: 0.0,
                         onEdit = { navController.navigate(Route.EditarServicio(servicio.id).route) },
-                        onDelete = { viewModel.showDeleteConfirmation(servicio) },
+                        onAnular = if (servicio.id in cancelableServicioIds) {
+                            { viewModel.showDeleteConfirmation(servicio) }
+                        } else {
+                            null
+                        },
                     )
                 }
             }
@@ -218,7 +223,7 @@ fun ServiciosExtraScreen(navController: NavController, drawerState: DrawerState,
 }
 
 @Composable
-private fun ServicioCard(servicio: ServicioExtra, aCuenta: Double = 0.0, onEdit: () -> Unit, onDelete: () -> Unit) {
+private fun ServicioCard(servicio: ServicioExtra, aCuenta: Double = 0.0, onEdit: () -> Unit, onAnular: (() -> Unit)?) {
     val saldo = servicio.montoTotal - aCuenta
     val estadoColor = when (servicio.estado) {
         "Entregado" -> MaterialTheme.colorScheme.positiveGreen
@@ -286,8 +291,10 @@ private fun ServicioCard(servicio: ServicioExtra, aCuenta: Double = 0.0, onEdit:
                         IconButton(onClick = onEdit, modifier = Modifier.size(48.dp)) {
                             Icon(Icons.Default.Edit, contentDescription = "Editar", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
                         }
-                        IconButton(onClick = onDelete, modifier = Modifier.size(48.dp)) {
-                            Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = MaterialTheme.colorScheme.alertRed, modifier = Modifier.size(18.dp))
+                        if (onAnular != null) {
+                            IconButton(onClick = onAnular, modifier = Modifier.size(48.dp)) {
+                                Icon(Icons.Default.Delete, contentDescription = "Anular", tint = MaterialTheme.colorScheme.alertRed, modifier = Modifier.size(18.dp))
+                            }
                         }
                     }
                 }

@@ -71,6 +71,7 @@ class ServiciosViewModel @Inject constructor(
 
     companion object {
         private const val TAG = "ServiciosViewModel"
+        private val CANCEL_ROLES = setOf("admin", "gerente")
     }
 
     private val _uiState = MutableStateFlow(ServiciosUiState())
@@ -99,6 +100,15 @@ class ServiciosViewModel @Inject constructor(
     val allServicios: StateFlow<List<ServicioExtra>> = sessionManager.opticaId
         .flatMapLatest { repository.getAllServiciosForOptica(it) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val cancelableServicioIds: StateFlow<Set<String>> =
+        combine(allServicios, sessionManager.opticaRol) { servicios, rol ->
+            if (rol.trim().lowercase() !in CANCEL_ROLES) {
+                emptySet()
+            } else {
+                servicios.filter { OrderStatusPolicy.canCancel(it.estado) }.map { it.id }.toSet()
+            }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptySet())
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val pacientes: StateFlow<List<Paciente>> = sessionManager.opticaId
@@ -479,7 +489,7 @@ class ServiciosViewModel @Inject constructor(
         val servicio = _servicioToDelete.value ?: return
         viewModelScope.launch {
             try {
-                AuthorizationGuard.requireRole(sessionManager.opticaRol.first(), setOf("admin", "gerente"), "anular servicio")
+                AuthorizationGuard.requireRole(sessionManager.opticaRol.first(), CANCEL_ROLES, "anular servicio")
                 val reason = normalizeMotivo(motivo)
                 cancelServicioExtraUseCase(servicio.id, sessionManager.opticaId.first(), reason)
                 _showDeleteDialog.value = false

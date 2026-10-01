@@ -198,13 +198,6 @@ open class OptoRepository(
         dispensacionRepo.updateServicio(stamped)
         postSaveSyncScheduler.get().scheduleFinanzasSync(stamped.opticaId)
     }
-    suspend fun deleteServicio(servicio: ServicioExtra) {
-        database.withTransaction {
-            dispensacionRepo.deleteServicio(servicio)
-            syncStateTracker.markDeleted(servicio.opticaId, "servicio_extra", servicio.id)
-        }
-        postSaveSyncScheduler.get().scheduleFinanzasSync(servicio.opticaId)
-    }
 
     fun getMonturasByOptica(opticaId: String) = monturaCoordinator.getMonturasByOptica(opticaId)
     suspend fun getMonturaById(id: String, opticaId: String) = monturaCoordinator.getMonturaById(id, opticaId)
