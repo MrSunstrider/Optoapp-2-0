@@ -155,6 +155,8 @@ open class OptoRepository(
     suspend fun getDispensacionItemsByDispensacion(dispensacionId: String, opticaId: String) =
         dispensacionRepo.getItemsListByDispensacion(dispensacionId, opticaId)
     suspend fun suggestNextOt(opticaId: String, fecha: LocalDate) = dispensacionRepo.suggestNextOt(opticaId, fecha)
+    suspend fun nextReclamoOt(opticaId: String, originalOt: String, fecha: LocalDate) =
+        dispensacionRepo.nextReclamoOt(opticaId, originalOt, fecha)
     suspend fun suggestNextHistoriaOptometrica(opticaId: String) = pacienteRepo.suggestNextHistoriaOptometrica(opticaId)
     suspend fun existsDuplicateHistoriaOptometrica(opticaId: String, historia: String, excludePacienteId: String?) = pacienteRepo.existsDuplicateHistoriaOptometrica(opticaId, historia, excludePacienteId)
 

@@ -13,6 +13,7 @@ import com.example.optoapp.util.DateUtils
 import java.time.Instant
 import java.util.UUID
 import javax.inject.Inject
+import kotlin.math.abs
 
 private val CREDIT_TIPOS = setOf("Abono", "Pago completo")
 private const val TIPO_REVERSO = "Reverso"
@@ -282,6 +283,129 @@ class EliminarDispensacionUseCase @Inject constructor(
             repository.deleteDispensacion(disp)
         }
     }
+}
+
+sealed interface ReclamoOutcome {
+    data class Created(val replacementId: String, val replacementOt: String) : ReclamoOutcome
+    data class AlreadyTerminal(val estado: String) : ReclamoOutcome
+}
+
+/** Interim guard: a legacy cross-method debit (negative net for one metodo) still needs its adjustment Reembolso. */
+class ReclamoLegacyAdjustmentUnsupportedException : IllegalStateException("legacy adjustment not supported")
+
+private const val MONEY_EPSILON = 0.005
+
+/**
+ * The original becomes Reclamada and a `-R<n>` replacement receives the original's net paid per
+ * metodo, so each metodo nets 0 in Cierre de Caja and only the refund of the excess moves cash.
+ * The estado check is the first statement of the transaction so a retried claim writes nothing.
+ * Regalos are not copied to the replacement.
+ */
+class ReclamarDispensacionUseCase @Inject constructor(
+    private val repository: OptoRepository,
+    private val pagoDao: PagoDao,
+    private val stockHelper: DispensacionStockHelper,
+    private val postSaveSyncScheduler: PostSaveSyncScheduler,
+    private val calcularMontoPagado: CalcularMontoPagadoUseCase,
+) {
+    suspend operator fun invoke(
+        originalId: String,
+        opticaId: String,
+        motivo: String,
+        nuevoMontoTotal: Double,
+        metodoReembolso: String,
+    ): ReclamoOutcome {
+        val reason = normalizeMotivo(motivo)
+        require(nuevoMontoTotal.isFinite() && nuevoMontoTotal >= 0.0) { "El nuevo monto total debe ser mayor o igual a 0." }
+        val outcome = repository.withTransaction {
+            val original = (repository.getDispensacionById(originalId, opticaId) as? Resource.Success)?.data
+                ?: throw IllegalStateException("Dispensación no encontrada.")
+            if (original.estadoEntrega.trim() == OrderStatusPolicy.RECLAMADA) {
+                return@withTransaction ReclamoOutcome.AlreadyTerminal(OrderStatusPolicy.RECLAMADA)
+            }
+            check(OrderStatusPolicy.canClaim(original.estadoEntrega)) {
+                "Solo se puede reclamar una orden entregada (estado actual: ${original.estadoEntrega})."
+            }
+            val snapshot = ledgerSnapshot(pagoDao.getPagosByParent(originalId, opticaId))
+            requireTransferable(snapshot, calcularMontoPagado(originalId, opticaId))
+            val replacement = insertReplacement(original, nuevoMontoTotal)
+            reverseLedgerFully(repository, pagoDao, originalId, opticaId, forDispensacion = true, contexto = "reclamo")
+            transferCredit(snapshot, replacement, original.ot, nuevoMontoTotal, metodoReembolso)
+            repository.updateDispensacion(
+                original.copy(
+                    estadoEntrega = OrderStatusPolicy.RECLAMADA,
+                    motivoAnulacion = reason,
+                    fechaAnulacion = DateUtils.today(),
+                    montoPagado = calcularMontoPagado(originalId, opticaId),
+                ),
+            )
+            repository.updateDispensacion(replacement.copy(montoPagado = calcularMontoPagado(replacement.id, opticaId)))
+            ReclamoOutcome.Created(replacement.id, replacement.ot)
+        }
+        if (outcome is ReclamoOutcome.Created) {
+            postSaveSyncScheduler.scheduleFinanzasSync(opticaId)
+            postSaveSyncScheduler.scheduleInventarioSync(opticaId)
+        }
+        return outcome
+    }
+
+    private fun requireTransferable(snapshot: LedgerSnapshot, persistedNetPaid: Double) {
+        val netPaid = snapshot.netPaid
+        check(netPaid >= -MONEY_EPSILON && abs(netPaid - persistedNetPaid) <= MONEY_EPSILON) {
+            "Saldo pagado inconsistente en la orden original; sincroniza y reintenta."
+        }
+        if (snapshot.netByMetodo.values.any { it < -MONEY_EPSILON }) throw ReclamoLegacyAdjustmentUnsupportedException()
+    }
+
+    private suspend fun insertReplacement(original: DispensacionOptica, nuevoMontoTotal: Double): DispensacionOptica {
+        val replacement = original.copy(
+            id = UUID.randomUUID().toString(),
+            ot = repository.nextReclamoOt(original.opticaId, original.ot, DateUtils.today()),
+            fecha = DateUtils.today(),
+            estadoEntrega = OrderStatusPolicy.PENDIENTE,
+            fechaEntrega = null,
+            fechaVencimientoGarantia = null,
+            montoTotal = nuevoMontoTotal,
+            montoPagado = 0.0,
+            reclamoOrigenId = original.id,
+            motivoAnulacion = null,
+            fechaAnulacion = null,
+        )
+        repository.insertDispensacion(replacement)
+        repository.getDispensacionItemsByDispensacion(original.id, original.opticaId).forEach { item ->
+            repository.insertDispensacionItem(item.copy(id = UUID.randomUUID().toString(), dispensacionId = replacement.id))
+        }
+        return replacement
+    }
+
+    private suspend fun transferCredit(
+        snapshot: LedgerSnapshot,
+        replacement: DispensacionOptica,
+        originalOt: String,
+        nuevoMontoTotal: Double,
+        metodoReembolso: String,
+    ) {
+        snapshot.netByMetodo.filterValues { it > MONEY_EPSILON }.forEach { (metodo, monto) ->
+            repository.insertPago(replacementPago(replacement, "Abono", monto, metodo, "Crédito por reclamo de OT $originalOt"))
+        }
+        val excess = snapshot.netPaid - nuevoMontoTotal
+        if (excess > MONEY_EPSILON) {
+            repository.insertPago(replacementPago(replacement, TIPO_REEMBOLSO, excess, metodoReembolso, "Reembolso por reclamo de OT $originalOt"))
+        }
+    }
+
+    private fun replacementPago(replacement: DispensacionOptica, tipo: String, monto: Double, metodo: String, nota: String) = Pago(
+        id = UUID.randomUUID().toString(),
+        dispensacionId = replacement.id,
+        fecha = DateUtils.today(),
+        tipo = tipo,
+        monto = monto,
+        metodoPago = metodo,
+        nota = nota,
+        opticaId = replacement.opticaId,
+        ventaId = "v_disp_${replacement.id}",
+        updatedAt = Instant.now().toString(),
+    )
 }
 
 class ReclaimDispensacionUseCase @Inject constructor(
