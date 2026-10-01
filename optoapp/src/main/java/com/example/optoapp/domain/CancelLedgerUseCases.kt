@@ -295,6 +295,11 @@ class ReclamoStockInsuficienteException(val monturaId: String, val montura: Stri
 
 private const val MONEY_EPSILON = 0.005
 
+fun lastCreditMetodo(pagos: List<Pago>): String? = pagos
+    .filter { PagoEffect.signedAmount(it.tipo, it.monto) > 0.0 && it.metodoPago.isNotBlank() }
+    .maxWithOrNull(compareBy<Pago> { it.fecha }.thenBy { it.updatedAt.orEmpty() })
+    ?.metodoPago
+
 /**
  * The original becomes Reclamada and a `-R<n>` replacement receives the original's net paid per
  * metodo, so each metodo nets 0 in Cierre de Caja and only the refund of the excess moves cash.

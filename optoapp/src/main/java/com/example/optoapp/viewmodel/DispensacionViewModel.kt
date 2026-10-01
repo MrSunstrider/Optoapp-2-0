@@ -17,6 +17,9 @@ import com.example.optoapp.domain.EliminarDispensacionUseCase
 import com.example.optoapp.domain.LifecycleOutcome
 import com.example.optoapp.domain.OrderStatusPolicy
 import com.example.optoapp.domain.PagoEffect
+import com.example.optoapp.domain.ReclamarDispensacionUseCase
+import com.example.optoapp.domain.ReclamoOutcome
+import com.example.optoapp.domain.lastCreditMetodo
 import com.example.optoapp.domain.auth.AuthorizationGuard
 import com.example.optoapp.domain.inventario.InventarioItemKind
 import com.example.optoapp.sync.PostSaveSyncScheduler
@@ -116,7 +119,7 @@ class DispensacionViewModel @Inject constructor(
     private val stockHelper: DispensacionStockHelper,
     private val calcularMontoPagadoUseCase: CalcularMontoPagadoUseCase,
     private val anularDispensacionUseCase: com.example.optoapp.domain.AnularDispensacionUseCase,
-    private val reclaimDispensacionUseCase: com.example.optoapp.domain.ReclaimDispensacionUseCase,
+    private val reclamarDispensacionUseCase: ReclamarDispensacionUseCase,
     private val costoProductoDao: com.example.optoapp.data.costoproducto.CostoProductoDao,
     private val costoBiseladoDao: com.example.optoapp.data.costobiselado.CostoBiseladoDao,
     private val eliminarDispensacionUseCase: EliminarDispensacionUseCase,
@@ -615,44 +618,40 @@ class DispensacionViewModel @Inject constructor(
 
     fun crearReclamo(
         originalDispensacionId: String,
+        motivo: String,
         nuevoMontoTotal: Double,
-        onComplete: () -> Unit,
+        metodoReembolso: String,
+        onCreated: (replacementId: String) -> Unit,
     ) {
         viewModelScope.launch {
-            val opticaId = sessionManager.opticaId.first()
-            val result = repository.getDispensacionById(originalDispensacionId, opticaId)
-            if (result is Resource.Success && result.data != null) {
-                val original = result.data
-                val totalPagadoOriginal = calcularMontoPagadoUseCase(originalDispensacionId, opticaId)
-
-                if (totalPagadoOriginal <= 0.0) {
-                    _uiState.update { it.copy(error = "No se puede crear un reclamo porque no hay pagos registrados para esta dispensación.") }
-                    return@launch
+            if (_uiState.value.isLoading) return@launch
+            _uiState.update { it.copy(isLoading = true, error = null) }
+            try {
+                val role = sessionManager.opticaRol.first()
+                AuthorizationGuard.requireRole(role, setOf("admin", "gerente"), "reclamar dispensación")
+                val opticaId = sessionManager.opticaId.first()
+                when (val outcome = reclamarDispensacionUseCase(originalDispensacionId, opticaId, motivo, nuevoMontoTotal, metodoReembolso)) {
+                    is ReclamoOutcome.Created -> {
+                        _uiState.update { it.copy(isLoading = false) }
+                        onCreated(outcome.replacementId)
+                    }
+                    is ReclamoOutcome.AlreadyTerminal ->
+                        _uiState.update { it.copy(isLoading = false, error = "Esta orden ya fue reclamada") }
                 }
-
-                val refundMonto = (totalPagadoOriginal - nuevoMontoTotal).coerceAtLeast(0.0)
-                reclaimDispensacionUseCase(
-                    dispensacionId = originalDispensacionId,
-                    opticaId = opticaId,
-                    refundMonto = refundMonto,
-                    metodoPago = original.metodoPago,
-                    ot = original.ot,
-                )
-
-                val newId = UUID.randomUUID().toString()
-                val nuevaDisp = original.copy(
-                    id = newId,
-                    estadoEntrega = "Pendiente",
-                    fecha = DateUtils.today(),
-                    reclamoOrigenId = originalDispensacionId,
-                    montoTotal = nuevoMontoTotal,
-                    montoPagado = 0.0,
-                    updatedAt = java.time.Instant.now().toString(),
-                )
-                repository.insertDispensacion(nuevaDisp)
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                _uiState.update { it.copy(isLoading = false) }
+                throw e
+            } catch (e: Exception) {
+                Log.e(TAG, "reclamo failed", e)
+                _uiState.update { it.copy(isLoading = false, error = e.message ?: "Error al registrar el reclamo.") }
             }
-            onComplete()
         }
+    }
+
+    suspend fun metodoReembolsoSugerido(originalDispensacionId: String): String {
+        val opticaId = sessionManager.opticaId.first()
+        val pagos = repository.getPagosByDispensacion(originalDispensacionId, opticaId).first()
+        return lastCreditMetodo(pagos) ?: METODO_REEMBOLSO_POR_DEFECTO
     }
 
     fun anularDispensacion(dispensacionId: String, motivo: String, onComplete: () -> Unit) {
@@ -848,6 +847,7 @@ class DispensacionViewModel @Inject constructor(
         private const val ORIGEN_PACIENTE = "Paciente"
         private const val ORIGEN_TIENDA_LEGACY = "Nueva de Tienda"
         private const val ORIGEN_PACIENTE_LEGACY = "Traída por paciente"
+        private const val METODO_REEMBOLSO_POR_DEFECTO = "Efectivo"
 
         fun determineTipoLente(esfera: Double, cilindro: Double?): String {
             val absEsf = kotlin.math.abs(esfera)
