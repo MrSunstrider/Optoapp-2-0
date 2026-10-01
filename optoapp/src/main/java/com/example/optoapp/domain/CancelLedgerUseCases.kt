@@ -18,6 +18,7 @@ import kotlin.math.abs
 private val CREDIT_TIPOS = setOf("Abono", "Pago completo")
 private const val TIPO_REVERSO = "Reverso"
 private const val TIPO_REEMBOLSO = "Reembolso"
+internal const val NOTA_COMPENSACION_PREFIX = "Compensación de "
 
 /**
  * Ledger of one parent with reversed credit/Reverso pairs removed. `legacyDebits` are Reembolsos
@@ -95,7 +96,7 @@ internal suspend fun reverseLedgerFully(
                 tipo = "Abono",
                 monto = debit.monto,
                 metodoPago = debit.metodoPago,
-                nota = "Compensación de ${debit.tipo.trim()} ${debit.id.take(8)} por $contexto",
+                nota = "$NOTA_COMPENSACION_PREFIX${debit.tipo.trim()} ${debit.id.take(8)} por $contexto",
                 opticaId = opticaId,
                 ventaId = debit.ventaId,
                 updatedAt = Instant.now().toString(),
