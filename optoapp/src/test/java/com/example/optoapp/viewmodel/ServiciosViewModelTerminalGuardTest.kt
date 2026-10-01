@@ -13,6 +13,7 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -102,6 +103,20 @@ class ServiciosViewModelTerminalGuardTest {
         coVerify(exactly = 0) { repository.deleteServicioExtraItemsByServicioId(any(), any()) }
         coVerify(exactly = 0) { repository.insertServicioExtraItem(any()) }
         coVerify(exactly = 0) { repository.insertPago(any()) }
+    }
+
+    @Test
+    fun `cancelled save is not reported as an edit error`() = runTest(testDispatcher) {
+        givenPersistedEstado("Entregado")
+        coEvery { repository.withTransaction(any<suspend () -> Any>()) } throws CancellationException("screen closed")
+        val viewModel = editWithNewMontura()
+
+        var saved = false
+        viewModel.saveServicio { saved = true }
+        advanceUntilIdle()
+
+        assertEquals(false, saved)
+        assertNull(viewModel.uiState.value.error)
     }
 
     @Test

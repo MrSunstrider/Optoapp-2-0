@@ -121,7 +121,7 @@ class ServiciosViewModel @Inject constructor(
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
 
     fun updateUiState(update: (ServiciosUiState) -> ServiciosUiState) {
-        _uiState.value = update(_uiState.value)
+        _uiState.update(update)
     }
 
     fun updateEstado(estado: String) {
@@ -304,11 +304,6 @@ class ServiciosViewModel @Inject constructor(
                 val headerDescripcion = validItems.joinToString(" + ") { it.descripcion.trim() }
                     .ifBlank { validItems.first().descripcion.trim() }
 
-                val existingServicio = if (state.isEdit) {
-                    (repository.getServicioById(finalId, currentOpticaId) as? Resource.Success)?.data
-                } else {
-                    null
-                }
                 val previousItems = if (state.isEdit) {
                     initialItems.ifEmpty { repository.getServicioExtraItems(finalId, currentOpticaId) }
                 } else {
@@ -361,9 +356,8 @@ class ServiciosViewModel @Inject constructor(
 
                 repository.withTransaction {
                     if (state.isEdit) {
-                        (repository.getServicioById(finalId, currentOpticaId) as? Resource.Success)?.data?.let {
-                            OrderStatusPolicy.requireEditable(it.estado, "editar el servicio")
-                        }
+                        val existingServicio = (repository.getServicioById(finalId, currentOpticaId) as? Resource.Success)?.data
+                        existingServicio?.let { OrderStatusPolicy.requireEditable(it.estado, "editar el servicio") }
                         applyEditStockDiff(
                             previousItems = previousItems,
                             persistedItems = persistedItems,
@@ -453,10 +447,10 @@ class ServiciosViewModel @Inject constructor(
                         error = "No se pudo guardar: revisa el paciente asociado o deja el servicio sin paciente.",
                     )
                 }
-            } catch (e: IllegalStateException) {
-                _uiState.update { it.copy(error = e.message ?: "No se pudo ajustar el stock.") }
             } catch (e: CancellationException) {
                 throw e
+            } catch (e: IllegalStateException) {
+                _uiState.update { it.copy(error = e.message ?: "No se pudo ajustar el stock.") }
             } catch (e: IOException) {
                 Log.e(TAG, "Guardar servicio: error de red/IO", e)
                 _uiState.update { it.copy(error = "Error inesperado. Reintente más tarde.") }
