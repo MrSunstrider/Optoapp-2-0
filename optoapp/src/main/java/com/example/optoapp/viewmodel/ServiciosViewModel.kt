@@ -58,7 +58,15 @@ data class ServiciosUiState(
     val pagosToDelete: List<Pago> = emptyList(),
     val generatedId: String = UUID.randomUUID().toString(),
     val isEdit: Boolean = false,
-)
+    val motivoAnulacion: String? = null,
+    val fechaAnulacion: LocalDate? = null,
+) {
+    val isReadOnly: Boolean
+        get() = OrderStatusPolicy.isTerminal(estado)
+
+    val selectableEstados: List<String>
+        get() = OrderStatusPolicy.selectableEstados(estado)
+}
 
 @HiltViewModel
 class ServiciosViewModel @Inject constructor(
@@ -88,6 +96,9 @@ class ServiciosViewModel @Inject constructor(
 
     private val _deleteError = MutableStateFlow<String?>(null)
     val deleteError: StateFlow<String?> = _deleteError.asStateFlow()
+
+    private val _anulando = MutableStateFlow(false)
+    val anulando: StateFlow<Boolean> = _anulando.asStateFlow()
 
     init {
         viewModelScope.launch {
@@ -138,9 +149,10 @@ class ServiciosViewModel @Inject constructor(
 
     fun updateEstado(estado: String) {
         _uiState.update {
+            if (estado !in it.selectableEstados) return@update it
             it.copy(
                 estado = estado,
-                fechaEntrega = if (estado == "Entregado") DateUtils.today() else it.fechaEntrega,
+                fechaEntrega = if (estado == OrderStatusPolicy.ENTREGADO) DateUtils.today() else it.fechaEntrega,
             )
         }
     }
@@ -241,6 +253,8 @@ class ServiciosViewModel @Inject constructor(
                         isEdit = true,
                         isLoading = false,
                         error = null,
+                        motivoAnulacion = s.motivoAnulacion,
+                        fechaAnulacion = s.fechaAnulacion,
                     )
                     _uiState.value = deriveHeader(base)
                 }
@@ -485,8 +499,10 @@ class ServiciosViewModel @Inject constructor(
         _deleteError.value = null
     }
 
-    fun confirmAnular(motivo: String) {
+    fun confirmAnular(motivo: String, onComplete: () -> Unit = {}) {
         val servicio = _servicioToDelete.value ?: return
+        if (_anulando.value) return
+        _anulando.value = true
         viewModelScope.launch {
             try {
                 AuthorizationGuard.requireRole(sessionManager.opticaRol.first(), CANCEL_ROLES, "anular servicio")
@@ -494,6 +510,7 @@ class ServiciosViewModel @Inject constructor(
                 cancelServicioExtraUseCase(servicio.id, sessionManager.opticaId.first(), reason)
                 _showDeleteDialog.value = false
                 _servicioToDelete.value = null
+                onComplete()
             } catch (e: CancellationException) {
                 throw e
             } catch (e: IllegalArgumentException) {
@@ -503,6 +520,8 @@ class ServiciosViewModel @Inject constructor(
             } catch (e: Exception) {
                 Log.e(TAG, "Anular servicio", e)
                 _deleteError.value = "Error inesperado. Reintente más tarde."
+            } finally {
+                _anulando.value = false
             }
         }
     }

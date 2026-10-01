@@ -162,6 +162,32 @@ class ServiciosViewModelDeleteTest {
     }
 
     @Test
+    fun `double tap on the cancel confirmation cancels once`() = runTest(testDispatcher) {
+        var completions = 0
+
+        viewModel.confirmAnular("Error de registro") { completions++ }
+        viewModel.confirmAnular("Error de registro") { completions++ }
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coVerify(exactly = 1) { cancelServicioExtraUseCase(servId, "optica-test", "Error de registro") }
+        assertEquals(1, completions)
+        assertFalse(viewModel.anulando.value)
+    }
+
+    @Test
+    fun `a failed cancel releases the guard and skips completion`() = runTest(testDispatcher) {
+        coEvery { cancelServicioExtraUseCase(any(), any(), any()) } throws IllegalStateException("Stock insuficiente")
+        var completions = 0
+
+        viewModel.confirmAnular("Error de registro") { completions++ }
+        assertTrue(viewModel.anulando.value)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(0, completions)
+        assertFalse(viewModel.anulando.value)
+    }
+
+    @Test
     fun `dismissDeleteDialog clears the pending servicio and error`() = runTest(testDispatcher) {
         confirm("   ")
 
