@@ -63,3 +63,16 @@ optoweb/.env.local
 optoweb/.env.vercel
 optoweb/.next/
 optoweb/node_modules/
+/optoweb/
+
+# Isolated Gradle builds and local verification logs; untracked noise here makes
+# `gentle-ai review assess` unassessable.
+/.build-iso-*/
+/.gradle-test-iso/
+/.gradle-iso-init.gradle
+/.gradle-iso-init.gradle.kts
+/*-out*.txt
+/*-exit.txt
+/*-compile.txt
+/*-run.txt
+/mig-list.json
