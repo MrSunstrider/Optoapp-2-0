@@ -261,4 +261,26 @@ class CancelLedgerUseCasesTest {
         assertNull(inserted.single().dispensacionId)
         assertEquals(mapOf("Yape" to 30.0), snapshot.netByMetodo)
     }
+
+    @Test
+    fun lastCreditMetodo_sameDateTie_isResolvedByLatestUpdatedAt() {
+        val pagos = listOf(
+            ledgerPago("late", "Abono", 40.0, "Yape").copy(updatedAt = "2026-08-14T18:00:00Z"),
+            ledgerPago("early", "Abono", 60.0, "Tarjeta").copy(updatedAt = "2026-08-14T09:00:00Z"),
+        )
+
+        assertEquals("Yape", lastCreditMetodo(pagos))
+        assertEquals("Yape", lastCreditMetodo(pagos.reversed()))
+    }
+
+    @Test
+    fun lastCreditMetodo_ignoresNewerReversoAndReembolsoRows() {
+        val pagos = listOf(
+            ledgerPago("abono", "Abono", 100.0, "Efectivo").copy(fecha = date.minusDays(2)),
+            ledgerPago("reverso", "Reverso", 30.0, "Tarjeta", reversaPagoId = "abono"),
+            ledgerPago("reembolso", "Reembolso", 20.0, "Yape").copy(fecha = date.plusDays(1)),
+        )
+
+        assertEquals("Efectivo", lastCreditMetodo(pagos))
+    }
 }
