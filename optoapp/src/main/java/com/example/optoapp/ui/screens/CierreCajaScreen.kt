@@ -24,12 +24,13 @@ import com.example.optoapp.data.AppRoles
 import com.example.optoapp.ui.components.OptoCard
 import com.example.optoapp.ui.components.OptoDatePickerDialog
 import com.example.optoapp.ui.components.OptoTopAppBar
+import com.example.optoapp.ui.components.OrderEstadoChip
+import com.example.optoapp.ui.components.orderEstadoColor
 import com.example.optoapp.ui.components.cierre_caja.ResumenCard
 import com.example.optoapp.ui.components.cierre_caja.TransactionItem
 import com.example.optoapp.ui.navigation.Route
 import com.example.optoapp.ui.theme.alertRed
 import com.example.optoapp.ui.theme.positiveGreen
-import com.example.optoapp.ui.theme.warningAmber
 import com.example.optoapp.util.DateUtils
 import com.example.optoapp.viewmodel.AuthViewModel
 import com.example.optoapp.viewmodel.CierreCajaViewModel
@@ -437,7 +438,7 @@ private fun VentaDispensacionCard(
 ) {
     val totalPagado = cierreVentaPagado(disp.montoPagado, disp.id, pagadoLedgerByDispensacion)
     val saldo = disp.montoTotal - totalPagado
-    val estadoColor = ventaEstadoColor(disp.estadoEntrega, saldo)
+    val estadoColor = orderEstadoColor(disp.estadoEntrega, saldo)
 
     Card(
         modifier = Modifier.fillMaxWidth()
@@ -470,7 +471,7 @@ private fun VentaDispensacionCard(
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
-                VentaEstadoChip(disp.estadoEntrega, saldo)
+                OrderEstadoChip(disp.estadoEntrega, saldo = saldo)
             }
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text("Total: ${formatSoles(disp.montoTotal)}", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
@@ -496,7 +497,7 @@ private fun VentaServicioCard(
 ) {
     val totalPagado = cierreVentaPagado(serv.aCuenta, serv.id, pagadoLedgerByServicio)
     val saldo = serv.montoTotal - totalPagado
-    val estadoColor = ventaEstadoColor(serv.estado, saldo)
+    val estadoColor = orderEstadoColor(serv.estado, saldo)
     val otLine = servicioVentaOtLine(serv)
 
     Card(
@@ -524,7 +525,7 @@ private fun VentaServicioCard(
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
-                VentaEstadoChip(serv.estado, saldo)
+                OrderEstadoChip(serv.estado, saldo = saldo, servicio = true)
             }
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text("Total: ${formatSoles(serv.montoTotal)}", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
@@ -539,30 +540,5 @@ private fun VentaServicioCard(
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun ventaEstadoColor(estado: String, saldo: Double): androidx.compose.ui.graphics.Color =
-    when (estado) {
-        "Entregado" -> MaterialTheme.colorScheme.positiveGreen
-        "Pendiente" -> if (saldo > 0) MaterialTheme.colorScheme.alertRed else MaterialTheme.colorScheme.warningAmber
-        else -> MaterialTheme.colorScheme.onSurfaceVariant
-    }
-
-@Composable
-private fun VentaEstadoChip(estado: String, saldo: Double) {
-    val estadoColor = ventaEstadoColor(estado, saldo)
-    Surface(
-        shape = RoundedCornerShape(6.dp),
-        color = estadoColor.copy(alpha = 0.15f),
-    ) {
-        Text(
-            estado,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Bold,
-            color = estadoColor,
-        )
     }
 }

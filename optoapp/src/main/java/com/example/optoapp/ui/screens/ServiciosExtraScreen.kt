@@ -21,6 +21,8 @@ import com.example.optoapp.ui.navigation.Route
 import com.example.optoapp.ui.components.OptoDatePickerDialog
 import com.example.optoapp.ui.components.OptoKpiCard
 import com.example.optoapp.ui.components.OptoTopAppBar
+import com.example.optoapp.ui.components.OrderEstadoChip
+import com.example.optoapp.ui.components.orderEstadoColor
 import com.example.optoapp.ui.theme.alertRed
 import com.example.optoapp.ui.theme.positiveGreen
 import com.example.optoapp.ui.theme.warningAmber
@@ -225,11 +227,7 @@ fun ServiciosExtraScreen(navController: NavController, drawerState: DrawerState,
 @Composable
 private fun ServicioCard(servicio: ServicioExtra, aCuenta: Double = 0.0, onEdit: () -> Unit, onAnular: (() -> Unit)?) {
     val saldo = servicio.montoTotal - aCuenta
-    val estadoColor = when (servicio.estado) {
-        "Entregado" -> MaterialTheme.colorScheme.positiveGreen
-        "Pendiente" -> if (saldo > 0) MaterialTheme.colorScheme.alertRed else MaterialTheme.colorScheme.warningAmber
-        else -> MaterialTheme.colorScheme.onSurfaceVariant
-    }
+    val estadoColor = orderEstadoColor(servicio.estado, saldo)
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -253,18 +251,7 @@ private fun ServicioCard(servicio: ServicioExtra, aCuenta: Double = 0.0, onEdit:
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
-                Surface(
-                    shape = RoundedCornerShape(6.dp),
-                    color = estadoColor.copy(alpha = 0.15f),
-                ) {
-                    Text(
-                        servicio.estado,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = estadoColor,
-                    )
-                }
+                OrderEstadoChip(servicio.estado, saldo = saldo, servicio = true)
             }
 
             Spacer(Modifier.height(8.dp))
