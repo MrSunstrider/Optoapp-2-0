@@ -401,7 +401,8 @@ class DispensacionViewModel @Inject constructor(
                 s.montoTotal.replace(",", ".").toDoubleOrNull()?.takeIf { it > 0.0 } ?: 0.0
             } else {
                 val parsed = s.montoTotal.replace(",", ".").toDoubleOrNull()
-                if (parsed == null || parsed <= 0.0) {
+                val zeroAllowed = parsed == 0.0 && dispensacionId != null && isClaimReplacement(dispensacionId)
+                if (parsed == null || parsed < 0.0 || (parsed == 0.0 && !zeroAllowed)) {
                     fail(FinanzasRemoteDefaults.Messages.MONTO_TOTAL_MAYOR_A_CERO)
                     return@launch
                 }
@@ -579,6 +580,12 @@ class DispensacionViewModel @Inject constructor(
             _uiState.update { it.copy(isLoading = false) }
             onComplete()
         }
+    }
+
+    /** A warranty remake may be free, so a claim replacement keeps a total of 0 on edit. */
+    private suspend fun isClaimReplacement(dispensacionId: String): Boolean {
+        val persisted = repository.getDispensacionById(dispensacionId, sessionManager.opticaId.first())
+        return (persisted as? Resource.Success)?.data?.reclamoOrigenId != null
     }
 
     /**

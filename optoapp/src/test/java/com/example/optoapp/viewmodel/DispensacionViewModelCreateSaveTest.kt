@@ -1,7 +1,9 @@
 package com.example.optoapp.viewmodel
 
+import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.FinanzasRemoteDefaults
 import com.example.optoapp.data.OptoRepository
+import com.example.optoapp.data.Resource
 import com.example.optoapp.data.SessionManager
 import com.example.optoapp.data.costobiselado.CostoBiseladoDao
 import com.example.optoapp.data.costoproducto.CostoProductoDao
@@ -31,6 +33,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
+import java.time.LocalDate
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DispensacionViewModelCreateSaveTest {
@@ -136,6 +139,65 @@ class DispensacionViewModelCreateSaveTest {
             FinanzasRemoteDefaults.Messages.MONTO_TOTAL_MAYOR_A_CERO,
             viewModel.uiState.value.error,
         )
+        coVerify(exactly = 0) { repository.updateDispensacion(any()) }
+    }
+
+    private fun stubPersisted(reclamoOrigenId: String?) {
+        coEvery { repository.getDispensacionItemsByDispensacion("disp-existing", "optica-test") } returns emptyList()
+        coEvery { repository.getDispensacionById("disp-existing", "optica-test") } returns Resource.Success(
+            DispensacionOptica(
+                id = "disp-existing", ot = "OT-2026-0001-R1", pacienteId = "pac-1", fecha = LocalDate.of(2026, 7, 10),
+                opticaId = "optica-test", estadoEntrega = "Pendiente", reclamoOrigenId = reclamoOrigenId,
+            ),
+        )
+    }
+
+    @Test
+    fun `saveDispensacion on edit accepts zero montoTotal for a claim replacement`() = runTest(testDispatcher) {
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+        stubPersisted(reclamoOrigenId = "disp-original")
+
+        viewModel.updateUiState { it.copy(ot = "OT-2026-0001-R1", items = listOf(minimalItem()), montoTotal = "0") }
+        viewModel.saveDispensacion("pac-1", "disp-existing") {}
+
+        coVerify(timeout = 10_000) {
+            repository.updateDispensacion(
+                withArg { disp ->
+                    assertEquals(0.0, disp.montoTotal, 0.001)
+                    assertEquals("disp-original", disp.reclamoOrigenId)
+                },
+            )
+        }
+        runBlocking { withTimeout(5_000) { while (viewModel.uiState.value.isLoading) delay(10) } }
+        assertNull(viewModel.uiState.value.error)
+    }
+
+    @Test
+    fun `saveDispensacion on edit rejects zero montoTotal for a regular order`() = runTest(testDispatcher) {
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+        stubPersisted(reclamoOrigenId = null)
+
+        viewModel.updateUiState { it.copy(ot = "OT-2026-0001", items = listOf(minimalItem()), montoTotal = "0") }
+        viewModel.saveDispensacion("pac-1", "disp-existing") {}
+        advanceUntilIdle()
+
+        assertEquals(FinanzasRemoteDefaults.Messages.MONTO_TOTAL_MAYOR_A_CERO, viewModel.uiState.value.error)
+        coVerify(exactly = 0) { repository.updateDispensacion(any()) }
+    }
+
+    @Test
+    fun `saveDispensacion on edit rejects a negative montoTotal even for a claim replacement`() = runTest(testDispatcher) {
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+        stubPersisted(reclamoOrigenId = "disp-original")
+
+        viewModel.updateUiState { it.copy(ot = "OT-2026-0001-R1", items = listOf(minimalItem()), montoTotal = "-5") }
+        viewModel.saveDispensacion("pac-1", "disp-existing") {}
+        advanceUntilIdle()
+
+        assertEquals(FinanzasRemoteDefaults.Messages.MONTO_TOTAL_MAYOR_A_CERO, viewModel.uiState.value.error)
         coVerify(exactly = 0) { repository.updateDispensacion(any()) }
     }
 }
