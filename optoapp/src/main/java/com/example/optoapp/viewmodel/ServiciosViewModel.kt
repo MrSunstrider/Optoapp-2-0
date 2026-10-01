@@ -11,6 +11,7 @@ import com.example.optoapp.data.Resource
 import com.example.optoapp.data.ServicioExtra
 import com.example.optoapp.data.regaloservicio.RegaloServicioExtraEntity
 import com.example.optoapp.data.servicio.ServicioExtraItem
+import com.example.optoapp.domain.OrderStatusPolicy
 import com.example.optoapp.domain.PagoEffect
 import com.example.optoapp.domain.inventario.inventarioParaServicioExtra
 import com.example.optoapp.domain.inventario.monturaMatchesDescripcion
@@ -360,6 +361,9 @@ class ServiciosViewModel @Inject constructor(
 
                 repository.withTransaction {
                     if (state.isEdit) {
+                        (repository.getServicioById(finalId, currentOpticaId) as? Resource.Success)?.data?.let {
+                            OrderStatusPolicy.requireEditable(it.estado, "editar el servicio")
+                        }
                         applyEditStockDiff(
                             previousItems = previousItems,
                             persistedItems = persistedItems,
