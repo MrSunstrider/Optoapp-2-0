@@ -252,6 +252,31 @@ class AnularDispensacionTransactionTest {
     }
 
     @Test
+    fun legacyNuevaDeTiendaHeaderFrame_restocksOnceAcrossRepeatedCancels() = runTest {
+        seedOrder(headerMonturaId = "M1", headerOrigen = "Nueva de Tienda")
+        seedMontura("M1", stock = 0)
+
+        useCase()(dispId, opticaId, "Cliente desistió")
+        val second = useCase()(dispId, opticaId, "Cliente desistió")
+
+        assertEquals(LifecycleOutcome.AlreadyTerminal("Anulado"), second)
+        assertEquals(1, stock("M1"))
+        assertEquals(listOf("d1:anul:h:M1"), movimientos().map { it.referenciaId })
+    }
+
+    @Test
+    fun legacyNuevaDeTiendaItemFrame_isRestocked() = runTest {
+        seedOrder()
+        seedMontura("M1", stock = 2)
+        seedItem("i1", "M1", origen = "Nueva de Tienda")
+
+        useCase()(dispId, opticaId, "Cliente desistió")
+
+        assertEquals(3, stock("M1"))
+        assertEquals(listOf("d1:anul:i1"), movimientos().map { it.referenciaId })
+    }
+
+    @Test
     fun secondCancel_returnsAlreadyTerminalAndChangesNothing() = runTest {
         seedOrder()
         seedMontura("M1", stock = 3)

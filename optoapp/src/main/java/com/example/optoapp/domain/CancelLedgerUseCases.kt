@@ -187,7 +187,6 @@ sealed interface LifecycleOutcome {
 }
 
 private const val MOTIVO_MAX_LENGTH = 500
-private const val ORIGEN_TIENDA = "Tienda"
 
 internal fun normalizeMotivo(motivo: String): String {
     val trimmed = motivo.trim()
@@ -241,12 +240,12 @@ class AnularDispensacionUseCase @Inject constructor(
     private suspend fun restockFrames(disp: DispensacionOptica, opticaId: String) {
         val items = repository.getDispensacionItemsByDispensacion(disp.id, opticaId)
         if (items.isEmpty()) {
-            if (disp.origenMontura.trim() == ORIGEN_TIENDA && disp.monturaId.isNotBlank()) {
+            if (OrigenMontura.isTienda(disp.origenMontura) && disp.monturaId.isNotBlank()) {
                 restock(disp.monturaId, opticaId, 1, movimientoReferenciaForDispensacionHeaderAnulacion(disp.id, disp.monturaId))
             }
             return
         }
-        items.filter { it.origenMontura.trim() == ORIGEN_TIENDA && it.monturaId.isNotBlank() }.forEach { item ->
+        items.filter { OrigenMontura.isTienda(it.origenMontura) && it.monturaId.isNotBlank() }.forEach { item ->
             restock(item.monturaId, opticaId, 1, movimientoReferenciaForDispensacionItemAnulacion(disp.id, item.id))
         }
     }
@@ -390,7 +389,7 @@ class ReclamarDispensacionUseCase @Inject constructor(
             items.map { CopiedFrame(it.origenMontura, it.monturaId, it.descripcionMontura) }
         }
         frames
-            .filter { it.origen.trim() == ORIGEN_TIENDA && it.monturaId.isNotBlank() }
+            .filter { OrigenMontura.isTienda(it.origen) && it.monturaId.isNotBlank() }
             .forEach { consumeFrame(replacement, it) }
         return replacement
     }

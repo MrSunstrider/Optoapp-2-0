@@ -16,6 +16,7 @@ import com.example.optoapp.domain.CalcularMontoPagadoUseCase
 import com.example.optoapp.domain.EliminarDispensacionUseCase
 import com.example.optoapp.domain.LifecycleOutcome
 import com.example.optoapp.domain.OrderStatusPolicy
+import com.example.optoapp.domain.OrigenMontura
 import com.example.optoapp.domain.PagoEffect
 import com.example.optoapp.domain.ReclamarDispensacionUseCase
 import com.example.optoapp.domain.ReclamoOutcome
@@ -721,12 +722,10 @@ class DispensacionViewModel @Inject constructor(
     }
 
     private fun normalizeOrigenMontura(value: String): String = when (value.trim()) {
-        ORIGEN_TIENDA_LEGACY -> ORIGEN_TIENDA
+        OrigenMontura.TIENDA_LEGACY -> OrigenMontura.TIENDA
         ORIGEN_PACIENTE_LEGACY -> ORIGEN_PACIENTE
         else -> value.trim()
     }
-
-    private fun isOrigenTienda(value: String): Boolean = value == ORIGEN_TIENDA || value == ORIGEN_TIENDA_LEGACY
 
     fun loadEvaluacionesDisponibles(pacienteId: String) {
         viewModelScope.launch {
@@ -882,9 +881,7 @@ class DispensacionViewModel @Inject constructor(
 
     companion object {
         private const val TAG = "DispensacionVM"
-        private const val ORIGEN_TIENDA = "Tienda"
         private const val ORIGEN_PACIENTE = "Paciente"
-        private const val ORIGEN_TIENDA_LEGACY = "Nueva de Tienda"
         private const val ORIGEN_PACIENTE_LEGACY = "Traída por paciente"
         private const val METODO_REEMBOLSO_POR_DEFECTO = "Efectivo"
 

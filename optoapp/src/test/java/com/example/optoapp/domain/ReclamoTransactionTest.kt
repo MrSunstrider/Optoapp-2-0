@@ -430,6 +430,18 @@ class ReclamoTransactionTest {
     }
 
     @Test
+    fun legacyNuevaDeTiendaHeaderFrame_isConsumedByTheReplacement() = runTest {
+        seedOriginal()
+        db.dispensacionDao().updateDispensacion(original().copy(monturaId = "M1", origenMontura = "Nueva de Tienda"))
+        seedMontura("M1", stock = 1)
+
+        val created = claim(total = 200.0) as ReclamoOutcome.Created
+
+        assertEquals(0, stock("M1"))
+        assertEquals(listOf(created.replacementId), movimientos().map { it.referenciaId })
+    }
+
+    @Test
     fun outOfStockCopiedFrame_failsTheWholeClaimWithTypedError() = runTest {
         seedOriginal()
         seedStoreItemAndRegalo(frameStock = 0)
