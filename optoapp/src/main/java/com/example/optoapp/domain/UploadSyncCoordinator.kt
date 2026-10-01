@@ -12,7 +12,6 @@ import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.CancellationException
 import java.io.IOException
-import java.time.Instant
 import javax.inject.Inject
 
 /**
@@ -178,7 +177,12 @@ open class UploadSyncCoordinator @Inject constructor(
             }
             uniqueById[row.id] = localId to row
         }
-        val rows = uniqueById.values.map { it.second }
+        // WHY: the original may have adopted a remote id by OT; the replacement must point at that id.
+        val remoteIdByLocalId = uniqueById.values.associate { (localId, row) -> localId to row.id }
+        val rows = uniqueById.values.map { (_, row) ->
+            val remoteOrigenId = row.reclamoOrigenId?.let(remoteIdByLocalId::get)
+            if (remoteOrigenId != null) row.copy(reclamoOrigenId = remoteOrigenId) else row
+        }
         val acceptedRemoteIds = mutableSetOf<String>()
         var uploadedCount = 0
         try {
@@ -355,6 +359,8 @@ open class UploadSyncCoordinator @Inject constructor(
 
     internal data class PagoKey(
         val dispensacionId: String?,
+        val servicioExtraId: String?,
+        val reversaPagoId: String?,
         val tipo: String,
         val monto: Double,
         val metodoPago: String,
@@ -473,19 +479,31 @@ open class UploadSyncCoordinator @Inject constructor(
             AppLogger.e(TAG, "FATAL: Cannot reconcile pagos with remote. Aborting to prevent duplicates.", e)
             throw UploadPreCheckFailedException("Reconciliation fetch failed for $TABLE_PAGOS", e)
         }
-        val remoteIdByKey = remotos.map { r ->
-            PagoKey(r.dispensacionId ?: "", r.tipo, r.monto, r.metodoPago, r.fecha) to r.id
-        }.toMap()
+        val remoteIds = remotos.mapTo(HashSet()) { it.id }
+        val remoteIdByKey = remotos.associate { r ->
+            PagoKey(
+                r.dispensacionId.orEmpty(), r.servicioExtraId.orEmpty(), r.reversaPagoId.orEmpty(),
+                r.tipo, r.monto, r.metodoPago, r.fecha,
+            ) to r.id
+        }
 
         val uniqueById = LinkedHashMap<String, Pair<String, PagoRemoto>>()
         rows.forEach { row ->
-            val key = PagoKey(row.dispensacionId ?: "", row.tipo, row.monto, row.metodoPago, row.fecha)
-            val remoteId = remoteIdByKey[key]
+            val key = PagoKey(
+                row.dispensacionId.orEmpty(), row.servicioExtraId.orEmpty(), row.reversaPagoId.orEmpty(),
+                row.tipo, row.monto, row.metodoPago, row.fecha,
+            )
+            // WHY: a pago already stored remotely under its own id must keep it; remapping it onto an
+            // equal-looking twin would collapse two real pagos into one.
+            val remoteId = if (row.id in remoteIds) null else remoteIdByKey[key]
             val reconciled = if (remoteId != null && remoteId != row.id) row.copy(id = remoteId) else row
             if (uniqueById.containsKey(reconciled.id)) return@forEach
             uniqueById[reconciled.id] = row.id to reconciled
         }
+        // WHY: a debit landing before its offsetting credit (chunk split or row-by-row fallback)
+        // drives the server parent balance below 0 and trips the monto_pagado CHECK.
         val uniqueRows = uniqueById.values.map { it.second }
+            .sortedBy { if (PagoEffect.signedAmount(it.tipo, it.monto) >= 0) 0 else 1 }
         var uploadedCount = 0
         try {
             uniqueRows.chunked(UPSERT_BATCH_SIZE).forEachIndexed { index, chunk ->

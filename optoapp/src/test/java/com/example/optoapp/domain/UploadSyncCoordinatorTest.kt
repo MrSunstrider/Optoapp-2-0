@@ -42,7 +42,7 @@ class UploadSyncCoordinatorTest {
     fun setUp() {
         mockkStatic("android.util.Log")
         coEvery { syncStateTracker.quarantinedEntityIds(any(), any()) } returns emptySet()
-        // Override runInTransaction to run blocks inline without a real DB transaction
+        // WHY: Room's withTransaction is an extension function MockK cannot stub.
         coordinator = object : UploadSyncCoordinator(
             repository = repository,
             supabase = supabase,
@@ -98,7 +98,6 @@ class UploadSyncCoordinatorTest {
             // acceptable — mock can't handle inline Postgrest DSL
         }
 
-        // GREEN (fixed code): merge deferred after upsert → upsert failed → merge NOT called
         coVerify(exactly = 0) { mergeHandler.mergeLocalDispensacionConflict(any(), any(), any()) }
     }
 
@@ -205,7 +204,7 @@ class UploadSyncCoordinatorTest {
         }
     }
 
-    // ── T2.1 RED: Pagos reconciliation tests ──────────────────────────
+    // ── Pagos reconciliation ────────────────────────────────────────────
 
     private fun createPagoCoordinator(
         parentDispIds: Set<String> = setOf("disp-1", "disp-2", "other-disp", "disp-X"),
@@ -403,7 +402,7 @@ class UploadSyncCoordinatorTest {
             fetchServicios(opticaId)
     }
 
-    // ── C1+C2: uploadPagos dedup + local ID tracking ─────────────────
+    // ── uploadPagos dedup + local ID tracking ────────────────────────
 
     @Test
     fun `uploadPagos deduplicatesById after reconciliation`() = runTest {
@@ -417,7 +416,6 @@ class UploadSyncCoordinatorTest {
             )
         }
 
-        // Two local pagos with same PagoKey reconcile to same remote ID
         coEvery { repository.getPagosSnapshotForOptica(opticaId) } returns listOf(
             com.example.optoapp.data.Pago(
                 id = "local-A", dispensacionId = "disp-1", tipo = "Abono", monto = 100.0,
@@ -432,9 +430,8 @@ class UploadSyncCoordinatorTest {
 
         testCoordinator.uploadPagos(opticaId)
 
-        // Only 1 upserted (uniqueById dedup); first-wins → local-A marked synced
         coVerify { syncStateTracker.markSynced(opticaId, "pago", "local-A") }
-        // Deduplicated local-B is NOT in uniqueById → NOT marked synced
+        coVerify(exactly = 0) { syncStateTracker.markSynced(opticaId, "pago", "local-B") }
     }
 
     @Test
@@ -459,11 +456,10 @@ class UploadSyncCoordinatorTest {
 
         testCoordinator.uploadPagos(opticaId)
 
-        // Must use original local ID, NOT the reconciled remote-99
         coVerify { syncStateTracker.markSynced(opticaId, "pago", "local-P1") }
     }
 
-    // ── C3+W1: uploadServicios dedup + local ID tracking ──────────────
+    // ── uploadServicios dedup + local ID tracking ─────────────────────
 
     @Test
     fun `uploadServicios deduplicates by reconciled ID`() = runTest {
@@ -474,7 +470,6 @@ class UploadSyncCoordinatorTest {
             )
         }
 
-        // Two servicios with same OT reconcile to same remote ID
         coEvery { repository.getServiciosSnapshotForOptica(opticaId) } returns listOf(
             ServicioExtra(
                 id = "local-S1", ot = "OT-001", descripcion = "Servicio A",
@@ -492,9 +487,8 @@ class UploadSyncCoordinatorTest {
 
         testCoordinator.uploadServicios(opticaId)
 
-        // Only 1 upserted (uniqueById dedup); first-wins → local-S1 marked synced
         coVerify { syncStateTracker.markSynced(opticaId, "servicio_extra", "local-S1") }
-        // Deduplicated local-S2 is NOT in uniqueById → NOT marked synced
+        coVerify(exactly = 0) { syncStateTracker.markSynced(opticaId, "servicio_extra", "local-S2") }
     }
 
     @Test
@@ -518,7 +512,6 @@ class UploadSyncCoordinatorTest {
 
         testCoordinator.uploadServicios(opticaId)
 
-        // Must use original local ID "local-SV1", not reconciled remote-S99
         coVerify { syncStateTracker.markSynced(opticaId, "servicio_extra", "local-SV1") }
     }
 
@@ -635,5 +628,252 @@ class UploadSyncCoordinatorTest {
         coVerify(exactly = 0) {
             syncStateTracker.markError(opticaId, "dispensacion", dispId, match { it.contains("23514") })
         }
+    }
+
+    // ── Claim linkage remap ───────────────────────────────────────────
+
+    private fun claimPair(opticaId: String): Pair<DispensacionOptica, DispensacionOptica> {
+        val original = DispensacionOptica(
+            id = "local-orig", ot = "2026-0042", fecha = LocalDate.parse("2026-09-01"),
+            pacienteId = "p1", opticaId = opticaId, estadoEntrega = OrderStatusPolicy.RECLAMADA,
+        )
+        val replacement = DispensacionOptica(
+            id = "local-repl", ot = "2026-0042-R1", fecha = LocalDate.parse("2026-09-30"),
+            pacienteId = "p1", opticaId = opticaId, estadoEntrega = OrderStatusPolicy.PENDIENTE,
+            reclamoOrigenId = "local-orig",
+        )
+        return original to replacement
+    }
+
+    private fun createDispensacionCaptureCoordinator(
+        remotos: List<DispensacionRemotaLookup>,
+        captured: MutableList<DispensacionRemota>,
+    ): UploadSyncCoordinator = object : UploadSyncCoordinator(
+        repository = repository,
+        supabase = supabase,
+        database = database,
+        syncStateTracker = syncStateTracker,
+        mergeHandler = mergeHandler,
+        networkRetryHelper = networkRetryHelper,
+        costoProductoDao = costoProductoDao,
+        costoBiseladoDao = costoBiseladoDao,
+    ) {
+        override suspend fun <T> runInTransaction(block: suspend () -> T): T = block()
+        override suspend fun fetchRemoteDispensacionesForLookup(opticaId: String) = remotos
+        override suspend fun upsertDispensacionesChunk(chunk: List<DispensacionRemota>) {
+            captured.addAll(chunk)
+        }
+    }
+
+    @Test
+    fun `replacement uploads remote id of original remapped by OT`() = runTest {
+        val opticaId = "optica-test"
+        val (original, replacement) = claimPair(opticaId)
+        coEvery { repository.getDispensacionesSnapshotForOptica(opticaId) } returns listOf(original, replacement)
+        coEvery { repository.getPagosSnapshotForOptica(opticaId) } returns emptyList()
+        coEvery { networkRetryHelper.retryNetwork(any(), any()) } coAnswers {
+            secondArg<suspend () -> Unit>().invoke()
+        }
+        val captured = mutableListOf<DispensacionRemota>()
+        val testCoordinator = createDispensacionCaptureCoordinator(
+            remotos = listOf(DispensacionRemotaLookup(id = "remote-orig", ot = "2026-0042")),
+            captured = captured,
+        )
+
+        val uploaded = testCoordinator.uploadDispensaciones(opticaId)
+
+        assertEquals(2, uploaded)
+        assertEquals(listOf("2026-0042", "2026-0042-R1"), captured.map { it.ot })
+        val uploadedOriginal = captured.single { it.ot == "2026-0042" }
+        val uploadedReplacement = captured.single { it.ot == "2026-0042-R1" }
+        assertEquals("remote-orig", uploadedOriginal.id)
+        assertEquals("local-repl", uploadedReplacement.id)
+        assertEquals("remote-orig", uploadedReplacement.reclamoOrigenId)
+    }
+
+    @Test
+    fun `replacement keeps local original id when original is not remapped`() = runTest {
+        val opticaId = "optica-test"
+        val (original, replacement) = claimPair(opticaId)
+        coEvery { repository.getDispensacionesSnapshotForOptica(opticaId) } returns listOf(original, replacement)
+        coEvery { repository.getPagosSnapshotForOptica(opticaId) } returns emptyList()
+        coEvery { networkRetryHelper.retryNetwork(any(), any()) } coAnswers {
+            secondArg<suspend () -> Unit>().invoke()
+        }
+        val captured = mutableListOf<DispensacionRemota>()
+        val testCoordinator = createDispensacionCaptureCoordinator(
+            remotos = listOf(DispensacionRemotaLookup(id = "remote-other", ot = "2026-0099")),
+            captured = captured,
+        )
+
+        testCoordinator.uploadDispensaciones(opticaId)
+
+        assertEquals(2, captured.size)
+        assertEquals("local-orig", captured.single { it.ot == "2026-0042-R1" }.reclamoOrigenId)
+        assertEquals("local-orig", captured.single { it.ot == "2026-0042" }.id)
+    }
+
+    // ── Credits before debits ─────────────────────────────────────────
+
+    private fun pago(
+        id: String,
+        tipo: String,
+        monto: Double = 10.0,
+        dispensacionId: String? = "disp-1",
+        servicioExtraId: String? = null,
+        reversaPagoId: String? = null,
+        fecha: String = "2026-09-30",
+    ) = com.example.optoapp.data.Pago(
+        id = id, dispensacionId = dispensacionId, servicioExtraId = servicioExtraId, tipo = tipo, monto = monto,
+        metodoPago = "Efectivo", fecha = LocalDate.parse(fecha), opticaId = "optica-test",
+        reversaPagoId = reversaPagoId,
+    )
+
+    private fun createPagoCaptureCoordinator(
+        remotos: List<PagoRemotoLookup> = emptyList(),
+        uploadedChunks: MutableList<List<PagoRemoto>>,
+        failMultiRowChunks: Boolean = false,
+    ): UploadSyncCoordinator {
+        coEvery { networkRetryHelper.retryNetwork(any(), any()) } coAnswers {
+            secondArg<suspend () -> Unit>().invoke()
+        }
+        return object : UploadSyncCoordinator(
+            repository = repository,
+            supabase = supabase,
+            database = database,
+            syncStateTracker = syncStateTracker,
+            mergeHandler = mergeHandler,
+            networkRetryHelper = networkRetryHelper,
+            costoProductoDao = costoProductoDao,
+            costoBiseladoDao = costoBiseladoDao,
+        ) {
+            override suspend fun <T> runInTransaction(block: suspend () -> T): T = block()
+            override suspend fun fetchRemotePagosForLookup(opticaId: String) = remotos
+            override suspend fun fetchRemoteParentIds(opticaId: String): Pair<Set<String>, Set<String>> =
+                setOf("disp-1") to setOf("serv-1", "serv-2")
+            override suspend fun upsertPagosChunk(chunk: List<PagoRemoto>) {
+                if (failMultiRowChunks && chunk.size > 1) {
+                    throw RuntimeException("new row violates row-level security policy Code: 42501")
+                }
+                uploadedChunks.add(chunk.toList())
+            }
+        }
+    }
+
+    @Test
+    fun `uploadPagos sends credits before debits keeping relative order`() = runTest {
+        val opticaId = "optica-test"
+        coEvery { repository.getPagosSnapshotForOptica(opticaId) } returns listOf(
+            pago("reemb-1", "Reembolso"),
+            pago("abono-1", "Abono"),
+            pago("rev-1", "Reverso", reversaPagoId = "abono-1"),
+            pago("abono-2", "Pago completo"),
+        )
+        val chunks = mutableListOf<List<PagoRemoto>>()
+
+        createPagoCaptureCoordinator(uploadedChunks = chunks).uploadPagos(opticaId)
+
+        assertEquals(listOf("abono-1", "abono-2", "reemb-1", "rev-1"), chunks.flatten().map { it.id })
+    }
+
+    @Test
+    fun `uploadPagos puts a late credit in the first chunk ahead of eighty debits`() = runTest {
+        val opticaId = "optica-test"
+        val debits = (1..80).map { pago("reemb-$it", "Reembolso", monto = it.toDouble()) }
+        coEvery { repository.getPagosSnapshotForOptica(opticaId) } returns debits + pago("abono-late", "Abono")
+        val chunks = mutableListOf<List<PagoRemoto>>()
+
+        createPagoCaptureCoordinator(uploadedChunks = chunks).uploadPagos(opticaId)
+
+        assertEquals(listOf(80, 1), chunks.map { it.size })
+        assertEquals("abono-late", chunks.first().first().id)
+        assertEquals(listOf("abono-late") + debits.map { it.id }, chunks.flatten().map { it.id })
+    }
+
+    @Test
+    fun `uploadPagos row by row fallback keeps credits before debits`() = runTest {
+        val opticaId = "optica-test"
+        coEvery { repository.getPagosSnapshotForOptica(opticaId) } returns listOf(
+            pago("reemb-1", "Reembolso"),
+            pago("abono-1", "Abono"),
+            pago("rev-1", "Reverso", reversaPagoId = "abono-1"),
+            pago("abono-2", "Abono", monto = 20.0),
+        )
+        val chunks = mutableListOf<List<PagoRemoto>>()
+
+        createPagoCaptureCoordinator(uploadedChunks = chunks, failMultiRowChunks = true).uploadPagos(opticaId)
+
+        assertTrue(chunks.all { it.size == 1 })
+        assertEquals(listOf("abono-1", "abono-2", "reemb-1", "rev-1"), chunks.flatten().map { it.id })
+    }
+
+    // ── PagoKey guard ─────────────────────────────────────────────────
+
+    private fun lookup(
+        id: String,
+        tipo: String = "Abono",
+        dispensacionId: String? = "disp-1",
+        servicioExtraId: String? = null,
+        reversaPagoId: String? = null,
+    ) = PagoRemotoLookup(
+        id = id, dispensacionId = dispensacionId, servicioExtraId = servicioExtraId, tipo = tipo,
+        monto = 10.0, metodoPago = "Efectivo", fecha = "2026-09-30", reversaPagoId = reversaPagoId,
+    )
+
+    @Test
+    fun `local pago whose id exists remotely is never remapped`() = runTest {
+        val opticaId = "optica-test"
+        coEvery { repository.getPagosSnapshotForOptica(opticaId) } returns listOf(
+            pago("p-a", "Abono"),
+            pago("p-b", "Abono"),
+        )
+        val chunks = mutableListOf<List<PagoRemoto>>()
+
+        createPagoCaptureCoordinator(
+            remotos = listOf(lookup("p-a"), lookup("p-b")),
+            uploadedChunks = chunks,
+        ).uploadPagos(opticaId)
+
+        assertEquals(listOf("p-a", "p-b"), chunks.flatten().map { it.id })
+        coVerify { syncStateTracker.markSynced(opticaId, "pago", "p-a") }
+        coVerify { syncStateTracker.markSynced(opticaId, "pago", "p-b") }
+    }
+
+    @Test
+    fun `same day equal reversos with different reversaPagoId are not collapsed`() = runTest {
+        val opticaId = "optica-test"
+        coEvery { repository.getPagosSnapshotForOptica(opticaId) } returns listOf(
+            pago("rv-1-local", "Reverso", reversaPagoId = "abono-1"),
+            pago("rv-2", "Reverso", reversaPagoId = "abono-2"),
+        )
+        val chunks = mutableListOf<List<PagoRemoto>>()
+
+        createPagoCaptureCoordinator(
+            remotos = listOf(lookup("remote-rv1", tipo = "Reverso", reversaPagoId = "abono-1")),
+            uploadedChunks = chunks,
+        ).uploadPagos(opticaId)
+
+        val uploaded = chunks.flatten()
+        assertEquals(listOf("remote-rv1", "rv-2"), uploaded.map { it.id })
+        assertEquals(listOf("abono-1", "abono-2"), uploaded.map { it.reversaPagoId })
+    }
+
+    @Test
+    fun `servicio pagos with different servicioExtraId are not collapsed`() = runTest {
+        val opticaId = "optica-test"
+        coEvery { repository.getPagosSnapshotForOptica(opticaId) } returns listOf(
+            pago("ps-1", "Abono", dispensacionId = null, servicioExtraId = "serv-1"),
+            pago("ps-2", "Abono", dispensacionId = null, servicioExtraId = "serv-2"),
+        )
+        val chunks = mutableListOf<List<PagoRemoto>>()
+
+        createPagoCaptureCoordinator(
+            remotos = listOf(lookup("remote-s1", dispensacionId = null, servicioExtraId = "serv-1")),
+            uploadedChunks = chunks,
+        ).uploadPagos(opticaId)
+
+        val uploaded = chunks.flatten()
+        assertEquals(listOf("remote-s1", "ps-2"), uploaded.map { it.id })
+        assertEquals(listOf("serv-1", "serv-2"), uploaded.map { it.servicioExtraId })
     }
 }

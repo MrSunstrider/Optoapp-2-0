@@ -511,6 +511,8 @@ internal data class PagoRemotoLookup(
     val monto: Double = 0.0,
     @SerialName("metodo_pago") val metodoPago: String = "",
     val fecha: String = "",
+    @SerialName("servicio_extra_id") val servicioExtraId: String? = null,
+    @SerialName("reversa_pago_id") val reversaPagoId: String? = null,
 )
 
 fun DispensacionOptica.toRemoto(pagosSum: Double = montoPagado): DispensacionRemota = DispensacionRemota(
