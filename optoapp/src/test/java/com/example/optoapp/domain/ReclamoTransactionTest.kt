@@ -326,6 +326,8 @@ class ReclamoTransactionTest {
         assertEquals(100.0, net(repl.id), 0.001)
         assertEquals(0.0, net(origId), 0.001)
         assertEquals(-50.0, claimDayPagos().sumOf { PagoEffect.signedAmount(it.tipo, it.monto) }, 0.001)
+        assertEquals(-50.0, cashDeltaBy("Efectivo"), 0.001)
+        assertEquals(0.0, cashDeltaBy("Tarjeta"), 0.001)
     }
 
     @Test
