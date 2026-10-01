@@ -51,8 +51,8 @@ An audit of the Cursor install (gentle-ai 3.7.0, engram 2.2.1, gga 2.10.1) found
 
 ## Progress
 
-- T1-T8 done. RDD advisories from the first review (locale-dependent grep, unasserted trailing blank lines, attribution-only message, readability nits) are fixed in 4b6a3b6d.
-- Open, optional: scenario 5 of `test_commit_msg.sh` only discriminates on hosts that honor `C.UTF-8` (true on this machine: it failed before the fix).
+- T1-T9 done. RDD advisories from the first review (locale-dependent grep, unasserted trailing blank lines, attribution-only message, readability nits) are fixed in 4b6a3b6d.
+- T9 done: Claude Code plugins (`engram@engram`, `vercel`) disabled in `~/.claude/settings.json` (backup in `~/.gentle-ai/backups/`), so `cursor-agent` (GGA) now loads only Cursor MCP servers and skills. Scenario 5 probes for a locale where grep withholds invalid-byte lines (works with grep before and after 3.5) and skips loudly otherwise; verified against real grep 3.0, an emulated grep 3.5, and a host without such a locale. Commits 5705c81b, 9b728a02; RDD `review-8baddd4780ddde18` and `review-bfa970c4b8c77c49` approved.
 
 ## Next step
 
