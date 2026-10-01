@@ -74,11 +74,27 @@ class ReclamoTransactionTest {
         db.close()
     }
 
-    private suspend fun claim(total: Double, metodoReembolso: String = "Efectivo", motivo: String = " Lente rayado ") =
-        ReclamarDispensacionUseCase(
-            repository, db.pagoDao(), DispensacionStockHelper(repository.monturaCoordinator), claimScheduler,
-            CalcularMontoPagadoUseCase(db.pagoDao()),
-        )(origId, opticaId, motivo, total, metodoReembolso)
+    private suspend fun claim(
+        total: Double,
+        metodoReembolso: String = "Efectivo",
+        motivo: String = " Lente rayado ",
+        repo: OptoRepository = repository,
+    ) = ReclamarDispensacionUseCase(
+        repo, db.pagoDao(), DispensacionStockHelper(repository.monturaCoordinator), claimScheduler,
+        CalcularMontoPagadoUseCase(db.pagoDao()),
+    )(origId, opticaId, motivo, total, metodoReembolso)
+
+    private fun recordingRepository(inserted: MutableList<Pago>): OptoRepository {
+        val spy = spyk(repository)
+        coEvery { spy.insertPago(any()) } coAnswers {
+            inserted += firstArg<Pago>()
+            callOriginal()
+        }
+        return spy
+    }
+
+    private fun lowestRunningNet(startNet: Double, rows: List<Pago>): Double =
+        rows.runningFold(startNet) { net, pago -> net + PagoEffect.signedAmount(pago.tipo, pago.monto) }.min()
 
     private suspend fun seedOriginal(estado: String = "Entregado") {
         db.pacienteDao().insertPaciente(
@@ -165,6 +181,43 @@ class ReclamoTransactionTest {
         assertEquals(150.0, repl.montoPagado, 0.001)
         assertEquals(-50.0, claimDayPagos().sumOf { PagoEffect.signedAmount(it.tipo, it.monto) }, 0.001)
         assertTrue(pagosOf(origId).none { it.tipo == "Reembolso" })
+    }
+
+    @Test
+    fun refundMethodYape_isHonoredAndOnlyYapeCashMoves() = runTest {
+        seedOriginal()
+        seedPago("a1", "Abono", 120.0, "Efectivo")
+        seedPago("a2", "Abono", 80.0, "Tarjeta")
+
+        claim(total = 150.0, metodoReembolso = "Yape")
+
+        val repl = replacement()!!
+        assertEquals(listOf(50.0 to "Yape"), pagosOf(repl.id).filter { it.tipo == "Reembolso" }.map { it.monto to it.metodoPago })
+        assertEquals(-50.0, cashDeltaBy("Yape"), 0.001)
+        assertEquals(0.0, cashDeltaBy("Efectivo"), 0.001)
+        assertEquals(0.0, cashDeltaBy("Tarjeta"), 0.001)
+    }
+
+    @Test
+    fun mixedMethodOriginal_transfersEachMethodAndRefundsWithoutNegativeParents() = runTest {
+        seedOriginal()
+        seedPago("a1", "Abono", 150.0, "Efectivo")
+        seedPago("a2", "Abono", 50.0, "Yape")
+        val inserted = mutableListOf<Pago>()
+
+        claim(total = 120.0, metodoReembolso = "Tarjeta", repo = recordingRepository(inserted))
+
+        val repl = replacement()!!
+        assertEquals(
+            setOf(Triple("Abono", 150.0, "Efectivo"), Triple("Abono", 50.0, "Yape"), Triple("Reembolso", 80.0, "Tarjeta")),
+            pagosOf(repl.id).map { Triple(it.tipo, it.monto, it.metodoPago) }.toSet(),
+        )
+        assertEquals(120.0, net(repl.id), 0.001)
+        assertEquals(0.0, net(origId), 0.001)
+        assertEquals(5, inserted.size)
+        assertTrue(lowestRunningNet(200.0, inserted.filter { it.dispensacionId == origId }) >= -0.001)
+        assertTrue(lowestRunningNet(0.0, inserted.filter { it.dispensacionId == repl.id }) >= -0.001)
+        assertEquals(-80.0, claimDayPagos().sumOf { PagoEffect.signedAmount(it.tipo, it.monto) }, 0.001)
     }
 
     @Test
