@@ -38,7 +38,7 @@ An audit of the Cursor install (gentle-ai 3.7.0, engram 2.2.1, gga 2.10.1) found
 - [x] T4 `.gitignore` local build/verification artifacts so `review assess` is assessable. Route: inline. Commit 117760c5.
 - [x] T5 `commit-msg` hook strips Cursor attribution trailers, with tests first (RED → GREEN). Route: inline (one hook + its test). Commit 383938f5; `test_commit_msg.sh` 8/8; the commit itself landed without the trailer.
 - [x] T6 Disable Cursor CLI commit/PR attribution; refresh skill registry. Route: inline. Evidence: `~/.cursor/cli-config.json` attribution false; `.cursor/skills` junction to `~/.cursor/skills` so the registry resolves Cursor paths (13 skills); Engram `skill-registry` mirror refreshed.
-- [ ] T7 Verify end to end: hook tests, `review assess`, GGA, RDD on the new commits.
+- [x] T7 Verify end to end: hook tests, `review assess`, GGA, RDD on the new commits. Evidence: `gentle-ai doctor` healthy (7/7); `test_pre_commit.sh` 15/15 and `test_commit_msg.sh` 8/8 under Git Bash; GGA ran with provider `cursor` on ce241961, which landed without a trailer; RDD `review-4df030caf66aa05e` (bf43cd2d..ce241961, high risk) approved and acknowledged after human consent.
 
 ## Acceptance criteria
 
@@ -50,8 +50,9 @@ An audit of the Cursor install (gentle-ai 3.7.0, engram 2.2.1, gga 2.10.1) found
 
 ## Progress
 
-- T1-T6 done.
+- T1-T7 done.
+- Advisory RDD findings left as follow-up: commit-msg grep is locale-dependent and can drop body lines on non-UTF-8 input (R4-001); hook tests compare via command substitution, so trailing blank lines go unasserted (R3-001); attribution-only messages become empty (R3-002); readability nits R2-001..003.
 
 ## Next step
 
-T7.
+None; follow-ups above are separate work.
