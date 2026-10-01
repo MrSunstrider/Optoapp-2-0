@@ -353,6 +353,32 @@ class InformacionFinancieraViewModelTest {
     }
 
     @Test
+    fun `loading an Anulado order exposes it as read-only with its reason and date`() = runTest {
+        coEvery { repository.obtenerDispensacion(dispId, any()) } returns Resource.Success(
+            testDispensacion.copy(estadoEntrega = "Anulado", motivoAnulacion = "Cliente desistió", fechaAnulacion = testDate),
+        )
+        val vm = createViewModel()
+        vm.loadFinanciera(dispId)
+
+        val state = vm.uiState.value
+        assertEquals(true, state.isReadOnly)
+        assertEquals("Cliente desistió", state.motivoAnulacion)
+        assertEquals(testDate, state.fechaAnulacion)
+        assertEquals(listOf("Anulado"), state.selectableEstados)
+    }
+
+    @Test
+    fun `an active order stays editable and offers only manual estados`() = runTest {
+        val vm = createViewModel()
+        vm.loadFinanciera(dispId)
+
+        val state = vm.uiState.value
+        assertEquals(false, state.isReadOnly)
+        assertEquals(null, state.motivoAnulacion)
+        assertEquals(listOf("Pendiente", "Entregado"), state.selectableEstados)
+    }
+
+    @Test
     fun `save rejects empty montoTotal`() = runTest {
         val vm = createViewModel()
         vm.loadFinanciera(dispId)

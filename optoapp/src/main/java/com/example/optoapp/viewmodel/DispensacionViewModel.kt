@@ -63,6 +63,9 @@ data class DispensacionUiState(
     val fechaEntrega: LocalDate? = null,
     val fecha: LocalDate = DateUtils.today(),
     val fechaVencimientoGarantia: LocalDate? = null,
+    val motivoAnulacion: String? = null,
+    val fechaAnulacion: LocalDate? = null,
+    val reclamoOrigenId: String? = null,
 
     val isLoading: Boolean = false,
     val error: String? = null,
@@ -248,6 +251,9 @@ class DispensacionViewModel @Inject constructor(
                             fechaEntrega = d.fechaEntrega,
                             fecha = d.fecha,
                             fechaVencimientoGarantia = d.fechaVencimientoGarantia,
+                            motivoAnulacion = d.motivoAnulacion,
+                            fechaAnulacion = d.fechaAnulacion,
+                            reclamoOrigenId = d.reclamoOrigenId,
                             pagos = loadedPagos,
                             montoPagado = computedMontoPagado,
                             regalos = regalosUi,
@@ -610,10 +616,16 @@ class DispensacionViewModel @Inject constructor(
         )
     }
 
+    /** Claims the loading flag before launching so a second tap queued behind the first is ignored. */
+    private fun tryStartAction(): Boolean {
+        if (_uiState.value.isLoading) return false
+        _uiState.update { it.copy(isLoading = true, error = null) }
+        return true
+    }
+
     fun deleteDispensacion(dispensacionId: String, onComplete: () -> Unit) {
+        if (!tryStartAction()) return
         viewModelScope.launch {
-            if (_uiState.value.isLoading) return@launch
-            _uiState.update { it.copy(isLoading = true, error = null) }
             try {
                 val role = sessionManager.opticaRol.first()
                 AuthorizationGuard.requireRole(role, setOf("admin", "gerente"), "eliminar dispensación")
@@ -669,9 +681,8 @@ class DispensacionViewModel @Inject constructor(
     }
 
     fun anularDispensacion(dispensacionId: String, motivo: String, onComplete: () -> Unit) {
+        if (!tryStartAction()) return
         viewModelScope.launch {
-            if (_uiState.value.isLoading) return@launch
-            _uiState.update { it.copy(isLoading = true, error = null) }
             try {
                 val role = sessionManager.opticaRol.first()
                 AuthorizationGuard.requireRole(role, setOf("admin", "gerente"), "anular dispensación")
@@ -833,7 +844,7 @@ class DispensacionViewModel @Inject constructor(
                         }
                     }
 
-                    // Auto-fill costs in item (R6: override persists even if matrix changes)
+                    // R6: a manual cost override persists even if the cost matrix changes.
                     val updatedItem = item.copy(
                         costoRealOd = item.costoRealOd ?: costoOd,
                         costoRealOi = item.costoRealOi ?: costoOi,

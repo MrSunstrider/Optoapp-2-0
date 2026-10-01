@@ -29,10 +29,14 @@ import androidx.navigation.NavController
 import com.example.optoapp.testing.TestTags
 import com.example.optoapp.domain.estadoAfterFechaEntrega
 import com.example.optoapp.domain.PagoEffect
+import com.example.optoapp.ui.components.ConfirmDeleteDialog
 import com.example.optoapp.ui.components.FechaEntregaEditButton
+import com.example.optoapp.ui.components.MotivoDialog
 import com.example.optoapp.ui.components.OptoDatePickerDialog
 import com.example.optoapp.ui.components.OptoTextField
 import com.example.optoapp.ui.components.OptoTopAppBar
+import com.example.optoapp.ui.components.OrderEstadoChip
+import com.example.optoapp.ui.components.OrderReadOnlyBanner
 import com.example.optoapp.ui.components.PatientContextCard
 import com.example.optoapp.ui.components.WizardStepHeader
 import com.example.optoapp.ui.navigation.Route
@@ -40,6 +44,7 @@ import com.example.optoapp.ui.components.dispensacion.LenteForm
 import com.example.optoapp.util.DateUtils
 import com.example.optoapp.viewmodel.DispensacionItemUi
 import com.example.optoapp.viewmodel.DispensacionViewModel
+import com.example.optoapp.viewmodel.OrderLifecycleState
 import java.time.LocalDate
 
 internal fun wizardStepsForMode(isEditMode: Boolean): List<String> =
@@ -49,6 +54,7 @@ internal fun wizardStepsForMode(isEditMode: Boolean): List<String> =
 @Composable
 fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, dispensacionId: String? = null, viewModel: DispensacionViewModel = hiltViewModel()) {
     val uiState by viewModel.uiState.collectAsState()
+    val lifecycle by viewModel.lifecycle.collectAsState()
     val monturasActivas by viewModel.monturasActivas.collectAsState()
     val expandedItems = remember { mutableStateMapOf<Int, Boolean>() }
     var showDatePicker by remember { mutableStateOf(false) }
@@ -113,7 +119,7 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
                     if (currentStep == lastStepIndex) {
                         IconButton(
                             onClick = { saveAction() },
-                            enabled = !uiState.isLoading,
+                            enabled = !uiState.isLoading && !lifecycle.isReadOnly,
                         ) {
                             Icon(Icons.Default.Check, contentDescription = "Guardar")
                         }
@@ -143,7 +149,7 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
                 } else {
                     Button(
                         onClick = { saveAction() },
-                        enabled = !uiState.isLoading,
+                        enabled = !uiState.isLoading && !lifecycle.isReadOnly,
                         modifier = Modifier.weight(1f).testTag(TestTags.DISPENSACION_GUARDAR_BTN),
                     ) {
                         Text(
@@ -188,6 +194,14 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
                 )
             }
 
+            if (lifecycle.isReadOnly) {
+                OrderReadOnlyBanner(
+                    estado = uiState.estadoEntrega,
+                    motivo = uiState.motivoAnulacion,
+                    fecha = uiState.fechaAnulacion,
+                )
+            }
+
             when (currentStep) {
                 0 -> StepOrden(
                     uiState = uiState,
@@ -202,10 +216,12 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
                     viewModel = viewModel,
                     monturasActivas = monturasActivas,
                     expandedItems = expandedItems,
+                    canAddItems = !lifecycle.isReadOnly,
                 )
                 2 -> if (isEditMode) {
                     StepGestion(
                         uiState = uiState,
+                        lifecycle = lifecycle,
                         viewModel = viewModel,
                         dispensacionId = dispensacionId!!,
                         navController = navController,
@@ -338,6 +354,7 @@ private fun StepProductos(
     viewModel: DispensacionViewModel,
     monturasActivas: List<com.example.optoapp.data.Montura>,
     expandedItems: MutableMap<Int, Boolean>,
+    canAddItems: Boolean,
 ) {
     Text(
         "Productos",
@@ -361,23 +378,66 @@ private fun StepProductos(
         )
     }
 
-    OutlinedButton(
-        onClick = { viewModel.addItem() },
-        modifier = Modifier.fillMaxWidth().testTag(TestTags.DISPENSACION_AGREGAR_ITEM_BTN),
-    ) {
-        Icon(Icons.Default.Add, contentDescription = "Agregar")
-        Spacer(Modifier.width(8.dp))
-        Text("Agregar otro producto (lente + montura)")
+    if (canAddItems) {
+        OutlinedButton(
+            onClick = { viewModel.addItem() },
+            modifier = Modifier.fillMaxWidth().testTag(TestTags.DISPENSACION_AGREGAR_ITEM_BTN),
+        ) {
+            Icon(Icons.Default.Add, contentDescription = "Agregar")
+            Spacer(Modifier.width(8.dp))
+            Text("Agregar otro producto (lente + montura)")
+        }
     }
 }
 
 @Composable
 private fun StepGestion(
     uiState: com.example.optoapp.viewmodel.DispensacionUiState,
+    lifecycle: OrderLifecycleState,
     viewModel: DispensacionViewModel,
     dispensacionId: String,
     navController: NavController,
 ) {
+    var showAnularDialog by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(uiState.error) {
+        if (uiState.error != null) {
+            showAnularDialog = false
+            showDeleteDialog = false
+        }
+    }
+
+    if (showAnularDialog) {
+        MotivoDialog(
+            title = "¿Anular orden?",
+            confirmText = "Anular",
+            message = "Se revierten los pagos y vuelven al stock la montura de tienda y los regalos. No se puede deshacer.",
+            submitting = uiState.isLoading,
+            onConfirm = { motivo ->
+                viewModel.anularDispensacion(dispensacionId, motivo) {
+                    showAnularDialog = false
+                    viewModel.loadDispensacion(dispensacionId)
+                }
+            },
+            onDismiss = { showAnularDialog = false },
+        )
+    }
+
+    if (showDeleteDialog) {
+        ConfirmDeleteDialog(
+            itemName = "OT ${uiState.ot}".trim(),
+            deleting = uiState.isLoading,
+            onConfirm = {
+                viewModel.deleteDispensacion(dispensacionId) {
+                    showDeleteDialog = false
+                    navController.popBackStack()
+                }
+            },
+            onDismiss = { if (!uiState.isLoading) showDeleteDialog = false },
+        )
+    }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
@@ -400,9 +460,13 @@ private fun StepGestion(
                     color = if (saldo > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary,
                 )
             }
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 Text("Estado:", fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(uiState.estadoEntrega, fontWeight = FontWeight.Bold)
+                OrderEstadoChip(uiState.estadoEntrega, saldo = saldo)
             }
             OutlinedButton(
                 onClick = { navController.navigate(Route.InformacionFinanciera(dispensacionId).route) },
@@ -416,46 +480,64 @@ private fun StepGestion(
                 Spacer(Modifier.width(6.dp))
                 Text("Gestionar costos →")
             }
-            if (uiState.fechaEntrega != null) {
-                FechaEntregaEditButton(
-                    fechaEntrega = uiState.fechaEntrega,
-                    onFechaChanged = { nueva ->
-                        viewModel.updateUiState {
-                            it.copy(
-                                fechaEntrega = nueva,
-                                estadoEntrega = estadoAfterFechaEntrega(it.estadoEntrega, nueva),
-                            )
-                        }
-                    },
-                )
-            } else {
-                TextButton(onClick = {
-                    val fecha = LocalDate.now()
-                    viewModel.updateUiState {
-                        it.copy(
-                            fechaEntrega = fecha,
-                            estadoEntrega = estadoAfterFechaEntrega(it.estadoEntrega, fecha),
-                        )
-                    }
-                }) {
-                    Text("Asignar fecha de entrega", fontSize = 12.sp)
-                }
+            if (!lifecycle.isReadOnly) {
+                FechaEntregaControls(uiState = uiState, viewModel = viewModel)
             }
         }
     }
 
-    Spacer(modifier = Modifier.height(8.dp))
-    OutlinedButton(
-        onClick = {
-            viewModel.deleteDispensacion(dispensacionId) {
-                navController.popBackStack()
+    if (lifecycle.canCancel) {
+        Spacer(modifier = Modifier.height(8.dp))
+        OutlinedButton(
+            onClick = { showAnularDialog = true },
+            enabled = !uiState.isLoading,
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
+        ) {
+            Text("Anular orden")
+        }
+    }
+    if (lifecycle.canHardDelete) {
+        TextButton(
+            onClick = { showDeleteDialog = true },
+            enabled = !uiState.isLoading,
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+        ) {
+            Text("Eliminar orden")
+        }
+    }
+}
+
+@Composable
+private fun FechaEntregaControls(
+    uiState: com.example.optoapp.viewmodel.DispensacionUiState,
+    viewModel: DispensacionViewModel,
+) {
+    if (uiState.fechaEntrega != null) {
+        FechaEntregaEditButton(
+            fechaEntrega = uiState.fechaEntrega,
+            onFechaChanged = { nueva ->
+                viewModel.updateUiState {
+                    it.copy(
+                        fechaEntrega = nueva,
+                        estadoEntrega = estadoAfterFechaEntrega(it.estadoEntrega, nueva),
+                    )
+                }
+            },
+        )
+    } else {
+        TextButton(onClick = {
+            val fecha = LocalDate.now()
+            viewModel.updateUiState {
+                it.copy(
+                    fechaEntrega = fecha,
+                    estadoEntrega = estadoAfterFechaEntrega(it.estadoEntrega, fecha),
+                )
             }
-        },
-        enabled = !uiState.isLoading,
-        modifier = Modifier.fillMaxWidth(),
-        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
-    ) {
-        Text("Eliminar Orden")
+        }) {
+            Text("Asignar fecha de entrega", fontSize = 12.sp)
+        }
     }
 }
 

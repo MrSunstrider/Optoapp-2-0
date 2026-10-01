@@ -37,10 +37,18 @@ data class FinancieraUiState(
     val regalos: List<RegaloDispensacionUi> = emptyList(),
     val estadoEntrega: String = "Pendiente",
     val fechaEntrega: LocalDate? = null,
+    val motivoAnulacion: String? = null,
+    val fechaAnulacion: LocalDate? = null,
     val isLoading: Boolean = false,
     val loadFailed: Boolean = false,
     val error: String? = null,
 ) {
+    val isReadOnly: Boolean
+        get() = OrderStatusPolicy.isTerminal(estadoEntrega)
+
+    val selectableEstados: List<String>
+        get() = OrderStatusPolicy.selectableEstados(estadoEntrega)
+
     val saldoRestante: Double
         get() {
             val total = montoTotal.toDoubleOrNull() ?: 0.0
@@ -100,6 +108,8 @@ class InformacionFinancieraViewModel @Inject constructor(
                             regalos = regalosUi,
                             estadoEntrega = d.estadoEntrega,
                             fechaEntrega = d.fechaEntrega,
+                            motivoAnulacion = d.motivoAnulacion,
+                            fechaAnulacion = d.fechaAnulacion,
                         )
                     }
                 }
