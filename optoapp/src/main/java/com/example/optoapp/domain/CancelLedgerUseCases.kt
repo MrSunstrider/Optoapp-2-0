@@ -290,6 +290,9 @@ sealed interface ReclamoOutcome {
     data class AlreadyTerminal(val estado: String) : ReclamoOutcome
 }
 
+class ReclamoStockInsuficienteException(val monturaId: String, val montura: String) :
+    IllegalStateException("Sin stock de la montura $montura para el reemplazo. No se registró el reclamo.")
+
 /** Interim guard: a legacy cross-method debit (negative net for one metodo) still needs its adjustment Reembolso. */
 class ReclamoLegacyAdjustmentUnsupportedException : IllegalStateException("legacy adjustment not supported")
 
@@ -372,10 +375,27 @@ class ReclamarDispensacionUseCase @Inject constructor(
             fechaAnulacion = null,
         )
         repository.insertDispensacion(replacement)
-        repository.getDispensacionItemsByDispensacion(original.id, original.opticaId).forEach { item ->
+        val items = repository.getDispensacionItemsByDispensacion(original.id, original.opticaId)
+        items.forEach { item ->
             repository.insertDispensacionItem(item.copy(id = UUID.randomUUID().toString(), dispensacionId = replacement.id))
         }
+        val frames = if (items.isEmpty()) {
+            listOf(CopiedFrame(replacement.origenMontura, replacement.monturaId, replacement.descripcionMontura))
+        } else {
+            items.map { CopiedFrame(it.origenMontura, it.monturaId, it.descripcionMontura) }
+        }
+        frames
+            .filter { it.origen.trim() == ORIGEN_TIENDA && it.monturaId.isNotBlank() }
+            .forEach { consumeFrame(replacement, it) }
         return replacement
+    }
+
+    private class CopiedFrame(val origen: String, val monturaId: String, val descripcion: String)
+
+    private suspend fun consumeFrame(replacement: DispensacionOptica, frame: CopiedFrame) {
+        stockHelper.adjustStockAndRegistrarMovimiento(
+            frame.monturaId, replacement.opticaId, -1, "SALIDA_VENTA", replacement.id, "Venta por reclamo de OT ${replacement.ot}",
+        ).getOrElse { throw ReclamoStockInsuficienteException(frame.monturaId, frame.descripcion.ifBlank { frame.monturaId }) }
     }
 
     private suspend fun transferCredit(

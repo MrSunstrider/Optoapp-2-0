@@ -2,6 +2,7 @@ package com.example.optoapp.domain
 
 import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.OptoRepository
+import com.example.optoapp.data.Pago
 import com.example.optoapp.data.Resource
 import com.example.optoapp.data.pago.PagoDao
 import com.example.optoapp.sync.PostSaveSyncScheduler
@@ -76,6 +77,20 @@ class ReclamarDispensacionUseCaseTest {
 
             assertTrue("estado $estado", error is IllegalStateException)
         }
+        assertNoWrites()
+    }
+
+    @Test
+    fun snapshotDisagreeingWithPersistedNetPaid_throwsWithNoWrites() = runTest {
+        stubOriginal("Entregado")
+        coEvery { pagoDao.getPagosByParent("d1", "o1") } returns listOf(
+            Pago(id = "a1", dispensacionId = "d1", fecha = LocalDate.of(2026, 9, 2), tipo = "Abono", monto = 100.0, metodoPago = "Efectivo", opticaId = "o1"),
+        )
+        coEvery { pagoDao.sumMontoByDispensacion("d1", "o1") } returns 80.0
+
+        val error = runCatching { claim() }.exceptionOrNull()
+
+        assertEquals("Saldo pagado inconsistente en la orden original; sincroniza y reintenta.", error?.message)
         assertNoWrites()
     }
 

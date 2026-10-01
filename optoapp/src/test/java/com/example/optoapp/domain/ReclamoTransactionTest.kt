@@ -5,6 +5,8 @@ import androidx.test.core.app.ApplicationProvider
 import com.example.optoapp.data.DispensacionItem
 import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.DispensacionRepository
+import com.example.optoapp.data.Montura
+import com.example.optoapp.data.MonturaMovimiento
 import com.example.optoapp.data.OptoDatabase
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Paciente
@@ -13,15 +15,18 @@ import com.example.optoapp.data.Pago
 import com.example.optoapp.data.SyncRepository
 import com.example.optoapp.data.backup.BackupRestoreCoordinator
 import com.example.optoapp.data.montura.MonturaInventoryCoordinator
+import com.example.optoapp.data.regalodispensacion.RegaloDispensacionEntity
 import com.example.optoapp.data.sync.SyncSnapshotCoordinator
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import com.example.optoapp.util.DateUtils
 import com.example.optoapp.util.DispensacionStockHelper
 import dagger.Lazy
 import io.github.jan.supabase.SupabaseClient
+import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.spyk
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -239,5 +244,114 @@ class ReclamoTransactionTest {
         assertNull(replacement())
         assertEquals(2, pagosOf(origId).size)
         coVerify(exactly = 0) { claimScheduler.scheduleFinanzasSync(any()) }
+    }
+
+    private suspend fun seedMontura(id: String, stock: Int) =
+        db.monturaDao().insertMontura(Montura(id = id, sku = "sku-$id", stockActual = stock, opticaId = opticaId))
+
+    private suspend fun stock(id: String) = db.monturaDao().getMonturaByIdForOptica(id, opticaId)!!.stockActual
+    private suspend fun movimientos(): List<MonturaMovimiento> = db.monturaMovimientoDao().getMovimientosListByOptica(opticaId)
+
+    private suspend fun seedStoreItemAndRegalo(frameStock: Int) {
+        seedMontura("M1", frameStock)
+        seedMontura("P1", stock = 5)
+        db.dispensacionItemDao().insertItem(
+            DispensacionItem(id = "i1", dispensacionId = origId, monturaId = "M1", origenMontura = "Tienda", descripcionMontura = "Ray-Ban 5154", opticaId = opticaId),
+        )
+        db.regaloDispensacionDao().insert(
+            RegaloDispensacionEntity(
+                id = "r1", dispensacionId = origId, productoId = "P1", cantidad = 1,
+                costoUnitario = 5.0, descripcion = "Estuche", motivo = "", opticaId = opticaId,
+            ),
+        )
+    }
+
+    @Test
+    fun copiedStoreFrame_isConsumedByTheReplacementWhileRegalosAndOriginalStockStay() = runTest {
+        seedOriginal()
+        seedStoreItemAndRegalo(frameStock = 3)
+        seedPago("a1", "Abono", 200.0, "Efectivo")
+
+        val created = claim(total = 200.0) as ReclamoOutcome.Created
+
+        val copied = db.dispensacionItemDao().getItemsListByDispensacion(created.replacementId, opticaId).single()
+        assertEquals("M1", copied.monturaId)
+        assertNotEquals("i1", copied.id)
+        assertTrue(db.regaloDispensacionDao().getByDispensacionId(created.replacementId, opticaId).isEmpty())
+        assertEquals(2, stock("M1"))
+        assertEquals(5, stock("P1"))
+        val salida = movimientos().single()
+        assertEquals("SALIDA_VENTA" to created.replacementId, salida.tipo to salida.referenciaId)
+        assertEquals("M1", salida.monturaId)
+    }
+
+    @Test
+    fun legacyHeaderStoreFrame_isConsumedByTheReplacement() = runTest {
+        seedOriginal()
+        db.dispensacionDao().updateDispensacion(original().copy(monturaId = "M1", origenMontura = "Tienda"))
+        seedMontura("M1", stock = 1)
+
+        val created = claim(total = 200.0) as ReclamoOutcome.Created
+
+        assertEquals(0, stock("M1"))
+        assertEquals(listOf(created.replacementId), movimientos().map { it.referenciaId })
+    }
+
+    @Test
+    fun outOfStockCopiedFrame_failsTheWholeClaimWithTypedError() = runTest {
+        seedOriginal()
+        seedStoreItemAndRegalo(frameStock = 0)
+        seedPago("a1", "Abono", 200.0, "Efectivo")
+
+        val error = runCatching { claim(total = 200.0) }.exceptionOrNull()
+
+        assertTrue(error is ReclamoStockInsuficienteException)
+        assertEquals("M1", (error as ReclamoStockInsuficienteException).monturaId)
+        assertTrue(error.message!!.contains("Ray-Ban 5154"))
+        val orig = original()
+        assertEquals("Entregado", orig.estadoEntrega)
+        assertNull(orig.motivoAnulacion)
+        assertNull(orig.fechaAnulacion)
+        assertNull(replacement())
+        assertEquals(listOf("a1"), pagosOf(origId).map { it.id })
+        assertTrue(movimientos().isEmpty())
+        assertEquals(0, stock("M1"))
+        coVerify(exactly = 0) { claimScheduler.scheduleInventarioSync(any()) }
+    }
+
+    @Test
+    fun failureAfterReversos_rollsBackTheWholeClaim() = runTest {
+        seedOriginal()
+        seedStoreItemAndRegalo(frameStock = 3)
+        seedPago("a1", "Abono", 200.0, "Efectivo")
+        val failingRepo = spyk(repository)
+        coEvery { failingRepo.insertPago(match { it.nota.startsWith("Crédito por reclamo") }) } throws IllegalStateException("insert failed")
+
+        val error = runCatching {
+            ReclamarDispensacionUseCase(
+                failingRepo, db.pagoDao(), DispensacionStockHelper(repository.monturaCoordinator), claimScheduler,
+                CalcularMontoPagadoUseCase(db.pagoDao()),
+            )(origId, opticaId, "Lente rayado", 200.0, "Efectivo")
+        }.exceptionOrNull()
+
+        assertEquals("insert failed", error?.message)
+        assertEquals("Entregado", original().estadoEntrega)
+        assertNull(replacement())
+        assertEquals(listOf("a1"), pagosOf(origId).map { it.id })
+        assertEquals(3, stock("M1"))
+        assertTrue(movimientos().isEmpty())
+    }
+
+    @Test
+    fun negativeNetPaid_throwsWithoutWrites() = runTest {
+        seedOriginal()
+        seedPago("e1", "Reembolso", 50.0, "Efectivo")
+
+        val error = runCatching { claim(total = 100.0) }.exceptionOrNull()
+
+        assertTrue(error is IllegalStateException && error !is ReclamoLegacyAdjustmentUnsupportedException)
+        assertEquals("Entregado", original().estadoEntrega)
+        assertNull(replacement())
+        assertEquals(listOf("e1"), pagosOf(origId).map { it.id })
     }
 }
