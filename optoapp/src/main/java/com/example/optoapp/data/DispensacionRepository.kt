@@ -220,6 +220,8 @@ class DispensacionRepository(
             pacienteId = servicio.pacienteId, metodoPago = servicio.metodoPago,
             fechaEntrega = servicio.fechaEntrega,
             updatedAt = servicio.updatedAt, updatedBy = servicio.updatedBy,
+            motivoAnulacion = servicio.motivoAnulacion,
+            fechaAnulacion = servicio.fechaAnulacion,
         )
     }
 

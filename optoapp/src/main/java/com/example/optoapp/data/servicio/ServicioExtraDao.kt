@@ -16,6 +16,7 @@ interface ServicioExtraDao {
     @Upsert
     suspend fun insertServicio(servicio: ServicioExtra)
 
+    // COALESCE: non-cancel saves pass null metadata and must not erase a recorded cancellation.
     @Query(
         """
         UPDATE servicios_extra SET ot=:ot, descripcion=:descripcion,
@@ -23,6 +24,8 @@ interface ServicioExtraDao {
         montoTotal=:montoTotal, aCuenta=:aCuenta, estado=:estado,
         fecha=:fecha, pacienteId=:pacienteId, metodoPago=:metodoPago,
         opticaId=:opticaId, fecha_entrega=:fechaEntrega,
+        motivoAnulacion=COALESCE(:motivoAnulacion, motivoAnulacion),
+        fechaAnulacion=COALESCE(:fechaAnulacion, fechaAnulacion),
         updatedAt=:updatedAt, updatedBy=:updatedBy
         WHERE id=:id AND opticaId=:opticaId
     """,
@@ -42,6 +45,8 @@ interface ServicioExtraDao {
         fechaEntrega: java.time.LocalDate?,
         updatedAt: String?,
         updatedBy: String?,
+        motivoAnulacion: String? = null,
+        fechaAnulacion: java.time.LocalDate? = null,
     ): Int
 
     @Query("SELECT * FROM servicios_extra WHERE fecha >= :start AND fecha <= :end AND opticaId = :opticaId ORDER BY fecha DESC")

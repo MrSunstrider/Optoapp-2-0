@@ -47,6 +47,9 @@ data class DispensacionRemota(
     @SerialName("evaluacion_id") val evaluacionId: String? = null,
     @SerialName("updated_at") val updatedAt: String? = null,
     @SerialName("updated_by") val updatedBy: String? = null,
+    @SerialName("reclamo_origen_id") val reclamoOrigenId: String? = null,
+    @SerialName("motivo_anulacion") val motivoAnulacion: String? = null,
+    @SerialName("fecha_anulacion") val fechaAnulacion: String? = null,
 ) {
     fun toEntity() = DispensacionOptica(
         id = id, ot = ot ?: "", monturaId = monturaId ?: "", pacienteId = pacienteId,
@@ -68,6 +71,9 @@ data class DispensacionRemota(
         evaluacionId = evaluacionId,
         updatedAt = updatedAt,
         updatedBy = updatedBy,
+        reclamoOrigenId = reclamoOrigenId.normalizeOptionalFk(),
+        motivoAnulacion = motivoAnulacion,
+        fechaAnulacion = fechaAnulacion?.let(LocalDate::parse),
     )
 
     internal fun optId(remoteId: String) = remoteId.ifBlank { "mi_optica_base" }
@@ -89,6 +95,8 @@ data class ServicioRemoto(
     @SerialName("optica_id") val opticaId: String,
     @SerialName("updated_at") val updatedAt: String? = null,
     @SerialName("updated_by") val updatedBy: String? = null,
+    @SerialName("motivo_anulacion") val motivoAnulacion: String? = null,
+    @SerialName("fecha_anulacion") val fechaAnulacion: String? = null,
 ) {
     fun toEntity() = ServicioExtra(
         id = id,
@@ -105,6 +113,8 @@ data class ServicioRemoto(
         updatedAt = updatedAt,
         updatedBy = updatedBy,
         fechaEntrega = fechaEntrega?.let(LocalDate::parse),
+        motivoAnulacion = motivoAnulacion,
+        fechaAnulacion = fechaAnulacion?.let(LocalDate::parse),
     )
 }
 
@@ -518,6 +528,9 @@ fun DispensacionOptica.toRemoto(pagosSum: Double = montoPagado): DispensacionRem
     filtroDiscromatopsiaTipo = filtroDiscromatopsiaTipo,
     evaluacionId = evaluacionId,
     updatedAt = updatedAt, updatedBy = updatedBy,
+    reclamoOrigenId = reclamoOrigenId.normalizeOptionalFk(),
+    motivoAnulacion = motivoAnulacion,
+    fechaAnulacion = fechaAnulacion?.toString(),
 )
 
 fun Pago.toRemoto(): PagoRemoto = PagoRemoto(
@@ -569,6 +582,8 @@ fun ServicioExtra.toRemoto(aCuentaSum: Double = aCuenta): ServicioRemoto = Servi
     updatedAt = updatedAt,
     updatedBy = updatedBy,
     fechaEntrega = fechaEntrega?.toString(),
+    motivoAnulacion = motivoAnulacion,
+    fechaAnulacion = fechaAnulacion?.toString(),
 )
 
 internal fun String?.normalizeOptionalFk(): String? = this?.trim()?.takeIf { it.isNotBlank() }

@@ -42,6 +42,9 @@ class DispensacionMergeHandler @Inject constructor(
             distanciaLente = canonical.distanciaLente.ifBlank { duplicate.distanciaLente },
             altura = canonical.altura.ifBlank { duplicate.altura },
             subTipoBifocal = canonical.subTipoBifocal.ifBlank { duplicate.subTipoBifocal },
+            reclamoOrigenId = canonical.reclamoOrigenId ?: duplicate.reclamoOrigenId,
+            motivoAnulacion = canonical.motivoAnulacion ?: duplicate.motivoAnulacion,
+            fechaAnulacion = canonical.fechaAnulacion ?: duplicate.fechaAnulacion,
         )
         var movedPagos = 0
         var movedItems = 0

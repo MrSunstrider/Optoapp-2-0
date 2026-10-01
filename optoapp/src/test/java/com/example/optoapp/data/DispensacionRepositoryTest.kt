@@ -332,6 +332,58 @@ class DispensacionRepositoryTest {
         assertEquals("Lentes de contacto", all[0].descripcion)
     }
 
+    private fun servicio(
+        motivoAnulacion: String? = null,
+        fechaAnulacion: LocalDate? = null,
+        estado: String = "Pendiente",
+        descripcion: String = "Reparación",
+    ) = ServicioExtra(
+        id = "se_cancel",
+        descripcion = descripcion,
+        montoTotal = 80.0,
+        estado = estado,
+        fecha = LocalDate.parse("2026-09-01"),
+        opticaId = "o1",
+        motivoAnulacion = motivoAnulacion,
+        fechaAnulacion = fechaAnulacion,
+    )
+
+    @Test
+    fun updateServicio_persistsCancellationMetadata() = runBlocking {
+        repo.insertServicio(servicio())
+
+        repo.updateServicio(
+            servicio(
+                estado = "Anulado",
+                motivoAnulacion = "Pieza no disponible",
+                fechaAnulacion = LocalDate.parse("2026-09-30"),
+            ),
+        )
+
+        val stored = servicioExtraDao.getServicioById("se_cancel", "o1")!!
+        assertEquals("Anulado", stored.estado)
+        assertEquals("Pieza no disponible", stored.motivoAnulacion)
+        assertEquals(LocalDate.parse("2026-09-30"), stored.fechaAnulacion)
+    }
+
+    @Test
+    fun updateServicio_nonCancelSaveWithoutMetadata_keepsStoredMetadata() = runBlocking {
+        repo.insertServicio(
+            servicio(
+                estado = "Anulado",
+                motivoAnulacion = "Pieza no disponible",
+                fechaAnulacion = LocalDate.parse("2026-09-30"),
+            ),
+        )
+
+        repo.updateServicio(servicio(estado = "Anulado", descripcion = "Reparación de bisagra"))
+
+        val stored = servicioExtraDao.getServicioById("se_cancel", "o1")!!
+        assertEquals("Reparación de bisagra", stored.descripcion)
+        assertEquals("Pieza no disponible", stored.motivoAnulacion)
+        assertEquals(LocalDate.parse("2026-09-30"), stored.fechaAnulacion)
+    }
+
     @Test
     fun getDispensacionesSnapshotForOptica_returnsAllForOptica() = runBlocking {
         insertDummyPaciente()
