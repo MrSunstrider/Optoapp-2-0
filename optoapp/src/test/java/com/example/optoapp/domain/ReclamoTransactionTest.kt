@@ -284,19 +284,96 @@ class ReclamoTransactionTest {
         coVerify(exactly = 1) { claimScheduler.scheduleFinanzasSync(opticaId) }
     }
 
+    private fun creditsFirst(rows: List<Pago>) = rows.sortedBy { PagoEffect.signedAmount(it.tipo, it.monto) < 0 }
+
+    private fun List<Pago>.summary() = map { Triple(it.tipo, it.monto, it.metodoPago) }.toSet()
+
+    private suspend fun seedLegacySameMethodOriginal() {
+        seedOriginal()
+        seedPago("a1", "Abono", 120.0, "Efectivo")
+        seedPago("a2", "Abono", 80.0, "Tarjeta")
+        seedPago("e1", "Reembolso", 50.0, "Efectivo")
+    }
+
     @Test
-    fun legacyNegativeMethodNet_failsWithTypedErrorAndWritesNothing() = runTest {
+    fun legacyRefundWithoutDifference_transfersNetPerMethodAndMovesNoCash() = runTest {
+        seedLegacySameMethodOriginal()
+
+        claim(total = 150.0)
+
+        val origNew = pagosOf(origId).filter { it.fecha == today }
+        assertEquals(
+            setOf(Triple("Reverso", 120.0, "Efectivo"), Triple("Reverso", 80.0, "Tarjeta"), Triple("Abono", 50.0, "Efectivo")),
+            origNew.summary(),
+        )
+        assertTrue(origNew.single { it.tipo == "Abono" }.nota.startsWith("Compensación de Reembolso"))
+        assertEquals(0.0, net(origId), 0.001)
+        val repl = replacement()!!
+        assertEquals(setOf(Triple("Abono", 70.0, "Efectivo"), Triple("Abono", 80.0, "Tarjeta")), pagosOf(repl.id).summary())
+        assertEquals(150.0, repl.montoPagado, 0.001)
+        assertEquals(0.0, cashDeltaBy("Efectivo"), 0.001)
+        assertEquals(0.0, cashDeltaBy("Tarjeta"), 0.001)
+    }
+
+    @Test
+    fun legacyRefundWithDifference_refundsOnlyTheDifference() = runTest {
+        seedLegacySameMethodOriginal()
+
+        claim(total = 100.0)
+
+        val repl = replacement()!!
+        assertEquals(listOf(50.0 to "Efectivo"), pagosOf(repl.id).filter { it.tipo == "Reembolso" }.map { it.monto to it.metodoPago })
+        assertEquals(100.0, net(repl.id), 0.001)
+        assertEquals(0.0, net(origId), 0.001)
+        assertEquals(-50.0, claimDayPagos().sumOf { PagoEffect.signedAmount(it.tipo, it.monto) }, 0.001)
+    }
+
+    @Test
+    fun crossMethodLegacyRefund_addsAdjustmentReembolsoExcludedFromCashDelta() = runTest {
         seedOriginal()
         seedPago("a1", "Abono", 100.0, "Efectivo")
         seedPago("e1", "Reembolso", 30.0, "Yape")
+        val inserted = mutableListOf<Pago>()
 
-        val error = runCatching { claim(total = 70.0) }.exceptionOrNull()
+        val outcome = claim(total = 50.0, metodoReembolso = "Efectivo", repo = recordingRepository(inserted))
 
-        assertTrue(error is ReclamoLegacyAdjustmentUnsupportedException)
-        assertEquals("Entregado", original().estadoEntrega)
-        assertNull(replacement())
-        assertEquals(2, pagosOf(origId).size)
-        coVerify(exactly = 0) { claimScheduler.scheduleFinanzasSync(any()) }
+        assertTrue(outcome is ReclamoOutcome.Created)
+        assertEquals(setOf(Triple("Reverso", 100.0, "Efectivo"), Triple("Abono", 30.0, "Yape")), pagosOf(origId).filter { it.fecha == today }.summary())
+        assertEquals(0.0, net(origId), 0.001)
+        val repl = replacement()!!
+        val replPagos = pagosOf(repl.id)
+        assertEquals(
+            setOf(Triple("Abono", 100.0, "Efectivo"), Triple("Reembolso", 30.0, "Yape"), Triple("Reembolso", 20.0, "Efectivo")),
+            replPagos.summary(),
+        )
+        val adjustment = replPagos.single { it.metodoPago == "Yape" }
+        assertEquals("Ajuste de crédito por reclamo de OT 2026-0042", adjustment.nota)
+        assertEquals("v_disp_${repl.id}", adjustment.ventaId)
+        assertEquals(today, adjustment.fecha)
+        assertEquals(50.0, net(repl.id), 0.001)
+        assertEquals(0.0, repl.montoTotal - repl.montoPagado, 0.001)
+        assertEquals(-20.0, claimDayPagos().sumOf { PagoEffect.signedAmount(it.tipo, it.monto) }, 0.001)
+        assertEquals(-20.0, cashDeltaBy("Efectivo"), 0.001)
+        assertEquals(0.0, cashDeltaBy("Yape"), 0.001)
+        assertEquals(5, inserted.size)
+        assertTrue(lowestRunningNet(70.0, creditsFirst(inserted.filter { it.dispensacionId == origId })) >= -0.001)
+        assertTrue(lowestRunningNet(0.0, inserted.filter { it.dispensacionId == repl.id }) >= -0.001)
+    }
+
+    @Test
+    fun crossMethodOrphanReverso_withoutDifference_movesNoCash() = runTest {
+        seedOriginal()
+        seedPago("a1", "Abono", 100.0, "Efectivo")
+        seedPago("r0", "Reverso", 30.0, "Yape")
+
+        claim(total = 70.0)
+
+        val repl = replacement()!!
+        assertEquals(setOf(Triple("Abono", 100.0, "Efectivo"), Triple("Reembolso", 30.0, "Yape")), pagosOf(repl.id).summary())
+        assertEquals(70.0, net(repl.id), 0.001)
+        assertEquals(0.0, net(origId), 0.001)
+        assertEquals(0.0, cashDeltaBy("Efectivo"), 0.001)
+        assertEquals(0.0, cashDeltaBy("Yape"), 0.001)
     }
 
     private suspend fun seedMontura(id: String, stock: Int) =
@@ -402,7 +479,8 @@ class ReclamoTransactionTest {
 
         val error = runCatching { claim(total = 100.0) }.exceptionOrNull()
 
-        assertTrue(error is IllegalStateException && error !is ReclamoLegacyAdjustmentUnsupportedException)
+        assertTrue(error is IllegalStateException)
+        assertEquals("Saldo pagado inconsistente en la orden original; sincroniza y reintenta.", error!!.message)
         assertEquals("Entregado", original().estadoEntrega)
         assertNull(replacement())
         assertEquals(listOf("e1"), pagosOf(origId).map { it.id })

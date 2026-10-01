@@ -293,9 +293,6 @@ sealed interface ReclamoOutcome {
 class ReclamoStockInsuficienteException(val monturaId: String, val montura: String) :
     IllegalStateException("Sin stock de la montura $montura para el reemplazo. No se registró el reclamo.")
 
-/** Interim guard: a legacy cross-method debit (negative net for one metodo) still needs its adjustment Reembolso. */
-class ReclamoLegacyAdjustmentUnsupportedException : IllegalStateException("legacy adjustment not supported")
-
 private const val MONEY_EPSILON = 0.005
 
 /**
@@ -357,7 +354,6 @@ class ReclamarDispensacionUseCase @Inject constructor(
         check(netPaid >= -MONEY_EPSILON && abs(netPaid - persistedNetPaid) <= MONEY_EPSILON) {
             "Saldo pagado inconsistente en la orden original; sincroniza y reintenta."
         }
-        if (snapshot.netByMetodo.values.any { it < -MONEY_EPSILON }) throw ReclamoLegacyAdjustmentUnsupportedException()
     }
 
     private suspend fun insertReplacement(original: DispensacionOptica, nuevoMontoTotal: Double): DispensacionOptica {
@@ -407,6 +403,9 @@ class ReclamarDispensacionUseCase @Inject constructor(
     ) {
         snapshot.netByMetodo.filterValues { it > MONEY_EPSILON }.forEach { (metodo, monto) ->
             repository.insertPago(replacementPago(replacement, "Abono", monto, metodo, "Crédito por reclamo de OT $originalOt"))
+        }
+        snapshot.netByMetodo.filterValues { it < -MONEY_EPSILON }.forEach { (metodo, monto) ->
+            repository.insertPago(replacementPago(replacement, TIPO_REEMBOLSO, -monto, metodo, "Ajuste de crédito por reclamo de OT $originalOt"))
         }
         val excess = snapshot.netPaid - nuevoMontoTotal
         if (excess > MONEY_EPSILON) {
