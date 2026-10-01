@@ -11,6 +11,7 @@ import com.example.optoapp.data.Resource
 import com.example.optoapp.data.SessionManager
 import com.example.optoapp.data.regalodispensacion.RegaloDispensacionEntity
 import com.example.optoapp.domain.CalcularMontoPagadoUseCase
+import com.example.optoapp.domain.OrderStatusPolicy
 import com.example.optoapp.domain.estadoAfterFechaEntrega
 import com.example.optoapp.domain.PagoEffect
 import com.example.optoapp.domain.movimientoReferenciaForRegalo
@@ -128,11 +129,13 @@ class InformacionFinancieraViewModel @Inject constructor(
 
     fun updateEstado(estado: String) {
         _uiState.update { s ->
-            val nuevaFechaEntrega = when (estado) {
-                "Entregado" -> s.fechaEntrega ?: LocalDate.now()
+            val target = estado.trim()
+            if (target !in OrderStatusPolicy.selectableEstados(s.estadoEntrega)) return@update s
+            val nuevaFechaEntrega = when (target) {
+                OrderStatusPolicy.ENTREGADO -> s.fechaEntrega ?: LocalDate.now()
                 else -> null
             }
-            s.copy(estadoEntrega = estado, fechaEntrega = nuevaFechaEntrega, error = null)
+            s.copy(estadoEntrega = target, fechaEntrega = nuevaFechaEntrega, error = null)
         }
     }
 
@@ -192,6 +195,9 @@ class InformacionFinancieraViewModel @Inject constructor(
                 }
 
                 repository.withTransaction {
+                    val persisted = (repository.obtenerDispensacion(dispId, opticaId) as? Resource.Success)?.data
+                        ?: throw IllegalStateException("Dispensación no encontrada")
+                    OrderStatusPolicy.requireEditable(persisted.estadoEntrega, "modificar la información financiera")
                     repository.actualizarMontoTotal(dispId, montoTotal, opticaId)
                     repository.actualizarEstado(dispId, s.estadoEntrega, s.fechaEntrega, opticaId)
 

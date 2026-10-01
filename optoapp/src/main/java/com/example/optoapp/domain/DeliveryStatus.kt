@@ -9,11 +9,34 @@ object OrderStatusPolicy {
     const val RECLAMADA = "Reclamada"
 
     private val TERMINAL = setOf(ANULADO, RECLAMADA)
-    private val CANCELABLE = setOf(PENDIENTE, ENTREGADO)
+    private val ACTIVE = listOf(PENDIENTE, ENTREGADO)
 
     fun isTerminal(estado: String): Boolean = estado.trim() in TERMINAL
 
-    fun canCancel(estado: String): Boolean = estado.trim() in CANCELABLE
+    fun isEditable(estado: String): Boolean = !isTerminal(estado)
+
+    fun canCancel(estado: String): Boolean = estado.trim() in ACTIVE
+
+    fun canClaim(estado: String): Boolean = estado.trim() == ENTREGADO
+
+    /** Terminal estados have no undo; Anulado and Reclamada are reachable only through cancel and claim. */
+    fun canTransition(from: String, to: String): Boolean {
+        val target = to.trim()
+        return when {
+            from.trim() == target -> true
+            isTerminal(from) -> false
+            target == ANULADO -> canCancel(from)
+            target == RECLAMADA -> canClaim(from)
+            else -> target in ACTIVE
+        }
+    }
+
+    fun selectableEstados(current: String): List<String> =
+        if (isTerminal(current)) listOf(current.trim()) else ACTIVE
+
+    fun requireEditable(estado: String, operation: String) {
+        check(isEditable(estado)) { "La orden está ${estado.trim().lowercase()} y no se puede $operation." }
+    }
 }
 
 /** Waiting for delivery: still Pendiente and no delivery date recorded. */
