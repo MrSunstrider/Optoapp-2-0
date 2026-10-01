@@ -206,6 +206,40 @@ class AnularDispensacionTransactionTest {
     }
 
     @Test
+    fun alreadyReversedPago_getsNoSecondReversoAndOnlyUnreversedOneIsReversed() = runTest {
+        seedOrder()
+        seedPago("a1", "Abono", 100.0, "Efectivo", daysAgo = 10)
+        seedPago("rv-a1", "Reverso", 100.0, "Efectivo", daysAgo = 9, reversaPagoId = "a1")
+        seedPago("a2", "Abono", 50.0, "Yape", daysAgo = 2)
+
+        val outcome = useCase()(dispId, opticaId, "Cliente desistió")
+
+        assertEquals(LifecycleOutcome.Applied, outcome)
+        val newReversos = reversos().filter { it.id != "rv-a1" }
+        assertEquals(listOf("a2"), newReversos.map { it.reversaPagoId })
+        assertEquals(50.0, newReversos.single().monto, 0.001)
+        assertEquals(today, newReversos.single().fecha)
+        assertEquals(listOf("rv-a1"), reversos().filter { it.reversaPagoId == "a1" }.map { it.id })
+        assertEquals(0.0, netPaid(), 0.001)
+        assertEquals("Anulado", order().estadoEntrega)
+    }
+
+    @Test
+    fun noPagosWithStoreFrame_restocksFrameWithoutPagoRows() = runTest {
+        seedOrder()
+        seedMontura("M1", stock = 2)
+        seedItem("i1", "M1")
+
+        val outcome = useCase()(dispId, opticaId, "Cliente desistió")
+
+        assertEquals(LifecycleOutcome.Applied, outcome)
+        assertEquals(0, pagos().size)
+        assertEquals(3, stock("M1"))
+        assertEquals(listOf("d1:anul:i1"), movimientos().map { it.referenciaId })
+        assertEquals("Anulado", order().estadoEntrega)
+    }
+
+    @Test
     fun legacyHeaderStoreFrame_restocksWithHeaderReferencia() = runTest {
         seedOrder(headerMonturaId = "M1", headerOrigen = "Tienda")
         seedMontura("M1", stock = 0)
