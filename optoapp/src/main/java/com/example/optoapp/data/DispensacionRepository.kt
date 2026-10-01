@@ -204,6 +204,9 @@ class DispensacionRepository(
 
     suspend fun getDispensacionesByIds(ids: List<String>, opticaId: String): List<DispensacionOptica> = dispensacionDao.getDispensacionesByIds(ids, opticaId)
 
+    suspend fun getDispensacionByReclamoOrigenId(originalId: String, opticaId: String): DispensacionOptica? =
+        dispensacionDao.getByReclamoOrigenId(originalId, opticaId)
+
     suspend fun getServicioById(id: String, opticaId: String): Resource<ServicioExtra> = try {
         val servicio = servicioExtraDao.getServicioById(id, opticaId)
         if (servicio != null) {

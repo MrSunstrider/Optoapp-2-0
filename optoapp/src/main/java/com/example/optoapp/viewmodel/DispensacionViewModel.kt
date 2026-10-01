@@ -66,6 +66,8 @@ data class DispensacionUiState(
     val motivoAnulacion: String? = null,
     val fechaAnulacion: LocalDate? = null,
     val reclamoOrigenId: String? = null,
+    val reemplazo: ReclamoLink? = null,
+    val reclamoOrigen: ReclamoLink? = null,
 
     val isLoading: Boolean = false,
     val error: String? = null,
@@ -80,6 +82,8 @@ data class DispensacionUiState(
     val evaluacionId: String? = null,
     val evaluacionesDisponibles: List<EvaluacionClinica> = emptyList(),
 )
+
+data class ReclamoLink(val id: String, val ot: String)
 
 data class RegaloDispensacionUi(
     val id: String = UUID.randomUUID().toString(),
@@ -235,6 +239,15 @@ class DispensacionViewModel @Inject constructor(
                             motivo = entity.motivo,
                         )
                     }
+                    val reemplazo = if (d.estadoEntrega.trim() == OrderStatusPolicy.RECLAMADA) {
+                        repository.getDispensacionByReclamoOrigenId(dispensacionId, opticaId)?.let { ReclamoLink(it.id, it.ot) }
+                    } else {
+                        null
+                    }
+                    val reclamoOrigen = d.reclamoOrigenId?.let { origenId ->
+                        (repository.getDispensacionById(origenId, opticaId) as? Resource.Success)?.data
+                            ?.let { ReclamoLink(it.id, it.ot) }
+                    }
                     _uiState.update {
                         it.copy(
                             isLoading = false,
@@ -254,6 +267,8 @@ class DispensacionViewModel @Inject constructor(
                             motivoAnulacion = d.motivoAnulacion,
                             fechaAnulacion = d.fechaAnulacion,
                             reclamoOrigenId = d.reclamoOrigenId,
+                            reemplazo = reemplazo,
+                            reclamoOrigen = reclamoOrigen,
                             pagos = loadedPagos,
                             montoPagado = computedMontoPagado,
                             regalos = regalosUi,
@@ -649,9 +664,8 @@ class DispensacionViewModel @Inject constructor(
         metodoReembolso: String,
         onCreated: (replacementId: String) -> Unit,
     ) {
+        if (!tryStartAction()) return
         viewModelScope.launch {
-            if (_uiState.value.isLoading) return@launch
-            _uiState.update { it.copy(isLoading = true, error = null) }
             try {
                 val role = sessionManager.opticaRol.first()
                 AuthorizationGuard.requireRole(role, setOf("admin", "gerente"), "reclamar dispensación")

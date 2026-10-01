@@ -1,7 +1,9 @@
 package com.example.optoapp.viewmodel
 
+import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Pago
+import com.example.optoapp.data.Resource
 import com.example.optoapp.data.SessionManager
 import com.example.optoapp.domain.ReclamarDispensacionUseCase
 import com.example.optoapp.domain.ReclamoOutcome
@@ -145,6 +147,61 @@ class DispensacionViewModelReclamoTest {
     }
 
     @Test
+    fun `double tap on the claim confirmation creates one replacement`() = runTest {
+        coEvery { reclamar(originalId, opticaId, any(), any(), any()) } returns ReclamoOutcome.Created("repl-1", "OT-1-R1")
+        var navigations = 0
+
+        viewModel.crearReclamo(originalId, "Lente rayado", 250.0, "Tarjeta") { navigations++ }
+        viewModel.crearReclamo(originalId, "Lente rayado", 250.0, "Tarjeta") { navigations++ }
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coVerify(exactly = 1) { reclamar(originalId, opticaId, any(), any(), any()) }
+        assertEquals(1, navigations)
+    }
+
+    @Test
+    fun `a Reclamada original exposes its replacement link`() = runTest {
+        givenOrder(DispensacionOptica(id = originalId, ot = "2026-0042", pacienteId = "pac-1", fecha = LocalDate.of(2026, 9, 1), estadoEntrega = "Reclamada"))
+        coEvery { repository.getDispensacionByReclamoOrigenId(originalId, opticaId) } returns
+            DispensacionOptica(id = "repl-1", ot = "2026-0042-R1", pacienteId = "pac-1", fecha = LocalDate.of(2026, 9, 20), reclamoOrigenId = originalId)
+
+        viewModel.loadDispensacion(originalId)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals(ReclamoLink(id = "repl-1", ot = "2026-0042-R1"), state.reemplazo)
+        assertNull(state.reclamoOrigen)
+    }
+
+    @Test
+    fun `a replacement exposes the link back to its original`() = runTest {
+        val replacementId = "repl-1"
+        givenOrder(DispensacionOptica(id = replacementId, ot = "2026-0042-R1", pacienteId = "pac-1", fecha = LocalDate.of(2026, 9, 20), reclamoOrigenId = originalId), replacementId)
+        coEvery { repository.getDispensacionById(originalId, opticaId) } returns
+            Resource.Success(DispensacionOptica(id = originalId, ot = "2026-0042", pacienteId = "pac-1", fecha = LocalDate.of(2026, 9, 1), estadoEntrega = "Reclamada"))
+
+        viewModel.loadDispensacion(replacementId)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals(ReclamoLink(id = originalId, ot = "2026-0042"), state.reclamoOrigen)
+        assertNull(state.reemplazo)
+    }
+
+    @Test
+    fun `an order outside a claim exposes no links and skips the lookups`() = runTest {
+        givenOrder(DispensacionOptica(id = originalId, ot = "2026-0050", pacienteId = "pac-1", fecha = LocalDate.of(2026, 9, 1), estadoEntrega = "Entregado"))
+
+        viewModel.loadDispensacion(originalId)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertNull(state.reemplazo)
+        assertNull(state.reclamoOrigen)
+        coVerify(exactly = 0) { repository.getDispensacionByReclamoOrigenId(any(), any()) }
+    }
+
+    @Test
     fun `suggested refund method is the last credit payment method of the original`() = runTest {
         every { repository.getPagosByDispensacion(originalId, opticaId) } returns flowOf(
             listOf(
@@ -162,6 +219,13 @@ class DispensacionViewModelReclamoTest {
         every { repository.getPagosByDispensacion(originalId, opticaId) } returns flowOf(emptyList())
 
         assertEquals("Efectivo", viewModel.metodoReembolsoSugerido(originalId))
+    }
+
+    private fun givenOrder(order: DispensacionOptica, id: String = originalId) {
+        coEvery { repository.getDispensacionById(id, opticaId) } returns Resource.Success(order)
+        every { repository.getPagosByDispensacion(id, opticaId) } returns flowOf(emptyList())
+        coEvery { repository.getDispensacionItemsByDispensacion(id, opticaId) } returns emptyList()
+        coEvery { repository.getRegalosByDispensacionId(id, opticaId) } returns emptyList()
     }
 
     private fun pago(id: String, tipo: String, metodo: String, fecha: LocalDate) = Pago(
