@@ -123,7 +123,7 @@ class DispensacionViewModelReclamoTest {
             postSaveSyncScheduler,
             stockHelper,
             calcularMontoPagadoUseCase,
-            mockk<com.example.optoapp.domain.CancelDispensacionUseCase>(relaxed = true),
+            mockk<com.example.optoapp.domain.AnularDispensacionUseCase>(relaxed = true),
             mockk<com.example.optoapp.domain.ReclaimDispensacionUseCase>(relaxed = true),
             costoProductoDao,
             costoBiseladoDao,
@@ -151,7 +151,7 @@ class DispensacionViewModelReclamoTest {
             postSaveSyncScheduler,
             stockHelper,
             calcularMontoPagadoUseCase,
-            mockk<com.example.optoapp.domain.CancelDispensacionUseCase>(relaxed = true),
+            mockk<com.example.optoapp.domain.AnularDispensacionUseCase>(relaxed = true),
             mockk<com.example.optoapp.domain.ReclaimDispensacionUseCase>(relaxed = true),
             costoProductoDao,
             costoBiseladoDao,
@@ -159,11 +159,9 @@ class DispensacionViewModelReclamoTest {
         testDispatcher.scheduler.advanceUntilIdle()
 
         var completed = false
-        // nuevoMontoTotal = 250, totalPagado = 200, diff = 50 > 0
         viewModel.crearReclamo(originalId, 250.0) { completed = true }
         testDispatcher.scheduler.advanceUntilIdle()
 
-        // Should NOT have inserted a refund pago
         coVerify(inverse = true) { repository.insertPago(match { it.monto < 0 }) }
         assertTrue(completed)
     }
@@ -186,7 +184,6 @@ class DispensacionViewModelReclamoTest {
         testDispatcher.scheduler.advanceUntilIdle()
 
         var completed = false
-        // nuevoMontoTotal = 150, totalPagado = 200 → refund 50
         viewModel.crearReclamo(originalId, 150.0) { completed = true }
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -212,7 +209,7 @@ class DispensacionViewModelReclamoTest {
             postSaveSyncScheduler,
             stockHelper,
             calcularMontoPagadoUseCase,
-            mockk<com.example.optoapp.domain.CancelDispensacionUseCase>(relaxed = true),
+            mockk<com.example.optoapp.domain.AnularDispensacionUseCase>(relaxed = true),
             mockk<com.example.optoapp.domain.ReclaimDispensacionUseCase>(relaxed = true),
             costoProductoDao,
             costoBiseladoDao,
@@ -220,7 +217,6 @@ class DispensacionViewModelReclamoTest {
         testDispatcher.scheduler.advanceUntilIdle()
 
         var completed = false
-        // nuevoMontoTotal = 200, totalPagado = 200, diff = 0
         viewModel.crearReclamo(originalId, 200.0) { completed = true }
         testDispatcher.scheduler.advanceUntilIdle()
 

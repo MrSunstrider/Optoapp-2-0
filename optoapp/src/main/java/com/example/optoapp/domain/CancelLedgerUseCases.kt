@@ -275,20 +275,6 @@ class AnularDispensacionUseCase @Inject constructor(
     }
 }
 
-class CancelDispensacionUseCase @Inject constructor(
-    private val repository: OptoRepository,
-    private val pagoDao: PagoDao,
-    private val postSaveSyncScheduler: PostSaveSyncScheduler,
-) {
-    suspend operator fun invoke(dispensacionId: String, opticaId: String) {
-        val disp = (repository.getDispensacionById(dispensacionId, opticaId) as? Resource.Success)?.data ?: return
-        if (disp.estadoEntrega == "Anulado") return
-        insertMissingReversos(repository, pagoDao, dispensacionId, opticaId, forDispensacion = true)
-        repository.updateDispensacion(disp.copy(estadoEntrega = "Anulado", updatedAt = Instant.now().toString()))
-        postSaveSyncScheduler.scheduleFinanzasSync(opticaId)
-    }
-}
-
 class ReclaimDispensacionUseCase @Inject constructor(
     private val repository: OptoRepository,
     private val postSaveSyncScheduler: PostSaveSyncScheduler,

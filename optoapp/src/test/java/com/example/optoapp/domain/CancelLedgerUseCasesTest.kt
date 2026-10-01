@@ -235,30 +235,6 @@ class CancelLedgerUseCasesTest {
     }
 
     @Test
-    fun cancelDispensacion_insertsLinkedReverso() = runTest {
-        val credit = Pago(
-            id = "p1", dispensacionId = "d1", fecha = date,
-            tipo = "Pago completo", monto = 150.0, metodoPago = "Efectivo", opticaId = "o1",
-        )
-        coEvery { repository.getDispensacionById("d1", any()) } returns Resource.Success(
-            DispensacionOptica(
-                id = "d1", pacienteId = "pac", fecha = date, opticaId = "o1",
-                estadoEntrega = "Pendiente", metodoPago = "Efectivo",
-            ),
-        )
-        coEvery { pagoDao.getCreditPagosByParent("d1", any()) } returns listOf(credit)
-        coEvery { pagoDao.getReversoByOriginalId("p1", any()) } returns null
-        val slot = slot<Pago>()
-        coEvery { repository.insertPago(capture(slot)) } returns Unit
-
-        CancelDispensacionUseCase(repository, pagoDao, scheduler)("d1", "o1")
-
-        assertEquals("Reverso", slot.captured.tipo)
-        assertEquals("p1", slot.captured.reversaPagoId)
-        coVerify { repository.updateDispensacion(match { it.estadoEntrega == "Anulado" }) }
-    }
-
-    @Test
     fun reclaim_positiveReembolsoWithoutReversaLink() = runTest {
         coEvery { repository.getDispensacionById("d1", any()) } returns Resource.Success(
             DispensacionOptica(
