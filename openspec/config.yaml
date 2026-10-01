@@ -9,6 +9,9 @@ context: |
 
 strict_tdd: true
 
+sdd:
+  artifact_store: engram
+
 testing:
   runner:
     command: ./gradlew :optoapp:testDebugUnitTest --stacktrace
