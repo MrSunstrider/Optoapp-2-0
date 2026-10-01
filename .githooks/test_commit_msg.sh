@@ -71,9 +71,11 @@ echo ""
 echo "=== SCENARIO 5: Non-UTF-8 body survives stripping under a UTF-8 locale ==="
 # Only a locale where grep really flags invalid bytes as binary can expose the
 # regression; on hosts without one the scenario would pass vacuously.
+# grep's binary notice moved to stderr and was reworded in 3.5, so the probe
+# checks that the matching line is withheld instead of parsing the notice.
 utf8_locale=""
 for candidate in C.UTF-8 en_US.UTF-8 C.utf8 en_US.utf8; do
-    if printf 'a\xf3\n' | LC_ALL="$candidate" grep a 2>/dev/null | grep -q '^Binary file'; then
+    if [ "$(printf 'a\xf3\n' | LC_ALL="$candidate" grep a 2>/dev/null)" != $'a\xf3' ]; then
         utf8_locale="$candidate"
         break
     fi
