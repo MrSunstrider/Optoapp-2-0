@@ -876,4 +876,80 @@ class UploadSyncCoordinatorTest {
         assertEquals(listOf("remote-s1", "ps-2"), uploaded.map { it.id })
         assertEquals(listOf("serv-1", "serv-2"), uploaded.map { it.servicioExtraId })
     }
+
+    // ── Terminal estados upload unchanged ─────────────────────────────
+
+    @Test
+    fun `cancelled and claimed dispensaciones upload with zero balance and no quarantine`() = runTest {
+        val opticaId = "optica-test"
+        val anulada = DispensacionOptica(
+            id = "d-anul", ot = "2026-0050", fecha = LocalDate.parse("2026-09-01"), pacienteId = "p1",
+            opticaId = opticaId, montoTotal = 200.0, montoPagado = 0.0, estadoEntrega = OrderStatusPolicy.ANULADO,
+        )
+        val (reclamada, replacement) = claimPair(opticaId)
+        coEvery { repository.getDispensacionesSnapshotForOptica(opticaId) } returns
+            listOf(anulada, reclamada, replacement)
+        coEvery { repository.getPagosSnapshotForOptica(opticaId) } returns listOf(
+            pago("abono-1", "Abono", monto = 200.0, dispensacionId = "d-anul"),
+            pago("rev-1", "Reverso", monto = 200.0, dispensacionId = "d-anul", reversaPagoId = "abono-1"),
+        )
+        coEvery { networkRetryHelper.retryNetwork(any(), any()) } coAnswers {
+            secondArg<suspend () -> Unit>().invoke()
+        }
+        val captured = mutableListOf<DispensacionRemota>()
+
+        val uploaded = createDispensacionCaptureCoordinator(emptyList(), captured).uploadDispensaciones(opticaId)
+
+        assertEquals(3, uploaded)
+        assertEquals(0.0, captured.single { it.id == "d-anul" }.montoPagado, 0.0)
+        listOf("d-anul", "local-orig", "local-repl").forEach {
+            coVerify { syncStateTracker.markSynced(opticaId, "dispensacion", it) }
+        }
+        coVerify(exactly = 0) {
+            syncStateTracker.markError(opticaId, any(), any(), match { it.startsWith("quarantine:") })
+        }
+    }
+
+    @Test
+    fun `cancelled servicio uploads without quarantine`() = runTest {
+        val opticaId = "optica-test"
+        coEvery { repository.getServiciosSnapshotForOptica(opticaId) } returns listOf(
+            ServicioExtra(
+                id = "local-SA", ot = "OT-077", descripcion = "Biselado", montoTotal = 80.0, aCuenta = 0.0,
+                estado = OrderStatusPolicy.ANULADO, fecha = LocalDate.parse("2026-09-01"), opticaId = opticaId,
+            ),
+        )
+        coEvery { repository.getPagosSnapshotForOptica(opticaId) } returns emptyList()
+        coEvery { networkRetryHelper.retryNetwork(any(), any()) } returns Unit
+
+        createServicioCoordinator { emptyList() }.uploadServicios(opticaId)
+
+        coVerify { syncStateTracker.markSynced(opticaId, "servicio_extra", "local-SA") }
+        coVerify(exactly = 0) {
+            syncStateTracker.markError(opticaId, any(), any(), match { it.startsWith("quarantine:") })
+        }
+    }
+
+    @Test
+    fun `reversal and compensation pagos of terminal orders upload and sync without quarantine`() = runTest {
+        val opticaId = "optica-test"
+        val ledger = listOf(
+            pago("abono-1", "Abono", monto = 120.0),
+            pago("rev-1", "Reverso", monto = 120.0, reversaPagoId = "abono-1"),
+            pago("comp-1", "Abono", monto = 120.0),
+            pago("reemb-1", "Reembolso", monto = 50.0),
+            pago("ps-1", "Abono", monto = 80.0, dispensacionId = null, servicioExtraId = "serv-1"),
+            pago("ps-rev", "Reverso", monto = 80.0, dispensacionId = null, servicioExtraId = "serv-1", reversaPagoId = "ps-1"),
+        )
+        coEvery { repository.getPagosSnapshotForOptica(opticaId) } returns ledger
+        val chunks = mutableListOf<List<PagoRemoto>>()
+
+        createPagoCaptureCoordinator(uploadedChunks = chunks).uploadPagos(opticaId)
+
+        assertEquals(ledger.map { it.id }.toSet(), chunks.flatten().map { it.id }.toSet())
+        ledger.forEach { coVerify { syncStateTracker.markSynced(opticaId, "pago", it.id) } }
+        coVerify(exactly = 0) {
+            syncStateTracker.markError(opticaId, any(), any(), match { it.startsWith("quarantine:") })
+        }
+    }
 }

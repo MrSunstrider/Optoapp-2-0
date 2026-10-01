@@ -276,6 +276,27 @@ class AnularDispensacionTransactionTest {
     }
 
     @Test
+    fun redownloadedSyncedReversal_staysSingleAndRestockIsNotRepeated() = runTest {
+        seedOrder()
+        seedMontura("M1", stock = 3)
+        seedItem("i1", "M1")
+        useCase()(dispId, opticaId, "Cliente desistió")
+        val synced = movimientos().single()
+
+        repository.upsertMonturaMovimiento(synced.toRemoto().toEntity())
+        repository.upsertMonturaMovimiento(synced.copy(id = "remote-other-device").toRemoto().toEntity())
+
+        assertEquals(listOf("d1:anul:i1"), movimientos().map { it.referenciaId })
+        assertEquals(4, stock("M1"))
+        assertEquals(LifecycleOutcome.AlreadyTerminal("Anulado"), useCase()(dispId, opticaId, "Otra vez"))
+        val restock = DispensacionStockHelper(repository.monturaCoordinator)
+            .restockOnce("M1", opticaId, 1, "d1:anul:i1", "Reintento")
+        assertEquals(Result.success(false), restock)
+        assertEquals(1, movimientos().size)
+        assertEquals(4, stock("M1"))
+    }
+
+    @Test
     fun overlappingInvocations_applyExactlyOnce() = runTest {
         seedOrder()
         seedMontura("M1", stock = 3)

@@ -109,6 +109,27 @@ class SyncInventarioUseCaseUploadTest {
     }
 
     @Test
+    fun uploadMovimientos_reconcilesCancelReversalToRemoteIdInsteadOfUploadingDuplicate() = runTest {
+        stubMonturasUploadEmpty()
+        val local = mov(id = "local-anul", referenciaId = "disp-1:anul:item-1").copy(tipo = "AJUSTE")
+        val remote = local.copy(id = "remote-anul")
+
+        coEvery { repository.getMovimientosMonturaSnapshotForOptica(opticaId) } returns listOf(local)
+        coEvery { conflictHelper.filterConflictMovimientos(opticaId, any()) } returns MovimientoUploadPlan(
+            safeIds = listOf(local.id),
+            remoteByKey = mapOf(Triple(local.referenciaId, local.tipo, local.monturaId) to remote),
+            conflictedIds = emptyList(),
+        )
+
+        val result = createUseCase().invoke(opticaId, downloadAfterUpload = false)
+
+        assertTrue(uploadedBatches.isEmpty())
+        coVerify(exactly = 1) { repository.upsertMonturaMovimiento(local.copy(id = "remote-anul")) }
+        coVerify(exactly = 1) { repository.deleteMonturaMovimiento("local-anul", opticaId) }
+        assertEquals(1, result.data?.reconciledMovimientos)
+    }
+
+    @Test
     fun uploadMovimientos_failsClosed_whenRemoteFetchFails() = runTest {
         stubMonturasUploadEmpty()
         val local = mov(id = "uuid-new")
