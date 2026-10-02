@@ -14,10 +14,11 @@ import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -33,9 +34,6 @@ import java.time.LocalDate
  * Local-write contract (Pattern B from exploration):
  *  1. El DAO recibe la entidad con timestamp stamped (Instant.now()).
  *  2. PostSaveSyncScheduler.scheduleFinanzasSync() es llamado.
- *
- * These tests reference constructor parameters and methods that DO NOT EXIST YET
- * on OptoRepository — RED phase.
  */
 @RunWith(RobolectricTestRunner::class)
 class OptoRepositoryFinanzasTest {
@@ -125,7 +123,7 @@ class OptoRepositoryFinanzasTest {
     }
 
     @Test
-    fun insertGastoOperativo_stamps_timestamp_when_null() = runBlocking {
+    fun insertGastoOperativo_stamps_timestamp_when_null() = runTest {
         val entity = GastoOperativoEntity(
             id = "g1",
             opticaId = opticaId,
@@ -139,14 +137,14 @@ class OptoRepositoryFinanzasTest {
         repo.insertGastoOperativo(entity)
 
         val inserted = gastoOperativoDao.getByOpticaId(opticaId).first().first()
-        assertNotNull(inserted.createdAt) { "Expected createdAt to be stamped but was null" }
+        assertNotNull("Expected createdAt to be stamped but was null", inserted.createdAt)
         assertEquals("g1", inserted.id)
         assertEquals("alquiler", inserted.categoria)
         assertEquals(BigDecimal.valueOf(500.0), inserted.monto)
     }
 
     @Test
-    fun insertGastoOperativo_preserves_createdAt_when_already_set() = runBlocking {
+    fun insertGastoOperativo_preserves_createdAt_when_already_set() = runTest {
         val originalTimestamp = "2026-01-15T12:30:00Z"
         val entity = GastoOperativoEntity(
             id = "g1b",
@@ -165,7 +163,7 @@ class OptoRepositoryFinanzasTest {
     }
 
     @Test
-    fun insertGastoOperativo_calls_scheduleFinanzasSync() = runBlocking {
+    fun insertGastoOperativo_calls_scheduleFinanzasSync() = runTest {
         coEvery { scheduler.scheduleFinanzasSync(any()) } just Runs
 
         val entity = GastoOperativoEntity(
@@ -183,7 +181,7 @@ class OptoRepositoryFinanzasTest {
     }
 
     @Test
-    fun upsertGastoOperativo_preserves_createdAt_on_existing_record() = runBlocking {
+    fun upsertGastoOperativo_preserves_createdAt_on_existing_record() = runTest {
         val originalTimestamp = "2026-01-01T00:00:00Z"
         val entity = GastoOperativoEntity(
             id = "g3",
@@ -202,7 +200,7 @@ class OptoRepositoryFinanzasTest {
     }
 
     @Test
-    fun upsertGastoOperativo_calls_scheduleFinanzasSync() = runBlocking {
+    fun upsertGastoOperativo_calls_scheduleFinanzasSync() = runTest {
         coEvery { scheduler.scheduleFinanzasSync(any()) } just Runs
 
         val entity = GastoOperativoEntity(
@@ -220,7 +218,7 @@ class OptoRepositoryFinanzasTest {
     }
 
     @Test
-    fun deleteGastoOperativo_schedules_finanzas_sync() = runBlocking {
+    fun deleteGastoOperativo_schedules_finanzas_sync() = runTest {
         coEvery { scheduler.scheduleFinanzasSync(any()) } just Runs
         val entity = GastoOperativoEntity(
             id = "g_del",
@@ -238,7 +236,7 @@ class OptoRepositoryFinanzasTest {
     }
 
     @Test
-    fun deleteGastoOperativo_calls_markDeleted() = runBlocking {
+    fun deleteGastoOperativo_calls_markDeleted() = runTest {
         coEvery { scheduler.scheduleFinanzasSync(any()) } just Runs
         val entity = GastoOperativoEntity(
             id = "g_md",
@@ -255,8 +253,40 @@ class OptoRepositoryFinanzasTest {
         coVerify(exactly = 1) { syncStateTracker.markDeleted(opticaId, "gasto_operativo", entity.id) }
     }
 
+    private suspend fun seedDispensacion(): DispensacionOptica {
+        db.pacienteDao().insertPaciente(
+            Paciente(id = "pac", nombreCompleto = "Paciente", edad = 30, telefono = "1", fechaCreacion = testDate, opticaId = opticaId),
+        )
+        val disp = DispensacionOptica(id = "d_del", ot = "2026-0099", pacienteId = "pac", fecha = testDate, opticaId = opticaId)
+        db.dispensacionDao().insertDispensacion(disp)
+        return disp
+    }
+
     @Test
-    fun getGastosOperativos_delegates_to_dao() = runBlocking {
+    fun deleteDispensacion_removesRowRecordsTombstoneAndSchedulesFinanzasSync() = runTest {
+        val disp = seedDispensacion()
+
+        repo.deleteDispensacion(disp)
+
+        assertNull(db.dispensacionDao().getDispensacionById(disp.id, opticaId))
+        coVerify(exactly = 1) { syncStateTracker.markDeleted(opticaId, "dispensacion", disp.id) }
+        coVerify(exactly = 1) { scheduler.scheduleFinanzasSync(opticaId) }
+    }
+
+    @Test
+    fun deleteDispensacion_tombstoneFailure_rollsBackDeleteAndSkipsSync() = runTest {
+        val disp = seedDispensacion()
+        coEvery { syncStateTracker.markDeleted(opticaId, "dispensacion", disp.id) } throws IllegalStateException("tombstone failed")
+
+        val error = runCatching { repo.deleteDispensacion(disp) }.exceptionOrNull()
+
+        assertEquals("tombstone failed", error?.message)
+        assertNotNull(db.dispensacionDao().getDispensacionById(disp.id, opticaId))
+        coVerify(exactly = 0) { scheduler.scheduleFinanzasSync(any()) }
+    }
+
+    @Test
+    fun getGastosOperativos_returnsNewestFechaFirst() = runTest {
         val g1 = GastoOperativoEntity(
             id = "g_r1",
             opticaId = opticaId,
@@ -279,7 +309,6 @@ class OptoRepositoryFinanzasTest {
         val result = repo.getGastosOperativos(opticaId).first()
 
         assertEquals(2, result.size)
-        // Ordenado por fecha DESC
         assertEquals("g_r1", result[0].id)
         assertEquals("g_r2", result[1].id)
     }

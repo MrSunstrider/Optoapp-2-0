@@ -33,7 +33,7 @@ The read-only audit of `feat/anulaciones-wu6c-verify-fixes` (8d5b4021) found:
 
 - [x] T1 Make restock idempotent on its own: `restockOnce` atomic (no double stock adjustment even outside a caller transaction) and movimiento inserts no longer silently `REPLACE` on the restock path. Real-Room overlap test for `CancelServicioExtraUseCase`. Route: delegated writer.
 - [x] T2 Surface lifecycle outcomes: `confirmAnular` and `anularDispensacion` report `AlreadyTerminal` to the user; replace the "silent no-op" test. Route: delegated writer.
-- [ ] T3 Prove hard-delete sync: repository test that `deleteDispensacion` records the tombstone and schedules sync. Route: delegated writer.
+- [x] T3 Prove hard-delete sync: repository test that `deleteDispensacion` records the tombstone and schedules sync. Route: delegated writer.
 - [ ] T4 Validate the claim refund method in the use case, and align `reclamoPreview` / `canConfirmReclamo` with the use case (finite total, `MONEY_EPSILON`, non-blank method when a refund is shown). Route: delegated writer.
 - [ ] T5 Verify: full unit suite, GGA, native RDD on the commits, and a read-only re-audit of the four items. Route: parent.
 
@@ -58,12 +58,18 @@ One work-unit commit per task on `feat/anulaciones-wu7-backlog-fixes`. The chain
   - GREEN: `DispensacionStockHelperRoomTest` (3), `DispensacionStockHelperTest` (15), `CancelServicioExtraTransactionTest` (1), `AnularDispensacionTransactionTest` (16), `ReclamoTransactionTest` (18), `MonturaMovimientoDaoTest` (10), `CancelLedgerUseCasesTest` (12): all passing.
   - `CancelServicioExtraTransactionTest.overlappingInvocations_applyExactlyOnce` passed on first run (characterization: the estado check already serializes overlapping cancels; RED not applicable).
 
-- T2 done (`fix(anulaciones): report already-terminal outcomes to the user`; hash recorded with T3).
+- T2 done in `64cc1b18` (`fix(anulaciones): report already-terminal outcomes to the user`).
   - `ServiciosViewModel` exposes `infoMessage` / `clearInfoMessage`. On `AlreadyTerminal` it closes the dialog, shows "Este servicio ya fue anulado", skips `onComplete` (so `NuevoServicioScreen` no longer pops back before the snackbar shows) and reloads the open form when it is that servicio, so the screen turns read-only. Both `ServiciosExtraScreen` and `NuevoServicioScreen` show the message in their snackbar.
   - `DispensacionViewModel.anularDispensacion` sets `infoMessage = "Esta orden ya fue anulada"` on `AlreadyTerminal("Anulado")` and still completes (closes the dialog and reloads the order); `NuevaDispensacionScreen` already renders `infoMessage`. `Reclamada` keeps its error.
   - RED: `ServiciosViewModelDeleteTest` "informs the user and stays on screen" (`expected:<Este servicio ya fue anulado> but was:<null>`), "reloads the open form so it turns read-only" (`expected:<[Anulado]> but was:<[Pendiente]>`); `DispensacionViewModelAnulacionTest` "informs the user and completes to refresh the order" (`expected:<Esta orden ya fue anulada> but was:<null>`).
   - GREEN: all `ServiciosViewModel*` and `DispensacionViewModel*` suites passing (ServiciosViewModelDeleteTest 13, DispensacionViewModelAnulacionTest 6).
 
+- T3 done (`test(sync): cover dispensacion hard-delete tombstone and sync`; hash recorded with T4).
+  - `OptoRepositoryFinanzasTest.deleteDispensacion_removesRowRecordsTombstoneAndSchedulesFinanzasSync` and `deleteDispensacion_tombstoneFailure_rollsBackDeleteAndSkipsSync` (real Room).
+  - RED not applicable: both passed on first run because the behavior already exists (characterization tests). No code was broken to fake RED.
+  - GREEN: `OptoRepositoryFinanzasTest` 10/10 passing.
+  - GGA first rejected the file for pre-existing issues, all fixed in this commit: an `assertNotNull(value) { msg }` that could never fail (now `assertNotNull(msg, value)`), `runBlocking` replaced by `runTest`, a stale "RED phase" class comment, and a WHAT comment (ordering moved into the test name `getGastosOperativos_returnsNewestFechaFirst`).
+
 ## Next step
 
-T3.
+T4.
