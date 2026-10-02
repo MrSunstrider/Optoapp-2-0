@@ -41,6 +41,7 @@ open class UploadSyncCoordinator @Inject constructor(
         private const val TABLE_COSTOS_PRODUCTOS = "costos_productos"
         private const val TABLE_COSTOS_BISELADO = "costos_biselado"
         private const val UPSERT_BATCH_SIZE = 80
+        private const val TIPO_REVERSO = "Reverso"
     }
 
     class UploadPreCheckFailedException(
@@ -125,9 +126,18 @@ open class UploadSyncCoordinator @Inject constructor(
                 normalizedOtForUnique(r.ot)?.let { key -> key to r.id }
             }
             .toMap()
+        val claimConflicts = detectClaimConflicts(dispensaciones, localById, remotosExistentes, remoteIdByOt)
+        claimConflicts.forEach { (replacementId, reason) ->
+            syncStateTracker.markError(opticaId, "dispensacion", replacementId, reason)
+        }
+        // WHY: while a claim conflict is unresolved the local original carries this device's claim
+        // (estado/motivo/fecha); uploading it would overwrite the winner's original.
+        val skippedLocalIds = claimConflicts.keys +
+            claimConflicts.keys.mapNotNull { localById[it]?.reclamoOrigenId }
         val deferredMerges = mutableListOf<Pair<DispensacionOptica, DispensacionOptica>>()
         val uniqueRows = LinkedHashMap<String, Pair<String, DispensacionRemota>>()
         dispensaciones.forEach { dispensacion ->
+            if (dispensacion.id in skippedLocalIds) return@forEach
             val pagosSum = pagosSumByDisp[dispensacion.id] ?: 0.0
             val safePagosSum = FinanzasUploadValidator.safeParentBalanceForUpload(pagosSum)
             if (safePagosSum < pagosSum) {
@@ -197,7 +207,13 @@ open class UploadSyncCoordinator @Inject constructor(
                     },
                     onPoison = { row, reason ->
                         val localId = uniqueById[row.id]?.first ?: row.id
-                        if (remotosExistentes.isEmpty()) {
+                        val localOrigenId = localById[localId]?.reclamoOrigenId
+                        if (reason == FinanzasUploadValidator.CLAIM_UNIQUE_VIOLATION && localOrigenId != null) {
+                            syncStateTracker.markError(
+                                opticaId, "dispensacion", localId,
+                                FinanzasUploadValidator.reclamoDuplicateReason(localOrigenId),
+                            )
+                        } else if (remotosExistentes.isEmpty()) {
                             // WHY: upsert ON CONFLICT id updates another tenant's row → RLS 42501.
                             repository.deleteDispensacionById(localId, opticaId)
                             AppLogger.w(
@@ -238,6 +254,45 @@ open class UploadSyncCoordinator @Inject constructor(
         syncStateTracker.markSynced(opticaId, "upload_dispensaciones", "batch")
         return acceptedRemoteIds.size
     }
+
+    /**
+     * A local replacement must never adopt another row's id: the first claim to reach the server
+     * wins, so a replacement whose original already has a different remote replacement loses
+     * (reclamo_duplicate), and one whose OT is taken by an unrelated remote order is held back.
+     */
+    private fun detectClaimConflicts(
+        dispensaciones: List<DispensacionOptica>,
+        localById: Map<String, DispensacionOptica>,
+        remotos: List<DispensacionRemotaLookup>,
+        remoteIdByOt: Map<String, String>,
+    ): Map<String, String> {
+        val remoteReplacementByOrigen = remotos
+            .mapNotNull { r -> r.reclamoOrigenId?.takeIf { it.isNotBlank() }?.let { it to r.id } }
+            .toMap()
+        fun remoteIdOf(local: DispensacionOptica): String =
+            normalizedOtForUnique(local.ot)?.let(remoteIdByOt::get) ?: local.id
+        val conflicts = LinkedHashMap<String, String>()
+        dispensaciones.forEach { replacement ->
+            val origenId = replacement.reclamoOrigenId ?: return@forEach
+            val remoteOrigenId = localById[origenId]?.let(::remoteIdOf) ?: origenId
+            val winnerId = remoteReplacementByOrigen[remoteOrigenId]
+            val otOwnerId = normalizedOtForUnique(replacement.ot)?.let(remoteIdByOt::get)
+            val reason = when {
+                winnerId != null && winnerId != replacement.id ->
+                    FinanzasUploadValidator.reclamoDuplicateReason(origenId)
+                otOwnerId != null && otOwnerId != replacement.id ->
+                    FinanzasUploadValidator.reclamoOtConflictReason(otOwnerId)
+                else -> null
+            }
+            if (reason != null) conflicts[replacement.id] = reason
+        }
+        return conflicts
+    }
+
+    private suspend fun losingClaimReplacementIds(opticaId: String): Set<String> =
+        syncStateTracker.quarantineReasons(opticaId, "dispensacion")
+            .filterValues { FinanzasUploadValidator.reclamoOrigenIdOf(it) != null }
+            .keys
 
     suspend fun uploadServicios(opticaId: String): Int {
         val servicios = repository.getServiciosSnapshotForOptica(opticaId)
@@ -328,7 +383,11 @@ open class UploadSyncCoordinator @Inject constructor(
         }
         require(opticaId.isNotBlank()) { "opticaId must not be blank for upload" }
         val opticaRemota = opticaId.trim()
-        val rows = items.map { it.toRemoto().copy(opticaId = opticaRemota) }.distinctBy { it.id }
+        val losingReplacements = losingClaimReplacementIds(opticaId)
+        val rows = items
+            .filterNot { it.dispensacionId in losingReplacements }
+            .map { it.toRemoto().copy(opticaId = opticaRemota) }
+            .distinctBy { it.id }
         return executeSimpleUpsert(
             opticaId,
             TABLE_DISPENSACION_ITEMS,
@@ -336,7 +395,15 @@ open class UploadSyncCoordinator @Inject constructor(
             "upload_dispensacion_items",
             rows,
             { it.id },
-        ) { supabase.postgrest[TABLE_DISPENSACION_ITEMS].upsert(it) }
+        ) { upsertDispensacionItemsChunk(it) }
+    }
+
+    internal open suspend fun upsertDispensacionItemsChunk(chunk: List<DispensacionItemRemota>) {
+        supabase.postgrest[TABLE_DISPENSACION_ITEMS].upsert(chunk)
+    }
+
+    internal open suspend fun upsertRegalosChunk(chunk: List<RegaloDispensacionRemota>) {
+        supabase.postgrest[TABLE_REGALOS].upsert(chunk)
     }
 
     // WHY: testability seam — MockK cannot mock chained PostgREST DSL calls.
@@ -413,7 +480,7 @@ open class UploadSyncCoordinator @Inject constructor(
             val msg = e.message
             if (chunk.size == 1) {
                 if (!FinanzasUploadValidator.isIsolatableUploadFailure(msg)) throw e
-                onPoison(chunk[0], "quarantine:constraint:${msg.orEmpty().take(120)}")
+                onPoison(chunk[0], FinanzasUploadValidator.poisonReason(msg))
                 return 0
             }
             if (!FinanzasUploadValidator.isIsolatableUploadFailure(msg)) throw e
@@ -486,6 +553,9 @@ open class UploadSyncCoordinator @Inject constructor(
                 r.tipo, r.monto, r.metodoPago, r.fecha,
             ) to r.id
         }
+        val remoteReversoIdByTarget = remotos
+            .filter { it.tipo.trim() == TIPO_REVERSO && !it.reversaPagoId.isNullOrBlank() }
+            .associate { it.reversaPagoId!! to it.id }
 
         val uniqueById = LinkedHashMap<String, Pair<String, PagoRemoto>>()
         rows.forEach { row ->
@@ -497,6 +567,17 @@ open class UploadSyncCoordinator @Inject constructor(
             // equal-looking twin would collapse two real pagos into one.
             val remoteId = if (row.id in remoteIds) null else remoteIdByKey[key]
             val reconciled = if (remoteId != null && remoteId != row.id) row.copy(id = remoteId) else row
+            val target = reconciled.reversaPagoId
+            val remoteReversoId = target?.takeIf { reconciled.tipo.trim() == TIPO_REVERSO }
+                ?.let(remoteReversoIdByTarget::get)
+            if (target != null && remoteReversoId != null && remoteReversoId != reconciled.id) {
+                // WHY: another device already reversed this credit (e.g. a winning claim); a second
+                // Reverso would double-debit the order and trips pagos_reversa_pago_id_uidx.
+                syncStateTracker.markError(opticaId, "pago", row.id, FinanzasUploadValidator.reversoDuplicateReason(target))
+                quarantineCount++
+                poisonedLocalIds.add(row.id)
+                return@forEach
+            }
             if (uniqueById.containsKey(reconciled.id)) return@forEach
             uniqueById[reconciled.id] = row.id to reconciled
         }
@@ -518,7 +599,12 @@ open class UploadSyncCoordinator @Inject constructor(
                         quarantineCount++
                         val localId = uniqueById[row.id]?.first ?: row.id
                         poisonedLocalIds.add(localId)
-                        syncStateTracker.markError(opticaId, "pago", localId, reason)
+                        val effectiveReason = if (reason == FinanzasUploadValidator.REVERSO_UNIQUE_VIOLATION) {
+                            FinanzasUploadValidator.reversoDuplicateReason(row.reversaPagoId.orEmpty())
+                        } else {
+                            reason
+                        }
+                        syncStateTracker.markError(opticaId, "pago", localId, effectiveReason)
                     },
                 )
             }
@@ -576,7 +662,11 @@ open class UploadSyncCoordinator @Inject constructor(
         }
         require(opticaId.isNotBlank()) { "opticaId must not be blank for upload" }
         val opticaRemota = opticaId.trim()
-        val rows = regalos.map { it.toRemoto().copy(opticaId = opticaRemota) }.distinctBy { it.id }
+        val losingReplacements = losingClaimReplacementIds(opticaId)
+        val rows = regalos
+            .filterNot { it.dispensacionId in losingReplacements }
+            .map { it.toRemoto().copy(opticaId = opticaRemota) }
+            .distinctBy { it.id }
         return executeSimpleUpsert(
             opticaId,
             TABLE_REGALOS,
@@ -584,7 +674,7 @@ open class UploadSyncCoordinator @Inject constructor(
             "upload_regalos",
             rows,
             { it.id },
-        ) { supabase.postgrest[TABLE_REGALOS].upsert(it) }
+        ) { upsertRegalosChunk(it) }
     }
 
     suspend fun uploadServicioExtraItems(opticaId: String): Int {

@@ -72,6 +72,12 @@ class SyncStateTracker @Inject constructor(
             .map { it.entityId }
             .toSet()
 
+    suspend fun quarantineReasons(opticaId: String, entityType: String): Map<String, String> =
+        dao.getByStatus(opticaId, "error")
+            .asSequence()
+            .filter { it.entityType == entityType && it.lastError.startsWith("quarantine:") }
+            .associate { it.entityId to it.lastError }
+
     // WHY: atomic sync state + operation prevents partial updates on failure
     suspend fun markSyncedAtomic(opticaId: String, entityType: String, entityId: String, block: suspend () -> Unit) {
         database.withTransaction {

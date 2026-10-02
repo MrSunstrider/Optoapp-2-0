@@ -501,6 +501,7 @@ internal data class ServicioRemotoLookup(
 internal data class DispensacionRemotaLookup(
     val id: String,
     val ot: String? = null,
+    @SerialName("reclamo_origen_id") val reclamoOrigenId: String? = null,
 )
 
 @Serializable

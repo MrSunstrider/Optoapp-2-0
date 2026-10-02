@@ -42,6 +42,7 @@ class UploadSyncCoordinatorTest {
     fun setUp() {
         mockkStatic("android.util.Log")
         coEvery { syncStateTracker.quarantinedEntityIds(any(), any()) } returns emptySet()
+        coEvery { syncStateTracker.quarantineReasons(any(), any()) } returns emptyMap()
         // WHY: Room's withTransaction is an extension function MockK cannot stub.
         coordinator = object : UploadSyncCoordinator(
             repository = repository,
@@ -951,5 +952,293 @@ class UploadSyncCoordinatorTest {
         coVerify(exactly = 0) {
             syncStateTracker.markError(opticaId, any(), any(), match { it.startsWith("quarantine:") })
         }
+    }
+
+    // ── Losing offline claim ──────────────────────────────────────────
+
+    private fun stubRetryPassThrough() {
+        coEvery { networkRetryHelper.retryNetwork(any(), any()) } coAnswers {
+            secondArg<suspend () -> Unit>().invoke()
+        }
+    }
+
+    @Test
+    fun `losing replacement with the winner OT is quarantined instead of adopting the winner id`() = runTest {
+        val opticaId = "optica-test"
+        val (original, replacement) = claimPair(opticaId)
+        coEvery { repository.getDispensacionesSnapshotForOptica(opticaId) } returns listOf(original, replacement)
+        coEvery { repository.getPagosSnapshotForOptica(opticaId) } returns emptyList()
+        stubRetryPassThrough()
+        val captured = mutableListOf<DispensacionRemota>()
+
+        createDispensacionCaptureCoordinator(
+            remotos = listOf(
+                DispensacionRemotaLookup(id = "local-orig", ot = "2026-0042"),
+                DispensacionRemotaLookup(id = "winner-repl", ot = "2026-0042-R1", reclamoOrigenId = "local-orig"),
+            ),
+            captured = captured,
+        ).uploadDispensaciones(opticaId)
+
+        assertTrue(captured.none { it.id == "winner-repl" })
+        assertTrue(captured.none { it.ot == "2026-0042-R1" })
+        assertTrue("the loser's view of the original must not overwrite the winner's", captured.isEmpty())
+        coVerify {
+            syncStateTracker.markError(opticaId, "dispensacion", "local-repl", "quarantine:reclamo_duplicate:local-orig")
+        }
+        coVerify(exactly = 0) { syncStateTracker.markSynced(opticaId, "dispensacion", "local-repl") }
+        coVerify(exactly = 0) { syncStateTracker.markSynced(opticaId, "dispensacion", "local-orig") }
+    }
+
+    @Test
+    fun `losing replacement is quarantined when the remapped original already has another replacement`() = runTest {
+        val opticaId = "optica-test"
+        val (original, replacement) = claimPair(opticaId)
+        coEvery { repository.getDispensacionesSnapshotForOptica(opticaId) } returns
+            listOf(original, replacement.copy(ot = "2026-0042-R2"))
+        coEvery { repository.getPagosSnapshotForOptica(opticaId) } returns emptyList()
+        stubRetryPassThrough()
+        val captured = mutableListOf<DispensacionRemota>()
+
+        createDispensacionCaptureCoordinator(
+            remotos = listOf(
+                DispensacionRemotaLookup(id = "remote-orig", ot = "2026-0042"),
+                DispensacionRemotaLookup(id = "winner-repl", ot = "2026-0042-R1", reclamoOrigenId = "remote-orig"),
+            ),
+            captured = captured,
+        ).uploadDispensaciones(opticaId)
+
+        assertTrue(captured.isEmpty())
+        coVerify {
+            syncStateTracker.markError(opticaId, "dispensacion", "local-repl", "quarantine:reclamo_duplicate:local-orig")
+        }
+    }
+
+    @Test
+    fun `replacement whose OT collides with an unrelated remote order is not adopted`() = runTest {
+        val opticaId = "optica-test"
+        val (original, replacement) = claimPair(opticaId)
+        coEvery { repository.getDispensacionesSnapshotForOptica(opticaId) } returns listOf(original, replacement)
+        coEvery { repository.getPagosSnapshotForOptica(opticaId) } returns emptyList()
+        stubRetryPassThrough()
+        val captured = mutableListOf<DispensacionRemota>()
+
+        createDispensacionCaptureCoordinator(
+            remotos = listOf(DispensacionRemotaLookup(id = "unrelated", ot = "2026-0042-R1")),
+            captured = captured,
+        ).uploadDispensaciones(opticaId)
+
+        assertTrue(captured.none { it.id == "unrelated" })
+        assertTrue("the original stays local until the claim conflict is resolved", captured.isEmpty())
+        coVerify {
+            syncStateTracker.markError(opticaId, "dispensacion", "local-repl", "quarantine:reclamo_ot_conflict:unrelated")
+        }
+    }
+
+    @Test
+    fun `own replacement already on the server is not treated as a duplicate claim`() = runTest {
+        val opticaId = "optica-test"
+        val (original, replacement) = claimPair(opticaId)
+        coEvery { repository.getDispensacionesSnapshotForOptica(opticaId) } returns listOf(original, replacement)
+        coEvery { repository.getPagosSnapshotForOptica(opticaId) } returns emptyList()
+        stubRetryPassThrough()
+        val captured = mutableListOf<DispensacionRemota>()
+
+        createDispensacionCaptureCoordinator(
+            remotos = listOf(
+                DispensacionRemotaLookup(id = "local-orig", ot = "2026-0042"),
+                DispensacionRemotaLookup(id = "local-repl", ot = "2026-0042-R1", reclamoOrigenId = "local-orig"),
+            ),
+            captured = captured,
+        ).uploadDispensaciones(opticaId)
+
+        assertEquals(setOf("local-orig", "local-repl"), captured.map { it.id }.toSet())
+        coVerify { syncStateTracker.markSynced(opticaId, "dispensacion", "local-repl") }
+        coVerify(exactly = 0) { syncStateTracker.markError(opticaId, "dispensacion", any(), any()) }
+    }
+
+    @Test
+    fun `claim index violation on upsert quarantines only the replacement as a duplicate claim`() = runTest {
+        val opticaId = "optica-test"
+        val (original, replacement) = claimPair(opticaId)
+        coEvery { repository.getDispensacionesSnapshotForOptica(opticaId) } returns listOf(original, replacement)
+        coEvery { repository.getPagosSnapshotForOptica(opticaId) } returns emptyList()
+        stubRetryPassThrough()
+        val accepted = mutableListOf<DispensacionRemota>()
+        val testCoordinator = object : UploadSyncCoordinator(
+            repository, supabase, database, syncStateTracker, mergeHandler, networkRetryHelper,
+            costoProductoDao, costoBiseladoDao,
+        ) {
+            override suspend fun <T> runInTransaction(block: suspend () -> T): T = block()
+            override suspend fun fetchRemoteDispensacionesForLookup(opticaId: String) =
+                listOf(DispensacionRemotaLookup(id = "local-orig", ot = "2026-0042"))
+            override suspend fun upsertDispensacionesChunk(chunk: List<DispensacionRemota>) {
+                if (chunk.any { it.id == "local-repl" }) {
+                    throw RuntimeException(
+                        "duplicate key value violates unique constraint \"dispensaciones_reclamo_origen_uidx\" Code: 23505",
+                    )
+                }
+                accepted.addAll(chunk)
+            }
+        }
+
+        val uploaded = testCoordinator.uploadDispensaciones(opticaId)
+
+        assertEquals(1, uploaded)
+        assertEquals(listOf("local-orig"), accepted.map { it.id })
+        coVerify {
+            syncStateTracker.markError(opticaId, "dispensacion", "local-repl", "quarantine:reclamo_duplicate:local-orig")
+        }
+    }
+
+    @Test
+    fun `unrelated unique violation on dispensaciones still fails the upload`() = runTest {
+        val opticaId = "optica-test"
+        val (original, _) = claimPair(opticaId)
+        coEvery { repository.getDispensacionesSnapshotForOptica(opticaId) } returns listOf(original)
+        coEvery { repository.getPagosSnapshotForOptica(opticaId) } returns emptyList()
+        stubRetryPassThrough()
+        val testCoordinator = object : UploadSyncCoordinator(
+            repository, supabase, database, syncStateTracker, mergeHandler, networkRetryHelper,
+            costoProductoDao, costoBiseladoDao,
+        ) {
+            override suspend fun <T> runInTransaction(block: suspend () -> T): T = block()
+            override suspend fun fetchRemoteDispensacionesForLookup(opticaId: String) =
+                emptyList<DispensacionRemotaLookup>()
+            override suspend fun upsertDispensacionesChunk(chunk: List<DispensacionRemota>) {
+                throw RuntimeException("duplicate key value violates unique constraint \"dispensaciones_ot_key\" Code: 23505")
+            }
+        }
+
+        try {
+            testCoordinator.uploadDispensaciones(opticaId)
+            fail("Expected the unrelated 23505 to propagate")
+        } catch (e: RuntimeException) {
+            assertTrue(e.message.orEmpty().contains("dispensaciones_ot_key"))
+        }
+    }
+
+    @Test
+    fun `local reverso whose original already has a remote reverso is quarantined`() = runTest {
+        val opticaId = "optica-test"
+        coEvery { repository.getPagosSnapshotForOptica(opticaId) } returns listOf(
+            pago("rv-loser", "Reverso", reversaPagoId = "abono-1", fecha = "2026-09-30"),
+            pago("abono-2", "Abono"),
+        )
+        val chunks = mutableListOf<List<PagoRemoto>>()
+
+        try {
+            createPagoCaptureCoordinator(
+                remotos = listOf(
+                    lookup("abono-1").copy(monto = 50.0),
+                    lookup("rv-winner", tipo = "Reverso", reversaPagoId = "abono-1").copy(fecha = "2026-09-29"),
+                ),
+                uploadedChunks = chunks,
+            ).uploadPagos(opticaId)
+            fail("Expected UploadPartialException for the quarantined reverso")
+        } catch (_: UploadPartialException) { }
+
+        assertEquals(listOf("abono-2"), chunks.flatten().map { it.id })
+        coVerify { syncStateTracker.markError(opticaId, "pago", "rv-loser", "quarantine:reverso_duplicate:abono-1") }
+        coVerify(exactly = 0) { syncStateTracker.markSynced(opticaId, "pago", "rv-loser") }
+    }
+
+    @Test
+    fun `reverso index violation on upsert quarantines the reverso instead of failing pagos`() = runTest {
+        val opticaId = "optica-test"
+        coEvery { repository.getPagosSnapshotForOptica(opticaId) } returns listOf(
+            pago("abono-2", "Abono"),
+            pago("rv-race", "Reverso", reversaPagoId = "abono-1"),
+        )
+        stubRetryPassThrough()
+        val accepted = mutableListOf<PagoRemoto>()
+        val testCoordinator = object : UploadSyncCoordinator(
+            repository, supabase, database, syncStateTracker, mergeHandler, networkRetryHelper,
+            costoProductoDao, costoBiseladoDao,
+        ) {
+            override suspend fun <T> runInTransaction(block: suspend () -> T): T = block()
+            override suspend fun fetchRemotePagosForLookup(opticaId: String) = emptyList<PagoRemotoLookup>()
+            override suspend fun fetchRemoteParentIds(opticaId: String): Pair<Set<String>, Set<String>> =
+                setOf("disp-1") to emptySet()
+            override suspend fun upsertPagosChunk(chunk: List<PagoRemoto>) {
+                if (chunk.any { it.id == "rv-race" }) {
+                    throw RuntimeException(
+                        "duplicate key value violates unique constraint \"pagos_reversa_pago_id_uidx\" Code: 23505",
+                    )
+                }
+                accepted.addAll(chunk)
+            }
+        }
+
+        try {
+            testCoordinator.uploadPagos(opticaId)
+            fail("Expected UploadPartialException for the quarantined reverso")
+        } catch (_: UploadPartialException) { }
+
+        assertEquals(listOf("abono-2"), accepted.map { it.id })
+        coVerify { syncStateTracker.markError(opticaId, "pago", "rv-race", "quarantine:reverso_duplicate:abono-1") }
+    }
+
+    @Test
+    fun `transfer pagos of a quarantined losing replacement are gated as parent missing`() = runTest {
+        val opticaId = "optica-test"
+        coEvery { syncStateTracker.quarantinedEntityIds(opticaId, "dispensacion") } returns setOf("local-repl")
+        coEvery { repository.getPagosSnapshotForOptica(opticaId) } returns listOf(
+            pago("transfer-1", "Abono", dispensacionId = "local-repl"),
+        )
+        val chunks = mutableListOf<List<PagoRemoto>>()
+
+        try {
+            createPagoCaptureCoordinator(uploadedChunks = chunks).uploadPagos(opticaId)
+            fail("Expected UploadPartialException")
+        } catch (_: UploadPartialException) { }
+
+        assertTrue(chunks.flatten().isEmpty())
+        coVerify {
+            syncStateTracker.markError(opticaId, "pago", "transfer-1", "quarantine:parent_missing:dispensacion:local-repl")
+        }
+    }
+
+    @Test
+    fun `items and regalos of a losing replacement are not uploaded`() = runTest {
+        val opticaId = "optica-test"
+        coEvery { syncStateTracker.quarantineReasons(opticaId, "dispensacion") } returns
+            mapOf("local-repl" to "quarantine:reclamo_duplicate:local-orig")
+        coEvery { repository.getDispensacionItemsSnapshotForOptica(opticaId) } returns listOf(
+            DispensacionItem(id = "item-loser", dispensacionId = "local-repl", opticaId = opticaId),
+            DispensacionItem(id = "item-ok", dispensacionId = "local-orig", opticaId = opticaId),
+        )
+        coEvery { repository.getRegalosSnapshotForOptica(opticaId) } returns listOf(
+            com.example.optoapp.data.regalodispensacion.RegaloDispensacionEntity(
+                id = "regalo-loser", dispensacionId = "local-repl", productoId = "prod-1", cantidad = 1,
+                costoUnitario = 5.0, descripcion = "Estuche", opticaId = opticaId,
+            ),
+            com.example.optoapp.data.regalodispensacion.RegaloDispensacionEntity(
+                id = "regalo-ok", dispensacionId = "local-orig", productoId = "prod-1", cantidad = 1,
+                costoUnitario = 5.0, descripcion = "Estuche", opticaId = opticaId,
+            ),
+        )
+        stubRetryPassThrough()
+        val items = mutableListOf<DispensacionItemRemota>()
+        val regalos = mutableListOf<RegaloDispensacionRemota>()
+        val testCoordinator = object : UploadSyncCoordinator(
+            repository, supabase, database, syncStateTracker, mergeHandler, networkRetryHelper,
+            costoProductoDao, costoBiseladoDao,
+        ) {
+            override suspend fun <T> runInTransaction(block: suspend () -> T): T = block()
+            override suspend fun upsertDispensacionItemsChunk(chunk: List<DispensacionItemRemota>) {
+                items.addAll(chunk)
+            }
+            override suspend fun upsertRegalosChunk(chunk: List<RegaloDispensacionRemota>) {
+                regalos.addAll(chunk)
+            }
+        }
+
+        testCoordinator.uploadDispensacionItems(opticaId)
+        testCoordinator.uploadRegalos(opticaId)
+
+        assertEquals(listOf("item-ok"), items.map { it.id })
+        assertEquals(listOf("regalo-ok"), regalos.map { it.id })
+        coVerify(exactly = 0) { syncStateTracker.markSynced(opticaId, "dispensacion_item", "item-loser") }
+        coVerify(exactly = 0) { syncStateTracker.markSynced(opticaId, "regalo_dispensacion", "regalo-loser") }
     }
 }
