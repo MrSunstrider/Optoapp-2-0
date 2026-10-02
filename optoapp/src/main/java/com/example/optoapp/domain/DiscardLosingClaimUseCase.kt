@@ -86,12 +86,12 @@ class DiscardLosingClaimUseCase @Inject constructor(
      * the original and an Abono with the same metodo on the replacement. Only originals whose local
      * claim was discarded qualify, and only right after a complete pagos download so the winner's
      * Reversos are local and already-reversed credit is never transferred twice. The download marker
-     * is consumed here, so a success left by an earlier run never authorizes a later one.
+     * is consumed here, so a success left by an earlier run never authorizes a later one; a recorded
+     * download failure is left in place so it stays visible until a later fetch succeeds.
      */
     suspend fun transferResidualCredit(opticaId: String): Int {
-        val pagosDownloadComplete = syncStateTracker.isSynced(opticaId, DOWNLOAD_PAGOS, "batch")
+        if (!syncStateTracker.isSynced(opticaId, DOWNLOAD_PAGOS, "batch")) return 0
         syncStateTracker.clear(opticaId, DOWNLOAD_PAGOS, "batch")
-        if (!pagosDownloadComplete) return 0
         return syncStateTracker.awaitingRemoteIds(opticaId, PENDING_CREDIT).sumOf { localOrigenId ->
             repository.withTransaction { settle(opticaId, localOrigenId) }
         }

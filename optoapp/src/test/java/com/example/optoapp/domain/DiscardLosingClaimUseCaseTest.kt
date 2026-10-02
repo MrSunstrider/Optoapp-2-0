@@ -407,6 +407,18 @@ class DiscardLosingClaimUseCaseTest {
     }
 
     @Test
+    fun failedPagosDownload_staysRecordedAfterTheResidualTransfer() = runTest {
+        tracker.markError(opticaId, "download_pago", "batch", "timeout")
+
+        assertEquals(0, discarder().transferResidualCredit(opticaId))
+
+        assertEquals(
+            listOf("batch"),
+            db.syncEntityStateDao().getByStatus(opticaId, "error").filter { it.entityType == "download_pago" }.map { it.entityId },
+        )
+    }
+
+    @Test
     fun ownConfirmedClaim_keepsItsUnsyncedCompensationAbonoOnTheOriginal() = runTest {
         val replId = seedClaimedOriginal(legacyReembolso = true, losing = false)
         listOf(replId, origId).forEach { tracker.markSynced(opticaId, "dispensacion", it) }
