@@ -65,7 +65,7 @@ object DiagnosticoCalculator {
      * Converts a Snellen visual acuity string (e.g. "20/20") to LogMAR.
      *
      * Accepts optional spaces around the slash ("20 / 40") — aligned with web.
-     * Returns null for invalid formats, missing slash, zero denominator, or
+     * Returns null for invalid formats, missing slash, zero numerator or denominator, or
      * unparseable input.
      */
     fun parseSnellenToLogMar(snellen: String): Double? {
@@ -75,7 +75,7 @@ object DiagnosticoCalculator {
             val m = regex.find(clean) ?: return null
             val numerator = m.groupValues[1].toDoubleOrNull() ?: return null
             val denominator = m.groupValues[2].toDoubleOrNull() ?: return null
-            if (denominator <= 0) return null
+            if (numerator <= 0 || denominator <= 0) return null
             val decimalAV = numerator / denominator
             return -log10(decimalAV)
         } catch (e: Exception) {

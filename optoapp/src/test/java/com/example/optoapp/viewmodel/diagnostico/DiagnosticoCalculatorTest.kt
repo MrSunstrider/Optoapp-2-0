@@ -218,6 +218,12 @@ class DiagnosticoCalculatorTest {
     }
 
     @Test
+    fun `parseSnellenToLogMar numerator zero returns null instead of infinity`() {
+        assertNull(DiagnosticoCalculator.parseSnellenToLogMar("0/20"))
+        assertNull(DiagnosticoCalculator.parseAvToLogMar("0/20"))
+    }
+
+    @Test
     fun `parseSnellenToLogMar empty returns null`() {
         assertNull(DiagnosticoCalculator.parseSnellenToLogMar(""))
     }
