@@ -36,6 +36,7 @@ The read-only audit of `feat/anulaciones-wu6c-verify-fixes` (8d5b4021) found:
 - [x] T3 Prove hard-delete sync: repository test that `deleteDispensacion` records the tombstone and schedules sync. Route: delegated writer.
 - [x] T4 Validate the claim refund method in the use case, and align `reclamoPreview` / `canConfirmReclamo` with the use case (finite total, `MONEY_EPSILON`, non-blank method when a refund is shown). Route: delegated writer.
 - [x] T6 Resolve review findings on T1/T3: a failed restock inside a caller transaction must fail the caller instead of rolling it back silently; an ignored claim must be backed by an existing row; standalone rollback and true concurrency tests for the helper; real `SyncStateTracker` in the hard-delete tests; schedule inventory sync only after the restock commits. Route: delegated writer.
+- [x] T7 Remove the dual restock contract found by native RDD on T6: nested detection through the thread-bound `RoomDatabase.inTransaction()` misclassifies a caller on another dispatcher as standalone. Every restock failure now throws. Route: delegated writer.
 - [ ] T5 Verify: full unit suite, GGA, native RDD on the commits, and a read-only re-audit of the four items. Route: parent.
 
 Route evidence: 4+ files across use cases, DAO, ViewModels, UI and tests, so the writer trigger fires; one delegated writer.
@@ -85,10 +86,17 @@ One work-unit commit per task on `feat/anulaciones-wu7-backlog-fixes`. The chain
   - Characterization (passed on first run, no code broken to fake RED): `adjustFailureAfterClaim_standalone_returnsFailureAndRollsBackClaim`, `concurrentRestocksForSameKey_adjustStockExactlyOnce` (two `async(Dispatchers.IO)` restocks, outcomes `{true, false}`, stock +1, one movimiento), `MonturaMovimientoDaoTest.findByKey_matchesOnlyExactReferenciaTipoAndMontura` (query scaffold added before the test). Scheduling and nested-rethrow mock assertions were added after the fix as regression coverage.
   - GREEN: `DispensacionStockHelperRoomTest` 6, `DispensacionStockHelperTest` 17, `MonturaMovimientoDaoTest` 11, `AnularDispensacionTransactionTest` 16, `ReclamoTransactionTest` 18, `CancelServicioExtraTransactionTest` 1, `CancelLedgerUseCasesTest` 12, `MonturaInventoryCoordinator*` 8: all passing.
 
-- T6 tombstone tests done (`test(sync): persist hard-delete tombstone with real tracker`).
+- T6 tombstone tests done in `d5310c31` (`test(sync): persist hard-delete tombstone with real tracker`).
   - `OptoRepositoryFinanzasTest` now uses `spyk(SyncStateTracker(db.syncEntityStateDao(), db))` on the same in-memory database. The success test asserts the `deleted` row for `("dispensacion", id)` via `getPendingDeletions`; the rollback test lets the real `markDeleted` write the tombstone and then throws, and asserts both the dispensacion and the absence of the tombstone (the write rolled back with the delete), plus no sync scheduled.
   - Characterization: passed on first run (production already writes the tombstone inside the delete transaction); RED not applicable.
   - GREEN: `OptoRepositoryFinanzasTest` 10/10.
+
+- T7 done (`fix(inventario): always propagate post-claim restock failures`).
+  - Native RDD on T6 (approved) found that `restockOnce` classified nesting with `RoomDatabase.inTransaction()`, which is thread-bound: a caller inside `withTransaction` that switches dispatcher (`withContext(Dispatchers.IO)`) got `Result.failure` while the joined inner transaction had already doomed the outer one, so the silent rollback came back.
+  - Contract now has one shape: `restockOnce` returns `Boolean` (`true` restocked, `false` already restocked) and throws `IllegalStateException` for every failure, pre-claim validation included, so the type cannot report a failure the caller might ignore. `DatabaseTransactionRunner.isInTransaction()` and the private failure class were removed; `restockOrThrow` in `CancelLedgerUseCases.kt` became redundant and its call sites call `restockOnce` directly.
+  - RED: `DispensacionStockHelperRoomTest.adjustFailureInsideCallerTransactionOnAnotherDispatcher_failsTheCallerAndRollsBackItsWrites` failed with `caller transaction must fail loudly, got null`.
+  - Updated to the new contract: the standalone rollback test now asserts the exception plus the rollback; mock tests assert exceptions for montura lookup failure, failed adjustment, and an ignored claim without a row; the nested-only mock test was merged into the adjustment test; `CancelLedgerUseCasesTest` stubs `throws` instead of `Result.failure`.
+  - GREEN: `DispensacionStockHelperRoomTest` 7, `DispensacionStockHelperTest` 16, `AnularDispensacionTransactionTest` 16, `ReclamoTransactionTest` 18, `CancelServicioExtraTransactionTest` 1, `CancelLedgerUseCasesTest` 12, `MonturaMovimientoDaoTest` 11: all passing.
 
 ## Next step
 

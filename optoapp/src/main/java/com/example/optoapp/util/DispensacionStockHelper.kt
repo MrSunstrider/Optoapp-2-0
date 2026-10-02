@@ -74,17 +74,18 @@ class DispensacionStockHelper @Inject constructor(
     }
 
     /**
-     * Returns `success(false)` when the AJUSTE for [referenciaId] already exists so a retried
-     * cancel never restocks twice; `success(true)` after restocking.
+     * Returns `false` when the AJUSTE for [referenciaId] already exists so a retried cancel never
+     * restocks twice, and `true` after restocking. Every failure throws [IllegalStateException]:
+     * validation before the claim, a failed adjustment after a won claim, and an ignored claim with
+     * no row behind it.
+     *
+     * Failures are never returned as values because the restock runs in a transaction that joins
+     * any caller transaction: once it fails, Android SQLite rolls the caller back on commit, so a
+     * caller that kept going on a returned failure would lose its writes silently.
      *
      * The movimiento is claimed first through the unique (referenciaId, tipo, monturaId) index and
-     * stock moves only when the claim wins, all in one transaction, so a duplicate can neither
-     * adjust stock twice nor replace the existing movimiento, with or without a caller transaction.
-     *
-     * A write failure (adjustment after a won claim, or an ignored claim with no row behind it)
-     * rolls the claim back. Standalone it is returned as `Result.failure`; inside a caller
-     * transaction it is rethrown, because a swallowed nested failure makes Android SQLite roll
-     * the caller back silently instead of failing it.
+     * stock moves only when the claim wins, so a duplicate can neither adjust stock twice nor
+     * replace the existing movimiento, with or without a caller transaction.
      *
      * Inventory sync is scheduled only after the restock transaction completes; a caller that
      * owns an outer transaction must still schedule after its own commit.
@@ -95,16 +96,10 @@ class DispensacionStockHelper @Inject constructor(
         delta: Int,
         referenciaId: String,
         nota: String,
-    ): Result<Boolean> {
-        val nested = transactionRunner.isInTransaction()
-        val result = try {
-            transactionRunner.inTransaction { claimAndRestock(monturaId, opticaId, delta, referenciaId, nota) }
-        } catch (e: RestockWriteFailed) {
-            if (nested) throw e
-            Result.failure(IllegalStateException(e.message))
-        }
-        if (result.getOrNull() == true) coordinator.scheduleInventarioSync(opticaId)
-        return result
+    ): Boolean {
+        val restocked = transactionRunner.inTransaction { claimAndRestock(monturaId, opticaId, delta, referenciaId, nota) }
+        if (restocked) coordinator.scheduleInventarioSync(opticaId)
+        return restocked
     }
 
     private suspend fun claimAndRestock(
@@ -113,18 +108,17 @@ class DispensacionStockHelper @Inject constructor(
         delta: Int,
         referenciaId: String,
         nota: String,
-    ): Result<Boolean> {
-        val montura = monturaForDelta(monturaId, opticaId, delta).getOrElse { return Result.failure(it) }
+    ): Boolean {
+        val montura = monturaForDelta(monturaId, opticaId, delta).getOrThrow()
         val claimed = coordinator.insertMonturaMovimientoIfAbsent(movimientoFor(montura, delta, TIPO_AJUSTE, referenciaId, nota))
         if (!claimed) {
-            coordinator.findMovimientoByKey(referenciaId, TIPO_AJUSTE, monturaId)
-                ?: throw RestockWriteFailed("No se pudo registrar el movimiento de reposición")
-            return Result.success(false)
+            checkNotNull(coordinator.findMovimientoByKey(referenciaId, TIPO_AJUSTE, monturaId)) {
+                "No se pudo registrar el movimiento de reposición"
+            }
+            return false
         }
-        if (coordinator.adjustMonturaStockLocal(monturaId, opticaId, delta) <= 0) {
-            throw RestockWriteFailed("No se pudo ajustar el stock")
-        }
-        return Result.success(true)
+        check(coordinator.adjustMonturaStockLocal(monturaId, opticaId, delta) > 0) { "No se pudo ajustar el stock" }
+        return true
     }
 
     private suspend fun monturaForDelta(monturaId: String, opticaId: String, delta: Int): Result<Montura> {
@@ -154,8 +148,6 @@ class DispensacionStockHelper @Inject constructor(
         nota = nota,
         opticaId = montura.opticaId,
     )
-
-    private class RestockWriteFailed(message: String) : IllegalStateException(message)
 
     private companion object {
         const val TIPO_AJUSTE = "AJUSTE"

@@ -34,6 +34,7 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -317,7 +318,7 @@ class AnularDispensacionTransactionTest {
         assertEquals(LifecycleOutcome.AlreadyTerminal("Anulado"), useCase()(dispId, opticaId, "Otra vez"))
         val restock = DispensacionStockHelper(repository.monturaCoordinator, RoomTransactionRunner(db))
             .restockOnce("M1", opticaId, 1, "d1:anul:i1", "Reintento")
-        assertEquals(Result.success(false), restock)
+        assertFalse(restock)
         assertEquals(1, movimientos().size)
         assertEquals(4, stock("M1"))
     }

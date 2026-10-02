@@ -18,8 +18,10 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withContext
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -60,8 +62,8 @@ class DispensacionStockHelperRoomTest {
 
         val second = helper().restockOnce("M1", opticaId, 1, referencia, "Reposición")
 
-        assertEquals(Result.success(true), first)
-        assertEquals(Result.success(false), second)
+        assertTrue(first)
+        assertFalse(second)
         assertEquals(4, stock())
         assertEquals(listOf(afterFirst), movimientos())
     }
@@ -69,7 +71,7 @@ class DispensacionStockHelperRoomTest {
     @Test
     fun duplicateRestockArrivingMidRestock_adjustsStockOnceAndKeepsFirstMovimiento() = runTest {
         var duplicateSent = false
-        var interleaved: Result<Boolean>? = null
+        var interleaved: Boolean? = null
         coEvery { coordinator.getMonturaById("M1", opticaId) } coAnswers {
             if (!duplicateSent) {
                 duplicateSent = true
@@ -80,7 +82,7 @@ class DispensacionStockHelperRoomTest {
 
         val outer = helper().restockOnce("M1", opticaId, 1, referencia, "Reposición")
 
-        assertEquals(setOf(Result.success(true), Result.success(false)), setOf(outer, interleaved))
+        assertEquals(setOf(true, false), setOf(outer, interleaved))
         assertEquals(4, stock())
         val movimiento = movimientos().single()
         assertEquals("Duplicado", movimiento.nota)
@@ -98,18 +100,19 @@ class DispensacionStockHelperRoomTest {
 
         val result = helper().restockOnce("M1", opticaId, 1, referencia, "Reposición")
 
-        assertEquals(Result.success(false), result)
+        assertFalse(result)
         assertEquals(3, stock())
         assertEquals(listOf(synced), movimientos())
     }
 
     @Test
-    fun adjustFailureAfterClaim_standalone_returnsFailureAndRollsBackClaim() = runTest {
+    fun adjustFailureAfterClaim_standalone_throwsAndRollsBackClaim() = runTest {
         coEvery { coordinator.adjustMonturaStockLocal("M1", opticaId, 1) } returns 0
 
-        val result = helper().restockOnce("M1", opticaId, 1, referencia, "Reposición")
+        val error = runCatching { helper().restockOnce("M1", opticaId, 1, referencia, "Reposición") }.exceptionOrNull()
 
-        assertEquals("No se pudo ajustar el stock", result.exceptionOrNull()?.message)
+        assertTrue("restock must fail loudly, got $error", error is IllegalStateException)
+        assertEquals("No se pudo ajustar el stock", error?.message)
         assertEquals(emptyList<MonturaMovimiento>(), movimientos())
         assertEquals(3, stock())
     }
@@ -133,12 +136,30 @@ class DispensacionStockHelperRoomTest {
     }
 
     @Test
+    fun adjustFailureInsideCallerTransactionOnAnotherDispatcher_failsTheCallerAndRollsBackItsWrites() = runTest {
+        coEvery { coordinator.adjustMonturaStockLocal("M1", opticaId, 1) } returns 0
+
+        val error = runCatching {
+            db.withTransaction {
+                db.monturaDao().insertMontura(Montura(id = "M2", sku = "sku-M2", stockActual = 7, opticaId = opticaId))
+                withContext(Dispatchers.IO) { helper().restockOnce("M1", opticaId, 1, referencia, "Reposición") }
+            }
+        }.exceptionOrNull()
+
+        assertTrue("caller transaction must fail loudly, got $error", error is IllegalStateException)
+        assertEquals("No se pudo ajustar el stock", error?.message)
+        assertNull(db.monturaDao().getMonturaByIdForOptica("M2", opticaId))
+        assertEquals(emptyList<MonturaMovimiento>(), movimientos())
+        assertEquals(3, stock())
+    }
+
+    @Test
     fun concurrentRestocksForSameKey_adjustStockExactlyOnce() = runTest {
         val outcomes = List(2) {
             async(Dispatchers.IO) { helper().restockOnce("M1", opticaId, 1, referencia, "Reposición") }
         }.awaitAll()
 
-        assertEquals(setOf(Result.success(true), Result.success(false)), outcomes.toSet())
+        assertEquals(setOf(true, false), outcomes.toSet())
         assertEquals(4, stock())
         assertEquals(1, movimientos().size)
     }

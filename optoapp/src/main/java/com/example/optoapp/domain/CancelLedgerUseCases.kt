@@ -130,7 +130,7 @@ class CancelServicioExtraUseCase @Inject constructor(
             repository.getRegalosByServicioExtraId(servicioId, opticaId)
                 .filter { it.productoId.isNotBlank() }
                 .forEach { regalo ->
-                    stockHelper.restockOrThrow(
+                    stockHelper.restockOnce(
                         regalo.productoId, opticaId, regalo.cantidad,
                         movimientoReferenciaForRegaloAnulacion(regalo.id), "Reversión por anulación de regalo de servicio",
                     )
@@ -156,30 +156,19 @@ class CancelServicioExtraUseCase @Inject constructor(
         val itemsWithStock = repository.getServicioExtraItems(servicio.id, opticaId).filter { !it.monturaId.isNullOrBlank() }
         if (itemsWithStock.isEmpty()) {
             servicio.monturaId?.takeIf { it.isNotBlank() }?.let { monturaId ->
-                stockHelper.restockOrThrow(
+                stockHelper.restockOnce(
                     monturaId, opticaId, 1, movimientoReferenciaForServicioExtraReverso(servicio.id, monturaId), NOTA_SERVICIO,
                 )
             }
             return
         }
         itemsWithStock.forEach { item ->
-            stockHelper.restockOrThrow(item.monturaId!!, opticaId, 1, movimientoReferenciaForServicioItemAnulacion(item.id), NOTA_SERVICIO)
+            stockHelper.restockOnce(item.monturaId!!, opticaId, 1, movimientoReferenciaForServicioItemAnulacion(item.id), NOTA_SERVICIO)
         }
     }
 }
 
 private const val NOTA_SERVICIO = "Reversión por anulación de servicio extra"
-
-private suspend fun DispensacionStockHelper.restockOrThrow(
-    monturaId: String,
-    opticaId: String,
-    delta: Int,
-    referenciaId: String,
-    nota: String,
-) {
-    restockOnce(monturaId, opticaId, delta, referenciaId, nota)
-        .getOrElse { throw IllegalStateException(it.message ?: "No se pudo reponer el stock.", it) }
-}
 
 sealed interface LifecycleOutcome {
     data object Applied : LifecycleOutcome
@@ -259,7 +248,7 @@ class AnularDispensacionUseCase @Inject constructor(
     }
 
     private suspend fun restock(monturaId: String, opticaId: String, delta: Int, referenciaId: String) {
-        stockHelper.restockOrThrow(monturaId, opticaId, delta, referenciaId, "Reversión por anulación de dispensación")
+        stockHelper.restockOnce(monturaId, opticaId, delta, referenciaId, "Reversión por anulación de dispensación")
     }
 }
 
