@@ -88,6 +88,9 @@ One work-unit commit per task on `feat/anulaciones-wu8-server-guards`; the chain
 - T5 evidence: native RDD `review-62e28377e3859317` approved and acknowledged on `c2d31824..72d474b0` with 1 WARNING (a failed pagos download was erased by the marker consumption), fixed in T9.
 - T9. RED: `failedPagosDownload_staysRecordedAfterTheResidualTransfer` (error row cleared; 1 of 21 failed). GREEN: DiscardLosingClaimUseCaseTest 21/21, SyncFinanzasUseCaseKtTest 24/24.
 
+- T9 commit `478617b8` (GGA passed); full `testDebugUnitTest` green.
+- T5 evidence: native RDD `review-65c3a5709455f5a0` approved and acknowledged on `72d474b0..478617b8` with no findings. Every slice of `f98a5d54..478617b8` is now reviewed. Server triggers on `pagos` (`trg_pagos_maintain_monto_pagado`, `pagos_updated_at`, auto `venta_id`) do not reject rows by dispensacion estado, so claim Reversos and transfers on a Reclamada original are accepted (verified against the repository migrations).
+
 ## Next step
 
-T5 (parent): run `supabase db lint` and `supabase/tests/test_anulacion_server_guards.sql` on a stack with Docker, GGA, native RDD, re-audit; product decisions listed in the writer report.
+T5 remaining: runtime proof of the migration. Run `supabase db lint` and `supabase/tests/test_anulacion_server_guards.sql` on a local stack (Docker) or an authorized Supabase branch before G1.
