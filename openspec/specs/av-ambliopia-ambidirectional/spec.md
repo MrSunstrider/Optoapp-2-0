@@ -227,6 +227,8 @@ If either eye fails bidirectional parse (null logMAR), the system MUST NOT force
 
 ### Requirement: OptoWeb helper parity
 
+> **Status: DEFERRED.** OptoWeb work was reverted and postponed until the OptoApp MVP is complete (see `openspec/changes/archive/2026-09-26-av-ambliopia-ambidirectional/scope-correction-optoweb-deferred.md`). The OptoWeb requirements and scenarios in this spec are not yet implemented.
+
 OptoWeb MUST provide the same bidirectional parse order (Snellen first, then decimal with explicit separator and `(0, 2.0]` acceptance) and MUST fix Snellen fractional conversion to use captured `numerator/denominator` (not a hardcoded numerator of 20). Amblyopia auto on the web MUST route through the bidirectional conversion. UI redesign is out of scope; helper and tests only. Schema and RLS MUST NOT change.
 
 #### Scenario: Web Snellen uses captured numerator and denominator

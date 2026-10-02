@@ -443,10 +443,10 @@ Fuente alineada con `docs/sdd/spec.md` (mantener como contrato clínico):
 - Ambliopía (auto, AV cc lejos OD vs OI):
   - **Umbral:** `|logMAR_OD − logMAR_OI| ≥ 0.19` (≈ 2 líneas / 0.2 logMAR).
   - **Normalización ambidireccional (requisito):** cada ojo SHALL aceptar **ambos** formatos de entrada y convertir a logMAR antes de comparar:
-    - **Snellen fraccional:** `20/20`, `20/40`, `20 / 40` → `logMAR = −log10(numerador/denominador)`.
-    - **Decimal:** `1.0`, `0.8`, `0.5` (coma o punto) → `logMAR = −log10(decimal)` (valores en (0, ∞)).
+    - **Snellen fraccional:** `20/20`, `20/40`, `20 / 40` → `logMAR = −log10(numerador/denominador)` (numerador y denominador > 0).
+    - **Decimal:** `1.0`, `0.8`, `0.5` (coma o punto obligatorio) → `logMAR = −log10(decimal)` (valores en (0, 2.0]).
   - Si un ojo no es parseable en ninguno de los dos formatos, no se fuerza auto; se conserva el valor manual (`otrosAmbliopia`).
-  - **AS-IS:** solo Snellen está implementado (`parseSnellenToLogMar`). Decimal aún no dispara el auto-cálculo → estado **P**; completar en roadmap TO-BE **#1**.
+  - **AS-IS:** implementado en Android (`DiagnosticoCalculator.parseAvToLogMar`) → estado **I**. OptoWeb queda diferido hasta después del MVP de OptoApp.
 - LC por \|K1−K2\|: \<2.50 blando; 2.50–3.99 valorar RGP/tórico; ≥4.00 RGP.
 
 ### 8.3 Sync
