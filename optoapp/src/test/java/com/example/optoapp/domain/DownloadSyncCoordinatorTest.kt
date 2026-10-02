@@ -12,6 +12,7 @@ import com.example.optoapp.data.resumendiario.ResumenDiarioDao
 import io.github.jan.supabase.SupabaseClient
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.coVerifyOrder
 import io.mockk.mockk
 import io.mockk.slot
 import kotlinx.coroutines.test.runTest
@@ -206,7 +207,43 @@ class DownloadSyncCoordinatorTest {
 
         coordinator.downloadPagos(opticaId)
 
+        coVerifyOrder {
+            syncStateTracker.clear(opticaId, "download_pago", "batch")
+            syncStateTracker.markSynced(opticaId, "download_pago", "batch")
+        }
+    }
+
+    private fun remotePago(id: String) = PagoRemoto(id = id, dispensacionId = "d1", fecha = "2026-09-01", tipo = "Reverso", monto = 10.0, opticaId = opticaId)
+
+    @Test
+    fun everyPagoPersisted_marksTheDownloadBatchComplete() = runTest {
+        stubSyncInfra()
+
+        assertEquals(2, coordinator.persistPagos(opticaId, listOf(remotePago("p1"), remotePago("p2"))))
+
         coVerify { syncStateTracker.markSynced(opticaId, "download_pago", "batch") }
+    }
+
+    @Test
+    fun pagoPersistFailureAfterASuccessfulFetch_leavesTheBatchIncomplete() = runTest {
+        stubSyncInfra()
+        coEvery { repository.upsertPagoFromRemote(match { it.id == "p2" }) } throws IllegalStateException("constraint")
+
+        assertEquals(1, coordinator.persistPagos(opticaId, listOf(remotePago("p1"), remotePago("p2"))))
+
+        coVerify(exactly = 0) { syncStateTracker.markSynced(opticaId, "download_pago", "batch") }
+    }
+
+    @Test
+    fun quarantinedOrPendingDeletionPago_leavesTheBatchIncomplete() = runTest {
+        stubSyncInfra()
+        coEvery { syncStateTracker.quarantinedEntityIds(opticaId, "pago") } returns setOf("p1")
+        coordinator.persistPagos(opticaId, listOf(remotePago("p1")))
+        coEvery { syncStateTracker.quarantinedEntityIds(opticaId, "pago") } returns emptySet()
+        coEvery { deletionSyncHelper.deletedIds(opticaId) } returns setOf("p2")
+        coordinator.persistPagos(opticaId, listOf(remotePago("p2")))
+
+        coVerify(exactly = 0) { syncStateTracker.markSynced(opticaId, "download_pago", "batch") }
     }
 
     @Test

@@ -266,12 +266,12 @@ class DiscardLosingClaimUseCaseTest {
      * What the download brings: the winner's replacement, its transfers and the Reversos of the credits
      * the winner knew. [remoteOriginalId] differs from the local id when the original adopted a remote id by OT.
      */
-    private suspend fun downloadWinner(remoteOriginalId: String = origId) {
+    private suspend fun downloadWinner(remoteOriginalId: String = origId, remoteOriginalEstado: String = "Reclamada") {
         if (remoteOriginalId != origId) {
             db.dispensacionDao().insertDispensacion(
                 DispensacionOptica(
                     id = remoteOriginalId, ot = "2026-0042", pacienteId = "pac", fecha = today.minusDays(40), opticaId = opticaId,
-                    montoTotal = 200.0, estadoEntrega = "Reclamada", fechaEntrega = today.minusDays(30),
+                    montoTotal = 200.0, estadoEntrega = remoteOriginalEstado, fechaEntrega = today.minusDays(30),
                     motivoAnulacion = "Armazón roto", fechaAnulacion = today,
                 ),
             )
@@ -318,6 +318,63 @@ class DiscardLosingClaimUseCaseTest {
         assertEquals(0.0, db.pagoDao().sumMontoByDispensacion("r1", opticaId), 0.001)
         assertEquals(250.0, db.pagoDao().sumMontoByDispensacion(winnerId, opticaId), 0.001)
         assertEquals(listOf("r1"), db.dispensacionItemDao().getItemsListByDispensacion("r1", opticaId).map { it.dispensacionId })
+    }
+
+    private suspend fun pendingCreditMarkers() = tracker.awaitingRemoteIds(opticaId, "reclamo_credito")
+
+    @Test
+    fun remappedOriginal_waitsUntilTheDownloadedTwinIsReclamada() = runTest {
+        seedClaimedOriginal(unsyncedCredit = true)
+        discarder()(opticaId)
+        downloadWinner(remoteOriginalId = "r1", remoteOriginalEstado = "Entregado")
+
+        assertEquals(0, discarder().transferResidualCredit(opticaId))
+
+        assertNotNull(db.dispensacionDao().getDispensacionById(origId, opticaId))
+        assertEquals(setOf(origId), pendingCreditMarkers())
+        assertEquals(1, pagosOf(origId).count { it.id == "a3" })
+
+        val twin = db.dispensacionDao().getDispensacionById("r1", opticaId)!!
+        db.dispensacionDao().insertDispensacion(twin.copy(estadoEntrega = "Reclamada"))
+        tracker.markSynced(opticaId, "download_pago", "batch")
+
+        assertEquals(1, discarder().transferResidualCredit(opticaId))
+        assertNull(db.dispensacionDao().getDispensacionById(origId, opticaId))
+        assertTrue(pendingCreditMarkers().isEmpty())
+        assertEquals(0.0, db.pagoDao().sumMontoByDispensacion("r1", opticaId), 0.001)
+    }
+
+    @Test
+    fun failureAfterTheFold_rollsBackTheFoldAndKeepsTheMarker() = runTest {
+        seedClaimedOriginal(unsyncedCredit = true)
+        discarder()(opticaId)
+        downloadWinner(remoteOriginalId = "r1")
+        val failing = spyk(repository)
+        coEvery { failing.insertPago(match { it.dispensacionId == winnerId }) } throws IllegalStateException("insert failed")
+
+        val error = runCatching { discarder(failing).transferResidualCredit(opticaId) }.exceptionOrNull()
+
+        assertEquals("insert failed", error?.message)
+        assertNotNull(db.dispensacionDao().getDispensacionById(origId, opticaId))
+        assertEquals(1, pagosOf(origId).count { it.id == "a3" })
+        assertEquals(setOf(origId), pendingCreditMarkers())
+        assertEquals(setOf(origId), tracker.awaitingRemoteIds(opticaId, "dispensacion"))
+    }
+
+    @Test
+    fun residualTransfer_needsAPagosDownloadFromTheSameRun() = runTest {
+        seedClaimedOriginal(unsyncedCredit = true)
+        discarder()(opticaId)
+        downloadWinner()
+        tracker.markAwaitingRemote(opticaId, "dispensacion", origId)
+        assertEquals(0, discarder().transferResidualCredit(opticaId))
+
+        tracker.markSynced(opticaId, "dispensacion", origId)
+        assertEquals(0, discarder().transferResidualCredit(opticaId))
+        assertTrue(pagosOf(origId).none { it.reversaPagoId == "a3" })
+
+        tracker.markSynced(opticaId, "download_pago", "batch")
+        assertEquals(1, discarder().transferResidualCredit(opticaId))
     }
 
     @Test

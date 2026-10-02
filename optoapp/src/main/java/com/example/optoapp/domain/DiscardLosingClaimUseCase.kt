@@ -41,6 +41,7 @@ class DiscardLosingClaimUseCase @Inject constructor(
         private const val TAG = "SyncFinanzas"
         private const val NOTICE = "reclamo_descartado"
         private const val PENDING_CREDIT = "reclamo_credito"
+        private const val DOWNLOAD_PAGOS = "download_pago"
         private const val DISCARD_FAILED_PREFIX = "quarantine:reclamo_descarte_fallido:"
     }
 
@@ -83,11 +84,14 @@ class DiscardLosingClaimUseCase @Inject constructor(
      * Credit the winning claim never reversed (recorded offline, or synced after the winner's claim)
      * moves to the winner's replacement with the claim's own mechanics: a Reverso of that credit on
      * the original and an Abono with the same metodo on the replacement. Only originals whose local
-     * claim was discarded qualify, and only after a successful pagos download so the winner's
-     * Reversos are local and already-reversed credit is never transferred twice.
+     * claim was discarded qualify, and only right after a complete pagos download so the winner's
+     * Reversos are local and already-reversed credit is never transferred twice. The download marker
+     * is consumed here, so a success left by an earlier run never authorizes a later one.
      */
     suspend fun transferResidualCredit(opticaId: String): Int {
-        if (!syncStateTracker.isSynced(opticaId, "download_pago", "batch")) return 0
+        val pagosDownloadComplete = syncStateTracker.isSynced(opticaId, DOWNLOAD_PAGOS, "batch")
+        syncStateTracker.clear(opticaId, DOWNLOAD_PAGOS, "batch")
+        if (!pagosDownloadComplete) return 0
         return syncStateTracker.awaitingRemoteIds(opticaId, PENDING_CREDIT).sumOf { localOrigenId ->
             repository.withTransaction { settle(opticaId, localOrigenId) }
         }
@@ -103,14 +107,15 @@ class DiscardLosingClaimUseCase @Inject constructor(
         val origenId = adoptedOriginalId(opticaId, localOrigenId, snapshot) ?: return 0
         val winner = syncedWinnerOf(opticaId, origenId, snapshot) ?: return 0
         val transferred = transferToWinner(opticaId, origenId, winner) ?: return 0
-        syncStateTracker.clear(opticaId, PENDING_CREDIT, localOrigenId)
+        syncStateTracker.clear(opticaId, PENDING_CREDIT, origenId)
         return transferred
     }
 
     /**
      * The original the winner points at. Download releases the hold on the local original by id; when
      * the original had adopted a remote id by OT the download brings that row instead, so the local
-     * copy is folded into it once the winner's replacement for it is local.
+     * copy is folded into it, but only once that row is Reclamada and its winning replacement is
+     * local. The pending-credit marker moves with the fold so it can never point at a deleted row.
      */
     private suspend fun adoptedOriginalId(
         opticaId: String,
@@ -123,6 +128,7 @@ class DiscardLosingClaimUseCase @Inject constructor(
         val twin = snapshot.firstOrNull { row ->
             row.id != localOrigenId && row.reclamoOrigenId.isNullOrBlank() &&
                 normalizedOtForUnique(row.ot) == otKey &&
+                row.estadoEntrega.trim() == OrderStatusPolicy.RECLAMADA &&
                 syncStateTracker.isSynced(opticaId, "dispensacion", row.id) &&
                 syncedWinnerOf(opticaId, row.id, snapshot) != null
         } ?: return null
@@ -131,6 +137,8 @@ class DiscardLosingClaimUseCase @Inject constructor(
         repository.reassignRegalosDispensacion(localOrigenId, twin.id, opticaId)
         repository.deleteDispensacionById(localOrigenId, opticaId)
         syncStateTracker.clear(opticaId, "dispensacion", localOrigenId)
+        syncStateTracker.clear(opticaId, PENDING_CREDIT, localOrigenId)
+        syncStateTracker.markAwaitingRemote(opticaId, PENDING_CREDIT, twin.id)
         AppLogger.w(TAG, "Original local $localOrigenId fusionado en ${twin.id} descargado por OT ${local.ot}")
         return twin.id
     }
