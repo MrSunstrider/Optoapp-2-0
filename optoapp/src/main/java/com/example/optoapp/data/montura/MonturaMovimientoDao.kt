@@ -19,6 +19,14 @@ interface MonturaMovimientoDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertMovimientoIfAbsent(movimiento: MonturaMovimiento): Long
 
+    @Query(
+        """
+        SELECT * FROM montura_movimientos
+        WHERE referenciaId = :referenciaId AND tipo = :tipo AND monturaId = :monturaId
+        """,
+    )
+    suspend fun findByKey(referenciaId: String, tipo: String, monturaId: String): MonturaMovimiento?
+
     @Query("DELETE FROM montura_movimientos WHERE id = :id AND opticaId = :opticaId")
     suspend fun deleteMovimiento(id: String, opticaId: String)
 

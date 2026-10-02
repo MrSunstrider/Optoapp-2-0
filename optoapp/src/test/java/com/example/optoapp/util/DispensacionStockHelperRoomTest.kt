@@ -1,6 +1,7 @@
 package com.example.optoapp.util
 
 import androidx.room.Room
+import androidx.room.withTransaction
 import androidx.test.core.app.ApplicationProvider
 import com.example.optoapp.data.Montura
 import com.example.optoapp.data.MonturaMovimiento
@@ -12,10 +13,15 @@ import dagger.Lazy
 import io.mockk.coEvery
 import io.mockk.mockk
 import io.mockk.spyk
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -95,5 +101,45 @@ class DispensacionStockHelperRoomTest {
         assertEquals(Result.success(false), result)
         assertEquals(3, stock())
         assertEquals(listOf(synced), movimientos())
+    }
+
+    @Test
+    fun adjustFailureAfterClaim_standalone_returnsFailureAndRollsBackClaim() = runTest {
+        coEvery { coordinator.adjustMonturaStockLocal("M1", opticaId, 1) } returns 0
+
+        val result = helper().restockOnce("M1", opticaId, 1, referencia, "Reposición")
+
+        assertEquals("No se pudo ajustar el stock", result.exceptionOrNull()?.message)
+        assertEquals(emptyList<MonturaMovimiento>(), movimientos())
+        assertEquals(3, stock())
+    }
+
+    @Test
+    fun adjustFailureInsideCallerTransaction_failsTheCallerAndRollsBackItsWrites() = runTest {
+        coEvery { coordinator.adjustMonturaStockLocal("M1", opticaId, 1) } returns 0
+
+        val error = runCatching {
+            db.withTransaction {
+                db.monturaDao().insertMontura(Montura(id = "M2", sku = "sku-M2", stockActual = 7, opticaId = opticaId))
+                helper().restockOnce("M1", opticaId, 1, referencia, "Reposición")
+            }
+        }.exceptionOrNull()
+
+        assertTrue("caller transaction must fail loudly, got $error", error is IllegalStateException)
+        assertEquals("No se pudo ajustar el stock", error?.message)
+        assertNull(db.monturaDao().getMonturaByIdForOptica("M2", opticaId))
+        assertEquals(emptyList<MonturaMovimiento>(), movimientos())
+        assertEquals(3, stock())
+    }
+
+    @Test
+    fun concurrentRestocksForSameKey_adjustStockExactlyOnce() = runTest {
+        val outcomes = List(2) {
+            async(Dispatchers.IO) { helper().restockOnce("M1", opticaId, 1, referencia, "Reposición") }
+        }.awaitAll()
+
+        assertEquals(setOf(Result.success(true), Result.success(false)), outcomes.toSet())
+        assertEquals(4, stock())
+        assertEquals(1, movimientos().size)
     }
 }
