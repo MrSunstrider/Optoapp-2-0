@@ -101,8 +101,8 @@ open class UploadSyncCoordinator @Inject constructor(
     suspend fun uploadDispensaciones(opticaId: String): Int {
         require(opticaId.isNotBlank()) { "opticaId must not be blank for upload" }
         mergeHandler.resolveLocalDuplicateDispensaciones(opticaId)
-        val dispensaciones = repository.getDispensacionesSnapshotForOptica(opticaId)
-        if (dispensaciones.isEmpty()) {
+        val snapshot = repository.getDispensacionesSnapshotForOptica(opticaId)
+        if (snapshot.isEmpty()) {
             syncStateTracker.markSynced(opticaId, "upload_dispensaciones", "batch")
             return 0
         }
@@ -111,7 +111,6 @@ open class UploadSyncCoordinator @Inject constructor(
             .filter { it.dispensacionId != null }
             .groupBy { it.dispensacionId!! }
             .mapValues { (_, pags) -> pags.sumOf { PagoEffect.signedAmount(it.tipo, it.monto) } }
-        val localById = dispensaciones.associateBy { it.id }
         val opticaRemota = opticaId.trim()
         val remotosExistentes = try {
             fetchRemoteDispensacionesForLookup(opticaRemota)
@@ -126,6 +125,8 @@ open class UploadSyncCoordinator @Inject constructor(
                 normalizedOtForUnique(r.ot)?.let { key -> key to r.id }
             }
             .toMap()
+        val dispensaciones = renumberCollidingClaimOts(snapshot, remotosExistentes, remoteIdByOt)
+        val localById = dispensaciones.associateBy { it.id }
         val claimConflicts = detectClaimConflicts(dispensaciones, localById, remotosExistentes, remoteIdByOt)
         claimConflicts.forEach { (replacementId, reason) ->
             syncStateTracker.markError(opticaId, "dispensacion", replacementId, reason)
@@ -275,22 +276,60 @@ open class UploadSyncCoordinator @Inject constructor(
      * wins, so a replacement whose original already has a different remote replacement loses
      * (reclamo_duplicate), and one whose OT is taken by an unrelated remote order is held back.
      */
+    private fun remoteReplacementsByOrigen(remotos: List<DispensacionRemotaLookup>): Map<String, String> = remotos
+        .mapNotNull { r -> r.reclamoOrigenId?.takeIf { it.isNotBlank() }?.let { it to r.id } }
+        .toMap()
+
+    private fun remoteOrigenIdOf(
+        replacement: DispensacionOptica,
+        localById: Map<String, DispensacionOptica>,
+        remoteIdByOt: Map<String, String>,
+    ): String {
+        val origenId = replacement.reclamoOrigenId.orEmpty()
+        val original = localById[origenId] ?: return origenId
+        return normalizedOtForUnique(original.ot)?.let(remoteIdByOt::get) ?: original.id
+    }
+
+    /**
+     * Claim OTs are numbered offline, so another order may already own `<base>-R<n>` on the server.
+     * Such a replacement takes the next suffix free both locally and remotely instead of waiting
+     * forever; a losing claim (the original already has another remote replacement) keeps its OT
+     * because [detectClaimConflicts] discards it anyway.
+     */
+    private suspend fun renumberCollidingClaimOts(
+        snapshot: List<DispensacionOptica>,
+        remotos: List<DispensacionRemotaLookup>,
+        remoteIdByOt: Map<String, String>,
+    ): List<DispensacionOptica> {
+        val snapshotById = snapshot.associateBy { it.id }
+        val remoteReplacementByOrigen = remoteReplacementsByOrigen(remotos)
+        val takenOts = (snapshot.mapNotNull { normalizedOtForUnique(it.ot) } + remoteIdByOt.keys).toMutableSet()
+        return snapshot.map { replacement ->
+            if (replacement.reclamoOrigenId.isNullOrBlank()) return@map replacement
+            val otOwnerId = normalizedOtForUnique(replacement.ot)?.let(remoteIdByOt::get)
+            if (otOwnerId == null || otOwnerId == replacement.id) return@map replacement
+            val winnerId = remoteReplacementByOrigen[remoteOrigenIdOf(replacement, snapshotById, remoteIdByOt)]
+            if (winnerId != null && winnerId != replacement.id) return@map replacement
+            val freeOt = nextFreeReclamoOt(replacement.ot, takenOts) ?: return@map replacement
+            takenOts += normalizedOtForUnique(freeOt).orEmpty()
+            val renumbered = replacement.copy(ot = freeOt)
+            repository.updateDispensacion(renumbered)
+            AppLogger.w(TAG, "OT ${replacement.ot} del reclamo ${replacement.id} ya existe en la nube; renumerada a $freeOt")
+            renumbered
+        }
+    }
+
     private fun detectClaimConflicts(
         dispensaciones: List<DispensacionOptica>,
         localById: Map<String, DispensacionOptica>,
         remotos: List<DispensacionRemotaLookup>,
         remoteIdByOt: Map<String, String>,
     ): Map<String, String> {
-        val remoteReplacementByOrigen = remotos
-            .mapNotNull { r -> r.reclamoOrigenId?.takeIf { it.isNotBlank() }?.let { it to r.id } }
-            .toMap()
-        fun remoteIdOf(local: DispensacionOptica): String =
-            normalizedOtForUnique(local.ot)?.let(remoteIdByOt::get) ?: local.id
+        val remoteReplacementByOrigen = remoteReplacementsByOrigen(remotos)
         val conflicts = LinkedHashMap<String, String>()
         dispensaciones.forEach { replacement ->
             val origenId = replacement.reclamoOrigenId ?: return@forEach
-            val remoteOrigenId = localById[origenId]?.let(::remoteIdOf) ?: origenId
-            val winnerId = remoteReplacementByOrigen[remoteOrigenId]
+            val winnerId = remoteReplacementByOrigen[remoteOrigenIdOf(replacement, localById, remoteIdByOt)]
             val otOwnerId = normalizedOtForUnique(replacement.ot)?.let(remoteIdByOt::get)
             val reason = when {
                 winnerId != null && winnerId != replacement.id ->

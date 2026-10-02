@@ -1036,21 +1036,50 @@ class UploadSyncCoordinatorTest {
     }
 
     @Test
-    fun `replacement whose OT collides with an unrelated remote order is not adopted`() = runTest {
+    fun `replacement whose OT collides with an unrelated remote order is renumbered and uploaded`() = runTest {
         val opticaId = "optica-test"
         val (original, replacement) = claimPair(opticaId)
-        coEvery { repository.getDispensacionesSnapshotForOptica(opticaId) } returns listOf(original, replacement)
+        val localSibling = DispensacionOptica(
+            id = "local-sibling", ot = "2026-0042-R2", fecha = LocalDate.parse("2026-09-15"),
+            pacienteId = "p1", opticaId = opticaId,
+        )
+        coEvery { repository.getDispensacionesSnapshotForOptica(opticaId) } returns listOf(original, replacement, localSibling)
         coEvery { repository.getPagosSnapshotForOptica(opticaId) } returns emptyList()
         stubRetryPassThrough()
         val captured = mutableListOf<DispensacionRemota>()
 
         createDispensacionCaptureCoordinator(
-            remotos = listOf(DispensacionRemotaLookup(id = "unrelated", ot = "2026-0042-R1")),
+            remotos = listOf(
+                DispensacionRemotaLookup(id = "unrelated", ot = "2026-0042-R1"),
+                DispensacionRemotaLookup(id = "unrelated-3", ot = "2026-0042-r3"),
+            ),
             captured = captured,
         ).uploadDispensaciones(opticaId)
 
+        coVerify { repository.updateDispensacion(replacement.copy(ot = "2026-0042-R4")) }
+        assertEquals("2026-0042-R4", captured.single { it.id == "local-repl" }.ot)
         assertTrue(captured.none { it.id == "unrelated" })
+        assertTrue("the original follows its renumbered replacement", captured.any { it.id == "local-orig" })
+        coVerify(exactly = 0) { syncStateTracker.markError(opticaId, "dispensacion", "local-repl", any()) }
+    }
+
+    @Test
+    fun `replacement OT collision without a determinable base stays quarantined`() = runTest {
+        val opticaId = "optica-test"
+        val (original, replacement) = claimPair(opticaId)
+        val baseless = replacement.copy(ot = "-R1")
+        coEvery { repository.getDispensacionesSnapshotForOptica(opticaId) } returns listOf(original, baseless)
+        coEvery { repository.getPagosSnapshotForOptica(opticaId) } returns emptyList()
+        stubRetryPassThrough()
+        val captured = mutableListOf<DispensacionRemota>()
+
+        createDispensacionCaptureCoordinator(
+            remotos = listOf(DispensacionRemotaLookup(id = "unrelated", ot = "-R1")),
+            captured = captured,
+        ).uploadDispensaciones(opticaId)
+
         assertTrue("the original stays local until the claim conflict is resolved", captured.isEmpty())
+        coVerify(exactly = 0) { repository.updateDispensacion(any()) }
         coVerify {
             syncStateTracker.markError(opticaId, "dispensacion", "local-repl", "quarantine:reclamo_ot_conflict:unrelated")
         }

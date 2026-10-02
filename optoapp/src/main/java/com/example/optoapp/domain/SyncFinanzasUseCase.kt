@@ -120,6 +120,7 @@ open class SyncFinanzasUseCase @Inject constructor(
             AppLogger.d(TAG, "Finanzas: download regalos=$regalosDown")
             gastosDown = safeDownload("gastos_operativos") { downloadSyncCoordinator.downloadGastosOperativos(opticaId) }
             AppLogger.d(TAG, "Finanzas: download gastos_operativos=$gastosDown")
+            hadPartialUpload = !transferResidualClaimCredit(opticaId) || hadPartialUpload
         } else {
             dispDown = 0
             itemsDown = 0
@@ -181,6 +182,21 @@ open class SyncFinanzasUseCase @Inject constructor(
         throw e
     } catch (e: Exception) {
         AppLogger.e(TAG, "Discard of losing claims failed", e)
+        false
+    }
+
+    /**
+     * Runs after download because only then is the winner's replacement local and the original's
+     * `awaiting_remote` hold released. Returns false when the transfer failed.
+     */
+    private suspend fun transferResidualClaimCredit(opticaId: String): Boolean = try {
+        val transferred = discardLosingClaim.transferResidualCredit(opticaId)
+        if (transferred > 0) AppLogger.w(TAG, "Finanzas: créditos locales transferidos al reclamo ganador=$transferred")
+        true
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        AppLogger.e(TAG, "Residual claim credit transfer failed", e)
         false
     }
 

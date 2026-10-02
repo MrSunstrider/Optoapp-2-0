@@ -72,9 +72,32 @@ END;
 $$;
 
 -- ----------------------------------------------------------------------------
--- G3: pagos, sale movimiento, '<id>:anul:...' restock and regalo movimientos
---     each block a direct delete with the stable token and SQLSTATE.
+-- G3: each trace kind blocks a direct delete with SQLSTATE P0001 and the
+--     stable `dispensacion_has_trace` token the Android client matches.
+--     G3a pago, G3b sale movimiento, G3c '<id>:anul:...' restock,
+--     G3d regalo movimiento.
 -- ----------------------------------------------------------------------------
+CREATE FUNCTION pg_temp.zzt_assert_delete_refused(p_id TEXT, p_label TEXT) RETURNS VOID
+LANGUAGE plpgsql AS $$
+DECLARE
+    v_state TEXT;
+    v_message TEXT;
+BEGIN
+    BEGIN
+        DELETE FROM public.dispensaciones WHERE id = p_id;
+        RAISE EXCEPTION '% FAIL: traced dispensacion % was deleted', p_label, p_id;
+    EXCEPTION WHEN raise_exception THEN
+        GET STACKED DIAGNOSTICS v_state = RETURNED_SQLSTATE, v_message = MESSAGE_TEXT;
+        ASSERT v_state = 'P0001', p_label || ' FAIL: expected P0001, got ' || v_state;
+        ASSERT v_message LIKE 'dispensacion_has_trace%',
+            p_label || ' FAIL: expected dispensacion_has_trace token, got ' || v_message;
+    END;
+    ASSERT EXISTS (SELECT 1 FROM public.dispensaciones WHERE id = p_id),
+        p_label || ' FAIL: the refused dispensacion must survive';
+    RAISE NOTICE '% PASS: delete of % refused with dispensacion_has_trace', p_label, p_id;
+END;
+$$;
+
 INSERT INTO public.pagos (id, dispensacion_id, fecha, tipo, monto, metodo_pago, optica_id)
 VALUES ('zzt_guard_p1', 'zzt_guard_paid', DATE '2026-01-11', 'Abono', 100, 'Efectivo', 'zzt_guard_optica');
 
@@ -86,26 +109,15 @@ INSERT INTO public.montura_movimientos (id, montura_id, fecha, tipo, cantidad, s
     ('zzt_guard_m2', 'zzt_guard_mon', DATE '2026-01-11', 'ENTRADA', 1, 9, 10, 'zzt_guard_restk:anul:item1', '', 'zzt_guard_optica'),
     ('zzt_guard_m3', 'zzt_guard_mon', DATE '2026-01-11', 'SALIDA_VENTA', 1, 10, 9, 'zzt_guard_reg', '', 'zzt_guard_optica');
 
+SELECT pg_temp.zzt_assert_delete_refused('zzt_guard_paid', 'G3a pago');
+SELECT pg_temp.zzt_assert_delete_refused('zzt_guard_sold', 'G3b sale movimiento');
+SELECT pg_temp.zzt_assert_delete_refused('zzt_guard_restk', 'G3c anulacion restock');
+SELECT pg_temp.zzt_assert_delete_refused('zzt_guard_gift', 'G3d regalo movimiento');
+
 DO $$
-DECLARE
-    v_id TEXT;
-    v_state TEXT;
-    v_message TEXT;
 BEGIN
-    FOREACH v_id IN ARRAY ARRAY['zzt_guard_paid', 'zzt_guard_sold', 'zzt_guard_restk', 'zzt_guard_gift'] LOOP
-        BEGIN
-            DELETE FROM public.dispensaciones WHERE id = v_id;
-            RAISE EXCEPTION 'G3 FAIL: traced dispensacion % was deleted', v_id;
-        EXCEPTION WHEN raise_exception THEN
-            GET STACKED DIAGNOSTICS v_state = RETURNED_SQLSTATE, v_message = MESSAGE_TEXT;
-            ASSERT v_state = 'P0001', 'G3 FAIL: expected P0001 for ' || v_id || ', got ' || v_state;
-            ASSERT v_message LIKE 'dispensacion_has_trace%',
-                'G3 FAIL: expected dispensacion_has_trace token for ' || v_id || ', got ' || v_message;
-        END;
-        ASSERT EXISTS (SELECT 1 FROM public.pagos WHERE id = 'zzt_guard_p1'),
-            'G3 FAIL: a refused delete must not cascade to pagos';
-    END LOOP;
-    RAISE NOTICE 'G3 PASS: pagos and movimiento traces refuse direct deletes';
+    ASSERT EXISTS (SELECT 1 FROM public.pagos WHERE id = 'zzt_guard_p1'),
+        'G3 FAIL: a refused delete must not cascade to pagos';
 END;
 $$;
 
@@ -129,7 +141,8 @@ END;
 $$;
 
 -- ----------------------------------------------------------------------------
--- G5: a paciente delete still cascades through traced dispensaciones.
+-- G5: a paciente delete still cascades through traced dispensaciones,
+--     including one with pagos (zzt_guard_paid / zzt_guard_p1).
 -- ----------------------------------------------------------------------------
 ALTER TABLE public.pacientes DISABLE TRIGGER trg_guard_pacientes_delete;
 

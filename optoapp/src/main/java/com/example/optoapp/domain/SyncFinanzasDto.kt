@@ -5,6 +5,7 @@ import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.FinanzasRemoteDefaults
 import com.example.optoapp.data.Pago
 import com.example.optoapp.data.ServicioExtra
+import com.example.optoapp.data.baseOtForReclamo
 import com.example.optoapp.data.configuracionfinanciera.ConfiguracionFinancieraEntity
 import com.example.optoapp.data.costobiselado.CostoBiseladoEntity
 import com.example.optoapp.data.costoproducto.CostoProductoEntity
@@ -596,3 +597,11 @@ internal fun String.remotoServicioExtraMetodoToLocal(): String = if (this == Fin
 internal fun String.remotoOtServicioExtraToLocal(): String = if (this == FinanzasRemoteDefaults.ServicioExtra.OT_VACIA) "" else this
 
 internal fun normalizedOtForUnique(ot: String?): String? = ot?.trim()?.takeIf { it.isNotBlank() }?.uppercase()
+
+/** Lowest `<base>-R<n>` whose normalized OT is not taken; null when the OT has no base to number from. */
+internal fun nextFreeReclamoOt(ot: String, takenNormalizedOts: Set<String>): String? {
+    val base = baseOtForReclamo(ot).ifBlank { return null }
+    return generateSequence(1) { it + 1 }
+        .map { "$base-R$it" }
+        .first { normalizedOtForUnique(it) !in takenNormalizedOts }
+}

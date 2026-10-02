@@ -12,7 +12,7 @@ import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkStatic
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -104,7 +104,7 @@ class SyncFinanzasUseCaseKtTest {
     }
 
     @Test
-    fun syncFinanzas_includes_gastosOperativos_in_upload_sequence() = runBlocking {
+    fun syncFinanzas_includes_gastosOperativos_in_upload_sequence() = runTest {
         val uploadCoordinator = mockk<UploadSyncCoordinator>(relaxed = true)
         val downloadCoordinator = mockk<DownloadSyncCoordinator>()
         val deletionSyncHelper = mockk<DeletionSyncHelper>()
@@ -141,7 +141,7 @@ class SyncFinanzasUseCaseKtTest {
     }
 
     @Test
-    fun syncFinanzas_includes_resumenDiario_in_download_sequence() = runBlocking {
+    fun syncFinanzas_includes_resumenDiario_in_download_sequence() = runTest {
         val uploadCoordinator = mockk<UploadSyncCoordinator>(relaxed = true)
         val downloadCoordinator = mockk<DownloadSyncCoordinator>()
         val deletionSyncHelper = mockk<DeletionSyncHelper>()
@@ -175,7 +175,7 @@ class SyncFinanzasUseCaseKtTest {
     }
 
     @Test
-    fun syncFinanzas_includes_configuracionFinanciera_in_download_sequence() = runBlocking {
+    fun syncFinanzas_includes_configuracionFinanciera_in_download_sequence() = runTest {
         val uploadCoordinator = mockk<UploadSyncCoordinator>(relaxed = true)
         val downloadCoordinator = mockk<DownloadSyncCoordinator>()
         val deletionSyncHelper = mockk<DeletionSyncHelper>()
@@ -215,7 +215,7 @@ class SyncFinanzasUseCaseKtTest {
     }
 
     @Test
-    fun syncFinanzas_upload_order_places_servicio_children_after_header() = runBlocking {
+    fun syncFinanzas_upload_order_places_servicio_children_after_header() = runTest {
         val uploadCoordinator = mockk<UploadSyncCoordinator>()
         val downloadCoordinator = mockk<DownloadSyncCoordinator>(relaxed = true)
         val deletionSyncHelper = mockk<DeletionSyncHelper>()
@@ -251,7 +251,7 @@ class SyncFinanzasUseCaseKtTest {
     }
 
     @Test
-    fun syncFinanzas_download_sequence_includes_finanzas_entities() = runBlocking {
+    fun syncFinanzas_download_sequence_includes_finanzas_entities() = runTest {
         val uploadCoordinator = mockk<UploadSyncCoordinator>()
         val downloadCoordinator = mockk<DownloadSyncCoordinator>()
         val deletionSyncHelper = mockk<DeletionSyncHelper>()
@@ -300,10 +300,8 @@ class SyncFinanzasUseCaseKtTest {
             downloadCoordinator.downloadPagos("optica-test")
         }
     }
-    // WHY: Verifies that a single upload failure doesn't prevent downloads — partial success must still sync
-
     @Test
-    fun pushPendingDeletions_error_returns_ResourceError_not_crash() = runBlocking {
+    fun pushPendingDeletions_error_returns_ResourceError_not_crash() = runTest {
         val uploadCoordinator = mockk<UploadSyncCoordinator>()
         val downloadCoordinator = mockk<DownloadSyncCoordinator>()
         val deletionSyncHelper = mockk<DeletionSyncHelper>()
@@ -328,7 +326,7 @@ class SyncFinanzasUseCaseKtTest {
     }
 
     @Test
-    fun pushPendingDeletions_generic_error_returns_ResourceError() = runBlocking {
+    fun pushPendingDeletions_generic_error_returns_ResourceError() = runTest {
         val uploadCoordinator = mockk<UploadSyncCoordinator>()
         val downloadCoordinator = mockk<DownloadSyncCoordinator>()
         val deletionSyncHelper = mockk<DeletionSyncHelper>()
@@ -355,7 +353,7 @@ class SyncFinanzasUseCaseKtTest {
     // WHY: UploadPartialException is truthful Resource.Error with partial counts in data
 
     @Test
-    fun `partial upload via UploadPartialException continues to next steps`() = runBlocking {
+    fun `partial upload via UploadPartialException continues to next steps`() = runTest {
         val uploadCoordinator = mockk<UploadSyncCoordinator>(relaxed = true)
         val downloadCoordinator = mockk<DownloadSyncCoordinator>()
         val deletionSyncHelper = mockk<DeletionSyncHelper>()
@@ -405,7 +403,7 @@ class SyncFinanzasUseCaseKtTest {
     // RestException immediate throw, and UploadPartialException partial-count passthrough
 
     @Test
-    fun `full network failure propagates IOException to Resource Error`() = runBlocking {
+    fun `full network failure propagates IOException to Resource Error`() = runTest {
         val uploadCoordinator = mockk<UploadSyncCoordinator>()
         val downloadCoordinator = mockk<DownloadSyncCoordinator>()
         val deletionSyncHelper = mockk<DeletionSyncHelper>()
@@ -448,7 +446,7 @@ class SyncFinanzasUseCaseKtTest {
     }
 
     @Test
-    fun `UploadPartialException returns partial count`() = runBlocking {
+    fun `UploadPartialException returns partial count`() = runTest {
         val uploadCoordinator = mockk<UploadSyncCoordinator>(relaxed = true)
         val downloadCoordinator = mockk<DownloadSyncCoordinator>()
         val deletionSyncHelper = mockk<DeletionSyncHelper>()
@@ -493,7 +491,7 @@ class SyncFinanzasUseCaseKtTest {
     }
 
     @Test
-    fun `401 RestException propagates immediately to Resource Error`() = runBlocking {
+    fun `401 RestException propagates immediately to Resource Error`() = runTest {
         val uploadCoordinator = mockk<UploadSyncCoordinator>(relaxed = true)
         val downloadCoordinator = mockk<DownloadSyncCoordinator>()
         val deletionSyncHelper = mockk<DeletionSyncHelper>()
@@ -518,7 +516,7 @@ class SyncFinanzasUseCaseKtTest {
     }
 
     @Test
-    fun `nonAuth RestException propagates to Resource Error`() = runBlocking {
+    fun `nonAuth RestException propagates to Resource Error`() = runTest {
         val uploadCoordinator = mockk<UploadSyncCoordinator>(relaxed = true)
         val downloadCoordinator = mockk<DownloadSyncCoordinator>()
         val deletionSyncHelper = mockk<DeletionSyncHelper>()
@@ -555,7 +553,7 @@ class SyncFinanzasUseCaseKtTest {
     }
 
     @Test
-    fun `generic Exception propagates to Resource Error`() = runBlocking {
+    fun `generic Exception propagates to Resource Error`() = runTest {
         val uploadCoordinator = mockk<UploadSyncCoordinator>(relaxed = true)
         val downloadCoordinator = mockk<DownloadSyncCoordinator>()
         val deletionSyncHelper = mockk<DeletionSyncHelper>()
@@ -591,7 +589,7 @@ class SyncFinanzasUseCaseKtTest {
     }
 
     @Test
-    fun `IOException in safeUpload aborts remaining uploads and returns Resource Error`() = runBlocking {
+    fun `IOException in safeUpload aborts remaining uploads and returns Resource Error`() = runTest {
         val uploadCoordinator = mockk<UploadSyncCoordinator>(relaxed = true)
         val downloadCoordinator = mockk<DownloadSyncCoordinator>()
         val deletionSyncHelper = mockk<DeletionSyncHelper>()
@@ -641,7 +639,7 @@ class SyncFinanzasUseCaseKtTest {
     }
 
     @Test
-    fun syncFinanzas_discardsLosingClaimsAfterDispensacionUploadAndBeforeChildUploads() = runBlocking {
+    fun syncFinanzas_discardsLosingClaimsAfterDispensacionUploadAndBeforeChildUploads() = runTest {
         val discard = mockk<DiscardLosingClaimUseCase>()
         coEvery { discard("optica-test") } returns 1
         val (useCase, uploadCoordinator, downloadCoordinator) = relaxedSync(discard)
@@ -658,7 +656,33 @@ class SyncFinanzasUseCaseKtTest {
     }
 
     @Test
-    fun syncFinanzas_discardFailureMarksPartialButStillDownloads() = runBlocking {
+    fun syncFinanzas_transfersResidualClaimCreditAfterTheDownloads() = runTest {
+        val discard = mockk<DiscardLosingClaimUseCase>(relaxed = true)
+        val (useCase, _, downloadCoordinator) = relaxedSync(discard)
+
+        useCase("optica-test")
+
+        coVerifyOrder {
+            downloadCoordinator.downloadDispensaciones("optica-test")
+            downloadCoordinator.downloadPagos("optica-test")
+            discard.transferResidualCredit("optica-test")
+        }
+    }
+
+    @Test
+    fun syncFinanzas_residualTransferFailureIsReportedAsError() = runTest {
+        val discard = mockk<DiscardLosingClaimUseCase>(relaxed = true)
+        coEvery { discard.transferResidualCredit(any()) } throws IllegalStateException("boom")
+        val (useCase, _, downloadCoordinator) = relaxedSync(discard)
+
+        val result = useCase("optica-test")
+
+        coVerify { downloadCoordinator.downloadGastosOperativos("optica-test") }
+        assertTrue(result is com.example.optoapp.data.Resource.Error)
+    }
+
+    @Test
+    fun syncFinanzas_discardFailureMarksPartialButStillDownloads() = runTest {
         val discard = mockk<DiscardLosingClaimUseCase>()
         coEvery { discard(any()) } throws IllegalStateException("boom")
         val (useCase, _, downloadCoordinator) = relaxedSync(discard)

@@ -8,7 +8,10 @@ import com.example.optoapp.data.montura.MonturaInventoryCoordinator
 import com.example.optoapp.data.montura.MonturaMovimientoDao
 import com.example.optoapp.data.pago.PagoDao
 import com.example.optoapp.util.AppLogger
+import com.example.optoapp.util.DateUtils
 import com.example.optoapp.util.DispensacionStockHelper
+import java.time.Instant
+import java.util.UUID
 import javax.inject.Inject
 
 /**
@@ -46,6 +49,57 @@ class DiscardLosingClaimUseCase @Inject constructor(
             AppLogger.w(TAG, "Reclamo local $replacementId descartado: otro dispositivo reclamó $origenId primero")
         }
         return losing.size
+    }
+
+    /**
+     * Credit recorded on the original offline and never uploaded is unknown to the winning claim, so
+     * once download has adopted the winner it moves to the winner's replacement with the claim's own
+     * mechanics: a Reverso of that credit on the original and an Abono with the same metodo on the
+     * replacement. Synced credits are excluded because the winner already reversed them remotely.
+     */
+    suspend fun transferResidualCredit(opticaId: String): Int {
+        val awaiting = syncStateTracker.awaitingRemoteIds(opticaId, "dispensacion")
+        val winners = repository.getDispensacionesSnapshotForOptica(opticaId).filter { replacement ->
+            val origenId = replacement.reclamoOrigenId
+            !origenId.isNullOrBlank() && origenId !in awaiting &&
+                syncStateTracker.isSynced(opticaId, "dispensacion", replacement.id)
+        }
+        return winners.sumOf { winner -> repository.withTransaction { transferToWinner(opticaId, winner.id) } }
+    }
+
+    private suspend fun transferToWinner(opticaId: String, winnerId: String): Int {
+        val winner = repository.getDispensacionById(winnerId, opticaId).data ?: return 0
+        val origenId = winner.reclamoOrigenId ?: return 0
+        val original = repository.getDispensacionById(origenId, opticaId).data ?: return 0
+        if (original.estadoEntrega.trim() != OrderStatusPolicy.RECLAMADA) return 0
+        val residual = ledgerSnapshot(pagoDao.getPagosByParent(origenId, opticaId)).unreversedCredits
+            .filter { !syncStateTracker.isSynced(opticaId, "pago", it.id) }
+        if (residual.isEmpty()) return 0
+        residual.forEach { credit ->
+            repository.insertPago(buildReverso(credit, origenId, opticaId, forDispensacion = true))
+            repository.insertPago(
+                Pago(
+                    id = UUID.randomUUID().toString(),
+                    dispensacionId = winner.id,
+                    fecha = DateUtils.today(),
+                    tipo = "Abono",
+                    monto = credit.monto,
+                    metodoPago = credit.metodoPago,
+                    nota = "Crédito por reclamo de OT ${original.ot}",
+                    opticaId = opticaId,
+                    ventaId = "v_disp_${winner.id}",
+                    updatedAt = Instant.now().toString(),
+                ),
+            )
+        }
+        repository.updateDispensacion(original.copy(montoPagado = pagoDao.sumMontoByDispensacion(origenId, opticaId)))
+        repository.updateDispensacion(winner.copy(montoPagado = pagoDao.sumMontoByDispensacion(winner.id, opticaId)))
+        syncStateTracker.markError(
+            opticaId, "reclamo_descartado", "$origenId:credito",
+            "El pago local de la OT ${original.ot} se transfirió a la orden ${winner.ot} del reclamo registrado en otro dispositivo.",
+        )
+        AppLogger.w(TAG, "Crédito local de $origenId (${residual.size} pagos) transferido al reclamo ganador ${winner.id}")
+        return residual.size
     }
 
     private suspend fun discard(opticaId: String, replacementId: String, origenId: String) {

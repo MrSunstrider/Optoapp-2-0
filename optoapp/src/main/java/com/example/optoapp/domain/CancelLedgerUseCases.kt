@@ -52,7 +52,7 @@ internal fun ledgerSnapshot(pagos: List<Pago>): LedgerSnapshot {
     return LedgerSnapshot(unreversedCredits, legacyDebits, netByMetodo)
 }
 
-private fun buildReverso(credit: Pago, parentId: String, opticaId: String, forDispensacion: Boolean) = Pago(
+internal fun buildReverso(credit: Pago, parentId: String, opticaId: String, forDispensacion: Boolean) = Pago(
     id = UUID.randomUUID().toString(),
     dispensacionId = if (forDispensacion) parentId else null,
     servicioExtraId = if (forDispensacion) null else parentId,
