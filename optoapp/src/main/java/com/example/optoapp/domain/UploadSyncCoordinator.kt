@@ -194,39 +194,53 @@ open class UploadSyncCoordinator @Inject constructor(
             val remoteOrigenId = row.reclamoOrigenId?.let(remoteIdByLocalId::get)
             if (remoteOrigenId != null) row.copy(reclamoOrigenId = remoteOrigenId) else row
         }
+        // WHY: the server unique index decides which claim wins; an original sent before its replacement
+        // would carry this device's claim (estado/motivo/fecha) over the winner's original.
+        val replacementByOriginal = unconfirmedClaimReplacements(opticaId, dispensaciones)
+        val (heldOriginals, firstPass) = rows.partition { uniqueById[it.id]?.first in replacementByOriginal }
         val acceptedRemoteIds = mutableSetOf<String>()
         var uploadedCount = 0
+        var chunkNumber = 0
+        suspend fun uploadInChunks(batch: List<DispensacionRemota>) = batch.chunked(UPSERT_BATCH_SIZE).forEach { chunk ->
+            chunkNumber++
+            val label = "upsert:$TABLE_DISPENSACIONES:chunk$chunkNumber"
+            uploadedCount += upsertIsolating(
+                chunk,
+                upsert = { c ->
+                    networkRetryHelper.retryNetwork(label) {
+                        upsertDispensacionesChunk(c)
+                    }
+                    acceptedRemoteIds.addAll(c.map { it.id })
+                },
+                onPoison = { row, reason ->
+                    val localId = uniqueById[row.id]?.first ?: row.id
+                    val localOrigenId = localById[localId]?.reclamoOrigenId
+                    if (reason == FinanzasUploadValidator.CLAIM_UNIQUE_VIOLATION && localOrigenId != null) {
+                        syncStateTracker.markError(
+                            opticaId, "dispensacion", localId,
+                            FinanzasUploadValidator.reclamoDuplicateReason(localOrigenId),
+                        )
+                    } else if (remotosExistentes.isEmpty()) {
+                        // WHY: upsert ON CONFLICT id updates another tenant's row → RLS 42501.
+                        repository.deleteDispensacionById(localId, opticaId)
+                        AppLogger.w(
+                            TAG,
+                            "Descartada dispensación local $localId: RLS al subir a óptica vacía (PK de otra cuenta)",
+                        )
+                    } else {
+                        syncStateTracker.markError(opticaId, "dispensacion", localId, reason)
+                    }
+                },
+            )
+        }
         try {
-            rows.chunked(UPSERT_BATCH_SIZE).forEachIndexed { index, chunk ->
-                uploadedCount += upsertIsolating(
-                    chunk,
-                    upsert = { c ->
-                        networkRetryHelper.retryNetwork("upsert:$TABLE_DISPENSACIONES:chunk${index + 1}") {
-                            upsertDispensacionesChunk(c)
-                        }
-                        acceptedRemoteIds.addAll(c.map { it.id })
-                    },
-                    onPoison = { row, reason ->
-                        val localId = uniqueById[row.id]?.first ?: row.id
-                        val localOrigenId = localById[localId]?.reclamoOrigenId
-                        if (reason == FinanzasUploadValidator.CLAIM_UNIQUE_VIOLATION && localOrigenId != null) {
-                            syncStateTracker.markError(
-                                opticaId, "dispensacion", localId,
-                                FinanzasUploadValidator.reclamoDuplicateReason(localOrigenId),
-                            )
-                        } else if (remotosExistentes.isEmpty()) {
-                            // WHY: upsert ON CONFLICT id updates another tenant's row → RLS 42501.
-                            repository.deleteDispensacionById(localId, opticaId)
-                            AppLogger.w(
-                                TAG,
-                                "Descartada dispensación local $localId: RLS al subir a óptica vacía (PK de otra cuenta)",
-                            )
-                        } else {
-                            syncStateTracker.markError(opticaId, "dispensacion", localId, reason)
-                        }
-                    },
-                )
-            }
+            uploadInChunks(firstPass)
+            uploadInChunks(
+                heldOriginals.filter { row ->
+                    val replacementLocalId = replacementByOriginal[uniqueById[row.id]?.first]
+                    remoteIdByLocalId[replacementLocalId] in acceptedRemoteIds
+                },
+            )
         } catch (e: CancellationException) {
             throw e
         } catch (e: IOException) {
@@ -288,6 +302,33 @@ open class UploadSyncCoordinator @Inject constructor(
             if (reason != null) conflicts[replacement.id] = reason
         }
         return conflicts
+    }
+
+    /** Original local id -> its replacement's local id, for claims the server has not confirmed yet. */
+    private suspend fun unconfirmedClaimReplacements(
+        opticaId: String,
+        dispensaciones: List<DispensacionOptica>,
+    ): Map<String, String> = dispensaciones
+        .filter { !it.reclamoOrigenId.isNullOrBlank() && !syncStateTracker.isSynced(opticaId, "dispensacion", it.id) }
+        .associate { it.reclamoOrigenId!! to it.id }
+
+    /**
+     * Ledger rows of a claim reach the server only after the claim itself: an early Reverso on the
+     * original would debit it even if this device's claim later loses. Pagos of an original held for
+     * the winner wait for the download so residual local credit can still be moved to the winner.
+     */
+    private suspend fun claimLedgerDeferral(opticaId: String): (com.example.optoapp.data.Pago) -> Boolean {
+        val replacementByOriginal = unconfirmedClaimReplacements(opticaId, repository.getDispensacionesSnapshotForOptica(opticaId))
+        val pendingReplacements = replacementByOriginal.values.toSet()
+        val awaiting = syncStateTracker.awaitingRemoteIds(opticaId, "dispensacion")
+        return { pago ->
+            val dispId = pago.dispensacionId
+            dispId != null && (
+                dispId in pendingReplacements ||
+                    dispId in awaiting ||
+                    (dispId in replacementByOriginal && isClaimReversalPago(pago))
+                )
+        }
     }
 
     private suspend fun losingClaimReplacementIds(opticaId: String): Set<String> =
@@ -512,10 +553,16 @@ open class UploadSyncCoordinator @Inject constructor(
         val quarantinedDisp = syncStateTracker.quarantinedEntityIds(opticaId, "dispensacion")
         val quarantinedServ = syncStateTracker.quarantinedEntityIds(opticaId, "servicio_extra")
 
+        val isDeferred = claimLedgerDeferral(opticaId)
         var quarantineCount = 0
+        var deferredCount = 0
         val eligible = mutableListOf<com.example.optoapp.data.Pago>()
         val poisonedLocalIds = mutableSetOf<String>()
         for (pago in pagos) {
+            if (isDeferred(pago)) {
+                deferredCount++
+                continue
+            }
             val reason = FinanzasUploadValidator.validatePago(
                 pago.tipo, pago.monto, pago.dispensacionId, pago.servicioExtraId, pago.reversaPagoId,
             ) ?: run {
@@ -538,6 +585,9 @@ open class UploadSyncCoordinator @Inject constructor(
             }
         }
 
+        if (deferredCount > 0) {
+            AppLogger.d(TAG, "Pagos de reclamo retenidos hasta confirmar el reclamo: $deferredCount")
+        }
         val rows = eligible.map { it.toRemoto().copy(opticaId = opticaRemota) }.distinctBy { it.id }
         val remotos = try {
             fetchRemotePagosForLookup(opticaRemota)

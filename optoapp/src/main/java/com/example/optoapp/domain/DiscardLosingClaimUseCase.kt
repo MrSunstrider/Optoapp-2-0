@@ -34,8 +34,6 @@ class DiscardLosingClaimUseCase @Inject constructor(
 ) {
     companion object {
         private const val TAG = "SyncFinanzas"
-        private const val TIPO_REVERSO = "Reverso"
-        private const val CLAIM_COMPENSATION_SUFFIX = "por reclamo"
     }
 
     suspend operator fun invoke(opticaId: String): Int {
@@ -59,7 +57,7 @@ class DiscardLosingClaimUseCase @Inject constructor(
             .forEach { undoMovimiento(opticaId, replacementId, it) }
 
         pagoDao.getPagosByParent(origenId, opticaId)
-            .filter { isClaimReversal(it) && !syncStateTracker.isSynced(opticaId, "pago", it.id) }
+            .filter { isClaimReversalPago(it) && !syncStateTracker.isSynced(opticaId, "pago", it.id) }
             .forEach { pago ->
                 pagoDao.deletePago(pago.id, opticaId)
                 syncStateTracker.clear(opticaId, "pago", pago.id)
@@ -103,9 +101,9 @@ class DiscardLosingClaimUseCase @Inject constructor(
         }
     }
 
-    private fun isClaimReversal(pago: Pago): Boolean {
-        val tipo = pago.tipo.trim()
-        return tipo == TIPO_REVERSO ||
-            (pago.nota.startsWith(NOTA_COMPENSACION_PREFIX) && pago.nota.endsWith(CLAIM_COMPENSATION_SUFFIX))
-    }
 }
+
+/** Rows a claim writes on its original: Reversos and the Abonos compensating its legacy debits. */
+internal fun isClaimReversalPago(pago: Pago): Boolean =
+    pago.tipo.trim() == "Reverso" ||
+        (pago.nota.startsWith(NOTA_COMPENSACION_PREFIX) && pago.nota.endsWith("por reclamo"))

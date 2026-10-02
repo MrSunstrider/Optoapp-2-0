@@ -685,7 +685,7 @@ class UploadSyncCoordinatorTest {
         val uploaded = testCoordinator.uploadDispensaciones(opticaId)
 
         assertEquals(2, uploaded)
-        assertEquals(listOf("2026-0042", "2026-0042-R1"), captured.map { it.ot })
+        assertEquals(listOf("2026-0042-R1", "2026-0042"), captured.map { it.ot })
         val uploadedOriginal = captured.single { it.ot == "2026-0042" }
         val uploadedReplacement = captured.single { it.ot == "2026-0042-R1" }
         assertEquals("remote-orig", uploadedOriginal.id)
@@ -1105,8 +1105,8 @@ class UploadSyncCoordinatorTest {
 
         val uploaded = testCoordinator.uploadDispensaciones(opticaId)
 
-        assertEquals(1, uploaded)
-        assertEquals(listOf("local-orig"), accepted.map { it.id })
+        assertEquals(0, uploaded)
+        assertTrue("the original must wait for the winner", accepted.isEmpty())
         coVerify {
             syncStateTracker.markError(opticaId, "dispensacion", "local-repl", "quarantine:reclamo_duplicate:local-orig")
         }
@@ -1262,5 +1262,174 @@ class UploadSyncCoordinatorTest {
         assertEquals(listOf("regalo-ok"), regalos.map { it.id })
         coVerify(exactly = 0) { syncStateTracker.markSynced(opticaId, "dispensacion_item", "item-loser") }
         coVerify(exactly = 0) { syncStateTracker.markSynced(opticaId, "regalo_dispensacion", "regalo-loser") }
+    }
+
+    // ── Claim upload ordering and claim ledger gate ───────────────────
+
+    private fun chunkRecordingCoordinator(
+        remotos: List<DispensacionRemotaLookup>,
+        chunks: MutableList<List<String>>,
+        failWhen: (List<DispensacionRemota>) -> Exception? = { null },
+    ): UploadSyncCoordinator = object : UploadSyncCoordinator(
+        repository, supabase, database, syncStateTracker, mergeHandler, networkRetryHelper,
+        costoProductoDao, costoBiseladoDao,
+    ) {
+        override suspend fun <T> runInTransaction(block: suspend () -> T): T = block()
+        override suspend fun fetchRemoteDispensacionesForLookup(opticaId: String) = remotos
+        override suspend fun upsertDispensacionesChunk(chunk: List<DispensacionRemota>) {
+            failWhen(chunk)?.let { throw it }
+            chunks.add(chunk.map { it.id })
+        }
+    }
+
+    private fun filler(opticaId: String, count: Int) = (1..count).map { n ->
+        DispensacionOptica(
+            id = "filler-$n", ot = "2026-1%03d".format(n), fecha = LocalDate.parse("2026-09-01"),
+            pacienteId = "p1", opticaId = opticaId,
+        )
+    }
+
+    @Test
+    fun `original of an unconfirmed claim is uploaded only after its replacement`() = runTest {
+        val opticaId = "optica-test"
+        val (original, replacement) = claimPair(opticaId)
+        coEvery { repository.getDispensacionesSnapshotForOptica(opticaId) } returns listOf(original, replacement)
+        coEvery { repository.getPagosSnapshotForOptica(opticaId) } returns emptyList()
+        stubRetryPassThrough()
+        val chunks = mutableListOf<List<String>>()
+
+        chunkRecordingCoordinator(
+            remotos = listOf(DispensacionRemotaLookup(id = "local-orig", ot = "2026-0042")),
+            chunks = chunks,
+        ).uploadDispensaciones(opticaId)
+
+        val replacementChunk = chunks.indexOfFirst { "local-repl" in it }
+        val originalChunk = chunks.indexOfFirst { "local-orig" in it }
+        assertTrue("replacement must be uploaded", replacementChunk >= 0)
+        assertTrue("original must follow its replacement", originalChunk > replacementChunk)
+    }
+
+    @Test
+    fun `original in an earlier chunk waits when its replacement upload fails transiently`() = runTest {
+        val opticaId = "optica-test"
+        val (original, replacement) = claimPair(opticaId)
+        coEvery { repository.getDispensacionesSnapshotForOptica(opticaId) } returns
+            listOf(original) + filler(opticaId, 85) + replacement
+        coEvery { repository.getPagosSnapshotForOptica(opticaId) } returns emptyList()
+        stubRetryPassThrough()
+        val chunks = mutableListOf<List<String>>()
+
+        try {
+            chunkRecordingCoordinator(
+                remotos = listOf(DispensacionRemotaLookup(id = "local-orig", ot = "2026-0042")),
+                chunks = chunks,
+                failWhen = { chunk -> if (chunk.any { it.id == "local-repl" }) IOException("timeout") else null },
+            ).uploadDispensaciones(opticaId)
+            fail("Expected UploadPartialException")
+        } catch (_: UploadPartialException) { }
+
+        assertTrue(chunks.flatten().none { it == "local-orig" })
+        coVerify(exactly = 0) { syncStateTracker.markSynced(opticaId, "dispensacion", "local-orig") }
+    }
+
+    @Test
+    fun `original of an already confirmed claim uploads in the first pass`() = runTest {
+        val opticaId = "optica-test"
+        val (original, replacement) = claimPair(opticaId)
+        coEvery { repository.getDispensacionesSnapshotForOptica(opticaId) } returns listOf(original, replacement)
+        coEvery { repository.getPagosSnapshotForOptica(opticaId) } returns emptyList()
+        coEvery { syncStateTracker.isSynced(opticaId, "dispensacion", "local-repl") } returns true
+        stubRetryPassThrough()
+        val chunks = mutableListOf<List<String>>()
+
+        chunkRecordingCoordinator(
+            remotos = listOf(
+                DispensacionRemotaLookup(id = "local-orig", ot = "2026-0042"),
+                DispensacionRemotaLookup(id = "local-repl", ot = "2026-0042-R1", reclamoOrigenId = "local-orig"),
+            ),
+            chunks = chunks,
+        ).uploadDispensaciones(opticaId)
+
+        assertEquals(listOf(listOf("local-orig", "local-repl")), chunks)
+    }
+
+    private fun claimLedgerPagos(): List<com.example.optoapp.data.Pago> = listOf(
+        pago("rv-claim", "Reverso", dispensacionId = "disp-1", reversaPagoId = "ab-1"),
+        pago("comp-claim", "Abono", dispensacionId = "disp-1")
+            .copy(nota = "Compensación de Reembolso rb000001 por reclamo"),
+        pago("transfer", "Abono", dispensacionId = "repl-1"),
+        pago("refund", "Reembolso", dispensacionId = "repl-1"),
+        pago("unrelated", "Abono", dispensacionId = "disp-9"),
+    )
+
+    private fun stubClaimSnapshot(opticaId: String) {
+        coEvery { repository.getDispensacionesSnapshotForOptica(opticaId) } returns listOf(
+            DispensacionOptica(id = "disp-1", ot = "2026-0042", fecha = LocalDate.parse("2026-09-01"), pacienteId = "p1", opticaId = opticaId),
+            DispensacionOptica(
+                id = "repl-1", ot = "2026-0042-R1", fecha = LocalDate.parse("2026-09-30"), pacienteId = "p1",
+                opticaId = opticaId, reclamoOrigenId = "disp-1",
+            ),
+        )
+    }
+
+    private fun claimPagoCoordinator(remoteDispIds: Set<String>, uploaded: MutableList<String>): UploadSyncCoordinator {
+        stubRetryPassThrough()
+        return object : UploadSyncCoordinator(
+            repository, supabase, database, syncStateTracker, mergeHandler, networkRetryHelper,
+            costoProductoDao, costoBiseladoDao,
+        ) {
+            override suspend fun <T> runInTransaction(block: suspend () -> T): T = block()
+            override suspend fun fetchRemotePagosForLookup(opticaId: String) = emptyList<PagoRemotoLookup>()
+            override suspend fun fetchRemoteParentIds(opticaId: String): Pair<Set<String>, Set<String>> =
+                remoteDispIds to emptySet()
+            override suspend fun upsertPagosChunk(chunk: List<PagoRemoto>) {
+                uploaded.addAll(chunk.map { it.id })
+            }
+        }
+    }
+
+    @Test
+    fun `claim ledger rows stay local while the replacement is not confirmed on the server`() = runTest {
+        val opticaId = "optica-test"
+        stubClaimSnapshot(opticaId)
+        coEvery { repository.getPagosSnapshotForOptica(opticaId) } returns claimLedgerPagos()
+        val uploaded = mutableListOf<String>()
+
+        claimPagoCoordinator(remoteDispIds = setOf("disp-1", "disp-9"), uploaded = uploaded).uploadPagos(opticaId)
+
+        assertEquals(listOf("unrelated"), uploaded)
+        coVerify(exactly = 0) { syncStateTracker.markError(opticaId, "pago", any(), any()) }
+        listOf("rv-claim", "comp-claim", "transfer", "refund").forEach { id ->
+            coVerify(exactly = 0) { syncStateTracker.markSynced(opticaId, "pago", id) }
+        }
+    }
+
+    @Test
+    fun `claim ledger rows upload once the replacement is confirmed`() = runTest {
+        val opticaId = "optica-test"
+        stubClaimSnapshot(opticaId)
+        coEvery { repository.getPagosSnapshotForOptica(opticaId) } returns claimLedgerPagos()
+        coEvery { syncStateTracker.isSynced(opticaId, "dispensacion", "repl-1") } returns true
+        val uploaded = mutableListOf<String>()
+
+        claimPagoCoordinator(remoteDispIds = setOf("disp-1", "repl-1", "disp-9"), uploaded = uploaded).uploadPagos(opticaId)
+
+        assertEquals(setOf("rv-claim", "comp-claim", "transfer", "refund", "unrelated"), uploaded.toSet())
+    }
+
+    @Test
+    fun `pagos of an original held for the winner stay local`() = runTest {
+        val opticaId = "optica-test"
+        coEvery { syncStateTracker.awaitingRemoteIds(opticaId, "dispensacion") } returns setOf("disp-1")
+        coEvery { repository.getPagosSnapshotForOptica(opticaId) } returns listOf(
+            pago("user-abono", "Abono", dispensacionId = "disp-1"),
+            pago("unrelated", "Abono", dispensacionId = "disp-9"),
+        )
+        val uploaded = mutableListOf<String>()
+
+        claimPagoCoordinator(remoteDispIds = setOf("disp-1", "disp-9"), uploaded = uploaded).uploadPagos(opticaId)
+
+        assertEquals(listOf("unrelated"), uploaded)
+        coVerify(exactly = 0) { syncStateTracker.markError(opticaId, "pago", any(), any()) }
     }
 }
