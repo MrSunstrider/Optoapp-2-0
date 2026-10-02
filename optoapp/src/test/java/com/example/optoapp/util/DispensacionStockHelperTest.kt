@@ -1,5 +1,6 @@
 package com.example.optoapp.util
 
+import com.example.optoapp.data.DatabaseTransactionRunner
 import com.example.optoapp.data.Montura
 import com.example.optoapp.data.Resource
 import com.example.optoapp.data.montura.MonturaInventoryCoordinator
@@ -14,12 +15,15 @@ import org.junit.Test
 class DispensacionStockHelperTest {
 
     private lateinit var coordinator: MonturaInventoryCoordinator
+    private lateinit var transactionRunner: DatabaseTransactionRunner
     private lateinit var helper: DispensacionStockHelper
 
     @Before
     fun setUp() {
         coordinator = mockk(relaxed = true)
-        helper = DispensacionStockHelper(coordinator)
+        transactionRunner = mockk()
+        coEvery { transactionRunner.inTransaction<Any?>(any()) } coAnswers { firstArg<suspend () -> Any?>().invoke() }
+        helper = DispensacionStockHelper(coordinator, transactionRunner)
     }
 
     @Test
@@ -167,8 +171,10 @@ class DispensacionStockHelperTest {
     }
 
     @Test
-    fun restockOnce_existingAjusteForReferencia_skipsWithoutTouchingStock() = runTest {
-        coEvery { coordinator.hasMovimiento("d1:anul:i1", "AJUSTE", "m1", "o1") } returns true
+    fun restockOnce_movimientoKeyAlreadyTaken_skipsWithoutTouchingStock() = runTest {
+        coEvery { coordinator.getMonturaById("m1", "o1") } returns
+            Resource.Success(Montura(id = "m1", opticaId = "o1", stockActual = 4))
+        coEvery { coordinator.insertMonturaMovimientoIfAbsent(any()) } returns false
 
         val result = helper.restockOnce("m1", "o1", 1, "d1:anul:i1", "Reposición por anulación")
 
@@ -179,9 +185,9 @@ class DispensacionStockHelperTest {
 
     @Test
     fun restockOnce_noPriorAjuste_restocksWithAjusteMovimiento() = runTest {
-        coEvery { coordinator.hasMovimiento("r1:anul", "AJUSTE", "m1", "o1") } returns false
         coEvery { coordinator.getMonturaById("m1", "o1") } returns
             Resource.Success(Montura(id = "m1", opticaId = "o1", stockActual = 4))
+        coEvery { coordinator.insertMonturaMovimientoIfAbsent(any()) } returns true
         coEvery { coordinator.adjustMonturaStock("m1", "o1", 2) } returns 1
 
         val result = helper.restockOnce("m1", "o1", 2, "r1:anul", "Reposición de regalo")
@@ -189,24 +195,37 @@ class DispensacionStockHelperTest {
         assertEquals(true, result.getOrNull())
         coVerify(exactly = 1) { coordinator.adjustMonturaStock("m1", "o1", 2) }
         coVerify(exactly = 1) {
-            coordinator.insertMonturaMovimiento(
+            coordinator.insertMonturaMovimientoIfAbsent(
                 match { mov ->
                     mov.tipo == "AJUSTE" && mov.referenciaId == "r1:anul" &&
                         mov.cantidad == 2 && mov.stockPrevio == 4 && mov.stockNuevo == 6
                 },
             )
         }
+        coVerify(exactly = 1) { transactionRunner.inTransaction<Any?>(any()) }
     }
 
     @Test
-    fun restockOnce_adjustFailure_propagatesFailure() = runTest {
-        coEvery { coordinator.hasMovimiento(any(), any(), any(), any()) } returns false
+    fun restockOnce_monturaLookupFailure_propagatesFailureWithoutWrites() = runTest {
         coEvery { coordinator.getMonturaById("m1", "o1") } returns Resource.Error("Montura no encontrada")
 
         val result = helper.restockOnce("m1", "o1", 1, "d1:anul:i1", "Reposición por anulación")
 
         assertTrue(result.isFailure)
-        coVerify(exactly = 0) { coordinator.insertMonturaMovimiento(any()) }
+        coVerify(exactly = 0) { coordinator.insertMonturaMovimientoIfAbsent(any()) }
+        coVerify(exactly = 0) { coordinator.adjustMonturaStock(any(), any(), any()) }
+    }
+
+    @Test
+    fun restockOnce_adjustFailsAfterClaim_returnsFailure() = runTest {
+        coEvery { coordinator.getMonturaById("m1", "o1") } returns
+            Resource.Success(Montura(id = "m1", opticaId = "o1", stockActual = 4))
+        coEvery { coordinator.insertMonturaMovimientoIfAbsent(any()) } returns true
+        coEvery { coordinator.adjustMonturaStock("m1", "o1", 1) } returns 0
+
+        val result = helper.restockOnce("m1", "o1", 1, "d1:anul:i1", "Reposición por anulación")
+
+        assertEquals("No se pudo ajustar el stock", result.exceptionOrNull()?.message)
     }
 
     @Test

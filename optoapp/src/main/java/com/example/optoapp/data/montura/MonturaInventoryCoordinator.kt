@@ -120,9 +120,6 @@ class MonturaInventoryCoordinator @Inject constructor(
     suspend fun getMovimientoMonturaById(id: String, opticaId: String): MonturaMovimiento? =
         monturaMovimientoDao.getMovimientoById(id, opticaId)
 
-    suspend fun hasMovimiento(referenciaId: String, tipo: String, monturaId: String, opticaId: String): Boolean =
-        monturaMovimientoDao.countByKey(referenciaId, tipo, monturaId, opticaId) > 0
-
     suspend fun countMovimientosForDispensacion(dispensacionId: String, regaloIds: List<String>, opticaId: String): Int =
         monturaMovimientoDao.countForDispensacion(dispensacionId, regaloIds, opticaId)
 
@@ -130,6 +127,14 @@ class MonturaInventoryCoordinator @Inject constructor(
         val stamped = movimiento.copy(updatedAt = Instant.now().toString())
         monturaMovimientoDao.insertMovimiento(stamped)
         postSaveSyncScheduler.get().scheduleInventarioSync(stamped.opticaId)
+    }
+
+    /** Never replaces an existing row; returns false when the movimiento key is already taken. */
+    suspend fun insertMonturaMovimientoIfAbsent(movimiento: MonturaMovimiento): Boolean {
+        val stamped = movimiento.copy(updatedAt = Instant.now().toString())
+        val inserted = monturaMovimientoDao.insertMovimientoIfAbsent(stamped) != -1L
+        if (inserted) postSaveSyncScheduler.get().scheduleInventarioSync(stamped.opticaId)
+        return inserted
     }
 
     suspend fun registrarSalida(

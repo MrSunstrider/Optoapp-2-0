@@ -15,6 +15,10 @@ interface MonturaMovimientoDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertMovimiento(movimiento: MonturaMovimiento)
 
+    /** Returns -1 when a row with the same id or (referenciaId, tipo, monturaId) already exists. */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertMovimientoIfAbsent(movimiento: MonturaMovimiento): Long
+
     @Query("DELETE FROM montura_movimientos WHERE id = :id AND opticaId = :opticaId")
     suspend fun deleteMovimiento(id: String, opticaId: String)
 
@@ -26,15 +30,6 @@ interface MonturaMovimientoDao {
 
     @Query("SELECT * FROM montura_movimientos WHERE id = :id AND opticaId = :opticaId")
     suspend fun getMovimientoById(id: String, opticaId: String): MonturaMovimiento?
-
-    @Query(
-        """
-        SELECT COUNT(*) FROM montura_movimientos
-        WHERE referenciaId = :referenciaId AND tipo = :tipo
-          AND monturaId = :monturaId AND opticaId = :opticaId
-        """,
-    )
-    suspend fun countByKey(referenciaId: String, tipo: String, monturaId: String, opticaId: String): Int
 
     @Query(
         """

@@ -12,6 +12,7 @@ import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Paciente
 import com.example.optoapp.data.PacienteRepository
 import com.example.optoapp.data.Pago
+import com.example.optoapp.data.RoomTransactionRunner
 import com.example.optoapp.data.SyncRepository
 import com.example.optoapp.data.backup.BackupRestoreCoordinator
 import com.example.optoapp.data.montura.MonturaInventoryCoordinator
@@ -83,7 +84,7 @@ class AnularDispensacionTransactionTest {
     private fun useCase(repo: OptoRepository = repository) = AnularDispensacionUseCase(
         repo,
         db.pagoDao(),
-        DispensacionStockHelper(repo.monturaCoordinator),
+        DispensacionStockHelper(repo.monturaCoordinator, RoomTransactionRunner(db)),
         scheduler,
         CalcularMontoPagadoUseCase(db.pagoDao()),
     )
@@ -314,7 +315,7 @@ class AnularDispensacionTransactionTest {
         assertEquals(listOf("d1:anul:i1"), movimientos().map { it.referenciaId })
         assertEquals(4, stock("M1"))
         assertEquals(LifecycleOutcome.AlreadyTerminal("Anulado"), useCase()(dispId, opticaId, "Otra vez"))
-        val restock = DispensacionStockHelper(repository.monturaCoordinator)
+        val restock = DispensacionStockHelper(repository.monturaCoordinator, RoomTransactionRunner(db))
             .restockOnce("M1", opticaId, 1, "d1:anul:i1", "Reintento")
         assertEquals(Result.success(false), restock)
         assertEquals(1, movimientos().size)

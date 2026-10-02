@@ -293,7 +293,7 @@ class MonturaMovimientoDaoTest {
     }
 
     @Test
-    fun countByKey_matchesOnlyExactReferenciaTipoMonturaAndOptica() = runBlocking {
+    fun insertMovimientoIfAbsent_duplicateSecondaryUniqueKey_keepsExistingRow() = runBlocking {
         monturaDao.insertMontura(
             Montura(
                 id = "m1", sku = "S001", marca = "M", modelo = "X",
@@ -301,24 +301,17 @@ class MonturaMovimientoDaoTest {
                 stockActual = 10, stockMinimo = 2, activo = true, opticaId = "o1",
             ),
         )
-        dao.insertMovimiento(
-            MonturaMovimiento(
-                id = "mov-anul",
-                monturaId = "m1",
-                fecha = LocalDate.parse("2026-06-18"),
-                tipo = "AJUSTE",
-                cantidad = 1,
-                stockPrevio = 9,
-                stockNuevo = 10,
-                referenciaId = "d1:anul:i1",
-                opticaId = "o1",
-            ),
+        val existing = MonturaMovimiento(
+            id = "mov-anul", monturaId = "m1", fecha = LocalDate.parse("2026-06-18"), tipo = "AJUSTE",
+            cantidad = 1, stockPrevio = 9, stockNuevo = 10, referenciaId = "d1:anul:i1", opticaId = "o1",
         )
 
-        assertEquals(1, dao.countByKey("d1:anul:i1", "AJUSTE", "m1", "o1"))
-        assertEquals(0, dao.countByKey("d1:anul:i1", "SALIDA_VENTA", "m1", "o1"))
-        assertEquals(0, dao.countByKey("d1", "AJUSTE", "m1", "o1"))
-        assertEquals(0, dao.countByKey("d1:anul:i1", "AJUSTE", "m1", "o-other"))
+        val firstRowId = dao.insertMovimientoIfAbsent(existing)
+        val duplicateRowId = dao.insertMovimientoIfAbsent(existing.copy(id = "mov-dup", stockPrevio = 10, stockNuevo = 11))
+
+        assertTrue(firstRowId != -1L)
+        assertEquals(-1L, duplicateRowId)
+        assertEquals(listOf(existing), dao.getMovimientosListByOptica("o1"))
     }
 
     @Test
