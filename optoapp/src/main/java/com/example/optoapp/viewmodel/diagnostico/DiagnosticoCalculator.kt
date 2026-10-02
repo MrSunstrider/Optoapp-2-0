@@ -38,7 +38,6 @@ object DiagnosticoCalculator {
         var e = esf ?: 0.0
         var c = cil ?: 0.0
 
-        // Transpose to negative cylinder
         if (c > 0) {
             e += c
             c = -c
@@ -82,5 +81,19 @@ object DiagnosticoCalculator {
         } catch (e: Exception) {
             return null
         }
+    }
+
+    /**
+     * Bidirectional AV → logMAR: Snellen fractional first, then decimal with
+     * explicit separator and clinical ceiling (0, 2.0].
+     */
+    fun parseAvToLogMar(raw: String): Double? {
+        val clean = raw.trim()
+        if (clean.isEmpty()) return null
+        parseSnellenToLogMar(clean)?.let { return it }
+        if ('.' !in clean && ',' !in clean) return null
+        val value = clean.replace(',', '.').toDoubleOrNull() ?: return null
+        if (!value.isFinite() || value <= 0.0 || value > 2.0) return null
+        return -log10(value)
     }
 }

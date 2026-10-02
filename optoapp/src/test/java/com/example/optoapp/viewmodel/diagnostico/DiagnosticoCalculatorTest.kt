@@ -227,4 +227,63 @@ class DiagnosticoCalculatorTest {
         val expected = -Math.log10(20.0 / 10.0)
         assertEquals(expected, DiagnosticoCalculator.parseSnellenToLogMar("20/10")!!, 0.001)
     }
+
+    // --- parseAvToLogMar (bidirectional AV → logMAR) ---
+
+    @Test
+    fun `parseAvToLogMar blank returns null`() {
+        assertNull(DiagnosticoCalculator.parseAvToLogMar(""))
+        assertNull(DiagnosticoCalculator.parseAvToLogMar("   "))
+    }
+
+    @Test
+    fun `parseAvToLogMar Snellen 20 over 40`() {
+        val expected = -Math.log10(0.5)
+        assertEquals(expected, DiagnosticoCalculator.parseAvToLogMar("20/40")!!, 0.001)
+        assertEquals(expected, DiagnosticoCalculator.parseAvToLogMar("20 / 40")!!, 0.001)
+    }
+
+    @Test
+    fun `parseAvToLogMar decimal values`() {
+        assertEquals(-Math.log10(0.5), DiagnosticoCalculator.parseAvToLogMar("0.5")!!, 0.001)
+        assertEquals(-Math.log10(0.8), DiagnosticoCalculator.parseAvToLogMar("0,8")!!, 0.001)
+        assertEquals(-Math.log10(1.0), DiagnosticoCalculator.parseAvToLogMar("1.0")!!, 0.001)
+        assertEquals(-Math.log10(0.8), DiagnosticoCalculator.parseAvToLogMar("0.8")!!, 0.001)
+        assertEquals(-Math.log10(2.0), DiagnosticoCalculator.parseAvToLogMar("2.0")!!, 0.001)
+    }
+
+    @Test
+    fun `parseAvToLogMar rejects bare integer zero negative and over ceiling`() {
+        assertNull(DiagnosticoCalculator.parseAvToLogMar("20"))
+        assertNull(DiagnosticoCalculator.parseAvToLogMar("0.0"))
+        assertNull(DiagnosticoCalculator.parseAvToLogMar("-0.5"))
+        assertNull(DiagnosticoCalculator.parseAvToLogMar("20.0"))
+        assertNull(DiagnosticoCalculator.parseAvToLogMar("20,40"))
+    }
+
+    @Test
+    fun `parseAvToLogMar rejects incomplete Snellen`() {
+        assertNull(DiagnosticoCalculator.parseAvToLogMar("/40"))
+        assertNull(DiagnosticoCalculator.parseAvToLogMar("20/"))
+        assertNull(DiagnosticoCalculator.parseAvToLogMar("/"))
+    }
+
+    @Test
+    fun `parseAvToLogMar Snellen and decimal equivalence`() {
+        assertEquals(
+            DiagnosticoCalculator.parseAvToLogMar("20/40")!!,
+            DiagnosticoCalculator.parseAvToLogMar("0.5")!!,
+            0.001,
+        )
+        assertEquals(
+            DiagnosticoCalculator.parseAvToLogMar("20/20")!!,
+            DiagnosticoCalculator.parseAvToLogMar("1.0")!!,
+            0.001,
+        )
+    }
+
+    @Test
+    fun `parseAvToLogMar metric Snellen 6 over 6 returns zero`() {
+        assertEquals(0.0, DiagnosticoCalculator.parseAvToLogMar("6/6")!!, 0.001)
+    }
 }

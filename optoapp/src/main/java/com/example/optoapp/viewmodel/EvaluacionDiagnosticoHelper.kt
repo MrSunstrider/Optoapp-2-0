@@ -72,8 +72,8 @@ fun computeOtrosAuto(state: EvaluacionUiState): EvaluacionUiState {
         false
     }
 
-    val logMarOd = DiagnosticoCalculator.parseSnellenToLogMar(state.avCcOdLejos)
-    val logMarOi = DiagnosticoCalculator.parseSnellenToLogMar(state.avCcOiLejos)
+    val logMarOd = DiagnosticoCalculator.parseAvToLogMar(state.avCcOdLejos)
+    val logMarOi = DiagnosticoCalculator.parseAvToLogMar(state.avCcOiLejos)
     val ambliopiaVal = if (logMarOd != null && logMarOi != null) {
         abs(logMarOd - logMarOi) >= 0.19
     } else {
