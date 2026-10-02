@@ -37,7 +37,7 @@ The read-only audit of `feat/anulaciones-wu6c-verify-fixes` (8d5b4021) found:
 - [x] T4 Validate the claim refund method in the use case, and align `reclamoPreview` / `canConfirmReclamo` with the use case (finite total, `MONEY_EPSILON`, non-blank method when a refund is shown). Route: delegated writer.
 - [x] T6 Resolve review findings on T1/T3: a failed restock inside a caller transaction must fail the caller instead of rolling it back silently; an ignored claim must be backed by an existing row; standalone rollback and true concurrency tests for the helper; real `SyncStateTracker` in the hard-delete tests; schedule inventory sync only after the restock commits. Route: delegated writer.
 - [x] T7 Remove the dual restock contract found by native RDD on T6: nested detection through the thread-bound `RoomDatabase.inTransaction()` misclassifies a caller on another dispatcher as standalone. Every restock failure now throws. Route: delegated writer.
-- [ ] T5 Verify: full unit suite, GGA, native RDD on the commits, and a read-only re-audit of the four items. Route: parent.
+- [x] T5 Verify: full unit suite, GGA, native RDD on the commits, and a read-only re-audit of the four items. Route: parent.
 
 Route evidence: 4+ files across use cases, DAO, ViewModels, UI and tests, so the writer trigger fires; one delegated writer.
 
@@ -98,6 +98,13 @@ One work-unit commit per task on `feat/anulaciones-wu7-backlog-fixes`. The chain
   - Updated to the new contract: the standalone rollback test now asserts the exception plus the rollback; mock tests assert exceptions for montura lookup failure, failed adjustment, and an ignored claim without a row; the nested-only mock test was merged into the adjustment test; `CancelLedgerUseCasesTest` stubs `throws` instead of `Result.failure`.
   - GREEN: `DispensacionStockHelperRoomTest` 7, `DispensacionStockHelperTest` 16, `AnularDispensacionTransactionTest` 16, `ReclamoTransactionTest` 18, `CancelServicioExtraTransactionTest` 1, `CancelLedgerUseCasesTest` 12, `MonturaMovimientoDaoTest` 11: all passing.
 
+- T7 committed in `d8ed7c9a`.
+- T5 done (parent):
+  - Full suite `./gradlew :optoapp:testDebugUnitTest --rerun` green at `d8ed7c9a` (parent run; writer reported 2625 tests, 0 failures, 3 skipped).
+  - GGA passed on every commit through the pre-commit hook.
+  - Native RDD, all approved and acknowledged: `review-adddae4a7de6c4cc` (T1-T4, 8d5b4021..e10c2316), `review-4bdb96730f509483` (T6, e10c2316..d5310c31), `review-649907d66445f2aa` (T7, d5310c31..d8ed7c9a). Their suggestions became T6 and T7.
+  - Read-only re-audit at `e10c2316`: all four items FIXED, no regressions; its residual risks were resolved in T6 and T7.
+
 ## Next step
 
-T5 (parent): full suite, GGA, native RDD on the commits, read-only re-audit.
+Push the tracker and the chained PRs. This branch becomes the last child PR, targeting `feat/anulaciones-wu6c-verify-fixes`. Before G1, apply `20261001042950_anulacion_motivo_fecha.sql` to production (GGA plus explicit user authorization).
